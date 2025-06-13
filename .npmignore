@@ -1,48 +1,34 @@
-# Development files
-*.test.ts
-*.spec.ts
-test/
-tests/
-coverage/
-.github/
-.vscode/
-
-# Build artifacts
-bin/claude-flow-simple
-bin/claude-flow-typecheck
-*.tgz
-
-# Documentation
-docs/
-examples/
-plans/
-research/
-coordination/
-memory/
-mcp_config/
-
-# Scripts (except install.js)
-scripts/*.ts
-scripts/*.sh
-scripts/demo-*.ts
-scripts/test-*.ts
-scripts/validate-*.ts
-scripts/check-*.ts
-scripts/coverage-*.ts
-
-# Logs and temp files
+src/ui/
+dist/ui/
 *.log
 *.tmp
-.DS_Store
+.env
+.env.*
 node_modules/
-dist/
-test-results/
-
-# Config files
+.git/
+.github/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+coverage/
+.nyc_output/
+*.test.ts
+*.spec.ts
+__tests__/
+test/
+tests/
+docs/
+examples/
+.eslintrc*
+.prettierrc*
+.gitignore
+.npmignore
 tsconfig.json
-vitest.config.ts
-codecov.yml
-claude.md
 *.md
 !README.md
-!LICENSE
+!SWARM_TTY_SOLUTION.md
+!SWARM_VISIBILITY.md

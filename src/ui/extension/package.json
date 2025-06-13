@@ -1,0 +1,169 @@
+{
+  "name": "claude-flow-vscode",
+  "displayName": "Claude Flow",
+  "description": "AI-powered coding assistant with multi-agent orchestration",
+  "version": "0.1.0",
+  "publisher": "claude-flow",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "claude",
+    "ai",
+    "assistant",
+    "coding",
+    "orchestration"
+  ],
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/claude-code-flow"
+  },
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claude-flow.openChat",
+        "title": "Claude Flow: Open Chat",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "claude-flow.askClaude",
+        "title": "Claude Flow: Ask Claude",
+        "icon": "$(question)"
+      },
+      {
+        "command": "claude-flow.switchMode",
+        "title": "Claude Flow: Switch Mode"
+      },
+      {
+        "command": "claude-flow.stopExecution",
+        "title": "Claude Flow: Stop Execution",
+        "icon": "$(debug-stop)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "claude-flow.askClaude",
+          "group": "claude-flow",
+          "when": "editorHasSelection"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "claude-flow.openChat",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Claude Flow",
+      "properties": {
+        "claude-flow.apiKey": {
+          "type": "string",
+          "description": "Anthropic Claude API Key",
+          "scope": "application"
+        },
+        "claude-flow.model": {
+          "type": "string",
+          "enum": [
+            "claude-3-opus-20240229",
+            "claude-3-sonnet-20240229",
+            "claude-3-haiku-20240307"
+          ],
+          "default": "claude-3-opus-20240229",
+          "description": "Claude model to use"
+        },
+        "claude-flow.maxTokens": {
+          "type": "number",
+          "default": 100000,
+          "description": "Maximum tokens for context window"
+        },
+        "claude-flow.permissionLevel": {
+          "type": "string",
+          "enum": [
+            "restricted",
+            "normal",
+            "autonomous"
+          ],
+          "default": "normal",
+          "description": "Permission level for agent actions"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "claude-flow.openChat",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "compile": "tsc -p ./",
+    "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
+    "watch": "webpack --mode development --watch",
+    "watch:tsc": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "lint": "eslint src --ext ts",
+    "test": "mocha",
+    "test:watch": "mocha --watch",
+    "test:coverage": "nyc mocha",
+    "test:integration": "node ./src/test/runTests.js",
+    "test:e2e": "mocha src/test/e2e/**/*.test.ts",
+    "test:all": "npm run test && npm run test:integration && npm run test:e2e",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.20.0",
+    "highlight.js": "^11.9.0",
+    "marked": "^9.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "uuid": "^9.0.0",
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.2",
+    "@types/chai": "^4.3.5",
+    "@types/chai-as-promised": "^8.0.2",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "18.x",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/sinon": "^10.0.15",
+    "@types/sinon-chai": "^4.0.0",
+    "@types/uuid": "^9.0.0",
+    "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.7",
+    "@typescript-eslint/parser": "^5.59.7",
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^2.19.0",
+    "chai": "^4.3.7",
+    "chai-as-promised": "^8.0.1",
+    "css-loader": "^6.8.1",
+    "eslint": "^8.41.0",
+    "html-webpack-plugin": "^5.5.3",
+    "mini-css-extract-plugin": "^2.7.6",
+    "mocha": "^10.2.0",
+    "nyc": "^15.1.0",
+    "sinon": "^15.1.0",
+    "sinon-chai": "^4.0.0",
+    "style-loader": "^3.3.3",
+    "terser-webpack-plugin": "^5.3.9",
+    "ts-loader": "^9.4.4",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
+  }
+}

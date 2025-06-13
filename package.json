@@ -1,6 +1,6 @@
 {
   "name": "claude-flow",
-  "version": "1.0.44",
+  "version": "1.0.46",
   "description": "Advanced AI agent orchestration system for Claude Code",
   "main": "src/cli/main.ts",
   "bin": {
@@ -10,6 +10,8 @@
     "postinstall": "node scripts/install.js",
     "build": "PATH=\"/home/codespace/.deno/bin:$PATH\" deno compile --allow-all --no-check --output=bin/claude-flow src/cli/main.ts",
     "build:simple": "PATH=\"/home/codespace/.deno/bin:$PATH\" deno compile --allow-all --no-check --output=bin/claude-flow-simple src/cli/simple-cli.ts",
+    "build:npm": "deno task build:npm",
+    "prepublishOnly": "npm run build:npm",
     "test": "deno task test"
   },
   "keywords": [
@@ -39,9 +41,15 @@
     "bin/claude-flow-swarm",
     "bin/claude-flow-swarm-ui",
     "bin/claude-flow-swarm-monitor",
-    "src/",
-    "swarm-demo.ts",
-    "swarm-demo-enhanced.ts",
+    "dist/cli/",
+    "dist/communication/",
+    "dist/core/",
+    "dist/mcp/",
+    "dist/memory/",
+    "dist/resources/",
+    "dist/swarm/",
+    "dist/terminal/",
+    "dist/utils/",
     "scripts/install.js",
     "scripts/swarm-blessed-ui.js",
     "scripts/swarm-simple.js",

@@ -1,0 +1,9 @@
+{
+  "timeout": 10000,
+  "color": true,
+  "ui": "bdd",
+  "spec": ["src/**/*.test.ts"],
+  "require": ["ts-node/register"],
+  "recursive": true,
+  "exit": true
+}

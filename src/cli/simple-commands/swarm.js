@@ -5,8 +5,20 @@
 
 export async function swarmCommand(args, flags) {
   try {
-    // Import the new comprehensive swarm action
-    const { swarmAction } = await import('../commands/swarm-new.ts');
+    // Import the swarm action - try .js first (for npm/dist), then .ts (for dev)
+    let swarmAction;
+    try {
+      const module = await import('../commands/swarm-new.js');
+      swarmAction = module.swarmAction;
+    } catch (jsError) {
+      // Fallback to .ts for development environment
+      try {
+        const module = await import('../commands/swarm-new.ts');
+        swarmAction = module.swarmAction;
+      } catch (tsError) {
+        throw jsError; // Throw .js error if both fail
+      }
+    }
     
     // Create command context compatible with TypeScript version
     const ctx = {

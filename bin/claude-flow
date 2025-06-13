@@ -35,8 +35,12 @@ if (!denoPath) {
   process.exit(1);
 }
 
-// Use the simple CLI JavaScript file which works well
-const cliPath = path.join(__dirname, '..', 'src', 'cli', 'simple-cli.js');
+// Use the simple CLI JavaScript file from dist directory in npm packages
+const distPath = path.join(__dirname, '..', 'dist', 'cli', 'simple-cli.js');
+const srcPath = path.join(__dirname, '..', 'src', 'cli', 'simple-cli.js');
+
+// Check if we're in an npm installation (dist exists) or development (src exists)
+const cliPath = fs.existsSync(distPath) ? distPath : srcPath;
 
 // Run the CLI with Deno
 const deno = spawn(denoPath, ['run', '--allow-all', '--no-check', cliPath, ...process.argv.slice(2)], {
