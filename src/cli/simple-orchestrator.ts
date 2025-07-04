@@ -9,6 +9,7 @@ import { createServer } from 'http';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import cors from 'cors';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +46,29 @@ function startWebUI(host: string, port: number) {
   const app = express();
   const server = createServer(app);
   const wss = new WebSocketServer({ server });
+  
+  // Add CORS middleware for cross-origin support
+  app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+  }));
+  
+  // Global error handler middleware
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Global error handler:', err);
+    res.status(err.status || 500).json({
+      error: err.message || 'Internal server error',
+      timestamp: new Date().toISOString()
+    });
+  });
+  
+  // Request logging middleware
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+    next();
+  });
   
   // Store CLI output history and active connections
   const outputHistory: string[] = [];
@@ -207,33 +231,101 @@ function startWebUI(host: string, port: number) {
             let ws = null;
             let commandHistory = [];
             let historyIndex = -1;
+            let reconnectAttempts = 0;
+            let reconnectTimer = null;
+            let isReconnecting = false;
+            const MAX_RECONNECT_ATTEMPTS = 10;
+            const BASE_RECONNECT_DELAY = 1000;
+            
+            function getReconnectDelay() {
+                // Exponential backoff with jitter
+                const exponentialDelay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts), 30000);
+                const jitter = Math.random() * 0.3 * exponentialDelay;
+                return exponentialDelay + jitter;
+            }
             
             function connect() {
+                if (isReconnecting || (ws && ws.readyState === WebSocket.CONNECTING)) {
+                    console.log('Already connecting, skipping duplicate attempt');
+                    return;
+                }
+                
+                isReconnecting = true;
                 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                ws = new WebSocket(\`\${protocol}//\${window.location.host}\`);
+                const wsUrl = \`\${protocol}//\${window.location.host}\`;
                 
-                ws.onopen = () => {
-                    wsStatus.classList.remove('inactive');
-                    wsText.textContent = 'Connected';
-                    appendOutput('\n<span class="success">🔗 Connected to Claude-Flow Console</span>\n');
-                    appendOutput('<span class="info">Type "help" for available commands or use any claude-flow command</span>\n\n');
-                };
-                
-                ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    handleMessage(data);
-                };
-                
-                ws.onclose = () => {
-                    wsStatus.classList.add('inactive');
-                    wsText.textContent = 'Disconnected';
-                    appendOutput('\n<span class="error">🔗 Connection lost. Reconnecting...</span>\n');
-                    setTimeout(connect, 3000);
-                };
-                
-                ws.onerror = (error) => {
-                    appendOutput('\n<span class="error">❌ WebSocket error</span>\n');
-                };
+                try {
+                    console.log(\`Attempting WebSocket connection to \${wsUrl}\`);
+                    ws = new WebSocket(wsUrl);
+                    
+                    ws.onopen = () => {
+                        console.log('WebSocket connected successfully');
+                        wsStatus.classList.remove('inactive');
+                        wsText.textContent = 'Connected';
+                        reconnectAttempts = 0;
+                        isReconnecting = false;
+                        
+                        if (reconnectTimer) {
+                            clearTimeout(reconnectTimer);
+                            reconnectTimer = null;
+                        }
+                        
+                        appendOutput('\n<span class="success">🔗 Connected to Claude-Flow Console</span>\n');
+                        appendOutput('<span class="info">Type "help" for available commands or use any claude-flow command</span>\n\n');
+                    };
+                    
+                    ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            handleMessage(data);
+                        } catch (error) {
+                            console.error('Failed to parse WebSocket message:', error);
+                            appendOutput(\`\n<span class="error">❌ Invalid message received: \${error.message}</span>\n\`);
+                        }
+                    };
+                    
+                    ws.onclose = (event) => {
+                        console.log(\`WebSocket closed: code=\${event.code}, reason=\${event.reason}\`);
+                        wsStatus.classList.add('inactive');
+                        wsText.textContent = 'Disconnected';
+                        isReconnecting = false;
+                        
+                        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                            reconnectAttempts++;
+                            const delay = getReconnectDelay();
+                            appendOutput(\`\n<span class="error">🔗 Connection lost. Reconnecting in \${Math.round(delay/1000)}s... (attempt \${reconnectAttempts}/\${MAX_RECONNECT_ATTEMPTS})</span>\n\`);
+                            
+                            reconnectTimer = setTimeout(() => {
+                                reconnectTimer = null;
+                                connect();
+                            }, delay);
+                        } else {
+                            appendOutput(\`\n<span class="error">❌ Failed to reconnect after \${MAX_RECONNECT_ATTEMPTS} attempts. Please refresh the page.</span>\n\`);
+                            wsText.textContent = 'Failed to connect';
+                        }
+                    };
+                    
+                    ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        appendOutput(\`\n<span class="error">❌ WebSocket error: \${error.message || 'Connection failed'}</span>\n\`);
+                        isReconnecting = false;
+                    };
+                    
+                } catch (error) {
+                    console.error('Failed to create WebSocket:', error);
+                    appendOutput(\`\n<span class="error">❌ Failed to create WebSocket connection: \${error.message}</span>\n\`);
+                    isReconnecting = false;
+                    
+                    // Try reconnect if not exceeded max attempts
+                    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                        reconnectAttempts++;
+                        const delay = getReconnectDelay();
+                        reconnectTimer = setTimeout(() => {
+                            reconnectTimer = null;
+                            connect();
+                        }, delay);
+                    }
+                }
             }
             
             function handleMessage(data) {
@@ -329,6 +421,22 @@ function startWebUI(host: string, port: number) {
                 connect();
             });
             
+            // Implement heartbeat to detect stale connections
+            setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+                }
+            }, 30000); // Ping every 30 seconds
+            
+            // Handle page visibility changes
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && ws && ws.readyState !== WebSocket.OPEN) {
+                    console.log('Page became visible, checking connection...');
+                    reconnectAttempts = 0; // Reset attempts when page becomes visible
+                    connect();
+                }
+            });
+            
             // Keep input focused
             document.addEventListener('click', () => {
                 input.focus();
@@ -422,8 +530,9 @@ function startWebUI(host: string, port: number) {
   });
 
   // WebSocket for real-time CLI interaction
-  wss.on('connection', (ws) => {
-    console.log('🔌 WebSocket client connected');
+  wss.on('connection', (ws, req) => {
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    console.log(`🔌 WebSocket client connected from ${clientIp}`);
     activeConnections.add(ws);
     
     // Send initial status and history
@@ -444,13 +553,20 @@ function startWebUI(host: string, port: number) {
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message.toString());
+        console.log(`Received command from client: ${data.type}`);
+        
         if (data.type === 'command') {
           handleCliCommand(data.data, ws);
+        } else if (data.type === 'ping') {
+          // Handle ping/pong for connection keepalive
+          ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
         }
       } catch (error) {
+        console.error('Failed to handle WebSocket message:', error);
         ws.send(JSON.stringify({
           type: 'error',
-          data: `Invalid message format: ${error.message}`
+          data: `Invalid message format: ${error.message}`,
+          timestamp: new Date().toISOString()
         }));
       }
     });
@@ -461,7 +577,17 @@ function startWebUI(host: string, port: number) {
     });
     
     ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
+      console.error('WebSocket client error:', error);
+      // Send detailed error information to client before closing
+      try {
+        ws.send(JSON.stringify({
+          type: 'error',
+          data: `Server WebSocket error: ${error.message || 'Unknown error'}`,
+          timestamp: new Date().toISOString()
+        }));
+      } catch (sendError) {
+        console.error('Failed to send error to client:', sendError);
+      }
       activeConnections.delete(ws);
     });
   });
@@ -666,7 +792,7 @@ function startWebUI(host: string, port: number) {
         componentStatus.webUI = false;
         reject(err);
       } else {
-        console.error('❌ Web UI server error:', err.message);
+        console.error('❌ Web UI server error:', err.message, err.stack);
         reject(err);
       }
     });
