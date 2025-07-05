@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { getErrorMessage } from '../utils/error-handler.js';
 
-import type { Command } from "@cliffy/command";
+import { Command } from 'commander';
 import * as path from 'path';
 import { copyPrompts, copyPromptsEnhanced } from './prompt-copier-enhanced.js';
 import { 
@@ -136,9 +136,8 @@ program
   });
 
 program
-  .command('validate')
+  .command('validate <path>')
   .description('Validate prompt files')
-  .argument('<path>', 'Path to validate (file or directory)')
   .option('--recursive', 'Validate recursively')
   .action(async (filePath, options) => {
     try {
@@ -240,9 +239,8 @@ program
   });
 
 program
-  .command('rollback')
+  .command('rollback <manifest>')
   .description('Rollback from backup')
-  .argument('<manifest>', 'Path to backup manifest file')
   .action(async (manifestPath) => {
     try {
       const { PromptCopier } = await import('./prompt-copier');

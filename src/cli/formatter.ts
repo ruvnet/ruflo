@@ -4,8 +4,8 @@ import { getErrorMessage } from '../utils/error-handler.js';
  */
 
 import chalk from 'chalk';
-import type { Table } from '@cliffy/table';
-// Box is not available in the current cliffy version
+import Table from 'cli-table3';
+// Using cli-table3 instead of @cliffy/table for Node.js compatibility
 import type { AgentProfile, Task, MemoryEntry, HealthStatus } from '../utils/types.js';
 
 /**

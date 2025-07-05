@@ -4,9 +4,9 @@ import { promises as fs } from 'node:fs';
  * Enhanced Interactive REPL for Claude-Flow
  */
 
-import type { Input, Confirm, Select } from '@cliffy/prompt';
+import inquirer from 'inquirer';
 import chalk from 'chalk';
-import type { Table } from '@cliffy/table';
+import Table from 'cli-table3';
 import type { AgentProfile, Task } from '../utils/types.js';
 import { generateId } from '../utils/helpers.js';
 import { formatStatusIndicator, formatDuration, formatProgressBar } from './formatter.js';

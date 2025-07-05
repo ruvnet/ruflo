@@ -3,7 +3,7 @@ import { getErrorMessage } from '../utils/error-handler.js';
  * Simple MCP command implementation for Node.js compatibility
  */
 
-import type { Command } from "@cliffy/command";
+import { Command } from 'commander';
 import http from 'http';
 
 function printSuccess(message: string) {

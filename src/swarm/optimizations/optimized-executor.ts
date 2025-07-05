@@ -6,10 +6,10 @@ import { getErrorMessage } from '../../utils/error-handler.js';
 
 import { EventEmitter } from 'node:events';
 import { Logger } from '../../core/logger.js';
-import type { ClaudeConnectionPool } from './connection-pool.js';
-import type { AsyncFileManager } from './async-file-manager.js';
-import type { TTLMap } from './ttl-map.js';
-import type { CircularBuffer } from './circular-buffer.js';
+import { ClaudeConnectionPool } from './connection-pool.js';
+import { AsyncFileManager } from './async-file-manager.js';
+import { TTLMap } from './ttl-map.js';
+import { CircularBuffer } from './circular-buffer.js';
 import PQueue from 'p-queue';
 import type { 
   TaskDefinition, 
@@ -78,8 +78,13 @@ export class OptimizedExecutor extends EventEmitter {
   constructor(private config: ExecutorConfig = {}) {
     super();
     
+    // Use test-safe logger configuration
+    const loggerConfig = process.env.CLAUDE_FLOW_ENV === 'test' 
+      ? { level: 'error' as const, format: 'json' as const, destination: 'console' as const }
+      : { level: 'info' as const, format: 'json' as const, destination: 'console' as const };
+    
     this.logger = new Logger(
-      { level: 'info', format: 'json', destination: 'console' },
+      loggerConfig,
       { component: 'OptimizedExecutor' }
     );
     

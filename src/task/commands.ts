@@ -4,7 +4,7 @@ import { getErrorMessage } from '../utils/error-handler.js';
  * Integrates with TodoWrite/TodoRead for coordination and Memory for persistence
  */
 
-import type { Command } from "@cliffy/command";
+import { Command } from 'commander';
 import chalk from 'chalk';
 import type { TaskEngine, WorkflowTask, TaskFilter, TaskSort, Workflow, ResourceRequirement, TaskSchedule } from './engine.js';
 import { generateId } from '../utils/helpers.js';
@@ -19,10 +19,8 @@ export interface TaskCommandContext {
  * Task Create Command - Create tasks with dependencies, priority, scheduling, resource requirements
  */
 export function createTaskCreateCommand(context: TaskCommandContext): Command {
-  return new Command('create')
+  return new Command('create <type> <description>')
     .description('Create a new task with comprehensive options')
-    .argument('<type>', 'Task type (e.g., research, development, analysis)')
-    .argument('<description>', 'Task description')
     .option('-p, --priority <number>', 'Task priority (0-100)', '50')
     .option('-d, --dependencies <deps>', 'Comma-separated dependency task IDs')
     .option('--dep-type <type>', 'Dependency type: finish-to-start, start-to-start, finish-to-finish, start-to-finish', 'finish-to-start')

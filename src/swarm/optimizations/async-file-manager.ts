@@ -1,4 +1,4 @@
-import { getErrorMessage } from '../utils/error-handler.js';
+import { getErrorMessage } from '../../utils/error-handler.js';
 /**
  * Async File Manager
  * Handles non-blocking file operations with queuing
@@ -6,7 +6,8 @@ import { getErrorMessage } from '../utils/error-handler.js';
 
 import { promises as fs } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
-import { createWriteStream, createReadStream, Readable } from 'node:stream';
+import { createWriteStream, createReadStream } from 'node:fs';
+import { Readable } from 'node:stream';
 import { join, dirname } from 'node:path';
 import PQueue from 'p-queue';
 import { Logger } from '../../core/logger.js';
@@ -39,8 +40,13 @@ export class AsyncFileManager {
     this.writeQueue = new PQueue({ concurrency: this.concurrency.write });
     this.readQueue = new PQueue({ concurrency: this.concurrency.read });
     
+    // Use test-safe logger configuration
+    const loggerConfig = process.env.CLAUDE_FLOW_ENV === 'test' 
+      ? { level: 'error' as const, format: 'json' as const, destination: 'console' as const }
+      : { level: 'info' as const, format: 'json' as const, destination: 'console' as const };
+    
     this.logger = new Logger(
-      { level: 'info', format: 'json', destination: 'console' },
+      loggerConfig,
       { component: 'AsyncFileManager' }
     );
   }

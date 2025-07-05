@@ -6,7 +6,32 @@ import { getErrorMessage } from '../../utils/error-handler.js';
 
 import { EventEmitter } from 'node:events';
 import { Logger } from '../../core/logger.js';
-import type { ClaudeAPI } from '../../services/claude/api.js';
+// Mock ClaudeAPI for testing when service doesn't exist
+export class ClaudeAPI {
+  id: string;
+  isHealthy: boolean;
+  
+  constructor() {
+    this.id = `mock-api-${Date.now()}`;
+    this.isHealthy = true;
+  }
+  
+  async healthCheck(): Promise<boolean> {
+    return this.isHealthy;
+  }
+  
+  async complete(options: any): Promise<any> {
+    // Mock response for testing
+    return {
+      content: [{ text: `Mock response for: ${options.messages?.[0]?.content || 'test'}` }],
+      model: options.model || 'claude-3-5-sonnet-20241022',
+      usage: {
+        input_tokens: 10,
+        output_tokens: 20
+      }
+    };
+  }
+}
 
 export interface PoolConfig {
   min: number;

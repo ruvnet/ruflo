@@ -1,4 +1,10 @@
-// Type definitions for Cliffy modules
+// DEPRECATED: Type definitions for Cliffy modules
+// These definitions are no longer used as @cliffy has been replaced with:
+// - @cliffy/command -> commander.js
+// - @cliffy/prompt -> inquirer
+// - @cliffy/table -> cli-table3
+// - @cliffy/ansi/colors -> chalk
+// This file is kept for reference only and should be removed once migration is complete.
 declare module "@cliffy/ansi/colors" {
   export interface ColorFunction {
     (text: string): string;
