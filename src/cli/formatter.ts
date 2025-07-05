@@ -7,6 +7,7 @@ import chalk from 'chalk';
 import Table from 'cli-table3';
 // Using cli-table3 instead of @cliffy/table for Node.js compatibility
 import type { AgentProfile, Task, MemoryEntry, HealthStatus } from '../utils/types.js';
+import process from 'process';
 
 /**
  * Formats an error for display
@@ -244,9 +245,9 @@ export function displayVersion(version: string, buildDate: string): void {
     '',
     chalk.white('Version:    ') + chalk.yellow(version),
     chalk.white('Build Date: ') + chalk.yellow(buildDate),
-    chalk.white('Runtime:    ') + chalk.yellow('Deno ' + Deno.version.deno),
-    chalk.white('TypeScript: ') + chalk.yellow(Deno.version.typescript),
-    chalk.white('V8:         ') + chalk.yellow(Deno.version.v8),
+    chalk.white('Runtime:    ') + chalk.yellow('Node.js ' + process.version),
+    chalk.white('Platform:   ') + chalk.yellow(process.platform),
+    chalk.white('Arch:       ') + chalk.yellow(process.arch),
     '',
     chalk.gray('Components:'),
     chalk.white('  • Multi-Agent Orchestration'),

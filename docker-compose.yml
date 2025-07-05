@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # Claude Flow main service
+  claude-flow:
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile
+    image: claude-flow:latest
+    container_name: claude-flow
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - CLAUDE_FLOW_HOME=/home/claude/.claude-flow
+      - MCP_SERVER_URL=http://mcp-server:3001
+    volumes:
+      - claude-flow-data:/home/claude/.claude-flow
+      - ./workspace:/workspace
+    networks:
+      - claude-flow-network
+    command: ["start", "--mode", "server"]
+    ports:
+      - "3000:3000"
+
+  # MCP Server for Claude Flow
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile
+    image: claude-flow:latest
+    container_name: claude-flow-mcp
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - MCP_MODE=server
+      - MCP_PORT=3001
+    volumes:
+      - mcp-data:/home/claude/.mcp
+    networks:
+      - claude-flow-network
+    command: ["mcp", "start", "--port", "3001"]
+    ports:
+      - "3001:3001"
+
+  # ruv-swarm integration
+  ruv-swarm:
+    image: node:20-alpine
+    container_name: ruv-swarm
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - SWARM_MODE=distributed
+      - CLAUDE_FLOW_URL=http://claude-flow:3000
+    volumes:
+      - ./ruv-swarm:/app
+      - swarm-data:/data
+    networks:
+      - claude-flow-network
+    command: ["npx", "ruv-swarm", "mcp", "start"]
+    depends_on:
+      - claude-flow
+      - mcp-server
+
+  # Development environment
+  dev:
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile
+      target: builder
+    image: claude-flow:dev
+    container_name: claude-flow-dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - claude-flow-network
+    command: ["bash"]
+    stdin_open: true
+    tty: true
+
+  # Test runner
+  test:
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile
+      target: builder
+    image: claude-flow:test
+    container_name: claude-flow-test
+    environment:
+      - NODE_ENV=test
+      - CI=true
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - claude-flow-network
+    command: ["npm", "test"]
+
+volumes:
+  claude-flow-data:
+    driver: local
+  mcp-data:
+    driver: local
+  swarm-data:
+    driver: local
+
+networks:
+  claude-flow-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

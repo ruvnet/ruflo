@@ -6,6 +6,7 @@ export function showInitHelp() {
   console.log('Usage: claude-flow init [options]');
   console.log();
   console.log('🛡️  ENHANCED INITIALIZATION:');
+  console.log('  --claude-flow, --v2  Claude Flow v2.0.0 with GitHub integration & enhanced features');
   console.log('  --enhanced, --safe   Enhanced initialization with validation and rollback');
   console.log('  --validate           Run validation checks only');
   console.log('  --validate-only      Validate without initializing');
@@ -38,7 +39,9 @@ export function showInitHelp() {
   console.log();
   console.log('Examples:');
   console.log('🛡️  SAFE INITIALIZATION:');
-  console.log('  claude-flow init --enhanced --sparc         # ⭐ SAFEST: With validation & rollback');
+  console.log('  claude-flow init --claude-flow              # ⭐ NEW: Claude Flow v2.0.0 enhanced');
+  console.log('  claude-flow init --v2 --force               # v2.0.0 with force overwrite');
+  console.log('  claude-flow init --enhanced --sparc         # With validation & rollback');
   console.log('  claude-flow init --safe --sparc --force     # Enhanced with optimized templates');
   console.log('  claude-flow init --validate-only            # Check system before initializing');
   console.log();

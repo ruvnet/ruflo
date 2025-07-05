@@ -24,16 +24,7 @@ for arg in "$@"; do
   fi
 done
 
-# Try Deno first, but check if it actually works
-if command -v deno >/dev/null 2>&1 && [ -f "$ROOT_DIR/src/cli/main.ts" ]; then
-  # Test if Deno can actually run the main file
-  if deno check "$ROOT_DIR/src/cli/main.ts" >/dev/null 2>&1; then
-    # Use Deno for full functionality
-    exec deno run --allow-all "$ROOT_DIR/src/cli/main.ts" "$@"
-  fi
-fi
-
-# Fall back to Node.js version
+# Use Node.js with TypeScript support
 if [ -f "$ROOT_DIR/src/cli/simple-cli.js" ]; then
   # Use node for JavaScript version
   exec node "$ROOT_DIR/src/cli/simple-cli.js" "$@"
@@ -49,11 +40,7 @@ else
   echo ""
   echo "⚠️  No compatible runtime found."
   echo ""
-  echo "For full functionality (recommended):"
-  echo "  1. Install Deno: curl -fsSL https://deno.land/x/install/install.sh | sh"
-  echo "  2. Run: claude-flow <command>"
-  echo ""
-  echo "For Node.js compatibility mode:"
+  echo "To install and run:"
   echo "  1. Install tsx: npm install -g tsx"
   echo "  2. Run: claude-flow <command>"
   echo ""

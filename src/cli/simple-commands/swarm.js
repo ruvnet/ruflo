@@ -1,7 +1,13 @@
-#!/usr/bin/env -S deno run --allow-all
 /**
  * Swarm command wrapper for simple CLI
  */
+
+import { args, mkdirAsync, writeTextFile, exit, cwd } from '../node-compat.js';
+import { spawn, execSync } from 'child_process';
+import { existsSync, chmodSync, statSync } from 'fs';
+import { open } from 'fs/promises';
+import process from 'process';
+import path from 'path';
 
 function showSwarmHelp() {
   console.log(`
@@ -92,7 +98,7 @@ export async function swarmCommand(args, flags) {
       const swarmRunDir = `./swarm-runs/${swarmId}`;
       
       // Create swarm directory
-      await Deno.mkdir(swarmRunDir, { recursive: true });
+      await mkdirAsync(swarmRunDir, { recursive: true });
       
       console.log(`🐝 Launching swarm in background mode...`);
       console.log(`📋 Objective: ${objective}`);
@@ -113,7 +119,7 @@ export async function swarmCommand(args, flags) {
       
       // Create log file
       const logFile = `${swarmRunDir}/swarm.log`;
-      const logHandle = await Deno.open(logFile, { create: true, write: true });
+      const logHandle = await open(logFile, 'w');
       
       // Create a script to run the swarm without background flag
       const scriptContent = `#!/usr/bin/env -S deno run --allow-all
@@ -126,17 +132,17 @@ const flags = ${JSON.stringify(newFlags)};
 const args = ${JSON.stringify(args)};
 
 // Set env to prevent background spawning
-Deno.env.set('CLAUDE_SWARM_NO_BG', 'true');
+process.env.CLAUDE_SWARM_NO_BG = 'true';
 
 // Run the swarm
 await swarmCommand(args, flags);
 `;
       
       const scriptPath = `${swarmRunDir}/run-swarm.js`;
-      await Deno.writeTextFile(scriptPath, scriptContent);
+      await writeTextFile(scriptPath, scriptContent);
       
       // Save process info first
-      await Deno.writeTextFile(`${swarmRunDir}/process.json`, JSON.stringify({
+      await writeTextFile(`${swarmRunDir}/process.json`, JSON.stringify({
         swarmId: swarmId,
         objective: objective,
         startTime: new Date().toISOString(),
@@ -153,7 +159,7 @@ await swarmCommand(args, flags);
       
       try {
         // Check if the background script exists
-        await Deno.stat(bgScriptPath);
+        statSync(bgScriptPath);
         
         // Build command args for the background script
         const bgArgs = [objective];
@@ -165,14 +171,9 @@ await swarmCommand(args, flags);
         }
         
         // Use the bash background script
-        const bgCommand = new Deno.Command(bgScriptPath, {
-          args: bgArgs,
-          stdin: "null",
-          stdout: "piped",
-          stderr: "piped"
+        const bgProcess = spawn(bgScriptPath, bgArgs, {
+          stdio: ['ignore', 'pipe', 'pipe']
         });
-        
-        const bgProcess = bgCommand.spawn();
         
         // Read and display output
         const decoder = new TextDecoder();
@@ -180,7 +181,7 @@ await swarmCommand(args, flags);
         console.log(decoder.decode(output.stdout));
         
         // Exit immediately after launching
-        Deno.exit(0);
+        exit(0);
       } catch (error) {
         // Fallback: create a double-fork pattern using a shell script
         console.log(`\n⚠️  Background script not found, using fallback method`);
@@ -190,7 +191,7 @@ await swarmCommand(args, flags);
 # Double fork to detach from parent
 (
   (
-    "${Deno.execPath()}" run --allow-all "${scriptPath}" > "${logFile}" 2>&1 &
+    node "${scriptPath}" > "${logFile}" 2>&1 &
     echo $! > "${swarmRunDir}/swarm.pid"
   ) &
 )
@@ -198,19 +199,15 @@ exit 0
 `;
         
         const shellScriptPath = `${swarmRunDir}/launch-background.sh`;
-        await Deno.writeTextFile(shellScriptPath, shellScript);
-        await Deno.chmod(shellScriptPath, 0o755);
+        await writeTextFile(shellScriptPath, shellScript);
+        chmodSync(shellScriptPath, 0o755);
         
         // Execute the shell script
-        const shellCommand = new Deno.Command("bash", {
-          args: [shellScriptPath],
-          stdin: "null",
-          stdout: "null",
-          stderr: "null"
+        const shellProcess = spawn("bash", [shellScriptPath], {
+          stdio: 'ignore',
+          detached: true
         });
-        
-        const shellProcess = shellCommand.spawn();
-        await shellProcess.status;
+        shellProcess.unref();
         
         console.log(`\n✅ Swarm launched in background!`);
         console.log(`📄 Logs: tail -f ${logFile}`);
@@ -218,7 +215,7 @@ exit 0
         console.log(`\nThe swarm will continue running independently.`);
         
         // Exit immediately
-        Deno.exit(0);
+        exit(0);
       }
     }
     
@@ -379,7 +376,7 @@ exit 0
           }
           
           console.log('🚀 Starting advanced swarm execution...');
-          const swarmProcess = spawn(Deno.execPath(), ['run', '--allow-all', swarmDemoPath, ...swarmArgs], {
+          const swarmProcess = spawn('node', [swarmDemoPath, ...swarmArgs], {
             stdio: 'inherit'
           });
           
@@ -847,11 +844,11 @@ if (import.meta.main) {
   const flags = {};
   
   // Parse arguments and flags
-  for (let i = 0; i < Deno.args.length; i++) {
-    const arg = Deno.args[i];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
     if (arg.startsWith('--')) {
       const flagName = arg.substring(2);
-      const nextArg = Deno.args[i + 1];
+      const nextArg = args[i + 1];
       
       if (nextArg && !nextArg.startsWith('--')) {
         flags[flagName] = nextArg;

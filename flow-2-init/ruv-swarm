@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# ruv-swarm local wrapper
+# This script ensures ruv-swarm runs from your project directory
+
+# Save the current directory
+PROJECT_DIR="${PWD}"
+
+# Set environment to ensure correct working directory
+export PWD="${PROJECT_DIR}"
+export RUVSW_WORKING_DIR="${PROJECT_DIR}"
+
+# Function to find and execute ruv-swarm
+find_and_execute() {
+    # 1. Try local npm/npx
+    if command -v npx &> /dev/null; then
+        cd "${PROJECT_DIR}"
+        exec npx ruv-swarm "$@"
+        
+    # 2. Try local node_modules
+    elif [ -f "${PROJECT_DIR}/node_modules/.bin/ruv-swarm" ]; then
+        cd "${PROJECT_DIR}"
+        exec "${PROJECT_DIR}/node_modules/.bin/ruv-swarm" "$@"
+        
+    # 3. Try global installation
+    elif command -v ruv-swarm &> /dev/null; then
+        cd "${PROJECT_DIR}"
+        exec ruv-swarm "$@"
+        
+    # 4. Fallback to latest version
+    else
+        cd "${PROJECT_DIR}"
+        exec npx ruv-swarm@latest "$@"
+    fi
+}
+
+# Handle remote execution if SSH context detected
+if [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ] || [ "$TERM" = "screen" ]; then
+    echo "🌐 Remote execution detected"
+    export RUVSW_REMOTE_MODE=1
+fi
+
+# Execute with error handling
+find_and_execute "$@"

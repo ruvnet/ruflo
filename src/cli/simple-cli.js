@@ -12,7 +12,10 @@ import {
   listCommands 
 } from './command-registry.js';
 import { parseFlags } from './utils.js';
-import { args, cwd, isMainModule } from './node-compat.js';
+import { args, cwd, isMainModule, exit, readTextFile, writeTextFile, mkdirAsync, errors } from './node-compat.js';
+import { spawn } from 'child_process';
+import process from 'process';
+import readline from 'readline';
 import { getMainHelp, getCommandHelp } from './help-text.js';
 
 const VERSION = '2.0.0';
@@ -298,7 +301,7 @@ async function main() {
               console.log('     • Max Pool Size: 10');
               console.log('     • Idle Timeout: 5 minutes');
               console.log('     • Shell: /bin/bash');
-              console.log('     • Working Directory: ' + Deno.cwd());
+              console.log('     • Working Directory: ' + cwd());
               console.log('   Performance:');
               console.log('     • Average Response Time: N/A');
               console.log('     • Terminal Creation Time: N/A');
@@ -1430,10 +1433,9 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
                 console.log(`claude ${claudeArgs.map(arg => arg.includes(' ') || arg.includes('\n') ? `"${arg}"` : arg).join(' ')}`);
               }
               
-              const command = new Deno.Command('claude', {
-                args: claudeArgs,
+              const child = spawn('claude', claudeArgs, {
                 env: {
-                  ...Deno.env.toObject(),
+                  ...process.env,
                   CLAUDE_INSTANCE_ID: instanceId,
                   CLAUDE_FLOW_MODE: flags.mode || 'full',
                   CLAUDE_FLOW_COVERAGE: (flags.coverage || 80).toString(),
@@ -1444,19 +1446,20 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
                   CLAUDE_FLOW_COORDINATION_ENABLED: flags.parallel ? 'true' : 'false',
                   CLAUDE_FLOW_FEATURES: 'memory,coordination,swarm',
                 },
-                stdin: 'inherit',
-                stdout: 'inherit',
-                stderr: 'inherit',
+                stdio: 'inherit'
               });
               
-              const child = command.spawn();
-              const status = await child.status;
-              
-              if (status.success) {
-                printSuccess(`Claude instance ${instanceId} completed successfully`);
-              } else {
-                printError(`Claude instance ${instanceId} exited with code ${status.code}`);
-              }
+              // Wait for process to exit
+              await new Promise((resolve) => {
+                child.on('exit', (code) => {
+                  if (code === 0) {
+                    printSuccess(`Claude instance ${instanceId} completed successfully`);
+                  } else {
+                    printError(`Claude instance ${instanceId} exited with code ${code}`);
+                  }
+                  resolve();
+                });
+              });
             } catch (err) {
               printError(`Failed to spawn Claude: ${err.message}`);
               console.log('Make sure you have the Claude CLI installed.');
@@ -2057,7 +2060,7 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
         suggestions.forEach(cmd => console.log(`  claude-flow ${cmd}`));
       }
       
-      Deno.exit(1);
+      exit(1);
   }
 }
 
@@ -2144,7 +2147,7 @@ Shortcuts:
     
     config: async (key) => {
       try {
-        const config = JSON.parse(await Deno.readTextFile('claude-flow.config.json'));
+        const config = JSON.parse(await readTextFile('claude-flow.config.json'));
         if (key) {
           const keys = key.split('.');
           let value = config;
@@ -2180,18 +2183,21 @@ Shortcuts:
     if (trimmed.startsWith('!')) {
       const shellCmd = trimmed.substring(1);
       try {
-        const command = new Deno.Command('sh', {
-          args: ['-c', shellCmd],
-          stdout: 'piped',
-          stderr: 'piped'
+        await new Promise((resolve) => {
+          const proc = spawn('sh', ['-c', shellCmd], {
+            stdio: ['inherit', 'pipe', 'pipe']
+          });
+          
+          proc.stdout.on('data', (data) => {
+            console.log(data.toString());
+          });
+          
+          proc.stderr.on('data', (data) => {
+            console.error(data.toString());
+          });
+          
+          proc.on('exit', resolve);
         });
-        const { stdout, stderr } = await command.output();
-        if (stdout.length > 0) {
-          console.log(new TextDecoder().decode(stdout));
-        }
-        if (stderr.length > 0) {
-          console.error(new TextDecoder().decode(stderr));
-        }
       } catch (err) {
         console.error(`Shell error: ${err.message}`);
       }
@@ -2473,28 +2479,47 @@ Shortcuts:
     }
   }
   
-  // Main REPL loop
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
+  // Main REPL loop with Node.js readline
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
   
-  while (true) {
-    // Show prompt
-    const prompt = replState.currentSession ? 
+  // Set prompt based on session
+  function updatePrompt() {
+    rl.setPrompt(replState.currentSession ? 
       `claude-flow:${replState.currentSession}> ` : 
-      'claude-flow> ';
-    await Deno.stdout.write(encoder.encode(prompt));
-    
-    // Read input
-    const buf = new Uint8Array(1024);
-    const n = await Deno.stdin.read(buf);
-    if (n === null) break;
-    
-    const input = decoder.decode(buf.subarray(0, n)).trim();
+      'claude-flow> ');
+  }
+  
+  updatePrompt();
+  rl.prompt();
+  
+  // Handle each line of input
+  rl.on('line', async (input) => {
+    input = input.trim();
     
     // Process command
     const shouldContinue = await processReplCommand(input);
-    if (!shouldContinue) break;
-  }
+    if (!shouldContinue) {
+      rl.close();
+    } else {
+      updatePrompt();
+      rl.prompt();
+    }
+  });
+  
+  // Handle CTRL+C
+  rl.on('SIGINT', () => {
+    console.log('\nExiting Claude-Flow...');
+    rl.close();
+    process.exit(0);
+  });
+  
+  // Wait for REPL to close
+  return new Promise(resolve => {
+    rl.on('close', resolve);
+  });
 }
 
 // Helper functions for init command
@@ -2824,10 +2849,10 @@ async function createSparcStructureManually() {
     
     for (const dir of rooDirectories) {
       try {
-        await Deno.mkdir(dir, { recursive: true });
+        await mkdirAsync(dir, { recursive: true });
         console.log(`  ✓ Created ${dir}/`);
       } catch (err) {
-        if (!(err instanceof Deno.errors.AlreadyExists)) {
+        if (!(err instanceof errors.AlreadyExists)) {
           throw err;
         }
       }
@@ -2837,23 +2862,23 @@ async function createSparcStructureManually() {
     let roomodesContent;
     try {
       // Check if .roomodes already exists and read it
-      roomodesContent = await Deno.readTextFile('.roomodes');
+      roomodesContent = await readTextFile('.roomodes');
       console.log('  ✓ Using existing .roomodes configuration');
     } catch {
       // Create basic .roomodes configuration
       roomodesContent = createBasicRoomodesConfig();
-      await Deno.writeTextFile('.roomodes', roomodesContent);
+      await writeTextFile('.roomodes', roomodesContent);
       console.log('  ✓ Created .roomodes configuration');
     }
     
     // Create basic workflow templates
     const basicWorkflow = createBasicSparcWorkflow();
-    await Deno.writeTextFile('.roo/workflows/basic-tdd.json', basicWorkflow);
+    await writeTextFile('.roo/workflows/basic-tdd.json', basicWorkflow);
     console.log('  ✓ Created .roo/workflows/basic-tdd.json');
     
     // Create README for .roo directory
     const rooReadme = createRooReadme();
-    await Deno.writeTextFile('.roo/README.md', rooReadme);
+    await writeTextFile('.roo/README.md', rooReadme);
     console.log('  ✓ Created .roo/README.md');
     
     console.log('  ✅ Basic SPARC structure created successfully');

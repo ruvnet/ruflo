@@ -1,0 +1,51 @@
+{
+  "env": {
+    "RUV_SWARM_AUTO_COMMIT": "false",
+    "RUV_SWARM_AUTO_PUSH": "false",
+    "RUV_SWARM_HOOKS_ENABLED": "false",
+    "RUV_SWARM_TELEMETRY_ENABLED": "true",
+    "RUV_SWARM_REMOTE_EXECUTION": "true"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npx ruv-swarm *)",
+      "Bash(npm run lint)",
+      "Bash(npm run test:*)",
+      "Bash(npm test *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push)",
+      "Bash(git config *)",
+      "Bash(node *)",
+      "Bash(which *)",
+      "Bash(pwd)",
+      "Bash(ls *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | sh)",
+      "Bash(eval *)"
+    ]
+  },
+  "hooks": {},
+  "mcpServers": {
+    "ruv-swarm": {
+      "command": "npx",
+      "args": [
+        "ruv-swarm",
+        "mcp",
+        "start"
+      ],
+      "env": {
+        "RUV_SWARM_HOOKS_ENABLED": "false",
+        "RUV_SWARM_TELEMETRY_ENABLED": "true",
+        "RUV_SWARM_REMOTE_READY": "true"
+      }
+    }
+  },
+  "includeCoAuthoredBy": true
+}
