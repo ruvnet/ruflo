@@ -138,17 +138,15 @@ export class TerminalEmulator {
     const welcome = document.createElement('div');
     welcome.className = 'welcome-message';
     welcome.innerHTML = `
-      <div class="ascii-art">
-   ╔═══════════════════════════════════════════════════════════╗
-   ║                                                           ║
-   ║     ⚡ Claude Code Console v1.0.0                         ║
-   ║                                                           ║
-   ║     Welcome to the web-based CLI interface               ║
-   ║     Type 'help' for available commands                   ║
-   ║     Use Ctrl+L to clear console                          ║
-   ║                                                           ║
-   ╚═══════════════════════════════════════════════════════════╝
-      </div>
+      <div class="ascii-art">╔═══════════════════════════════════════════════════════════╗
+║                                                           ║
+║     🌊 Claude Flow v2.0.0                                ║
+║                                                           ║
+║     Welcome to the web-based swarm orchestration         ║
+║     Type 'help' for available commands                   ║
+║     Use Ctrl+L to clear console                          ║
+║                                                           ║
+╚═══════════════════════════════════════════════════════════╝</div>
     `;
     this.outputElement.appendChild(welcome);
   }
@@ -347,9 +345,16 @@ export class TerminalEmulator {
   /**
    * Scroll to bottom
    */
-  scrollToBottom() {
+  scrollToBottom(smooth = false) {
     if (this.shouldAutoScroll()) {
-      this.outputElement.scrollTop = this.outputElement.scrollHeight;
+      if (smooth) {
+        this.outputElement.scrollTo({
+          top: this.outputElement.scrollHeight,
+          behavior: 'smooth'
+        });
+      } else {
+        this.outputElement.scrollTop = this.outputElement.scrollHeight;
+      }
     }
   }
   
@@ -468,14 +473,40 @@ export class TerminalEmulator {
   setupScrollBehavior() {
     let isUserScrolling = false;
     let scrollTimeout;
+    let lastScrollTop = 0;
     
     this.outputElement.addEventListener('scroll', () => {
-      isUserScrolling = true;
+      const currentScrollTop = this.outputElement.scrollTop;
+      const maxScrollTop = this.outputElement.scrollHeight - this.outputElement.clientHeight;
       
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
+      // Check if user scrolled up (away from bottom)
+      if (currentScrollTop < lastScrollTop && currentScrollTop < maxScrollTop - 10) {
+        isUserScrolling = true;
+        
+        // Show scroll indicator if not already visible
+        this.showScrollIndicator();
+        
+        clearTimeout(scrollTimeout);
+        // Don't auto-resume scrolling for 3 seconds after user scrolls up
+        scrollTimeout = setTimeout(() => {
+          // Only resume auto-scroll if user is back near the bottom
+          const newScrollTop = this.outputElement.scrollTop;
+          const newMaxScrollTop = this.outputElement.scrollHeight - this.outputElement.clientHeight;
+          
+          if (newScrollTop >= newMaxScrollTop - 50) {
+            isUserScrolling = false;
+            this.hideScrollIndicator();
+          }
+        }, 3000);
+      }
+      // If user scrolled to bottom, resume auto-scrolling immediately
+      else if (currentScrollTop >= maxScrollTop - 10) {
         isUserScrolling = false;
-      }, 1000);
+        this.hideScrollIndicator();
+        clearTimeout(scrollTimeout);
+      }
+      
+      lastScrollTop = currentScrollTop;
     });
     
     // Override shouldAutoScroll to check user scrolling
@@ -483,6 +514,53 @@ export class TerminalEmulator {
     this.shouldAutoScroll = () => {
       return originalShouldAutoScroll.call(this) && !isUserScrolling;
     };
+    
+    // Store reference for manual scroll control
+    this.isUserScrolling = () => isUserScrolling;
+    this.resumeAutoScroll = () => {
+      isUserScrolling = false;
+      this.hideScrollIndicator();
+      this.scrollToBottom(true); // Smooth scroll to bottom
+    };
+  }
+
+  /**
+   * Show scroll indicator
+   */
+  showScrollIndicator() {
+    let indicator = document.getElementById('scrollIndicator');
+    
+    if (!indicator) {
+      indicator = document.createElement('div');
+      indicator.id = 'scrollIndicator';
+      indicator.className = 'scroll-indicator';
+      indicator.innerHTML = `
+        <span class="scroll-text">Auto-scroll paused</span>
+        <button class="scroll-resume-btn" onclick="window.claudeConsole.terminal.resumeAutoScroll()">
+          ↓ Resume
+        </button>
+      `;
+      
+      // Position it relative to the console container
+      const consoleContainer = this.outputElement.closest('.console-container');
+      if (consoleContainer) {
+        consoleContainer.appendChild(indicator);
+      } else {
+        document.body.appendChild(indicator);
+      }
+    }
+    
+    indicator.style.display = 'flex';
+  }
+
+  /**
+   * Hide scroll indicator
+   */
+  hideScrollIndicator() {
+    const indicator = document.getElementById('scrollIndicator');
+    if (indicator) {
+      indicator.style.display = 'none';
+    }
   }
   
   /**

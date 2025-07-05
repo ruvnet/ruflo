@@ -340,8 +340,8 @@ export class ClaudeCodeWebServer {
       jsonrpc: '2.0',
       method: 'connection/established',
       params: {
-        server: 'claude-code-web-server',
-        version: '1.0.72',
+        server: 'claude-flow-web-server',
+        version: '2.0.0',
         timestamp: new Date().toISOString()
       }
     });
@@ -417,8 +417,8 @@ export class ClaudeCodeWebServer {
       result: {
         protocolVersion: { major: 2024, minor: 11, patch: 5 },
         serverInfo: {
-          name: 'claude-code-web-server',
-          version: '1.0.72'
+          name: 'claude-flow-web-server',
+          version: '2.0.0'
         },
         capabilities: {
           logging: { level: 'info' },
@@ -638,7 +638,7 @@ export class ClaudeCodeWebServer {
     switch (command) {
       case 'status':
         return `Claude Flow Status:
-  Version: 1.0.72
+  Version: 2.0.0
   Mode: Web Console
   Active Processes: 3
   Memory Usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB

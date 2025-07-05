@@ -267,6 +267,13 @@ body {
   color: var(--text-accent);
   white-space: pre;
   font-weight: normal;
+  letter-spacing: 0;
+  word-spacing: 0;
+  text-align: left;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0;
+  overflow-x: auto;
+  display: block;
 }
 
 /* Console output entries */
@@ -555,4 +562,55 @@ button:focus-visible {
   border-radius: 4px;
   padding: var(--spacing-md);
   margin: var(--spacing-md) 0;
+}
+
+/* Scroll indicator */
+.scroll-indicator {
+  position: absolute;
+  bottom: 60px;
+  right: var(--spacing-md);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  display: none;
+  align-items: center;
+  gap: var(--spacing-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  font-size: var(--font-size-small);
+  transition: all var(--transition-fast);
+}
+
+.scroll-indicator:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-secondary);
+}
+
+.scroll-text {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.scroll-resume-btn {
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.scroll-resume-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.scroll-resume-btn:active {
+  transform: translateY(1px);
 }

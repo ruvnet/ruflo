@@ -411,8 +411,8 @@ export class WebSocketClient {
     const params = {
       protocolVersion: { major: 2024, minor: 11, patch: 5 },
       clientInfo: {
-        name: 'Claude Code Console',
-        version: '1.0.0',
+        name: 'Claude Flow v2',
+        version: '2.0.0',
         ...clientInfo
       },
       capabilities: {
