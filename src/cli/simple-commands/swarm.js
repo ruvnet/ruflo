@@ -75,7 +75,8 @@ OPTIONS:
   --verbose                  Enable detailed logging
   --dry-run                  Show configuration without executing
   --executor                 Use built-in executor instead of Claude Code
-  --auto                     Auto-approve Claude permissions
+  --auto                     (Deprecated: auto-permissions enabled by default)
+  --no-auto-permissions      Disable automatic --dangerously-skip-permissions
 
 ADVANCED OPTIONS:
   --quality-threshold <n>    Quality threshold 0-1 (default: 0.8)
@@ -496,10 +497,10 @@ The swarm should be self-documenting - use memory_store to save all important in
       // Pass the prompt directly as an argument to claude
       const claudeArgs = [swarmPrompt];
       
-      // Add auto-permission flag if requested
-      if (flags.auto || flags['dangerously-skip-permissions']) {
+      // Add auto-permission flag by default for swarm mode (unless explicitly disabled)
+      if (flags['dangerously-skip-permissions'] !== false && !flags['no-auto-permissions']) {
         claudeArgs.push('--dangerously-skip-permissions');
-        console.log('🔓 Automatically using --dangerously-skip-permissions for seamless execution');
+        console.log('🔓 Using --dangerously-skip-permissions by default for seamless swarm execution');
       }
       
       // Spawn claude with the prompt as the first argument
@@ -956,8 +957,8 @@ Begin execution now. Create all necessary files and provide a complete, working 
         
         const claudeArgs = [];
         
-        // Add auto-permission flag if requested
-        if (flags.auto || flags['dangerously-skip-permissions']) {
+        // Add auto-permission flag by default for swarm mode (unless explicitly disabled)
+        if (flags['dangerously-skip-permissions'] !== false && !flags['no-auto-permissions']) {
           claudeArgs.push('--dangerously-skip-permissions');
         }
         
@@ -1063,7 +1064,8 @@ OPTIONS:
   --verbose                  Enable detailed logging
   --dry-run                  Show configuration without executing
   --executor                 Use built-in executor instead of Claude Code
-  --auto                     Auto-approve Claude permissions
+  --auto                     (Deprecated: auto-permissions enabled by default)
+  --no-auto-permissions      Disable automatic --dangerously-skip-permissions
 
 ADVANCED OPTIONS:
   --quality-threshold <n>    Quality threshold 0-1 (default: 0.8)
