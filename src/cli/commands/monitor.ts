@@ -7,7 +7,7 @@ import { Command } from 'commander';
 import { promises as fs } from 'node:fs';
 import { existsSync } from 'fs';
 import chalk from 'chalk';
-import * as Table from 'cli-table3';
+import Table from 'cli-table3';
 import { formatProgressBar, formatDuration, formatStatusIndicator } from '../formatter.js';
 
 // Type definitions
@@ -30,7 +30,7 @@ interface AlertData {
 
 export const monitorCommand = new Command()
   .description('Start live monitoring dashboard')
-  .option('-i, --interval <seconds:number>', 'Update interval in seconds', { default: 2 })
+  .option('-i, --interval <seconds>', 'Update interval in seconds', '2')
   .option('-c, --compact', 'Compact view mode')
   .option('--no-graphs', 'Disable ASCII graphs')
   .option('--focus <component:string>', 'Focus on specific component')
@@ -241,7 +241,7 @@ class Dashboard {
     console.log('─'.repeat(40));
     
     if (data.tasks.length > 0) {
-      const taskTable = new Table.default({
+      const taskTable = new Table({
         head: ['Task ID', 'Type', 'Status', 'Duration'],
         style: { border: [], head: [] }
       });

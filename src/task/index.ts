@@ -29,14 +29,15 @@ export {
 } from './commands.js';
 
 export {
-  type TaskCommandContext
+  type TaskCommandContext,
+  type TodoItem,
+  type MemoryEntry,
+  type CoordinationContext,
+  type TaskMetadata
 } from './types.js';
 
 export {
-  TaskCoordinator,
-  type TodoItem,
-  type MemoryEntry,
-  type CoordinationContext
+  TaskCoordinator
 } from './coordination.js';
 
 /**
@@ -49,8 +50,8 @@ export async function initializeTaskManagement(
     logger?: any;
   } = {}
 ): Promise<{
-  taskEngine: TaskEngine;
-  taskCoordinator: TaskCoordinator;
+  taskEngine: any;
+  taskCoordinator: any;
   commands: {
     create: any;
     list: any;
@@ -59,6 +60,11 @@ export async function initializeTaskManagement(
     workflow: any;
   };
 }> {
+  // Import required classes dynamically to avoid circular dependencies
+  const { TaskEngine } = await import('./engine.js');
+  const { TaskCoordinator } = await import('./coordination.js');
+  const { createTaskCreateCommand, createTaskListCommand, createTaskStatusCommand, createTaskCancelCommand, createTaskWorkflowCommand } = await import('./commands.js');
+  
   const taskEngine = new TaskEngine(
     config.maxConcurrentTasks || 10,
     config.memoryManager
@@ -69,7 +75,7 @@ export async function initializeTaskManagement(
     config.memoryManager
   );
 
-  const commandContext: TaskCommandContext = {
+  const commandContext = {
     taskEngine,
     taskCoordinator,
     memoryManager: config.memoryManager,
@@ -103,16 +109,15 @@ export async function createTaskTodos(
     parallelExecution?: boolean;
     memoryCoordination?: boolean;
   } = {},
-  coordinator?: TaskCoordinator
-): Promise<TodoItem[]> {
+  coordinator?: any
+): Promise<any[]> {
   if (!coordinator) {
     throw new Error('TaskCoordinator instance required for todo creation');
   }
 
-  const context: CoordinationContext = {
+  const context = {
     sessionId: `session-${Date.now()}`,
-    coordinationMode: options.batchOptimized ? 'distributed' : 'centralized',
-    agents: []
+    coordinationMode: options.batchOptimized ? 'distributed' : 'centralized'
   };
 
   return await coordinator.createTaskTodos(objective, context, options);
@@ -130,16 +135,15 @@ export async function launchParallelAgents(
     memoryKey?: string;
     batchOptimized?: boolean;
   }>,
-  coordinator?: TaskCoordinator
+  coordinator?: any
 ): Promise<string[]> {
   if (!coordinator) {
     throw new Error('TaskCoordinator instance required for agent launching');
   }
 
-  const context: CoordinationContext = {
+  const context = {
     sessionId: `session-${Date.now()}`,
-    coordinationMode: 'distributed',
-    agents: []
+    coordinationMode: 'distributed'
   };
 
   return await coordinator.launchParallelAgents(tasks, context);
@@ -156,7 +160,7 @@ export async function storeCoordinationData(
     tags?: string[];
     expiresAt?: Date;
   } = {},
-  coordinator?: TaskCoordinator
+  coordinator?: any
 ): Promise<void> {
   if (!coordinator) {
     throw new Error('TaskCoordinator instance required for memory storage');
@@ -171,7 +175,7 @@ export async function storeCoordinationData(
 export async function retrieveCoordinationData(
   key: string,
   namespace?: string,
-  coordinator?: TaskCoordinator
+  coordinator?: any
 ): Promise<any | null> {
   if (!coordinator) {
     throw new Error('TaskCoordinator instance required for memory retrieval');

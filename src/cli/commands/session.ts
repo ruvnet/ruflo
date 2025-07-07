@@ -6,7 +6,7 @@ import { getErrorMessage } from '../../utils/error-handler.js';
 import { Command } from 'commander';
 import { promises as fs, existsSync } from 'node:fs';
 import * as path from 'node:path';
-import * as Table from 'cli-table3';
+import Table from 'cli-table3';
 import inquirer from 'inquirer';
 import { formatDuration, formatStatusIndicator } from '../formatter.js';
 import { generateId } from '../../utils/helpers.js';

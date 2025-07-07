@@ -1,5 +1,6 @@
 
-export type TaskType = 
+// Extended TaskType for auto strategy (extends base TaskType)
+export type ExtendedTaskType = 
   | 'data-analysis' | 'performance-analysis' | 'statistical-analysis'
   | 'visualization' | 'predictive-modeling' | 'anomaly-detection'
   | 'trend-analysis' | 'business-intelligence' | 'quality-analysis'
@@ -65,7 +66,7 @@ export class AutoStrategy extends BaseStrategy {
   /**
    * Enhanced objective decomposition with async processing and intelligent batching
    */
-  async decomposeObjective(objective: SwarmObjective): Promise<DecompositionResult> {
+  override async decomposeObjective(objective: SwarmObjective): Promise<DecompositionResult> {
     const startTime = Date.now();
     const cacheKey = this.getCacheKey(objective);
 
@@ -98,7 +99,12 @@ export class AutoStrategy extends BaseStrategy {
       estimatedDuration,
       recommendedStrategy: this.selectOptimalStrategy(objective, complexity),
       complexity,
-      batchGroups
+      batchGroups,
+      timestamp: new Date(),
+      ttl: 1800000, // 30 minutes
+      accessCount: 0,
+      lastAccessed: new Date(),
+      data: { objectiveId: objective.id, strategy: 'auto' }
     };
 
     // Cache the result
@@ -111,7 +117,7 @@ export class AutoStrategy extends BaseStrategy {
   /**
    * ML-inspired agent selection with performance history consideration
    */
-  async selectAgentForTask(task: TaskDefinition, availableAgents: AgentState[]): Promise<string | null> {
+  override async selectAgentForTask(task: TaskDefinition, availableAgents: AgentState[]): Promise<string | null> {
     if (availableAgents.length === 0) return null;
 
     // Score agents using ML heuristics
@@ -135,7 +141,7 @@ export class AutoStrategy extends BaseStrategy {
   /**
    * Predictive task scheduling with dynamic agent allocation
    */
-  async optimizeTaskSchedule(tasks: TaskDefinition[], agents: AgentState[]): Promise<AgentAllocation[]> {
+  override async optimizeTaskSchedule(tasks: TaskDefinition[], agents: AgentState[]): Promise<AgentAllocation[]> {
     const schedule = await this.createPredictiveSchedule(tasks, agents);
     
     return this.allocateAgentsOptimally(tasks, agents, schedule);
@@ -519,7 +525,7 @@ export class AutoStrategy extends BaseStrategy {
   }
 
   private getRequiredTools(type: TaskType): string[] {
-    const toolMap: Record<TaskType, string[]> = {
+    const toolMap: Record<string, string[]> = {
       'coding': ['file-system', 'terminal', 'editor'],
       'testing': ['test-runner', 'file-system', 'terminal'],
       'analysis': ['analyst', 'file-system', 'web-search'],
@@ -748,7 +754,7 @@ export class AutoStrategy extends BaseStrategy {
         endTime: currentTime + duration,
         tasks: [task.id.id],
         agents: [], // To be filled by allocation
-        dependencies: task.constraints.dependencies
+        dependencies: task.constraints.dependencies.map(dep => dep.id)
       });
       currentTime += duration;
     }

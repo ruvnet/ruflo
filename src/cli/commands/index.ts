@@ -1334,7 +1334,7 @@ Now, please proceed with the task: ${task}`;
         info("Starting enhanced monitoring dashboard...");
         console.log("Press Ctrl+C to exit");
         
-        const interval = options.interval * 1000;
+        const interval = Number(options.interval) * 1000;
         let running = true;
         
         const cleanup = () => {
@@ -1689,7 +1689,7 @@ Now, please proceed with the task: ${task}`;
 
   // Migration command
   const migrateCmd = createMigrateCommand();
-  cli.command(migrateCmd);
+  cli.command(migrateCmd as any);
 
   // Swarm UI command (convenience wrapper)
   cli.command({

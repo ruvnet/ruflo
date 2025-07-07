@@ -108,7 +108,88 @@ export class ResearchStrategy extends BaseStrategy {
   };
 
   constructor(config: Partial<SwarmConfig> = {}) {
-    super(config);
+    const defaultConfig: SwarmConfig = {
+      name: 'research-strategy',
+      description: 'Research-focused strategy',
+      version: '1.0.0',
+      mode: 'mesh',
+      strategy: 'research',
+      coordinationStrategy: {
+        name: 'research-coordination',
+        description: 'Research-optimized coordination',
+        agentSelection: 'capability-based',
+        taskScheduling: 'priority',
+        loadBalancing: 'work-sharing',
+        faultTolerance: 'retry',
+        communication: 'direct'
+      },
+      maxAgents: 8,
+      maxTasks: 50,
+      maxDuration: 3600000,
+      resourceLimits: {},
+      qualityThreshold: 0.8,
+      reviewRequired: true,
+      testingRequired: false,
+      monitoring: {
+        metricsEnabled: true,
+        loggingEnabled: true,
+        tracingEnabled: false,
+        metricsInterval: 5000,
+        heartbeatInterval: 10000,
+        healthCheckInterval: 30000,
+        retentionPeriod: 86400000,
+        maxLogSize: 1048576,
+        maxMetricPoints: 1000,
+        alertingEnabled: false,
+        alertThresholds: {},
+        exportEnabled: false,
+        exportFormat: 'json',
+        exportDestination: 'file'
+      },
+      memory: {
+        namespace: 'research',
+        partitions: [],
+        permissions: {
+          read: 'swarm',
+          write: 'swarm',
+          delete: 'team',
+          share: 'swarm'
+        },
+        persistent: true,
+        backupEnabled: false,
+        distributed: false,
+        consistency: 'eventual',
+        cacheEnabled: true,
+        compressionEnabled: false
+      },
+      security: {
+        authenticationRequired: false,
+        authorizationRequired: false,
+        encryptionEnabled: false,
+        defaultPermissions: ['read', 'write'],
+        adminRoles: ['admin'],
+        auditEnabled: false,
+        auditLevel: 'info',
+        inputValidation: true,
+        outputSanitization: true
+      },
+      performance: {
+        maxConcurrency: 10,
+        defaultTimeout: 300000,
+        cacheEnabled: true,
+        cacheSize: 100,
+        cacheTtl: 3600000,
+        optimizationEnabled: true,
+        adaptiveScheduling: true,
+        predictiveLoading: false,
+        resourcePooling: true,
+        connectionPooling: true,
+        memoryPooling: false
+      }
+    };
+    
+    const mergedConfig = { ...defaultConfig, ...config };
+    super(mergedConfig);
     
     this.logger = new Logger(
       { level: 'info', format: 'text', destination: 'console' },
@@ -145,7 +226,7 @@ export class ResearchStrategy extends BaseStrategy {
     // Create research query planning task
     const queryPlanningTask = this.createResearchTask(
       'query-planning',
-      'research-planning',
+      'research',
       'Research Query Planning',
       `Analyze the research objective and create optimized search queries:
 
@@ -171,7 +252,7 @@ Focus on creating queries that will yield high-quality, credible results.`,
     // Create parallel web search tasks
     const webSearchTask = this.createResearchTask(
       'web-search',
-      'web-search',
+      'research',
       'Parallel Web Search Execution',
       `Execute parallel web searches based on the research plan:
 
@@ -199,7 +280,7 @@ Collect diverse, high-quality sources relevant to the research objective.`,
     // Create data extraction and processing task
     const dataExtractionTask = this.createResearchTask(
       'data-extraction',
-      'data-processing',
+      'analysis',
       'Parallel Data Extraction',
       `Extract and process data from collected sources:
 
@@ -320,18 +401,16 @@ Ensure the report is well-structured and actionable.`,
     try {
       // Apply research-specific optimizations based on task type
       switch (task.type) {
-        case 'web-search':
+        case 'research':
           return await this.executeOptimizedWebSearch(task, agent);
-        case 'data-processing':
-          return await this.executeOptimizedDataExtraction(task, agent);
         case 'analysis':
-          return await this.executeOptimizedClustering(task, agent);
+          return await this.executeOptimizedDataExtraction(task, agent);
         default:
           return await this.executeGenericResearchTask(task, agent);
       }
     } finally {
       const duration = Date.now() - startTime;
-      this.updateMetrics(task.type, duration);
+      this.updateResearchMetrics(task.type, duration);
     }
   }
 
@@ -702,7 +781,7 @@ Ensure the report is well-structured and actionable.`,
   }
 
   private getFromCache(key: string): any | null {
-    const entry = this.cache.get(key);
+    const entry = this.researchCache.get(key);
     if (!entry) return null;
 
     const now = new Date();
@@ -717,7 +796,7 @@ Ensure the report is well-structured and actionable.`,
   }
 
   private setCache(key: string, data: any, ttl: number): void {
-    this.cache.set(key, {
+    this.researchCache.set(key, {
       key,
       data,
       timestamp: new Date(),
@@ -793,7 +872,7 @@ Ensure the report is well-structured and actionable.`,
     };
   }
 
-  private updateMetrics(taskType: string, duration: number): void {
+  private updateResearchMetrics(taskType: string, duration: number): void {
     this.metrics.queriesExecuted++;
     this.metrics.averageResponseTime = 
       (this.metrics.averageResponseTime + duration) / 2;

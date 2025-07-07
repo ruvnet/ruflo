@@ -213,9 +213,9 @@ async function listWorkflows(options: any): Promise<void> {
     console.log(chalk.cyan.bold(`Workflows (${workflows.length})`));
     console.log('─'.repeat(60));
 
-    const table = new Table()
-      .header(['ID', 'Name', 'Status', 'Progress', 'Started', 'Duration'])
-      .border(true);
+    const table = new Table({
+      head: ['ID', 'Name', 'Status', 'Progress', 'Started', 'Duration']
+    });
 
     for (const workflow of workflows) {
       const statusIcon = formatStatusIndicator(workflow.status);
@@ -268,10 +268,12 @@ async function stopWorkflow(workflowId: string, options: any): Promise<void> {
     }
 
     if (!options.force) {
-      const confirmed = await Confirm.prompt({
+      const { confirmed } = await inquirer.prompt([{
+        type: 'confirm',
+        name: 'confirmed',
         message: `Stop workflow "${execution.workflowName}"?`,
         default: false,
-      });
+      }]);
 
       if (!confirmed) {
         console.log(chalk.gray('Stop cancelled'));
@@ -669,9 +671,9 @@ function displayWorkflowStatus(execution: WorkflowExecution): void {
   console.log(chalk.cyan.bold('Tasks'));
   console.log('─'.repeat(50));
   
-  const table = new Table()
-    .header(['Task', 'Status', 'Duration', 'Agent'])
-    .border(true);
+  const table = new Table({
+    head: ['Task', 'Status', 'Duration', 'Agent']
+  });
 
   for (const taskExec of execution.tasks) {
     const statusIcon = formatStatusIndicator(taskExec.status);

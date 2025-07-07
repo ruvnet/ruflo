@@ -6,7 +6,7 @@ import { promises as fs } from 'node:fs';
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import * as Table from 'cli-table3';
+import Table from 'cli-table3';
 import { formatHealthStatus, formatDuration, formatStatusIndicator } from '../formatter.js';
 
 export const statusCommand = new Command()
