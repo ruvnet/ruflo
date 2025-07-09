@@ -11,12 +11,20 @@
   const { resolve } = await import('path');
   const { fileURLToPath } = await import('url');
   
+  // Detect if we're running in ES module context
+  let __dirname;
   try {
-    // Try to use import.meta.url (ES modules)
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = resolve(__filename, '..');
+    // Check if import.meta is available (ES modules)
+    if (typeof import.meta !== 'undefined' && import.meta.url) {
+      const __filename = fileURLToPath(import.meta.url);
+      __dirname = resolve(__filename, '..');
+    } else {
+      // Fallback for CommonJS
+      __dirname = process.cwd();
+    }
   } catch {
     // Fallback for CommonJS
+    __dirname = process.cwd();
   }
 
   // Try multiple strategies to find claude-flow
