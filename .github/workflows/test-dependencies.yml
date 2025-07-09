@@ -1,0 +1,52 @@
+name: Test Dependencies
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-matrix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [18.x, 20.x, 21.x]
+      fail-fast: false
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies (CI mode)
+      run: npm ci
+      env:
+        CI: true
+    
+    - name: Verify installation
+      run: |
+        npm ls --depth=0
+        node -e "console.log('Node:', process.version)"
+        npm --version
+    
+    - name: Run dependency validation tests
+      run: npm run test:unit
+      env:
+        CI: true
+        NODE_OPTIONS: '--experimental-vm-modules'
+    
+    - name: Test npm rebuild
+      run: npm rebuild
+    
+    - name: Clean install test
+      run: |
+        rm -rf node_modules
+        npm ci
+      env:
+        CI: true

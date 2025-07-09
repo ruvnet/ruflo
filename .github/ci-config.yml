@@ -1,0 +1,50 @@
+# CI Environment Configuration
+# This file contains CI-specific settings and optimizations
+
+# Test configuration
+test:
+  timeout: 30000 # 30 seconds per test
+  maxWorkers: 2 # Limit parallel workers in CI
+  bail: true # Stop on first failure
+  forceExit: true # Force exit after tests complete
+  detectOpenHandles: false # Disable open handle detection in CI
+  
+# Node.js configuration  
+node:
+  versions:
+    - '18.x'
+    - '20.x'
+    - '21.x'
+  memoryLimit: 2048 # MB
+  
+# Cache configuration
+cache:
+  nodeModules: true
+  buildArtifacts: true
+  testResults: true
+  
+# Platform-specific settings
+platforms:
+  ubuntu:
+    shell: bash
+    timeout: 30
+  windows:
+    shell: powershell
+    timeout: 40
+    env:
+      NODE_OPTIONS: '--max-old-space-size=2048'
+  macos:
+    shell: bash
+    timeout: 40
+    
+# Dependency installation
+dependencies:
+  ciFlags: '--ignore-scripts --no-audit --no-fund'
+  productionFlags: '--only=production --ignore-scripts'
+  
+# Coverage thresholds (relaxed for CI)
+coverage:
+  lines: 50
+  functions: 50
+  branches: 40
+  statements: 50
