@@ -21,7 +21,7 @@
     "dev:build": "tsc --watch",
     "test": "NODE_OPTIONS='--experimental-vm-modules' npx jest --config=${JEST_CONFIG:-jest.config.js}",
     "test:watch": "NODE_OPTIONS='--experimental-vm-modules' npx jest --watch",
-    "test:unit": "NODE_OPTIONS='--experimental-vm-modules' npx jest tests/unit --config=${JEST_CONFIG:-jest.config.js}",
+    "test:unit": "node --experimental-vm-modules node_modules/.bin/jest tests/unit --config=jest.config.js",
     "test:integration": "NODE_OPTIONS='--experimental-vm-modules' npx jest tests/integration --testPathIgnorePatterns='.*\\.test\\.ts$' --testMatch='**/*.test.js'",
     "test:e2e": "NODE_OPTIONS='--experimental-vm-modules' npx jest tests/e2e --testPathIgnorePatterns='.*\\.test\\.ts$' --testMatch='**/*.test.js'",
     "test:performance": "NODE_OPTIONS='--experimental-vm-modules' npx jest tests/unit/performance-simple.test.js",
