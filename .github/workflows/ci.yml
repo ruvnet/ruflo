@@ -11,7 +11,7 @@ on:
 
 env:
   DENO_VERSION: '1.40.0'
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
 
 jobs:
   # Code quality and security checks

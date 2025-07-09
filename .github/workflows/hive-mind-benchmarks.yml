@@ -39,7 +39,7 @@ on:
         type: string
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   PYTHON_VERSION: '3.9'
   BENCHMARK_PROFILE: ${{ github.event.inputs.profile || 'quick' }}
   BENCHMARK_TIMEOUT: ${{ github.event.inputs.timeout_minutes || '60' }}
