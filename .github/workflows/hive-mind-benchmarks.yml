@@ -125,7 +125,7 @@ jobs:
           LOG_LEVEL: WARNING
 
       - name: Upload PR benchmark results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: pr-benchmark-results
@@ -255,7 +255,7 @@ jobs:
           fi
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ${{ matrix.profile }}-benchmark-results
@@ -343,7 +343,7 @@ jobs:
           "
 
       - name: Upload comprehensive results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: comprehensive-benchmark-results
@@ -382,7 +382,7 @@ jobs:
               --output-dir /app/benchmark-results
 
       - name: Upload Docker benchmark results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: docker-benchmark-results
@@ -407,7 +407,7 @@ jobs:
           cache: 'pip'
 
       - name: Download current results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: standard-benchmark-results
           path: current-results/

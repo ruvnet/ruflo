@@ -19,7 +19,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 21.x]
+        node-version: [18.x, 20.x]
 
     steps:
     - name: Checkout code
@@ -54,7 +54,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 21.x]
+        node-version: [18.x, 20.x]
       fail-fast: false
 
     steps:
@@ -427,7 +427,7 @@ jobs:
       run: npm run lint -- --format=json --output-file=eslint-report.json || true
 
     - name: Upload lint results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: eslint-report
         path: eslint-report.json
@@ -502,7 +502,7 @@ jobs:
         fi
 
     - name: Upload coverage artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report
         path: |
