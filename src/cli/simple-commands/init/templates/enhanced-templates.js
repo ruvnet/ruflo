@@ -1259,39 +1259,60 @@ function createEnhancedSettingsJsonFallback() {
         "Bash(eval *)"
       ]
     },
-    hooks: {
-      preEditHook: {
-        command: "npx",
-        args: ["claude-flow", "hook", "pre-edit", "--file", "${file}", "--auto-assign-agents", "true", "--load-context", "true"],
-        alwaysRun: false,
-        outputFormat: "json"
-      },
-      postEditHook: {
-        command: "npx",
-        args: ["claude-flow", "hook", "post-edit", "--file", "${file}", "--format", "true", "--update-memory", "true", "--train-neural", "true"],
-        alwaysRun: true,
-        outputFormat: "json"
-      },
-      preCommandHook: {
-        command: "npx",
-        args: ["claude-flow", "hook", "pre-command", "--command", "${command}", "--validate-safety", "true", "--prepare-resources", "true"],
-        alwaysRun: false,
-        outputFormat: "json"
-      },
-      postCommandHook: {
-        command: "npx",
-        args: ["claude-flow", "hook", "post-command", "--command", "${command}", "--track-metrics", "true", "--store-results", "true"],
-        alwaysRun: false,
-        outputFormat: "json"
-      },
-      sessionEndHook: {
-        command: "npx",
-        args: ["claude-flow", "hook", "session-end", "--generate-summary", "true", "--persist-state", "true", "--export-metrics", "true"],
-        alwaysRun: true,
-        outputFormat: "json"
-      }
+   "hooks": {
+      "PreToolUse": [
+        {
+          "matcher": "Bash",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "COMMAND=$(jq -r '.tool_input.command') && npx claude-flow hooks pre-command --command \"$COMMAND\" --validate-safety true --prepare-resources true"
+            }
+          ]
+        },
+        {
+          "matcher": "Write|Edit|MultiEdit",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "FILE_PATH=$(jq -r '.tool_input.file_path') && npx claude-flow hooks pre-edit --file \"$FILE_PATH\" --auto-assign-agents true --load-context true"
+            }
+          ]
+        }
+      ],
+      "PostToolUse": [
+        {
+          "matcher": "Bash",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "COMMAND=$(jq -r '.tool_input.command') && npx claude-flow hooks post-command --command \"$COMMAND\" --track-metrics true --store-results true"
+            }
+          ]
+        },
+        {
+          "matcher": "Write|Edit|MultiEdit",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "FILE_PATH=$(jq -r '.tool_input.file_path') && npx claude-flow hooks post-edit --file \"$FILE_PATH\" --format true --update-memory true --train-neural true"
+            }
+          ]
+        }
+      ],
+      "Stop": [
+        {
+          "matcher": "",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "npx claude-flow hooks session-end --generate-summary true --persist-state true --export-metrics true"
+            }
+          ]
+        }
+      ]
     },
-    mcpServers: {
+   mcpServers: {
       "claude-flow": {
         command: "npx",
         args: ["claude-flow", "mcp", "start"],
