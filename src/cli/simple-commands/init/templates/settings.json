@@ -33,92 +33,58 @@
       "Bash(eval *)"
     ]
   },
-   "hooks": {
-      "PreToolUse": [
-        {
-          "matcher": "Bash",
-          "hooks": [
-            {
-              "type": "command",
-              "command": "COMMAND=$(jq -r '.tool_input.command') && npx claude-flow hooks pre-command --command \"$COMMAND\" --validate-safety true --prepare-resources true"
-            }
-          ]
-        },
-        {
-          "matcher": "Write|Edit|MultiEdit",
-          "hooks": [
-            {
-              "type": "command",
-              "command": "FILE_PATH=$(jq -r '.tool_input.file_path') && npx claude-flow hooks pre-edit --file \"$FILE_PATH\" --auto-assign-agents true --load-context true"
-            }
-          ]
-        }
-      ],
-      "PostToolUse": [
-        {
-          "matcher": "Bash",
-          "hooks": [
-            {
-              "type": "command",
-              "command": "COMMAND=$(jq -r '.tool_input.command') && npx claude-flow hooks post-command --command \"$COMMAND\" --track-metrics true --store-results true"
-            }
-          ]
-        },
-        {
-          "matcher": "Write|Edit|MultiEdit",
-          "hooks": [
-            {
-              "type": "command",
-              "command": "FILE_PATH=$(jq -r '.tool_input.file_path') && npx claude-flow hooks post-edit --file \"$FILE_PATH\" --format true --update-memory true --train-neural true"
-            }
-          ]
-        }
-      ],
-      "Stop": [
-        {
-          "matcher": "",
-          "hooks": [
-            {
-              "type": "command",
-              "command": "npx claude-flow hooks session-end --generate-summary true --persist-state true --export-metrics true"
-            }
-          ]
-        }
-      ]
-    },
-  "mcpServers": {
-    "claude-flow": {
-      "command": "npx",
-      "args": [
-        "claude-flow",
-        "mcp",
-        "start"
-      ],
-      "env": {
-        "CLAUDE_FLOW_HOOKS_ENABLED": "true",
-        "CLAUDE_FLOW_TELEMETRY_ENABLED": "true",
-        "CLAUDE_FLOW_REMOTE_READY": "true",
-        "CLAUDE_FLOW_GITHUB_INTEGRATION": "true"
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "COMMAND=$(jq -r '.tool_input.command') && npx claude-flow hooks pre-command --command \"$COMMAND\" --validate-safety true --prepare-resources true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE_PATH=$(jq -r '.tool_input.file_path') && npx claude-flow hooks pre-edit --file \"$FILE_PATH\" --auto-assign-agents true --load-context true"
+          }
+        ]
       }
-    }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "COMMAND=$(jq -r '.tool_input.command') && npx claude-flow hooks post-command --command \"$COMMAND\" --track-metrics true --store-results true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE_PATH=$(jq -r '.tool_input.file_path') && npx claude-flow hooks post-edit --file \"$FILE_PATH\" --format true --update-memory true --train-neural true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx claude-flow hooks session-end --generate-summary true --persist-state true --export-metrics true"
+          }
+        ]
+      }
+    ]
   },
-  "includeCoAuthoredBy": true,
-  "features": {
-    "autoTopologySelection": true,
-    "parallelExecution": true,
-    "neuralTraining": true,
-    "bottleneckAnalysis": true,
-    "smartAutoSpawning": true,
-    "selfHealingWorkflows": true,
-    "crossSessionMemory": true,
-    "githubIntegration": true
-  },
-  "performance": {
-    "maxAgents": 10,
-    "defaultTopology": "hierarchical",
-    "executionStrategy": "parallel",
-    "tokenOptimization": true,
-    "cacheEnabled": true,
-    "telemetryLevel": "detailed"
-  }
+  "includeCoAuthoredBy": true
 }

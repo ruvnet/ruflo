@@ -1023,6 +1023,10 @@ async function enhancedClaudeFlowInit(flags, subArgs = []) {
           "mcp__ruv-swarm",
           "mcp__claude-flow"
         ],
+        "enabledMcpjsonServers": [
+          "claude-flow",
+          "ruv-swarm"
+        ],
         "deny": []
       }
     };
