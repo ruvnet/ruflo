@@ -24,6 +24,8 @@ import { HiveMindCore } from './hive-mind/core.js';
 import { QueenCoordinator } from './hive-mind/queen.js';
 import { CollectiveMemory } from './hive-mind/memory.js';
 import { SwarmCommunication } from './hive-mind/communication.js';
+import { HiveMindSessionManager } from './hive-mind/session-manager.js';
+import { createAutoSaveMiddleware } from './hive-mind/auto-save-middleware.js';
 
 function showHiveMindHelp() {
   console.log(`
@@ -36,6 +38,8 @@ ${chalk.bold('SUBCOMMANDS:')}
   ${chalk.green('init')}         Initialize hive mind system
   ${chalk.green('spawn')}        Spawn hive mind swarm for a task
   ${chalk.green('status')}       Show hive mind status
+  ${chalk.green('resume')}       Resume a paused hive mind session
+  ${chalk.green('sessions')}     List all hive mind sessions
   ${chalk.green('consensus')}    View consensus decisions
   ${chalk.green('memory')}       Manage collective memory
   ${chalk.green('metrics')}      View performance metrics
@@ -62,6 +66,12 @@ ${chalk.bold('EXAMPLES:')}
 
   ${chalk.gray('# Auto-spawn coordinated Claude Code instances')}
   claude-flow hive-mind spawn "Research AI trends" --auto-spawn --verbose
+
+  ${chalk.gray('# List all sessions')}
+  claude-flow hive-mind sessions
+
+  ${chalk.gray('# Resume a paused session')}
+  claude-flow hive-mind resume session-1234567890-abc123
 
 ${chalk.bold('KEY FEATURES:')}
   ${chalk.cyan('🐝')} Queen-led coordination with worker specialization
@@ -548,6 +558,35 @@ async function spawnSwarm(args, flags) {
       throw new Error(`Failed to create swarm record: ${error.message}`);
     }
     
+    // Create session for this swarm
+    spinner.text = 'Creating session tracking...';
+    const sessionManager = new HiveMindSessionManager();
+    const sessionId = sessionManager.createSession(swarmId, hiveMind.config.name, objective, {
+      queenType: hiveMind.config.queenType,
+      maxWorkers: hiveMind.config.maxWorkers,
+      consensusAlgorithm: hiveMind.config.consensusAlgorithm,
+      autoScale: hiveMind.config.autoScale,
+      encryption: hiveMind.config.encryption,
+      workerTypes: flags.workerTypes
+    });
+    
+    spinner.text = 'Session tracking established...';
+    sessionManager.close();
+    
+    // Initialize auto-save middleware
+    const autoSave = createAutoSaveMiddleware(sessionId, {
+      saveInterval: 30000, // Save every 30 seconds
+      autoStart: true
+    });
+    
+    // Track initial swarm creation
+    autoSave.trackChange('swarm_created', {
+      swarmId,
+      swarmName: hiveMind.config.name,
+      objective,
+      workerCount: hiveMind.config.maxWorkers
+    });
+    
     spinner.text = 'Initializing Queen coordinator...';
     
     // Initialize Queen
@@ -602,6 +641,12 @@ async function spawnSwarm(args, flags) {
         INSERT INTO agents (id, swarm_id, name, type, role, status, capabilities)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `).run(...Object.values(worker));
+      
+      // Track agent spawning for auto-save
+      autoSave.trackAgentActivity(workerId, 'spawned', {
+        type: workerType,
+        name: worker.name
+      });
     }
     
     spinner.text = 'Initializing collective memory...';
@@ -616,6 +661,7 @@ async function spawnSwarm(args, flags) {
     memory.store('objective', objective, 'context');
     memory.store('queen_type', hiveMind.config.queenType, 'config');
     memory.store('worker_count', workers.length, 'metrics');
+    memory.store('session_id', sessionId, 'system');
     
     spinner.text = 'Establishing communication channels...';
     
@@ -633,6 +679,7 @@ async function spawnSwarm(args, flags) {
     console.log('\n' + chalk.bold('🐝 Swarm Summary:'));
     console.log(chalk.gray('─'.repeat(50)));
     console.log(chalk.cyan('Swarm ID:'), swarmId);
+    console.log(chalk.cyan('Session ID:'), sessionId);
     console.log(chalk.cyan('Name:'), hiveMind.config.name);
     console.log(chalk.cyan('Objective:'), objective);
     console.log(chalk.cyan('Queen Type:'), hiveMind.config.queenType);
@@ -651,6 +698,9 @@ async function spawnSwarm(args, flags) {
     // Enhanced coordination instructions with MCP tools
     console.log('\n' + chalk.green('✓') + ' Swarm is ready for coordination');
     console.log(chalk.gray('Use "claude-flow hive-mind status" to view swarm activity'));
+    console.log(chalk.gray('Session auto-save enabled - progress saved every 30 seconds'));
+    console.log(chalk.blue('💡 To pause:') + ' Press Ctrl+C to safely pause and resume later');
+    console.log(chalk.blue('💡 To resume:') + ' claude-flow hive-mind resume ' + sessionId);
     
     // Offer to spawn Claude Code instances with coordination instructions
     if (flags.claude || flags.spawn) {
@@ -1230,6 +1280,14 @@ export async function hiveMindCommand(args, flags) {
       
     case 'status':
       await showStatus(flags);
+      break;
+      
+    case 'sessions':
+      await showSessions(flags);
+      break;
+      
+    case 'resume':
+      await resumeSession(subArgs, flags);
       break;
       
     case 'consensus':
@@ -2011,6 +2069,259 @@ function getWorkerTypeInstructions(workerType) {
 - Document work and share insights
 - Maintain quality standards
 - Contribute to collective objectives`;
+}
+
+/**
+ * Show all hive mind sessions
+ */
+async function showSessions(flags) {
+  try {
+    const sessionManager = new HiveMindSessionManager();
+    const sessions = sessionManager.getActiveSessions();
+    
+    if (sessions.length === 0) {
+      console.log(chalk.gray('No active or paused sessions found'));
+      sessionManager.close();
+      return;
+    }
+    
+    console.log(chalk.bold('\n🗂️  Hive Mind Sessions\n'));
+    
+    sessions.forEach((session, index) => {
+      const statusColor = session.status === 'active' ? 'green' : 
+                         session.status === 'paused' ? 'yellow' : 'gray';
+      const statusIcon = session.status === 'active' ? '🟢' : 
+                        session.status === 'paused' ? '🟡' : '⚫';
+      
+      console.log(chalk.yellow('═'.repeat(60)));
+      console.log(`${statusIcon} ${chalk.bold(session.swarm_name)}`);
+      console.log(chalk.cyan('Session ID:'), session.id);
+      console.log(chalk.cyan('Status:'), chalk[statusColor](session.status));
+      console.log(chalk.cyan('Objective:'), session.objective);
+      console.log(chalk.cyan('Progress:'), `${session.completion_percentage}%`);
+      console.log(chalk.cyan('Created:'), new Date(session.created_at).toLocaleString());
+      console.log(chalk.cyan('Last Updated:'), new Date(session.updated_at).toLocaleString());
+      
+      if (session.paused_at) {
+        console.log(chalk.cyan('Paused At:'), new Date(session.paused_at).toLocaleString());
+      }
+      
+      console.log('\n' + chalk.bold('Progress:'));
+      console.log(`  Agents: ${session.agent_count || 0}`);
+      console.log(`  Tasks: ${session.completed_tasks || 0}/${session.task_count || 0}`);
+      
+      if (session.checkpoint_data) {
+        console.log('\n' + chalk.bold('Last Checkpoint:'));
+        console.log(chalk.gray(JSON.stringify(session.checkpoint_data, null, 2).substring(0, 200) + '...'));
+      }
+    });
+    
+    console.log(chalk.yellow('═'.repeat(60)) + '\n');
+    
+    console.log(chalk.blue('💡 Tips:'));
+    console.log('  • Resume a session: claude-flow hive-mind resume <session-id>');
+    console.log('  • View session details: claude-flow hive-mind status');
+    
+    sessionManager.close();
+    
+  } catch (error) {
+    console.error(chalk.red('Error:'), error.message);
+    exit(1);
+  }
+}
+
+/**
+ * Resume a paused hive mind session
+ */
+async function resumeSession(args, flags) {
+  const sessionId = args[0];
+  
+  if (!sessionId) {
+    console.error(chalk.red('Error: Please provide a session ID'));
+    console.log('Usage: claude-flow hive-mind resume <session-id>');
+    console.log('Run "claude-flow hive-mind sessions" to see available sessions');
+    return;
+  }
+  
+  const spinner = ora('Resuming Hive Mind session...').start();
+  
+  try {
+    const sessionManager = new HiveMindSessionManager();
+    
+    // Get session details
+    const session = sessionManager.getSession(sessionId);
+    
+    if (!session) {
+      spinner.fail(`Session ${sessionId} not found`);
+      console.log('\nRun "claude-flow hive-mind sessions" to see available sessions');
+      sessionManager.close();
+      return;
+    }
+    
+    if (session.status !== 'paused') {
+      spinner.fail(`Session is not paused (status: ${session.status})`);
+      sessionManager.close();
+      return;
+    }
+    
+    // Resume the session
+    const resumedSession = await sessionManager.resumeSession(sessionId);
+    
+    spinner.succeed('Session resumed successfully!');
+    
+    // Display session summary
+    console.log('\n' + chalk.bold('📋 Resumed Session Summary:'));
+    console.log(chalk.gray('─'.repeat(50)));
+    console.log(chalk.cyan('Session ID:'), sessionId);
+    console.log(chalk.cyan('Swarm Name:'), resumedSession.swarm_name);
+    console.log(chalk.cyan('Objective:'), resumedSession.objective);
+    console.log(chalk.cyan('Progress:'), `${resumedSession.statistics.completionPercentage}%`);
+    console.log(chalk.cyan('Active Agents:'), `${resumedSession.statistics.activeAgents}/${resumedSession.statistics.totalAgents}`);
+    console.log(chalk.cyan('Tasks:'), `${resumedSession.statistics.completedTasks}/${resumedSession.statistics.totalTasks} completed`);
+    console.log(chalk.gray('─'.repeat(50)));
+    
+    // Show task breakdown
+    console.log('\n' + chalk.bold('📊 Task Status:'));
+    console.log(`  ✅ Completed: ${resumedSession.statistics.completedTasks}`);
+    console.log(`  🔄 In Progress: ${resumedSession.statistics.inProgressTasks}`);
+    console.log(`  ⏳ Pending: ${resumedSession.statistics.pendingTasks}`);
+    
+    // Show recent activity
+    if (resumedSession.recentLogs && resumedSession.recentLogs.length > 0) {
+      console.log('\n' + chalk.bold('📜 Recent Activity:'));
+      resumedSession.recentLogs.slice(0, 5).forEach(log => {
+        const timestamp = new Date(log.timestamp).toLocaleTimeString();
+        console.log(`  [${timestamp}] ${log.message}`);
+      });
+    }
+    
+    // Restore checkpoint if available
+    if (resumedSession.checkpoint_data) {
+      console.log('\n' + chalk.bold('♻️  Restoring from checkpoint...'));
+      console.log(chalk.gray('Checkpoint data available for restoration'));
+    }
+    
+    sessionManager.close();
+    
+    // Offer to spawn Claude Code with restored context
+    if (flags.claude || flags.spawn) {
+      console.log('\n' + chalk.yellow('🚀 Launching Claude Code with restored context...'));
+      
+      // Generate prompt with session context
+      const restoredPrompt = generateRestoredSessionPrompt(resumedSession);
+      
+      // Launch Claude Code with restored context
+      await launchClaudeWithContext(restoredPrompt, flags);
+    } else {
+      console.log('\n' + chalk.blue('💡 Pro Tip:') + ' Add --claude to spawn Claude Code with restored context');
+      console.log(chalk.gray('   claude-flow hive-mind resume ' + sessionId + ' --claude'));
+    }
+    
+  } catch (error) {
+    spinner.fail('Failed to resume session');
+    console.error(chalk.red('Error:'), error.message);
+    exit(1);
+  }
+}
+
+/**
+ * Generate prompt for restored session
+ */
+function generateRestoredSessionPrompt(session) {
+  const activeAgents = session.agents.filter(a => a.status === 'active' || a.status === 'busy');
+  const pendingTasks = session.tasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
+  
+  return `🔄 RESUMING HIVE MIND SESSION
+═══════════════════════════════════
+
+You are resuming a paused Hive Mind session with the following context:
+
+SESSION DETAILS:
+📌 Session ID: ${session.id}
+📌 Swarm Name: ${session.swarm_name}
+🎯 Objective: ${session.objective}
+📊 Progress: ${session.statistics.completionPercentage}% complete
+⏸️ Paused: ${new Date(session.paused_at).toLocaleString()}
+▶️ Resumed: ${new Date().toLocaleString()}
+
+CURRENT STATUS:
+• Total Agents: ${session.statistics.totalAgents}
+• Active Agents: ${session.statistics.activeAgents}
+• Completed Tasks: ${session.statistics.completedTasks}/${session.statistics.totalTasks}
+• Pending Tasks: ${pendingTasks.length}
+
+ACTIVE AGENTS:
+${activeAgents.map(agent => `• ${agent.name} (${agent.type}) - ${agent.status}`).join('\n')}
+
+PENDING TASKS:
+${pendingTasks.slice(0, 10).map(task => `• [${task.priority}] ${task.description}`).join('\n')}
+${pendingTasks.length > 10 ? `... and ${pendingTasks.length - 10} more tasks` : ''}
+
+CHECKPOINT DATA:
+${session.checkpoint_data ? JSON.stringify(session.checkpoint_data, null, 2) : 'No checkpoint data available'}
+
+RECENT ACTIVITY:
+${session.recentLogs.slice(0, 10).map(log => `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.message}`).join('\n')}
+
+🎯 RESUMPTION PROTOCOL:
+
+1. **RESTORE CONTEXT**:
+   - Review the checkpoint data and recent activity
+   - Check collective memory for important decisions
+   - Verify agent status and reassign if needed
+
+2. **CONTINUE EXECUTION**:
+   - Resume pending tasks based on priority
+   - Maintain coordination with existing agents
+   - Update progress tracking regularly
+
+3. **COORDINATION**:
+   - Use mcp__claude-flow__memory_retrieve to access shared knowledge
+   - Continue using consensus mechanisms for decisions
+   - Maintain swarm communication protocols
+
+Resume the hive mind operation and continue working towards the objective.`;
+}
+
+/**
+ * Launch Claude Code with context
+ */
+async function launchClaudeWithContext(prompt, flags) {
+  try {
+    const { spawn: childSpawn, execSync } = await import('child_process');
+    let claudeAvailable = false;
+    
+    try {
+      execSync('which claude', { stdio: 'ignore' });
+      claudeAvailable = true;
+    } catch {
+      console.log(chalk.yellow('\n⚠️  Claude Code CLI not found'));
+      
+      // Save prompt to file
+      const promptFile = `hive-mind-resume-${Date.now()}.txt`;
+      await writeFile(promptFile, prompt);
+      console.log(chalk.green(`\n✓ Session context saved to: ${promptFile}`));
+      console.log(chalk.gray('Install Claude Code: npm install -g @anthropic-ai/claude-code'));
+      return;
+    }
+    
+    if (claudeAvailable && !flags.dryRun) {
+      const claudeArgs = [prompt];
+      
+      if (flags['dangerously-skip-permissions'] !== false && !flags['no-auto-permissions']) {
+        claudeArgs.push('--dangerously-skip-permissions');
+      }
+      
+      const claudeProcess = childSpawn('claude', claudeArgs, {
+        stdio: 'inherit',
+        shell: false
+      });
+      
+      console.log(chalk.green('\n✓ Claude Code launched with restored session context'));
+    }
+  } catch (error) {
+    console.error(chalk.red('Failed to launch Claude Code:'), error.message);
+  }
 }
 
 /**

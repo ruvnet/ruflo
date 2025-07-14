@@ -8,6 +8,9 @@
 *.swp
 *.swo
 
+# UI source files (extension not needed for CLI)
+src/ui/
+
 # Test files
 __tests__/
 test/

@@ -90,8 +90,8 @@ npx claude-flow@alpha hive-mind spawn "auth-system" --namespace auth --claude
 # Feature 2: User management (separate hive)  
 npx claude-flow@alpha hive-mind spawn "user-management" --namespace users --claude
 
-# Resume Feature 1 later
-npx claude-flow@alpha hive-mind resume --namespace auth
+# Resume Feature 1 later (use session ID from spawn output)
+npx claude-flow@alpha hive-mind resume session-xxxxx-xxxxx
 ```
 
 #### **🔍 Pattern 3: Research & Analysis**
@@ -108,7 +108,7 @@ npx claude-flow@alpha swarm "Deep dive into API gateway patterns" --continue-ses
 
 | Situation | Action | Command |
 |-----------|--------|---------|
-| **Same objective/feature** | Continue existing hive | `npx claude-flow@alpha hive-mind resume` |
+| **Same objective/feature** | Continue existing hive | `npx claude-flow@alpha hive-mind resume <session-id>` |
 | **New feature in same project** | Create new hive with namespace | `npx claude-flow@alpha hive-mind spawn "new-feature" --namespace feature-name` |
 | **Completely different project** | New directory + init | `mkdir new-project && cd new-project && npx claude-flow@alpha init` |
 | **Experimenting/testing** | Temporary hive | `npx claude-flow@alpha hive-mind spawn "experiment" --temp` |
@@ -137,11 +137,11 @@ npx claude-flow@alpha hive-mind status    # See active hives
 npx claude-flow@alpha hive-mind status
 npx claude-flow@alpha memory query --recent --limit 5
 
-# Resume the most recent hive
-npx claude-flow@alpha hive-mind resume
+# List all sessions to find the one you want
+npx claude-flow@alpha hive-mind sessions
 
-# Or resume specific namespace
-npx claude-flow@alpha hive-mind resume --namespace auth
+# Resume specific session by ID
+npx claude-flow@alpha hive-mind resume session-xxxxx-xxxxx
 ```
 
 ---

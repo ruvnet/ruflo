@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 
 class ClaudeFlowMCPServer {
   constructor() {
-    this.version = '2.0.0-alpha.49';
+    this.version = '2.0.0-alpha.50';
     this.memoryStore = new EnhancedMemory();
     this.capabilities = {
       tools: {
