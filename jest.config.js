@@ -64,10 +64,5 @@ export default {
   // Clear mocks between tests
   clearMocks: true,
   restoreMocks: true,
-  // Enhanced globals
-  globals: {
-    'ts-jest': {
-      useESM: true
-    }
-  }
+  // Removed deprecated globals
 };
