@@ -33,7 +33,7 @@ export class PromptDefaultsManager {
   private environmentDefaults: Map<string, any> = new Map();
 
   constructor(configPath?: string) {
-    this.configPath = configPath || join(homedir(), '.claude-flow', 'prompt-defaults.json');
+    this.configPath = configPath || join(homedir(), '.gemini-flow', 'prompt-defaults.json');
     this.loadConfig();
     this.loadEnvironmentDefaults();
   }
@@ -75,22 +75,22 @@ export class PromptDefaultsManager {
     const env = process.env;
     
     // Common defaults from environment
-    if (env.CLAUDE_AUTO_APPROVE === '1' || env.CLAUDE_AUTO_APPROVE === 'true') {
+    if (env.GEMINI_AUTO_APPROVE === '1' || env.GEMINI_AUTO_APPROVE === 'true') {
       this.environmentDefaults.set('confirm:*', true);
     }
-    
-    if (env.CLAUDE_DEFAULT_MODEL) {
-      this.environmentDefaults.set('select:model', env.CLAUDE_DEFAULT_MODEL);
+
+    if (env.GEMINI_DEFAULT_MODEL) {
+      this.environmentDefaults.set('select:model', env.GEMINI_DEFAULT_MODEL);
     }
-    
-    if (env.CLAUDE_DEFAULT_REGION) {
-      this.environmentDefaults.set('select:region', env.CLAUDE_DEFAULT_REGION);
+
+    if (env.GEMINI_DEFAULT_REGION) {
+      this.environmentDefaults.set('select:region', env.GEMINI_DEFAULT_REGION);
     }
-    
-    // Parse CLAUDE_PROMPT_DEFAULTS if set
-    if (env.CLAUDE_PROMPT_DEFAULTS) {
+
+    // Parse GEMINI_PROMPT_DEFAULTS if set
+    if (env.GEMINI_PROMPT_DEFAULTS) {
       try {
-        const defaults = JSON.parse(env.CLAUDE_PROMPT_DEFAULTS);
+        const defaults = JSON.parse(env.GEMINI_PROMPT_DEFAULTS);
         Object.entries(defaults).forEach(([key, value]) => {
           this.environmentDefaults.set(key, value);
         });
@@ -210,14 +210,14 @@ export class PromptDefaultsManager {
       'confirm:deploy': false, // Safety: don't auto-confirm deploys
       
       // Selection prompts
-      'select:model': 'claude-3-opus-20240229',
+      'select:model': 'gemini-1.0-pro',
       'select:region': 'us-east-1',
       'select:topology': 'hierarchical',
       'select:strategy': 'auto',
       
       // Text prompts
-      'text:projectName': 'claude-flow-project',
-      'text:description': 'Claude Flow AI Project',
+      'text:projectName': 'gemini-flow-project',
+      'text:description': 'Gemini Flow AI Project',
       
       // Number prompts
       'number:maxAgents': 4,

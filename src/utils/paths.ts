@@ -6,7 +6,7 @@ import { existsSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export function getClaudeFlowRoot(): string {
+export function getGeminiFlowRoot(): string {
   // Try multiple strategies to find the root
   const strategies = [
     // Strategy 1: From current file location
@@ -14,16 +14,16 @@ export function getClaudeFlowRoot(): string {
     // Strategy 2: From process.cwd()
     process.cwd(),
     // Strategy 3: From npm global location
-    resolve(process.execPath, '../../lib/node_modules/claude-flow'),
+    resolve(process.execPath, '../../lib/node_modules/gemini-flow'),
     // Strategy 4: From environment variable
-    process.env.CLAUDE_FLOW_ROOT || ''
+    process.env.GEMINI_FLOW_ROOT || ''
   ];
 
   for (const path of strategies) {
     if (path && existsSync(join(path, 'package.json'))) {
       try {
         const pkg = require(join(path, 'package.json'));
-        if (pkg.name === 'claude-flow') {
+        if (pkg.name === 'gemini-flow') {
           return path;
         }
       } catch {}
@@ -34,11 +34,11 @@ export function getClaudeFlowRoot(): string {
   return process.cwd();
 }
 
-export function getClaudeFlowBin(): string {
-  return join(getClaudeFlowRoot(), 'bin', 'claude-flow');
+export function getGeminiFlowBin(): string {
+  return join(getGeminiFlowRoot(), 'bin', 'gemini-flow');
 }
 
 export function resolveProjectPath(relativePath: string): string {
-  const root = getClaudeFlowRoot();
+  const root = getGeminiFlowRoot();
   return resolve(root, relativePath);
 }
