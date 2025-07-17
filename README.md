@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/ruvnet-claude-flow-badge.png)](https://mseep.ai/app/ruvnet-claude-flow)
+
 # 🌊 Claude-Flow v1.0.72: Advanced AI Agent Orchestration Platform
 
 <div align="center">
