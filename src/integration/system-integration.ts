@@ -147,11 +147,31 @@ export class SystemIntegration {
       // Initialize memory manager
       try {
         const { MemoryManager } = await import('../memory/manager.js');
-        this.memoryManager = new MemoryManager();
+        const { Logger } = await import('../core/logger.js');
+        const { EventBus } = await import('../core/event-bus.js');
+        
+        // Create default memory configuration
+        const memoryConfig = {
+          backend: 'sqlite' as const,
+          cacheSizeMB: 50,
+          syncInterval: 30000, // 30 seconds
+          conflictResolution: 'last-write' as const,
+          retentionDays: 30,
+          sqlitePath: './claude-flow-memory.db'
+        };
+        
+        // Create logger and event bus for memory manager
+        const memoryLogger = new Logger(
+          { level: 'info', format: 'text', destination: 'console' },
+          { component: 'MemoryManager' }
+        );
+        const eventBus = new EventBus();
+        
+        this.memoryManager = new MemoryManager(memoryConfig, eventBus, memoryLogger);
         if (typeof this.memoryManager.initialize === 'function') {
           await this.memoryManager.initialize();
         }
-        this.updateComponentStatus('memory', 'healthy', 'Memory manager initialized');
+        this.updateComponentStatus('memory', 'healthy', 'Memory manager initialized with SQLite backend');
       } catch (error) {
         this.logger.warn('Memory manager not available:', getErrorMessage(error));
         this.updateComponentStatus('memory', 'warning', 'Memory manager not available');
