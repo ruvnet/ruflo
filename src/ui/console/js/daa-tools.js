@@ -1,6 +1,6 @@
 /**
  * Dynamic Agent Architecture (DAA) Tools
- * Implementation of 8 core DAA tools for Claude Flow
+ * Implementation of 8 core DAA tools for Gemini Flow
  */
 
 class DAATools {

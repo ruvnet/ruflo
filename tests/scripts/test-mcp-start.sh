@@ -1,7 +1,7 @@
 #!/bin/bash
-# Test script to verify ./claude-flow mcp start uses the wrapper
+# Test script to verify ./gemini-flow mcp start uses the wrapper
 
-echo "🧪 Testing claude-flow mcp start with wrapper"
+echo "🧪 Testing gemini-flow mcp start with wrapper"
 echo "============================================"
 echo ""
 
@@ -10,7 +10,7 @@ echo "📍 Test 1: Starting MCP server (should use wrapper by default)..."
 echo ""
 
 # Start the server in background and capture output
-timeout 5s ./claude-flow mcp start 2>&1 | tee mcp-output.log &
+timeout 5s ./gemini-flow mcp start 2>&1 | tee mcp-output.log &
 MCP_PID=$!
 
 # Wait a moment for startup messages
@@ -27,10 +27,10 @@ else
   echo "❌ Missing: 'Wrapper Mode' in output"
 fi
 
-if grep -q "Using Claude Code MCP pass-through" mcp-output.log; then
-  echo "✅ Found: 'Using Claude Code MCP pass-through' in output"
+if grep -q "Using Gemini Code MCP pass-through" mcp-output.log; then
+  echo "✅ Found: 'Using Gemini Code MCP pass-through' in output"
 else
-  echo "❌ Missing: 'Using Claude Code MCP pass-through' in output"
+  echo "❌ Missing: 'Using Gemini Code MCP pass-through' in output"
 fi
 
 if grep -q "SPARC prompt injection" mcp-output.log; then
@@ -54,7 +54,7 @@ echo "📍 Test 2: Testing legacy mode..."
 echo ""
 
 # Test legacy mode
-timeout 5s ./claude-flow mcp start --legacy 2>&1 | tee mcp-legacy.log &
+timeout 5s ./gemini-flow mcp start --legacy 2>&1 | tee mcp-legacy.log &
 LEGACY_PID=$!
 
 sleep 2

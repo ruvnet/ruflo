@@ -4,7 +4,7 @@ export function createAgentsReadme() {
   return `# Agent Memory Storage
 
 ## Purpose
-This directory stores agent-specific memory data, configurations, and persistent state information for individual Claude agents in the orchestration system.
+This directory stores agent-specific memory data, configurations, and persistent state information for individual Gemini agents in the orchestration system.
 
 ## Structure
 Each agent gets its own subdirectory for isolated memory storage:
@@ -39,7 +39,7 @@ export function createSessionsReadme() {
   return `# Session Memory Storage
 
 ## Purpose
-This directory stores session-based memory data, conversation history, and contextual information for development sessions using the Claude-Flow orchestration system.
+This directory stores session-based memory data, conversation history, and contextual information for development sessions using the Gemini-Flow orchestration system.
 
 ## Structure
 Sessions are organized by date and session ID for easy retrieval:

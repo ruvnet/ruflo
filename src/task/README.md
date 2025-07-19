@@ -1,6 +1,6 @@
 # Task Management System
 
-Comprehensive task management with orchestration features for Claude-Flow. Integrates seamlessly with TodoWrite/TodoRead for coordination and Memory for state persistence.
+Comprehensive task management with orchestration features for Gemini-Flow. Integrates seamlessly with TodoWrite/TodoRead for coordination and Memory for state persistence.
 
 ## Features
 
@@ -183,7 +183,7 @@ const results = await coordinator.coordinateBatchOperations([
 ### Task Create
 ```bash
 # Create comprehensive task with all options
-claude-flow task create development "Implement authentication" \
+gemini-flow task create development "Implement authentication" \
   --priority 80 \
   --dependencies "task-123,task-456" \
   --dep-type finish-to-start \
@@ -199,7 +199,7 @@ claude-flow task create development "Implement authentication" \
 ### Task List
 ```bash
 # List with advanced filtering and visualization
-claude-flow task list \
+gemini-flow task list \
   --status running,pending \
   --priority 70-100 \
   --tags auth,security \
@@ -214,7 +214,7 @@ claude-flow task list \
 ### Task Status
 ```bash
 # Detailed status with all metrics
-claude-flow task status task-789 \
+gemini-flow task status task-789 \
   --show-logs \
   --show-checkpoints \
   --show-metrics \
@@ -226,7 +226,7 @@ claude-flow task status task-789 \
 ### Task Cancel
 ```bash
 # Safe cancellation with rollback
-claude-flow task cancel task-789 \
+gemini-flow task cancel task-789 \
   --reason "Requirements changed" \
   --cascade \
   --dry-run
@@ -235,19 +235,19 @@ claude-flow task cancel task-789 \
 ### Workflow Management
 ```bash
 # Create workflow
-claude-flow task workflow create "E-commerce Platform" \
+gemini-flow task workflow create "E-commerce Platform" \
   --description "Complete development workflow" \
   --max-concurrent 8 \
   --strategy priority-based \
   --error-handling continue-on-error
 
 # Execute workflow with monitoring
-claude-flow task workflow execute workflow-123 \
+gemini-flow task workflow execute workflow-123 \
   --variables '{"environment":"staging"}' \
   --monitor
 
 # Visualize dependency graph
-claude-flow task workflow visualize workflow-123 \
+gemini-flow task workflow visualize workflow-123 \
   --format dot \
   --output workflow-graph.dot
 ```
@@ -304,9 +304,9 @@ await coordinator.coordinateSwarm(
 );
 ```
 
-## Integration with Claude Code Batch Tools
+## Integration with Gemini Code Batch Tools
 
-The task management system is designed to work seamlessly with Claude Code's batch tools:
+The task management system is designed to work seamlessly with Gemini Code's batch tools:
 
 ### TodoWrite/TodoRead
 - Automatic task breakdown using TodoWrite patterns

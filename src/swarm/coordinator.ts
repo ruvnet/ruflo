@@ -761,7 +761,7 @@ export class SwarmCoordinator extends EventEmitter implements SwarmEventEmitter 
     });
 
     try {
-      // Execute task (this would spawn actual Claude process)
+      // Execute task (this would spawn actual Gemini process)
       const result = await this.executeTaskWithAgent(task, agent);
       await this.completeTask(task.id.id, result);
       
@@ -2162,7 +2162,7 @@ Ensure your implementation is complete, well-structured, and follows best practi
     const targetDir = this.extractTargetDirectory(task);
     
     try {
-      // Use Claude Flow executor for full SPARC system in non-interactive mode
+      // Use Gemini Flow executor for full SPARC system in non-interactive mode
       const { ClaudeFlowExecutor } = await import('./gemini-flow-executor.ts');
       const executor = new ClaudeFlowExecutor({ 
         logger: this.logger,
@@ -2192,7 +2192,7 @@ Ensure your implementation is complete, well-structured, and follows best practi
   }
   
   private createExecutionPrompt(task: TaskDefinition): string {
-    // Create a prompt that Claude will understand
+    // Create a prompt that Gemini will understand
     let prompt = `# Swarm Task Execution\n\n`;
     prompt += `## Task: ${task.name}\n\n`;
     prompt += `${task.instructions || task.description}\n\n`;
@@ -2285,7 +2285,7 @@ Ensure your implementation is complete, well-structured, and follows best practi
     // Create unique instance ID for this execution
     const instanceId = `swarm-${this.swarmId.id}-${task.id.id}-${Date.now()}`;
     
-    // Build Claude arguments for non-interactive execution
+    // Build Gemini arguments for non-interactive execution
     const geminiArgs = [prompt];
     
     // Always skip permissions for swarm automation
@@ -2318,7 +2318,7 @@ Ensure your implementation is complete, well-structured, and follows best practi
         throw new Error('Gemini CLI not found. Please ensure gemini is installed and in PATH.');
       }
       
-      // Execute Claude with the prompt
+      // Execute Gemini with the prompt
       const command = new Deno.Command("gemini", {
         args: geminiArgs,
         cwd: targetDir || process.cwd(),
@@ -2338,7 +2338,7 @@ Ensure your implementation is complete, well-structured, and follows best practi
         stderr: "piped",
       });
       
-      this.logger.info('Spawning Claude agent for task', { 
+      this.logger.info('Spawning Gemini agent for task', { 
         taskId: task.id.id,
         agentId: agent.id.id,
         instanceId,
@@ -2350,7 +2350,7 @@ Ensure your implementation is complete, well-structured, and follows best practi
       
       if (code === 0) {
         const output = new TextDecoder().decode(stdout);
-        this.logger.info('Claude agent completed task successfully', {
+        this.logger.info('Gemini agent completed task successfully', {
           taskId: task.id.id,
           outputLength: output.length
         });
@@ -2363,15 +2363,15 @@ Ensure your implementation is complete, well-structured, and follows best practi
         };
       } else {
         const errorOutput = new TextDecoder().decode(stderr);
-        this.logger.error(`Claude agent failed with code ${code}`, { 
+        this.logger.error(`Gemini agent failed with code ${code}`, { 
           taskId: task.id.id,
           error: errorOutput 
         });
-        throw new Error(`Claude execution failed: ${errorOutput}`);
+        throw new Error(`Gemini execution failed: ${errorOutput}`);
       }
       
     } catch (error) {
-      this.logger.error('Failed to execute Claude agent', { 
+      this.logger.error('Failed to execute Gemini agent', { 
         taskId: task.id.id,
         error: (error instanceof Error ? error.message : String(error)) 
       });
@@ -2590,7 +2590,7 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(port, () => {
   console.log(\`REST API server running on port \${port}\`);
-  console.log('Created by Claude Flow Swarm');
+  console.log('Created by Gemini Flow Swarm');
 });
 
 module.exports = app;
@@ -2602,7 +2602,7 @@ module.exports = app;
       const packageJson = {
         name: projectName,
         version: "1.0.0",
-        description: "REST API created by Claude Flow Swarm",
+        description: "REST API created by Gemini Flow Swarm",
         main: "server.js",
         scripts: {
           start: "node server.js",
@@ -2610,7 +2610,7 @@ module.exports = app;
           test: "jest"
         },
         keywords: ["rest", "api", "swarm", "gemini-flow"],
-        author: "Claude Flow Swarm",
+        author: "Gemini Flow Swarm",
         license: "MIT",
         dependencies: {
           express: "^4.18.2"
@@ -2636,7 +2636,7 @@ module.exports = app;
       // Create README
       const readme = `# REST API
 
-This REST API was created by the Claude Flow Swarm system.
+This REST API was created by the Gemini Flow Swarm system.
 
 ## Swarm Details
 - Swarm ID: ${this.swarmId.id}
@@ -2675,7 +2675,7 @@ npm run dev
 ${task.description}
 
 ---
-Created by Claude Flow Swarm
+Created by Gemini Flow Swarm
 `;
       
       await fs.writeFile(`${projectDir}/README.md`, readme);
@@ -2712,10 +2712,10 @@ coverage/
       const mainCode = `#!/usr/bin/env node
 
 // Hello World Application
-// Generated by Claude Flow Swarm
+// Generated by Gemini Flow Swarm
 
 console.log('Hello, World!');
-console.log('This application was created by the Claude Flow Swarm system.');
+console.log('This application was created by the Gemini Flow Swarm system.');
 console.log('Swarm ID: ${this.swarmId.id}');
 console.log('Task: ${task.name}');
 console.log('Generated at: ${new Date().toISOString()}');
@@ -2732,14 +2732,14 @@ if (typeof module !== 'undefined' && module.exports) {
       const packageJson = {
         name: "hello-world",
         version: "1.0.0",
-        description: "Hello World application created by Claude Flow Swarm",
+        description: "Hello World application created by Gemini Flow Swarm",
         main: "index.js",
         scripts: {
           start: "node index.js",
           test: "node test.js"
         },
         keywords: ["hello-world", "swarm", "gemini-flow"],
-        author: "Claude Flow Swarm",
+        author: "Gemini Flow Swarm",
         license: "MIT"
       };
       
@@ -2751,7 +2751,7 @@ if (typeof module !== 'undefined' && module.exports) {
       // Create README
       const readme = `# Hello World
 
-This application was created by the Claude Flow Swarm system.
+This application was created by the Gemini Flow Swarm system.
 
 ## Swarm Details
 - Swarm ID: ${this.swarmId.id}
@@ -2859,7 +2859,7 @@ main();
 ${task.description}
 
 ## Overview
-This documentation was generated by the Claude Flow Swarm system.
+This documentation was generated by the Gemini Flow Swarm system.
 
 ## Details
 - Task ID: ${task.id.id}
@@ -3001,7 +3001,7 @@ console.log('Tests completed for: ${task.name}');
 
   private processHeartbeats(): void {
     const now = new Date();
-    const timeout = this.config.monitoring.heartbeatInterval * 10; // Increased multiplier for long-running Claude tasks
+    const timeout = this.config.monitoring.heartbeatInterval * 10; // Increased multiplier for long-running Gemini tasks
     
     for (const agent of this.agents.values()) {
       if (agent.status === 'offline' || agent.status === 'terminated') {

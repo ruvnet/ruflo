@@ -1,5 +1,5 @@
 /**
- * Comprehensive test for Claude-Flow task system with parallel batch operations
+ * Comprehensive test for Gemini-Flow task system with parallel batch operations
  * This test demonstrates:
  * - Task creation and queuing
  * - Agent spawning and assignment
@@ -170,7 +170,7 @@ function getRequiredCapabilities(taskType: string): string[] {
 
 // Test runner
 export async function runBatchTaskTest() {
-  console.log('🚀 Starting Claude-Flow Batch Task System Test\n');
+  console.log('🚀 Starting Gemini-Flow Batch Task System Test\n');
   
   // Initialize components
   const eventBus = new EventBus();

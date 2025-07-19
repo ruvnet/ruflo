@@ -1,6 +1,6 @@
 # Init Command Test Suite
 
-This directory contains comprehensive tests for the `claude-flow init` command, covering all aspects of project initialization including basic setup, SPARC integration, error handling, and performance validation.
+This directory contains comprehensive tests for the `gemini-flow init` command, covering all aspects of project initialization including basic setup, SPARC integration, error handling, and performance validation.
 
 ## Test Structure
 

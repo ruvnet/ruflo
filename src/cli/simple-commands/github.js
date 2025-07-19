@@ -53,10 +53,10 @@ const GITHUB_MODES = {
 
 function showGitHubHelp() {
   console.log(`
-🐙 Claude Flow GitHub Workflow Automation
+🐙 Gemini Flow GitHub Workflow Automation
 
 USAGE:
-  claude-flow github <mode> <objective> [options]
+  gemini-flow github <mode> <objective> [options]
 
 GITHUB AUTOMATION MODES:
 `);
@@ -67,15 +67,15 @@ GITHUB AUTOMATION MODES:
 
   console.log(`
 EXAMPLES:
-  claude-flow github pr-manager "create feature PR with automated testing"
-  claude-flow github gh-coordinator "setup CI/CD pipeline" --auto-approve
-  claude-flow github release-manager "prepare v2.0.0 release"
-  claude-flow github repo-architect "optimize repository structure"
-  claude-flow github issue-tracker "analyze project roadmap issues"
-  claude-flow github sync-coordinator "sync package versions across repos"
+  gemini-flow github pr-manager "create feature PR with automated testing"
+  gemini-flow github gh-coordinator "setup CI/CD pipeline" --auto-approve
+  gemini-flow github release-manager "prepare v2.0.0 release"
+  gemini-flow github repo-architect "optimize repository structure"
+  gemini-flow github issue-tracker "analyze project roadmap issues"
+  gemini-flow github sync-coordinator "sync package versions across repos"
 
 OPTIONS:
-  --auto-approve             Auto-approve Claude permissions
+  --auto-approve             Auto-approve Gemini permissions
   --verbose                  Enable detailed logging
   --dry-run                  Show what would be executed
   --repo <name>              Target specific repository
@@ -91,7 +91,7 @@ ADVANCED FEATURES:
   • Cross-repository dependency management and synchronization
 
 For complete documentation:
-https://github.com/ruvnet/claude-code-flow/docs/github.md
+https://github.com/ruvnet/gemini-flow/docs/github.md
 `);
 }
 
@@ -146,7 +146,7 @@ export async function githubCommand(args, flags) {
   }
 
   try {
-    // Check if Claude is available
+    // Check if Gemini is available
     const { execSync } = await import('child_process');
     
     try {
@@ -162,7 +162,7 @@ export async function githubCommand(args, flags) {
       return;
     }
 
-    // Build the prompt for Claude using GitHub workflow methodology
+    // Build the prompt for Gemini using GitHub workflow methodology
     const githubPrompt = `Execute GitHub workflow automation using ${mode} mode:
 
 OBJECTIVE: ${objective}
@@ -231,7 +231,7 @@ Begin execution now. Create all necessary GitHub workflow files and configuratio
 
     console.log('🚀 Launching GitHub automation via Claude...');
     
-    // Execute Claude with the GitHub prompt
+    // Execute Gemini with the GitHub prompt
     const { spawn } = await import('child_process');
     
     const claudeArgs = [];
@@ -241,7 +241,7 @@ Begin execution now. Create all necessary GitHub workflow files and configuratio
       claudeArgs.push('--dangerously-skip-permissions');
     }
     
-    // Spawn claude process
+    // Spawn gemini process
     const claudeProcess = spawn('claude', claudeArgs, {
       stdio: ['pipe', 'inherit', 'inherit'],
       shell: false
@@ -258,7 +258,7 @@ Begin execution now. Create all necessary GitHub workflow files and configuratio
           printSuccess('✅ GitHub automation completed successfully!');
           resolve();
         } else {
-          reject(new Error(`Claude process exited with code ${code}`));
+          reject(new Error(`Gemini process exited with code ${code}`));
         }
       });
       

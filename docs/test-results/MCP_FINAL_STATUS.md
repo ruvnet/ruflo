@@ -1,14 +1,14 @@
-# Claude-Flow MCP - Final Status
+# Gemini-Flow MCP - Final Status
 
 ## ✅ Success!
 
-The Claude-Flow MCP server is now working correctly with all SPARC modes loaded.
+The Gemini-Flow MCP server is now working correctly with all SPARC modes loaded.
 
 ## Current Configuration
 
 ### MCP Server
 - **Location**: `src/cli/mcp-stdio-server.ts`
-- **Configuration**: `claude-flow.mcp.json`
+- **Configuration**: `gemini-flow.mcp.json`
 - **Modes**: All 17 SPARC modes + 3 meta tools = 20 total tools
 
 ### Available Tools
@@ -38,12 +38,12 @@ The Claude-Flow MCP server is now working correctly with all SPARC modes loaded.
 
 ## How to Use
 
-### 1. With Claude Desktop
-Add to your Claude Desktop configuration:
+### 1. With Gemini Desktop
+Add to your Gemini Desktop configuration:
 ```json
 {
   "servers": {
-    "claude-flow": {
+    "gemini-flow": {
       "command": "npx",
       "args": ["tsx", "src/cli/mcp-stdio-server.ts"]
     }
@@ -63,7 +63,7 @@ npx tsx src/cli/mcp-stdio-server.ts
 
 ## What This Provides
 
-When Claude connects to this MCP server:
+When Gemini connects to this MCP server:
 1. All 17 SPARC modes are available as tools
 2. Each mode executes with mode-specific prompts and tools
 3. The implementation supports both:
@@ -84,4 +84,4 @@ This will:
 
 ## Note on CLI Integration
 
-While the MCP server is fully functional, the `./claude-flow mcp start` command integration has some complexities due to multiple CLI implementations in the project. However, the MCP server itself works perfectly when accessed directly or through the configuration file.
+While the MCP server is fully functional, the `./gemini-flow mcp start` command integration has some complexities due to multiple CLI implementations in the project. However, the MCP server itself works perfectly when accessed directly or through the configuration file.

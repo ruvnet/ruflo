@@ -125,7 +125,7 @@ async function patternLearnCommand(subArgs, flags) {
         // Use real ruv-swarm pattern learning
         const metadata = {
             timestamp: Date.now(),
-            environment: 'claude-flow',
+            environment: 'gemini-flow',
             version: '2.0.0'
         };
         
@@ -174,7 +174,7 @@ async function modelUpdateCommand(subArgs, flags) {
                 type: `${agentType}_operation`,
                 result: result,
                 timestamp: Date.now(),
-                environment: 'claude-flow'
+                environment: 'gemini-flow'
             }
         });
         
@@ -219,7 +219,7 @@ function showTrainingHelp() {
 🧠 Training Commands - Neural Pattern Learning & Model Updates
 
 USAGE:
-  claude-flow training <command> [options]
+  gemini-flow training <command> [options]
 
 COMMANDS:
   neural-train      Train neural patterns from operations
@@ -243,16 +243,16 @@ MODEL UPDATE OPTIONS:
 
 EXAMPLES:
   # Train from recent swarm operations
-  claude-flow training neural-train --data recent --model task-predictor
+  gemini-flow training neural-train --data recent --model task-predictor
 
   # Learn from specific operation
-  claude-flow training pattern-learn --operation "file-creation" --outcome "success"
+  gemini-flow training pattern-learn --operation "file-creation" --outcome "success"
   
   # Update coordinator model
-  claude-flow training model-update --agent-type coordinator --operation-result "efficient"
+  gemini-flow training model-update --agent-type coordinator --operation-result "efficient"
 
   # Custom training with specific epochs
-  claude-flow training neural-train --data "swarm-123" --epochs 100 --model "coordinator-predictor"
+  gemini-flow training neural-train --data "swarm-123" --epochs 100 --model "coordinator-predictor"
 
 🎯 Neural training improves:
   • Task selection accuracy

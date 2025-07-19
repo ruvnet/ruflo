@@ -9,7 +9,7 @@ All WebSocket connection fixes for issue #78 have been successfully verified.
 - **Platform**: Linux 6.8.0-1027-azure
 - **Node.js**: v22.16.0
 - **Server Port**: 3000
-- **Claude-Flow Version**: 2.0.0
+- **Gemini-Flow Version**: 2.0.0
 
 ### Tests Performed
 
@@ -89,7 +89,7 @@ All WebSocket connection fixes for issue #78 have been successfully verified.
 1. **Module Not Found Error**
    - When executing certain commands, there's a missing module error:
    ```
-   Cannot find module '/workspaces/ruv-FANN/claude-code-flow/claude-code-flow/src/cli/commands/ruv-swarm.js'
+   Cannot find module '/workspaces/ruv-FANN/gemini-flow/gemini-flow/src/cli/commands/ruv-swarm.js'
    ```
    - This appears to be a build/compilation issue rather than a WebSocket issue
 

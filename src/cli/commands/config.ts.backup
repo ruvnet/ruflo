@@ -14,7 +14,7 @@ import { join } from 'path';
 
 export const configCommand = new Command()
   .name('config')
-  .description('Manage Claude-Flow configuration')
+  .description('Manage Gemini-Flow configuration')
   .action(() => {
     configCommand.help();
   });
@@ -141,7 +141,7 @@ configCommand
     .option('--template <template:string>', 'Configuration template (default, development, production, minimal, testing, enterprise)', { default: 'default' })
     .option('--format <format:string>', 'Output format (json, yaml, toml)', { default: 'json' })
     .option('--interactive', 'Interactive template selection')
-    .action(async (options: any, outputFile: string = 'claude-flow.config.json') => {
+    .action(async (options: any, outputFile: string = 'gemini-flow.config.json') => {
       try {
         // Check if file exists
         try {

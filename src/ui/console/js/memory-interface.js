@@ -1,6 +1,6 @@
 /**
  * Memory Management Interface
- * Comprehensive memory management system for Claude Flow
+ * Comprehensive memory management system for Gemini Flow
  */
 
 class MemoryInterface {
@@ -289,7 +289,7 @@ class MemoryInterface {
 
     async loadMemoryData() {
         try {
-            // Load memory data from Claude Flow's memory system
+            // Load memory data from Gemini Flow's memory system
             const response = await fetch('/api/memory/list');
             const data = await response.json();
             

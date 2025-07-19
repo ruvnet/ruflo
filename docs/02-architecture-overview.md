@@ -1,12 +1,12 @@
 # Architecture Overview
 
-Claude-Flow implements a sophisticated multi-layered architecture designed for scalability, reliability, and extensibility. This document provides a comprehensive overview of the system components and their interactions.
+Gemini-Flow implements a sophisticated multi-layered architecture designed for scalability, reliability, and extensibility. This document provides a comprehensive overview of the system components and their interactions.
 
 ## High-Level Architecture
 
 ```mermaid
 graph TB
-    CLI[Claude-Flow CLI] --> Orchestrator[Orchestrator]
+    CLI[Gemini-Flow CLI] --> Orchestrator[Orchestrator]
     Orchestrator --> TM[Terminal Manager]
     Orchestrator --> MM[Memory Manager]
     Orchestrator --> CM[Coordination Manager]
@@ -31,7 +31,7 @@ graph TB
 
 ### 1. Orchestrator (Central Coordinator)
 
-The orchestrator serves as the central command and control system for all Claude-Flow operations.
+The orchestrator serves as the central command and control system for all Gemini-Flow operations.
 
 **Key Responsibilities:**
 - **Agent Lifecycle Management**: Spawning, monitoring, and terminating agents
@@ -212,7 +212,7 @@ sequenceDiagram
 
 ## Communication Patterns
 
-Claude-Flow supports multiple communication patterns between agents:
+Gemini-Flow supports multiple communication patterns between agents:
 
 ### 1. Direct Communication
 Agents can send messages directly to specific agents:

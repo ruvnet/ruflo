@@ -1,5 +1,5 @@
 /**
- * Mock-based test for Claude-Flow batch task system
+ * Mock-based test for Gemini-Flow batch task system
  * This test uses mocked components to demonstrate the task system without full dependencies
  */
 

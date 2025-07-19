@@ -1,13 +1,13 @@
-# Claude Flow Swarm Mode Documentation
+# Gemini Flow Swarm Mode Documentation
 
 ## Overview
 
-The Claude Flow Swarm Mode enables self-orchestrating agent swarms that can work collaboratively on complex tasks. When activated, a master orchestrator spawns specialized agents in separate terminal windows/sessions to work on different aspects of your objective.
+The Gemini Flow Swarm Mode enables self-orchestrating agent swarms that can work collaboratively on complex tasks. When activated, a master orchestrator spawns specialized agents in separate terminal windows/sessions to work on different aspects of your objective.
 
 ## How It Works
 
-1. **Master Orchestrator**: The main Claude instance that analyzes your objective and coordinates the swarm
-2. **Specialized Agents**: Individual Claude instances spawned in separate terminals for specific tasks
+1. **Master Orchestrator**: The main Gemini instance that analyzes your objective and coordinates the swarm
+2. **Specialized Agents**: Individual Gemini instances spawned in separate terminals for specific tasks
 3. **Shared Memory**: Agents communicate through a shared memory namespace for coordination
 4. **Real Terminal Spawning**: Each agent runs in its own terminal window/tab for visibility
 
@@ -36,27 +36,27 @@ The Claude Flow Swarm Mode enables self-orchestrating agent swarms that can work
 
 ### Basic Usage
 ```bash
-claude-flow swarm "Your objective here"
+gemini-flow swarm "Your objective here"
 ```
 
 ### With Options
 Due to CLI parsing limitations, flags must come AFTER the objective:
 ```bash
-claude-flow swarm "Research cloud architectures" --strategy research --max-agents 5 --monitor
+gemini-flow swarm "Research cloud architectures" --strategy research --max-agents 5 --monitor
 ```
 
 ### Dry Run
 ```bash
-claude-flow swarm "Test objective" --dry-run
+gemini-flow swarm "Test objective" --dry-run
 ```
 
 ### VS Code Integration
 ```bash
 # Automatically detects VS Code environment
-claude-flow swarm "Build a feature" --vscode
+gemini-flow swarm "Build a feature" --vscode
 
 # Force VS Code mode
-claude-flow swarm "Create API" --vscode
+gemini-flow swarm "Create API" --vscode
 ```
 
 ## Options
@@ -99,17 +99,17 @@ claude-flow swarm "Create API" --vscode
 
 ### Research Task
 ```bash
-claude-flow swarm --strategy research --research "Research best practices for microservices"
+gemini-flow swarm --strategy research --research "Research best practices for microservices"
 ```
 
 ### Development Task
 ```bash
-claude-flow swarm --strategy development --max-agents 3 "Build a REST API with authentication"
+gemini-flow swarm --strategy development --max-agents 3 "Build a REST API with authentication"
 ```
 
 ### Complex Project
 ```bash
-claude-flow swarm --parallel --review --coordinator "Design and implement a real-time chat system"
+gemini-flow swarm --parallel --review --coordinator "Design and implement a real-time chat system"
 ```
 
 ## Monitoring
@@ -117,7 +117,7 @@ claude-flow swarm --parallel --review --coordinator "Design and implement a real
 Use the `--monitor` flag to enable real-time monitoring of swarm progress:
 
 ```bash
-claude-flow swarm --monitor "Your task"
+gemini-flow swarm --monitor "Your task"
 ```
 
 This displays:

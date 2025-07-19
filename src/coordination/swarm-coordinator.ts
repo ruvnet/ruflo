@@ -406,7 +406,7 @@ export class SwarmCoordinator extends EventEmitter {
   private async executeTask(task: SwarmTask, agent: SwarmAgent): Promise<void> {
     try {
       // Simulate task execution
-      // In real implementation, this would spawn actual Claude instances
+      // In real implementation, this would spawn actual Gemini instances
       const result = await this.simulateTaskExecution(task, agent);
       
       await this.handleTaskCompleted(task.id, result);
@@ -416,7 +416,7 @@ export class SwarmCoordinator extends EventEmitter {
   }
 
   private async simulateTaskExecution(task: SwarmTask, agent: SwarmAgent): Promise<any> {
-    // This is where we would actually spawn Claude processes
+    // This is where we would actually spawn Gemini processes
     // For now, simulate with timeout
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {

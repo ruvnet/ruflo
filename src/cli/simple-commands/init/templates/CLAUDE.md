@@ -1,16 +1,16 @@
-# Claude Code Configuration for Claude Flow
+# Gemini Code Configuration for Gemini Flow
 
-## 🚀 IMPORTANT: Claude Flow AI-Driven Development
+## 🚀 IMPORTANT: Gemini Flow AI-Driven Development
 
-### Claude Code Handles:
+### Gemini Code Handles:
 - ✅ **ALL file operations** (Read, Write, Edit, MultiEdit)
 - ✅ **ALL code generation** and development tasks
 - ✅ **ALL bash commands** and system operations
 - ✅ **ALL actual implementation** work
 - ✅ **Project navigation** and code analysis
 
-### Claude Flow MCP Tools Handle:
-- 🧠 **Coordination only** - Orchestrating Claude Code's actions
+### Gemini Flow MCP Tools Handle:
+- 🧠 **Coordination only** - Orchestrating Gemini Code's actions
 - 💾 **Memory management** - Persistent state across sessions
 - 🤖 **Neural features** - Cognitive patterns and learning
 - 📊 **Performance tracking** - Monitoring and metrics
@@ -18,7 +18,7 @@
 - 🔗 **GitHub integration** - Advanced repository management
 
 ### ⚠️ Key Principle:
-**MCP tools DO NOT create content or write code.** They coordinate and enhance Claude Code's native capabilities. Think of them as an orchestration layer that helps Claude Code work more efficiently.
+**MCP tools DO NOT create content or write code.** They coordinate and enhance Gemini Code's native capabilities. Think of them as an orchestration layer that helps Gemini Code work more efficiently.
 
 ## 🚀 CRITICAL: Parallel Execution & Batch Operations
 
@@ -41,12 +41,12 @@ If you need to do X operations, they should be in 1 message, not X messages
 **✅ CORRECT - Everything in ONE Message:**
 ```javascript
 [Single Message with BatchTool]:
-  mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 6 }
-  mcp__claude-flow__agent_spawn { type: "researcher" }
-  mcp__claude-flow__agent_spawn { type: "coder" }
-  mcp__claude-flow__agent_spawn { type: "analyst" }
-  mcp__claude-flow__agent_spawn { type: "tester" }
-  mcp__claude-flow__agent_spawn { type: "coordinator" }
+  mcp__gemini-flow__swarm_init { topology: "mesh", maxAgents: 6 }
+  mcp__gemini-flow__agent_spawn { type: "researcher" }
+  mcp__gemini-flow__agent_spawn { type: "coder" }
+  mcp__gemini-flow__agent_spawn { type: "analyst" }
+  mcp__gemini-flow__agent_spawn { type: "tester" }
+  mcp__gemini-flow__agent_spawn { type: "coordinator" }
   TodoWrite { todos: [todo1, todo2, todo3, todo4, todo5] }
   Bash "mkdir -p app/{src,tests,docs}"
   Write "app/package.json" 
@@ -56,9 +56,9 @@ If you need to do X operations, they should be in 1 message, not X messages
 
 **❌ WRONG - Multiple Messages (NEVER DO THIS):**
 ```javascript
-Message 1: mcp__claude-flow__swarm_init
-Message 2: mcp__claude-flow__agent_spawn 
-Message 3: mcp__claude-flow__agent_spawn
+Message 1: mcp__gemini-flow__swarm_init
+Message 2: mcp__gemini-flow__agent_spawn 
+Message 3: mcp__gemini-flow__agent_spawn
 Message 4: TodoWrite (one todo)
 Message 5: Bash "mkdir src"
 Message 6: Write "package.json"
@@ -86,109 +86,109 @@ Message 6: Write "package.json"
 
 ### 1. Add MCP Server (Stdio - No Port Needed)
 ```bash
-# Add Claude Flow MCP server to Claude Code using stdio
-claude mcp add claude-flow npx claude-flow mcp start
+# Add Gemini Flow MCP server to Gemini Code using stdio
+gemini mcp add gemini-flow npx gemini-flow mcp start
 ```
 
-### 2. Use MCP Tools for Coordination in Claude Code
-Once configured, Claude Flow MCP tools enhance Claude Code's coordination:
+### 2. Use MCP Tools for Coordination in Gemini Code
+Once configured, Gemini Flow MCP tools enhance Gemini Code's coordination:
 
 **Initialize a swarm:**
-- Use the `mcp__claude-flow__swarm_init` tool to set up coordination topology
+- Use the `mcp__gemini-flow__swarm_init` tool to set up coordination topology
 - Choose: mesh, hierarchical, ring, or star
-- This creates a coordination framework for Claude Code's work
+- This creates a coordination framework for Gemini Code's work
 
 **Spawn agents:**
-- Use `mcp__claude-flow__agent_spawn` tool to create specialized coordinators
+- Use `mcp__gemini-flow__agent_spawn` tool to create specialized coordinators
 - Agent types represent different thinking patterns, not actual coders
-- They help Claude Code approach problems from different angles
+- They help Gemini Code approach problems from different angles
 
 **Orchestrate tasks:**
-- Use `mcp__claude-flow__task_orchestrate` tool to coordinate complex workflows
-- This breaks down tasks for Claude Code to execute systematically
-- The agents don't write code - they coordinate Claude Code's actions
+- Use `mcp__gemini-flow__task_orchestrate` tool to coordinate complex workflows
+- This breaks down tasks for Gemini Code to execute systematically
+- The agents don't write code - they coordinate Gemini Code's actions
 
 ## Available MCP Tools for Coordination
 
 ### Coordination Tools:
-- `mcp__claude-flow__swarm_init` - Set up coordination topology for Claude Code
-- `mcp__claude-flow__agent_spawn` - Create cognitive patterns to guide Claude Code
-- `mcp__claude-flow__task_orchestrate` - Break down and coordinate complex tasks
+- `mcp__gemini-flow__swarm_init` - Set up coordination topology for Gemini Code
+- `mcp__gemini-flow__agent_spawn` - Create cognitive patterns to guide Gemini Code
+- `mcp__gemini-flow__task_orchestrate` - Break down and coordinate complex tasks
 
 ### Monitoring Tools:
-- `mcp__claude-flow__swarm_status` - Monitor coordination effectiveness
-- `mcp__claude-flow__agent_list` - View active cognitive patterns
-- `mcp__claude-flow__agent_metrics` - Track coordination performance
-- `mcp__claude-flow__task_status` - Check workflow progress
-- `mcp__claude-flow__task_results` - Review coordination outcomes
+- `mcp__gemini-flow__swarm_status` - Monitor coordination effectiveness
+- `mcp__gemini-flow__agent_list` - View active cognitive patterns
+- `mcp__gemini-flow__agent_metrics` - Track coordination performance
+- `mcp__gemini-flow__task_status` - Check workflow progress
+- `mcp__gemini-flow__task_results` - Review coordination outcomes
 
 ### Memory & Neural Tools:
-- `mcp__claude-flow__memory_usage` - Persistent memory across sessions
-- `mcp__claude-flow__neural_status` - Neural pattern effectiveness
-- `mcp__claude-flow__neural_train` - Improve coordination patterns
-- `mcp__claude-flow__neural_patterns` - Analyze thinking approaches
+- `mcp__gemini-flow__memory_usage` - Persistent memory across sessions
+- `mcp__gemini-flow__neural_status` - Neural pattern effectiveness
+- `mcp__gemini-flow__neural_train` - Improve coordination patterns
+- `mcp__gemini-flow__neural_patterns` - Analyze thinking approaches
 
 ### GitHub Integration Tools (NEW!):
-- `mcp__claude-flow__github_swarm` - Create specialized GitHub management swarms
-- `mcp__claude-flow__repo_analyze` - Deep repository analysis with AI
-- `mcp__claude-flow__pr_enhance` - AI-powered pull request improvements
-- `mcp__claude-flow__issue_triage` - Intelligent issue classification
-- `mcp__claude-flow__code_review` - Automated code review with swarms
+- `mcp__gemini-flow__github_swarm` - Create specialized GitHub management swarms
+- `mcp__gemini-flow__repo_analyze` - Deep repository analysis with AI
+- `mcp__gemini-flow__pr_enhance` - AI-powered pull request improvements
+- `mcp__gemini-flow__issue_triage` - Intelligent issue classification
+- `mcp__gemini-flow__code_review` - Automated code review with swarms
 
 ### System Tools:
-- `mcp__claude-flow__benchmark_run` - Measure coordination efficiency
-- `mcp__claude-flow__features_detect` - Available capabilities
-- `mcp__claude-flow__swarm_monitor` - Real-time coordination tracking
+- `mcp__gemini-flow__benchmark_run` - Measure coordination efficiency
+- `mcp__gemini-flow__features_detect` - Available capabilities
+- `mcp__gemini-flow__swarm_monitor` - Real-time coordination tracking
 
 ## Workflow Examples (Coordination-Focused)
 
 ### Research Coordination Example
-**Context:** Claude Code needs to research a complex topic systematically
+**Context:** Gemini Code needs to research a complex topic systematically
 
 **Step 1:** Set up research coordination
-- Tool: `mcp__claude-flow__swarm_init`
+- Tool: `mcp__gemini-flow__swarm_init`
 - Parameters: `{"topology": "mesh", "maxAgents": 5, "strategy": "balanced"}`
 - Result: Creates a mesh topology for comprehensive exploration
 
 **Step 2:** Define research perspectives
-- Tool: `mcp__claude-flow__agent_spawn`
+- Tool: `mcp__gemini-flow__agent_spawn`
 - Parameters: `{"type": "researcher", "name": "Literature Review"}`
-- Tool: `mcp__claude-flow__agent_spawn`
+- Tool: `mcp__gemini-flow__agent_spawn`
 - Parameters: `{"type": "analyst", "name": "Data Analysis"}`
-- Result: Different cognitive patterns for Claude Code to use
+- Result: Different cognitive patterns for Gemini Code to use
 
 **Step 3:** Coordinate research execution
-- Tool: `mcp__claude-flow__task_orchestrate`
+- Tool: `mcp__gemini-flow__task_orchestrate`
 - Parameters: `{"task": "Research neural architecture search papers", "strategy": "adaptive"}`
-- Result: Claude Code systematically searches, reads, and analyzes papers
+- Result: Gemini Code systematically searches, reads, and analyzes papers
 
 **What Actually Happens:**
 1. The swarm sets up a coordination framework
-2. Each agent MUST use Claude Flow hooks for coordination:
-   - `npx claude-flow hooks pre-task` before starting
-   - `npx claude-flow hooks post-edit` after each file operation
-   - `npx claude-flow hooks notification` to share decisions
-3. Claude Code uses its native Read, WebSearch, and Task tools
+2. Each agent MUST use Gemini Flow hooks for coordination:
+   - `npx gemini-flow hooks pre-task` before starting
+   - `npx gemini-flow hooks post-edit` after each file operation
+   - `npx gemini-flow hooks notification` to share decisions
+3. Gemini Code uses its native Read, WebSearch, and Task tools
 4. The swarm coordinates through shared memory and hooks
-5. Results are synthesized by Claude Code with full coordination history
+5. Results are synthesized by Gemini Code with full coordination history
 
 ### Development Coordination Example
-**Context:** Claude Code needs to build a complex system with multiple components
+**Context:** Gemini Code needs to build a complex system with multiple components
 
 **Step 1:** Set up development coordination
-- Tool: `mcp__claude-flow__swarm_init`
+- Tool: `mcp__gemini-flow__swarm_init`
 - Parameters: `{"topology": "hierarchical", "maxAgents": 8, "strategy": "specialized"}`
 - Result: Hierarchical structure for organized development
 
 **Step 2:** Define development perspectives
-- Tool: `mcp__claude-flow__agent_spawn`
+- Tool: `mcp__gemini-flow__agent_spawn`
 - Parameters: `{"type": "architect", "name": "System Design"}`
-- Result: Architectural thinking pattern for Claude Code
+- Result: Architectural thinking pattern for Gemini Code
 
 **Step 3:** Coordinate implementation
-- Tool: `mcp__claude-flow__task_orchestrate`
+- Tool: `mcp__gemini-flow__task_orchestrate`
 - Parameters: `{"task": "Implement user authentication with JWT", "strategy": "parallel"}`
-- Result: Claude Code implements features using its native tools
+- Result: Gemini Code implements features using its native tools
 
 **What Actually Happens:**
 1. The swarm creates a development coordination plan
@@ -196,32 +196,32 @@ Once configured, Claude Flow MCP tools enhance Claude Code's coordination:
    - Pre-task hooks for context loading
    - Post-edit hooks for progress tracking
    - Memory storage for cross-agent coordination
-3. Claude Code uses Write, Edit, Bash tools for implementation
-4. Agents share progress through Claude Flow memory
-5. All code is written by Claude Code with full coordination
+3. Gemini Code uses Write, Edit, Bash tools for implementation
+4. Agents share progress through Gemini Flow memory
+5. All code is written by Gemini Code with full coordination
 
 ### GitHub Repository Management Example (NEW!)
-**Context:** Claude Code needs to manage a complex GitHub repository
+**Context:** Gemini Code needs to manage a complex GitHub repository
 
 **Step 1:** Initialize GitHub swarm
-- Tool: `mcp__claude-flow__github_swarm`
+- Tool: `mcp__gemini-flow__github_swarm`
 - Parameters: `{"repository": "owner/repo", "agents": 5, "focus": "maintenance"}`
 - Result: Specialized swarm for repository management
 
 **Step 2:** Analyze repository health
-- Tool: `mcp__claude-flow__repo_analyze`
+- Tool: `mcp__gemini-flow__repo_analyze`
 - Parameters: `{"deep": true, "include": ["issues", "prs", "code"]}`
 - Result: Comprehensive repository analysis
 
 **Step 3:** Enhance pull requests
-- Tool: `mcp__claude-flow__pr_enhance`
+- Tool: `mcp__gemini-flow__pr_enhance`
 - Parameters: `{"pr_number": 123, "add_tests": true, "improve_docs": true}`
 - Result: AI-powered PR improvements
 
 ## Best Practices for Coordination
 
 ### ✅ DO:
-- Use MCP tools to coordinate Claude Code's approach to complex tasks
+- Use MCP tools to coordinate Gemini Code's approach to complex tasks
 - Let the swarm break down problems into manageable pieces
 - Use memory tools to maintain context across sessions
 - Monitor coordination effectiveness with status tools
@@ -229,14 +229,14 @@ Once configured, Claude Flow MCP tools enhance Claude Code's coordination:
 - Leverage GitHub tools for repository management
 
 ### ❌ DON'T:
-- Expect agents to write code (Claude Code does all implementation)
-- Use MCP tools for file operations (use Claude Code's native tools)
-- Try to make agents execute bash commands (Claude Code handles this)
-- Confuse coordination with execution (MCP coordinates, Claude executes)
+- Expect agents to write code (Gemini Code does all implementation)
+- Use MCP tools for file operations (use Gemini Code's native tools)
+- Try to make agents execute bash commands (Gemini Code handles this)
+- Confuse coordination with execution (MCP coordinates, Gemini executes)
 
 ## Memory and Persistence
 
-The swarm provides persistent memory that helps Claude Code:
+The swarm provides persistent memory that helps Gemini Code:
 - Remember project context across sessions
 - Track decisions and rationale
 - Maintain consistency in large projects
@@ -245,16 +245,16 @@ The swarm provides persistent memory that helps Claude Code:
 
 ## Performance Benefits
 
-When using Claude Flow coordination with Claude Code:
+When using Gemini Flow coordination with Gemini Code:
 - **84.8% SWE-Bench solve rate** - Better problem-solving through coordination
 - **32.3% token reduction** - Efficient task breakdown reduces redundancy
 - **2.8-4.4x speed improvement** - Parallel coordination strategies
 - **27+ neural models** - Diverse cognitive approaches
 - **GitHub automation** - Streamlined repository management
 
-## Claude Code Hooks Integration
+## Gemini Code Hooks Integration
 
-Claude Flow includes powerful hooks that automate coordination:
+Gemini Flow includes powerful hooks that automate coordination:
 
 ### Pre-Operation Hooks
 - **Auto-assign agents** before file edits based on file type
@@ -274,7 +274,7 @@ Claude Flow includes powerful hooks that automate coordination:
 
 ### Session Management
 - **Generate summaries** at session end
-- **Persist state** across Claude Code sessions
+- **Persist state** across Gemini Code sessions
 - **Track metrics** for continuous improvement
 - **Restore previous** session context automatically
 - **Export workflows** for reuse
@@ -321,7 +321,7 @@ See `.claude/commands/` for detailed documentation on all features.
 1. **SPAWN ALL AGENTS IN ONE BATCH** - Use multiple tool calls in a SINGLE message
 2. **EXECUTE TASKS IN PARALLEL** - Never wait for one task before starting another
 3. **USE BATCHTOOL FOR EVERYTHING** - Multiple operations = Single message with multiple tools
-4. **ALL AGENTS MUST USE COORDINATION TOOLS** - Every spawned agent MUST use Claude Flow hooks and memory
+4. **ALL AGENTS MUST USE COORDINATION TOOLS** - Every spawned agent MUST use Gemini Flow hooks and memory
 
 ## 📋 MANDATORY AGENT COORDINATION PROTOCOL
 
@@ -332,27 +332,27 @@ When you spawn an agent using the Task tool, that agent MUST:
 **1️⃣ BEFORE Starting Work:**
 ```bash
 # Check previous work and load context
-npx claude-flow hooks pre-task --description "[agent task]" --auto-spawn-agents false
-npx claude-flow hooks session-restore --session-id "swarm-[id]" --load-memory true
+npx gemini-flow hooks pre-task --description "[agent task]" --auto-spawn-agents false
+npx gemini-flow hooks session-restore --session-id "swarm-[id]" --load-memory true
 ```
 
 **2️⃣ DURING Work (After EVERY Major Step):**
 ```bash
 # Store progress in memory after each file operation
-npx claude-flow hooks post-edit --file "[filepath]" --memory-key "swarm/[agent]/[step]"
+npx gemini-flow hooks post-edit --file "[filepath]" --memory-key "swarm/[agent]/[step]"
 
 # Store decisions and findings
-npx claude-flow hooks notification --message "[what was done]" --telemetry true
+npx gemini-flow hooks notification --message "[what was done]" --telemetry true
 
 # Check coordination with other agents
-npx claude-flow hooks pre-search --query "[what to check]" --cache-results true
+npx gemini-flow hooks pre-search --query "[what to check]" --cache-results true
 ```
 
 **3️⃣ AFTER Completing Work:**
 ```bash
 # Save all results and learnings
-npx claude-flow hooks post-task --task-id "[task]" --analyze-performance true
-npx claude-flow hooks session-end --export-metrics true --generate-summary true
+npx gemini-flow hooks post-task --task-id "[task]" --analyze-performance true
+npx gemini-flow hooks session-end --export-metrics true --generate-summary true
 ```
 
 ### 🎯 AGENT PROMPT TEMPLATE
@@ -363,10 +363,10 @@ When spawning agents, ALWAYS include these coordination instructions:
 You are the [Agent Type] agent in a coordinated swarm.
 
 MANDATORY COORDINATION:
-1. START: Run `npx claude-flow hooks pre-task --description "[your task]"`
-2. DURING: After EVERY file operation, run `npx claude-flow hooks post-edit --file "[file]" --memory-key "agent/[step]"`
-3. MEMORY: Store ALL decisions using `npx claude-flow hooks notification --message "[decision]"`
-4. END: Run `npx claude-flow hooks post-task --task-id "[task]" --analyze-performance true`
+1. START: Run `npx gemini-flow hooks pre-task --description "[your task]"`
+2. DURING: After EVERY file operation, run `npx gemini-flow hooks post-edit --file "[file]" --memory-key "agent/[step]"`
+3. MEMORY: Store ALL decisions using `npx gemini-flow hooks notification --message "[decision]"`
+4. END: Run `npx gemini-flow hooks post-task --task-id "[task]" --analyze-performance true`
 
 Your specific task: [detailed task description]
 
@@ -387,12 +387,12 @@ Message 5: Create file 2
 **THIS IS CORRECT ✅ (Parallel - ALWAYS DO THIS):**
 ```
 Message 1: [BatchTool]
-  - mcp__claude-flow__swarm_init
-  - mcp__claude-flow__agent_spawn (researcher)
-  - mcp__claude-flow__agent_spawn (coder)
-  - mcp__claude-flow__agent_spawn (analyst)
-  - mcp__claude-flow__agent_spawn (tester)
-  - mcp__claude-flow__agent_spawn (coordinator)
+  - mcp__gemini-flow__swarm_init
+  - mcp__gemini-flow__agent_spawn (researcher)
+  - mcp__gemini-flow__agent_spawn (coder)
+  - mcp__gemini-flow__agent_spawn (analyst)
+  - mcp__gemini-flow__agent_spawn (tester)
+  - mcp__gemini-flow__agent_spawn (coordinator)
 
 Message 2: [BatchTool]  
   - Write file1.js
@@ -409,20 +409,20 @@ When given ANY complex task with swarms:
 ```
 STEP 1: IMMEDIATE PARALLEL SPAWN (Single Message!)
 [BatchTool]:
-  - mcp__claude-flow__swarm_init { topology: "hierarchical", maxAgents: 8, strategy: "parallel" }
-  - mcp__claude-flow__agent_spawn { type: "architect", name: "System Designer" }
-  - mcp__claude-flow__agent_spawn { type: "coder", name: "API Developer" }
-  - mcp__claude-flow__agent_spawn { type: "coder", name: "Frontend Dev" }
-  - mcp__claude-flow__agent_spawn { type: "analyst", name: "DB Designer" }
-  - mcp__claude-flow__agent_spawn { type: "tester", name: "QA Engineer" }
-  - mcp__claude-flow__agent_spawn { type: "researcher", name: "Tech Lead" }
-  - mcp__claude-flow__agent_spawn { type: "coordinator", name: "PM" }
+  - mcp__gemini-flow__swarm_init { topology: "hierarchical", maxAgents: 8, strategy: "parallel" }
+  - mcp__gemini-flow__agent_spawn { type: "architect", name: "System Designer" }
+  - mcp__gemini-flow__agent_spawn { type: "coder", name: "API Developer" }
+  - mcp__gemini-flow__agent_spawn { type: "coder", name: "Frontend Dev" }
+  - mcp__gemini-flow__agent_spawn { type: "analyst", name: "DB Designer" }
+  - mcp__gemini-flow__agent_spawn { type: "tester", name: "QA Engineer" }
+  - mcp__gemini-flow__agent_spawn { type: "researcher", name: "Tech Lead" }
+  - mcp__gemini-flow__agent_spawn { type: "coordinator", name: "PM" }
   - TodoWrite { todos: [multiple todos at once] }
 
 STEP 2: PARALLEL TASK EXECUTION (Single Message!)
 [BatchTool]:
-  - mcp__claude-flow__task_orchestrate { task: "main task", strategy: "parallel" }
-  - mcp__claude-flow__memory_usage { action: "store", key: "init", value: {...} }
+  - mcp__gemini-flow__task_orchestrate { task: "main task", strategy: "parallel" }
+  - mcp__gemini-flow__memory_usage { action: "store", key: "init", value: {...} }
   - Multiple Read operations
   - Multiple Write operations
   - Multiple Bash commands
@@ -467,13 +467,13 @@ Dependencies: ↳ X deps | Actionable: ▶
 // ✅ CORRECT: SINGLE MESSAGE with ALL operations
 [BatchTool - Message 1]:
   // Initialize and spawn ALL agents at once
-  mcp__claude-flow__swarm_init { topology: "hierarchical", maxAgents: 8, strategy: "parallel" }
-  mcp__claude-flow__agent_spawn { type: "architect", name: "System Designer" }
-  mcp__claude-flow__agent_spawn { type: "coder", name: "API Developer" }
-  mcp__claude-flow__agent_spawn { type: "coder", name: "Auth Expert" }
-  mcp__claude-flow__agent_spawn { type: "analyst", name: "DB Designer" }
-  mcp__claude-flow__agent_spawn { type: "tester", name: "Test Engineer" }
-  mcp__claude-flow__agent_spawn { type: "coordinator", name: "Lead" }
+  mcp__gemini-flow__swarm_init { topology: "hierarchical", maxAgents: 8, strategy: "parallel" }
+  mcp__gemini-flow__agent_spawn { type: "architect", name: "System Designer" }
+  mcp__gemini-flow__agent_spawn { type: "coder", name: "API Developer" }
+  mcp__gemini-flow__agent_spawn { type: "coder", name: "Auth Expert" }
+  mcp__gemini-flow__agent_spawn { type: "analyst", name: "DB Designer" }
+  mcp__gemini-flow__agent_spawn { type: "tester", name: "Test Engineer" }
+  mcp__gemini-flow__agent_spawn { type: "coordinator", name: "Lead" }
   
   // Update ALL todos at once
   TodoWrite { todos: [
@@ -485,10 +485,10 @@ Dependencies: ↳ X deps | Actionable: ▶
   ]}
   
   // Start orchestration
-  mcp__claude-flow__task_orchestrate { task: "Build REST API", strategy: "parallel" }
+  mcp__gemini-flow__task_orchestrate { task: "Build REST API", strategy: "parallel" }
   
   // Store initial memory
-  mcp__claude-flow__memory_usage { action: "store", key: "project/init", value: { started: Date.now() } }
+  mcp__gemini-flow__memory_usage { action: "store", key: "project/init", value: { started: Date.now() } }
 
 [BatchTool - Message 2]:
   // Create ALL directories at once
@@ -518,9 +518,9 @@ Dependencies: ↳ X deps | Actionable: ▶
 ### 🚫 NEVER DO THIS (Sequential = WRONG):
 ```javascript
 // ❌ WRONG: Multiple messages, one operation each
-Message 1: mcp__claude-flow__swarm_init
-Message 2: mcp__claude-flow__agent_spawn (just one agent)
-Message 3: mcp__claude-flow__agent_spawn (another agent)
+Message 1: mcp__gemini-flow__swarm_init
+Message 2: mcp__gemini-flow__agent_spawn (just one agent)
+Message 3: mcp__gemini-flow__agent_spawn (another agent)
 Message 4: TodoWrite (single todo)
 Message 5: Write (single file)
 // This is 5x slower and wastes swarm coordination!
@@ -532,7 +532,7 @@ Every agent coordination step MUST use memory:
 
 ```
 // After each major decision or implementation
-mcp__claude-flow__memory_usage
+mcp__gemini-flow__memory_usage
   action: "store"
   key: "swarm-{id}/agent-{name}/{step}"
   value: {
@@ -544,12 +544,12 @@ mcp__claude-flow__memory_usage
   }
 
 // To retrieve coordination data
-mcp__claude-flow__memory_usage
+mcp__gemini-flow__memory_usage
   action: "retrieve"
   key: "swarm-{id}/agent-{name}/{step}"
 
 // To check all swarm progress
-mcp__claude-flow__memory_usage
+mcp__gemini-flow__memory_usage
   action: "list"
   pattern: "swarm-{id}/*"
 ```
@@ -559,7 +559,7 @@ mcp__claude-flow__memory_usage
 1. **Batch Everything**: Never operate on single files when multiple are needed
 2. **Parallel First**: Always think "what can run simultaneously?"
 3. **Memory is Key**: Use memory for ALL cross-agent coordination
-4. **Monitor Progress**: Use mcp__claude-flow__swarm_monitor for real-time tracking
+4. **Monitor Progress**: Use mcp__gemini-flow__swarm_monitor for real-time tracking
 5. **Auto-Optimize**: Let hooks handle topology and agent selection
 
 ### 🎨 VISUAL SWARM STATUS
@@ -583,9 +583,9 @@ Agent Activity:
 └── 🟢 coordinator: Monitoring progress...
 ```
 
-## Claude Flow v2.0.0 Features
+## Gemini Flow v2.0.0 Features
 
-Claude Flow extends the base coordination with:
+Gemini Flow extends the base coordination with:
 - **🔗 GitHub Integration** - Deep repository management
 - **🎯 Project Templates** - Quick-start for common projects
 - **📊 Advanced Analytics** - Detailed performance insights
@@ -595,10 +595,10 @@ Claude Flow extends the base coordination with:
 
 ## Support
 
-- Documentation: https://github.com/Ejb503/claude-flow
-- Issues: https://github.com/Ejb503/claude-flow/issues
-- Examples: https://github.com/Ejb503/claude-flow/tree/main/examples
+- Documentation: https://github.com/Ejb503/gemini-flow
+- Issues: https://github.com/Ejb503/gemini-flow/issues
+- Examples: https://github.com/Ejb503/gemini-flow/tree/main/examples
 
 ---
 
-Remember: **Claude Flow coordinates, Claude Code creates!** Start with `mcp__claude-flow__swarm_init` to enhance your development workflow.
+Remember: **Gemini Flow coordinates, Gemini Code creates!** Start with `mcp__gemini-flow__swarm_init` to enhance your development workflow.

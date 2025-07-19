@@ -1,6 +1,6 @@
-# Docker Testing Environment for claude-code-flow
+# Docker Testing Environment for gemini-flow
 
-This directory contains a comprehensive Docker testing environment for claude-code-flow and ruv-swarm integration.
+This directory contains a comprehensive Docker testing environment for gemini-flow and ruv-swarm integration.
 
 ## 🏗️ Architecture
 
@@ -187,7 +187,7 @@ infrastructure/docker/testing/
 │   ├── run-all-tests.sh       # Comprehensive test runner
 │   └── performance-monitor.js  # Performance monitoring
 └── volumes/
-    ├── claude-flow/           # claude-code-flow specific data
+    ├── claude-flow/           # gemini-flow specific data
     ├── ruv-swarm/             # ruv-swarm specific data
     └── shared/                # Cross-container shared data
 ```
@@ -285,10 +285,10 @@ Before deployment, verify:
 
 For issues or questions:
 
-- **GitHub Issues**: https://github.com/ruvnet/claude-code-flow/issues
-- **Documentation**: https://github.com/ruvnet/claude-code-flow/docs
+- **GitHub Issues**: https://github.com/ruvnet/gemini-flow/issues
+- **Documentation**: https://github.com/ruvnet/gemini-flow/docs
 - **Discord**: Community support channel
 
 ---
 
-**Note**: This Docker environment is optimized for testing claude-code-flow and ruv-swarm integration. For production deployments, review security configurations and resource limits.
+**Note**: This Docker environment is optimized for testing gemini-flow and ruv-swarm integration. For production deployments, review security configurations and resource limits.

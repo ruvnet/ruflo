@@ -15,7 +15,7 @@ function ensureDirSync(dirPath) {
 export class BackupManager {
   constructor(workingDir) {
     this.workingDir = workingDir;
-    this.backupDir = `${workingDir}/.claude-flow-backups`;
+    this.backupDir = `${workingDir}/.gemini-flow-backups`;
   }
 
   /**
@@ -320,8 +320,8 @@ export class BackupManager {
       'package.json',
       'package-lock.json',
       '.roomodes',
-      'claude-flow',
-      'memory/claude-flow-data.json'
+      'gemini-flow',
+      'memory/gemini-flow-data.json'
     ];
 
     for (const file of potentialFiles) {

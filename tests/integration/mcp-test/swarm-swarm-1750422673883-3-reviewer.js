@@ -1,4 +1,4 @@
-// reviewer output for: Conduct comprehensive analysis of claude-code-flow repository including architecture review, code quality assessment, documentation audit, and testing coverage evaluation
+// reviewer output for: Conduct comprehensive analysis of gemini-flow repository including architecture review, code quality assessment, documentation audit, and testing coverage evaluation
 // Swarm ID: swarm-1750422673883
 // Task: 3
 // Strategy: analysis
@@ -9,7 +9,7 @@ const swarmOutput = {
   agent: 'reviewer',
   task: 3,
   strategy: 'analysis',
-  objective: 'Conduct comprehensive analysis of claude-code-flow repository including architecture review, code quality assessment, documentation audit, and testing coverage evaluation',
+  objective: 'Conduct comprehensive analysis of gemini-flow repository including architecture review, code quality assessment, documentation audit, and testing coverage evaluation',
   timestamp: '2025-06-20T12:31:13.887Z',
   
   execute() {

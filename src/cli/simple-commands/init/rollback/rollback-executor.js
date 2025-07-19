@@ -157,7 +157,7 @@ export class RollbackExecutor {
   }
 
   /**
-   * Rollback Claude commands
+   * Rollback Gemini commands
    */
   async rollbackClaudeCommands() {
     const result = {
@@ -187,7 +187,7 @@ export class RollbackExecutor {
 
     } catch (error) {
       result.success = false;
-      result.errors.push(`Claude commands rollback failed: ${error.message}`);
+      result.errors.push(`Gemini commands rollback failed: ${error.message}`);
     }
 
     return result;
@@ -206,7 +206,7 @@ export class RollbackExecutor {
 
     try {
       const memoryItems = [
-        'memory/claude-flow-data.json',
+        'memory/gemini-flow-data.json',
         'memory/agents',
         'memory/sessions'
       ];
@@ -294,13 +294,13 @@ export class RollbackExecutor {
     };
 
     try {
-      const executablePath = `${this.workingDir}/claude-flow`;
+      const executablePath = `${this.workingDir}/gemini-flow`;
       
       try {
         await Deno.remove(executablePath);
-        result.actions.push('Removed claude-flow executable');
+        result.actions.push('Removed gemini-flow executable');
       } catch {
-        result.actions.push('claude-flow executable was already clean');
+        result.actions.push('gemini-flow executable was already clean');
       }
 
     } catch (error) {
@@ -361,7 +361,7 @@ export class RollbackExecutor {
         'CLAUDE.md',
         'memory-bank.md',
         'coordination.md',
-        'claude-flow',
+        'gemini-flow',
         '.roomodes',
         '.roo',
         '.claude',
@@ -442,7 +442,7 @@ export class RollbackExecutor {
         'coordination.md',
         '.roomodes',
         '.roo',
-        'claude-flow'
+        'gemini-flow'
       ];
 
       let foundArtifacts = 0;

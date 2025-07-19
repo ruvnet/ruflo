@@ -258,7 +258,7 @@ class ProgressMonitor {
 
 To use this optimized SPARC mode:
 
-1. Run directly: `npx claude-flow sparc run sparc-optimized "your complex task"`
+1. Run directly: `npx gemini-flow sparc run sparc-optimized "your complex task"`
 2. Use in workflow: Include `sparc-optimized` in your SPARC workflow
 3. Delegate tasks: Use `new_task` with parallel batching
 
@@ -266,10 +266,10 @@ To use this optimized SPARC mode:
 
 ```bash
 # Orchestrate complete feature development
-npx claude-flow sparc run sparc-optimized "implement complete e-commerce platform"
+npx gemini-flow sparc run sparc-optimized "implement complete e-commerce platform"
 
 # Parallel multi-service implementation
-npx claude-flow sparc run sparc-optimized "create microservices architecture with 5 services"
+npx gemini-flow sparc run sparc-optimized "create microservices architecture with 5 services"
 ```
 
 ## Validation Checklist (Parallelized)

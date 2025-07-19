@@ -1,21 +1,21 @@
-# Claude-Flow MCP Wrapper Guide
+# Gemini-Flow MCP Wrapper Guide
 
 ## Overview
 
-The Claude-Flow MCP Wrapper is a new architecture that replaces the templated approach with a dynamic wrapper around Claude Code's MCP tools. This provides automatic SPARC/swarm prompt injection while leveraging Claude Code's native capabilities.
+The Gemini-Flow MCP Wrapper is a new architecture that replaces the templated approach with a dynamic wrapper around Gemini Code's MCP tools. This provides automatic SPARC/swarm prompt injection while leveraging Gemini Code's native capabilities.
 
 ## Architecture
 
 ### Previous Architecture (Templated)
 ```
-User → claude-flow MCP → Template Engine → File Generation
+User → gemini-flow MCP → Template Engine → File Generation
                       ↓
                     Gemini CLI (optional)
 ```
 
 ### New Architecture (Wrapper)
 ```
-User → claude-flow MCP Wrapper → Claude Code MCP Tools
+User → gemini-flow MCP Wrapper → Gemini Code MCP Tools
            ↓                           ↑
     Prompt Injection              Native Tools
 ```
@@ -23,9 +23,9 @@ User → claude-flow MCP Wrapper → Claude Code MCP Tools
 ## Key Benefits
 
 1. **No More Templates**: Removes the need for hardcoded file generation templates
-2. **Real Claude Intelligence**: Uses Claude Code's actual AI capabilities
+2. **Real Gemini Intelligence**: Uses Gemini Code's actual AI capabilities
 3. **Automatic Enhancement**: Injects SPARC methodology without manual prompting
-4. **Tool Pass-Through**: Direct access to all Claude Code tools
+4. **Tool Pass-Through**: Direct access to all Gemini Code tools
 5. **Simplified Maintenance**: No need to update templates for new patterns
 
 ## How It Works
@@ -35,7 +35,7 @@ When a SPARC tool is called (e.g., `sparc_coder`), the wrapper:
 - Intercepts the request
 - Extracts the task and context
 - Builds an enhanced prompt with SPARC methodology
-- Forwards to Claude Code's `Task` tool
+- Forwards to Gemini Code's `Task` tool
 
 ### 2. Prompt Injection
 The wrapper automatically adds:
@@ -57,7 +57,7 @@ The wrapper automatically adds:
 }
 ```
 
-**Enhanced Prompt Sent to Claude Code:**
+**Enhanced Prompt Sent to Gemini Code:**
 ```
 SPARC: coder
 
@@ -97,7 +97,7 @@ Autonomous code generation and implementation
 npm run mcp:wrapper
 
 # Or use the executable
-./claude-flow-mcp-wrapper
+./gemini-flow-mcp-wrapper
 
 # Build and run compiled version
 npm run mcp:wrapper:build
@@ -106,11 +106,11 @@ npm run mcp:wrapper:serve
 
 ### Configuration
 
-The wrapper is configured via `claude-flow-wrapper.mcp.json`:
+The wrapper is configured via `gemini-flow-wrapper.mcp.json`:
 
 ```json
 {
-  "name": "claude-flow-wrapper",
+  "name": "gemini-flow-wrapper",
   "tools": {
     "sparc_coder": {
       "passThrough": "Task",
@@ -122,13 +122,13 @@ The wrapper is configured via `claude-flow-wrapper.mcp.json`:
 
 ### Integration with Claude
 
-Add to your Claude desktop configuration:
+Add to your Gemini desktop configuration:
 
 ```json
 {
   "servers": {
-    "claude-flow": {
-      "command": "/path/to/claude-flow-mcp-wrapper"
+    "gemini-flow": {
+      "command": "/path/to/gemini-flow-mcp-wrapper"
     }
   }
 }
@@ -198,8 +198,8 @@ function generateCode(task) {
 
 **After (Wrapper-based):**
 ```javascript
-// Just forward to Claude Code with enhanced prompt
-return this.forwardToClaudeCode('Task', {
+// Just forward to Gemini CLI with enhanced prompt
+return this.forwardToGeminiCli('Task', {
   description: `SPARC ${mode}`,
   prompt: enhancedPrompt
 });
@@ -253,8 +253,8 @@ sparc_coder({
 2. Verify SPARC modes are loading correctly
 3. Check console for error messages
 
-### Claude Code Connection Issues
-1. Ensure Claude Code is installed
+### Gemini Code Connection Issues
+1. Ensure Gemini Code is installed
 2. Check MCP server permissions
 3. Verify stdio communication
 
@@ -266,7 +266,7 @@ sparc_coder({
 3. Mode automatically available as `sparc_<mode>`
 
 ### Customizing Prompt Injection
-Edit `buildEnhancedPrompt` method in `claude-code-wrapper.ts`:
+Edit `buildEnhancedPrompt` method in `gemini-cli-wrapper.ts`:
 ```typescript
 private buildEnhancedPrompt(mode: SparcMode, task: string, context?: SparcContext): string {
   // Customize prompt building logic
@@ -276,9 +276,9 @@ private buildEnhancedPrompt(mode: SparcMode, task: string, context?: SparcContex
 ### Testing
 ```bash
 # Test wrapper functionality
-npm test src/mcp/claude-code-wrapper.test.ts
+npm test src/mcp/gemini-cli-wrapper.test.ts
 
-# Test with real Claude Code
+# Test with real Gemini CLI
 ./test-wrapper-integration.sh
 ```
 
@@ -293,7 +293,7 @@ npm test src/mcp/claude-code-wrapper.test.ts
 
 1. **Input Validation**: All inputs validated before forwarding
 2. **No Code Generation**: No hardcoded templates that could have vulnerabilities
-3. **Sandboxed Execution**: Relies on Claude Code's security model
+3. **Sandboxed Execution**: Relies on Gemini Code's security model
 4. **Environment Isolation**: No environment variable exposure
 
 ## Future Enhancements

@@ -1,12 +1,12 @@
-// slash-commands.js - Create Claude Code slash commands
+// slash-commands.js - Create Gemini Code slash commands
 
 import { createSparcSlashCommand, createMainSparcCommand } from './sparc-commands.js';
-import { createClaudeFlowCommands } from './claude-flow-commands.js';
+import { createClaudeFlowCommands } from './gemini-flow-commands.js';
 
-// Create Claude Code slash commands for SPARC modes
+// Create Gemini Code slash commands for SPARC modes
 export async function createClaudeSlashCommands(workingDir) {
   try {
-    console.log('\n📝 Creating Claude Code slash commands...');
+    console.log('\n📝 Creating Gemini Code slash commands...');
     
     // Parse .roomodes to get all SPARC modes
     const roomodesContent = await Deno.readTextFile(`${workingDir}/.roomodes`);
@@ -26,10 +26,10 @@ export async function createClaudeSlashCommands(workingDir) {
     await Deno.writeTextFile(`${workingDir}/.claude/commands/sparc.md`, mainSparcCommand);
     console.log('  ✓ Created main slash command: /sparc');
     
-    // Create claude-flow specific commands
+    // Create gemini-flow specific commands
     await createClaudeFlowCommands(workingDir);
     
   } catch (err) {
-    console.log(`  ⚠️  Could not create Claude Code slash commands: ${err.message}`);
+    console.log(`  ⚠️  Could not create Gemini Code slash commands: ${err.message}`);
   }
 }

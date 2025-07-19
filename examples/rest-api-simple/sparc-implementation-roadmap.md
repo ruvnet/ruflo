@@ -141,7 +141,7 @@ If you prefer to execute each phase manually:
 
 1. **Start with core refactoring**:
    ```bash
-   cd /workspaces/claude-code-flow/examples/rest-api-simple
+   cd /workspaces/gemini-flow/examples/rest-api-simple
    # Backup current implementation
    cp index.js index.js.backup
    ```

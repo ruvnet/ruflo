@@ -1,15 +1,15 @@
-# Claude-Flow Web UI Implementation
+# Gemini-Flow Web UI Implementation
 
 ## Backend Infrastructure Complete
 
-I have successfully implemented the console-style web UI backend infrastructure for Claude Code as the Backend Implementation Lead. Here's what has been delivered:
+I have successfully implemented the console-style web UI backend infrastructure for Gemini CLI as the Backend Implementation Lead. Here's what has been delivered:
 
 ### ✅ Implemented Features
 
 #### 1. UI Flag Parsing
 - **Location**: `/src/cli/simple-cli.ts` (lines 547-549)
 - **Implementation**: Added `--ui`, `--no-ui`, `--port`, and `--host` options to the start command
-- **Usage**: `claude-flow start --ui --port 3002 --host localhost`
+- **Usage**: `gemini-flow start --ui --port 3002 --host localhost`
 
 #### 2. Web Server Infrastructure
 - **Location**: `/src/cli/simple-orchestrator.ts` (enhanced existing implementation)
@@ -94,7 +94,7 @@ I have successfully implemented the console-style web UI backend infrastructure 
 - **Responsive design** that works on desktop and mobile
 
 #### Interaction Features
-- **Command prompt** with `claude-flow>` prefix
+- **Command prompt** with `gemini-flow>` prefix
 - **Syntax highlighting** for different message types (success, error, warning, info)
 - **Command history** with persistent storage across sessions
 - **Auto-scroll** to follow command output
@@ -120,24 +120,24 @@ I have successfully implemented the console-style web UI backend infrastructure 
 
 #### Command Line Options
 ```bash
-claude-flow start --ui --port 3002 --host localhost
+gemini-flow start --ui --port 3002 --host localhost
 ```
 
 #### Environment Variables
-- `CLAUDE_FLOW_WEB_MODE=true` - Enables web-friendly output formatting
+- `GEMINI_FLOW_WEB_MODE=true` - Enables web-friendly output formatting
 
 ### 🚀 Usage Examples
 
 #### Starting Web UI
 ```bash
 # Start with default settings (port 3000)
-claude-flow start --ui
+gemini-flow start --ui
 
 # Start with custom port
-claude-flow start --ui --port 3002
+gemini-flow start --ui --port 3002
 
 # Start with custom host and port
-claude-flow start --ui --host 0.0.0.0 --port 8080
+gemini-flow start --ui --host 0.0.0.0 --port 8080
 ```
 
 #### Accessing the Interface
@@ -146,7 +146,7 @@ claude-flow start --ui --host 0.0.0.0 --port 8080
 - **Health Check**: `http://localhost:3002/health`
 
 #### Supported Commands
-All standard claude-flow CLI commands work through the web interface:
+All standard gemini-flow CLI commands work through the web interface:
 - `help` - Show available commands
 - `status` - Display system status
 - `agent list` - List agents
@@ -214,6 +214,6 @@ All standard claude-flow CLI commands work through the web interface:
 
 ## Summary
 
-The backend infrastructure for the console-style web UI is now complete and functional. Users can start the web interface using `claude-flow start --ui` and access a full-featured terminal emulator in their browser at `http://localhost:3000` (or custom port). The implementation provides real-time command execution, output streaming, and maintains full compatibility with the existing CLI system.
+The backend infrastructure for the console-style web UI is now complete and functional. Users can start the web interface using `gemini-flow start --ui` and access a full-featured terminal emulator in their browser at `http://localhost:3000` (or custom port). The implementation provides real-time command execution, output streaming, and maintains full compatibility with the existing CLI system.
 
 **Ready for integration with frontend team's console interface design.**

@@ -1,6 +1,6 @@
 # Configuration Guide
 
-Claude-Flow uses a comprehensive configuration system that allows fine-tuning of all system components. This guide covers all configuration options, examples, and best practices.
+Gemini-Flow uses a comprehensive configuration system that allows fine-tuning of all system components. This guide covers all configuration options, examples, and best practices.
 
 ## Configuration File Structure
 
@@ -624,4 +624,4 @@ claude-flow config validate --strict
 - Test backup restoration procedures
 - Implement proper retention policies
 
-This configuration guide provides comprehensive coverage of all Claude-Flow configuration options. Use these settings to optimize Claude-Flow for your specific use case and environment.
+This configuration guide provides comprehensive coverage of all Gemini-Flow configuration options. Use these settings to optimize Gemini-Flow for your specific use case and environment.

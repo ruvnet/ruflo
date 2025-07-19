@@ -39,18 +39,18 @@ const objective = args.join(' ');
 if (!objective && !flags.help) {
   console.error("❌ Usage: swarm <objective>");
   console.log(`
-🐝 Claude Flow Advanced Swarm System
+🐝 Gemini Flow Advanced Swarm System
 
 USAGE:
-  claude-flow swarm <objective> [options]
+  gemini-flow swarm <objective> [options]
 
 EXAMPLES:
-  claude-flow swarm "Build a REST API" --strategy development
-  claude-flow swarm "Research cloud architecture" --strategy research --ui
-  claude-flow swarm "Analyze data trends" --strategy analysis --parallel
-  claude-flow swarm "Optimize performance" --distributed --monitor
+  gemini-flow swarm "Build a REST API" --strategy development
+  gemini-flow swarm "Research cloud architecture" --strategy research --ui
+  gemini-flow swarm "Analyze data trends" --strategy analysis --parallel
+  gemini-flow swarm "Optimize performance" --distributed --monitor
 
-Run 'claude-flow swarm --help' for full options
+Run 'gemini-flow swarm --help' for full options
 `);
   Deno.exit(1);
 }
@@ -106,19 +106,19 @@ if (!swarmPath) {
     Deno.exit(0);
   }
   
-  // Try to use Claude wrapper approach
+  // Try to use Gemini wrapper approach
   try {
     const { execSync } = await import('child_process');
     
-    // Check if claude command exists
+    // Check if gemini command exists
     try {
       execSync('which claude', { stdio: 'ignore' });
     } catch (e) {
-      // Claude not found, show fallback message
+      // Gemini not found, show fallback message
       console.log(`✅ Swarm initialized with ID: ${swarmId}`);
-      console.log('\n⚠️  Note: Advanced swarm features require Claude or local installation.');
+      console.log('\n⚠️  Note: Advanced swarm features require Gemini or local installation.');
       console.log('Install Claude: https://claude.ai/code');
-      console.log('Or install locally: npm install -g claude-flow@latest');
+      console.log('Or install locally: npm install -g gemini-flow@latest');
       console.log('\nThe swarm system would coordinate the following:');
       console.log('1. Agent spawning and task distribution');
       console.log('2. Parallel execution of subtasks');
@@ -128,8 +128,8 @@ if (!swarmPath) {
       Deno.exit(0);
     }
     
-    // Claude is available, use it to run swarm
-    console.log('🚀 Launching swarm via Claude wrapper...');
+    // Gemini is available, use it to run swarm
+    console.log('🚀 Launching swarm via Gemini wrapper...');
     
     // Build the prompt for Claude
     const swarmPrompt = `Execute a swarm coordination task with the following configuration:
@@ -164,7 +164,7 @@ Please coordinate this swarm task by:
 
 Use all available tools including file operations, web search, and code execution as needed.`;
 
-    // Execute Claude non-interactively by piping the prompt
+    // Execute Gemini non-interactively by piping the prompt
     const { spawn } = await import('child_process');
     
     const claudeArgs = [];
@@ -174,7 +174,7 @@ Use all available tools including file operations, web search, and code executio
       claudeArgs.push('--dangerously-skip-permissions');
     }
     
-    // Spawn claude process
+    // Spawn gemini process
     const claudeProcess = spawn('claude', claudeArgs, {
       stdio: ['pipe', 'inherit', 'inherit'],
       shell: false
@@ -190,7 +190,7 @@ Use all available tools including file operations, web search, and code executio
         if (code === 0) {
           resolve();
         } else {
-          reject(new Error(`Claude process exited with code ${code}`));
+          reject(new Error(`Gemini process exited with code ${code}`));
         }
       });
       
@@ -200,11 +200,11 @@ Use all available tools including file operations, web search, and code executio
     });
     
   } catch (error) {
-    // Fallback if Claude execution fails
+    // Fallback if Gemini execution fails
     console.log(`✅ Swarm initialized with ID: ${swarmId}`);
-    console.log('\n⚠️  Note: Advanced swarm features require Claude or local installation.');
+    console.log('\n⚠️  Note: Advanced swarm features require Gemini or local installation.');
     console.log('Install Claude: https://claude.ai/code');
-    console.log('Or install locally: npm install -g claude-flow@latest');
+    console.log('Or install locally: npm install -g gemini-flow@latest');
     console.log('\nThe swarm system would coordinate the following:');
     console.log('1. Agent spawning and task distribution');
     console.log('2. Parallel execution of subtasks');

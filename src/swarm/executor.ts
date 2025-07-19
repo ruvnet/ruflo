@@ -186,30 +186,30 @@ export class TaskExecutor extends EventEmitter {
     }
   }
 
-  async executeClaudeTask(
+  async executeGeminiTask(
     task: TaskDefinition,
     agent: AgentState,
-    claudeOptions: ClaudeExecutionOptions = {}
+    geminiOptions: GeminiExecutionOptions = {}
   ): Promise<ExecutionResult> {
-    const sessionId = generateId('claude-execution');
+    const sessionId = generateId('gemini-execution');
     const context = await this.createExecutionContext(task, agent);
     
-    this.logger.info('Starting Claude task execution', {
+    this.logger.info('Starting Gemini task execution', {
       sessionId,
       taskId: task.id.id,
       agentId: agent.id.id
     });
 
     try {
-      return await this.executeClaudeWithTimeout(
+      return await this.executeGeminiWithTimeout(
         sessionId,
         task,
         agent,
         context,
-        claudeOptions
+        geminiOptions
       );
     } catch (error) {
-      this.logger.error('Claude task execution failed', {
+      this.logger.error('Gemini task execution failed', {
         sessionId,
         error: (error instanceof Error ? error.message : String(error))
       });
@@ -257,30 +257,30 @@ export class TaskExecutor extends EventEmitter {
     });
   }
 
-  private async executeClaudeWithTimeout(
+  private async executeGeminiWithTimeout(
     sessionId: string,
     task: TaskDefinition,
     agent: AgentState,
     context: ExecutionContext,
-    options: ClaudeExecutionOptions
+    options: GeminiExecutionOptions
   ): Promise<ExecutionResult> {
     const startTime = Date.now();
     const timeout = options.timeout || this.config.timeoutMs;
 
-    // Build Claude command
-    const command = this.buildClaudeCommand(task, agent, options);
+    // Build Gemini command
+    const command = this.buildGeminiCommand(task, agent, options);
     
     // Create execution environment
     const env = {
       ...process.env,
       ...context.environment,
-      CLAUDE_TASK_ID: task.id.id,
-      CLAUDE_AGENT_ID: agent.id.id,
-      CLAUDE_SESSION_ID: sessionId,
-      CLAUDE_WORKING_DIR: context.workingDirectory
+      GEMINI_TASK_ID: task.id.id,
+      GEMINI_AGENT_ID: agent.id.id,
+      GEMINI_SESSION_ID: sessionId,
+      GEMINI_WORKING_DIR: context.workingDirectory
     };
 
-    this.logger.debug('Executing Claude command', {
+    this.logger.debug('Executing Gemini command', {
       sessionId,
       command: command.command,
       args: command.args,
@@ -297,7 +297,7 @@ export class TaskExecutor extends EventEmitter {
       const timeoutHandle = setTimeout(() => {
         isTimeout = true;
         if (process) {
-          this.logger.warn('Claude execution timeout, killing process', {
+          this.logger.warn('Gemini execution timeout, killing process', {
             sessionId,
             pid: process.pid,
             timeout
@@ -316,7 +316,7 @@ export class TaskExecutor extends EventEmitter {
       }, timeout);
 
       try {
-        // Spawn Claude process
+        // Spawn Gemini process
         process = spawn(command.command, command.args, {
           cwd: context.workingDirectory,
           env,
@@ -326,11 +326,11 @@ export class TaskExecutor extends EventEmitter {
 
         if (!process.pid) {
           clearTimeout(timeoutHandle);
-          reject(new Error('Failed to spawn Claude process'));
+          reject(new Error('Failed to spawn Gemini process'));
           return;
         }
 
-        this.logger.info('Claude process started', {
+        this.logger.info('Gemini process started', {
           sessionId,
           pid: process.pid,
           command: command.command
@@ -374,7 +374,7 @@ export class TaskExecutor extends EventEmitter {
           const duration = Date.now() - startTime;
           const exitCode = code || 0;
           
-          this.logger.info('Claude process completed', {
+          this.logger.info('Gemini process completed', {
             sessionId,
             exitCode,
             signal,
@@ -407,9 +407,9 @@ export class TaskExecutor extends EventEmitter {
             };
 
             if (isTimeout) {
-              reject(new Error(`Claude execution timed out after ${timeout}ms`));
+              reject(new Error(`Gemini execution timed out after ${timeout}ms`));
             } else if (exitCode !== 0) {
-              reject(new Error(`Claude execution failed with exit code ${exitCode}: ${errorBuffer}`));
+              reject(new Error(`Gemini execution failed with exit code ${exitCode}: ${errorBuffer}`));
             } else {
               resolve(result);
             }
@@ -422,7 +422,7 @@ export class TaskExecutor extends EventEmitter {
         // Handle process errors
         process.on('error', (error: Error) => {
           clearTimeout(timeoutHandle);
-          this.logger.error('Claude process error', {
+          this.logger.error('Gemini process error', {
             sessionId,
             error: (error instanceof Error ? error.message : String(error))
           });
@@ -447,16 +447,16 @@ export class TaskExecutor extends EventEmitter {
     });
   }
 
-  private buildClaudeCommand(
+  private buildGeminiCommand(
     task: TaskDefinition,
     agent: AgentState,
-    options: ClaudeExecutionOptions
-  ): ClaudeCommand {
+    options: GeminiExecutionOptions
+  ): GeminiCommand {
     const args: string[] = [];
     let input = '';
 
     // Build prompt
-    const prompt = this.buildClaudePrompt(task, agent);
+    const prompt = this.buildGeminiPrompt(task, agent);
     
     if (options.useStdin) {
       // Send prompt via stdin
@@ -495,13 +495,13 @@ export class TaskExecutor extends EventEmitter {
     }
 
     return {
-      command: options.claudePath || 'claude',
+      command: options.geminiPath || 'gemini',
       args,
       input
     };
   }
 
-  private buildClaudePrompt(task: TaskDefinition, agent: AgentState): string {
+  private buildGeminiPrompt(task: TaskDefinition, agent: AgentState): string {
     const sections: string[] = [];
 
     // Agent identification
@@ -1016,18 +1016,18 @@ class ProcessPool extends EventEmitter {
 
 // ===== INTERFACES =====
 
-export interface ClaudeExecutionOptions {
+export interface GeminiExecutionOptions {
   model?: string;
   maxTokens?: number;
   temperature?: number;
   timeout?: number;
-  claudePath?: string;
+  geminiPath?: string;
   useStdin?: boolean;
   detached?: boolean;
   outputFormat?: string;
 }
 
-export interface ClaudeCommand {
+export interface GeminiCommand {
   command: string;
   args: string[];
   input?: string;

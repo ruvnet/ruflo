@@ -104,7 +104,7 @@ rest-api-advanced/
 
 ```bash
 # Navigate to the project
-cd /workspaces/claude-code-flow/examples/05-swarm-apps/rest-api-advanced
+cd /workspaces/gemini-flow/examples/05-swarm-apps/rest-api-advanced
 
 # Run the quick start script
 ./scripts/quick-start.sh

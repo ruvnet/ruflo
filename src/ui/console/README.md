@@ -1,6 +1,6 @@
-# Claude Code Web Console
+# Gemini Code Web Console
 
-A modern web-based terminal interface for Claude Code, providing an authentic console experience with real-time communication to the backend MCP server.
+A modern web-based terminal interface for Gemini Code, providing an authentic console experience with real-time communication to the backend MCP server.
 
 ## Features
 
@@ -12,7 +12,7 @@ A modern web-based terminal interface for Claude Code, providing an authentic co
 - **ANSI Color Support**: Processes ANSI escape codes for colored output
 
 ### WebSocket Communication
-- **Real-time Bidirectional Communication**: Connects to Claude Code MCP server via WebSocket
+- **Real-time Bidirectional Communication**: Connects to Gemini Code MCP server via WebSocket
 - **Auto-reconnection**: Automatic reconnection with exponential backoff
 - **Message Queuing**: Queues messages when disconnected and sends when reconnected
 - **Heartbeat Mechanism**: Monitors connection health with ping/pong
@@ -22,11 +22,11 @@ A modern web-based terminal interface for Claude Code, providing an authentic co
 - **Connection Settings**: Server URL, authentication tokens, auto-connect
 - **Appearance Customization**: Multiple themes (dark, light, classic, matrix), font size, line height
 - **Behavior Options**: Auto-scroll, timestamps, sound notifications, history limits
-- **Claude Flow Configuration**: Default SPARC modes, swarm strategies, coordination modes
+- **Gemini Flow Configuration**: Default SPARC modes, swarm strategies, coordination modes
 - **Persistent Storage**: Settings saved to localStorage with import/export capabilities
 
-### Claude Flow Integration
-- **Built-in Commands**: Support for all major Claude Flow commands
+### Gemini Flow Integration
+- **Built-in Commands**: Support for all major Gemini Flow commands
 - **SPARC Mode Support**: Integration with all 17 specialized SPARC modes
 - **Swarm Management**: Web interface for swarm coordination and monitoring
 - **Real-time Status**: Live updates of agent status, memory usage, and system metrics
@@ -58,9 +58,9 @@ src/ui/console/
 ## Usage
 
 ### Starting the Web Console
-1. Start Claude Code with HTTP transport enabled:
+1. Start Gemini Code with HTTP transport enabled:
    ```bash
-   claude-flow start --transport http --port 3000
+   gemini-flow start --transport http --port 3000
    ```
 
 2. Open web browser and navigate to:
@@ -72,10 +72,10 @@ src/ui/console/
 
 ### Basic Commands
 - `help` - Show all available commands
-- `connect [url] [token]` - Connect to Claude Code server
+- `connect [url] [token]` - Connect to Gemini Code server
 - `status` - Show connection and system status
 - `clear` - Clear console output (or Ctrl+L)
-- `claude-flow <command>` - Execute Claude Flow commands
+- `gemini-flow <command>` - Execute Gemini Flow commands
 - `swarm <action>` - Manage swarms
 - `tools` - List available tools
 
@@ -92,7 +92,7 @@ Access via the ⚙️ Settings button to configure:
 - Server connection details
 - Visual appearance and themes
 - Console behavior preferences
-- Claude Flow default settings
+- Gemini Flow default settings
 
 ## Themes
 
@@ -155,7 +155,7 @@ The console uses CSS custom properties for easy theming:
 ## Development
 
 ### Local Development
-1. Ensure Claude Code backend is running with HTTP transport
+1. Ensure Gemini Code backend is running with HTTP transport
 2. Open `src/ui/console/index.html` in a web browser
 3. Modify settings to point to your local server URL
 
@@ -206,7 +206,7 @@ app.use('/console', express.static('src/ui/console'));
 ## Troubleshooting
 
 ### Common Issues
-1. **Connection Failed**: Check server URL and ensure Claude Code is running with HTTP transport
+1. **Connection Failed**: Check server URL and ensure Gemini Code is running with HTTP transport
 2. **WebSocket Errors**: Verify firewall settings and proxy configuration
 3. **Authentication Issues**: Check bearer token format and validity
 4. **Mobile Display Issues**: Ensure viewport meta tag is present
@@ -221,4 +221,4 @@ window.claudeConsole.wsClient.debugMode = true;
 
 ## License
 
-Part of the Claude Code project. See main project LICENSE for details.
+Part of the Gemini Code project. See main project LICENSE for details.

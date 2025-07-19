@@ -1,6 +1,6 @@
 # Hive Mind System - Advanced Swarm Intelligence
 
-The Hive Mind system is the revolutionary centerpiece of Claude Flow v2.0.0, introducing queen-led swarm intelligence with collective memory, emergent behavior, and adaptive coordination. This document provides comprehensive coverage of the Hive Mind's capabilities and implementation.
+The Hive Mind system is the revolutionary centerpiece of Gemini Flow v2.0.0, introducing queen-led swarm intelligence with collective memory, emergent behavior, and adaptive coordination. This document provides comprehensive coverage of the Hive Mind's capabilities and implementation.
 
 ## 🧠 Conceptual Overview
 
@@ -112,26 +112,26 @@ Collective Memory
 
 ```bash
 # Access collective memory
-claude-flow hive-mind memory show \
+gemini-flow hive-mind memory show \
   --type "strategic" \
   --timeframe "30d" \
   --pattern-analysis
 
 # Store strategic decision
-claude-flow hive-mind memory store \
+gemini-flow hive-mind memory store \
   --type "strategic" \
   --key "optimization-strategy-2024" \
   --value "neural-weighted-load-balancing" \
   --importance "critical"
 
 # Query memory patterns
-claude-flow hive-mind memory query \
+gemini-flow hive-mind memory query \
   --pattern "successful-optimizations" \
   --confidence-threshold 0.8 \
   --return-contexts
 
 # Analyze memory evolution
-claude-flow hive-mind memory analyze \
+gemini-flow hive-mind memory analyze \
   --evolution-tracking \
   --pattern-emergence \
   --performance-correlation
@@ -168,7 +168,7 @@ The Hive Mind can create custom topologies combining multiple patterns:
 
 ```bash
 # Create hybrid topology
-claude-flow hive-mind topology create \
+gemini-flow hive-mind topology create \
   --name "enterprise-development" \
   --pattern "hierarchical-mesh-hybrid" \
   --zones '[
@@ -217,7 +217,7 @@ The heart of the Hive Mind's intelligence is its neural coordination engine:
 #### Training Process
 ```bash
 # Train coordination network
-claude-flow hive-mind neural train coordination \
+gemini-flow hive-mind neural train coordination \
   --training-data "swarm-interactions-30d" \
   --validation-split 0.2 \
   --epochs 100 \
@@ -227,7 +227,7 @@ claude-flow hive-mind neural train coordination \
   --model-checkpoints
 
 # Monitor training progress
-claude-flow hive-mind neural monitor training \
+gemini-flow hive-mind neural monitor training \
   --model "coordination-v3" \
   --metrics '["loss","accuracy","validation-loss","coordination-efficiency"]' \
   --live-updates
@@ -240,14 +240,14 @@ The Hive Mind predicts future performance based on current conditions:
 
 ```bash
 # Predict task completion time
-claude-flow hive-mind predict completion-time \
+gemini-flow hive-mind predict completion-time \
   --task-description "implement-authentication-system" \
   --available-agents 6 \
   --complexity-level "high" \
   --confidence-interval 0.95
 
 # Predict resource requirements
-claude-flow hive-mind predict resources \
+gemini-flow hive-mind predict resources \
   --project-scope "full-stack-application" \
   --timeline "2-weeks" \
   --quality-requirements "enterprise"
@@ -258,7 +258,7 @@ Proactive identification of potential performance issues:
 
 ```bash
 # Analyze bottleneck risks
-claude-flow hive-mind analyze bottleneck-risks \
+gemini-flow hive-mind analyze bottleneck-risks \
   --current-workload \
   --agent-utilization \
   --resource-constraints \
@@ -279,7 +279,7 @@ Knowledge gained in one domain transfers to related areas:
 
 ```bash
 # Transfer learning between projects
-claude-flow hive-mind transfer-learning \
+gemini-flow hive-mind transfer-learning \
   --source-domain "web-development" \
   --target-domain "mobile-development" \
   --similarity-threshold 0.7 \
@@ -311,7 +311,7 @@ Define custom agent groups:
 
 ```bash
 # Create specialized constellation
-claude-flow hive-mind constellation create \
+gemini-flow hive-mind constellation create \
   --name "ai-research-team" \
   --composition '{
     "lead-researcher": {"type":"researcher","specialization":"ai-theory"},
@@ -330,14 +330,14 @@ The Hive Mind uses neural networks to optimize its own performance:
 
 ```bash
 # Auto-optimize hive mind performance
-claude-flow hive-mind optimize \
+gemini-flow hive-mind optimize \
   --target-metric "overall-efficiency" \
   --optimization-strategy "neural-guided" \
   --constraints '{"memory":"<16GB","cpu":"<80%"}' \
   --neural-epochs 50
 
 # Optimize specific components
-claude-flow hive-mind optimize coordination \
+gemini-flow hive-mind optimize coordination \
   --focus-area "task-distribution" \
   --improvement-target 0.15 \
   --neural-assistance
@@ -348,7 +348,7 @@ Intelligent scaling based on workload:
 
 ```bash
 # Auto-scale swarm
-claude-flow hive-mind scale \
+gemini-flow hive-mind scale \
   --mode "adaptive" \
   --min-agents 3 \
   --max-agents 20 \
@@ -356,7 +356,7 @@ claude-flow hive-mind scale \
   --neural-prediction
 
 # Predictive scaling
-claude-flow hive-mind scale predict \
+gemini-flow hive-mind scale predict \
   --workload-forecast "next-7d" \
   --resource-planning \
   --cost-optimization
@@ -369,7 +369,7 @@ The Hive Mind includes advanced fault tolerance:
 
 ```bash
 # Configure self-healing
-claude-flow hive-mind resilience configure \
+gemini-flow hive-mind resilience configure \
   --agent-redundancy 2 \
   --automatic-recovery true \
   --backup-queens 1 \
@@ -377,7 +377,7 @@ claude-flow hive-mind resilience configure \
   --neural-model-backup true
 
 # Test resilience
-claude-flow hive-mind resilience test \
+gemini-flow hive-mind resilience test \
   --failure-scenarios '["agent-crash","network-partition","memory-corruption"]' \
   --recovery-time-targets \
   --data-loss-tolerance "zero"
@@ -388,7 +388,7 @@ Comprehensive backup and recovery capabilities:
 
 ```bash
 # Create full hive mind backup
-claude-flow hive-mind backup create \
+gemini-flow hive-mind backup create \
   --type "comprehensive" \
   --include-neural-weights \
   --include-memory-state \
@@ -396,7 +396,7 @@ claude-flow hive-mind backup create \
   --compression "intelligent"
 
 # Restore from backup
-claude-flow hive-mind restore \
+gemini-flow hive-mind restore \
   --backup-id "hive-backup-20240706-001" \
   --restore-strategy "intelligent-merge" \
   --preserve-learning true
@@ -411,14 +411,14 @@ Comprehensive monitoring interface:
 
 ```bash
 # Launch monitoring dashboard
-claude-flow hive-mind dashboard \
+gemini-flow hive-mind dashboard \
   --real-time-updates \
   --neural-insights \
   --performance-analytics \
   --predictive-alerts
 
 # Custom monitoring setup
-claude-flow hive-mind monitor setup \
+gemini-flow hive-mind monitor setup \
   --metrics '["coordination-efficiency","neural-accuracy","memory-utilization"]' \
   --alert-thresholds '{"efficiency":0.8,"accuracy":0.9,"memory":85}' \
   --notification-channels '["slack","email","webhook"]'
@@ -429,7 +429,7 @@ Deep analysis of Hive Mind performance:
 
 ```bash
 # Generate comprehensive analytics
-claude-flow hive-mind analytics generate \
+gemini-flow hive-mind analytics generate \
   --timeframe "30d" \
   --include-trends \
   --neural-pattern-analysis \
@@ -437,7 +437,7 @@ claude-flow hive-mind analytics generate \
   --export-format "interactive-html"
 
 # Comparative analysis
-claude-flow hive-mind analytics compare \
+gemini-flow hive-mind analytics compare \
   --baseline-period "last-month" \
   --current-period "this-month" \
   --metrics-focus "efficiency-improvements" \
@@ -451,12 +451,12 @@ The Hive Mind includes experimental capabilities for advanced users:
 
 ```bash
 # Enable experimental features
-claude-flow hive-mind experimental enable \
+gemini-flow hive-mind experimental enable \
   --features '["quantum-coordination","advanced-neural-architectures","bio-inspired-algorithms"]' \
   --risk-tolerance "medium"
 
 # Run research experiments
-claude-flow hive-mind research experiment \
+gemini-flow hive-mind research experiment \
   --hypothesis "mesh-topology-performs-better-for-parallel-tasks" \
   --control-group "hierarchical-topology" \
   --test-group "mesh-topology" \
@@ -469,14 +469,14 @@ Develop custom neural models for specific use cases:
 
 ```bash
 # Create custom neural model
-claude-flow hive-mind neural develop \
+gemini-flow hive-mind neural develop \
   --model-name "custom-coordination-v1" \
   --architecture "transformer-with-attention" \
   --training-strategy "domain-specific" \
   --target-capability "microservice-coordination"
 
 # Test custom model
-claude-flow hive-mind neural test \
+gemini-flow hive-mind neural test \
   --model "custom-coordination-v1" \
   --test-scenarios "microservice-development-tasks" \
   --performance-comparison "baseline-model"
@@ -531,7 +531,7 @@ The Hive Mind system continues to evolve with ongoing research in:
 
 ### Integration Guidelines
 
-1. **Claude Code Integration**: Use MCP protocol for seamless integration
+1. **Gemini Code Integration**: Use MCP protocol for seamless integration
 2. **Custom Workflows**: Develop domain-specific coordination patterns
 3. **Team Coordination**: Align Hive Mind goals with team objectives
 4. **Quality Assurance**: Implement validation and testing protocols

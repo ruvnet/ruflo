@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document specifies the design for a unified user input handling system that seamlessly processes commands from both CLI and web UI interfaces while maintaining full compatibility with existing claude-flow operations.
+This document specifies the design for a unified user input handling system that seamlessly processes commands from both CLI and web UI interfaces while maintaining full compatibility with existing gemini-flow operations.
 
 ## Architecture Goals
 
@@ -413,19 +413,19 @@ class AliasRegistry {
   }
   
   private loadDefaultAliases(): void {
-    // Common shortcuts for claude-flow commands
-    this.aliases.set('cf', 'claude-flow');
-    this.aliases.set('start', 'claude-flow start');
-    this.aliases.set('status', 'claude-flow status');
-    this.aliases.set('agents', 'claude-flow agent list');
-    this.aliases.set('tasks', 'claude-flow task list');
-    this.aliases.set('mem', 'claude-flow memory');
-    this.aliases.set('cfg', 'claude-flow config');
+    // Common shortcuts for gemini-flow commands
+    this.aliases.set('cf', 'gemini-flow');
+    this.aliases.set('start', 'gemini-flow start');
+    this.aliases.set('status', 'gemini-flow status');
+    this.aliases.set('agents', 'gemini-flow agent list');
+    this.aliases.set('tasks', 'gemini-flow task list');
+    this.aliases.set('mem', 'gemini-flow memory');
+    this.aliases.set('cfg', 'gemini-flow config');
     
     // Development shortcuts
-    this.aliases.set('dev', 'claude-flow start --mode development');
-    this.aliases.set('test', 'claude-flow start --mode testing');
-    this.aliases.set('prod', 'claude-flow start --mode production');
+    this.aliases.set('dev', 'gemini-flow start --mode development');
+    this.aliases.set('test', 'gemini-flow start --mode testing');
+    this.aliases.set('prod', 'gemini-flow start --mode production');
     
     // File operation shortcuts
     this.aliases.set('upload', 'special:upload');
@@ -1183,7 +1183,7 @@ describe('InputRouter', () => {
     const input: UserInput = {
       type: 'command',
       source: 'web',
-      content: 'claude-flow status',
+      content: 'gemini-flow status',
       sessionId: 'test-session',
       timestamp: Date.now()
     };
@@ -1224,7 +1224,7 @@ describe('End-to-End Input Processing', () => {
     const result = await system.processInput({
       type: 'command',
       source: 'web',
-      content: 'claude-flow --version',
+      content: 'gemini-flow --version',
       sessionId: session.id,
       timestamp: Date.now()
     });
@@ -1247,4 +1247,4 @@ This user input handling system provides:
 6. **Backward Compatibility**: Existing CLI behavior unchanged
 7. **Error Recovery**: Robust error handling and user guidance
 
-The architecture ensures that users can interact with claude-flow through both CLI and web interfaces seamlessly, with full security and performance optimization while maintaining complete compatibility with existing CLI operations.
+The architecture ensures that users can interact with gemini-flow through both CLI and web interfaces seamlessly, with full security and performance optimization while maintaining complete compatibility with existing CLI operations.

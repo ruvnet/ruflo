@@ -19,7 +19,7 @@ describe('CLI Commands E2E', () => {
   
   beforeEach(async () => {
     setupTestEnv();
-    testDir = await Deno.makeTempDir({ prefix: 'claude-flow-e2e-' });
+    testDir = await Deno.makeTempDir({ prefix: 'gemini-flow-e2e-' });
   });
 
   afterEach(async () => {
@@ -45,7 +45,7 @@ describe('CLI Commands E2E', () => {
       const errorOutput = new TextDecoder().decode(stderr);
 
       assertEquals(code, 0);
-      assertStringIncludes(output, 'Claude-Flow');
+      assertStringIncludes(output, 'Gemini-Flow');
       assertStringIncludes(output, 'COMMANDS');
       assertStringIncludes(output, 'start');
       assertStringIncludes(output, 'config');
@@ -129,7 +129,7 @@ describe('CLI Commands E2E', () => {
           level: 'info',
           format: 'json',
           destination: 'both',
-          filePath: './logs/claude-flow.log',
+          filePath: './logs/gemini-flow.log',
         },
       };
 
@@ -668,7 +668,7 @@ describe('CLI Commands E2E', () => {
       const output = new TextDecoder().decode(stdout);
 
       assertEquals(code, 0);
-      assertStringIncludes(output, 'Claude-Flow system');
+      assertStringIncludes(output, 'Gemini-Flow system');
     });
 
     it('should show system status', async () => {
@@ -698,7 +698,7 @@ describe('CLI Commands E2E', () => {
       const output = new TextDecoder().decode(stdout);
 
       assertEquals(code, 0);
-      assertStringIncludes(output, 'Claude-Flow');
+      assertStringIncludes(output, 'Gemini-Flow');
       assertStringIncludes(output, 'version');
     });
   });

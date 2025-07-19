@@ -16,7 +16,7 @@ import {
   SWARM_CONSTANTS
 } from './types.js';
 
-export interface ClaudeExecutionOptionsV2 extends ClaudeExecutionOptions {
+export interface GeminiExecutionOptionsV2 extends GeminiExecutionOptions {
   nonInteractive?: boolean;
   autoApprove?: boolean;
   promptDefaults?: Record<string, any>;
@@ -38,13 +38,13 @@ export class TaskExecutorV2 extends TaskExecutor {
     });
   }
 
-  async executeClaudeTask(
+  async executeGeminiTask(
     task: TaskDefinition,
     agent: AgentState,
-    claudeOptions: ClaudeExecutionOptionsV2 = {}
+    geminiOptions: GeminiExecutionOptionsV2 = {}
   ): Promise<ExecutionResult> {
     // Apply smart defaults based on environment
-    const enhancedOptions = applySmartDefaults(claudeOptions, this.environment);
+    const enhancedOptions = applySmartDefaults(geminiOptions, this.environment);
     
     // Log if defaults were applied
     if (enhancedOptions.appliedDefaults.length > 0) {
@@ -55,8 +55,8 @@ export class TaskExecutorV2 extends TaskExecutor {
     }
     
     try {
-      return await this.executeClaudeWithTimeoutV2(
-        generateId('claude-execution'),
+      return await this.executeGeminiWithTimeoutV2(
+        generateId('gemini-execution'),
         task,
         agent,
         await this.createExecutionContext(task, agent),
@@ -73,8 +73,8 @@ export class TaskExecutorV2 extends TaskExecutor {
         enhancedOptions.nonInteractive = true;
         enhancedOptions.dangerouslySkipPermissions = true;
         
-        return await this.executeClaudeWithTimeoutV2(
-          generateId('claude-execution-retry'),
+        return await this.executeGeminiWithTimeoutV2(
+          generateId('gemini-execution-retry'),
           task,
           agent,
           await this.createExecutionContext(task, agent),
@@ -86,38 +86,38 @@ export class TaskExecutorV2 extends TaskExecutor {
     }
   }
 
-  private async executeClaudeWithTimeoutV2(
+  private async executeGeminiWithTimeoutV2(
     sessionId: string,
     task: TaskDefinition,
     agent: AgentState,
     context: ExecutionContext,
-    options: ClaudeExecutionOptionsV2
+    options: GeminiExecutionOptionsV2
   ): Promise<ExecutionResult> {
     const startTime = Date.now();
     const timeout = options.timeout || this.config.timeoutMs;
 
-    // Build Claude command with v2 enhancements
-    const command = this.buildClaudeCommandV2(task, agent, options);
+    // Build Gemini command with v2 enhancements
+    const command = this.buildGeminiCommandV2(task, agent, options);
     
     // Create execution environment with enhancements
     const env = {
       ...process.env,
       ...context.environment,
       ...options.environmentOverride,
-      CLAUDE_TASK_ID: task.id.id,
-      CLAUDE_AGENT_ID: agent.id.id,
-      CLAUDE_SESSION_ID: sessionId,
-      CLAUDE_WORKING_DIR: context.workingDirectory,
-      CLAUDE_NON_INTERACTIVE: options.nonInteractive ? '1' : '0',
-      CLAUDE_AUTO_APPROVE: options.autoApprove ? '1' : '0'
+      GEMINI_TASK_ID: task.id.id,
+      GEMINI_AGENT_ID: agent.id.id,
+      GEMINI_SESSION_ID: sessionId,
+      GEMINI_WORKING_DIR: context.workingDirectory,
+      GEMINI_NON_INTERACTIVE: options.nonInteractive ? '1' : '0',
+      GEMINI_AUTO_APPROVE: options.autoApprove ? '1' : '0'
     };
 
     // Add prompt defaults if provided
     if (options.promptDefaults) {
-      env.CLAUDE_PROMPT_DEFAULTS = JSON.stringify(options.promptDefaults);
+      env.GEMINI_PROMPT_DEFAULTS = JSON.stringify(options.promptDefaults);
     }
 
-    this.logger.debug('Executing Claude command v2', {
+    this.logger.debug('Executing Gemini command v2', {
       sessionId,
       command: command.command,
       args: command.args,
@@ -136,7 +136,7 @@ export class TaskExecutorV2 extends TaskExecutor {
       const timeoutHandle = setTimeout(() => {
         isTimeout = true;
         if (process) {
-          this.logger.warn('Claude execution timeout, killing process', {
+          this.logger.warn('Gemini execution timeout, killing process', {
             sessionId,
             pid: process.pid,
             timeout
@@ -152,7 +152,7 @@ export class TaskExecutorV2 extends TaskExecutor {
       }, timeout);
 
       try {
-        // Spawn Claude process with enhanced options
+        // Spawn Gemini process with enhanced options
         process = spawn(command.command, command.args, {
           cwd: context.workingDirectory,
           env,
@@ -164,11 +164,11 @@ export class TaskExecutorV2 extends TaskExecutor {
 
         if (!process.pid) {
           clearTimeout(timeoutHandle);
-          reject(new Error('Failed to spawn Claude process'));
+          reject(new Error('Failed to spawn Gemini process'));
           return;
         }
 
-        this.logger.info('Claude process started (v2)', {
+        this.logger.info('Gemini process started (v2)', {
           sessionId,
           pid: process.pid,
           command: command.command,
@@ -232,7 +232,7 @@ export class TaskExecutorV2 extends TaskExecutor {
           const duration = Date.now() - startTime;
           const exitCode = code || 0;
           
-          this.logger.info('Claude process completed (v2)', {
+          this.logger.info('Gemini process completed (v2)', {
             sessionId,
             exitCode,
             signal,
@@ -302,16 +302,16 @@ export class TaskExecutorV2 extends TaskExecutor {
     });
   }
 
-  private buildClaudeCommandV2(
+  private buildGeminiCommandV2(
     task: TaskDefinition,
     agent: AgentState,
-    options: ClaudeExecutionOptionsV2
-  ): ClaudeCommand {
+    options: GeminiExecutionOptionsV2
+  ): GeminiCommand {
     const args: string[] = [];
     let input = '';
 
     // Build prompt
-    const prompt = this.buildClaudePrompt(task, agent);
+    const prompt = this.buildGeminiPrompt(task, agent);
     
     if (options.useStdin) {
       input = prompt;
@@ -371,7 +371,7 @@ export class TaskExecutorV2 extends TaskExecutor {
     }));
 
     return {
-      command: options.claudePath || 'claude',
+      command: options.geminiPath || 'gemini',
       args,
       input
     };

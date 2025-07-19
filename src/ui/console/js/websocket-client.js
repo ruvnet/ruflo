@@ -1,5 +1,5 @@
 /**
- * WebSocket Client for Claude Code Console
+ * WebSocket Client for Gemini Code Console
  * Handles real-time communication with the backend MCP server
  */
 
@@ -405,13 +405,13 @@ export class WebSocketClient {
   }
   
   /**
-   * Initialize Claude Code session
+   * Initialize Gemini Code session
    */
   async initializeSession(clientInfo = {}) {
     const params = {
       protocolVersion: { major: 2024, minor: 11, patch: 5 },
       clientInfo: {
-        name: 'Claude Flow v2',
+        name: 'Gemini Flow v2',
         version: '2.0.0',
         ...clientInfo
       },
@@ -434,12 +434,12 @@ export class WebSocketClient {
   }
   
   /**
-   * Execute Claude Flow command
+   * Execute Gemini Flow command
    */
   async executeCommand(command, args = {}) {
     try {
       const result = await this.sendRequest('tools/call', {
-        name: 'claude-flow/execute',
+        name: 'gemini-flow/execute',
         arguments: { command, args }
       });
       

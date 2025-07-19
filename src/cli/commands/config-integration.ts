@@ -3,7 +3,7 @@ import { getErrorMessage } from '../../utils/error-handler.js';
  * Configuration integration commands for ruv-swarm
  * 
  * These commands provide enhanced configuration management
- * specifically for ruv-swarm integration with Claude Code.
+ * specifically for ruv-swarm integration with Gemini CLI.
  */
 
 import { success, error, warning, info } from "../cli-core.js";
@@ -63,7 +63,7 @@ function showConfigIntegrationHelp() {
   console.log('config-integration - Enhanced configuration management with ruv-swarm\\n');
   
   console.log('Usage:');
-  console.log('  claude-flow config-integration <command> [options]\\n');
+  console.log('  gemini-flow config-integration <command> [options]\\n');
   
   console.log('Commands:');
   console.log('  setup                      Initialize ruv-swarm integration');
@@ -80,11 +80,11 @@ function showConfigIntegrationHelp() {
   console.log('  production                 Optimized for production environments\\n');
   
   console.log('Examples:');
-  console.log('  claude-flow config-integration setup --enable-ruv-swarm');
-  console.log('  claude-flow config-integration preset development');
-  console.log('  claude-flow config-integration sync --force');
-  console.log('  claude-flow config-integration export my-config.json');
-  console.log('  claude-flow config-integration status --verbose');
+  console.log('  gemini-flow config-integration setup --enable-ruv-swarm');
+  console.log('  gemini-flow config-integration preset development');
+  console.log('  gemini-flow config-integration sync --force');
+  console.log('  gemini-flow config-integration export my-config.json');
+  console.log('  gemini-flow config-integration status --verbose');
 }
 
 /**
@@ -383,7 +383,7 @@ async function handleExport(ctx: CommandContext) {
     
     if (format === 'yaml') {
       // Simple YAML export (basic implementation)
-      const yamlContent = `# Claude-Flow Configuration Export
+      const yamlContent = `# Gemini-Flow Configuration Export
 # Generated: ${exportData.timestamp}
 
 main:

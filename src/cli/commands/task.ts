@@ -37,27 +37,27 @@ export const taskCommand = new Command()
 
       console.log(chalk.green('Task created:'));
       console.log(JSON.stringify(task, null, 2));
-      console.log(chalk.yellow('\nTo submit this task, ensure Claude-Flow is running'));
+      console.log(chalk.yellow('\nTo submit this task, ensure Gemini-Flow is running'));
     })
   .command('list')
     .description('List all tasks')
     .option('-s, --status <status:string>', 'Filter by status')
     .option('-a, --agent <agent:string>', 'Filter by assigned agent')
     .action(async (options: any) => {
-      console.log(chalk.yellow('Task listing requires a running Claude-Flow instance'));
+      console.log(chalk.yellow('Task listing requires a running Gemini-Flow instance'));
     })
   .command('status')
     .description('Get task status')
     .argument('<task-id>', 'Task ID')
     .action(async (taskId: string, options: any) => {
-      console.log(chalk.yellow(`Task status requires a running Claude-Flow instance`));
+      console.log(chalk.yellow(`Task status requires a running Gemini-Flow instance`));
     })
   .command('cancel')
     .description('Cancel a task')
     .argument('<task-id>', 'Task ID')
     .option('-r, --reason <reason>', 'Cancellation reason')
     .action(async (taskId: string, options: any) => {
-      console.log(chalk.yellow(`Cancelling task ${taskId} requires a running Claude-Flow instance`));
+      console.log(chalk.yellow(`Cancelling task ${taskId} requires a running Gemini-Flow instance`));
     })
   .command('workflow')
     .description('Execute a workflow from file')
@@ -70,7 +70,7 @@ export const taskCommand = new Command()
         console.log(chalk.green('Workflow loaded:'));
         console.log(`- Name: ${workflow.name || 'Unnamed'}`);
         console.log(`- Tasks: ${workflow.tasks?.length || 0}`);
-        console.log(chalk.yellow('\nTo execute this workflow, ensure Claude-Flow is running'));
+        console.log(chalk.yellow('\nTo execute this workflow, ensure Gemini-Flow is running'));
       } catch (error) {
         console.error(chalk.red('Failed to load workflow:'), getErrorMessage(error));
       }

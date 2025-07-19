@@ -1,7 +1,7 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Claude Flow SPARC Executor
- * Executes tasks using the full claude-flow SPARC system in non-interactive mode
+ * Gemini Flow SPARC Executor
+ * Executes tasks using the full gemini-flow SPARC system in non-interactive mode
  */
 
 import type { TaskDefinition, AgentState, TaskResult } from './types.js';
@@ -41,7 +41,7 @@ export class ClaudeFlowExecutor {
     agent: AgentState,
     targetDir?: string
   ): Promise<TaskResult> {
-    this.logger.info('Executing task with Claude Flow SPARC', {
+    this.logger.info('Executing task with Gemini Flow SPARC', {
       taskId: task.id.id,
       taskName: task.name,
       agentType: agent.type,
@@ -82,7 +82,7 @@ export class ClaudeFlowExecutor {
         error: result.error
       };
     } catch (error) {
-      this.logger.error('Failed to execute Claude Flow SPARC command', { 
+      this.logger.error('Failed to execute Gemini Flow SPARC command', { 
         error: (error instanceof Error ? error.message : String(error)),
         taskId: task.id.id 
       });

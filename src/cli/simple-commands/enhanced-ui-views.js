@@ -1,5 +1,5 @@
 /**
- * Enhanced UI Views for Claude-Flow Web UI
+ * Enhanced UI Views for Gemini-Flow Web UI
  * Provides comprehensive interfaces for all 71+ missing MCP tools
  * Organized by tool categories with real-time updates
  */
@@ -299,9 +299,9 @@ export class EnhancedUIViews {
     console.log();
     console.log(colors.cyan('🔔 Recent Activity'));
     const mockActivity = [
-      { action: 'PR merged', repo: 'claude-code-flow', time: '1h ago' },
+      { action: 'PR merged', repo: 'gemini-flow', time: '1h ago' },
       { action: 'Issue closed', repo: 'ruv-swarm', time: '2h ago' },
-      { action: 'Release created', repo: 'claude-code-flow', time: '4h ago' }
+      { action: 'Release created', repo: 'gemini-flow', time: '4h ago' }
     ];
     
     mockActivity.forEach(activity => {

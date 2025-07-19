@@ -78,7 +78,7 @@ export class ConfigValidator {
 
       // Check for required sections
       const requiredSections = [
-        '# Claude Code Configuration',
+        '# Gemini Code Configuration',
         '## Project Overview',
         '## SPARC Development Commands'
       ];
@@ -91,7 +91,7 @@ export class ConfigValidator {
 
       // Check for important command patterns
       const importantCommands = [
-        'npx claude-flow sparc',
+        'npx gemini-flow sparc',
         'npm run build',
         'npm run test'
       ];
@@ -127,7 +127,7 @@ export class ConfigValidator {
       data: null
     };
 
-    const memoryDataPath = `${this.workingDir}/memory/claude-flow-data.json`;
+    const memoryDataPath = `${this.workingDir}/memory/gemini-flow-data.json`;
 
     try {
       const content = await Deno.readTextFile(memoryDataPath);
@@ -210,14 +210,14 @@ export class ConfigValidator {
       warnings: []
     };
 
-    const executablePath = `${this.workingDir}/claude-flow`;
+    const executablePath = `${this.workingDir}/gemini-flow`;
 
     try {
       const stat = await Deno.stat(executablePath);
       
       if (!stat.isFile) {
         result.success = false;
-        result.errors.push('claude-flow executable is not a file');
+        result.errors.push('gemini-flow executable is not a file');
         return result;
       }
 
@@ -225,7 +225,7 @@ export class ConfigValidator {
       if (Deno.build.os !== 'windows') {
         const isExecutable = (stat.mode & 0o111) !== 0;
         if (!isExecutable) {
-          result.warnings.push('claude-flow file is not executable');
+          result.warnings.push('gemini-flow file is not executable');
         }
       }
 
@@ -235,7 +235,7 @@ export class ConfigValidator {
       // Check for required elements
       if (content.includes('#!/usr/bin/env')) {
         // Script file
-        if (!content.includes('claude-flow') && !content.includes('deno run')) {
+        if (!content.includes('gemini-flow') && !content.includes('deno run')) {
           result.warnings.push('Executable script may not be properly configured');
         }
       } else {

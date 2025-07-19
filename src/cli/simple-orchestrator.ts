@@ -84,7 +84,7 @@ function startWebUI(host: string, port: number) {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Claude-Flow Console</title>
+        <title>Gemini-Flow Console</title>
         <style>
             * {
                 margin: 0;
@@ -204,7 +204,7 @@ function startWebUI(host: string, port: number) {
     </head>
     <body>
         <div class="header">
-            <div class="title">🧠 Claude-Flow Console</div>
+            <div class="title">🧠 Gemini-Flow Console</div>
             <div class="system-status">
                 <div class="status-item">
                     <div class="status-dot" id="ws-status"></div>
@@ -218,7 +218,7 @@ function startWebUI(host: string, port: number) {
         </div>
         <div class="console-container">
             <div class="console-output scrollbar" id="output"></div>
-            <input type="text" class="console-input" id="input" placeholder="Enter claude-flow command..." autocomplete="off">
+            <input type="text" class="console-input" id="input" placeholder="Enter gemini-flow command..." autocomplete="off">
         </div>
 
         <script>
@@ -271,8 +271,8 @@ function startWebUI(host: string, port: number) {
                             reconnectTimer = null;
                         }
                         
-                        appendOutput('\n<span class="success">🔗 Connected to Claude-Flow Console</span>\n');
-                        appendOutput('<span class="info">Type "help" for available commands or use any claude-flow command</span>\n\n');
+                        appendOutput('\n<span class="success">🔗 Connected to Gemini-Flow Console</span>\n');
+                        appendOutput('<span class="info">Type "help" for available commands or use any gemini-flow command</span>\n\n');
                     };
                     
                     ws.onmessage = (event) => {
@@ -338,7 +338,7 @@ function startWebUI(host: string, port: number) {
                         appendOutput('<span class="error">' + data.data + '</span>');
                         break;
                     case 'command_complete':
-                        appendOutput('\n<span class="prompt">claude-flow> </span>');
+                        appendOutput('\n<span class="prompt">gemini-flow> </span>');
                         break;
                     case 'status':
                         updateStatus(data.data);
@@ -364,7 +364,7 @@ function startWebUI(host: string, port: number) {
             
             function sendCommand(command) {
                 if (ws && ws.readyState === WebSocket.OPEN) {
-                    appendOutput('<span class="prompt">claude-flow> </span>' + command + '\n');
+                    appendOutput('<span class="prompt">gemini-flow> </span>' + command + '\n');
                     ws.send(JSON.stringify({
                         type: 'command',
                         data: command
@@ -644,7 +644,7 @@ function startWebUI(host: string, port: number) {
 • <span class="info">clear</span> - Clear console
 • <span class="info">version</span> - Show version information
 
-<span class="warning">Note:</span> This is a web console interface for claude-flow CLI commands.
+<span class="warning">Note:</span> This is a web console interface for gemini-flow CLI commands.
 `;
       sendResponse(ws, {
         type: 'output',
@@ -691,9 +691,9 @@ function startWebUI(host: string, port: number) {
     const cmd = args[0];
     const cmdArgs = args.slice(1);
     
-    // Determine the correct claude-flow executable path
+    // Determine the correct gemini-flow executable path
     const rootDir = path.resolve(__dirname, '../..');
-    const cliPath = path.join(rootDir, 'bin', 'claude-flow');
+    const cliPath = path.join(rootDir, 'bin', 'gemini-flow');
     
     // Spawn the command
     const child = spawn('node', [path.join(rootDir, 'src/cli/simple-cli.js'), ...cmdArgs], {
@@ -788,7 +788,7 @@ function startWebUI(host: string, port: number) {
     server.on('error', (err: any) => {
       if (err.code === 'EADDRINUSE') {
         console.error(`\n❌ Port ${port} is already in use`);
-        console.log(`💡 Try a different port: claude-flow start --ui --port ${port + 1}`);
+        console.log(`💡 Try a different port: gemini-flow start --ui --port ${port + 1}`);
         console.log(`💡 Or stop the process using port ${port}: lsof -ti:${port} | xargs kill -9`);
         componentStatus.webUI = false;
         reject(err);
@@ -869,8 +869,8 @@ export async function startOrchestrator(options: any) {
     console.log(`   • Web UI: Active at http://${options.host || 'localhost'}:${options.port || 3000}`);
   }
 
-  console.log('\n💡 Use "claude-flow status" to check system status');
-  console.log('💡 Use "claude-flow stop" to stop the orchestrator');
+  console.log('\n💡 Use "gemini-flow status" to check system status');
+  console.log('💡 Use "gemini-flow stop" to stop the orchestrator');
   
   // Keep the process running
   if (!options.daemon) {

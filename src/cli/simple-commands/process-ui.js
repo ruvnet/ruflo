@@ -46,7 +46,7 @@ export class ProcessUI {
     console.clear();
     
     // Show welcome
-    printSuccess('🧠 Claude-Flow Process Management UI v1.0.43');
+    printSuccess('🧠 Gemini-Flow Process Management UI v1.0.43');
     console.log('─'.repeat(60));
     console.log();
     
@@ -68,7 +68,7 @@ export class ProcessUI {
     console.log('\x1b[2J\x1b[H');
     
     // Header
-    console.log(colors.cyan('🧠 Claude-Flow Process Manager'));
+    console.log(colors.cyan('🧠 Gemini-Flow Process Manager'));
     console.log(colors.gray('─'.repeat(60)));
     console.log();
     

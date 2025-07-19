@@ -35,13 +35,13 @@ SPARC (Specification, Planning, Architecture, Review, Code) is a comprehensive d
 ## Usage
 \`\`\`bash
 # Run a specific mode
-./claude-flow sparc run <mode> "task description"
+./gemini-flow sparc run <mode> "task description"
 
 # List all modes
-./claude-flow sparc modes
+./gemini-flow sparc modes
 
 # Get help for a mode
-./claude-flow sparc help <mode>
+./gemini-flow sparc help <mode>
 \`\`\`
 `;
 }
@@ -65,7 +65,7 @@ function createAnalysisStrategy() {
 Comprehensive analysis through distributed agent coordination.
 
 ## Activation
-\`./claude-flow swarm "analyze system performance" --strategy analysis\`
+\`./gemini-flow swarm "analyze system performance" --strategy analysis\`
 
 ## Agent Roles
 - Data Collector: Gathers metrics and logs
@@ -87,7 +87,7 @@ function createDevelopmentStrategy() {
 Coordinated development through specialized agent teams.
 
 ## Activation
-\`./claude-flow swarm "build feature X" --strategy development\`
+\`./gemini-flow swarm "build feature X" --strategy development\`
 
 ## Agent Roles
 - Architect: Designs system structure
@@ -110,7 +110,7 @@ function createExamplesStrategy() {
 
 ### Research Swarm
 \`\`\`bash
-./claude-flow swarm "research AI trends" \\
+./gemini-flow swarm "research AI trends" \\
   --strategy research \\
   --mode distributed \\
   --max-agents 6 \\
@@ -119,7 +119,7 @@ function createExamplesStrategy() {
 
 ### Development Swarm
 \`\`\`bash
-./claude-flow swarm "build REST API" \\
+./gemini-flow swarm "build REST API" \\
   --strategy development \\
   --mode hierarchical \\
   --monitor \\
@@ -128,7 +128,7 @@ function createExamplesStrategy() {
 
 ### Analysis Swarm
 \`\`\`bash
-./claude-flow swarm "analyze codebase" \\
+./gemini-flow swarm "analyze codebase" \\
   --strategy analysis \\
   --mode mesh \\
   --parallel \\
@@ -144,7 +144,7 @@ function createMaintenanceStrategy() {
 System maintenance and updates through coordinated agents.
 
 ## Activation
-\`./claude-flow swarm "update dependencies" --strategy maintenance\`
+\`./gemini-flow swarm "update dependencies" --strategy maintenance\`
 
 ## Agent Roles
 - Dependency Analyzer: Checks for updates
@@ -166,7 +166,7 @@ function createOptimizationStrategy() {
 Performance optimization through specialized analysis.
 
 ## Activation
-\`./claude-flow swarm "optimize performance" --strategy optimization\`
+\`./gemini-flow swarm "optimize performance" --strategy optimization\`
 
 ## Agent Roles
 - Performance Profiler: Identifies bottlenecks
@@ -189,7 +189,7 @@ function createResearchStrategy() {
 Deep research through parallel information gathering.
 
 ## Activation
-\`./claude-flow swarm "research topic X" --strategy research\`
+\`./gemini-flow swarm "research topic X" --strategy research\`
 
 ## Agent Roles
 - Web Researcher: Searches online sources
@@ -211,7 +211,7 @@ function createTestingStrategy() {
 Comprehensive testing through distributed execution.
 
 ## Activation
-\`./claude-flow swarm "test application" --strategy testing\`
+\`./gemini-flow swarm "test application" --strategy testing\`
 
 ## Agent Roles
 - Unit Tester: Tests individual components
@@ -256,7 +256,7 @@ function createAnalyzerMode() {
 Deep code and data analysis with batch processing capabilities.
 
 ## Activation
-\`./claude-flow sparc run analyzer "analyze codebase performance"\`
+\`./gemini-flow sparc run analyzer "analyze codebase performance"\`
 
 ## Core Capabilities
 - Code analysis with parallel file processing
@@ -286,7 +286,7 @@ function createArchitectMode() {
 System design with Memory-based coordination for scalable architectures.
 
 ## Activation
-\`./claude-flow sparc run architect "design microservices architecture"\`
+\`./gemini-flow sparc run architect "design microservices architecture"\`
 
 ## Core Capabilities
 - System architecture design
@@ -317,7 +317,7 @@ function createBatchExecutorMode() {
 Parallel task execution specialist using batch operations.
 
 ## Activation
-\`./claude-flow sparc run batch-executor "process multiple files"\`
+\`./gemini-flow sparc run batch-executor "process multiple files"\`
 
 ## Core Capabilities
 - Parallel file operations
@@ -349,7 +349,7 @@ function createCoderMode() {
 Autonomous code generation with batch file operations.
 
 ## Activation
-\`./claude-flow sparc run coder "implement user authentication"\`
+\`./gemini-flow sparc run coder "implement user authentication"\`
 
 ## Core Capabilities
 - Feature implementation
@@ -381,7 +381,7 @@ function createDebuggerMode() {
 Systematic debugging with TodoWrite and Memory integration.
 
 ## Activation
-\`./claude-flow sparc run debugger "fix authentication issues"\`
+\`./gemini-flow sparc run debugger "fix authentication issues"\`
 
 ## Core Capabilities
 - Issue reproduction
@@ -413,7 +413,7 @@ function createDesignerMode() {
 UI/UX design with Memory coordination for consistent experiences.
 
 ## Activation
-\`./claude-flow sparc run designer "create dashboard UI"\`
+\`./gemini-flow sparc run designer "create dashboard UI"\`
 
 ## Core Capabilities
 - Interface design
@@ -444,7 +444,7 @@ function createDocumenterMode() {
 Documentation with batch file operations for comprehensive docs.
 
 ## Activation
-\`./claude-flow sparc run documenter "create API documentation"\`
+\`./gemini-flow sparc run documenter "create API documentation"\`
 
 ## Core Capabilities
 - API documentation
@@ -476,7 +476,7 @@ function createInnovatorMode() {
 Creative problem solving with WebSearch and Memory integration.
 
 ## Activation
-\`./claude-flow sparc run innovator "innovative solutions for scaling"\`
+\`./gemini-flow sparc run innovator "innovative solutions for scaling"\`
 
 ## Core Capabilities
 - Creative ideation
@@ -508,7 +508,7 @@ function createMemoryManagerMode() {
 Knowledge management with Memory tools for persistent insights.
 
 ## Activation
-\`./claude-flow sparc run memory-manager "organize project knowledge"\`
+\`./gemini-flow sparc run memory-manager "organize project knowledge"\`
 
 ## Core Capabilities
 - Knowledge organization
@@ -540,7 +540,7 @@ function createOptimizerMode() {
 Performance optimization with systematic analysis and improvements.
 
 ## Activation
-\`./claude-flow sparc run optimizer "optimize application performance"\`
+\`./gemini-flow sparc run optimizer "optimize application performance"\`
 
 ## Core Capabilities
 - Performance profiling
@@ -572,7 +572,7 @@ function createOrchestratorMode() {
 Multi-agent task orchestration with TodoWrite/TodoRead/Task/Memory.
 
 ## Activation
-\`./claude-flow sparc run orchestrator "coordinate feature development"\`
+\`./gemini-flow sparc run orchestrator "coordinate feature development"\`
 
 ## Core Capabilities
 - Task decomposition
@@ -604,7 +604,7 @@ function createResearcherMode() {
 Deep research with parallel WebSearch/WebFetch and Memory coordination.
 
 ## Activation
-\`./claude-flow sparc run researcher "research AI trends 2024"\`
+\`./gemini-flow sparc run researcher "research AI trends 2024"\`
 
 ## Core Capabilities
 - Information gathering
@@ -636,7 +636,7 @@ function createReviewerMode() {
 Code review using batch file analysis for comprehensive reviews.
 
 ## Activation
-\`./claude-flow sparc run reviewer "review pull request #123"\`
+\`./gemini-flow sparc run reviewer "review pull request #123"\`
 
 ## Core Capabilities
 - Code quality assessment
@@ -668,7 +668,7 @@ function createSwarmCoordinatorMode() {
 Specialized swarm management with batch coordination capabilities.
 
 ## Activation
-\`./claude-flow sparc run swarm-coordinator "manage development swarm"\`
+\`./gemini-flow sparc run swarm-coordinator "manage development swarm"\`
 
 ## Core Capabilities
 - Swarm initialization
@@ -700,7 +700,7 @@ function createTddMode() {
 Test-driven development with TodoWrite planning and comprehensive testing.
 
 ## Activation
-\`./claude-flow sparc run tdd "shopping cart feature"\`
+\`./gemini-flow sparc run tdd "shopping cart feature"\`
 
 ## Core Capabilities
 - Test-first development
@@ -732,7 +732,7 @@ function createTesterMode() {
 Comprehensive testing with parallel execution capabilities.
 
 ## Activation
-\`./claude-flow sparc run tester "full regression suite"\`
+\`./gemini-flow sparc run tester "full regression suite"\`
 
 ## Core Capabilities
 - Test planning
@@ -764,7 +764,7 @@ function createWorkflowManagerMode() {
 Process automation with TodoWrite planning and Task execution.
 
 ## Activation
-\`./claude-flow sparc run workflow-manager "automate deployment"\`
+\`./gemini-flow sparc run workflow-manager "automate deployment"\`
 
 ## Core Capabilities
 - Workflow design

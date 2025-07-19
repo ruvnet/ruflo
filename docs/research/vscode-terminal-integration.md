@@ -231,19 +231,19 @@ function getOrCreateTerminal(): vscode.Terminal {
 
 ## 9. Orchestration Patterns from External CLIs
 
-### Claude Code Flow Patterns
+### Gemini Code Flow Patterns
 
 #### 1. **Fanning Out Pattern**
 Handle large-scale operations by:
 - Generate task list programmatically
-- Loop through tasks calling Claude for each
+- Loop through tasks calling Gemini for each
 - Provide specific tools and context per task
 
 #### 2. **Git Worktrees for Parallel Workflows**
 ```bash
 # Create new branch and worktree
 pgw new-feature
-# Opens VS Code with Claude Code ready
+# Opens VS Code with Gemini Code ready
 # Work in parallel on multiple features
 ```
 
@@ -253,9 +253,9 @@ Using `.vscode/tasks.json`:
 {
   "version": "2.0.0",
   "tasks": [{
-    "label": "Run Claude Code Automatically",
+    "label": "Run Gemini Code Automatically",
     "type": "shell",
-    "command": "/path/to/claude --dangerously-skip-permissions",
+    "command": "/path/to/gemini --dangerously-skip-permissions",
     "presentation": {
       "reveal": "always",
       "panel": "new",
@@ -270,14 +270,14 @@ Using `.vscode/tasks.json`:
 
 ### Headless/Programmatic Mode
 ```bash
-# Run Claude Code programmatically
-claude -p "migrate foo.py from React to Vue" --allowedTools Edit Bash
+# Run Gemini Code programmatically
+gemini -p "migrate foo.py from React to Vue" --allowedTools Edit Bash
 ```
 
 ### MCP (Model Context Protocol) Integration
 - Connect multiple tools and services
 - Example: Playwright MCP server for browser testing
-- Claude Code as MCP server for nested agent workflows
+- Gemini Code as MCP server for nested agent workflows
 
 ## Implementation Recommendations for TypeScript/Deno Runtime
 

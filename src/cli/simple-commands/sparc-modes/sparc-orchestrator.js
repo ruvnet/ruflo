@@ -12,22 +12,22 @@ For maximum efficiency, I can orchestrate multiple SPARC modes concurrently usin
 # Full SPARC Workflow with BatchTool (Boomerang Pattern)
 batchtool orchestrate --boomerang --name "${taskDescription}" \\
   --phase1-parallel \\
-    "npx claude-flow sparc run ask 'research requirements for ${taskDescription}' --non-interactive" \\
-    "npx claude-flow sparc run security-review 'identify security needs for ${taskDescription}' --non-interactive" \\
+    "npx gemini-flow sparc run ask 'research requirements for ${taskDescription}' --non-interactive" \\
+    "npx gemini-flow sparc run security-review 'identify security needs for ${taskDescription}' --non-interactive" \\
   --phase2-sequential \\
-    "npx claude-flow sparc run spec-pseudocode 'create specifications from research' --non-interactive" \\
-    "npx claude-flow sparc run architect 'design system architecture' --non-interactive" \\
+    "npx gemini-flow sparc run spec-pseudocode 'create specifications from research' --non-interactive" \\
+    "npx gemini-flow sparc run architect 'design system architecture' --non-interactive" \\
   --phase3-parallel \\
-    "npx claude-flow sparc run code 'implement core features' --non-interactive" \\
-    "npx claude-flow sparc run code 'implement authentication' --non-interactive" \\
-    "npx claude-flow sparc run code 'implement data layer' --non-interactive" \\
+    "npx gemini-flow sparc run code 'implement core features' --non-interactive" \\
+    "npx gemini-flow sparc run code 'implement authentication' --non-interactive" \\
+    "npx gemini-flow sparc run code 'implement data layer' --non-interactive" \\
   --phase4-sequential \\
-    "npx claude-flow sparc run integration 'integrate all components' --non-interactive" \\
-    "npx claude-flow sparc run tdd 'comprehensive testing' --non-interactive" \\
+    "npx gemini-flow sparc run integration 'integrate all components' --non-interactive" \\
+    "npx gemini-flow sparc run tdd 'comprehensive testing' --non-interactive" \\
   --phase5-parallel \\
-    "npx claude-flow sparc run optimization 'performance tuning' --non-interactive" \\
-    "npx claude-flow sparc run docs-writer 'create documentation' --non-interactive" \\
-    "npx claude-flow sparc run devops 'deployment setup' --non-interactive"
+    "npx gemini-flow sparc run optimization 'performance tuning' --non-interactive" \\
+    "npx gemini-flow sparc run docs-writer 'create documentation' --non-interactive" \\
+    "npx gemini-flow sparc run devops 'deployment setup' --non-interactive"
 
 # Monitor all parallel executions
 batchtool monitor --dashboard
@@ -39,8 +39,8 @@ batchtool monitor --dashboard
    - Analyze the complex objective: "${taskDescription}"
    - Query existing context:
      \`\`\`bash
-     npx claude-flow memory query ${memoryNamespace}
-     npx claude-flow memory list
+     npx gemini-flow memory query ${memoryNamespace}
+     npx gemini-flow memory list
      \`\`\`
    - Break down into SPARC phases:
      - **S**pecification: Define what needs to be built
@@ -50,79 +50,79 @@ batchtool monitor --dashboard
      - **C**ompletion: Integrate, document, and deploy
    - Identify required specialist modes
    - Create task dependency graph
-   - Store plan: \`npx claude-flow memory store ${memoryNamespace}_sparc_plan "Objective: ${taskDescription}. Phases: 5. Estimated subtasks: 12. Critical path: spec->arch->tdd->integration."\`
+   - Store plan: \`npx gemini-flow memory store ${memoryNamespace}_sparc_plan "Objective: ${taskDescription}. Phases: 5. Estimated subtasks: 12. Critical path: spec->arch->tdd->integration."\`
 
 2. **Specification Phase Delegation** (10 mins)
    - Create specification subtasks:
      \`\`\`bash
      # Delegate requirements gathering
-     npx claude-flow sparc run spec-pseudocode "Define detailed requirements for ${taskDescription}" --non-interactive
+     npx gemini-flow sparc run spec-pseudocode "Define detailed requirements for ${taskDescription}" --non-interactive
      
      # Store task assignment
-     npx claude-flow memory store ${memoryNamespace}_task_spec "Assigned to: spec-pseudocode mode. Status: In progress. Dependencies: None."
+     npx gemini-flow memory store ${memoryNamespace}_task_spec "Assigned to: spec-pseudocode mode. Status: In progress. Dependencies: None."
      \`\`\`
    - Monitor specification progress
    - Review deliverables: requirements.md, pseudocode.md
    - Validate no hardcoded env vars allowed
-   - Store spec results: \`npx claude-flow memory store ${memoryNamespace}_spec_complete "Requirements defined. Pseudocode created. Edge cases identified. Ready for architecture phase."\`
+   - Store spec results: \`npx gemini-flow memory store ${memoryNamespace}_spec_complete "Requirements defined. Pseudocode created. Edge cases identified. Ready for architecture phase."\`
 
 3. **Architecture Phase Delegation** (15 mins)
    - Create architecture subtasks:
      \`\`\`bash
      # Delegate system design
-     npx claude-flow sparc run architect "Design scalable architecture for ${taskDescription}" --non-interactive
+     npx gemini-flow sparc run architect "Design scalable architecture for ${taskDescription}" --non-interactive
      
      # Store task assignment
-     npx claude-flow memory store ${memoryNamespace}_task_arch "Assigned to: architect mode. Status: In progress. Dependencies: spec_complete."
+     npx gemini-flow memory store ${memoryNamespace}_task_arch "Assigned to: architect mode. Status: In progress. Dependencies: spec_complete."
      \`\`\`
    - Ensure modular design (< 500 lines per file)
    - Verify extensible service boundaries
    - Review security architecture
-   - Store arch results: \`npx claude-flow memory store ${memoryNamespace}_arch_complete "Architecture designed. APIs defined. Security boundaries established. Ready for implementation."\`
+   - Store arch results: \`npx gemini-flow memory store ${memoryNamespace}_arch_complete "Architecture designed. APIs defined. Security boundaries established. Ready for implementation."\`
 
 4. **Refinement Phase Orchestration** (20 mins)
    - Coordinate parallel implementation tasks:
      \`\`\`bash
      # TDD implementation
-     npx claude-flow sparc run tdd "Implement core functionality with tests" --non-interactive
+     npx gemini-flow sparc run tdd "Implement core functionality with tests" --non-interactive
      
      # Main code implementation
-     npx claude-flow sparc run code "Build modular implementation following architecture" --non-interactive
+     npx gemini-flow sparc run code "Build modular implementation following architecture" --non-interactive
      
      # Security review
-     npx claude-flow sparc run security-review "Audit implementation for vulnerabilities" --non-interactive
+     npx gemini-flow sparc run security-review "Audit implementation for vulnerabilities" --non-interactive
      
      # Debugging support
-     npx claude-flow sparc run debug "Investigate and fix any issues" --non-interactive
+     npx gemini-flow sparc run debug "Investigate and fix any issues" --non-interactive
      
      # Store parallel task status
-     npx claude-flow memory store ${memoryNamespace}_refinement_tasks "TDD: 80% complete. Code: 60% complete. Security: Pending. Debug: On standby."\`
+     npx gemini-flow memory store ${memoryNamespace}_refinement_tasks "TDD: 80% complete. Code: 60% complete. Security: Pending. Debug: On standby."\`
    - Monitor task progress
    - Resolve dependencies and conflicts
    - Ensure all files < 500 lines
-   - Store refinement status: \`npx claude-flow memory store ${memoryNamespace}_refinement_progress "Core features implemented. Tests passing. Security review in progress."\`
+   - Store refinement status: \`npx gemini-flow memory store ${memoryNamespace}_refinement_progress "Core features implemented. Tests passing. Security review in progress."\`
 
 5. **Completion Phase Coordination** (15 mins)
    - Final integration and deployment tasks:
      \`\`\`bash
      # System integration
-     npx claude-flow sparc run integration "Integrate all components" --non-interactive
+     npx gemini-flow sparc run integration "Integrate all components" --non-interactive
      
      # Documentation
-     npx claude-flow sparc run docs-writer "Create comprehensive documentation" --non-interactive
+     npx gemini-flow sparc run docs-writer "Create comprehensive documentation" --non-interactive
      
      # Optimization
-     npx claude-flow sparc run refinement-optimization-mode "Optimize performance and structure" --non-interactive
+     npx gemini-flow sparc run refinement-optimization-mode "Optimize performance and structure" --non-interactive
      
      # DevOps deployment
-     npx claude-flow sparc run devops "Deploy to production" --non-interactive
+     npx gemini-flow sparc run devops "Deploy to production" --non-interactive
      
      # Monitoring setup
-     npx claude-flow sparc run post-deployment-monitoring-mode "Configure production monitoring" --non-interactive
+     npx gemini-flow sparc run post-deployment-monitoring-mode "Configure production monitoring" --non-interactive
      \`\`\`
    - Validate all deliverables
    - Ensure continuous improvement setup
-   - Store completion: \`npx claude-flow memory store ${memoryNamespace}_sparc_complete "Project delivered. All phases complete. Documentation ready. Deployed to production. Monitoring active."\`
+   - Store completion: \`npx gemini-flow memory store ${memoryNamespace}_sparc_complete "Project delivered. All phases complete. Documentation ready. Deployed to production. Monitoring active."\`
 
 ## Task Delegation Strategy
 
@@ -148,16 +148,16 @@ For each subtask, I will:
 ## Orchestration Commands
 \`\`\`bash
 # Check overall progress
-npx claude-flow memory query ${memoryNamespace}_sparc
+npx gemini-flow memory query ${memoryNamespace}_sparc
 
 # View specific phase status
-npx claude-flow memory query ${memoryNamespace}_refinement
+npx gemini-flow memory query ${memoryNamespace}_refinement
 
 # Check task dependencies
-npx claude-flow memory query ${memoryNamespace}_dependencies
+npx gemini-flow memory query ${memoryNamespace}_dependencies
 
 # Monitor active tasks
-npx claude-flow status
+npx gemini-flow status
 \`\`\`
 
 ## Next Steps

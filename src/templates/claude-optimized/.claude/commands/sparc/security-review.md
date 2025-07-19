@@ -170,25 +170,25 @@ Return `attempt_completion` with:
 
 To use this SPARC mode, you can:
 
-1. Run directly: `npx claude-flow sparc run security-review "your task"`
+1. Run directly: `npx gemini-flow sparc run security-review "your task"`
 2. Use in workflow: Include `security-review` in your SPARC workflow
 3. Delegate tasks: Use `new_task` to assign work to this mode
-4. Batch operations: `npx claude-flow sparc run security-review --batch "audit all microservices"`
+4. Batch operations: `npx gemini-flow sparc run security-review --batch "audit all microservices"`
 
 ## Example
 
 ```bash
 # Standard security review
-npx claude-flow sparc run security-review "audit user authentication module"
+npx gemini-flow sparc run security-review "audit user authentication module"
 
 # Batch security scan across services
-npx claude-flow sparc run security-review --batch-scan "all services for OWASP Top 10"
+npx gemini-flow sparc run security-review --batch-scan "all services for OWASP Top 10"
 
 # Parallel vulnerability check
-npx claude-flow sparc run security-review --parallel-vuln "check all dependencies"
+npx gemini-flow sparc run security-review --parallel-vuln "check all dependencies"
 
 # Concurrent compliance audit
-npx claude-flow sparc run security-review --compliance "GDPR,PCI-DSS,SOC2"
+npx gemini-flow sparc run security-review --compliance "GDPR,PCI-DSS,SOC2"
 ```
 
 ## Integration Examples

@@ -1,5 +1,5 @@
 /**
- * Test data generators and fixtures for Claude-Flow tests
+ * Test data generators and fixtures for Gemini-Flow tests
  */
 
 import { TestDataGenerator } from '../utils/test-utils.ts';
@@ -230,7 +230,7 @@ export function generateCLITestScenarios() {
   return [
     {
       command: ['start'],
-      expectedOutput: 'Claude-Flow orchestrator started',
+      expectedOutput: 'Gemini-Flow orchestrator started',
       expectedExitCode: 0,
     },
     {

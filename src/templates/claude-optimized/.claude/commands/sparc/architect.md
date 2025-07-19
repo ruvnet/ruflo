@@ -58,14 +58,14 @@ Ensure no part of the design includes secrets or hardcoded env values. Emphasize
 
 To use this SPARC mode, you can:
 
-1. Run directly: `npx claude-flow sparc run architect "your task"`
+1. Run directly: `npx gemini-flow sparc run architect "your task"`
 2. Use in workflow: Include `architect` in your SPARC workflow
 3. Delegate tasks: Use `new_task` to assign work to this mode
 
 ## Example
 
 ```bash
-npx claude-flow sparc run architect "implement user authentication"
+npx gemini-flow sparc run architect "implement user authentication"
 ```
 
 ## Batchtools Integration Examples

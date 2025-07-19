@@ -2,14 +2,14 @@
 
 ## Executive Summary
 
-This document outlines comprehensive improvements for integrating ruv-swarm as an NPM SDK with Claude Flow v2.0.0, focusing on developer experience, type safety, and performance optimization.
+This document outlines comprehensive improvements for integrating ruv-swarm as an NPM SDK with Gemini Flow v2.0.0, focusing on developer experience, type safety, and performance optimization.
 
 ## 1. Current Integration Challenges
 
 ### 1.1 Complex Command Structure
 ```bash
 # Current - verbose and error-prone
-npx ruv-swarm@latest init hierarchical 8 --claude --force
+npx ruv-swarm@latest init hierarchical 8 --gemini --force
 npx ruv-swarm@latest spawn researcher "Agent Name"
 npx ruv-swarm@latest orchestrate "Complex task description"
 ```
@@ -28,7 +28,7 @@ npx ruv-swarm@latest orchestrate "Complex task description"
 
 ### 2.1 Package Structure
 ```
-@claude-flow/ruv-swarm
+@gemini-flow/ruv-swarm
 ├── src/
 │   ├── index.ts          # Main exports
 │   ├── swarm.ts          # Swarm class
@@ -47,7 +47,7 @@ npx ruv-swarm@latest orchestrate "Complex task description"
 
 ### 2.2 Modern API Design
 ```typescript
-import { Swarm, SwarmPreset } from '@claude-flow/ruv-swarm';
+import { Swarm, SwarmPreset } from '@gemini-flow/ruv-swarm';
 
 // Simple preset usage
 const swarm = await Swarm.create(SwarmPreset.Development);
@@ -168,16 +168,16 @@ const task = await swarm.orchestrate({
 ### 4.1 Simplified Commands
 ```bash
 # Current (complex)
-npx ruv-swarm@latest init hierarchical 8 --claude --force
+npx ruv-swarm@latest init hierarchical 8 --gemini --force
 
 # Improved (simple)
-npx claude-flow swarm create --preset=development
-npx claude-flow swarm create -p dev  # short alias
+npx gemini-flow swarm create --preset=development
+npx gemini-flow swarm create -p dev  # short alias
 ```
 
 ### 4.2 Interactive Mode
 ```bash
-npx claude-flow swarm create --interactive
+npx gemini-flow swarm create --interactive
 
 ? Choose a preset or custom configuration:
   ❯ Development Team (5 agents)
@@ -193,23 +193,23 @@ npx claude-flow swarm create --interactive
 ✓ Creating development swarm...
 ✓ Spawning 5 agents...
 ✓ Configuring neural networks...
-✓ Ready! Run 'claude-flow swarm status' to view your team.
+✓ Ready! Run 'gemini-flow swarm status' to view your team.
 ```
 
 ### 4.3 Consistent Parameter Format
 ```bash
 # All commands follow noun-verb-options pattern
-claude-flow swarm create --preset=dev
-claude-flow swarm status --detailed
-claude-flow swarm monitor --duration=60
+gemini-flow swarm create --preset=dev
+gemini-flow swarm status --detailed
+gemini-flow swarm monitor --duration=60
 
-claude-flow agent spawn --type=coder --name="John"
-claude-flow agent list --swarm=my-swarm
-claude-flow agent terminate --id=agent-123
+gemini-flow agent spawn --type=coder --name="John"
+gemini-flow agent list --swarm=my-swarm
+gemini-flow agent terminate --id=agent-123
 
-claude-flow task run --file=tasks.json
-claude-flow task status --id=task-456
-claude-flow task cancel --all
+gemini-flow task run --file=tasks.json
+gemini-flow task status --id=task-456
+gemini-flow task cancel --all
 ```
 
 ## 5. Advanced Features
@@ -273,7 +273,7 @@ class SwarmCompat {
 
 ### 6.2 Migration Wizard
 ```bash
-npx claude-flow migrate
+npx gemini-flow migrate
 
 ? Detected v1.x configuration. Migrate to v2.0?
 ? Select target preset based on your setup:
@@ -283,7 +283,7 @@ npx claude-flow migrate
 
 ✓ Configuration migrated
 ✓ Updated 5 script references
-✓ Created backup at .claude-flow-backup/
+✓ Created backup at .gemini-flow-backup/
 ```
 
 ## 7. Performance Optimizations
@@ -319,7 +319,7 @@ try {
 } catch (error) {
   // SwarmError: Invalid agent type 'invalid'
   // Valid types: researcher, coder, analyst, tester, coordinator
-  // See: https://docs.claude-flow.ai/agents/types
+  // See: https://docs.gemini-flow.ai/agents/types
 }
 ```
 

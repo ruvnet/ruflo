@@ -24,7 +24,7 @@ interface ScanResult {
 }
 
 const TIMEOUT_MS = 10000; // 10 seconds
-const USER_AGENT = 'Claude-Flow Link Checker';
+const USER_AGENT = 'Gemini-Flow Link Checker';
 const MAX_CONCURRENT = 10;
 
 // Links to skip (known to have issues with automated checking)

@@ -20,10 +20,10 @@ The coordinator agent specializes in planning, task delegation, and project mana
 **Spawning a Coordinator:**
 ```bash
 # Basic coordinator
-claude-flow agent spawn coordinator --name "Project Manager"
+gemini-flow agent spawn coordinator --name "Project Manager"
 
 # Advanced coordinator with capabilities
-claude-flow agent spawn coordinator --name "Senior Project Coordinator" \
+gemini-flow agent spawn coordinator --name "Senior Project Coordinator" \
   --capabilities "planning,delegation,monitoring,risk-assessment" \
   --memory-context "project-management" \
   --priority high
@@ -68,13 +68,13 @@ Specialized in information gathering, analysis, and knowledge synthesis.
 **Spawning a Researcher:**
 ```bash
 # Domain-specific researcher
-claude-flow agent spawn researcher --name "AI Research Specialist" \
+gemini-flow agent spawn researcher --name "AI Research Specialist" \
   --capabilities "web-research,analysis,documentation" \
   --domain "artificial-intelligence,machine-learning" \
   --tools "web-scraper,search-engine,pdf-parser"
 
 # Market researcher
-claude-flow agent spawn researcher --name "Market Analyst" \
+gemini-flow agent spawn researcher --name "Market Analyst" \
   --capabilities "market-research,competitive-analysis" \
   --sources "industry-reports,financial-data,news"
 ```
@@ -119,13 +119,13 @@ Focused on code development, technical implementation, and software engineering.
 **Spawning an Implementer:**
 ```bash
 # Full-stack developer
-claude-flow agent spawn implementer --name "Full-Stack Developer" \
+gemini-flow agent spawn implementer --name "Full-Stack Developer" \
   --capabilities "coding,testing,deployment" \
   --tech-stack "javascript,python,react,nodejs,docker" \
   --methodologies "tdd,agile,ci-cd"
 
 # Specialized backend developer
-claude-flow agent spawn implementer --name "Backend Specialist" \
+gemini-flow agent spawn implementer --name "Backend Specialist" \
   --capabilities "api-development,database-design,microservices" \
   --tech-stack "python,fastapi,postgresql,redis,kubernetes"
 ```
@@ -166,13 +166,13 @@ Specializes in data analysis, pattern recognition, and insights generation.
 **Spawning an Analyst:**
 ```bash
 # Data analyst
-claude-flow agent spawn analyst --name "Data Science Specialist" \
+gemini-flow agent spawn analyst --name "Data Science Specialist" \
   --capabilities "analysis,visualization,reporting,statistics" \
   --tools "pandas,numpy,matplotlib,jupyter,sql" \
   --specialization "data-science"
 
 # Performance analyst
-claude-flow agent spawn analyst --name "Performance Analyst" \
+gemini-flow agent spawn analyst --name "Performance Analyst" \
   --capabilities "performance-analysis,optimization,monitoring" \
   --focus "system-performance,application-metrics"
 ```
@@ -211,13 +211,13 @@ Create specialized agents for unique requirements.
 **Creating Custom Agent Type:**
 ```bash
 # Define custom agent type
-claude-flow agent create-type security-auditor \
+gemini-flow agent create-type security-auditor \
   --capabilities "security-audit,vulnerability-assessment,compliance" \
   --tools "nmap,burp-suite,owasp-zap,sonarqube" \
   --certifications "cissp,ceh,oscp"
 
 # Spawn custom agent
-claude-flow agent spawn security-auditor --name "Security Specialist" \
+gemini-flow agent spawn security-auditor --name "Security Specialist" \
   --config security-auditor.json
 ```
 
@@ -256,15 +256,15 @@ claude-flow agent spawn security-auditor --name "Security Specialist" \
 **Basic Agent Spawning:**
 ```bash
 # Simple spawn
-claude-flow agent spawn researcher --name "Research Assistant"
+gemini-flow agent spawn researcher --name "Research Assistant"
 
 # Spawn with specific configuration
-claude-flow agent spawn implementer \
+gemini-flow agent spawn implementer \
   --name "Backend Developer" \
   --config backend-dev-config.json
 
 # Spawn with inline configuration
-claude-flow agent spawn analyst \
+gemini-flow agent spawn analyst \
   --name "Data Analyst" \
   --capabilities "analysis,visualization" \
   --memory-limit 2GB \
@@ -274,13 +274,13 @@ claude-flow agent spawn analyst \
 **Advanced Spawning Options:**
 ```bash
 # Spawn with team context
-claude-flow agent spawn coordinator \
+gemini-flow agent spawn coordinator \
   --name "Team Lead" \
   --team "development-team" \
   --authority "task-assignment,resource-allocation"
 
 # Spawn with resource constraints
-claude-flow agent spawn implementer \
+gemini-flow agent spawn implementer \
   --name "Resource-Constrained Developer" \
   --memory-limit 1GB \
   --cpu-limit 2 \
@@ -288,7 +288,7 @@ claude-flow agent spawn implementer \
   --max-concurrent-tasks 3
 
 # Spawn with scheduling preferences
-claude-flow agent spawn researcher \
+gemini-flow agent spawn researcher \
   --name "Scheduled Researcher" \
   --schedule "weekdays:9-17" \
   --timezone "America/New_York" \
@@ -300,28 +300,28 @@ claude-flow agent spawn researcher \
 **Real-time Monitoring:**
 ```bash
 # List all active agents
-claude-flow agent list
+gemini-flow agent list
 
 # Detailed agent information
-claude-flow agent info <agent-id> --detailed
+gemini-flow agent info <agent-id> --detailed
 
 # Monitor specific agent
-claude-flow agent monitor <agent-id> --follow --metrics all
+gemini-flow agent monitor <agent-id> --follow --metrics all
 
 # Monitor all agents with dashboard
-claude-flow agent monitor --all --dashboard --refresh 5s
+gemini-flow agent monitor --all --dashboard --refresh 5s
 ```
 
 **Health Monitoring:**
 ```bash
 # Check agent health
-claude-flow agent health <agent-id>
+gemini-flow agent health <agent-id>
 
 # System-wide health check
-claude-flow agent health --all --summary
+gemini-flow agent health --all --summary
 
 # Set up health alerts
-claude-flow agent health-alerts \
+gemini-flow agent health-alerts \
   --threshold "response-time:>5s,memory:>90%,errors:>5" \
   --notification "email,slack"
 ```
@@ -329,18 +329,18 @@ claude-flow agent health-alerts \
 **Performance Metrics:**
 ```bash
 # View agent performance
-claude-flow agent metrics <agent-id> \
+gemini-flow agent metrics <agent-id> \
   --metrics "tasks-completed,response-time,resource-usage" \
   --time-range "24h"
 
 # Compare agent performance
-claude-flow agent compare \
+gemini-flow agent compare \
   --agents "agent-1,agent-2,agent-3" \
   --metric "productivity" \
   --period "7d"
 
 # Export performance data
-claude-flow agent export-metrics \
+gemini-flow agent export-metrics \
   --format json \
   --output agent-performance.json \
   --time-range "30d"
@@ -351,32 +351,32 @@ claude-flow agent export-metrics \
 **Direct Messaging:**
 ```bash
 # Send message to specific agent
-claude-flow agent message <agent-id> \
+gemini-flow agent message <agent-id> \
   "Please prioritize the API implementation task"
 
 # Send structured message
-claude-flow agent message <agent-id> \
+gemini-flow agent message <agent-id> \
   --type "task-update" \
   --priority "high" \
   --data '{"task_id": "123", "status": "urgent"}'
 
 # Request agent status
-claude-flow agent request-status <agent-id>
+gemini-flow agent request-status <agent-id>
 ```
 
 **Broadcast Communication:**
 ```bash
 # Broadcast to all agents
-claude-flow agent broadcast \
+gemini-flow agent broadcast \
   "System maintenance scheduled in 30 minutes"
 
 # Broadcast to specific agent types
-claude-flow agent broadcast \
+gemini-flow agent broadcast \
   --types "implementer,analyst" \
   "Code freeze starts now for release preparation"
 
 # Broadcast with metadata
-claude-flow agent broadcast \
+gemini-flow agent broadcast \
   --message "New project requirements available" \
   --metadata '{"project": "web-app", "priority": "high"}' \
   --require-acknowledgment
@@ -385,16 +385,16 @@ claude-flow agent broadcast \
 **Group Communication:**
 ```bash
 # Create agent group
-claude-flow agent group create "backend-team" \
+gemini-flow agent group create "backend-team" \
   --members "dev-1,dev-2,dev-3" \
   --lead "senior-dev"
 
 # Send group message
-claude-flow agent group message "backend-team" \
+gemini-flow agent group message "backend-team" \
   "Sprint planning meeting at 2 PM"
 
 # Group coordination
-claude-flow agent group coordinate "backend-team" \
+gemini-flow agent group coordinate "backend-team" \
   --task "database-migration" \
   --strategy "divide-and-conquer"
 ```
@@ -404,28 +404,28 @@ claude-flow agent group coordinate "backend-team" \
 **Graceful Termination:**
 ```bash
 # Graceful agent shutdown
-claude-flow agent terminate <agent-id> --graceful
+gemini-flow agent terminate <agent-id> --graceful
 
 # Terminate with task completion
-claude-flow agent terminate <agent-id> \
+gemini-flow agent terminate <agent-id> \
   --complete-current-tasks \
   --timeout 600s
 
 # Terminate with handover
-claude-flow agent terminate <agent-id> \
+gemini-flow agent terminate <agent-id> \
   --handover-to <backup-agent-id>
 ```
 
 **Batch Termination:**
 ```bash
 # Terminate agents by type
-claude-flow agent terminate --type researcher --graceful
+gemini-flow agent terminate --type researcher --graceful
 
 # Terminate idle agents
-claude-flow agent terminate --idle-longer-than 1h
+gemini-flow agent terminate --idle-longer-than 1h
 
 # Emergency termination
-claude-flow agent terminate-all --emergency --confirm
+gemini-flow agent terminate-all --emergency --confirm
 ```
 
 ## Agent Coordination Patterns
@@ -435,7 +435,7 @@ claude-flow agent terminate-all --emergency --confirm
 **Setting Up Agent Hierarchies:**
 ```bash
 # Create development hierarchy
-claude-flow agent hierarchy create "development-team" \
+gemini-flow agent hierarchy create "development-team" \
   --coordinator "senior-architect" \
   --levels '{
     "architects": ["system-architect", "data-architect"],
@@ -445,7 +445,7 @@ claude-flow agent hierarchy create "development-team" \
   }'
 
 # Assign hierarchy roles
-claude-flow agent hierarchy assign "development-team" \
+gemini-flow agent hierarchy assign "development-team" \
   --agent "senior-architect" \
   --role "coordinator" \
   --authority "task-delegation,resource-allocation"
@@ -454,7 +454,7 @@ claude-flow agent hierarchy assign "development-team" \
 **Hierarchical Task Delegation:**
 ```bash
 # Create hierarchical task
-claude-flow task create-hierarchical "build-microservices-platform" \
+gemini-flow task create-hierarchical "build-microservices-platform" \
   --hierarchy "development-team" \
   --delegation-strategy "expertise-based" \
   --coordination-level "leads"
@@ -465,13 +465,13 @@ claude-flow task create-hierarchical "build-microservices-platform" \
 **Creating Agent Teams:**
 ```bash
 # Create specialized team
-claude-flow agent team create "ai-research-team" \
+gemini-flow agent team create "ai-research-team" \
   --members "ml-researcher,nlp-specialist,cv-expert,data-scientist" \
   --lead "ai-research-lead" \
   --focus "artificial-intelligence"
 
 # Cross-functional team
-claude-flow agent team create "product-team" \
+gemini-flow agent team create "product-team" \
   --members "product-manager,designer,frontend-dev,backend-dev,qa-engineer" \
   --methodology "agile" \
   --sprint-duration "2w"
@@ -480,12 +480,12 @@ claude-flow agent team create "product-team" \
 **Team Coordination:**
 ```bash
 # Assign team task
-claude-flow task create development "user-authentication-system" \
+gemini-flow task create development "user-authentication-system" \
   --assign-to-team "product-team" \
   --coordination-mode "collaborative"
 
 # Team synchronization
-claude-flow agent team sync "product-team" \
+gemini-flow agent team sync "product-team" \
   --frequency "daily" \
   --format "standup"
 ```
@@ -495,13 +495,13 @@ claude-flow agent team sync "product-team" \
 **Setting Up Peer Networks:**
 ```bash
 # Create research network
-claude-flow agent network create "research-network" \
+gemini-flow agent network create "research-network" \
   --topology "mesh" \
   --agents "researcher-1,researcher-2,researcher-3" \
   --collaboration-protocol "peer-review"
 
 # Specialist network
-claude-flow agent network create "specialists" \
+gemini-flow agent network create "specialists" \
   --topology "hub-spoke" \
   --hub "lead-specialist" \
   --spokes "ui-expert,api-expert,db-expert,security-expert"
@@ -514,14 +514,14 @@ claude-flow agent network create "specialists" \
 **Knowledge Transfer:**
 ```bash
 # Transfer knowledge between agents
-claude-flow agent knowledge-transfer \
+gemini-flow agent knowledge-transfer \
   --from "senior-dev" \
   --to "junior-dev" \
   --category "best-practices" \
   --method "progressive"
 
 # Batch knowledge sharing
-claude-flow agent knowledge-share "development-team" \
+gemini-flow agent knowledge-share "development-team" \
   --topic "code-review-guidelines" \
   --format "workshop"
 ```
@@ -529,11 +529,11 @@ claude-flow agent knowledge-share "development-team" \
 **Performance Learning:**
 ```bash
 # Enable agent learning
-claude-flow agent learning enable <agent-id> \
+gemini-flow agent learning enable <agent-id> \
   --methods "performance-feedback,peer-review,outcome-analysis"
 
 # Learning analytics
-claude-flow agent learning-analytics <agent-id> \
+gemini-flow agent learning-analytics <agent-id> \
   --metrics "improvement-rate,skill-acquisition,efficiency"
 ```
 
@@ -542,13 +542,13 @@ claude-flow agent learning-analytics <agent-id> \
 **Auto-scaling Agents:**
 ```bash
 # Configure auto-scaling
-claude-flow agent auto-scale configure \
+gemini-flow agent auto-scale configure \
   --trigger "queue-length:>20,wait-time:>5m" \
   --scale-up "implementer,analyst" \
   --scale-down-delay "15m"
 
 # Demand-based provisioning
-claude-flow agent provision-on-demand \
+gemini-flow agent provision-on-demand \
   --strategy "workload-prediction" \
   --lead-time "2m" \
   --max-instances 10
@@ -557,7 +557,7 @@ claude-flow agent provision-on-demand \
 **Spot Instance Agents:**
 ```bash
 # Cost-optimized agents
-claude-flow agent provision-spot \
+gemini-flow agent provision-spot \
   --max-price 0.50 \
   --agent-type "batch-processor" \
   --interruption-handler "graceful-migration" \
@@ -569,12 +569,12 @@ claude-flow agent provision-spot \
 **Skill Development:**
 ```bash
 # Enhance agent capabilities
-claude-flow agent enhance <agent-id> \
+gemini-flow agent enhance <agent-id> \
   --new-capabilities "advanced-debugging,performance-tuning" \
   --training-duration "24h"
 
 # Specialization tracks
-claude-flow agent specialize <agent-id> \
+gemini-flow agent specialize <agent-id> \
   --track "machine-learning" \
   --certifications "tensorflow,pytorch" \
   --mentorship "ml-expert"
@@ -583,12 +583,12 @@ claude-flow agent specialize <agent-id> \
 **Tool Integration:**
 ```bash
 # Add tools to agent
-claude-flow agent add-tools <agent-id> \
+gemini-flow agent add-tools <agent-id> \
   --tools "docker,kubernetes,jenkins" \
   --training "hands-on"
 
 # Custom tool development
-claude-flow agent develop-tool <agent-id> \
+gemini-flow agent develop-tool <agent-id> \
   --tool-name "custom-analyzer" \
   --specification tool-spec.json
 ```
@@ -605,11 +605,11 @@ claude-flow agent develop-tool <agent-id> \
 **Capability Matching:**
 ```bash
 # Good: Specific capabilities
-claude-flow agent spawn researcher \
+gemini-flow agent spawn researcher \
   --capabilities "academic-research,technical-documentation"
 
 # Avoid: Overly broad capabilities
-claude-flow agent spawn researcher \
+gemini-flow agent spawn researcher \
   --capabilities "everything,general-purpose"
 ```
 
@@ -618,10 +618,10 @@ claude-flow agent spawn researcher \
 **Memory and CPU Optimization:**
 ```bash
 # Monitor resource usage
-claude-flow agent resources --summary --optimize
+gemini-flow agent resources --summary --optimize
 
 # Set appropriate limits
-claude-flow agent spawn implementer \
+gemini-flow agent spawn implementer \
   --memory-limit 2GB \
   --cpu-limit 2 \
   --priority normal
@@ -630,12 +630,12 @@ claude-flow agent spawn implementer \
 **Task Load Balancing:**
 ```bash
 # Monitor agent workload
-claude-flow agent workload-analysis \
+gemini-flow agent workload-analysis \
   --time-range "7d" \
   --recommendations
 
 # Rebalance tasks
-claude-flow agent rebalance \
+gemini-flow agent rebalance \
   --strategy "capability-based" \
   --consider-performance
 ```
@@ -645,13 +645,13 @@ claude-flow agent rebalance \
 **Message Optimization:**
 ```bash
 # Use structured messages
-claude-flow agent message <agent-id> \
+gemini-flow agent message <agent-id> \
   --type "status-update" \
   --structured true \
   --compress true
 
 # Batch communications
-claude-flow agent batch-message \
+gemini-flow agent batch-message \
   --recipients "team-members" \
   --message-template "sprint-update.json"
 ```
@@ -661,12 +661,12 @@ claude-flow agent batch-message \
 **Agent Authentication:**
 ```bash
 # Set up agent authentication
-claude-flow agent auth setup \
+gemini-flow agent auth setup \
   --method "certificate" \
   --rotation-period "30d"
 
 # Access control
-claude-flow agent permissions set <agent-id> \
+gemini-flow agent permissions set <agent-id> \
   --resources "project-files,databases" \
   --actions "read,write" \
   --restrictions "no-delete"
@@ -677,12 +677,12 @@ claude-flow agent permissions set <agent-id> \
 **Comprehensive Monitoring:**
 ```bash
 # Set up monitoring dashboard
-claude-flow agent monitoring-dashboard \
+gemini-flow agent monitoring-dashboard \
   --metrics "health,performance,productivity" \
   --alerts "failure,degradation,anomaly"
 
 # Performance baselines
-claude-flow agent baseline-performance \
+gemini-flow agent baseline-performance \
   --agents "all" \
   --metrics "response-time,throughput,accuracy"
 ```

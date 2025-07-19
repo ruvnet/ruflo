@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Main orchestrator for Claude-Flow
+ * Main orchestrator for Gemini-Flow
  */
 
 import {

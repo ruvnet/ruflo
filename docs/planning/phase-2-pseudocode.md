@@ -1,5 +1,5 @@
 # Phase 2: Pseudocode and Algorithms
-## Claude-Flow Core Algorithms
+## Gemini-Flow Core Algorithms
 
 ### Core Orchestrator Algorithm
 

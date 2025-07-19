@@ -1,5 +1,5 @@
 # Phase 3: Architecture Design
-## Claude-Flow System Architecture
+## Gemini-Flow System Architecture
 
 ### System Overview
 
@@ -570,20 +570,20 @@ services:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: claude-flow-orchestrator
+  name: gemini-flow-orchestrator
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: claude-flow
+      app: gemini-flow
   template:
     metadata:
       labels:
-        app: claude-flow
+        app: gemini-flow
     spec:
       containers:
       - name: orchestrator
-        image: claude-flow:latest
+        image: gemini-flow:latest
         env:
         - name: MODE
           value: production

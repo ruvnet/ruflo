@@ -1,5 +1,5 @@
 /**
- * Comprehensive test utilities for Claude-Flow
+ * Comprehensive test utilities for Gemini-Flow
  */
 
 import { assertEquals, assertExists, assertRejects, assertThrows } from "https://deno.land/std@0.220.0/assert/mod.ts";
@@ -407,7 +407,7 @@ export class FileSystemTestUtils {
   /**
    * Create temporary directory for testing
    */
-  static async createTempDir(prefix = 'claude-flow-test-'): Promise<string> {
+  static async createTempDir(prefix = 'gemini-flow-test-'): Promise<string> {
     const tempDir = await Deno.makeTempDir({ prefix });
     return tempDir;
   }

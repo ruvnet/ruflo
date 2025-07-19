@@ -1,37 +1,37 @@
-# Claude Flow v2.0.0 - Comprehensive Troubleshooting Guide
+# Gemini Flow v2.0.0 - Comprehensive Troubleshooting Guide
 
 ## 🎯 Overview
 
-This comprehensive troubleshooting guide addresses common issues, performance problems, and integration challenges with Claude Flow v2.0.0, including ruv-swarm coordination, neural networks, memory management, and enterprise deployment.
+This comprehensive troubleshooting guide addresses common issues, performance problems, and integration challenges with Gemini Flow v2.0.0, including ruv-swarm coordination, neural networks, memory management, and enterprise deployment.
 
 ## 📋 Quick Diagnostic Commands
 
 ### System Health Check
 ```bash
 # Complete system diagnostics
-npx claude-flow@2.0.0 health-check --comprehensive
+npx gemini-flow@2.0.0 health-check --comprehensive
 
 # Check all integrations
-npx claude-flow@2.0.0 diagnostic run --components "swarm,neural,memory,mcp"
+npx gemini-flow@2.0.0 diagnostic run --components "swarm,neural,memory,mcp"
 
 # Verify MCP tools
-claude mcp status ruv-swarm
-claude mcp test ruv-swarm
+gemini mcp status ruv-swarm
+gemini mcp test ruv-swarm
 
 # Check neural networks
-npx claude-flow@2.0.0 neural status --detailed
+npx gemini-flow@2.0.0 neural status --detailed
 ```
 
 ### Performance Analysis
 ```bash
 # Performance overview
-npx claude-flow@2.0.0 performance report --timeframe 24h --format detailed
+npx gemini-flow@2.0.0 performance report --timeframe 24h --format detailed
 
 # Identify bottlenecks
-npx claude-flow@2.0.0 bottleneck analyze --all-components
+npx gemini-flow@2.0.0 bottleneck analyze --all-components
 
 # Memory analysis
-npx claude-flow@2.0.0 memory analytics --real-time
+npx gemini-flow@2.0.0 memory analytics --real-time
 ```
 
 ---
@@ -48,28 +48,28 @@ npx claude-flow@2.0.0 memory analytics --real-time
 **Diagnosis:**
 ```bash
 # Check swarm initialization
-npx claude-flow@2.0.0 swarm status --verbose
+npx gemini-flow@2.0.0 swarm status --verbose
 
 # Verify coordination hooks
 npx ruv-swarm hook pre-task --test
 npx ruv-swarm hook post-edit --test
 
 # Check MCP connectivity
-claude mcp status ruv-swarm
+gemini mcp status ruv-swarm
 ```
 
 **Solutions:**
 ```bash
 # Solution 1: Reset swarm completely
-npx claude-flow@2.0.0 swarm destroy --force --all
-npx claude-flow@2.0.0 coordination swarm-init --topology mesh --max-agents 8
+npx gemini-flow@2.0.0 swarm destroy --force --all
+npx gemini-flow@2.0.0 coordination swarm-init --topology mesh --max-agents 8
 
 # Solution 2: Clear coordination cache
 rm -rf ./memory/coordination-cache/
-npx claude-flow@2.0.0 coordination sync --force
+npx gemini-flow@2.0.0 coordination sync --force
 
 # Solution 3: Restart MCP server
-claude mcp restart ruv-swarm
+gemini mcp restart ruv-swarm
 
 # Solution 4: Check permissions
 chmod +x node_modules/.bin/ruv-swarm
@@ -91,24 +91,24 @@ npm install -g ruv-swarm@1.0.14 --force
 **Diagnosis:**
 ```bash
 # Analyze coordination metrics
-npx claude-flow@2.0.0 agent metrics --all
-npx claude-flow@2.0.0 coordination sync --analyze
+npx gemini-flow@2.0.0 agent metrics --all
+npx gemini-flow@2.0.0 coordination sync --analyze
 
 # Check task distribution
-npx claude-flow@2.0.0 task status --detailed
+npx gemini-flow@2.0.0 task status --detailed
 ```
 
 **Solutions:**
 ```bash
 # Solution 1: Optimize topology
-npx claude-flow@2.0.0 topology optimize --swarm-id current
+npx gemini-flow@2.0.0 topology optimize --swarm-id current
 
 # Solution 2: Adjust agent allocation
-npx claude-flow@2.0.0 load balance --strategy adaptive
+npx gemini-flow@2.0.0 load balance --strategy adaptive
 
 # Solution 3: Clear memory bottlenecks
-npx claude-flow@2.0.0 memory compress --ratio 0.8
-npx claude-flow@2.0.0 memory backup --cleanup-old
+npx gemini-flow@2.0.0 memory compress --ratio 0.8
+npx gemini-flow@2.0.0 memory backup --cleanup-old
 
 # Solution 4: Tune batch operations
 export CLAUDE_BATCH_SIZE=16
@@ -125,26 +125,26 @@ export CLAUDE_PARALLEL_LIMIT=8
 **Diagnosis:**
 ```bash
 # Check memory sync status
-npx claude-flow@2.0.0 memory sync --status
-npx claude-flow@2.0.0 swarm monitor --memory-focus
+npx gemini-flow@2.0.0 memory sync --status
+npx gemini-flow@2.0.0 swarm monitor --memory-focus
 
 # Analyze sync performance
-npx claude-flow@2.0.0 memory analytics --sync-metrics
+npx gemini-flow@2.0.0 memory analytics --sync-metrics
 ```
 
 **Solutions:**
 ```bash
 # Solution 1: Force memory synchronization
-npx claude-flow@2.0.0 memory sync --force --all-agents
+npx gemini-flow@2.0.0 memory sync --force --all-agents
 
 # Solution 2: Rebuild memory index
-npx claude-flow@2.0.0 memory usage --action rebuild-index
+npx gemini-flow@2.0.0 memory usage --action rebuild-index
 
 # Solution 3: Increase sync timeout
 export MEMORY_SYNC_TIMEOUT=60000  # 60 seconds
 
 # Solution 4: Clean corrupted entries
-npx claude-flow@2.0.0 memory usage --action cleanup --corrupted-only
+npx gemini-flow@2.0.0 memory usage --action cleanup --corrupted-only
 ```
 
 ---
@@ -165,11 +165,11 @@ node -e "console.log('WASM support:', typeof WebAssembly !== 'undefined')"
 
 # Validate WASM module
 ls -la node_modules/ruv-swarm/dist/neural/
-file node_modules/ruv-swarm/dist/neural/claude-flow-neural.wasm
-wasm-validate node_modules/ruv-swarm/dist/neural/claude-flow-neural.wasm
+file node_modules/ruv-swarm/dist/neural/gemini-flow-neural.wasm
+wasm-validate node_modules/ruv-swarm/dist/neural/gemini-flow-neural.wasm
 
 # Check for corruption
-shasum -a 256 node_modules/ruv-swarm/dist/neural/claude-flow-neural.wasm
+shasum -a 256 node_modules/ruv-swarm/dist/neural/gemini-flow-neural.wasm
 ```
 
 **Solutions:**
@@ -180,11 +180,11 @@ npm install -g ruv-swarm@1.0.14 --build-from-source
 
 # Solution 2: Clear neural cache
 rm -rf ./memory/neural-cache/
-npx claude-flow@2.0.0 neural train --reset-cache
+npx gemini-flow@2.0.0 neural train --reset-cache
 
 # Solution 3: Download fresh WASM module
-curl -L https://github.com/ruvnet/ruv-FANN/releases/latest/download/claude-flow-neural.wasm \
-  -o node_modules/ruv-swarm/dist/neural/claude-flow-neural.wasm
+curl -L https://github.com/ruvnet/ruv-FANN/releases/latest/download/gemini-flow-neural.wasm \
+  -o node_modules/ruv-swarm/dist/neural/gemini-flow-neural.wasm
 
 # Solution 4: Use Node.js with WASM support
 node --experimental-wasm-modules --experimental-wasm-bigint
@@ -200,20 +200,20 @@ node --experimental-wasm-modules --experimental-wasm-bigint
 **Diagnosis:**
 ```bash
 # Check training performance
-npx claude-flow@2.0.0 neural status --training-metrics
-npx claude-flow@2.0.0 benchmark run --category neural
+npx gemini-flow@2.0.0 neural status --training-metrics
+npx gemini-flow@2.0.0 benchmark run --category neural
 
 # Monitor resource usage
-npx claude-flow@2.0.0 neural profile --real-time
+npx gemini-flow@2.0.0 neural profile --real-time
 ```
 
 **Solutions:**
 ```bash
 # Solution 1: Enable SIMD optimization
-npx claude-flow@2.0.0 wasm optimize --enable-simd
+npx gemini-flow@2.0.0 wasm optimize --enable-simd
 
 # Solution 2: Adjust training parameters
-npx claude-flow@2.0.0 neural train \
+npx gemini-flow@2.0.0 neural train \
   --pattern-type coordination \
   --epochs 50 \
   --batch-size 16 \
@@ -224,7 +224,7 @@ export UV_THREADPOOL_SIZE=16
 node --max-old-space-size=4096
 
 # Solution 4: Use distributed training
-npx claude-flow@2.0.0 neural train \
+npx gemini-flow@2.0.0 neural train \
   --distributed \
   --workers 4
 ```
@@ -239,10 +239,10 @@ npx claude-flow@2.0.0 neural train \
 **Diagnosis:**
 ```bash
 # Validate model integrity
-npx claude-flow@2.0.0 neural validate --model-id coordination-v1
+npx gemini-flow@2.0.0 neural validate --model-id coordination-v1
 
 # Check input data format
-npx claude-flow@2.0.0 neural predict \
+npx gemini-flow@2.0.0 neural predict \
   --model-id coordination-v1 \
   --input "test data" \
   --debug
@@ -251,24 +251,24 @@ npx claude-flow@2.0.0 neural predict \
 **Solutions:**
 ```bash
 # Solution 1: Retrain model with better data
-npx claude-flow@2.0.0 neural train \
+npx gemini-flow@2.0.0 neural train \
   --pattern-type coordination \
   --training-data "./data/validated-patterns.json" \
   --epochs 100
 
 # Solution 2: Compress and optimize model
-npx claude-flow@2.0.0 neural compress \
+npx gemini-flow@2.0.0 neural compress \
   --model-id coordination-v1 \
   --ratio 0.7
 
 # Solution 3: Use ensemble prediction
-npx claude-flow@2.0.0 ensemble create \
+npx gemini-flow@2.0.0 ensemble create \
   --models "coord-v1,coord-v2,coord-v3" \
   --strategy voting
 
 # Solution 4: Clear model cache
 rm -rf ./models/cache/
-npx claude-flow@2.0.0 model reload --all
+npx gemini-flow@2.0.0 model reload --all
 ```
 
 ---
@@ -285,32 +285,32 @@ npx claude-flow@2.0.0 model reload --all
 **Diagnosis:**
 ```bash
 # Check memory integrity
-npx claude-flow@2.0.0 memory usage --action validate --all-namespaces
+npx gemini-flow@2.0.0 memory usage --action validate --all-namespaces
 
 # Analyze corruption patterns
-npx claude-flow@2.0.0 memory analytics --corruption-analysis
+npx gemini-flow@2.0.0 memory analytics --corruption-analysis
 
 # Check file system status
 df -h .
-fsck -n ./memory/claude-flow-data.json
+fsck -n ./memory/gemini-flow-data.json
 ```
 
 **Solutions:**
 ```bash
 # Solution 1: Restore from backup
-npx claude-flow@2.0.0 memory backup --list
-npx claude-flow@2.0.0 memory restore --backup-path ./backups/latest
+npx gemini-flow@2.0.0 memory backup --list
+npx gemini-flow@2.0.0 memory restore --backup-path ./backups/latest
 
 # Solution 2: Rebuild memory database
-npx claude-flow@2.0.0 memory usage --action rebuild --force
-npx claude-flow@2.0.0 memory compress --optimize
+npx gemini-flow@2.0.0 memory usage --action rebuild --force
+npx gemini-flow@2.0.0 memory compress --optimize
 
 # Solution 3: Check and fix permissions
 chmod 755 ./memory/
 chown -R $USER:$USER ./memory/
 
 # Solution 4: Emergency data recovery
-npx claude-flow@2.0.0 memory backup --emergency --format json
+npx gemini-flow@2.0.0 memory backup --emergency --format json
 ```
 
 ### Issue 2: High Memory Usage
@@ -323,8 +323,8 @@ npx claude-flow@2.0.0 memory backup --emergency --format json
 **Diagnosis:**
 ```bash
 # Monitor memory usage
-npx claude-flow@2.0.0 memory analytics --real-time
-npx claude-flow@2.0.0 memory usage --action stats
+npx gemini-flow@2.0.0 memory analytics --real-time
+npx gemini-flow@2.0.0 memory usage --action stats
 
 # Check for memory leaks
 node --trace-gc
@@ -334,16 +334,16 @@ node --heap-prof
 **Solutions:**
 ```bash
 # Solution 1: Compress existing data
-npx claude-flow@2.0.0 memory compress --all-namespaces --ratio 0.8
+npx gemini-flow@2.0.0 memory compress --all-namespaces --ratio 0.8
 
 # Solution 2: Clean old entries
-npx claude-flow@2.0.0 memory usage \
+npx gemini-flow@2.0.0 memory usage \
   --action delete \
   --older-than "7d" \
   --exclude-important
 
 # Solution 3: Optimize storage
-npx claude-flow@2.0.0 memory usage --action optimize-storage
+npx gemini-flow@2.0.0 memory usage --action optimize-storage
 
 # Solution 4: Increase memory limits
 export NODE_OPTIONS="--max-old-space-size=8192"
@@ -359,28 +359,28 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 **Diagnosis:**
 ```bash
 # Check persistence mechanisms
-npx claude-flow@2.0.0 memory persist --test
+npx gemini-flow@2.0.0 memory persist --test
 ls -la ./memory/sessions/
 
 # Verify database connectivity
-sqlite3 ./memory/claude-flow-data.json ".schema"
+sqlite3 ./memory/gemini-flow-data.json ".schema"
 ```
 
 **Solutions:**
 ```bash
 # Solution 1: Repair persistence layer
-npx claude-flow@2.0.0 memory persist --repair
+npx gemini-flow@2.0.0 memory persist --repair
 
 # Solution 2: Reinitialize session storage
 rm -rf ./memory/sessions/
-npx claude-flow@2.0.0 init --claude --force
+npx gemini-flow@2.0.0 init --gemini --force
 
 # Solution 3: Check disk space and permissions
 df -h .
 chmod 755 ./memory/sessions/
 
 # Solution 4: Use alternative backend
-npx claude-flow@2.0.0 config update \
+npx gemini-flow@2.0.0 config update \
   --section memory \
   --config '{"backend": "postgresql"}'
 ```
@@ -399,31 +399,31 @@ npx claude-flow@2.0.0 config update \
 **Diagnosis:**
 ```bash
 # Check MCP server status
-claude mcp status ruv-swarm
-claude mcp logs ruv-swarm --tail 50
+gemini mcp status ruv-swarm
+gemini mcp logs ruv-swarm --tail 50
 
 # Test connectivity
-claude mcp test ruv-swarm
+gemini mcp test ruv-swarm
 netstat -tulpn | grep :8080
 ```
 
 **Solutions:**
 ```bash
 # Solution 1: Restart MCP server
-claude mcp stop ruv-swarm
-claude mcp start ruv-swarm
+gemini mcp stop ruv-swarm
+gemini mcp start ruv-swarm
 
 # Solution 2: Clear MCP cache
 rm -rf ~/.claude/mcp-cache/
-claude mcp restart ruv-swarm
+gemini mcp restart ruv-swarm
 
 # Solution 3: Check port conflicts
 lsof -i :8080
 # Kill conflicting processes if needed
 
 # Solution 4: Reinstall MCP integration
-claude mcp remove ruv-swarm
-claude mcp add ruv-swarm npx ruv-swarm mcp start
+gemini mcp remove ruv-swarm
+gemini mcp add ruv-swarm npx ruv-swarm mcp start
 ```
 
 ### Issue 2: Tool Registration Problems
@@ -436,19 +436,19 @@ claude mcp add ruv-swarm npx ruv-swarm mcp start
 **Diagnosis:**
 ```bash
 # List available tools
-claude mcp list-tools ruv-swarm | wc -l  # Should be 87
+gemini mcp list-tools ruv-swarm | wc -l  # Should be 87
 
 # Check specific tool
-claude mcp describe-tool ruv-swarm mcp__claude-flow__swarm_init
+gemini mcp describe-tool ruv-swarm mcp__gemini-flow__swarm_init
 
 # Verify tool registration
-claude mcp validate ruv-swarm
+gemini mcp validate ruv-swarm
 ```
 
 **Solutions:**
 ```bash
 # Solution 1: Force tool refresh
-claude mcp refresh ruv-swarm
+gemini mcp refresh ruv-swarm
 
 # Solution 2: Re-register tools
 npx ruv-swarm mcp register-tools --force
@@ -458,7 +458,7 @@ npx ruv-swarm mcp validate --tools-only
 
 # Solution 4: Update to latest version
 npm update -g ruv-swarm
-claude mcp update ruv-swarm
+gemini mcp update ruv-swarm
 ```
 
 ### Issue 3: Batch Operations Failures
@@ -471,13 +471,13 @@ claude mcp update ruv-swarm
 **Diagnosis:**
 ```bash
 # Test batch operation
-claude mcp batch-test ruv-swarm --operations 5
+gemini mcp batch-test ruv-swarm --operations 5
 
 # Check batch limits
-claude mcp config ruv-swarm | grep batch
+gemini mcp config ruv-swarm | grep batch
 
 # Monitor batch performance
-npx claude-flow@2.0.0 performance report --mcp-focus
+npx gemini-flow@2.0.0 performance report --mcp-focus
 ```
 
 **Solutions:**
@@ -487,7 +487,7 @@ export CLAUDE_BATCH_SIZE=8
 export CLAUDE_BATCH_TIMEOUT=60000
 
 # Solution 2: Enable parallel batch processing
-claude mcp config ruv-swarm --set parallel_batches=true
+gemini mcp config ruv-swarm --set parallel_batches=true
 
 # Solution 3: Implement retry logic
 export CLAUDE_BATCH_RETRIES=3
@@ -510,11 +510,11 @@ export CLAUDE_BATCH_FALLBACK=sequential
 **Diagnosis:**
 ```bash
 # Check WebUI server status
-npx claude-flow@2.0.0 start --ui --test-mode
+npx gemini-flow@2.0.0 start --ui --test-mode
 curl -f http://localhost:3000/health
 
 # Check logs
-npx claude-flow@2.0.0 logs --component webui --tail 50
+npx gemini-flow@2.0.0 logs --component webui --tail 50
 
 # Verify port availability
 netstat -tulpn | grep :3000
@@ -523,18 +523,18 @@ netstat -tulpn | grep :3000
 **Solutions:**
 ```bash
 # Solution 1: Restart WebUI server
-npx claude-flow@2.0.0 stop
-npx claude-flow@2.0.0 start --ui --port 3000
+npx gemini-flow@2.0.0 stop
+npx gemini-flow@2.0.0 start --ui --port 3000
 
 # Solution 2: Clear browser cache
 # In browser: Clear cache and hard reload (Ctrl+Shift+R)
 
 # Solution 3: Use different port
-npx claude-flow@2.0.0 start --ui --port 3001
+npx gemini-flow@2.0.0 start --ui --port 3001
 
 # Solution 4: Check firewall settings
 sudo ufw allow 3000
-# Or on Windows: New-NetFirewallRule -DisplayName "Claude Flow" -Direction Inbound -Port 3000 -Protocol TCP -Action Allow
+# Or on Windows: New-NetFirewallRule -DisplayName "Gemini Flow" -Direction Inbound -Port 3000 -Protocol TCP -Action Allow
 ```
 
 ### Issue 2: Real-time Updates Not Working
@@ -547,10 +547,10 @@ sudo ufw allow 3000
 **Diagnosis:**
 ```bash
 # Check WebSocket connectivity
-npx claude-flow@2.0.0 websocket test
+npx gemini-flow@2.0.0 websocket test
 
 # Monitor WebSocket traffic
-npx claude-flow@2.0.0 logs --component websocket --real-time
+npx gemini-flow@2.0.0 logs --component websocket --real-time
 
 # Test browser WebSocket support
 # In browser console: typeof WebSocket
@@ -559,13 +559,13 @@ npx claude-flow@2.0.0 logs --component websocket --real-time
 **Solutions:**
 ```bash
 # Solution 1: Enable WebSocket explicitly
-npx claude-flow@2.0.0 start --ui --websockets --port 3000
+npx gemini-flow@2.0.0 start --ui --websockets --port 3000
 
 # Solution 2: Check proxy settings
 # Disable proxy for localhost in browser settings
 
 # Solution 3: Use polling fallback
-npx claude-flow@2.0.0 config update \
+npx gemini-flow@2.0.0 config update \
   --section webui \
   --config '{"realtime": "polling", "polling_interval": 2000}'
 
@@ -584,28 +584,28 @@ telnet localhost 3000
 **Diagnosis:**
 ```bash
 # Check metrics collection
-npx claude-flow@2.0.0 metrics collect --test
+npx gemini-flow@2.0.0 metrics collect --test
 
 # Verify data pipeline
-npx claude-flow@2.0.0 performance report --format json
+npx gemini-flow@2.0.0 performance report --format json
 
 # Test chart rendering
-npx claude-flow@2.0.0 webui validate --charts
+npx gemini-flow@2.0.0 webui validate --charts
 ```
 
 **Solutions:**
 ```bash
 # Solution 1: Reset metrics database
-npx claude-flow@2.0.0 metrics reset --confirm
+npx gemini-flow@2.0.0 metrics reset --confirm
 
 # Solution 2: Force metrics refresh
-npx claude-flow@2.0.0 metrics collect --force --all-components
+npx gemini-flow@2.0.0 metrics collect --force --all-components
 
 # Solution 3: Check browser compatibility
 # Ensure browser supports modern JavaScript and Canvas
 
 # Solution 4: Use simplified dashboard
-npx claude-flow@2.0.0 start --ui --simple-mode
+npx gemini-flow@2.0.0 start --ui --simple-mode
 ```
 
 ---
@@ -622,16 +622,16 @@ npx claude-flow@2.0.0 start --ui --simple-mode
 **Diagnosis:**
 ```bash
 # Check container status
-docker ps -a | grep claude-flow
-kubectl get pods -n claude-flow
+docker ps -a | grep gemini-flow
+kubectl get pods -n gemini-flow
 
 # View container logs
-docker logs claude-flow-container
-kubectl logs -f deployment/claude-flow-v2 -n claude-flow
+docker logs gemini-flow-container
+kubectl logs -f deployment/gemini-flow-v2 -n gemini-flow
 
 # Check resource usage
-docker stats claude-flow-container
-kubectl top pods -n claude-flow
+docker stats gemini-flow-container
+kubectl top pods -n gemini-flow
 ```
 
 **Solutions:**
@@ -645,15 +645,15 @@ kubectl top pods -n claude-flow
 #       cpus: '2.0'
 
 # Solution 2: Fix environment variables
-docker run -e NODE_ENV=production -e CLAUDE_FLOW_VERSION=2.0.0 claude-flow:2.0.0
+docker run -e NODE_ENV=production -e CLAUDE_FLOW_VERSION=2.0.0 gemini-flow:2.0.0
 
 # Solution 3: Check volume mounts
-docker run -v ./data:/app/data -v ./memory:/app/memory claude-flow:2.0.0
+docker run -v ./data:/app/data -v ./memory:/app/memory gemini-flow:2.0.0
 
 # Solution 4: Use health checks
 # Add to Dockerfile:
 # HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-#   CMD npx claude-flow health-check || exit 1
+#   CMD npx gemini-flow health-check || exit 1
 ```
 
 ### Issue 2: Load Balancing Problems
@@ -666,11 +666,11 @@ docker run -v ./data:/app/data -v ./memory:/app/memory claude-flow:2.0.0
 **Diagnosis:**
 ```bash
 # Check load balancer status
-kubectl get services -n claude-flow
-kubectl describe service claude-flow-service
+kubectl get services -n gemini-flow
+kubectl describe service gemini-flow-service
 
 # Monitor request distribution
-kubectl logs -f deployment/nginx-lb -n claude-flow
+kubectl logs -f deployment/nginx-lb -n gemini-flow
 
 # Test load balancing
 for i in {1..10}; do curl -s http://your-domain.com/health; done
@@ -689,13 +689,13 @@ for i in {1..10}; do curl -s http://your-domain.com/health; done
 # In nginx.conf:
 # upstream claude_flow {
 #   least_conn;
-#   server claude-flow-1:3000;
-#   server claude-flow-2:3000;
+#   server gemini-flow-1:3000;
+#   server gemini-flow-2:3000;
 # }
 
 # Solution 3: Implement health checks
 # In nginx.conf:
-# server claude-flow-1:3000 max_fails=3 fail_timeout=30s;
+# server gemini-flow-1:3000 max_fails=3 fail_timeout=30s;
 
 # Solution 4: Use sticky sessions for coordination
 # Add to nginx:
@@ -715,7 +715,7 @@ for i in {1..10}; do curl -s http://your-domain.com/health; done
 psql -h postgres-host -U claude_flow -d claude_flow -c "SELECT 1;"
 
 # Monitor connection pool
-npx claude-flow@2.0.0 database status --connections
+npx gemini-flow@2.0.0 database status --connections
 
 # Check for locks
 psql -c "SELECT * FROM pg_locks WHERE NOT granted;"
@@ -751,7 +751,7 @@ psql -c "SELECT * FROM pg_locks WHERE NOT granted;"
 # }
 
 # Solution 4: Implement connection health checks
-npx claude-flow@2.0.0 database migrate --check-health
+npx gemini-flow@2.0.0 database migrate --check-health
 ```
 
 ---
@@ -762,10 +762,10 @@ npx claude-flow@2.0.0 database migrate --check-health
 
 ```bash
 # Optimize memory usage across all components
-npx claude-flow@2.0.0 memory compress --all-components --ratio 0.8
+npx gemini-flow@2.0.0 memory compress --all-components --ratio 0.8
 
 # Clean up old data
-npx claude-flow@2.0.0 memory usage \
+npx gemini-flow@2.0.0 memory usage \
   --action cleanup \
   --older-than "7d" \
   --backup-first
@@ -778,17 +778,17 @@ export NODE_OPTIONS="--max-old-space-size=4096 --optimize-for-size"
 
 ```bash
 # Enable compression
-npx claude-flow@2.0.0 config update \
+npx gemini-flow@2.0.0 config update \
   --section network \
   --config '{"compression": true, "compression_level": 6}'
 
 # Tune connection pooling
-npx claude-flow@2.0.0 config update \
+npx gemini-flow@2.0.0 config update \
   --section mcp \
   --config '{"pool_size": 20, "keep_alive": true}'
 
 # Enable caching
-npx claude-flow@2.0.0 cache manage --action enable-all
+npx gemini-flow@2.0.0 cache manage --action enable-all
 ```
 
 ### CPU Optimization
@@ -798,12 +798,12 @@ npx claude-flow@2.0.0 cache manage --action enable-all
 export UV_THREADPOOL_SIZE=16
 
 # Use worker threads for heavy operations
-npx claude-flow@2.0.0 config update \
+npx gemini-flow@2.0.0 config update \
   --section workers \
   --config '{"neural_workers": 4, "coordination_workers": 8}'
 
 # Enable SIMD optimization
-npx claude-flow@2.0.0 wasm optimize --enable-simd
+npx gemini-flow@2.0.0 wasm optimize --enable-simd
 ```
 
 ---
@@ -812,9 +812,9 @@ npx claude-flow@2.0.0 wasm optimize --enable-simd
 
 ### Support Channels
 
-1. **Documentation**: Check `/workspaces/claude-code-flow/docs/`
-2. **GitHub Issues**: https://github.com/ruvnet/claude-code-flow/issues
-3. **Community**: https://github.com/ruvnet/claude-code-flow/discussions
+1. **Documentation**: Check `/workspaces/gemini-flow/docs/`
+2. **GitHub Issues**: https://github.com/ruvnet/gemini-flow/issues
+3. **Community**: https://github.com/ruvnet/gemini-flow/discussions
 4. **Performance Reports**: Use built-in diagnostic tools
 
 ### Reporting Issues
@@ -822,26 +822,26 @@ npx claude-flow@2.0.0 wasm optimize --enable-simd
 When reporting issues, include:
 ```bash
 # Generate diagnostic report
-npx claude-flow@2.0.0 diagnostic export --format comprehensive
+npx gemini-flow@2.0.0 diagnostic export --format comprehensive
 
 # Include system information
-npx claude-flow@2.0.0 env-info
+npx gemini-flow@2.0.0 env-info
 
 # Attach relevant logs
-npx claude-flow@2.0.0 logs --all-components --last 1h
+npx gemini-flow@2.0.0 logs --all-components --last 1h
 ```
 
 ### Emergency Recovery
 
 ```bash
 # Complete system reset (use with caution)
-npx claude-flow@2.0.0 emergency-reset --backup-first
+npx gemini-flow@2.0.0 emergency-reset --backup-first
 
 # Factory reset while preserving data
-npx claude-flow@2.0.0 reset --keep-data --keep-models
+npx gemini-flow@2.0.0 reset --keep-data --keep-models
 
 # Restore from backup
-npx claude-flow@2.0.0 restore --backup-path ./emergency-backup/
+npx gemini-flow@2.0.0 restore --backup-path ./emergency-backup/
 ```
 
-This comprehensive troubleshooting guide should help resolve most issues encountered with Claude Flow v2.0.0. For persistent problems, refer to the diagnostic tools and support channels mentioned above.
+This comprehensive troubleshooting guide should help resolve most issues encountered with Gemini Flow v2.0.0. For persistent problems, refer to the diagnostic tools and support channels mentioned above.

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Deploy Claude optimized template to a target project
+ * Deploy Gemini optimized template to a target project
  * Usage: node deploy-to-project.js <target-project-path>
  */
 
@@ -20,7 +20,7 @@ const SOURCE_DIR = path.join(__dirname, '.claude');
 const TARGET_DIR = path.join(TARGET_PROJECT, '.claude');
 const MANIFEST_PATH = path.join(__dirname, 'manifest.json');
 
-console.log('Claude Optimized Template Deployment');
+console.log('Gemini Optimized Template Deployment');
 console.log('====================================');
 console.log(`Source: ${SOURCE_DIR}`);
 console.log(`Target: ${TARGET_DIR}`);
@@ -44,12 +44,12 @@ if (!hasProjectFile) {
 // Read manifest
 const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
 
-// Create target .claude directory
+// Create target .gemini directory
 if (!fs.existsSync(TARGET_DIR)) {
   fs.mkdirSync(TARGET_DIR, { recursive: true });
-  console.log('✓ Created .claude directory');
+  console.log('✓ Created .gemini directory');
 } else {
-  console.log('⚠️  .claude directory already exists - files will be overwritten');
+  console.log('⚠️  .gemini directory already exists - files will be overwritten');
 }
 
 // Create directory structure
@@ -126,10 +126,10 @@ console.log(`  Template version: ${manifest.version}`);
 if (errorCount === 0) {
   console.log('\n🎉 Template deployed successfully!');
   console.log('\nNext steps:');
-  console.log('1. Open Claude Code in your project');
+  console.log('1. Open Gemini Code in your project');
   console.log('2. Type / to see available commands');
   console.log('3. Use /sparc for SPARC methodology');
-  console.log('4. Use /claude-flow-* for Claude Flow features');
+  console.log('4. Use /gemini-flow-* for Gemini Flow features');
   console.log('\nFor help, see the documentation files in .claude/');
 } else {
   console.log('\n⚠️  Template deployed with errors. Please check the messages above.');

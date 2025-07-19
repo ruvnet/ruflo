@@ -1,6 +1,6 @@
 # Terminal Management and Session Handling
 
-Claude-Flow's terminal management system provides efficient, pooled terminal sessions with advanced features for command execution, session recycling, and cross-platform compatibility. This guide covers comprehensive terminal management capabilities and best practices.
+Gemini-Flow's terminal management system provides efficient, pooled terminal sessions with advanced features for command execution, session recycling, and cross-platform compatibility. This guide covers comprehensive terminal management capabilities and best practices.
 
 ## Terminal Pool Architecture
 
@@ -955,4 +955,4 @@ claude-flow terminal optimize \
   --rebuild-index true
 ```
 
-This comprehensive terminal management guide provides all the tools needed to effectively manage complex terminal workflows, coordinate multi-terminal environments, and maintain high-performance terminal operations in Claude-Flow.
+This comprehensive terminal management guide provides all the tools needed to effectively manage complex terminal workflows, coordinate multi-terminal environments, and maintain high-performance terminal operations in Gemini-Flow.

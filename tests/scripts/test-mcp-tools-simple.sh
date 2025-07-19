@@ -28,12 +28,12 @@ log_error() {
 # Initialize results tracking
 echo '{"test_start": "'$(date -Iseconds)'", "install_method": "'$INSTALL_METHOD'", "category": "'$CATEGORY'", "results": {}}' > ./test-results/test_results.json
 
-# Get claude-flow command
+# Get gemini-flow command
 get_command() {
     if [ "$INSTALL_METHOD" = "npx" ]; then
-        echo "npx claude-flow@2.0.0"
+        echo "npx gemini-flow@2.0.0"
     else
-        echo "./node_modules/.bin/claude-flow"
+        echo "./node_modules/.bin/gemini-flow"
     fi
 }
 

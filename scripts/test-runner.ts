@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-all
 /**
- * Comprehensive test runner for Claude-Flow
+ * Comprehensive test runner for Gemini-Flow
  * Runs all tests with coverage and generates reports
  */
 
@@ -60,7 +60,7 @@ class TestRunner {
   }
 
   async run(): Promise<boolean> {
-    console.log("🧪 Claude-Flow Test Runner");
+    console.log("🧪 Gemini-Flow Test Runner");
     console.log("=".repeat(50));
 
     // Ensure output directory exists
@@ -274,7 +274,7 @@ class TestRunner {
       const failures = result.passed ? 0 : 1;
       
       return `    <testsuite name="${result.suite}" tests="1" errors="${errors}" failures="${failures}" time="${result.duration / 1000}">
-      <testcase name="${result.suite}-tests" classname="Claude-Flow.${result.suite}" time="${result.duration / 1000}">
+      <testcase name="${result.suite}-tests" classname="Gemini-Flow.${result.suite}" time="${result.duration / 1000}">
         ${!result.passed ? '<failure message="Test suite failed" type="TestFailure">Test suite execution failed</failure>' : ''}
       </testcase>
     </testsuite>`;
@@ -286,7 +286,7 @@ class TestRunner {
     const totalTime = results.reduce((sum, r) => sum + r.duration, 0) / 1000;
 
     const junit = `<?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="Claude-Flow" tests="${totalTests}" errors="${totalErrors}" failures="${totalFailures}" time="${totalTime}">
+<testsuites name="Gemini-Flow" tests="${totalTests}" errors="${totalErrors}" failures="${totalFailures}" time="${totalTime}">
 ${testsuites}
 </testsuites>`;
 
@@ -316,7 +316,7 @@ ${testsuites}
     const html = `<!DOCTYPE html>
 <html>
 <head>
-    <title>Claude-Flow Test Report</title>
+    <title>Gemini-Flow Test Report</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .header { background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
@@ -337,7 +337,7 @@ ${testsuites}
 </head>
 <body>
     <div class="header">
-        <h1>🧪 Claude-Flow Test Report</h1>
+        <h1>🧪 Gemini-Flow Test Report</h1>
         <p>Generated on: ${timestamp}</p>
     </div>
     
@@ -374,7 +374,7 @@ ${testsuites}
     </table>
 
     <div class="footer">
-        <p>Claude-Flow Test Suite - Advanced AI Agent Orchestration System</p>
+        <p>Gemini-Flow Test Suite - Advanced AI Agent Orchestration System</p>
     </div>
 </body>
 </html>`;
@@ -476,7 +476,7 @@ async function main(): Promise<void> {
 
   if (args.help) {
     console.log(`
-🧪 Claude-Flow Test Runner
+🧪 Gemini-Flow Test Runner
 
 USAGE:
   test-runner.ts [OPTIONS]

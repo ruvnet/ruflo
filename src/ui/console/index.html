@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Claude Code Console - Web-based CLI interface">
-    <title>🌊 Claude Flow v2</title>
+    <meta name="description" content="Gemini Code Console - Web-based CLI interface">
+    <title>🌊 Gemini Flow v2</title>
     <link rel="stylesheet" href="styles/console.css">
     <link rel="stylesheet" href="styles/settings.css">
     <link rel="stylesheet" href="styles/responsive.css">
@@ -18,7 +18,7 @@
         <div class="header-left">
             <h1 class="console-title">
                 <span class="console-icon">🌊</span>
-                Claude Flow v2
+                Gemini Flow v2
             </h1>
             <div class="connection-status" id="connectionStatus">
                 <span class="status-indicator" id="statusIndicator"></span>
@@ -134,9 +134,9 @@
                     </div>
                 </section>
 
-                <!-- Claude Flow Settings -->
+                <!-- Gemini Flow Settings -->
                 <section class="setting-group">
-                    <h3>Claude Flow</h3>
+                    <h3>Gemini Flow</h3>
                     <div class="setting-item">
                         <label for="defaultMode">Default SPARC Mode:</label>
                         <select id="defaultMode">
@@ -183,7 +183,7 @@
             <div class="console-output" id="consoleOutput" role="log" aria-live="polite" aria-label="Console Output">
                 <div class="welcome-message">
                     <div class="ascii-art">
-🌊 Claude Flow v2.0.0
+🌊 Gemini Flow v2.0.0
 
 Welcome to the web-based swarm orchestration console
 Type 'help' for available commands
@@ -194,7 +194,7 @@ Use Ctrl+L to clear console</div>
             <!-- Input area -->
             <div class="console-input-area">
                 <div class="input-prompt">
-                    <span class="prompt-text" id="promptText">claude-flow></span>
+                    <span class="prompt-text" id="promptText">gemini-flow></span>
                     <input 
                         type="text" 
                         class="console-input" 
@@ -228,7 +228,7 @@ Use Ctrl+L to clear console</div>
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner">
             <div class="spinner"></div>
-            <div class="loading-text">Connecting to Claude Code...</div>
+            <div class="loading-text">Connecting to Gemini Code...</div>
         </div>
     </div>
 

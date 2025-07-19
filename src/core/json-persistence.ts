@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * JSON-based persistence layer for Claude-Flow
+ * JSON-based persistence layer for Gemini-Flow
  */
 
 import { join } from "path";
@@ -44,7 +44,7 @@ export class JsonPersistenceManager {
   private data: PersistenceData;
 
   constructor(dataDir: string = "./memory") {
-    this.dataPath = join(dataDir, "claude-flow-data.json");
+    this.dataPath = join(dataDir, "gemini-flow-data.json");
     this.data = {
       agents: [],
       tasks: [],

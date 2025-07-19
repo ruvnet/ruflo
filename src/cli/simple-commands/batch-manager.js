@@ -104,7 +104,7 @@ async function createInteractiveConfig(outputFile) {
     console.log('1. Edit the configuration file to match your needs');
     console.log('2. Remove the "_comment" and example entries');
     console.log('3. Use either "projects" array OR "projectConfigs" object');
-    console.log(`4. Run: claude-flow init --config ${outputFile}`);
+    console.log(`4. Run: gemini-flow init --config ${outputFile}`);
   } catch (error) {
     printError(`Failed to create interactive config: ${error.message}`);
   }
@@ -299,7 +299,7 @@ function showBatchManagerHelp() {
   console.log('====================================================\n');
   
   console.log('USAGE:');
-  console.log('  claude-flow batch <command> [options]\n');
+  console.log('  gemini-flow batch <command> [options]\n');
   
   console.log('COMMANDS:');
   console.log('  create-config [file]     Create batch configuration template');
@@ -314,14 +314,14 @@ function showBatchManagerHelp() {
   console.log('  --help, -h             Show command help\n');
   
   console.log('EXAMPLES:');
-  console.log('  claude-flow batch create-config my-batch.json');
-  console.log('  claude-flow batch create-config --interactive');
-  console.log('  claude-flow batch validate-config my-batch.json');
-  console.log('  claude-flow batch estimate my-batch.json');
-  console.log('  claude-flow batch list-templates');
-  console.log('  claude-flow batch list-environments\n');
+  console.log('  gemini-flow batch create-config my-batch.json');
+  console.log('  gemini-flow batch create-config --interactive');
+  console.log('  gemini-flow batch validate-config my-batch.json');
+  console.log('  gemini-flow batch estimate my-batch.json');
+  console.log('  gemini-flow batch list-templates');
+  console.log('  gemini-flow batch list-environments\n');
   
   console.log('INTEGRATION:');
-  console.log('  Use created configs with: claude-flow init --config <file>');
-  console.log('  Or batch init directly: claude-flow init --batch-init project1,project2');
+  console.log('  Use created configs with: gemini-flow init --config <file>');
+  console.log('  Or batch init directly: gemini-flow init --batch-init project1,project2');
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Main Test Runner for Claude Flow Web UI
+ * Main Test Runner for Gemini Flow Web UI
  * Executes all test suites and generates comprehensive reports
  */
 
@@ -18,7 +18,7 @@ const performanceTests = require('./performance/LoadTesting.test');
 async function runAllTests() {
   console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
-║        Claude Flow Web UI - Comprehensive Test Suite          ║
+║        Gemini Flow Web UI - Comprehensive Test Suite          ║
 ║                    Testing 71+ MCP Tools                      ║
 ╚═══════════════════════════════════════════════════════════════╝
 `);
@@ -122,7 +122,7 @@ async function generateHTMLReport(report) {
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Claude Flow Test Report</title>
+  <title>Gemini Flow Test Report</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -218,7 +218,7 @@ async function generateHTMLReport(report) {
 </head>
 <body>
   <div class="container">
-    <h1>🧪 Claude Flow Web UI Test Report</h1>
+    <h1>🧪 Gemini Flow Web UI Test Report</h1>
     <p>Generated: ${new Date().toLocaleString()}</p>
     
     <div class="summary">

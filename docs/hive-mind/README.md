@@ -1,6 +1,6 @@
-# 🐝 Claude Flow Hive Mind System
+# 🐝 Gemini Flow Hive Mind System
 
-The **Hive Mind System** is Claude Flow's advanced collective intelligence platform that creates self-organizing, adaptive AI agent swarms with persistent memory and emergent coordination capabilities.
+The **Hive Mind System** is Gemini Flow's advanced collective intelligence platform that creates self-organizing, adaptive AI agent swarms with persistent memory and emergent coordination capabilities.
 
 ## 🎯 Overview
 
@@ -16,7 +16,7 @@ The Hive Mind System transforms individual AI agents into a unified collective i
 
 ### 1. Interactive Wizard (Recommended)
 ```bash
-npx claude-flow@2.0.0 hive-mind wizard
+npx gemini-flow@2.0.0 hive-mind wizard
 ```
 
 This guided setup will:
@@ -28,13 +28,13 @@ This guided setup will:
 ### 2. Manual Setup
 ```bash
 # Initialize Hive Mind system
-npx claude-flow hive-mind init
+npx gemini-flow hive-mind init
 
 # Create an intelligent swarm
-npx claude-flow hive-mind spawn "Build a REST API with authentication"
+npx gemini-flow hive-mind spawn "Build a REST API with authentication"
 
 # Monitor swarm activity
-npx claude-flow hive-mind status
+npx gemini-flow hive-mind status
 ```
 
 ## 🏗️ Core Architecture
@@ -67,13 +67,13 @@ SQLite-powered persistent storage that maintains:
 #### `hive-mind wizard`
 Interactive setup wizard for new users.
 ```bash
-npx claude-flow hive-mind wizard
+npx gemini-flow hive-mind wizard
 ```
 
 #### `hive-mind init`
 Initialize the Hive Mind system with database and core agents.
 ```bash
-npx claude-flow hive-mind init [options]
+npx gemini-flow hive-mind init [options]
 
 Options:
   --db-path <path>     Custom SQLite database location
@@ -84,7 +84,7 @@ Options:
 #### `hive-mind spawn <objective>`
 Create an intelligent swarm to achieve a specific objective.
 ```bash
-npx claude-flow hive-mind spawn "Build a React dashboard"
+npx gemini-flow hive-mind spawn "Build a React dashboard"
 
 Options:
   --agents <number>    Number of agents to spawn
@@ -96,7 +96,7 @@ Options:
 #### `hive-mind status`
 View active swarms, agent status, and performance metrics.
 ```bash
-npx claude-flow hive-mind status
+npx gemini-flow hive-mind status
 
 Options:
   --detailed          Show detailed agent information
@@ -107,7 +107,7 @@ Options:
 #### `hive-mind metrics`
 Advanced performance analytics and insights.
 ```bash
-npx claude-flow hive-mind metrics
+npx gemini-flow hive-mind metrics
 
 Options:
   --timeframe <period>  Analysis period (1h|24h|7d|30d)
@@ -120,46 +120,46 @@ Options:
 #### Agent Management
 ```bash
 # List all agents
-npx claude-flow hive-mind agents list
+npx gemini-flow hive-mind agents list
 
 # Inspect specific agent
-npx claude-flow hive-mind agents inspect <agent-id>
+npx gemini-flow hive-mind agents inspect <agent-id>
 
 # Retire underperforming agents
-npx claude-flow hive-mind agents retire <agent-id>
+npx gemini-flow hive-mind agents retire <agent-id>
 
 # Clone successful agents
-npx claude-flow hive-mind agents clone <agent-id>
+npx gemini-flow hive-mind agents clone <agent-id>
 ```
 
 #### Memory Operations
 ```bash
 # Search collective memory
-npx claude-flow hive-mind memory search "authentication patterns"
+npx gemini-flow hive-mind memory search "authentication patterns"
 
 # Export knowledge base
-npx claude-flow hive-mind memory export --format json
+npx gemini-flow hive-mind memory export --format json
 
 # Import previous learnings
-npx claude-flow hive-mind memory import <file-path>
+npx gemini-flow hive-mind memory import <file-path>
 
 # Optimize memory usage
-npx claude-flow hive-mind memory optimize
+npx gemini-flow hive-mind memory optimize
 ```
 
 #### Performance Tuning
 ```bash
 # Analyze bottlenecks
-npx claude-flow hive-mind analyze bottlenecks
+npx gemini-flow hive-mind analyze bottlenecks
 
 # Optimize topology
-npx claude-flow hive-mind optimize topology
+npx gemini-flow hive-mind optimize topology
 
 # Rebalance workloads
-npx claude-flow hive-mind optimize load-balance
+npx gemini-flow hive-mind optimize load-balance
 
 # Update coordination patterns
-npx claude-flow hive-mind optimize coordination
+npx gemini-flow hive-mind optimize coordination
 ```
 
 ## 🎯 Usage Patterns
@@ -169,7 +169,7 @@ npx claude-flow hive-mind optimize coordination
 #### Full-Stack Application
 ```bash
 # Create a comprehensive development swarm
-npx claude-flow hive-mind spawn "Build a full-stack e-commerce platform" \
+npx gemini-flow hive-mind spawn "Build a full-stack e-commerce platform" \
   --agents 8 \
   --strategy adaptive \
   --priority high
@@ -187,7 +187,7 @@ npx claude-flow hive-mind spawn "Build a full-stack e-commerce platform" \
 #### Bug Investigation
 ```bash
 # Deploy a specialized debugging swarm
-npx claude-flow hive-mind spawn "Investigate memory leak in production API" \
+npx gemini-flow hive-mind spawn "Investigate memory leak in production API" \
   --agents 4 \
   --strategy sequential \
   --timeout 60
@@ -205,7 +205,7 @@ npx claude-flow hive-mind spawn "Investigate memory leak in production API" \
 #### Market Research
 ```bash
 # Launch a research swarm
-npx claude-flow hive-mind spawn "Analyze AI development trends 2024-2025" \
+npx gemini-flow hive-mind spawn "Analyze AI development trends 2024-2025" \
   --agents 6 \
   --strategy parallel
 
@@ -220,7 +220,7 @@ npx claude-flow hive-mind spawn "Analyze AI development trends 2024-2025" \
 #### Code Analysis
 ```bash
 # Comprehensive codebase analysis
-npx claude-flow hive-mind spawn "Audit React codebase for performance issues" \
+npx gemini-flow hive-mind spawn "Audit React codebase for performance issues" \
   --agents 5 \
   --priority medium
 
@@ -237,7 +237,7 @@ npx claude-flow hive-mind spawn "Audit React codebase for performance issues" \
 #### Deployment Pipeline
 ```bash
 # Create deployment swarm
-npx claude-flow hive-mind spawn "Set up CI/CD pipeline with Docker and AWS" \
+npx gemini-flow hive-mind spawn "Set up CI/CD pipeline with Docker and AWS" \
   --agents 4 \
   --strategy adaptive
 
@@ -317,7 +317,7 @@ The Hive Mind exhibits sophisticated emergent behaviors:
 
 Access the live monitoring dashboard:
 ```bash
-npx claude-flow hive-mind status --watch
+npx gemini-flow hive-mind status --watch
 ```
 
 #### Key Metrics:
@@ -331,7 +331,7 @@ npx claude-flow hive-mind status --watch
 
 #### **Swarm Efficiency Metrics**
 ```bash
-npx claude-flow hive-mind metrics --timeframe 7d --charts
+npx gemini-flow hive-mind metrics --timeframe 7d --charts
 ```
 
 Generated insights:
@@ -356,21 +356,21 @@ Generated insights:
 export HIVE_MIND_DB_PATH="/custom/path/hive-mind.db"
 
 # Performance tuning
-npx claude-flow hive-mind config set memory.cache_size 100000
-npx claude-flow hive-mind config set performance.wal_mode true
-npx claude-flow hive-mind config set performance.synchronous_mode normal
+npx gemini-flow hive-mind config set memory.cache_size 100000
+npx gemini-flow hive-mind config set performance.wal_mode true
+npx gemini-flow hive-mind config set performance.synchronous_mode normal
 ```
 
 #### Memory Management
 ```bash
 # Set memory limits
-npx claude-flow hive-mind config set memory.max_session_size "100MB"
-npx claude-flow hive-mind config set memory.retention_period "30d"
+npx gemini-flow hive-mind config set memory.max_session_size "100MB"
+npx gemini-flow hive-mind config set memory.retention_period "30d"
 
 # Optimize for different workloads
-npx claude-flow hive-mind config preset research    # Large knowledge base
-npx claude-flow hive-mind config preset development # Fast iteration
-npx claude-flow hive-mind config preset production  # Stability focused
+npx gemini-flow hive-mind config preset research    # Large knowledge base
+npx gemini-flow hive-mind config preset development # Fast iteration
+npx gemini-flow hive-mind config preset production  # Stability focused
 ```
 
 ### Agent Customization
@@ -395,7 +395,7 @@ npx claude-flow hive-mind config preset production  # Stability focused
 #### Personality Profiles
 ```bash
 # Set agent personality traits
-npx claude-flow hive-mind agents configure <agent-id> \
+npx gemini-flow hive-mind agents configure <agent-id> \
   --creativity 0.8 \
   --caution 0.6 \
   --collaboration 0.9 \
@@ -460,7 +460,7 @@ Dynamic topology that adapts based on:
 ### AI-Assisted Development
 ```bash
 # Create a full development lifecycle swarm
-npx claude-flow hive-mind spawn "Build and deploy microservices architecture" \
+npx gemini-flow hive-mind spawn "Build and deploy microservices architecture" \
   --agents 10 \
   --strategy hybrid \
   --priority critical \
@@ -479,7 +479,7 @@ The swarm will handle:
 ### Research & Innovation
 ```bash
 # Deploy a research and prototyping swarm
-npx claude-flow hive-mind spawn "Explore quantum computing applications for optimization" \
+npx gemini-flow hive-mind spawn "Explore quantum computing applications for optimization" \
   --agents 6 \
   --strategy exploratory \
   --priority high
@@ -495,7 +495,7 @@ Research activities:
 ### Enterprise Operations
 ```bash
 # Large-scale enterprise automation
-npx claude-flow hive-mind spawn "Modernize legacy banking system" \
+npx gemini-flow hive-mind spawn "Modernize legacy banking system" \
   --agents 15 \
   --strategy phased \
   --priority critical \
@@ -557,16 +557,16 @@ Enterprise capabilities:
 - **❓ [FAQ](../FAQ.md)**: Frequently asked questions
 
 ### Community
-- **💬 [Discord](https://discord.gg/claude-flow)**: Real-time community support
-- **📧 [Newsletter](https://newsletter.claude-flow.ai)**: Latest updates and tips
-- **📺 [YouTube](https://youtube.com/claude-flow)**: Video tutorials and demos
+- **💬 [Discord](https://discord.gg/gemini-flow)**: Real-time community support
+- **📧 [Newsletter](https://newsletter.gemini-flow.ai)**: Latest updates and tips
+- **📺 [YouTube](https://youtube.com/gemini-flow)**: Video tutorials and demos
 - **🐦 [Twitter](https://twitter.com/claude_flow)**: News and announcements
 
 ### Professional Support
-- **🏢 [Enterprise Consulting](mailto:enterprise@claude-flow.ai)**
-- **🎯 [Custom Development](mailto:dev@claude-flow.ai)**
-- **🏫 [Training Programs](mailto:training@claude-flow.ai)**
-- **🔧 [Priority Support](mailto:support@claude-flow.ai)**
+- **🏢 [Enterprise Consulting](mailto:enterprise@gemini-flow.ai)**
+- **🎯 [Custom Development](mailto:dev@gemini-flow.ai)**
+- **🏫 [Training Programs](mailto:training@gemini-flow.ai)**
+- **🔧 [Priority Support](mailto:support@gemini-flow.ai)**
 
 ---
 
@@ -576,13 +576,13 @@ Ready to experience the power of collective AI intelligence?
 
 ```bash
 # Launch the Hive Mind wizard
-npx claude-flow@2.0.0 hive-mind wizard
+npx gemini-flow@2.0.0 hive-mind wizard
 
 # Or dive right in
-npx claude-flow hive-mind spawn "Your amazing project idea"
+npx gemini-flow hive-mind spawn "Your amazing project idea"
 ```
 
-Join thousands of developers who are already building the future with Claude Flow's Hive Mind System!
+Join thousands of developers who are already building the future with Gemini Flow's Hive Mind System!
 
 ---
 

@@ -282,9 +282,9 @@ export const enterpriseCommands: Command[] = [
           console.log('  report <id> [type] Generate project report');
           console.log();
           console.log(`${bold('Examples:')}`);
-          console.log(`  ${cyan('claude-flow project create')} "E-commerce Platform" --type web-app --priority high`);
-          console.log(`  ${cyan('claude-flow project list')} --status active --verbose`);
-          console.log(`  ${cyan('claude-flow project report')} proj-123 financial`);
+          console.log(`  ${cyan('gemini-flow project create')} "E-commerce Platform" --type web-app --priority high`);
+          console.log(`  ${cyan('gemini-flow project list')} --status active --verbose`);
+          console.log(`  ${cyan('gemini-flow project report')} proj-123 financial`);
           break;
         }
       }
@@ -525,9 +525,9 @@ export const enterpriseCommands: Command[] = [
           console.log('  environments      Manage deployment environments');
           console.log();
           console.log(`${bold('Examples:')}`);
-          console.log(`  ${cyan('claude-flow deploy create')} "v2.1.0" --environment production --strategy blue-green`);
-          console.log(`  ${cyan('claude-flow deploy rollback')} deploy-123 "Critical bug found"`);
-          console.log(`  ${cyan('claude-flow deploy metrics')} --environment production`);
+          console.log(`  ${cyan('gemini-flow deploy create')} "v2.1.0" --environment production --strategy blue-green`);
+          console.log(`  ${cyan('gemini-flow deploy rollback')} deploy-123 "Critical bug found"`);
+          console.log(`  ${cyan('gemini-flow deploy metrics')} --environment production`);
           break;
         }
       }
@@ -791,9 +791,9 @@ export const enterpriseCommands: Command[] = [
           console.log('  metrics           Show cloud infrastructure metrics');
           console.log();
           console.log(`${bold('Examples:')}`);
-          console.log(`  ${cyan('claude-flow cloud providers add')} "AWS Production" aws --access-key xxx`);
-          console.log(`  ${cyan('claude-flow cloud resources create')} "web-server" compute --provider aws-prod`);
-          console.log(`  ${cyan('claude-flow cloud optimize')} --environment production`);
+          console.log(`  ${cyan('gemini-flow cloud providers add')} "AWS Production" aws --access-key xxx`);
+          console.log(`  ${cyan('gemini-flow cloud resources create')} "web-server" compute --provider aws-prod`);
+          console.log(`  ${cyan('gemini-flow cloud optimize')} --environment production`);
           break;
         }
       }
@@ -1018,9 +1018,9 @@ export const enterpriseCommands: Command[] = [
           console.log('  metrics                  Show security metrics');
           console.log();
           console.log(`${bold('Examples:')}`);
-          console.log(`  ${cyan('claude-flow security scan')} "API Vulnerability Scan" ./api --type vulnerability`);
-          console.log(`  ${cyan('claude-flow security incident create')} "Unauthorized Access" --severity high`);
-          console.log(`  ${cyan('claude-flow security compliance')} SOC2 GDPR --project web-app`);
+          console.log(`  ${cyan('gemini-flow security scan')} "API Vulnerability Scan" ./api --type vulnerability`);
+          console.log(`  ${cyan('gemini-flow security incident create')} "Unauthorized Access" --severity high`);
+          console.log(`  ${cyan('gemini-flow security compliance')} SOC2 GDPR --project web-app`);
           break;
         }
       }
@@ -1328,9 +1328,9 @@ export const enterpriseCommands: Command[] = [
           console.log('  predict           Predictive modeling and forecasting');
           console.log();
           console.log(`${bold('Examples:')}`);
-          console.log(`  ${cyan('claude-flow analytics insights')} --timerange 7d`);
-          console.log(`  ${cyan('claude-flow analytics metrics')} performance`);
-          console.log(`  ${cyan('claude-flow analytics predict train')} "load-predictor" --features cpu,memory --target response-time`);
+          console.log(`  ${cyan('gemini-flow analytics insights')} --timerange 7d`);
+          console.log(`  ${cyan('gemini-flow analytics metrics')} performance`);
+          console.log(`  ${cyan('gemini-flow analytics predict train')} "load-predictor" --features cpu,memory --target response-time`);
           break;
         }
       }
@@ -1625,9 +1625,9 @@ export const enterpriseCommands: Command[] = [
           console.log('  metrics               Show audit metrics');
           console.log();
           console.log(`${bold('Examples:')}`);
-          console.log(`  ${cyan('claude-flow audit log')} user_login success --user john.doe --resource user-account`);
-          console.log(`  ${cyan('claude-flow audit report')} compliance --framework SOC2 --timerange 90d`);
-          console.log(`  ${cyan('claude-flow audit export')} --format csv --timerange 30d --encrypt`);
+          console.log(`  ${cyan('gemini-flow audit log')} user_login success --user john.doe --resource user-account`);
+          console.log(`  ${cyan('gemini-flow audit report')} compliance --framework SOC2 --timerange 90d`);
+          console.log(`  ${cyan('gemini-flow audit export')} --format csv --timerange 30d --encrypt`);
           break;
         }
       }

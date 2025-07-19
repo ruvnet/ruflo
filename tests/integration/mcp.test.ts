@@ -417,7 +417,7 @@ describe('MCP Integration Tests', () => {
     });
   });
 
-  describe('Claude-Flow Tools', () => {
+  describe('Gemini-Flow Tools', () => {
     beforeEach(async () => {
       await server.start();
     });

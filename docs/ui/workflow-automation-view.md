@@ -2,7 +2,7 @@
 
 ## Overview
 
-The WorkflowAutomationView provides a comprehensive interface for all workflow and automation tools in Claude Flow. It implements 11 workflow-related MCP tools with rich UI components including a visual workflow builder, SPARC modes integration, and pipeline management.
+The WorkflowAutomationView provides a comprehensive interface for all workflow and automation tools in Gemini Flow. It implements 11 workflow-related MCP tools with rich UI components including a visual workflow builder, SPARC modes integration, and pipeline management.
 
 ## Features
 
@@ -144,7 +144,7 @@ eventBus.on('tool:executed', (data) => {
 ## Styling
 
 The view includes comprehensive CSS styling for:
-- Dark theme with Claude Flow branding
+- Dark theme with Gemini Flow branding
 - Responsive design for mobile devices
 - Smooth transitions and animations
 - Drag-and-drop visual feedback

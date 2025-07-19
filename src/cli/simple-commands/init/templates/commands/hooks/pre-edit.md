@@ -5,7 +5,7 @@ Execute pre-edit validations and agent assignment before file modifications.
 ## Usage
 
 ```bash
-npx claude-flow hook pre-edit [options]
+npx gemini-flow hook pre-edit [options]
 ```
 
 ## Options
@@ -20,22 +20,22 @@ npx claude-flow hook pre-edit [options]
 
 ### Basic pre-edit hook
 ```bash
-npx claude-flow hook pre-edit --file "src/auth/login.js"
+npx gemini-flow hook pre-edit --file "src/auth/login.js"
 ```
 
 ### With validation
 ```bash
-npx claude-flow hook pre-edit -f "config/database.js" --validate-syntax
+npx gemini-flow hook pre-edit -f "config/database.js" --validate-syntax
 ```
 
 ### Manual agent assignment
 ```bash
-npx claude-flow hook pre-edit -f "api/users.ts" --auto-assign-agent false
+npx gemini-flow hook pre-edit -f "api/users.ts" --auto-assign-agent false
 ```
 
 ### Safe editing with backup
 ```bash
-npx claude-flow hook pre-edit -f "production.env" --backup-file --check-conflicts
+npx gemini-flow hook pre-edit -f "production.env" --backup-file --check-conflicts
 ```
 
 ## Features
@@ -67,7 +67,7 @@ npx claude-flow hook pre-edit -f "production.env" --backup-file --check-conflict
 
 ## Integration
 
-This hook is automatically called by Claude Code when:
+This hook is automatically called by Gemini Code when:
 - Using Edit or MultiEdit tools
 - Before file modifications
 - During refactoring operations
@@ -76,7 +76,7 @@ This hook is automatically called by Claude Code when:
 Manual usage in agents:
 ```bash
 # Before editing files
-npx claude-flow hook pre-edit --file "path/to/file.js" --validate-syntax
+npx gemini-flow hook pre-edit --file "path/to/file.js" --validate-syntax
 ```
 
 ## Output

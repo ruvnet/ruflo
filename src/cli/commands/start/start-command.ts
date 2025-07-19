@@ -16,7 +16,7 @@ import { logger } from '../../../core/logger.js';
 import { formatDuration } from '../../formatter.js';
 
 export const startCommand = new Command()
-  .description('Start the Claude-Flow orchestration system')
+  .description('Start the Gemini-Flow orchestration system')
   .option('-d, --daemon', 'Run as daemon in background')
   .option('-p, --port <port:number>', 'MCP server port', { default: 3000 })
   .option('--mcp-transport <transport:string>', 'MCP transport type (stdio, http)', {
@@ -30,13 +30,13 @@ export const startCommand = new Command()
   .option('--health-check', 'Perform health checks before starting')
   .option('--timeout <seconds:number>', 'Startup timeout in seconds', { default: 60 })
   .action(async (options: StartOptions) => {
-    console.log(chalk.cyan('🧠 Claude-Flow Orchestration System'));
+    console.log(chalk.cyan('🧠 Gemini-Flow Orchestration System'));
     console.log(chalk.gray('─'.repeat(60)));
 
     try {
       // Check if already running
       if (!options.force && await isSystemRunning()) {
-        console.log(chalk.yellow('⚠ Claude-Flow is already running'));
+        console.log(chalk.yellow('⚠ Gemini-Flow is already running'));
         const { shouldContinue } = await inquirer.prompt([{
           type: 'confirm',
           name: 'shouldContinue',
@@ -45,7 +45,7 @@ export const startCommand = new Command()
         }]);
         
         if (!shouldContinue) {
-          console.log(chalk.gray('Use --force to override or "claude-flow stop" first'));
+          console.log(chalk.gray('Use --force to override or "gemini-flow stop" first'));
           return;
         }
         
@@ -173,15 +173,15 @@ export const startCommand = new Command()
           config: options.config || 'default',
           processes: processManager.getAllProcesses().map(p => ({ id: p.id, status: p.status }))
         };
-        await fs.writeFile('.claude-flow.pid', JSON.stringify(pidData, null, 2));
+        await fs.writeFile('.gemini-flow.pid', JSON.stringify(pidData, null, 2));
         console.log(chalk.gray(`Process ID: ${pid}`));
         
         // Wait for services to be fully ready
         await waitForSystemReady(processManager);
         
         console.log(chalk.green.bold('✓'), 'Daemon started successfully');
-        console.log(chalk.gray('Use "claude-flow status" to check system status'));
-        console.log(chalk.gray('Use "claude-flow monitor" for real-time monitoring'));
+        console.log(chalk.gray('Use "gemini-flow status" to check system status'));
+        console.log(chalk.gray('Use "gemini-flow monitor" for real-time monitoring'));
         
         // Keep process running
         await new Promise<void>(() => {});
@@ -248,7 +248,7 @@ export const startCommand = new Command()
 
           // Redraw menu
           console.clear();
-          console.log(chalk.cyan('🧠 Claude-Flow Interactive Mode'));
+          console.log(chalk.cyan('🧠 Gemini-Flow Interactive Mode'));
           console.log(chalk.gray('─'.repeat(60)));
           
           // Show current status
@@ -289,7 +289,7 @@ export const startCommand = new Command()
 
 async function isSystemRunning(): Promise<boolean> {
   try {
-    const pidData = await fs.readFile('.claude-flow.pid', 'utf-8');
+    const pidData = await fs.readFile('.gemini-flow.pid', 'utf-8');
     const data = JSON.parse(pidData);
     
     // Check if process is still running
@@ -306,7 +306,7 @@ async function isSystemRunning(): Promise<boolean> {
 
 async function stopExistingInstance(): Promise<void> {
   try {
-    const pidData = await fs.readFile('.claude-flow.pid', 'utf-8');
+    const pidData = await fs.readFile('.gemini-flow.pid', 'utf-8');
     const data = JSON.parse(pidData);
     
     console.log(chalk.yellow('Stopping existing instance...'));
@@ -322,7 +322,7 @@ async function stopExistingInstance(): Promise<void> {
       // Process already stopped
     }
     
-    await Deno.remove('.claude-flow.pid').catch(() => {});
+    await Deno.remove('.gemini-flow.pid').catch(() => {});
     console.log(chalk.green('✓ Existing instance stopped'));
   } catch (error) {
     console.warn(chalk.yellow('Warning: Could not stop existing instance'), (error as Error).message);
@@ -382,7 +382,7 @@ async function checkNetworkConnectivity(): Promise<void> {
 
 async function checkDependencies(): Promise<void> {
   // Check for required directories and files
-  const requiredDirs = ['.claude-flow', 'memory', 'logs'];
+  const requiredDirs = ['.gemini-flow', 'memory', 'logs'];
   for (const dir of requiredDirs) {
     try {
       await Deno.mkdir(dir, { recursive: true });
@@ -475,7 +475,7 @@ async function waitForSystemReady(processManager: ProcessManager): Promise<void>
 
 async function cleanupOnFailure(): Promise<void> {
   try {
-    await Deno.remove('.claude-flow.pid').catch(() => {});
+    await Deno.remove('.gemini-flow.pid').catch(() => {});
     console.log(chalk.gray('Cleaned up PID file'));
   } catch {
     // Ignore cleanup errors
@@ -484,7 +484,7 @@ async function cleanupOnFailure(): Promise<void> {
 
 async function cleanupOnShutdown(): Promise<void> {
   try {
-    await Deno.remove('.claude-flow.pid').catch(() => {});
+    await Deno.remove('.gemini-flow.pid').catch(() => {});
     console.log(chalk.gray('Cleaned up PID file'));
   } catch {
     // Ignore cleanup errors

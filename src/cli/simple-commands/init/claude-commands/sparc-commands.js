@@ -34,8 +34,8 @@ ${Array.isArray(mode.groups) ? mode.groups.map(g => {
 
 To use this SPARC mode, you can:
 
-1. **Run directly**: \`./claude-flow sparc run ${mode.slug} "your task"\`
-2. **TDD shorthand** (if applicable): \`./claude-flow sparc ${mode.slug} "your task"\`
+1. **Run directly**: \`./gemini-flow sparc run ${mode.slug} "your task"\`
+2. **TDD shorthand** (if applicable): \`./gemini-flow sparc ${mode.slug} "your task"\`
 3. **Use in workflow**: Include \`${mode.slug}\` in your SPARC workflow
 4. **Delegate tasks**: Use \`new_task\` to assign work to this mode
 
@@ -43,23 +43,23 @@ To use this SPARC mode, you can:
 
 \`\`\`bash
 # Run this specific mode
-./claude-flow sparc run ${mode.slug} "${getExampleTask(mode.slug)}"
+./gemini-flow sparc run ${mode.slug} "${getExampleTask(mode.slug)}"
 
 # Use with memory namespace
-./claude-flow sparc run ${mode.slug} "your task" --namespace ${mode.slug}
+./gemini-flow sparc run ${mode.slug} "your task" --namespace ${mode.slug}
 
 # Non-interactive mode for automation
-./claude-flow sparc run ${mode.slug} "your task" --non-interactive
+./gemini-flow sparc run ${mode.slug} "your task" --non-interactive
 \`\`\`
 
 ## Memory Integration
 
 \`\`\`bash
 # Store mode-specific context
-./claude-flow memory store "${mode.slug}_context" "important decisions" --namespace ${mode.slug}
+./gemini-flow memory store "${mode.slug}_context" "important decisions" --namespace ${mode.slug}
 
 # Query previous work
-./claude-flow memory query "${mode.slug}" --limit 5
+./gemini-flow memory query "${mode.slug}" --limit 5
 \`\`\`
 `;
 }
@@ -111,7 +111,7 @@ export function createMainSparcCommand(modes) {
   
   return `---
 name: sparc
-description: Execute SPARC methodology workflows with Claude-Flow
+description: Execute SPARC methodology workflows with Gemini-Flow
 ---
 
 # ⚡️ SPARC Development Methodology
@@ -130,24 +130,24 @@ ${modeList}
 
 ### Run SPARC orchestrator (default):
 \`\`\`bash
-./claude-flow sparc "build complete authentication system"
+./gemini-flow sparc "build complete authentication system"
 \`\`\`
 
 ### Run a specific mode:
 \`\`\`bash
-./claude-flow sparc run <mode> "your task"
-./claude-flow sparc run architect "design API structure"
-./claude-flow sparc run tdd "implement user service"
+./gemini-flow sparc run <mode> "your task"
+./gemini-flow sparc run architect "design API structure"
+./gemini-flow sparc run tdd "implement user service"
 \`\`\`
 
 ### Execute full TDD workflow:
 \`\`\`bash
-./claude-flow sparc tdd "implement user authentication"
+./gemini-flow sparc tdd "implement user authentication"
 \`\`\`
 
 ### List all modes with details:
 \`\`\`bash
-./claude-flow sparc modes --verbose
+./gemini-flow sparc modes --verbose
 \`\`\`
 
 ## SPARC Methodology Phases
@@ -163,16 +163,16 @@ ${modeList}
 Use memory commands to persist context across SPARC sessions:
 \`\`\`bash
 # Store specifications
-./claude-flow memory store "spec_auth" "OAuth2 + JWT requirements" --namespace spec
+./gemini-flow memory store "spec_auth" "OAuth2 + JWT requirements" --namespace spec
 
 # Store architectural decisions
-./claude-flow memory store "arch_api" "RESTful microservices design" --namespace arch
+./gemini-flow memory store "arch_api" "RESTful microservices design" --namespace arch
 
 # Query previous work
-./claude-flow memory query "authentication" --limit 10
+./gemini-flow memory query "authentication" --limit 10
 
 # Export project memory
-./claude-flow memory export sparc-project-backup.json
+./gemini-flow memory export sparc-project-backup.json
 \`\`\`
 
 ## Advanced Swarm Mode
@@ -180,21 +180,21 @@ Use memory commands to persist context across SPARC sessions:
 For complex tasks requiring multiple agents with timeout-free execution:
 \`\`\`bash
 # Development swarm with monitoring
-./claude-flow swarm "Build e-commerce platform" --strategy development --monitor --review
+./gemini-flow swarm "Build e-commerce platform" --strategy development --monitor --review
 
 # Background optimization swarm
-./claude-flow swarm "Optimize system performance" --strategy optimization --background
+./gemini-flow swarm "Optimize system performance" --strategy optimization --background
 
 # Distributed research swarm
-./claude-flow swarm "Analyze market trends" --strategy research --distributed --ui
+./gemini-flow swarm "Analyze market trends" --strategy research --distributed --ui
 \`\`\`
 
 ## Non-Interactive Mode
 
 For CI/CD integration and automation:
 \`\`\`bash
-./claude-flow sparc run code "implement API" --non-interactive
-./claude-flow sparc tdd "user tests" --non-interactive --enable-permissions
+./gemini-flow sparc run code "implement API" --non-interactive
+./gemini-flow sparc tdd "user tests" --non-interactive --enable-permissions
 \`\`\`
 
 ## Best Practices
@@ -205,6 +205,6 @@ For CI/CD integration and automation:
 ✅ **Memory Usage**: Store important decisions and context
 ✅ **Task Completion**: All tasks should end with \`attempt_completion\`
 
-See \`/claude-flow-help\` for all available commands.
+See \`/gemini-flow-help\` for all available commands.
 `;
 }

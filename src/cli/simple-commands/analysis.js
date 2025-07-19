@@ -178,7 +178,7 @@ function showAnalysisHelp() {
 📊 Analysis Commands - Performance & Usage Analytics
 
 USAGE:
-  claude-flow analysis <command> [options]
+  gemini-flow analysis <command> [options]
 
 COMMANDS:
   bottleneck-detect    Detect performance bottlenecks in the system
@@ -204,19 +204,19 @@ TOKEN USAGE OPTIONS:
 
 EXAMPLES:
   # Detect system-wide bottlenecks
-  claude-flow analysis bottleneck-detect --scope system
+  gemini-flow analysis bottleneck-detect --scope system
 
   # Agent-specific bottleneck analysis
-  claude-flow analysis bottleneck-detect --scope agent --target coordinator-1
+  gemini-flow analysis bottleneck-detect --scope agent --target coordinator-1
 
   # Weekly performance report
-  claude-flow analysis performance-report --timeframe 7d --format detailed
+  gemini-flow analysis performance-report --timeframe 7d --format detailed
 
   # Token usage with breakdown
-  claude-flow analysis token-usage --breakdown --cost-analysis
+  gemini-flow analysis token-usage --breakdown --cost-analysis
 
   # Swarm-specific analysis
-  claude-flow analysis bottleneck-detect --scope swarm --target swarm-123
+  gemini-flow analysis bottleneck-detect --scope swarm --target swarm-123
 
 🎯 Analysis helps with:
   • Performance optimization

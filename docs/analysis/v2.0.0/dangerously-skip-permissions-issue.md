@@ -2,7 +2,7 @@
 
 ## Issue Summary
 
-The `--dangerously-skip-permissions` flag in Claude Flow v1 doesn't fully resolve interactive UI requirements in certain environments, particularly VS Code integrated terminal, causing "manual UI agreement needed" errors.
+The `--dangerously-skip-permissions` flag in Gemini Flow v1 doesn't fully resolve interactive UI requirements in certain environments, particularly VS Code integrated terminal, causing "manual UI agreement needed" errors.
 
 ## Root Cause Analysis
 
@@ -145,4 +145,4 @@ RUN npx claude-flow@2.0.0 init
 
 ## Conclusion
 
-The v2.0.0 environment handling improvements transform Claude Flow from a tool that requires manual configuration in non-interactive environments to one that "just works" everywhere. This significantly improves the developer experience and reduces friction in adoption.
+The v2.0.0 environment handling improvements transform Gemini Flow from a tool that requires manual configuration in non-interactive environments to one that "just works" everywhere. This significantly improves the developer experience and reduces friction in adoption.

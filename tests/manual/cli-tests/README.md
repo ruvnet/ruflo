@@ -1,6 +1,6 @@
-# 🧪 CLI Testing Suite for claude-code-flow
+# 🧪 CLI Testing Suite for gemini-flow
 
-This directory contains comprehensive testing scripts for the claude-code-flow CLI and its integration with ruv-swarm.
+This directory contains comprehensive testing scripts for the gemini-flow CLI and its integration with ruv-swarm.
 
 ## 📁 Test Scripts
 
@@ -155,7 +155,7 @@ Success Rate: 87%
 ### JUnit XML
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="claude-flow-cli-tests" tests="8" failures="1" time="15">
+<testsuites name="gemini-flow-cli-tests" tests="8" failures="1" time="15">
   <testsuite name="CLI Tests" tests="8" failures="1" time="15">
     <testcase name="CLI Help" classname="Core" time="1.0"/>
     <testcase name="Error Handling" classname="Core" time="1.0">
@@ -267,4 +267,4 @@ npx ruv-swarm hook post-task --task-id "test-id" 2>/dev/null || true
 
 ## 📝 License
 
-These test scripts are part of the claude-code-flow project and follow the same MIT license.
+These test scripts are part of the gemini-flow project and follow the same MIT license.

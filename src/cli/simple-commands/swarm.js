@@ -11,24 +11,24 @@ import path from 'path';
 
 function showSwarmHelp() {
   console.log(`
-🐝 Claude Flow Advanced Swarm System
+🐝 Gemini Flow Advanced Swarm System
 
 USAGE:
-  claude-flow swarm <objective> [options]
+  gemini-flow swarm <objective> [options]
 
 EXAMPLES:
-  claude-flow swarm "Build a REST API with authentication"
-  claude-flow swarm "Research cloud architecture patterns" --strategy research
-  claude-flow swarm "Analyze database performance" --max-agents 3 --parallel
-  claude-flow swarm "Develop user registration feature" --mode distributed
-  claude-flow swarm "Optimize React app performance" --strategy optimization
-  claude-flow swarm "Create microservice" --executor  # Use built-in executor
+  gemini-flow swarm "Build a REST API with authentication"
+  gemini-flow swarm "Research cloud architecture patterns" --strategy research
+  gemini-flow swarm "Analyze database performance" --max-agents 3 --parallel
+  gemini-flow swarm "Develop user registration feature" --mode distributed
+  gemini-flow swarm "Optimize React app performance" --strategy optimization
+  gemini-flow swarm "Create microservice" --executor  # Use built-in executor
 
 DEFAULT BEHAVIOR:
-  Swarm now opens Claude Code by default with comprehensive MCP tool instructions
+  Swarm now opens Gemini Code by default with comprehensive MCP tool instructions
   including memory coordination, agent management, and task orchestration.
   
-  Use --executor flag to run with the built-in executor instead of Claude Code
+  Use --executor flag to run with the built-in executor instead of Gemini Code
 
 STRATEGIES:
   auto           Automatically determine best approach (default)
@@ -74,7 +74,7 @@ OPTIONS:
   --encryption               Enable encryption
   --verbose                  Enable detailed logging
   --dry-run                  Show configuration without executing
-  --executor                 Use built-in executor instead of Claude Code
+  --executor                 Use built-in executor instead of Gemini Code
   --auto                     (Deprecated: auto-permissions enabled by default)
   --no-auto-permissions      Disable automatic --dangerously-skip-permissions
 
@@ -87,7 +87,7 @@ ADVANCED OPTIONS:
   --fault-tolerance <type>   Fault tolerance strategy
 
 For complete documentation and examples:
-https://github.com/ruvnet/claude-code-flow/docs/swarm.md
+https://github.com/ruvnet/gemini-flow/docs/swarm.md
 `);
 }
 
@@ -104,11 +104,11 @@ export async function swarmCommand(args, flags) {
   if (flags && flags.executor) {
     // Continue with the old swarm executor implementation below
   } else {
-    // Default behavior: spawn Claude Code with comprehensive swarm MCP instructions
+    // Default behavior: spawn Gemini Code with comprehensive swarm MCP instructions
     try {
       const { execSync, spawn } = await import('child_process');
       
-      // Check if claude command exists
+      // Check if gemini command exists
       let claudeAvailable = false;
       try {
         execSync('which claude', { stdio: 'ignore' });
@@ -116,14 +116,14 @@ export async function swarmCommand(args, flags) {
       } catch {
         console.log('⚠️  Gemini CLI not found in PATH');
         console.log('Install it with: npm install -g @google/gemini-cli');
-        console.log('\nWould spawn Claude Code with swarm objective:');
+        console.log('\nWould spawn Gemini Code with swarm objective:');
         console.log(`📋 Objective: ${objective}`);
-        console.log('\nTo use the built-in executor instead: claude-flow swarm "objective" --executor');
+        console.log('\nTo use the built-in executor instead: gemini-flow swarm "objective" --executor');
         return;
       }
       
-      // Claude is available, use it to run swarm
-      console.log('🐝 Launching Claude Flow Swarm System...');
+      // Gemini is available, use it to run swarm
+      console.log('🐝 Launching Gemini Flow Swarm System...');
       console.log(`📋 Objective: ${objective}`);
       console.log(`🎯 Strategy: ${flags.strategy || 'auto'}`);
       console.log(`🏗️  Mode: ${flags.mode || 'centralized'}`);
@@ -140,7 +140,7 @@ export async function swarmCommand(args, flags) {
       
       const enableSparc = flags.sparc !== false && (strategy === 'development' || strategy === 'auto');
       
-      const swarmPrompt = `You are orchestrating a Claude Flow Swarm with advanced MCP tool coordination.
+      const swarmPrompt = `You are orchestrating a Gemini Flow Swarm with advanced MCP tool coordination.
 
 🎯 OBJECTIVE: ${objective}
 
@@ -166,21 +166,21 @@ If you need to do X operations, they should be in 1 message, not X messages.
 \`\`\`javascript
 [Single Message with Multiple Tools]:
   // Spawn ALL agents at once
-  mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
-  mcp__claude-flow__agent_spawn {"type": "researcher", "name": "DataAnalyst"}
-  mcp__claude-flow__agent_spawn {"type": "coder", "name": "BackendDev"}
-  mcp__claude-flow__agent_spawn {"type": "coder", "name": "FrontendDev"}
-  mcp__claude-flow__agent_spawn {"type": "tester", "name": "QAEngineer"}
+  mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
+  mcp__gemini-flow__agent_spawn {"type": "researcher", "name": "DataAnalyst"}
+  mcp__gemini-flow__agent_spawn {"type": "coder", "name": "BackendDev"}
+  mcp__gemini-flow__agent_spawn {"type": "coder", "name": "FrontendDev"}
+  mcp__gemini-flow__agent_spawn {"type": "tester", "name": "QAEngineer"}
   
   // Initialize ALL memory keys
-  mcp__claude-flow__memory_store {"key": "swarm/objective", "value": "${objective}"}
-  mcp__claude-flow__memory_store {"key": "swarm/config", "value": {"strategy": "${strategy}", "mode": "${mode}"}}
+  mcp__gemini-flow__memory_store {"key": "swarm/objective", "value": "${objective}"}
+  mcp__gemini-flow__memory_store {"key": "swarm/config", "value": {"strategy": "${strategy}", "mode": "${mode}"}}
   
   // Create task hierarchy
-  mcp__claude-flow__task_create {"name": "${objective}", "type": "parent", "id": "main"}
-  mcp__claude-flow__task_create {"name": "Research Phase", "parent": "main"}
-  mcp__claude-flow__task_create {"name": "Design Phase", "parent": "main"}
-  mcp__claude-flow__task_create {"name": "Implementation", "parent": "main"}
+  mcp__gemini-flow__task_create {"name": "${objective}", "type": "parent", "id": "main"}
+  mcp__gemini-flow__task_create {"name": "Research Phase", "parent": "main"}
+  mcp__gemini-flow__task_create {"name": "Design Phase", "parent": "main"}
+  mcp__gemini-flow__task_create {"name": "Implementation", "parent": "main"}
   
   // Initialize comprehensive todo list
   TodoWrite {"todos": [
@@ -196,30 +196,30 @@ If you need to do X operations, they should be in 1 message, not X messages.
 \`\`\`javascript
 [Single Message]:
   // Assign all tasks
-  mcp__claude-flow__task_assign {"taskId": "research-1", "agentId": "researcher-1"}
-  mcp__claude-flow__task_assign {"taskId": "design-1", "agentId": "architect-1"}
-  mcp__claude-flow__task_assign {"taskId": "code-1", "agentId": "coder-1"}
-  mcp__claude-flow__task_assign {"taskId": "code-2", "agentId": "coder-2"}
+  mcp__gemini-flow__task_assign {"taskId": "research-1", "agentId": "researcher-1"}
+  mcp__gemini-flow__task_assign {"taskId": "design-1", "agentId": "architect-1"}
+  mcp__gemini-flow__task_assign {"taskId": "code-1", "agentId": "coder-1"}
+  mcp__gemini-flow__task_assign {"taskId": "code-2", "agentId": "coder-2"}
   
   // Communicate to all agents
-  mcp__claude-flow__agent_communicate {"to": "all", "message": "Begin phase 1"}
+  mcp__gemini-flow__agent_communicate {"to": "all", "message": "Begin phase 1"}
   
   // Update multiple task statuses
-  mcp__claude-flow__task_update {"taskId": "research-1", "status": "in_progress"}
-  mcp__claude-flow__task_update {"taskId": "design-1", "status": "pending"}
+  mcp__gemini-flow__task_update {"taskId": "research-1", "status": "in_progress"}
+  mcp__gemini-flow__task_update {"taskId": "design-1", "status": "pending"}
 \`\`\`
 
 3️⃣ **MEMORY COORDINATION** - Store/retrieve in batches:
 \`\`\`javascript
 [Single Message]:
   // Store multiple findings
-  mcp__claude-flow__memory_store {"key": "research/requirements", "value": {...}}
-  mcp__claude-flow__memory_store {"key": "research/constraints", "value": {...}}
-  mcp__claude-flow__memory_store {"key": "architecture/decisions", "value": {...}}
+  mcp__gemini-flow__memory_store {"key": "research/requirements", "value": {...}}
+  mcp__gemini-flow__memory_store {"key": "research/constraints", "value": {...}}
+  mcp__gemini-flow__memory_store {"key": "architecture/decisions", "value": {...}}
   
   // Retrieve related data
-  mcp__claude-flow__memory_retrieve {"key": "research/*"}
-  mcp__claude-flow__memory_search {"pattern": "architecture"}
+  mcp__gemini-flow__memory_retrieve {"key": "research/*"}
+  mcp__gemini-flow__memory_search {"pattern": "architecture"}
 \`\`\`
 
 4️⃣ **FILE & CODE OPERATIONS** - Parallel execution:
@@ -236,27 +236,27 @@ If you need to do X operations, they should be in 1 message, not X messages.
   Write {"file_path": "/tests/auth.test.js", "content": "..."}
   
   // Update memory with results
-  mcp__claude-flow__memory_store {"key": "code/api/auth", "value": "implemented"}
-  mcp__claude-flow__memory_store {"key": "code/api/users", "value": "implemented"}
+  mcp__gemini-flow__memory_store {"key": "code/api/auth", "value": "implemented"}
+  mcp__gemini-flow__memory_store {"key": "code/api/users", "value": "implemented"}
 \`\`\`
 
 5️⃣ **MONITORING & STATUS** - Combined checks:
 \`\`\`javascript
 [Single Message]:
-  mcp__claude-flow__swarm_monitor {}
-  mcp__claude-flow__swarm_status {}
-  mcp__claude-flow__agent_list {"status": "active"}
-  mcp__claude-flow__task_status {"includeCompleted": false}
+  mcp__gemini-flow__swarm_monitor {}
+  mcp__gemini-flow__swarm_status {}
+  mcp__gemini-flow__agent_list {"status": "active"}
+  mcp__gemini-flow__task_status {"includeCompleted": false}
   TodoRead {}
 \`\`\`
 
 ❌ NEVER DO THIS (Sequential = SLOW):
 \`\`\`
-Message 1: mcp__claude-flow__agent_spawn
-Message 2: mcp__claude-flow__agent_spawn
+Message 1: mcp__gemini-flow__agent_spawn
+Message 2: mcp__gemini-flow__agent_spawn
 Message 3: TodoWrite (one todo)
 Message 4: Read file
-Message 5: mcp__claude-flow__memory_store
+Message 5: mcp__gemini-flow__memory_store
 \`\`\`
 
 ✅ ALWAYS DO THIS (Batch = FAST):
@@ -288,13 +288,13 @@ ${agentRecommendations}
    Example:
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__agent_spawn (coordinator)
-     mcp__claude-flow__agent_spawn (architect)
-     mcp__claude-flow__agent_spawn (coder-1)
-     mcp__claude-flow__agent_spawn (coder-2)
-     mcp__claude-flow__agent_spawn (tester)
-     mcp__claude-flow__memory_store { key: "init", value: {...} }
-     mcp__claude-flow__task_create { name: "Main", subtasks: [...] }
+     mcp__gemini-flow__agent_spawn (coordinator)
+     mcp__gemini-flow__agent_spawn (architect)
+     mcp__gemini-flow__agent_spawn (coder-1)
+     mcp__gemini-flow__agent_spawn (coder-2)
+     mcp__gemini-flow__agent_spawn (tester)
+     mcp__gemini-flow__memory_store { key: "init", value: {...} }
+     mcp__gemini-flow__task_create { name: "Main", subtasks: [...] }
      TodoWrite { todos: [5-10 todos at once] }
    \`\`\`
 
@@ -311,28 +311,28 @@ ${agentRecommendations}
 🔧 AVAILABLE MCP TOOLS FOR SWARM COORDINATION:
 
 📊 MONITORING & STATUS:
-- mcp__claude-flow__swarm_status - Check current swarm status and agent activity
-- mcp__claude-flow__swarm_monitor - Real-time monitoring of swarm execution
-- mcp__claude-flow__agent_list - List all active agents and their capabilities
-- mcp__claude-flow__task_status - Check task progress and dependencies
+- mcp__gemini-flow__swarm_status - Check current swarm status and agent activity
+- mcp__gemini-flow__swarm_monitor - Real-time monitoring of swarm execution
+- mcp__gemini-flow__agent_list - List all active agents and their capabilities
+- mcp__gemini-flow__task_status - Check task progress and dependencies
 
 🧠 MEMORY & KNOWLEDGE:
-- mcp__claude-flow__memory_store - Store knowledge in swarm collective memory
-- mcp__claude-flow__memory_retrieve - Retrieve shared knowledge from memory
-- mcp__claude-flow__memory_search - Search collective memory by pattern
-- mcp__claude-flow__memory_sync - Synchronize memory across agents
+- mcp__gemini-flow__memory_store - Store knowledge in swarm collective memory
+- mcp__gemini-flow__memory_retrieve - Retrieve shared knowledge from memory
+- mcp__gemini-flow__memory_search - Search collective memory by pattern
+- mcp__gemini-flow__memory_sync - Synchronize memory across agents
 
 🤖 AGENT MANAGEMENT:
-- mcp__claude-flow__agent_spawn - Spawn specialized agents for tasks
-- mcp__claude-flow__agent_assign - Assign tasks to specific agents
-- mcp__claude-flow__agent_communicate - Send messages between agents
-- mcp__claude-flow__agent_coordinate - Coordinate agent activities
+- mcp__gemini-flow__agent_spawn - Spawn specialized agents for tasks
+- mcp__gemini-flow__agent_assign - Assign tasks to specific agents
+- mcp__gemini-flow__agent_communicate - Send messages between agents
+- mcp__gemini-flow__agent_coordinate - Coordinate agent activities
 
 📋 TASK ORCHESTRATION:
-- mcp__claude-flow__task_create - Create new tasks with dependencies
-- mcp__claude-flow__task_assign - Assign tasks to agents
-- mcp__claude-flow__task_update - Update task status and progress
-- mcp__claude-flow__task_complete - Mark tasks as complete with results
+- mcp__gemini-flow__task_create - Create new tasks with dependencies
+- mcp__gemini-flow__task_assign - Assign tasks to agents
+- mcp__gemini-flow__task_update - Update task status and progress
+- mcp__gemini-flow__task_complete - Mark tasks as complete with results
 
 🎛️ COORDINATION MODES:
 1. CENTRALIZED (default): Single coordinator manages all agents
@@ -358,46 +358,46 @@ ${enableSparc ? `
    S - Specification Phase (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__memory_store { key: "specs/requirements", value: {...} }
-     mcp__claude-flow__task_create { name: "Requirement 1" }
-     mcp__claude-flow__task_create { name: "Requirement 2" }
-     mcp__claude-flow__task_create { name: "Requirement 3" }
-     mcp__claude-flow__agent_spawn { type: "researcher", name: "SpecAnalyst" }
+     mcp__gemini-flow__memory_store { key: "specs/requirements", value: {...} }
+     mcp__gemini-flow__task_create { name: "Requirement 1" }
+     mcp__gemini-flow__task_create { name: "Requirement 2" }
+     mcp__gemini-flow__task_create { name: "Requirement 3" }
+     mcp__gemini-flow__agent_spawn { type: "researcher", name: "SpecAnalyst" }
    \`\`\`
    
    P - Pseudocode Phase (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__memory_store { key: "pseudocode/main", value: {...} }
-     mcp__claude-flow__task_create { name: "Design API" }
-     mcp__claude-flow__task_create { name: "Design Data Model" }
-     mcp__claude-flow__agent_communicate { to: "all", message: "Review design" }
+     mcp__gemini-flow__memory_store { key: "pseudocode/main", value: {...} }
+     mcp__gemini-flow__task_create { name: "Design API" }
+     mcp__gemini-flow__task_create { name: "Design Data Model" }
+     mcp__gemini-flow__agent_communicate { to: "all", message: "Review design" }
    \`\`\`
    
    A - Architecture Phase (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__agent_spawn { type: "architect", name: "LeadArchitect" }
-     mcp__claude-flow__memory_store { key: "architecture/decisions", value: {...} }
-     mcp__claude-flow__task_create { name: "Backend", subtasks: [...] }
-     mcp__claude-flow__task_create { name: "Frontend", subtasks: [...] }
+     mcp__gemini-flow__agent_spawn { type: "architect", name: "LeadArchitect" }
+     mcp__gemini-flow__memory_store { key: "architecture/decisions", value: {...} }
+     mcp__gemini-flow__task_create { name: "Backend", subtasks: [...] }
+     mcp__gemini-flow__task_create { name: "Frontend", subtasks: [...] }
    \`\`\`
    
    R - Refinement Phase (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__swarm_monitor {}
-     mcp__claude-flow__task_update { taskId: "1", progress: 50 }
-     mcp__claude-flow__task_update { taskId: "2", progress: 75 }
-     mcp__claude-flow__memory_store { key: "learnings/iteration1", value: {...} }
+     mcp__gemini-flow__swarm_monitor {}
+     mcp__gemini-flow__task_update { taskId: "1", progress: 50 }
+     mcp__gemini-flow__task_update { taskId: "2", progress: 75 }
+     mcp__gemini-flow__memory_store { key: "learnings/iteration1", value: {...} }
    \`\`\`
    
    C - Completion Phase (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__task_complete { taskId: "1", results: {...} }
-     mcp__claude-flow__task_complete { taskId: "2", results: {...} }
-     mcp__claude-flow__memory_retrieve { pattern: "**/*" }
+     mcp__gemini-flow__task_complete { taskId: "1", results: {...} }
+     mcp__gemini-flow__task_complete { taskId: "2", results: {...} }
+     mcp__gemini-flow__memory_retrieve { pattern: "**/*" }
      TodoWrite { todos: [{content: "Final review", status: "completed"}] }
    \`\`\`
 ` : `
@@ -406,27 +406,27 @@ ${enableSparc ? `
    Initial Setup (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__task_create { name: "Main", subtasks: [...] }
-     mcp__claude-flow__agent_spawn { type: "coordinator" }
-     mcp__claude-flow__agent_spawn { type: "coder" }
-     mcp__claude-flow__agent_spawn { type: "tester" }
-     mcp__claude-flow__memory_store { key: "init", value: {...} }
+     mcp__gemini-flow__task_create { name: "Main", subtasks: [...] }
+     mcp__gemini-flow__agent_spawn { type: "coordinator" }
+     mcp__gemini-flow__agent_spawn { type: "coder" }
+     mcp__gemini-flow__agent_spawn { type: "tester" }
+     mcp__gemini-flow__memory_store { key: "init", value: {...} }
    \`\`\`
    
    Task Assignment (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__task_assign { taskId: "1", agentId: "agent-1" }
-     mcp__claude-flow__task_assign { taskId: "2", agentId: "agent-2" }
-     mcp__claude-flow__task_assign { taskId: "3", agentId: "agent-3" }
+     mcp__gemini-flow__task_assign { taskId: "1", agentId: "agent-1" }
+     mcp__gemini-flow__task_assign { taskId: "2", agentId: "agent-2" }
+     mcp__gemini-flow__task_assign { taskId: "3", agentId: "agent-3" }
    \`\`\`
    
    Monitoring & Updates (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__swarm_monitor {}
-     mcp__claude-flow__agent_communicate { to: "all", message: "Status update" }
-     mcp__claude-flow__memory_store { key: "progress", value: {...} }
+     mcp__gemini-flow__swarm_monitor {}
+     mcp__gemini-flow__agent_communicate { to: "all", message: "Status update" }
+     mcp__gemini-flow__memory_store { key: "progress", value: {...} }
    \`\`\`
 `}
 
@@ -460,24 +460,24 @@ TESTER:
 📝 EXAMPLE MCP TOOL USAGE PATTERNS:
 
 1. Starting a swarm:
-   mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
-   mcp__claude-flow__memory_store {"key": "objective", "value": "${objective}"}
-   mcp__claude-flow__task_create {"name": "Main Objective", "type": "parent"}
+   mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
+   mcp__gemini-flow__memory_store {"key": "objective", "value": "${objective}"}
+   mcp__gemini-flow__task_create {"name": "Main Objective", "type": "parent"}
 
 2. Spawning worker agents:
-   mcp__claude-flow__agent_spawn {"type": "researcher", "capabilities": ["web-search"]}
-   mcp__claude-flow__agent_spawn {"type": "coder", "capabilities": ["python", "testing"]}
-   mcp__claude-flow__task_assign {"taskId": "task-123", "agentId": "agent-456"}
+   mcp__gemini-flow__agent_spawn {"type": "researcher", "capabilities": ["web-search"]}
+   mcp__gemini-flow__agent_spawn {"type": "coder", "capabilities": ["python", "testing"]}
+   mcp__gemini-flow__task_assign {"taskId": "task-123", "agentId": "agent-456"}
 
 3. Coordinating work:
-   mcp__claude-flow__agent_communicate {"to": "agent-123", "message": "Begin phase 2"}
-   mcp__claude-flow__memory_store {"key": "phase1/results", "value": {...}}
-   mcp__claude-flow__task_update {"taskId": "task-123", "progress": 75}
+   mcp__gemini-flow__agent_communicate {"to": "agent-123", "message": "Begin phase 2"}
+   mcp__gemini-flow__memory_store {"key": "phase1/results", "value": {...}}
+   mcp__gemini-flow__task_update {"taskId": "task-123", "progress": 75}
 
 4. Monitoring progress:
-   mcp__claude-flow__swarm_monitor {}
-   mcp__claude-flow__task_status {"includeCompleted": true}
-   mcp__claude-flow__agent_list {"status": "active"}
+   mcp__gemini-flow__swarm_monitor {}
+   mcp__gemini-flow__task_status {"includeCompleted": true}
+   mcp__gemini-flow__agent_list {"status": "active"}
 
 💾 MEMORY PATTERNS:
 
@@ -503,14 +503,14 @@ The swarm should be self-documenting - use memory_store to save all important in
         console.log('🔓 Using --dangerously-skip-permissions by default for seamless swarm execution');
       }
       
-      // Spawn claude with the prompt as the first argument
+      // Spawn gemini with the prompt as the first argument
       const claudeProcess = spawn('claude', claudeArgs, {
         stdio: 'inherit',
         shell: false
       });
       
-      console.log('✓ Claude Code launched with swarm coordination prompt!');
-      console.log('\n🚀 The swarm coordination instructions have been injected into Claude Code');
+      console.log('✓ Gemini Code launched with swarm coordination prompt!');
+      console.log('\n🚀 The swarm coordination instructions have been injected into Gemini Code');
       console.log('   The prompt includes:');
       console.log('   • Strategy-specific guidance for', strategy);
       console.log('   • Coordination patterns for', mode, 'mode');
@@ -519,14 +519,14 @@ The swarm should be self-documenting - use memory_store to save all important in
       
       // Handle process events
       claudeProcess.on('error', (err) => {
-        console.error('❌ Failed to launch Claude Code:', err.message);
+        console.error('❌ Failed to launch Gemini Code:', err.message);
       });
       
       // Don't wait for completion - let it run
       return;
       
     } catch (error) {
-      console.error('❌ Failed to spawn Claude Code:', error.message);
+      console.error('❌ Failed to spawn Gemini Code:', error.message);
       console.log('\nFalling back to built-in executor...');
       // Fall through to executor implementation
     }
@@ -599,7 +599,7 @@ await swarmCommand(args, flags);
       
       // Use the bash script for true background execution
       const binDir = new URL('../../../bin/', import.meta.url).pathname;
-      const bgScriptPath = `${binDir}claude-flow-swarm-bg`;
+      const bgScriptPath = `${binDir}gemini-flow-swarm-bg`;
       
       try {
         // Check if the background script exists
@@ -655,7 +655,7 @@ exit 0
         
         console.log(`\n✅ Swarm launched in background!`);
         console.log(`📄 Logs: tail -f ${logFile}`);
-        console.log(`📊 Status: claude-flow swarm status ${swarmId}`);
+        console.log(`📊 Status: gemini-flow swarm status ${swarmId}`);
         console.log(`\nThe swarm will continue running independently.`);
         
         // Exit immediately
@@ -670,8 +670,8 @@ exit 0
     
     const objective = (args || []).join(' ').trim();
     
-    // Get the claude-flow-swarm-bg script path
-    const bgScriptPath = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../bin/claude-flow-swarm-bg');
+    // Get the gemini-flow-swarm-bg script path
+    const bgScriptPath = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../bin/gemini-flow-swarm-bg');
     
     // Check if background script exists
     if (fs.existsSync(bgScriptPath)) {
@@ -698,9 +698,9 @@ exit 0
       // Fallback to simple message
       console.log(`🐝 Background mode requested`);
       console.log(`📋 Objective: ${objective}`);
-      console.log(`\n⚠️  Background execution requires the claude-flow-swarm-bg script.`);
+      console.log(`\n⚠️  Background execution requires the gemini-flow-swarm-bg script.`);
       console.log(`\nFor true background execution, use:`)
-      console.log(`  nohup claude-flow swarm "${objective}" ${Object.entries(flags).filter(([k,v]) => k !== 'background' && v).map(([k,v]) => `--${k}${v !== true ? ` ${v}` : ''}`).join(' ')} > swarm.log 2>&1 &`);
+      console.log(`  nohup gemini-flow swarm "${objective}" ${Object.entries(flags).filter(([k,v]) => k !== 'background' && v).map(([k,v]) => `--${k}${v !== true ? ` ${v}` : ''}`).join(' ')} > swarm.log 2>&1 &`);
     }
     return;
   }
@@ -854,19 +854,19 @@ exit 0
         // Fallback to basic message if can't run swarm-demo.ts
       }
       
-      // Try to use Claude wrapper approach like SPARC does
+      // Try to use Gemini wrapper approach like SPARC does
       try {
         const { execSync } = await import('child_process');
         
-        // Check if claude command exists
+        // Check if gemini command exists
         try {
           execSync('which claude', { stdio: 'ignore' });
         } catch (e) {
-          // Claude not found, show fallback message
+          // Gemini not found, show fallback message
           console.log(`✅ Swarm initialized with ID: ${swarmId}`);
-          console.log('\n⚠️  Note: Advanced swarm features require Claude or local installation.');
+          console.log('\n⚠️  Note: Advanced swarm features require Gemini or local installation.');
           console.log('Install Claude: https://claude.ai/code');
-          console.log('Or install locally: npm install -g claude-flow@latest');
+          console.log('Or install locally: npm install -g gemini-flow@latest');
           console.log('\nThe swarm system would coordinate the following:');
           console.log('1. Agent spawning and task distribution');
           console.log('2. Parallel execution of subtasks');
@@ -876,13 +876,13 @@ exit 0
           return;
         }
         
-        // Claude is available, use it to run swarm
-        console.log('🚀 Launching swarm via Claude wrapper...');
+        // Gemini is available, use it to run swarm
+        console.log('🚀 Launching swarm via Gemini wrapper...');
         if (flags.sparc !== false) {
           console.log('🧪 SPARC methodology enabled - using full TDD workflow');
         }
         
-        // Build the prompt for Claude using SPARC methodology
+        // Build the prompt for Gemini using SPARC methodology
         const enableSparc = flags.sparc !== false;
         const swarmPrompt = `Execute a swarm coordination task using ${enableSparc ? 'the full SPARC methodology' : 'standard approach'}:
 
@@ -952,7 +952,7 @@ IMPORTANT:
 
 Begin execution now. Create all necessary files and provide a complete, working solution.`;
 
-        // Execute Claude non-interactively by piping the prompt
+        // Execute Gemini non-interactively by piping the prompt
         const { spawn } = await import('child_process');
         
         const claudeArgs = [];
@@ -962,7 +962,7 @@ Begin execution now. Create all necessary files and provide a complete, working 
           claudeArgs.push('--dangerously-skip-permissions');
         }
         
-        // Spawn claude process
+        // Spawn gemini process
         const claudeProcess = spawn('claude', claudeArgs, {
           stdio: ['pipe', 'inherit', 'inherit'],
           shell: false
@@ -978,7 +978,7 @@ Begin execution now. Create all necessary files and provide a complete, working 
             if (code === 0) {
               resolve();
             } else {
-              reject(new Error(`Claude process exited with code ${code}`));
+              reject(new Error(`Gemini process exited with code ${code}`));
             }
           });
           
@@ -988,11 +988,11 @@ Begin execution now. Create all necessary files and provide a complete, working 
         });
         
       } catch (error) {
-        // Fallback if Claude execution fails
+        // Fallback if Gemini execution fails
         console.log(`✅ Swarm initialized with ID: ${swarmId}`);
-        console.log('\n⚠️  Note: Advanced swarm features require Claude or local installation.');
+        console.log('\n⚠️  Note: Advanced swarm features require Gemini or local installation.');
         console.log('Install Claude: https://claude.ai/code');
-        console.log('Or install locally: npm install -g claude-flow@latest');
+        console.log('Or install locally: npm install -g gemini-flow@latest');
         console.log('\nThe swarm system would coordinate the following:');
         console.log('1. Agent spawning and task distribution');
         console.log('2. Parallel execution of subtasks');
@@ -1008,16 +1008,16 @@ Begin execution now. Create all necessary files and provide a complete, working 
     
     // Fallback to comprehensive help if there's an import error
     console.log(`
-🐝 Claude Flow Advanced Swarm System
+🐝 Gemini Flow Advanced Swarm System
 
 USAGE:
-  claude-flow swarm <objective> [options]
+  gemini-flow swarm <objective> [options]
 
 EXAMPLES:
-  claude-flow swarm "Build a REST API" --strategy development
-  claude-flow swarm "Research cloud architecture" --strategy research --ui
-  claude-flow swarm "Analyze data trends" --strategy analysis --parallel
-  claude-flow swarm "Optimize performance" --distributed --monitor
+  gemini-flow swarm "Build a REST API" --strategy development
+  gemini-flow swarm "Research cloud architecture" --strategy research --ui
+  gemini-flow swarm "Analyze data trends" --strategy analysis --parallel
+  gemini-flow swarm "Optimize performance" --distributed --monitor
 
 STRATEGIES:
   auto           Automatically determine best approach (default)
@@ -1063,7 +1063,7 @@ OPTIONS:
   --encryption               Enable encryption
   --verbose                  Enable detailed logging
   --dry-run                  Show configuration without executing
-  --executor                 Use built-in executor instead of Claude Code
+  --executor                 Use built-in executor instead of Gemini Code
   --auto                     (Deprecated: auto-permissions enabled by default)
   --no-auto-permissions      Disable automatic --dangerously-skip-permissions
 
@@ -1076,7 +1076,7 @@ ADVANCED OPTIONS:
   --fault-tolerance <type>   Fault tolerance strategy
 
 For complete documentation and examples:
-https://github.com/ruvnet/claude-code-flow/docs/swarm.md
+https://github.com/ruvnet/gemini-flow/docs/swarm.md
 `);
   }
 }
@@ -1169,7 +1169,7 @@ app.post('/api/v1/items', (req, res) => {
 // Start server
 app.listen(port, () => {
   console.log(\`REST API server running on port \${port}\`);
-  console.log('Created by Claude Flow Swarm');
+  console.log('Created by Gemini Flow Swarm');
 });
 
 module.exports = app;
@@ -1182,15 +1182,15 @@ module.exports = app;
     const packageJson = {
       name: "rest-api",
       version: "1.0.0",
-      description: "REST API created by Claude Flow Swarm",
+      description: "REST API created by Gemini Flow Swarm",
       main: "server.js",
       scripts: {
         start: "node server.js",
         dev: "nodemon server.js",
         test: "jest"
       },
-      keywords: ["rest", "api", "swarm", "claude-flow"],
-      author: "Claude Flow Swarm",
+      keywords: ["rest", "api", "swarm", "gemini-flow"],
+      author: "Gemini Flow Swarm",
       license: "MIT",
       dependencies: {
         express: "^4.18.2"
@@ -1216,7 +1216,7 @@ module.exports = app;
     // Create README
     const readme = `# REST API
 
-This REST API was created by the Claude Flow Swarm system.
+This REST API was created by the Gemini Flow Swarm system.
 
 ## Swarm Details
 - Swarm ID: ${swarmId}
@@ -1244,7 +1244,7 @@ npm start
 - \`POST /api/v1/items\` - Create new item
 
 ---
-Created by Claude Flow Swarm
+Created by Gemini Flow Swarm
 `;
     
     await fs.promises.writeFile(path.join(apiDir, 'README.md'), readme);
@@ -1257,7 +1257,7 @@ Created by Claude Flow Swarm
     // Create generic application
     console.log(`\n🏗️  Creating application...`);
     
-    const appCode = `// Application created by Claude Flow Swarm
+    const appCode = `// Application created by Gemini Flow Swarm
 // Objective: ${objective}
 // Swarm ID: ${swarmId}
 
@@ -1275,7 +1275,7 @@ main();
     const packageJson = {
       name: "swarm-app",
       version: "1.0.0",
-      description: `Application created by Claude Flow Swarm: ${objective}`,
+      description: `Application created by Gemini Flow Swarm: ${objective}`,
       main: "app.js",
       scripts: {
         start: "node app.js"
@@ -1587,12 +1587,12 @@ function getAgentRecommendations(strategy, maxAgents, objective) {
 
 \`\`\`
 [BatchTool - Single Message]:
-  mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
-  mcp__claude-flow__agent_spawn {"type": "researcher", "name": "RequirementsAnalyst"}
-  mcp__claude-flow__agent_spawn {"type": "architect", "name": "SystemDesigner"}
-  mcp__claude-flow__memory_store {"key": "swarm/objective", "value": "${objective}"}
-  mcp__claude-flow__task_create {"name": "Analyze Requirements", "assignTo": "RequirementsAnalyst"}
-  mcp__claude-flow__task_create {"name": "Design Architecture", "assignTo": "SystemDesigner", "dependsOn": ["Analyze Requirements"]}
+  mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
+  mcp__gemini-flow__agent_spawn {"type": "researcher", "name": "RequirementsAnalyst"}
+  mcp__gemini-flow__agent_spawn {"type": "architect", "name": "SystemDesigner"}
+  mcp__gemini-flow__memory_store {"key": "swarm/objective", "value": "${objective}"}
+  mcp__gemini-flow__task_create {"name": "Analyze Requirements", "assignTo": "RequirementsAnalyst"}
+  mcp__gemini-flow__task_create {"name": "Design Architecture", "assignTo": "SystemDesigner", "dependsOn": ["Analyze Requirements"]}
   TodoWrite {"todos": [
     {"id": "1", "content": "Initialize swarm coordination", "status": "completed", "priority": "high"},
     {"id": "2", "content": "Analyze objective requirements", "status": "in_progress", "priority": "high"},
@@ -1607,16 +1607,16 @@ function getAgentRecommendations(strategy, maxAgents, objective) {
 
 \`\`\`
 [BatchTool - Single Message]:
-  mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "ResearchLead"}
-  mcp__claude-flow__agent_spawn {"type": "researcher", "name": "PrimaryInvestigator"}
-  mcp__claude-flow__agent_spawn {"type": "analyst", "name": "DataScientist"}
-  mcp__claude-flow__agent_spawn {"type": "researcher", "name": "LiteratureExpert"}
-  mcp__claude-flow__agent_spawn {"type": "analyst", "name": "InsightsCompiler"}
-  mcp__claude-flow__memory_store {"key": "research/objective", "value": "${objective}"}
-  mcp__claude-flow__task_create {"name": "Literature Review", "assignTo": "LiteratureExpert"}
-  mcp__claude-flow__task_create {"name": "Primary Research", "assignTo": "PrimaryInvestigator"}
-  mcp__claude-flow__task_create {"name": "Data Analysis", "assignTo": "DataScientist"}
-  mcp__claude-flow__task_create {"name": "Compile Insights", "assignTo": "InsightsCompiler", "dependsOn": ["Literature Review", "Primary Research", "Data Analysis"]}
+  mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "ResearchLead"}
+  mcp__gemini-flow__agent_spawn {"type": "researcher", "name": "PrimaryInvestigator"}
+  mcp__gemini-flow__agent_spawn {"type": "analyst", "name": "DataScientist"}
+  mcp__gemini-flow__agent_spawn {"type": "researcher", "name": "LiteratureExpert"}
+  mcp__gemini-flow__agent_spawn {"type": "analyst", "name": "InsightsCompiler"}
+  mcp__gemini-flow__memory_store {"key": "research/objective", "value": "${objective}"}
+  mcp__gemini-flow__task_create {"name": "Literature Review", "assignTo": "LiteratureExpert"}
+  mcp__gemini-flow__task_create {"name": "Primary Research", "assignTo": "PrimaryInvestigator"}
+  mcp__gemini-flow__task_create {"name": "Data Analysis", "assignTo": "DataScientist"}
+  mcp__gemini-flow__task_create {"name": "Compile Insights", "assignTo": "InsightsCompiler", "dependsOn": ["Literature Review", "Primary Research", "Data Analysis"]}
   TodoWrite {"todos": [
     {"id": "1", "content": "Initialize research swarm", "status": "completed", "priority": "high"},
     {"id": "2", "content": "Conduct literature review", "status": "in_progress", "priority": "high"},
@@ -1632,16 +1632,16 @@ function getAgentRecommendations(strategy, maxAgents, objective) {
 
 \`\`\`
 [BatchTool - Single Message]:
-  mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "TechLead"}
-  mcp__claude-flow__agent_spawn {"type": "architect", "name": "SystemArchitect"}
-  mcp__claude-flow__agent_spawn {"type": "coder", "name": "BackendDev"}
-  mcp__claude-flow__agent_spawn {"type": "coder", "name": "FrontendDev"}
-  mcp__claude-flow__agent_spawn {"type": "tester", "name": "QAEngineer"}
-  mcp__claude-flow__memory_store {"key": "dev/objective", "value": "${objective}"}
-  mcp__claude-flow__task_create {"name": "System Architecture", "assignTo": "SystemArchitect"}
-  mcp__claude-flow__task_create {"name": "Backend Implementation", "assignTo": "BackendDev", "dependsOn": ["System Architecture"]}
-  mcp__claude-flow__task_create {"name": "Frontend Implementation", "assignTo": "FrontendDev", "dependsOn": ["System Architecture"]}
-  mcp__claude-flow__task_create {"name": "Testing Suite", "assignTo": "QAEngineer", "dependsOn": ["Backend Implementation", "Frontend Implementation"]}
+  mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "TechLead"}
+  mcp__gemini-flow__agent_spawn {"type": "architect", "name": "SystemArchitect"}
+  mcp__gemini-flow__agent_spawn {"type": "coder", "name": "BackendDev"}
+  mcp__gemini-flow__agent_spawn {"type": "coder", "name": "FrontendDev"}
+  mcp__gemini-flow__agent_spawn {"type": "tester", "name": "QAEngineer"}
+  mcp__gemini-flow__memory_store {"key": "dev/objective", "value": "${objective}"}
+  mcp__gemini-flow__task_create {"name": "System Architecture", "assignTo": "SystemArchitect"}
+  mcp__gemini-flow__task_create {"name": "Backend Implementation", "assignTo": "BackendDev", "dependsOn": ["System Architecture"]}
+  mcp__gemini-flow__task_create {"name": "Frontend Implementation", "assignTo": "FrontendDev", "dependsOn": ["System Architecture"]}
+  mcp__gemini-flow__task_create {"name": "Testing Suite", "assignTo": "QAEngineer", "dependsOn": ["Backend Implementation", "Frontend Implementation"]}
   TodoWrite {"todos": [
     {"id": "1", "content": "Initialize development swarm", "status": "completed", "priority": "high"},
     {"id": "2", "content": "Design system architecture", "status": "in_progress", "priority": "high"},
@@ -1657,16 +1657,16 @@ function getAgentRecommendations(strategy, maxAgents, objective) {
 
 \`\`\`
 [BatchTool - Single Message]:
-  mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "AnalysisLead"}
-  mcp__claude-flow__agent_spawn {"type": "analyst", "name": "DataEngineer"}
-  mcp__claude-flow__agent_spawn {"type": "analyst", "name": "StatisticalExpert"}
-  mcp__claude-flow__agent_spawn {"type": "coder", "name": "VisualizationDev"}
-  mcp__claude-flow__agent_spawn {"type": "analyst", "name": "BusinessAnalyst"}
-  mcp__claude-flow__memory_store {"key": "analysis/objective", "value": "${objective}"}
-  mcp__claude-flow__task_create {"name": "Data Pipeline Setup", "assignTo": "DataEngineer"}
-  mcp__claude-flow__task_create {"name": "Statistical Analysis", "assignTo": "StatisticalExpert", "dependsOn": ["Data Pipeline Setup"]}
-  mcp__claude-flow__task_create {"name": "Create Visualizations", "assignTo": "VisualizationDev", "dependsOn": ["Statistical Analysis"]}
-  mcp__claude-flow__task_create {"name": "Business Insights", "assignTo": "BusinessAnalyst", "dependsOn": ["Statistical Analysis"]}
+  mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "AnalysisLead"}
+  mcp__gemini-flow__agent_spawn {"type": "analyst", "name": "DataEngineer"}
+  mcp__gemini-flow__agent_spawn {"type": "analyst", "name": "StatisticalExpert"}
+  mcp__gemini-flow__agent_spawn {"type": "coder", "name": "VisualizationDev"}
+  mcp__gemini-flow__agent_spawn {"type": "analyst", "name": "BusinessAnalyst"}
+  mcp__gemini-flow__memory_store {"key": "analysis/objective", "value": "${objective}"}
+  mcp__gemini-flow__task_create {"name": "Data Pipeline Setup", "assignTo": "DataEngineer"}
+  mcp__gemini-flow__task_create {"name": "Statistical Analysis", "assignTo": "StatisticalExpert", "dependsOn": ["Data Pipeline Setup"]}
+  mcp__gemini-flow__task_create {"name": "Create Visualizations", "assignTo": "VisualizationDev", "dependsOn": ["Statistical Analysis"]}
+  mcp__gemini-flow__task_create {"name": "Business Insights", "assignTo": "BusinessAnalyst", "dependsOn": ["Statistical Analysis"]}
   TodoWrite {"todos": [
     {"id": "1", "content": "Initialize analysis swarm", "status": "completed", "priority": "high"},
     {"id": "2", "content": "Setup data pipelines", "status": "in_progress", "priority": "high"},
@@ -1682,16 +1682,16 @@ function getAgentRecommendations(strategy, maxAgents, objective) {
 
 \`\`\`
 [BatchTool - Single Message]:
-  mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "QALead"}
-  mcp__claude-flow__agent_spawn {"type": "tester", "name": "UnitTestEngineer"}
-  mcp__claude-flow__agent_spawn {"type": "tester", "name": "IntegrationTester"}
-  mcp__claude-flow__agent_spawn {"type": "tester", "name": "PerformanceTester"}
-  mcp__claude-flow__agent_spawn {"type": "tester", "name": "SecurityAuditor"}
-  mcp__claude-flow__memory_store {"key": "testing/objective", "value": "${objective}"}
-  mcp__claude-flow__task_create {"name": "Unit Test Suite", "assignTo": "UnitTestEngineer"}
-  mcp__claude-flow__task_create {"name": "Integration Tests", "assignTo": "IntegrationTester"}
-  mcp__claude-flow__task_create {"name": "Performance Tests", "assignTo": "PerformanceTester"}
-  mcp__claude-flow__task_create {"name": "Security Audit", "assignTo": "SecurityAuditor"}
+  mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "QALead"}
+  mcp__gemini-flow__agent_spawn {"type": "tester", "name": "UnitTestEngineer"}
+  mcp__gemini-flow__agent_spawn {"type": "tester", "name": "IntegrationTester"}
+  mcp__gemini-flow__agent_spawn {"type": "tester", "name": "PerformanceTester"}
+  mcp__gemini-flow__agent_spawn {"type": "tester", "name": "SecurityAuditor"}
+  mcp__gemini-flow__memory_store {"key": "testing/objective", "value": "${objective}"}
+  mcp__gemini-flow__task_create {"name": "Unit Test Suite", "assignTo": "UnitTestEngineer"}
+  mcp__gemini-flow__task_create {"name": "Integration Tests", "assignTo": "IntegrationTester"}
+  mcp__gemini-flow__task_create {"name": "Performance Tests", "assignTo": "PerformanceTester"}
+  mcp__gemini-flow__task_create {"name": "Security Audit", "assignTo": "SecurityAuditor"}
   TodoWrite {"todos": [
     {"id": "1", "content": "Initialize testing swarm", "status": "completed", "priority": "high"},
     {"id": "2", "content": "Create unit tests", "status": "in_progress", "priority": "high"},
@@ -1707,16 +1707,16 @@ function getAgentRecommendations(strategy, maxAgents, objective) {
 
 \`\`\`
 [BatchTool - Single Message]:
-  mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "OptimizationLead"}
-  mcp__claude-flow__agent_spawn {"type": "analyst", "name": "PerformanceProfiler"}
-  mcp__claude-flow__agent_spawn {"type": "coder", "name": "AlgorithmExpert"}
-  mcp__claude-flow__agent_spawn {"type": "analyst", "name": "DatabaseOptimizer"}
-  mcp__claude-flow__agent_spawn {"type": "coder", "name": "SystemsTuner"}
-  mcp__claude-flow__memory_store {"key": "optimization/objective", "value": "${objective}"}
-  mcp__claude-flow__task_create {"name": "Performance Profiling", "assignTo": "PerformanceProfiler"}
-  mcp__claude-flow__task_create {"name": "Algorithm Optimization", "assignTo": "AlgorithmExpert", "dependsOn": ["Performance Profiling"]}
-  mcp__claude-flow__task_create {"name": "Database Optimization", "assignTo": "DatabaseOptimizer", "dependsOn": ["Performance Profiling"]}
-  mcp__claude-flow__task_create {"name": "System Tuning", "assignTo": "SystemsTuner", "dependsOn": ["Performance Profiling"]}
+  mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "OptimizationLead"}
+  mcp__gemini-flow__agent_spawn {"type": "analyst", "name": "PerformanceProfiler"}
+  mcp__gemini-flow__agent_spawn {"type": "coder", "name": "AlgorithmExpert"}
+  mcp__gemini-flow__agent_spawn {"type": "analyst", "name": "DatabaseOptimizer"}
+  mcp__gemini-flow__agent_spawn {"type": "coder", "name": "SystemsTuner"}
+  mcp__gemini-flow__memory_store {"key": "optimization/objective", "value": "${objective}"}
+  mcp__gemini-flow__task_create {"name": "Performance Profiling", "assignTo": "PerformanceProfiler"}
+  mcp__gemini-flow__task_create {"name": "Algorithm Optimization", "assignTo": "AlgorithmExpert", "dependsOn": ["Performance Profiling"]}
+  mcp__gemini-flow__task_create {"name": "Database Optimization", "assignTo": "DatabaseOptimizer", "dependsOn": ["Performance Profiling"]}
+  mcp__gemini-flow__task_create {"name": "System Tuning", "assignTo": "SystemsTuner", "dependsOn": ["Performance Profiling"]}
   TodoWrite {"todos": [
     {"id": "1", "content": "Initialize optimization swarm", "status": "completed", "priority": "high"},
     {"id": "2", "content": "Profile system performance", "status": "in_progress", "priority": "high"},
@@ -1732,16 +1732,16 @@ function getAgentRecommendations(strategy, maxAgents, objective) {
 
 \`\`\`
 [BatchTool - Single Message]:
-  mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "MaintenanceLead"}
-  mcp__claude-flow__agent_spawn {"type": "analyst", "name": "SystemAuditor"}
-  mcp__claude-flow__agent_spawn {"type": "coder", "name": "PatchDeveloper"}
-  mcp__claude-flow__agent_spawn {"type": "tester", "name": "RegressionTester"}
-  mcp__claude-flow__agent_spawn {"type": "analyst", "name": "DocumentationUpdater"}
-  mcp__claude-flow__memory_store {"key": "maintenance/objective", "value": "${objective}"}
-  mcp__claude-flow__task_create {"name": "System Audit", "assignTo": "SystemAuditor"}
-  mcp__claude-flow__task_create {"name": "Develop Patches", "assignTo": "PatchDeveloper", "dependsOn": ["System Audit"]}
-  mcp__claude-flow__task_create {"name": "Regression Testing", "assignTo": "RegressionTester", "dependsOn": ["Develop Patches"]}
-  mcp__claude-flow__task_create {"name": "Update Documentation", "assignTo": "DocumentationUpdater", "dependsOn": ["Develop Patches"]}
+  mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "MaintenanceLead"}
+  mcp__gemini-flow__agent_spawn {"type": "analyst", "name": "SystemAuditor"}
+  mcp__gemini-flow__agent_spawn {"type": "coder", "name": "PatchDeveloper"}
+  mcp__gemini-flow__agent_spawn {"type": "tester", "name": "RegressionTester"}
+  mcp__gemini-flow__agent_spawn {"type": "analyst", "name": "DocumentationUpdater"}
+  mcp__gemini-flow__memory_store {"key": "maintenance/objective", "value": "${objective}"}
+  mcp__gemini-flow__task_create {"name": "System Audit", "assignTo": "SystemAuditor"}
+  mcp__gemini-flow__task_create {"name": "Develop Patches", "assignTo": "PatchDeveloper", "dependsOn": ["System Audit"]}
+  mcp__gemini-flow__task_create {"name": "Regression Testing", "assignTo": "RegressionTester", "dependsOn": ["Develop Patches"]}
+  mcp__gemini-flow__task_create {"name": "Update Documentation", "assignTo": "DocumentationUpdater", "dependsOn": ["Develop Patches"]}
   TodoWrite {"todos": [
     {"id": "1", "content": "Initialize maintenance swarm", "status": "completed", "priority": "high"},
     {"id": "2", "content": "Audit system health", "status": "in_progress", "priority": "high"},

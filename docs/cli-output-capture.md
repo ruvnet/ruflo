@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides detailed technical specifications for capturing and streaming CLI output in real-time while maintaining full backward compatibility with existing claude-flow operations.
+This document provides detailed technical specifications for capturing and streaming CLI output in real-time while maintaining full backward compatibility with existing gemini-flow operations.
 
 ## Architecture Design
 
@@ -843,4 +843,4 @@ This CLI output capture and streaming system provides:
 6. **Performance**: Optimized streaming with compression and batching
 7. **Backward Compatibility**: Existing CLI functionality unchanged
 
-The architecture ensures that the web UI can provide a real-time console experience while maintaining the full functionality and reliability of the existing claude-flow CLI system.
+The architecture ensures that the web UI can provide a real-time console experience while maintaining the full functionality and reliability of the existing gemini-flow CLI system.

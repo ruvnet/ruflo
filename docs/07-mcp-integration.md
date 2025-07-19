@@ -1,6 +1,6 @@
 # MCP Integration Guide for External Tools
 
-Model Context Protocol (MCP) integration enables Claude-Flow to seamlessly connect with external tools, services, and systems, dramatically expanding its capabilities. This comprehensive guide covers MCP server setup, tool integration, security, and advanced usage patterns.
+Model Context Protocol (MCP) integration enables Gemini-Flow to seamlessly connect with external tools, services, and systems, dramatically expanding its capabilities. This comprehensive guide covers MCP server setup, tool integration, security, and advanced usage patterns.
 
 ## MCP Server Configuration
 
@@ -469,7 +469,7 @@ claude-flow mcp invoke test load \
 ```python
 #!/usr/bin/env python3
 """
-Database Query Tool for Claude-Flow MCP
+Database Query Tool for Gemini-Flow MCP
 Executes database queries with security and performance monitoring
 """
 
@@ -664,7 +664,7 @@ if __name__ == "__main__":
 ```javascript
 #!/usr/bin/env node
 /**
- * API Testing Tool for Claude-Flow MCP
+ * API Testing Tool for Gemini-Flow MCP
  * Performs comprehensive API testing with performance metrics
  */
 
@@ -735,7 +735,7 @@ class APITestingTool {
                 metadata: {
                     url,
                     method,
-                    userAgent: headers['User-Agent'] || 'Claude-Flow-MCP/1.0'
+                    userAgent: headers['User-Agent'] || 'Gemini-Flow-MCP/1.0'
                 }
             };
 
@@ -1338,4 +1338,4 @@ claude-flow mcp analytics optimize \
   --auto-tune false
 ```
 
-This comprehensive MCP integration guide provides all the tools and patterns needed to extend Claude-Flow with powerful external capabilities while maintaining security and performance standards.
+This comprehensive MCP integration guide provides all the tools and patterns needed to extend Gemini-Flow with powerful external capabilities while maintaining security and performance standards.

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Swarm Load Testing for Claude Flow v2.0.0
+ * Swarm Load Testing for Gemini Flow v2.0.0
  */
 
 import { spawn } from 'child_process';

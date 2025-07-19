@@ -92,14 +92,14 @@ Never hardcode secrets or environment values. Split code into files < 500 lines.
 
 To use this SPARC mode, you can:
 
-1. Run directly: `npx claude-flow sparc run code "your task"`
+1. Run directly: `npx gemini-flow sparc run code "your task"`
 2. Use in workflow: Include `code` in your SPARC workflow
 3. Delegate tasks: Use `new_task` to assign work to this mode
 
 ## Example
 
 ```bash
-npx claude-flow sparc run code "implement user authentication"
+npx gemini-flow sparc run code "implement user authentication"
 ```
 
 ## Batchtools Optimization Examples

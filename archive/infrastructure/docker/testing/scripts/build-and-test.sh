@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Automated build and test script for claude-code-flow Docker environment
+# Automated build and test script for gemini-flow Docker environment
 # This script handles the complete build, test, and validation pipeline
 
 set -euo pipefail

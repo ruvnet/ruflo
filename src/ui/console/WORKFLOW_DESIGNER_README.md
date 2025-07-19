@@ -1,8 +1,8 @@
-# Claude Flow - Advanced Workflow Designer
+# Gemini Flow - Advanced Workflow Designer
 
 ## Overview
 
-The Claude Flow Workflow Designer is a comprehensive visual workflow builder that enables users to create, execute, and manage complex data processing pipelines through an intuitive drag-and-drop interface. It features real-time execution, AI integration, and advanced validation capabilities.
+The Gemini Flow Workflow Designer is a comprehensive visual workflow builder that enables users to create, execute, and manage complex data processing pipelines through an intuitive drag-and-drop interface. It features real-time execution, AI integration, and advanced validation capabilities.
 
 ## Features
 
@@ -47,7 +47,7 @@ The Claude Flow Workflow Designer is a comprehensive visual workflow builder tha
 ## File Structure
 
 ```
-/workspaces/claude-code-flow/src/ui/console/
+/workspaces/gemini-flow/src/ui/console/
 ├── js/
 │   └── workflow-designer.js          # Main workflow designer class
 ├── styles/
@@ -533,7 +533,7 @@ console.log(designer.getDebugInfo());
 
 ## License
 
-This component is part of the Claude Flow system and follows the project's licensing terms.
+This component is part of the Gemini Flow system and follows the project's licensing terms.
 
 ## Contributing
 

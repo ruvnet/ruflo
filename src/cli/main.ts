@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Claude-Flow CLI - Main entry point for Node.js
+ * Gemini-Flow CLI - Main entry point for Node.js
  */
 
 import { CLI, VERSION } from "./cli-core.js";
@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 
 async function main() {
-  const cli = new CLI("claude-flow", "Advanced AI Agent Orchestration System");
+  const cli = new CLI("gemini-flow", "Advanced AI Agent Orchestration System");
   
   // Setup all commands
   setupCommands(cli);

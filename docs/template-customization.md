@@ -2,7 +2,7 @@
 
 ## Overview
 
-Claude-Flow uses a modular template system that can be customized for different project types, development workflows, and team preferences. This guide covers the template structure and how to customize it effectively.
+Gemini-Flow uses a modular template system that can be customized for different project types, development workflows, and team preferences. This guide covers the template structure and how to customize it effectively.
 
 ## Template Structure
 
@@ -10,12 +10,12 @@ Claude-Flow uses a modular template system that can be customized for different 
 
 ```
 src/cli/simple-commands/init/templates/
-├── claude-md.js              # CLAUDE.md template generation
+├── gemini-md.js              # GEMINI.md template generation
 ├── memory-bank-md.js         # Memory system documentation
 ├── coordination-md.js        # Agent coordination guide
 ├── readme-files.js          # Helper README templates
 └── optimized/               # Optimized template variants
-    ├── claude-md-optimized.js
+    ├── gemini-md-optimized.js
     ├── sparc-modes-optimized.js
     └── slash-commands-optimized.js
 ```
@@ -26,24 +26,24 @@ After initialization, your project will have:
 
 ```
 your-project/
-├── CLAUDE.md                 # Main AI instructions
+├── GEMINI.md                 # Main AI instructions
 ├── memory-bank.md           # Memory system guide
 ├── coordination.md          # Coordination documentation
 ├── .roomodes               # SPARC mode definitions
-├── .claude/
-│   ├── commands/           # Claude Code slash commands
+├── .gemini/
+│   ├── commands/           # Gemini CLI slash commands
 │   │   ├── sparc/         # SPARC-specific commands
 │   │   └── ...
 │   └── logs/              # Session logs
 ├── memory/
 │   ├── agents/           # Agent-specific memory
 │   ├── sessions/         # Session storage
-│   └── claude-flow-data.json
+│   └── gemini-flow-data.json
 ├── coordination/
 │   ├── memory_bank/      # Shared memory
 │   ├── subtasks/         # Task breakdown
 │   └── orchestration/    # Workflow coordination
-└── ./claude-flow         # Local executable wrapper
+└── ./gemini-flow         # Local executable wrapper
 ```
 
 ## Template Types
@@ -58,10 +58,10 @@ your-project/
 - Standard performance optimizations
 
 ```bash
-npx claude-flow init --sparc
+npx gemini-flow init --sparc
 ```
 
-**Generated CLAUDE.md includes:**
+**Generated GEMINI.md includes:**
 - Basic SPARC workflow instructions
 - Standard coding guidelines
 - General purpose tool configurations
@@ -77,7 +77,7 @@ npx claude-flow init --sparc
 - Stricter best practices enforcement
 
 ```bash
-npx claude-flow init --sparc --force
+npx gemini-flow init --sparc --force
 ```
 
 **Enhanced features:**
@@ -96,11 +96,11 @@ npx claude-flow init --sparc --force
 - Faster initialization
 
 ```bash
-npx claude-flow init --minimal
+npx gemini-flow init --minimal
 ```
 
 **Minimal set includes:**
-- Basic CLAUDE.md
+- Basic GEMINI.md
 - Essential memory structure
 - Core slash commands only
 - Simplified workflows
@@ -112,8 +112,8 @@ npx claude-flow init --minimal
 #### Web Development Template
 ```javascript
 // Custom template for web projects
-export function createWebDevClaudeMd() {
-  return `# Claude Code Configuration - Web Development
+export function createWebDevGeminiMd() {
+  return `# Gemini CLI Configuration - Web Development
 
 ## Project Type: Full-Stack Web Application
 
@@ -142,8 +142,8 @@ export function createWebDevClaudeMd() {
 
 #### Mobile App Template
 ```javascript
-export function createMobileAppClaudeMd() {
-  return `# Claude Code Configuration - Mobile Development
+export function createMobileAppGeminiMd() {
+  return `# Gemini CLI Configuration - Mobile Development
 
 ## Project Type: Cross-Platform Mobile App
 
@@ -241,16 +241,16 @@ For complex projects requiring multiple configurations:
 
 ```bash
 # Initialize base structure
-npx claude-flow init --sparc --force
+npx gemini-flow init --sparc --force
 
 # Add frontend-specific configuration
-npx claude-flow template add frontend --type react
+npx gemini-flow template add frontend --type react
 
 # Add backend-specific configuration  
-npx claude-flow template add backend --type nodejs-api
+npx gemini-flow template add backend --type nodejs-api
 
 # Add mobile configuration
-npx claude-flow template add mobile --type react-native
+npx gemini-flow template add mobile --type react-native
 ```
 
 ### Template Inheritance
@@ -264,7 +264,7 @@ export class BaseTemplate {
     this.config = config;
   }
   
-  generateClaudeMd() {
+  generateGeminiMd() {
     return this.getBaseInstructions() + this.getSpecificInstructions();
   }
 }
@@ -346,7 +346,7 @@ export function createCustomTemplate(options = {}) {
   } = options;
   
   return {
-    claudeMd: generateClaudeMd(projectType, framework),
+    geminiMd: generateGeminiMd(projectType, framework),
     sparcModes: generateSparcModes(testingStrategy),
     slashCommands: generateSlashCommands(framework)
   };
@@ -372,7 +372,7 @@ registerTemplate('my-custom', {
 
 ### Step 3: Use Custom Template
 ```bash
-npx claude-flow init --template my-custom --project-type web --framework react
+npx gemini-flow init --template my-custom --project-type web --framework react
 ```
 
 ## Template Validation
@@ -388,11 +388,11 @@ npx claude-flow init --template my-custom --project-type web --framework react
     "templates": {
       "type": "object",
       "properties": {
-        "claudeMd": { "type": "string" },
+        "geminiMd": { "type": "string" },
         "sparcModes": { "type": "object" },
         "slashCommands": { "type": "array" }
       },
-      "required": ["claudeMd", "sparcModes"]
+      "required": ["geminiMd", "sparcModes"]
     }
   },
   "required": ["name", "version", "templates"]
@@ -403,10 +403,10 @@ npx claude-flow init --template my-custom --project-type web --framework react
 ```javascript
 // Template validation tests
 describe('Template Generation', () => {
-  test('generates valid CLAUDE.md', () => {
+  test('generates valid GEMINI.md', () => {
     const template = createCustomTemplate();
-    expect(template.claudeMd).toContain('# Claude Code Configuration');
-    expect(template.claudeMd).toContain('## SPARC Development');
+    expect(template.geminiMd).toContain('# Gemini CLI Configuration');
+    expect(template.geminiMd).toContain('## SPARC Development');
   });
   
   test('includes all required SPARC modes', () => {
@@ -426,11 +426,11 @@ Create npm packages for reusable templates:
 
 ```json
 {
-  "name": "@company/claude-flow-templates",
+  "name": "@company/gemini-flow-templates",
   "version": "1.0.0",
-  "description": "Company-specific Claude-Flow templates",
+  "description": "Company-specific Gemini-Flow templates",
   "main": "index.js",
-  "keywords": ["claude-flow", "templates", "development"],
+  "keywords": ["gemini-flow", "templates", "development"],
   "files": ["templates/", "README.md"]
 }
 ```
@@ -440,10 +440,10 @@ Contribute to the community template registry:
 
 ```bash
 # Submit template for review
-npx claude-flow template submit my-template.js
+npx gemini-flow template submit my-template.js
 
 # Install community template
-npx claude-flow template install @community/react-template
+npx gemini-flow template install @community/react-template
 ```
 
 ## Migration and Updates
@@ -460,7 +460,7 @@ When updating templates:
 ### Automated Migration
 ```bash
 # Migrate to new template version
-npx claude-flow template migrate --from 1.0 --to 2.0 --preserve-custom
+npx gemini-flow template migrate --from 1.0 --to 2.0 --preserve-custom
 ```
 
 ## Troubleshooting Templates
@@ -485,7 +485,7 @@ npx claude-flow template migrate --from 1.0 --to 2.0 --preserve-custom
 ### Debug Mode
 ```bash
 # Debug template generation
-npx claude-flow init --template custom --debug --verbose
+npx gemini-flow init --template custom --debug --verbose
 ```
 
 ## Contributing Templates

@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Enterprise Configuration Management for Claude-Flow
+ * Enterprise Configuration Management for Gemini-Flow
  * Features: Security masking, change tracking, multi-format support, credential management
  */
 
@@ -528,7 +528,7 @@ export class ConfigManager {
    */
   private getUserConfigDir(): string {
     const home = homedir();
-    return join(home, '.claude-flow');
+    return join(home, '.gemini-flow');
   }
 
   /**

@@ -1,12 +1,12 @@
-// optimized-slash-commands.js - Create batchtools-optimized Claude Code slash commands
+// optimized-slash-commands.js - Create batchtools-optimized Gemini Code slash commands
 
 import { createOptimizedSparcSlashCommand, createOptimizedMainSparcCommand } from './optimized-sparc-commands.js';
-import { createOptimizedClaudeFlowCommands } from './optimized-claude-flow-commands.js';
+import { createOptimizedClaudeFlowCommands } from './optimized-gemini-flow-commands.js';
 
-// Create batchtools-optimized Claude Code slash commands for SPARC modes
+// Create batchtools-optimized Gemini Code slash commands for SPARC modes
 export async function createOptimizedClaudeSlashCommands(workingDir, selectedModes = null) {
   try {
-    console.log('\n🚀 Creating batchtools-optimized Claude Code slash commands...');
+    console.log('\n🚀 Creating batchtools-optimized Gemini Code slash commands...');
     
     // Parse .roomodes to get all SPARC modes
     const roomodesContent = await Deno.readTextFile(`${workingDir}/.roomodes`);
@@ -36,7 +36,7 @@ export async function createOptimizedClaudeSlashCommands(workingDir, selectedMod
     await Deno.writeTextFile(`${workingDir}/.claude/commands/sparc.md`, mainSparcCommand);
     console.log('  ✅ Created optimized main slash command: /sparc (Batchtools enhanced)');
     
-    // Create claude-flow specific commands with batchtools optimization
+    // Create gemini-flow specific commands with batchtools optimization
     await createOptimizedClaudeFlowCommands(workingDir);
     
     // Create batchtools-specific commands
@@ -46,7 +46,7 @@ export async function createOptimizedClaudeSlashCommands(workingDir, selectedMod
     console.log('  💡 All commands include parallel processing and performance optimizations');
     
   } catch (err) {
-    console.log(`  ⚠️  Could not create optimized Claude Code slash commands: ${err.message}`);
+    console.log(`  ⚠️  Could not create optimized Gemini Code slash commands: ${err.message}`);
   }
 }
 
@@ -197,28 +197,28 @@ Chain operations with parallel execution at each stage:
 ### Full SPARC Pipeline with Batchtools
 \`\`\`bash
 # Execute complete SPARC workflow with parallel processing
-./claude-flow sparc pipeline "authentication system" --batch-optimize
+./gemini-flow sparc pipeline "authentication system" --batch-optimize
 
 # Run multiple SPARC modes concurrently
-./claude-flow sparc batch architect,code,tdd "user management" --parallel
+./gemini-flow sparc batch architect,code,tdd "user management" --parallel
 
 # Concurrent project analysis
-./claude-flow sparc concurrent-analyze project-requirements.json --parallel
+./gemini-flow sparc concurrent-analyze project-requirements.json --parallel
 \`\`\`
 
 ### Performance Monitoring
 \`\`\`bash
 # Monitor batch operation performance
-./claude-flow batchtools monitor --real-time
+./gemini-flow batchtools monitor --real-time
 
 # Analyze parallel processing metrics
-./claude-flow batchtools analyze --performance --detailed
+./gemini-flow batchtools analyze --performance --detailed
 
 # Check system resource utilization
-./claude-flow batchtools resources --concurrent --verbose
+./gemini-flow batchtools resources --concurrent --verbose
 \`\`\`
 
-For detailed documentation, see: https://github.com/ruvnet/claude-code-flow/docs/batchtools.md
+For detailed documentation, see: https://github.com/ruvnet/gemini-flow/docs/batchtools.md
 `;
   
   await Deno.writeTextFile(`${workingDir}/.claude/commands/batchtools.md`, batchtoolsCommand);
@@ -232,7 +232,7 @@ description: Monitor and optimize system performance with batchtools
 
 # 📊 Performance Monitoring & Optimization
 
-Real-time performance monitoring and optimization tools for Claude-Flow operations.
+Real-time performance monitoring and optimization tools for Gemini-Flow operations.
 
 ## Performance Metrics
 
@@ -253,25 +253,25 @@ Real-time performance monitoring and optimization tools for Claude-Flow operatio
 ### Real-time Monitoring
 \`\`\`bash
 # Monitor all system performance
-./claude-flow performance monitor --real-time --all
+./gemini-flow performance monitor --real-time --all
 
 # Focus on parallel operations
-./claude-flow performance monitor --parallel --batchtools
+./gemini-flow performance monitor --parallel --batchtools
 
 # Monitor specific components
-./claude-flow performance monitor --focus sparc --concurrent
+./gemini-flow performance monitor --focus sparc --concurrent
 \`\`\`
 
 ### Performance Analysis
 \`\`\`bash
 # Generate performance report
-./claude-flow performance report --detailed --timeframe 24h
+./gemini-flow performance report --detailed --timeframe 24h
 
 # Analyze batch operation efficiency
-./claude-flow performance analyze --batchtools --optimization
+./gemini-flow performance analyze --batchtools --optimization
 
 # Compare performance across different modes
-./claude-flow performance compare --modes architect,code,tdd
+./gemini-flow performance compare --modes architect,code,tdd
 \`\`\`
 
 ## Optimization Recommendations
@@ -316,7 +316,7 @@ Real-time performance monitoring and optimization tools for Claude-Flow operatio
 - Implement performance alerts for critical thresholds
 - Regular performance analysis and optimization
 
-For comprehensive performance guides, see: https://github.com/ruvnet/claude-code-flow/docs/performance.md
+For comprehensive performance guides, see: https://github.com/ruvnet/gemini-flow/docs/performance.md
 `;
   
   await Deno.writeTextFile(`${workingDir}/.claude/commands/performance.md`, performanceCommand);

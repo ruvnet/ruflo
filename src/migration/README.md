@@ -1,6 +1,6 @@
-# Claude-Flow Migration System
+# Gemini-Flow Migration System
 
-A comprehensive migration system for existing claude-flow projects to adopt optimized prompts and configurations.
+A comprehensive migration system for existing gemini-flow projects to adopt optimized prompts and configurations.
 
 ## Overview
 
@@ -15,16 +15,16 @@ The migration system provides tools to:
 
 ```bash
 # Analyze your project
-npx claude-flow migrate analyze
+npx gemini-flow migrate analyze
 
 # Run migration with dry-run preview
-npx claude-flow migrate --dry-run --verbose
+npx gemini-flow migrate --dry-run --verbose
 
 # Migrate with selective strategy (recommended)
-npx claude-flow migrate --strategy selective --preserve-custom
+npx gemini-flow migrate --strategy selective --preserve-custom
 
 # Rollback if needed
-npx claude-flow migrate rollback
+npx gemini-flow migrate rollback
 ```
 
 ## Architecture
@@ -63,64 +63,64 @@ npx claude-flow migrate rollback
 
 ```bash
 # Basic analysis
-claude-flow migrate analyze
+gemini-flow migrate analyze
 
 # Detailed analysis with output file
-claude-flow migrate analyze --detailed --output analysis.json
+gemini-flow migrate analyze --detailed --output analysis.json
 
 # Check specific project
-claude-flow migrate analyze /path/to/project
+gemini-flow migrate analyze /path/to/project
 ```
 
 ### Migration Commands
 
 ```bash
 # Preview changes (safe)
-claude-flow migrate --dry-run --verbose
+gemini-flow migrate --dry-run --verbose
 
 # Full migration
-claude-flow migrate --strategy full
+gemini-flow migrate --strategy full
 
 # Selective migration (recommended)
-claude-flow migrate --strategy selective --preserve-custom
+gemini-flow migrate --strategy selective --preserve-custom
 
 # Merge migration for complex projects
-claude-flow migrate --strategy merge
+gemini-flow migrate --strategy merge
 
 # Force migration without prompts
-claude-flow migrate --force
+gemini-flow migrate --force
 
 # Skip post-migration validation
-claude-flow migrate --skip-validation
+gemini-flow migrate --skip-validation
 ```
 
 ### Backup & Rollback Commands
 
 ```bash
 # List available backups
-claude-flow migrate rollback --list
+gemini-flow migrate rollback --list
 
 # Rollback to latest backup
-claude-flow migrate rollback
+gemini-flow migrate rollback
 
 # Rollback to specific backup
-claude-flow migrate rollback --timestamp 2024-01-01T12:00:00
+gemini-flow migrate rollback --timestamp 2024-01-01T12:00:00
 
 # Force rollback without confirmation
-claude-flow migrate rollback --force
+gemini-flow migrate rollback --force
 ```
 
 ### Validation Commands
 
 ```bash
 # Validate migration
-claude-flow migrate validate
+gemini-flow migrate validate
 
 # Detailed validation report
-claude-flow migrate validate --verbose
+gemini-flow migrate validate --verbose
 
 # Check project status
-claude-flow migrate status
+gemini-flow migrate status
 ```
 
 ## Configuration
@@ -172,7 +172,7 @@ Projects can include migration preferences in `CLAUDE.md`:
 ### Programmatic Migration
 
 ```typescript
-import { MigrationRunner, MigrationAnalyzer } from 'claude-flow/migration';
+import { MigrationRunner, MigrationAnalyzer } from 'gemini-flow/migration';
 
 // Analyze project
 const analyzer = new MigrationAnalyzer();
@@ -193,7 +193,7 @@ console.log(`Migration ${result.success ? 'succeeded' : 'failed'}`);
 ### Backup Management
 
 ```typescript
-import { RollbackManager } from 'claude-flow/migration';
+import { RollbackManager } from 'gemini-flow/migration';
 
 const rollback = new RollbackManager('./my-project');
 
@@ -216,7 +216,7 @@ await rollback.rollback(backup.metadata.backupId);
 
 ```bash
 # For new projects without existing customizations
-claude-flow migrate --strategy full
+gemini-flow migrate --strategy full
 ```
 
 **Result**: Clean installation of all optimized prompts and configurations.
@@ -225,10 +225,10 @@ claude-flow migrate --strategy full
 
 ```bash
 # Analyze first
-claude-flow migrate analyze --detailed
+gemini-flow migrate analyze --detailed
 
 # Selective migration preserving customizations
-claude-flow migrate --strategy selective --preserve-custom
+gemini-flow migrate --strategy selective --preserve-custom
 ```
 
 **Result**: Core files updated, custom commands preserved.
@@ -237,10 +237,10 @@ claude-flow migrate --strategy selective --preserve-custom
 
 ```bash
 # Use merge strategy for complex setups
-claude-flow migrate --strategy merge --preserve-custom
+gemini-flow migrate --strategy merge --preserve-custom
 
 # Validate after migration
-claude-flow migrate validate --verbose
+gemini-flow migrate validate --verbose
 ```
 
 **Result**: Configurations merged, custom content preserved.
@@ -249,10 +249,10 @@ claude-flow migrate validate --verbose
 
 ```bash
 # Preview all changes
-claude-flow migrate --dry-run --verbose
+gemini-flow migrate --dry-run --verbose
 
 # Run actual migration if satisfied
-claude-flow migrate --strategy selective
+gemini-flow migrate --strategy selective
 ```
 
 **Result**: Risk-free preview of all changes before applying.
@@ -264,7 +264,7 @@ claude-flow migrate --strategy selective
 find . -name ".claude" -type d | while read dir; do
   project_path=$(dirname "$dir")
   echo "Migrating $project_path"
-  claude-flow migrate "$project_path" --strategy selective --force
+  gemini-flow migrate "$project_path" --strategy selective --force
 done
 ```
 
@@ -304,19 +304,19 @@ Multiple rollback options:
 ```bash
 # Check and fix permissions
 chmod -R u+w .claude/
-claude-flow migrate --strategy selective
+gemini-flow migrate --strategy selective
 ```
 
 #### Custom Commands Not Preserved
 ```bash
 # Use preserve-custom flag
-claude-flow migrate --strategy selective --preserve-custom
+gemini-flow migrate --strategy selective --preserve-custom
 ```
 
 #### Validation Failures
 ```bash
 # Run detailed validation
-claude-flow migrate validate --verbose
+gemini-flow migrate validate --verbose
 
 # Check for missing files or corruption
 ls -la .claude/commands/
@@ -325,7 +325,7 @@ ls -la .claude/commands/
 #### Rollback Not Working
 ```bash
 # List available backups
-claude-flow migrate rollback --list
+gemini-flow migrate rollback --list
 
 # Check backup integrity
 cat .claude-backup/*/backup-manifest.json
@@ -336,7 +336,7 @@ cat .claude-backup/*/backup-manifest.json
 Enable detailed logging:
 ```bash
 export DEBUG=true
-claude-flow migrate --verbose
+gemini-flow migrate --verbose
 ```
 
 ### Log Files
@@ -352,7 +352,7 @@ Migration logs are stored in:
 Create custom migration scripts using the API:
 
 ```typescript
-import { MigrationRunner } from 'claude-flow/migration';
+import { MigrationRunner } from 'gemini-flow/migration';
 
 class CustomMigration extends MigrationRunner {
   async customTransform(content: string): Promise<string> {
@@ -367,7 +367,7 @@ class CustomMigration extends MigrationRunner {
 Add custom validation rules:
 
 ```typescript
-import { MigrationValidator } from 'claude-flow/migration';
+import { MigrationValidator } from 'gemini-flow/migration';
 
 class ProjectValidator extends MigrationValidator {
   async validateCustomRules(projectPath: string): Promise<ValidationResult> {
@@ -385,13 +385,13 @@ Automate migrations in CI/CD pipelines:
 # .github/workflows/migrate.yml
 steps:
   - name: Analyze Migration
-    run: claude-flow migrate analyze --output analysis.json
+    run: gemini-flow migrate analyze --output analysis.json
   
   - name: Run Migration
-    run: claude-flow migrate --strategy selective --force
+    run: gemini-flow migrate --strategy selective --force
   
   - name: Validate Migration  
-    run: claude-flow migrate validate
+    run: gemini-flow migrate validate
 ```
 
 ## Performance Considerations
@@ -434,8 +434,8 @@ Typical performance metrics:
 
 ```bash
 # Clone and setup
-git clone https://github.com/ruvnet/claude-code-flow
-cd claude-code-flow
+git clone https://github.com/ruvnet/gemini-flow
+cd gemini-flow
 npm install
 
 # Run migration tests
@@ -467,7 +467,7 @@ npm run test:e2e
 
 ## License
 
-This migration system is part of claude-code-flow and follows the same license terms.
+This migration system is part of gemini-flow and follows the same license terms.
 
 ## Support
 
@@ -478,4 +478,4 @@ This migration system is part of claude-code-flow and follows the same license t
 
 ---
 
-For more information, see the [main claude-code-flow documentation](../../README.md).
+For more information, see the [main gemini-flow documentation](../../README.md).

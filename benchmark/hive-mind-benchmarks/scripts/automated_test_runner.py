@@ -70,7 +70,7 @@ class AutomatedTestRunner:
             "config/test-config.json",
             "../config/test-config.json",
             "test-config.json",
-            "/workspaces/claude-code-flow/benchmark/hive-mind-benchmarks/config/test-config.json"
+            "/workspaces/gemini-flow/benchmark/hive-mind-benchmarks/config/test-config.json"
         ]
         
         for path in possible_paths:

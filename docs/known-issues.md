@@ -14,20 +14,20 @@ When running `npx ruv-swarm mcp start`, you may encounter:
 - This is a non-critical error that doesn't affect functionality
 
 ### Workaround
-Use claude-flow's integrated MCP server instead:
+Use gemini-flow's integrated MCP server instead:
 
 ```bash
-# Option 1: Use claude-flow MCP server (recommended)
-npx claude-flow@alpha mcp start
+# Option 1: Use gemini-flow MCP server (recommended)
+npx gemini-flow@alpha mcp start
 
-# Option 2: Configure claude-flow with MCP integration
-claude mcp add claude-flow npx claude-flow@alpha mcp start
+# Option 2: Configure gemini-flow with MCP integration
+gemini mcp add gemini-flow npx gemini-flow@alpha mcp start
 ```
 
 ### Fix Status
 - **Affected Version**: ruv-swarm v1.0.8
 - **Status**: Known issue in external package
-- **Claude-Flow**: Provides integrated MCP server as alternative
+- **Gemini-Flow**: Provides integrated MCP server as alternative
 
 ### Technical Details
 The error occurs because ruv-swarm attempts to call `logger.logMemoryUsage()` in a monitoring interval, but the method isn't properly bound to the logger instance in certain contexts.

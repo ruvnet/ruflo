@@ -9,7 +9,7 @@ export async function createBatchToolsGuide(): Promise<void> {
   const batchToolsGuide = `# Batch Tools Coordination Guide
 
 ## Overview
-This guide explains how to use Claude Code's batch tools effectively for swarm orchestration and parallel task execution.
+This guide explains how to use Gemini Code's batch tools effectively for swarm orchestration and parallel task execution.
 
 ## Core Batch Tools
 
@@ -382,7 +382,7 @@ Memory.store("error_state", {
 - Plan rollback procedures in TodoWrite tasks
 - Monitor agent health and implement recovery procedures
 
-This guide provides the foundation for effective batch tool coordination in Claude-Flow swarm operations.
+This guide provides the foundation for effective batch tool coordination in Gemini-Flow swarm operations.
 `;
   
   await fs.writeFile(path.join(batchToolsDir, 'batch-tools-guide.md'), batchToolsGuide);

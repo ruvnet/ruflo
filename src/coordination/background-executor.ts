@@ -165,7 +165,7 @@ export class BackgroundExecutor extends EventEmitter {
       maxTokens?: number;
     }> = {}
   ): Promise<string> {
-    // Build claude command arguments
+    // Build gemini command arguments
     const args = ['-p', prompt];
     
     if (tools.length > 0) {

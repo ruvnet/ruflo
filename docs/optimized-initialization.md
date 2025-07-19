@@ -8,10 +8,10 @@ The optimized initialization feature (`--sparc --force`) provides a streamlined 
 
 ```bash
 # Optimized initialization (recommended for new projects)
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 
 # Standard initialization (for comparison)
-npx -y claude-flow@latest init --sparc
+npx -y gemini-flow@latest init --sparc
 ```
 
 ## Benefits of Optimized Initialization
@@ -42,8 +42,8 @@ All 17+ SPARC modes receive optimized prompts:
 
 ## What Gets Optimized?
 
-### CLAUDE.md Enhancements
-The optimized `CLAUDE.md` includes:
+### GEMINI.md Enhancements
+The optimized `GEMINI.md` includes:
 - Focused role definitions for each development mode
 - Clear success criteria and quality gates
 - Pre-defined coding patterns and anti-patterns
@@ -57,7 +57,7 @@ Optimized mode definitions with:
 - Mode-specific best practices
 
 ### Slash Commands
-Enhanced `.claude/commands/` with:
+Enhanced `.gemini/commands/` with:
 - Faster command execution templates
 - Pre-validated parameter handling
 - Optimized context loading
@@ -69,13 +69,13 @@ Enhanced `.claude/commands/` with:
 
 1. **Backup Current Configuration**
    ```bash
-   cp CLAUDE.md CLAUDE.md.backup
+   cp GEMINI.md GEMINI.md.backup
    cp .roomodes .roomodes.backup
    ```
 
 2. **Run Optimized Initialization**
    ```bash
-   npx claude-flow@latest init --sparc --force
+   npx gemini-flow@latest init --sparc --force
    ```
 
 3. **Review and Merge Customizations**
@@ -118,32 +118,32 @@ If you have custom configurations:
 1. **Existing Files Warning**
    ```bash
    # Solution: Use --force to overwrite
-   npx claude-flow@latest init --sparc --force
+   npx gemini-flow@latest init --sparc --force
    ```
 
 2. **Custom Modes Lost After Update**
    ```bash
    # Solution: Backup before updating
-   cp -r .claude .claude.backup
+   cp -r .gemini .gemini.backup
    ```
 
 3. **Performance Not Improved**
-   - Ensure you're using the local wrapper: `./claude-flow`
+   - Ensure you're using the local wrapper: `./gemini-flow`
    - Check that optimized files were created successfully
-   - Verify Claude Code is reading the new configurations
+   - Verify Gemini CLI is reading the new configurations
 
 ### Validation
 
 Run these commands to verify optimized setup:
 ```bash
 # Check SPARC modes are loaded
-./claude-flow sparc modes --verbose
+./gemini-flow sparc modes --verbose
 
 # Test a simple task
-./claude-flow sparc run code "hello world function"
+./gemini-flow sparc run code "hello world function"
 
 # Verify memory system
-./claude-flow memory stats
+./gemini-flow memory stats
 ```
 
 ## Advanced Configuration
@@ -171,7 +171,7 @@ Create custom optimized modes:
 Fine-tune for your specific needs:
 1. Adjust prompt lengths in `.roomodes`
 2. Modify context windows per mode
-3. Set project-specific constraints in `CLAUDE.md`
+3. Set project-specific constraints in `GEMINI.md`
 
 ## Best Practices
 
@@ -211,8 +211,8 @@ A: Yes! Submit PRs with performance benchmarks.
 
 ## Next Steps
 
-1. Run optimized initialization: `npx -y claude-flow@latest init --sparc --force`
-2. Test with your first SPARC task: `./claude-flow sparc "your task"`
+1. Run optimized initialization: `npx -y gemini-flow@latest init --sparc --force`
+2. Test with your first SPARC task: `./gemini-flow sparc "your task"`
 3. Monitor performance improvements
 4. Share feedback for continuous improvement
 

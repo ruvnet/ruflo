@@ -33,7 +33,7 @@ describe('Start Command Backward Compatibility', () => {
       const originalLog = console.log;
       let helpShown = false;
       console.log = (...args) => {
-        if (args.join(' ').includes('claude-flow start')) {
+        if (args.join(' ').includes('gemini-flow start')) {
           helpShown = true;
         }
       };
@@ -79,7 +79,7 @@ describe('Start Command Backward Compatibility', () => {
       
       const originalWriteTextFile = Deno.writeTextFile;
       Deno.writeTextFile = async (path: string) => {
-        if (path === '.claude-flow.pid') {
+        if (path === '.gemini-flow.pid') {
           return Promise.resolve();
         }
         return originalWriteTextFile(path, '');

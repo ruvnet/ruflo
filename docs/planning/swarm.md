@@ -1,4 +1,4 @@
-# Claude-Flow Swarm Mode Demo
+# Gemini-Flow Swarm Mode Demo
 
 This is a working demonstration of the swarm mode feature that bypasses the Cliffy import issues in the current version.
 
@@ -8,11 +8,11 @@ This is a working demonstration of the swarm mode feature that bypasses the Clif
 # Direct usage
 ./swarm-demo.ts <objective> [options]
 
-# Using claude-flow wrapper
-./bin/claude-flow swarm <objective> [options]
+# Using gemini-flow wrapper
+./bin/gemini-flow swarm <objective> [options]
 
 # Or if installed globally
-claude-flow swarm <objective> [options]
+gemini-flow swarm <objective> [options]
 ```
 
 ## Options
@@ -30,22 +30,22 @@ claude-flow swarm <objective> [options]
 
 ```bash
 # Basic swarm
-./bin/claude-flow swarm "Build a REST API"
+./bin/gemini-flow swarm "Build a REST API"
 
 # Complex migration with coordinator
-./bin/claude-flow swarm "Migrate monolithic app to microservices" \
+./bin/gemini-flow swarm "Migrate monolithic app to microservices" \
   --coordinator --max-agents 10 --review
 
 # Research swarm
-./bin/claude-flow swarm "Research best practices for cloud architecture" \
+./bin/gemini-flow swarm "Research best practices for cloud architecture" \
   --strategy research --research --max-agents 8
 
 # Development swarm with parallel execution
-./bin/claude-flow swarm "Implement user authentication system" \
+./bin/gemini-flow swarm "Implement user authentication system" \
   --strategy development --parallel --review
 
 # Preview configuration
-./bin/claude-flow swarm "Create mobile app" --dry-run --verbose
+./bin/gemini-flow swarm "Create mobile app" --dry-run --verbose
 ```
 
 ## Requirements
@@ -56,7 +56,7 @@ claude-flow swarm <objective> [options]
 ## How It Works
 
 1. The swarm demo script creates an orchestration prompt for Claude
-2. Claude acts as the master orchestrator
+2. Gemini acts as the master orchestrator
 3. The master analyzes the objective and creates an execution plan
 4. It then coordinates the spawning and management of sub-agents
 5. Each agent works on specific tasks while sharing knowledge

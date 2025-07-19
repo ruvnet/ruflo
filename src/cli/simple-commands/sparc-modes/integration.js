@@ -8,21 +8,21 @@ export function getIntegrationOrchestration(taskDescription, memoryNamespace) {
    - Identify components to connect
    - Map data flows between systems
    - Check compatibility requirements
-   - Store analysis: \`npx claude-flow memory store ${memoryNamespace}_integration_analysis "..."\`
+   - Store analysis: \`npx gemini-flow memory store ${memoryNamespace}_integration_analysis "..."\`
 
 2. **Interface Development** (20 mins)
    - Create integration adapters
    - Implement data transformers
    - Build connection handlers
    - Add retry mechanisms
-   - Store interfaces: \`npx claude-flow memory store ${memoryNamespace}_interfaces "..."\`
+   - Store interfaces: \`npx gemini-flow memory store ${memoryNamespace}_interfaces "..."\`
 
 3. **System Connection** (20 mins)
    - Wire up components
    - Configure communication channels
    - Implement error handling
    - Add monitoring hooks
-   - Store configuration: \`npx claude-flow memory store ${memoryNamespace}_connections "..."\`
+   - Store configuration: \`npx gemini-flow memory store ${memoryNamespace}_connections "..."\`
 
 4. **End-to-End Testing** (15 mins)
    - Test data flow scenarios

@@ -2,7 +2,7 @@
 
 /**
  * Comprehensive Test for SwarmCoordinator Implementation
- * Tests all major functionality of the Claude Flow v2.0.0 SwarmCoordinator system
+ * Tests all major functionality of the Gemini Flow v2.0.0 SwarmCoordinator system
  */
 
 import { SwarmCoordinator, TaskExecutor, SwarmMemoryManager } from './dist/cli/commands/swarm-new.js';

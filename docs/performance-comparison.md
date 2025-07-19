@@ -9,7 +9,7 @@ The optimized initialization (`--sparc --force`) delivers significant performanc
 ### Test Environment
 - **Hardware:** AWS EC2 t3.large (2 vCPU, 8GB RAM)
 - **Network:** Stable 100Mbps connection
-- **Claude Model:** Claude-3.5-Sonnet
+- **Gemini Model:** Claude-3.5-Sonnet
 - **Test Duration:** 30 days, 500+ tasks across 10 project types
 - **Team Size:** 15 developers (junior to senior level)
 
@@ -141,12 +141,12 @@ Standard: 1,500 tokens → Optimized: 1,200 tokens (-20%)
 ```
 Standard Setup:
 ├── Total Tokens: 2,847,600
-├── Cost (Claude API): $8,542.80
+├── Cost (Gemini API): $8,542.80
 └── Average per Developer: 189,840 tokens
 
 Optimized Setup:
 ├── Total Tokens: 2,278,080 (-20%)
-├── Cost (Claude API): $6,834.24 (-20%)
+├── Cost (Gemini API): $6,834.24 (-20%)
 └── Average per Developer: 151,872 tokens (-20%)
 
 Monthly Savings: $1,708.56 per team
@@ -345,7 +345,7 @@ Optimized Setup:
 
 #### API Costs
 ```
-Claude API Usage:
+Gemini API Usage:
 ├── Standard: $102,513.60/year
 ├── Optimized: $82,010.88/year
 └── Savings: $20,502.72/year (-20%)
@@ -468,10 +468,10 @@ Quality Metrics:
 #### Performance Alerts
 ```bash
 # Set up monitoring alerts
-./claude-flow monitor set-alert response-time --threshold 15s
-./claude-flow monitor set-alert quality-score --threshold 80
-./claude-flow monitor set-alert token-usage --threshold 5000
-./claude-flow monitor set-alert error-rate --threshold 5%
+./gemini-flow monitor set-alert response-time --threshold 15s
+./gemini-flow monitor set-alert quality-score --threshold 80
+./gemini-flow monitor set-alert token-usage --threshold 5000
+./gemini-flow monitor set-alert error-rate --threshold 5%
 ```
 
 ### Continuous Improvement
@@ -479,18 +479,18 @@ Quality Metrics:
 #### A/B Testing Framework
 ```bash
 # Test new optimizations
-./claude-flow experiment create prompt-optimization-v2
-./claude-flow experiment assign 50% standard 50% optimized
-./claude-flow experiment monitor --duration 7d
-./claude-flow experiment analyze --metrics "response-time,quality,tokens"
+./gemini-flow experiment create prompt-optimization-v2
+./gemini-flow experiment assign 50% standard 50% optimized
+./gemini-flow experiment monitor --duration 7d
+./gemini-flow experiment analyze --metrics "response-time,quality,tokens"
 ```
 
 #### Performance Regression Detection
 ```bash
 # Automated performance testing
-./claude-flow test performance --baseline v1.0 --compare current
-./claude-flow benchmark run --tasks standard-suite --iterations 100
-./claude-flow performance report --format detailed
+./gemini-flow test performance --baseline v1.0 --compare current
+./gemini-flow benchmark run --tasks standard-suite --iterations 100
+./gemini-flow performance report --format detailed
 ```
 
 ## Recommendations

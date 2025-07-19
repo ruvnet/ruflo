@@ -42,7 +42,7 @@ test_command "Error handling works" "timeout 10 node cli.js invalid-command 2>&1
 test_command "Package structure valid" "[ -f package.json ] && [ -f cli.js ]"
 test_command "Dependencies installed" "[ -d node_modules ]"
 test_command "ruv-swarm integration" "timeout 10 npx ruv-swarm --version"
-test_command "Binary files exist" "[ -f bin/claude-flow ]"
+test_command "Binary files exist" "[ -f bin/gemini-flow ]"
 
 echo ""
 echo "### 📊 Summary"

@@ -19,27 +19,27 @@ The Claude-Flow coordination system manages multiple AI agents working together 
 ## Coordination Commands
 ```bash
 # Agent Management
-npx claude-flow agent spawn <type> --name <name> --priority <1-10>
-npx claude-flow agent list
-npx claude-flow agent info <agent-id>
-npx claude-flow agent terminate <agent-id>
+npx gemini-flow agent spawn <type> --name <name> --priority <1-10>
+npx gemini-flow agent list
+npx gemini-flow agent info <agent-id>
+npx gemini-flow agent terminate <agent-id>
 
 # Task Management  
-npx claude-flow task create <type> <description> --priority <1-10> --deps <task-ids>
-npx claude-flow task list --verbose
-npx claude-flow task status <task-id>
-npx claude-flow task cancel <task-id>
+npx gemini-flow task create <type> <description> --priority <1-10> --deps <task-ids>
+npx gemini-flow task list --verbose
+npx gemini-flow task status <task-id>
+npx gemini-flow task cancel <task-id>
 
 # System Monitoring
-npx claude-flow status --verbose
-npx claude-flow monitor --interval 5000
+npx gemini-flow status --verbose
+npx gemini-flow monitor --interval 5000
 ```
 
 ## Workflow Execution
 Workflows are defined in JSON format and can orchestrate complex multi-agent operations:
 ```bash
-npx claude-flow workflow examples/research-workflow.json
-npx claude-flow workflow examples/development-config.json --async
+npx gemini-flow workflow examples/research-workflow.json
+npx gemini-flow workflow examples/development-config.json --async
 ```
 
 ## Advanced Features
@@ -49,7 +49,7 @@ npx claude-flow workflow examples/development-config.json --async
 - **Metrics Collection**: Performance monitoring and optimization
 
 ## Configuration
-Coordination settings in `claude-flow.config.json`:
+Coordination settings in `gemini-flow.config.json`:
 ```json
 {
   "orchestrator": {
@@ -82,7 +82,7 @@ Coordination settings in `claude-flow.config.json`:
 - Regular cleanup of completed tasks and inactive agents
 
 ## Troubleshooting
-- Check agent health with `npx claude-flow status`
-- View detailed logs with `npx claude-flow monitor`
+- Check agent health with `npx gemini-flow status`
+- View detailed logs with `npx gemini-flow monitor`
 - Restart stuck agents with terminate/spawn cycle
 - Use `--verbose` flags for detailed diagnostic information

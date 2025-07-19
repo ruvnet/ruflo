@@ -5,7 +5,7 @@ Cleanup and persist session state before ending work.
 ## Usage
 
 ```bash
-npx claude-flow hook session-end [options]
+npx gemini-flow hook session-end [options]
 ```
 
 ## Options
@@ -20,22 +20,22 @@ npx claude-flow hook session-end [options]
 
 ### Basic session end
 ```bash
-npx claude-flow hook session-end --session-id "dev-session-2024"
+npx gemini-flow hook session-end --session-id "dev-session-2024"
 ```
 
 ### With full export
 ```bash
-npx claude-flow hook session-end -s "feature-auth" --export-metrics --generate-summary
+npx gemini-flow hook session-end -s "feature-auth" --export-metrics --generate-summary
 ```
 
 ### Quick close
 ```bash
-npx claude-flow hook session-end -s "quick-fix" --save-state false --cleanup-temp
+npx gemini-flow hook session-end -s "quick-fix" --save-state false --cleanup-temp
 ```
 
 ### Complete persistence
 ```bash
-npx claude-flow hook session-end -s "major-refactor" --save-state --export-metrics --generate-summary
+npx gemini-flow hook session-end -s "major-refactor" --save-state --export-metrics --generate-summary
 ```
 
 ## Features
@@ -67,7 +67,7 @@ npx claude-flow hook session-end -s "major-refactor" --save-state --export-metri
 
 ## Integration
 
-This hook is automatically called by Claude Code when:
+This hook is automatically called by Gemini Code when:
 - Ending a conversation
 - Closing work session
 - Before shutdown
@@ -76,7 +76,7 @@ This hook is automatically called by Claude Code when:
 Manual usage in agents:
 ```bash
 # At session end
-npx claude-flow hook session-end --session-id "your-session" --generate-summary
+npx gemini-flow hook session-end --session-id "your-session" --generate-summary
 ```
 
 ## Output

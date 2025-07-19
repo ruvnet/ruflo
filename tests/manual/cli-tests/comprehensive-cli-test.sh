@@ -82,7 +82,7 @@ test_environment() {
 test_basic_cli() {
     log "Testing Basic CLI Functionality"
     
-    run_test "CLI executable permissions" "[ -x cli.js ] || [ -x bin/claude-flow ]"
+    run_test "CLI executable permissions" "[ -x cli.js ] || [ -x bin/gemini-flow ]"
     run_test "CLI help command" "timeout 10 node cli.js --help | grep -i 'usage\|help\|commands'"
     run_test "CLI version command" "timeout 10 node cli.js --version | grep -E '[0-9]+\.[0-9]+\.[0-9]+'"
     run_test "CLI without arguments" "timeout 10 node cli.js 2>&1 | grep -i 'usage\|help\|commands\|error'"
@@ -93,16 +93,16 @@ test_npm_installation() {
     log "Testing NPM Package Installation"
     
     # Create test directory for npm installation
-    mkdir -p /tmp/claude-flow-test
-    cd /tmp/claude-flow-test
+    mkdir -p /tmp/gemini-flow-test
+    cd /tmp/gemini-flow-test
     
-    run_test "NPM package can be installed locally" "npm init -y && npm install /workspaces/ruv-FANN/claude-code-flow/claude-code-flow --no-save"
-    run_test "Binary is available after install" "[ -f node_modules/.bin/claude-flow ] || [ -f node_modules/claude-flow/cli.js ]"
-    run_test "Can run installed package" "timeout 10 npx claude-flow --help | grep -i 'usage\|help\|commands'"
+    run_test "NPM package can be installed locally" "npm init -y && npm install /workspaces/ruv-FANN/gemini-flow/gemini-flow --no-save"
+    run_test "Binary is available after install" "[ -f node_modules/.bin/gemini-flow ] || [ -f node_modules/gemini-flow/cli.js ]"
+    run_test "Can run installed package" "timeout 10 npx gemini-flow --help | grep -i 'usage\|help\|commands'"
     
     # Clean up
-    cd /workspaces/ruv-FANN/claude-code-flow/claude-code-flow
-    rm -rf /tmp/claude-flow-test
+    cd /workspaces/ruv-FANN/gemini-flow/gemini-flow
+    rm -rf /tmp/gemini-flow-test
 }
 
 # Command-specific tests
@@ -167,7 +167,7 @@ test_docker_environment() {
 test_cross_package_integration() {
     log "Testing Cross-Package CLI Integration"
     
-    # Test that claude-flow can call ruv-swarm and vice versa
+    # Test that gemini-flow can call ruv-swarm and vice versa
     run_test "Claude-flow can execute ruv-swarm commands" "timeout 10 node cli.js --help | grep -i 'swarm\|agent\|task'"
     
     # Test MCP integration
@@ -189,11 +189,11 @@ test_init_functionality() {
     log "Testing Init Functionality"
     
     # Create isolated test directory
-    TEST_DIR="/tmp/claude-flow-init-test"
+    TEST_DIR="/tmp/gemini-flow-init-test"
     mkdir -p "$TEST_DIR"
     cd "$TEST_DIR"
     
-    run_test "Init with minimal config" "timeout 30 echo 'test-project' | node /workspaces/ruv-FANN/claude-code-flow/claude-code-flow/cli.js init --mode minimal 2>&1 | grep -i 'success\|complete\|created' || true"
+    run_test "Init with minimal config" "timeout 30 echo 'test-project' | node /workspaces/ruv-FANN/gemini-flow/gemini-flow/cli.js init --mode minimal 2>&1 | grep -i 'success\|complete\|created' || true"
     
     # Check if files were created
     if [ -d "test-project" ]; then
@@ -204,7 +204,7 @@ test_init_functionality() {
     fi
     
     # Clean up
-    cd /workspaces/ruv-FANN/claude-code-flow/claude-code-flow
+    cd /workspaces/ruv-FANN/gemini-flow/gemini-flow
     rm -rf "$TEST_DIR"
 }
 
@@ -218,7 +218,7 @@ store_test_progress() {
 # Main test execution
 main() {
     log "🚀 Starting Comprehensive CLI Test Suite"
-    log "Target: claude-flow and ruv-swarm integration"
+    log "Target: gemini-flow and ruv-swarm integration"
     log "Environment: Docker container"
     
     # Store initial progress

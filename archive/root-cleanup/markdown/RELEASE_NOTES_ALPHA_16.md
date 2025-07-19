@@ -85,4 +85,4 @@ Thanks to all contributors and testers who helped make this release possible!
 
 ---
 
-For more information, visit: https://github.com/ruvnet/claude-code-flow
+For more information, visit: https://github.com/ruvnet/gemini-flow

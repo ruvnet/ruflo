@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Fixed orchestrator implementation for Claude-Flow
+ * Fixed orchestrator implementation for Gemini-Flow
  */
 
 import type { EventBus } from './event-bus.js';

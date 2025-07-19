@@ -427,7 +427,7 @@ export class AdvancedTaskExecutor extends EventEmitter {
     env: Record<string, string>;
   } {
     // This would be customized based on task type and agent capabilities
-    // For now, return a default Claude execution command
+    // For now, return a default Gemini execution command
     
     const cmd = 'deno';
     const args = [

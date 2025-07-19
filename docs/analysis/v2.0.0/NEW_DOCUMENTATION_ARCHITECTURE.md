@@ -1,8 +1,8 @@
-# Claude Flow v2.0.0 - New Documentation Architecture
+# Gemini Flow v2.0.0 - New Documentation Architecture
 
 ## 🏗️ Architectural Overview
 
-This document defines the complete restructuring of Claude Flow documentation to properly showcase v2.0.0 capabilities while maintaining excellent user experience and discoverability.
+This document defines the complete restructuring of Gemini Flow documentation to properly showcase v2.0.0 capabilities while maintaining excellent user experience and discoverability.
 
 ## 📁 Proposed Directory Structure
 
@@ -168,10 +168,10 @@ docs/
 Create comprehensive navigation with clear user journeys:
 
 ```markdown
-# 📚 Claude Flow v2.0.0 Documentation
+# 📚 Gemini Flow v2.0.0 Documentation
 
 ## 🚀 Getting Started
-Quick paths to success with Claude Flow v2.0.0
+Quick paths to success with Gemini Flow v2.0.0
 
 ### New Users (5-minute setup)
 1. [Installation Guide](./quick-start/installation.md)
@@ -184,7 +184,7 @@ Quick paths to success with Claude Flow v2.0.0
 3. [Feature Mapping](./migration/feature-mapping.md)
 
 ## 🏛️ Core Concepts
-Understanding Claude Flow v2.0.0 architecture
+Understanding Gemini Flow v2.0.0 architecture
 
 ### System Architecture
 - [Architecture Overview](./architecture/README.md)
@@ -375,4 +375,4 @@ Information organized from basic to advanced:
 - **Review process** for maintaining quality
 - **Update procedures** for keeping content current
 
-This documentation architecture provides a solid foundation for showcasing Claude Flow v2.0.0's revolutionary capabilities while ensuring excellent user experience across all skill levels and use cases.
+This documentation architecture provides a solid foundation for showcasing Gemini Flow v2.0.0's revolutionary capabilities while ensuring excellent user experience across all skill levels and use cases.

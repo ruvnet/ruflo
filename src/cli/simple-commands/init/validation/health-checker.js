@@ -155,7 +155,7 @@ export class HealthChecker {
 
       // Check consistency between CLAUDE.md and actual setup
       const claudeCheck = await this.checkClaudeConfigConsistency();
-      result.consistency.claude = claudeCheck;
+      result.consistency.gemini = claudeCheck;
       if (!claudeCheck.consistent) {
         result.warnings.push('Inconsistency between CLAUDE.md and actual setup');
       }
@@ -374,7 +374,7 @@ export class HealthChecker {
 
       // Check if mentioned commands exist
       const mentionedCommands = [
-        'claude-flow sparc',
+        'gemini-flow sparc',
         'npm run build',
         'npm run test'
       ];
@@ -383,8 +383,8 @@ export class HealthChecker {
         if (content.includes(command)) {
           // Check if the command is actually available
           const parts = command.split(' ');
-          if (parts[0] === 'claude-flow') {
-            const executablePath = `${this.workingDir}/claude-flow`;
+          if (parts[0] === 'gemini-flow') {
+            const executablePath = `${this.workingDir}/gemini-flow`;
             try {
               await Deno.stat(executablePath);
             } catch {
@@ -411,7 +411,7 @@ export class HealthChecker {
 
     try {
       // Check if memory structure matches documentation
-      const memoryDataPath = `${this.workingDir}/memory/claude-flow-data.json`;
+      const memoryDataPath = `${this.workingDir}/memory/gemini-flow-data.json`;
       const data = JSON.parse(await Deno.readTextFile(memoryDataPath));
 
       // Basic structure validation

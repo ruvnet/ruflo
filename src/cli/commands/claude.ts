@@ -62,7 +62,7 @@ claudeCommand
         
         if (options.dryRun) {
           console.log(chalk.yellow('DRY RUN - Would execute:'));
-          console.log(chalk.gray(`claude ${claudeArgs.join(' ')}`));
+          console.log(chalk.gray(`gemini ${claudeArgs.join(' ')}`));
           console.log('\nConfiguration:');
           console.log(`  Instance ID: ${instanceId}`);
           console.log(`  Task: ${task}`);
@@ -78,7 +78,7 @@ claudeCommand
         console.log(chalk.gray(`Tools: ${tools}`));
         
         // Spawn Claude process
-        const claude = spawn('claude', claudeArgs, {
+        const gemini = spawn('claude', claudeArgs, {
           stdio: 'inherit',
           env: {
             ...process.env,
@@ -144,11 +144,11 @@ claudeCommand
         
         if (options.dryRun) {
           console.log(chalk.yellow(`\nDRY RUN - Task: ${task.name || task.id}`));
-          console.log(chalk.gray(`claude ${claudeArgs.join(' ')}`));
+          console.log(chalk.gray(`gemini ${claudeArgs.join(' ')}`));
         } else {
           console.log(chalk.blue(`\nSpawning Claude for task: ${task.name || task.id}`));
           
-          const claude = spawn('claude', claudeArgs, {
+          const gemini = spawn('claude', claudeArgs, {
             stdio: 'inherit',
             env: {
               ...process.env,

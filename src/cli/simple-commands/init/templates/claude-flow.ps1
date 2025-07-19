@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Claude Flow CLI for PowerShell
+# Gemini Flow CLI for PowerShell
 # AI-Driven Development Toolkit
 
 param(
@@ -17,8 +17,8 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 # Get the script directory
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# Run Claude Flow CLI
-& node "$scriptDir\claude-flow" @Arguments
+# Run Gemini Flow CLI
+& node "$scriptDir\gemini-flow" @Arguments
 
 # Forward the exit code
 exit $LASTEXITCODE

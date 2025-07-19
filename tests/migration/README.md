@@ -1,11 +1,11 @@
-# Claude Flow Migration Test Suite
+# Gemini Flow Migration Test Suite
 
-Comprehensive test suite for validating the Claude Flow migration from Deno to pure Node.js/npm.
+Comprehensive test suite for validating the Gemini Flow migration from Deno to pure Node.js/npm.
 
 ## Test Categories
 
 ### 1. Local Execution Tests (`local/`)
-Tests that Claude Flow works correctly with pure Node.js without any Deno dependencies.
+Tests that Gemini Flow works correctly with pure Node.js without any Deno dependencies.
 
 **Coverage:**
 - CLI executable without Deno
@@ -15,7 +15,7 @@ Tests that Claude Flow works correctly with pure Node.js without any Deno depend
 - Environment variable handling
 
 ### 2. Remote NPX Tests (`remote/`)
-Validates that `npx claude-flow@latest` works correctly.
+Validates that `npx gemini-flow@latest` works correctly.
 
 **Coverage:**
 - NPX execution without installation
@@ -84,7 +84,7 @@ node test/migration/performance/test-performance.js
 
 ### CI/CD Integration
 Tests are automatically run on:
-- Push to main or claude-flow-v2.0.0 branches
+- Push to main or gemini-flow-v2.0.0 branches
 - Pull requests
 - Manual workflow dispatch
 
@@ -103,7 +103,7 @@ Each test generates a JSON results file:
 
 ### Building the Docker Image
 ```bash
-docker build -t claude-flow:latest -f Docker/Dockerfile .
+docker build -t gemini-flow:latest -f Docker/Dockerfile .
 ```
 
 ### Running with Docker Compose
@@ -113,8 +113,8 @@ docker-compose up -d
 
 ### Testing in Docker
 ```bash
-docker run --rm claude-flow:latest --help
-docker run --rm claude-flow:latest init -y
+docker run --rm gemini-flow:latest --help
+docker run --rm gemini-flow:latest init -y
 ```
 
 ## Performance Thresholds

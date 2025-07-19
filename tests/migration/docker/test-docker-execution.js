@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Docker Execution Tests for Claude Flow Migration
+ * Docker Execution Tests for Gemini Flow Migration
  * Tests containerized execution and deployment
  */
 
@@ -11,7 +11,7 @@ const path = require('path');
 const http = require('http');
 
 // Test configuration
-const DOCKER_IMAGE = 'claude-flow:test';
+const DOCKER_IMAGE = 'gemini-flow:test';
 const COMPOSE_FILE = path.resolve(__dirname, '../../../docker-compose.yml');
 
 // Color codes for output
@@ -135,7 +135,7 @@ runTest('Run container with help command', () => {
 // Test 3: Run container with version command
 runTest('Run container with version command', () => {
   const output = exec(`docker run --rm ${DOCKER_IMAGE} --version`);
-  if (!output.includes('claude-flow')) {
+  if (!output.includes('gemini-flow')) {
     throw new Error('Version output not found');
   }
 });
@@ -177,7 +177,7 @@ runTest('Environment variables pass through', () => {
 runTest('User permissions are correct', () => {
   const output = exec(`docker run --rm ${DOCKER_IMAGE} whoami`);
   if (!output.includes('claude')) {
-    throw new Error('Container not running as claude user');
+    throw new Error('Container not running as gemini user');
   }
 });
 
@@ -185,7 +185,7 @@ runTest('User permissions are correct', () => {
 runTest('Docker Compose stack starts', () => {
   try {
     // Start services in detached mode
-    exec(`docker-compose -f ${COMPOSE_FILE} up -d claude-flow mcp-server`, {
+    exec(`docker-compose -f ${COMPOSE_FILE} up -d gemini-flow mcp-server`, {
       cwd: path.resolve(__dirname, '../../..')
     });
     
@@ -194,7 +194,7 @@ runTest('Docker Compose stack starts', () => {
     
     // Check services are running
     const psOutput = exec(`docker-compose -f ${COMPOSE_FILE} ps`);
-    if (!psOutput.includes('claude-flow') || !psOutput.includes('mcp-server')) {
+    if (!psOutput.includes('gemini-flow') || !psOutput.includes('mcp-server')) {
       throw new Error('Services not running');
     }
   } finally {
@@ -213,14 +213,14 @@ runTest('Docker Compose stack starts', () => {
 runTest('Container networking works', () => {
   try {
     // Create a test network
-    exec('docker network create test-claude-flow-net');
+    exec('docker network create test-gemini-flow-net');
     
     // Run two containers on the same network
-    exec(`docker run -d --name test-server --network test-claude-flow-net ${DOCKER_IMAGE} start --mode server`);
+    exec(`docker run -d --name test-server --network test-gemini-flow-net ${DOCKER_IMAGE} start --mode server`);
     execSync('sleep 2');
     
     const output = exec(
-      `docker run --rm --network test-claude-flow-net ${DOCKER_IMAGE} config set mcp.server http://test-server:3000`
+      `docker run --rm --network test-gemini-flow-net ${DOCKER_IMAGE} config set mcp.server http://test-server:3000`
     );
     
     if (output.includes('error')) {
@@ -231,7 +231,7 @@ runTest('Container networking works', () => {
     try {
       exec('docker stop test-server');
       exec('docker rm test-server');
-      exec('docker network rm test-claude-flow-net');
+      exec('docker network rm test-gemini-flow-net');
     } catch (e) {
       // Ignore cleanup errors
     }

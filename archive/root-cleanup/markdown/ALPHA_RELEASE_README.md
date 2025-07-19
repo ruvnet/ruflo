@@ -33,8 +33,8 @@ npx claude-flow@2.0.0-alpha.1
 ### Running in Development Mode
 ```bash
 # Clone the repository
-git clone https://github.com/ruvnet/claude-code-flow.git
-cd claude-code-flow
+git clone https://github.com/ruvnet/gemini-flow.git
+cd gemini-flow
 
 # Install dependencies
 npm install
@@ -85,8 +85,8 @@ This alpha release was achieved through coordinated swarm execution:
 
 ## 📞 Support
 
-- **Issues**: https://github.com/ruvnet/claude-code-flow/issues
-- **Documentation**: https://github.com/ruvnet/claude-code-flow/wiki
+- **Issues**: https://github.com/ruvnet/gemini-flow/issues
+- **Documentation**: https://github.com/ruvnet/gemini-flow/wiki
 - **Discord**: [Coming Soon]
 
 ---

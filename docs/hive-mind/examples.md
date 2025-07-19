@@ -22,7 +22,7 @@ This guide provides real-world examples of using Hive Mind for various developme
 **Task**: Create a simple CRUD API for managing books.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Create CRUD API for books with title, author, ISBN" --complexity low
+npx gemini-flow@2.0.0 hive-mind --task "Create CRUD API for books with title, author, ISBN" --complexity low
 ```
 
 **Expected Output**:
@@ -39,7 +39,7 @@ npx claude-flow@2.0.0 hive-mind --task "Create CRUD API for books with title, au
 **Task**: Add JWT authentication to existing Express app.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 ```
 
 **Wizard Inputs**:
@@ -67,7 +67,7 @@ Timeline: Balanced
 **Task**: Build a complete todo application with user accounts.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Build todo app with React frontend, Node.js backend, user accounts, and PostgreSQL" --complexity high
+npx gemini-flow@2.0.0 hive-mind --task "Build todo app with React frontend, Node.js backend, user accounts, and PostgreSQL" --complexity high
 ```
 
 **Expected Structure**:
@@ -106,7 +106,7 @@ todo-app/
 **Task**: Create an e-commerce platform with products, cart, and checkout.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 ```
 
 **Wizard Configuration**:
@@ -141,7 +141,7 @@ Tech Stack:
 **Task**: Convert monolithic API to microservices architecture.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Split monolithic Node.js API into user, product, and order microservices with API gateway"
+npx gemini-flow@2.0.0 hive-mind --task "Split monolithic Node.js API into user, product, and order microservices with API gateway"
 ```
 
 **Output Structure**:
@@ -183,7 +183,7 @@ microservices/
 **Task**: Build a GraphQL API for a social media application.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Create GraphQL API for social media with users, posts, comments, and real-time subscriptions"
+npx gemini-flow@2.0.0 hive-mind --task "Create GraphQL API for social media with users, posts, comments, and real-time subscriptions"
 ```
 
 **Delivered**:
@@ -204,7 +204,7 @@ npx claude-flow@2.0.0 hive-mind --task "Create GraphQL API for social media with
 **Task**: Design event-driven system for order processing.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 ```
 
 **Configuration**:
@@ -231,7 +231,7 @@ Tech: Node.js, RabbitMQ, PostgreSQL
 **Task**: Build serverless application on AWS.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Create serverless image processing API with AWS Lambda, S3, and DynamoDB"
+npx gemini-flow@2.0.0 hive-mind --task "Create serverless image processing API with AWS Lambda, S3, and DynamoDB"
 ```
 
 **Output**:
@@ -253,7 +253,7 @@ npx claude-flow@2.0.0 hive-mind --task "Create serverless image processing API w
 **Task**: Migrate Express.js app to Fastify.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Migrate existing Express.js API to Fastify while maintaining all endpoints and functionality"
+npx gemini-flow@2.0.0 hive-mind --task "Migrate existing Express.js API to Fastify while maintaining all endpoints and functionality"
 ```
 
 **Migration Process**:
@@ -271,7 +271,7 @@ npx claude-flow@2.0.0 hive-mind --task "Migrate existing Express.js API to Fasti
 **Task**: Convert JavaScript codebase to TypeScript.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 ```
 
 **Wizard Input**:
@@ -300,7 +300,7 @@ Context: Maintain backward compatibility, add strict typing
 **Task**: Optimize slow React application.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Optimize React app performance - reduce bundle size, improve rendering, add code splitting"
+npx gemini-flow@2.0.0 hive-mind --task "Optimize React app performance - reduce bundle size, improve rendering, add code splitting"
 ```
 
 **Optimizations Applied**:
@@ -321,7 +321,7 @@ npx claude-flow@2.0.0 hive-mind --task "Optimize React app performance - reduce 
 **Task**: Optimize database queries and structure.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Optimize PostgreSQL database - analyze slow queries, add indexes, optimize schema"
+npx gemini-flow@2.0.0 hive-mind --task "Optimize PostgreSQL database - analyze slow queries, add indexes, optimize schema"
 ```
 
 **Delivered**:
@@ -342,7 +342,7 @@ npx claude-flow@2.0.0 hive-mind --task "Optimize PostgreSQL database - analyze s
 **Task**: Build multi-tenant SaaS application.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 ```
 
 **Complex Configuration**:
@@ -376,7 +376,7 @@ Tech Stack:
 **Task**: Create real-time analytics dashboard.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Build real-time analytics dashboard with WebSockets, data visualization, and historical data"
+npx gemini-flow@2.0.0 hive-mind --task "Build real-time analytics dashboard with WebSockets, data visualization, and historical data"
 ```
 
 **Components**:
@@ -398,7 +398,7 @@ npx claude-flow@2.0.0 hive-mind --task "Build real-time analytics dashboard with
 **Task**: Set up complete CI/CD pipeline.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Create CI/CD pipeline with GitHub Actions for Node.js app with testing, linting, and deployment"
+npx gemini-flow@2.0.0 hive-mind --task "Create CI/CD pipeline with GitHub Actions for Node.js app with testing, linting, and deployment"
 ```
 
 **Pipeline Includes**:
@@ -418,7 +418,7 @@ npx claude-flow@2.0.0 hive-mind --task "Create CI/CD pipeline with GitHub Action
 **Task**: Generate comprehensive documentation.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --task "Generate complete documentation for existing codebase including API docs, guides, and examples"
+npx gemini-flow@2.0.0 hive-mind --task "Generate complete documentation for existing codebase including API docs, guides, and examples"
 ```
 
 **Documentation Created**:
@@ -438,24 +438,24 @@ npx claude-flow@2.0.0 hive-mind --task "Generate complete documentation for exis
 
 ```bash
 # Use template with customization
-npx claude-flow@2.0.0 hive-mind --template rest-api --task "Extend with GraphQL support"
+npx gemini-flow@2.0.0 hive-mind --template rest-api --task "Extend with GraphQL support"
 ```
 
 ### Sequential Tasks
 
 ```bash
 # First create the base
-npx claude-flow@2.0.0 hive-mind --task "Create Express API" --export base-api.json
+npx gemini-flow@2.0.0 hive-mind --task "Create Express API" --export base-api.json
 
 # Then enhance it
-npx claude-flow@2.0.0 hive-mind --task "Add authentication to existing API" --import base-api.json
+npx gemini-flow@2.0.0 hive-mind --task "Add authentication to existing API" --import base-api.json
 ```
 
 ### Parallel Development
 
 ```javascript
 // Use API for parallel development
-const { HiveMind } = require('claude-flow');
+const { HiveMind } = require('gemini-flow');
 
 const hiveMind = new HiveMind();
 
@@ -504,19 +504,19 @@ const results = await Promise.all([
 ### Agents Not Coordinating
 ```bash
 # Check status
-npx claude-flow@2.0.0 hive-mind swarm status
+npx gemini-flow@2.0.0 hive-mind swarm status
 
 # Force sync
-npx claude-flow@2.0.0 hive-mind swarm sync
+npx gemini-flow@2.0.0 hive-mind swarm sync
 ```
 
 ### Task Taking Too Long
 ```bash
 # Monitor progress
-npx claude-flow@2.0.0 hive-mind monitor
+npx gemini-flow@2.0.0 hive-mind monitor
 
 # Check bottlenecks
-npx claude-flow@2.0.0 hive-mind analyze bottlenecks
+npx gemini-flow@2.0.0 hive-mind analyze bottlenecks
 ```
 
 ### Incomplete Results

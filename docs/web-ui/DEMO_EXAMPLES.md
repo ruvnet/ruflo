@@ -1,8 +1,8 @@
-# Claude Flow Web UI - Demo Examples
+# Gemini Flow Web UI - Demo Examples
 
 ## 🎯 Overview
 
-This guide provides practical examples demonstrating how to use the Claude Flow Web UI for various tasks, from basic operations to advanced swarm orchestration.
+This guide provides practical examples demonstrating how to use the Gemini Flow Web UI for various tasks, from basic operations to advanced swarm orchestration.
 
 ## 🚀 Basic Operations
 
@@ -10,10 +10,10 @@ This guide provides practical examples demonstrating how to use the Claude Flow 
 
 ```bash
 # Terminal 1: Start the web server
-$ claude-flow start --ui --port 3000
+$ gemini-flow start --ui --port 3000
 
-🚀 Starting Claude Code Web UI...
-🌐 Claude Code Web UI started successfully
+🚀 Starting Gemini Code Web UI...
+🌐 Gemini Code Web UI started successfully
 📍 Web Interface: http://localhost:3000/console
 🔗 WebSocket: ws://localhost:3000/ws
 📁 Serving UI from: /src/ui/console
@@ -21,7 +21,7 @@ $ claude-flow start --ui --port 3000
 
 ```javascript
 // In the Web Console
-claude-flow> help
+gemini-flow> help
 Available commands:
   help                Show this help message
   status              Display system status
@@ -31,8 +31,8 @@ Available commands:
   memory list         Show memory entries
   clear               Clear the console
 
-claude-flow> status
-Claude Flow Status:
+gemini-flow> status
+Gemini Flow Status:
   Version: 2.0.0
   Mode: Web Console
   Active Processes: 3
@@ -44,7 +44,7 @@ Claude Flow Status:
 
 ```javascript
 // Spawn a research agent
-claude-flow> agent spawn researcher
+gemini-flow> agent spawn researcher
 ✅ Agent spawned successfully
   ID: agent_1736201234567_abc123
   Type: researcher
@@ -52,14 +52,14 @@ claude-flow> agent spawn researcher
   Status: active
 
 // List all agents
-claude-flow> agent list
+gemini-flow> agent list
 Active Agents:
   • agent_1736201234567_abc123 (researcher) - idle - 0 tasks
   
 Total: 1 agent
 
 // Check agent status
-claude-flow> agent status agent_1736201234567_abc123
+gemini-flow> agent status agent_1736201234567_abc123
 Agent Status:
   ID: agent_1736201234567_abc123
   Type: researcher
@@ -75,7 +75,7 @@ Agent Status:
 
 ```javascript
 // Open Neural Networks panel (click 🧠 Neural button or type)
-claude-flow> neural status
+gemini-flow> neural status
 Neural System Status:
   Models Loaded: 0
   Training Active: false
@@ -83,7 +83,7 @@ Neural System Status:
   Memory Usage: 12MB
 
 // Start training a coordination pattern
-claude-flow> neural train --pattern coordination --data "task allocation strategies" --epochs 50
+gemini-flow> neural train --pattern coordination --data "task allocation strategies" --epochs 50
 🚀 Training Started
   Model ID: model_coordination_1736201345678
   Pattern: coordination
@@ -103,11 +103,11 @@ Training Progress:
 
 ```javascript
 // Load a trained model
-claude-flow> model load model_coordination_1736201345678
+gemini-flow> model load model_coordination_1736201345678
 ✅ Model loaded successfully
 
 // Make a prediction
-claude-flow> neural predict --model model_coordination_1736201345678 --input "distribute tasks across 5 agents"
+gemini-flow> neural predict --model model_coordination_1736201345678 --input "distribute tasks across 5 agents"
 Prediction Results:
   Strategy: hierarchical
   Confidence: 87.3%
@@ -123,7 +123,7 @@ Prediction Results:
 
 ```javascript
 // Initialize a swarm
-claude-flow> swarm init --topology hierarchical --agents 5
+gemini-flow> swarm init --topology hierarchical --agents 5
 🐝 Swarm Initialization Complete
   Swarm ID: swarm_1736201456789
   Topology: hierarchical
@@ -131,14 +131,14 @@ claude-flow> swarm init --topology hierarchical --agents 5
   Status: active
 
 // Spawn agents for the swarm
-claude-flow> swarm spawn coordinator --name "Lead"
-claude-flow> swarm spawn coder --name "Backend Dev"
-claude-flow> swarm spawn coder --name "Frontend Dev"
-claude-flow> swarm spawn tester --name "QA Engineer"
-claude-flow> swarm spawn analyst --name "Data Analyst"
+gemini-flow> swarm spawn coordinator --name "Lead"
+gemini-flow> swarm spawn coder --name "Backend Dev"
+gemini-flow> swarm spawn coder --name "Frontend Dev"
+gemini-flow> swarm spawn tester --name "QA Engineer"
+gemini-flow> swarm spawn analyst --name "Data Analyst"
 
 // Check swarm status
-claude-flow> swarm status
+gemini-flow> swarm status
 Swarm Status:
   🐝 Swarm: ACTIVE
   🏗️ Topology: hierarchical
@@ -159,7 +159,7 @@ Agent Activity:
 
 ```javascript
 // Orchestrate a task across the swarm
-claude-flow> task orchestrate "Build a REST API with authentication, database, and tests"
+gemini-flow> task orchestrate "Build a REST API with authentication, database, and tests"
 📋 Task Created
   Task ID: task_1736201567890
   Strategy: adaptive
@@ -189,7 +189,7 @@ claude-flow> task orchestrate "Build a REST API with authentication, database, a
 
 ```javascript
 // Open Analytics Dashboard or use commands
-claude-flow> benchmark run --type swarm --iterations 10
+gemini-flow> benchmark run --type swarm --iterations 10
 Running Benchmark: swarm
 Iterations: 10
 
@@ -209,7 +209,7 @@ Iterations: 10
 ### Example 8: Token Usage Analysis
 
 ```javascript
-claude-flow> token usage --period 24h
+gemini-flow> token usage --period 24h
 Token Usage Report (Last 24 Hours):
   Total Tokens: 125,847
   Input Tokens: 45,231
@@ -232,14 +232,14 @@ Efficiency Score: 87/100
 
 ```javascript
 // Store important data
-claude-flow> memory store --key "project/api/config" --value '{"database": "postgres", "port": 5432}'
+gemini-flow> memory store --key "project/api/config" --value '{"database": "postgres", "port": 5432}'
 ✅ Memory stored successfully
   Key: project/api/config
   Namespace: default
   Timestamp: 2025-07-06T10:30:45Z
 
 // Search memory
-claude-flow> memory search "project/*"
+gemini-flow> memory search "project/*"
 Memory Search Results:
   • project/api/config - API configuration
   • project/api/routes - Route definitions
@@ -248,7 +248,7 @@ Memory Search Results:
 Total: 3 entries found
 
 // Create a memory backup
-claude-flow> memory backup --path "./backups/project-backup.json"
+gemini-flow> memory backup --path "./backups/project-backup.json"
 ✅ Backup created successfully
   File: ./backups/project-backup.json
   Entries: 15
@@ -261,20 +261,20 @@ claude-flow> memory backup --path "./backups/project-backup.json"
 
 ```javascript
 // Create a workflow
-claude-flow> workflow create "Daily Analysis Pipeline"
+gemini-flow> workflow create "Daily Analysis Pipeline"
 📋 Workflow Created
   ID: workflow_1736201678901
   Name: Daily Analysis Pipeline
   Status: draft
 
 // Add workflow steps
-claude-flow> workflow add-step "Collect metrics" --tool "metrics_collect"
-claude-flow> workflow add-step "Analyze performance" --tool "performance_report"
-claude-flow> workflow add-step "Check errors" --tool "error_analysis"
-claude-flow> workflow add-step "Generate report" --tool "quality_assess"
+gemini-flow> workflow add-step "Collect metrics" --tool "metrics_collect"
+gemini-flow> workflow add-step "Analyze performance" --tool "performance_report"
+gemini-flow> workflow add-step "Check errors" --tool "error_analysis"
+gemini-flow> workflow add-step "Generate report" --tool "quality_assess"
 
 // Set up scheduling
-claude-flow> scheduler create --workflow workflow_1736201678901 --cron "0 9 * * *"
+gemini-flow> scheduler create --workflow workflow_1736201678901 --cron "0 9 * * *"
 ⏰ Schedule Created
   Workflow: Daily Analysis Pipeline
   Schedule: Every day at 9:00 AM
@@ -288,14 +288,14 @@ claude-flow> scheduler create --workflow workflow_1736201678901 --cron "0 9 * * 
 
 ```javascript
 // Create a code review swarm
-claude-flow> swarm init --topology mesh --agents 4
-claude-flow> swarm spawn reviewer --name "Senior Reviewer"
-claude-flow> swarm spawn analyzer --name "Code Analyzer"
-claude-flow> swarm spawn tester --name "Test Validator"
-claude-flow> swarm spawn documenter --name "Doc Checker"
+gemini-flow> swarm init --topology mesh --agents 4
+gemini-flow> swarm spawn reviewer --name "Senior Reviewer"
+gemini-flow> swarm spawn analyzer --name "Code Analyzer"
+gemini-flow> swarm spawn tester --name "Test Validator"
+gemini-flow> swarm spawn documenter --name "Doc Checker"
 
 // Submit code for review
-claude-flow> task orchestrate "Review pull request #123 for security, performance, and code quality"
+gemini-flow> task orchestrate "Review pull request #123 for security, performance, and code quality"
 
 🔍 Code Review in Progress:
   Senior Reviewer: Checking design patterns...
@@ -319,7 +319,7 @@ claude-flow> task orchestrate "Review pull request #123 for security, performanc
 
 ```javascript
 // Start real-time monitoring
-claude-flow> monitor start --interval 5s --duration 5m
+gemini-flow> monitor start --interval 5s --duration 5m
 
 📊 Real-time System Monitor
 ═══════════════════════════════════════════
@@ -346,7 +346,7 @@ Live Agent Status:
 
 ```javascript
 // Check connection status
-claude-flow> connection status
+gemini-flow> connection status
 WebSocket Connection:
   Status: 🔴 Disconnected
   Last Connected: 2 minutes ago
@@ -354,7 +354,7 @@ WebSocket Connection:
   Error: Connection timeout
 
 // Manually reconnect
-claude-flow> connection reconnect --server ws://localhost:3000/ws
+gemini-flow> connection reconnect --server ws://localhost:3000/ws
 🔄 Attempting to reconnect...
 ✅ Connection established
   Latency: 12ms
@@ -366,7 +366,7 @@ claude-flow> connection reconnect --server ws://localhost:3000/ws
 
 ```javascript
 // Run system diagnostics
-claude-flow> diagnostic run --comprehensive
+gemini-flow> diagnostic run --comprehensive
 
 🔍 Running System Diagnostics...
 
@@ -413,7 +413,7 @@ Recommendations:
    - Task distribution
 
 ### Video Walkthroughs
-- [Getting Started with Claude Flow Web UI](https://example.com/video1)
+- [Getting Started with Gemini Flow Web UI](https://example.com/video1)
 - [Advanced Swarm Orchestration Techniques](https://example.com/video2)
 - [Neural Network Training Best Practices](https://example.com/video3)
 

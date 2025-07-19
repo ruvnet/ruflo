@@ -56,7 +56,7 @@ export async function createSparcStructureManually() {
     await Deno.writeTextFile(`${workingDir}/.roo/README.md`, rooReadme);
     console.log('  ✓ Created .roo/README.md');
     
-    // Create Claude Code slash commands for SPARC modes
+    // Create Gemini Code slash commands for SPARC modes
     await createClaudeSlashCommands(workingDir);
     
     console.log('  ✅ Basic SPARC structure created successfully');

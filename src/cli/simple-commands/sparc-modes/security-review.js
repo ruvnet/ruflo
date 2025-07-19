@@ -7,9 +7,9 @@ export function getSecurityReviewOrchestration(taskDescription, memoryNamespace)
    - Define audit boundaries for: "${taskDescription}"
    - Query system architecture and sensitive areas:
      \`\`\`bash
-     npx claude-flow memory query ${memoryNamespace}_architecture
-     npx claude-flow memory query ${memoryNamespace}_auth
-     npx claude-flow memory query ${memoryNamespace}_config
+     npx gemini-flow memory query ${memoryNamespace}_architecture
+     npx gemini-flow memory query ${memoryNamespace}_auth
+     npx gemini-flow memory query ${memoryNamespace}_config
      \`\`\`
    - Identify critical assets:
      - User data and PII
@@ -19,7 +19,7 @@ export function getSecurityReviewOrchestration(taskDescription, memoryNamespace)
    - Map data flows and trust boundaries
    - List all external interfaces and integrations
    - Review authentication/authorization points
-   - Store scope: \`npx claude-flow memory store ${memoryNamespace}_security_scope "Audit scope: ${taskDescription}. Critical assets: user PII, JWT tokens, payment data. External interfaces: REST API, webhooks, third-party integrations."\`
+   - Store scope: \`npx gemini-flow memory store ${memoryNamespace}_security_scope "Audit scope: ${taskDescription}. Critical assets: user PII, JWT tokens, payment data. External interfaces: REST API, webhooks, third-party integrations."\`
 
 2. **Static Security Analysis** (20 mins)
    - Scan for hardcoded secrets and credentials:
@@ -47,7 +47,7 @@ export function getSecurityReviewOrchestration(taskDescription, memoryNamespace)
      \`\`\`bash
      npm audit
      \`\`\`
-   - Store findings: \`npx claude-flow memory store ${memoryNamespace}_vulnerabilities "Critical: 2 hardcoded API keys found. High: Missing input validation in user-controller. Medium: Outdated JWT library. Low: Verbose error messages expose stack traces."\`
+   - Store findings: \`npx gemini-flow memory store ${memoryNamespace}_vulnerabilities "Critical: 2 hardcoded API keys found. High: Missing input validation in user-controller. Medium: Outdated JWT library. Low: Verbose error messages expose stack traces."\`
 
 3. **Dynamic Security Analysis** (10 mins)
    - Test authentication flows:
@@ -61,7 +61,7 @@ export function getSecurityReviewOrchestration(taskDescription, memoryNamespace)
    - Analyze rate limiting and DoS protection
    - Review CORS and CSP policies
    - Test error handling for information leakage
-   - Store dynamic findings: \`npx claude-flow memory store ${memoryNamespace}_dynamic_findings "Auth bypass: None found. Rate limiting: Missing on login endpoint. CORS: Overly permissive. Error handling: Leaks database schema in dev mode."\`
+   - Store dynamic findings: \`npx gemini-flow memory store ${memoryNamespace}_dynamic_findings "Auth bypass: None found. Rate limiting: Missing on login endpoint. CORS: Overly permissive. Error handling: Leaks database schema in dev mode."\`
 
 4. **Risk Assessment & Prioritization** (15 mins)
    - Categorize findings by severity (CVSS scores):
@@ -76,7 +76,7 @@ export function getSecurityReviewOrchestration(taskDescription, memoryNamespace)
    - Calculate risk scores (likelihood × impact)
    - Prioritize remediation efforts
    - Document attack vectors and exploit scenarios
-   - Store assessment: \`npx claude-flow memory store ${memoryNamespace}_risk_assessment "Critical risks: 2 (hardcoded secrets, missing auth on admin endpoints). High risks: 3 (outdated deps, missing rate limiting, weak session management). Compliance impact: GDPR violation risk due to logging PII."\`
+   - Store assessment: \`npx gemini-flow memory store ${memoryNamespace}_risk_assessment "Critical risks: 2 (hardcoded secrets, missing auth on admin endpoints). High risks: 3 (outdated deps, missing rate limiting, weak session management). Compliance impact: GDPR violation risk due to logging PII."\`
 
 5. **Remediation Plan & Implementation** (10 mins)
    - Create specific fix recommendations:
@@ -93,7 +93,7 @@ export function getSecurityReviewOrchestration(taskDescription, memoryNamespace)
      - Set up security monitoring
    - Create security checklist for future development
    - Implement critical fixes if authorized
-   - Store plan: \`npx claude-flow memory store ${memoryNamespace}_remediation_plan "Immediate: Remove hardcoded secrets, fix auth bypass. Next sprint: Implement rate limiting, update dependencies. Future: Add WAF, implement SIEM integration."\`
+   - Store plan: \`npx gemini-flow memory store ${memoryNamespace}_remediation_plan "Immediate: Remove hardcoded secrets, fix auth bypass. Next sprint: Implement rate limiting, update dependencies. Future: Add WAF, implement SIEM integration."\`
 
 ## Deliverables
 - security-audit-report.md:
@@ -124,7 +124,7 @@ export function getSecurityReviewOrchestration(taskDescription, memoryNamespace)
 
 ## Next Steps
 After security review:
-- \`npx claude-flow sparc run code "Implement security remediation plan" --non-interactive\`
-- \`npx claude-flow sparc run tdd "Write security test cases" --non-interactive\`
-- \`npx claude-flow sparc run post-deployment-monitoring-mode "Set up security monitoring and alerts" --non-interactive\``;
+- \`npx gemini-flow sparc run code "Implement security remediation plan" --non-interactive\`
+- \`npx gemini-flow sparc run tdd "Write security test cases" --non-interactive\`
+- \`npx gemini-flow sparc run post-deployment-monitoring-mode "Set up security monitoring and alerts" --non-interactive\``;
 }

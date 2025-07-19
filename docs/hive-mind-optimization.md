@@ -8,13 +8,13 @@ The Hive Mind database optimization system provides safe, backward-compatible pe
 
 ```bash
 # Interactive optimization wizard
-claude-flow hive-mind-optimize
+gemini-flow hive-mind-optimize
 
 # Auto-optimize with all features
-claude-flow hive-mind-optimize --auto --vacuum --clean-memory --archive-tasks
+gemini-flow hive-mind-optimize --auto --vacuum --clean-memory --archive-tasks
 
 # Generate optimization report only
-claude-flow hive-mind-optimize --report
+gemini-flow hive-mind-optimize --report
 ```
 
 ## 📊 Optimization Features
@@ -123,7 +123,7 @@ Remove old, unused memory entries:
 
 ```bash
 # Clean memory older than 30 days with < 5 accesses
-claude-flow hive-mind-optimize --clean-memory --memory-days 30
+gemini-flow hive-mind-optimize --clean-memory --memory-days 30
 ```
 
 ### Task Archival
@@ -132,7 +132,7 @@ Archive completed tasks to separate table:
 
 ```bash
 # Archive tasks completed > 7 days ago
-claude-flow hive-mind-optimize --archive-tasks --task-days 7
+gemini-flow hive-mind-optimize --archive-tasks --task-days 7
 ```
 
 ### Database Vacuum
@@ -141,7 +141,7 @@ Reclaim disk space (requires exclusive access):
 
 ```bash
 # Vacuum and reindex database
-claude-flow hive-mind-optimize --vacuum
+gemini-flow hive-mind-optimize --vacuum
 ```
 
 ## 📈 Performance Impact
@@ -166,7 +166,7 @@ claude-flow hive-mind-optimize --vacuum
 ### Generate Optimization Report
 
 ```bash
-claude-flow hive-mind-optimize --report
+gemini-flow hive-mind-optimize --report
 ```
 
 Output includes:
@@ -204,7 +204,7 @@ Optimization Status:
 
 ```bash
 # Add to crontab for weekly optimization
-0 2 * * 0 /usr/local/bin/claude-flow hive-mind-optimize --auto --clean-memory --archive-tasks
+0 2 * * 0 /usr/local/bin/gemini-flow hive-mind-optimize --auto --clean-memory --archive-tasks
 ```
 
 ### CI/CD Integration
@@ -213,8 +213,8 @@ Optimization Status:
 # GitHub Action example
 - name: Optimize Hive Mind Database
   run: |
-    claude-flow hive-mind-optimize --auto --report
-    claude-flow hive-mind metrics
+    gemini-flow hive-mind-optimize --auto --report
+    gemini-flow hive-mind metrics
 ```
 
 ## 🎯 Best Practices
@@ -309,4 +309,4 @@ To add new optimizations:
 
 ---
 
-For more information, see the [Hive Mind Documentation](./hive-mind.md) or run `claude-flow hive-mind-optimize --help`.
+For more information, see the [Hive Mind Documentation](./hive-mind.md) or run `gemini-flow hive-mind-optimize --help`.

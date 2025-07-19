@@ -50,7 +50,7 @@ describe("Full Init Flow Integration Tests", () => {
       assertExists(await exists(join(testDir, "CLAUDE.md")));
       assertExists(await exists(join(testDir, "memory-bank.md")));
       assertExists(await exists(join(testDir, "coordination.md")));
-      assertExists(await exists(join(testDir, "memory/claude-flow-data.json")));
+      assertExists(await exists(join(testDir, "memory/gemini-flow-data.json")));
 
       // Check directory structure
       assertExists(await exists(join(testDir, "memory")));
@@ -114,7 +114,7 @@ describe("Full Init Flow Integration Tests", () => {
       // Should overwrite files
       const claudeContent = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
       assertEquals(claudeContent.includes("old content"), false);
-      assertStringIncludes(claudeContent, "Claude Code Configuration");
+      assertStringIncludes(claudeContent, "Gemini Code Configuration");
 
       const memoryContent = await Deno.readTextFile(join(testDir, "memory-bank.md"));
       assertEquals(memoryContent.includes("old memory"), false);
@@ -267,7 +267,7 @@ describe("Full Init Flow Integration Tests", () => {
       await command.output();
 
       // Check JSON files are valid
-      const dataPath = join(testDir, "memory/claude-flow-data.json");
+      const dataPath = join(testDir, "memory/gemini-flow-data.json");
       const dataContent = await Deno.readTextFile(dataPath);
       const data = JSON.parse(dataContent);
 
@@ -353,11 +353,11 @@ describe("Full Init Flow Integration Tests", () => {
       await command.output();
 
       // Check executable was created
-      assertExists(await exists(join(testDir, "claude-flow")));
+      assertExists(await exists(join(testDir, "gemini-flow")));
 
       // Check it's executable (on Unix-like systems)
       try {
-        const fileInfo = await Deno.stat(join(testDir, "claude-flow"));
+        const fileInfo = await Deno.stat(join(testDir, "gemini-flow"));
         assertEquals(fileInfo.isFile, true);
       } catch {
         // May not work on all systems
@@ -380,7 +380,7 @@ describe("Full Init Flow Integration Tests", () => {
       await command.output();
 
       // Try to run the created executable
-      const execCommand = new Deno.Command(join(testDir, "claude-flow"), {
+      const execCommand = new Deno.Command(join(testDir, "gemini-flow"), {
         args: ["--help"],
         cwd: testDir,
         stdout: "piped",
@@ -391,7 +391,7 @@ describe("Full Init Flow Integration Tests", () => {
       const execOutput = new TextDecoder().decode(execResult.stdout);
 
       // Should show help output
-      assertStringIncludes(execOutput, "claude-flow");
+      assertStringIncludes(execOutput, "gemini-flow");
     });
   });
 

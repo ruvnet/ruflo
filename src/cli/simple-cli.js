@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Simple CLI wrapper for Claude-Flow (JavaScript version)
+ * Simple CLI wrapper for Gemini-Flow (JavaScript version)
  * This version avoids TypeScript issues in node_modules
  */
 
@@ -32,15 +32,15 @@ function printCommandHelp(command) {
 // Legacy help function for backward compatibility
 function printLegacyHelp() {
   console.log(`
-🌊 Claude-Flow v${VERSION} - Enterprise-Grade AI Agent Orchestration Platform
+🌊 Gemini-Flow v${VERSION} - Enterprise-Grade AI Agent Orchestration Platform
 
 🎯 ENTERPRISE FEATURES: Complete ruv-swarm integration with 27 MCP tools, neural networking, and production-ready infrastructure
 
 USAGE:
-  claude-flow <command> [options]
+  gemini-flow <command> [options]
 
 🚀 INSTALLATION & ENTERPRISE SETUP:
-  npx claude-flow@2.0.0 init --sparc  # Enterprise SPARC + ruv-swarm integration
+  npx gemini-flow@2.0.0 init --sparc  # Enterprise SPARC + ruv-swarm integration
   
   The --sparc flag creates:
   • Complete ruv-swarm integration with 27 MCP tools
@@ -87,22 +87,22 @@ USAGE:
 
 🎮 ENTERPRISE QUICK START:
   # Initialize enterprise environment
-  npx claude-flow@2.0.0 init --sparc
+  npx gemini-flow@2.0.0 init --sparc
   
   # Start enterprise orchestration with swarm intelligence
-  ./claude-flow start --ui --swarm
+  ./gemini-flow start --ui --swarm
   
   # Deploy intelligent multi-agent development workflow
-  ./claude-flow swarm "build enterprise API" --strategy development --parallel --monitor
+  ./gemini-flow swarm "build enterprise API" --strategy development --parallel --monitor
   
   # GitHub workflow automation
-  ./claude-flow github pr-manager "coordinate release with automated testing"
+  ./gemini-flow github pr-manager "coordinate release with automated testing"
   
   # Neural memory management
-  ./claude-flow memory store "architecture" "microservices with API gateway pattern"
+  ./gemini-flow memory store "architecture" "microservices with API gateway pattern"
   
   # Real-time system monitoring
-  ./claude-flow status --verbose
+  ./gemini-flow status --verbose
 
 🏢 ENTERPRISE COMMAND CATEGORIES:
   Core Intelligence:    swarm, agent, sparc, memory, neural
@@ -128,20 +128,20 @@ USAGE:
 
 🔗 INTEGRATION & COMPATIBILITY:
   • Node.js 20+ optimization for enterprise environments
-  • Complete Claude Code integration with enhanced capabilities
+  • Complete Gemini Code integration with enhanced capabilities
   • Multi-platform support (Windows, macOS, Linux)
   • Enterprise security with access control and audit logging
   • Cross-package synchronization and dependency management
 
 GET DETAILED HELP:
-  claude-flow help <command>           # Command-specific enterprise documentation
-  claude-flow <command> --help         # Alternative help syntax
+  gemini-flow help <command>           # Command-specific enterprise documentation
+  gemini-flow <command> --help         # Alternative help syntax
   
   Examples:
-    claude-flow help swarm             # Swarm intelligence coordination
-    claude-flow help github            # GitHub workflow automation
-    claude-flow help neural            # Neural network processing
-    claude-flow help enterprise        # Enterprise features and compliance
+    gemini-flow help swarm             # Swarm intelligence coordination
+    gemini-flow help github            # GitHub workflow automation
+    gemini-flow help neural            # Neural network processing
+    gemini-flow help enterprise        # Enterprise features and compliance
 
 COMMON OPTIONS:
   --verbose, -v                        Enable detailed output with performance metrics
@@ -150,15 +150,15 @@ COMMON OPTIONS:
   --parallel                           Enable parallel execution (default for swarms)
   --monitor                            Real-time monitoring and performance tracking
 
-📚 Documentation: https://github.com/ruvnet/claude-code-flow
+📚 Documentation: https://github.com/ruvnet/gemini-flow
 🐝 ruv-swarm: https://github.com/ruvnet/ruv-FANN/tree/main/ruv-swarm
 
-🚀 Enterprise-Grade AI Agent Orchestration - Built with ❤️ by rUv for the Claude community
+🚀 Enterprise-Grade AI Agent Orchestration - Built with ❤️ by rUv for the Gemini community
 `);
 }
 
 function printVersion() {
-  console.log(`Claude-Flow v${VERSION}`);
+  console.log(`Gemini-Flow v${VERSION}`);
 }
 
 function printError(message) {
@@ -180,7 +180,7 @@ function showHelpWithCommands() {
   for (const command of commands) {
     console.log(`  ${command.name.padEnd(12)} ${command.description}`);
   }
-  console.log('\nUse "claude-flow help <command>" for detailed usage information');
+  console.log('\nUse "gemini-flow help <command>" for detailed usage information');
 }
 
 async function main() {
@@ -216,7 +216,7 @@ async function main() {
       showCommandHelp(command);
     } else {
       printError(`Unknown command: ${command}`);
-      console.log('\nRun "claude-flow --help" to see available commands.');
+      console.log('\nRun "gemini-flow --help" to see available commands.');
     }
     return;
   }
@@ -276,7 +276,7 @@ async function main() {
       return;
     } catch (err) {
       printError(err.message);
-      console.log(`\nRun "claude-flow ${command} --help" for usage information.`);
+      console.log(`\nRun "gemini-flow ${command} --help" for usage information.`);
       return;
     }
   }
@@ -286,7 +286,7 @@ async function main() {
   
   switch (command) {
     case 'status':
-      printSuccess('Claude-Flow System Status:');
+      printSuccess('Gemini-Flow System Status:');
       console.log('🟡 Status: Not Running (orchestrator not started)');
       console.log('🤖 Agents: 0 active');
       console.log('📋 Tasks: 0 in queue');
@@ -579,7 +579,7 @@ async function main() {
           const accessLevel = subArgs.find(arg => arg.includes('--access-level'));
           if (shareId) {
             printSuccess(`Sharing terminal session: ${shareId}`);
-            console.log(`🔗 Share URL: https://claude-flow.local/terminal/${shareId}/view`);
+            console.log(`🔗 Share URL: https://gemini-flow.local/terminal/${shareId}/view`);
             console.log(`🔐 Access: ${accessLevel ? accessLevel.split('=')[1] : 'read-only'}`);
             console.log('⏱️  Expires in: 2 hours');
           } else {
@@ -930,7 +930,7 @@ async function main() {
               const awsHA = subArgs.includes('--ha-configuration');
               const awsCostOpt = subArgs.includes('--cost-optimization');
               
-              printSuccess('Deploying Claude-Flow to AWS');
+              printSuccess('Deploying Gemini-Flow to AWS');
               console.log('☁️  AWS Deployment Configuration:');
               if (awsServices >= 0) {
                 console.log(`   Services: ${subArgs[awsServices + 1]}`);
@@ -950,8 +950,8 @@ async function main() {
               console.log('   ✓ Setting up load balancers');
               
               console.log('\n✅ AWS deployment completed successfully');
-              console.log('   Cluster ARN: arn:aws:ecs:us-east-1:123456789012:cluster/claude-flow');
-              console.log('   API Gateway: https://api.aws.claude-flow.com');
+              console.log('   Cluster ARN: arn:aws:ecs:us-east-1:123456789012:cluster/gemini-flow');
+              console.log('   API Gateway: https://api.aws.gemini-flow.com');
               console.log('   Monitoring: https://console.aws.amazon.com/cloudwatch');
               break;
               
@@ -993,7 +993,7 @@ async function main() {
               const azureRegions = subArgs.indexOf('--regions');
               const azureIntegration = subArgs.includes('--integration-with-aws');
               
-              printSuccess('Deploying Claude-Flow to Azure');
+              printSuccess('Deploying Gemini-Flow to Azure');
               console.log('☁️  Azure Deployment Configuration:');
               if (azureServices >= 0) {
                 console.log(`   Services: ${subArgs[azureServices + 1]}`);
@@ -1012,8 +1012,8 @@ async function main() {
               console.log('   ✓ Setting up Application Gateway');
               
               console.log('\n✅ Azure deployment completed successfully');
-              console.log('   Resource Group: claude-flow-production');
-              console.log('   API Gateway: https://api.azure.claude-flow.com');
+              console.log('   Resource Group: gemini-flow-production');
+              console.log('   API Gateway: https://api.azure.gemini-flow.com');
               console.log('   Monitoring: https://portal.azure.com');
               break;
               
@@ -1055,7 +1055,7 @@ async function main() {
               const gcpRegions = subArgs.indexOf('--regions');
               const multiCloud = subArgs.includes('--multi-cloud-networking');
               
-              printSuccess('Deploying Claude-Flow to Google Cloud');
+              printSuccess('Deploying Gemini-Flow to Google Cloud');
               console.log('☁️  GCP Deployment Configuration:');
               if (gcpServices >= 0) {
                 console.log(`   Services: ${subArgs[gcpServices + 1]}`);
@@ -1074,8 +1074,8 @@ async function main() {
               console.log('   ✓ Setting up Cloud Load Balancing');
               
               console.log('\n✅ GCP deployment completed successfully');
-              console.log('   Project ID: claude-flow-production');
-              console.log('   API Gateway: https://api.gcp.claude-flow.com');
+              console.log('   Project ID: gemini-flow-production');
+              console.log('   API Gateway: https://api.gcp.gemini-flow.com');
               console.log('   Monitoring: https://console.cloud.google.com');
               break;
               
@@ -1115,7 +1115,7 @@ async function main() {
           
           switch (multiCloudCmd) {
             case 'deploy':
-              printSuccess('Deploying multi-cloud Claude-Flow architecture');
+              printSuccess('Deploying multi-cloud Gemini-Flow architecture');
               console.log('🌐 Multi-Cloud Deployment:');
               console.log('   Primary: AWS (us-east-1)');
               console.log('   Secondary: Azure (eastus)');
@@ -1128,7 +1128,7 @@ async function main() {
               console.log('   ✓ Unified monitoring deployed');
               
               console.log('\n✅ Multi-cloud deployment completed');
-              console.log('   Global endpoint: https://global.claude-flow.com');
+              console.log('   Global endpoint: https://global.gemini-flow.com');
               console.log('   Failover time: < 30 seconds');
               console.log('   Data consistency: Eventually consistent');
               break;
@@ -1175,9 +1175,9 @@ async function main() {
           
           switch (k8sCmd) {
             case 'deploy':
-              printSuccess('Deploying Claude-Flow to Kubernetes');
+              printSuccess('Deploying Gemini-Flow to Kubernetes');
               console.log('⚙️  Kubernetes Deployment:');
-              console.log('   Namespace: claude-flow');
+              console.log('   Namespace: gemini-flow');
               console.log('   Replicas: 3');
               console.log('   Resources: 1Gi memory, 500m CPU per pod');
               
@@ -1191,13 +1191,13 @@ async function main() {
               
               console.log('\n✅ Kubernetes deployment completed');
               console.log('   Pods: 3/3 running');
-              console.log('   Service: claude-flow-orchestrator-service');
-              console.log('   Ingress: https://k8s.claude-flow.com');
+              console.log('   Service: gemini-flow-orchestrator-service');
+              console.log('   Ingress: https://k8s.gemini-flow.com');
               break;
               
             case 'scale':
               const replicas = subArgs[2] || '5';
-              printSuccess(`Scaling Claude-Flow to ${replicas} replicas`);
+              printSuccess(`Scaling Gemini-Flow to ${replicas} replicas`);
               console.log('📈 Scaling Progress:');
               console.log(`   Current replicas: 3`);
               console.log(`   Target replicas: ${replicas}`);
@@ -1209,7 +1209,7 @@ async function main() {
             case 'status':
               printSuccess('Kubernetes Cluster Status');
               console.log('\n⚙️  Cluster Information:');
-              console.log('   Namespace: claude-flow');
+              console.log('   Namespace: gemini-flow');
               console.log('   Deployments: 3/3 ready');
               console.log('   Pods: 3/3 running');
               console.log('   Services: 2 active');
@@ -1258,7 +1258,7 @@ async function main() {
           
           const task = subArgs.slice(1, taskEndIndex).join(' ');
           if (!task) {
-            printError('Usage: claude spawn <task description> [options]');
+            printError('Usage: gemini spawn <task description> [options]');
             break;
           }
           
@@ -1302,7 +1302,7 @@ async function main() {
           
           if (flags.dryRun) {
             printWarning('DRY RUN - Would execute:');
-            console.log(`Command: claude "<enhanced task with guidance>" --allowedTools ${tools}`);
+            console.log(`Command: gemini "<enhanced task with guidance>" --allowedTools ${tools}`);
             console.log(`Instance ID: ${instanceId}`);
             console.log(`Task: ${task}`);
             console.log(`Tools: ${tools}`);
@@ -1310,17 +1310,17 @@ async function main() {
             console.log(`Coverage: ${flags.coverage || 80}%`);
             console.log(`Commit: ${flags.commit || 'phase'}`);
             console.log(`\nEnhanced Features:`);
-            console.log(`  - Memory Bank enabled via: npx claude-flow memory commands`);
+            console.log(`  - Memory Bank enabled via: npx gemini-flow memory commands`);
             console.log(`  - Coordination ${flags.parallel ? 'enabled' : 'disabled'}`);
-            console.log(`  - Access Claude-Flow features through Bash tool`);
+            console.log(`  - Access Gemini-Flow features through Bash tool`);
           } else {
-            printSuccess(`Spawning Claude instance: ${instanceId}`);
+            printSuccess(`Spawning Gemini instance: ${instanceId}`);
             console.log(`📝 Original Task: ${task}`);
             console.log(`🔧 Tools: ${tools}`);
             console.log(`⚙️  Mode: ${flags.mode || 'full'}`);
             console.log(`📊 Coverage: ${flags.coverage || 80}%`);
             console.log(`💾 Commit: ${flags.commit || 'phase'}`);
-            console.log(`✨ Enhanced with Claude-Flow guidance for memory and coordination`);
+            console.log(`✨ Enhanced with Gemini-Flow guidance for memory and coordination`);
             console.log('');
             console.log('📋 Task will be enhanced with:');
             console.log('  - Memory Bank instructions (store/retrieve)');
@@ -1328,7 +1328,7 @@ async function main() {
             console.log('  - Best practices for multi-agent workflows');
             console.log('');
             
-            // Build the actual claude command with enhanced guidance
+            // Build the actual gemini command with enhanced guidance
             let enhancedTask = `# Task Assignment
 
 ## Your Primary Task
@@ -1352,22 +1352,22 @@ ${flags.tools ? `- Custom tools specified: ${flags.tools}` : ''}
 
 ### Optional Orchestration Features
 
-If this task requires complex coordination, memory persistence, or multi-agent collaboration, you can use the claude-flow system:
+If this task requires complex coordination, memory persistence, or multi-agent collaboration, you can use the gemini-flow system:
 
 1. **Persistent Memory** (if needed for your task)
-   - Store project data: \`npx claude-flow memory store <key> "<value>"\`
-   - Retrieve stored data: \`npx claude-flow memory query <key>\`
-   - Export/Import memory: \`npx claude-flow memory export/import <file>\`
+   - Store project data: \`npx gemini-flow memory store <key> "<value>"\`
+   - Retrieve stored data: \`npx gemini-flow memory query <key>\`
+   - Export/Import memory: \`npx gemini-flow memory export/import <file>\`
 
 2. **Task Coordination** (if working on complex multi-part tasks)
-   - Check task status: \`npx claude-flow status\`
-   - Monitor progress: \`npx claude-flow monitor\`
-   - List active tasks: \`npx claude-flow task list\`
+   - Check task status: \`npx gemini-flow status\`
+   - Monitor progress: \`npx gemini-flow monitor\`
+   - List active tasks: \`npx gemini-flow task list\`
 
 3. **Multi-Agent Collaboration** (if task benefits from parallelization)
-   - Spawn specialized agents: \`npx claude-flow agent spawn <type> --name <name>\`
-   - Create subtasks: \`npx claude-flow task create <type> "<description>"\`
-   - Coordinate work: \`npx claude-flow task assign <task-id> <agent-id>\``;
+   - Spawn specialized agents: \`npx gemini-flow agent spawn <type> --name <name>\`
+   - Create subtasks: \`npx gemini-flow task create <type> "<description>"\`
+   - Coordinate work: \`npx gemini-flow task assign <task-id> <agent-id>\``;
 
             if (flags.parallel) {
               enhancedTask += `
@@ -1419,14 +1419,14 @@ Begin working on your task. The orchestration features are available as tools to
 
 \`\`\`bash
 # Example: Storing project-specific data
-Bash("npx claude-flow memory store project_config '{\\"name\\": \\"my-app\\", \\"version\\": \\"1.0.0\\"}'")
+Bash("npx gemini-flow memory store project_config '{\\"name\\": \\"my-app\\", \\"version\\": \\"1.0.0\\"}'")
 
 # Example: Checking for previous work
-Bash("npx claude-flow memory query previous_implementation")
+Bash("npx gemini-flow memory query previous_implementation")
 
 # Example: Creating subtasks for complex projects
-Bash("npx claude-flow task create frontend 'Build React components'")
-Bash("npx claude-flow task create backend 'Implement API endpoints'")
+Bash("npx gemini-flow task create frontend 'Build React components'")
+Bash("npx gemini-flow task create backend 'Implement API endpoints'")
 \`\`\`
 
 Remember: These are optional tools. Use them when they add value to your development process.
@@ -1460,12 +1460,12 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
               claudeArgs.push('--verbose');
             }
             
-            // Execute the actual claude command
+            // Execute the actual gemini command
             try {
               // Debug: Log the actual command being executed
               if (flags.verbose) {
                 console.log('Debug - Executing command:');
-                console.log(`claude ${claudeArgs.map(arg => arg.includes(' ') || arg.includes('\n') ? `"${arg}"` : arg).join(' ')}`);
+                console.log(`gemini ${claudeArgs.map(arg => arg.includes(' ') || arg.includes('\n') ? `"${arg}"` : arg).join(' ')}`);
               }
               
               const child = spawn('claude', claudeArgs, {
@@ -1475,7 +1475,7 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
                   CLAUDE_FLOW_MODE: flags.mode || 'full',
                   CLAUDE_FLOW_COVERAGE: (flags.coverage || 80).toString(),
                   CLAUDE_FLOW_COMMIT: flags.commit || 'phase',
-                  // Add claude-flow specific features
+                  // Add gemini-flow specific features
                   CLAUDE_FLOW_MEMORY_ENABLED: 'true',
                   CLAUDE_FLOW_MEMORY_NAMESPACE: 'default',
                   CLAUDE_FLOW_COORDINATION_ENABLED: flags.parallel ? 'true' : 'false',
@@ -1488,9 +1488,9 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
               await new Promise((resolve) => {
                 child.on('exit', (code) => {
                   if (code === 0) {
-                    printSuccess(`Claude instance ${instanceId} completed successfully`);
+                    printSuccess(`Gemini instance ${instanceId} completed successfully`);
                   } else {
-                    printError(`Claude instance ${instanceId} exited with code ${code}`);
+                    printError(`Gemini instance ${instanceId} exited with code ${code}`);
                   }
                   resolve();
                 });
@@ -1505,7 +1505,7 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
         case 'batch':
           const workflowFile = subArgs[1];
           if (!workflowFile) {
-            printError('Usage: claude batch <workflow-file>');
+            printError('Usage: gemini batch <workflow-file>');
             break;
           }
           printSuccess(`Loading workflow: ${workflowFile}`);
@@ -1513,11 +1513,11 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
           break;
           
         default:
-          console.log('Claude commands: spawn, batch');
+          console.log('Gemini commands: spawn, batch');
           console.log('\nExamples:');
-          console.log('  claude-flow claude spawn "implement user authentication" --research --parallel');
-          console.log('  claude-flow claude spawn "fix bug in payment system" --no-permissions');
-          console.log('  claude-flow claude batch workflow.json --dry-run');
+          console.log('  gemini-flow gemini spawn "implement user authentication" --research --parallel');
+          console.log('  gemini-flow gemini spawn "fix bug in payment system" --no-permissions');
+          console.log('  gemini-flow gemini batch workflow.json --dry-run');
       }
       break;
       
@@ -1546,7 +1546,7 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
           console.log('   ✓ Setting up health checks');
           console.log('   ✓ Establishing replication');
           console.log('\n✅ HA cluster deployed successfully!');
-          console.log('   Cluster endpoint: https://claude-flow-ha.example.com');
+          console.log('   Cluster endpoint: https://gemini-flow-ha.example.com');
           break;
           
         case 'scaling':
@@ -1612,17 +1612,17 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
         case 'k8s':
           printSuccess('Deploying to Kubernetes...');
           console.log('☸️  Kubernetes Deployment:');
-          console.log('   Namespace: claude-flow');
+          console.log('   Namespace: gemini-flow');
           console.log('   Replicas: 3');
-          console.log('   Image: claude-flow/orchestrator:latest');
+          console.log('   Image: gemini-flow/orchestrator:latest');
           console.log('   Service Type: LoadBalancer');
           
           console.log('\n📦 Creating resources:');
-          console.log('   ✓ Created namespace/claude-flow');
-          console.log('   ✓ Created deployment/claude-flow-orchestrator');
-          console.log('   ✓ Created service/claude-flow-orchestrator-service');
-          console.log('   ✓ Created configmap/claude-flow-config');
-          console.log('   ✓ Created secret/claude-flow-secrets');
+          console.log('   ✓ Created namespace/gemini-flow');
+          console.log('   ✓ Created deployment/gemini-flow-orchestrator');
+          console.log('   ✓ Created service/gemini-flow-orchestrator-service');
+          console.log('   ✓ Created configmap/gemini-flow-config');
+          console.log('   ✓ Created secret/gemini-flow-secrets');
           console.log('\n✅ Kubernetes deployment complete');
           console.log('   Service endpoint: http://a1b2c3d4.elb.amazonaws.com');
           break;
@@ -2081,7 +2081,7 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
       
     default:
       printError(`Unknown command: ${command}`);
-      console.log('Run "claude-flow help" for available commands');
+      console.log('Run "gemini-flow help" for available commands');
       
       // Suggest similar commands
       const commonCommands = ['agent', 'task', 'spawn', 'init', 'start', 'status', 'memory', 'sparc', 'help'];
@@ -2092,7 +2092,7 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
       
       if (suggestions.length > 0) {
         console.log('\nDid you mean:');
-        suggestions.forEach(cmd => console.log(`  claude-flow ${cmd}`));
+        suggestions.forEach(cmd => console.log(`  gemini-flow ${cmd}`));
       }
       
       exit(1);
@@ -2101,7 +2101,7 @@ ${flags.mode === 'full' || !flags.mode ? `Full-stack development covering all as
 
 // REPL Implementation
 async function startRepl() {
-  console.log('🧠 Claude-Flow Interactive Shell v' + VERSION);
+  console.log('🧠 Gemini-Flow Interactive Shell v' + VERSION);
   console.log('Type "help" for available commands, "exit" to quit\n');
   
   const replState = {
@@ -2161,7 +2161,7 @@ Shortcuts:
     },
     
     status: () => {
-      console.log('🟢 Claude-Flow Status:');
+      console.log('🟢 Gemini-Flow Status:');
       console.log(`  Agents: ${replState.context.agents.length} active`);
       console.log(`  Tasks: ${replState.context.tasks.length} in queue`);
       console.log(`  Terminals: ${replState.context.terminals.length} active`);
@@ -2170,7 +2170,7 @@ Shortcuts:
     
     clear: () => {
       console.clear();
-      console.log('🧠 Claude-Flow Interactive Shell v' + VERSION);
+      console.log('🧠 Gemini-Flow Interactive Shell v' + VERSION);
     },
     
     history: () => {
@@ -2182,7 +2182,7 @@ Shortcuts:
     
     config: async (key) => {
       try {
-        const config = JSON.parse(await readTextFile('claude-flow.config.json'));
+        const config = JSON.parse(await readTextFile('gemini-flow.config.json'));
         if (key) {
           const keys = key.split('.');
           let value = config;
@@ -2210,7 +2210,7 @@ Shortcuts:
     
     // Handle special commands
     if (trimmed === 'exit' || trimmed === 'quit') {
-      console.log('👋 Exiting Claude-Flow REPL...');
+      console.log('👋 Exiting Gemini-Flow REPL...');
       return false;
     }
     
@@ -2523,8 +2523,8 @@ Shortcuts:
   // Set prompt based on session
   function updatePrompt() {
     rl.setPrompt(replState.currentSession ? 
-      `claude-flow:${replState.currentSession}> ` : 
-      'claude-flow> ');
+      `gemini-flow:${replState.currentSession}> ` : 
+      'gemini-flow> ');
   }
   
   updatePrompt();
@@ -2546,7 +2546,7 @@ Shortcuts:
   
   // Handle CTRL+C
   rl.on('SIGINT', () => {
-    console.log('\nExiting Claude-Flow...');
+    console.log('\nExiting Gemini-Flow...');
     rl.close();
     process.exit(0);
   });
@@ -2559,9 +2559,9 @@ Shortcuts:
 
 // Helper functions for init command
 function createMinimalClaudeMd() {
-  return `# Claude Code Integration
+  return `# Gemini Code Integration
 
-This file provides guidance to Claude when working with this codebase.
+This file provides guidance to Gemini when working with this codebase.
 
 ## Project Overview
 [Describe your project here]
@@ -2578,9 +2578,9 @@ This file provides guidance to Claude when working with this codebase.
 }
 
 function createFullClaudeMd() {
-  return `# Claude Code Integration Guide
+  return `# Gemini Code Integration Guide
 
-This document provides comprehensive guidance to Claude when working with this codebase.
+This document provides comprehensive guidance to Gemini when working with this codebase.
 
 ## Project Overview
 [Provide a detailed description of your project, its purpose, and main features]
@@ -2646,7 +2646,7 @@ Session memory and context storage.
 function createFullMemoryBankMd() {
   return `# Memory Bank
 
-This file serves as persistent memory storage for Claude across sessions.
+This file serves as persistent memory storage for Gemini across sessions.
 
 ## Session Information
 - **Current Session**: Started ${new Date().toISOString()}
@@ -2845,7 +2845,7 @@ Each agent gets its own subdirectory named by agent ID:
 - \`metrics.json\`: Performance metrics
 
 ## Usage
-Files in this directory are automatically managed by the Claude-Flow system.
+Files in this directory are automatically managed by the Gemini-Flow system.
 `;
 }
 
@@ -2866,7 +2866,7 @@ Each session gets a unique directory:
 Sessions are retained for 30 days by default, then archived or deleted based on configuration.
 
 ## Usage
-The Claude-Flow system automatically manages session files. Do not modify these files manually.
+The Gemini-Flow system automatically manages session files. Do not modify these files manually.
 `;
 }
 
@@ -3040,22 +3040,22 @@ SPARC is a systematic approach to software development:
 4. **Refinement**: Implement, test, and optimize using TDD
 5. **Completion**: Integrate, document, and validate
 
-## Usage with Claude-Flow
+## Usage with Gemini-Flow
 
-Use the claude-flow SPARC commands to leverage this environment:
+Use the gemini-flow SPARC commands to leverage this environment:
 
 \`\`\`bash
 # List available modes
-claude-flow sparc modes
+gemini-flow sparc modes
 
 # Run specific mode
-claude-flow sparc run code "implement user authentication"
+gemini-flow sparc run code "implement user authentication"
 
 # Execute full TDD workflow  
-claude-flow sparc tdd "payment processing system"
+gemini-flow sparc tdd "payment processing system"
 
 # Use custom workflow
-claude-flow sparc workflow .roo/workflows/basic-tdd.json
+gemini-flow sparc workflow .roo/workflows/basic-tdd.json
 \`\`\`
 
 ## Configuration
@@ -3069,23 +3069,23 @@ You can customize this environment by:
 - Creating mode-specific templates in \`templates/\`
 - Adding project-specific configurations in \`configs/\`
 
-For more information, see: https://github.com/ruvnet/claude-code-flow/docs/sparc.md
+For more information, see: https://github.com/ruvnet/gemini-flow/docs/sparc.md
 `;
 }
 
 function createSparcClaudeMd() {
-  return `# Claude Code Configuration - SPARC Development Environment
+  return `# Gemini Code Configuration - SPARC Development Environment
 
 ## Project Overview
-This project uses the SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology for systematic Test-Driven Development with AI assistance through Claude-Flow orchestration.
+This project uses the SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology for systematic Test-Driven Development with AI assistance through Gemini-Flow orchestration.
 
 ## SPARC Development Commands
 
 ### Core SPARC Commands
-- \`npx claude-flow sparc modes\`: List all available SPARC development modes
-- \`npx claude-flow sparc run <mode> "<task>"\`: Execute specific SPARC mode for a task
-- \`npx claude-flow sparc tdd "<feature>"\`: Run complete TDD workflow using SPARC methodology
-- \`npx claude-flow sparc info <mode>\`: Get detailed information about a specific mode
+- \`npx gemini-flow sparc modes\`: List all available SPARC development modes
+- \`npx gemini-flow sparc run <mode> "<task>"\`: Execute specific SPARC mode for a task
+- \`npx gemini-flow sparc tdd "<feature>"\`: Run complete TDD workflow using SPARC methodology
+- \`npx gemini-flow sparc info <mode>\`: Get detailed information about a specific mode
 
 ### Standard Build Commands
 - \`npm run build\`: Build the project
@@ -3098,7 +3098,7 @@ This project uses the SPARC (Specification, Pseudocode, Architecture, Refinement
 ### 1. Specification Phase
 \`\`\`bash
 # Create detailed specifications and requirements
-npx claude-flow sparc run spec-pseudocode "Define user authentication requirements"
+npx gemini-flow sparc run spec-pseudocode "Define user authentication requirements"
 \`\`\`
 - Define clear functional requirements
 - Document edge cases and constraints
@@ -3108,7 +3108,7 @@ npx claude-flow sparc run spec-pseudocode "Define user authentication requiremen
 ### 2. Pseudocode Phase
 \`\`\`bash
 # Develop algorithmic logic and data flows
-npx claude-flow sparc run spec-pseudocode "Create authentication flow pseudocode"
+npx gemini-flow sparc run spec-pseudocode "Create authentication flow pseudocode"
 \`\`\`
 - Break down complex logic into steps
 - Define data structures and interfaces
@@ -3118,7 +3118,7 @@ npx claude-flow sparc run spec-pseudocode "Create authentication flow pseudocode
 ### 3. Architecture Phase
 \`\`\`bash
 # Design system architecture and component structure
-npx claude-flow sparc run architect "Design authentication service architecture"
+npx gemini-flow sparc run architect "Design authentication service architecture"
 \`\`\`
 - Create system diagrams and component relationships
 - Define API contracts and interfaces
@@ -3128,7 +3128,7 @@ npx claude-flow sparc run architect "Design authentication service architecture"
 ### 4. Refinement Phase (TDD Implementation)
 \`\`\`bash
 # Execute Test-Driven Development cycle
-npx claude-flow sparc tdd "implement user authentication system"
+npx gemini-flow sparc tdd "implement user authentication system"
 \`\`\`
 
 **TDD Cycle:**
@@ -3140,7 +3140,7 @@ npx claude-flow sparc tdd "implement user authentication system"
 ### 5. Completion Phase
 \`\`\`bash
 # Integration, documentation, and validation
-npx claude-flow sparc run integration "integrate authentication with user management"
+npx gemini-flow sparc run integration "integrate authentication with user management"
 \`\`\`
 - Integrate all components
 - Perform end-to-end testing
@@ -3183,7 +3183,7 @@ npx claude-flow sparc run integration "integrate authentication with user manage
 - Prefer composition over inheritance
 
 ### Memory and State Management
-- Use claude-flow memory system for persistent state across sessions
+- Use gemini-flow memory system for persistent state across sessions
 - Store progress and findings using namespaced keys
 - Query previous work before starting new tasks
 - Export/import memory for backup and sharing
@@ -3193,19 +3193,19 @@ npx claude-flow sparc run integration "integrate authentication with user manage
 ### Memory Commands for SPARC Development
 \`\`\`bash
 # Store project specifications
-npx claude-flow memory store spec_auth "User authentication requirements and constraints"
+npx gemini-flow memory store spec_auth "User authentication requirements and constraints"
 
 # Store architectural decisions
-npx claude-flow memory store arch_decisions "Database schema and API design choices"
+npx gemini-flow memory store arch_decisions "Database schema and API design choices"
 
 # Store test results and coverage
-npx claude-flow memory store test_coverage "Authentication module: 95% coverage, all tests passing"
+npx gemini-flow memory store test_coverage "Authentication module: 95% coverage, all tests passing"
 
 # Query previous work
-npx claude-flow memory query auth_implementation
+npx gemini-flow memory query auth_implementation
 
 # Export project memory
-npx claude-flow memory export project_backup.json
+npx gemini-flow memory export project_backup.json
 \`\`\`
 
 ### Memory Namespaces
@@ -3220,37 +3220,37 @@ npx claude-flow memory export project_backup.json
 ### Feature Development Workflow
 \`\`\`bash
 # 1. Start with specification
-npx claude-flow sparc run spec-pseudocode "User profile management feature"
+npx gemini-flow sparc run spec-pseudocode "User profile management feature"
 
 # 2. Design architecture
-npx claude-flow sparc run architect "Profile service architecture with data validation"
+npx gemini-flow sparc run architect "Profile service architecture with data validation"
 
 # 3. Implement with TDD
-npx claude-flow sparc tdd "user profile CRUD operations"
+npx gemini-flow sparc tdd "user profile CRUD operations"
 
 # 4. Security review
-npx claude-flow sparc run security-review "profile data access and validation"
+npx gemini-flow sparc run security-review "profile data access and validation"
 
 # 5. Integration testing
-npx claude-flow sparc run integration "profile service with authentication system"
+npx gemini-flow sparc run integration "profile service with authentication system"
 
 # 6. Documentation
-npx claude-flow sparc run docs-writer "profile service API documentation"
+npx gemini-flow sparc run docs-writer "profile service API documentation"
 \`\`\`
 
 ### Bug Fix Workflow
 \`\`\`bash
 # 1. Debug and analyze
-npx claude-flow sparc run debug "authentication token expiration issue"
+npx gemini-flow sparc run debug "authentication token expiration issue"
 
 # 2. Write regression tests
-npx claude-flow sparc run tdd "token refresh mechanism tests"
+npx gemini-flow sparc run tdd "token refresh mechanism tests"
 
 # 3. Implement fix
-npx claude-flow sparc run code "fix token refresh in authentication service"
+npx gemini-flow sparc run code "fix token refresh in authentication service"
 
 # 4. Security review
-npx claude-flow sparc run security-review "token handling security implications"
+npx gemini-flow sparc run security-review "token handling security implications"
 \`\`\`
 
 ## Configuration Files
@@ -3259,7 +3259,7 @@ npx claude-flow sparc run security-review "token handling security implications"
 - **\`.roomodes\`**: SPARC mode definitions and configurations
 - **\`.roo/\`**: Templates, workflows, and mode-specific rules
 
-### Claude-Flow Configuration
+### Gemini-Flow Configuration
 - **\`memory/\`**: Persistent memory and session data
 - **\`coordination/\`**: Multi-agent coordination settings
 
@@ -3288,16 +3288,16 @@ npx claude-flow sparc run security-review "token handling security implications"
 ### Debug Commands
 \`\`\`bash
 # Check SPARC configuration
-npx claude-flow sparc modes
+npx gemini-flow sparc modes
 
 # Verify memory system
-npx claude-flow memory stats
+npx gemini-flow memory stats
 
 # Check system status
-npx claude-flow status
+npx gemini-flow status
 
 # View detailed mode information
-npx claude-flow sparc info <mode-name>
+npx gemini-flow sparc info <mode-name>
 \`\`\`
 
 ## Project Architecture
@@ -3317,7 +3317,7 @@ This SPARC-enabled project follows a systematic development approach:
 - Document architectural decisions in memory for future reference
 - Regular security reviews for any authentication or data handling code
 
-For more information about SPARC methodology, see: https://github.com/ruvnet/claude-code-flow/docs/sparc.md
+For more information about SPARC methodology, see: https://github.com/ruvnet/gemini-flow/docs/sparc.md
 `;
 }
 

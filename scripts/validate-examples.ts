@@ -242,7 +242,7 @@ async function main(): Promise<void> {
   }
   
   // Also check any config files in the root
-  const rootConfigFiles = ['claude-flow.config.json', 'config.json'];
+  const rootConfigFiles = ['gemini-flow.config.json', 'config.json'];
   for (const filename of rootConfigFiles) {
     try {
       await Deno.stat(filename);

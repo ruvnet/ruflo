@@ -1,6 +1,6 @@
-# Claude Optimized Template
+# Gemini Optimized Template
 
-This directory contains the optimized Claude Code template with SPARC methodology support and batch tools integration.
+This directory contains the optimized Gemini Code template with SPARC methodology support and batch tools integration.
 
 ## Overview
 
@@ -9,7 +9,7 @@ The optimized template provides:
 - **Improved performance** with batch operations
 - **Complete SPARC methodology** support
 - **Comprehensive test suite** for validation
-- **Claude Flow integration** for orchestration
+- **Gemini Flow integration** for orchestration
 
 ## Structure
 
@@ -22,7 +22,7 @@ claude-optimized/
 └── .claude/              # Template files (created during init)
     ├── commands/         # Slash commands
     │   ├── sparc/       # SPARC mode commands
-    │   └── ...          # Claude Flow commands
+    │   └── ...          # Gemini Flow commands
     ├── tests/           # Test suite
     │   ├── unit/        # Unit tests
     │   ├── integration/ # Integration tests
@@ -35,7 +35,7 @@ claude-optimized/
 
 ## Installation
 
-The template is automatically installed when initializing a new Claude Flow project. To manually install:
+The template is automatically installed when initializing a new Gemini Flow project. To manually install:
 
 1. Copy all files listed in `manifest.json` to your project's `.claude` directory
 2. Create the directory structure as specified
@@ -51,7 +51,7 @@ The template is automatically installed when initializing a new Claude Flow proj
 - `PERFORMANCE_BENCHMARKS.md` - Performance comparison data
 
 ### Commands
-- Main commands for Claude Flow integration
+- Main commands for Gemini Flow integration
 - 15 SPARC methodology mode commands
 - Each command is optimized for minimal token usage
 
@@ -79,10 +79,10 @@ The `manifest.json` file contains:
 
 ## Usage
 
-After installation, the commands are available in Claude Code:
+After installation, the commands are available in Gemini Code:
 - Type `/` to see all available commands
 - Use `/sparc` for SPARC methodology
-- Use `/claude-flow-*` for Claude Flow features
+- Use `/gemini-flow-*` for Gemini Flow features
 
 ## Performance Improvements
 
@@ -113,4 +113,4 @@ To update the templates:
 For issues or questions:
 - Check the documentation files
 - Run the test suite for validation
-- Refer to Claude Flow documentation
+- Refer to Gemini Flow documentation

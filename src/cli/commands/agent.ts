@@ -61,9 +61,9 @@ async function initializeAgentManager(): Promise<AgentManager> {
 
 export function createAgentCommand(): Command {
   const agentCommand = new Command('agent')
-    .description('Comprehensive Claude-Flow agent management with advanced features')
+    .description('Comprehensive Gemini-Flow agent management with advanced features')
     .action(() => {
-      console.log(chalk.cyan('🤖 Claude-Flow Agent Management System'));
+      console.log(chalk.cyan('🤖 Gemini-Flow Agent Management System'));
       console.log('');
       console.log('Available commands:');
       console.log('  spawn    - Create and start new agents with advanced configuration');
@@ -242,7 +242,7 @@ export function createAgentCommand(): Command {
           await manager.startAgent(agentId);
           console.log(chalk.green('✅ Agent started and ready!'));
         } else {
-          console.log(chalk.yellow(`Use 'claude-flow agent start ${agentId}' to start the agent`));
+          console.log(chalk.yellow(`Use 'gemini-flow agent start ${agentId}' to start the agent`));
         }
         
         // Display agent info

@@ -11,7 +11,7 @@ The Hive Mind system provides a comprehensive set of CLI commands for orchestrat
 The main entry point for the Hive Mind system with an interactive wizard.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 ```
 
 **Aliases:**
@@ -28,13 +28,13 @@ npx claude-flow@2.0.0 hive-mind
 **Examples:**
 ```bash
 # Interactive wizard
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 
 # Direct task execution
-npx claude-flow@2.0.0 hive-mind --task "Build REST API" --complexity high
+npx gemini-flow@2.0.0 hive-mind --task "Build REST API" --complexity high
 
 # Custom configuration
-npx claude-flow@2.0.0 hive-mind --agents 8 --topology mesh --no-wizard
+npx gemini-flow@2.0.0 hive-mind --agents 8 --topology mesh --no-wizard
 ```
 
 ### `hive-mind init` - Initialize Hive Mind System
@@ -42,7 +42,7 @@ npx claude-flow@2.0.0 hive-mind --agents 8 --topology mesh --no-wizard
 Set up Hive Mind with specific configuration.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind init [options]
+npx gemini-flow@2.0.0 hive-mind init [options]
 ```
 
 **Options:**
@@ -55,10 +55,10 @@ npx claude-flow@2.0.0 hive-mind init [options]
 **Examples:**
 ```bash
 # Basic initialization
-npx claude-flow@2.0.0 hive-mind init
+npx gemini-flow@2.0.0 hive-mind init
 
 # Advanced setup
-npx claude-flow@2.0.0 hive-mind init --topology hierarchical --max-agents 12 --neural
+npx gemini-flow@2.0.0 hive-mind init --topology hierarchical --max-agents 12 --neural
 ```
 
 ### `hive-mind task` - Execute Specific Task
@@ -66,7 +66,7 @@ npx claude-flow@2.0.0 hive-mind init --topology hierarchical --max-agents 12 --n
 Run a task with Hive Mind orchestration.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind task <description> [options]
+npx gemini-flow@2.0.0 hive-mind task <description> [options]
 ```
 
 **Options:**
@@ -79,10 +79,10 @@ npx claude-flow@2.0.0 hive-mind task <description> [options]
 **Examples:**
 ```bash
 # Simple task
-npx claude-flow@2.0.0 hive-mind task "Create user authentication system"
+npx gemini-flow@2.0.0 hive-mind task "Create user authentication system"
 
 # Complex task with options
-npx claude-flow@2.0.0 hive-mind task "Migrate database to PostgreSQL" \
+npx gemini-flow@2.0.0 hive-mind task "Migrate database to PostgreSQL" \
   --agents "architect,analyst,coder,tester" \
   --monitor \
   --export ./migration-results.json
@@ -95,7 +95,7 @@ npx claude-flow@2.0.0 hive-mind task "Migrate database to PostgreSQL" \
 List, spawn, and control agents in the hive.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind agents <action> [options]
+npx gemini-flow@2.0.0 hive-mind agents <action> [options]
 ```
 
 **Actions:**
@@ -114,13 +114,13 @@ npx claude-flow@2.0.0 hive-mind agents <action> [options]
 **Examples:**
 ```bash
 # List all agents
-npx claude-flow@2.0.0 hive-mind agents list
+npx gemini-flow@2.0.0 hive-mind agents list
 
 # Spawn specialized agent
-npx claude-flow@2.0.0 hive-mind agents spawn --type coder --name "API-Expert"
+npx gemini-flow@2.0.0 hive-mind agents spawn --type coder --name "API-Expert"
 
 # Check agent metrics
-npx claude-flow@2.0.0 hive-mind agents metrics --id coder-001
+npx gemini-flow@2.0.0 hive-mind agents metrics --id coder-001
 ```
 
 ### `hive-mind swarm` - Swarm Operations
@@ -128,7 +128,7 @@ npx claude-flow@2.0.0 hive-mind agents metrics --id coder-001
 Control the overall swarm behavior.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind swarm <action> [options]
+npx gemini-flow@2.0.0 hive-mind swarm <action> [options]
 ```
 
 **Actions:**
@@ -141,13 +141,13 @@ npx claude-flow@2.0.0 hive-mind swarm <action> [options]
 **Examples:**
 ```bash
 # Check swarm status
-npx claude-flow@2.0.0 hive-mind swarm status
+npx gemini-flow@2.0.0 hive-mind swarm status
 
 # Optimize for current task
-npx claude-flow@2.0.0 hive-mind swarm optimize
+npx gemini-flow@2.0.0 hive-mind swarm optimize
 
 # Scale to 10 agents
-npx claude-flow@2.0.0 hive-mind swarm scale --target 10
+npx gemini-flow@2.0.0 hive-mind swarm scale --target 10
 ```
 
 ## Task Orchestration Commands
@@ -157,7 +157,7 @@ npx claude-flow@2.0.0 hive-mind swarm scale --target 10
 Fine-grained control over task orchestration.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind orchestrate [options]
+npx gemini-flow@2.0.0 hive-mind orchestrate [options]
 ```
 
 **Options:**
@@ -170,13 +170,13 @@ npx claude-flow@2.0.0 hive-mind orchestrate [options]
 **Examples:**
 ```bash
 # Parallel orchestration with dependencies
-npx claude-flow@2.0.0 hive-mind orchestrate \
+npx gemini-flow@2.0.0 hive-mind orchestrate \
   --strategy parallel \
   --dependencies \
   --priority high
 
 # Adaptive strategy with timeout
-npx claude-flow@2.0.0 hive-mind orchestrate \
+npx gemini-flow@2.0.0 hive-mind orchestrate \
   --strategy adaptive \
   --timeout 300000 \
   --retry 3
@@ -187,7 +187,7 @@ npx claude-flow@2.0.0 hive-mind orchestrate \
 Create and manage complex workflows.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind workflow <action> [options]
+npx gemini-flow@2.0.0 hive-mind workflow <action> [options]
 ```
 
 **Actions:**
@@ -200,15 +200,15 @@ npx claude-flow@2.0.0 hive-mind workflow <action> [options]
 **Examples:**
 ```bash
 # Create workflow
-npx claude-flow@2.0.0 hive-mind workflow create \
+npx gemini-flow@2.0.0 hive-mind workflow create \
   --name "full-stack-dev" \
   --steps "design,implement,test,deploy"
 
 # Run saved workflow
-npx claude-flow@2.0.0 hive-mind workflow run full-stack-dev
+npx gemini-flow@2.0.0 hive-mind workflow run full-stack-dev
 
 # Export workflow
-npx claude-flow@2.0.0 hive-mind workflow export full-stack-dev --format json
+npx gemini-flow@2.0.0 hive-mind workflow export full-stack-dev --format json
 ```
 
 ## Memory & Learning Commands
@@ -218,7 +218,7 @@ npx claude-flow@2.0.0 hive-mind workflow export full-stack-dev --format json
 Manage Hive Mind's shared memory system.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind memory <action> [options]
+npx gemini-flow@2.0.0 hive-mind memory <action> [options]
 ```
 
 **Actions:**
@@ -231,13 +231,13 @@ npx claude-flow@2.0.0 hive-mind memory <action> [options]
 **Examples:**
 ```bash
 # Check memory status
-npx claude-flow@2.0.0 hive-mind memory status
+npx gemini-flow@2.0.0 hive-mind memory status
 
 # Search for patterns
-npx claude-flow@2.0.0 hive-mind memory search --pattern "authentication"
+npx gemini-flow@2.0.0 hive-mind memory search --pattern "authentication"
 
 # Backup current state
-npx claude-flow@2.0.0 hive-mind memory backup --path ./hive-backup.json
+npx gemini-flow@2.0.0 hive-mind memory backup --path ./hive-backup.json
 ```
 
 ### `hive-mind learn` - Learning System
@@ -245,7 +245,7 @@ npx claude-flow@2.0.0 hive-mind memory backup --path ./hive-backup.json
 Manage neural learning and pattern recognition.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind learn <action> [options]
+npx gemini-flow@2.0.0 hive-mind learn <action> [options]
 ```
 
 **Actions:**
@@ -257,13 +257,13 @@ npx claude-flow@2.0.0 hive-mind learn <action> [options]
 **Examples:**
 ```bash
 # Train on successful patterns
-npx claude-flow@2.0.0 hive-mind learn train --data ./success-patterns.json
+npx gemini-flow@2.0.0 hive-mind learn train --data ./success-patterns.json
 
 # Analyze task patterns
-npx claude-flow@2.0.0 hive-mind learn analyze --task "API development"
+npx gemini-flow@2.0.0 hive-mind learn analyze --task "API development"
 
 # Predict optimal approach
-npx claude-flow@2.0.0 hive-mind learn predict --task "Build chat app"
+npx gemini-flow@2.0.0 hive-mind learn predict --task "Build chat app"
 ```
 
 ## Monitoring & Analytics Commands
@@ -273,7 +273,7 @@ npx claude-flow@2.0.0 hive-mind learn predict --task "Build chat app"
 Monitor Hive Mind operations in real-time.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind monitor [options]
+npx gemini-flow@2.0.0 hive-mind monitor [options]
 ```
 
 **Options:**
@@ -285,15 +285,15 @@ npx claude-flow@2.0.0 hive-mind monitor [options]
 **Examples:**
 ```bash
 # Basic monitoring
-npx claude-flow@2.0.0 hive-mind monitor
+npx gemini-flow@2.0.0 hive-mind monitor
 
 # Custom monitoring
-npx claude-flow@2.0.0 hive-mind monitor \
+npx gemini-flow@2.0.0 hive-mind monitor \
   --interval 1000 \
   --metrics "agents,memory,tasks"
 
 # Web dashboard
-npx claude-flow@2.0.0 hive-mind monitor --dashboard
+npx gemini-flow@2.0.0 hive-mind monitor --dashboard
 ```
 
 ### `hive-mind report` - Generate Reports
@@ -301,7 +301,7 @@ npx claude-flow@2.0.0 hive-mind monitor --dashboard
 Generate detailed reports on Hive Mind operations.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind report <type> [options]
+npx gemini-flow@2.0.0 hive-mind report <type> [options]
 ```
 
 **Report Types:**
@@ -314,13 +314,13 @@ npx claude-flow@2.0.0 hive-mind report <type> [options]
 **Examples:**
 ```bash
 # Performance report
-npx claude-flow@2.0.0 hive-mind report performance --timeframe 24h
+npx gemini-flow@2.0.0 hive-mind report performance --timeframe 24h
 
 # Agent activity report
-npx claude-flow@2.0.0 hive-mind report agents --format detailed
+npx gemini-flow@2.0.0 hive-mind report agents --format detailed
 
 # Task summary
-npx claude-flow@2.0.0 hive-mind report tasks --export ./task-report.pdf
+npx gemini-flow@2.0.0 hive-mind report tasks --export ./task-report.pdf
 ```
 
 ## Configuration Commands
@@ -330,7 +330,7 @@ npx claude-flow@2.0.0 hive-mind report tasks --export ./task-report.pdf
 Manage Hive Mind configuration.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind config <action> [options]
+npx gemini-flow@2.0.0 hive-mind config <action> [options]
 ```
 
 **Actions:**
@@ -343,13 +343,13 @@ npx claude-flow@2.0.0 hive-mind config <action> [options]
 **Examples:**
 ```bash
 # View all settings
-npx claude-flow@2.0.0 hive-mind config list
+npx gemini-flow@2.0.0 hive-mind config list
 
 # Set max agents
-npx claude-flow@2.0.0 hive-mind config set max-agents 12
+npx gemini-flow@2.0.0 hive-mind config set max-agents 12
 
 # Export configuration
-npx claude-flow@2.0.0 hive-mind config export --path ./hive-config.json
+npx gemini-flow@2.0.0 hive-mind config export --path ./hive-config.json
 ```
 
 ## Integration Commands
@@ -359,7 +359,7 @@ npx claude-flow@2.0.0 hive-mind config export --path ./hive-config.json
 Integrate Hive Mind with external services.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind integrate <service> [options]
+npx gemini-flow@2.0.0 hive-mind integrate <service> [options]
 ```
 
 **Services:**
@@ -372,10 +372,10 @@ npx claude-flow@2.0.0 hive-mind integrate <service> [options]
 **Examples:**
 ```bash
 # GitHub integration
-npx claude-flow@2.0.0 hive-mind integrate github --repo owner/repo
+npx gemini-flow@2.0.0 hive-mind integrate github --repo owner/repo
 
 # Slack notifications
-npx claude-flow@2.0.0 hive-mind integrate slack --webhook <url>
+npx gemini-flow@2.0.0 hive-mind integrate slack --webhook <url>
 ```
 
 ## Utility Commands
@@ -385,7 +385,7 @@ npx claude-flow@2.0.0 hive-mind integrate slack --webhook <url>
 Analyze tasks without execution.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind analyze <task> [options]
+npx gemini-flow@2.0.0 hive-mind analyze <task> [options]
 ```
 
 **Options:**
@@ -397,10 +397,10 @@ npx claude-flow@2.0.0 hive-mind analyze <task> [options]
 **Examples:**
 ```bash
 # Basic analysis
-npx claude-flow@2.0.0 hive-mind analyze "Build e-commerce platform"
+npx gemini-flow@2.0.0 hive-mind analyze "Build e-commerce platform"
 
 # Detailed analysis
-npx claude-flow@2.0.0 hive-mind analyze "Migrate to microservices" \
+npx gemini-flow@2.0.0 hive-mind analyze "Migrate to microservices" \
   --detailed \
   --suggest-agents \
   --estimate-time
@@ -411,7 +411,7 @@ npx claude-flow@2.0.0 hive-mind analyze "Migrate to microservices" \
 Use and manage task templates.
 
 ```bash
-npx claude-flow@2.0.0 hive-mind template <action> [options]
+npx gemini-flow@2.0.0 hive-mind template <action> [options]
 ```
 
 **Actions:**
@@ -430,13 +430,13 @@ npx claude-flow@2.0.0 hive-mind template <action> [options]
 **Examples:**
 ```bash
 # List templates
-npx claude-flow@2.0.0 hive-mind template list
+npx gemini-flow@2.0.0 hive-mind template list
 
 # Use REST API template
-npx claude-flow@2.0.0 hive-mind template use rest-api --name "MyAPI"
+npx gemini-flow@2.0.0 hive-mind template use rest-api --name "MyAPI"
 
 # Create custom template
-npx claude-flow@2.0.0 hive-mind template create --name "my-template"
+npx gemini-flow@2.0.0 hive-mind template create --name "my-template"
 ```
 
 ## Advanced Options
@@ -499,7 +499,7 @@ Create `.hive-mind.json` in your project:
 
 ```bash
 # 1. Start Hive Mind
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 
 # 2. Follow wizard prompts
 # 3. Monitor progress
@@ -510,23 +510,23 @@ npx claude-flow@2.0.0 hive-mind
 
 ```bash
 # 1. Initialize with custom settings
-npx claude-flow@2.0.0 hive-mind init --topology hierarchical --max-agents 12
+npx gemini-flow@2.0.0 hive-mind init --topology hierarchical --max-agents 12
 
 # 2. Create workflow
-npx claude-flow@2.0.0 hive-mind workflow create --name "enterprise-app"
+npx gemini-flow@2.0.0 hive-mind workflow create --name "enterprise-app"
 
 # 3. Run with monitoring
-npx claude-flow@2.0.0 hive-mind workflow run enterprise-app --monitor
+npx gemini-flow@2.0.0 hive-mind workflow run enterprise-app --monitor
 
 # 4. Generate report
-npx claude-flow@2.0.0 hive-mind report summary --export ./project-report.pdf
+npx gemini-flow@2.0.0 hive-mind report summary --export ./project-report.pdf
 ```
 
 ### Continuous Integration
 
 ```bash
 # In CI/CD pipeline
-npx claude-flow@2.0.0 hive-mind task "$BUILD_TASK" \
+npx gemini-flow@2.0.0 hive-mind task "$BUILD_TASK" \
   --non-interactive \
   --export ./build-results.json \
   --timeout 600000
@@ -547,34 +547,34 @@ npx claude-flow@2.0.0 hive-mind task "$BUILD_TASK" \
 ### Command Not Found
 ```bash
 # Ensure global installation
-npm install -g claude-flow@2.0.0
+npm install -g gemini-flow@2.0.0
 
 # Or use npx
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 ```
 
 ### Agents Not Coordinating
 ```bash
 # Check swarm status
-npx claude-flow@2.0.0 hive-mind swarm status
+npx gemini-flow@2.0.0 hive-mind swarm status
 
 # Sync agents
-npx claude-flow@2.0.0 hive-mind swarm sync
+npx gemini-flow@2.0.0 hive-mind swarm sync
 
 # Reset if needed
-npx claude-flow@2.0.0 hive-mind swarm reset
+npx gemini-flow@2.0.0 hive-mind swarm reset
 ```
 
 ### Performance Issues
 ```bash
 # Run diagnostics
-npx claude-flow@2.0.0 hive-mind monitor --metrics "bottlenecks"
+npx gemini-flow@2.0.0 hive-mind monitor --metrics "bottlenecks"
 
 # Optimize topology
-npx claude-flow@2.0.0 hive-mind swarm optimize
+npx gemini-flow@2.0.0 hive-mind swarm optimize
 
 # Scale agents
-npx claude-flow@2.0.0 hive-mind swarm scale --target 6
+npx gemini-flow@2.0.0 hive-mind swarm scale --target 6
 ```
 
 ## Next Steps

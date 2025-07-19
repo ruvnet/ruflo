@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Event bus implementation for Claude-Flow
+ * Event bus implementation for Gemini-Flow
  */
 
 import { SystemEvents } from '../utils/types.js';

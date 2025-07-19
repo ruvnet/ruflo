@@ -6,7 +6,7 @@ console.log('🧪 Testing MCP Wrapper directly...\n');
 import { spawn } from 'child_process';
 
 // Start the wrapper directly
-const wrapper = spawn('npx', ['tsx', 'src/mcp/claude-code-wrapper.ts'], {
+const wrapper = spawn('npx', ['tsx', 'src/mcp/gemini-cli-wrapper.ts'], {
   stdio: ['pipe', 'pipe', 'pipe']
 });
 
@@ -28,16 +28,16 @@ setTimeout(() => {
   console.log('================\n');
   
   // Check for expected messages
-  if (output.includes('Claude-Flow MCP Server (Wrapper Mode)')) {
+  if (output.includes('Gemini-Flow MCP Server (Wrapper Mode)')) {
     console.log('✅ Wrapper mode confirmed');
   } else {
     console.log('❌ Wrapper mode not detected');
   }
   
-  if (output.includes('Using Claude Code MCP pass-through')) {
-    console.log('✅ Claude Code pass-through confirmed');
+  if (output.includes('Using Gemini CLI MCP pass-through')) {
+    console.log('✅ Gemini CLI pass-through confirmed');
   } else {
-    console.log('❌ Claude Code pass-through not detected');
+    console.log('❌ Gemini CLI pass-through not detected');
   }
   
   if (output.includes('SPARC prompt injection')) {

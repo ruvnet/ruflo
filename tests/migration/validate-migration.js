@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Quick validation script to check Claude Flow migration status
+ * Quick validation script to check Gemini Flow migration status
  * Runs basic checks to ensure no Deno dependencies remain
  */
 
@@ -71,12 +71,12 @@ function checkCommand(command, description) {
   }
 }
 
-console.log(`${colors.blue}Claude Flow Migration Validation${colors.reset}`);
+console.log(`${colors.blue}Gemini Flow Migration Validation${colors.reset}`);
 console.log('='.repeat(40));
 
 // Check key files
 checkFile('package.json', 'Package configuration');
-checkFile('bin/claude-flow', 'Main CLI script');
+checkFile('bin/gemini-flow', 'Main CLI script');
 checkFile('cli.js', 'CLI entry point');
 checkFile('src/cli/index.ts', 'CLI TypeScript source');
 
@@ -86,7 +86,7 @@ if (fs.existsSync('deno.json')) {
 }
 
 // Test basic commands
-const binPath = path.resolve('bin/claude-flow');
+const binPath = path.resolve('bin/gemini-flow');
 checkCommand(`node ${binPath} --version`, 'Version command');
 checkCommand(`node ${binPath} --help`, 'Help command');
 
@@ -120,6 +120,6 @@ if (hasErrors) {
   process.exit(1);
 } else {
   console.log(`${colors.green}✓ Migration validation PASSED${colors.reset}`);
-  console.log('Claude Flow appears to be successfully migrated to pure npm/Node.js!');
+  console.log('Gemini Flow appears to be successfully migrated to pure npm/Node.js!');
   process.exit(0);
 }

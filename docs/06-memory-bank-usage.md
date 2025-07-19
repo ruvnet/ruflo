@@ -1,6 +1,6 @@
 # Memory Bank Usage and Query Guide
 
-Claude-Flow's memory management system provides intelligent, persistent storage for agent knowledge, task history, and system state. This guide covers comprehensive memory operations, query patterns, and advanced usage scenarios.
+Gemini-Flow's memory management system provides intelligent, persistent storage for agent knowledge, task history, and system state. This guide covers comprehensive memory operations, query patterns, and advanced usage scenarios.
 
 ## Memory Architecture Overview
 
@@ -694,4 +694,4 @@ claude-flow memory rebuild-indexes \
   --verify true
 ```
 
-This comprehensive memory bank guide provides all the tools needed to effectively manage knowledge, facilitate learning, and maintain system intelligence in Claude-Flow. Use these patterns to build robust, intelligent memory systems that enhance agent capabilities and preserve organizational knowledge.
+This comprehensive memory bank guide provides all the tools needed to effectively manage knowledge, facilitate learning, and maintain system intelligence in Gemini-Flow. Use these patterns to build robust, intelligent memory systems that enhance agent capabilities and preserve organizational knowledge.

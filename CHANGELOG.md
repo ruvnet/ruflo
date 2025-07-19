@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **WASM-powered neural processing** with SIMD optimization support
 
 #### **GitHub Workflow Automation**
-- **6 specialized command modes** in `.claude/commands/github/`:
+- **6 specialized command modes** in `.gemini/commands/github/`:
   - `pr-manager`: Automated pull request management with swarm coordination
   - `issue-tracker`: Intelligent issue management and progress tracking
   - `sync-coordinator`: Cross-package synchronization and version alignment
@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security hardening** with non-root containers and best practices implementation
 
 #### **Enhanced CLI Capabilities**
-- **Advanced swarm coordination commands** with `npx claude-flow swarm`
+- **Advanced swarm coordination commands** with `npx gemini-flow swarm`
 - **GitHub integration commands** accessible through enhanced CLI interface
 - **Improved error handling** and validation with detailed error messages
 - **Enhanced UI** with `--ui` flag support for interactive management
@@ -92,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Enhanced package installation** reliability
 
 #### **Version Compatibility**
-- **Aligned Node.js requirements** across claude-code-flow and ruv-swarm
+- **Aligned Node.js requirements** across gemini-flow and ruv-swarm
 - **Fixed better-sqlite3 version** conflicts for cross-platform compatibility
 - **Resolved npm installation** issues in Docker environments
 - **Enhanced cross-platform** compatibility validation
@@ -174,42 +174,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 1. **Uninstall previous version** (if installed globally):
    ```bash
-   npm uninstall -g claude-flow
+   npm uninstall -g gemini-flow
    ```
 
 2. **Install v2.0.0**:
    ```bash
-   npm install -g claude-flow@2.0.0
+   npm install -g gemini-flow@2.0.0
    ```
 
 3. **Verify installation**:
    ```bash
-   claude-flow --version  # Should show 2.0.0
-   claude-flow --help     # Verify all commands available
+   gemini-flow --version  # Should show 2.0.0
+   gemini-flow --help     # Verify all commands available
    ```
 
 ### Configuration Updates
 
 1. **Initialize new features**:
    ```bash
-   npx claude-flow init --sparc
+   npx gemini-flow init --sparc
    ```
 
 2. **Test swarm capabilities**:
    ```bash
-   npx claude-flow swarm init
+   npx gemini-flow swarm init
    ```
 
 3. **Explore GitHub integration**:
    ```bash
-   npx claude-flow github --help
+   npx gemini-flow github --help
    ```
 
 ### Breaking Changes
 
 #### Command Structure
 - **All commands** now support swarm coordination
-- **New GitHub commands** available in `.claude/commands/github/`
+- **New GitHub commands** available in `.gemini/commands/github/`
 - **Enhanced error handling** may change error message formats
 - **Existing commands** remain backward compatible
 
@@ -219,7 +219,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Node.js 20+** is required for optimal performance
 
 #### Configuration
-- **New configuration files** in `.claude/commands/github/`
+- **New configuration files** in `.gemini/commands/github/`
 - **Enhanced MCP integration** requires ruv-swarm setup
 - **Updated package metadata** for npm publishing
 
@@ -228,26 +228,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Swarm Coordination
 ```bash
 # Initialize swarm
-npx claude-flow swarm init
+npx gemini-flow swarm init
 
 # Spawn agents
-npx claude-flow agent spawn researcher
-npx claude-flow agent spawn coder
+npx gemini-flow agent spawn researcher
+npx gemini-flow agent spawn coder
 
 # Orchestrate tasks
-npx claude-flow task orchestrate "complex development task"
+npx gemini-flow task orchestrate "complex development task"
 ```
 
 #### GitHub Integration
 ```bash
 # Automated PR management
-npx claude-flow github pr-manager "review and merge feature branch"
+npx gemini-flow github pr-manager "review and merge feature branch"
 
 # Issue tracking
-npx claude-flow github issue-tracker "manage project issues"
+npx gemini-flow github issue-tracker "manage project issues"
 
 # Release coordination
-npx claude-flow github release-manager "prepare v2.0.0 release"
+npx gemini-flow github release-manager "prepare v2.0.0 release"
 ```
 
 #### Docker Development
@@ -265,16 +265,16 @@ After migration, verify functionality:
 
 ```bash
 # Basic functionality
-claude-flow --version
-claude-flow --help
-claude-flow status
+gemini-flow --version
+gemini-flow --help
+gemini-flow status
 
 # Swarm features
-claude-flow swarm init
-claude-flow agent list
+gemini-flow swarm init
+gemini-flow agent list
 
 # GitHub integration
-claude-flow github --help
+gemini-flow github --help
 
 # Docker testing
 cd infrastructure/docker && docker-compose up
@@ -299,11 +299,12 @@ cd infrastructure/docker && docker-compose up
 ## [1.0.0] - 2025-01-01
 
 ### Added
-- Initial release of claude-flow
+
+- Initial release of gemini-flow
 - Basic AI agent orchestration
 - CLI interface for agent management
 - Core workflow automation
-- Integration with Claude Code
+- Integration with Gemini CLI
 
 ---
 

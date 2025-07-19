@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Logging infrastructure for Claude-Flow
+ * Logging infrastructure for Gemini-Flow
  */
 
 import { promises as fs } from 'node:fs';

@@ -23,7 +23,7 @@ jest.mock('../node-compat.js', () => ({
   isMainModule: () => true,
 }));
 
-describe('Claude-Flow CLI', () => {
+describe('Gemini-Flow CLI', () => {
   let originalArgv;
   let originalExit;
   let consoleLogSpy;
@@ -47,7 +47,7 @@ describe('Claude-Flow CLI', () => {
 
   describe('Help output', () => {
     test('should show help when no arguments provided', async () => {
-      process.argv = ['node', 'claude-flow'];
+      process.argv = ['node', 'gemini-flow'];
       
       const { executeCommand, hasCommand, showAllCommands } = await import('../command-registry.js');
       hasCommand.mockReturnValue(false);
@@ -57,13 +57,13 @@ describe('Claude-Flow CLI', () => {
       
       expect(consoleLogSpy).toHaveBeenCalled();
       const output = consoleLogSpy.mock.calls.join('\n');
-      expect(output).toContain('Claude-Flow v2.0.0');
+      expect(output).toContain('Gemini-Flow v2.0.0');
       expect(output).toContain('USAGE:');
-      expect(output).toContain('claude-flow <command> [options]');
+      expect(output).toContain('gemini-flow <command> [options]');
     });
 
     test('should show help for --help flag', async () => {
-      process.argv = ['node', 'claude-flow', '--help'];
+      process.argv = ['node', 'gemini-flow', '--help'];
       
       const { hasCommand } = await import('../command-registry.js');
       hasCommand.mockReturnValue(false);
@@ -72,11 +72,11 @@ describe('Claude-Flow CLI', () => {
       
       expect(consoleLogSpy).toHaveBeenCalled();
       const output = consoleLogSpy.mock.calls.join('\n');
-      expect(output).toContain('Claude-Flow v2.0.0');
+      expect(output).toContain('Gemini-Flow v2.0.0');
     });
 
     test('should show version for --version flag', async () => {
-      process.argv = ['node', 'claude-flow', '--version'];
+      process.argv = ['node', 'gemini-flow', '--version'];
       
       await import('../simple-cli.js');
       
@@ -87,7 +87,7 @@ describe('Claude-Flow CLI', () => {
 
   describe('Command execution', () => {
     test('should execute valid command', async () => {
-      process.argv = ['node', 'claude-flow', 'init', '--sparc'];
+      process.argv = ['node', 'gemini-flow', 'init', '--sparc'];
       
       const { executeCommand, hasCommand } = await import('../command-registry.js');
       hasCommand.mockReturnValue(true);
@@ -100,7 +100,7 @@ describe('Claude-Flow CLI', () => {
     });
 
     test('should handle command with multiple arguments', async () => {
-      process.argv = ['node', 'claude-flow', 'swarm', 'Build a REST API', '--strategy', 'development'];
+      process.argv = ['node', 'gemini-flow', 'swarm', 'Build a REST API', '--strategy', 'development'];
       
       const { executeCommand, hasCommand } = await import('../command-registry.js');
       hasCommand.mockReturnValue(true);
@@ -117,7 +117,7 @@ describe('Claude-Flow CLI', () => {
     });
 
     test('should show error for unknown command', async () => {
-      process.argv = ['node', 'claude-flow', 'invalid-command'];
+      process.argv = ['node', 'gemini-flow', 'invalid-command'];
       
       const { hasCommand, listCommands } = await import('../command-registry.js');
       hasCommand.mockReturnValue(false);
@@ -157,7 +157,7 @@ describe('Claude-Flow CLI', () => {
 
   describe('Error handling', () => {
     test('should handle command execution errors gracefully', async () => {
-      process.argv = ['node', 'claude-flow', 'init'];
+      process.argv = ['node', 'gemini-flow', 'init'];
       
       const { executeCommand, hasCommand } = await import('../command-registry.js');
       hasCommand.mockReturnValue(true);
@@ -172,7 +172,7 @@ describe('Claude-Flow CLI', () => {
     });
 
     test('should handle missing required arguments', async () => {
-      process.argv = ['node', 'claude-flow', 'agent'];
+      process.argv = ['node', 'gemini-flow', 'agent'];
       
       const { executeCommand, hasCommand } = await import('../command-registry.js');
       hasCommand.mockReturnValue(true);

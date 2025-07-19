@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Test script for Claude-Flow MCP Wrapper
+ * Test script for Gemini-Flow MCP Wrapper
  * 
  * This script demonstrates how the wrapper transforms SPARC tool calls
- * into enhanced Claude Code MCP requests.
+ * into enhanced Gemini Code MCP requests.
  */
 
 import { spawn } from 'child_process';
@@ -17,11 +17,11 @@ class MCPWrapperTester {
   }
 
   async connect() {
-    console.log('🔌 Connecting to Claude-Flow MCP Wrapper...');
+    console.log('🔌 Connecting to Gemini-Flow MCP Wrapper...');
     
     const transport = new StdioClientTransport({
       command: 'npx',
-      args: ['tsx', 'src/mcp/claude-code-wrapper.ts'],
+      args: ['tsx', 'src/mcp/gemini-cli-wrapper.ts'],
     });
 
     this.client = new Client({
@@ -92,8 +92,8 @@ class MCPWrapperTester {
       const text = result.content[0].text;
       console.log(text.substring(0, 500) + '...\n');
       
-      // Show what would be sent to Claude Code
-      console.log('📤 Enhanced prompt that would be sent to Claude Code:');
+      // Show what would be sent to Gemini CLI
+      console.log('📤 Enhanced prompt that would be sent to Gemini CLI:');
       console.log('Tool: Task');
       console.log(`Description: SPARC ${mode}`);
       console.log('Prompt includes:');

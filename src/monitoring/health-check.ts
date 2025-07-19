@@ -1,5 +1,5 @@
 /**
- * Health Check System for Claude Flow v2.0.0
+ * Health Check System for Gemini Flow v2.0.0
  */
 
 import { EventBus } from '../core/event-bus.js';

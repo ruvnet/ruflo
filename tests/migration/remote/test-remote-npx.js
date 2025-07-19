@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Remote NPX Execution Tests for Claude Flow Migration
- * Tests that 'npx claude-flow@latest' works correctly
+ * Remote NPX Execution Tests for Gemini Flow Migration
+ * Tests that 'npx gemini-flow@latest' works correctly
  */
 
 const { execSync, spawn } = require('child_process');
@@ -11,7 +11,7 @@ const path = require('path');
 const os = require('os');
 
 // Test configuration
-const TEST_DIR = path.join(os.tmpdir(), 'claude-flow-npx-test-' + Date.now());
+const TEST_DIR = path.join(os.tmpdir(), 'gemini-flow-npx-test-' + Date.now());
 const NPM_REGISTRY = process.env.NPM_REGISTRY || 'https://registry.npmjs.org';
 
 // Color codes for output
@@ -70,7 +70,7 @@ function exec(command, options = {}) {
  */
 async function checkNpmPackage() {
   try {
-    const output = exec(`npm view claude-flow version`, { cwd: process.cwd() });
+    const output = exec(`npm view gemini-flow version`, { cwd: process.cwd() });
     return output.trim();
   } catch (error) {
     return null;
@@ -86,22 +86,22 @@ process.chdir(TEST_DIR);
 console.log(`${colors.yellow}Checking npm registry...${colors.reset}`);
 const npmVersion = checkNpmPackage();
 if (!npmVersion) {
-  console.log(`${colors.yellow}Warning: claude-flow not found on npm registry${colors.reset}`);
+  console.log(`${colors.yellow}Warning: gemini-flow not found on npm registry${colors.reset}`);
   console.log('These tests require the package to be published');
 }
 
 // Test 1: NPX executes without install
 runTest('NPX executes without install', () => {
   // This will use the local package in development
-  const output = exec('npx claude-flow --version', { cwd: process.cwd() });
-  if (!output.includes('claude-flow')) {
+  const output = exec('npx gemini-flow --version', { cwd: process.cwd() });
+  if (!output.includes('gemini-flow')) {
     throw new Error('NPX execution failed');
   }
 });
 
 // Test 2: NPX help command works
 runTest('NPX help command works', () => {
-  const output = exec('npx claude-flow --help', { cwd: process.cwd() });
+  const output = exec('npx gemini-flow --help', { cwd: process.cwd() });
   if (!output.includes('init') || !output.includes('start')) {
     throw new Error('Help output missing expected commands');
   }
@@ -109,14 +109,14 @@ runTest('NPX help command works', () => {
 
 // Test 3: NPX init creates files
 runTest('NPX init creates files', () => {
-  exec('npx claude-flow init -y');
+  exec('npx gemini-flow init -y');
   
   // Check files were created
   if (!fs.existsSync(path.join(TEST_DIR, 'CLAUDE.md'))) {
     throw new Error('CLAUDE.md not created');
   }
-  if (!fs.existsSync(path.join(TEST_DIR, 'claude-flow'))) {
-    throw new Error('claude-flow script not created');
+  if (!fs.existsSync(path.join(TEST_DIR, 'gemini-flow'))) {
+    throw new Error('gemini-flow script not created');
   }
 });
 
@@ -125,8 +125,8 @@ runTest('Cross-platform NPX execution', () => {
   const isWindows = process.platform === 'win32';
   const command = isWindows ? 'npx.cmd' : 'npx';
   
-  const output = exec(`${command} claude-flow --version`, { cwd: process.cwd() });
-  if (!output.includes('claude-flow')) {
+  const output = exec(`${command} gemini-flow --version`, { cwd: process.cwd() });
+  if (!output.includes('gemini-flow')) {
     throw new Error('Cross-platform NPX execution failed');
   }
 });
@@ -138,7 +138,7 @@ runTest('NPX with specific version (if published)', () => {
     return;
   }
   
-  const output = exec(`npx claude-flow@${npmVersion} --version`);
+  const output = exec(`npx gemini-flow@${npmVersion} --version`);
   if (!output.includes(npmVersion)) {
     throw new Error('Specific version execution failed');
   }
@@ -149,7 +149,7 @@ runTest('NPX in subdirectory', () => {
   const subdir = path.join(TEST_DIR, 'subproject');
   fs.mkdirSync(subdir, { recursive: true });
   
-  const output = exec('npx claude-flow --help', { cwd: subdir });
+  const output = exec('npx gemini-flow --help', { cwd: subdir });
   if (!output.includes('init')) {
     throw new Error('NPX in subdirectory failed');
   }
@@ -157,7 +157,7 @@ runTest('NPX in subdirectory', () => {
 
 // Test 7: NPX with environment variables
 runTest('NPX with environment variables', () => {
-  const output = exec('npx claude-flow config get github.token', {
+  const output = exec('npx gemini-flow config get github.token', {
     env: { ...process.env, GITHUB_TOKEN: 'test-npx-token' }
   });
   if (!output.includes('test-npx-token')) {
@@ -169,11 +169,11 @@ runTest('NPX with environment variables', () => {
 runTest('NPX cache behavior', () => {
   // Run twice to test caching
   const start1 = Date.now();
-  exec('npx claude-flow --version', { cwd: process.cwd() });
+  exec('npx gemini-flow --version', { cwd: process.cwd() });
   const time1 = Date.now() - start1;
   
   const start2 = Date.now();
-  exec('npx claude-flow --version', { cwd: process.cwd() });
+  exec('npx gemini-flow --version', { cwd: process.cwd() });
   const time2 = Date.now() - start2;
   
   console.log(`  First run: ${time1}ms, Second run: ${time2}ms`);
@@ -190,7 +190,7 @@ runTest('NPX with npm scripts', () => {
     name: 'npx-test-project',
     version: '1.0.0',
     scripts: {
-      'test-claude': 'npx claude-flow --version'
+      'test-claude': 'npx gemini-flow --version'
     }
   };
   
@@ -200,19 +200,19 @@ runTest('NPX with npm scripts', () => {
   );
   
   const output = exec('npm run test-claude');
-  if (!output.includes('claude-flow')) {
+  if (!output.includes('gemini-flow')) {
     throw new Error('NPX in npm script failed');
   }
 });
 
 // Test 10: Global vs local precedence
 runTest('Global vs local precedence', () => {
-  // Create a local package.json with claude-flow
+  // Create a local package.json with gemini-flow
   const packageJson = {
     name: 'local-test',
     version: '1.0.0',
     devDependencies: {
-      'claude-flow': 'file:' + path.resolve(__dirname, '../../..')
+      'gemini-flow': 'file:' + path.resolve(__dirname, '../../..')
     }
   };
   
@@ -222,8 +222,8 @@ runTest('Global vs local precedence', () => {
   );
   
   // NPX should prefer local version
-  const output = exec('npx claude-flow --version');
-  if (!output.includes('claude-flow')) {
+  const output = exec('npx gemini-flow --version');
+  if (!output.includes('gemini-flow')) {
     throw new Error('Local precedence test failed');
   }
 });

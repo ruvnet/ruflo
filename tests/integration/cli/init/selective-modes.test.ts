@@ -63,8 +63,8 @@ describe("Selective Mode Initialization Tests", () => {
       await minimalCommand.output();
 
       // Compare content sizes
-      const standardClaude = await Deno.readTextFile(join(standardDir, "CLAUDE.md"));
-      const minimalClaude = await Deno.readTextFile(join(minimalDir, "CLAUDE.md"));
+      const standardGemini = await Deno.readTextFile(join(standardDir, "CLAUDE.md"));
+      const minimalGemini = await Deno.readTextFile(join(minimalDir, "CLAUDE.md"));
 
       assertEquals(standardClaude.length > minimalClaude.length, true);
       assertStringIncludes(minimalClaude, "Minimal project configuration");
@@ -168,8 +168,8 @@ describe("Selective Mode Initialization Tests", () => {
       assertExists(await exists(join(sparcDir, ".claude/commands/sparc")));
 
       // Check CLAUDE.md content differences
-      const regularClaude = await Deno.readTextFile(join(regularDir, "CLAUDE.md"));
-      const sparcClaude = await Deno.readTextFile(join(sparcDir, "CLAUDE.md"));
+      const regularGemini = await Deno.readTextFile(join(regularDir, "CLAUDE.md"));
+      const sparcGemini = await Deno.readTextFile(join(sparcDir, "CLAUDE.md"));
 
       assertEquals(regularClaude.includes("SPARC Development Environment"), false);
       assertStringIncludes(sparcClaude, "SPARC Development Environment");
@@ -205,7 +205,7 @@ describe("Selective Mode Initialization Tests", () => {
         assertExists(await exists(join(testDir, dir)));
       }
 
-      // Check Claude commands
+      // Check Gemini commands
       assertExists(await exists(join(testDir, ".claude/commands/sparc")));
 
       // Check workflow files
@@ -267,7 +267,7 @@ describe("Selective Mode Initialization Tests", () => {
 
       await minimalCommand.output();
 
-      const minimalClaude = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
+      const minimalGemini = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
 
       // Now initialize with SPARC minimal (force overwrite)
       const sparcMinimalCommand = new Deno.Command("deno", {
@@ -287,10 +287,10 @@ describe("Selective Mode Initialization Tests", () => {
 
       await sparcMinimalCommand.output();
 
-      const sparcMinimalClaude = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
+      const sparcMinimalGemini = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
 
       // SPARC version should be different from minimal-only
-      assertEquals(minimalClaude === sparcMinimalClaude, false);
+      assertEquals(minimalGemini === sparcMinimalClaude, false);
       assertStringIncludes(sparcMinimalClaude, "SPARC Development Environment");
       assertEquals(minimalClaude.includes("SPARC Development Environment"), false);
     });
@@ -314,7 +314,7 @@ describe("Selective Mode Initialization Tests", () => {
 
       await minimalCommand.output();
 
-      const minimalClaude = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
+      const minimalGemini = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
       const minimalMemory = await Deno.readTextFile(join(testDir, "memory-bank.md"));
 
       // Upgrade to full with force
@@ -333,11 +333,11 @@ describe("Selective Mode Initialization Tests", () => {
 
       await fullCommand.output();
 
-      const fullClaude = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
+      const fullGemini = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
       const fullMemory = await Deno.readTextFile(join(testDir, "memory-bank.md"));
 
       // Should be different and longer
-      assertEquals(minimalClaude === fullClaude, false);
+      assertEquals(minimalGemini === fullClaude, false);
       assertEquals(minimalMemory === fullMemory, false);
       assertEquals(fullClaude.length > minimalClaude.length, true);
       assertEquals(fullMemory.length > minimalMemory.length, true);
@@ -419,7 +419,7 @@ describe("Selective Mode Initialization Tests", () => {
       assertEquals(coordContent.length < 2000, true);
 
       // But should still have basic structure
-      assertStringIncludes(claudeContent, "# Claude Code Configuration");
+      assertStringIncludes(claudeContent, "# Gemini Code Configuration");
       assertStringIncludes(memoryContent, "# Memory Bank");
       assertStringIncludes(coordContent, "# Multi-Agent Coordination");
     });

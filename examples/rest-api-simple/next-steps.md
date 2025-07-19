@@ -13,7 +13,7 @@ The REST API implementation (`index.js`) doesn't match its specification:
 Execute the following command to start the refactoring:
 
 ```bash
-cd /workspaces/claude-code-flow/examples/rest-api-simple
+cd /workspaces/gemini-flow/examples/rest-api-simple
 npx claude-flow sparc run code "Refactor index.js to server.js for REST API: change resource from items to tasks, add API versioning /api/v1/, update data model with title/completed/timestamps"
 ```
 
@@ -26,7 +26,7 @@ Then continue with:
 Use swarm mode to complete everything at once:
 
 ```bash
-cd /workspaces/claude-code-flow/examples/rest-api-simple
+cd /workspaces/gemini-flow/examples/rest-api-simple
 npx claude-flow swarm "Complete REST API implementation: refactor to tasks resource with proper data model, add API versioning, create Jest test suite, implement query parameters, enhance error handling" \
   --strategy development \
   --background \

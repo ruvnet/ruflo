@@ -24,7 +24,7 @@
     "agent_spawn_time": 0.0,
     "collective_memory_ops": 0,
     "success": false,
-    "error_message": "Initialization failed: node:internal/modules/cjs/loader:1215\n  throw err;\n  ^\n\nError: Cannot find module '/workspaces/claude-code-flow/benchmark/src/cli/simple-cli.js'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)\n    at Module._load (node:internal/modules/cjs/loader:1043:27)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\n    at node:internal/main/run_main_module:28:49 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v20.19.0\n"
+    "error_message": "Initialization failed: node:internal/modules/cjs/loader:1215\n  throw err;\n  ^\n\nError: Cannot find module '/workspaces/gemini-flow/benchmark/src/cli/simple-cli.js'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)\n    at Module._load (node:internal/modules/cjs/loader:1043:27)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\n    at node:internal/main/run_main_module:28:49 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v20.19.0\n"
   },
   {
     "config": {
@@ -51,7 +51,7 @@
     "agent_spawn_time": 0.0,
     "collective_memory_ops": 0,
     "success": false,
-    "error_message": "Initialization failed: node:internal/modules/cjs/loader:1215\n  throw err;\n  ^\n\nError: Cannot find module '/workspaces/claude-code-flow/benchmark/src/cli/simple-cli.js'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)\n    at Module._load (node:internal/modules/cjs/loader:1043:27)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\n    at node:internal/main/run_main_module:28:49 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v20.19.0\n"
+    "error_message": "Initialization failed: node:internal/modules/cjs/loader:1215\n  throw err;\n  ^\n\nError: Cannot find module '/workspaces/gemini-flow/benchmark/src/cli/simple-cli.js'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)\n    at Module._load (node:internal/modules/cjs/loader:1043:27)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\n    at node:internal/main/run_main_module:28:49 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v20.19.0\n"
   },
   {
     "config": {
@@ -78,6 +78,6 @@
     "agent_spawn_time": 0.0,
     "collective_memory_ops": 0,
     "success": false,
-    "error_message": "Initialization failed: node:internal/modules/cjs/loader:1215\n  throw err;\n  ^\n\nError: Cannot find module '/workspaces/claude-code-flow/benchmark/src/cli/simple-cli.js'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)\n    at Module._load (node:internal/modules/cjs/loader:1043:27)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\n    at node:internal/main/run_main_module:28:49 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v20.19.0\n"
+    "error_message": "Initialization failed: node:internal/modules/cjs/loader:1215\n  throw err;\n  ^\n\nError: Cannot find module '/workspaces/gemini-flow/benchmark/src/cli/simple-cli.js'\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)\n    at Module._load (node:internal/modules/cjs/loader:1043:27)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)\n    at node:internal/main/run_main_module:28:49 {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: []\n}\n\nNode.js v20.19.0\n"
   }
 ]

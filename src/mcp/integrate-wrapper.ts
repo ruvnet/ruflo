@@ -3,68 +3,66 @@ import { getErrorMessage } from '../utils/error-handler.js';
 import { spawn } from 'child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { ClaudeCodeMCPWrapper } from './claude-code-wrapper.js';
+import { GeminiCliMCPWrapper } from './gemini-cli-wrapper.js';
 
 /**
- * Integration script that connects the Claude-Flow MCP wrapper
- * to the Claude Code MCP server
+ * Integration script that connects the Gemini-Flow MCP wrapper
+ * to the Gemini CLI MCP server
  */
 export class MCPIntegration {
-  private claudeCodeClient?: Client;
-  private wrapper: ClaudeCodeMCPWrapper;
+  private geminiCliClient?: Client;
+  private wrapper: GeminiCliMCPWrapper;
 
   constructor() {
-    this.wrapper = new ClaudeCodeMCPWrapper();
+    this.wrapper = new GeminiCliMCPWrapper();
   }
 
-  async connectToClaudeCode(): Promise<void> {
+  async connectToGeminiCli(): Promise<void> {
     try {
-      // Start Claude Code MCP server process
-      const claudeCodeProcess = spawn('npx', [
-        '-y',
-        '@anthropic/claude-code',
+      // Start Gemini CLI MCP server process
+      const geminiCliProcess = spawn('gemini', [
         'mcp'
       ], {
         stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       const transport = new StdioClientTransport({
-        command: 'npx',
-        args: ['-y', '@anthropic/claude-code', 'mcp'],
+        command: 'gemini',
+        args: ['mcp'],
       });
 
-      this.claudeCodeClient = new Client({
-        name: 'claude-flow-wrapper-client',
+      this.geminiCliClient = new Client({
+        name: 'gemini-flow-wrapper-client',
         version: '1.0.0',
       }, {
         capabilities: {},
       });
 
-      await this.claudeCodeClient.connect(transport);
+      await this.geminiCliClient.connect(transport);
 
       // Inject the client into the wrapper
-      (this.wrapper as any).claudeCodeMCP = this.claudeCodeClient;
+      (this.wrapper as any).geminiCliMcp = this.geminiCliClient;
 
-      console.log('Connected to Claude Code MCP server');
+      console.log('Connected to Gemini CLI MCP server');
     } catch (error) {
-      console.error('Failed to connect to Claude Code MCP:', error);
+      console.error('Failed to connect to Gemini CLI MCP:', error);
       throw error;
     }
   }
 
   async start(): Promise<void> {
-    // Connect to Claude Code MCP
-    await this.connectToClaudeCode();
+    // Connect to Gemini CLI MCP
+    await this.connectToGeminiCli();
 
     // Start the wrapper server
     await this.wrapper.run();
   }
 }
 
-// Update the wrapper to use the real Claude Code MCP client
-export function injectClaudeCodeClient(wrapper: ClaudeCodeMCPWrapper, client: Client): void {
-  // Override the forwardToClaudeCode method
-  (wrapper as any).forwardToClaudeCode = async function(toolName: string, args: any) {
+// Update the wrapper to use the real Gemini CLI MCP client
+export function injectGeminiCliClient(wrapper: GeminiCliMCPWrapper, client: Client): void {
+  // Override the forwardToGeminiCli method
+  (wrapper as any).forwardToGeminiCli = async function(toolName: string, args: any) {
     try {
       const result = await client.callTool(toolName, args);
       return result;
@@ -72,7 +70,7 @@ export function injectClaudeCodeClient(wrapper: ClaudeCodeMCPWrapper, client: Cl
       return {
         content: [{
           type: 'text',
-          text: `Error calling Claude Code tool ${toolName}: ${error instanceof Error ? error.message : String(error)}`,
+          text: `Error calling Gemini CLI tool ${toolName}: ${error instanceof Error ? error.message : String(error)}`,
         }],
         isError: true,
       };

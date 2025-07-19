@@ -18,7 +18,7 @@ export async function startCommand(subArgs, flags) {
   const web = subArgs.includes('--web') || subArgs.includes('-w') || flags.web;
   
   try {
-    printSuccess('Starting Claude-Flow Orchestration System...');
+    printSuccess('Starting Gemini-Flow Orchestration System...');
     console.log();
     
     // Check if we should launch the web UI mode
@@ -51,7 +51,7 @@ export async function startCommand(subArgs, flags) {
         const webServer = new ClaudeCodeWebServer(port);
         await webServer.start();
         
-        printSuccess('🌐 Claude Flow Web UI is running!');
+        printSuccess('🌐 Gemini Flow Web UI is running!');
         console.log(`📍 Open your browser to: http://localhost:${port}/console`);
         console.log('   Press Ctrl+C to stop the server');
         console.log();
@@ -89,7 +89,7 @@ export async function startCommand(subArgs, flags) {
     
     if (missingDirs.length > 0) {
       printWarning('Missing required directories: ' + missingDirs.join(', '));
-      console.log('Run "claude-flow init" first to create the necessary structure');
+      console.log('Run "gemini-flow init" first to create the necessary structure');
       return;
     }
     
@@ -107,7 +107,7 @@ export async function startCommand(subArgs, flags) {
     
     // Memory system
     console.log('   ✓ Memory Bank: Ready');
-    console.log('     - Backend: JSON file (memory/claude-flow-data.json)');
+    console.log('     - Backend: JSON file (memory/gemini-flow-data.json)');
     console.log('     - Namespaces: Enabled');
     
     // Terminal pool
@@ -137,13 +137,13 @@ export async function startCommand(subArgs, flags) {
       const pid = compat.terminal.getPid();
       await compat.safeCall(async () => {
         if (compat.runtime === 'deno') {
-          await Deno.writeTextFile('.claude-flow.pid', pid.toString());
+          await Deno.writeTextFile('.gemini-flow.pid', pid.toString());
         } else {
           const fs = await import('fs/promises');
-          await fs.writeFile('.claude-flow.pid', pid.toString());
+          await fs.writeFile('.gemini-flow.pid', pid.toString());
         }
       });
-      console.log(`Process ID: ${pid} (saved to .claude-flow.pid)`);
+      console.log(`Process ID: ${pid} (saved to .gemini-flow.pid)`);
       
     } else {
       // Interactive mode
@@ -151,16 +151,16 @@ export async function startCommand(subArgs, flags) {
       console.log();
       console.log('🎯 Available Actions:');
       console.log('   • Open another terminal and run:');
-      console.log('     - claude-flow agent spawn researcher');
-      console.log('     - claude-flow task create "your task"');
-      console.log('     - claude-flow sparc "build feature"');
-      console.log('     - claude-flow monitor');
+      console.log('     - gemini-flow agent spawn researcher');
+      console.log('     - gemini-flow task create "your task"');
+      console.log('     - gemini-flow sparc "build feature"');
+      console.log('     - gemini-flow monitor');
       console.log();
       console.log('   • View system status:');
-      console.log('     - claude-flow status');
+      console.log('     - gemini-flow status');
       console.log();
       console.log('   • Launch process management UI:');
-      console.log('     - claude-flow start --ui');
+      console.log('     - gemini-flow start --ui');
       console.log();
       console.log('   • Press Ctrl+C to stop the orchestrator');
       console.log();
@@ -215,10 +215,10 @@ async function cleanup() {
   try {
     await compat.safeCall(async () => {
       if (compat.runtime === 'deno') {
-        await Deno.remove('.claude-flow.pid');
+        await Deno.remove('.gemini-flow.pid');
       } else {
         const fs = await import('fs/promises');
-        await fs.unlink('.claude-flow.pid');
+        await fs.unlink('.gemini-flow.pid');
       }
     });
   } catch {
@@ -232,9 +232,9 @@ async function cleanup() {
 }
 
 function showStartHelp() {
-  console.log('Start the Claude-Flow orchestration system');
+  console.log('Start the Gemini-Flow orchestration system');
   console.log();
-  console.log('Usage: claude-flow start [options]');
+  console.log('Usage: gemini-flow start [options]');
   console.log();
   console.log('Options:');
   console.log('  -d, --daemon        Run as daemon in background');
@@ -245,12 +245,12 @@ function showStartHelp() {
   console.log('  -h, --help          Show this help message');
   console.log();
   console.log('Examples:');
-  console.log('  claude-flow start                    # Start in interactive mode');
-  console.log('  claude-flow start --daemon           # Start as background daemon');
-  console.log('  claude-flow start --port 8080        # Use custom server port');
-  console.log('  claude-flow start --ui               # Launch terminal-based UI');
-  console.log('  claude-flow start --web              # Launch web-based UI');
-  console.log('  claude-flow start --verbose          # Show detailed logs');
+  console.log('  gemini-flow start                    # Start in interactive mode');
+  console.log('  gemini-flow start --daemon           # Start as background daemon');
+  console.log('  gemini-flow start --port 8080        # Use custom server port');
+  console.log('  gemini-flow start --ui               # Launch terminal-based UI');
+  console.log('  gemini-flow start --web              # Launch web-based UI');
+  console.log('  gemini-flow start --verbose          # Show detailed logs');
   console.log();
   console.log('Web-based UI:');
   console.log('  The --web flag starts a web server with:');
@@ -258,7 +258,7 @@ function showStartHelp() {
   console.log('    - Real-time WebSocket communication');
   console.log('    - Mobile-responsive design');
   console.log('    - Multiple themes and customization options');
-  console.log('    - Claude Flow swarm integration');
+  console.log('    - Gemini Flow swarm integration');
   console.log();
   console.log('Terminal-based UI:');
   console.log('  The --ui flag launches an advanced multi-view interface with:');
@@ -278,9 +278,9 @@ function showStartHelp() {
   console.log('    - Tab navigation between views');
   console.log();
   console.log('Notes:');
-  console.log('  - Requires "claude-flow init" to be run first');
+  console.log('  - Requires "gemini-flow init" to be run first');
   console.log('  - Interactive mode shows real-time system status');
   console.log('  - Daemon mode runs in background (check logs)');
-  console.log('  - Use "claude-flow status" to check if running');
-  console.log('  - Use Ctrl+C or "claude-flow stop" to shutdown');
+  console.log('  - Use "gemini-flow status" to check if running');
+  console.log('  - Use Ctrl+C or "gemini-flow stop" to shutdown');
 }

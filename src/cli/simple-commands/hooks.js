@@ -389,7 +389,7 @@ async function postSearchCommand(subArgs, flags) {
 
 async function mcpInitializedCommand(subArgs, flags) {
     const options = flags;
-    const serverName = options.server || 'claude-flow';
+    const serverName = options.server || 'gemini-flow';
     const sessionId = options['session-id'] || generateId('mcp-session');
 
     console.log(`🔌 Executing mcp-initialized hook...`);
@@ -644,7 +644,7 @@ async function notifyCommand(subArgs, flags) {
 }
 
 function showHooksHelp() {
-    console.log('Claude Flow Hooks (with .swarm/memory.db persistence):\n');
+    console.log('Gemini Flow Hooks (with .swarm/memory.db persistence):\n');
     
     console.log('Pre-Operation Hooks:');
     console.log('  pre-task        Execute before starting a task');

@@ -43,7 +43,7 @@ Generate REAL, FUNCTIONAL code and documentation based on the specific objective
     let stderr = '';
     let filesCreated = [];
 
-    // Use the working v1.0.50 approach: spawn Claude with piped output capture
+    // Use the working v1.0.50 approach: spawn Gemini with piped output capture
     const claudeProcess = spawn('claude', ['--dangerously-skip-permissions'], {
       stdio: ['pipe', 'pipe', 'pipe'],
       shell: false,
@@ -62,12 +62,12 @@ Generate REAL, FUNCTIONAL code and documentation based on the specific objective
     // Capture output from Claude
     claudeProcess.stdout.on('data', (data) => {
       stdout += data.toString();
-      console.log(`Claude stdout: ${data.toString().slice(0, 200)}...`);
+      console.log(`Gemini stdout: ${data.toString().slice(0, 200)}...`);
     });
 
     claudeProcess.stderr.on('data', (data) => {
       stderr += data.toString();
-      console.log(`Claude stderr: ${data.toString().slice(0, 200)}...`);
+      console.log(`Gemini stderr: ${data.toString().slice(0, 200)}...`);
     });
 
     // Write the swarm prompt to stdin and close it
@@ -123,7 +123,7 @@ Generate REAL, FUNCTIONAL code and documentation based on the specific objective
       } else {
         console.warn(`Gemini CLI failed with code ${code}. stdout: ${stdout.slice(-200)}, stderr: ${stderr.slice(-200)}`);
         
-        // Create diagnostic file with actual Claude output
+        // Create diagnostic file with actual Gemini output
         const diagnosticFile = `swarm-${swarmId}-diagnostic.md`;
         
         try {

@@ -1,5 +1,5 @@
 /**
- * Integration Types for Claude Flow v2.0.0
+ * Integration Types for Gemini Flow v2.0.0
  */
 
 export interface IntegrationConfig {

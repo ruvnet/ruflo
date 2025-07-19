@@ -67,7 +67,7 @@ async function applyFixes() {
   
   for (const fix of fixes) {
     try {
-      const filePath = path.join('/workspaces/claude-code-flow', fix.file);
+      const filePath = path.join('/workspaces/gemini-flow', fix.file);
       let content = await fs.readFile(filePath, 'utf-8');
       
       if (content.includes(fix.search)) {

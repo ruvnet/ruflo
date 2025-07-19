@@ -110,7 +110,7 @@ describe('Command Registry', () => {
       expect(initCmd).toHaveProperty('description');
       expect(initCmd).toHaveProperty('usage');
       expect(initCmd).toHaveProperty('examples');
-      expect(initCmd.description).toContain('Initialize Claude Code integration');
+      expect(initCmd.description).toContain('Initialize Gemini Code integration');
     });
   });
 
@@ -169,7 +169,7 @@ describe('Command Registry', () => {
       
       const output = consoleLogSpy.mock.calls.flat().join('\n');
       expect(output).toContain('init');
-      expect(output).toContain('Initialize Claude Code integration');
+      expect(output).toContain('Initialize Gemini Code integration');
       expect(output).toContain('Usage:');
       expect(output).toContain('Examples:');
     });

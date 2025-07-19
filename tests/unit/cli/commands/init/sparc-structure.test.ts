@@ -69,7 +69,7 @@ describe("SPARC Structure Creation Tests", () => {
       assertStringIncludes(readmeContent, "## Directory Structure");
     });
 
-    it("should create Claude commands directory", async () => {
+    it("should create Gemini commands directory", async () => {
       await createSparcStructureManually();
 
       assertExists(await exists(join(testDir, ".claude")));
@@ -206,7 +206,7 @@ describe("SPARC Structure Creation Tests", () => {
     });
   });
 
-  describe("Integration with Claude commands", () => {
+  describe("Integration with Gemini commands", () => {
     it("should create SPARC slash commands", async () => {
       await createSparcStructureManually();
 

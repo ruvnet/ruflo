@@ -1,5 +1,5 @@
 /**
- * Diagnostic Tools for Claude Flow v2.0.0
+ * Diagnostic Tools for Gemini Flow v2.0.0
  */
 
 import { EventBus } from '../core/event-bus.js';
@@ -452,7 +452,7 @@ export class DiagnosticManager {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Claude Flow v2.0.0 Diagnostic Report</title>
+    <title>Gemini Flow v2.0.0 Diagnostic Report</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; }
         .header { border-bottom: 2px solid #ccc; padding-bottom: 20px; }
@@ -471,7 +471,7 @@ export class DiagnosticManager {
 </head>
 <body>
     <div class="header">
-        <h1>Claude Flow v2.0.0 Diagnostic Report</h1>
+        <h1>Gemini Flow v2.0.0 Diagnostic Report</h1>
         <p><strong>Generated:</strong> ${timestamp}</p>
         <p><strong>Severity:</strong> <span class="severity">${report.severity.toUpperCase()}</span></p>
     </div>

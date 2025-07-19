@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document summarizes the comprehensive documentation created for the new optimized initialization behavior (`--sparc --force`) in Claude-Flow. The documentation provides complete guidance for understanding, implementing, and troubleshooting the enhanced initialization feature.
+This document summarizes the comprehensive documentation created for the new optimized initialization behavior (`--sparc --force`) in Gemini-Flow. The documentation provides complete guidance for understanding, implementing, and troubleshooting the enhanced initialization feature.
 
 ## Documentation Files Created
 
@@ -113,7 +113,7 @@ This document summarizes the comprehensive documentation created for the new opt
 - Template generation errors
 - SPARC mode loading issues
 - Memory system initialization
-- Claude Code integration problems
+- Gemini Code integration problems
 - Performance issues
 
 #### [Init Command Help Updates](./src/cli/simple-commands/init/help.js)
@@ -148,14 +148,14 @@ This document summarizes the comprehensive documentation created for the new opt
 ### For New Projects
 ```bash
 # Single command for optimal setup
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 ```
 
 ### For Existing Projects
 ```bash
 # Backup and migrate
 cp CLAUDE.md CLAUDE.md.backup
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 # Review and merge customizations
 ```
 
@@ -248,7 +248,7 @@ Documentation should be updated when:
 
 ## Conclusion
 
-The optimized initialization documentation provides a comprehensive foundation for users to understand, implement, and benefit from the enhanced Claude-Flow setup. The documentation covers all aspects from quick start to enterprise deployment, ensuring successful adoption across different user types and scenarios.
+The optimized initialization documentation provides a comprehensive foundation for users to understand, implement, and benefit from the enhanced Gemini-Flow setup. The documentation covers all aspects from quick start to enterprise deployment, ensuring successful adoption across different user types and scenarios.
 
 The measured performance improvements (27% faster responses, 20% token reduction, 17% higher success rates) combined with significant cost savings ($304,969 annual savings for 15-person team) provide a compelling business case for adoption.
 

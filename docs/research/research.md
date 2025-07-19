@@ -1,10 +1,10 @@
-The Claude Code multi-agent collaboration system is a game changer. I built things in a fraction of the time it used to take—tasks that once required hours of manual orchestration now happen in parallel, across coordinated agent workflows, with almost no overhead.
+The Gemini Code multi-agent collaboration system is a game changer. I built things in a fraction of the time it used to take—tasks that once required hours of manual orchestration now happen in parallel, across coordinated agent workflows, with almost no overhead.
 
 What makes it so powerful isn’t just the automation—it’s the structure. Agents aren’t freelancing; they follow SPARC. Every task is tracked, assigned, and documented. Discoveries go into a shared memory bank. Failures are logged, not buried. Progress is visible. Integration is planned.
 
 Using BatchTool for orchestration, I get real concurrency: one agent researching tech stacks, another writing pseudocode, a third implementing code—all in sync. The boomerang pattern lets me launch, collect, and integrate work from multiple specialists, recursively refining results until done.
 
-This is what modern development should feel like: modular, recursive, and fast. Claude Code isn’t just a new tool—it’s an entirely new development rhythm.
+This is what modern development should feel like: modular, recursive, and fast. Gemini Code isn’t just a new tool—it’s an entirely new development rhythm.
 
 Great. I’ll develop a full implementation plan, directory structure, and test strategy for integrating multi-terminal orchestration into the Claude-SPARC CLI system. This will cover integration design, VS Code terminal control, argument parsing, test coverage (mocked and behavioral), and compatibility guidance.
  

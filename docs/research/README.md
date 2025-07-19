@@ -1,6 +1,6 @@
 # Research Documents
 
-This directory contains research documents and technical investigations for Claude Flow.
+This directory contains research documents and technical investigations for Gemini Flow.
 
 ## Contents
 

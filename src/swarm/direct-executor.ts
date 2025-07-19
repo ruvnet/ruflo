@@ -462,7 +462,7 @@ console.log(calc.multiply(4, 7)); // 28
 npm test
 \`\`\`
 
-Created by Claude Flow Swarm
+Created by Gemini Flow Swarm
 `
     };
 
@@ -489,7 +489,7 @@ Created by Claude Flow Swarm
     const files = {
       'index.js': `#!/usr/bin/env node
 console.log('Hello, World!');
-console.log('Created by Claude Flow Swarm');
+console.log('Created by Gemini Flow Swarm');
 `,
       'package.json': this.generatePackageJson('hello-world', []),
       'README.md': this.generateReadme('Hello World Application', task)
@@ -1109,15 +1109,15 @@ module.exports = (req, res, next) => {
     const pkg = {
       name,
       version: '1.0.0',
-      description: `${name} created by Claude Flow Swarm`,
+      description: `${name} created by Gemini Flow Swarm`,
       main: 'server.js',
       scripts: {
         start: 'node server.js',
         dev: 'nodemon server.js',
         test: 'echo "No tests yet"'
       },
-      keywords: ['swarm', 'claude-flow'],
-      author: 'Claude Flow Swarm',
+      keywords: ['swarm', 'gemini-flow'],
+      author: 'Gemini Flow Swarm',
       license: 'MIT',
       dependencies: deps
     };
@@ -1128,7 +1128,7 @@ module.exports = (req, res, next) => {
   private generateReadme(title: string, task: TaskDefinition): string {
     return `# ${title}
 
-Created by Claude Flow Swarm
+Created by Gemini Flow Swarm
 
 ## Overview
 ${task.description}
@@ -1156,7 +1156,7 @@ npm run dev
   }
 
   private generateGenericApp(task: TaskDefinition): string {
-    return `// Application created by Claude Flow Swarm
+    return `// Application created by Gemini Flow Swarm
 // Task: ${task.name}
 // Description: ${task.description}
 

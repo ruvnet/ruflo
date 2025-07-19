@@ -1,6 +1,6 @@
 # MCP (Model Context Protocol) Implementation
 
-This directory contains a comprehensive implementation of the Model Context Protocol (MCP) for Claude-Flow, providing robust server lifecycle management, tool registration and discovery, protocol version negotiation, security, performance monitoring, and integration with the broader orchestration system.
+This directory contains a comprehensive implementation of the Model Context Protocol (MCP) for Gemini-Flow, providing robust server lifecycle management, tool registration and discovery, protocol version negotiation, security, performance monitoring, and integration with the broader orchestration system.
 
 ## Overview
 
@@ -11,7 +11,7 @@ The MCP implementation provides:
 - **Protocol Management**: Version compatibility checking and negotiation
 - **Security**: Authentication, authorization, and session management
 - **Performance Monitoring**: Real-time metrics, alerting, and optimization suggestions
-- **Orchestration Integration**: Seamless integration with Claude-Flow components
+- **Orchestration Integration**: Seamless integration with Gemini-Flow components
 
 ## Architecture
 
@@ -139,7 +139,7 @@ monitor.recordRequestEnd(requestId, response);
 
 ### 7. Orchestration Integration (`orchestration-integration.ts`)
 
-Seamless integration with Claude-Flow:
+Seamless integration with Gemini-Flow:
 - Component health monitoring
 - Tool registration for orchestration features
 - Event forwarding and coordination

@@ -1,17 +1,17 @@
-# Claude-Flow MCP Wrapper - Current Status
+# Gemini-Flow MCP Wrapper - Current Status
 
 ## Summary
 
-The Claude Code MCP wrapper has been successfully implemented and integrated, but there are multiple CLI entry points that need updating.
+The Gemini Code MCP wrapper has been successfully implemented and integrated, but there are multiple CLI entry points that need updating.
 
 ## What's Working
 
 ### ✅ MCP Wrapper Implementation
-- The wrapper (`src/mcp/claude-code-wrapper.ts`) is fully functional
+- The wrapper (`src/mcp/gemini-cli-wrapper.ts`) is fully functional
 - All SPARC tools are available with automatic prompt injection
 - Direct execution works perfectly:
   ```bash
-  npx tsx src/mcp/claude-code-wrapper.ts
+  npx tsx src/mcp/gemini-cli-wrapper.ts
   ```
 
 ### ✅ Package.json Scripts
@@ -19,8 +19,8 @@ The Claude Code MCP wrapper has been successfully implemented and integrated, bu
 - `npm run mcp:wrapper` runs the wrapper directly
 
 ### ✅ MCP Configuration
-- `claude-flow.mcp.json` updated to use the wrapper
-- Can be served with: `claude mcp serve claude-flow.mcp.json`
+- `gemini-flow.mcp.json` updated to use the wrapper
+- Can be served with: `gemini mcp serve gemini-flow.mcp.json`
 
 ## What Needs Work
 
@@ -31,7 +31,7 @@ The project has multiple CLI implementations:
 3. **Compiled versions** - Out of date due to TypeScript errors
 
 ### Current Behavior
-- `./claude-flow` uses the binary script which falls back to `simple-cli.ts`
+- `./gemini-flow` uses the binary script which falls back to `simple-cli.ts`
 - `simple-cli.ts` was updated but has a different command structure
 - The `mcp start` command in simple-cli.ts doesn't match our updates
 
@@ -39,7 +39,7 @@ The project has multiple CLI implementations:
 
 ### Method 1: Direct Execution
 ```bash
-npx tsx src/mcp/claude-code-wrapper.ts
+npx tsx src/mcp/gemini-cli-wrapper.ts
 ```
 
 ### Method 2: NPM Scripts
@@ -48,11 +48,11 @@ npm run mcp
 ```
 
 ### Method 3: MCP Configuration
-Add to Claude Desktop config:
+Add to Gemini Desktop config:
 ```json
 {
   "servers": {
-    "claude-flow": {
+    "gemini-flow": {
       "command": "node",
       "args": ["node_modules/.bin/tsx", "src/mcp/server-with-wrapper.ts"]
     }
@@ -62,7 +62,7 @@ Add to Claude Desktop config:
 
 ## Next Steps
 
-To fully integrate `./claude-flow mcp start`:
+To fully integrate `./gemini-flow mcp start`:
 1. Fix TypeScript compilation errors to rebuild the project
 2. Update all CLI entry points to use the wrapper
 3. Ensure consistent command structure across all CLIs

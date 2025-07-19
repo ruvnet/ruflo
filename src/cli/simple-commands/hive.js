@@ -86,16 +86,16 @@ function showHiveHelp() {
 🐝 Hive Mind - Advanced Multi-Agent Coordination
 
 USAGE:
-  claude-flow hive <objective> [options]
+  gemini-flow hive <objective> [options]
 
 DESCRIPTION:
   Hive Mind implements advanced swarm intelligence with consensus mechanisms,
   distributed decision-making, and quality-driven execution.
 
 EXAMPLES:
-  claude-flow hive "Build microservices architecture"
-  claude-flow hive "Optimize database performance" --consensus unanimous
-  claude-flow hive "Develop ML pipeline" --topology mesh --monitor
+  gemini-flow hive "Build microservices architecture"
+  gemini-flow hive "Optimize database performance" --consensus unanimous
+  gemini-flow hive "Develop ML pipeline" --topology mesh --monitor
 
 TOPOLOGIES:
   hierarchical   Queen-led hierarchy (default)
@@ -135,6 +135,6 @@ FEATURES:
   • Distributed memory sharing
   • SPARC methodology support
 
-For more info: https://github.com/ruvnet/claude-code-flow/docs/hive.md
+For more info: https://github.com/ruvnet/gemini-flow/docs/hive.md
 `);
 }

@@ -1,3 +1,3 @@
 Debug test file created at 2025-06-20T12:31:13.884Z
 Swarm: swarm-1750422673883
-Objective: Conduct comprehensive analysis of claude-code-flow repository including architecture review, code quality assessment, documentation audit, and testing coverage evaluation
+Objective: Conduct comprehensive analysis of gemini-flow repository including architecture review, code quality assessment, documentation audit, and testing coverage evaluation

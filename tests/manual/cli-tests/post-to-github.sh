@@ -34,7 +34,7 @@ else
 **Environment:** Docker Container
 **Success Rate:** 100%
 
-All CLI functionality tests have passed. The claude-flow CLI is ready for production use.
+All CLI functionality tests have passed. The gemini-flow CLI is ready for production use.
 
 For detailed results, see the test-cli/ directory in the repository."
 fi

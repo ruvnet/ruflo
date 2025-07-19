@@ -1,8 +1,8 @@
-# Claude Flow v2.0.0 - Complete MCP Tools Reference
+# Gemini Flow v2.0.0 - Complete MCP Tools Reference
 
 ## 🎯 Overview
 
-This document provides comprehensive documentation for all 87 MCP tools available in Claude Flow v2.0.0, including ruv-swarm integration tools and native Claude Flow capabilities.
+This document provides comprehensive documentation for all 87 MCP tools available in Gemini Flow v2.0.0, including ruv-swarm integration tools and native Gemini Flow capabilities.
 
 ## 📋 Tool Categories
 
@@ -19,7 +19,7 @@ This document provides comprehensive documentation for all 87 MCP tools availabl
 
 ## 🐝 Swarm Coordination Tools
 
-### mcp__claude-flow__swarm_init
+### mcp__gemini-flow__swarm_init
 
 Initialize a swarm with specified topology and configuration.
 
@@ -47,7 +47,7 @@ Initialize a swarm with specified topology and configuration.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 coordination swarm-init \
+npx gemini-flow@2.0.0 coordination swarm-init \
   --topology hierarchical \
   --max-agents 8 \
   --strategy parallel
@@ -68,7 +68,7 @@ npx claude-flow@2.0.0 coordination swarm-init \
 
 ---
 
-### mcp__claude-flow__agent_spawn
+### mcp__gemini-flow__agent_spawn
 
 Create a specialized agent within the swarm.
 
@@ -102,7 +102,7 @@ Create a specialized agent within the swarm.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 coordination agent-spawn \
+npx gemini-flow@2.0.0 coordination agent-spawn \
   --type architect \
   --name "SystemDesigner" \
   --capabilities "system-design,database-architecture,microservices"
@@ -127,7 +127,7 @@ npx claude-flow@2.0.0 coordination agent-spawn \
 
 ---
 
-### mcp__claude-flow__task_orchestrate
+### mcp__gemini-flow__task_orchestrate
 
 Orchestrate complex task workflows across agents.
 
@@ -160,7 +160,7 @@ Orchestrate complex task workflows across agents.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 coordination task-orchestrate \
+npx gemini-flow@2.0.0 coordination task-orchestrate \
   --task "Build REST API with authentication and testing" \
   --strategy parallel \
   --priority high
@@ -198,7 +198,7 @@ npx claude-flow@2.0.0 coordination task-orchestrate \
 
 ---
 
-### mcp__claude-flow__swarm_status
+### mcp__gemini-flow__swarm_status
 
 Monitor the health and status of the swarm.
 
@@ -214,7 +214,7 @@ Monitor the health and status of the swarm.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 coordination swarm-status
+npx gemini-flow@2.0.0 coordination swarm-status
 ```
 
 **Response:**
@@ -253,7 +253,7 @@ npx claude-flow@2.0.0 coordination swarm-status
 
 ---
 
-### mcp__claude-flow__agent_list
+### mcp__gemini-flow__agent_list
 
 List all active agents and their capabilities.
 
@@ -269,7 +269,7 @@ List all active agents and their capabilities.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 coordination agent-list
+npx gemini-flow@2.0.0 coordination agent-list
 ```
 
 **Response:**
@@ -312,7 +312,7 @@ npx claude-flow@2.0.0 coordination agent-list
 
 ## 🧠 Neural Network Tools
 
-### mcp__claude-flow__neural_train
+### mcp__gemini-flow__neural_train
 
 Train neural patterns with WASM acceleration.
 
@@ -338,7 +338,7 @@ Train neural patterns with WASM acceleration.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 neural train \
+npx gemini-flow@2.0.0 neural train \
   --pattern-type coordination \
   --training-data "./data/coordination-patterns.json" \
   --epochs 100
@@ -372,7 +372,7 @@ npx claude-flow@2.0.0 neural train \
 
 ---
 
-### mcp__claude-flow__neural_predict
+### mcp__gemini-flow__neural_predict
 
 Make AI predictions using trained models.
 
@@ -392,7 +392,7 @@ Make AI predictions using trained models.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 neural predict \
+npx gemini-flow@2.0.0 neural predict \
   --model-id coordination_model_v1.2 \
   --input "complex microservices architecture with event sourcing"
 ```
@@ -430,7 +430,7 @@ npx claude-flow@2.0.0 neural predict \
 
 ---
 
-### mcp__claude-flow__neural_status
+### mcp__gemini-flow__neural_status
 
 Check the status of neural network systems.
 
@@ -446,7 +446,7 @@ Check the status of neural network systems.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 neural status
+npx gemini-flow@2.0.0 neural status
 ```
 
 **Response:**
@@ -496,7 +496,7 @@ npx claude-flow@2.0.0 neural status
 
 ## 💾 Memory & Persistence Tools
 
-### mcp__claude-flow__memory_usage
+### mcp__gemini-flow__memory_usage
 
 Store and retrieve persistent memory data.
 
@@ -531,7 +531,7 @@ Store and retrieve persistent memory data.
 **Example Usage:**
 ```bash
 # Store project context
-npx claude-flow@2.0.0 memory usage \
+npx gemini-flow@2.0.0 memory usage \
   --action store \
   --key "project/architecture" \
   --value "microservices with event sourcing and CQRS" \
@@ -539,7 +539,7 @@ npx claude-flow@2.0.0 memory usage \
   --ttl 86400
 
 # Retrieve stored data
-npx claude-flow@2.0.0 memory usage \
+npx gemini-flow@2.0.0 memory usage \
   --action retrieve \
   --key "project/architecture" \
   --namespace "development"
@@ -581,7 +581,7 @@ npx claude-flow@2.0.0 memory usage \
 
 ---
 
-### mcp__claude-flow__memory_search
+### mcp__gemini-flow__memory_search
 
 Search memory entries with pattern matching.
 
@@ -606,7 +606,7 @@ Search memory entries with pattern matching.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 memory search \
+npx gemini-flow@2.0.0 memory search \
   --pattern "microservices|architecture" \
   --namespace "development" \
   --limit 5
@@ -640,7 +640,7 @@ npx claude-flow@2.0.0 memory search \
 
 ## 📊 Analysis & Monitoring Tools
 
-### mcp__claude-flow__performance_report
+### mcp__gemini-flow__performance_report
 
 Generate comprehensive performance reports.
 
@@ -664,7 +664,7 @@ Generate comprehensive performance reports.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 performance report \
+npx gemini-flow@2.0.0 performance report \
   --timeframe 24h \
   --format detailed
 ```
@@ -716,7 +716,7 @@ npx claude-flow@2.0.0 performance report \
 
 ---
 
-### mcp__claude-flow__bottleneck_analyze
+### mcp__gemini-flow__bottleneck_analyze
 
 Identify and analyze system performance bottlenecks.
 
@@ -736,7 +736,7 @@ Identify and analyze system performance bottlenecks.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 bottleneck analyze \
+npx gemini-flow@2.0.0 bottleneck analyze \
   --component swarm_coordination \
   --metrics "response_time,throughput,error_rate"
 ```
@@ -800,7 +800,7 @@ npx claude-flow@2.0.0 bottleneck analyze \
 
 ## 🔄 Workflow & Automation Tools
 
-### mcp__claude-flow__workflow_create
+### mcp__gemini-flow__workflow_create
 
 Create custom workflows for automation.
 
@@ -824,7 +824,7 @@ Create custom workflows for automation.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 workflow create \
+npx gemini-flow@2.0.0 workflow create \
   --name "full-stack-development" \
   --steps '[
     {"type": "swarm_init", "topology": "hierarchical"},
@@ -871,7 +871,7 @@ npx claude-flow@2.0.0 workflow create \
 
 ## 🐙 GitHub Integration Tools
 
-### mcp__claude-flow__github_repo_analyze
+### mcp__gemini-flow__github_repo_analyze
 
 Analyze GitHub repositories for coordination optimization.
 
@@ -892,7 +892,7 @@ Analyze GitHub repositories for coordination optimization.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 github repo-analyze \
+npx gemini-flow@2.0.0 github repo-analyze \
   --repo "myorg/my-project" \
   --analysis-type code_quality
 ```
@@ -946,7 +946,7 @@ npx claude-flow@2.0.0 github repo-analyze \
 
 ## 🤖 DAA (Dynamic Agent Architecture) Tools
 
-### mcp__claude-flow__daa_agent_create
+### mcp__gemini-flow__daa_agent_create
 
 Create dynamic agents with adaptive capabilities.
 
@@ -970,7 +970,7 @@ Create dynamic agents with adaptive capabilities.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 daa agent-create \
+npx gemini-flow@2.0.0 daa agent-create \
   --agent-type adaptive_coder \
   --capabilities '["javascript", "python", "api_design"]' \
   --resources '{"memory": "512MB", "cpu": "2_cores"}'
@@ -1011,7 +1011,7 @@ npx claude-flow@2.0.0 daa agent-create \
 
 ## 🛠️ System & Utilities Tools
 
-### mcp__claude-flow__health_check
+### mcp__gemini-flow__health_check
 
 Perform comprehensive system health checks.
 
@@ -1027,7 +1027,7 @@ Perform comprehensive system health checks.
 
 **Example Usage:**
 ```bash
-npx claude-flow@2.0.0 health-check \
+npx gemini-flow@2.0.0 health-check \
   --components '["swarm", "neural", "memory", "mcp"]'
 ```
 
@@ -1101,45 +1101,45 @@ npx claude-flow@2.0.0 health-check \
 
 ```bash
 # 1. Initialize swarm
-npx claude-flow@2.0.0 coordination swarm-init \
+npx gemini-flow@2.0.0 coordination swarm-init \
   --topology hierarchical \
   --max-agents 8
 
 # 2. Spawn specialized agents
-npx claude-flow@2.0.0 coordination agent-spawn \
+npx gemini-flow@2.0.0 coordination agent-spawn \
   --type architect \
   --name "SystemDesigner"
 
-npx claude-flow@2.0.0 coordination agent-spawn \
+npx gemini-flow@2.0.0 coordination agent-spawn \
   --type coder \
   --name "BackendDev"
 
 # 3. Train coordination patterns
-npx claude-flow@2.0.0 neural train \
+npx gemini-flow@2.0.0 neural train \
   --pattern-type coordination \
   --epochs 50
 
 # 4. Store project context
-npx claude-flow@2.0.0 memory usage \
+npx gemini-flow@2.0.0 memory usage \
   --action store \
   --key "project/requirements" \
   --value "REST API with authentication"
 
 # 5. Orchestrate development task
-npx claude-flow@2.0.0 coordination task-orchestrate \
+npx gemini-flow@2.0.0 coordination task-orchestrate \
   --task "Build complete REST API" \
   --strategy parallel
 
 # 6. Monitor progress
-npx claude-flow@2.0.0 swarm status
-npx claude-flow@2.0.0 performance report
+npx gemini-flow@2.0.0 swarm status
+npx gemini-flow@2.0.0 performance report
 ```
 
 ### Automated Workflow Example
 
 ```bash
 # Create reusable workflow
-npx claude-flow@2.0.0 workflow create \
+npx gemini-flow@2.0.0 workflow create \
   --name "api-development-pipeline" \
   --steps '[
     {"type": "swarm_init", "topology": "hierarchical"},
@@ -1149,8 +1149,8 @@ npx claude-flow@2.0.0 workflow create \
   ]'
 
 # Execute workflow
-npx claude-flow@2.0.0 workflow execute \
+npx gemini-flow@2.0.0 workflow execute \
   --workflow-id "workflow_20250706_141350"
 ```
 
-This comprehensive MCP tools reference provides detailed documentation for all 87 tools available in Claude Flow v2.0.0, enabling developers to leverage the full power of intelligent coordination and neural-enhanced development workflows.
+This comprehensive MCP tools reference provides detailed documentation for all 87 tools available in Gemini Flow v2.0.0, enabling developers to leverage the full power of intelligent coordination and neural-enhanced development workflows.

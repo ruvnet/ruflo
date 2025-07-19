@@ -2,7 +2,7 @@
 
 ## Overview
 
-This roadmap provides a detailed 5-week implementation plan to achieve **2.5x performance improvement** in the Claude Code Flow swarm system.
+This roadmap provides a detailed 5-week implementation plan to achieve **2.5x performance improvement** in the Gemini Code Flow swarm system.
 
 ## Week 1: Foundation - Quick Wins
 
@@ -383,4 +383,4 @@ This roadmap provides a clear path to achieving 2.5x performance improvement in 
 3. **Strong communication** across teams
 4. **Focus on metrics** and validation
 
-With proper implementation, the Claude Code Flow swarm system will become a industry-leading example of high-performance distributed agent coordination.
+With proper implementation, the Gemini Code Flow swarm system will become a industry-leading example of high-performance distributed agent coordination.

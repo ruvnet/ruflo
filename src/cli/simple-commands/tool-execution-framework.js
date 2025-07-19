@@ -1,6 +1,6 @@
 /**
  * Tool Execution Framework
- * Provides unified interface for executing all Claude-Flow MCP tools
+ * Provides unified interface for executing all Gemini-Flow MCP tools
  * Handles progress tracking, cancellation, and result formatting
  */
 

@@ -22,11 +22,11 @@ This guide provides detailed examples of different initialization scenarios for 
 
 ```bash
 # Quick optimized setup
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 
 # Verify setup
-./claude-flow sparc modes
-./claude-flow status
+./gemini-flow sparc modes
+./gemini-flow status
 ```
 
 **Expected Output:**
@@ -39,23 +39,23 @@ npx -y claude-flow@latest init --sparc --force
   ✓ Created memory/ directory
   ✓ Created .claude/commands/ directory
   ✅ SPARC environment initialized successfully
-  ✓ Created 20+ Claude Code slash commands
+  ✓ Created 20+ Gemini Code slash commands
 
 Next steps:
 1. Review and customize the generated files for your project
-2. Run './claude-flow start' to begin the orchestration system
-3. Use './claude-flow' instead of 'npx claude-flow' for all commands
-4. Use 'claude --dangerously-skip-permissions' for unattended operation
-5. Use Claude Code slash commands: /sparc, /sparc-architect, /sparc-tdd, etc.
+2. Run './gemini-flow start' to begin the orchestration system
+3. Use './gemini-flow' instead of 'npx gemini-flow' for all commands
+4. Use 'gemini --dangerously-skip-permissions' for unattended operation
+5. Use Gemini Code slash commands: /sparc, /sparc-architect, /sparc-tdd, etc.
 ```
 
 **Follow-up Tasks:**
 ```bash
 # Start development workflow
-./claude-flow sparc "create React app with routing and state management"
+./gemini-flow sparc "create React app with routing and state management"
 
 # Verify SPARC modes available
-./claude-flow sparc modes --verbose
+./gemini-flow sparc modes --verbose
 ```
 
 ### Scenario 1.2: Team Lead - Microservices Project
@@ -65,10 +65,10 @@ Next steps:
 ```bash
 # Initialize with force for latest optimizations
 mkdir microservices-project && cd microservices-project
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 
 # Customize for microservices
-./claude-flow sparc run architect "design microservices architecture"
+./gemini-flow sparc run architect "design microservices architecture"
 ```
 
 **Custom Configuration:**
@@ -85,13 +85,13 @@ Create `microservices-config.json`:
 **Team Setup:**
 ```bash
 # Create team-specific modes
-./claude-flow config set team.size 8
-./claude-flow config set team.experience "senior"
-./claude-flow config set project.type "microservices"
+./gemini-flow config set team.size 8
+./gemini-flow config set team.experience "senior"
+./gemini-flow config set project.type "microservices"
 
 # Generate service templates
 for service in user-service auth-service api-gateway; do
-  ./claude-flow sparc run architect "design $service with PostgreSQL and Docker"
+  ./gemini-flow sparc run architect "design $service with PostgreSQL and Docker"
 done
 ```
 
@@ -101,12 +101,12 @@ done
 
 ```bash
 # Fast MVP setup
-npx -y claude-flow@latest init --sparc --force
-./claude-flow config set development.speed "fast"
-./claude-flow config set quality.threshold 0.7  # Lower for MVP
+npx -y gemini-flow@latest init --sparc --force
+./gemini-flow config set development.speed "fast"
+./gemini-flow config set quality.threshold 0.7  # Lower for MVP
 
 # Start MVP development
-./claude-flow sparc "build user authentication and basic CRUD API"
+./gemini-flow sparc "build user authentication and basic CRUD API"
 ```
 
 **MVP-Specific CLAUDE.md customization:**
@@ -125,14 +125,14 @@ npx -y claude-flow@latest init --sparc --force
 
 ### Scenario 2.1: Legacy Codebase Integration
 
-**Context:** Adding Claude-Flow to existing 2-year-old Node.js project
+**Context:** Adding Gemini-Flow to existing 2-year-old Node.js project
 
 ```bash
 # Backup existing configuration
 cp -r . ../project-backup
 
 # Initialize in existing project
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 
 # Review generated vs existing files
 diff CLAUDE.md CLAUDE.md.backup || echo "New file created"
@@ -149,9 +149,9 @@ diff CLAUDE.md CLAUDE.md.backup || echo "New file created"
 **Example Migration Script:**
 ```bash
 #!/bin/bash
-# migrate-to-claude-flow.sh
+# migrate-to-gemini-flow.sh
 
-echo "🔄 Migrating existing project to Claude-Flow..."
+echo "🔄 Migrating existing project to Gemini-Flow..."
 
 # Backup
 mkdir -p migration-backup
@@ -160,7 +160,7 @@ cp package.json migration-backup/
 cp -r docs/ migration-backup/ 2>/dev/null || true
 
 # Initialize
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 
 # Merge existing docs
 if [ -f migration-backup/README.md ]; then
@@ -169,26 +169,26 @@ if [ -f migration-backup/README.md ]; then
 fi
 
 echo "✅ Migration complete. Review CLAUDE.md and test with:"
-echo "   ./claude-flow sparc modes"
+echo "   ./gemini-flow sparc modes"
 ```
 
 ### Scenario 2.2: Converting from Other AI Tools
 
-**Context:** Team switching from GitHub Copilot to Claude-Flow
+**Context:** Team switching from GitHub Copilot to Gemini-Flow
 
 ```bash
 # Remove existing AI tool configurations
 rm -rf .github/copilot/
 rm .vscode/extensions.json 2>/dev/null || true
 
-# Initialize Claude-Flow
-npx -y claude-flow@latest init --sparc --force
+# Initialize Gemini-Flow
+npx -y gemini-flow@latest init --sparc --force
 
 # Configure for team transition
 echo "# Migration from GitHub Copilot
 
 ## Key Differences
-- Use './claude-flow sparc' instead of copilot suggestions
+- Use './gemini-flow sparc' instead of copilot suggestions
 - SPARC methodology provides structured development
 - Memory system maintains context across sessions
 - Multi-agent coordination for complex tasks
@@ -211,12 +211,12 @@ echo "# Migration from GitHub Copilot
 
 ```bash
 # Initialize shared configuration
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 
 # Configure for large team
-./claude-flow config set team.size 25
-./claude-flow config set coordination.strategy "hierarchical"
-./claude-flow config set memory.sharedAccess true
+./gemini-flow config set team.size 25
+./gemini-flow config set coordination.strategy "hierarchical"
+./gemini-flow config set memory.sharedAccess true
 ```
 
 **Team-Specific Directory Structure:**
@@ -239,13 +239,13 @@ project/
 ```bash
 # Frontend squad
 cd teams/frontend-squad
-./claude-flow config set focus "react,typescript,testing"
-./claude-flow sparc run architect "component library architecture"
+./gemini-flow config set focus "react,typescript,testing"
+./gemini-flow sparc run architect "component library architecture"
 
 # Backend squad  
 cd teams/backend-squad
-./claude-flow config set focus "nodejs,postgresql,api-design"
-./claude-flow sparc run architect "microservices with GraphQL"
+./gemini-flow config set focus "nodejs,postgresql,api-design"
+./gemini-flow sparc run architect "microservices with GraphQL"
 ```
 
 ### Scenario 3.2: Distributed Remote Team
@@ -254,9 +254,9 @@ cd teams/backend-squad
 
 ```bash
 # Initialize with async-friendly settings
-npx -y claude-flow@latest init --sparc --force
-./claude-flow config set team.distribution "global"
-./claude-flow config set workflow.async true
+npx -y gemini-flow@latest init --sparc --force
+./gemini-flow config set team.distribution "global"
+./gemini-flow config set workflow.async true
 ```
 
 **Async Workflow Configuration:**
@@ -265,14 +265,14 @@ npx -y claude-flow@latest init --sparc --force
 
 ### Time Zone Considerations
 - All communication in memory system
-- Async code reviews via ./claude-flow review
+- Async code reviews via ./gemini-flow review
 - Daily sync via shared memory queries
 - Documentation-first development
 
 ### Memory Usage Patterns
-- Store decisions: ./claude-flow memory store decision-2024-06-16 "API versioning strategy"
-- Share context: ./claude-flow memory store context-feature-auth "Current auth implementation status"
-- Query updates: ./claude-flow memory query --since yesterday
+- Store decisions: ./gemini-flow memory store decision-2024-06-16 "API versioning strategy"
+- Share context: ./gemini-flow memory store context-feature-auth "Current auth implementation status"
+- Query updates: ./gemini-flow memory query --since yesterday
 ```
 
 ### Scenario 3.3: Junior Developer Onboarding
@@ -281,9 +281,9 @@ npx -y claude-flow@latest init --sparc --force
 
 ```bash
 # Initialize with learning mode
-npx -y claude-flow@latest init --sparc --force
-./claude-flow config set learning.mode true
-./claude-flow config set assistance.level "high"
+npx -y gemini-flow@latest init --sparc --force
+./gemini-flow config set learning.mode true
+./gemini-flow config set assistance.level "high"
 ```
 
 **Learning-Focused CLAUDE.md:**
@@ -291,13 +291,13 @@ npx -y claude-flow@latest init --sparc --force
 ## Junior Developer Guidance
 
 ### Learning Path
-1. Start with ./claude-flow sparc tdd "simple function"
-2. Progress to ./claude-flow sparc run architect "small component"
-3. Practice with ./claude-flow sparc run code "feature implementation"
-4. Advanced: ./claude-flow swarm "complex feature"
+1. Start with ./gemini-flow sparc tdd "simple function"
+2. Progress to ./gemini-flow sparc run architect "small component"
+3. Practice with ./gemini-flow sparc run code "feature implementation"
+4. Advanced: ./gemini-flow swarm "complex feature"
 
 ### Code Review Process
-- Every commit includes ./claude-flow sparc run review
+- Every commit includes ./gemini-flow sparc run review
 - Pair programming with senior dev weekly
 - Documentation required for all features
 - Test coverage minimum 85%
@@ -318,7 +318,7 @@ npx -y claude-flow@latest init --sparc --force
 
 ```bash
 # ML-focused initialization
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 
 # Add ML-specific modes
 echo '{
@@ -343,13 +343,13 @@ echo '{
 **ML Workflow:**
 ```bash
 # Data exploration
-./claude-flow sparc run ml-data-prep "analyze customer dataset for churn prediction"
+./gemini-flow sparc run ml-data-prep "analyze customer dataset for churn prediction"
 
 # Model development
-./claude-flow sparc run ml-model-dev "build XGBoost classifier with hyperparameter tuning"
+./gemini-flow sparc run ml-model-dev "build XGBoost classifier with hyperparameter tuning"
 
 # Model deployment
-./claude-flow sparc run ml-deploy "deploy model to Kubernetes with A/B testing"
+./gemini-flow sparc run ml-deploy "deploy model to Kubernetes with A/B testing"
 ```
 
 ### Scenario 4.2: DevOps Infrastructure Project
@@ -358,32 +358,32 @@ echo '{
 
 ```bash
 # DevOps-focused setup
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 
 # Configure for infrastructure
-./claude-flow config set project.type "infrastructure"
-./claude-flow config set tools.primary "terraform,ansible,kubernetes"
+./gemini-flow config set project.type "infrastructure"
+./gemini-flow config set tools.primary "terraform,ansible,kubernetes"
 ```
 
 **Infrastructure-Specific Modes:**
 ```bash
 # Add to .roomodes
-./claude-flow config add-mode infra-design "Design cloud infrastructure architecture"
-./claude-flow config add-mode infra-code "Write Terraform and Ansible code"
-./claude-flow config add-mode infra-security "Security review for infrastructure"
-./claude-flow config add-mode infra-monitor "Set up monitoring and alerting"
+./gemini-flow config add-mode infra-design "Design cloud infrastructure architecture"
+./gemini-flow config add-mode infra-code "Write Terraform and Ansible code"
+./gemini-flow config add-mode infra-security "Security review for infrastructure"
+./gemini-flow config add-mode infra-monitor "Set up monitoring and alerting"
 ```
 
 **DevOps Workflow:**
 ```bash
 # Infrastructure design
-./claude-flow sparc run infra-design "AWS architecture for high-availability web app"
+./gemini-flow sparc run infra-design "AWS architecture for high-availability web app"
 
 # Infrastructure as code
-./claude-flow sparc run infra-code "Terraform modules for EKS cluster"
+./gemini-flow sparc run infra-code "Terraform modules for EKS cluster"
 
 # Security review
-./claude-flow sparc run infra-security "review security groups and IAM policies"
+./gemini-flow sparc run infra-security "review security groups and IAM policies"
 ```
 
 ### Scenario 4.3: Mobile App Development
@@ -393,11 +393,11 @@ npx -y claude-flow@latest init --sparc --force
 ```bash
 # Mobile-focused initialization
 mkdir mobile-app && cd mobile-app
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 
 # Configure for mobile development
-./claude-flow config set platform "mobile"
-./claude-flow config set framework "react-native"
+./gemini-flow config set platform "mobile"
+./gemini-flow config set framework "react-native"
 ```
 
 **Mobile-Specific Configuration:**
@@ -432,9 +432,9 @@ npx -y claude-flow@latest init --sparc --force
 
 ```bash
 # Compliance-aware initialization
-npx -y claude-flow@latest init --sparc --force
-./claude-flow config set compliance.required true
-./claude-flow config set audit.logging true
+npx -y gemini-flow@latest init --sparc --force
+./gemini-flow config set compliance.required true
+./gemini-flow config set audit.logging true
 ```
 
 **Compliance Configuration:**
@@ -448,16 +448,16 @@ npx -y claude-flow@latest init --sparc --force
 - Security review required for all features
 
 ### AI Code Review Process
-1. ./claude-flow sparc run code "feature implementation"
-2. ./claude-flow sparc run security-review "compliance check"
+1. ./gemini-flow sparc run code "feature implementation"
+2. ./gemini-flow sparc run security-review "compliance check"
 3. Human senior developer review
 4. Compliance officer approval
 5. Deployment approval
 
 ### Audit Commands
-- ./claude-flow audit log --since "2024-01-01"
-- ./claude-flow audit export --format compliance
-- ./claude-flow memory export audit-backup.json
+- ./gemini-flow audit log --since "2024-01-01"
+- ./gemini-flow audit export --format compliance
+- ./gemini-flow memory export audit-backup.json
 ```
 
 ### Scenario 5.2: Enterprise Multi-Region Deployment
@@ -469,7 +469,7 @@ npx -y claude-flow@latest init --sparc --force
 for region in us-east eu-west asia-pacific; do
   mkdir -p regions/$region
   cd regions/$region
-  npx -y claude-flow@latest init --sparc --force --region $region
+  npx -y gemini-flow@latest init --sparc --force --region $region
   cd ../..
 done
 ```
@@ -478,18 +478,18 @@ done
 ```bash
 # US East (primary)
 cd regions/us-east
-./claude-flow config set region.primary true
-./claude-flow config set timezone "America/New_York"
+./gemini-flow config set region.primary true
+./gemini-flow config set timezone "America/New_York"
 
 # EU West
 cd regions/eu-west  
-./claude-flow config set region.gdpr true
-./claude-flow config set timezone "Europe/London"
+./gemini-flow config set region.gdpr true
+./gemini-flow config set timezone "Europe/London"
 
 # Asia Pacific
 cd regions/asia-pacific
-./claude-flow config set region.latency-sensitive true
-./claude-flow config set timezone "Asia/Tokyo"
+./gemini-flow config set region.latency-sensitive true
+./gemini-flow config set timezone "Asia/Tokyo"
 ```
 
 ---
@@ -513,7 +513,7 @@ sudo chown -R $USER:$USER .
 chmod 755 .
 
 # Retry initialization
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 ```
 
 ### Issue 2: Existing Files Conflict
@@ -531,7 +531,7 @@ mkdir backup-$(date +%Y%m%d)
 cp CLAUDE.md .roomodes backup-$(date +%Y%m%d)/
 
 # Force initialization
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 
 # Merge important customizations
 # Review backup files and merge needed changes
@@ -553,7 +553,7 @@ curl -I https://registry.npmjs.org/create-sparc
 npm cache clean --force
 
 # Retry with verbose logging
-npx claude-flow@latest init --sparc --force --verbose
+npx gemini-flow@latest init --sparc --force --verbose
 ```
 
 ### Issue 4: Template Generation Errors
@@ -566,26 +566,26 @@ Error: Failed to generate template: ReferenceError: createSparcClaudeMd is not d
 **Solution:**
 ```bash
 # Update to latest version
-npm uninstall -g claude-flow
-npm install -g claude-flow@latest
+npm uninstall -g gemini-flow
+npm install -g gemini-flow@latest
 
 # Clear any cached templates
 rm -rf ~/.npm/_cacache/
 
 # Retry initialization
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 ```
 
 ## Validation Checklist
 
 After any initialization scenario, verify:
 
-- [ ] `./claude-flow --version` works
-- [ ] `./claude-flow sparc modes` lists all modes
-- [ ] `./claude-flow status` shows healthy system
-- [ ] Claude Code slash commands available (type `/` in Claude Code)
-- [ ] Memory system initialized: `./claude-flow memory stats`
-- [ ] Test simple task: `./claude-flow sparc "hello world function"`
+- [ ] `./gemini-flow --version` works
+- [ ] `./gemini-flow sparc modes` lists all modes
+- [ ] `./gemini-flow status` shows healthy system
+- [ ] Gemini Code slash commands available (type `/` in Gemini Code)
+- [ ] Memory system initialized: `./gemini-flow memory stats`
+- [ ] Test simple task: `./gemini-flow sparc "hello world function"`
 
 ## Next Steps
 

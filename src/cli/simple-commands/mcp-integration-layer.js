@@ -1,6 +1,6 @@
 /**
  * MCP Integration Layer for Web UI
- * Provides comprehensive integration with all Claude-Flow MCP tools
+ * Provides comprehensive integration with all Gemini-Flow MCP tools
  * Supports real-time updates, error handling, and result streaming
  */
 
@@ -209,8 +209,8 @@ export class MCPIntegrationLayer {
     }
     
     try {
-      // Use the mcp__claude-flow__ tools that are available
-      const mcpToolName = `mcp__claude-flow__${toolName}`;
+      // Use the mcp__gemini-flow__ tools that are available
+      const mcpToolName = `mcp__gemini-flow__${toolName}`;
       
       // Check if we have this tool available (would need to be passed from the calling context)
       // For now, simulate execution

@@ -9,7 +9,7 @@ The Hive Mind Interactive Wizard is your gateway to effortless AI-powered develo
 Launch the wizard with a simple command:
 
 ```bash
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 ```
 
 You'll be greeted with:
@@ -329,7 +329,7 @@ Save full report? (Y/n): _
 Skip the wizard with command-line options:
 
 ```bash
-npx claude-flow@2.0.0 hive-mind \
+npx gemini-flow@2.0.0 hive-mind \
   --task "Build chat application" \
   --complexity high \
   --features "auth,database,api,frontend,realtime,tests" \
@@ -341,7 +341,7 @@ npx claude-flow@2.0.0 hive-mind \
 Use predefined templates:
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --template rest-api
+npx gemini-flow@2.0.0 hive-mind --template rest-api
 ```
 
 Available templates:
@@ -356,7 +356,7 @@ Available templates:
 Replay a previous task configuration:
 
 ```bash
-npx claude-flow@2.0.0 hive-mind --replay ./hive-mind-task-12345.json
+npx gemini-flow@2.0.0 hive-mind --replay ./hive-mind-task-12345.json
 ```
 
 ## Tips for Best Results
@@ -438,7 +438,7 @@ Result: Complete migration with documentation
 - Use web UI instead
 
 ### Unclear Options
-- Use help: `npx claude-flow@2.0.0 hive-mind --help`
+- Use help: `npx gemini-flow@2.0.0 hive-mind --help`
 - Check examples in this guide
 - Start simple, add complexity
 

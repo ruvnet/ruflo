@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Shell completion generator for Claude-Flow CLI
+ * Shell completion generator for Gemini-Flow CLI
  */
 
 import chalk from 'chalk';
@@ -83,7 +83,7 @@ export class CompletionGenerator {
   }
 
   private getBashCompletionScript(): string {
-    return `# Claude-Flow bash completion
+    return `# Gemini-Flow bash completion
 _claude_flow_completion() {
     local cur prev words cword
     _init_completion || return
@@ -186,13 +186,13 @@ _claude_flow_completion() {
     esac
 }
 
-complete -F _claude_flow_completion claude-flow`;
+complete -F _claude_flow_completion gemini-flow`;
   }
 
   private getZshCompletionScript(): string {
-    return `#compdef claude-flow
+    return `#compdef gemini-flow
 
-# Claude-Flow zsh completion
+# Gemini-Flow zsh completion
 
 _claude_flow() {
     local context state state_descr line
@@ -244,14 +244,14 @@ _claude_flow() {
 _claude_flow_commands() {
     local commands
     commands=(
-        'start:Start the Claude-Flow orchestration system'
-        'agent:Manage Claude-Flow agents'
+        'start:Start the Gemini-Flow orchestration system'
+        'agent:Manage Gemini-Flow agents'
         'task:Manage tasks'
         'memory:Manage agent memory'
-        'config:Manage Claude-Flow configuration'
-        'status:Show Claude-Flow system status'
+        'config:Manage Gemini-Flow configuration'
+        'status:Show Gemini-Flow system status'
         'monitor:Start live monitoring dashboard'
-        'session:Manage Claude-Flow sessions'
+        'session:Manage Gemini-Flow sessions'
         'workflow:Execute and manage workflows'
         'repl:Start interactive REPL mode'
         'version:Show detailed version information'
@@ -378,7 +378,7 @@ _claude_flow "$@"`;
   }
 
   private getFishCompletionScript(): string {
-    return `# Claude-Flow fish completion
+    return `# Gemini-Flow fish completion
 
 function __fish_claude_flow_needs_command
     set cmd (commandline -opc)
@@ -399,84 +399,84 @@ function __fish_claude_flow_using_command
 end
 
 # Main commands
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'start' -d 'Start the Claude-Flow orchestration system'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'agent' -d 'Manage Claude-Flow agents'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'task' -d 'Manage tasks'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'memory' -d 'Manage agent memory'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'config' -d 'Manage Claude-Flow configuration'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'status' -d 'Show Claude-Flow system status'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'monitor' -d 'Start live monitoring dashboard'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'session' -d 'Manage Claude-Flow sessions'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'workflow' -d 'Execute and manage workflows'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'repl' -d 'Start interactive REPL mode'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'version' -d 'Show detailed version information'
-complete -f -c claude-flow -n '__fish_claude_flow_needs_command' -a 'completion' -d 'Generate shell completion scripts'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'start' -d 'Start the Gemini-Flow orchestration system'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'agent' -d 'Manage Gemini-Flow agents'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'task' -d 'Manage tasks'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'memory' -d 'Manage agent memory'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'config' -d 'Manage Gemini-Flow configuration'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'status' -d 'Show Gemini-Flow system status'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'monitor' -d 'Start live monitoring dashboard'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'session' -d 'Manage Gemini-Flow sessions'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'workflow' -d 'Execute and manage workflows'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'repl' -d 'Start interactive REPL mode'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'version' -d 'Show detailed version information'
+complete -f -c gemini-flow -n '__fish_claude_flow_needs_command' -a 'completion' -d 'Generate shell completion scripts'
 
 # Global options
-complete -c claude-flow -s h -l help -d 'Show help information'
-complete -c claude-flow -s v -l verbose -d 'Enable verbose logging'
-complete -c claude-flow -s q -l quiet -d 'Suppress non-essential output'
-complete -c claude-flow -s c -l config -r -d 'Path to configuration file'
-complete -c claude-flow -l log-level -r -a 'debug info warn error' -d 'Set log level'
-complete -c claude-flow -l no-color -d 'Disable colored output'
-complete -c claude-flow -l json -d 'Output in JSON format'
-complete -c claude-flow -l profile -r -d 'Use named configuration profile'
+complete -c gemini-flow -s h -l help -d 'Show help information'
+complete -c gemini-flow -s v -l verbose -d 'Enable verbose logging'
+complete -c gemini-flow -s q -l quiet -d 'Suppress non-essential output'
+complete -c gemini-flow -s c -l config -r -d 'Path to configuration file'
+complete -c gemini-flow -l log-level -r -a 'debug info warn error' -d 'Set log level'
+complete -c gemini-flow -l no-color -d 'Disable colored output'
+complete -c gemini-flow -l json -d 'Output in JSON format'
+complete -c gemini-flow -l profile -r -d 'Use named configuration profile'
 
 # Agent subcommands
-complete -f -c claude-flow -n '__fish_claude_flow_using_command agent' -a 'spawn' -d 'Spawn a new agent'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command agent' -a 'list' -d 'List all agents'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command agent' -a 'terminate' -d 'Terminate an agent'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command agent' -a 'info' -d 'Get agent information'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command agent' -a 'spawn' -d 'Spawn a new agent'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command agent' -a 'list' -d 'List all agents'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command agent' -a 'terminate' -d 'Terminate an agent'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command agent' -a 'info' -d 'Get agent information'
 
 # Task subcommands
-complete -f -c claude-flow -n '__fish_claude_flow_using_command task' -a 'create' -d 'Create a new task'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command task' -a 'list' -d 'List all tasks'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command task' -a 'status' -d 'Get task status'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command task' -a 'cancel' -d 'Cancel a task'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command task' -a 'workflow' -d 'Execute workflow from file'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command task' -a 'create' -d 'Create a new task'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command task' -a 'list' -d 'List all tasks'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command task' -a 'status' -d 'Get task status'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command task' -a 'cancel' -d 'Cancel a task'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command task' -a 'workflow' -d 'Execute workflow from file'
 
 # Memory subcommands
-complete -f -c claude-flow -n '__fish_claude_flow_using_command memory' -a 'query' -d 'Query memory entries'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command memory' -a 'export' -d 'Export memory to file'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command memory' -a 'import' -d 'Import memory from file'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command memory' -a 'stats' -d 'Show memory statistics'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command memory' -a 'cleanup' -d 'Clean up old entries'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command memory' -a 'query' -d 'Query memory entries'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command memory' -a 'export' -d 'Export memory to file'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command memory' -a 'import' -d 'Import memory from file'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command memory' -a 'stats' -d 'Show memory statistics'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command memory' -a 'cleanup' -d 'Clean up old entries'
 
 # Config subcommands
-complete -f -c claude-flow -n '__fish_claude_flow_using_command config' -a 'show' -d 'Show current configuration'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command config' -a 'get' -d 'Get specific config value'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command config' -a 'set' -d 'Set config value'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command config' -a 'init' -d 'Initialize config file'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command config' -a 'validate' -d 'Validate config file'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command config' -a 'show' -d 'Show current configuration'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command config' -a 'get' -d 'Get specific config value'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command config' -a 'set' -d 'Set config value'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command config' -a 'init' -d 'Initialize config file'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command config' -a 'validate' -d 'Validate config file'
 
 # Session subcommands
-complete -f -c claude-flow -n '__fish_claude_flow_using_command session' -a 'list' -d 'List all saved sessions'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command session' -a 'save' -d 'Save current session state'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command session' -a 'restore' -d 'Restore a saved session'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command session' -a 'delete' -d 'Delete a saved session'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command session' -a 'export' -d 'Export session to file'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command session' -a 'import' -d 'Import session from file'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command session' -a 'info' -d 'Show detailed session information'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command session' -a 'clean' -d 'Clean up old sessions'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command session' -a 'list' -d 'List all saved sessions'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command session' -a 'save' -d 'Save current session state'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command session' -a 'restore' -d 'Restore a saved session'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command session' -a 'delete' -d 'Delete a saved session'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command session' -a 'export' -d 'Export session to file'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command session' -a 'import' -d 'Import session from file'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command session' -a 'info' -d 'Show detailed session information'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command session' -a 'clean' -d 'Clean up old sessions'
 
 # Workflow subcommands
-complete -f -c claude-flow -n '__fish_claude_flow_using_command workflow' -a 'run' -d 'Execute a workflow from file'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command workflow' -a 'validate' -d 'Validate a workflow file'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command workflow' -a 'list' -d 'List running workflows'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command workflow' -a 'status' -d 'Show workflow execution status'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command workflow' -a 'stop' -d 'Stop a running workflow'
-complete -f -c claude-flow -n '__fish_claude_flow_using_command workflow' -a 'template' -d 'Generate workflow templates'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command workflow' -a 'run' -d 'Execute a workflow from file'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command workflow' -a 'validate' -d 'Validate a workflow file'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command workflow' -a 'list' -d 'List running workflows'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command workflow' -a 'status' -d 'Show workflow execution status'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command workflow' -a 'stop' -d 'Stop a running workflow'
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command workflow' -a 'template' -d 'Generate workflow templates'
 
 # Completion subcommands
-complete -f -c claude-flow -n '__fish_claude_flow_using_command completion' -a 'bash zsh fish'`;
+complete -f -c gemini-flow -n '__fish_claude_flow_using_command completion' -a 'bash zsh fish'`;
   }
 
   private async installBashCompletion(script: string): Promise<void> {
     const possiblePaths = [
-      '/etc/bash_completion.d/claude-flow',
-      '/usr/local/etc/bash_completion.d/claude-flow',
-      `${process.env['HOME']}/.local/share/bash-completion/completions/claude-flow`,
-      `${process.env['HOME']}/.bash_completion.d/claude-flow`
+      '/etc/bash_completion.d/gemini-flow',
+      '/usr/local/etc/bash_completion.d/gemini-flow',
+      `${process.env['HOME']}/.local/share/bash-completion/completions/gemini-flow`,
+      `${process.env['HOME']}/.bash_completion.d/gemini-flow`
     ];
 
     for (const path of possiblePaths) {
@@ -501,9 +501,9 @@ complete -f -c claude-flow -n '__fish_claude_flow_using_command completion' -a '
 
   private async installZshCompletion(script: string): Promise<void> {
     const possiblePaths = [
-      `${process.env['HOME']}/.zsh/completions/_claude-flow`,
-      '/usr/local/share/zsh/site-functions/_claude-flow',
-      '/usr/share/zsh/site-functions/_claude-flow'
+      `${process.env['HOME']}/.zsh/completions/_gemini-flow`,
+      '/usr/local/share/zsh/site-functions/_gemini-flow',
+      '/usr/share/zsh/site-functions/_gemini-flow'
     ];
 
     for (const path of possiblePaths) {
@@ -528,9 +528,9 @@ complete -f -c claude-flow -n '__fish_claude_flow_using_command completion' -a '
 
   private async installFishCompletion(script: string): Promise<void> {
     const possiblePaths = [
-      `${process.env['HOME']}/.config/fish/completions/claude-flow.fish`,
-      '/usr/local/share/fish/completions/claude-flow.fish',
-      '/usr/share/fish/completions/claude-flow.fish'
+      `${process.env['HOME']}/.config/fish/completions/gemini-flow.fish`,
+      '/usr/local/share/fish/completions/gemini-flow.fish',
+      '/usr/share/fish/completions/gemini-flow.fish'
     ];
 
     for (const path of possiblePaths) {

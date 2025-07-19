@@ -2,11 +2,11 @@
 
 ## Quick Start
 
-The optimized initialization (`--sparc --force`) is the recommended way to set up Claude-Flow for maximum performance and productivity.
+The optimized initialization (`--sparc --force`) is the recommended way to set up Gemini-Flow for maximum performance and productivity.
 
 ```bash
 # ⭐ Recommended setup for new projects
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 ```
 
 ## Complete Usage Guide
@@ -31,24 +31,24 @@ ls -la           # Verify write permissions
 #### Recommended Optimized Setup
 ```bash
 # For new projects (recommended)
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 
 # For existing projects with customizations
 # (Backup first)
-cp CLAUDE.md CLAUDE.md.backup 2>/dev/null || true
-npx claude-flow@latest init --sparc --force
+cp GEMINI.md GEMINI.md.backup 2>/dev/null || true
+npx gemini-flow@latest init --sparc --force
 ```
 
 #### Alternative Setups
 ```bash
 # Standard SPARC (without optimizations)
-npx claude-flow@latest init --sparc
+npx gemini-flow@latest init --sparc
 
 # Minimal setup (basic features only)
-npx claude-flow@latest init --minimal
+npx gemini-flow@latest init --minimal
 
 # Preview what will be created (dry run)
-npx claude-flow@latest init --sparc --force --dry-run
+npx gemini-flow@latest init --sparc --force --dry-run
 ```
 
 ### 3. Post-Installation Verification
@@ -57,19 +57,19 @@ After initialization, verify everything is working:
 
 ```bash
 # Test local executable
-./claude-flow --version
+./gemini-flow --version
 
 # Check SPARC modes are available
-./claude-flow sparc modes
+./gemini-flow sparc modes
 
 # Verify memory system
-./claude-flow memory stats
+./gemini-flow memory stats
 
 # Test a simple SPARC command
-./claude-flow sparc "create a hello world function"
+./gemini-flow sparc "create a hello world function"
 
 # Check system status
-./claude-flow status
+./gemini-flow status
 ```
 
 ### 4. Understanding What Gets Created
@@ -77,13 +77,13 @@ After initialization, verify everything is working:
 #### Directory Structure
 ```
 your-project/
-├── CLAUDE.md                 # AI-readable project instructions (optimized)
+├── GEMINI.md                 # AI-readable project instructions (optimized)
 ├── memory-bank.md           # Memory system documentation
 ├── coordination.md          # Agent coordination guide
 ├── .roomodes               # SPARC mode definitions (optimized prompts)
-├── ./claude-flow           # Local executable wrapper
-├── .claude/
-│   ├── commands/           # Claude Code slash commands
+├── ./gemini-flow           # Local executable wrapper
+├── .gemini/
+│   ├── commands/           # Gemini CLI slash commands
 │   │   ├── sparc/         # SPARC-specific commands
 │   │   ├── sparc-architect.md
 │   │   ├── sparc-code.md
@@ -93,7 +93,7 @@ your-project/
 ├── memory/
 │   ├── agents/           # Agent-specific memory
 │   ├── sessions/         # Session storage
-│   └── claude-flow-data.json # Persistence database
+│   └── gemini-flow-data.json # Persistence database
 └── coordination/
     ├── memory_bank/      # Shared memory
     ├── subtasks/         # Task breakdown
@@ -102,7 +102,7 @@ your-project/
 
 #### Key Files Explained
 
-**CLAUDE.md (Optimized Version)**
+**GEMINI.md (Optimized Version)**
 - Enhanced with performance-tuned instructions
 - Pre-configured best practices
 - Optimized prompt patterns
@@ -114,7 +114,7 @@ your-project/
 - Mode-specific tool restrictions
 - Performance-optimized context windows
 
-**Claude Code Slash Commands**
+**Gemini CLI Slash Commands**
 - `/sparc` - Main SPARC orchestrator
 - `/sparc-architect` - System design mode
 - `/sparc-code` - Implementation mode
@@ -125,7 +125,7 @@ your-project/
 
 #### Step 1: Customize for Your Project
 ```bash
-# Edit CLAUDE.md to add project-specific context
+# Edit GEMINI.md to add project-specific context
 echo "
 
 ## Project-Specific Context
@@ -133,35 +133,35 @@ echo "
 - Tech Stack: [React, Node.js, PostgreSQL, etc]
 - Team Size: [solo/small/large]
 - Experience Level: [junior/mixed/senior]
-" >> CLAUDE.md
+" >> GEMINI.md
 
 # Configure project settings
-./claude-flow config set project.type "web-app"
-./claude-flow config set team.size 5
-./claude-flow config set team.experience "mixed"
+./gemini-flow config set project.type "web-app"
+./gemini-flow config set team.size 5
+./gemini-flow config set team.experience "mixed"
 ```
 
 #### Step 2: Test Core Functionality
 ```bash
 # Start with a simple task
-./claude-flow sparc "create a simple calculator function with tests"
+./gemini-flow sparc "create a simple calculator function with tests"
 
 # Try different modes
-./claude-flow sparc run architect "design user authentication system"
-./claude-flow sparc run tdd "implement user registration"
-./claude-flow sparc run security-review "review authentication code"
+./gemini-flow sparc run architect "design user authentication system"
+./gemini-flow sparc run tdd "implement user registration"
+./gemini-flow sparc run security-review "review authentication code"
 ```
 
 #### Step 3: Set Up Team Collaboration
 ```bash
 # Initialize shared memory
-./claude-flow memory store "project-start" "Project initialized with optimized Claude-Flow setup"
+./gemini-flow memory store "project-start" "Project initialized with optimized Gemini-Flow setup"
 
 # Create team guidelines
-./claude-flow sparc run docs-writer "create team development guidelines"
+./gemini-flow sparc run docs-writer "create team development guidelines"
 
 # Set up monitoring
-./claude-flow start --daemon  # Optional: run orchestrator in background
+./gemini-flow start --daemon  # Optional: run orchestrator in background
 ```
 
 ### 6. Performance Optimization Tips
@@ -169,29 +169,29 @@ echo "
 #### Monitor Performance
 ```bash
 # Enable performance monitoring
-./claude-flow config set monitoring.enabled true
+./gemini-flow config set monitoring.enabled true
 
 # Track response times
-./claude-flow monitor --focus performance
+./gemini-flow monitor --focus performance
 
 # Analyze token usage
-./claude-flow memory query --stats
+./gemini-flow memory query --stats
 ```
 
 #### Optimize for Your Use Case
 ```bash
 # Web development optimization
-./claude-flow config set focus "frontend,backend,api-design"
-./claude-flow config set testing.coverage 85
-./claude-flow config set security.level "high"
+./gemini-flow config set focus "frontend,backend,api-design"
+./gemini-flow config set testing.coverage 85
+./gemini-flow config set security.level "high"
 
 # Mobile development optimization
-./claude-flow config set platform "mobile"
-./claude-flow config set performance.priority "battery-life"
+./gemini-flow config set platform "mobile"
+./gemini-flow config set performance.priority "battery-life"
 
 # API development optimization
-./claude-flow config set api.style "RESTful"
-./claude-flow config set documentation.auto true
+./gemini-flow config set api.style "RESTful"
+./gemini-flow config set documentation.auto true
 ```
 
 ### 7. Advanced Configuration
@@ -239,36 +239,36 @@ cat > team-config.json << 'EOF'
 EOF
 
 # Apply team configuration
-./claude-flow config import team-config.json
+./gemini-flow config import team-config.json
 ```
 
 ### 8. Integration with Development Workflow
 
 #### Git Integration
 ```bash
-# Add Claude-Flow files to git
-git add CLAUDE.md .roomodes .claude/ memory-bank.md coordination.md
-git commit -m "feat: Add optimized Claude-Flow configuration
+# Add Gemini-Flow files to git
+git add GEMINI.md .roomodes .gemini/ memory-bank.md coordination.md
+git commit -m "feat: Add optimized Gemini-Flow configuration
 
-🤖 Generated with Claude-Flow v1.0.50
+🤖 Generated with Gemini-Flow v1.0.50
 - Optimized SPARC modes for faster AI responses
-- 20+ Claude Code slash commands
+- 20+ Gemini CLI slash commands
 - Memory system for persistent context
 - Complete development workflow integration"
 
 # Create .gitignore entries
 echo "
-# Claude-Flow
-memory/claude-flow-data.json
-.claude/logs/
+# Gemini-Flow
+memory/gemini-flow-data.json
+.gemini/logs/
 coordination/memory_bank/*.temp
 " >> .gitignore
 ```
 
 #### CI/CD Integration
 ```yaml
-# .github/workflows/claude-flow-quality.yml
-name: Claude-Flow Quality Check
+# .github/workflows/gemini-flow-quality.yml
+name: Gemini-Flow Quality Check
 on: [push, pull_request]
 
 jobs:
@@ -280,18 +280,18 @@ jobs:
         with:
           node-version: '18'
       
-      - name: Install Claude-Flow
-        run: npm install -g claude-flow
+      - name: Install Gemini-Flow
+        run: npm install -g gemini-flow
       
       - name: Validate Configuration
         run: |
-          ./claude-flow config validate
-          ./claude-flow sparc modes --validate
+          ./gemini-flow config validate
+          ./gemini-flow sparc modes --validate
       
       - name: Run Quality Gates
         run: |
-          ./claude-flow sparc run security-review "automated security scan"
-          ./claude-flow sparc run code-review "automated code quality check"
+          ./gemini-flow sparc run security-review "automated security scan"
+          ./gemini-flow sparc run code-review "automated code quality check"
 ```
 
 ### 9. Team Onboarding
@@ -300,41 +300,41 @@ jobs:
 ```bash
 # Quick onboarding script
 #!/bin/bash
-echo "🚀 Setting up Claude-Flow for new team member..."
+echo "🚀 Setting up Gemini-Flow for new team member..."
 
 # Clone project
 git clone <project-repo>
 cd <project-directory>
 
-# Verify Claude-Flow setup
-if [ ! -f "./claude-flow" ]; then
-  echo "⚠️  Claude-Flow not initialized. Running setup..."
-  npx -y claude-flow@latest init --sparc --force
+# Verify Gemini-Flow setup
+if [ ! -f "./gemini-flow" ]; then
+  echo "⚠️  Gemini-Flow not initialized. Running setup..."
+  npx -y gemini-flow@latest init --sparc --force
 fi
 
 # Test functionality
-./claude-flow --version
-./claude-flow sparc modes
+./gemini-flow --version
+./gemini-flow sparc modes
 
 # Set up personal configuration
-./claude-flow config set user.name "$(git config user.name)"
-./claude-flow config set user.experience "junior"  # or senior/intermediate
+./gemini-flow config set user.name "$(git config user.name)"
+./gemini-flow config set user.experience "junior"  # or senior/intermediate
 
-echo "✅ Claude-Flow setup complete!"
-echo "Try: ./claude-flow sparc 'hello world function'"
+echo "✅ Gemini-Flow setup complete!"
+echo "Try: ./gemini-flow sparc 'hello world function'"
 ```
 
 #### Team Training Materials
 ```bash
 # Generate training documentation
-./claude-flow sparc run docs-writer "create Claude-Flow training guide for new developers"
+./gemini-flow sparc run docs-writer "create Gemini-Flow training guide for new developers"
 
 # Create example tasks
-./claude-flow memory store "training-examples" "
-1. Basic function: ./claude-flow sparc 'create utility function'
-2. TDD workflow: ./claude-flow sparc tdd 'user validation'
-3. Architecture: ./claude-flow sparc run architect 'system design'
-4. Review process: ./claude-flow sparc run review 'code quality check'
+./gemini-flow memory store "training-examples" "
+1. Basic function: ./gemini-flow sparc 'create utility function'
+2. TDD workflow: ./gemini-flow sparc tdd 'user validation'
+3. Architecture: ./gemini-flow sparc run architect 'system design'
+4. Review process: ./gemini-flow sparc run review 'code quality check'
 "
 ```
 
@@ -344,19 +344,19 @@ echo "Try: ./claude-flow sparc 'hello world function'"
 ```bash
 # Weekly maintenance script
 #!/bin/bash
-echo "🔧 Claude-Flow weekly maintenance..."
+echo "🔧 Gemini-Flow weekly maintenance..."
 
 # Update to latest version
-npx claude-flow@latest --version
+npx gemini-flow@latest --version
 
 # Clean up old memory entries
-./claude-flow memory cleanup --days 30
+./gemini-flow memory cleanup --days 30
 
 # Backup configuration
-./claude-flow memory export backup-$(date +%Y%m%d).json
+./gemini-flow memory export backup-$(date +%Y%m%d).json
 
 # Check system health
-./claude-flow status
+./gemini-flow status
 
 echo "✅ Maintenance complete"
 ```
@@ -364,16 +364,16 @@ echo "✅ Maintenance complete"
 #### Update Process
 ```bash
 # Before updating
-./claude-flow memory export pre-update-backup.json
-cp CLAUDE.md CLAUDE.md.backup
+./gemini-flow memory export pre-update-backup.json
+cp GEMINI.md GEMINI.md.backup
 cp .roomodes .roomodes.backup
 
 # Update to latest version
-npm uninstall -g claude-flow
-npm install -g claude-flow@latest
+npm uninstall -g gemini-flow
+npm install -g gemini-flow@latest
 
 # Reinitialize with latest optimizations
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 
 # Merge customizations from backup
 # (Manual review recommended)
@@ -384,27 +384,27 @@ npx claude-flow@latest init --sparc --force
 #### Performance Issues
 ```bash
 # Debug slow responses
-./claude-flow config set logging.level debug
-./claude-flow monitor --performance
+./gemini-flow config set logging.level debug
+./gemini-flow monitor --performance
 
 # Check token usage
-./claude-flow memory stats --verbose
+./gemini-flow memory stats --verbose
 
 # Optimize prompts
-./claude-flow config set prompts.optimize true
+./gemini-flow config set prompts.optimize true
 ```
 
 #### Configuration Issues
 ```bash
 # Reset to defaults
-./claude-flow config reset
+./gemini-flow config reset
 
 # Validate configuration
-./claude-flow config validate
+./gemini-flow config validate
 
 # Regenerate corrupted files
-rm .roomodes CLAUDE.md
-npx claude-flow@latest init --sparc --force
+rm .roomodes GEMINI.md
+npx gemini-flow@latest init --sparc --force
 ```
 
 ### 12. Best Practices Summary
@@ -429,19 +429,19 @@ npx claude-flow@latest init --sparc --force
 #### Built-in Help
 ```bash
 # Command help
-./claude-flow init --help
-./claude-flow sparc --help
-./claude-flow --help
+./gemini-flow init --help
+./gemini-flow sparc --help
+./gemini-flow --help
 
 # Mode information
-./claude-flow sparc info architect
-./claude-flow sparc modes --verbose
+./gemini-flow sparc info architect
+./gemini-flow sparc modes --verbose
 ```
 
 #### Community Resources
-- **Documentation**: https://github.com/ruvnet/claude-code-flow/docs
-- **Issues**: https://github.com/ruvnet/claude-code-flow/issues
-- **Discussions**: https://github.com/ruvnet/claude-code-flow/discussions
+- **Documentation**: https://github.com/ruvnet/gemini-flow/docs
+- **Issues**: https://github.com/ruvnet/gemini-flow/issues
+- **Discussions**: https://github.com/ruvnet/gemini-flow/discussions
 
 #### Success Metrics
 
@@ -454,6 +454,6 @@ Track these metrics to measure optimization success:
 
 ## Conclusion
 
-The optimized initialization provides a powerful foundation for AI-assisted development. By following this guide, you'll maximize the benefits of Claude-Flow's enhanced performance while maintaining code quality and team productivity.
+The optimized initialization provides a powerful foundation for AI-assisted development. By following this guide, you'll maximize the benefits of Gemini-Flow's enhanced performance while maintaining code quality and team productivity.
 
 Remember: The optimization is just the beginning. Customize for your specific needs, monitor performance, and continuously improve your development workflow.

@@ -36,7 +36,7 @@ const SWARM_MODE = {
 
   // Prerequisites
   prerequisites: [
-    "Claude-Flow initialized with --sparc flag",
+    "Gemini-Flow initialized with --sparc flag",
     "Understanding of agent types and coordination strategies",
     "Basic familiarity with swarm concepts",
     "Project structure suitable for parallel processing"
@@ -90,7 +90,7 @@ You are operating in SPARC Swarm Mode 🐝 - Advanced multi-agent coordination w
 Coordinate multiple AI agents to accomplish complex tasks that would be difficult or impossible for a single agent due to scope, complexity, or timeout constraints.
 
 ## 🐝 SWARM CAPABILITIES
-You have access to the advanced Claude-Flow swarm system with the following capabilities:
+You have access to the advanced Gemini-Flow swarm system with the following capabilities:
 
 ### 🤖 Agent Types Available:
 - **Coordinator**: Plans and delegates tasks to other agents
@@ -115,19 +115,19 @@ You have access to the advanced Claude-Flow swarm system with the following capa
 ### Basic Swarm Execution:
 \`\`\`bash
 # Start a development swarm for complex implementation
-npx claude-flow swarm "Build a complete REST API with authentication" --strategy development --monitor
+npx gemini-flow swarm "Build a complete REST API with authentication" --strategy development --monitor
 
 # Research swarm with distributed coordination
-npx claude-flow swarm "Research and analyze blockchain technologies" --strategy research --distributed --ui
+npx gemini-flow swarm "Research and analyze blockchain technologies" --strategy research --distributed --ui
 
 # Background optimization swarm (for long-running tasks)
-npx claude-flow swarm "Optimize application performance across all modules" --strategy optimization --background --monitor
+npx gemini-flow swarm "Optimize application performance across all modules" --strategy optimization --background --monitor
 \`\`\`
 
 ### Advanced Swarm Configuration:
 \`\`\`bash
 # Full-featured swarm with all enterprise features
-npx claude-flow swarm "Complex enterprise application development" \\
+npx gemini-flow swarm "Complex enterprise application development" \\
   --strategy development \\
   --mode distributed \\
   --max-agents 10 \\
@@ -139,20 +139,20 @@ npx claude-flow swarm "Complex enterprise application development" \\
   --verbose
 
 # Dry run to see configuration before execution
-npx claude-flow swarm "Your complex task" --dry-run --strategy development
+npx gemini-flow swarm "Your complex task" --dry-run --strategy development
 \`\`\`
 
 ### 🔍 Monitoring and Management:
 \`\`\`bash
 # Real-time swarm monitoring
-npx claude-flow monitor
+npx gemini-flow monitor
 
 # Check swarm status
-npx claude-flow status
+npx gemini-flow status
 
 # Memory operations for cross-agent sharing
-npx claude-flow memory store "key" "value" --namespace swarm
-npx claude-flow memory query "search-term" --namespace swarm
+npx gemini-flow memory store "key" "value" --namespace swarm
+npx gemini-flow memory query "search-term" --namespace swarm
 \`\`\`
 
 ## 🎯 SWARM METHODOLOGY
@@ -191,7 +191,7 @@ The swarm system is specifically designed to handle complex, long-running tasks 
 ### 🌙 Background Execution:
 - Use \`--background\` flag for tasks that might take over 60 minutes
 - Background swarms run independently and save results
-- Monitor progress with \`npx claude-flow status\`
+- Monitor progress with \`npx gemini-flow status\`
 
 ### 🔄 Task Splitting:
 - Large tasks are automatically decomposed into smaller chunks
@@ -208,40 +208,40 @@ The swarm system is specifically designed to handle complex, long-running tasks 
 ### Complex Development Project:
 \`\`\`bash
 # 1. Start comprehensive development swarm
-npx claude-flow swarm "Build microservices e-commerce platform" \\
+npx gemini-flow swarm "Build microservices e-commerce platform" \\
   --strategy development --parallel --monitor --review --testing
 
 # 2. Monitor progress in real-time
-npx claude-flow monitor
+npx gemini-flow monitor
 
 # 3. Check specific swarm status
-npx claude-flow status
+npx gemini-flow status
 \`\`\`
 
 ### Research and Analysis:
 \`\`\`bash
 # 1. Launch research swarm with UI
-npx claude-flow swarm "Comprehensive AI/ML market analysis" \\
+npx gemini-flow swarm "Comprehensive AI/ML market analysis" \\
   --strategy research --distributed --ui --verbose
 
 # 2. Store findings for cross-agent access
-npx claude-flow memory store "research-findings" "key insights" --namespace swarm
+npx gemini-flow memory store "research-findings" "key insights" --namespace swarm
 \`\`\`
 
 ### Long-Running Optimization:
 \`\`\`bash
 # 1. Background optimization swarm
-npx claude-flow swarm "Optimize entire codebase performance" \\
+npx gemini-flow swarm "Optimize entire codebase performance" \\
   --strategy optimization --background --testing --encryption
 
 # 2. Check background progress
-npx claude-flow status
+npx gemini-flow status
 \`\`\`
 
 ## 🔧 TROUBLESHOOTING
 
 ### Common Issues:
-1. **Swarm fails to start**: Check if Claude-Flow is initialized with \`npx claude-flow init --sparc\`
+1. **Swarm fails to start**: Check if Gemini-Flow is initialized with \`npx gemini-flow init --sparc\`
 2. **Agents not coordinating**: Ensure memory namespace is consistent
 3. **Timeout concerns**: Use \`--background\` flag for long tasks
 4. **Performance issues**: Reduce \`--max-agents\` or use \`--monitor\` for insights
@@ -304,17 +304,17 @@ export function getSwarmOrchestration(taskDescription, memoryNamespace) {
 ### Phase 2: Swarm Configuration (2-5 minutes)
 4. **Environment Preparation**
    \`\`\`bash
-   # Ensure Claude-Flow is properly initialized
-   npx claude-flow status
+   # Ensure Gemini-Flow is properly initialized
+   npx gemini-flow status
    
    # Check memory system
-   npx claude-flow memory stats
+   npx gemini-flow memory stats
    \`\`\`
 
 5. **Dry Run Validation**
    \`\`\`bash
    # Test swarm configuration before execution
-   npx claude-flow swarm "${taskDescription}" --dry-run --strategy <selected-strategy>
+   npx gemini-flow swarm "${taskDescription}" --dry-run --strategy <selected-strategy>
    \`\`\`
 
 ### Phase 3: Swarm Execution (Variable)
@@ -323,22 +323,22 @@ export function getSwarmOrchestration(taskDescription, memoryNamespace) {
 
    **For Standard Tasks (< 30 minutes):**
    \`\`\`bash
-   npx claude-flow swarm "${taskDescription}" --strategy <strategy> --monitor --verbose
+   npx gemini-flow swarm "${taskDescription}" --strategy <strategy> --monitor --verbose
    \`\`\`
 
    **For Complex Tasks (30-60 minutes):**
    \`\`\`bash
-   npx claude-flow swarm "${taskDescription}" --strategy <strategy> --parallel --monitor --review
+   npx gemini-flow swarm "${taskDescription}" --strategy <strategy> --parallel --monitor --review
    \`\`\`
 
    **For Long-Running Tasks (> 60 minutes):**
    \`\`\`bash
-   npx claude-flow swarm "${taskDescription}" --strategy <strategy> --background --monitor --testing
+   npx gemini-flow swarm "${taskDescription}" --strategy <strategy> --background --monitor --testing
    \`\`\`
 
    **For Enterprise Tasks (Multiple hours):**
    \`\`\`bash
-   npx claude-flow swarm "${taskDescription}" \\
+   npx gemini-flow swarm "${taskDescription}" \\
      --strategy <strategy> \\
      --mode distributed \\
      --max-agents 10 \\
@@ -355,28 +355,28 @@ export function getSwarmOrchestration(taskDescription, memoryNamespace) {
 7. **Real-Time Monitoring**
    \`\`\`bash
    # Monitor swarm progress
-   npx claude-flow monitor
+   npx gemini-flow monitor
    
    # Check specific swarm status
-   npx claude-flow status
+   npx gemini-flow status
    
    # View agent activities
-   npx claude-flow agent list
+   npx gemini-flow agent list
    \`\`\`
 
 8. **Cross-Agent Memory Sharing**
    \`\`\`bash
    # Store important findings for all agents
-   npx claude-flow memory store "${memoryNamespace}_findings" "key insights and decisions"
+   npx gemini-flow memory store "${memoryNamespace}_findings" "key insights and decisions"
    
    # Store progress updates
-   npx claude-flow memory store "${memoryNamespace}_progress" "current completion status"
+   npx gemini-flow memory store "${memoryNamespace}_progress" "current completion status"
    
    # Store blockers or issues
-   npx claude-flow memory store "${memoryNamespace}_blockers" "any impediments or questions"
+   npx gemini-flow memory store "${memoryNamespace}_blockers" "any impediments or questions"
    
    # Query shared knowledge
-   npx claude-flow memory query "${memoryNamespace}" --limit 10
+   npx gemini-flow memory query "${memoryNamespace}" --limit 10
    \`\`\`
 
 ### Phase 5: Results Integration (5-15 minutes)
@@ -389,10 +389,10 @@ export function getSwarmOrchestration(taskDescription, memoryNamespace) {
 10. **Memory Documentation**
     \`\`\`bash
     # Store final results
-    npx claude-flow memory store "${memoryNamespace}_final" "completed task summary and results"
+    npx gemini-flow memory store "${memoryNamespace}_final" "completed task summary and results"
     
     # Store lessons learned
-    npx claude-flow memory store "${memoryNamespace}_lessons" "insights for future similar tasks"
+    npx gemini-flow memory store "${memoryNamespace}_lessons" "insights for future similar tasks"
     \`\`\`
 
 ## 🎯 SWARM SUCCESS CRITERIA

@@ -130,16 +130,16 @@ export class MigrationRunner {
     const targetPath = path.join(this.options.projectPath, '.claude');
 
     if (this.options.dryRun) {
-      logger.info('[DRY RUN] Would replace entire .claude folder');
+      logger.info('[DRY RUN] Would replace entire .gemini folder');
       return;
     }
 
-    // Remove existing .claude folder
+    // Remove existing .gemini folder
     if (await fs.pathExists(targetPath)) {
       await fs.remove(targetPath);
     }
 
-    // Copy new .claude folder
+    // Copy new .gemini folder
     await fs.copy(sourcePath, targetPath);
     result.filesCreated.push('.claude');
 
@@ -267,9 +267,9 @@ export class MigrationRunner {
       }
 
       const scripts = {
-        'migrate': 'claude-flow migrate',
-        'migrate:analyze': 'claude-flow migrate analyze',
-        'migrate:rollback': 'claude-flow migrate rollback'
+        'migrate': 'gemini-flow migrate',
+        'migrate:analyze': 'gemini-flow migrate analyze',
+        'migrate:rollback': 'gemini-flow migrate rollback'
       };
 
       let modified = false;
@@ -304,7 +304,7 @@ export class MigrationRunner {
       }
     };
 
-    // Backup .claude folder
+    // Backup .gemini folder
     const claudePath = path.join(this.options.projectPath, '.claude');
     if (await fs.pathExists(claudePath)) {
       await fs.copy(claudePath, path.join(backupPath, '.claude'));
@@ -481,9 +481,9 @@ export class MigrationRunner {
           { source: 'sparc/architect.md', target: 'sparc-architect.md' },
           { source: 'sparc/code.md', target: 'sparc-code.md' },
           { source: 'sparc/tdd.md', target: 'sparc-tdd.md' },
-          { source: 'claude-flow-help.md', target: 'claude-flow-help.md' },
-          { source: 'claude-flow-memory.md', target: 'claude-flow-memory.md' },
-          { source: 'claude-flow-swarm.md', target: 'claude-flow-swarm.md' }
+          { source: 'gemini-flow-help.md', target: 'gemini-flow-help.md' },
+          { source: 'gemini-flow-memory.md', target: 'gemini-flow-memory.md' },
+          { source: 'gemini-flow-swarm.md', target: 'gemini-flow-swarm.md' }
         ],
         configurations: {},
         templates: {}
@@ -554,7 +554,7 @@ export class MigrationRunner {
 
     if (result.rollbackPath) {
       console.log(`\n${chalk.bold('Rollback Available:')} ${result.rollbackPath}`);
-      console.log(chalk.gray(`  Run "claude-flow migrate rollback -t ${result.rollbackPath}" to revert`));
+      console.log(chalk.gray(`  Run "gemini-flow migrate rollback -t ${result.rollbackPath}" to revert`));
     }
 
     console.log(chalk.gray('\n' + '─'.repeat(50)));

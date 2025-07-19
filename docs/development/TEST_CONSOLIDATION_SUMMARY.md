@@ -24,7 +24,7 @@ Consolidated multiple test directories into a single `tests/` directory for bett
 
 5. **`test-sparc-init/` → `tests/sparc-init/`**
    - Moved SPARC initialization test files
-   - Preserved CLAUDE.md and claude-flow files
+   - Preserved CLAUDE.md and gemini-flow files
 
 6. **`test-dir/`**
    - Moved session data to `tests/data/sessions/test-dir/`
@@ -79,7 +79,7 @@ The following directories were intentionally NOT consolidated as they serve diff
 - `docker-test/` - Docker testing infrastructure
 - `mcp-test-environment/` - MCP testing environment setup
 - `init-test/` - Initialization testing
-- `claude-flow-mcp-test/` - Specific MCP test project
+- `gemini-flow-mcp-test/` - Specific MCP test project
 
 ## Benefits
 1. **Single Source of Truth**: All tests now live under `tests/`

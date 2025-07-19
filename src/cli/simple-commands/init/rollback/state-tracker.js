@@ -3,7 +3,7 @@
 export class StateTracker {
   constructor(workingDir) {
     this.workingDir = workingDir;
-    this.stateFile = `${workingDir}/.claude-flow-state.json`;
+    this.stateFile = `${workingDir}/.gemini-flow-state.json`;
   }
 
   /**

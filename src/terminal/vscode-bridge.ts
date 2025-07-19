@@ -2,10 +2,10 @@ import { getErrorMessage } from '../utils/error-handler.js';
 /**
  * VSCode Extension Bridge for Terminal Integration
  * 
- * This file provides the bridge between Claude-Flow and VSCode extension API
+ * This file provides the bridge between Gemini-Flow and VSCode extension API
  * for terminal management and output capture.
  * 
- * NOTE: This file is only used when Claude-Flow is packaged as a VS Code extension.
+ * NOTE: This file is only used when Gemini-Flow is packaged as a VS Code extension.
  * It is excluded from the main CLI build. If you need to use this in a VS Code
  * extension context, install @types/vscode as a devDependency.
  */
@@ -31,7 +31,7 @@ const terminalWriteEmulators = new Map<vscode.Terminal, vscode.EventEmitter<stri
  * Initialize the VSCode terminal bridge
  */
 export function initializeTerminalBridge(context: vscode.ExtensionContext): void {
-  // Inject VSCode API into global scope for Claude-Flow
+  // Inject VSCode API into global scope for Gemini-Flow
   (globalThis as any).vscode = vscode;
 
   // Register terminal output processor function
@@ -52,7 +52,7 @@ export function initializeTerminalBridge(context: vscode.ExtensionContext): void
     terminalWriteEmulators.set(terminal, writeEmulator);
 
     // Find terminal ID from name
-    const match = options.name?.match(/Claude-Flow Terminal ([\w-]+)/);
+    const match = options.name?.match(/Gemini-Flow Terminal ([\w-]+)/);
     if (match) {
       const terminalId = match[1];
       activeTerminals.set(terminalId, terminal);

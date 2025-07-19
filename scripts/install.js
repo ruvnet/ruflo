@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import https from 'node:https';
 import { spawn } from 'node:child_process';
 
-console.log('Installing Claude-Flow...');
+console.log('Installing Gemini-Flow...');
 
 // Check if Deno is available
 function checkDeno() {
@@ -59,8 +59,8 @@ async function main() {
       await installDeno();
     }
     
-    console.log('Claude-Flow installation completed!');
-    console.log('You can now use: npx claude-flow or claude-flow (if installed globally)');
+    console.log('Gemini-Flow installation completed!');
+    console.log('You can now use: npx gemini-flow or gemini-flow (if installed globally)');
     
   } catch (error) {
     console.error('Installation failed:', error.message);

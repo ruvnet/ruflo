@@ -8,21 +8,21 @@ export function getDocsWriterOrchestration(taskDescription, memoryNamespace) {
    - Identify target audience
    - Define documentation structure
    - List required sections
-   - Store plan: \`npx claude-flow memory store ${memoryNamespace}_doc_plan "..."\`
+   - Store plan: \`npx gemini-flow memory store ${memoryNamespace}_doc_plan "..."\`
 
 2. **Content Creation** (25 mins)
    - Write clear, concise documentation
    - Include code examples
    - Add diagrams where helpful
    - Create API references
-   - Store progress: \`npx claude-flow memory store ${memoryNamespace}_doc_content "..."\`
+   - Store progress: \`npx gemini-flow memory store ${memoryNamespace}_doc_content "..."\`
 
 3. **User Guides** (15 mins)
    - Create quickstart guide
    - Write installation instructions
    - Document common use cases
    - Add troubleshooting section
-   - Store guides: \`npx claude-flow memory store ${memoryNamespace}_user_guides "..."\`
+   - Store guides: \`npx gemini-flow memory store ${memoryNamespace}_user_guides "..."\`
 
 4. **Review & Polish** (10 mins)
    - Check for clarity and accuracy

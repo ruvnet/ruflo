@@ -1,6 +1,6 @@
 # Init Command - Modular Structure
 
-This directory contains the modular implementation of the `claude-flow init` command, which initializes Claude Code integration files for projects.
+This directory contains the modular implementation of the `gemini-flow init` command, which initializes Gemini Code integration files for projects.
 
 ## Directory Structure
 
@@ -20,20 +20,20 @@ init/
 │   ├── roomodes-config.js      # .roomodes configuration
 │   ├── workflows.js            # SPARC workflow templates
 │   └── roo-readme.js           # .roo directory README
-└── claude-commands/             # Claude Code slash commands
+└── claude-commands/             # Gemini Code slash commands
     ├── slash-commands.js        # Main slash command creator
     ├── sparc-commands.js        # SPARC-specific commands
-    └── claude-flow-commands.js  # Claude-Flow specific commands
+    └── gemini-flow-commands.js  # Gemini-Flow specific commands
 ```
 
 ## What Gets Created
 
 ### With `--sparc` flag:
 
-1. **Claude Code Configuration**:
+1. **Gemini Code Configuration**:
    - `CLAUDE.md` - SPARC-enhanced project instructions
    - `.claude/` directory structure
-   - `.claude/commands/` - Slash commands for Claude Code
+   - `.claude/commands/` - Slash commands for Gemini Code
    - `.claude/logs/` - Conversation logs directory
 
 2. **Memory System**:
@@ -41,7 +41,7 @@ init/
    - `memory/` directory structure
    - `memory/agents/` - Agent-specific memory
    - `memory/sessions/` - Session storage
-   - `memory/claude-flow-data.json` - Persistence database
+   - `memory/gemini-flow-data.json` - Persistence database
 
 3. **Coordination System**:
    - `coordination.md` - Agent coordination documentation
@@ -54,13 +54,13 @@ init/
 5. **Slash Commands Created**:
    - `/sparc` - Main SPARC command
    - `/sparc-<mode>` - Individual mode commands (architect, code, tdd, etc.)
-   - `/claude-flow-help` - Help command
-   - `/claude-flow-memory` - Memory system command
-   - `/claude-flow-swarm` - Swarm coordination command
+   - `/gemini-flow-help` - Help command
+   - `/gemini-flow-memory` - Memory system command
+   - `/gemini-flow-swarm` - Swarm coordination command
 
 6. **Local Executable**:
-   - `./claude-flow` (Unix/Mac/Linux)
-   - `claude-flow.cmd` (Windows)
+   - `./gemini-flow` (Unix/Mac/Linux)
+   - `gemini-flow.cmd` (Windows)
 
 ### With `--minimal` flag:
 Creates minimal versions of all configuration files without SPARC features.
@@ -72,13 +72,13 @@ Overwrites existing files if they already exist.
 
 ```bash
 # Recommended first-time setup with SPARC
-npx claude-flow@latest init --sparc
+npx gemini-flow@latest init --sparc
 
 # Minimal setup
-npx claude-flow init --minimal
+npx gemini-flow init --minimal
 
 # Force overwrite existing files
-npx claude-flow init --force
+npx gemini-flow init --force
 ```
 
 ## Module Responsibilities
@@ -89,11 +89,11 @@ npx claude-flow init --force
 - **sparc-structure.js**: SPARC environment setup and integration
 - **templates/**: All template content for generated files
 - **sparc/**: SPARC-specific configurations and templates
-- **claude-commands/**: Claude Code slash command generation
+- **claude-commands/**: Gemini Code slash command generation
 
 ## Notes
 
-- The init command detects Claude Code's `.claude/` directory structure
-- Slash commands follow Claude Code's markdown format with YAML frontmatter
-- SPARC modes are fully integrated with Claude-Flow's orchestration system
+- The init command detects Gemini Code's `.claude/` directory structure
+- Slash commands follow Gemini Code's markdown format with YAML frontmatter
+- SPARC modes are fully integrated with Gemini-Flow's orchestration system
 - All generated files include comprehensive documentation

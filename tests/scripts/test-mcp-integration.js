@@ -183,7 +183,7 @@ class MCPTester {
     };
 
     fs.writeFile(
-      '/workspaces/claude-code-flow/mcp-integration-test-results.json',
+      '/workspaces/gemini-flow/mcp-integration-test-results.json',
       JSON.stringify(reportData, null, 2)
     ).then(() => {
       console.log('\n📄 Detailed results saved to: mcp-integration-test-results.json');

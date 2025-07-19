@@ -4,7 +4,7 @@ import { getErrorMessage } from '../utils/error-handler.js';
  * MCP Server entry point that uses the wrapper by default
  */
 
-import { ClaudeCodeMCPWrapper } from './claude-code-wrapper.js';
+import { GeminiCliMCPWrapper } from './gemini-cli-wrapper.js';
 
 // Check if we should use the legacy server
 const useLegacy = process.env.CLAUDE_FLOW_LEGACY_MCP === 'true' || 
@@ -12,7 +12,7 @@ const useLegacy = process.env.CLAUDE_FLOW_LEGACY_MCP === 'true' ||
 
 async function main() {
   if (useLegacy) {
-    console.error('Starting Claude-Flow MCP in legacy mode...');
+    console.error('Starting Gemini-Flow MCP in legacy mode...');
     // Dynamically import the old server to avoid circular dependencies
     const module = await import('./server.js');
     if (module.runMCPServer) {
@@ -24,8 +24,8 @@ async function main() {
       process.exit(1);
     }
   } else {
-    console.error('Starting Claude-Flow MCP with Claude Code wrapper...');
-    const wrapper = new ClaudeCodeMCPWrapper();
+    console.error('Starting Gemini-Flow MCP with Gemini CLI wrapper...');
+    const wrapper = new GeminiCliMCPWrapper();
     await wrapper.run();
   }
 }

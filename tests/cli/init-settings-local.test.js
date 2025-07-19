@@ -30,7 +30,7 @@ describe('Init Command - settings.local.json Creation', () => {
     execSync('npx claude-flow init', {
       cwd: testDir,
       stdio: 'pipe',
-      env: { ...process.env, PATH: `/workspaces/claude-code-flow/node_modules/.bin:${process.env.PATH}` }
+      env: { ...process.env, PATH: `/workspaces/gemini-flow/node_modules/.bin:${process.env.PATH}` }
     });
 
     // Check if settings.local.json exists
@@ -58,7 +58,7 @@ describe('Init Command - settings.local.json Creation', () => {
     execSync('npx claude-flow init --dry-run', {
       cwd: testDir,
       stdio: 'pipe',
-      env: { ...process.env, PATH: `/workspaces/claude-code-flow/node_modules/.bin:${process.env.PATH}` }
+      env: { ...process.env, PATH: `/workspaces/gemini-flow/node_modules/.bin:${process.env.PATH}` }
     });
 
     // Check that settings.local.json does not exist
@@ -86,7 +86,7 @@ describe('Init Command - settings.local.json Creation', () => {
     execSync('npx claude-flow init --force', {
       cwd: testDir,
       stdio: 'pipe',
-      env: { ...process.env, PATH: `/workspaces/claude-code-flow/node_modules/.bin:${process.env.PATH}` }
+      env: { ...process.env, PATH: `/workspaces/gemini-flow/node_modules/.bin:${process.env.PATH}` }
     });
 
     // Read and verify new content
@@ -105,7 +105,7 @@ describe('Init Command - settings.local.json Creation', () => {
     execSync('npx claude-flow init', {
       cwd: testDir,
       stdio: 'pipe',
-      env: { ...process.env, PATH: `/workspaces/claude-code-flow/node_modules/.bin:${process.env.PATH}` }
+      env: { ...process.env, PATH: `/workspaces/gemini-flow/node_modules/.bin:${process.env.PATH}` }
     });
 
     const settingsLocalPath = path.join(testDir, '.claude', 'settings.local.json');

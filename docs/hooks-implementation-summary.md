@@ -1,7 +1,7 @@
 # Hooks Implementation Summary
 
 ## Overview
-Successfully implemented a comprehensive hooks system for Claude Flow that integrates with ruv-swarm for agent coordination.
+Successfully implemented a comprehensive hooks system for Gemini Flow that integrates with ruv-swarm for agent coordination.
 
 ## Implementation Details
 
@@ -100,24 +100,24 @@ Successfully implemented a comprehensive hooks system for Claude Flow that integ
 
 ```bash
 # Start a complex task with auto agent spawning
-claude hook pre-task --description "Build REST API" --complexity high --auto-spawn-agents
+gemini hook pre-task --description "Build REST API" --complexity high --auto-spawn-agents
 
 # Track file edits with memory storage
-claude hook post-edit --file src/api/routes.js --memory-key "api/routes/implementation" --format
+gemini hook post-edit --file src/api/routes.js --memory-key "api/routes/implementation" --format
 
 # End session with full metrics export
-claude hook session-end --export-metrics --generate-summary --save-to ./session-backup.json
+gemini hook session-end --export-metrics --generate-summary --save-to ./session-backup.json
 
 # Track performance metrics
-claude hook performance --operation "api-build" --duration 1234 --metrics '{"memory": 512, "cpu": 85}'
+gemini hook performance --operation "api-build" --duration 1234 --metrics '{"memory": 512, "cpu": 85}'
 
 # Synchronize memory across agents
-claude hook memory-sync --namespace "project-state" --direction push --target "shared-memory"
+gemini hook memory-sync --namespace "project-state" --direction push --target "shared-memory"
 ```
 
 ## Integration Points
 
-1. **Claude Code Native Tools**: Hooks enhance but don't replace Claude's file operations
+1. **Gemini Code Native Tools**: Hooks enhance but don't replace Claude's file operations
 2. **ruv-swarm Coordination**: All hooks delegate to ruv-swarm for execution
 3. **Memory Persistence**: Hooks enable cross-session state management
 4. **Performance Tracking**: Automatic metrics collection and analysis

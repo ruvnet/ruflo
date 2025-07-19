@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * ruv-swarm MCP tools wrapper for Claude Code integration
+ * ruv-swarm MCP tools wrapper for Gemini Code integration
  * 
  * This module provides MCP tools that integrate with the external ruv-swarm
  * package to enable advanced swarm coordination and neural capabilities.
@@ -85,7 +85,7 @@ async function executeRuvSwarmCommand(
 }
 
 /**
- * Create ruv-swarm MCP tools for Claude Code integration
+ * Create ruv-swarm MCP tools for Gemini Code integration
  * 
  * These tools provide access to the full ruv-swarm functionality including:
  * - Swarm initialization and management
@@ -553,7 +553,7 @@ export async function getRuvSwarmCapabilities(logger?: ILogger): Promise<any> {
 }
 
 /**
- * Initialize ruv-swarm with claude-code-flow integration
+ * Initialize ruv-swarm with gemini-flow integration
  */
 export async function initializeRuvSwarmIntegration(
   workingDirectory: string,
@@ -561,7 +561,7 @@ export async function initializeRuvSwarmIntegration(
 ): Promise<RuvSwarmResponse> {
   const context: RuvSwarmToolContext = {
     workingDirectory,
-    sessionId: `claude-flow-${Date.now()}`
+    sessionId: `gemini-flow-${Date.now()}`
   };
   
   logger?.info('Initializing ruv-swarm integration', { workingDirectory });
@@ -585,7 +585,7 @@ export async function initializeRuvSwarmIntegration(
     data: {
       available: true,
       capabilities,
-      integration: 'claude-code-flow',
+      integration: 'gemini-flow',
       sessionId: context.sessionId
     },
     metadata: {

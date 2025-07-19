@@ -19,12 +19,12 @@ let stderr = '';
 
 claudeProcess.stdout.on('data', (data) => {
   stdout += data.toString();
-  console.log('Claude output:', data.toString());
+  console.log('Gemini output:', data.toString());
 });
 
 claudeProcess.stderr.on('data', (data) => {
   stderr += data.toString();
-  console.log('Claude error:', data.toString());
+  console.log('Gemini error:', data.toString());
 });
 
 claudeProcess.stdin.write(simplePrompt);

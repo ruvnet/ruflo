@@ -80,7 +80,7 @@ class GitHubAPIClient {
     const headers = {
       'Authorization': `token ${this.token}`,
       'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'Claude-Flow-GitHub-Integration',
+      'User-Agent': 'Gemini-Flow-GitHub-Integration',
       ...options.headers
     };
 

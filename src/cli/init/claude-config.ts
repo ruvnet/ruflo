@@ -1,5 +1,5 @@
 import { getErrorMessage } from '../../utils/error-handler.js';
-// init/claude-config.ts - Claude configuration creation
+// init/claude-config.ts - Gemini configuration creation
 import type { InitOptions } from './index.js';
 
 export async function createClaudeConfig(options: InitOptions): Promise<void> {
@@ -11,7 +11,7 @@ export async function createClaudeConfig(options: InitOptions): Promise<void> {
     version: "1.0.71",
     project: {
       name: path.basename(process.cwd()),
-      type: "claude-flow",
+      type: "gemini-flow",
       created: new Date().toISOString()
     },
     features: {
@@ -63,7 +63,7 @@ async function createBatchToolsConfig(): Promise<void> {
   
   const batchConfig = {
     version: "1.0.71",
-    description: "Batch tools configuration for Claude Code orchestration",
+    description: "Batch tools configuration for Gemini Code orchestration",
     tools: {
       todoWrite: {
         enabled: true,
@@ -144,7 +144,7 @@ async function createSwarmConfig(): Promise<void> {
   
   const swarmConfig = {
     version: "1.0.71",
-    description: "Swarm orchestration configuration for Claude-Flow",
+    description: "Swarm orchestration configuration for Gemini-Flow",
     strategies: {
       research: {
         description: "Multi-agent research coordination",

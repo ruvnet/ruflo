@@ -30,8 +30,8 @@ describe("Simple Test Suite", () => {
     });
 
     it("should handle special characters", () => {
-      const result = greet("Claude-Flow 🚀");
-      assertEquals(result, "Hello, Claude-Flow 🚀!");
+      const result = greet("Gemini-Flow 🚀");
+      assertEquals(result, "Hello, Gemini-Flow 🚀!");
     });
   });
 

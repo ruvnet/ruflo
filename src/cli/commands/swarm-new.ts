@@ -15,10 +15,10 @@ import { spawn, execSync } from 'child_process';
 import * as readline from 'readline';
 
 async function launchClaudeCodeWithSwarm(objective: string, options: any): Promise<void> {
-  console.log('\n🤖 Launching Claude Code with swarm configuration...\n');
+  console.log('\n🤖 Launching Gemini Code with swarm configuration...\n');
   
   // Build the swarm prompt with interactive approval if requested
-  let swarmPrompt = `You are orchestrating a Claude Flow Swarm with advanced MCP tool coordination.
+  let swarmPrompt = `You are orchestrating a Gemini Flow Swarm with advanced MCP tool coordination.
 
 🎯 OBJECTIVE: ${objective}
 
@@ -63,21 +63,21 @@ If you need to do X operations, they should be in 1 message, not X messages.
 \`\`\`javascript
 [Single Message with Multiple Tools]:
   // Spawn ALL agents at once
-  mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
-  mcp__claude-flow__agent_spawn {"type": "researcher", "name": "DataAnalyst"}
-  mcp__claude-flow__agent_spawn {"type": "coder", "name": "BackendDev"}
-  mcp__claude-flow__agent_spawn {"type": "coder", "name": "FrontendDev"}
-  mcp__claude-flow__agent_spawn {"type": "tester", "name": "QAEngineer"}
+  mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
+  mcp__gemini-flow__agent_spawn {"type": "researcher", "name": "DataAnalyst"}
+  mcp__gemini-flow__agent_spawn {"type": "coder", "name": "BackendDev"}
+  mcp__gemini-flow__agent_spawn {"type": "coder", "name": "FrontendDev"}
+  mcp__gemini-flow__agent_spawn {"type": "tester", "name": "QAEngineer"}
   
   // Initialize ALL memory keys
-  mcp__claude-flow__memory_store {"key": "swarm/objective", "value": "${objective}"}
-  mcp__claude-flow__memory_store {"key": "swarm/config", "value": ${JSON.stringify(options)}}
+  mcp__gemini-flow__memory_store {"key": "swarm/objective", "value": "${objective}"}
+  mcp__gemini-flow__memory_store {"key": "swarm/config", "value": ${JSON.stringify(options)}}
   
   // Create task hierarchy
-  mcp__claude-flow__task_create {"name": "${objective}", "type": "parent", "id": "main"}
-  mcp__claude-flow__task_create {"name": "Research Phase", "parent": "main"}
-  mcp__claude-flow__task_create {"name": "Design Phase", "parent": "main"}
-  mcp__claude-flow__task_create {"name": "Implementation", "parent": "main"}
+  mcp__gemini-flow__task_create {"name": "${objective}", "type": "parent", "id": "main"}
+  mcp__gemini-flow__task_create {"name": "Research Phase", "parent": "main"}
+  mcp__gemini-flow__task_create {"name": "Design Phase", "parent": "main"}
+  mcp__gemini-flow__task_create {"name": "Implementation", "parent": "main"}
   
   // Initialize comprehensive todo list
   TodoWrite {"todos": [
@@ -93,30 +93,30 @@ If you need to do X operations, they should be in 1 message, not X messages.
 \`\`\`javascript
 [Single Message]:
   // Assign all tasks
-  mcp__claude-flow__task_assign {"taskId": "research-1", "agentId": "researcher-1"}
-  mcp__claude-flow__task_assign {"taskId": "design-1", "agentId": "architect-1"}
-  mcp__claude-flow__task_assign {"taskId": "code-1", "agentId": "coder-1"}
-  mcp__claude-flow__task_assign {"taskId": "code-2", "agentId": "coder-2"}
+  mcp__gemini-flow__task_assign {"taskId": "research-1", "agentId": "researcher-1"}
+  mcp__gemini-flow__task_assign {"taskId": "design-1", "agentId": "architect-1"}
+  mcp__gemini-flow__task_assign {"taskId": "code-1", "agentId": "coder-1"}
+  mcp__gemini-flow__task_assign {"taskId": "code-2", "agentId": "coder-2"}
   
   // Communicate to all agents
-  mcp__claude-flow__agent_communicate {"to": "all", "message": "Begin phase 1"}
+  mcp__gemini-flow__agent_communicate {"to": "all", "message": "Begin phase 1"}
   
   // Update multiple task statuses
-  mcp__claude-flow__task_update {"taskId": "research-1", "status": "in_progress"}
-  mcp__claude-flow__task_update {"taskId": "design-1", "status": "pending"}
+  mcp__gemini-flow__task_update {"taskId": "research-1", "status": "in_progress"}
+  mcp__gemini-flow__task_update {"taskId": "design-1", "status": "pending"}
 \`\`\`
 
 3️⃣ **MEMORY COORDINATION** - Store/retrieve in batches:
 \`\`\`javascript
 [Single Message]:
   // Store multiple findings
-  mcp__claude-flow__memory_store {"key": "research/requirements", "value": {...}}
-  mcp__claude-flow__memory_store {"key": "research/constraints", "value": {...}}
-  mcp__claude-flow__memory_store {"key": "architecture/decisions", "value": {...}}
+  mcp__gemini-flow__memory_store {"key": "research/requirements", "value": {...}}
+  mcp__gemini-flow__memory_store {"key": "research/constraints", "value": {...}}
+  mcp__gemini-flow__memory_store {"key": "architecture/decisions", "value": {...}}
   
   // Retrieve related data
-  mcp__claude-flow__memory_retrieve {"key": "research/*"}
-  mcp__claude-flow__memory_search {"pattern": "architecture"}
+  mcp__gemini-flow__memory_retrieve {"key": "research/*"}
+  mcp__gemini-flow__memory_search {"pattern": "architecture"}
 \`\`\`
 
 4️⃣ **FILE & CODE OPERATIONS** - Parallel execution:
@@ -133,27 +133,27 @@ If you need to do X operations, they should be in 1 message, not X messages.
   Write {"file_path": "/tests/auth.test.js", "content": "..."}
   
   // Update memory with results
-  mcp__claude-flow__memory_store {"key": "code/api/auth", "value": "implemented"}
-  mcp__claude-flow__memory_store {"key": "code/api/users", "value": "implemented"}
+  mcp__gemini-flow__memory_store {"key": "code/api/auth", "value": "implemented"}
+  mcp__gemini-flow__memory_store {"key": "code/api/users", "value": "implemented"}
 \`\`\`
 
 5️⃣ **MONITORING & STATUS** - Combined checks:
 \`\`\`javascript
 [Single Message]:
-  mcp__claude-flow__swarm_monitor {}
-  mcp__claude-flow__swarm_status {}
-  mcp__claude-flow__agent_list {"status": "active"}
-  mcp__claude-flow__task_status {"includeCompleted": false}
+  mcp__gemini-flow__swarm_monitor {}
+  mcp__gemini-flow__swarm_status {}
+  mcp__gemini-flow__agent_list {"status": "active"}
+  mcp__gemini-flow__task_status {"includeCompleted": false}
   TodoRead {}
 \`\`\`
 
 ❌ NEVER DO THIS (Sequential = SLOW):
 \`\`\`
-Message 1: mcp__claude-flow__agent_spawn
-Message 2: mcp__claude-flow__agent_spawn
+Message 1: mcp__gemini-flow__agent_spawn
+Message 2: mcp__gemini-flow__agent_spawn
 Message 3: TodoWrite (one todo)
 Message 4: Read file
-Message 5: mcp__claude-flow__memory_store
+Message 5: mcp__gemini-flow__memory_store
 \`\`\`
 
 ✅ ALWAYS DO THIS (Batch = FAST):
@@ -209,12 +209,12 @@ BEST FOR:
 
 \`\`\`
 [BatchTool - Single Message]:
-  mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
-  mcp__claude-flow__agent_spawn {"type": "researcher", "name": "RequirementsAnalyst"}
-  mcp__claude-flow__agent_spawn {"type": "architect", "name": "SystemDesigner"}
-  mcp__claude-flow__memory_store {"key": "swarm/objective", "value": "${objective}"}
-  mcp__claude-flow__task_create {"name": "Analyze Requirements", "assignTo": "RequirementsAnalyst"}
-  mcp__claude-flow__task_create {"name": "Design Architecture", "assignTo": "SystemDesigner", "dependsOn": ["Analyze Requirements"]}
+  mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
+  mcp__gemini-flow__agent_spawn {"type": "researcher", "name": "RequirementsAnalyst"}
+  mcp__gemini-flow__agent_spawn {"type": "architect", "name": "SystemDesigner"}
+  mcp__gemini-flow__memory_store {"key": "swarm/objective", "value": "${objective}"}
+  mcp__gemini-flow__task_create {"name": "Analyze Requirements", "assignTo": "RequirementsAnalyst"}
+  mcp__gemini-flow__task_create {"name": "Design Architecture", "assignTo": "SystemDesigner", "dependsOn": ["Analyze Requirements"]}
   TodoWrite {"todos": [
     {"id": "1", "content": "Initialize swarm coordination", "status": "completed", "priority": "high"},
     {"id": "2", "content": "Analyze objective requirements", "status": "in_progress", "priority": "high"},
@@ -234,13 +234,13 @@ BEST FOR:
    Example:
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__agent_spawn (coordinator)
-     mcp__claude-flow__agent_spawn (architect)
-     mcp__claude-flow__agent_spawn (coder-1)
-     mcp__claude-flow__agent_spawn (coder-2)
-     mcp__claude-flow__agent_spawn (tester)
-     mcp__claude-flow__memory_store { key: "init", value: {...} }
-     mcp__claude-flow__task_create { name: "Main", subtasks: [...] }
+     mcp__gemini-flow__agent_spawn (coordinator)
+     mcp__gemini-flow__agent_spawn (architect)
+     mcp__gemini-flow__agent_spawn (coder-1)
+     mcp__gemini-flow__agent_spawn (coder-2)
+     mcp__gemini-flow__agent_spawn (tester)
+     mcp__gemini-flow__memory_store { key: "init", value: {...} }
+     mcp__gemini-flow__task_create { name: "Main", subtasks: [...] }
      TodoWrite { todos: [5-10 todos at once] }
    \`\`\`
 
@@ -257,28 +257,28 @@ BEST FOR:
 🔧 AVAILABLE MCP TOOLS FOR SWARM COORDINATION:
 
 📊 MONITORING & STATUS:
-- mcp__claude-flow__swarm_status - Check current swarm status and agent activity
-- mcp__claude-flow__swarm_monitor - Real-time monitoring of swarm execution
-- mcp__claude-flow__agent_list - List all active agents and their capabilities
-- mcp__claude-flow__task_status - Check task progress and dependencies
+- mcp__gemini-flow__swarm_status - Check current swarm status and agent activity
+- mcp__gemini-flow__swarm_monitor - Real-time monitoring of swarm execution
+- mcp__gemini-flow__agent_list - List all active agents and their capabilities
+- mcp__gemini-flow__task_status - Check task progress and dependencies
 
 🧠 MEMORY & KNOWLEDGE:
-- mcp__claude-flow__memory_store - Store knowledge in swarm collective memory
-- mcp__claude-flow__memory_retrieve - Retrieve shared knowledge from memory
-- mcp__claude-flow__memory_search - Search collective memory by pattern
-- mcp__claude-flow__memory_sync - Synchronize memory across agents
+- mcp__gemini-flow__memory_store - Store knowledge in swarm collective memory
+- mcp__gemini-flow__memory_retrieve - Retrieve shared knowledge from memory
+- mcp__gemini-flow__memory_search - Search collective memory by pattern
+- mcp__gemini-flow__memory_sync - Synchronize memory across agents
 
 🤖 AGENT MANAGEMENT:
-- mcp__claude-flow__agent_spawn - Spawn specialized agents for tasks
-- mcp__claude-flow__agent_assign - Assign tasks to specific agents
-- mcp__claude-flow__agent_communicate - Send messages between agents
-- mcp__claude-flow__agent_coordinate - Coordinate agent activities
+- mcp__gemini-flow__agent_spawn - Spawn specialized agents for tasks
+- mcp__gemini-flow__agent_assign - Assign tasks to specific agents
+- mcp__gemini-flow__agent_communicate - Send messages between agents
+- mcp__gemini-flow__agent_coordinate - Coordinate agent activities
 
 📋 TASK ORCHESTRATION:
-- mcp__claude-flow__task_create - Create new tasks with dependencies
-- mcp__claude-flow__task_assign - Assign tasks to agents
-- mcp__claude-flow__task_update - Update task status and progress
-- mcp__claude-flow__task_complete - Mark tasks as complete with results
+- mcp__gemini-flow__task_create - Create new tasks with dependencies
+- mcp__gemini-flow__task_assign - Assign tasks to agents
+- mcp__gemini-flow__task_update - Update task status and progress
+- mcp__gemini-flow__task_complete - Mark tasks as complete with results
 
 🎛️ COORDINATION MODES:
 1. CENTRALIZED (default): Single coordinator manages all agents
@@ -304,46 +304,46 @@ BEST FOR:
    S - Specification Phase (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__memory_store { key: "specs/requirements", value: {...} }
-     mcp__claude-flow__task_create { name: "Requirement 1" }
-     mcp__claude-flow__task_create { name: "Requirement 2" }
-     mcp__claude-flow__task_create { name: "Requirement 3" }
-     mcp__claude-flow__agent_spawn { type: "researcher", name: "SpecAnalyst" }
+     mcp__gemini-flow__memory_store { key: "specs/requirements", value: {...} }
+     mcp__gemini-flow__task_create { name: "Requirement 1" }
+     mcp__gemini-flow__task_create { name: "Requirement 2" }
+     mcp__gemini-flow__task_create { name: "Requirement 3" }
+     mcp__gemini-flow__agent_spawn { type: "researcher", name: "SpecAnalyst" }
    \`\`\`
    
    P - Pseudocode Phase (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__memory_store { key: "pseudocode/main", value: {...} }
-     mcp__claude-flow__task_create { name: "Design API" }
-     mcp__claude-flow__task_create { name: "Design Data Model" }
-     mcp__claude-flow__agent_communicate { to: "all", message: "Review design" }
+     mcp__gemini-flow__memory_store { key: "pseudocode/main", value: {...} }
+     mcp__gemini-flow__task_create { name: "Design API" }
+     mcp__gemini-flow__task_create { name: "Design Data Model" }
+     mcp__gemini-flow__agent_communicate { to: "all", message: "Review design" }
    \`\`\`
    
    A - Architecture Phase (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__agent_spawn { type: "architect", name: "LeadArchitect" }
-     mcp__claude-flow__memory_store { key: "architecture/decisions", value: {...} }
-     mcp__claude-flow__task_create { name: "Backend", subtasks: [...] }
-     mcp__claude-flow__task_create { name: "Frontend", subtasks: [...] }
+     mcp__gemini-flow__agent_spawn { type: "architect", name: "LeadArchitect" }
+     mcp__gemini-flow__memory_store { key: "architecture/decisions", value: {...} }
+     mcp__gemini-flow__task_create { name: "Backend", subtasks: [...] }
+     mcp__gemini-flow__task_create { name: "Frontend", subtasks: [...] }
    \`\`\`
    
    R - Refinement Phase (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__swarm_monitor {}
-     mcp__claude-flow__task_update { taskId: "1", progress: 50 }
-     mcp__claude-flow__task_update { taskId: "2", progress: 75 }
-     mcp__claude-flow__memory_store { key: "learnings/iteration1", value: {...} }
+     mcp__gemini-flow__swarm_monitor {}
+     mcp__gemini-flow__task_update { taskId: "1", progress: 50 }
+     mcp__gemini-flow__task_update { taskId: "2", progress: 75 }
+     mcp__gemini-flow__memory_store { key: "learnings/iteration1", value: {...} }
    \`\`\`
    
    C - Completion Phase (Single BatchTool):
    \`\`\`
    [BatchTool]:
-     mcp__claude-flow__task_complete { taskId: "1", results: {...} }
-     mcp__claude-flow__task_complete { taskId: "2", results: {...} }
-     mcp__claude-flow__memory_retrieve { pattern: "**/*" }
+     mcp__gemini-flow__task_complete { taskId: "1", results: {...} }
+     mcp__gemini-flow__task_complete { taskId: "2", results: {...} }
+     mcp__gemini-flow__memory_retrieve { pattern: "**/*" }
      TodoWrite { todos: [{content: "Final review", status: "completed"}] }
    \`\`\`
 
@@ -377,24 +377,24 @@ TESTER:
 📝 EXAMPLE MCP TOOL USAGE PATTERNS:
 
 1. Starting a swarm:
-   mcp__claude-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
-   mcp__claude-flow__memory_store {"key": "objective", "value": "${objective}"}
-   mcp__claude-flow__task_create {"name": "Main Objective", "type": "parent"}
+   mcp__gemini-flow__agent_spawn {"type": "coordinator", "name": "SwarmLead"}
+   mcp__gemini-flow__memory_store {"key": "objective", "value": "${objective}"}
+   mcp__gemini-flow__task_create {"name": "Main Objective", "type": "parent"}
 
 2. Spawning worker agents:
-   mcp__claude-flow__agent_spawn {"type": "researcher", "capabilities": ["web-search"]}
-   mcp__claude-flow__agent_spawn {"type": "coder", "capabilities": ["python", "testing"]}
-   mcp__claude-flow__task_assign {"taskId": "task-123", "agentId": "agent-456"}
+   mcp__gemini-flow__agent_spawn {"type": "researcher", "capabilities": ["web-search"]}
+   mcp__gemini-flow__agent_spawn {"type": "coder", "capabilities": ["python", "testing"]}
+   mcp__gemini-flow__task_assign {"taskId": "task-123", "agentId": "agent-456"}
 
 3. Coordinating work:
-   mcp__claude-flow__agent_communicate {"to": "agent-123", "message": "Begin phase 2"}
-   mcp__claude-flow__memory_store {"key": "phase1/results", "value": {...}}
-   mcp__claude-flow__task_update {"taskId": "task-123", "progress": 75}
+   mcp__gemini-flow__agent_communicate {"to": "agent-123", "message": "Begin phase 2"}
+   mcp__gemini-flow__memory_store {"key": "phase1/results", "value": {...}}
+   mcp__gemini-flow__task_update {"taskId": "task-123", "progress": 75}
 
 4. Monitoring progress:
-   mcp__claude-flow__swarm_monitor {}
-   mcp__claude-flow__task_status {"includeCompleted": true}
-   mcp__claude-flow__agent_list {"status": "active"}
+   mcp__gemini-flow__swarm_monitor {}
+   mcp__gemini-flow__task_status {"includeCompleted": true}
+   mcp__gemini-flow__agent_list {"status": "active"}
 
 💾 MEMORY PATTERNS:
 
@@ -411,11 +411,11 @@ Start by spawning a coordinator agent and creating the initial task structure. U
 
 The swarm should be self-documenting - use memory_store to save all important information, decisions, and results throughout the execution.`;
 
-  // Check if claude command exists
+  // Check if gemini command exists
   try {
     execSync('which claude', { stdio: 'pipe' });
   } catch {
-    error('Claude command not found. Please ensure Claude is installed and in your PATH.');
+    error('Gemini command not found. Please ensure Gemini is installed and in your PATH.');
     console.log('\nTo install Claude, run:');
     console.log('  npm install -g @anthropic/claude-cli');
     return;
@@ -425,11 +425,11 @@ The swarm should be self-documenting - use memory_store to save all important in
   if (options.interactive || options.approvalRequired) {
     console.log(`\n📋 Interactive Approval Mode Enabled`);
     console.log(`👤 Reviewer: ${options.reviewer}`);
-    console.log(`\n⚠️  Claude will present a plan before making any changes.`);
+    console.log(`\n⚠️  Gemini will present a plan before making any changes.`);
     console.log(`You must explicitly approve with "APPROVED" or request modifications.\n`);
   }
   
-  // Launch Claude with the swarm prompt
+  // Launch Gemini with the swarm prompt
   const args = ['--text', swarmPrompt];
   
   console.log('Launching Claude...\n');
@@ -445,9 +445,9 @@ The swarm should be self-documenting - use memory_store to save all important in
   
   claudeProcess.on('exit', (code) => {
     if (code !== 0) {
-      error(`Claude exited with code ${code}`);
+      error(`Gemini exited with code ${code}`);
     } else {
-      success('Claude session completed successfully');
+      success('Gemini session completed successfully');
     }
   });
 }
@@ -482,8 +482,8 @@ export async function swarmAction(ctx: CommandContext) {
     return;
   }
   
-  // If claude flag is set (or not executor flag), launch Claude Code with swarm prompt
-  if (options.claude || !options.executor) {
+  // If gemini flag is set (or not executor flag), launch Gemini Code with swarm prompt
+  if (options.gemini || !options.executor) {
     await launchClaudeCodeWithSwarm(objective, options);
     return;
   }
@@ -523,7 +523,7 @@ export async function swarmAction(ctx: CommandContext) {
         loggingEnabled: true,
         tracingEnabled: options.verbose,
         metricsInterval: 5000,
-        heartbeatInterval: 60000, // Increased to 60 seconds for long Claude executions
+        heartbeatInterval: 60000, // Increased to 60 seconds for long Gemini executions
         healthCheckInterval: 120000, // Increased to 2 minutes
         retentionPeriod: 24 * 60 * 60 * 1000,
         maxLogSize: 100 * 1024 * 1024,
@@ -598,7 +598,7 @@ export async function swarmAction(ctx: CommandContext) {
     await memory.initialize();
     
     // Create a directory for this swarm run
-    const swarmDir = `.claude-flow/swarm-runs/${swarmId}`;
+    const swarmDir = `.gemini-flow/swarm-runs/${swarmId}`;
     await fs.mkdir(swarmDir, { recursive: true });
 
     // Create objective
@@ -749,7 +749,7 @@ export async function swarmAction(ctx: CommandContext) {
       // Background mode requested - launch in background
       console.log(`\n🌙 Launching swarm in background mode...`);
       console.log(`📁 Results will be saved to: ${swarmDir}`);
-      console.log(`📊 Monitor progress: claude-flow swarm status ${swarmId}`);
+      console.log(`📊 Monitor progress: gemini-flow swarm status ${swarmId}`);
       
       // Save initial state for background monitoring
       await fs.writeFile(`${swarmDir}/background.json`, JSON.stringify({
@@ -763,7 +763,7 @@ export async function swarmAction(ctx: CommandContext) {
       // Use the swarm-background script
       const scriptPath = new URL(import.meta.url).pathname;
       const projectRoot = scriptPath.substring(0, scriptPath.indexOf('/src/'));
-      const bgScriptPath = `${projectRoot}/bin/claude-flow-swarm-background`;
+      const bgScriptPath = `${projectRoot}/bin/gemini-flow-swarm-background`;
       
       const bgCommand = new Deno.Command(bgScriptPath, {
         args: [objective, ...buildBackgroundArgs(options)],
@@ -851,8 +851,8 @@ function parseSwarmOptions(flags: any) {
     ui: flags.ui || false,
     dryRun: flags.dryRun || flags['dry-run'] || flags.d || false,
     
-    // Claude Code options
-    claude: flags.claude || false,
+    // Gemini Code options
+    claude: flags.gemini || false,
     executor: flags.executor || false
   };
 }
@@ -1447,17 +1447,17 @@ function showDryRunConfiguration(swarmId: string, objective: string, options: an
 
 function showSwarmHelp(): void {
   console.log(`
-🐝 Claude Flow Advanced Swarm System
+🐝 Gemini Flow Advanced Swarm System
 
 USAGE:
-  claude-flow swarm <objective> [options]
+  gemini-flow swarm <objective> [options]
 
 EXAMPLES:
-  claude-flow swarm "Build a REST API" --strategy development
-  claude-flow swarm "Research cloud architecture" --strategy research --ui
-  claude-flow swarm "Analyze data trends" --strategy analysis --parallel
-  claude-flow swarm "Optimize performance" --distributed --monitor
-  claude-flow swarm "Create GitHub issues for bugs" --interactive --reviewer @username
+  gemini-flow swarm "Build a REST API" --strategy development
+  gemini-flow swarm "Research cloud architecture" --strategy research --ui
+  gemini-flow swarm "Analyze data trends" --strategy analysis --parallel
+  gemini-flow swarm "Optimize performance" --distributed --monitor
+  gemini-flow swarm "Create GitHub issues for bugs" --interactive --reviewer @username
 
 STRATEGIES:
   auto           Automatically determine best approach (default)
@@ -1504,7 +1504,7 @@ OPTIONS:
 
 INTERACTIVE APPROVAL MODE:
   When --interactive or --approval-required is set:
-  - Claude will present a detailed plan before making changes
+  - Gemini will present a detailed plan before making changes
   - You must explicitly approve with "APPROVED"
   - You can request modifications to the plan
   - Implementation only proceeds after approval
@@ -1516,6 +1516,6 @@ ADVANCED OPTIONS:
   --fault-tolerance <strategy>   Fault tolerance approach
   --quality-threshold <n>        Quality threshold (0-1)
 
-For more information, see: https://github.com/ruvnet/claude-flow
+For more information, see: https://github.com/ruvnet/gemini-flow
 `);
 }

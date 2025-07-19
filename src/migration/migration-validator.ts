@@ -13,8 +13,8 @@ import { glob } from 'glob';
 export class MigrationValidator {
   private requiredFiles = [
     '.claude/commands/sparc.md',
-    '.claude/commands/claude-flow-help.md',
-    '.claude/commands/claude-flow-memory.md',
+    '.claude/commands/gemini-flow-help.md',
+    '.claude/commands/gemini-flow-memory.md',
     '.claude/BATCHTOOLS_GUIDE.md',
     '.claude/BATCHTOOLS_BEST_PRACTICES.md'
   ];
@@ -24,9 +24,9 @@ export class MigrationValidator {
     'sparc-architect',
     'sparc-code',
     'sparc-tdd',
-    'claude-flow-help',
-    'claude-flow-memory',
-    'claude-flow-swarm'
+    'gemini-flow-help',
+    'gemini-flow-memory',
+    'gemini-flow-swarm'
   ];
 
   async validate(projectPath: string): Promise<ValidationResult> {
@@ -64,11 +64,11 @@ export class MigrationValidator {
       passed: true
     };
 
-    // Check .claude directory exists
+    // Check .gemini directory exists
     const claudePath = path.join(projectPath, '.claude');
     if (!await fs.pathExists(claudePath)) {
       check.passed = false;
-      result.errors.push('.claude directory not found');
+      result.errors.push('.gemini directory not found');
     }
 
     // Check commands directory
@@ -258,7 +258,7 @@ export class MigrationValidator {
         await fs.writeFile(testFile, 'test');
         await fs.remove(testFile);
       } catch (error) {
-        result.warnings.push('.claude directory may not be writable');
+        result.warnings.push('.gemini directory may not be writable');
       }
     }
 
@@ -271,7 +271,7 @@ export class MigrationValidator {
         // Check for script conflicts
         const scripts = packageJson.scripts || {};
         const conflictingScripts = Object.keys(scripts).filter(script => 
-          script.startsWith('claude-flow') || script.startsWith('sparc')
+          script.startsWith('gemini-flow') || script.startsWith('sparc')
         );
         
         if (conflictingScripts.length > 0) {

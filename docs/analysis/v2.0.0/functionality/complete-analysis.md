@@ -1,8 +1,8 @@
-# Claude Flow v2.0.0 - Complete Functionality Analysis
+# Gemini Flow v2.0.0 - Complete Functionality Analysis
 
 ## Executive Summary
 
-Claude Flow v2.0.0 represents a major evolution in AI agent orchestration, featuring complete ruv-swarm integration with 27 MCP tools, neural network processing, and enterprise-grade infrastructure.
+Gemini Flow v2.0.0 represents a major evolution in AI agent orchestration, featuring complete ruv-swarm integration with 27 MCP tools, neural network processing, and enterprise-grade infrastructure.
 
 ## 1. Core Architecture
 
@@ -19,8 +19,8 @@ Claude Flow v2.0.0 represents a major evolution in AI agent orchestration, featu
 #### Local Installation
 ```bash
 # Clone and install
-git clone https://github.com/ruvnet/claude-code-flow
-cd claude-code-flow
+git clone https://github.com/ruvnet/gemini-flow
+cd gemini-flow
 npm install
 
 # Local wrapper
@@ -139,7 +139,7 @@ docker run --rm node:20-alpine npx ruv-swarm@latest status --verbose
 ### 4.1 ruv-swarm Integration
 
 ```
-Claude Flow v2.0.0
+Gemini Flow v2.0.0
        ↓
   NPX Execution
        ↓
@@ -220,6 +220,6 @@ Claude Flow v2.0.0
 
 ## 8. Conclusion
 
-Claude Flow v2.0.0 shows excellent potential with strong remote execution capabilities via NPX. The swarm intelligence and neural network features work well, achieving good performance metrics. However, local build issues and incomplete MCP integration prevent it from being fully production-ready in all deployment scenarios.
+Gemini Flow v2.0.0 shows excellent potential with strong remote execution capabilities via NPX. The swarm intelligence and neural network features work well, achieving good performance metrics. However, local build issues and incomplete MCP integration prevent it from being fully production-ready in all deployment scenarios.
 
 **Recommendation**: Use NPX execution method for production deployments until local build issues are resolved.

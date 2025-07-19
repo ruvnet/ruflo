@@ -1,7 +1,7 @@
 #!/bin/bash
-# Test script for claude-flow MCP wrapper integration
+# Test script for gemini-flow MCP wrapper integration
 
-echo "🧪 Testing Claude-Flow MCP Wrapper Integration"
+echo "🧪 Testing Gemini-Flow MCP Wrapper Integration"
 echo "=============================================="
 echo ""
 
@@ -45,7 +45,7 @@ async function testMCP() {
     console.log('Result:', listResult.content[0].text.substring(0, 200) + '...');
     
     // Test sparc_coder
-    console.log('\n🧪 Testing sparc_coder (would forward to Claude Code)...');
+    console.log('\n🧪 Testing sparc_coder (would forward to Gemini Code)...');
     const coderResult = await client.callTool('sparc_coder', {
       task: 'Create a simple greeting function',
       context: { memoryKey: 'test_greeting' }
@@ -75,6 +75,6 @@ echo "✅ Integration test complete!"
 echo ""
 echo "📌 Next steps:"
 echo "1. The MCP server now uses the wrapper by default"
-echo "2. All SPARC tools forward to Claude Code with prompt injection"
+echo "2. All SPARC tools forward to Gemini Code with prompt injection"
 echo "3. To use legacy mode: CLAUDE_FLOW_LEGACY_MCP=true npm run mcp"
-echo "4. Configure in Claude Desktop with: claude-flow.mcp.json"
+echo "4. Configure in Gemini Desktop with: gemini-flow.mcp.json"

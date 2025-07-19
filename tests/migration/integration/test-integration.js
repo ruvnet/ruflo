@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Integration Tests for Claude Flow Migration
+ * Integration Tests for Gemini Flow Migration
  * Tests integration with ruv-swarm MCP, GitHub API, and cross-platform functionality
  */
 
@@ -12,8 +12,8 @@ const os = require('os');
 const net = require('net');
 
 // Test configuration
-const TEST_DIR = path.join(os.tmpdir(), 'claude-flow-integration-' + Date.now());
-const CLAUDE_FLOW_BIN = path.resolve(__dirname, '../../../bin/claude-flow');
+const TEST_DIR = path.join(os.tmpdir(), 'gemini-flow-integration-' + Date.now());
+const CLAUDE_FLOW_BIN = path.resolve(__dirname, '../../../bin/gemini-flow');
 
 // Color codes for output
 const colors = {
@@ -137,7 +137,7 @@ console.log(`${colors.yellow}Setting up test environment...${colors.reset}`);
 fs.mkdirSync(TEST_DIR, { recursive: true });
 process.chdir(TEST_DIR);
 
-// Initialize Claude Flow
+// Initialize Gemini Flow
 exec(`node ${CLAUDE_FLOW_BIN} init -y`);
 
 // Test 1: ruv-swarm MCP integration
@@ -204,19 +204,19 @@ runTest('GitHub API integration', () => {
 // Test 3: Cross-platform script execution
 runTest('Cross-platform script execution', () => {
   const isWindows = process.platform === 'win32';
-  const scriptName = isWindows ? 'claude-flow.bat' : 'claude-flow';
+  const scriptName = isWindows ? 'gemini-flow.bat' : 'gemini-flow';
   
   // Create platform-specific wrapper
   if (isWindows) {
     fs.writeFileSync(
-      path.join(TEST_DIR, 'claude-flow.bat'),
-      '@echo off\nnode "%~dp0claude-flow" %*'
+      path.join(TEST_DIR, 'gemini-flow.bat'),
+      '@echo off\nnode "%~dp0gemini-flow" %*'
     );
   }
   
   // Test execution
   const output = exec(`./${scriptName} --version`);
-  if (!output.includes('claude-flow')) {
+  if (!output.includes('gemini-flow')) {
     throw new Error('Cross-platform script execution failed');
   }
 });

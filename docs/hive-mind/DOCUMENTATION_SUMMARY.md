@@ -22,7 +22,7 @@ This document summarizes the comprehensive documentation created for the Hive Mi
 - Coordination mechanisms
 - Performance benefits
 - Use case examples
-- Integration with Claude Flow ecosystem
+- Integration with Gemini Flow ecosystem
 
 #### `/docs/hive-mind/cli-commands.md`
 - Comprehensive CLI command reference
@@ -114,7 +114,7 @@ All documentation follows:
 ## Usage
 
 Users can now:
-1. Start immediately with `npx claude-flow@2.0.0 hive-mind`
+1. Start immediately with `npx gemini-flow@2.0.0 hive-mind`
 2. Follow the wizard for guided setup
 3. Use CLI commands for advanced control
 4. Integrate programmatically with the API

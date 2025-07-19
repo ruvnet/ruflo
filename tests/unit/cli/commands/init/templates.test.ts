@@ -22,7 +22,7 @@ describe("Template Generation Tests", () => {
     it("should generate full CLAUDE.md with proper structure", () => {
       const content = createFullClaudeMd();
       
-      expect(content).toContain("# Claude Code Configuration");
+      expect(content).toContain("# Gemini Code Configuration");
       expect(content).toContain("## Project Overview");
       expect(content).toContain("## Key Commands");
       expect(content).toContain("## Code Style");
@@ -32,7 +32,7 @@ describe("Template Generation Tests", () => {
     it("should generate minimal CLAUDE.md with basic info", () => {
       const content = createMinimalClaudeMd();
       
-      expect(content).toContain("# Claude Code Configuration");
+      expect(content).toContain("# Gemini Code Configuration");
       expect(content).toContain("Minimal project configuration");
       
       // Should be shorter than full version
@@ -58,10 +58,10 @@ describe("Template Generation Tests", () => {
       const content = createSparcClaudeMd();
       
       // Check for SPARC commands
-      expect(content).toContain("npx claude-flow sparc modes");
-      expect(content).toContain("npx claude-flow sparc run");
-      expect(content).toContain("npx claude-flow sparc tdd");
-      expect(content).toContain("npx claude-flow sparc info");
+      expect(content).toContain("npx gemini-flow sparc modes");
+      expect(content).toContain("npx gemini-flow sparc run");
+      expect(content).toContain("npx gemini-flow sparc tdd");
+      expect(content).toContain("npx gemini-flow sparc info");
     });
   });
 

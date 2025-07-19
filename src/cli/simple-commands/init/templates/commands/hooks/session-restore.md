@@ -5,7 +5,7 @@ Restore a previous session's context and state.
 ## Usage
 
 ```bash
-npx claude-flow hook session-restore [options]
+npx gemini-flow hook session-restore [options]
 ```
 
 ## Options
@@ -20,22 +20,22 @@ npx claude-flow hook session-restore [options]
 
 ### Basic session restore
 ```bash
-npx claude-flow hook session-restore --session-id "dev-session-2024"
+npx gemini-flow hook session-restore --session-id "dev-session-2024"
 ```
 
 ### Full restoration
 ```bash
-npx claude-flow hook session-restore -s "feature-auth" --load-memory --restore-files --resume-tasks
+npx gemini-flow hook session-restore -s "feature-auth" --load-memory --restore-files --resume-tasks
 ```
 
 ### Selective restore
 ```bash
-npx claude-flow hook session-restore -s "bug-fix-123" --load-memory --resume-tasks
+npx gemini-flow hook session-restore -s "bug-fix-123" --load-memory --resume-tasks
 ```
 
 ### Context merging
 ```bash
-npx claude-flow hook session-restore -s "refactor-api" --merge-context
+npx gemini-flow hook session-restore -s "refactor-api" --merge-context
 ```
 
 ## Features
@@ -66,7 +66,7 @@ npx claude-flow hook session-restore -s "refactor-api" --merge-context
 
 ## Integration
 
-This hook is automatically called by Claude Code when:
+This hook is automatically called by Gemini Code when:
 - Resuming previous work
 - After unexpected shutdown
 - Loading saved sessions
@@ -75,7 +75,7 @@ This hook is automatically called by Claude Code when:
 Manual usage in agents:
 ```bash
 # To restore context
-npx claude-flow hook session-restore --session-id "previous-session" --load-memory
+npx gemini-flow hook session-restore --session-id "previous-session" --load-memory
 ```
 
 ## Output

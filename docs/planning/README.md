@@ -1,6 +1,6 @@
 # Planning Documents
 
-This directory contains planning and phase documents for Claude Flow development.
+This directory contains planning and phase documents for Gemini Flow development.
 
 ## Phase Documents
 

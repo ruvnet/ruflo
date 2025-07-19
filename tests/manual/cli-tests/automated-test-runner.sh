@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Automated CI/CD Test Runner for claude-flow
+# Automated CI/CD Test Runner for gemini-flow
 # Designed for GitHub Actions and Docker environments
 
 set -e
@@ -160,7 +160,7 @@ run_core_tests() {
     fi
     
     # Test 8: Binary Files
-    if execute_test_with_retry "Binary Files" "[ -f bin/claude-flow ] && [ -x bin/claude-flow ]"; then
+    if execute_test_with_retry "Binary Files" "[ -f bin/gemini-flow ] && [ -x bin/gemini-flow ]"; then
         ((tests_passed++))
         junit_content="$junit_content    <testcase name=\"Binary Files\" classname=\"Build\" time=\"1.0\"/>\n"
     else
@@ -175,7 +175,7 @@ run_core_tests() {
     # Generate JUnit XML
     cat > "$JUNIT_FILE" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="claude-flow-cli-tests" tests="$total_tests" failures="$tests_failed" time="$duration">
+<testsuites name="gemini-flow-cli-tests" tests="$total_tests" failures="$tests_failed" time="$duration">
   <testsuite name="CLI Tests" tests="$total_tests" failures="$tests_failed" time="$duration">
 $(echo -e "$junit_content")
   </testsuite>
@@ -235,7 +235,7 @@ generate_report() {
     local report_file="$TEST_OUTPUT_DIR/test-report.md"
     
     cat > "$report_file" <<EOF
-# 🧪 Claude-Flow CLI Test Report
+# 🧪 Gemini-Flow CLI Test Report
 
 **Generated:** $(date)  
 **Environment:** $(uname -a)  
@@ -272,7 +272,7 @@ $(timeout 10 node cli.js --help 2>/dev/null | grep -E '^\s+[a-z]' | head -10)
 
 - **Name:** $(node -pe 'JSON.parse(require("fs").readFileSync("package.json")).name' 2>/dev/null)
 - **Main Entry:** $(node -pe 'JSON.parse(require("fs").readFileSync("package.json")).main' 2>/dev/null)
-- **Binary:** $(node -pe 'JSON.parse(require("fs").readFileSync("package.json")).bin["claude-flow"]' 2>/dev/null)
+- **Binary:** $(node -pe 'JSON.parse(require("fs").readFileSync("package.json")).bin["gemini-flow"]' 2>/dev/null)
 
 ## 🔗 Integration Status
 

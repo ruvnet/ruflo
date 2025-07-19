@@ -1,4 +1,4 @@
-# Claude Flow Web UI - Deployment Checklist
+# Gemini Flow Web UI - Deployment Checklist
 
 ## 📋 Pre-Deployment Checklist
 
@@ -219,15 +219,15 @@
 ## 📞 Contact Information
 
 ### Deployment Team
-- **Lead Developer**: dev-lead@claude-flow.ai
-- **DevOps Engineer**: devops@claude-flow.ai
-- **QA Lead**: qa-lead@claude-flow.ai
-- **Product Manager**: pm@claude-flow.ai
+- **Lead Developer**: dev-lead@gemini-flow.ai
+- **DevOps Engineer**: devops@gemini-flow.ai
+- **QA Lead**: qa-lead@gemini-flow.ai
+- **Product Manager**: pm@gemini-flow.ai
 
 ### Emergency Contacts
 - **On-Call Engineer**: +1-555-CLAUDE-1
 - **Incident Hotline**: +1-555-FLOW-911
-- **Executive Escalation**: exec@claude-flow.ai
+- **Executive Escalation**: exec@gemini-flow.ai
 
 ## 📝 Sign-offs
 

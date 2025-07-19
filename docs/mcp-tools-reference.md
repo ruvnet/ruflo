@@ -1,6 +1,6 @@
-# Claude Flow v2.0.0 MCP Tools Reference
+# Gemini Flow v2.0.0 MCP Tools Reference
 
-This comprehensive reference covers all 87 MCP (Model Context Protocol) tools available in Claude Flow v2.0.0. These tools provide deep integration with Claude Code and enable sophisticated swarm coordination, neural processing, and workflow automation.
+This comprehensive reference covers all 87 MCP (Model Context Protocol) tools available in Gemini Flow v2.0.0. These tools provide deep integration with Gemini CLI and enable sophisticated swarm coordination, neural processing, and workflow automation.
 
 ## 🧠 Core Swarm Coordination Tools
 
@@ -16,7 +16,7 @@ Initialize a swarm with specified topology and configuration.
 
 **Example:**
 ```bash
-claude-flow mcp swarm-init --topology mesh --max-agents 6 --strategy parallel
+gemini-flow mcp swarm-init --topology mesh --max-agents 6 --strategy parallel
 ```
 
 #### `swarm_status`
@@ -27,7 +27,7 @@ Monitor swarm health and performance metrics.
 
 **Example:**
 ```bash
-claude-flow mcp swarm-status --swarm-id mesh-001
+gemini-flow mcp swarm-status --swarm-id mesh-001
 ```
 
 #### `swarm_destroy`
@@ -38,7 +38,7 @@ Gracefully shutdown a swarm with cleanup.
 
 **Example:**
 ```bash
-claude-flow mcp swarm-destroy --swarm-id mesh-001
+gemini-flow mcp swarm-destroy --swarm-id mesh-001
 ```
 
 #### `swarm_monitor`
@@ -50,7 +50,7 @@ Real-time swarm monitoring with live updates.
 
 **Example:**
 ```bash
-claude-flow mcp swarm-monitor --swarm-id mesh-001 --interval 5000
+gemini-flow mcp swarm-monitor --swarm-id mesh-001 --interval 5000
 ```
 
 #### `swarm_scale`
@@ -62,7 +62,7 @@ Auto-scale agent count based on workload.
 
 **Example:**
 ```bash
-claude-flow mcp swarm-scale --swarm-id mesh-001 --target-size 12
+gemini-flow mcp swarm-scale --swarm-id mesh-001 --target-size 12
 ```
 
 ### Agent Operations
@@ -78,7 +78,7 @@ Create specialized AI agents with defined capabilities.
 
 **Example:**
 ```bash
-claude-flow mcp agent-spawn --type researcher --name "AI Research Specialist" --capabilities '["api-analysis","performance-research"]'
+gemini-flow mcp agent-spawn --type researcher --name "AI Research Specialist" --capabilities '["api-analysis","performance-research"]'
 ```
 
 #### `agent_list`
@@ -89,7 +89,7 @@ List active agents and their capabilities.
 
 **Example:**
 ```bash
-claude-flow mcp agent-list --swarm-id mesh-001
+gemini-flow mcp agent-list --swarm-id mesh-001
 ```
 
 #### `agent_metrics`
@@ -100,7 +100,7 @@ Get performance metrics for specific agents.
 
 **Example:**
 ```bash
-claude-flow mcp agent-metrics --agent-id researcher-001
+gemini-flow mcp agent-metrics --agent-id researcher-001
 ```
 
 ### Task Orchestration
@@ -116,7 +116,7 @@ Orchestrate complex task workflows with intelligent coordination.
 
 **Example:**
 ```bash
-claude-flow mcp task-orchestrate --task "Build REST API with authentication" --strategy adaptive --priority high
+gemini-flow mcp task-orchestrate --task "Build REST API with authentication" --strategy adaptive --priority high
 ```
 
 #### `task_status`
@@ -127,7 +127,7 @@ Check task execution status and progress.
 
 **Example:**
 ```bash
-claude-flow mcp task-status --task-id task-001
+gemini-flow mcp task-status --task-id task-001
 ```
 
 #### `task_results`
@@ -138,7 +138,7 @@ Get comprehensive task completion results.
 
 **Example:**
 ```bash
-claude-flow mcp task-results --task-id task-001
+gemini-flow mcp task-results --task-id task-001
 ```
 
 ## 🤖 Neural Network and AI Tools
@@ -153,7 +153,7 @@ Check neural network system status and model availability.
 
 **Example:**
 ```bash
-claude-flow mcp neural-status --model-id coordination-v2
+gemini-flow mcp neural-status --model-id coordination-v2
 ```
 
 #### `neural_train`
@@ -166,7 +166,7 @@ Train neural patterns with WASM SIMD acceleration.
 
 **Example:**
 ```bash
-claude-flow mcp neural-train --pattern-type coordination --training-data "workflow-logs" --epochs 100
+gemini-flow mcp neural-train --pattern-type coordination --training-data "workflow-logs" --epochs 100
 ```
 
 #### `neural_predict`
@@ -178,7 +178,7 @@ Make AI predictions using trained models.
 
 **Example:**
 ```bash
-claude-flow mcp neural-predict --model-id optimization-v3 --input "task-complexity-data"
+gemini-flow mcp neural-predict --model-id optimization-v3 --input "task-complexity-data"
 ```
 
 #### `neural_patterns`
@@ -192,7 +192,7 @@ Analyze cognitive patterns and learning behaviors.
 
 **Example:**
 ```bash
-claude-flow mcp neural-patterns --action analyze --operation "swarm-coordination" --outcome "improved-efficiency"
+gemini-flow mcp neural-patterns --action analyze --operation "swarm-coordination" --outcome "improved-efficiency"
 ```
 
 #### `neural_compress`
@@ -204,7 +204,7 @@ Compress neural models for efficient deployment.
 
 **Example:**
 ```bash
-claude-flow mcp neural-compress --model-id coordination-v2 --ratio 0.5
+gemini-flow mcp neural-compress --model-id coordination-v2 --ratio 0.5
 ```
 
 #### `neural_explain`
@@ -216,7 +216,7 @@ AI explainability for model predictions and decisions.
 
 **Example:**
 ```bash
-claude-flow mcp neural-explain --model-id optimization-v3 --prediction "task-assignment-decision"
+gemini-flow mcp neural-explain --model-id optimization-v3 --prediction "task-assignment-decision"
 ```
 
 ### Model Management
@@ -229,7 +229,7 @@ Load pre-trained neural models.
 
 **Example:**
 ```bash
-claude-flow mcp model-load --model-path "./models/coordination-v2.wasm"
+gemini-flow mcp model-load --model-path "./models/coordination-v2.wasm"
 ```
 
 #### `model_save`
@@ -241,7 +241,7 @@ Save trained models for later use.
 
 **Example:**
 ```bash
-claude-flow mcp model-save --model-id coordination-v2 --path "./models/coordination-v2-trained.wasm"
+gemini-flow mcp model-save --model-id coordination-v2 --path "./models/coordination-v2-trained.wasm"
 ```
 
 #### `ensemble_create`
@@ -253,7 +253,7 @@ Create model ensembles for improved accuracy.
 
 **Example:**
 ```bash
-claude-flow mcp ensemble-create --models '["coord-v1","coord-v2","coord-v3"]' --strategy weighted-voting
+gemini-flow mcp ensemble-create --models '["coord-v1","coord-v2","coord-v3"]' --strategy weighted-voting
 ```
 
 #### `transfer_learn`
@@ -265,7 +265,7 @@ Transfer learning between domains and tasks.
 
 **Example:**
 ```bash
-claude-flow mcp transfer-learn --source-model coordination-v2 --target-domain optimization
+gemini-flow mcp transfer-learn --source-model coordination-v2 --target-domain optimization
 ```
 
 ## 💾 Memory and Persistence Tools
@@ -284,7 +284,7 @@ Store/retrieve persistent memory with TTL and namespacing.
 
 **Example:**
 ```bash
-claude-flow mcp memory-usage --action store --key "project/config" --value '{"api":"rest","db":"postgres"}' --ttl 3600
+gemini-flow mcp memory-usage --action store --key "project/config" --value '{"api":"rest","db":"postgres"}' --ttl 3600
 ```
 
 #### `memory_search`
@@ -297,7 +297,7 @@ Search memory with pattern matching and semantic search.
 
 **Example:**
 ```bash
-claude-flow mcp memory-search --pattern "authentication" --namespace project --limit 5
+gemini-flow mcp memory-search --pattern "authentication" --namespace project --limit 5
 ```
 
 #### `memory_persist`
@@ -308,7 +308,7 @@ Cross-session persistence and continuity.
 
 **Example:**
 ```bash
-claude-flow mcp memory-persist --session-id dev-session-001
+gemini-flow mcp memory-persist --session-id dev-session-001
 ```
 
 #### `memory_backup`
@@ -319,7 +319,7 @@ Backup memory stores for disaster recovery.
 
 **Example:**
 ```bash
-claude-flow mcp memory-backup --path "./backups/memory-$(date +%Y%m%d).json"
+gemini-flow mcp memory-backup --path "./backups/memory-$(date +%Y%m%d).json"
 ```
 
 #### `memory_restore`
@@ -330,7 +330,7 @@ Restore from memory backups.
 
 **Example:**
 ```bash
-claude-flow mcp memory-restore --backup-path "./backups/memory-20250706.json"
+gemini-flow mcp memory-restore --backup-path "./backups/memory-20250706.json"
 ```
 
 #### `memory_compress`
@@ -341,7 +341,7 @@ Compress memory data for efficient storage.
 
 **Example:**
 ```bash
-claude-flow mcp memory-compress --namespace project
+gemini-flow mcp memory-compress --namespace project
 ```
 
 #### `memory_sync`
@@ -352,7 +352,7 @@ Synchronize memory across instances and sessions.
 
 **Example:**
 ```bash
-claude-flow mcp memory-sync --target production-instance
+gemini-flow mcp memory-sync --target production-instance
 ```
 
 #### `memory_namespace`
@@ -364,7 +364,7 @@ Manage memory namespaces and organization.
 
 **Example:**
 ```bash
-claude-flow mcp memory-namespace --namespace production --action create
+gemini-flow mcp memory-namespace --namespace production --action create
 ```
 
 #### `memory_analytics`
@@ -375,7 +375,7 @@ Analyze memory usage patterns and optimization opportunities.
 
 **Example:**
 ```bash
-claude-flow mcp memory-analytics --timeframe 30d
+gemini-flow mcp memory-analytics --timeframe 30d
 ```
 
 ### State Management
@@ -388,7 +388,7 @@ Create state snapshots for rollback and analysis.
 
 **Example:**
 ```bash
-claude-flow mcp state-snapshot --name "before-major-refactor"
+gemini-flow mcp state-snapshot --name "before-major-refactor"
 ```
 
 #### `context_restore`
@@ -399,7 +399,7 @@ Restore execution context from snapshots.
 
 **Example:**
 ```bash
-claude-flow mcp context-restore --snapshot-id snapshot-001
+gemini-flow mcp context-restore --snapshot-id snapshot-001
 ```
 
 #### `cache_manage`
@@ -411,7 +411,7 @@ Manage coordination cache for performance.
 
 **Example:**
 ```bash
-claude-flow mcp cache-manage --action clear --key "optimization-cache"
+gemini-flow mcp cache-manage --action clear --key "optimization-cache"
 ```
 
 ## 📊 Performance and Analytics Tools
@@ -427,7 +427,7 @@ Generate comprehensive performance reports with real-time metrics.
 
 **Example:**
 ```bash
-claude-flow mcp performance-report --format detailed --timeframe 7d
+gemini-flow mcp performance-report --format detailed --timeframe 7d
 ```
 
 #### `bottleneck_analyze`
@@ -439,7 +439,7 @@ Identify and analyze performance bottlenecks.
 
 **Example:**
 ```bash
-claude-flow mcp bottleneck-analyze --component swarm-coordination --metrics '["latency","throughput","memory"]'
+gemini-flow mcp bottleneck-analyze --component swarm-coordination --metrics '["latency","throughput","memory"]'
 ```
 
 #### `token_usage`
@@ -451,7 +451,7 @@ Analyze token consumption and optimization opportunities.
 
 **Example:**
 ```bash
-claude-flow mcp token-usage --operation task-orchestration --timeframe 7d
+gemini-flow mcp token-usage --operation task-orchestration --timeframe 7d
 ```
 
 #### `benchmark_run`
@@ -462,7 +462,7 @@ Execute performance benchmarks and comparisons.
 
 **Example:**
 ```bash
-claude-flow mcp benchmark-run --suite comprehensive
+gemini-flow mcp benchmark-run --suite comprehensive
 ```
 
 #### `metrics_collect`
@@ -473,7 +473,7 @@ Collect detailed system metrics.
 
 **Example:**
 ```bash
-claude-flow mcp metrics-collect --components '["memory","neural","swarm","coordination"]'
+gemini-flow mcp metrics-collect --components '["memory","neural","swarm","coordination"]'
 ```
 
 #### `trend_analysis`
@@ -485,7 +485,7 @@ Analyze performance trends over time.
 
 **Example:**
 ```bash
-claude-flow mcp trend-analysis --metric throughput --period 30d
+gemini-flow mcp trend-analysis --metric throughput --period 30d
 ```
 
 #### `cost_analysis`
@@ -496,7 +496,7 @@ Analyze costs and resource utilization.
 
 **Example:**
 ```bash
-claude-flow mcp cost-analysis --timeframe monthly
+gemini-flow mcp cost-analysis --timeframe monthly
 ```
 
 #### `quality_assess`
@@ -508,7 +508,7 @@ Quality assessment and improvement recommendations.
 
 **Example:**
 ```bash
-claude-flow mcp quality-assess --target "swarm-coordination" --criteria '["efficiency","accuracy","reliability"]'
+gemini-flow mcp quality-assess --target "swarm-coordination" --criteria '["efficiency","accuracy","reliability"]'
 ```
 
 #### `error_analysis`
@@ -519,7 +519,7 @@ Analyze error patterns and suggest improvements.
 
 **Example:**
 ```bash
-claude-flow mcp error-analysis --logs "./logs/swarm-errors.log"
+gemini-flow mcp error-analysis --logs "./logs/swarm-errors.log"
 ```
 
 #### `usage_stats`
@@ -530,7 +530,7 @@ Detailed usage statistics and patterns.
 
 **Example:**
 ```bash
-claude-flow mcp usage-stats --component neural-networks
+gemini-flow mcp usage-stats --component neural-networks
 ```
 
 #### `health_check`
@@ -541,7 +541,7 @@ System health monitoring and diagnostics.
 
 **Example:**
 ```bash
-claude-flow mcp health-check --components '["swarm","memory","neural","coordination"]'
+gemini-flow mcp health-check --components '["swarm","memory","neural","coordination"]'
 ```
 
 ## 🛠️ Workflow and Automation Tools
@@ -558,7 +558,7 @@ Create custom workflows with intelligent orchestration.
 
 **Example:**
 ```bash
-claude-flow mcp workflow-create --name "ci-cd-pipeline" --steps '[{"name":"build","type":"parallel"},{"name":"test","depends":"build"}]'
+gemini-flow mcp workflow-create --name "ci-cd-pipeline" --steps '[{"name":"build","type":"parallel"},{"name":"test","depends":"build"}]'
 ```
 
 #### `workflow_execute`
@@ -570,7 +570,7 @@ Execute predefined workflows with monitoring.
 
 **Example:**
 ```bash
-claude-flow mcp workflow-execute --workflow-id ci-cd-pipeline --params '{"branch":"main","environment":"staging"}'
+gemini-flow mcp workflow-execute --workflow-id ci-cd-pipeline --params '{"branch":"main","environment":"staging"}'
 ```
 
 #### `workflow_export`
@@ -582,7 +582,7 @@ Export workflow definitions for sharing and backup.
 
 **Example:**
 ```bash
-claude-flow mcp workflow-export --workflow-id ci-cd-pipeline --format yaml
+gemini-flow mcp workflow-export --workflow-id ci-cd-pipeline --format yaml
 ```
 
 #### `workflow_template`
@@ -594,7 +594,7 @@ Manage workflow templates and reusable patterns.
 
 **Example:**
 ```bash
-claude-flow mcp workflow-template --action create --template '{"name":"microservice-deploy","type":"reusable"}'
+gemini-flow mcp workflow-template --action create --template '{"name":"microservice-deploy","type":"reusable"}'
 ```
 
 ### Automation
@@ -607,7 +607,7 @@ Setup automation rules and triggers.
 
 **Example:**
 ```bash
-claude-flow mcp automation-setup --rules '[{"trigger":"git-push","action":"run-tests","condition":"branch==main"}]'
+gemini-flow mcp automation-setup --rules '[{"trigger":"git-push","action":"run-tests","condition":"branch==main"}]'
 ```
 
 #### `pipeline_create`
@@ -618,7 +618,7 @@ Create CI/CD pipelines with intelligent coordination.
 
 **Example:**
 ```bash
-claude-flow mcp pipeline-create --config '{"stages":["build","test","deploy"],"parallel":true,"neural-optimization":true}'
+gemini-flow mcp pipeline-create --config '{"stages":["build","test","deploy"],"parallel":true,"neural-optimization":true}'
 ```
 
 #### `scheduler_manage`
@@ -630,7 +630,7 @@ Manage task scheduling and cron-like operations.
 
 **Example:**
 ```bash
-claude-flow mcp scheduler-manage --action create --schedule '{"cron":"0 2 * * *","task":"memory-cleanup"}'
+gemini-flow mcp scheduler-manage --action create --schedule '{"cron":"0 2 * * *","task":"memory-cleanup"}'
 ```
 
 #### `trigger_setup`
@@ -642,7 +642,7 @@ Setup event triggers and automated responses.
 
 **Example:**
 ```bash
-claude-flow mcp trigger-setup --events '["memory-low","cpu-high"]' --actions '["optimize-swarm","scale-down"]'
+gemini-flow mcp trigger-setup --events '["memory-low","cpu-high"]' --actions '["optimize-swarm","scale-down"]'
 ```
 
 #### `batch_process`
@@ -654,7 +654,7 @@ Batch processing for large-scale operations.
 
 **Example:**
 ```bash
-claude-flow mcp batch-process --items '["file1.js","file2.js","file3.js"]' --operation "optimize-code"
+gemini-flow mcp batch-process --items '["file1.js","file2.js","file3.js"]' --operation "optimize-code"
 ```
 
 #### `parallel_execute`
@@ -665,7 +665,7 @@ Execute tasks in parallel with coordination.
 
 **Example:**
 ```bash
-claude-flow mcp parallel-execute --tasks '[{"id":"test-api","type":"test"},{"id":"build-frontend","type":"build"}]'
+gemini-flow mcp parallel-execute --tasks '[{"id":"test-api","type":"test"},{"id":"build-frontend","type":"build"}]'
 ```
 
 ## 🐙 GitHub Integration Tools
@@ -681,7 +681,7 @@ Repository analysis with AI-powered insights.
 
 **Example:**
 ```bash
-claude-flow mcp github-repo-analyze --repo "myorg/myproject" --analysis-type code-quality
+gemini-flow mcp github-repo-analyze --repo "myorg/myproject" --analysis-type code-quality
 ```
 
 #### `github_metrics`
@@ -692,7 +692,7 @@ Repository metrics and analytics.
 
 **Example:**
 ```bash
-claude-flow mcp github-metrics --repo "myorg/myproject"
+gemini-flow mcp github-metrics --repo "myorg/myproject"
 ```
 
 #### `github_sync_coord`
@@ -703,7 +703,7 @@ Multi-repository synchronization and coordination.
 
 **Example:**
 ```bash
-claude-flow mcp github-sync-coord --repos '["myorg/frontend","myorg/backend","myorg/shared"]'
+gemini-flow mcp github-sync-coord --repos '["myorg/frontend","myorg/backend","myorg/shared"]'
 ```
 
 ### Pull Request Management
@@ -718,7 +718,7 @@ Intelligent pull request management and automation.
 
 **Example:**
 ```bash
-claude-flow mcp github-pr-manage --repo "myorg/myproject" --action review --pr-number 42
+gemini-flow mcp github-pr-manage --repo "myorg/myproject" --action review --pr-number 42
 ```
 
 #### `github_code_review`
@@ -730,7 +730,7 @@ Automated code review with AI assistance.
 
 **Example:**
 ```bash
-claude-flow mcp github-code-review --repo "myorg/myproject" --pr 42
+gemini-flow mcp github-code-review --repo "myorg/myproject" --pr 42
 ```
 
 ### Issue and Release Management
@@ -744,7 +744,7 @@ Issue tracking, triage, and automated management.
 
 **Example:**
 ```bash
-claude-flow mcp github-issue-track --repo "myorg/myproject" --action auto-triage
+gemini-flow mcp github-issue-track --repo "myorg/myproject" --action auto-triage
 ```
 
 #### `github_release_coord`
@@ -756,7 +756,7 @@ Release coordination and automation.
 
 **Example:**
 ```bash
-claude-flow mcp github-release-coord --repo "myorg/myproject" --version "v2.1.0"
+gemini-flow mcp github-release-coord --repo "myorg/myproject" --version "v2.1.0"
 ```
 
 ### Workflow Automation
@@ -770,7 +770,7 @@ Automated GitHub workflow management.
 
 **Example:**
 ```bash
-claude-flow mcp github-workflow-auto --repo "myorg/myproject" --workflow '{"type":"ci-cd","neural-optimization":true}'
+gemini-flow mcp github-workflow-auto --repo "myorg/myproject" --workflow '{"type":"ci-cd","neural-optimization":true}'
 ```
 
 ## 🤖 Dynamic Agent Allocation (DAA) Tools
@@ -787,7 +787,7 @@ Create dynamic agents with adaptive capabilities.
 
 **Example:**
 ```bash
-claude-flow mcp daa-agent-create --agent-type "adaptive-optimizer" --capabilities '["performance","memory","neural"]'
+gemini-flow mcp daa-agent-create --agent-type "adaptive-optimizer" --capabilities '["performance","memory","neural"]'
 ```
 
 #### `daa_capability_match`
@@ -799,7 +799,7 @@ Match agent capabilities to task requirements.
 
 **Example:**
 ```bash
-claude-flow mcp daa-capability-match --task-requirements '["code-analysis","performance-optimization"]'
+gemini-flow mcp daa-capability-match --task-requirements '["code-analysis","performance-optimization"]'
 ```
 
 #### `daa_resource_alloc`
@@ -811,7 +811,7 @@ Intelligent resource allocation for agents.
 
 **Example:**
 ```bash
-claude-flow mcp daa-resource-alloc --resources '{"cpu":8,"memory":"16GB","neural-units":4}'
+gemini-flow mcp daa-resource-alloc --resources '{"cpu":8,"memory":"16GB","neural-units":4}'
 ```
 
 #### `daa_lifecycle_manage`
@@ -823,7 +823,7 @@ Agent lifecycle management and optimization.
 
 **Example:**
 ```bash
-claude-flow mcp daa-lifecycle-manage --agent-id optimizer-001 --action optimize
+gemini-flow mcp daa-lifecycle-manage --agent-id optimizer-001 --action optimize
 ```
 
 ### Communication and Coordination
@@ -838,7 +838,7 @@ Inter-agent communication and coordination.
 
 **Example:**
 ```bash
-claude-flow mcp daa-communication --from optimizer-001 --to coordinator-001 --message '{"type":"performance-update","data":"85% efficiency"}'
+gemini-flow mcp daa-communication --from optimizer-001 --to coordinator-001 --message '{"type":"performance-update","data":"85% efficiency"}'
 ```
 
 #### `daa_consensus`
@@ -850,7 +850,7 @@ Consensus mechanisms for distributed decision making.
 
 **Example:**
 ```bash
-claude-flow mcp daa-consensus --agents '["coord-001","opt-001","mon-001"]' --proposal '{"action":"scale-up","reason":"high-load"}'
+gemini-flow mcp daa-consensus --agents '["coord-001","opt-001","mon-001"]' --proposal '{"action":"scale-up","reason":"high-load"}'
 ```
 
 #### `daa_fault_tolerance`
@@ -862,7 +862,7 @@ Fault tolerance and recovery mechanisms.
 
 **Example:**
 ```bash
-claude-flow mcp daa-fault-tolerance --agent-id critical-optimizer-001 --strategy redundant-backup
+gemini-flow mcp daa-fault-tolerance --agent-id critical-optimizer-001 --strategy redundant-backup
 ```
 
 #### `daa_optimization`
@@ -874,7 +874,7 @@ Performance optimization for agent operations.
 
 **Example:**
 ```bash
-claude-flow mcp daa-optimization --target "swarm-efficiency" --metrics '["throughput","latency","accuracy"]'
+gemini-flow mcp daa-optimization --target "swarm-efficiency" --metrics '["throughput","latency","accuracy"]'
 ```
 
 ## 🔧 System and Utility Tools
@@ -890,7 +890,7 @@ Execute terminal commands with coordination.
 
 **Example:**
 ```bash
-claude-flow mcp terminal-execute --command "npm" --args '["test","--coverage"]'
+gemini-flow mcp terminal-execute --command "npm" --args '["test","--coverage"]'
 ```
 
 #### `config_manage`
@@ -902,7 +902,7 @@ Configuration management and optimization.
 
 **Example:**
 ```bash
-claude-flow mcp config-manage --action optimize --config '{"neural":true,"performance":"high"}'
+gemini-flow mcp config-manage --action optimize --config '{"neural":true,"performance":"high"}'
 ```
 
 #### `features_detect`
@@ -913,7 +913,7 @@ Feature detection and capability assessment.
 
 **Example:**
 ```bash
-claude-flow mcp features-detect --component neural-networks
+gemini-flow mcp features-detect --component neural-networks
 ```
 
 #### `security_scan`
@@ -925,7 +925,7 @@ Security scanning and vulnerability assessment.
 
 **Example:**
 ```bash
-claude-flow mcp security-scan --target "swarm-configuration" --depth comprehensive
+gemini-flow mcp security-scan --target "swarm-configuration" --depth comprehensive
 ```
 
 #### `backup_create`
@@ -937,7 +937,7 @@ Create system backups with intelligent compression.
 
 **Example:**
 ```bash
-claude-flow mcp backup-create --components '["memory","neural","configuration"]' --destination "./backups/"
+gemini-flow mcp backup-create --components '["memory","neural","configuration"]' --destination "./backups/"
 ```
 
 #### `restore_system`
@@ -948,7 +948,7 @@ System restoration from backups.
 
 **Example:**
 ```bash
-claude-flow mcp restore-system --backup-id backup-20250706-001
+gemini-flow mcp restore-system --backup-id backup-20250706-001
 ```
 
 #### `log_analysis`
@@ -960,7 +960,7 @@ Log analysis with AI-powered insights.
 
 **Example:**
 ```bash
-claude-flow mcp log-analysis --log-file "./logs/swarm.log" --patterns '["error","performance","coordination"]'
+gemini-flow mcp log-analysis --log-file "./logs/swarm.log" --patterns '["error","performance","coordination"]'
 ```
 
 #### `diagnostic_run`
@@ -971,7 +971,7 @@ Comprehensive system diagnostics.
 
 **Example:**
 ```bash
-claude-flow mcp diagnostic-run --components '["swarm","neural","memory","coordination"]'
+gemini-flow mcp diagnostic-run --components '["swarm","neural","memory","coordination"]'
 ```
 
 ### Coordination Tools
@@ -984,7 +984,7 @@ Synchronize agent coordination across the swarm.
 
 **Example:**
 ```bash
-claude-flow mcp coordination-sync --swarm-id mesh-production-001
+gemini-flow mcp coordination-sync --swarm-id mesh-production-001
 ```
 
 #### `load_balance`
@@ -996,7 +996,7 @@ Distribute tasks efficiently across agents.
 
 **Example:**
 ```bash
-claude-flow mcp load-balance --swarm-id mesh-001 --tasks '[{"id":"optimize-api","weight":3},{"id":"test-suite","weight":2}]'
+gemini-flow mcp load-balance --swarm-id mesh-001 --tasks '[{"id":"optimize-api","weight":3},{"id":"test-suite","weight":2}]'
 ```
 
 #### `topology_optimize`
@@ -1007,7 +1007,7 @@ Auto-optimize swarm topology for performance.
 
 **Example:**
 ```bash
-claude-flow mcp topology-optimize --swarm-id mesh-production-001
+gemini-flow mcp topology-optimize --swarm-id mesh-production-001
 ```
 
 ## 🔍 Advanced Neural Operations
@@ -1022,7 +1022,7 @@ WASM SIMD optimization for neural processing.
 
 **Example:**
 ```bash
-claude-flow mcp wasm-optimize --operation neural-inference
+gemini-flow mcp wasm-optimize --operation neural-inference
 ```
 
 #### `inference_run`
@@ -1034,7 +1034,7 @@ Run neural inference with WASM acceleration.
 
 **Example:**
 ```bash
-claude-flow mcp inference-run --model-id coordination-v3 --data '[{"task":"optimize","complexity":0.8}]'
+gemini-flow mcp inference-run --model-id coordination-v3 --data '[{"task":"optimize","complexity":0.8}]'
 ```
 
 #### `pattern_recognize`
@@ -1046,7 +1046,7 @@ Advanced pattern recognition with neural networks.
 
 **Example:**
 ```bash
-claude-flow mcp pattern-recognize --data workflow-logs.json --patterns '["efficiency-patterns","bottleneck-patterns"]'
+gemini-flow mcp pattern-recognize --data workflow-logs.json --patterns '["efficiency-patterns","bottleneck-patterns"]'
 ```
 
 #### `cognitive_analyze`
@@ -1057,7 +1057,7 @@ Cognitive behavior analysis and optimization.
 
 **Example:**
 ```bash
-claude-flow mcp cognitive-analyze --behavior "swarm-decision-making"
+gemini-flow mcp cognitive-analyze --behavior "swarm-decision-making"
 ```
 
 #### `learning_adapt`
@@ -1068,7 +1068,7 @@ Adaptive learning from experience and feedback.
 
 **Example:**
 ```bash
-claude-flow mcp learning-adapt --experience '{"task":"coordination","outcome":"successful","efficiency":0.92}'
+gemini-flow mcp learning-adapt --experience '{"task":"coordination","outcome":"successful","efficiency":0.92}'
 ```
 
 ## 📋 Usage Examples and Best Practices
@@ -1077,45 +1077,45 @@ claude-flow mcp learning-adapt --experience '{"task":"coordination","outcome":"s
 
 ```bash
 # Initialize intelligent swarm
-claude-flow mcp swarm-init --topology adaptive --max-agents 8 --strategy parallel
+gemini-flow mcp swarm-init --topology adaptive --max-agents 8 --strategy parallel
 
 # Spawn specialized agents
-claude-flow mcp agent-spawn --type architect --name "System Designer"
-claude-flow mcp agent-spawn --type coder --name "Backend Developer"
-claude-flow mcp agent-spawn --type tester --name "QA Engineer"
+gemini-flow mcp agent-spawn --type architect --name "System Designer"
+gemini-flow mcp agent-spawn --type coder --name "Backend Developer"
+gemini-flow mcp agent-spawn --type tester --name "QA Engineer"
 
 # Orchestrate development task
-claude-flow mcp task-orchestrate \
+gemini-flow mcp task-orchestrate \
   --task "Build microservice with authentication" \
   --strategy adaptive \
   --priority high
 
 # Train neural patterns from results
-claude-flow mcp neural-train \
+gemini-flow mcp neural-train \
   --pattern-type development \
   --training-data "task-logs" \
   --epochs 50
 
 # Analyze performance and optimize
-claude-flow mcp performance-report --format detailed
-claude-flow mcp bottleneck-analyze --component coordination
+gemini-flow mcp performance-report --format detailed
+gemini-flow mcp bottleneck-analyze --component coordination
 ```
 
 ### Example 2: GitHub Repository Optimization
 
 ```bash
 # Analyze repository
-claude-flow mcp github-repo-analyze \
+gemini-flow mcp github-repo-analyze \
   --repo "myorg/myproject" \
   --analysis-type performance
 
 # Setup automated PR management
-claude-flow mcp github-workflow-auto \
+gemini-flow mcp github-workflow-auto \
   --repo "myorg/myproject" \
   --workflow '{"type":"pr-automation","neural-review":true}'
 
 # Create intelligent release coordination
-claude-flow mcp github-release-coord \
+gemini-flow mcp github-release-coord \
   --repo "myorg/myproject" \
   --version "v2.1.0"
 ```
@@ -1124,18 +1124,18 @@ claude-flow mcp github-release-coord \
 
 ```bash
 # Create training workflow
-claude-flow mcp workflow-create \
+gemini-flow mcp workflow-create \
   --name "neural-training-pipeline" \
   --steps '[{"name":"data-prep","type":"parallel"},{"name":"train","depends":"data-prep"},{"name":"validate","depends":"train"}]'
 
 # Execute with neural optimization
-claude-flow mcp workflow-execute \
+gemini-flow mcp workflow-execute \
   --workflow-id neural-training-pipeline \
   --params '{"neural-acceleration":true,"wasm-optimization":true}'
 
 # Monitor training progress
-claude-flow mcp neural-status --model-id coordination-v4
-claude-flow mcp performance-report --format neural-training
+gemini-flow mcp neural-status --model-id coordination-v4
+gemini-flow mcp performance-report --format neural-training
 ```
 
 ## 🚀 Advanced Tips and Optimization
@@ -1164,4 +1164,4 @@ claude-flow mcp performance-report --format neural-training
 4. **Neural Debugging**: Use neural explainability tools for complex issues
 5. **Memory Analytics**: Analyze memory patterns for optimization
 
-This comprehensive reference covers all 87 MCP tools available in Claude Flow v2.0.0. Each tool is designed to work seamlessly with Claude Code and provides deep integration for sophisticated AI agent orchestration, neural processing, and workflow automation.
+This comprehensive reference covers all 87 MCP tools available in Gemini Flow v2.0.0. Each tool is designed to work seamlessly with Gemini CLI and provides deep integration for sophisticated AI agent orchestration, neural processing, and workflow automation.

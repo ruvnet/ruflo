@@ -78,7 +78,7 @@ describe("Init Command Unit Tests", () => {
 
       // Check that help was displayed
       const helpOutput = logs.join("\n");
-      assertStringIncludes(helpOutput, "Initialize Claude Code integration");
+      assertStringIncludes(helpOutput, "Initialize Gemini Code integration");
       assertStringIncludes(helpOutput, "--force");
       assertStringIncludes(helpOutput, "--minimal");
       assertStringIncludes(helpOutput, "--sparc");
@@ -120,7 +120,7 @@ describe("Init Command Unit Tests", () => {
       assertEquals(memoryBankMd.includes("old memory"), false);
 
       // Should contain new content
-      assertStringIncludes(claudeMd, "Claude Code Configuration");
+      assertStringIncludes(claudeMd, "Gemini Code Configuration");
       assertStringIncludes(memoryBankMd, "Memory Bank");
     });
   });
@@ -155,8 +155,8 @@ describe("Init Command Unit Tests", () => {
     it("should create valid JSON files", async () => {
       await initCommand([], {});
 
-      // Check claude-flow-data.json is valid JSON
-      const dataPath = join(testDir, "memory/claude-flow-data.json");
+      // Check gemini-flow-data.json is valid JSON
+      const dataPath = join(testDir, "memory/gemini-flow-data.json");
       assertExists(await exists(dataPath));
 
       const data = JSON.parse(await Deno.readTextFile(dataPath));

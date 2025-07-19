@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Claude-Flow specific MCP tools
+ * Gemini-Flow specific MCP tools
  */
 
 import type { MCPTool, MCPContext, AgentProfile, Task, MemoryEntry } from '../utils/types.js';
@@ -12,7 +12,7 @@ export interface ClaudeFlowToolContext extends MCPContext {
 }
 
 /**
- * Create all Claude-Flow specific MCP tools
+ * Create all Gemini-Flow specific MCP tools
  */
 export function createClaudeFlowTools(logger: ILogger): MCPTool[] {
   return [
@@ -61,7 +61,7 @@ export function createClaudeFlowTools(logger: ILogger): MCPTool[] {
 function createSpawnAgentTool(logger: ILogger): MCPTool {
   return {
     name: 'agents/spawn',
-    description: 'Spawn a new Claude agent with specified configuration',
+    description: 'Spawn a new Gemini agent with specified configuration',
     inputSchema: {
       type: 'object',
       properties: {

@@ -60,7 +60,7 @@
       "best_practices": "completed",
       "advanced_strategies": "completed"
     },
-    "output_file": "/workspaces/claude-code-flow/dist/cli/init/swarm-commands.js",
+    "output_file": "/workspaces/gemini-flow/dist/cli/init/swarm-commands.js",
     "features_implemented": [
       "ES module syntax conversion",
       "Node.js compatibility",
@@ -95,8 +95,8 @@
       "success_reporting": "completed"
     },
     "implementation_details": {
-      "main_orchestrator_file": "/workspaces/claude-code-flow/dist/cli/init/index.js",
-      "cli_integration_file": "/workspaces/claude-code-flow/dist/cli/simple-cli.js",
+      "main_orchestrator_file": "/workspaces/gemini-flow/dist/cli/init/index.js",
+      "cli_integration_file": "/workspaces/gemini-flow/dist/cli/simple-cli.js",
       "features": [
         "Phase-based initialization system",
         "Comprehensive error handling",
@@ -158,7 +158,7 @@
         "node_js_compatible": true,
         "es_module_syntax": true
       },
-      "location": "/workspaces/claude-code-flow/dist/cli/simple-commands/init/directory-structure.js"
+      "location": "/workspaces/gemini-flow/dist/cli/simple-commands/init/directory-structure.js"
     },
     "claude_config_status": {
       "status": "completed",
@@ -166,7 +166,7 @@
       "agent": "Claude Config Agent",
       "task": "create-compiled-claude-config",
       "details": {
-        "file_created": "/workspaces/claude-code-flow/dist/cli/init/claude-config.js",
+        "file_created": "/workspaces/gemini-flow/dist/cli/init/claude-config.js",
         "features_implemented": [
           "base_claude_configuration",
           "batch_tools_settings",
@@ -218,7 +218,7 @@
         "es_module_syntax": true,
         "node_js_compatible": true
       },
-      "location": "/workspaces/claude-code-flow/dist/cli/init/claude-config.js"
+      "location": "/workspaces/gemini-flow/dist/cli/init/claude-config.js"
     },
     "batch_tools_status": {
       "status": "completed",
@@ -226,7 +226,7 @@
       "agent": "Batch Tools Agent",
       "task": "create-compiled-batch-tools-coordination-guide",
       "details": {
-        "file_created": "/workspaces/claude-code-flow/dist/cli/init/batch-tools.js",
+        "file_created": "/workspaces/gemini-flow/dist/cli/init/batch-tools.js",
         "components_implemented": [
           "memory_integration_system",
           "todo_integration_system", 
@@ -297,7 +297,7 @@
           "node_js_compatibility": true
         }
       },
-      "location": "/workspaces/claude-code-flow/dist/cli/init/batch-tools.js"
+      "location": "/workspaces/gemini-flow/dist/cli/init/batch-tools.js"
     }
   }
 }

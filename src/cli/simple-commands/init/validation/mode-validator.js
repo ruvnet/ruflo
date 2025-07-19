@@ -120,12 +120,12 @@ export class ModeValidator {
         result.error = '.roomodes file not found';
       }
 
-      // Check for claude-flow executable
+      // Check for gemini-flow executable
       try {
-        const stat = await Deno.stat(`${this.workingDir}/claude-flow`);
+        const stat = await Deno.stat(`${this.workingDir}/gemini-flow`);
         result.hasExecutable = stat.isFile;
       } catch {
-        result.error = 'claude-flow executable not found';
+        result.error = 'gemini-flow executable not found';
       }
 
       result.initialized = result.hasRoomodes && result.hasExecutable;
@@ -180,7 +180,7 @@ export class ModeValidator {
 
     try {
       // Test with sparc info command
-      const command = new Deno.Command('./claude-flow', {
+      const command = new Deno.Command('./gemini-flow', {
         args: ['sparc', 'info', modeName],
         cwd: this.workingDir,
         stdout: 'piped',
@@ -260,7 +260,7 @@ export class ModeValidator {
 
     try {
       // Test with a safe, non-destructive command
-      const command = new Deno.Command('./claude-flow', {
+      const command = new Deno.Command('./gemini-flow', {
         args: ['sparc', 'run', modeName, 'test validation', '--dry-run'],
         cwd: this.workingDir,
         stdout: 'piped',
@@ -276,7 +276,7 @@ export class ModeValidator {
         const errorOutput = new TextDecoder().decode(stderr);
         if (errorOutput.includes('dry-run') || errorOutput.includes('unknown flag')) {
           // Try without dry-run but with a safe test task
-          const testCommand = new Deno.Command('./claude-flow', {
+          const testCommand = new Deno.Command('./gemini-flow', {
             args: ['sparc', 'modes'],
             cwd: this.workingDir,
             stdout: 'piped',

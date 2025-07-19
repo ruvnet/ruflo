@@ -1,5 +1,5 @@
 /**
- * System Integration Tests for Claude Flow v2.0.0
+ * System Integration Tests for Gemini Flow v2.0.0
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';

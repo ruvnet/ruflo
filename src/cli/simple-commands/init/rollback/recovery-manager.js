@@ -337,7 +337,7 @@ export class RecoveryManager {
 
     try {
       // Try to recreate the executable
-      const executablePath = `${this.workingDir}/claude-flow`;
+      const executablePath = `${this.workingDir}/gemini-flow`;
       
       // Remove corrupted executable if it exists
       try {
@@ -350,7 +350,7 @@ export class RecoveryManager {
       // Recreate executable
       const createResult = await this.createExecutableWrapper();
       if (createResult.success) {
-        result.actions.push('Recreated claude-flow executable');
+        result.actions.push('Recreated gemini-flow executable');
         
         // Set permissions
         if (Deno.build.os !== 'windows') {
@@ -406,7 +406,7 @@ export class RecoveryManager {
       }
 
       // Recreate memory data file
-      const memoryDataPath = `${this.workingDir}/memory/claude-flow-data.json`;
+      const memoryDataPath = `${this.workingDir}/memory/gemini-flow-data.json`;
       const initialData = {
         agents: [],
         tasks: [],
@@ -525,7 +525,7 @@ export class RecoveryManager {
     const tempPatterns = [
       '*.tmp',
       '*.temp',
-      '.claude-flow-*-test*'
+      '.gemini-flow-*-test*'
     ];
 
     for (const pattern of tempPatterns) {
@@ -544,7 +544,7 @@ export class RecoveryManager {
     const result = { actions: [] };
 
     try {
-      const backupDir = `${this.workingDir}/.claude-flow-backups`;
+      const backupDir = `${this.workingDir}/.gemini-flow-backups`;
       
       // This would normally integrate with BackupManager
       result.actions.push('Cleaned old backups');
@@ -665,7 +665,7 @@ export class RecoveryManager {
       'CLAUDE.md',
       'memory-bank.md',
       'coordination.md',
-      'claude-flow'
+      'gemini-flow'
     ];
 
     for (const file of requiredFiles) {
@@ -764,13 +764,13 @@ export class RecoveryManager {
     };
 
     const executableContent = `#!/usr/bin/env bash
-# Claude Flow Local Executable Wrapper
+# Gemini Flow Local Executable Wrapper
 exec deno run --allow-all --unstable-kv --unstable-cron \\
   "${import.meta.url.replace('file://', '').replace(/[^/]*$/, '../../../main.js')}" "$@"
 `;
 
     try {
-      await Deno.writeTextFile(`${this.workingDir}/claude-flow`, executableContent);
+      await Deno.writeTextFile(`${this.workingDir}/gemini-flow`, executableContent);
     } catch {
       result.success = false;
     }

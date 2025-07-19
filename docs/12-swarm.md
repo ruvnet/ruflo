@@ -2,12 +2,12 @@
 
 ## Overview
 
-Swarm mode enables Claude to act as a master orchestrator, automatically spawning and coordinating multiple specialized sub-agents to achieve complex objectives. This advanced feature allows for autonomous, self-organizing AI teams that can tackle large-scale projects.
+Swarm mode enables Gemini to act as a master orchestrator, automatically spawning and coordinating multiple specialized sub-agents to achieve complex objectives. This advanced feature allows for autonomous, self-organizing AI teams that can tackle large-scale projects.
 
 ## Key Concepts
 
 ### Master Orchestrator
-The primary Claude instance that:
+The primary Gemini instance that:
 - Analyzes objectives and creates execution plans
 - Spawns specialized agents as needed
 - Manages task dependencies and coordination
@@ -208,9 +208,9 @@ During execution, the master orchestrator provides regular status updates:
   - Review API documentation
 ```
 
-## Integration with Claude-Flow
+## Integration with Gemini-Flow
 
-Swarm mode integrates seamlessly with other Claude-Flow features:
+Swarm mode integrates seamlessly with other Gemini-Flow features:
 - Uses the same persistence layer
 - Shares terminal pool resources
 - Leverages MCP tools
@@ -220,7 +220,7 @@ Swarm mode integrates seamlessly with other Claude-Flow features:
 
 ### Common Issues
 
-1. **"Claude command not found"**
+1. **"Gemini command not found"**
    - Ensure Gemini CLI is installed
    - Check PATH environment variable
 

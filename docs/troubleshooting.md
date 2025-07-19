@@ -1,4 +1,4 @@
-# 🔧 Claude Flow v2.0.0 Troubleshooting Guide
+# 🔧 Gemini Flow v2.0.0 Troubleshooting Guide
 
 ## 🚨 Current Known Issues
 
@@ -19,7 +19,7 @@ npm run build
 **✅ IMMEDIATE SOLUTION**: Use NPX version (fully functional)
 ```bash
 # Instead of local build, use NPX
-npx claude-flow@2.0.0 <command>
+npx gemini-flow@2.0.0 <command>
 ```
 
 **Development Status**: Active fixes in progress (80% import issues resolved)
@@ -40,8 +40,8 @@ npm test
 **✅ SOLUTION**: NPX version has been thoroughly tested
 ```bash
 # Use NPX for reliable functionality
-npx claude-flow@2.0.0 status
-npx claude-flow@2.0.0 swarm "test objective"
+npx gemini-flow@2.0.0 status
+npx gemini-flow@2.0.0 swarm "test objective"
 ```
 
 ---
@@ -54,7 +54,7 @@ npx claude-flow@2.0.0 swarm "test objective"
 
 **Solution**: Use latest NPX version
 ```bash
-npx claude-flow@2.0.0 swarm "your objective"
+npx gemini-flow@2.0.0 swarm "your objective"
 ```
 
 ---
@@ -65,23 +65,23 @@ npx claude-flow@2.0.0 swarm "your objective"
 
 ```bash
 # Verify NPX availability and version
-npx claude-flow@2.0.0 --version
+npx gemini-flow@2.0.0 --version
 
 # System status check
-npx claude-flow@2.0.0 status
+npx gemini-flow@2.0.0 status
 
 # Test basic functionality
-npx claude-flow@2.0.0 --help
+npx gemini-flow@2.0.0 --help
 
 # Validate swarm functionality
-npx claude-flow@2.0.0 swarm "test basic functionality" --max-agents 2 --timeout 1
+npx gemini-flow@2.0.0 swarm "test basic functionality" --max-agents 2 --timeout 1
 ```
 
 ### Expected Healthy Output
 
 ```bash
-$ npx claude-flow@2.0.0 status
-✅ Claude-Flow System Status:
+$ npx gemini-flow@2.0.0 status
+✅ Gemini-Flow System Status:
 🟡 Not Running (orchestrator not started)
 🤖 Agents: 0 active
 📋 Tasks: 0 in queue
@@ -90,8 +90,8 @@ $ npx claude-flow@2.0.0 status
 🌐 MCP Server: Stopped
 
 💡 Quick Actions:
-   Run "claude-flow start" to begin orchestration
-   Run "claude-flow agent spawn researcher" to create an agent
+   Run "gemini-flow start" to begin orchestration
+   Run "gemini-flow agent spawn researcher" to create an agent
 ```
 
 ---
@@ -117,8 +117,8 @@ npm install -g npm@latest
 npx clear-npx-cache
 
 # Alternative: Install globally first
-npm install -g claude-flow@2.0.0
-claude-flow --version
+npm install -g gemini-flow@2.0.0
+gemini-flow --version
 ```
 
 ### Permission Issues
@@ -131,7 +131,7 @@ Error: EACCES: permission denied
 **Solutions**:
 ```bash
 # Use NPX (recommended - no global installation)
-npx claude-flow@2.0.0 <command>
+npx gemini-flow@2.0.0 <command>
 
 # Or fix npm permissions (if using global install)
 sudo chown -R $(whoami) ~/.npm
@@ -158,8 +158,8 @@ npm config set proxy http://proxy.company.com:8080
 npm config set https-proxy http://proxy.company.com:8080
 
 # Alternative: Download and run locally
-git clone https://github.com/ruvnet/claude-code-flow.git
-cd claude-code-flow
+git clone https://github.com/ruvnet/gemini-flow.git
+cd gemini-flow
 npm install
 # Note: Local build currently has issues, use NPX instead
 ```
@@ -178,28 +178,28 @@ npm install
 **Diagnostic Steps**:
 ```bash
 # 1. Check basic functionality
-npx claude-flow@2.0.0 status
+npx gemini-flow@2.0.0 status
 
 # 2. Try minimal swarm
-npx claude-flow@2.0.0 swarm "test" --max-agents 1 --timeout 1
+npx gemini-flow@2.0.0 swarm "test" --max-agents 1 --timeout 1
 
 # 3. Check verbose output
-npx claude-flow@2.0.0 swarm "test" --verbose
+npx gemini-flow@2.0.0 swarm "test" --verbose
 
 # 4. Try different strategy
-npx claude-flow@2.0.0 swarm "test" --strategy research
+npx gemini-flow@2.0.0 swarm "test" --strategy research
 ```
 
 **Common Solutions**:
 ```bash
 # Use simpler configuration
-npx claude-flow@2.0.0 swarm "simple objective" --max-agents 2
+npx gemini-flow@2.0.0 swarm "simple objective" --max-agents 2
 
 # Increase timeout for complex tasks
-npx claude-flow@2.0.0 swarm "complex task" --timeout 30
+npx gemini-flow@2.0.0 swarm "complex task" --timeout 30
 
 # Use centralized mode for reliability
-npx claude-flow@2.0.0 swarm "task" --mode centralized
+npx gemini-flow@2.0.0 swarm "task" --mode centralized
 ```
 
 ### Agent Spawning Issues
@@ -209,25 +209,25 @@ npx claude-flow@2.0.0 swarm "task" --mode centralized
 **Diagnostic**:
 ```bash
 # Check agent list
-npx claude-flow@2.0.0 agent list
+npx gemini-flow@2.0.0 agent list
 
 # Try spawning single agent
-npx claude-flow@2.0.0 agent spawn researcher "Test Agent"
+npx gemini-flow@2.0.0 agent spawn researcher "Test Agent"
 
 # Check memory usage
-npx claude-flow@2.0.0 memory search "agent"
+npx gemini-flow@2.0.0 memory search "agent"
 ```
 
 **Solutions**:
 ```bash
 # Reduce concurrent agents
-npx claude-flow@2.0.0 swarm "task" --max-agents 3
+npx gemini-flow@2.0.0 swarm "task" --max-agents 3
 
 # Use specific agent types
-npx claude-flow@2.0.0 swarm "task" --strategy development
+npx gemini-flow@2.0.0 swarm "task" --strategy development
 
 # Clear memory if needed
-npx claude-flow@2.0.0 memory search "." --limit 100
+npx gemini-flow@2.0.0 memory search "." --limit 100
 ```
 
 ### Task Timeout Issues
@@ -237,17 +237,17 @@ npx claude-flow@2.0.0 memory search "." --limit 100
 **Solutions**:
 ```bash
 # Increase task timeout
-npx claude-flow@2.0.0 swarm "task" --timeout 60
+npx gemini-flow@2.0.0 swarm "task" --timeout 60
 
 # Use background mode
-npx claude-flow@2.0.0 swarm "long task" --background
+npx gemini-flow@2.0.0 swarm "long task" --background
 
 # Monitor progress
-npx claude-flow@2.0.0 swarm "task" --monitor
+npx gemini-flow@2.0.0 swarm "task" --monitor
 
 # Break into smaller tasks
-npx claude-flow@2.0.0 swarm "phase 1: setup" --max-agents 2
-npx claude-flow@2.0.0 swarm "phase 2: implementation" --max-agents 3
+npx gemini-flow@2.0.0 swarm "phase 1: setup" --max-agents 2
+npx gemini-flow@2.0.0 swarm "phase 2: implementation" --max-agents 3
 ```
 
 ---
@@ -264,13 +264,13 @@ Unknown mode: <mode-name>
 **Solutions**:
 ```bash
 # List available modes
-npx claude-flow@2.0.0 sparc modes
+npx gemini-flow@2.0.0 sparc modes
 
 # Get mode information
-npx claude-flow@2.0.0 sparc info <mode-name>
+npx gemini-flow@2.0.0 sparc info <mode-name>
 
 # Use auto-detection
-npx claude-flow@2.0.0 sparc "describe your objective"
+npx gemini-flow@2.0.0 sparc "describe your objective"
 ```
 
 ### Mode Execution Failures
@@ -280,13 +280,13 @@ npx claude-flow@2.0.0 sparc "describe your objective"
 **Diagnostic**:
 ```bash
 # Try with verbose output
-npx claude-flow@2.0.0 sparc <mode> "objective" --verbose
+npx gemini-flow@2.0.0 sparc <mode> "objective" --verbose
 
 # Use simpler objective
-npx claude-flow@2.0.0 sparc code "create hello world function"
+npx gemini-flow@2.0.0 sparc code "create hello world function"
 
 # Check system status
-npx claude-flow@2.0.0 status
+npx gemini-flow@2.0.0 status
 ```
 
 ---
@@ -300,16 +300,16 @@ npx claude-flow@2.0.0 status
 **Solutions**:
 ```bash
 # Use centralized coordination
-npx claude-flow@2.0.0 swarm "task" --mode centralized
+npx gemini-flow@2.0.0 swarm "task" --mode centralized
 
 # Reduce agent count
-npx claude-flow@2.0.0 swarm "task" --max-agents 3
+npx gemini-flow@2.0.0 swarm "task" --max-agents 3
 
 # Check memory system
-npx claude-flow@2.0.0 memory search "coordination"
+npx gemini-flow@2.0.0 memory search "coordination"
 
 # Use verbose monitoring
-npx claude-flow@2.0.0 swarm "task" --monitor --verbose
+npx gemini-flow@2.0.0 swarm "task" --monitor --verbose
 ```
 
 ### Memory Issues
@@ -319,26 +319,26 @@ npx claude-flow@2.0.0 swarm "task" --monitor --verbose
 **Diagnostic**:
 ```bash
 # Check memory status
-npx claude-flow@2.0.0 memory search "." --limit 10
+npx gemini-flow@2.0.0 memory search "." --limit 10
 
 # List memory partitions
-npx claude-flow@2.0.0 memory list
+npx gemini-flow@2.0.0 memory list
 
 # Test memory operations
-npx claude-flow@2.0.0 memory store "test" "value"
-npx claude-flow@2.0.0 memory get "test"
+npx gemini-flow@2.0.0 memory store "test" "value"
+npx gemini-flow@2.0.0 memory get "test"
 ```
 
 **Solutions**:
 ```bash
 # Use memory namespaces
-npx claude-flow@2.0.0 swarm "task" --memory-namespace clean
+npx gemini-flow@2.0.0 swarm "task" --memory-namespace clean
 
 # Clear specific entries
-npx claude-flow@2.0.0 memory delete "problematic-key"
+npx gemini-flow@2.0.0 memory delete "problematic-key"
 
 # Restart with fresh memory
-npx claude-flow@2.0.0 init --sparc --force
+npx gemini-flow@2.0.0 init --sparc --force
 ```
 
 ---
@@ -391,19 +391,19 @@ gh issue list --limit 5
 **Optimization**:
 ```bash
 # Enable parallel execution
-npx claude-flow@2.0.0 swarm "task" --parallel
+npx gemini-flow@2.0.0 swarm "task" --parallel
 
 # Reduce agent count
-npx claude-flow@2.0.0 swarm "task" --max-agents 3
+npx gemini-flow@2.0.0 swarm "task" --max-agents 3
 
 # Use appropriate strategy
-npx claude-flow@2.0.0 swarm "task" --strategy development
+npx gemini-flow@2.0.0 swarm "task" --strategy development
 
 # Monitor performance
-npx claude-flow@2.0.0 swarm "task" --monitor
+npx gemini-flow@2.0.0 swarm "task" --monitor
 
 # Use background mode for long tasks
-npx claude-flow@2.0.0 swarm "task" --background
+npx gemini-flow@2.0.0 swarm "task" --background
 ```
 
 ### Memory Usage Issues
@@ -413,16 +413,16 @@ npx claude-flow@2.0.0 swarm "task" --background
 **Solutions**:
 ```bash
 # Limit memory namespace
-npx claude-flow@2.0.0 swarm "task" --memory-namespace limited
+npx gemini-flow@2.0.0 swarm "task" --memory-namespace limited
 
 # Reduce concurrent agents
-npx claude-flow@2.0.0 swarm "task" --max-agents 2
+npx gemini-flow@2.0.0 swarm "task" --max-agents 2
 
 # Use simpler coordination
-npx claude-flow@2.0.0 swarm "task" --mode centralized
+npx gemini-flow@2.0.0 swarm "task" --mode centralized
 
 # Monitor memory usage
-npx claude-flow@2.0.0 monitor --metrics
+npx gemini-flow@2.0.0 monitor --metrics
 ```
 
 ---
@@ -457,7 +457,7 @@ npm --version  # Should be 9.0.0+
 
 **Setup**:
 ```bash
-# Claude API key (if using Claude integration)
+# Gemini API key (if using Gemini integration)
 export CLAUDE_API_KEY="your-api-key"
 
 # GitHub token (for GitHub features)
@@ -482,7 +482,7 @@ powershell
 wsl
 
 # NPX command in Windows
-npx.cmd claude-flow@2.0.0 --help
+npx.cmd gemini-flow@2.0.0 --help
 ```
 
 #### macOS Issues
@@ -517,16 +517,16 @@ sudo apt-get install -y nodejs
 **Solutions**:
 ```bash
 # Use NPX (safer, no global installation)
-npx claude-flow@2.0.0 <command>
+npx gemini-flow@2.0.0 <command>
 
 # Check file permissions
-ls -la claude-flow
+ls -la gemini-flow
 
 # Fix permissions if needed
-chmod +x claude-flow
+chmod +x gemini-flow
 
 # Run without elevated privileges
-npx claude-flow@2.0.0 --help  # No sudo needed
+npx gemini-flow@2.0.0 --help  # No sudo needed
 ```
 
 ### Network Security
@@ -543,8 +543,8 @@ npm config set https-proxy http://proxy.company.com:8080
 npm config set registry https://registry.npmjs.org/
 
 # Download package manually
-npm pack claude-flow@2.0.0
-tar -xzf claude-flow-2.0.0.tgz
+npm pack gemini-flow@2.0.0
+tar -xzf gemini-flow-2.0.0.tgz
 ```
 
 ---
@@ -558,14 +558,14 @@ tar -xzf claude-flow-2.0.0.tgz
 **Solutions**:
 ```bash
 # Try basic init
-npx claude-flow@2.0.0 init --minimal
+npx gemini-flow@2.0.0 init --minimal
 
 # Force reinitialize
-npx claude-flow@2.0.0 init --sparc --force
+npx gemini-flow@2.0.0 init --sparc --force
 
 # Check directory permissions
 ls -la .
-mkdir .claude  # Manual creation if needed
+mkdir .gemini  # Manual creation if needed
 
 # Verify after init
 ls -la .claude/
@@ -582,7 +582,7 @@ cat .claude/settings.json
 cp .claude/settings.json .claude/settings.json.backup
 
 # Reinitialize configuration
-npx claude-flow@2.0.0 init --sparc --force
+npx gemini-flow@2.0.0 init --sparc --force
 
 # Manual config check
 cat .claude/settings.json | jq .  # Validate JSON
@@ -612,14 +612,14 @@ node --version  # Should be 20+
 npm --version   # Should be 9+
 
 # 4. Test basic NPX functionality
-npx claude-flow@2.0.0 --version
+npx gemini-flow@2.0.0 --version
 
 # 5. Reinitialize project
-npx claude-flow@2.0.0 init --sparc
+npx gemini-flow@2.0.0 init --sparc
 
 # 6. Test basic operations
-npx claude-flow@2.0.0 status
-npx claude-flow@2.0.0 swarm "test recovery" --max-agents 1
+npx gemini-flow@2.0.0 status
+npx gemini-flow@2.0.0 swarm "test recovery" --max-agents 1
 ```
 
 ### Data Recovery
@@ -646,10 +646,10 @@ jq '.swarmStatus' swarm-runs/swarm_<id>/status.json
 
 Before seeking help, run through this checklist:
 
-1. ✅ **Version Check**: `npx claude-flow@2.0.0 --version`
-2. ✅ **Basic Functionality**: `npx claude-flow@2.0.0 --help`
-3. ✅ **System Status**: `npx claude-flow@2.0.0 status`
-4. ✅ **Simple Test**: `npx claude-flow@2.0.0 swarm "test" --max-agents 1`
+1. ✅ **Version Check**: `npx gemini-flow@2.0.0 --version`
+2. ✅ **Basic Functionality**: `npx gemini-flow@2.0.0 --help`
+3. ✅ **System Status**: `npx gemini-flow@2.0.0 status`
+4. ✅ **Simple Test**: `npx gemini-flow@2.0.0 swarm "test" --max-agents 1`
 5. ✅ **Environment**: `node --version` (should be 20+)
 
 ### Collecting Debug Information
@@ -659,11 +659,11 @@ Before seeking help, run through this checklist:
 echo "Node: $(node --version)"
 echo "NPM: $(npm --version)"
 echo "OS: $(uname -a)"
-echo "Claude Flow: $(npx claude-flow@2.0.0 --version)"
+echo "Gemini Flow: $(npx gemini-flow@2.0.0 --version)"
 
 # Test basic operations
-npx claude-flow@2.0.0 status > debug-status.txt 2>&1
-npx claude-flow@2.0.0 swarm "debug test" --verbose > debug-swarm.txt 2>&1
+npx gemini-flow@2.0.0 status > debug-status.txt 2>&1
+npx gemini-flow@2.0.0 swarm "debug test" --verbose > debug-swarm.txt 2>&1
 
 # Configuration state
 ls -la .claude/ > debug-config.txt 2>&1
@@ -672,7 +672,7 @@ cat .claude/settings.json >> debug-config.txt 2>&1
 
 ### Support Channels
 
-1. **GitHub Issues**: https://github.com/ruvnet/claude-code-flow/issues
+1. **GitHub Issues**: https://github.com/ruvnet/gemini-flow/issues
    - Include debug information
    - Specify NPX vs local build
    - Include error messages and steps to reproduce
@@ -684,7 +684,7 @@ cat .claude/settings.json >> debug-config.txt 2>&1
 
 3. **Community Resources**:
    - ruv-swarm documentation: https://github.com/ruvnet/ruv-FANN/tree/main/ruv-swarm
-   - NPM package: https://www.npmjs.com/package/claude-flow/v/alpha
+   - NPM package: https://www.npmjs.com/package/gemini-flow/v/alpha
 
 ---
 
@@ -694,16 +694,16 @@ cat .claude/settings.json >> debug-config.txt 2>&1
 
 ```bash
 # Monitor swarm performance
-npx claude-flow@2.0.0 swarm "task" --monitor --verbose
+npx gemini-flow@2.0.0 swarm "task" --monitor --verbose
 
 # Check system resources during execution
-npx claude-flow@2.0.0 monitor --realtime --metrics
+npx gemini-flow@2.0.0 monitor --realtime --metrics
 
 # Track memory usage
-npx claude-flow@2.0.0 status --detailed
+npx gemini-flow@2.0.0 status --detailed
 
 # Performance benchmarking
-time npx claude-flow@2.0.0 swarm "benchmark task" --max-agents 3
+time npx gemini-flow@2.0.0 swarm "benchmark task" --max-agents 3
 ```
 
 ### Performance Baselines (NPX)

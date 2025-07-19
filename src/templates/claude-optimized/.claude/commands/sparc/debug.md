@@ -90,22 +90,22 @@ Return `attempt_completion` with:
 
 To use this SPARC mode, you can:
 
-1. Run directly: `npx claude-flow sparc run debug "your task"`
+1. Run directly: `npx gemini-flow sparc run debug "your task"`
 2. Use in workflow: Include `debug` in your SPARC workflow
 3. Delegate tasks: Use `new_task` to assign work to this mode
-4. Batch operations: `npx claude-flow sparc run debug --batch "debug auth issues across services"`
+4. Batch operations: `npx gemini-flow sparc run debug --batch "debug auth issues across services"`
 
 ## Example
 
 ```bash
 # Standard debugging
-npx claude-flow sparc run debug "fix authentication timeout errors"
+npx gemini-flow sparc run debug "fix authentication timeout errors"
 
 # Batch debugging across services
-npx claude-flow sparc run debug --batch "debug all microservice communication issues"
+npx gemini-flow sparc run debug --batch "debug all microservice communication issues"
 
 # Parallel log analysis
-npx claude-flow sparc run debug --parallel-logs "analyze all error logs from last deployment"
+npx gemini-flow sparc run debug --parallel-logs "analyze all error logs from last deployment"
 ```
 
 ## Batchtools Integration Examples

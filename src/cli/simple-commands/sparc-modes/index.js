@@ -79,7 +79,7 @@ Build exactly what the user requested: "${taskDescription}"
 
 ⚠️ **CRITICAL INSTRUCTIONS:**
 - Create ALL project files in the current working directory: ${cwd}
-- NEVER create files in node_modules/ or any claude-flow directories
+- NEVER create files in node_modules/ or any gemini-flow directories
 - If the task specifies a project name (e.g., "hello-world"), create it as a subdirectory in ${cwd}
 - Use paths relative to ${cwd} for all file operations
 - Example: If creating "hello-world" app, use ${cwd}/hello-world/
@@ -92,22 +92,22 @@ ${orchestration}
 ## 📋 Mode-Specific Guidelines
 ${mode.customInstructions}
 
-## 🛠️ Claude-Flow Integration
+## 🛠️ Gemini-Flow Integration
 
 ### Memory Operations
 Use the memory system to track your progress and share context:
 
 \`\`\`bash
 # Store your work
-npx claude-flow memory store ${memoryNamespace}_<phase> "description of work completed"
+npx gemini-flow memory store ${memoryNamespace}_<phase> "description of work completed"
 
 # Query previous work
-npx claude-flow memory query ${memoryNamespace}
+npx gemini-flow memory query ${memoryNamespace}
 
 # Examples for this task
-npx claude-flow memory store ${memoryNamespace}_analysis "Analyzed ${taskDescription} - found X components needed"
-npx claude-flow memory store ${memoryNamespace}_progress "Completed Y% of implementation"
-npx claude-flow memory store ${memoryNamespace}_blockers "Issue with Z - need clarification"
+npx gemini-flow memory store ${memoryNamespace}_analysis "Analyzed ${taskDescription} - found X components needed"
+npx gemini-flow memory store ${memoryNamespace}_progress "Completed Y% of implementation"
+npx gemini-flow memory store ${memoryNamespace}_blockers "Issue with Z - need clarification"
 \`\`\`
 
 ### Task Orchestration
@@ -115,13 +115,13 @@ For complex tasks, coordinate with other specialists:
 
 \`\`\`bash
 # Check system status
-npx claude-flow status
+npx gemini-flow status
 
 # View active agents (if --parallel was used)
-npx claude-flow agent list
+npx gemini-flow agent list
 
 # Monitor progress
-npx claude-flow monitor
+npx gemini-flow monitor
 \`\`\`
 
 ### 🚀 Parallel Execution with BatchTool
@@ -130,24 +130,24 @@ Use BatchTool to orchestrate multiple SPARC modes concurrently in a boomerang pa
 \`\`\`bash
 # Example: Parallel development workflow
 batchtool run --parallel \\
-  "npx claude-flow sparc run architect 'design user authentication system' --non-interactive" \\
-  "npx claude-flow sparc run security-review 'analyze authentication requirements' --non-interactive" \\
-  "npx claude-flow sparc run spec-pseudocode 'create auth flow pseudocode' --non-interactive"
+  "npx gemini-flow sparc run architect 'design user authentication system' --non-interactive" \\
+  "npx gemini-flow sparc run security-review 'analyze authentication requirements' --non-interactive" \\
+  "npx gemini-flow sparc run spec-pseudocode 'create auth flow pseudocode' --non-interactive"
 
 # Boomerang Pattern: Research → Design → Implement → Test → Refine
 batchtool orchestrate --boomerang \\
-  --phase1 "npx claude-flow sparc run ask 'research best auth practices' --non-interactive" \\
-  --phase2 "npx claude-flow sparc run architect 'design based on research' --non-interactive" \\
-  --phase3 "npx claude-flow sparc run code 'implement auth system' --non-interactive" \\
-  --phase4 "npx claude-flow sparc run tdd 'test auth implementation' --non-interactive" \\
-  --phase5 "npx claude-flow sparc run optimization 'refine auth performance' --non-interactive"
+  --phase1 "npx gemini-flow sparc run ask 'research best auth practices' --non-interactive" \\
+  --phase2 "npx gemini-flow sparc run architect 'design based on research' --non-interactive" \\
+  --phase3 "npx gemini-flow sparc run code 'implement auth system' --non-interactive" \\
+  --phase4 "npx gemini-flow sparc run tdd 'test auth implementation' --non-interactive" \\
+  --phase5 "npx gemini-flow sparc run optimization 'refine auth performance' --non-interactive"
 
 # Concurrent Feature Development
 batchtool run --concurrent --max-parallel 3 \\
-  "npx claude-flow sparc run code 'implement login feature' --non-interactive" \\
-  "npx claude-flow sparc run code 'implement registration feature' --non-interactive" \\
-  "npx claude-flow sparc run code 'implement password reset' --non-interactive" \\
-  "npx claude-flow sparc run tdd 'create auth test suite' --non-interactive"
+  "npx gemini-flow sparc run code 'implement login feature' --non-interactive" \\
+  "npx gemini-flow sparc run code 'implement registration feature' --non-interactive" \\
+  "npx gemini-flow sparc run code 'implement password reset' --non-interactive" \\
+  "npx gemini-flow sparc run tdd 'create auth test suite' --non-interactive"
 \`\`\`
 
 #### Boomerang Orchestration Pattern
@@ -169,7 +169,7 @@ Benefits of --non-interactive mode with BatchTool:
 ## ⚡ Execution Guidelines
 
 1. **Focus on User's Project**
-   - Build what they asked for, not improvements to claude-flow
+   - Build what they asked for, not improvements to gemini-flow
    - Create files ONLY in the current working directory: ${cwd}
    - NEVER create files in node_modules/ or system directories
    - If creating a named project, make it a subdirectory of ${cwd}
@@ -197,5 +197,5 @@ Benefits of --non-interactive mode with BatchTool:
 
 Begin with Step 1 of the orchestration plan above. Focus on delivering exactly what was requested: "${taskDescription}"
 
-Remember: You're building the user's project, using claude-flow only for memory and orchestration support.`;
+Remember: You're building the user's project, using gemini-flow only for memory and orchestration support.`;
 }

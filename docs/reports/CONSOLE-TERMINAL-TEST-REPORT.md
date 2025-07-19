@@ -85,7 +85,7 @@ The console is built with a modular architecture:
 ### Command System
 The console supports three types of commands:
 1. **Built-in Commands**: help, clear, status, connect, disconnect, etc.
-2. **Claude Flow Commands**: claude-flow, swarm, init, config, memory, agents
+2. **Gemini Flow Commands**: gemini-flow, swarm, init, config, memory, agents
 3. **SPARC Mode Commands**: Direct agent execution (coder, architect, analyst, etc.)
 
 ### Key Features Verified
@@ -141,4 +141,4 @@ The Console Terminal is functional with core features working correctly. The mai
 2. Error handling for invalid commands
 3. Minor UI elements (timestamps, agent count)
 
-These are relatively minor issues that can be addressed to improve the user experience. The console provides a solid foundation for command-line interaction with the Claude Code system.
+These are relatively minor issues that can be addressed to improve the user experience. The console provides a solid foundation for command-line interaction with the Gemini CLI system.

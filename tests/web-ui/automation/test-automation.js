@@ -69,7 +69,7 @@ class TestAutomation {
    * Run automated test suite
    */
   async runAutomatedTests() {
-    console.log('🤖 Starting Automated Test Suite for Claude Flow Web UI\n');
+    console.log('🤖 Starting Automated Test Suite for Gemini Flow Web UI\n');
     
     try {
       // Phase 1: Unit Tests

@@ -656,7 +656,7 @@ settings:
   describe('Real-World Workflow Examples', () => {
     it('should execute the research workflow example', async () => {
       // Use the actual research workflow example
-      const examplePath = '/workspaces/claude-code-flow/examples/research-workflow.yaml';
+      const examplePath = '/workspaces/gemini-flow/examples/research-workflow.yaml';
       
       try {
         const workflow = await engine.loadWorkflow(examplePath);
@@ -711,7 +711,7 @@ settings:
 
     it('should validate the development workflow example', async () => {
       // Use the actual development workflow example
-      const examplePath = '/workspaces/claude-code-flow/examples/development-workflow.json';
+      const examplePath = '/workspaces/gemini-flow/examples/development-workflow.json';
       
       try {
         const workflow = await engine.loadWorkflow(examplePath);

@@ -1,31 +1,31 @@
 /**
- * Help text templates for Claude Flow CLI
+ * Help text templates for Gemini Flow CLI
  * Provides clear, actionable command documentation
  */
 
 export const VERSION = '2.0.0-alpha.43';
 
 export const MAIN_HELP = `
-🌊 Claude-Flow v${VERSION} - Enterprise-Grade AI Agent Orchestration Platform
+🌊 Gemini-Flow v${VERSION} - Enterprise-Grade AI Agent Orchestration Platform
 
 🎯 ENTERPRISE FEATURES: Complete ruv-swarm integration with 87 MCP tools, neural networking, and production-ready infrastructure
 🐝 NEW: Advanced Hive Mind System with Queen-led coordination, collective intelligence, and unlimited scaling
 
 USAGE:
-  claude-flow <command> [options]
-  claude-flow <command> --help    # Get detailed help for any command
+  gemini-flow <command> [options]
+  gemini-flow <command> --help    # Get detailed help for any command
 
 🚀 QUICK START:
   # First time setup (creates CLAUDE.md & .claude/commands)
-  npx claude-flow@2.0.0 init --sparc
+  npx gemini-flow@2.0.0 init --sparc
   
   # 🐝 HIVE MIND QUICK START (NEW!):
-  claude-flow hive-mind wizard          # Interactive setup wizard
-  claude-flow hive-mind spawn "objective"  # Create intelligent swarm
+  gemini-flow hive-mind wizard          # Interactive setup wizard
+  gemini-flow hive-mind spawn "objective"  # Create intelligent swarm
   
   # After setup, use without npx:
-  claude-flow start --ui --swarm         # Start with swarm intelligence UI
-  claude-flow swarm "build REST API"     # Deploy multi-agent workflow
+  gemini-flow start --ui --swarm         # Start with swarm intelligence UI
+  gemini-flow swarm "build REST API"     # Deploy multi-agent workflow
 
 🐝 HIVE MIND COMMANDS (NEW!):
   hive-mind wizard         🎯 Interactive setup wizard (RECOMMENDED)
@@ -35,7 +35,7 @@ USAGE:
   hive-mind metrics        Advanced performance analytics
 
 📋 CORE COMMANDS:
-  init                     Initialize Claude Flow v2.0.0 (creates CLAUDE.md & .claude/commands)
+  init                     Initialize Gemini Flow v2.0.0 (creates CLAUDE.md & .claude/commands)
   start [--ui] [--swarm]   Start orchestration system
   swarm <objective>        Multi-agent swarm coordination
   agent <action>           Agent management (spawn, list, terminate)
@@ -60,18 +60,18 @@ USAGE:
   batch <action>           Batch operations
 
 🔍 GET HELP:
-  claude-flow --help                Show this help
-  claude-flow help                  Show this help
-  claude-flow help <command>        Detailed command help
-  claude-flow <command> --help      Detailed command help
+  gemini-flow --help                Show this help
+  gemini-flow help                  Show this help
+  gemini-flow help <command>        Detailed command help
+  gemini-flow <command> --help      Detailed command help
 
 🎯 RECOMMENDED FOR NEW USERS:
-  claude-flow hive-mind wizard     # Start here! Interactive guided setup
-  claude-flow init --sparc         # Initialize with SPARC methodology
-  claude-flow help hive-mind       # Learn about Hive Mind features
+  gemini-flow hive-mind wizard     # Start here! Interactive guided setup
+  gemini-flow init --sparc         # Initialize with SPARC methodology
+  gemini-flow help hive-mind       # Learn about Hive Mind features
 
-📚 Documentation: https://github.com/ruvnet/claude-flow
-🐝 Hive Mind Guide: https://github.com/ruvnet/claude-flow/tree/main/docs/hive-mind
+📚 Documentation: https://github.com/ruvnet/gemini-flow
+🐝 Hive Mind Guide: https://github.com/ruvnet/gemini-flow/tree/main/docs/hive-mind
 🐝 ruv-swarm: https://github.com/ruvnet/ruv-FANN/tree/main/ruv-swarm
 `;
 
@@ -80,7 +80,7 @@ export const COMMAND_HELP = {
 🧠 SWARM COMMAND - Multi-Agent AI Coordination
 
 USAGE:
-  claude-flow swarm <objective> [options]
+  gemini-flow swarm <objective> [options]
 
 DESCRIPTION:
   Deploy intelligent multi-agent swarms to accomplish complex objectives.
@@ -98,10 +98,10 @@ OPTIONS:
   --background         Run in background with progress tracking
 
 EXAMPLES:
-  claude-flow swarm "Build a REST API with authentication"
-  claude-flow swarm "Research cloud architecture patterns" --strategy research
-  claude-flow swarm "Optimize database queries" --max-agents 3 --parallel
-  claude-flow swarm "Develop feature X" --strategy development --monitor --ui
+  gemini-flow swarm "Build a REST API with authentication"
+  gemini-flow swarm "Research cloud architecture patterns" --strategy research
+  gemini-flow swarm "Optimize database queries" --max-agents 3 --parallel
+  gemini-flow swarm "Develop feature X" --strategy development --monitor --ui
 
 AGENT TYPES:
   researcher    Research with web access and data analysis
@@ -116,7 +116,7 @@ AGENT TYPES:
 🐙 GITHUB COMMAND - Workflow Automation
 
 USAGE:
-  claude-flow github <mode> <objective> [options]
+  gemini-flow github <mode> <objective> [options]
 
 DESCRIPTION:
   Automate GitHub workflows with 6 specialized AI-powered modes.
@@ -137,19 +137,19 @@ OPTIONS:
   --config <file>     Custom configuration file
 
 EXAMPLES:
-  claude-flow github pr-manager "create feature PR with tests"
-  claude-flow github gh-coordinator "setup CI/CD pipeline" --auto-approve
-  claude-flow github release-manager "prepare v2.0.0 release"
-  claude-flow github repo-architect "optimize monorepo structure"
-  claude-flow github issue-tracker "analyze and label issues"
-  claude-flow github sync-coordinator "sync versions across packages"
+  gemini-flow github pr-manager "create feature PR with tests"
+  gemini-flow github gh-coordinator "setup CI/CD pipeline" --auto-approve
+  gemini-flow github release-manager "prepare v2.0.0 release"
+  gemini-flow github repo-architect "optimize monorepo structure"
+  gemini-flow github issue-tracker "analyze and label issues"
+  gemini-flow github sync-coordinator "sync versions across packages"
 `,
 
   agent: `
 🤖 AGENT COMMAND - AI Agent Management
 
 USAGE:
-  claude-flow agent <action> [options]
+  gemini-flow agent <action> [options]
 
 ACTIONS:
   spawn <type>      Create new AI agent
@@ -175,18 +175,18 @@ AGENT TYPES:
   optimizer        Performance optimization
 
 EXAMPLES:
-  claude-flow agent spawn researcher --name "DataBot"
-  claude-flow agent list --verbose
-  claude-flow agent terminate agent-123
-  claude-flow agent hierarchy create enterprise
-  claude-flow agent ecosystem status
+  gemini-flow agent spawn researcher --name "DataBot"
+  gemini-flow agent list --verbose
+  gemini-flow agent terminate agent-123
+  gemini-flow agent hierarchy create enterprise
+  gemini-flow agent ecosystem status
 `,
 
   memory: `
 💾 MEMORY COMMAND - Persistent Memory Management
 
 USAGE:
-  claude-flow memory <action> [options]
+  gemini-flow memory <action> [options]
 
 ACTIONS:
   store <key> <value>     Store data in memory
@@ -205,20 +205,20 @@ OPTIONS:
   --verbose               Detailed output
 
 EXAMPLES:
-  claude-flow memory store architecture "microservices pattern"
-  claude-flow memory get architecture
-  claude-flow memory query "API design"
-  claude-flow memory stats
-  claude-flow memory export backup.json
-  claude-flow memory cleanup --older-than 30d
+  gemini-flow memory store architecture "microservices pattern"
+  gemini-flow memory get architecture
+  gemini-flow memory query "API design"
+  gemini-flow memory stats
+  gemini-flow memory export backup.json
+  gemini-flow memory cleanup --older-than 30d
 `,
 
   sparc: `
 🚀 SPARC COMMAND - Development Mode Operations
 
 USAGE:
-  claude-flow sparc [mode] [objective]
-  claude-flow sparc <action>
+  gemini-flow sparc [mode] [objective]
+  gemini-flow sparc <action>
 
 DESCRIPTION:
   SPARC provides 17 specialized development modes for different workflows.
@@ -249,21 +249,21 @@ ACTIONS:
   run <mode>     Run specific mode
 
 EXAMPLES:
-  claude-flow sparc "design authentication system"    # Auto-select mode
-  claude-flow sparc architect "design microservices"  # Use architect mode
-  claude-flow sparc tdd "user registration feature"   # TDD workflow
-  claude-flow sparc modes                            # List all modes
-  claude-flow sparc info security                    # Mode details
+  gemini-flow sparc "design authentication system"    # Auto-select mode
+  gemini-flow sparc architect "design microservices"  # Use architect mode
+  gemini-flow sparc tdd "user registration feature"   # TDD workflow
+  gemini-flow sparc modes                            # List all modes
+  gemini-flow sparc info security                    # Mode details
 `,
 
   init: `
-🎯 INIT COMMAND - Initialize Claude Flow Environment
+🎯 INIT COMMAND - Initialize Gemini Flow Environment
 
 USAGE:
-  claude-flow init [options]
+  gemini-flow init [options]
 
 DESCRIPTION:
-  Initialize Claude Flow v2.0.0 in your project with full MCP integration.
+  Initialize Gemini Flow v2.0.0 in your project with full MCP integration.
   By default creates enhanced setup with CLAUDE.md and .claude/commands.
 
 OPTIONS:
@@ -274,7 +274,7 @@ OPTIONS:
   --minimal        Minimal setup without examples
   --template <t>   Use specific project template
 
-WHAT claude-flow init CREATES (DEFAULT):
+WHAT gemini-flow init CREATES (DEFAULT):
   📄 CLAUDE.md          AI-readable project instructions & context
   📁 .claude/           Enterprise configuration directory containing:
     └── commands/       Custom commands and automation scripts
@@ -292,7 +292,7 @@ WHAT claude-flow init CREATES (DEFAULT):
   .claude/commands INCLUDES:
   • Custom project-specific commands
   • Automated workflow scripts
-  • Integration hooks for Claude Code
+  • Integration hooks for Gemini Code
   • Team collaboration tools
   
   Features enabled:
@@ -305,22 +305,22 @@ WHAT claude-flow init CREATES (DEFAULT):
   • Enterprise security features
 
 EXAMPLES:
-  npx claude-flow@2.0.0 init              # Default: Full v2.0.0 setup
-  claude-flow init                        # Initialize with enhanced features
-  claude-flow init --force                # Overwrite existing configuration
-  claude-flow init --dry-run              # Preview what will be created
-  claude-flow init --sparc                # SPARC enterprise setup
-  claude-flow init --minimal              # Basic setup only
+  npx gemini-flow@2.0.0 init              # Default: Full v2.0.0 setup
+  gemini-flow init                        # Initialize with enhanced features
+  gemini-flow init --force                # Overwrite existing configuration
+  gemini-flow init --dry-run              # Preview what will be created
+  gemini-flow init --sparc                # SPARC enterprise setup
+  gemini-flow init --minimal              # Basic setup only
 `,
 
   start: `
 🚀 START COMMAND - Start Orchestration System
 
 USAGE:
-  claude-flow start [options]
+  gemini-flow start [options]
 
 DESCRIPTION:
-  Start the Claude Flow orchestration system with optional UI and swarm intelligence.
+  Start the Gemini Flow orchestration system with optional UI and swarm intelligence.
 
 OPTIONS:
   --ui             Enable interactive user interface
@@ -331,18 +331,18 @@ OPTIONS:
   --config <file>  Custom configuration file
 
 EXAMPLES:
-  claude-flow start                      # Basic start
-  claude-flow start --ui --swarm         # Full UI with swarm features
-  claude-flow start --daemon             # Background daemon
-  claude-flow start --port 8080          # Custom MCP port
-  claude-flow start --config prod.json   # Production config
+  gemini-flow start                      # Basic start
+  gemini-flow start --ui --swarm         # Full UI with swarm features
+  gemini-flow start --daemon             # Background daemon
+  gemini-flow start --port 8080          # Custom MCP port
+  gemini-flow start --config prod.json   # Production config
 `,
 
   status: `
 📊 STATUS COMMAND - System Status
 
 USAGE:
-  claude-flow status [options]
+  gemini-flow status [options]
 
 DESCRIPTION:
   Show comprehensive system status including agents, tasks, and resources.
@@ -363,17 +363,17 @@ OUTPUT INCLUDES:
   • Performance metrics
 
 EXAMPLES:
-  claude-flow status                     # Basic status
-  claude-flow status --verbose           # Detailed information
-  claude-flow status --json              # Machine-readable format
-  claude-flow status --watch             # Live monitoring
+  gemini-flow status                     # Basic status
+  gemini-flow status --verbose           # Detailed information
+  gemini-flow status --json              # Machine-readable format
+  gemini-flow status --watch             # Live monitoring
 `,
 
   training: `
 🧠 TRAINING COMMAND - Neural Pattern Learning & Model Updates
 
 USAGE:
-  claude-flow training <command> [options]
+  gemini-flow training <command> [options]
 
 DESCRIPTION:
   Train neural patterns from operations, learn from outcomes, and update agent models 
@@ -400,10 +400,10 @@ MODEL UPDATE OPTIONS:
   --operation-result <res> Result from operation execution
 
 EXAMPLES:
-  claude-flow training neural-train --data recent --model task-predictor
-  claude-flow training pattern-learn --operation "file-creation" --outcome "success"
-  claude-flow training model-update --agent-type coordinator --operation-result "efficient"
-  claude-flow training neural-train --data "swarm-123" --epochs 100 --model "coordinator-predictor"
+  gemini-flow training neural-train --data recent --model task-predictor
+  gemini-flow training pattern-learn --operation "file-creation" --outcome "success"
+  gemini-flow training model-update --agent-type coordinator --operation-result "efficient"
+  gemini-flow training neural-train --data "swarm-123" --epochs 100 --model "coordinator-predictor"
 
 🎯 Neural training improves:
   • Task selection accuracy
@@ -416,7 +416,7 @@ EXAMPLES:
 🐝 COORDINATION COMMAND - Swarm & Agent Orchestration
 
 USAGE:
-  claude-flow coordination <command> [options]
+  gemini-flow coordination <command> [options]
 
 DESCRIPTION:
   Initialize swarms, spawn coordinated agents, and orchestrate task execution 
@@ -449,10 +449,10 @@ TASK-ORCHESTRATE OPTIONS:
   --share-results      Enable result sharing across swarm
 
 EXAMPLES:
-  claude-flow coordination swarm-init --topology hierarchical --max-agents 8
-  claude-flow coordination agent-spawn --type developer --name "api-dev" --swarm-id swarm-123
-  claude-flow coordination task-orchestrate --task "Build REST API" --strategy parallel --share-results
-  claude-flow coordination swarm-init --topology mesh --max-agents 12
+  gemini-flow coordination swarm-init --topology hierarchical --max-agents 8
+  gemini-flow coordination agent-spawn --type developer --name "api-dev" --swarm-id swarm-123
+  gemini-flow coordination task-orchestrate --task "Build REST API" --strategy parallel --share-results
+  gemini-flow coordination swarm-init --topology mesh --max-agents 12
 
 🎯 Coordination enables:
   • Intelligent task distribution
@@ -466,7 +466,7 @@ EXAMPLES:
 📊 ANALYSIS COMMAND - Performance & Usage Analytics
 
 USAGE:
-  claude-flow analysis <command> [options]
+  gemini-flow analysis <command> [options]
 
 DESCRIPTION:
   Detect performance bottlenecks, generate comprehensive reports, and analyze 
@@ -495,11 +495,11 @@ TOKEN USAGE OPTIONS:
   --cost-analysis      Include cost projections and optimization
 
 EXAMPLES:
-  claude-flow analysis bottleneck-detect --scope system
-  claude-flow analysis bottleneck-detect --scope agent --target coordinator-1
-  claude-flow analysis performance-report --timeframe 7d --format detailed
-  claude-flow analysis token-usage --breakdown --cost-analysis
-  claude-flow analysis bottleneck-detect --scope swarm --target swarm-123
+  gemini-flow analysis bottleneck-detect --scope system
+  gemini-flow analysis bottleneck-detect --scope agent --target coordinator-1
+  gemini-flow analysis performance-report --timeframe 7d --format detailed
+  gemini-flow analysis token-usage --breakdown --cost-analysis
+  gemini-flow analysis bottleneck-detect --scope swarm --target swarm-123
 
 🎯 Analysis helps with:
   • Performance optimization
@@ -513,7 +513,7 @@ EXAMPLES:
 🤖 AUTOMATION COMMAND - Intelligent Agent & Workflow Management
 
 USAGE:
-  claude-flow automation <command> [options]
+  gemini-flow automation <command> [options]
 
 DESCRIPTION:
   Automatically spawn optimal agents, intelligently manage workflows, and select 
@@ -541,10 +541,10 @@ WORKFLOW-SELECT OPTIONS:
                            Options: speed, quality, cost, balanced
 
 EXAMPLES:
-  claude-flow automation auto-agent --task-complexity enterprise --swarm-id swarm-123
-  claude-flow automation smart-spawn --requirement "web-development" --max-agents 8
-  claude-flow automation workflow-select --project-type api --priority speed
-  claude-flow automation auto-agent --task-complexity low
+  gemini-flow automation auto-agent --task-complexity enterprise --swarm-id swarm-123
+  gemini-flow automation smart-spawn --requirement "web-development" --max-agents 8
+  gemini-flow automation workflow-select --project-type api --priority speed
+  gemini-flow automation auto-agent --task-complexity low
 
 🎯 Automation benefits:
   • Optimal resource allocation
@@ -558,7 +558,7 @@ EXAMPLES:
 🔗 HOOKS COMMAND - Lifecycle Event Management
 
 USAGE:
-  claude-flow hooks <command> [options]
+  gemini-flow hooks <command> [options]
 
 DESCRIPTION:
   Execute lifecycle hooks before and after tasks, edits, and sessions with 
@@ -596,11 +596,11 @@ SESSION-END OPTIONS:
   --generate-summary      Create comprehensive session summary
 
 EXAMPLES:
-  claude-flow hooks pre-task --description "Build API" --task-id task-123 --agent-id agent-456
-  claude-flow hooks post-task --task-id task-123 --analyze-performance --generate-insights
-  claude-flow hooks pre-edit --file "src/api.js" --operation edit
-  claude-flow hooks post-edit --file "src/api.js" --memory-key "swarm/123/edits/timestamp"
-  claude-flow hooks session-end --export-metrics --generate-summary --swarm-id swarm-123
+  gemini-flow hooks pre-task --description "Build API" --task-id task-123 --agent-id agent-456
+  gemini-flow hooks post-task --task-id task-123 --analyze-performance --generate-insights
+  gemini-flow hooks pre-edit --file "src/api.js" --operation edit
+  gemini-flow hooks post-edit --file "src/api.js" --memory-key "swarm/123/edits/timestamp"
+  gemini-flow hooks session-end --export-metrics --generate-summary --swarm-id swarm-123
 
 🎯 Hooks enable:
   • Automated preparation & cleanup

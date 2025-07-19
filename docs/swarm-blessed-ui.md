@@ -1,8 +1,8 @@
-# Claude Flow Swarm Mode - Blessed UI Implementation
+# Gemini Flow Swarm Mode - Blessed UI Implementation
 
 ## Overview
 
-The blessed UI implementation provides a terminal-based user interface for the Claude Flow Swarm Mode that solves the "Raw mode is not supported" error by using `node-pty` to spawn Claude in pseudo-terminals. This approach works from the console without requiring VS Code integration.
+The blessed UI implementation provides a terminal-based user interface for the Gemini Flow Swarm Mode that solves the "Raw mode is not supported" error by using `node-pty` to spawn Gemini in pseudo-terminals. This approach works from the console without requiring VS Code integration.
 
 ## Features
 
@@ -23,7 +23,7 @@ The UI automatically installs its dependencies when first run:
 ### Basic Usage
 ```bash
 # Using the UI wrapper (automatically adds --ui flag)
-./bin/claude-flow-swarm-ui "Your objective here"
+./bin/gemini-flow-swarm-ui "Your objective here"
 
 # Or directly with the enhanced demo
 ./swarm-demo-enhanced.ts "Your objective here" --ui
@@ -36,12 +36,12 @@ The UI automatically installs its dependencies when first run:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│            🐝 Claude Swarm Orchestrator                     │
+│            🐝 Gemini Swarm Orchestrator                     │
 │            Objective: Build a REST API                      │
 ├─────────────────────┬───────────────────────────────────────┤
 │ Master Orchestrator │ Agents                                │
 │                     ├─────────────────────────────────────  │
-│ [Claude output      │ Developer - agent-123                 │
+│ [Gemini output      │ Developer - agent-123                 │
 │  appears here]      │ Task: Implementing REST endpoints     │
 │                     ├─────────────────────────────────────  │
 │                     │ Researcher - agent-456                │
@@ -65,7 +65,7 @@ The UI automatically installs its dependencies when first run:
 
 ## How It Works
 
-1. **Pseudo-Terminal Creation**: Each Claude instance runs in a pseudo-terminal created by `node-pty`, which provides full TTY support.
+1. **Pseudo-Terminal Creation**: Each Gemini instance runs in a pseudo-terminal created by `node-pty`, which provides full TTY support.
 
 2. **Agent Detection**: The UI monitors the orchestrator's output for agent spawn commands and creates new panes automatically.
 
@@ -107,7 +107,7 @@ swarm-demo-enhanced.ts
    - Manages pseudo-terminal processes
    - Handles agent spawn detection
 
-3. **bin/claude-flow-swarm-ui**
+3. **bin/gemini-flow-swarm-ui**
    - Convenience wrapper that automatically adds --ui flag
    - Makes it easier to use the UI mode
 
@@ -131,7 +131,7 @@ const orchestratorPty = pty.spawn('claude', [
 
 The UI monitors the orchestrator output for patterns like:
 ```
-claude-flow agent spawn <type> --name "<name>" --task "<task>"
+gemini-flow agent spawn <type> --name "<name>" --task "<task>"
 ```
 
 When detected, it creates a new agent pane in the UI.
@@ -186,7 +186,7 @@ The UI requires at least 80x24 terminal size. Resize your terminal window.
 
 ### Research Task
 ```bash
-./bin/claude-flow-swarm-ui "Research best practices for microservices" \
+./bin/gemini-flow-swarm-ui "Research best practices for microservices" \
   --strategy research \
   --research \
   --max-agents 4
@@ -194,7 +194,7 @@ The UI requires at least 80x24 terminal size. Resize your terminal window.
 
 ### Development Task
 ```bash
-./bin/claude-flow-swarm-ui "Build a user authentication system" \
+./bin/gemini-flow-swarm-ui "Build a user authentication system" \
   --strategy development \
   --parallel \
   --review
@@ -202,7 +202,7 @@ The UI requires at least 80x24 terminal size. Resize your terminal window.
 
 ### Analysis Task
 ```bash
-./bin/claude-flow-swarm-ui "Analyze this codebase for performance issues" \
+./bin/gemini-flow-swarm-ui "Analyze this codebase for performance issues" \
   --strategy analysis \
   --coordinator
 ```

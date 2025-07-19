@@ -5,7 +5,7 @@ Execute pre-command validations and safety checks before running shell commands.
 ## Usage
 
 ```bash
-npx claude-flow hook pre-command [options]
+npx gemini-flow hook pre-command [options]
 ```
 
 ## Options
@@ -20,22 +20,22 @@ npx claude-flow hook pre-command [options]
 
 ### Basic pre-command hook
 ```bash
-npx claude-flow hook pre-command --command "npm install express"
+npx gemini-flow hook pre-command --command "npm install express"
 ```
 
 ### Safety validation
 ```bash
-npx claude-flow hook pre-command -c "rm -rf node_modules" --validate-safety
+npx gemini-flow hook pre-command -c "rm -rf node_modules" --validate-safety
 ```
 
 ### Permission check
 ```bash
-npx claude-flow hook pre-command -c "sudo apt update" --check-permissions
+npx gemini-flow hook pre-command -c "sudo apt update" --check-permissions
 ```
 
 ### Dry run preview
 ```bash
-npx claude-flow hook pre-command -c "git push origin main" --dry-run
+npx gemini-flow hook pre-command -c "git push origin main" --dry-run
 ```
 
 ## Features
@@ -66,7 +66,7 @@ npx claude-flow hook pre-command -c "git push origin main" --dry-run
 
 ## Integration
 
-This hook is automatically called by Claude Code when:
+This hook is automatically called by Gemini Code when:
 - Using Bash tool
 - Running shell commands
 - Executing npm/pip/cargo commands
@@ -75,7 +75,7 @@ This hook is automatically called by Claude Code when:
 Manual usage in agents:
 ```bash
 # Before running commands
-npx claude-flow hook pre-command --command "your command here" --validate-safety
+npx gemini-flow hook pre-command --command "your command here" --validate-safety
 ```
 
 ## Output

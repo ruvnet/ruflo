@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Performance Tests for Claude Flow Migration
+ * Performance Tests for Gemini Flow Migration
  * Validates performance is maintained or improved after migration
  */
 
@@ -12,8 +12,8 @@ const os = require('os');
 const { performance } = require('perf_hooks');
 
 // Test configuration
-const TEST_DIR = path.join(os.tmpdir(), 'claude-flow-perf-test-' + Date.now());
-const CLAUDE_FLOW_BIN = path.resolve(__dirname, '../../../bin/claude-flow');
+const TEST_DIR = path.join(os.tmpdir(), 'gemini-flow-perf-test-' + Date.now());
+const CLAUDE_FLOW_BIN = path.resolve(__dirname, '../../../bin/gemini-flow');
 
 // Performance thresholds (milliseconds)
 const THRESHOLDS = {

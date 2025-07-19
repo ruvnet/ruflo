@@ -261,7 +261,7 @@ cleanup_ci_environment() {
     fi
     
     # Clean up temporary files
-    rm -rf /tmp/claude-flow-test-*
+    rm -rf /tmp/gemini-flow-test-*
     
     # Generate final report
     cat > test-results/report.html <<EOF

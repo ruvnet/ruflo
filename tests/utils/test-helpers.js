@@ -10,7 +10,7 @@ import { tmpdir } from 'os';
 /**
  * Create a temporary test directory
  */
-export async function createTempDir(prefix = 'claude-flow-test') {
+export async function createTempDir(prefix = 'gemini-flow-test') {
   const tempDir = path.join(tmpdir(), `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   await fs.ensureDir(tempDir);
   return tempDir;

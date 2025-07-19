@@ -181,7 +181,7 @@ export class TerminalSession {
     }
 
     // Set up command prompt
-    await this.terminal.executeCommand('export PS1="[claude-flow]$ "');
+    await this.terminal.executeCommand('export PS1="[gemini-flow]$ "');
   }
 
   private async runCleanupCommands(): Promise<void> {

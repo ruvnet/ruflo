@@ -1,25 +1,25 @@
 ---
-name: claude-flow-swarm
+name: gemini-flow-swarm
 description: Coordinate multi-agent swarms with batchtools optimization for complex tasks
 ---
 
-# Claude-Flow Swarm Coordination (Batchtools Optimized)
+# Gemini-Flow Swarm Coordination (Batchtools Optimized)
 
 Swarm mode with batchtools enables massively parallel multi-agent coordination for complex tasks with enhanced efficiency.
 
 ## Enhanced Basic Usage
 ```bash
 # Traditional single swarm
-npx claude-flow swarm "your complex task" --strategy <type> [options]
+npx gemini-flow swarm "your complex task" --strategy <type> [options]
 
 # Batch swarm operations
-npx claude-flow swarm batch --tasks "frontend:dev,backend:dev,database:architect" --parallel
+npx gemini-flow swarm batch --tasks "frontend:dev,backend:dev,database:architect" --parallel
 ```
 
 ## Parallel Strategy Execution
 ```bash
 # Execute multiple strategies concurrently
-npx claude-flow swarm multi-strategy --config '{
+npx gemini-flow swarm multi-strategy --config '{
   "frontend": { "strategy": "development", "agents": 3 },
   "backend": { "strategy": "development", "agents": 4 },
   "testing": { "strategy": "testing", "agents": 2 },
@@ -52,7 +52,7 @@ npx claude-flow swarm multi-strategy --config '{
 ### Parallel Development Swarm
 ```bash
 # Develop multiple microservices concurrently
-npx claude-flow swarm batch-dev --services '{
+npx gemini-flow swarm batch-dev --services '{
   "auth-service": { "agents": 3, "priority": "high" },
   "user-service": { "agents": 2, "priority": "medium" },
   "order-service": { "agents": 3, "priority": "high" },
@@ -63,7 +63,7 @@ npx claude-flow swarm batch-dev --services '{
 ### Distributed Research Swarm
 ```bash
 # Parallel research across multiple domains
-npx claude-flow swarm batch-research --topics '{
+npx gemini-flow swarm batch-research --topics '{
   "market-analysis": { "sources": ["web", "apis", "databases"] },
   "competitor-research": { "sources": ["web", "reports"] },
   "technology-trends": { "sources": ["papers", "blogs", "news"] }
@@ -73,7 +73,7 @@ npx claude-flow swarm batch-research --topics '{
 ### Massive Testing Swarm
 ```bash
 # Execute comprehensive parallel testing
-npx claude-flow swarm batch-test --suites '{
+npx gemini-flow swarm batch-test --suites '{
   "unit": { "parallel": 10, "shards": 5 },
   "integration": { "parallel": 5, "environments": ["dev", "staging"] },
   "e2e": { "parallel": 3, "browsers": ["chrome", "firefox", "safari"] },
@@ -86,7 +86,7 @@ npx claude-flow swarm batch-test --suites '{
 ### Development Pipeline
 ```bash
 # Create development pipeline with parallel stages
-npx claude-flow swarm pipeline --config '{
+npx gemini-flow swarm pipeline --config '{
   "stages": [
     { "name": "design", "parallel": ["api", "database", "ui"] },
     { "name": "implement", "parallel": ["services", "controllers", "models"] },
@@ -99,7 +99,7 @@ npx claude-flow swarm pipeline --config '{
 ### Analysis Pipeline
 ```bash
 # Parallel data analysis pipeline
-npx claude-flow swarm analyze-pipeline --stages '{
+npx gemini-flow swarm analyze-pipeline --stages '{
   "collect": { "parallel": 5, "sources": ["logs", "metrics", "events"] },
   "process": { "parallel": 3, "operations": ["clean", "transform", "enrich"] },
   "analyze": { "parallel": 4, "methods": ["statistical", "ml", "pattern"] },
@@ -112,7 +112,7 @@ npx claude-flow swarm analyze-pipeline --stages '{
 ### Multi-Region Deployment
 ```bash
 # Deploy across regions in parallel
-npx claude-flow swarm deploy-multi --regions '{
+npx gemini-flow swarm deploy-multi --regions '{
   "us-east": { "services": 10, "priority": 1 },
   "eu-west": { "services": 10, "priority": 1 },
   "asia-pac": { "services": 10, "priority": 2 }
@@ -122,7 +122,7 @@ npx claude-flow swarm deploy-multi --regions '{
 ### Federated Learning
 ```bash
 # Coordinate distributed model training
-npx claude-flow swarm federated-train --nodes 20 --parallel --aggregate-method "secure"
+npx gemini-flow swarm federated-train --nodes 20 --parallel --aggregate-method "secure"
 ```
 
 ## Advanced Monitoring & Control
@@ -130,7 +130,7 @@ npx claude-flow swarm federated-train --nodes 20 --parallel --aggregate-method "
 ### Real-time Batch Monitoring
 ```bash
 # Monitor all swarm operations
-npx claude-flow swarm monitor-batch --metrics '{
+npx gemini-flow swarm monitor-batch --metrics '{
   "performance": ["latency", "throughput", "cpu", "memory"],
   "progress": ["tasks", "completions", "failures"],
   "agents": ["active", "idle", "failed"]
@@ -140,7 +140,7 @@ npx claude-flow swarm monitor-batch --metrics '{
 ### Dynamic Resource Management
 ```bash
 # Auto-scale based on load
-npx claude-flow swarm auto-manage --rules '{
+npx gemini-flow swarm auto-manage --rules '{
   "scale-up": { "cpu": ">80%", "queue": ">100" },
   "scale-down": { "cpu": "<20%", "queue": "<10" },
   "rebalance": { "interval": "5m" }
@@ -152,7 +152,7 @@ npx claude-flow swarm auto-manage --rules '{
 ### Work Distribution
 ```bash
 # Intelligent work distribution
-npx claude-flow swarm distribute --algorithm "weighted" --factors '{
+npx gemini-flow swarm distribute --algorithm "weighted" --factors '{
   "agent-capacity": 0.4,
   "task-complexity": 0.3,
   "priority": 0.3
@@ -162,7 +162,7 @@ npx claude-flow swarm distribute --algorithm "weighted" --factors '{
 ### Failure Handling
 ```bash
 # Resilient batch execution
-npx claude-flow swarm batch-execute --resilient '{
+npx gemini-flow swarm batch-execute --resilient '{
   "retry": { "max": 3, "backoff": "exponential" },
   "timeout": { "task": "5m", "total": "1h" },
   "circuit-breaker": { "threshold": 5, "reset": "30s" }
@@ -174,7 +174,7 @@ npx claude-flow swarm batch-execute --resilient '{
 ### Caching Strategy
 ```bash
 # Enable intelligent caching
-npx claude-flow swarm batch --cache '{
+npx gemini-flow swarm batch --cache '{
   "results": { "ttl": "1h", "size": "1GB" },
   "artifacts": { "ttl": "24h", "size": "10GB" },
   "models": { "ttl": "7d", "persistent": true }
@@ -184,7 +184,7 @@ npx claude-flow swarm batch --cache '{
 ### Network Optimization
 ```bash
 # Optimize network communication
-npx claude-flow swarm optimize-network --compression "gzip" --batching 100 --keepalive
+npx gemini-flow swarm optimize-network --compression "gzip" --batching 100 --keepalive
 ```
 
 ## Complex Workflow Examples
@@ -192,7 +192,7 @@ npx claude-flow swarm optimize-network --compression "gzip" --batching 100 --kee
 ### Full-Stack Application Development
 ```bash
 # Orchestrate complete application development
-npx claude-flow swarm full-stack --project "e-commerce" --parallel-components '{
+npx gemini-flow swarm full-stack --project "e-commerce" --parallel-components '{
   "frontend": { "framework": "react", "agents": 3 },
   "backend": { "framework": "node", "agents": 4 },
   "mobile": { "platforms": ["ios", "android"], "agents": 4 },
@@ -205,7 +205,7 @@ npx claude-flow swarm full-stack --project "e-commerce" --parallel-components '{
 ### Data Pipeline Processing
 ```bash
 # Massive parallel data processing
-npx claude-flow swarm data-pipeline --config '{
+npx gemini-flow swarm data-pipeline --config '{
   "ingestion": { "parallel": 10, "sources": 50 },
   "transformation": { "parallel": 20, "operations": 15 },
   "validation": { "parallel": 5, "rules": 100 },
@@ -216,7 +216,7 @@ npx claude-flow swarm data-pipeline --config '{
 ### Security Audit Swarm
 ```bash
 # Comprehensive security analysis
-npx claude-flow swarm security-audit --parallel-scans '{
+npx gemini-flow swarm security-audit --parallel-scans '{
   "code": { "tools": ["sast", "dependencies"], "agents": 5 },
   "infrastructure": { "tools": ["network", "config"], "agents": 3 },
   "runtime": { "tools": ["dast", "fuzzing"], "agents": 4 },

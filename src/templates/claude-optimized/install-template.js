@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Install Claude optimized template files
- * This script copies all template files from the source .claude directory
+ * Install Gemini optimized template files
+ * This script copies all template files from the source .gemini directory
  * to the template directory for packaging and distribution
  */
 
@@ -102,7 +102,7 @@ if (errorCount === 0) {
 
 // Display next steps
 console.log('\nNext steps:');
-console.log('1. Review the installed files in the .claude directory');
+console.log('1. Review the installed files in the .gemini directory');
 console.log('2. Run tests to verify functionality: npm test');
 console.log('3. Package for distribution if needed');
 console.log('\nFor more information, see README.md');

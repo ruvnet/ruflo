@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get up and running with Claude-Flow in just a few minutes! This guide will walk you through installation, basic configuration, and your first agent orchestration.
+Get up and running with Gemini-Flow in just a few minutes! This guide will walk you through installation, basic configuration, and your first agent orchestration.
 
 ## Prerequisites
 
@@ -12,10 +12,10 @@ Get up and running with Claude-Flow in just a few minutes! This guide will walk 
 
 ### Option 1: NPX (Recommended for Quick Start)
 
-Run Claude-Flow instantly without installation:
+Run Gemini-Flow instantly without installation:
 
 ```bash
-npx claude-flow
+npx gemini-flow
 ```
 
 This will download and run the latest version, perfect for trying out the system.
@@ -25,13 +25,13 @@ This will download and run the latest version, perfect for trying out the system
 Install globally for permanent access:
 
 ```bash
-npm install -g claude-flow
+npm install -g gemini-flow
 ```
 
 Verify installation:
 
 ```bash
-claude-flow --version
+gemini-flow --version
 ```
 
 ### Option 3: Deno Installation
@@ -39,7 +39,7 @@ claude-flow --version
 For Deno users:
 
 ```bash
-deno install --allow-all --name claude-flow https://raw.githubusercontent.com/ruvnet/claude-code-flow/main/src/cli/index.ts
+deno install --allow-all --name gemini-flow https://raw.githubusercontent.com/ruvnet/gemini-flow/main/src/cli/index.ts
 ```
 
 ## First Run
@@ -49,10 +49,10 @@ deno install --allow-all --name claude-flow https://raw.githubusercontent.com/ru
 Create your first configuration file:
 
 ```bash
-claude-flow config init
+gemini-flow config init
 ```
 
-This creates a `claude-flow.config.json` file in your current directory with sensible defaults:
+This creates a `gemini-flow.config.json` file in your current directory with sensible defaults:
 
 ```json
 {
@@ -76,18 +76,18 @@ This creates a `claude-flow.config.json` file in your current directory with sen
 
 ### 2. Start the Orchestrator
 
-Launch the Claude-Flow system:
+Launch the Gemini-Flow system:
 
 ```bash
-claude-flow start
+gemini-flow start
 ```
 
 You should see output like:
 
 ```
-🧠 Claude-Flow v1.0.0 - Advanced AI Agent Orchestration System
+🧠 Gemini-Flow v1.0.0 - Advanced AI Agent Orchestration System
 
-✅ Configuration loaded: ./claude-flow.config.json
+✅ Configuration loaded: ./gemini-flow.config.json
 ✅ Memory system initialized (SQLite backend)
 ✅ Terminal pool created (3 terminals)
 ✅ MCP server started on stdio transport
@@ -107,7 +107,7 @@ Keep the orchestrator running and open a new terminal window for commands.
 Create your first AI agent:
 
 ```bash
-claude-flow agent spawn researcher --name "Research Assistant" --description "Helps with research tasks"
+gemini-flow agent spawn researcher --name "Research Assistant" --description "Helps with research tasks"
 ```
 
 Expected output:
@@ -126,7 +126,7 @@ Terminal: terminal_1
 See all your agents:
 
 ```bash
-claude-flow agent list
+gemini-flow agent list
 ```
 
 Output:
@@ -146,7 +146,7 @@ Output:
 Assign work to your agent:
 
 ```bash
-claude-flow task create research "Research the latest developments in large language models in 2024" --assign-to agent_1704123456789_researcher
+gemini-flow task create research "Research the latest developments in large language models in 2024" --assign-to agent_1704123456789_researcher
 ```
 
 Output:
@@ -166,13 +166,13 @@ Priority: normal
 Check task status:
 
 ```bash
-claude-flow task status task_1704123456790_research
+gemini-flow task status task_1704123456790_research
 ```
 
 Watch live updates:
 
 ```bash
-claude-flow task status task_1704123456790_research --watch
+gemini-flow task status task_1704123456790_research --watch
 ```
 
 ### View Task Results
@@ -180,7 +180,7 @@ claude-flow task status task_1704123456790_research --watch
 Once completed, view the results:
 
 ```bash
-claude-flow task list --status completed
+gemini-flow task list --status completed
 ```
 
 ## Interactive Mode (REPL)
@@ -188,19 +188,19 @@ claude-flow task list --status completed
 For an interactive experience, use the REPL mode:
 
 ```bash
-claude-flow repl
+gemini-flow repl
 ```
 
-This opens an interactive prompt where you can run commands without prefixing `claude-flow`:
+This opens an interactive prompt where you can run commands without prefixing `gemini-flow`:
 
 ```
-🧠 Claude-Flow REPL v1.0.0
+🧠 Gemini-Flow REPL v1.0.0
 Type 'help' for available commands or 'exit' to quit.
 
-claude-flow> agent list
-claude-flow> task create analysis "Analyze the research findings"
-claude-flow> memory query --category research
-claude-flow> exit
+gemini-flow> agent list
+gemini-flow> task create analysis "Analyze the research findings"
+gemini-flow> memory query --category research
+gemini-flow> exit
 ```
 
 ## Working with Memory
@@ -210,7 +210,7 @@ claude-flow> exit
 View what your agents have learned:
 
 ```bash
-claude-flow memory query --category research --limit 5
+gemini-flow memory query --category research --limit 5
 ```
 
 ### Export Memory
@@ -218,7 +218,7 @@ claude-flow memory query --category research --limit 5
 Save agent memories for backup or sharing:
 
 ```bash
-claude-flow memory export research-backup.json --category research
+gemini-flow memory export research-backup.json --category research
 ```
 
 ### View Memory Statistics
@@ -226,7 +226,7 @@ claude-flow memory export research-backup.json --category research
 See memory usage and statistics:
 
 ```bash
-claude-flow memory stats
+gemini-flow memory stats
 ```
 
 Output:
@@ -249,15 +249,15 @@ Storage:
 
 ## Example Workflow
 
-Here's a complete workflow to demonstrate Claude-Flow's capabilities:
+Here's a complete workflow to demonstrate Gemini-Flow's capabilities:
 
 ### 1. Multi-Agent Setup
 
 ```bash
 # Spawn different types of agents
-claude-flow agent spawn researcher --name "Data Researcher"
-claude-flow agent spawn analyst --name "Data Analyst" 
-claude-flow agent spawn coordinator --name "Project Manager"
+gemini-flow agent spawn researcher --name "Data Researcher"
+gemini-flow agent spawn analyst --name "Data Analyst" 
+gemini-flow agent spawn coordinator --name "Project Manager"
 ```
 
 ### 2. Create Workflow File
@@ -300,21 +300,21 @@ Create `research-workflow.json`:
 ### 3. Execute Workflow
 
 ```bash
-claude-flow workflow execute research-workflow.json
+gemini-flow workflow execute research-workflow.json
 ```
 
 ### 4. Monitor Progress
 
 ```bash
-claude-flow workflow status research-workflow --watch
+gemini-flow workflow status research-workflow --watch
 ```
 
 ## Next Steps
 
-Now that you have Claude-Flow running, explore these advanced features:
+Now that you have Gemini-Flow running, explore these advanced features:
 
 ### 🔧 Configuration
-- [Configuration Guide](./configuration.md) - Customize Claude-Flow behavior
+- [Configuration Guide](./configuration.md) - Customize Gemini-Flow behavior
 - [Memory System](./memory-system.md) - Advanced memory management
 - [Terminal Integration](./terminal-integration.md) - Terminal customization
 
@@ -334,27 +334,27 @@ Here are the most frequently used commands:
 
 ```bash
 # System Management
-claude-flow start                    # Start orchestrator
-claude-flow status                   # System status
-claude-flow config show             # View configuration
+gemini-flow start                    # Start orchestrator
+gemini-flow status                   # System status
+gemini-flow config show             # View configuration
 
 # Agent Management
-claude-flow agent spawn <type>       # Create agent
-claude-flow agent list               # List agents
-claude-flow agent terminate <id>     # Stop agent
+gemini-flow agent spawn <type>       # Create agent
+gemini-flow agent list               # List agents
+gemini-flow agent terminate <id>     # Stop agent
 
 # Task Management
-claude-flow task create <type> <desc> # Create task
-claude-flow task list                # List tasks
-claude-flow task status <id>         # Task status
+gemini-flow task create <type> <desc> # Create task
+gemini-flow task list                # List tasks
+gemini-flow task status <id>         # Task status
 
 # Memory Management
-claude-flow memory query             # Query memory
-claude-flow memory stats             # Memory statistics
-claude-flow memory export <file>     # Export data
+gemini-flow memory query             # Query memory
+gemini-flow memory stats             # Memory statistics
+gemini-flow memory export <file>     # Export data
 
 # Interactive Mode
-claude-flow repl                     # Start REPL mode
+gemini-flow repl                     # Start REPL mode
 ```
 
 ## Getting Help
@@ -362,14 +362,14 @@ claude-flow repl                     # Start REPL mode
 If you encounter any issues:
 
 1. **Check the logs**: Add `--verbose` to any command for detailed output
-2. **Validate configuration**: Run `claude-flow config validate`
-3. **System status**: Run `claude-flow status` to check system health
+2. **Validate configuration**: Run `gemini-flow config validate`
+3. **System status**: Run `gemini-flow status` to check system health
 4. **Documentation**: Visit the [Troubleshooting Guide](./troubleshooting.md)
-5. **Community**: Ask questions in [GitHub Discussions](https://github.com/ruvnet/claude-code-flow/discussions)
+5. **Community**: Ask questions in [GitHub Discussions](https://github.com/ruvnet/gemini-flow/discussions)
 
 ## What's Next?
 
-You're now ready to explore Claude-Flow's full capabilities! Consider:
+You're now ready to explore Gemini-Flow's full capabilities! Consider:
 
 - Setting up [custom agent types](./agent-management.md#custom-agents)
 - Creating [complex workflows](./task-orchestration.md#workflow-templates)

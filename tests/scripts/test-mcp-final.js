@@ -5,7 +5,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 async function test() {
-  console.log('🧪 Testing Claude-Flow MCP Server...\n');
+  console.log('🧪 Testing Gemini-Flow MCP Server...\n');
   
   const transport = new StdioClientTransport({
     command: 'npx',

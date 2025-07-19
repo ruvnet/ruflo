@@ -1,7 +1,7 @@
 /**
  * Hook Safety System - Prevents recursive hook execution and financial damage
  * 
- * This system protects against infinite loops where Claude Code hooks call
+ * This system protects against infinite loops where Gemini Code hooks call
  * 'claude' commands, which could bypass rate limits and cost thousands of dollars.
  * 
  * Critical protections:
@@ -140,11 +140,11 @@ export class HookCommandValidator {
     const warnings = [];
     const errors = [];
     
-    // Critical check: Claude commands in Stop hooks
+    // Critical check: Gemini commands in Stop hooks
     if (hookType === 'Stop' && this.isClaudeCommand(command)) {
       errors.push({
         type: 'CRITICAL_RECURSION_RISK',
-        message: '🚨 CRITICAL ERROR: Claude command detected in Stop hook!\n' +
+        message: '🚨 CRITICAL ERROR: Gemini command detected in Stop hook!\n' +
                 'This creates an INFINITE LOOP that can cost THOUSANDS OF DOLLARS.\n' +
                 'Stop hooks that call "claude" commands bypass rate limits and\n' +
                 'can result in massive unexpected API charges.\n\n' +
@@ -166,7 +166,7 @@ export class HookCommandValidator {
       } else {
         warnings.push({
           type: 'POTENTIAL_RECURSION',
-          message: `⚠️  WARNING: Claude command in ${context.type} hook (depth: ${depth})\n` +
+          message: `⚠️  WARNING: Gemini command in ${context.type} hook (depth: ${depth})\n` +
                   'This could create recursion. Consider using --skip-hooks flag.'
         });
       }
@@ -185,12 +185,12 @@ export class HookCommandValidator {
   }
   
   static isClaudeCommand(command) {
-    // Match various forms of claude command invocation
+    // Match various forms of gemini command invocation
     const claudePatterns = [
-      /\bclaude\b/,           // Direct claude command
+      /\bclaude\b/,           // Direct gemini command
       /claude-code\b/,        // claude-code command
       /npx\s+claude\b/,      // NPX claude
-      /\.\/claude\b/,        // Local claude wrapper
+      /\.\/claude\b/,        // Local gemini wrapper
       /claude\.exe\b/        // Windows executable
     ];
     
@@ -273,11 +273,11 @@ export class HookCircuitBreaker {
  */
 export class HookConfigValidator {
   /**
-   * Validate Claude Code settings.json for dangerous hook configurations
+   * Validate Gemini Code settings.json for dangerous hook configurations
    */
   static validateClaudeCodeConfig(configPath = null) {
     if (!configPath) {
-      // Try to find Claude Code settings
+      // Try to find Gemini Code settings
       const possiblePaths = [
         path.join(process.env.HOME || '.', '.claude', 'settings.json'),
         path.join(process.cwd(), '.claude', 'settings.json'),
@@ -287,7 +287,7 @@ export class HookConfigValidator {
       configPath = possiblePaths.find(p => existsSync(p));
       
       if (!configPath) {
-        return { safe: true, message: 'No Claude Code configuration found.' };
+        return { safe: true, message: 'No Gemini Code configuration found.' };
       }
     }
     
@@ -357,14 +357,14 @@ export class HookConfigValidator {
     // Example: Stop hook calling claude
     if (dangerousConfig.includes('claude')) {
       alternatives.push({
-        pattern: 'Stop hook with claude command',
+        pattern: 'Stop hook with gemini command',
         problem: 'Creates infinite recursion loop',
         solution: 'Use flag-based approach instead',
         example: `
 // Instead of this DANGEROUS pattern:
 {
   "Stop": [{
-    "hooks": [{"type": "command", "command": "claude -c -p 'Update history'"}]
+    "hooks": [{"type": "command", "command": "gemini -c -p 'Update history'"}]
   }]
 }
 
@@ -375,7 +375,7 @@ export class HookConfigValidator {
   }]
 }
 
-// Then manually run: claude -c -p "Update history" when needed
+// Then manually run: gemini -c -p "Update history" when needed
         `
       });
       
@@ -514,10 +514,10 @@ async function validateConfigCommand(subArgs, flags) {
     }
     
     console.log('\n💡 RECOMMENDATIONS:');
-    console.log('1. Remove claude commands from Stop hooks');
+    console.log('1. Remove gemini commands from Stop hooks');
     console.log('2. Use PostToolUse hooks for specific tools');
     console.log('3. Implement flag-based update patterns');
-    console.log('4. Use claude --skip-hooks for manual updates');
+    console.log('4. Use gemini --skip-hooks for manual updates');
   }
 }
 
@@ -569,7 +569,7 @@ async function safeModeCommand(subArgs, flags) {
     HookContextManager.setSkipHooks(true);
     printSuccess('🛡️  Safe mode enabled!');
     console.log('• All hooks will be skipped');
-    console.log('• Claude commands will show safety warnings');
+    console.log('• Gemini commands will show safety warnings');
     console.log('• Additional validation will be performed');
   } else {
     HookContextManager.setSafeMode(false);
@@ -584,7 +584,7 @@ function showHookSafetyHelp() {
 🛡️  Hook Safety System - Prevent Infinite Loops & Financial Damage
 
 USAGE:
-  claude-flow hook-safety <command> [options]
+  gemini-flow hook-safety <command> [options]
 
 COMMANDS:
   validate      Validate hook configuration for dangerous patterns
@@ -593,29 +593,29 @@ COMMANDS:
   safe-mode     Enable/disable safe mode (skips all hooks)
 
 VALIDATE OPTIONS:
-  --config, -c <path>     Path to Claude Code settings.json
+  --config, -c <path>     Path to Gemini Code settings.json
 
 SAFE-MODE OPTIONS:
   --disable, --off        Disable safe mode
 
 EXAMPLES:
-  # Check your Claude Code hooks for dangerous patterns
-  claude-flow hook-safety validate
+  # Check your Gemini Code hooks for dangerous patterns
+  gemini-flow hook-safety validate
 
   # Check specific configuration file
-  claude-flow hook-safety validate --config ~/.claude/settings.json
+  gemini-flow hook-safety validate --config ~/.claude/settings.json
 
   # View current safety status
-  claude-flow hook-safety status
+  gemini-flow hook-safety status
 
   # Reset if circuit breaker is triggered
-  claude-flow hook-safety reset
+  gemini-flow hook-safety reset
 
   # Enable safe mode (skips all hooks)
-  claude-flow hook-safety safe-mode
+  gemini-flow hook-safety safe-mode
 
   # Disable safe mode
-  claude-flow hook-safety safe-mode --disable
+  gemini-flow hook-safety safe-mode --disable
 
 🚨 CRITICAL WARNING:
 Stop hooks that call 'claude' commands create INFINITE LOOPS that can:
@@ -626,18 +626,18 @@ Stop hooks that call 'claude' commands create INFINITE LOOPS that can:
 SAFE ALTERNATIVES:
 • Use PostToolUse hooks instead of Stop hooks
 • Implement flag-based update patterns
-• Use 'claude --skip-hooks' for manual updates
+• Use 'gemini --skip-hooks' for manual updates
 • Create conditional execution scripts
 
-For more information: https://github.com/ruvnet/claude-flow/issues/166
+For more information: https://github.com/ruvnet/gemini-flow/issues/166
 `);
 }
 
 /**
- * Emergency CLI flags for Claude commands
+ * Emergency CLI flags for Gemini commands
  */
 export function addSafetyFlags(command) {
-  // Add safety flags to any claude command
+  // Add safety flags to any gemini command
   const context = HookContextManager.getContext();
   
   if (context.type) {

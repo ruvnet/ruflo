@@ -1,4 +1,4 @@
-# Claude Flow v2.0.0 Agent System
+# Gemini Flow v2.0.0 Agent System
 
 A comprehensive agent type system with specialized capabilities, neural pattern support, and advanced coordination.
 
@@ -175,7 +175,7 @@ const bestAgent = matches[0].agent; // Highest scoring agent
 - **Health Monitoring**: 10-20 second intervals
 - **Auto-scaling**: Response time < 30 seconds
 
-## Integration with Claude Flow v2.0.0
+## Integration with Gemini Flow v2.0.0
 
 The agent system is fully integrated with:
 - **Swarm Coordination**: Works with ruv-swarm MCP tools
@@ -206,4 +206,4 @@ The agent system is fully integrated with:
 - `agent-registry.ts` - Agent registration and persistent storage
 - `index.ts` - Agent factory and system exports
 
-This comprehensive agent system provides the foundation for sophisticated multi-agent workflows in Claude Flow v2.0.0, enabling intelligent task distribution, specialized expertise, and coordinated problem-solving.
+This comprehensive agent system provides the foundation for sophisticated multi-agent workflows in Gemini Flow v2.0.0, enabling intelligent task distribution, specialized expertise, and coordinated problem-solving.

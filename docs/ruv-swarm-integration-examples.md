@@ -1,8 +1,9 @@
 # ruv-swarm Integration Examples
 
-This document provides comprehensive examples of integrating ruv-swarm with Claude Code for enhanced coordination and productivity.
+This document provides comprehensive examples of integrating ruv-swarm with Gemini CLI for enhanced coordination and productivity.
 
-## 🚀 Complete Full-Stack Development Example
+## 
+ Complete Full-Stack Development Example
 
 ### Scenario: Building a REST API with Authentication, Database, and Tests
 
@@ -11,10 +12,11 @@ This example demonstrates the complete ruv-swarm coordination pattern for a comp
 #### Step 1: Initialize Swarm and Spawn All Agents (Single Message)
 
 ```javascript
-// ✅ CORRECT: Everything in ONE message with BatchTool
+// 
+ CORRECT: Everything in ONE message with BatchTool
 [BatchTool - Message 1]:
   // Initialize swarm with optimal topology
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "hierarchical", 
     maxAgents: 8, 
     strategy: "parallel",
@@ -22,13 +24,13 @@ This example demonstrates the complete ruv-swarm coordination pattern for a comp
   })
   
   // Spawn ALL agents simultaneously
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "System Designer" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "API Developer" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Auth Expert" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "DB Designer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "QA Engineer" })
-  mcp__claude-flow__agent_spawn({ type: "researcher", name: "Tech Lead" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Project Manager" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "System Designer" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "API Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Auth Expert" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "DB Designer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "QA Engineer" })
+  mcp__gemini-flow__agent_spawn({ type: "researcher", name: "Tech Lead" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Project Manager" })
   
   // Create comprehensive todo list
   TodoWrite({ todos: [
@@ -42,14 +44,14 @@ This example demonstrates the complete ruv-swarm coordination pattern for a comp
   ]})
   
   // Start orchestration
-  mcp__claude-flow__task_orchestrate({ 
+  mcp__gemini-flow__task_orchestrate({ 
     task: "Build complete REST API system", 
     strategy: "parallel",
     dependencies: true 
   })
   
   // Store initial project context
-  mcp__claude-flow__memory_usage({ 
+  mcp__gemini-flow__memory_usage({ 
     action: "store", 
     key: "project/api-system/init", 
     value: { 
@@ -79,7 +81,7 @@ This example demonstrates the complete ruv-swarm coordination pattern for a comp
   Write("rest-api-system/src/config/auth.js", authConfigContent)
   
   // Store file creation progress
-  mcp__claude-flow__memory_usage({ 
+  mcp__gemini-flow__memory_usage({ 
     action: "store", 
     key: "project/api-system/infrastructure", 
     value: { 
@@ -111,7 +113,7 @@ This example demonstrates the complete ruv-swarm coordination pattern for a comp
   Write("rest-api-system/src/services/authService.js", authServiceContent)
   
   // Update coordination memory
-  mcp__claude-flow__memory_usage({ 
+  mcp__gemini-flow__memory_usage({ 
     action: "store", 
     key: "project/api-system/components", 
     value: { 
@@ -144,7 +146,7 @@ This example demonstrates the complete ruv-swarm coordination pattern for a comp
   Bash("cd rest-api-system && npm run build")
   
   // Final coordination update
-  mcp__claude-flow__memory_usage({ 
+  mcp__gemini-flow__memory_usage({ 
     action: "store", 
     key: "project/api-system/completion", 
     value: { 
@@ -158,7 +160,8 @@ This example demonstrates the complete ruv-swarm coordination pattern for a comp
   })
 ```
 
-## 🧠 Research Coordination Example
+## 
+ Research Coordination Example
 
 ### Scenario: Comprehensive Technology Research
 
@@ -166,13 +169,13 @@ This example demonstrates the complete ruv-swarm coordination pattern for a comp
 
 ```javascript
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ topology: "mesh", maxAgents: 6, strategy: "research" })
-  mcp__claude-flow__agent_spawn({ type: "researcher", name: "Literature Review" })
-  mcp__claude-flow__agent_spawn({ type: "researcher", name: "Market Analysis" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Data Synthesizer" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Trend Analyzer" })
-  mcp__claude-flow__agent_spawn({ type: "reviewer", name: "Quality Checker" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Research Lead" })
+  mcp__gemini-flow__swarm_init({ topology: "mesh", maxAgents: 6, strategy: "research" })
+  mcp__gemini-flow__agent_spawn({ type: "researcher", name: "Literature Review" })
+  mcp__gemini-flow__agent_spawn({ type: "researcher", name: "Market Analysis" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Data Synthesizer" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Trend Analyzer" })
+  mcp__gemini-flow__agent_spawn({ type: "reviewer", name: "Quality Checker" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Research Lead" })
   
   TodoWrite({ todos: [
     { id: "literature", content: "Conduct comprehensive literature review", status: "in_progress", priority: "high" },
@@ -192,9 +195,9 @@ This example demonstrates the complete ruv-swarm coordination pattern for a comp
   WebSearch("edge AI deployment strategies")
   
   // Store findings simultaneously
-  mcp__claude-flow__memory_usage({ action: "store", key: "research/nas/trends", value: searchResults1 })
-  mcp__claude-flow__memory_usage({ action: "store", key: "research/transformers/efficiency", value: searchResults2 })
-  mcp__claude-flow__memory_usage({ action: "store", key: "research/edge-ai/deployment", value: searchResults3 })
+  mcp__gemini-flow__memory_usage({ action: "store", key: "research/nas/trends", value: searchResults1 })
+  mcp__gemini-flow__memory_usage({ action: "store", key: "research/transformers/efficiency", value: searchResults2 })
+  mcp__gemini-flow__memory_usage({ action: "store", key: "research/edge-ai/deployment", value: searchResults3 })
   
   // Create research documentation
   Write("research-output/literature-review.md", literatureContent)
@@ -202,60 +205,62 @@ This example demonstrates the complete ruv-swarm coordination pattern for a comp
   Write("research-output/synthesis-report.md", synthesisContent)
 ```
 
-## 🎯 Real-World Integration Patterns
+## 
+ Real-World Integration Patterns
 
 ### Pattern 1: Microservices Development
 
 ```javascript
 // Initialize with hierarchical topology for complex systems
-mcp__claude-flow__swarm_init({ topology: "hierarchical", maxAgents: 12, strategy: "development" })
+mcp__gemini-flow__swarm_init({ topology: "hierarchical", maxAgents: 12, strategy: "development" })
 
 // Service-specific agents
-mcp__claude-flow__agent_spawn({ type: "architect", name: "System Architect" })
-mcp__claude-flow__agent_spawn({ type: "coder", name: "User Service Dev" })
-mcp__claude-flow__agent_spawn({ type: "coder", name: "Payment Service Dev" })
-mcp__claude-flow__agent_spawn({ type: "coder", name: "Notification Service Dev" })
-mcp__claude-flow__agent_spawn({ type: "coder", name: "API Gateway Dev" })
-mcp__claude-flow__agent_spawn({ type: "analyst", name: "Database Architect" })
-mcp__claude-flow__agent_spawn({ type: "tester", name: "Integration Tester" })
-mcp__claude-flow__agent_spawn({ type: "tester", name: "Performance Tester" })
+mcp__gemini-flow__agent_spawn({ type: "architect", name: "System Architect" })
+mcp__gemini-flow__agent_spawn({ type: "coder", name: "User Service Dev" })
+mcp__gemini-flow__agent_spawn({ type: "coder", name: "Payment Service Dev" })
+mcp__gemini-flow__agent_spawn({ type: "coder", name: "Notification Service Dev" })
+mcp__gemini-flow__agent_spawn({ type: "coder", name: "API Gateway Dev" })
+mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Database Architect" })
+mcp__gemini-flow__agent_spawn({ type: "tester", name: "Integration Tester" })
+mcp__gemini-flow__agent_spawn({ type: "tester", name: "Performance Tester" })
 ```
 
 ### Pattern 2: Data Pipeline Development
 
 ```javascript
 // Mesh topology for data flow coordination
-mcp__claude-flow__swarm_init({ topology: "mesh", maxAgents: 8, strategy: "analysis" })
+mcp__gemini-flow__swarm_init({ topology: "mesh", maxAgents: 8, strategy: "analysis" })
 
 // Data-focused agents
-mcp__claude-flow__agent_spawn({ type: "analyst", name: "Data Architect" })
-mcp__claude-flow__agent_spawn({ type: "coder", name: "ETL Developer" })
-mcp__claude-flow__agent_spawn({ type: "coder", name: "Stream Processor" })
-mcp__claude-flow__agent_spawn({ type: "analyst", name: "ML Pipeline Expert" })
-mcp__claude-flow__agent_spawn({ type: "tester", name: "Data Quality Tester" })
+mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Data Architect" })
+mcp__gemini-flow__agent_spawn({ type: "coder", name: "ETL Developer" })
+mcp__gemini-flow__agent_spawn({ type: "coder", name: "Stream Processor" })
+mcp__gemini-flow__agent_spawn({ type: "analyst", name: "ML Pipeline Expert" })
+mcp__gemini-flow__agent_spawn({ type: "tester", name: "Data Quality Tester" })
 ```
 
 ### Pattern 3: Frontend Application Development
 
 ```javascript
 // Star topology with central UI coordinator
-mcp__claude-flow__swarm_init({ topology: "star", maxAgents: 6, strategy: "development" })
+mcp__gemini-flow__swarm_init({ topology: "star", maxAgents: 6, strategy: "development" })
 
 // Frontend-specific agents
-mcp__claude-flow__agent_spawn({ type: "designer", name: "UI/UX Designer" })
-mcp__claude-flow__agent_spawn({ type: "coder", name: "React Developer" })
-mcp__claude-flow__agent_spawn({ type: "coder", name: "State Manager" })
-mcp__claude-flow__agent_spawn({ type: "tester", name: "UI Tester" })
-mcp__claude-flow__agent_spawn({ type: "optimizer", name: "Performance Optimizer" })
+mcp__gemini-flow__agent_spawn({ type: "designer", name: "UI/UX Designer" })
+mcp__gemini-flow__agent_spawn({ type: "coder", name: "React Developer" })
+mcp__gemini-flow__agent_spawn({ type: "coder", name: "State Manager" })
+mcp__gemini-flow__agent_spawn({ type: "tester", name: "UI Tester" })
+mcp__gemini-flow__agent_spawn({ type: "optimizer", name: "Performance Optimizer" })
 ```
 
-## 📊 Memory Coordination Patterns
+## 
+ Memory Coordination Patterns
 
 ### Hierarchical Memory Structure
 
 ```javascript
 // Project-level memory
-mcp__claude-flow__memory_usage({
+mcp__gemini-flow__memory_usage({
   action: "store",
   key: "project/microservices/architecture",
   value: {
@@ -267,7 +272,7 @@ mcp__claude-flow__memory_usage({
 })
 
 // Service-specific memory
-mcp__claude-flow__memory_usage({
+mcp__gemini-flow__memory_usage({
   action: "store", 
   key: "project/microservices/services/user/api",
   value: {
@@ -279,7 +284,7 @@ mcp__claude-flow__memory_usage({
 })
 
 // Cross-service dependencies
-mcp__claude-flow__memory_usage({
+mcp__gemini-flow__memory_usage({
   action: "store",
   key: "project/microservices/dependencies",
   value: {
@@ -294,7 +299,7 @@ mcp__claude-flow__memory_usage({
 
 ```javascript
 // Track individual agent progress
-mcp__claude-flow__memory_usage({
+mcp__gemini-flow__memory_usage({
   action: "store",
   key: "swarm/agents/user-service-dev/progress",
   value: {
@@ -307,7 +312,7 @@ mcp__claude-flow__memory_usage({
 })
 
 // Track overall project status
-mcp__claude-flow__memory_usage({
+mcp__gemini-flow__memory_usage({
   action: "store",
   key: "swarm/project/status",
   value: {
@@ -321,7 +326,8 @@ mcp__claude-flow__memory_usage({
 })
 ```
 
-## 🔧 Advanced Coordination Hooks
+## 
+ Advanced Coordination Hooks
 
 ### Pre-Task Coordination
 
@@ -367,12 +373,14 @@ npx ruv-swarm hook session-end \
   --cleanup-temp-files true
 ```
 
-## 🚀 Performance Optimization Examples
+## 
+ Performance Optimization Examples
 
 ### Batch File Operations
 
 ```javascript
-// ✅ Optimal: All related files in one batch
+// 
+ Optimal: All related files in one batch
 [BatchTool]:
   Write("src/models/User.js", userModel)
   Write("src/models/Product.js", productModel)
@@ -391,7 +399,8 @@ npx ruv-swarm hook session-end \
 ### Parallel Command Execution
 
 ```javascript
-// ✅ Optimal: All commands in parallel
+// 
+ Optimal: All commands in parallel
 [BatchTool]:
   Bash("npm install express mongoose cors helmet")
   Bash("npm install --save-dev jest supertest nodemon")
@@ -403,41 +412,43 @@ npx ruv-swarm hook session-end \
 ### Coordinated Agent Spawning
 
 ```javascript
-// ✅ Optimal: All agents spawned simultaneously with full coordination
+// 
+ Optimal: All agents spawned simultaneously with full coordination
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ topology: "mesh", maxAgents: 8, strategy: "parallel" })
+  mcp__gemini-flow__swarm_init({ topology: "mesh", maxAgents: 8, strategy: "parallel" })
   
   // Backend team
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "Backend Architect" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "API Developer" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Database Designer" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "Backend Architect" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "API Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Database Designer" })
   
   // Frontend team  
-  mcp__claude-flow__agent_spawn({ type: "designer", name: "UI Designer" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Frontend Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "designer", name: "UI Designer" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Frontend Developer" })
   
   // Quality team
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "QA Engineer" })
-  mcp__claude-flow__agent_spawn({ type: "reviewer", name: "Code Reviewer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "QA Engineer" })
+  mcp__gemini-flow__agent_spawn({ type: "reviewer", name: "Code Reviewer" })
   
   // Coordination team
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Project Manager" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Project Manager" })
   
   // Initialize shared memory for all agents
-  mcp__claude-flow__memory_usage({ 
+  mcp__gemini-flow__memory_usage({ 
     action: "store", 
     key: "swarm/shared/project-context",
     value: { initialized: Date.now(), agents: 8, strategy: "parallel" }
   })
 ```
 
-## 📈 Monitoring and Analytics
+## 
+ Monitoring and Analytics
 
 ### Real-Time Swarm Monitoring
 
 ```javascript
 // Monitor swarm performance in real-time
-mcp__claude-flow__swarm_monitor({
+mcp__gemini-flow__swarm_monitor({
   interval: "30s",
   metrics: ["task-completion", "agent-utilization", "memory-usage", "error-rates"],
   alerts: ["blocked-tasks", "performance-degradation", "memory-exhaustion"],
@@ -449,7 +460,7 @@ mcp__claude-flow__swarm_monitor({
 
 ```javascript
 // Generate performance reports
-mcp__claude-flow__benchmark_run({
+mcp__gemini-flow__benchmark_run({
   duration: "1h",
   scenarios: ["development", "testing", "deployment"],
   metrics: ["throughput", "latency", "resource-utilization"],
@@ -457,7 +468,8 @@ mcp__claude-flow__benchmark_run({
 })
 ```
 
-## 🎓 Best Practices Summary
+## 
+ Best Practices Summary
 
 1. **Always Batch Operations**: Use BatchTool for ALL related operations
 2. **Parallel Agent Spawning**: Spawn all agents in a single message
@@ -468,14 +480,15 @@ mcp__claude-flow__benchmark_run({
 7. **Neural Learning**: Let agents learn from successful patterns
 8. **Error Recovery**: Implement robust error handling and recovery
 
-## 🔗 Additional Resources
+## 
+ Additional Resources
 
 - [ruv-swarm GitHub Repository](https://github.com/ruvnet/ruv-FANN/tree/main/ruv-swarm)
-- [Claude Code Documentation](https://claude.ai/code)
+- [Gemini CLI Documentation](https://gemini.google.com/cli)
 - [MCP Protocol Specification](https://github.com/modelcontextprotocol/specification)
 - [Integration Examples](./examples/)
 - [Performance Benchmarks](./benchmark/)
 
 ---
 
-**Remember**: ruv-swarm coordinates, Claude Code creates! The key to success is understanding that MCP tools orchestrate and enhance Claude Code's native capabilities rather than replacing them.
+**Remember**: ruv-swarm coordinates, Gemini CLI creates! The key to success is understanding that MCP tools orchestrate and enhance Gemini CLI's native capabilities rather than replacing them.

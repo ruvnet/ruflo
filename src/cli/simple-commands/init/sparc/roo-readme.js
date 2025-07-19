@@ -27,22 +27,22 @@ SPARC is a systematic approach to software development:
 4. **Refinement**: Implement, test, and optimize using TDD
 5. **Completion**: Integrate, document, and validate
 
-## Usage with Claude-Flow
+## Usage with Gemini-Flow
 
-Use the claude-flow SPARC commands to leverage this environment:
+Use the gemini-flow SPARC commands to leverage this environment:
 
 \`\`\`bash
 # List available modes
-claude-flow sparc modes
+gemini-flow sparc modes
 
 # Run specific mode
-claude-flow sparc run code "implement user authentication"
+gemini-flow sparc run code "implement user authentication"
 
 # Execute full TDD workflow  
-claude-flow sparc tdd "payment processing system"
+gemini-flow sparc tdd "payment processing system"
 
 # Use custom workflow
-claude-flow sparc workflow .roo/workflows/basic-tdd.json
+gemini-flow sparc workflow .roo/workflows/basic-tdd.json
 \`\`\`
 
 ## Configuration
@@ -56,6 +56,6 @@ You can customize this environment by:
 - Creating mode-specific templates in \`templates/\`
 - Adding project-specific configurations in \`configs/\`
 
-For more information, see: https://github.com/ruvnet/claude-code-flow/docs/sparc.md
+For more information, see: https://github.com/ruvnet/gemini-flow/docs/sparc.md
 `;
 }

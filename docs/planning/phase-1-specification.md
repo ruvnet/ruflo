@@ -1,8 +1,8 @@
 # Phase 1: Specification
-## Claude-Flow Multi-Terminal Orchestration System
+## Gemini-Flow Multi-Terminal Orchestration System
 
 ### Executive Summary
-Claude-Flow is a next-generation CLI tool that orchestrates multiple Claude Code sessions across parallel terminal instances, enabling sophisticated multi-agent development workflows with shared memory and coordination capabilities.
+Gemini-Flow is a next-generation CLI tool that orchestrates multiple Gemini Code sessions across parallel terminal instances, enabling sophisticated multi-agent development workflows with shared memory and coordination capabilities.
 
 ### Functional Requirements
 
@@ -83,7 +83,7 @@ Claude-Flow is a next-generation CLI tool that orchestrates multiple Claude Code
 #### Epic 1: Developer Workflow Enhancement
 ```
 As a developer
-I want to run multiple Claude agents in parallel
+I want to run multiple Gemini agents in parallel
 So that I can tackle complex projects faster
 ```
 
@@ -109,7 +109,7 @@ So that we can divide and conquer large codebases
 #### Epic 3: Automation and CI/CD
 ```
 As a DevOps engineer
-I want to integrate Claude-Flow into our pipeline
+I want to integrate Gemini-Flow into our pipeline
 So that AI can assist with automated tasks
 ```
 
@@ -167,23 +167,23 @@ interface MCPServer {
 #### CLI Command Structure
 ```bash
 # Basic Commands
-claude-flow init                    # Initialize new project
-claude-flow spawn <count>           # Spawn agent terminals
-claude-flow exec <command>          # Execute in all terminals
-claude-flow target <agent> <cmd>    # Target specific agent
-claude-flow status                  # Show system status
-claude-flow shutdown               # Graceful shutdown
+gemini-flow init                    # Initialize new project
+gemini-flow spawn <count>           # Spawn agent terminals
+gemini-flow exec <command>          # Execute in all terminals
+gemini-flow target <agent> <cmd>    # Target specific agent
+gemini-flow status                  # Show system status
+gemini-flow shutdown               # Graceful shutdown
 
 # Advanced Commands
-claude-flow workflow <file>         # Run workflow file
-claude-flow memory export <file>    # Export memory bank
-claude-flow replay <session>        # Replay session
-claude-flow monitor                 # Live monitoring UI
+gemini-flow workflow <file>         # Run workflow file
+gemini-flow memory export <file>    # Export memory bank
+gemini-flow replay <session>        # Replay session
+gemini-flow monitor                 # Live monitoring UI
 
 # Configuration Commands
-claude-flow config set <key> <val>  # Set configuration
-claude-flow config get <key>        # Get configuration
-claude-flow profile create <name>   # Create agent profile
+gemini-flow config set <key> <val>  # Set configuration
+gemini-flow config get <key>        # Get configuration
+gemini-flow profile create <name>   # Create agent profile
 ```
 
 ### Data Models
@@ -272,7 +272,7 @@ interface Task {
 2. Sufficient system resources for multiple terminals
 3. Network connectivity for MCP operations
 4. Basic familiarity with CLI tools
-5. Claude Code or compatible AI available
+5. Gemini Code or compatible AI available
 
 ---
 *Phase 1 Status: Complete*

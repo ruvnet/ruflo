@@ -1,18 +1,18 @@
 # API Reference
 
-Comprehensive programmatic API documentation for Claude-Flow's multi-agent orchestration system.
+Comprehensive programmatic API documentation for Gemini-Flow's multi-agent orchestration system.
 
 ## Overview
 
-Claude-Flow provides a rich TypeScript/JavaScript API for programmatic control of the multi-agent system. This API enables deep integration with existing applications and custom workflow automation.
+Gemini-Flow provides a rich TypeScript/JavaScript API for programmatic control of the multi-agent system. This API enables deep integration with existing applications and custom workflow automation.
 
 ## Installation and Setup
 
 ### Package Installation
 
 ```bash
-# Install Claude-Flow as a dependency
-npm install claude-flow
+# Install Gemini-Flow as a dependency
+npm install gemini-flow
 
 # Or for Deno
 import { ClaudeFlow } from 'https://deno.land/x/claude_flow@latest/mod.ts';
@@ -21,7 +21,7 @@ import { ClaudeFlow } from 'https://deno.land/x/claude_flow@latest/mod.ts';
 ### Basic Initialization
 
 ```typescript
-import { ClaudeFlow, ClaudeFlowConfig } from 'claude-flow';
+import { ClaudeFlow, ClaudeFlowConfig } from 'gemini-flow';
 
 // Basic configuration
 const config: ClaudeFlowConfig = {
@@ -39,7 +39,7 @@ const config: ClaudeFlowConfig = {
   }
 };
 
-// Create and start Claude-Flow instance
+// Create and start Gemini-Flow instance
 const claudeFlow = new ClaudeFlow(config);
 await claudeFlow.initialize();
 ```
@@ -417,7 +417,7 @@ claudeFlow.on('system.error', (event) => {
 
 // One-time event subscription
 claudeFlow.once('system.started', () => {
-  console.log('Claude-Flow system is ready');
+  console.log('Gemini-Flow system is ready');
 });
 ```
 
@@ -646,12 +646,12 @@ interface TestingUtils {
 
 ```typescript
 import express from 'express';
-import { ClaudeFlow } from 'claude-flow';
+import { ClaudeFlow } from 'gemini-flow';
 
 const app = express();
 const claudeFlow = new ClaudeFlow();
 
-// Middleware to inject Claude-Flow instance
+// Middleware to inject Gemini-Flow instance
 app.use((req, res, next) => {
   req.claudeFlow = claudeFlow;
   next();
@@ -683,7 +683,7 @@ app.listen(3000);
 
 ```typescript
 import React, { useEffect, useState } from 'react';
-import { ClaudeFlow } from 'claude-flow';
+import { ClaudeFlow } from 'gemini-flow';
 
 export const ClaudeFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [claudeFlow, setClaudeFlow] = useState<ClaudeFlow | null>(null);
@@ -708,7 +708,7 @@ export const ClaudeFlowProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, []);
 
   if (!isReady) {
-    return <div>Initializing Claude-Flow...</div>;
+    return <div>Initializing Gemini-Flow...</div>;
   }
 
   return (
@@ -727,4 +727,4 @@ export const useClaudeFlow = () => {
 };
 ```
 
-This comprehensive API reference provides complete documentation for programmatic integration with Claude-Flow, enabling developers to build sophisticated multi-agent applications and custom workflows.
+This comprehensive API reference provides complete documentation for programmatic integration with Gemini-Flow, enabling developers to build sophisticated multi-agent applications and custom workflows.

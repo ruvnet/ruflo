@@ -1,13 +1,13 @@
-# 🌊 Gemini-Flow v2.0.0 Alpha: Revolutionary AI Orchestration Platform
+# 🌊 Gemini-Flow v2.0.0: Revolutionary AI Orchestration Platform
 
 <div align="center">
 
-[![🌟 Star on GitHub](https://img.shields.io/github/stars/ruvnet/gemini-code-flow?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/gemini-code-flow)
-[![📦 Alpha Release](https://img.shields.io/npm/v/gemini-flow/alpha?style=for-the-badge&logo=npm&color=orange&label=v2.0.0-alpha)](https://www.npmjs.com/package/gemini-flow/v/alpha)
-[![⚡ Gemini Code](https://img.shields.io/badge/Claude%20Code-Optimized-green?style=for-the-badge&logo=anthropic)](https://github.com/ruvnet/gemini-code-flow)
+[![🌟 Star on GitHub](https://img.shields.io/github/stars/ruvnet/gemini-flow?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/gemini-flow)
+[![📦  Release](https://img.shields.io/npm/v/gemini-flow?style=for-the-badge&logo=npm&color=orange&label=v2.0.0-alpha)](https://www.npmjs.com/package/gemini-flow/v/alpha)
+[![⚡ Gemini CLI](https://img.shields.io/badge/Gemini%20CLI-Ready-blue?style=for-the-badge&logo=google-gemini)](https://github.com/ruvnet/gemini-flow)
 [![🏛️ Agentics Foundation](https://img.shields.io/badge/Agentics-Foundation-crimson?style=for-the-badge&logo=openai)](https://discord.agentics.org)
-[![🐝 Hive-Mind](https://img.shields.io/badge/Hive--Mind-AI%20Coordination-purple?style=for-the-badge&logo=swarm)](https://github.com/ruvnet/gemini-code-flow)
-[![🧠 Neural](https://img.shields.io/badge/Neural-87%20MCP%20Tools-blue?style=for-the-badge&logo=tensorflow)](https://github.com/ruvnet/gemini-code-flow)
+[![🐝 Hive-Mind](https://img.shields.io/badge/Hive--Mind-AI%20Coordination-purple?style=for-the-badge&logo=swarm)](https://github.com/ruvnet/gemini-flow)
+[![🧠 Neural](https://img.shields.io/badge/Neural-87%20MCP%20Tools-blue?style=for-the-badge&logo=tensorflow)](https://github.com/ruvnet/gemini-flow)
 [![🛡️ MIT License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge&logo=opensourceinitiative)](https://opensource.org/licenses/MIT)
 
 </div>
@@ -16,7 +16,7 @@
 
 ## 🌟 **Overview**
 
-**Gemini-Flow v2 Alpha** is an enterprise-grade AI orchestration platform that revolutionizes how developers build with AI. By combining **hive-mind swarm intelligence**, **neural pattern recognition**, and **87 advanced MCP tools**, Gemini-Flow enables unprecedented AI-powered development workflows.
+**Gemini-Flow v2 ** is an enterprise-grade AI orchestration platform that revolutionizes how developers build with AI. By combining **hive-mind swarm intelligence**, **neural pattern recognition**, and **87 advanced MCP tools**, Gemini-Flow enables unprecedented AI-powered development workflows.
 
 ### 🎯 **Key Features**
 
@@ -31,34 +31,34 @@
 
 > 🔥 **Revolutionary AI Coordination**: Build faster, smarter, and more efficiently with AI-powered development orchestration
 
-## ⚡ **Try v2.0.0 Alpha in 4 Commands**
+## ⚡ **Try v2.0.0 in 4 Commands**
 
 ### 📋 **Prerequisites**
 
-⚠️ **IMPORTANT**: Gemini Code must be installed first:
+⚠️ **IMPORTANT**: Gemini CLI must be installed first:
 
 ```bash
-# 1. Install Gemini Code globally
-npm install -g @google-ai/gemini-code
+# 1. Install Gemini CLI globally
+npm install -g @google/generative-ai
 
-# 2. Activate Gemini Code with permissions
-gemini --dangerously-skip-permissions
+# 2. Activate Gemini CLI with permissions
+gemini init
 ```
 
-### 🎯 **Instant Alpha Testing**
+### 🎯 **Instant  Testing**
 
 ```bash
-# 1. Initialize Claude Flow with enhanced MCP setup (auto-configures permissions!)
-npx --y gemini-flow@alpha init --force
+# 1. Initialize Gemini Flow with enhanced MCP setup (auto-configures permissions!)
+gemini-flow init --force
 
 # 2. Explore all revolutionary capabilities  
-npx --y gemini-flow@alpha --help
+gemini-flow --help
 
 # 3. Launch the interactive hive-mind wizard
-npx --y gemini-flow@alpha hive-mind wizard
+gemini-flow hive-mind wizard
 
 # 4. Build something amazing with AI coordination
-npx gemini-flow@alpha hive-mind spawn "build me something amazing" --gemini
+gemini-flow hive-mind spawn "build me something amazing" --gemini
 ```
 
 ---
@@ -70,7 +70,7 @@ Gemini-Flow v2.0.0 introduces a powerful hooks system that automates coordinatio
 
 ```bash
 # Hooks automatically trigger on operations
-npx gemini-flow@alpha init --force  # Auto-configures MCP servers & hooks
+gemini-flow init --force  # Auto-configures MCP servers & hooks
 ```
 
 ### **Available Hooks**
@@ -116,11 +116,11 @@ npx gemini-flow@alpha init --force  # Auto-configures MCP servers & hooks
 }
 ```
 
-### **Using Hooks in Gemini Code**
+### **Using Hooks in Gemini CLI**
 
-Hooks integrate seamlessly with Gemini Code's workflow:
+Hooks integrate seamlessly with Gemini CLI's workflow:
 
-1. **Automatic Triggering**: Hooks fire automatically during Gemini Code operations
+1. **Automatic Triggering**: Hooks fire automatically during Gemini CLI operations
 2. **Context Awareness**: Each hook receives relevant context (file paths, commands, etc.)
 3. **Non-Blocking**: Hooks run asynchronously to maintain performance
 4. **Configurable**: Enable/disable specific hooks as needed
@@ -129,13 +129,13 @@ Hooks integrate seamlessly with Gemini Code's workflow:
 
 ```bash
 # Manual hook execution
-npx gemini-flow hooks pre-task --description "Build REST API" --auto-spawn-agents
+gemini-flow hooks pre-task --description "Build REST API" --auto-spawn-agents
 
 # Post-edit with formatting
-npx gemini-flow hooks post-edit --file "src/api.js" --format --train-neural
+gemini-flow hooks post-edit --file "src/api.js" --format --train-neural
 
 # Session management
-npx gemini-flow hooks session-end --generate-summary --persist-state
+gemini-flow hooks session-end --generate-summary --persist-state
 ```
 
 ---
@@ -146,10 +146,10 @@ Gemini-Flow v2.0.0 introduces groundbreaking hive-mind architecture where a **Qu
 
 ```bash
 # Deploy intelligent swarm coordination
-npx gemini-flow@alpha swarm "Build a full-stack application" --strategy development --gemini
+gemini-flow swarm "Build a full-stack application" --strategy development --gemini
 
 # Launch hive-mind with specific specializations
-npx gemini-flow@alpha hive-mind spawn "Create microservices architecture" --agents 8 --gemini
+gemini-flow hive-mind spawn "Create microservices architecture" --agents 8 --gemini
 ```
 
 ### **🤖 Intelligent Agent Types**
@@ -169,27 +169,27 @@ npx gemini-flow@alpha hive-mind spawn "Create microservices architecture" --agen
 ### **🧠 Neural & Cognitive Tools**
 ```bash
 # Neural pattern recognition and training
-npx gemini-flow@alpha neural train --pattern coordination --epochs 50
-npx gemini-flow@alpha neural predict --model cognitive-analysis
-npx gemini-flow@alpha cognitive analyze --behavior "development workflow"
+gemini-flow neural train --pattern coordination --epochs 50
+gemini-flow neural predict --model cognitive-analysis
+gemini-flow cognitive analyze --behavior "development workflow"
 ```
 
 ### **💾 SQLite Memory Systems**
 ```bash
 # Cross-session memory management with SQLite persistence
-npx gemini-flow@alpha memory store "project-context" "Full-stack app requirements"
-npx gemini-flow@alpha memory query "authentication" --namespace sparc
-npx gemini-flow@alpha memory stats  # Shows 12 specialized tables
-npx gemini-flow@alpha memory export backup.json --namespace default
-npx gemini-flow@alpha memory import project-memory.json
+gemini-flow memory store "project-context" "Full-stack app requirements"
+gemini-flow memory query "authentication" --namespace sparc
+gemini-flow memory stats  # Shows 12 specialized tables
+gemini-flow memory export backup.json --namespace default
+gemini-flow memory import project-memory.json
 ```
 
 ### **🔄 Workflow Orchestration**
 ```bash
 # Advanced workflow automation
-npx gemini-flow@alpha workflow create --name "CI/CD Pipeline" --parallel
-npx gemini-flow@alpha batch process --items "test,build,deploy" --concurrent
-npx gemini-flow@alpha pipeline create --config advanced-deployment.json
+gemini-flow workflow create --name "CI/CD Pipeline" --parallel
+gemini-flow batch process --items "test,build,deploy" --concurrent
+gemini-flow pipeline create --config advanced-deployment.json
 ```
 
 ## 🧠 **Neural Network Capabilities**
@@ -199,13 +199,13 @@ Powered by 27+ neural models optimized with WASM SIMD acceleration:
 
 ```bash
 # Train coordination patterns
-npx gemini-flow@alpha neural train --pattern coordination --data "workflow.json"
+gemini-flow neural train --pattern coordination --data "workflow.json"
 
 # Real-time predictions
-npx gemini-flow@alpha neural predict --model task-optimizer --input "current-state.json"
+gemini-flow neural predict --model task-optimizer --input "current-state.json"
 
 # Analyze cognitive behavior
-npx gemini-flow@alpha cognitive analyze --behavior "development-patterns"
+gemini-flow cognitive analyze --behavior "development-patterns"
 ```
 
 ### **Neural Features**
@@ -223,16 +223,16 @@ Complete programmatic control over agent lifecycle and coordination:
 
 ```bash
 # Create specialized agents
-npx gemini-flow@alpha daa agent-create --type "specialized-researcher" \
+gemini-flow daa agent-create --type "specialized-researcher" \
   --capabilities "[\"deep-analysis\", \"pattern-recognition\"]" \
   --resources "{\"memory\": 2048, \"compute\": \"high\"}"
 
 # Match capabilities to tasks
-npx gemini-flow@alpha daa capability-match \
+gemini-flow daa capability-match \
   --task-requirements "[\"security-analysis\", \"performance-optimization\"]"
 
 # Manage agent lifecycle
-npx gemini-flow@alpha daa lifecycle-manage --agentId "agent-123" --action "scale-up"
+gemini-flow daa lifecycle-manage --agentId "agent-123" --action "scale-up"
 ```
 
 ### **DAA Features**
@@ -289,10 +289,10 @@ Gemini-Flow v2.0.0 introduces groundbreaking hive-mind architecture where a **Qu
 
 ```bash
 # Deploy intelligent swarm coordination
-npx gemini-flow@alpha swarm "Build a full-stack application" --strategy development --gemini
+gemini-flow swarm "Build a full-stack application" --strategy development --gemini
 
 # Launch hive-mind with specific specializations
-npx gemini-flow@alpha hive-mind spawn "Create microservices architecture" --agents 8 --gemini
+gemini-flow hive-mind spawn "Create microservices architecture" --agents 8 --gemini
 ```
 
 ### **🤖 Intelligent Agent Types**
@@ -312,61 +312,61 @@ npx gemini-flow@alpha hive-mind spawn "Create microservices architecture" --agen
 ### **🧠 Neural & Cognitive Tools**
 ```bash
 # Neural pattern recognition and training
-npx gemini-flow@alpha neural train --pattern coordination --epochs 50
-npx gemini-flow@alpha neural predict --model cognitive-analysis
-npx gemini-flow@alpha cognitive analyze --behavior "development workflow"
+gemini-flow neural train --pattern coordination --epochs 50
+gemini-flow neural predict --model cognitive-analysis
+gemini-flow cognitive analyze --behavior "development workflow"
 ```
 
 ### **💾 SQLite Memory Systems**
 ```bash
 # Cross-session memory management with SQLite persistence
-npx gemini-flow@alpha memory store "project-context" "Full-stack app requirements"
-npx gemini-flow@alpha memory query "authentication" --namespace sparc
-npx gemini-flow@alpha memory stats  # Shows 12 specialized tables
-npx gemini-flow@alpha memory export backup.json --namespace default
-npx gemini-flow@alpha memory import project-memory.json
+gemini-flow memory store "project-context" "Full-stack app requirements"
+gemini-flow memory query "authentication" --namespace sparc
+gemini-flow memory stats  # Shows 12 specialized tables
+gemini-flow memory export backup.json --namespace default
+gemini-flow memory import project-memory.json
 ```
 
 ### **🔄 Workflow Orchestration**
 ```bash
 # Advanced workflow automation
-npx gemini-flow@alpha workflow create --name "CI/CD Pipeline" --parallel
-npx gemini-flow@alpha batch process --items "test,build,deploy" --concurrent
-npx gemini-flow@alpha pipeline create --config advanced-deployment.json
+gemini-flow workflow create --name "CI/CD Pipeline" --parallel
+gemini-flow batch process --items "test,build,deploy" --concurrent
+gemini-flow pipeline create --config advanced-deployment.json
 
 ```
 
 ### **📊 GitHub Integration**
 ```bash
 # GitHub workflow orchestration and coordination
-npx gemini-flow@alpha github gh-coordinator analyze --analysis-type security
-npx gemini-flow@alpha github pr-manager review --multi-reviewer --ai-powered
-npx gemini-flow@alpha github release-manager coord --version 2.0.0 --auto-changelog
-npx gemini-flow@alpha github repo-architect optimize --structure-analysis
-npx gemini-flow@alpha github issue-tracker manage --project-coordination
-npx gemini-flow@alpha github sync-coordinator align --multi-package
+gemini-flow github gh-coordinator analyze --analysis-type security
+gemini-flow github pr-manager review --multi-reviewer --ai-powered
+gemini-flow github release-manager coord --version 2.0.0 --auto-changelog
+gemini-flow github repo-architect optimize --structure-analysis
+gemini-flow github issue-tracker manage --project-coordination
+gemini-flow github sync-coordinator align --multi-package
 ```
 
 ---
 
-## 🛡️ **Seamless Gemini Code Integration**
+## 🛡️ **Seamless Gemini CLI Integration**
 
 ### **Auto-MCP Server Setup**
-v2.0.0 Alpha automatically configures MCP servers for seamless Gemini Code integration:
+v2.0.0 automatically configures MCP servers for seamless Gemini CLI integration:
 
 ```bash
 # Automatic MCP integration (happens during init)
 ✅ gemini-flow MCP server configured
 ✅ ruv-swarm MCP server configured  
-✅ 87 tools available in Gemini Code
+✅ 87 tools available in Gemini CLI
 ✅ --dangerously-skip-permissions set as default
 ```
 
 ### **Enhanced SPARC Workflows**
 ```bash
 # Advanced SPARC development with neural enhancement
-npx gemini-flow@alpha sparc mode --type "neural-tdd" --auto-learn
-npx gemini-flow@alpha sparc workflow --phases "all" --ai-guided --memory-enhanced
+gemini-flow sparc mode --type "neural-tdd" --auto-learn
+gemini-flow sparc workflow --phases "all" --ai-guided --memory-enhanced
 ```
 
 ---
@@ -382,14 +382,14 @@ npx gemini-flow@alpha sparc workflow --phases "all" --ai-guided --memory-enhance
 ### **🔄 Self-Healing Systems**
 ```bash
 # Automatic error recovery and optimization
-npx gemini-flow@alpha health check --components all --auto-heal
-npx gemini-flow@alpha fault tolerance --strategy retry-with-learning
-npx gemini-flow@alpha bottleneck analyze --auto-optimize
+gemini-flow health check --components all --auto-heal
+gemini-flow fault tolerance --strategy retry-with-learning
+gemini-flow bottleneck analyze --auto-optimize
 ```
 
 ### **💾 Advanced Memory Architecture**
 - **SQLite Persistence**: Robust `.swarm/memory.db` storage with 12 specialized tables
-- **Cross-Session Persistence**: Remember context across Gemini Code sessions
+- **Cross-Session Persistence**: Remember context across Gemini CLI sessions
 - **Namespace Management**: Organized memory with hierarchical access
 - **Enhanced Schema**: Agent interactions, training data, performance metrics, and more
 - **Memory Compression**: Efficient storage of large coordination contexts
@@ -404,20 +404,20 @@ npx gemini-flow@alpha bottleneck analyze --auto-optimize
 - **✅ 32.3% Token Reduction**: Efficient task breakdown reduces costs significantly
 - **✅ 2.8-4.4x Speed Improvement**: Parallel coordination maximizes throughput
 - **✅ 87 MCP Tools**: Most comprehensive AI tool suite available
-- **✅ Zero-Config Setup**: Automatic MCP integration with Gemini Code
+- **✅ Zero-Config Setup**: Automatic MCP integration with Gemini CLI
 
 ### **🚀 Available Capabilities**
 ```bash
 # Check memory system performance
-npx gemini-flow@alpha memory stats
-npx gemini-flow@alpha memory list
+gemini-flow memory stats
+gemini-flow memory list
 
 # Test GitHub coordination modes
-npx gemini-flow@alpha github gh-coordinator --help
-npx gemini-flow@alpha github pr-manager --help
+gemini-flow github gh-coordinator --help
+gemini-flow github pr-manager --help
 
 # Workflow orchestration
-npx gemini-flow@alpha workflow create --name "Development Pipeline" --parallel
+gemini-flow workflow create --name "Development Pipeline" --parallel
 ```
 
 ---
@@ -427,40 +427,40 @@ npx gemini-flow@alpha workflow create --name "Development Pipeline" --parallel
 ### **🏗️ Full-Stack Development**
 ```bash
 # Deploy complete development swarm
-npx gemini-flow@alpha hive-mind spawn "Build e-commerce platform with React, Node.js, and PostgreSQL" \
+gemini-flow hive-mind spawn "Build e-commerce platform with React, Node.js, and PostgreSQL" \
   --agents 10 \
   --strategy parallel \
   --memory-namespace ecommerce \
   --gemini
 
 # Monitor progress in real-time
-npx gemini-flow@alpha swarm monitor --dashboard --real-time
+gemini-flow swarm monitor --dashboard --real-time
 ```
 
 ### **🔬 Research & Analysis**
 ```bash
 # Deploy research swarm with neural enhancement
-npx gemini-flow@alpha swarm "Research AI safety in autonomous systems" \
+gemini-flow swarm "Research AI safety in autonomous systems" \
   --strategy research \
   --neural-patterns enabled \
   --memory-compression high \
   --gemini
 
 # Analyze results with cognitive computing
-npx gemini-flow@alpha cognitive analyze --target research-results
+gemini-flow cognitive analyze --target research-results
 ```
 
 ### **🛡️ Security & Compliance**
 ```bash
 # Automated security analysis with AI coordination
-npx gemini-flow@alpha github gh-coordinator analyze --analysis-type security --target ./src
-npx gemini-flow@alpha github repo-architect optimize --security-focused --compliance SOC2
-npx gemini-flow@alpha hive-mind spawn "security audit and compliance review" --gemini
+gemini-flow github gh-coordinator analyze --analysis-type security --target ./src
+gemini-flow github repo-architect optimize --security-focused --compliance SOC2
+gemini-flow hive-mind spawn "security audit and compliance review" --gemini
 ```
 
 ---
 
-## 🏗️ **Alpha Architecture Overview**
+## 🏗️ ** Architecture Overview**
 
 ### **🐝 Hive-Mind Coordination Layer**
 ```
@@ -477,7 +477,7 @@ npx gemini-flow@alpha hive-mind spawn "security audit and compliance review" --g
 ├─────────────────────────────────────────────────────────┤
 │            ⚡ 87 MCP Tools Integration Layer            │
 ├─────────────────────────────────────────────────────────┤
-│              🛡️ Gemini Code Integration                 │
+│              🛡️ Gemini CLI Integration                 │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -489,120 +489,120 @@ npx gemini-flow@alpha hive-mind spawn "security audit and compliance review" --g
 
 ---
 
-## 🛠️ **Alpha Installation & Setup**
+## 🛠️ ** Installation & Setup**
 
-### **🚀 Quick Alpha Installation**
+### **🚀 Quick  Installation**
 ```bash
 # Global installation (recommended for testing)
-npm install -g gemini-flow@alpha
+npm install -g gemini-flow
 
 # Or use NPX for instant testing
-npx gemini-flow@alpha init --force
+gemini-flow init --force
 
 # Verify installation
-gemini-flow --version  # Should show 2.0.0-alpha.x
+gemini-flow --version  # Should show 2.0.0
 ```
 
 ### **🔧 Enhanced Configuration**
 ```bash
 # Initialize with full alpha features
-npx gemini-flow@alpha init --force --hive-mind --neural-enhanced
+gemini-flow init --force --hive-mind --neural-enhanced
 
-# Configure Gemini Code integration
-npx gemini-flow@alpha mcp setup --auto-permissions --87-tools
+# Configure Gemini CLI integration
+gemini-flow mcp setup --auto-permissions --87-tools
 
 # Test hive-mind coordination
-npx gemini-flow@alpha hive-mind test --agents 5 --coordination-test
+gemini-flow hive-mind test --agents 5 --coordination-test
 ```
 
 ---
 
-## 📋 **Alpha Command Reference**
+## 📋 ** Command Reference**
 
 ### **🐝 Hive-Mind Commands**
 | Command | Description | Example |
 |---------|-------------|---------|
-| `hive-mind wizard` | Interactive hive setup | `npx gemini-flow@alpha hive-mind wizard` |
-| `hive-mind spawn` | Deploy intelligent swarm | `npx gemini-flow@alpha hive-mind spawn "task" --gemini` |
-| `hive-mind status` | Monitor coordination | `npx gemini-flow@alpha hive-mind status --real-time` |
+| `hive-mind wizard` | Interactive hive setup | `gemini-flow hive-mind wizard` |
+| `hive-mind spawn` | Deploy intelligent swarm | `gemini-flow hive-mind spawn "task" --gemini` |
+| `hive-mind status` | Monitor coordination | `gemini-flow hive-mind status --real-time` |
 
 ### **🧠 Neural Commands**
 | Command | Description | Example |
 |---------|-------------|---------|
-| `neural train` | Train coordination patterns | `npx gemini-flow@alpha neural train --pattern optimization` |
-| `neural predict` | AI-powered predictions | `npx gemini-flow@alpha neural predict --model performance` |
-| `cognitive analyze` | Behavior analysis | `npx gemini-flow@alpha cognitive analyze --workflow dev` |
+| `neural train` | Train coordination patterns | `gemini-flow neural train --pattern optimization` |
+| `neural predict` | AI-powered predictions | `gemini-flow neural predict --model performance` |
+| `cognitive analyze` | Behavior analysis | `gemini-flow cognitive analyze --workflow dev` |
 
 ### **💾 Memory Commands**
 | Command | Description | Example |
 |---------|-------------|---------|
-| `memory store` | Store key-value pair | `npx gemini-flow@alpha memory store "context" "data"` |
-| `memory query` | Search memory entries | `npx gemini-flow@alpha memory query "auth" --namespace sparc` |
-| `memory stats` | Show memory statistics | `npx gemini-flow@alpha memory stats` |
-| `memory export` | Export memory to file | `npx gemini-flow@alpha memory export backup.json` |
-| `memory import` | Import memory from file | `npx gemini-flow@alpha memory import project.json` |
-| `memory list` | List all namespaces | `npx gemini-flow@alpha memory list` |
+| `memory store` | Store key-value pair | `gemini-flow memory store "context" "data"` |
+| `memory query` | Search memory entries | `gemini-flow memory query "auth" --namespace sparc` |
+| `memory stats` | Show memory statistics | `gemini-flow memory stats` |
+| `memory export` | Export memory to file | `gemini-flow memory export backup.json` |
+| `memory import` | Import memory from file | `gemini-flow memory import project.json` |
+| `memory list` | List all namespaces | `gemini-flow memory list` |
 
 ### **📊 Monitoring Commands**
 | Command | Description | Example |
 |---------|-------------|---------|
-| `memory stats` | Memory usage statistics | `npx gemini-flow@alpha memory stats` |
-| `workflow create` | Create workflow pipelines | `npx gemini-flow@alpha workflow create --name "CI/CD"` |
-| `github <mode>` | GitHub coordination modes | `npx gemini-flow@alpha github gh-coordinator` |
+| `memory stats` | Memory usage statistics | `gemini-flow memory stats` |
+| `workflow create` | Create workflow pipelines | `gemini-flow workflow create --name "CI/CD"` |
+| `github <mode>` | GitHub coordination modes | `gemini-flow github gh-coordinator` |
 
 ---
 
-## 🧪 **Alpha Testing & Development**
+## 🧪 ** Testing & Development**
 
 ### **🐛 Bug Reports & Feedback**
 Found issues with the alpha? We want to hear from you!
 
-- **🐛 Report Bugs**: [GitHub Issues](https://github.com/ruvnet/gemini-code-flow/issues)
-- **💡 Feature Requests**: Use the "Alpha Feedback" label
-- **🛠️ Development**: Check the [`gemini-flow-v2.0.0`](https://github.com/ruvnet/gemini-code-flow/tree/gemini-flow-v2.0.0) branch
-- **📋 Alpha Testing**: Join our alpha testing program
+- **🐛 Report Bugs**: [GitHub Issues](https://github.com/ruvnet/gemini-flow/issues)
+- **💡 Feature Requests**: Use the " Feedback" label
+- **🛠️ Development**: Check the [`main`](https://github.com/ruvnet/gemini-flow/tree/main) branch
+- **📋  Testing**: Join our alpha testing program
 
-### **🔬 Testing the Alpha**
+### **🔬 Testing the **
 ```bash
 # Test available GitHub modes
-npx gemini-flow@alpha github gh-coordinator --help
-npx gemini-flow@alpha github pr-manager --help  
-npx gemini-flow@alpha github issue-tracker --help
-npx gemini-flow@alpha github release-manager --help
-npx gemini-flow@alpha github repo-architect --help
-npx gemini-flow@alpha github sync-coordinator --help
+gemini-flow github gh-coordinator --help
+gemini-flow github pr-manager --help  
+gemini-flow github issue-tracker --help
+gemini-flow github release-manager --help
+gemini-flow github repo-architect --help
+gemini-flow github sync-coordinator --help
 
 # Test memory functionality
-npx gemini-flow@alpha memory stats
-npx gemini-flow@alpha memory store "test" "alpha testing data"
-npx gemini-flow@alpha memory query "test"
+gemini-flow memory stats
+gemini-flow memory store "test" "alpha testing data"
+gemini-flow memory query "test"
 
 # Test workflow execution
-npx gemini-flow@alpha workflow create --name "Test Pipeline" --parallel
+gemini-flow workflow create --name "Test Pipeline" --parallel
 ```
 
-### **📊 Alpha Metrics Dashboard**
+### **📊  Metrics Dashboard**
 ```bash
 # Check memory usage and statistics
-npx gemini-flow@alpha memory stats
+gemini-flow memory stats
 
 # View available GitHub coordination modes
-npx gemini-flow@alpha github --help
+gemini-flow github --help
 
 # Test workflow capabilities
-npx gemini-flow@alpha workflow --help
+gemini-flow workflow --help
 ```
 
 ---
 
 ## 🚀 **Roadmap to Stable v2.0.0**
 
-### **🎯 Alpha Phase (Current)**
+### **🎯  Phase (Current)**
 - ✅ Hive-mind coordination system
 - ✅ 87 MCP tools integration
 - ✅ Neural pattern recognition
 - ✅ Distributed memory architecture
-- ✅ Auto-MCP setup for Gemini Code
+- ✅ Auto-MCP setup for Gemini CLI
 
 ### **🔄 Beta Phase (Coming Soon)**
 - 🔜 Enhanced swarm intelligence algorithms
@@ -620,37 +620,37 @@ npx gemini-flow@alpha workflow --help
 
 ---
 
-## 🤝 **Contributing to Alpha**
+## 🤝 **Contributing to **
 
-### **🛠️ Alpha Development Setup**
+### **🛠️  Development Setup**
 ```bash
 # Clone the alpha development branch
-git clone https://github.com/ruvnet/gemini-code-flow.git
-cd gemini-code-flow
-git checkout gemini-flow-v2.0.0
+git clone https://github.com/ruvnet/gemini-flow.git
+cd gemini-flow
+git checkout main
 
 # Install alpha dependencies
 npm install
 
 # Build alpha version
-npm run build:alpha
+npm run buildalpha
 
 # Test alpha features
-npm run test:alpha
+npm run testalpha
 ```
 
-### **🔬 Alpha Testing Guidelines**
+### **🔬  Testing Guidelines**
 - Focus on hive-mind coordination testing
 - Test neural pattern recognition accuracy
 - Validate memory system persistence
-- Verify Gemini Code MCP integration
+- Verify Gemini CLI MCP integration
 - Report performance metrics and bottlenecks
 
 ---
 
 ## 🛡️ **Enhanced Safety & Security Features**
 
-### **Enterprise-Grade Security in v2.0.0 Alpha**
+### **Enterprise-Grade Security in v2.0.0**
 
 Gemini-Flow v2.0.0 introduces revolutionary safety features that ensure secure, reliable AI orchestration at scale:
 
@@ -680,8 +680,8 @@ Gemini-Flow v2.0.0 introduces revolutionary safety features that ensure secure, 
 ##### **1. Hook-Based Validation System**
 ```bash
 # Pre-execution safety checks
-npx gemini-flow hooks pre-command --validate-security
-npx gemini-flow hooks pre-edit --check-permissions
+gemini-flow hooks pre-command --validate-security
+gemini-flow hooks pre-edit --check-permissions
 ```
 
 ##### **2. Agent Isolation & Sandboxing**
@@ -693,8 +693,8 @@ npx gemini-flow hooks pre-edit --check-permissions
 ##### **3. Audit Trail & Compliance**
 ```bash
 # Complete audit logging
-npx gemini-flow security audit --full-trace
-npx gemini-flow security compliance --standard SOC2
+gemini-flow security audit --full-trace
+gemini-flow security compliance --standard SOC2
 ```
 
 ##### **4. Real-Time Threat Detection**
@@ -714,7 +714,7 @@ npx gemini-flow security compliance --standard SOC2
 ##### **DAA Security Features**
 ```bash
 # Secure agent creation with resource limits
-npx gemini-flow daa agent-create \
+gemini-flow daa agent-create \
   --security-level high \
   --resource-limits "cpu:50%,memory:2GB" \
   --sandbox enabled
@@ -731,19 +731,19 @@ npx gemini-flow daa agent-create \
 ##### **Rollback & Recovery**
 ```bash
 # Instant rollback on security issues
-npx gemini-flow init --rollback --security-breach
-npx gemini-flow recovery --point last-safe-state
+gemini-flow init --rollback --security-breach
+gemini-flow recovery --point last-safe-state
 ```
 
 #### **📊 Security Monitoring Dashboard**
 ```bash
 # Real-time security monitoring
-npx gemini-flow security monitor --dashboard
-npx gemini-flow security scan --deep --report
+gemini-flow security monitor --dashboard
+gemini-flow security scan --deep --report
 
 # Security metrics and alerts
-npx gemini-flow security metrics --last-24h
-npx gemini-flow security alerts --configure
+gemini-flow security metrics --last-24h
+gemini-flow security alerts --configure
 ```
 
 #### **🔧 Configurable Security Policies**
@@ -780,7 +780,7 @@ npx gemini-flow security alerts --configure
 ```
 
 ### **✅ Security Best Practices**
-- Regular security scans with `npx gemini-flow security scan`
+- Regular security scans with `gemini-flow security scan`
 - Enable audit logging for production environments
 - Use high security level for sensitive operations
 - Configure resource limits for all agents
@@ -792,15 +792,15 @@ npx gemini-flow security alerts --configure
 
 MIT License - see [LICENSE](./LICENSE) for details.
 
-**Alpha Disclaimer**: This is an alpha release intended for testing and feedback. Use in production environments is not recommended.
+** Disclaimer**: This is an alpha release intended for testing and feedback. Use in production environments is not recommended.
 
 ---
 
-## 🎉 **Alpha Credits**
+## 🎉 ** Credits**
 
 - **🧠 Hive-Mind Architecture**: Inspired by natural swarm intelligence
 - **⚡ Neural Computing**: Advanced AI coordination patterns  
-- **🛡️ Gemini Code Integration**: Seamless AI development workflow
+- **🛡️ Gemini CLI Integration**: Seamless AI development workflow
 - **🚀 Performance Optimization**: 2.8-4.4x speed improvements through parallel coordination
 
 ---
@@ -810,13 +810,13 @@ MIT License - see [LICENSE](./LICENSE) for details.
 ### **🚀 Ready to experience the future of AI development?**
 
 ```bash
-npx --y gemini-flow@alpha init --force
+gemini-flow init --force
 ```
 
 **Join the alpha testing revolution!**
 
-[![GitHub](https://img.shields.io/badge/GitHub-Alpha%20Branch-blue?style=for-the-badge&logo=github)](https://github.com/ruvnet/gemini-code-flow/tree/gemini-flow-v2.0.0)
-[![NPM Alpha](https://img.shields.io/badge/NPM-Alpha%20Release-orange?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/gemini-flow/v/alpha)
+[![GitHub](https://img.shields.io/badge/GitHub-%20Branch-blue?style=for-the-badge&logo=github)](https://github.com/ruvnet/gemini-flow/tree/main)
+[![NPM ](https://img.shields.io/badge/NPM-%20Release-orange?style=for-the-badge&logo=npm)](https://www.npmjs.com/package/gemini-flow/v/alpha)
 [![Discord](https://img.shields.io/badge/Discord-Agentics%20Community-purple?style=for-the-badge&logo=discord)](https://discord.agentics.org)
 
 ---
@@ -835,6 +835,6 @@ npx --y gemini-flow@alpha init --force
 
 **Built with ❤️ by [rUv](https://github.com/ruvnet) | Powered by Revolutionary AI**
 
-*v2.0.0 Alpha - The Future of AI Orchestration*
+*v2.0.0 - The Future of AI Orchestration*
 
 </div>

@@ -231,7 +231,7 @@ export const hookCommand = {
 // Show help for hook commands
 function showHookHelp(): void {
   console.log(`
-Claude Flow Hook Commands
+Gemini Flow Hook Commands
 ========================
 
 Available hooks:
@@ -318,12 +318,12 @@ Common options:
   --metadata <json>          Additional metadata as JSON
 
 Examples:
-  claude hook pre-task --description "Build REST API" --complexity high
-  claude hook post-edit --file src/index.js --memory-key "api/implementation"
-  claude hook session-end --export-metrics --generate-summary
-  claude hook performance --operation "api-build" --duration 1234
-  claude hook memory-sync --namespace "project" --direction push
-  claude hook telemetry --event "task-completed" --data '{"taskId":"123"}'
+  gemini hook pre-task --description "Build REST API" --complexity high
+  gemini hook post-edit --file src/index.js --memory-key "api/implementation"
+  gemini hook session-end --export-metrics --generate-summary
+  gemini hook performance --operation "api-build" --duration 1234
+  gemini hook memory-sync --namespace "project" --direction push
+  gemini hook telemetry --event "task-completed" --data '{"taskId":"123"}'
 `);
 }
 

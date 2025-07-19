@@ -1,5 +1,5 @@
 /**
- * UIManager - Central UI Controller for Claude Flow Web UI
+ * UIManager - Central UI Controller for Gemini Flow Web UI
  * Coordinates all views, handles navigation, and manages global state
  */
 

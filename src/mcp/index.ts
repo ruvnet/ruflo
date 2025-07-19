@@ -77,7 +77,7 @@ export { SessionManager, type ISessionManager } from './session-manager.js';
 export { LoadBalancer, type ILoadBalancer, RequestQueue } from './load-balancer.js';
 
 // Tool Implementations
-export { createClaudeFlowTools, type ClaudeFlowToolContext } from './claude-flow-tools.js';
+export { createClaudeFlowTools, type ClaudeFlowToolContext } from './gemini-flow-tools.js';
 export { createSwarmTools, type SwarmToolContext } from './swarm-tools.js';
 
 /**

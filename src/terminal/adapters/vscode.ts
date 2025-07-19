@@ -59,7 +59,7 @@ class VSCodeTerminalWrapper implements Terminal {
       // Create VSCode terminal
       const shellPath = this.getShellPath();
       const terminalOptions: any = {
-        name: `Claude-Flow Terminal ${this.id}`,
+        name: `Gemini-Flow Terminal ${this.id}`,
         shellArgs: this.getShellArgs(),
         env: {
           CLAUDE_FLOW_TERMINAL: 'true',

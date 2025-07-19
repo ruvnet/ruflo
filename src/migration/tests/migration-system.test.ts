@@ -31,7 +31,7 @@ describe('Migration System', () => {
   });
 
   describe('MigrationAnalyzer', () => {
-    it('should detect missing .claude folder', async () => {
+    it('should detect missing .gemini folder', async () => {
       const analyzer = new MigrationAnalyzer();
       const analysis = await analyzer.analyze(projectPath);
 
@@ -40,13 +40,13 @@ describe('Migration System', () => {
       expect(analysis.migrationRisks).toContainEqual(
         expect.objectContaining({
           level: 'low',
-          description: 'No existing .claude folder found'
+          description: 'No existing .gemini folder found'
         })
       );
     });
 
-    it('should detect existing .claude folder and commands', async () => {
-      // Create mock .claude structure
+    it('should detect existing .gemini folder and commands', async () => {
+      // Create mock .gemini structure
       const claudePath = path.join(projectPath, '.claude');
       const commandsPath = path.join(claudePath, 'commands');
       await fs.ensureDir(commandsPath);
@@ -138,7 +138,7 @@ describe('Migration System', () => {
     });
 
     it('should create backup before migration', async () => {
-      // Create existing .claude folder
+      // Create existing .gemini folder
       const claudePath = path.join(projectPath, '.claude');
       await fs.ensureDir(claudePath);
       await fs.writeFile(path.join(claudePath, 'test.md'), '# Test');
@@ -294,7 +294,7 @@ describe('Migration System', () => {
       
       // Create required files
       await fs.writeFile(path.join(commandsPath, 'sparc.md'), '# SPARC Command');
-      await fs.writeFile(path.join(commandsPath, 'claude-flow-help.md'), '# Help');
+      await fs.writeFile(path.join(commandsPath, 'gemini-flow-help.md'), '# Help');
       await fs.writeFile(path.join(claudePath, 'BATCHTOOLS_GUIDE.md'), '# Guide');
 
       const result = await validator.validate(projectPath);

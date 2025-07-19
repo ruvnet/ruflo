@@ -1,14 +1,14 @@
-# Claude Flow v2.0.0 - Complete Integration Guide
+# Gemini Flow v2.0.0 - Complete Integration Guide
 
 ## 🎯 Overview
 
-This comprehensive guide covers all integration points for Claude Flow v2.0.0, including ruv-swarm MCP tools, QUDAG/DAA WASM neural networks, Claude Code MCP server configuration, and enterprise deployment strategies.
+This comprehensive guide covers all integration points for Gemini Flow v2.0.0, including ruv-swarm MCP tools, QUDAG/DAA WASM neural networks, Gemini Code MCP server configuration, and enterprise deployment strategies.
 
 ## 📋 Table of Contents
 
 1. [ruv-swarm MCP Integration](#ruv-swarm-mcp-integration)
 2. [QUDAG/DAA WASM Neural Networks](#qudag-daa-wasm-neural-networks)
-3. [Claude Code MCP Server Configuration](#claude-code-mcp-server-configuration)
+3. [Gemini Code MCP Server Configuration](#claude-code-mcp-server-configuration)
 4. [Benchmark System Setup](#benchmark-system-setup)
 5. [Enterprise Deployment](#enterprise-deployment)
 6. [Troubleshooting](#troubleshooting)
@@ -37,22 +37,22 @@ npx ruv-swarm --version
 # Expected output: ruv-swarm v1.0.14
 ```
 
-#### 2. Configure Claude Code MCP Server
+#### 2. Configure Gemini Code MCP Server
 
 ```bash
-# Add ruv-swarm MCP server to Claude Code
-claude mcp add ruv-swarm npx ruv-swarm mcp start
+# Add ruv-swarm MCP server to Gemini Code
+gemini mcp add ruv-swarm npx ruv-swarm mcp start
 
 # Verify MCP server is registered
-claude mcp list
+gemini mcp list
 # Should show ruv-swarm server with 87 tools available
 ```
 
-#### 3. Initialize Claude Flow Integration
+#### 3. Initialize Gemini Flow Integration
 
 ```bash
-# Initialize Claude Flow with full ruv-swarm integration
-npx claude-flow@2.0.0 init --claude --webui
+# Initialize Gemini Flow with full ruv-swarm integration
+npx gemini-flow@2.0.0 init --gemini --webui
 
 # This creates:
 # ✓ .claude/ directory with MCP configuration
@@ -65,10 +65,10 @@ npx claude-flow@2.0.0 init --claude --webui
 
 ```bash
 # Test MCP tools availability
-claude mcp test ruv-swarm
+gemini mcp test ruv-swarm
 
 # Test swarm initialization
-npx claude-flow@2.0.0 coordination swarm-init --topology mesh --max-agents 6
+npx gemini-flow@2.0.0 coordination swarm-init --topology mesh --max-agents 6
 
 # Expected output:
 # ✓ Swarm initialized with mesh topology
@@ -79,49 +79,49 @@ npx claude-flow@2.0.0 coordination swarm-init --topology mesh --max-agents 6
 ### Available MCP Tools (87 Total)
 
 #### Core Coordination Tools (12)
-- `mcp__claude-flow__swarm_init` - Initialize swarm topology
-- `mcp__claude-flow__agent_spawn` - Create specialized agents
-- `mcp__claude-flow__task_orchestrate` - Coordinate complex workflows
-- `mcp__claude-flow__swarm_status` - Monitor swarm health
-- `mcp__claude-flow__agent_list` - List active agents
-- `mcp__claude-flow__agent_metrics` - Agent performance metrics
-- `mcp__claude-flow__swarm_monitor` - Real-time monitoring
-- `mcp__claude-flow__topology_optimize` - Auto-optimize topology
-- `mcp__claude-flow__load_balance` - Distribute tasks efficiently
-- `mcp__claude-flow__coordination_sync` - Sync agent coordination
-- `mcp__claude-flow__swarm_scale` - Auto-scale agent count
-- `mcp__claude-flow__swarm_destroy` - Graceful shutdown
+- `mcp__gemini-flow__swarm_init` - Initialize swarm topology
+- `mcp__gemini-flow__agent_spawn` - Create specialized agents
+- `mcp__gemini-flow__task_orchestrate` - Coordinate complex workflows
+- `mcp__gemini-flow__swarm_status` - Monitor swarm health
+- `mcp__gemini-flow__agent_list` - List active agents
+- `mcp__gemini-flow__agent_metrics` - Agent performance metrics
+- `mcp__gemini-flow__swarm_monitor` - Real-time monitoring
+- `mcp__gemini-flow__topology_optimize` - Auto-optimize topology
+- `mcp__gemini-flow__load_balance` - Distribute tasks efficiently
+- `mcp__gemini-flow__coordination_sync` - Sync agent coordination
+- `mcp__gemini-flow__swarm_scale` - Auto-scale agent count
+- `mcp__gemini-flow__swarm_destroy` - Graceful shutdown
 
 #### Neural Network Tools (15)
-- `mcp__claude-flow__neural_train` - Train patterns with WASM
-- `mcp__claude-flow__neural_predict` - AI predictions
-- `mcp__claude-flow__neural_status` - Network status
-- `mcp__claude-flow__neural_patterns` - Analyze cognitive patterns
-- `mcp__claude-flow__model_load` - Load pre-trained models
-- `mcp__claude-flow__model_save` - Save trained models
-- `mcp__claude-flow__wasm_optimize` - WASM SIMD optimization
-- `mcp__claude-flow__inference_run` - Neural inference
-- `mcp__claude-flow__pattern_recognize` - Pattern recognition
-- `mcp__claude-flow__cognitive_analyze` - Cognitive analysis
-- `mcp__claude-flow__learning_adapt` - Adaptive learning
-- `mcp__claude-flow__neural_compress` - Model compression
-- `mcp__claude-flow__ensemble_create` - Model ensembles
-- `mcp__claude-flow__transfer_learn` - Transfer learning
-- `mcp__claude-flow__neural_explain` - AI explainability
+- `mcp__gemini-flow__neural_train` - Train patterns with WASM
+- `mcp__gemini-flow__neural_predict` - AI predictions
+- `mcp__gemini-flow__neural_status` - Network status
+- `mcp__gemini-flow__neural_patterns` - Analyze cognitive patterns
+- `mcp__gemini-flow__model_load` - Load pre-trained models
+- `mcp__gemini-flow__model_save` - Save trained models
+- `mcp__gemini-flow__wasm_optimize` - WASM SIMD optimization
+- `mcp__gemini-flow__inference_run` - Neural inference
+- `mcp__gemini-flow__pattern_recognize` - Pattern recognition
+- `mcp__gemini-flow__cognitive_analyze` - Cognitive analysis
+- `mcp__gemini-flow__learning_adapt` - Adaptive learning
+- `mcp__gemini-flow__neural_compress` - Model compression
+- `mcp__gemini-flow__ensemble_create` - Model ensembles
+- `mcp__gemini-flow__transfer_learn` - Transfer learning
+- `mcp__gemini-flow__neural_explain` - AI explainability
 
 #### Memory & Persistence Tools (12)
-- `mcp__claude-flow__memory_usage` - Store/retrieve data
-- `mcp__claude-flow__memory_search` - Search memory patterns
-- `mcp__claude-flow__memory_backup` - Backup memory stores
-- `mcp__claude-flow__memory_restore` - Restore from backups
-- `mcp__claude-flow__memory_compress` - Compress memory data
-- `mcp__claude-flow__memory_sync` - Sync across instances
-- `mcp__claude-flow__memory_persist` - Cross-session persistence
-- `mcp__claude-flow__memory_namespace` - Namespace management
-- `mcp__claude-flow__cache_manage` - Coordination cache
-- `mcp__claude-flow__state_snapshot` - Create snapshots
-- `mcp__claude-flow__context_restore` - Restore context
-- `mcp__claude-flow__memory_analytics` - Memory usage analysis
+- `mcp__gemini-flow__memory_usage` - Store/retrieve data
+- `mcp__gemini-flow__memory_search` - Search memory patterns
+- `mcp__gemini-flow__memory_backup` - Backup memory stores
+- `mcp__gemini-flow__memory_restore` - Restore from backups
+- `mcp__gemini-flow__memory_compress` - Compress memory data
+- `mcp__gemini-flow__memory_sync` - Sync across instances
+- `mcp__gemini-flow__memory_persist` - Cross-session persistence
+- `mcp__gemini-flow__memory_namespace` - Namespace management
+- `mcp__gemini-flow__cache_manage` - Coordination cache
+- `mcp__gemini-flow__state_snapshot` - Create snapshots
+- `mcp__gemini-flow__context_restore` - Restore context
+- `mcp__gemini-flow__memory_analytics` - Memory usage analysis
 
 ### Integration Examples
 
@@ -129,24 +129,24 @@ npx claude-flow@2.0.0 coordination swarm-init --topology mesh --max-agents 6
 
 ```bash
 # Initialize hierarchical swarm for development
-npx claude-flow@2.0.0 coordination swarm-init \
+npx gemini-flow@2.0.0 coordination swarm-init \
   --topology hierarchical \
   --max-agents 8 \
   --strategy specialized
 
 # Spawn specialized agents
-npx claude-flow@2.0.0 coordination agent-spawn \
+npx gemini-flow@2.0.0 coordination agent-spawn \
   --type architect \
   --name "SystemDesigner" \
   --capabilities "system-design,database-architecture"
 
-npx claude-flow@2.0.0 coordination agent-spawn \
+npx gemini-flow@2.0.0 coordination agent-spawn \
   --type coder \
   --name "BackendDev" \
   --capabilities "node-js,rest-api,database"
 
 # Orchestrate complex task
-npx claude-flow@2.0.0 coordination task-orchestrate \
+npx gemini-flow@2.0.0 coordination task-orchestrate \
   --task "Build complete REST API with authentication" \
   --strategy parallel \
   --share-results
@@ -156,16 +156,16 @@ npx claude-flow@2.0.0 coordination task-orchestrate \
 
 ```bash
 # Train coordination patterns with real WASM
-npx claude-flow@2.0.0 neural train \
+npx gemini-flow@2.0.0 neural train \
   --pattern-type coordination \
   --training-data "./data/development-patterns.json" \
   --epochs 100
 
 # Monitor training progress
-npx claude-flow@2.0.0 neural status
+npx gemini-flow@2.0.0 neural status
 
 # Use trained patterns for predictions
-npx claude-flow@2.0.0 neural predict \
+npx gemini-flow@2.0.0 neural predict \
   --model-id coordination-model-001 \
   --input "complex microservices architecture"
 ```
@@ -174,20 +174,20 @@ npx claude-flow@2.0.0 neural predict \
 
 ```bash
 # Store project context
-npx claude-flow@2.0.0 memory usage \
+npx gemini-flow@2.0.0 memory usage \
   --action store \
   --key "project/architecture" \
   --value "microservices with event-driven patterns" \
   --namespace "development"
 
 # Search for related patterns
-npx claude-flow@2.0.0 memory search \
+npx gemini-flow@2.0.0 memory search \
   --pattern "architecture" \
   --namespace "development" \
   --limit 10
 
 # Create backup before major changes
-npx claude-flow@2.0.0 memory backup \
+npx gemini-flow@2.0.0 memory backup \
   --destination "./backups/pre-refactor-$(date +%Y%m%d)"
 ```
 
@@ -197,7 +197,7 @@ npx claude-flow@2.0.0 memory backup \
 
 ### Architecture Overview
 
-Claude Flow v2.0.0 implements real neural networks using:
+Gemini Flow v2.0.0 implements real neural networks using:
 - **QUDAG (Quantum-inspired Directed Acyclic Graphs)** - Efficient graph processing
 - **DAA (Dynamic Agent Architecture)** - Adaptive agent behavior
 - **WASM (WebAssembly)** - High-performance local execution
@@ -209,10 +209,10 @@ Claude Flow v2.0.0 implements real neural networks using:
 
 ```bash
 # The neural networks are pre-compiled into a 512KB WASM module
-# Location: node_modules/ruv-swarm/dist/neural/claude-flow-neural.wasm
+# Location: node_modules/ruv-swarm/dist/neural/gemini-flow-neural.wasm
 
 # Verify WASM module integrity
-npx claude-flow@2.0.0 neural status
+npx gemini-flow@2.0.0 neural status
 # Expected output:
 # ✓ WASM module loaded: 512KB
 # ✓ SIMD optimization: ENABLED
@@ -270,14 +270,14 @@ cat > training-data.json << EOF
 EOF
 
 # Train new neural pattern
-npx claude-flow@2.0.0 neural train \
+npx gemini-flow@2.0.0 neural train \
   --pattern-type custom \
   --training-data "./training-data.json" \
   --epochs 200 \
   --model-name "custom-coordination-v1"
 
 # Monitor training with real-time feedback
-npx claude-flow@2.0.0 neural train \
+npx gemini-flow@2.0.0 neural train \
   --pattern-type custom \
   --training-data "./training-data.json" \
   --epochs 200 \
@@ -295,22 +295,22 @@ npx claude-flow@2.0.0 neural train \
 
 ```bash
 # Save trained model
-npx claude-flow@2.0.0 model save \
+npx gemini-flow@2.0.0 model save \
   --model-id custom-coordination-v1 \
   --path "./models/coordination/"
 
 # Load existing model
-npx claude-flow@2.0.0 model load \
+npx gemini-flow@2.0.0 model load \
   --model-path "./models/coordination/custom-coordination-v1.model"
 
 # Compress model for deployment
-npx claude-flow@2.0.0 neural compress \
+npx gemini-flow@2.0.0 neural compress \
   --model-id custom-coordination-v1 \
   --ratio 0.7 \
   --output-path "./models/compressed/"
 
 # Create ensemble of models
-npx claude-flow@2.0.0 ensemble create \
+npx gemini-flow@2.0.0 ensemble create \
   --models "coord-v1,coord-v2,coord-v3" \
   --strategy voting \
   --name "coordination-ensemble"
@@ -320,7 +320,7 @@ npx claude-flow@2.0.0 ensemble create \
 
 ```bash
 # Run inference on coordination tasks
-npx claude-flow@2.0.0 inference run \
+npx gemini-flow@2.0.0 inference run \
   --model-id coordination-ensemble \
   --data '[0.1, 0.2, 0.3, 0.4, 0.5]' \
   --format json
@@ -344,7 +344,7 @@ npx claude-flow@2.0.0 inference run \
 
 ---
 
-## 🔧 Claude Code MCP Server Configuration
+## 🔧 Gemini Code MCP Server Configuration
 
 ### Complete MCP Integration Setup
 
@@ -355,10 +355,10 @@ Create or update `.claude/mcp.json`:
 ```json
 {
   "servers": {
-    "claude-flow": {
+    "gemini-flow": {
       "command": "npx",
-      "args": ["claude-flow@2.0.0", "mcp", "start", "--stdio"],
-      "description": "Claude Flow v2.0.0 MCP Server with 87 tools",
+      "args": ["gemini-flow@2.0.0", "mcp", "start", "--stdio"],
+      "description": "Gemini Flow v2.0.0 MCP Server with 87 tools",
       "capabilities": {
         "tools": true,
         "resources": true,
@@ -385,7 +385,7 @@ Create or update `.claude/mcp.json`:
 }
 ```
 
-#### 2. Claude Code Configuration
+#### 2. Gemini Code Configuration
 
 Create `.claude/settings.json`:
 
@@ -393,7 +393,7 @@ Create `.claude/settings.json`:
 {
   "mcp": {
     "enabled": true,
-    "servers": ["claude-flow", "ruv-swarm"],
+    "servers": ["gemini-flow", "ruv-swarm"],
     "batch_tools": true,
     "parallel_execution": true,
     "coordination_hooks": true
@@ -425,10 +425,10 @@ Create `.claude/settings.json`:
 
 #### 3. Command Registration
 
-Create `.claude/commands/claude-flow-commands.md`:
+Create `.claude/commands/gemini-flow-commands.md`:
 
 ```markdown
-# Claude Flow v2.0.0 Commands
+# Gemini Flow v2.0.0 Commands
 
 ## Swarm Coordination
 - `/swarm-init` - Initialize swarm topology
@@ -457,24 +457,24 @@ Create `.claude/commands/claude-flow-commands.md`:
 
 ```bash
 # Test MCP server startup
-claude mcp start claude-flow
+gemini mcp start gemini-flow
 
 # Expected output:
-# ✓ MCP server started: claude-flow
+# ✓ MCP server started: gemini-flow
 # ✓ Tools loaded: 87
 # ✓ Neural networks: ACTIVE
 # ✓ Memory system: READY
 # ✓ Coordination hooks: ENABLED
 
 # Test tool availability
-claude mcp list-tools claude-flow | head -10
+gemini mcp list-tools gemini-flow | head -10
 
 # Expected output:
-# mcp__claude-flow__swarm_init
-# mcp__claude-flow__agent_spawn
-# mcp__claude-flow__task_orchestrate
-# mcp__claude-flow__neural_train
-# mcp__claude-flow__memory_usage
+# mcp__gemini-flow__swarm_init
+# mcp__gemini-flow__agent_spawn
+# mcp__gemini-flow__task_orchestrate
+# mcp__gemini-flow__neural_train
+# mcp__gemini-flow__memory_usage
 # ...
 ```
 
@@ -487,7 +487,7 @@ claude mcp list-tools claude-flow | head -10
 # Add to .vscode/settings.json
 {
   "claude.mcp.servers": [
-    "claude-flow",
+    "gemini-flow",
     "ruv-swarm"
   ],
   "claude.coordination.enabled": true,
@@ -495,7 +495,7 @@ claude mcp list-tools claude-flow | head -10
 }
 
 # CI/CD Integration
-# Add to .github/workflows/claude-flow.yml
+# Add to .github/workflows/gemini-flow.yml
 env:
   CLAUDE_MCP_ENABLED: true
   CLAUDE_FLOW_VERSION: "2.0.0"
@@ -546,7 +546,7 @@ export const customCoordinationTool: MCPTool = {
 
 ```bash
 # Install benchmark dependencies
-cd /workspaces/claude-code-flow/benchmark
+cd /workspaces/gemini-flow/benchmark
 pip install -r requirements.txt
 
 # Install additional analysis tools
@@ -569,7 +569,7 @@ Create `benchmark/config/production-benchmark.json`:
 ```json
 {
   "benchmark_suite": {
-    "name": "Claude Flow v2.0.0 Production Benchmark",
+    "name": "Gemini Flow v2.0.0 Production Benchmark",
     "version": "2.0.0",
     "description": "Comprehensive performance testing suite"
   },
@@ -719,12 +719,12 @@ RUN npm run build
 
 # Set up non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S claude-flow -u 1001
-USER claude-flow
+    adduser -S gemini-flow -u 1001
+USER gemini-flow
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD npx claude-flow health-check || exit 1
+    CMD npx gemini-flow health-check || exit 1
 
 # Expose ports
 EXPOSE 3000 8080
@@ -739,7 +739,7 @@ Create `docker/docker-compose.production.yml`:
 version: '3.8'
 
 services:
-  claude-flow:
+  gemini-flow:
     build:
       context: ..
       dockerfile: docker/Dockerfile.production
@@ -792,7 +792,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./ssl:/etc/nginx/ssl
     depends_on:
-      - claude-flow
+      - gemini-flow
     restart: unless-stopped
 
 volumes:
@@ -811,25 +811,25 @@ Create `k8s/deployment.yaml`:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: claude-flow-v2
-  namespace: claude-flow
+  name: gemini-flow-v2
+  namespace: gemini-flow
   labels:
-    app: claude-flow
+    app: gemini-flow
     version: v2.0.0
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: claude-flow
+      app: gemini-flow
   template:
     metadata:
       labels:
-        app: claude-flow
+        app: gemini-flow
         version: v2.0.0
     spec:
       containers:
-      - name: claude-flow
-        image: claude-flow:2.0.0
+      - name: gemini-flow
+        image: gemini-flow:2.0.0
         ports:
         - containerPort: 3000
         - containerPort: 8080
@@ -864,26 +864,26 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
         volumeMounts:
-        - name: claude-flow-data
+        - name: gemini-flow-data
           mountPath: /app/data
-        - name: claude-flow-memory
+        - name: gemini-flow-memory
           mountPath: /app/memory
       volumes:
-      - name: claude-flow-data
+      - name: gemini-flow-data
         persistentVolumeClaim:
-          claimName: claude-flow-data-pvc
-      - name: claude-flow-memory
+          claimName: gemini-flow-data-pvc
+      - name: gemini-flow-memory
         persistentVolumeClaim:
-          claimName: claude-flow-memory-pvc
+          claimName: gemini-flow-memory-pvc
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: claude-flow-service
-  namespace: claude-flow
+  name: gemini-flow-service
+  namespace: gemini-flow
 spec:
   selector:
-    app: claude-flow
+    app: gemini-flow
   ports:
   - name: web
     port: 3000
@@ -911,7 +911,7 @@ Create `config/production.json`:
   },
   "mcp": {
     "servers": {
-      "claude-flow": {
+      "gemini-flow": {
         "enabled": true,
         "max_connections": 100,
         "timeout": 30000,
@@ -972,15 +972,15 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'claude-flow'
+  - job_name: 'gemini-flow'
     static_configs:
-      - targets: ['claude-flow:8080']
+      - targets: ['gemini-flow:8080']
     metrics_path: /metrics
     scrape_interval: 5s
 
   - job_name: 'ruv-swarm'
     static_configs:
-      - targets: ['claude-flow:8081']
+      - targets: ['gemini-flow:8081']
     metrics_path: /swarm/metrics
     scrape_interval: 10s
 
@@ -998,16 +998,16 @@ Create `monitoring/alerts.yml`:
 
 ```yaml
 groups:
-  - name: claude-flow-alerts
+  - name: gemini-flow-alerts
     rules:
       - alert: ClaudeFlowDown
-        expr: up{job="claude-flow"} == 0
+        expr: up{job="gemini-flow"} == 0
         for: 1m
         labels:
           severity: critical
         annotations:
-          summary: "Claude Flow instance is down"
-          description: "Claude Flow instance {{ $labels.instance }} has been down for more than 1 minute."
+          summary: "Gemini Flow instance is down"
+          description: "Gemini Flow instance {{ $labels.instance }} has been down for more than 1 minute."
 
       - alert: HighResponseTime
         expr: http_request_duration_seconds{quantile="0.95"} > 5
@@ -1053,8 +1053,8 @@ kubectl apply -f k8s/service.yaml
 kubectl apply -f k8s/ingress.yaml
 
 # Verify deployment
-kubectl get pods -n claude-flow
-kubectl logs -f deployment/claude-flow-v2 -n claude-flow
+kubectl get pods -n gemini-flow
+kubectl logs -f deployment/gemini-flow-v2 -n gemini-flow
 
 # Health check
 curl -f http://localhost:3000/health
@@ -1073,8 +1073,8 @@ curl -f http://localhost:8080/ready
 
 ```bash
 # Diagnosis
-claude mcp status ruv-swarm
-claude mcp logs ruv-swarm
+gemini mcp status ruv-swarm
+gemini mcp logs ruv-swarm
 
 # Common solutions
 # 1. Check Node.js version
@@ -1086,7 +1086,7 @@ npm install -g ruv-swarm@1.0.14
 
 # 3. Clear MCP cache
 rm -rf ~/.claude/mcp-cache
-claude mcp restart ruv-swarm
+gemini mcp restart ruv-swarm
 
 # 4. Check port conflicts
 netstat -tulpn | grep :8080
@@ -1098,7 +1098,7 @@ netstat -tulpn | grep :8080
 
 ```bash
 # Diagnosis
-npx claude-flow@2.0.0 neural status
+npx gemini-flow@2.0.0 neural status
 
 # Common solutions
 # 1. Check WebAssembly support
@@ -1106,14 +1106,14 @@ node -e "console.log('WASM support:', typeof WebAssembly !== 'undefined')"
 
 # 2. Verify WASM module
 ls -la node_modules/ruv-swarm/dist/neural/
-file node_modules/ruv-swarm/dist/neural/claude-flow-neural.wasm
+file node_modules/ruv-swarm/dist/neural/gemini-flow-neural.wasm
 
 # 3. Reinstall with WASM support
 npm install --build-from-source ruv-swarm@1.0.14
 
 # 4. Clear neural cache
 rm -rf ./memory/neural-cache/
-npx claude-flow@2.0.0 neural train --reset-cache
+npx gemini-flow@2.0.0 neural train --reset-cache
 ```
 
 #### 3. Memory Persistence Issues
@@ -1122,7 +1122,7 @@ npx claude-flow@2.0.0 neural train --reset-cache
 
 ```bash
 # Diagnosis
-npx claude-flow@2.0.0 memory usage --action list
+npx gemini-flow@2.0.0 memory usage --action list
 ls -la ./memory/
 
 # Common solutions
@@ -1131,12 +1131,12 @@ chmod 755 ./memory/
 chown -R $USER:$USER ./memory/
 
 # 2. Verify SQLite database
-sqlite3 ./memory/claude-flow-data.json ".schema"
+sqlite3 ./memory/gemini-flow-data.json ".schema"
 
 # 3. Repair corrupted memory
-npx claude-flow@2.0.0 memory backup --emergency
-rm ./memory/claude-flow-data.json
-npx claude-flow@2.0.0 memory restore --backup-path ./backups/latest
+npx gemini-flow@2.0.0 memory backup --emergency
+rm ./memory/gemini-flow-data.json
+npx gemini-flow@2.0.0 memory restore --backup-path ./backups/latest
 
 # 4. Check disk space
 df -h .
@@ -1148,24 +1148,24 @@ df -h .
 
 ```bash
 # Diagnosis
-npx claude-flow@2.0.0 swarm status
-npx claude-flow@2.0.0 agent list
+npx gemini-flow@2.0.0 swarm status
+npx gemini-flow@2.0.0 agent list
 
 # Common solutions
 # 1. Reset swarm state
-npx claude-flow@2.0.0 swarm destroy --force
-npx claude-flow@2.0.0 swarm init --topology mesh --max-agents 8
+npx gemini-flow@2.0.0 swarm destroy --force
+npx gemini-flow@2.0.0 swarm init --topology mesh --max-agents 8
 
 # 2. Check coordination hooks
 npx ruv-swarm hook pre-task --test
 npx ruv-swarm hook post-edit --test
 
 # 3. Verify MCP tools
-claude mcp test ruv-swarm
+gemini mcp test ruv-swarm
 
 # 4. Clear coordination cache
 rm -rf ./memory/coordination-cache/
-npx claude-flow@2.0.0 coordination sync --force
+npx gemini-flow@2.0.0 coordination sync --force
 ```
 
 ### Performance Troubleshooting
@@ -1174,18 +1174,18 @@ npx claude-flow@2.0.0 coordination sync --force
 
 ```bash
 # Profile performance
-npx claude-flow@2.0.0 performance report --detailed
-npx claude-flow@2.0.0 bottleneck analyze --components "swarm,neural,memory"
+npx gemini-flow@2.0.0 performance report --detailed
+npx gemini-flow@2.0.0 bottleneck analyze --components "swarm,neural,memory"
 
 # Common optimizations
 # 1. Increase worker threads
 export UV_THREADPOOL_SIZE=16
 
 # 2. Optimize memory usage
-npx claude-flow@2.0.0 memory compress --ratio 0.8
+npx gemini-flow@2.0.0 memory compress --ratio 0.8
 
 # 3. Enable SIMD optimization
-npx claude-flow@2.0.0 wasm optimize --enable-simd
+npx gemini-flow@2.0.0 wasm optimize --enable-simd
 
 # 4. Tune garbage collection
 node --max-old-space-size=4096 --optimize-for-size
@@ -1195,18 +1195,18 @@ node --max-old-space-size=4096 --optimize-for-size
 
 ```bash
 # Monitor memory usage
-npx claude-flow@2.0.0 memory analytics --real-time
-npx claude-flow@2.0.0 metrics collect --components memory
+npx gemini-flow@2.0.0 memory analytics --real-time
+npx gemini-flow@2.0.0 metrics collect --components memory
 
 # Memory optimization
 # 1. Compress neural models
-npx claude-flow@2.0.0 neural compress --all-models --ratio 0.7
+npx gemini-flow@2.0.0 neural compress --all-models --ratio 0.7
 
 # 2. Clean old memory entries
-npx claude-flow@2.0.0 memory usage --action delete --older-than "7d"
+npx gemini-flow@2.0.0 memory usage --action delete --older-than "7d"
 
 # 3. Optimize coordination cache
-npx claude-flow@2.0.0 cache manage --action optimize
+npx gemini-flow@2.0.0 cache manage --action optimize
 
 # 4. Garbage collect
 node --expose-gc -e "global.gc()"
@@ -1214,10 +1214,10 @@ node --expose-gc -e "global.gc()"
 
 ### Support Resources
 
-- **Documentation**: `/workspaces/claude-code-flow/docs/`
-- **GitHub Issues**: https://github.com/ruvnet/claude-code-flow/issues
-- **Community**: https://github.com/ruvnet/claude-code-flow/discussions
-- **Performance Reports**: `/workspaces/claude-code-flow/benchmark/reports/`
+- **Documentation**: `/workspaces/gemini-flow/docs/`
+- **GitHub Issues**: https://github.com/ruvnet/gemini-flow/issues
+- **Community**: https://github.com/ruvnet/gemini-flow/discussions
+- **Performance Reports**: `/workspaces/gemini-flow/benchmark/reports/`
 
 ---
 
@@ -1229,7 +1229,7 @@ After completing integration, verify these performance indicators:
 
 ```bash
 # Run comprehensive validation
-npx claude-flow@2.0.0 validate integration --full
+npx gemini-flow@2.0.0 validate integration --full
 
 # Expected results:
 # ✓ MCP Integration: 87/87 tools active
@@ -1240,4 +1240,4 @@ npx claude-flow@2.0.0 validate integration --full
 # ✓ Enterprise Features: Security, monitoring, scaling
 ```
 
-This comprehensive integration guide provides all necessary information to successfully deploy and operate Claude Flow v2.0.0 in any environment, from development to enterprise production.
+This comprehensive integration guide provides all necessary information to successfully deploy and operate Gemini Flow v2.0.0 in any environment, from development to enterprise production.

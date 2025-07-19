@@ -21,10 +21,10 @@ Let's start by properly specifying what we're building:
 
 \`\`\`bash
 # Store our learning objective
-npx claude-flow memory store ${memoryNamespace}_tutorial_start "Learning SPARC by building: ${taskDescription}"
+npx gemini-flow memory store ${memoryNamespace}_tutorial_start "Learning SPARC by building: ${taskDescription}"
 
 # Use spec-pseudocode mode to define requirements
-npx claude-flow sparc run spec-pseudocode "Tutorial project: ${taskDescription} - create detailed specifications" --non-interactive
+npx gemini-flow sparc run spec-pseudocode "Tutorial project: ${taskDescription} - create detailed specifications" --non-interactive
 \`\`\`
 
 **What you'll learn:**
@@ -44,10 +44,10 @@ Now let's design a scalable system:
 
 \`\`\`bash
 # Query our specifications
-npx claude-flow memory query ${memoryNamespace}_requirements
+npx gemini-flow memory query ${memoryNamespace}_requirements
 
 # Design the architecture
-npx claude-flow sparc run architect "Tutorial: Design architecture for ${taskDescription}" --non-interactive
+npx gemini-flow sparc run architect "Tutorial: Design architecture for ${taskDescription}" --non-interactive
 \`\`\`
 
 **What you'll learn:**
@@ -67,7 +67,7 @@ Implement with TDD for quality:
 
 \`\`\`bash
 # Start with tests
-npx claude-flow sparc run tdd "Tutorial: Implement ${taskDescription} with TDD" --non-interactive
+npx gemini-flow sparc run tdd "Tutorial: Implement ${taskDescription} with TDD" --non-interactive
 
 # Follow Red-Green-Refactor cycle:
 # 1. Red: Write failing tests
@@ -92,10 +92,10 @@ Build the full implementation:
 
 \`\`\`bash
 # Implement based on TDD foundation
-npx claude-flow sparc run code "Tutorial: Complete implementation of ${taskDescription}" --non-interactive
+npx gemini-flow sparc run code "Tutorial: Complete implementation of ${taskDescription}" --non-interactive
 
 # Store progress
-npx claude-flow memory store ${memoryNamespace}_implementation_progress "Core features complete, working on edge cases"
+npx gemini-flow memory store ${memoryNamespace}_implementation_progress "Core features complete, working on edge cases"
 \`\`\`
 
 **What you'll learn:**
@@ -115,10 +115,10 @@ Ensure security and quality:
 
 \`\`\`bash
 # Security audit
-npx claude-flow sparc run security-review "Tutorial: Security review of ${taskDescription}" --non-interactive
+npx gemini-flow sparc run security-review "Tutorial: Security review of ${taskDescription}" --non-interactive
 
 # Code optimization
-npx claude-flow sparc run refinement-optimization-mode "Tutorial: Optimize ${taskDescription}" --non-interactive
+npx gemini-flow sparc run refinement-optimization-mode "Tutorial: Optimize ${taskDescription}" --non-interactive
 \`\`\`
 
 **What you'll learn:**
@@ -132,7 +132,7 @@ Document your work:
 
 \`\`\`bash
 # Create comprehensive docs
-npx claude-flow sparc run docs-writer "Tutorial: Document ${taskDescription}" --non-interactive
+npx gemini-flow sparc run docs-writer "Tutorial: Document ${taskDescription}" --non-interactive
 \`\`\`
 
 **What you'll learn:**
@@ -146,10 +146,10 @@ Bring it all together:
 
 \`\`\`bash
 # Integrate components
-npx claude-flow sparc run integration "Tutorial: Integrate all components of ${taskDescription}" --non-interactive
+npx gemini-flow sparc run integration "Tutorial: Integrate all components of ${taskDescription}" --non-interactive
 
 # Set up deployment
-npx claude-flow sparc run devops "Tutorial: Deploy ${taskDescription}" --non-interactive
+npx gemini-flow sparc run devops "Tutorial: Deploy ${taskDescription}" --non-interactive
 \`\`\`
 
 **What you'll learn:**
@@ -161,34 +161,34 @@ npx claude-flow sparc run devops "Tutorial: Deploy ${taskDescription}" --non-int
 ## Interactive Exercises
 
 ### Exercise 1: Memory Management
-Practice using Claude-Flow memory:
+Practice using Gemini-Flow memory:
 \`\`\`bash
 # Store different types of information
-npx claude-flow memory store ${memoryNamespace}_decisions "Chose PostgreSQL for data persistence due to ACID requirements"
-npx claude-flow memory store ${memoryNamespace}_blockers "Need clarification on authentication requirements"
+npx gemini-flow memory store ${memoryNamespace}_decisions "Chose PostgreSQL for data persistence due to ACID requirements"
+npx gemini-flow memory store ${memoryNamespace}_blockers "Need clarification on authentication requirements"
 
 # Query your stored information
-npx claude-flow memory query ${memoryNamespace}_decisions
+npx gemini-flow memory query ${memoryNamespace}_decisions
 \`\`\`
 
 ### Exercise 2: Mode Coordination
 Practice coordinating between modes:
 \`\`\`bash
 # Start with spec
-npx claude-flow sparc run spec-pseudocode "Define user registration flow" --non-interactive
+npx gemini-flow sparc run spec-pseudocode "Define user registration flow" --non-interactive
 
 # Then architecture
-npx claude-flow sparc run architect "Design registration service" --non-interactive
+npx gemini-flow sparc run architect "Design registration service" --non-interactive
 
 # Then TDD implementation
-npx claude-flow sparc run tdd "Implement registration with tests" --non-interactive
+npx gemini-flow sparc run tdd "Implement registration with tests" --non-interactive
 \`\`\`
 
 ### Exercise 3: Debugging Practice
 Practice debugging workflow:
 \`\`\`bash
 # Simulate a bug
-npx claude-flow sparc run debug "Tutorial: Fix registration validation bug" --non-interactive
+npx gemini-flow sparc run debug "Tutorial: Fix registration validation bug" --non-interactive
 \`\`\`
 
 ## Mental Models for SPARC
@@ -244,10 +244,10 @@ Congratulations! You've learned SPARC by building "${taskDescription}".
 ### Review your journey:
 \`\`\`bash
 # See all your stored learnings
-npx claude-flow memory query ${memoryNamespace}_tutorial
+npx gemini-flow memory query ${memoryNamespace}_tutorial
 
 # Check your implementation
-npx claude-flow status
+npx gemini-flow status
 \`\`\`
 
 ### Next steps:
@@ -262,15 +262,15 @@ Remember: SPARC is about systematic, quality development. Each mode serves a pur
 
 \`\`\`bash
 # SPARC Quick Commands
-npx claude-flow sparc run spec-pseudocode "Define X" --non-interactive      # Requirements
-npx claude-flow sparc run architect "Design X" --non-interactive            # Architecture
-npx claude-flow sparc run tdd "Build X with tests" --non-interactive       # TDD
-npx claude-flow sparc run code "Implement X" --non-interactive             # Clean code
-npx claude-flow sparc run debug "Fix X issue" --non-interactive            # Debugging
-npx claude-flow sparc run security-review "Audit X" --non-interactive      # Security
-npx claude-flow sparc run docs-writer "Document X" --non-interactive       # Documentation
-npx claude-flow sparc run integration "Connect X" --non-interactive        # Integration
-npx claude-flow sparc run devops "Deploy X" --non-interactive              # Deployment
+npx gemini-flow sparc run spec-pseudocode "Define X" --non-interactive      # Requirements
+npx gemini-flow sparc run architect "Design X" --non-interactive            # Architecture
+npx gemini-flow sparc run tdd "Build X with tests" --non-interactive       # TDD
+npx gemini-flow sparc run code "Implement X" --non-interactive             # Clean code
+npx gemini-flow sparc run debug "Fix X issue" --non-interactive            # Debugging
+npx gemini-flow sparc run security-review "Audit X" --non-interactive      # Security
+npx gemini-flow sparc run docs-writer "Document X" --non-interactive       # Documentation
+npx gemini-flow sparc run integration "Connect X" --non-interactive        # Integration
+npx gemini-flow sparc run devops "Deploy X" --non-interactive              # Deployment
 \`\`\`
 
 Happy SPARC coding! 🚀`;

@@ -68,7 +68,7 @@ run_basic_tests() {
     fi
     
     # Test 8: Binary files
-    if [ -f bin/claude-flow ]; then
+    if [ -f bin/gemini-flow ]; then
         echo "- ✅ Binary files exist in bin/"
     else
         echo "- ❌ Binary files missing"
@@ -120,7 +120,7 @@ run_basic_tests() {
     [ -f package.json ] && [ -f cli.js ] && ((passed_tests++))
     [ -d node_modules ] && ((passed_tests++))
     timeout 10 npx ruv-swarm --version >/dev/null 2>&1 && ((passed_tests++))
-    [ -f bin/claude-flow ] && ((passed_tests++))
+    [ -f bin/gemini-flow ] && ((passed_tests++))
     
     echo "- **Total Tests:** $total_tests"
     echo "- **Passed:** $passed_tests"
@@ -149,7 +149,7 @@ run_basic_tests() {
     echo ""
     echo "# File Permissions"
     ls -la cli.js
-    ls -la bin/claude-flow 2>/dev/null || echo "bin/claude-flow not found"
+    ls -la bin/gemini-flow 2>/dev/null || echo "bin/gemini-flow not found"
     echo "```"
     
     echo ""

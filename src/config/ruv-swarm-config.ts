@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * ruv-swarm configuration management for Claude Code integration
+ * ruv-swarm configuration management for Gemini Code integration
  * 
  * This module handles configuration settings for ruv-swarm integration,
  * including topology preferences, agent limits, and coordination patterns.

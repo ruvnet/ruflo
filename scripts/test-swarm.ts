@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-all
 /**
- * Test script for Claude Swarm Mode functionality
+ * Test script for Gemini Swarm Mode functionality
  */
 
 import { colors } from 'https://deno.land/x/cliffy@v1.0.0-rc.3/ansi/colors.ts';
@@ -53,7 +53,7 @@ async function runTest(name: string, command: string[], expectedPatterns: string
 }
 
 async function main() {
-  console.log(colors.bold('Claude-Flow Swarm Mode Test Suite'));
+  console.log(colors.bold('Gemini-Flow Swarm Mode Test Suite'));
   console.log('='.repeat(50));
   
   const tests = [
@@ -70,7 +70,7 @@ async function main() {
     {
       name: "CLI swarm help",
       command: ["deno", "run", "--allow-all", "./src/cli/main.ts", "help", "swarm"],
-      patterns: ["Claude Swarm Mode", "self-orchestrating Claude agent swarms"],
+      patterns: ["Gemini Swarm Mode", "self-orchestrating Gemini agent swarms"],
     },
     {
       name: "Swarm with research strategy",
@@ -129,7 +129,7 @@ async function main() {
   console.log('\n' + colors.bold('Manual Testing Instructions:'));
   console.log('1. Test with actual Gemini CLI (if available):');
   console.log('   ./swarm-demo.ts "Build a simple calculator"');
-  console.log('   ./bin/claude-flow swarm "Create a REST API"');
+  console.log('   ./bin/gemini-flow swarm "Create a REST API"');
   console.log('\n2. Test various strategies:');
   console.log('   ./swarm-demo.ts "Research best practices" --strategy research');
   console.log('   ./swarm-demo.ts "Implement feature" --strategy development');

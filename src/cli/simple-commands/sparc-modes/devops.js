@@ -8,9 +8,9 @@ export function getDevOpsOrchestration(taskDescription, memoryNamespace) {
    - Understand deployment requirements: "${taskDescription}"
    - Query architecture and configuration:
      \`\`\`bash
-     npx claude-flow memory query ${memoryNamespace}_architecture
-     npx claude-flow memory query ${memoryNamespace}_deployment
-     npx claude-flow memory query ${memoryNamespace}_infrastructure
+     npx gemini-flow memory query ${memoryNamespace}_architecture
+     npx gemini-flow memory query ${memoryNamespace}_deployment
+     npx gemini-flow memory query ${memoryNamespace}_infrastructure
      \`\`\`
    - Identify target environments:
      - Development, staging, production
@@ -18,7 +18,7 @@ export function getDevOpsOrchestration(taskDescription, memoryNamespace) {
      - Edge platforms (Vercel, Cloudflare)
      - Container orchestration (K8s, ECS)
    - Review current infrastructure state
-   - Store analysis: \`npx claude-flow memory store ${memoryNamespace}_devops_analysis "Task: ${taskDescription}. Target: AWS ECS + CloudFront. Current: Local dev only. Requirements: Auto-scaling, blue-green deployment, monitoring."\`
+   - Store analysis: \`npx gemini-flow memory store ${memoryNamespace}_devops_analysis "Task: ${taskDescription}. Target: AWS ECS + CloudFront. Current: Local dev only. Requirements: Auto-scaling, blue-green deployment, monitoring."\`
 
 2. **Infrastructure Provisioning** (20 mins)
    - Set up infrastructure as code:
@@ -38,7 +38,7 @@ export function getDevOpsOrchestration(taskDescription, memoryNamespace) {
      - Vault integration
      - Environment injection layers
    - NEVER hardcode credentials or tokens
-   - Store provisioning: \`npx claude-flow memory store ${memoryNamespace}_infrastructure "Provisioned: ECS cluster (2 AZs), RDS PostgreSQL, ElastiCache Redis, ALB. Secrets: AWS Secrets Manager configured. Terraform state: S3 backend."\`
+   - Store provisioning: \`npx gemini-flow memory store ${memoryNamespace}_infrastructure "Provisioned: ECS cluster (2 AZs), RDS PostgreSQL, ElastiCache Redis, ALB. Secrets: AWS Secrets Manager configured. Terraform state: S3 backend."\`
 
 3. **CI/CD Pipeline Setup** (15 mins)
    - Create pipeline configuration:
@@ -60,7 +60,7 @@ export function getDevOpsOrchestration(taskDescription, memoryNamespace) {
      - Code coverage thresholds
      - Performance benchmarks
      - Security scan results
-   - Store pipeline config: \`npx claude-flow memory store ${memoryNamespace}_cicd "Pipeline: GitHub Actions. Stages: build->test->security->deploy. Environments: dev (auto), staging (manual), prod (approved). Rollback: Automated on failure."\`
+   - Store pipeline config: \`npx gemini-flow memory store ${memoryNamespace}_cicd "Pipeline: GitHub Actions. Stages: build->test->security->deploy. Environments: dev (auto), staging (manual), prod (approved). Rollback: Automated on failure."\`
 
 4. **Monitoring & Observability** (15 mins)
    - Set up application monitoring:
@@ -83,7 +83,7 @@ export function getDevOpsOrchestration(taskDescription, memoryNamespace) {
      - SLA/SLO monitoring
      - Anomaly detection
      - Escalation procedures
-   - Store monitoring setup: \`npx claude-flow memory store ${memoryNamespace}_monitoring "APM: DataDog configured. Logs: CloudWatch Logs with 30-day retention. Alerts: CPU >80%, Memory >85%, Error rate >1%. Dashboards: App performance, infra health, cost tracking."\`
+   - Store monitoring setup: \`npx gemini-flow memory store ${memoryNamespace}_monitoring "APM: DataDog configured. Logs: CloudWatch Logs with 30-day retention. Alerts: CPU >80%, Memory >85%, Error rate >1%. Dashboards: App performance, infra health, cost tracking."\`
 
 5. **Security & Compliance** (10 mins)
    - Implement security best practices:
@@ -100,7 +100,7 @@ export function getDevOpsOrchestration(taskDescription, memoryNamespace) {
      - Infrastructure vulnerability scanning
      - Compliance policy validation
    - Document security procedures
-   - Store security config: \`npx claude-flow memory store ${memoryNamespace}_devops_security "TLS: ACM certificates on ALB. WAF: OWASP rules enabled. IAM: Least privilege roles. Backups: Daily snapshots, 30-day retention. Compliance: SOC2 controls implemented."\`
+   - Store security config: \`npx gemini-flow memory store ${memoryNamespace}_devops_security "TLS: ACM certificates on ALB. WAF: OWASP rules enabled. IAM: Least privilege roles. Backups: Daily snapshots, 30-day retention. Compliance: SOC2 controls implemented."\`
 
 ## Deliverables
 - infrastructure/
@@ -131,7 +131,7 @@ export function getDevOpsOrchestration(taskDescription, memoryNamespace) {
 
 ## Next Steps
 After DevOps setup:
-- \`npx claude-flow sparc run post-deployment-monitoring-mode "Verify production deployment health" --non-interactive\`
-- \`npx claude-flow sparc run security-review "Audit infrastructure security" --non-interactive\`
-- \`npx claude-flow sparc run refinement-optimization-mode "Optimize deployment performance" --non-interactive\``;
+- \`npx gemini-flow sparc run post-deployment-monitoring-mode "Verify production deployment health" --non-interactive\`
+- \`npx gemini-flow sparc run security-review "Audit infrastructure security" --non-interactive\`
+- \`npx gemini-flow sparc run refinement-optimization-mode "Optimize deployment performance" --non-interactive\``;
 }

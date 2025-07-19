@@ -1,10 +1,10 @@
-# Claude-Flow Documentation
+# Gemini-Flow Documentation
 
-Welcome to the complete documentation for Claude-Flow - an advanced AI agent orchestration system created by rUv for the Claude community.
+Welcome to the complete documentation for Gemini-Flow - an advanced AI agent orchestration system created by rUv for the Gemini community.
 
 ## 📚 Documentation Overview
 
-This comprehensive documentation covers all aspects of Claude-Flow, from quick start guides to advanced API integration.
+This comprehensive documentation covers all aspects of Gemini-Flow, from quick start guides to advanced API integration.
 
 ### 🚀 Getting Started
 - **[Quick Start Guide](./quick-start.md)** - Get up and running in minutes
@@ -26,12 +26,12 @@ This comprehensive documentation covers all aspects of Claude-Flow, from quick s
 - **[Deployment](./deployment/)** - Production deployment strategies
 - **[Troubleshooting](./troubleshooting.md)** - Common issues and solutions
 
-## 🎯 What is Claude-Flow?
+## 🎯 What is Gemini-Flow?
 
-Claude-Flow is a sophisticated multi-agent orchestration system that enables you to:
+Gemini-Flow is a sophisticated multi-agent orchestration system that enables you to:
 
 ### 🤖 Multi-Agent Orchestration
-- Spawn and coordinate multiple Claude agents with different roles
+- Spawn and coordinate multiple Gemini agents with different roles
 - Intelligent task assignment and load balancing
 - Inter-agent communication and collaboration
 - Dynamic agent lifecycle management
@@ -64,7 +64,7 @@ Claude-Flow is a sophisticated multi-agent orchestration system that enables you
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     Claude-Flow System                         │
+│                     Gemini-Flow System                         │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
 │  │   CLI/REPL      │  │   Web API       │  │   Extensions    │ │
@@ -82,26 +82,26 @@ Claude-Flow is a sophisticated multi-agent orchestration system that enables you
 
 ## 🚀 Quick Example
 
-Get started with Claude-Flow in just a few commands:
+Get started with Gemini-Flow in just a few commands:
 
 ```bash
 # Install and start
-npx claude-flow
+npx gemini-flow
 
 # Initialize configuration
-claude-flow config init
+gemini-flow config init
 
 # Start the orchestrator
-claude-flow start
+gemini-flow start
 
 # Create your first agent
-claude-flow agent spawn researcher --name "Research Assistant"
+gemini-flow agent spawn researcher --name "Research Assistant"
 
 # Assign a task
-claude-flow task create research "Analyze AI trends in 2024"
+gemini-flow task create research "Analyze AI trends in 2024"
 
 # Monitor progress
-claude-flow status --watch
+gemini-flow status --watch
 ```
 
 ## 📖 Documentation Structure
@@ -148,7 +148,7 @@ claude-flow status --watch
 
 ### Agent Types and Capabilities
 
-Claude-Flow supports multiple specialized agent types:
+Gemini-Flow supports multiple specialized agent types:
 
 - **🔬 Researcher**: Information gathering and analysis
 - **📊 Analyst**: Data analysis and pattern recognition  
@@ -209,7 +209,7 @@ Powerful terminal management with:
 - Data quality monitoring
 - Performance analysis
 
-## 🌟 Why Choose Claude-Flow?
+## 🌟 Why Choose Gemini-Flow?
 
 ### ✅ Production Ready
 - 100% test coverage
@@ -238,10 +238,10 @@ Powerful terminal management with:
 ## 🤝 Community and Support
 
 ### Getting Help
-- **[GitHub Issues](https://github.com/ruvnet/claude-code-flow/issues)** - Bug reports and feature requests
-- **[GitHub Discussions](https://github.com/ruvnet/claude-code-flow/discussions)** - Community Q&A
-- **[Discord](https://discord.gg/claude-flow)** - Real-time chat support
-- **[Documentation](https://claude-flow.dev/docs)** - Comprehensive guides
+- **[GitHub Issues](https://github.com/ruvnet/gemini-flow/issues)** - Bug reports and feature requests
+- **[GitHub Discussions](https://github.com/ruvnet/gemini-flow/discussions)** - Community Q&A
+- **[Discord](https://discord.gg/gemini-flow)** - Real-time chat support
+- **[Documentation](https://gemini-flow.dev/docs)** - Comprehensive guides
 
 ### Contributing
 - **[Contributing Guide](./contributing.md)** - How to contribute
@@ -265,9 +265,9 @@ Powerful terminal management with:
 
 ## 📄 License and Credits
 
-Claude-Flow is open source software released under the MIT License.
+Gemini-Flow is open source software released under the MIT License.
 
-**Created by [rUv](https://github.com/ruvnet)** - Advancing AI agent orchestration for the Claude community.
+**Created by [rUv](https://github.com/ruvnet)** - Advancing AI agent orchestration for the Gemini community.
 
 ---
 

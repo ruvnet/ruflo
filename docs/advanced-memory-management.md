@@ -1,6 +1,6 @@
 # Advanced Memory Management System
 
-The Claude Flow Advanced Memory Management System provides comprehensive capabilities for storing, querying, and managing data across swarm operations with advanced features including indexing, compression, cross-agent sharing, and intelligent cleanup.
+The Gemini Flow Advanced Memory Management System provides comprehensive capabilities for storing, querying, and managing data across swarm operations with advanced features including indexing, compression, cross-agent sharing, and intelligent cleanup.
 
 ## Features
 
@@ -46,14 +46,14 @@ The Claude Flow Advanced Memory Management System provides comprehensive capabil
 #### Store Data
 ```bash
 # Basic storage
-claude-flow memory store "user_preferences" '{"theme": "dark", "lang": "en"}' \
+gemini-flow memory store "user_preferences" '{"theme": "dark", "lang": "en"}' \
   --namespace "app_config" \
   --type "preferences" \
   --tags "user,config" \
   --access-level "shared"
 
 # With metadata and TTL
-claude-flow memory store "session_data" '{"user_id": 123, "token": "abc"}' \
+gemini-flow memory store "session_data" '{"user_id": 123, "token": "abc"}' \
   --namespace "sessions" \
   --type "auth" \
   --metadata '{"version": "1.0", "encrypted": false}' \
@@ -64,16 +64,16 @@ claude-flow memory store "session_data" '{"user_id": 123, "token": "abc"}' \
 #### Retrieve Data
 ```bash
 # Basic retrieval
-claude-flow memory get "user_preferences" --namespace "app_config"
+gemini-flow memory get "user_preferences" --namespace "app_config"
 
 # JSON format output
-claude-flow memory get "user_preferences" --format json
+gemini-flow memory get "user_preferences" --format json
 ```
 
 #### Update Data
 ```bash
 # Update entry (requires separate implementation)
-claude-flow memory update "user_preferences" '{"theme": "light"}' \
+gemini-flow memory update "user_preferences" '{"theme": "light"}' \
   --namespace "app_config" \
   --merge
 ```
@@ -81,7 +81,7 @@ claude-flow memory update "user_preferences" '{"theme": "light"}' \
 #### Delete Data
 ```bash
 # Delete with confirmation
-claude-flow memory delete "user_preferences" --namespace "app_config" --confirm
+gemini-flow memory delete "user_preferences" --namespace "app_config" --confirm
 ```
 
 ### Advanced Querying
@@ -89,16 +89,16 @@ claude-flow memory delete "user_preferences" --namespace "app_config" --confirm
 #### Basic Query
 ```bash
 # Simple search
-claude-flow memory query "user" --namespace "app_config"
+gemini-flow memory query "user" --namespace "app_config"
 
 # Full-text search
-claude-flow memory query "dark theme" --full-text "theme preferences"
+gemini-flow memory query "dark theme" --full-text "theme preferences"
 ```
 
 #### Complex Queries
 ```bash
 # Multi-criteria search
-claude-flow memory query "config" \
+gemini-flow memory query "config" \
   --namespace "app_config" \
   --type "preferences" \
   --tags "user,settings" \
@@ -109,7 +109,7 @@ claude-flow memory query "config" \
   --sort-order "desc"
 
 # Pattern matching
-claude-flow memory query "user_*" \
+gemini-flow memory query "user_*" \
   --key-pattern "^user_[0-9]+$" \
   --value-search "premium" \
   --include-expired
@@ -118,12 +118,12 @@ claude-flow memory query "user_*" \
 #### Aggregation Queries
 ```bash
 # Generate aggregations
-claude-flow memory query "*" \
+gemini-flow memory query "*" \
   --aggregate-by "namespace" \
   --format "table"
 
 # Statistics by type
-claude-flow memory query "*" \
+gemini-flow memory query "*" \
   --aggregate-by "type" \
   --include-metadata \
   --format "json"
@@ -134,12 +134,12 @@ claude-flow memory query "*" \
 #### Basic Export
 ```bash
 # JSON export
-claude-flow memory export "./backups/memory_backup.json" \
+gemini-flow memory export "./backups/memory_backup.json" \
   --format json \
   --include-metadata
 
 # CSV export with filtering
-claude-flow memory export "./reports/user_data.csv" \
+gemini-flow memory export "./reports/user_data.csv" \
   --format csv \
   --namespace "users" \
   --type "profile"
@@ -148,19 +148,19 @@ claude-flow memory export "./reports/user_data.csv" \
 #### Advanced Export
 ```bash
 # Compressed export
-claude-flow memory export "./backups/compressed_backup.json" \
+gemini-flow memory export "./backups/compressed_backup.json" \
   --format json \
   --compression \
   --include-metadata
 
 # Encrypted export
-claude-flow memory export "./secure/encrypted_backup.json" \
+gemini-flow memory export "./secure/encrypted_backup.json" \
   --format json \
   --encrypt \
   --encrypt-key "your-secret-key"
 
 # Filtered export with complex query
-claude-flow memory export "./analytics/recent_activity.json" \
+gemini-flow memory export "./analytics/recent_activity.json" \
   --format json \
   --filter-query '{"createdAfter": "2024-01-01", "tags": ["analytics"], "sizeGreaterThan": 1024}'
 ```
@@ -168,10 +168,10 @@ claude-flow memory export "./analytics/recent_activity.json" \
 #### Multi-format Export
 ```bash
 # XML export
-claude-flow memory export "./data/memory_data.xml" --format xml
+gemini-flow memory export "./data/memory_data.xml" --format xml
 
 # YAML export
-claude-flow memory export "./config/memory_config.yaml" --format yaml
+gemini-flow memory export "./config/memory_config.yaml" --format yaml
 ```
 
 ### Import Operations
@@ -179,13 +179,13 @@ claude-flow memory export "./config/memory_config.yaml" --format yaml
 #### Basic Import
 ```bash
 # JSON import
-claude-flow memory import "./data/backup.json" \
+gemini-flow memory import "./data/backup.json" \
   --format json \
   --namespace "imported" \
   --conflict-resolution "skip"
 
 # CSV import with validation
-claude-flow memory import "./data/user_data.csv" \
+gemini-flow memory import "./data/user_data.csv" \
   --format csv \
   --validation \
   --conflict-resolution "merge"
@@ -194,14 +194,14 @@ claude-flow memory import "./data/user_data.csv" \
 #### Advanced Import
 ```bash
 # Import with transformation
-claude-flow memory import "./data/legacy_data.json" \
+gemini-flow memory import "./data/legacy_data.json" \
   --format json \
   --key-mapping '{"old_key": "new_key", "legacy_id": "id"}' \
   --value-transform "return value.toUpperCase();" \
   --metadata-extract "return {imported: true, source: 'legacy'};"
 
 # Dry run import
-claude-flow memory import "./data/test_data.json" \
+gemini-flow memory import "./data/test_data.json" \
   --dry-run \
   --conflict-resolution "overwrite"
 ```
@@ -209,10 +209,10 @@ claude-flow memory import "./data/test_data.json" \
 #### Conflict Resolution Strategies
 ```bash
 # Different conflict resolution strategies
-claude-flow memory import "./data/conflicts.json" --conflict-resolution "overwrite"
-claude-flow memory import "./data/conflicts.json" --conflict-resolution "skip"
-claude-flow memory import "./data/conflicts.json" --conflict-resolution "merge"
-claude-flow memory import "./data/conflicts.json" --conflict-resolution "rename"
+gemini-flow memory import "./data/conflicts.json" --conflict-resolution "overwrite"
+gemini-flow memory import "./data/conflicts.json" --conflict-resolution "skip"
+gemini-flow memory import "./data/conflicts.json" --conflict-resolution "merge"
+gemini-flow memory import "./data/conflicts.json" --conflict-resolution "rename"
 ```
 
 ### Statistics and Analytics
@@ -220,22 +220,22 @@ claude-flow memory import "./data/conflicts.json" --conflict-resolution "rename"
 #### Basic Statistics
 ```bash
 # Overview statistics
-claude-flow memory stats
+gemini-flow memory stats
 
 # Detailed statistics
-claude-flow memory stats --detailed
+gemini-flow memory stats --detailed
 
 # JSON format for processing
-claude-flow memory stats --format json
+gemini-flow memory stats --format json
 ```
 
 #### Export Statistics
 ```bash
 # Export statistics to file
-claude-flow memory stats --format json --export "./reports/memory_stats.json"
+gemini-flow memory stats --format json --export "./reports/memory_stats.json"
 
 # Generate detailed report
-claude-flow memory stats --detailed --export "./reports/detailed_stats.json"
+gemini-flow memory stats --detailed --export "./reports/detailed_stats.json"
 ```
 
 ### Cleanup Operations
@@ -243,19 +243,19 @@ claude-flow memory stats --detailed --export "./reports/detailed_stats.json"
 #### Basic Cleanup
 ```bash
 # Standard cleanup
-claude-flow memory cleanup
+gemini-flow memory cleanup
 
 # Dry run to see what would be cleaned
-claude-flow memory cleanup --dry-run
+gemini-flow memory cleanup --dry-run
 ```
 
 #### Advanced Cleanup
 ```bash
 # Aggressive cleanup
-claude-flow memory cleanup --aggressive
+gemini-flow memory cleanup --aggressive
 
 # Custom cleanup rules
-claude-flow memory cleanup \
+gemini-flow memory cleanup \
   --remove-older-than 30 \
   --remove-unaccessed 7 \
   --remove-duplicates \
@@ -268,7 +268,7 @@ claude-flow memory cleanup \
 #### Retention Policy Cleanup
 ```bash
 # Custom retention policies
-claude-flow memory cleanup \
+gemini-flow memory cleanup \
   --retention-policies '[
     {
       "namespace": "sessions",
@@ -288,34 +288,34 @@ claude-flow memory cleanup \
 #### List Resources
 ```bash
 # List all namespaces
-claude-flow memory namespaces
+gemini-flow memory namespaces
 
 # List all data types
-claude-flow memory types
+gemini-flow memory types
 
 # List all tags
-claude-flow memory tags
+gemini-flow memory tags
 ```
 
 #### List Entries
 ```bash
 # List recent entries
-claude-flow memory list --limit 20 --sort-by "updatedAt" --sort-order "desc"
+gemini-flow memory list --limit 20 --sort-by "updatedAt" --sort-order "desc"
 
 # List by namespace
-claude-flow memory list --namespace "users" --type "profile"
+gemini-flow memory list --namespace "users" --type "profile"
 
 # Paginated listing
-claude-flow memory list --limit 10 --offset 20
+gemini-flow memory list --limit 10 --offset 20
 ```
 
 #### Configuration
 ```bash
 # Show current configuration
-claude-flow memory config --show
+gemini-flow memory config --show
 
 # Update configuration
-claude-flow memory config --set '{"autoCompress": true, "autoCleanup": false}'
+gemini-flow memory config --set '{"autoCompress": true, "autoCleanup": false}'
 ```
 
 ## Advanced Usage Patterns
@@ -323,7 +323,7 @@ claude-flow memory config --set '{"autoCompress": true, "autoCleanup": false}'
 ### Research Workflow Integration
 ```bash
 # Store research findings
-claude-flow memory store "research_findings_ai_trends" '{
+gemini-flow memory store "research_findings_ai_trends" '{
   "topic": "AI Trends 2024",
   "findings": [...],
   "sources": [...],
@@ -331,14 +331,14 @@ claude-flow memory store "research_findings_ai_trends" '{
 }' --namespace "research" --type "findings" --tags "ai,trends,2024"
 
 # Query research by topic
-claude-flow memory query "AI Trends" \
+gemini-flow memory query "AI Trends" \
   --namespace "research" \
   --type "findings" \
   --sort-by "createdAt" \
   --include-metadata
 
 # Export research for reporting
-claude-flow memory export "./reports/ai_research_2024.json" \
+gemini-flow memory export "./reports/ai_research_2024.json" \
   --namespace "research" \
   --filter-query '{"tags": ["ai", "2024"]}'
 ```
@@ -346,7 +346,7 @@ claude-flow memory export "./reports/ai_research_2024.json" \
 ### Development Workflow Integration
 ```bash
 # Store architecture decisions
-claude-flow memory store "arch_decision_microservices" '{
+gemini-flow memory store "arch_decision_microservices" '{
   "decision": "Use microservices architecture",
   "rationale": "Better scalability and maintainability",
   "alternatives": ["monolith", "serverless"],
@@ -354,7 +354,7 @@ claude-flow memory store "arch_decision_microservices" '{
 }' --namespace "architecture" --type "decision" --tags "microservices,backend"
 
 # Store and query test results
-claude-flow memory store "test_results_v1.2.0" '{
+gemini-flow memory store "test_results_v1.2.0" '{
   "version": "1.2.0",
   "passed": 156,
   "failed": 2,
@@ -366,7 +366,7 @@ claude-flow memory store "test_results_v1.2.0" '{
 ### Cross-Agent Coordination
 ```bash
 # Agent A stores task status
-claude-flow memory store "task_processing_status" '{
+gemini-flow memory store "task_processing_status" '{
   "taskId": "task_123",
   "status": "in_progress",
   "assignedTo": "agent_a",
@@ -375,13 +375,13 @@ claude-flow memory store "task_processing_status" '{
 }' --namespace "coordination" --type "task_status" --owner "agent_a"
 
 # Agent B queries for tasks
-claude-flow memory query "task_" \
+gemini-flow memory query "task_" \
   --namespace "coordination" \
   --type "task_status" \
   --value-search "in_progress"
 
 # Agent C updates task status
-claude-flow memory update "task_processing_status" '{
+gemini-flow memory update "task_processing_status" '{
   "status": "completed",
   "progress": 100,
   "completedBy": "agent_c",
@@ -400,25 +400,25 @@ claude-flow memory update "task_processing_status" '{
 #### Memory Usage Optimization
 ```bash
 # Enable compression for large entries
-claude-flow memory config --set '{"autoCompress": true, "compressionThreshold": 1024}'
+gemini-flow memory config --set '{"autoCompress": true, "compressionThreshold": 1024}'
 
 # Set up automatic cleanup
-claude-flow memory config --set '{"autoCleanup": true, "cleanupInterval": 3600000}'
+gemini-flow memory config --set '{"autoCleanup": true, "cleanupInterval": 3600000}'
 
 # Configure cache settings
-claude-flow memory config --set '{"cacheSize": 10000, "cacheTtl": 300000}'
+gemini-flow memory config --set '{"cacheSize": 10000, "cacheTtl": 300000}'
 ```
 
 #### Query Optimization
 ```bash
 # Use specific namespaces to narrow search space
-claude-flow memory query "search_term" --namespace "specific_namespace"
+gemini-flow memory query "search_term" --namespace "specific_namespace"
 
 # Limit results and use pagination for large datasets
-claude-flow memory query "*" --limit 100 --offset 0
+gemini-flow memory query "*" --limit 100 --offset 0
 
 # Use aggregation for statistics instead of processing all entries
-claude-flow memory query "*" --aggregate-by "type" --limit 0
+gemini-flow memory query "*" --aggregate-by "type" --limit 0
 ```
 
 ## Integration with SPARC Modes
@@ -444,7 +444,7 @@ Task("Analysis Agent", "Query memory for related research using tags and full-te
 ### Memory-Driven Coordination
 ```bash
 # Store coordination data between SPARC modes
-claude-flow memory store "sparc_session_context" '{
+gemini-flow memory store "sparc_session_context" '{
   "sessionId": "sparc_123",
   "mode": "development",
   "phase": "implementation",
@@ -452,7 +452,7 @@ claude-flow memory store "sparc_session_context" '{
 }' --namespace "sparc_coordination" --type "session_context"
 
 # Query for session context in subsequent operations
-claude-flow memory query "sparc_session_context" \
+gemini-flow memory query "sparc_session_context" \
   --namespace "sparc_coordination" \
   --type "session_context" \
   --include-metadata
@@ -465,22 +465,22 @@ claude-flow memory query "sparc_session_context" \
 #### Memory Not Persisting
 ```bash
 # Check configuration
-claude-flow memory config --show
+gemini-flow memory config --show
 
 # Ensure persistence is enabled
-claude-flow memory config --set '{"persistenceEnabled": true}'
+gemini-flow memory config --set '{"persistenceEnabled": true}'
 ```
 
 #### Performance Issues
 ```bash
 # Check statistics for bottlenecks
-claude-flow memory stats --detailed
+gemini-flow memory stats --detailed
 
 # Rebuild index if needed
-claude-flow memory cleanup --dry-run
+gemini-flow memory cleanup --dry-run
 
 # Optimize configuration
-claude-flow memory config --set '{
+gemini-flow memory config --set '{
   "indexingEnabled": true,
   "cacheSize": 20000,
   "autoCompress": true
@@ -490,19 +490,19 @@ claude-flow memory config --set '{
 #### Data Corruption
 ```bash
 # Check for corrupted entries
-claude-flow memory stats | grep "Corrupted"
+gemini-flow memory stats | grep "Corrupted"
 
 # Run comprehensive cleanup
-claude-flow memory cleanup --remove-orphaned --remove-duplicates
+gemini-flow memory cleanup --remove-orphaned --remove-duplicates
 ```
 
 #### Import/Export Issues
 ```bash
 # Validate data before import
-claude-flow memory import "./data.json" --validation --dry-run
+gemini-flow memory import "./data.json" --validation --dry-run
 
 # Check export with different formats
-claude-flow memory export "./test.json" --format json --namespace "test"
+gemini-flow memory export "./test.json" --format json --namespace "test"
 ```
 
 ## API Integration
@@ -577,4 +577,4 @@ await memory.cleanup({
 - Enable encryption for sensitive data exports
 - Implement proper backup and recovery procedures
 
-This advanced memory management system provides the foundation for sophisticated data handling in Claude Flow, enabling complex swarm operations with efficient data sharing and coordination.
+This advanced memory management system provides the foundation for sophisticated data handling in Gemini Flow, enabling complex swarm operations with efficient data sharing and coordination.

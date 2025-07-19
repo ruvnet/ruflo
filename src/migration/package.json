@@ -1,11 +1,11 @@
 {
-  "name": "@claude-flow/migration",
+  "name": "@gemini-flow/migration",
   "version": "1.0.0",
-  "description": "Migration system for claude-flow projects",
+  "description": "Migration system for gemini-flow projects",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "claude-flow-migrate": "dist/index.js"
+    "gemini-flow-migrate": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -17,13 +17,13 @@
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [
-    "claude-flow",
+    "gemini-flow",
     "migration",
     "prompts",
     "optimization",
     "automation"
   ],
-  "author": "Claude Flow Team",
+  "author": "Gemini Flow Team",
   "license": "MIT",
   "dependencies": {
     "commander": "^11.0.0",
@@ -66,11 +66,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-code-flow",
+    "url": "https://github.com/ruvnet/gemini-flow",
     "directory": "src/migration"
   },
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-code-flow/issues"
+    "url": "https://github.com/ruvnet/gemini-flow/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-code-flow#readme"
+  "homepage": "https://github.com/ruvnet/gemini-flow#readme"
 }

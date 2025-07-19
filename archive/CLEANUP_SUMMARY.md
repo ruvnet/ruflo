@@ -1,4 +1,4 @@
-# Claude-Flow Root Directory Cleanup Summary
+# Gemini-Flow Root Directory Cleanup Summary
 
 Date: 2025-07-04
 
@@ -34,7 +34,7 @@ Date: 2025-07-04
 - debug-hooks-system-SOLUTION.md
 
 #### Old Releases (moved to `archive/releases/`)
-- claude-flow-1.0.70.tgz (58MB)
+- gemini-flow-1.0.70.tgz (58MB)
 
 ### 🗑️ Files Removed
 - bin/*.tmp* (temporary files)
@@ -45,7 +45,7 @@ Date: 2025-07-04
 ### Documentation
 - **README.md** - Main project documentation (v2.0.0)
 - **CHANGELOG.md** - Version history and release notes
-- **CLAUDE.md** - Claude Code integration guide (785 lines)
+- **GEMINI.md** - Gemini CLI integration guide (785 lines)
 - **LICENSE** - MIT license
 
 ### Configuration
@@ -57,8 +57,8 @@ Date: 2025-07-04
 
 ### Entry Points
 - cli.js - Node.js entry point
-- claude-flow - Local wrapper script
-- bin/claude-flow - Main executable
+- gemini-flow - Local wrapper script
+- bin/gemini-flow - Main executable
 
 ## 📊 Space Saved
 

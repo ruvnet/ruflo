@@ -10,7 +10,7 @@ echo "sample application in the workspace directory."
 echo ""
 
 # Set up directories
-WORKSPACE_DIR="/workspaces/claude-code-flow"
+WORKSPACE_DIR="/workspaces/gemini-flow"
 SAMPLE_DIR="$WORKSPACE_DIR/swarm-sample"
 SWARM_OUTPUT_DIR="/tmp/swarm-sample-output"
 

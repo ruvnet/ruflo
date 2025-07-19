@@ -102,4 +102,4 @@ claude-flow start --ui --swarm
 
 **🚨 Alpha Release Note:** This is a pre-release version intended for early adopters and testing. Some features may have limitations, and the TypeScript build pipeline is temporarily simplified for rapid deployment.
 
-**Support:** Issues and feedback can be reported at https://github.com/ruvnet/claude-code-flow/issues
+**Support:** Issues and feedback can be reported at https://github.com/ruvnet/gemini-flow/issues

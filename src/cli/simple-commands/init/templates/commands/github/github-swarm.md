@@ -5,7 +5,7 @@ Create a specialized swarm for GitHub repository management.
 ## Usage
 
 ```bash
-npx claude-flow github swarm [options]
+npx gemini-flow github swarm [options]
 ```
 
 ## Options
@@ -21,22 +21,22 @@ npx claude-flow github swarm [options]
 
 ### Basic GitHub swarm
 ```bash
-npx claude-flow github swarm --repository owner/repo
+npx gemini-flow github swarm --repository owner/repo
 ```
 
 ### Maintenance-focused swarm
 ```bash
-npx claude-flow github swarm -r owner/repo -f maintenance --issue-labels
+npx gemini-flow github swarm -r owner/repo -f maintenance --issue-labels
 ```
 
 ### Development swarm with PR automation
 ```bash
-npx claude-flow github swarm -r owner/repo -f development --auto-pr --code-review
+npx gemini-flow github swarm -r owner/repo -f development --auto-pr --code-review
 ```
 
 ### Full-featured triage swarm
 ```bash
-npx claude-flow github swarm -r owner/repo -a 8 -f triage --issue-labels --auto-pr
+npx gemini-flow github swarm -r owner/repo -a 8 -f triage --issue-labels --auto-pr
 ```
 
 ## Agent Types
@@ -89,11 +89,11 @@ npx claude-flow github swarm -r owner/repo -a 8 -f triage --issue-labels --auto-
 4. Assess documentation completeness
 5. Generate health report
 
-## Integration with Claude Code
+## Integration with Gemini Code
 
-Use in Claude Code with MCP tools:
+Use in Gemini Code with MCP tools:
 ```javascript
-mcp__claude-flow__github_swarm { 
+mcp__gemini-flow__github_swarm { 
   repository: "owner/repo", 
   agents: 6, 
   focus: "maintenance" 

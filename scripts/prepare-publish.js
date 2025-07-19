@@ -30,11 +30,11 @@ const versionFiles = [
   { path: 'src/cli/simple-cli.js', pattern: /const VERSION = '[^']+';/, replacement: `const VERSION = '${version}';` },
   { path: 'src/cli/index.ts', pattern: /const VERSION = '[^']+';/, replacement: `const VERSION = '${version}';` },
   { path: 'src/cli/index-remote.ts', pattern: /const VERSION = '[^']+';/, replacement: `const VERSION = '${version}';` },
-  { path: 'bin/claude-flow', pattern: /VERSION="[^"]+"/, replacement: `VERSION="${version}"` },
+  { path: 'bin/gemini-flow', pattern: /VERSION="[^"]+"/, replacement: `VERSION="${version}"` },
   { path: 'src/cli/commands/status.ts', pattern: /version: '[^']+'/g, replacement: `version: '${version}'` },
   { path: 'src/cli/simple-commands/status.js', pattern: /version: '[^']+'/g, replacement: `version: '${version}'` },
   { path: 'src/cli/simple-commands/config.js', pattern: /version: "[^"]+"/g, replacement: `version: "${version}"` },
-  { path: 'src/cli/simple-commands/process-ui-enhanced.js', pattern: /Claude-Flow Process Management UI v[0-9.]+/, replacement: `Claude-Flow Process Management UI v${version}` },
+  { path: 'src/cli/simple-commands/process-ui-enhanced.js', pattern: /Gemini-Flow Process Management UI v[0-9.]+/, replacement: `Gemini-Flow Process Management UI v${version}` },
   { path: 'src/cli/init/claude-config.ts', pattern: /version: "[^"]+"/g, replacement: `version: "${version}"` },
   { path: 'src/cli/init/directory-structure.ts', pattern: /version: "[^"]+"/g, replacement: `version: "${version}"` }
 ];

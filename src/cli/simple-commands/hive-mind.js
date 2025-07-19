@@ -1,5 +1,5 @@
 /**
- * Hive Mind command for Claude-Flow v2.0.0
+ * Hive Mind command for Gemini-Flow v2.0.0
  * Advanced swarm intelligence with collective decision-making
  */
 
@@ -27,10 +27,10 @@ import { SwarmCommunication } from './hive-mind/communication.js';
 
 function showHiveMindHelp() {
   console.log(`
-${chalk.yellow('🧠 Claude Flow Hive Mind System')}
+${chalk.yellow('🧠 Gemini Flow Hive Mind System')}
 
 ${chalk.bold('USAGE:')}
-  claude-flow hive-mind [subcommand] [options]
+  gemini-flow hive-mind [subcommand] [options]
 
 ${chalk.bold('SUBCOMMANDS:')}
   ${chalk.green('init')}         Initialize hive mind system
@@ -43,25 +43,25 @@ ${chalk.bold('SUBCOMMANDS:')}
 
 ${chalk.bold('EXAMPLES:')}
   ${chalk.gray('# Initialize hive mind')}
-  claude-flow hive-mind init
+  gemini-flow hive-mind init
 
   ${chalk.gray('# Spawn swarm with interactive wizard')}
-  claude-flow hive-mind spawn
+  gemini-flow hive-mind spawn
 
   ${chalk.gray('# Quick spawn with objective')}
-  claude-flow hive-mind spawn "Build microservices architecture"
+  gemini-flow hive-mind spawn "Build microservices architecture"
 
   ${chalk.gray('# View current status')}
-  claude-flow hive-mind status
+  gemini-flow hive-mind status
 
   ${chalk.gray('# Interactive wizard')}
-  claude-flow hive-mind wizard
+  gemini-flow hive-mind wizard
 
-  ${chalk.gray('# Spawn with Claude Code coordination')}
-  claude-flow hive-mind spawn "Build REST API" --claude
+  ${chalk.gray('# Spawn with Gemini Code coordination')}
+  gemini-flow hive-mind spawn "Build REST API" --claude
 
-  ${chalk.gray('# Auto-spawn coordinated Claude Code instances')}
-  claude-flow hive-mind spawn "Research AI trends" --auto-spawn --verbose
+  ${chalk.gray('# Auto-spawn coordinated Gemini Code instances')}
+  gemini-flow hive-mind spawn "Research AI trends" --auto-spawn --verbose
 
 ${chalk.bold('KEY FEATURES:')}
   ${chalk.cyan('🐝')} Queen-led coordination with worker specialization
@@ -82,15 +82,15 @@ ${chalk.bold('OPTIONS:')}
   --encryption           Enable encrypted communication
   --monitor              Real-time monitoring dashboard
   --verbose              Detailed logging
-  --claude               Generate Claude Code spawn commands with coordination
+  --gemini               Generate Gemini Code spawn commands with coordination
   --spawn                Alias for --claude
-  --auto-spawn           Automatically spawn Claude Code instances
-  --execute              Execute Claude Code spawn commands immediately
+  --auto-spawn           Automatically spawn Gemini Code instances
+  --execute              Execute Gemini Code spawn commands immediately
   --auto                 (Deprecated: auto-permissions enabled by default)
   --no-auto-permissions  Disable automatic --dangerously-skip-permissions
 
 ${chalk.bold('For more information:')}
-${chalk.blue('https://github.com/ruvnet/claude-flow/tree/main/docs/hive-mind')}
+${chalk.blue('https://github.com/ruvnet/gemini-flow/tree/main/docs/hive-mind')}
 `);
 }
 
@@ -210,8 +210,8 @@ async function initHiveMind(flags) {
     console.log(chalk.green('✓') + ' Initialized SQLite database');
     console.log(chalk.green('✓') + ' Created configuration file');
     console.log('\n' + chalk.yellow('Next steps:'));
-    console.log('  1. Run ' + chalk.cyan('claude-flow hive-mind spawn') + ' to create your first swarm');
-    console.log('  2. Use ' + chalk.cyan('claude-flow hive-mind wizard') + ' for interactive setup');
+    console.log('  1. Run ' + chalk.cyan('gemini-flow hive-mind spawn') + ' to create your first swarm');
+    console.log('  2. Use ' + chalk.cyan('gemini-flow hive-mind wizard') + ' for interactive setup');
     
   } catch (error) {
     spinner.fail('Failed to initialize Hive Mind system');
@@ -400,7 +400,7 @@ async function spawnSwarm(args, flags) {
   
   if (!objective && !flags.wizard) {
     console.error(chalk.red('Error: Please provide an objective or use --wizard flag'));
-    console.log('Example: claude-flow hive-mind spawn "Build REST API"');
+    console.log('Example: gemini-flow hive-mind spawn "Build REST API"');
     return;
   }
   
@@ -650,14 +650,14 @@ async function spawnSwarm(args, flags) {
     
     // Enhanced coordination instructions with MCP tools
     console.log('\n' + chalk.green('✓') + ' Swarm is ready for coordination');
-    console.log(chalk.gray('Use "claude-flow hive-mind status" to view swarm activity'));
+    console.log(chalk.gray('Use "gemini-flow hive-mind status" to view swarm activity'));
     
-    // Offer to spawn Claude Code instances with coordination instructions
-    if (flags.claude || flags.spawn) {
+    // Offer to spawn Gemini Code instances with coordination instructions
+    if (flags.gemini || flags.spawn) {
       await spawnClaudeCodeInstances(swarmId, hiveMind.config.name, objective, workers, flags);
     } else {
-      console.log('\n' + chalk.blue('💡 Pro Tip:') + ' Add --claude to spawn coordinated Claude Code instances');
-      console.log(chalk.gray('   claude-flow hive-mind spawn "objective" --claude'));
+      console.log('\n' + chalk.blue('💡 Pro Tip:') + ' Add --gemini to spawn coordinated Gemini Code instances');
+      console.log(chalk.gray('   gemini-flow hive-mind spawn "objective" --claude'));
     }
     
   } catch (error) {
@@ -707,7 +707,7 @@ async function showStatus(flags) {
     
     if (!existsSync(dbPath)) {
       console.error(chalk.red('Error: Hive Mind not initialized'));
-      console.log('Run "claude-flow hive-mind init" first');
+      console.log('Run "gemini-flow hive-mind init" first');
       return;
     }
     
@@ -1211,7 +1211,7 @@ export async function hiveMindCommand(args, flags) {
   }
   
   // Warn about non-interactive environments for certain commands
-  if ((subcommand === 'spawn' && (flags.claude || flags.spawn)) || subcommand === 'wizard') {
+  if ((subcommand === 'spawn' && (flags.gemini || flags.spawn)) || subcommand === 'wizard') {
     warnNonInteractive('hive-mind ' + subcommand);
   }
   
@@ -1256,7 +1256,7 @@ export async function hiveMindCommand(args, flags) {
       
     default:
       console.error(chalk.red(`Unknown subcommand: ${subcommand}`));
-      console.log('Run "claude-flow hive-mind help" for usage information');
+      console.log('Run "gemini-flow hive-mind help" for usage information');
       exit(1);
   }
 }
@@ -1594,10 +1594,10 @@ async function exportMemoryBackup() {
 }
 
 /**
- * Spawn Claude Code with Hive Mind coordination instructions
+ * Spawn Gemini Code with Hive Mind coordination instructions
  */
 async function spawnClaudeCodeInstances(swarmId, swarmName, objective, workers, flags) {
-  console.log('\n' + chalk.bold('🚀 Launching Claude Code with Hive Mind Coordination'));
+  console.log('\n' + chalk.bold('🚀 Launching Gemini Code with Hive Mind Coordination'));
   console.log(chalk.gray('─'.repeat(60)));
   
   const spinner = ora('Preparing Hive Mind coordination prompt...').start();
@@ -1618,10 +1618,10 @@ async function spawnClaudeCodeInstances(swarmId, swarmName, objective, workers, 
     console.log(chalk.cyan('Worker Count:'), workers.length);
     console.log(chalk.cyan('Worker Types:'), Object.keys(workerGroups).join(', '));
     console.log(chalk.cyan('Consensus Algorithm:'), flags.consensus || 'majority');
-    console.log(chalk.cyan('MCP Tools:'), 'Full Claude-Flow integration enabled');
+    console.log(chalk.cyan('MCP Tools:'), 'Full Gemini-Flow integration enabled');
     
     try {
-      // Check if claude command exists
+      // Check if gemini command exists
       const { spawn: childSpawn, execSync } = await import('child_process');
       let claudeAvailable = false;
       
@@ -1645,18 +1645,18 @@ async function spawnClaudeCodeInstances(swarmId, swarmName, objective, workers, 
           console.log(chalk.yellow('🔓 Using --dangerously-skip-permissions by default for seamless hive-mind execution'));
         }
         
-        // Spawn claude with the prompt as the first argument
+        // Spawn gemini with the prompt as the first argument
         const claudeProcess = childSpawn('claude', claudeArgs, {
           stdio: 'inherit',
           shell: false
         });
         
-        console.log(chalk.green('\n✓ Claude Code launched with Hive Mind coordination'));
+        console.log(chalk.green('\n✓ Gemini Code launched with Hive Mind coordination'));
         console.log(chalk.blue('  The Queen coordinator will orchestrate all worker agents'));
         console.log(chalk.blue('  Use MCP tools for collective intelligence and task distribution'));
         
       } else if (flags.dryRun) {
-        console.log(chalk.blue('\nDry run - would execute Claude Code with prompt:'));
+        console.log(chalk.blue('\nDry run - would execute Gemini Code with prompt:'));
         console.log(chalk.gray('Prompt length:'), hiveMindPrompt.length, 'characters');
         console.log(chalk.gray('\nFirst 500 characters of prompt:'));
         console.log(chalk.yellow(hiveMindPrompt.substring(0, 500) + '...'));
@@ -1667,47 +1667,47 @@ async function spawnClaudeCodeInstances(swarmId, swarmName, objective, workers, 
         console.log(chalk.green(`\n✓ Full prompt saved to: ${promptFile}`));
         
       } else {
-        // Claude not available - save prompt and show instructions
+        // Gemini not available - save prompt and show instructions
         const promptFile = `hive-mind-prompt-${swarmId}.txt`;
         await writeFile(promptFile, hiveMindPrompt, 'utf8');
         
         console.log(chalk.yellow('\n📋 Manual Execution Instructions:'));
         console.log(chalk.gray('─'.repeat(50)));
-        console.log(chalk.gray('1. Install Claude Code:'));
+        console.log(chalk.gray('1. Install Gemini Code:'));
         console.log(chalk.green('   npm install -g @google/gemini-cli'));
         console.log(chalk.gray('\n2. Run with the saved prompt:'));
-        console.log(chalk.green(`   claude < ${promptFile}`));
+        console.log(chalk.green(`   gemini < ${promptFile}`));
         console.log(chalk.gray('\n3. Or copy the prompt manually:'));
         console.log(chalk.green(`   cat ${promptFile} | claude`));
         console.log(chalk.gray('\n4. With auto-permissions:'));
-        console.log(chalk.green(`   claude --dangerously-skip-permissions < ${promptFile}`));
+        console.log(chalk.green(`   gemini --dangerously-skip-permissions < ${promptFile}`));
       }
       
     } catch (error) {
-      console.error(chalk.red('\nFailed to launch Claude Code:'), error.message);
+      console.error(chalk.red('\nFailed to launch Gemini Code:'), error.message);
       
       // Save prompt as fallback
       const promptFile = `hive-mind-prompt-${swarmId}-fallback.txt`;
       await writeFile(promptFile, hiveMindPrompt, 'utf8');
       console.log(chalk.green(`\n✓ Prompt saved to: ${promptFile}`));
-      console.log(chalk.yellow('\nYou can run Claude Code manually with the saved prompt'));
+      console.log(chalk.yellow('\nYou can run Gemini Code manually with the saved prompt'));
     }
     
     console.log('\n' + chalk.bold('💡 Pro Tips:'));
     console.log(chalk.gray('─'.repeat(30)));
     console.log('• Use --auto-spawn to launch instances automatically');
     console.log('• Add --verbose for detailed coordination context');
-    console.log('• Monitor with: claude-flow hive-mind status');
+    console.log('• Monitor with: gemini-flow hive-mind status');
     console.log('• Share memories: mcp__ruv-swarm__memory_usage');
     
   } catch (error) {
-    spinner.fail('Failed to prepare Claude Code coordination');
+    spinner.fail('Failed to prepare Gemini Code coordination');
     console.error(chalk.red('Error:'), error.message);
   }
 }
 
 /**
- * Generate comprehensive Hive Mind prompt for Claude Code
+ * Generate comprehensive Hive Mind prompt for Gemini Code
  */
 function generateHiveMindPrompt(swarmId, swarmName, objective, workers, workerGroups, flags) {
   const currentTime = new Date().toISOString();
@@ -1735,34 +1735,34 @@ ${workerTypes.map(type => `• ${type}: ${workerGroups[type].length} agents`).jo
 🔧 AVAILABLE MCP TOOLS FOR HIVE MIND COORDINATION:
 
 1️⃣ **COLLECTIVE INTELLIGENCE**
-   mcp__claude-flow__consensus_vote    - Democratic decision making
-   mcp__claude-flow__memory_share      - Share knowledge across the hive
-   mcp__claude-flow__neural_sync       - Synchronize neural patterns
-   mcp__claude-flow__swarm_think       - Collective problem solving
+   mcp__gemini-flow__consensus_vote    - Democratic decision making
+   mcp__gemini-flow__memory_share      - Share knowledge across the hive
+   mcp__gemini-flow__neural_sync       - Synchronize neural patterns
+   mcp__gemini-flow__swarm_think       - Collective problem solving
 
 2️⃣ **QUEEN COORDINATION**
-   mcp__claude-flow__queen_command     - Issue directives to workers
-   mcp__claude-flow__queen_monitor     - Monitor swarm health
-   mcp__claude-flow__queen_delegate    - Delegate complex tasks
-   mcp__claude-flow__queen_aggregate   - Aggregate worker results
+   mcp__gemini-flow__queen_command     - Issue directives to workers
+   mcp__gemini-flow__queen_monitor     - Monitor swarm health
+   mcp__gemini-flow__queen_delegate    - Delegate complex tasks
+   mcp__gemini-flow__queen_aggregate   - Aggregate worker results
 
 3️⃣ **WORKER MANAGEMENT**
-   mcp__claude-flow__agent_spawn       - Create specialized workers
-   mcp__claude-flow__agent_assign      - Assign tasks to workers
-   mcp__claude-flow__agent_communicate - Inter-agent communication
-   mcp__claude-flow__agent_metrics     - Track worker performance
+   mcp__gemini-flow__agent_spawn       - Create specialized workers
+   mcp__gemini-flow__agent_assign      - Assign tasks to workers
+   mcp__gemini-flow__agent_communicate - Inter-agent communication
+   mcp__gemini-flow__agent_metrics     - Track worker performance
 
 4️⃣ **TASK ORCHESTRATION**
-   mcp__claude-flow__task_create       - Create hierarchical tasks
-   mcp__claude-flow__task_distribute   - Distribute work efficiently
-   mcp__claude-flow__task_monitor      - Track task progress
-   mcp__claude-flow__task_aggregate    - Combine task results
+   mcp__gemini-flow__task_create       - Create hierarchical tasks
+   mcp__gemini-flow__task_distribute   - Distribute work efficiently
+   mcp__gemini-flow__task_monitor      - Track task progress
+   mcp__gemini-flow__task_aggregate    - Combine task results
 
 5️⃣ **MEMORY & LEARNING**
-   mcp__claude-flow__memory_store      - Store collective knowledge
-   mcp__claude-flow__memory_retrieve   - Access shared memory
-   mcp__claude-flow__neural_train      - Learn from experiences
-   mcp__claude-flow__pattern_recognize - Identify patterns
+   mcp__gemini-flow__memory_store      - Store collective knowledge
+   mcp__gemini-flow__memory_retrieve   - Access shared memory
+   mcp__gemini-flow__neural_train      - Learn from experiences
+   mcp__gemini-flow__pattern_recognize - Identify patterns
 
 📋 HIVE MIND EXECUTION PROTOCOL:
 
@@ -1770,10 +1770,10 @@ As the Queen coordinator, you must:
 
 1. **INITIALIZE THE HIVE** (Single BatchTool Message):
    [BatchTool]:
-   ${workerTypes.map(type => `   mcp__claude-flow__agent_spawn { "type": "${type}", "count": ${workerGroups[type].length} }`).join('\n')}
-   mcp__claude-flow__memory_store { "key": "hive/objective", "value": "${objective}" }
-   mcp__claude-flow__memory_store { "key": "hive/queen", "value": "${queenType}" }
-   mcp__claude-flow__swarm_think { "topic": "initial_strategy" }
+   ${workerTypes.map(type => `   mcp__gemini-flow__agent_spawn { "type": "${type}", "count": ${workerGroups[type].length} }`).join('\n')}
+   mcp__gemini-flow__memory_store { "key": "hive/objective", "value": "${objective}" }
+   mcp__gemini-flow__memory_store { "key": "hive/queen", "value": "${queenType}" }
+   mcp__gemini-flow__swarm_think { "topic": "initial_strategy" }
    TodoWrite { "todos": [/* Create 5-10 high-level tasks */] }
 
 2. **ESTABLISH COLLECTIVE INTELLIGENCE**:
@@ -1865,7 +1865,7 @@ Remember: You are not just coordinating agents - you are orchestrating a collect
 }
 
 /**
- * Generate comprehensive coordination instructions for Claude Code instances
+ * Generate comprehensive coordination instructions for Gemini Code instances
  */
 function generateCoordinationInstructions(swarmId, swarmName, objective, workers) {
   return {
@@ -1910,7 +1910,7 @@ function groupWorkersByType(workers) {
 }
 
 /**
- * Create Claude Code spawn command with coordination context
+ * Create Gemini Code spawn command with coordination context
  */
 function createClaudeCodeSpawnCommand(swarmId, swarmName, objective, workerType, typeWorkers, instructions) {
   const context = `You are a ${workerType} agent in the "${swarmName}" Hive Mind swarm.

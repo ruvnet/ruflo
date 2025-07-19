@@ -1,4 +1,4 @@
-// enhanced-templates.js - Generate Claude Flow v2.0.0 enhanced templates
+// enhanced-templates.js - Generate Gemini Flow v2.0.0 enhanced templates
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -36,15 +36,15 @@ export function createEnhancedSettingsJson() {
 export function createWrapperScript(type = 'unix') {
   // For unix, use the universal wrapper that works in both CommonJS and ES modules
   if (type === 'unix') {
-    const universalTemplate = loadTemplate('claude-flow-universal');
+    const universalTemplate = loadTemplate('gemini-flow-universal');
     if (universalTemplate) {
       return universalTemplate;
     }
   }
   
-  const filename = type === 'unix' ? 'claude-flow' : 
-                   type === 'windows' ? 'claude-flow.bat' : 
-                   'claude-flow.ps1';
+  const filename = type === 'unix' ? 'gemini-flow' : 
+                   type === 'windows' ? 'gemini-flow.bat' : 
+                   'gemini-flow.ps1';
   
   const template = loadTemplate(filename);
   if (!template) {
@@ -72,7 +72,7 @@ Automatically detect performance bottlenecks in your swarm operations.
 
 ## Usage
 \`\`\`bash
-npx claude-flow analysis bottleneck-detect [options]
+npx gemini-flow analysis bottleneck-detect [options]
 \`\`\`
 
 ## Options
@@ -83,13 +83,13 @@ npx claude-flow analysis bottleneck-detect [options]
 ## Examples
 \`\`\`bash
 # Detect bottlenecks in current swarm
-npx claude-flow analysis bottleneck-detect
+npx gemini-flow analysis bottleneck-detect
 
 # Set custom threshold
-npx claude-flow analysis bottleneck-detect --threshold 500
+npx gemini-flow analysis bottleneck-detect --threshold 500
 
 # Export results
-npx claude-flow analysis bottleneck-detect --export bottlenecks.json
+npx gemini-flow analysis bottleneck-detect --export bottlenecks.json
 \`\`\`
 `,
       'token-usage': `# token-usage
@@ -98,7 +98,7 @@ Analyze token usage patterns and optimize for efficiency.
 
 ## Usage
 \`\`\`bash
-npx claude-flow analysis token-usage [options]
+npx gemini-flow analysis token-usage [options]
 \`\`\`
 
 ## Options
@@ -109,13 +109,13 @@ npx claude-flow analysis token-usage [options]
 ## Examples
 \`\`\`bash
 # Last 24 hours token usage
-npx claude-flow analysis token-usage --period 24h
+npx gemini-flow analysis token-usage --period 24h
 
 # By agent breakdown
-npx claude-flow analysis token-usage --by-agent
+npx gemini-flow analysis token-usage --by-agent
 
 # Export detailed report
-npx claude-flow analysis token-usage --period 7d --export tokens.csv
+npx gemini-flow analysis token-usage --period 7d --export tokens.csv
 \`\`\`
 `,
       'performance-report': `# performance-report
@@ -124,7 +124,7 @@ Generate comprehensive performance reports for swarm operations.
 
 ## Usage
 \`\`\`bash
-npx claude-flow analysis performance-report [options]
+npx gemini-flow analysis performance-report [options]
 \`\`\`
 
 ## Options
@@ -135,13 +135,13 @@ npx claude-flow analysis performance-report [options]
 ## Examples
 \`\`\`bash
 # Generate HTML report
-npx claude-flow analysis performance-report --format html
+npx gemini-flow analysis performance-report --format html
 
 # Compare swarms
-npx claude-flow analysis performance-report --compare swarm-123
+npx gemini-flow analysis performance-report --compare swarm-123
 
 # Full metrics report
-npx claude-flow analysis performance-report --include-metrics --format markdown
+npx gemini-flow analysis performance-report --include-metrics --format markdown
 \`\`\`
 `
     },
@@ -152,7 +152,7 @@ Automatically assign agents based on task analysis.
 
 ## Usage
 \`\`\`bash
-npx claude-flow automation auto-agent [options]
+npx gemini-flow automation auto-agent [options]
 \`\`\`
 
 ## Options
@@ -163,13 +163,13 @@ npx claude-flow automation auto-agent [options]
 ## Examples
 \`\`\`bash
 # Auto-assign for task
-npx claude-flow automation auto-agent --task "Build REST API"
+npx gemini-flow automation auto-agent --task "Build REST API"
 
 # Limit agents
-npx claude-flow automation auto-agent --task "Fix bugs" --max-agents 3
+npx gemini-flow automation auto-agent --task "Fix bugs" --max-agents 3
 
 # Use specific strategy
-npx claude-flow automation auto-agent --strategy specialized
+npx gemini-flow automation auto-agent --strategy specialized
 \`\`\`
 `,
       'smart-spawn': `# smart-spawn
@@ -178,7 +178,7 @@ Intelligently spawn agents based on workload analysis.
 
 ## Usage
 \`\`\`bash
-npx claude-flow automation smart-spawn [options]
+npx gemini-flow automation smart-spawn [options]
 \`\`\`
 
 ## Options
@@ -189,13 +189,13 @@ npx claude-flow automation smart-spawn [options]
 ## Examples
 \`\`\`bash
 # Smart spawn with analysis
-npx claude-flow automation smart-spawn --analyze
+npx gemini-flow automation smart-spawn --analyze
 
 # Set spawn threshold
-npx claude-flow automation smart-spawn --threshold 5
+npx gemini-flow automation smart-spawn --threshold 5
 
 # Force topology
-npx claude-flow automation smart-spawn --topology hierarchical
+npx gemini-flow automation smart-spawn --topology hierarchical
 \`\`\`
 `,
       'workflow-select': `# workflow-select
@@ -204,7 +204,7 @@ Automatically select optimal workflow based on task type.
 
 ## Usage
 \`\`\`bash
-npx claude-flow automation workflow-select [options]
+npx gemini-flow automation workflow-select [options]
 \`\`\`
 
 ## Options
@@ -215,13 +215,13 @@ npx claude-flow automation workflow-select [options]
 ## Examples
 \`\`\`bash
 # Select workflow for task
-npx claude-flow automation workflow-select --task "Deploy to production"
+npx gemini-flow automation workflow-select --task "Deploy to production"
 
 # With constraints
-npx claude-flow automation workflow-select --constraints "no-downtime,rollback"
+npx gemini-flow automation workflow-select --constraints "no-downtime,rollback"
 
 # Preview mode
-npx claude-flow automation workflow-select --task "Database migration" --preview
+npx gemini-flow automation workflow-select --task "Database migration" --preview
 \`\`\`
 `
     },
@@ -232,7 +232,7 @@ Initialize a new agent swarm with specified topology.
 
 ## Usage
 \`\`\`bash
-npx claude-flow swarm init [options]
+npx gemini-flow swarm init [options]
 \`\`\`
 
 ## Options
@@ -243,13 +243,13 @@ npx claude-flow swarm init [options]
 ## Examples
 \`\`\`bash
 # Initialize hierarchical swarm
-npx claude-flow swarm init --topology hierarchical
+npx gemini-flow swarm init --topology hierarchical
 
 # With agent limit
-npx claude-flow swarm init --topology mesh --max-agents 8
+npx gemini-flow swarm init --topology mesh --max-agents 8
 
 # Parallel execution
-npx claude-flow swarm init --strategy parallel
+npx gemini-flow swarm init --strategy parallel
 \`\`\`
 `,
       'agent-spawn': `# agent-spawn
@@ -258,7 +258,7 @@ Spawn a new agent in the current swarm.
 
 ## Usage
 \`\`\`bash
-npx claude-flow agent spawn [options]
+npx gemini-flow agent spawn [options]
 \`\`\`
 
 ## Options
@@ -269,13 +269,13 @@ npx claude-flow agent spawn [options]
 ## Examples
 \`\`\`bash
 # Spawn coder agent
-npx claude-flow agent spawn --type coder
+npx gemini-flow agent spawn --type coder
 
 # With custom name
-npx claude-flow agent spawn --type researcher --name "API Expert"
+npx gemini-flow agent spawn --type researcher --name "API Expert"
 
 # With specific skills
-npx claude-flow agent spawn --type coder --skills "python,fastapi,testing"
+npx gemini-flow agent spawn --type coder --skills "python,fastapi,testing"
 \`\`\`
 `,
       'task-orchestrate': `# task-orchestrate
@@ -284,7 +284,7 @@ Orchestrate complex tasks across the swarm.
 
 ## Usage
 \`\`\`bash
-npx claude-flow task orchestrate [options]
+npx gemini-flow task orchestrate [options]
 \`\`\`
 
 ## Options
@@ -295,13 +295,13 @@ npx claude-flow task orchestrate [options]
 ## Examples
 \`\`\`bash
 # Orchestrate development task
-npx claude-flow task orchestrate --task "Implement user authentication"
+npx gemini-flow task orchestrate --task "Implement user authentication"
 
 # High priority task
-npx claude-flow task orchestrate --task "Fix production bug" --priority critical
+npx gemini-flow task orchestrate --task "Fix production bug" --priority critical
 
 # With specific strategy
-npx claude-flow task orchestrate --task "Refactor codebase" --strategy parallel
+npx gemini-flow task orchestrate --task "Refactor codebase" --strategy parallel
 \`\`\`
 `
     },
@@ -312,7 +312,7 @@ Create a specialized swarm for GitHub repository management.
 
 ## Usage
 \`\`\`bash
-npx claude-flow github swarm [options]
+npx gemini-flow github swarm [options]
 \`\`\`
 
 ## Options
@@ -323,13 +323,13 @@ npx claude-flow github swarm [options]
 ## Examples
 \`\`\`bash
 # Create GitHub swarm
-npx claude-flow github swarm --repository myorg/myrepo
+npx gemini-flow github swarm --repository myorg/myrepo
 
 # With specific focus
-npx claude-flow github swarm --repository myorg/myrepo --focus security
+npx gemini-flow github swarm --repository myorg/myrepo --focus security
 
 # Custom agent count
-npx claude-flow github swarm --repository myorg/myrepo --agents 6
+npx gemini-flow github swarm --repository myorg/myrepo --agents 6
 \`\`\`
 `,
       'repo-analyze': `# repo-analyze
@@ -338,7 +338,7 @@ Deep analysis of GitHub repository with AI insights.
 
 ## Usage
 \`\`\`bash
-npx claude-flow github repo-analyze [options]
+npx gemini-flow github repo-analyze [options]
 \`\`\`
 
 ## Options
@@ -349,13 +349,13 @@ npx claude-flow github repo-analyze [options]
 ## Examples
 \`\`\`bash
 # Basic analysis
-npx claude-flow github repo-analyze --repository myorg/myrepo
+npx gemini-flow github repo-analyze --repository myorg/myrepo
 
 # Deep analysis
-npx claude-flow github repo-analyze --repository myorg/myrepo --deep
+npx gemini-flow github repo-analyze --repository myorg/myrepo --deep
 
 # Specific areas
-npx claude-flow github repo-analyze --repository myorg/myrepo --include issues,prs
+npx gemini-flow github repo-analyze --repository myorg/myrepo --include issues,prs
 \`\`\`
 `,
       'pr-enhance': `# pr-enhance
@@ -364,7 +364,7 @@ AI-powered pull request enhancements.
 
 ## Usage
 \`\`\`bash
-npx claude-flow github pr-enhance [options]
+npx gemini-flow github pr-enhance [options]
 \`\`\`
 
 ## Options
@@ -376,13 +376,13 @@ npx claude-flow github pr-enhance [options]
 ## Examples
 \`\`\`bash
 # Enhance PR
-npx claude-flow github pr-enhance --pr-number 123
+npx gemini-flow github pr-enhance --pr-number 123
 
 # Add tests
-npx claude-flow github pr-enhance --pr-number 123 --add-tests
+npx gemini-flow github pr-enhance --pr-number 123 --add-tests
 
 # Full enhancement
-npx claude-flow github pr-enhance --pr-number 123 --add-tests --improve-docs
+npx gemini-flow github pr-enhance --pr-number 123 --add-tests --improve-docs
 \`\`\`
 `,
       'issue-triage': `# issue-triage
@@ -391,7 +391,7 @@ Intelligent issue classification and triage.
 
 ## Usage
 \`\`\`bash
-npx claude-flow github issue-triage [options]
+npx gemini-flow github issue-triage [options]
 \`\`\`
 
 ## Options
@@ -402,13 +402,13 @@ npx claude-flow github issue-triage [options]
 ## Examples
 \`\`\`bash
 # Triage issues
-npx claude-flow github issue-triage --repository myorg/myrepo
+npx gemini-flow github issue-triage --repository myorg/myrepo
 
 # With auto-labeling
-npx claude-flow github issue-triage --repository myorg/myrepo --auto-label
+npx gemini-flow github issue-triage --repository myorg/myrepo --auto-label
 
 # Full automation
-npx claude-flow github issue-triage --repository myorg/myrepo --auto-label --assign
+npx gemini-flow github issue-triage --repository myorg/myrepo --auto-label --assign
 \`\`\`
 `,
       'code-review': `# code-review
@@ -417,7 +417,7 @@ Automated code review with swarm intelligence.
 
 ## Usage
 \`\`\`bash
-npx claude-flow github code-review [options]
+npx gemini-flow github code-review [options]
 \`\`\`
 
 ## Options
@@ -428,13 +428,13 @@ npx claude-flow github code-review [options]
 ## Examples
 \`\`\`bash
 # Review PR
-npx claude-flow github code-review --pr-number 456
+npx gemini-flow github code-review --pr-number 456
 
 # Security focus
-npx claude-flow github code-review --pr-number 456 --focus security
+npx gemini-flow github code-review --pr-number 456 --focus security
 
 # With fix suggestions
-npx claude-flow github code-review --pr-number 456 --suggest-fixes
+npx gemini-flow github code-review --pr-number 456 --suggest-fixes
 \`\`\`
 `
     },
@@ -445,7 +445,7 @@ Hook executed before task execution.
 
 ## Usage
 \`\`\`bash
-npx claude-flow hook pre-task [options]
+npx gemini-flow hook pre-task [options]
 \`\`\`
 
 ## Options
@@ -456,13 +456,13 @@ npx claude-flow hook pre-task [options]
 ## Examples
 \`\`\`bash
 # Basic pre-task hook
-npx claude-flow hook pre-task --description "Building API endpoints"
+npx gemini-flow hook pre-task --description "Building API endpoints"
 
 # With auto-spawn
-npx claude-flow hook pre-task --description "Complex refactoring" --auto-spawn-agents
+npx gemini-flow hook pre-task --description "Complex refactoring" --auto-spawn-agents
 
 # Load context
-npx claude-flow hook pre-task --description "Continue feature" --load-context
+npx gemini-flow hook pre-task --description "Continue feature" --load-context
 \`\`\`
 `,
       'post-task': `# post-task
@@ -471,7 +471,7 @@ Hook executed after task completion.
 
 ## Usage
 \`\`\`bash
-npx claude-flow hook post-task [options]
+npx gemini-flow hook post-task [options]
 \`\`\`
 
 ## Options
@@ -482,13 +482,13 @@ npx claude-flow hook post-task [options]
 ## Examples
 \`\`\`bash
 # Basic post-task
-npx claude-flow hook post-task --task-id task-123
+npx gemini-flow hook post-task --task-id task-123
 
 # With performance analysis
-npx claude-flow hook post-task --task-id task-123 --analyze-performance
+npx gemini-flow hook post-task --task-id task-123 --analyze-performance
 
 # Update memory
-npx claude-flow hook post-task --task-id task-123 --update-memory
+npx gemini-flow hook post-task --task-id task-123 --update-memory
 \`\`\`
 `,
       'pre-edit': `# pre-edit
@@ -497,7 +497,7 @@ Hook executed before file edits.
 
 ## Usage
 \`\`\`bash
-npx claude-flow hook pre-edit [options]
+npx gemini-flow hook pre-edit [options]
 \`\`\`
 
 ## Options
@@ -508,13 +508,13 @@ npx claude-flow hook pre-edit [options]
 ## Examples
 \`\`\`bash
 # Pre-edit hook
-npx claude-flow hook pre-edit --file src/api.js
+npx gemini-flow hook pre-edit --file src/api.js
 
 # With validation
-npx claude-flow hook pre-edit --file src/api.js --validate-syntax
+npx gemini-flow hook pre-edit --file src/api.js --validate-syntax
 
 # Create backup
-npx claude-flow hook pre-edit --file src/api.js --backup
+npx gemini-flow hook pre-edit --file src/api.js --backup
 \`\`\`
 `,
       'post-edit': `# post-edit
@@ -523,7 +523,7 @@ Hook executed after file edits.
 
 ## Usage
 \`\`\`bash
-npx claude-flow hook post-edit [options]
+npx gemini-flow hook post-edit [options]
 \`\`\`
 
 ## Options
@@ -534,13 +534,13 @@ npx claude-flow hook post-edit [options]
 ## Examples
 \`\`\`bash
 # Post-edit hook
-npx claude-flow hook post-edit --file src/api.js
+npx gemini-flow hook post-edit --file src/api.js
 
 # Store in memory
-npx claude-flow hook post-edit --file src/api.js --memory-key "api-changes"
+npx gemini-flow hook post-edit --file src/api.js --memory-key "api-changes"
 
 # With formatting
-npx claude-flow hook post-edit --file src/api.js --format
+npx gemini-flow hook post-edit --file src/api.js --format
 \`\`\`
 `,
       'session-end': `# session-end
@@ -549,7 +549,7 @@ Hook executed at session end.
 
 ## Usage
 \`\`\`bash
-npx claude-flow hook session-end [options]
+npx gemini-flow hook session-end [options]
 \`\`\`
 
 ## Options
@@ -560,13 +560,13 @@ npx claude-flow hook session-end [options]
 ## Examples
 \`\`\`bash
 # End session
-npx claude-flow hook session-end
+npx gemini-flow hook session-end
 
 # Export metrics
-npx claude-flow hook session-end --export-metrics
+npx gemini-flow hook session-end --export-metrics
 
 # Full closure
-npx claude-flow hook session-end --export-metrics --generate-summary --persist-state
+npx gemini-flow hook session-end --export-metrics --generate-summary --persist-state
 \`\`\`
 `
     },
@@ -577,7 +577,7 @@ Manage persistent memory storage.
 
 ## Usage
 \`\`\`bash
-npx claude-flow memory usage [options]
+npx gemini-flow memory usage [options]
 \`\`\`
 
 ## Options
@@ -588,13 +588,13 @@ npx claude-flow memory usage [options]
 ## Examples
 \`\`\`bash
 # Store memory
-npx claude-flow memory usage --action store --key "project-config" --value '{"api": "v2"}'
+npx gemini-flow memory usage --action store --key "project-config" --value '{"api": "v2"}'
 
 # Retrieve memory
-npx claude-flow memory usage --action retrieve --key "project-config"
+npx gemini-flow memory usage --action retrieve --key "project-config"
 
 # List all keys
-npx claude-flow memory usage --action list
+npx gemini-flow memory usage --action list
 \`\`\`
 `,
       'memory-persist': `# memory-persist
@@ -603,7 +603,7 @@ Persist memory across sessions.
 
 ## Usage
 \`\`\`bash
-npx claude-flow memory persist [options]
+npx gemini-flow memory persist [options]
 \`\`\`
 
 ## Options
@@ -614,13 +614,13 @@ npx claude-flow memory persist [options]
 ## Examples
 \`\`\`bash
 # Export memory
-npx claude-flow memory persist --export memory-backup.json
+npx gemini-flow memory persist --export memory-backup.json
 
 # Import memory
-npx claude-flow memory persist --import memory-backup.json
+npx gemini-flow memory persist --import memory-backup.json
 
 # Compressed export
-npx claude-flow memory persist --export memory.gz --compress
+npx gemini-flow memory persist --export memory.gz --compress
 \`\`\`
 `,
       'memory-search': `# memory-search
@@ -629,7 +629,7 @@ Search through stored memory.
 
 ## Usage
 \`\`\`bash
-npx claude-flow memory search [options]
+npx gemini-flow memory search [options]
 \`\`\`
 
 ## Options
@@ -640,13 +640,13 @@ npx claude-flow memory search [options]
 ## Examples
 \`\`\`bash
 # Search memory
-npx claude-flow memory search --query "authentication"
+npx gemini-flow memory search --query "authentication"
 
 # Pattern search
-npx claude-flow memory search --pattern "api-.*"
+npx gemini-flow memory search --pattern "api-.*"
 
 # Limited results
-npx claude-flow memory search --query "config" --limit 10
+npx gemini-flow memory search --query "config" --limit 10
 \`\`\`
 `
     },
@@ -657,7 +657,7 @@ Real-time swarm monitoring.
 
 ## Usage
 \`\`\`bash
-npx claude-flow swarm monitor [options]
+npx gemini-flow swarm monitor [options]
 \`\`\`
 
 ## Options
@@ -668,13 +668,13 @@ npx claude-flow swarm monitor [options]
 ## Examples
 \`\`\`bash
 # Start monitoring
-npx claude-flow swarm monitor
+npx gemini-flow swarm monitor
 
 # Custom interval
-npx claude-flow swarm monitor --interval 5000
+npx gemini-flow swarm monitor --interval 5000
 
 # With metrics
-npx claude-flow swarm monitor --metrics
+npx gemini-flow swarm monitor --metrics
 \`\`\`
 `,
       'agent-metrics': `# agent-metrics
@@ -683,7 +683,7 @@ View agent performance metrics.
 
 ## Usage
 \`\`\`bash
-npx claude-flow agent metrics [options]
+npx gemini-flow agent metrics [options]
 \`\`\`
 
 ## Options
@@ -694,13 +694,13 @@ npx claude-flow agent metrics [options]
 ## Examples
 \`\`\`bash
 # All agents metrics
-npx claude-flow agent metrics
+npx gemini-flow agent metrics
 
 # Specific agent
-npx claude-flow agent metrics --agent-id agent-001
+npx gemini-flow agent metrics --agent-id agent-001
 
 # Last hour
-npx claude-flow agent metrics --period 1h
+npx gemini-flow agent metrics --period 1h
 \`\`\`
 `,
       'real-time-view': `# real-time-view
@@ -709,7 +709,7 @@ Real-time view of swarm activity.
 
 ## Usage
 \`\`\`bash
-npx claude-flow monitoring real-time-view [options]
+npx gemini-flow monitoring real-time-view [options]
 \`\`\`
 
 ## Options
@@ -720,13 +720,13 @@ npx claude-flow monitoring real-time-view [options]
 ## Examples
 \`\`\`bash
 # Start real-time view
-npx claude-flow monitoring real-time-view
+npx gemini-flow monitoring real-time-view
 
 # Filter errors
-npx claude-flow monitoring real-time-view --filter errors
+npx gemini-flow monitoring real-time-view --filter errors
 
 # Highlight pattern
-npx claude-flow monitoring real-time-view --highlight "API"
+npx gemini-flow monitoring real-time-view --highlight "API"
 \`\`\`
 `
     },
@@ -737,7 +737,7 @@ Optimize swarm topology for current workload.
 
 ## Usage
 \`\`\`bash
-npx claude-flow optimization topology-optimize [options]
+npx gemini-flow optimization topology-optimize [options]
 \`\`\`
 
 ## Options
@@ -748,13 +748,13 @@ npx claude-flow optimization topology-optimize [options]
 ## Examples
 \`\`\`bash
 # Analyze and suggest
-npx claude-flow optimization topology-optimize --analyze-first
+npx gemini-flow optimization topology-optimize --analyze-first
 
 # Optimize for speed
-npx claude-flow optimization topology-optimize --target speed
+npx gemini-flow optimization topology-optimize --target speed
 
 # Apply changes
-npx claude-flow optimization topology-optimize --target efficiency --apply
+npx gemini-flow optimization topology-optimize --target efficiency --apply
 \`\`\`
 `,
       'parallel-execute': `# parallel-execute
@@ -763,7 +763,7 @@ Execute tasks in parallel for maximum efficiency.
 
 ## Usage
 \`\`\`bash
-npx claude-flow optimization parallel-execute [options]
+npx gemini-flow optimization parallel-execute [options]
 \`\`\`
 
 ## Options
@@ -774,13 +774,13 @@ npx claude-flow optimization parallel-execute [options]
 ## Examples
 \`\`\`bash
 # Execute task list
-npx claude-flow optimization parallel-execute --tasks tasks.json
+npx gemini-flow optimization parallel-execute --tasks tasks.json
 
 # Limit parallelism
-npx claude-flow optimization parallel-execute --tasks tasks.json --max-parallel 5
+npx gemini-flow optimization parallel-execute --tasks tasks.json --max-parallel 5
 
 # Custom strategy
-npx claude-flow optimization parallel-execute --strategy adaptive
+npx gemini-flow optimization parallel-execute --strategy adaptive
 \`\`\`
 `,
       'cache-manage': `# cache-manage
@@ -789,7 +789,7 @@ Manage operation cache for performance.
 
 ## Usage
 \`\`\`bash
-npx claude-flow optimization cache-manage [options]
+npx gemini-flow optimization cache-manage [options]
 \`\`\`
 
 ## Options
@@ -800,13 +800,13 @@ npx claude-flow optimization cache-manage [options]
 ## Examples
 \`\`\`bash
 # View cache stats
-npx claude-flow optimization cache-manage --action view
+npx gemini-flow optimization cache-manage --action view
 
 # Clear cache
-npx claude-flow optimization cache-manage --action clear
+npx gemini-flow optimization cache-manage --action clear
 
 # Set limits
-npx claude-flow optimization cache-manage --max-size 100 --ttl 3600
+npx gemini-flow optimization cache-manage --max-size 100 --ttl 3600
 \`\`\`
 `
     },
@@ -817,7 +817,7 @@ Train neural patterns from operations.
 
 ## Usage
 \`\`\`bash
-npx claude-flow training neural-train [options]
+npx gemini-flow training neural-train [options]
 \`\`\`
 
 ## Options
@@ -828,13 +828,13 @@ npx claude-flow training neural-train [options]
 ## Examples
 \`\`\`bash
 # Train from recent ops
-npx claude-flow training neural-train --data recent
+npx gemini-flow training neural-train --data recent
 
 # Specific model
-npx claude-flow training neural-train --model task-predictor
+npx gemini-flow training neural-train --model task-predictor
 
 # Custom epochs
-npx claude-flow training neural-train --epochs 100
+npx gemini-flow training neural-train --epochs 100
 \`\`\`
 `,
       'pattern-learn': `# pattern-learn
@@ -843,7 +843,7 @@ Learn patterns from successful operations.
 
 ## Usage
 \`\`\`bash
-npx claude-flow training pattern-learn [options]
+npx gemini-flow training pattern-learn [options]
 \`\`\`
 
 ## Options
@@ -854,13 +854,13 @@ npx claude-flow training pattern-learn [options]
 ## Examples
 \`\`\`bash
 # Learn from all ops
-npx claude-flow training pattern-learn
+npx gemini-flow training pattern-learn
 
 # High success only
-npx claude-flow training pattern-learn --threshold 0.9
+npx gemini-flow training pattern-learn --threshold 0.9
 
 # Save patterns
-npx claude-flow training pattern-learn --save optimal-patterns
+npx gemini-flow training pattern-learn --save optimal-patterns
 \`\`\`
 `,
       'model-update': `# model-update
@@ -869,7 +869,7 @@ Update neural models with new data.
 
 ## Usage
 \`\`\`bash
-npx claude-flow training model-update [options]
+npx gemini-flow training model-update [options]
 \`\`\`
 
 ## Options
@@ -880,13 +880,13 @@ npx claude-flow training model-update [options]
 ## Examples
 \`\`\`bash
 # Update all models
-npx claude-flow training model-update
+npx gemini-flow training model-update
 
 # Specific model
-npx claude-flow training model-update --model agent-selector
+npx gemini-flow training model-update --model agent-selector
 
 # Incremental with validation
-npx claude-flow training model-update --incremental --validate
+npx gemini-flow training model-update --incremental --validate
 \`\`\`
 `
     },
@@ -897,7 +897,7 @@ Create reusable workflow templates.
 
 ## Usage
 \`\`\`bash
-npx claude-flow workflow create [options]
+npx gemini-flow workflow create [options]
 \`\`\`
 
 ## Options
@@ -908,13 +908,13 @@ npx claude-flow workflow create [options]
 ## Examples
 \`\`\`bash
 # Create workflow
-npx claude-flow workflow create --name "deploy-api"
+npx gemini-flow workflow create --name "deploy-api"
 
 # From history
-npx claude-flow workflow create --name "test-suite" --from-history
+npx gemini-flow workflow create --name "test-suite" --from-history
 
 # Interactive mode
-npx claude-flow workflow create --interactive
+npx gemini-flow workflow create --interactive
 \`\`\`
 `,
       'workflow-execute': `# workflow-execute
@@ -923,7 +923,7 @@ Execute saved workflows.
 
 ## Usage
 \`\`\`bash
-npx claude-flow workflow execute [options]
+npx gemini-flow workflow execute [options]
 \`\`\`
 
 ## Options
@@ -934,13 +934,13 @@ npx claude-flow workflow execute [options]
 ## Examples
 \`\`\`bash
 # Execute workflow
-npx claude-flow workflow execute --name "deploy-api"
+npx gemini-flow workflow execute --name "deploy-api"
 
 # With parameters
-npx claude-flow workflow execute --name "test-suite" --params '{"env": "staging"}'
+npx gemini-flow workflow execute --name "test-suite" --params '{"env": "staging"}'
 
 # Dry run
-npx claude-flow workflow execute --name "deploy-api" --dry-run
+npx gemini-flow workflow execute --name "deploy-api" --dry-run
 \`\`\`
 `,
       'workflow-export': `# workflow-export
@@ -949,7 +949,7 @@ Export workflows for sharing.
 
 ## Usage
 \`\`\`bash
-npx claude-flow workflow export [options]
+npx gemini-flow workflow export [options]
 \`\`\`
 
 ## Options
@@ -960,19 +960,19 @@ npx claude-flow workflow export [options]
 ## Examples
 \`\`\`bash
 # Export workflow
-npx claude-flow workflow export --name "deploy-api"
+npx gemini-flow workflow export --name "deploy-api"
 
 # As YAML
-npx claude-flow workflow export --name "test-suite" --format yaml
+npx gemini-flow workflow export --name "test-suite" --format yaml
 
 # With history
-npx claude-flow workflow export --name "deploy-api" --include-history
+npx gemini-flow workflow export --name "deploy-api" --include-history
 \`\`\`
 `
     }
   };
 
-  return docs[category]?.[command] || `# ${command}\n\nCommand documentation for ${command} in category ${category}.\n\nUsage:\n\`\`\`bash\nnpx claude-flow ${category} ${command} [options]\n\`\`\`\n`;
+  return docs[category]?.[command] || `# ${command}\n\nCommand documentation for ${command} in category ${category}.\n\nUsage:\n\`\`\`bash\nnpx gemini-flow ${category} ${command} [options]\n\`\`\`\n`;
 }
 
 // Command categories and their commands
@@ -993,11 +993,11 @@ export const COMMAND_STRUCTURE = {
 export function createHelperScript(name) {
   const scripts = {
     'setup-mcp.sh': `#!/bin/bash
-# Setup MCP server for Claude Flow
+# Setup MCP server for Gemini Flow
 
-echo "🚀 Setting up Claude Flow MCP server..."
+echo "🚀 Setting up Gemini Flow MCP server..."
 
-# Check if claude command exists
+# Check if gemini command exists
 if ! command -v gemini &> /dev/null; then
     echo "❌ Error: Gemini CLI not found"
     echo "Please install Gemini CLI first"
@@ -1005,34 +1005,34 @@ if ! command -v gemini &> /dev/null; then
 fi
 
 # Add MCP server
-echo "📦 Adding Claude Flow MCP server..."
-claude mcp add claude-flow npx claude-flow mcp start
+echo "📦 Adding Gemini Flow MCP server..."
+gemini mcp add gemini-flow npx gemini-flow mcp start
 
 echo "✅ MCP server setup complete!"
-echo "🎯 You can now use mcp__claude-flow__ tools in Gemini CLI"
+echo "🎯 You can now use mcp__gemini-flow__ tools in Gemini CLI"
 `,
     'quick-start.sh': `#!/bin/bash
-# Quick start guide for Claude Flow
+# Quick start guide for Gemini Flow
 
-echo "🚀 Claude Flow Quick Start"
+echo "🚀 Gemini Flow Quick Start"
 echo "=========================="
 echo ""
 echo "1. Initialize a swarm:"
-echo "   npx claude-flow swarm init --topology hierarchical"
+echo "   npx gemini-flow swarm init --topology hierarchical"
 echo ""
 echo "2. Spawn agents:"
-echo "   npx claude-flow agent spawn --type coder --name \"API Developer\""
+echo "   npx gemini-flow agent spawn --type coder --name \"API Developer\""
 echo ""
 echo "3. Orchestrate tasks:"
-echo "   npx claude-flow task orchestrate --task \"Build REST API\""
+echo "   npx gemini-flow task orchestrate --task \"Build REST API\""
 echo ""
 echo "4. Monitor progress:"
-echo "   npx claude-flow swarm monitor"
+echo "   npx gemini-flow swarm monitor"
 echo ""
 echo "📚 For more examples, see .claude/commands/"
 `,
     'github-setup.sh': `#!/bin/bash
-# Setup GitHub integration for Claude Flow
+# Setup GitHub integration for Gemini Flow
 
 echo "🔗 Setting up GitHub integration..."
 
@@ -1055,10 +1055,10 @@ fi
 
 echo ""
 echo "📦 GitHub swarm commands available:"
-echo "  - npx claude-flow github swarm"
-echo "  - npx claude-flow repo analyze"
-echo "  - npx claude-flow pr enhance"
-echo "  - npx claude-flow issue triage"
+echo "  - npx gemini-flow github swarm"
+echo "  - npx gemini-flow repo analyze"
+echo "  - npx gemini-flow pr enhance"
+echo "  - npx gemini-flow issue triage"
 `
   };
   
@@ -1072,7 +1072,7 @@ function createWrapperScriptFallback(type) {
     return `#!/usr/bin/env node
 
 /**
- * Claude Flow CLI - Universal Wrapper
+ * Gemini Flow CLI - Universal Wrapper
  * Works in both CommonJS and ES Module projects
  */
 
@@ -1090,12 +1090,12 @@ function createWrapperScriptFallback(type) {
     // Fallback for CommonJS
   }
 
-  // Try multiple strategies to find claude-flow
+  // Try multiple strategies to find gemini-flow
   const strategies = [
     // 1. Local node_modules
     async () => {
       try {
-        const localPath = resolve(process.cwd(), 'node_modules/.bin/claude-flow');
+        const localPath = resolve(process.cwd(), 'node_modules/.bin/gemini-flow');
         const { existsSync } = await import('fs');
         if (existsSync(localPath)) {
           return spawn(localPath, process.argv.slice(2), { stdio: 'inherit' });
@@ -1106,7 +1106,7 @@ function createWrapperScriptFallback(type) {
     // 2. Parent node_modules (monorepo)
     async () => {
       try {
-        const parentPath = resolve(process.cwd(), '../node_modules/.bin/claude-flow');
+        const parentPath = resolve(process.cwd(), '../node_modules/.bin/gemini-flow');
         const { existsSync } = await import('fs');
         if (existsSync(parentPath)) {
           return spawn(parentPath, process.argv.slice(2), { stdio: 'inherit' });
@@ -1116,7 +1116,7 @@ function createWrapperScriptFallback(type) {
     
     // 3. NPX with latest alpha version (prioritized over global)
     async () => {
-      return spawn('npx', ['claude-flow@2.0.0-alpha.25', ...process.argv.slice(2)], { stdio: 'inherit' });
+      return spawn('npx', ['gemini-flow@2.0.0-alpha.25', ...process.argv.slice(2)], { stdio: 'inherit' });
     }
   ];
 
@@ -1137,12 +1137,12 @@ function createWrapperScriptFallback(type) {
     } catch {}
   }
   
-  console.error('Could not find claude-flow. Please install it with: npm install claude-flow');
+  console.error('Could not find gemini-flow. Please install it with: npm install gemini-flow');
   process.exit(1);
 })();`;
   } else if (type === 'windows') {
     return `@echo off
-rem Claude Flow wrapper script for Windows
+rem Gemini Flow wrapper script for Windows
 
 rem Check if package.json exists in current directory
 if exist "%~dp0package.json" (
@@ -1152,15 +1152,15 @@ if exist "%~dp0package.json" (
     ) else if exist "%~dp0dist\\cli.js" (
         node "%~dp0dist\\cli.js" %*
     ) else (
-        echo Error: Could not find Claude Flow CLI files
+        echo Error: Could not find Gemini Flow CLI files
         exit /b 1
     )
 ) else (
     rem Production mode - use npx alpha
-    npx claude-flow@alpha %*
+    npx gemini-flow@alpha %*
 )`;
   } else if (type === 'powershell') {
-    return `# Claude Flow wrapper script for PowerShell
+    return `# Gemini Flow wrapper script for PowerShell
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 
@@ -1171,12 +1171,12 @@ if (Test-Path "$scriptPath\\package.json") {
     } elseif (Test-Path "$scriptPath\\dist\\cli.js") {
         & node "$scriptPath\\dist\\cli.js" $args
     } else {
-        Write-Error "Could not find Claude Flow CLI files"
+        Write-Error "Could not find Gemini Flow CLI files"
         exit 1
     }
 } else {
     # Production mode - use npx alpha
-    & npx claude-flow@alpha $args
+    & npx gemini-flow@alpha $args
 }`;
   }
   return '';
@@ -1189,9 +1189,9 @@ function createEnhancedClaudeMdFallback() {
     return readFileSync(join(__dirname, 'CLAUDE.md'), 'utf8');
   } catch (error) {
     // If that fails, return a minimal version
-    return `# Gemini CLI Configuration for Claude Flow
+    return `# Gemini CLI Configuration for Gemini Flow
 
-## 🚀 IMPORTANT: Claude Flow AI-Driven Development
+## 🚀 IMPORTANT: Gemini Flow AI-Driven Development
 
 ### Gemini CLI Handles:
 - ✅ **ALL file operations** (Read, Write, Edit, MultiEdit)
@@ -1200,7 +1200,7 @@ function createEnhancedClaudeMdFallback() {
 - ✅ **ALL actual implementation** work
 - ✅ **Project navigation** and code analysis
 
-### Claude Flow MCP Tools Handle:
+### Gemini Flow MCP Tools Handle:
 - 🧠 **Coordination only** - Orchestrating Gemini CLI's actions
 - 💾 **Memory management** - Persistent state across sessions
 - 🤖 **Neural features** - Cognitive patterns and learning
@@ -1213,10 +1213,10 @@ function createEnhancedClaudeMdFallback() {
 
 ## Quick Start
 
-1. Add MCP server: \`claude mcp add claude-flow npx claude-flow mcp start\`
-2. Initialize swarm: \`mcp__claude-flow__swarm_init { topology: "hierarchical" }\`
-3. Spawn agents: \`mcp__claude-flow__agent_spawn { type: "coder" }\`
-4. Orchestrate: \`mcp__claude-flow__task_orchestrate { task: "Build feature" }\`
+1. Add MCP server: \`gemini mcp add gemini-flow npx gemini-flow mcp start\`
+2. Initialize swarm: \`mcp__gemini-flow__swarm_init { topology: "hierarchical" }\`
+3. Spawn agents: \`mcp__gemini-flow__agent_spawn { type: "coder" }\`
+4. Orchestrate: \`mcp__gemini-flow__task_orchestrate { task: "Build feature" }\`
 
 See full documentation in \`.claude/commands/\`
 `;
@@ -1235,7 +1235,7 @@ function createEnhancedSettingsJsonFallback() {
     },
     permissions: {
       allow: [
-        "Bash(npx claude-flow *)",
+        "Bash(npx gemini-flow *)",
         "Bash(npm run lint)",
         "Bash(npm run test:*)",
         "Bash(npm test *)",
@@ -1262,39 +1262,39 @@ function createEnhancedSettingsJsonFallback() {
     hooks: {
       preEditHook: {
         command: "npx",
-        args: ["claude-flow", "hook", "pre-edit", "--file", "${file}", "--auto-assign-agents", "true", "--load-context", "true"],
+        args: ["gemini-flow", "hook", "pre-edit", "--file", "${file}", "--auto-assign-agents", "true", "--load-context", "true"],
         alwaysRun: false,
         outputFormat: "json"
       },
       postEditHook: {
         command: "npx",
-        args: ["claude-flow", "hook", "post-edit", "--file", "${file}", "--format", "true", "--update-memory", "true", "--train-neural", "true"],
+        args: ["gemini-flow", "hook", "post-edit", "--file", "${file}", "--format", "true", "--update-memory", "true", "--train-neural", "true"],
         alwaysRun: true,
         outputFormat: "json"
       },
       preCommandHook: {
         command: "npx",
-        args: ["claude-flow", "hook", "pre-command", "--command", "${command}", "--validate-safety", "true", "--prepare-resources", "true"],
+        args: ["gemini-flow", "hook", "pre-command", "--command", "${command}", "--validate-safety", "true", "--prepare-resources", "true"],
         alwaysRun: false,
         outputFormat: "json"
       },
       postCommandHook: {
         command: "npx",
-        args: ["claude-flow", "hook", "post-command", "--command", "${command}", "--track-metrics", "true", "--store-results", "true"],
+        args: ["gemini-flow", "hook", "post-command", "--command", "${command}", "--track-metrics", "true", "--store-results", "true"],
         alwaysRun: false,
         outputFormat: "json"
       },
       sessionEndHook: {
         command: "npx",
-        args: ["claude-flow", "hook", "session-end", "--generate-summary", "true", "--persist-state", "true", "--export-metrics", "true"],
+        args: ["gemini-flow", "hook", "session-end", "--generate-summary", "true", "--persist-state", "true", "--export-metrics", "true"],
         alwaysRun: true,
         outputFormat: "json"
       }
     },
     mcpServers: {
-      "claude-flow": {
+      "gemini-flow": {
         command: "npx",
-        args: ["claude-flow", "mcp", "start"],
+        args: ["gemini-flow", "mcp", "start"],
         env: {
           CLAUDE_FLOW_HOOKS_ENABLED: "true",
           CLAUDE_FLOW_TELEMETRY_ENABLED: "true",

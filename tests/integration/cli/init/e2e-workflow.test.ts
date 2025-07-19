@@ -50,10 +50,10 @@ describe("End-to-End Init Workflow Tests", () => {
         "CLAUDE.md",
         "memory-bank.md",
         "coordination.md",
-        "memory/claude-flow-data.json",
+        "memory/gemini-flow-data.json",
         "memory/agents/README.md",
         "memory/sessions/README.md",
-        "claude-flow"
+        "gemini-flow"
       ];
 
       for (const file of expectedFiles) {
@@ -78,7 +78,7 @@ describe("End-to-End Init Workflow Tests", () => {
       }
 
       // Step 2: Test that local executable works
-      const helpCommand = new Deno.Command(join(testDir, "claude-flow"), {
+      const helpCommand = new Deno.Command(join(testDir, "gemini-flow"), {
         args: ["--help"],
         cwd: testDir,
         stdout: "piped",
@@ -89,10 +89,10 @@ describe("End-to-End Init Workflow Tests", () => {
       assertEquals(helpResult.success, true);
 
       const helpOutput = new TextDecoder().decode(helpResult.stdout);
-      assertStringIncludes(helpOutput, "claude-flow");
+      assertStringIncludes(helpOutput, "gemini-flow");
 
       // Step 3: Verify memory system is functional
-      const memoryTestCommand = new Deno.Command(join(testDir, "claude-flow"), {
+      const memoryTestCommand = new Deno.Command(join(testDir, "gemini-flow"), {
         args: ["memory", "store", "test_key", "test_value"],
         cwd: testDir,
         stdout: "piped",
@@ -131,7 +131,7 @@ describe("End-to-End Init Workflow Tests", () => {
       assertExists(await exists(join(testDir, ".claude/commands/sparc")));
 
       // Step 2: Test SPARC commands
-      const sparcModesCommand = new Deno.Command(join(testDir, "claude-flow"), {
+      const sparcModesCommand = new Deno.Command(join(testDir, "gemini-flow"), {
         args: ["sparc", "modes"],
         cwd: testDir,
         stdout: "piped",
@@ -169,7 +169,7 @@ describe("End-to-End Init Workflow Tests", () => {
 
       await minimalCommand.output();
 
-      const minimalClaude = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
+      const minimalGemini = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
       assertStringIncludes(minimalClaude, "Minimal project configuration");
 
       // Step 2: Upgrade to full project
@@ -189,7 +189,7 @@ describe("End-to-End Init Workflow Tests", () => {
       const fullResult = await fullCommand.output();
       assertEquals(fullResult.success, true);
 
-      const fullClaude = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
+      const fullGemini = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
       assertEquals(fullClaude.length > minimalClaude.length, true);
       assertStringIncludes(fullClaude, "## Project Overview");
 
@@ -211,7 +211,7 @@ describe("End-to-End Init Workflow Tests", () => {
       const sparcResult = await sparcCommand.output();
       assertEquals(sparcResult.success, true);
 
-      const sparcClaude = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
+      const sparcGemini = await Deno.readTextFile(join(testDir, "CLAUDE.md"));
       assertStringIncludes(sparcClaude, "SPARC Development Environment");
       assertExists(await exists(join(testDir, ".roo")));
     });
@@ -234,7 +234,7 @@ describe("End-to-End Init Workflow Tests", () => {
       await Deno.mkdir(join(testDir, "tests"));
       await Deno.writeTextFile(join(testDir, "tests/app.test.js"), "// Tests");
 
-      // Initialize Claude Flow
+      // Initialize Gemini Flow
       const initCommand = new Deno.Command("deno", {
         args: [
           "run",
@@ -256,11 +256,11 @@ describe("End-to-End Init Workflow Tests", () => {
       assertExists(await exists(join(testDir, "src/app.js")));
       assertExists(await exists(join(testDir, "tests/app.test.js")));
 
-      // Should add Claude Flow files
+      // Should add Gemini Flow files
       assertExists(await exists(join(testDir, "CLAUDE.md")));
       assertExists(await exists(join(testDir, "memory-bank.md")));
       assertExists(await exists(join(testDir, "coordination.md")));
-      assertExists(await exists(join(testDir, "claude-flow")));
+      assertExists(await exists(join(testDir, "gemini-flow")));
 
       // Verify package.json is unchanged
       const packageJson = JSON.parse(await Deno.readTextFile(join(testDir, "package.json")));
@@ -301,7 +301,7 @@ describe("End-to-End Init Workflow Tests", () => {
 
       await gitCommitCommand.output();
 
-      // Initialize Claude Flow
+      // Initialize Gemini Flow
       const initCommand = new Deno.Command("deno", {
         args: [
           "run",
@@ -322,7 +322,7 @@ describe("End-to-End Init Workflow Tests", () => {
       assertExists(await exists(join(testDir, "README.md")));
       assertExists(await exists(join(testDir, ".gitignore")));
 
-      // Should add Claude Flow files
+      // Should add Gemini Flow files
       assertExists(await exists(join(testDir, "CLAUDE.md")));
       assertExists(await exists(join(testDir, "memory-bank.md")));
 
@@ -371,7 +371,7 @@ describe("End-to-End Init Workflow Tests", () => {
 
       const startTime = performance.now();
 
-      // Initialize Claude Flow
+      // Initialize Gemini Flow
       const initCommand = new Deno.Command("deno", {
         args: [
           "run",
@@ -398,7 +398,7 @@ describe("End-to-End Init Workflow Tests", () => {
         assertExists(await exists(join(testDir, dir, "index.js")));
       }
 
-      // Should add Claude Flow files
+      // Should add Gemini Flow files
       assertExists(await exists(join(testDir, "CLAUDE.md")));
       assertExists(await exists(join(testDir, "memory-bank.md")));
       assertExists(await exists(join(testDir, "coordination.md")));
@@ -425,18 +425,18 @@ describe("End-to-End Init Workflow Tests", () => {
       const output = new TextDecoder().decode(result.stdout);
 
       // Should provide clear feedback
-      assertStringIncludes(output, "Initializing Claude Code integration files");
+      assertStringIncludes(output, "Initializing Gemini Code integration files");
       assertStringIncludes(output, "✓ Created");
       assertStringIncludes(output, "initialized successfully");
 
       // Should provide next steps
       assertStringIncludes(output, "Next steps:");
-      assertStringIncludes(output, "./claude-flow start");
+      assertStringIncludes(output, "./gemini-flow start");
       assertStringIncludes(output, "Review and customize");
 
       // Should mention local executable
       assertStringIncludes(output, "Local executable created");
-      assertStringIncludes(output, "Use './claude-flow' instead of 'npx claude-flow'");
+      assertStringIncludes(output, "Use './gemini-flow' instead of 'npx gemini-flow'");
     });
 
     it("should provide SPARC-specific guidance", async () => {
@@ -461,7 +461,7 @@ describe("End-to-End Init Workflow Tests", () => {
       assertStringIncludes(output, "SPARC environment initialized");
 
       // Should provide SPARC guidance
-      assertStringIncludes(output, "Claude Code slash commands");
+      assertStringIncludes(output, "Gemini Code slash commands");
       assertStringIncludes(output, "/sparc");
       assertStringIncludes(output, "sparc modes");
       assertStringIncludes(output, "sparc tdd");
@@ -485,7 +485,7 @@ describe("End-to-End Init Workflow Tests", () => {
       const output = new TextDecoder().decode(result.stdout);
 
       // Should show help without initializing
-      assertStringIncludes(output, "Initialize Claude Code integration");
+      assertStringIncludes(output, "Initialize Gemini Code integration");
       assertStringIncludes(output, "--force");
       assertStringIncludes(output, "--minimal");
       assertStringIncludes(output, "--sparc");

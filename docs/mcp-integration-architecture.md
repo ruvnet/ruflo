@@ -2,13 +2,13 @@
 
 ## Overview
 
-This document describes the comprehensive MCP (Model Context Protocol) integration architecture implemented for the Claude-Flow Web UI enhancement. The integration provides access to all 87 MCP tools through a sophisticated real-time interface.
+This document describes the comprehensive MCP (Model Context Protocol) integration architecture implemented for the Gemini-Flow Web UI enhancement. The integration provides access to all 87 MCP tools through a sophisticated real-time interface.
 
 ## Architecture Components
 
 ### 1. MCP Integration Layer (`mcp-integration-layer.js`)
 
-**Purpose**: Core integration layer that connects the Web UI to Claude-Flow MCP tools.
+**Purpose**: Core integration layer that connects the Web UI to Gemini-Flow MCP tools.
 
 **Features**:
 - Real-time MCP tool invocation
@@ -287,7 +287,7 @@ const viewSettings = {
 
 ### Requirements
 - Node.js 18+ or Deno 1.30+
-- Claude-Flow MCP server access
+- Gemini-Flow MCP server access
 - Terminal with ANSI color support
 - Sufficient memory for caching
 
@@ -332,4 +332,4 @@ node src/cli/simple-commands/enhanced-webui-complete.js
 
 ## Conclusion
 
-The MCP Integration Architecture provides a comprehensive, scalable, and user-friendly interface to all 87 Claude-Flow MCP tools. The modular design ensures maintainability while the real-time features provide an excellent user experience for complex tool orchestration and monitoring.
+The MCP Integration Architecture provides a comprehensive, scalable, and user-friendly interface to all 87 Gemini-Flow MCP tools. The modular design ensures maintainability while the real-time features provide an excellent user experience for complex tool orchestration and monitoring.

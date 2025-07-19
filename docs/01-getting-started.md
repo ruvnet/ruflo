@@ -1,6 +1,6 @@
-# Getting Started with Claude-Flow
+# Getting Started with Gemini-Flow
 
-Welcome to Claude-Flow, an advanced AI agent orchestration system designed for sophisticated multi-agent collaboration, task coordination, and memory management. This guide will help you get up and running quickly.
+Welcome to Gemini-Flow, an advanced AI agent orchestration system designed for sophisticated multi-agent collaboration, task coordination, and memory management. This guide will help you get up and running quickly.
 
 ## Quick Installation
 
@@ -17,7 +17,7 @@ claude-flow --version
 ### Option 2: Deno Installation
 ```bash
 # Install with Deno
-deno install --allow-all --name claude-flow https://raw.githubusercontent.com/ruvnet/claude-code-flow/main/src/cli/index.ts
+deno install --allow-all --name claude-flow https://raw.githubusercontent.com/ruvnet/gemini-flow/main/src/cli/index.ts
 
 # Verify installation
 claude-flow --help
@@ -26,8 +26,8 @@ claude-flow --help
 ### Option 3: From Source
 ```bash
 # Clone the repository
-git clone https://github.com/ruvnet/claude-code-flow.git
-cd claude-code-flow
+git clone https://github.com/ruvnet/gemini-flow.git
+cd gemini-flow
 
 # Install dependencies and build
 deno task install
@@ -69,7 +69,7 @@ claude-flow mcp status
 
 ## Your First Workflow
 
-Let's create a simple research workflow to demonstrate Claude-Flow's capabilities:
+Let's create a simple research workflow to demonstrate Gemini-Flow's capabilities:
 
 ### Step 1: Spawn a Research Agent
 ```bash
@@ -218,7 +218,7 @@ claude-flow config init --force
 
 ## Next Steps
 
-1. **Explore the Architecture**: Read [02-architecture-overview.md](./02-architecture-overview.md) to understand how Claude-Flow works
+1. **Explore the Architecture**: Read [02-architecture-overview.md](./02-architecture-overview.md) to understand how Gemini-Flow works
 2. **Configure Your System**: See [03-configuration-guide.md](./03-configuration-guide.md) for detailed configuration options
 3. **Learn Agent Management**: Check [04-agent-management.md](./04-agent-management.md) for advanced agent patterns
 4. **Create Complex Workflows**: Study [05-task-coordination.md](./05-task-coordination.md) for workflow orchestration
@@ -227,7 +227,7 @@ claude-flow config init --force
 
 - Use `claude-flow help` for command-line help
 - Join our [Discord community](https://discord.gg/claude-flow)
-- Check [GitHub Issues](https://github.com/ruvnet/claude-code-flow/issues)
+- Check [GitHub Issues](https://github.com/ruvnet/gemini-flow/issues)
 - Review the [full documentation](https://claude-flow.dev/docs)
 
 ## Troubleshooting Common Issues
@@ -267,4 +267,4 @@ claude-flow config set orchestrator.maxConcurrentAgents 5
 claude-flow logs --level debug
 ```
 
-You're now ready to start using Claude-Flow! Continue to the next sections for more advanced features and configuration options.
+You're now ready to start using Gemini-Flow! Continue to the next sections for more advanced features and configuration options.

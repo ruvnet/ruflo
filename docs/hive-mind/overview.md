@@ -54,7 +54,7 @@ Hive Mind is an intelligent task orchestration system that:
 
 ### 1. Task Initiation
 ```bash
-npx claude-flow@2.0.0 hive-mind
+npx gemini-flow@2.0.0 hive-mind
 ```
 The wizard guides you through:
 - Task description
@@ -240,9 +240,9 @@ Hive Mind spawns:
 Result: 73% performance improvement with full documentation
 ```
 
-## Integration with Claude Flow
+## Integration with Gemini Flow
 
-Hive Mind is deeply integrated with Claude Flow's ecosystem:
+Hive Mind is deeply integrated with Gemini Flow's ecosystem:
 
 ### Neural Processing
 - Pattern learning from successful coordinations
@@ -333,7 +333,7 @@ Hive Mind automatically selects optimal topology:
 
 Ready to experience the power of Hive Mind?
 
-1. **Quick Start**: Run `npx claude-flow@2.0.0 hive-mind`
+1. **Quick Start**: Run `npx gemini-flow@2.0.0 hive-mind`
 2. **Learn Commands**: See [CLI Commands Guide](./cli-commands.md)
 3. **Try Examples**: Check [Examples](./examples.md)
 4. **Go Deeper**: Read [API Reference](./api-reference.md)

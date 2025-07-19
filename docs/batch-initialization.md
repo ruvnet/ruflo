@@ -1,6 +1,6 @@
 # Batch Initialization Features
 
-The Claude-Flow batch initialization system provides powerful capabilities for initializing multiple projects simultaneously with parallel processing, templates, and comprehensive monitoring.
+The Gemini-Flow batch initialization system provides powerful capabilities for initializing multiple projects simultaneously with parallel processing, templates, and comprehensive monitoring.
 
 ## Overview
 
@@ -42,52 +42,52 @@ Batch initialization enables you to:
 ### Basic Batch Initialization
 ```bash
 # Initialize multiple projects with default settings
-claude-flow init --batch-init project1,project2,project3
+gemini-flow init --batch-init project1,project2,project3
 
 # With SPARC development environment
-claude-flow init --batch-init api-v1,api-v2 --sparc
+gemini-flow init --batch-init api-v1,api-v2 --sparc
 ```
 
 ### Template-Based Initialization
 ```bash
 # Web API template
-claude-flow init --batch-init api-service,user-service --template web-api
+gemini-flow init --batch-init api-service,user-service --template web-api
 
 # React application template
-claude-flow init --batch-init admin-portal,customer-portal --template react-app
+gemini-flow init --batch-init admin-portal,customer-portal --template react-app
 
 # Microservice template with SPARC
-claude-flow init --batch-init auth-service,payment-service --template microservice --sparc
+gemini-flow init --batch-init auth-service,payment-service --template microservice --sparc
 ```
 
 ### Multi-Environment Setup
 ```bash
 # Create dev, staging, and prod versions
-claude-flow init --batch-init myapp --environments dev,staging,prod
+gemini-flow init --batch-init myapp --environments dev,staging,prod
 
 # Multiple projects across environments
-claude-flow init --batch-init api,web --environments dev,staging --template web-api
+gemini-flow init --batch-init api,web --environments dev,staging --template web-api
 ```
 
 ### Configuration File Mode
 ```bash
 # Use JSON configuration file
-claude-flow init --config batch-config.json
+gemini-flow init --config batch-config.json
 
 # With custom concurrency
-claude-flow init --config enterprise-setup.json --max-concurrent 8
+gemini-flow init --config enterprise-setup.json --max-concurrent 8
 ```
 
 ### Performance Optimization
 ```bash
 # Disable parallel processing
-claude-flow init --batch-init projects --no-parallel
+gemini-flow init --batch-init projects --no-parallel
 
 # Custom concurrency limit
-claude-flow init --batch-init projects --max-concurrent 3
+gemini-flow init --batch-init projects --max-concurrent 3
 
 # Force overwrite with minimal setup
-claude-flow init --batch-init projects --force --minimal
+gemini-flow init --batch-init projects --force --minimal
 ```
 
 ## Configuration Files
@@ -141,31 +141,31 @@ claude-flow init --batch-init projects --force --minimal
 ### Create Configuration
 ```bash
 # Basic template
-claude-flow batch create-config my-batch.json
+gemini-flow batch create-config my-batch.json
 
 # Interactive mode
-claude-flow batch create-config --interactive
+gemini-flow batch create-config --interactive
 ```
 
 ### Validate Configuration
 ```bash
 # Validate before running
-claude-flow batch validate-config my-batch.json
+gemini-flow batch validate-config my-batch.json
 ```
 
 ### List Available Options
 ```bash
 # Show all project templates
-claude-flow batch list-templates
+gemini-flow batch list-templates
 
 # Show all environment configurations
-claude-flow batch list-environments
+gemini-flow batch list-environments
 ```
 
 ### Estimate Operations
 ```bash
 # Estimate time and resources
-claude-flow batch estimate my-batch.json
+gemini-flow batch estimate my-batch.json
 ```
 
 ## Project Templates
@@ -312,7 +312,7 @@ Memory Efficiency: good
 All batch operations support SPARC development environment:
 
 ### SPARC Features
-- **Slash Commands**: Automatic creation of Claude Code commands
+- **Slash Commands**: Automatic creation of Gemini Code commands
 - **Development Modes**: 17+ specialized SPARC modes
 - **TDD Workflows**: Test-driven development support
 - **Architecture Tools**: System design and documentation
@@ -321,7 +321,7 @@ All batch operations support SPARC development environment:
 ### SPARC Batch Benefits
 - **Consistent Setup**: All projects use same SPARC configuration
 - **Team Collaboration**: Standardized development environment
-- **AI Integration**: Optimized for Claude Code workflows
+- **AI Integration**: Optimized for Gemini Code workflows
 - **Quality Assurance**: Built-in testing and validation
 
 ## Best Practices
@@ -371,20 +371,20 @@ All batch operations support SPARC development environment:
 ### Debug Options
 ```bash
 # Verbose output
-claude-flow init --batch-init projects --verbose
+gemini-flow init --batch-init projects --verbose
 
 # Disable parallel processing for debugging
-claude-flow init --batch-init projects --no-parallel
+gemini-flow init --batch-init projects --no-parallel
 
 # Force operation
-claude-flow init --batch-init projects --force
+gemini-flow init --batch-init projects --force
 ```
 
 ## Command Reference
 
 ### Init Command Options
 ```bash
-claude-flow init [options]
+gemini-flow init [options]
 
 Options:
   --batch-init <projects>     Initialize multiple projects
@@ -400,7 +400,7 @@ Options:
 
 ### Batch Manager Commands
 ```bash
-claude-flow batch <command> [options]
+gemini-flow batch <command> [options]
 
 Commands:
   create-config [file]      Create batch configuration template
@@ -432,6 +432,6 @@ const results = await batchInitCommand(['project1', 'project2'], {
 
 ## Conclusion
 
-The Claude-Flow batch initialization system provides enterprise-grade capabilities for managing multiple project setups efficiently. With parallel processing, comprehensive monitoring, and extensive customization options, it scales from simple multi-project setups to complex enterprise deployments.
+The Gemini-Flow batch initialization system provides enterprise-grade capabilities for managing multiple project setups efficiently. With parallel processing, comprehensive monitoring, and extensive customization options, it scales from simple multi-project setups to complex enterprise deployments.
 
-For additional support and examples, see the `/examples` directory and visit the [Claude-Flow documentation](https://github.com/ruvnet/claude-code-flow).
+For additional support and examples, see the `/examples` directory and visit the [Gemini-Flow documentation](https://github.com/ruvnet/gemini-flow).

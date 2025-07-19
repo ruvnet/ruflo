@@ -401,7 +401,7 @@ export class MemoryManager implements IMemoryManager {
     switch (this.config.backend) {
       case 'sqlite':
         return new SQLiteBackend(
-          this.config.sqlitePath || './claude-flow.db',
+          this.config.sqlitePath || './gemini-flow.db',
           this.logger,
         );
       case 'markdown':
@@ -413,7 +413,7 @@ export class MemoryManager implements IMemoryManager {
         // Use SQLite for structured data and Markdown for human-readable backup
         return new HybridBackend(
           new SQLiteBackend(
-            this.config.sqlitePath || './claude-flow.db',
+            this.config.sqlitePath || './gemini-flow.db',
             this.logger,
           ),
           new MarkdownBackend(

@@ -207,7 +207,7 @@ The Agent Swarm Benchmarking Tool is **fully functional and ready for use**. It 
 
 ### Quick Start
 ```bash
-cd /workspaces/claude-code-flow/benchmark
+cd /workspaces/gemini-flow/benchmark
 pip install -r requirements.txt
 pip install -e .
 swarm-benchmark run "Your objective here" --strategy auto

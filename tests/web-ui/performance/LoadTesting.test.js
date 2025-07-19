@@ -1,5 +1,5 @@
 /**
- * Performance and Load Testing for Claude Flow Web UI
+ * Performance and Load Testing for Gemini Flow Web UI
  * Stress testing all 71+ tools under heavy load
  */
 

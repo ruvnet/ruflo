@@ -173,7 +173,7 @@ describe('Start Command E2E', () => {
         assertEquals(output.includes('Process ID:'), true);
 
         // Check PID file was created
-        const pidExists = await Deno.stat('.claude-flow.pid').then(() => true).catch(() => false);
+        const pidExists = await Deno.stat('.gemini-flow.pid').then(() => true).catch(() => false);
         assertEquals(pidExists, true);
 
       } finally {

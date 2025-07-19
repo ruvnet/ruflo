@@ -13,7 +13,7 @@ export class StateManager {
     this.toolResults = new Map();
     this.viewStates = new Map();
     this.sessionData = new Map();
-    this.storageKey = 'claude-flow-ui-state';
+    this.storageKey = 'gemini-flow-ui-state';
     this.isInitialized = false;
     this.autoSaveInterval = 30000; // 30 seconds
     this.autoSaveTimer = null;
@@ -64,7 +64,7 @@ export class StateManager {
         try {
           const fs = await import('fs');
           const path = await import('path');
-          const stateFile = path.join(process.cwd(), '.claude-flow-state.json');
+          const stateFile = path.join(process.cwd(), '.gemini-flow-state.json');
           
           if (fs.existsSync(stateFile)) {
             const data = fs.readFileSync(stateFile, 'utf8');
@@ -171,7 +171,7 @@ export class StateManager {
         try {
           const fs = await import('fs');
           const path = await import('path');
-          const stateFile = path.join(process.cwd(), '.claude-flow-state.json');
+          const stateFile = path.join(process.cwd(), '.gemini-flow-state.json');
           
           fs.writeFileSync(stateFile, JSON.stringify(stateData, null, 2));
         } catch (error) {

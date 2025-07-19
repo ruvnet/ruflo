@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * MCP Integration with Claude-Flow Orchestration System
+ * MCP Integration with Gemini-Flow Orchestration System
  * Provides seamless integration between MCP servers and the broader orchestration components
  */
 

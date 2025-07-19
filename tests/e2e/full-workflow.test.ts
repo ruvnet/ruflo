@@ -22,7 +22,7 @@ describe('E2E Full Workflow', () => {
 
   beforeEach(async () => {
     setupTestEnv();
-    testDir = await Deno.makeTempDir({ prefix: 'claude-flow-workflow-' });
+    testDir = await Deno.makeTempDir({ prefix: 'gemini-flow-workflow-' });
     configPath = `${testDir}/workflow-config.json`;
 
     // Create a test configuration

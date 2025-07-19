@@ -1,7 +1,7 @@
 # Init Command Analysis Report
 
 ## Overview
-This report provides a comprehensive analysis of the claude-flow init command structure, dependencies, and integration with SPARC modes.
+This report provides a comprehensive analysis of the gemini-flow init command structure, dependencies, and integration with SPARC modes.
 
 ## Init Command Structure
 
@@ -23,7 +23,7 @@ This report provides a comprehensive analysis of the claude-flow init command st
 src/cli/simple-commands/init/
 ├── index.js                    # Main init command logic
 ├── help.js                     # Help text display
-├── executable-wrapper.js       # Creates local claude-flow executable
+├── executable-wrapper.js       # Creates local gemini-flow executable
 ├── sparc-structure.js         # SPARC environment setup
 ├── templates/
 │   ├── claude-md.js           # CLAUDE.md templates
@@ -34,7 +34,7 @@ src/cli/simple-commands/init/
 │   ├── roomodes-config.js     # .roomodes configuration
 │   ├── workflows.js           # Workflow templates
 │   └── roo-readme.js          # .roo directory README
-└── claude-commands/
+└── gemini-commands/
     ├── slash-commands.js      # Main command creator
     ├── sparc-commands.js      # SPARC-specific commands
     └── claude-flow-commands.js # Claude-flow commands
@@ -43,7 +43,7 @@ src/cli/simple-commands/init/
 ## Key Functions and Dependencies
 
 ### 1. Main Init Function (`initCommand`)
-- **Purpose**: Initialize Claude Code integration files
+- **Purpose**: Initialize Gemini CLI integration files
 - **Parameters**: `subArgs`, `flags`
 - **Key Operations**:
   - Parse command flags
@@ -55,18 +55,18 @@ src/cli/simple-commands/init/
 Creates the following structure:
 ```
 project/
-├── CLAUDE.md                  # Project configuration
+├── GEMINI.md                  # Project configuration
 ├── memory-bank.md            # Memory documentation
 ├── coordination.md           # Coordination guidelines
 ├── memory/
 │   ├── agents/
 │   ├── sessions/
-│   └── claude-flow-data.json
+│   └── gemini-flow-data.json
 ├── coordination/
 │   ├── memory_bank/
 │   ├── subtasks/
 │   └── orchestration/
-└── .claude/
+└── .gemini/
     ├── commands/
     │   └── sparc/
     └── logs/
@@ -85,7 +85,7 @@ project/
 3. **Creates SPARC structure**:
    - `.roomodes` file with mode configurations
    - `.roo/` directory with templates and workflows
-   - Claude slash commands in `.claude/commands/`
+   - Gemini slash commands in .gemini/commands/
 
 ## SPARC Mode Configuration
 
@@ -113,25 +113,25 @@ Generated from `sparc/roomodes-config.js`, contains:
 
 ## Template System
 
-### CLAUDE.md Templates
+### GEMINI.md Templates
 Three variants based on flags:
 1. **Minimal** (`--minimal`): Basic configuration
 2. **Full** (default): Comprehensive setup
 3. **SPARC** (`--sparc`): Full SPARC methodology integration
 
 ### Template Sources
-- **CLAUDE.md**: Generated from `templates/claude-md.js`
+- **GEMINI.md**: Generated from `templates/gemini-md.js`
 - **memory-bank.md**: From `templates/memory-bank-md.js`
 - **coordination.md**: From `templates/coordination-md.js`
-- **Slash commands**: From `claude-commands/sparc-commands.js`
+- **Slash commands**: From `gemini-commands/sparc-commands.js`
 
-## Claude Slash Commands
+## Gemini Slash Commands
 
 ### Command Generation Process
 1. Reads `.roomodes` file
 2. Creates individual command for each mode
 3. Creates main `/sparc` command
-4. Saves to `.claude/commands/` directory
+4. Saves to .gemini/commands/
 
 ### Command Structure
 Each slash command includes:
@@ -178,18 +178,18 @@ Each slash command includes:
 
 ## Modification Points for Optimization
 
-To integrate optimized .claude prompts:
+To integrate optimized .gemini prompts:
 
 1. **Modify template generators**:
-   - `templates/claude-md.js`
-   - `claude-commands/sparc-commands.js`
+   - `templates/gemini-md.js`
+   - `gemini-commands/sparc-commands.js`
 
 2. **Update SPARC mode configurations**:
    - `sparc/roomodes-config.js`
 
 3. **Enhance slash command generation**:
-   - `claude-commands/slash-commands.js`
-   - `claude-commands/sparc-commands.js`
+   - `gemini-commands/slash-commands.js`
+   - `gemini-commands/sparc-commands.js`
 
 4. **Consider external template option**:
    - Add ability to load templates from files

@@ -1,8 +1,8 @@
-# Claude Flow v2.0.0 Web UI Documentation
+# Gemini Flow v2.0.0 Web UI Documentation
 
-## 🌊 Welcome to Claude Flow Web UI
+## 🌊 Welcome to Gemini Flow Web UI
 
-The Claude Flow Web UI provides a comprehensive browser-based interface for orchestrating AI swarms, managing neural networks, and executing all 71+ Claude Flow tools through an intuitive console interface.
+The Gemini Flow Web UI provides a comprehensive browser-based interface for orchestrating AI swarms, managing neural networks, and executing all 71+ Gemini Flow tools through an intuitive console interface.
 
 ## 📚 Documentation Index
 
@@ -101,7 +101,7 @@ The Claude Flow Web UI provides a comprehensive browser-based interface for orch
 ### 1. Start the Web Server
 ```bash
 # Using the start command with UI flag
-claude-flow start --ui --port 3000
+gemini-flow start --ui --port 3000
 
 # Or using the standalone script
 node start-web-ui.js 3000
@@ -112,19 +112,19 @@ Open your browser and navigate to:
 - Console UI: `http://localhost:3000/console`
 - Analytics Dashboard: `http://localhost:3000/console/analytics.html`
 
-### 3. Connect to Claude Flow
+### 3. Connect to Gemini Flow
 The WebSocket connection will establish automatically. Look for the green connection indicator.
 
 ### 4. Execute Your First Command
 ```bash
 # In the web console
-claude-flow> help
+gemini-flow> help
 
 # Check system status
-claude-flow> status
+gemini-flow> status
 
 # View available agents
-claude-flow> agents list
+gemini-flow> agents list
 ```
 
 ## 📊 Current Implementation Status
@@ -157,14 +157,14 @@ We welcome contributions! Please see:
 
 ## 📝 License
 
-Claude Flow is licensed under the MIT License. See [LICENSE](../../LICENSE) for details.
+Gemini Flow is licensed under the MIT License. See [LICENSE](../../LICENSE) for details.
 
 ## 🆘 Support
 
 - **Documentation**: This directory
-- **Issues**: [GitHub Issues](https://github.com/ruvnet/claude-flow/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/ruvnet/claude-flow/discussions)
-- **Email**: support@claude-flow.ai
+- **Issues**: [GitHub Issues](https://github.com/ruvnet/gemini-flow/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ruvnet/gemini-flow/discussions)
+- **Email**: support@gemini-flow.ai
 
 ---
 

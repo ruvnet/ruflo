@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Node.js Interactive REPL for Claude-Flow
+ * Node.js Interactive REPL for Gemini-Flow
  * Compatible implementation using Node.js readline and inquirer
  */
 
@@ -38,7 +38,7 @@ class CommandHistory {
   private historyFile: string;
 
   constructor(historyFile?: string) {
-    this.historyFile = historyFile || path.join(process.cwd(), '.claude-flow-history');
+    this.historyFile = historyFile || path.join(process.cwd(), '.gemini-flow-history');
     this.loadHistory();
   }
 
@@ -215,7 +215,7 @@ export async function startNodeREPL(options: any = {}): Promise<void> {
     {
       name: 'connect',
       aliases: ['conn'],
-      description: 'Connect to Claude-Flow orchestrator',
+      description: 'Connect to Gemini-Flow orchestrator',
       usage: 'connect [host:port]',
       examples: ['connect', 'connect localhost:3000'],
       handler: async (args, ctx) => {
@@ -470,7 +470,7 @@ export async function startNodeREPL(options: any = {}): Promise<void> {
 function displayBanner(): void {
   const banner = `
 ${chalk.cyan.bold('╔══════════════════════════════════════════════════════════════╗')}
-${chalk.cyan.bold('║')}             ${chalk.white.bold('🧠 Claude-Flow REPL')}                        ${chalk.cyan.bold('║')}
+${chalk.cyan.bold('║')}             ${chalk.white.bold('🧠 Gemini-Flow REPL')}                        ${chalk.cyan.bold('║')}
 ${chalk.cyan.bold('║')}          ${chalk.gray('Interactive AI Agent Orchestration')}             ${chalk.cyan.bold('║')}
 ${chalk.cyan.bold('╚══════════════════════════════════════════════════════════════╝')}
 `;
@@ -481,7 +481,7 @@ function createPrompt(context: REPLContext): string {
   const statusIcon = getConnectionStatusIcon(context.connectionStatus);
   const dir = path.basename(context.workingDirectory) || '/';
   
-  return `${statusIcon} ${chalk.cyan('claude-flow')}:${chalk.yellow(dir)}${chalk.white('> ')}`;
+  return `${statusIcon} ${chalk.cyan('gemini-flow')}:${chalk.yellow(dir)}${chalk.white('> ')}`;
 }
 
 function getConnectionStatusIcon(status: string): string {
@@ -533,7 +533,7 @@ function parseCommand(input: string): string[] {
 }
 
 function showHelp(commands: REPLCommand[]): void {
-  console.log(chalk.cyan.bold('Claude-Flow Interactive REPL'));
+  console.log(chalk.cyan.bold('Gemini-Flow Interactive REPL'));
   console.log('─'.repeat(50));
   console.log();
   
@@ -635,12 +635,12 @@ async function connectToOrchestrator(context: REPLContext, target?: string): Pro
     } else {
       context.connectionStatus = 'disconnected';
       console.log(chalk.red('✗ Connection failed'));
-      console.log(chalk.gray('Make sure Claude-Flow is running with: npx claude-flow start'));
+      console.log(chalk.gray('Make sure Gemini-Flow is running with: npx gemini-flow start'));
     }
   } catch (error) {
     context.connectionStatus = 'disconnected';
     console.log(chalk.red('✗ Connection failed'));
-    console.log(chalk.gray('Make sure Claude-Flow is running with: npx claude-flow start'));
+    console.log(chalk.gray('Make sure Gemini-Flow is running with: npx gemini-flow start'));
   }
 }
 

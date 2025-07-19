@@ -145,7 +145,7 @@ await batchtools.execute(advancedTutorial);
 
 To use this SPARC mode, you can:
 
-1. Run directly: `npx claude-flow sparc run tutorial "your task"`
+1. Run directly: `npx gemini-flow sparc run tutorial "your task"`
 2. Use in workflow: Include `tutorial` in your SPARC workflow
 3. Delegate tasks: Use `new_task` to assign work to this mode
 
@@ -153,13 +153,13 @@ To use this SPARC mode, you can:
 
 ```bash
 # Generate comprehensive SPARC tutorial with parallel content creation
-npx claude-flow sparc run tutorial "create full SPARC onboarding course with batch examples"
+npx gemini-flow sparc run tutorial "create full SPARC onboarding course with batch examples"
 
 # Build mode-specific tutorials simultaneously
-npx claude-flow sparc run tutorial "generate tutorials for all SPARC modes in parallel"
+npx gemini-flow sparc run tutorial "generate tutorials for all SPARC modes in parallel"
 
 # Create interactive workshop materials
-npx claude-flow sparc run tutorial "build hands-on SPARC workshop with concurrent exercises"
+npx gemini-flow sparc run tutorial "build hands-on SPARC workshop with concurrent exercises"
 ```
 
 ## Batchtools Best Practices for Tutorials

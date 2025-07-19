@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../../utils/error-handler.js';
 /**
- * Connection Pool for Claude API
+ * Connection Pool for Gemini API
  * Manages reusable connections to improve performance
  */
 

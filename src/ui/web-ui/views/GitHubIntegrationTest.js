@@ -108,14 +108,14 @@ export const GitHubViewMCPIntegration = {
     
     // Test repository analysis
     const analysisResult = await GitHubViewMCPIntegration.tools.github_repo_analyze.handler({
-      repo: 'ruvnet/claude-flow',
+      repo: 'ruvnet/gemini-flow',
       analysis_type: 'code_quality'
     });
     console.log('Repository Analysis Result:', analysisResult);
     
     // Test PR management
     const prResult = await GitHubViewMCPIntegration.tools.github_pr_manage.handler({
-      repo: 'ruvnet/claude-flow',
+      repo: 'ruvnet/gemini-flow',
       action: 'review',
       pr_number: 123
     });
@@ -123,7 +123,7 @@ export const GitHubViewMCPIntegration = {
     
     // Test metrics
     const metricsResult = await GitHubViewMCPIntegration.tools.github_metrics.handler({
-      repo: 'ruvnet/claude-flow'
+      repo: 'ruvnet/gemini-flow'
     });
     console.log('Metrics Result:', metricsResult);
   }

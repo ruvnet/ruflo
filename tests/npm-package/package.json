@@ -10,6 +10,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "claude-flow": "^1.0.55"
+    "gemini-flow": "^1.0.55"
   }
 }

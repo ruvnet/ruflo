@@ -9,7 +9,7 @@
   },
   "permissions": {
     "allow": [
-      "Bash(npx claude-flow *)",
+      "Bash(npx gemini-flow *)",
       "Bash(npm run lint)",
       "Bash(npm run test:*)",
       "Bash(npm test *)",
@@ -36,40 +36,40 @@
   "hooks": {
     "preEditHook": {
       "command": "npx",
-      "args": ["claude-flow", "hooks", "pre-edit", "--file", "${file}", "--auto-assign-agents", "true", "--load-context", "true"],
+      "args": ["gemini-flow", "hooks", "pre-edit", "--file", "${file}", "--auto-assign-agents", "true", "--load-context", "true"],
       "alwaysRun": false,
       "outputFormat": "json"
     },
     "postEditHook": {
       "command": "npx",
-      "args": ["claude-flow", "hooks", "post-edit", "--file", "${file}", "--format", "true", "--update-memory", "true", "--train-neural", "true"],
+      "args": ["gemini-flow", "hooks", "post-edit", "--file", "${file}", "--format", "true", "--update-memory", "true", "--train-neural", "true"],
       "alwaysRun": true,
       "outputFormat": "json"
     },
     "preCommandHook": {
       "command": "npx",
-      "args": ["claude-flow", "hooks", "pre-command", "--command", "${command}", "--validate-safety", "true", "--prepare-resources", "true"],
+      "args": ["gemini-flow", "hooks", "pre-command", "--command", "${command}", "--validate-safety", "true", "--prepare-resources", "true"],
       "alwaysRun": false,
       "outputFormat": "json"
     },
     "postCommandHook": {
       "command": "npx",
-      "args": ["claude-flow", "hooks", "post-command", "--command", "${command}", "--track-metrics", "true", "--store-results", "true"],
+      "args": ["gemini-flow", "hooks", "post-command", "--command", "${command}", "--track-metrics", "true", "--store-results", "true"],
       "alwaysRun": false,
       "outputFormat": "json"
     },
     "sessionEndHook": {
       "command": "npx",
-      "args": ["claude-flow", "hooks", "session-end", "--generate-summary", "true", "--persist-state", "true", "--export-metrics", "true"],
+      "args": ["gemini-flow", "hooks", "session-end", "--generate-summary", "true", "--persist-state", "true", "--export-metrics", "true"],
       "alwaysRun": true,
       "outputFormat": "json"
     }
   },
   "mcpServers": {
-    "claude-flow": {
+    "gemini-flow": {
       "command": "npx",
       "args": [
-        "claude-flow",
+        "gemini-flow",
         "mcp",
         "start"
       ],

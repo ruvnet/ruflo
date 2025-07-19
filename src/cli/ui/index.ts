@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../../utils/error-handler.js';
 /**
- * Claude-Flow UI Module
+ * Gemini-Flow UI Module
  * Provides compatible UI solutions for different terminal environments
  */
 

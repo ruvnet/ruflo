@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Claude Flow CLI - Universal Wrapper
+ * Gemini Flow CLI - Universal Wrapper
  * Works in both CommonJS and ES Module projects
  */
 
@@ -27,12 +27,12 @@
     __dirname = process.cwd();
   }
 
-  // Try multiple strategies to find claude-flow
+  // Try multiple strategies to find gemini-flow
   const strategies = [
     // 1. Local node_modules
     async () => {
       try {
-        const localPath = resolve(process.cwd(), 'node_modules/.bin/claude-flow');
+        const localPath = resolve(process.cwd(), 'node_modules/.bin/gemini-flow');
         const { existsSync } = await import('fs');
         if (existsSync(localPath)) {
           return spawn(localPath, process.argv.slice(2), { stdio: 'inherit' });
@@ -43,7 +43,7 @@
     // 2. Parent node_modules (monorepo)
     async () => {
       try {
-        const parentPath = resolve(process.cwd(), '../node_modules/.bin/claude-flow');
+        const parentPath = resolve(process.cwd(), '../node_modules/.bin/gemini-flow');
         const { existsSync } = await import('fs');
         if (existsSync(parentPath)) {
           return spawn(parentPath, process.argv.slice(2), { stdio: 'inherit' });
@@ -53,7 +53,7 @@
     
     // 3. NPX with latest alpha version (prioritized over global)
     async () => {
-      return spawn('npx', ['claude-flow@2.0.0-alpha.27', ...process.argv.slice(2)], { stdio: 'inherit' });
+      return spawn('npx', ['gemini-flow@2.0.0-alpha.27', ...process.argv.slice(2)], { stdio: 'inherit' });
     }
   ];
 
@@ -74,6 +74,6 @@
     } catch {}
   }
   
-  console.error('Could not find claude-flow. Please install it with: npm install claude-flow');
+  console.error('Could not find gemini-flow. Please install it with: npm install gemini-flow');
   process.exit(1);
 })();

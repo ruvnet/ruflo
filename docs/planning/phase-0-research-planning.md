@@ -24,7 +24,7 @@ This phase establishes the foundation for the Claude-Code-Flow CLI, a sophistica
 #### 2. Core Architecture Pattern
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Claude-Flow CLI                          │
+│                    Gemini-Flow CLI                          │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐  │
 │  │   Terminal   │  │   Memory     │  │  Coordination    │  │
@@ -89,7 +89,7 @@ This phase establishes the foundation for the Claude-Code-Flow CLI, a sophistica
 ### Key Insights from Research
 1. **VSCode Terminal API** provides programmatic control sufficient for our needs
 2. **Deno's permissions model** aligns perfectly with security requirements
-3. **MCP protocol** enables seamless integration with Claude and other AI tools
+3. **MCP protocol** enables seamless integration with Gemini and other AI tools
 4. **SQLite with WAL mode** offers best performance for high-frequency updates
 5. **Event sourcing pattern** ideal for agent coordination and debugging
 

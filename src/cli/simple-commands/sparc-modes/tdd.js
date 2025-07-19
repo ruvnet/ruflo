@@ -7,14 +7,14 @@ export function getTddOrchestration(taskDescription, memoryNamespace) {
    - Analyze requirements: "${taskDescription}"
    - Query existing code and architecture:
      \\\`\\\`\\\`bash
-     npx claude-flow memory query ${memoryNamespace}_architecture
-     npx claude-flow memory query ${memoryNamespace}_implementation
-     npx claude-flow memory query ${memoryNamespace}_tech_specs
+     npx gemini-flow memory query ${memoryNamespace}_architecture
+     npx gemini-flow memory query ${memoryNamespace}_implementation
+     npx gemini-flow memory query ${memoryNamespace}_tech_specs
      \\\`\\\`\\\`
    - Define test boundaries and acceptance criteria
    - Plan test structure (unit, integration, e2e)
    - Identify test doubles needed (mocks, stubs, spies)
-   - Store plan: \`npx claude-flow memory store ${memoryNamespace}_test_plan "Test strategy: Unit tests for domain logic, integration for APIs, e2e for workflows. Mocking: External services, database. Coverage target: 95%."\`
+   - Store plan: \`npx gemini-flow memory store ${memoryNamespace}_test_plan "Test strategy: Unit tests for domain logic, integration for APIs, e2e for workflows. Mocking: External services, database. Coverage target: 95%."\`
 
 2. **Red Phase - Write Failing Tests** (20 mins)
    - Create comprehensive test structure:
@@ -32,7 +32,7 @@ export function getTddOrchestration(taskDescription, memoryNamespace) {
    - Ensure NO hardcoded values in tests
    - Create parameterized tests for edge cases
    - Verify all tests fail with meaningful messages
-   - Store status: \`npx claude-flow memory store ${memoryNamespace}_red_phase "Written: 25 unit tests (all failing), 10 integration tests (all failing), 5 e2e tests (all failing). Coverage: 0%."\`
+   - Store status: \`npx gemini-flow memory store ${memoryNamespace}_red_phase "Written: 25 unit tests (all failing), 10 integration tests (all failing), 5 e2e tests (all failing). Coverage: 0%."\`
 
 3. **Green Phase - Minimal Implementation** (20 mins)
    - Implement ONLY enough code to pass tests:
@@ -43,7 +43,7 @@ export function getTddOrchestration(taskDescription, memoryNamespace) {
    - Use dependency injection for testability
    - Implement proper error handling
    - Track coverage as you progress
-   - Store progress: \`npx claude-flow memory store ${memoryNamespace}_green_phase "Progress: 20/25 unit tests passing, 8/10 integration tests passing. Current coverage: 75%. Remaining: Complex edge cases."\`
+   - Store progress: \`npx gemini-flow memory store ${memoryNamespace}_green_phase "Progress: 20/25 unit tests passing, 8/10 integration tests passing. Current coverage: 75%. Remaining: Complex edge cases."\`
 
 4. **Refactor Phase - Optimize & Clean** (15 mins)
    - Refactor while keeping tests green:
@@ -55,7 +55,7 @@ export function getTddOrchestration(taskDescription, memoryNamespace) {
    - Add performance tests if needed
    - Improve test maintainability
    - Document complex test scenarios
-   - Store refactoring: \`npx claude-flow memory store ${memoryNamespace}_refactor "Extracted 3 common utilities, optimized database queries, improved test readability. All tests green. Coverage: 95%."\`
+   - Store refactoring: \`npx gemini-flow memory store ${memoryNamespace}_refactor "Extracted 3 common utilities, optimized database queries, improved test readability. All tests green. Coverage: 95%."\`
 
 5. **Test Documentation & Validation** (10 mins)
    - Generate coverage reports
@@ -63,7 +63,7 @@ export function getTddOrchestration(taskDescription, memoryNamespace) {
    - Create test execution guide
    - Set up CI/CD test configuration
    - Validate against acceptance criteria
-   - Store completion: \`npx claude-flow memory store ${memoryNamespace}_tdd_complete "TDD cycle complete. Coverage: 95%. All acceptance criteria met. Tests documented. CI/CD ready."\`
+   - Store completion: \`npx gemini-flow memory store ${memoryNamespace}_tdd_complete "TDD cycle complete. Coverage: 95%. All acceptance criteria met. Tests documented. CI/CD ready."\`
 
 ## Directory Safety
 - **IMPORTANT**: All test files should be created in the current working directory
@@ -106,7 +106,7 @@ export function getTddOrchestration(taskDescription, memoryNamespace) {
 
 ## Next Steps
 After TDD cycle completes:
-- \`npx claude-flow sparc run debug "Investigate any failing edge cases" --non-interactive\`
-- \`npx claude-flow sparc run refinement-optimization-mode "Optimize performance bottlenecks" --non-interactive\`
-- \`npx claude-flow sparc run docs-writer "Create user documentation" --non-interactive\``;
+- \`npx gemini-flow sparc run debug "Investigate any failing edge cases" --non-interactive\`
+- \`npx gemini-flow sparc run refinement-optimization-mode "Optimize performance bottlenecks" --non-interactive\`
+- \`npx gemini-flow sparc run docs-writer "Create user documentation" --non-interactive\``;
 }

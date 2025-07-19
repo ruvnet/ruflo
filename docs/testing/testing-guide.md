@@ -1,8 +1,8 @@
-# Claude Flow v2.0.0 - Test Suite Documentation
+# Gemini Flow v2.0.0 - Test Suite Documentation
 
 ## Overview
 
-This document provides comprehensive information about the test suite for Claude Flow v2.0.0, including how to run tests, test coverage, and testing patterns.
+This document provides comprehensive information about the test suite for Gemini Flow v2.0.0, including how to run tests, test coverage, and testing patterns.
 
 ## Test Structure
 
@@ -396,4 +396,4 @@ JEST_VERBOSE=true  # Verbose Jest output
 
 **Last Updated**: July 2025  
 **Test Suite Version**: 2.0.0  
-**Maintainer**: Claude Flow Test Engineering Team
+**Maintainer**: Gemini Flow Test Engineering Team

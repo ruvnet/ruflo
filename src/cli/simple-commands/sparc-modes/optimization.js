@@ -8,21 +8,21 @@ export function getOptimizationOrchestration(taskDescription, memoryNamespace) {
    - Profile current performance
    - Identify bottlenecks
    - Review code quality metrics
-   - Store analysis: \`npx claude-flow memory store ${memoryNamespace}_performance_analysis "..."\`
+   - Store analysis: \`npx gemini-flow memory store ${memoryNamespace}_performance_analysis "..."\`
 
 2. **Refactoring Plan** (10 mins)
    - Prioritize improvements
    - Plan refactoring approach
    - Identify quick wins
    - Estimate impact
-   - Store plan: \`npx claude-flow memory store ${memoryNamespace}_refactor_plan "..."\`
+   - Store plan: \`npx gemini-flow memory store ${memoryNamespace}_refactor_plan "..."\`
 
 3. **Code Optimization** (25 mins)
    - Refactor large files (>500 lines)
    - Optimize algorithms
    - Improve data structures
    - Enhance caching strategies
-   - Store changes: \`npx claude-flow memory store ${memoryNamespace}_optimizations "..."\`
+   - Store changes: \`npx gemini-flow memory store ${memoryNamespace}_optimizations "..."\`
 
 4. **Validation** (10 mins)
    - Run performance benchmarks

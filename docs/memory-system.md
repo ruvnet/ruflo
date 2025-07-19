@@ -1,10 +1,10 @@
 # Memory System
 
-Comprehensive guide to Claude-Flow's advanced memory management system, featuring persistent storage, vector search, and intelligent conflict resolution.
+Comprehensive guide to Gemini-Flow's advanced memory management system, featuring persistent storage, vector search, and intelligent conflict resolution.
 
 ## Overview
 
-The Claude-Flow memory system provides sophisticated, persistent memory capabilities for AI agents, enabling them to:
+The Gemini-Flow memory system provides sophisticated, persistent memory capabilities for AI agents, enabling them to:
 
 - **Store and Retrieve Information**: Persistent storage across sessions
 - **Semantic Search**: Vector-based similarity search for contextual retrieval
@@ -121,13 +121,13 @@ Store memories with rich metadata:
 
 ```bash
 # Simple memory storage
-claude-flow memory store \
+gemini-flow memory store \
   --category "research" \
   --content "Claude-3 shows significant improvements in reasoning capabilities" \
   --tags "ai,claude,reasoning"
 
 # Advanced storage with metadata
-claude-flow memory store \
+gemini-flow memory store \
   --category "implementation" \
   --content "Implemented OAuth2 authentication with PKCE flow" \
   --tags "auth,oauth,security" \
@@ -138,7 +138,7 @@ claude-flow memory store \
 **Programmatic API:**
 
 ```typescript
-import { MemoryManager } from 'claude-flow';
+import { MemoryManager } from 'gemini-flow';
 
 const memory = new MemoryManager(config);
 
@@ -164,17 +164,17 @@ Multiple retrieval methods for different use cases:
 
 ```bash
 # Retrieve by ID
-claude-flow memory get memory_1704123456789
+gemini-flow memory get memory_1704123456789
 
 # Query by criteria
-claude-flow memory query \
+gemini-flow memory query \
   --category research \
   --tags "ai,claude" \
   --since "2024-01-01" \
   --limit 10
 
 # Semantic search
-claude-flow memory search \
+gemini-flow memory search \
   --text "machine learning optimization techniques" \
   --similarity-threshold 0.7 \
   --limit 5
@@ -243,7 +243,7 @@ const facets = await memory.getFacets({
 
 ### Semantic Similarity
 
-Claude-Flow uses vector embeddings for semantic search:
+Gemini-Flow uses vector embeddings for semantic search:
 
 ```json
 {
@@ -276,10 +276,10 @@ Automatic embedding generation for all stored content:
 
 ```bash
 # Generate embeddings for existing memories
-claude-flow memory embed --regenerate --batch-size 50
+gemini-flow memory embed --regenerate --batch-size 50
 
 # Check embedding status
-claude-flow memory stats --embeddings
+gemini-flow memory stats --embeddings
 ```
 
 ### Similarity Search Examples
@@ -356,29 +356,29 @@ Organize memories into isolated namespaces:
 
 ```bash
 # List namespaces
-claude-flow memory namespace list
+gemini-flow memory namespace list
 
 # Create namespace
-claude-flow memory namespace create research-2024 \
+gemini-flow memory namespace create research-2024 \
   --description "Research memories for 2024" \
   --quota-items 20000 \
   --quota-size 200
 
 # Set permissions
-claude-flow memory namespace permissions research-2024 \
+gemini-flow memory namespace permissions research-2024 \
   --read "research-team" \
   --write "senior-researchers" \
   --admin "research-lead"
 
 # Query specific namespace
-claude-flow memory query --namespace research-2024 --category findings
+gemini-flow memory query --namespace research-2024 --category findings
 ```
 
 ## Conflict Resolution
 
 ### CRDT-Based Synchronization
 
-Claude-Flow uses Conflict-free Replicated Data Types (CRDTs) for automatic conflict resolution:
+Gemini-Flow uses Conflict-free Replicated Data Types (CRDTs) for automatic conflict resolution:
 
 ```json
 {
@@ -470,16 +470,16 @@ Intelligent caching for optimal performance:
 
 ```bash
 # View cache statistics
-claude-flow memory cache stats
+gemini-flow memory cache stats
 
 # Clear cache
-claude-flow memory cache clear --layer l1
+gemini-flow memory cache clear --layer l1
 
 # Optimize cache
-claude-flow memory cache optimize
+gemini-flow memory cache optimize
 
 # Preload cache
-claude-flow memory cache preload --category research --namespace project-alpha
+gemini-flow memory cache preload --category research --namespace project-alpha
 ```
 
 ## Full-Text Search
@@ -513,13 +513,13 @@ Powerful full-text search capabilities:
 
 ```bash
 # Basic text search
-claude-flow memory search --text "machine learning algorithms"
+gemini-flow memory search --text "machine learning algorithms"
 
 # Advanced search with operators
-claude-flow memory search --text "neural AND network NOT simple" --fuzzy
+gemini-flow memory search --text "neural AND network NOT simple" --fuzzy
 
 # Search with filters
-claude-flow memory search \
+gemini-flow memory search \
   --text "optimization techniques" \
   --category "implementation" \
   --tags "performance" \
@@ -562,16 +562,16 @@ Comprehensive analytics and insights:
 
 ```bash
 # Memory usage statistics
-claude-flow memory stats
+gemini-flow memory stats
 
 # Detailed analytics
-claude-flow memory analytics \
+gemini-flow memory analytics \
   --breakdown category,namespace \
   --timerange "last-30-days" \
   --format json
 
 # Growth analysis
-claude-flow memory growth \
+gemini-flow memory growth \
   --period daily \
   --start "2024-01-01" \
   --metrics items,size,categories
@@ -608,25 +608,25 @@ console.log({
 
 ```bash
 # Export memories
-claude-flow memory export backup.json \
+gemini-flow memory export backup.json \
   --format json \
   --include-vectors \
   --compress
 
 # Export specific data
-claude-flow memory export research-backup.json \
+gemini-flow memory export research-backup.json \
   --category research \
   --namespace project-alpha \
   --since "2024-01-01"
 
 # Import memories
-claude-flow memory import backup.json \
+gemini-flow memory import backup.json \
   --format json \
   --merge-strategy "update" \
   --validate
 
 # Restore from backup
-claude-flow memory restore backup.json \
+gemini-flow memory restore backup.json \
   --namespace project-alpha \
   --overwrite
 ```
@@ -635,14 +635,14 @@ claude-flow memory restore backup.json \
 
 ```bash
 # Migrate from SQLite to Markdown
-claude-flow memory migrate \
+gemini-flow memory migrate \
   --from sqlite \
   --to markdown \
   --preserve-ids \
   --include-vectors
 
 # Validate migration
-claude-flow memory migrate-verify \
+gemini-flow memory migrate-verify \
   --source ./data/memory.db \
   --target ./data/memory-docs
 ```
@@ -761,16 +761,16 @@ Common issues and solutions:
 
 ```bash
 # Check memory system health
-claude-flow memory health
+gemini-flow memory health
 
 # Repair corrupted data
-claude-flow memory repair --fix-checksums --rebuild-indexes
+gemini-flow memory repair --fix-checksums --rebuild-indexes
 
 # Optimize performance
-claude-flow memory optimize --vacuum --reindex
+gemini-flow memory optimize --vacuum --reindex
 
 # Debug query performance
-claude-flow memory debug-query --explain --profile
+gemini-flow memory debug-query --explain --profile
 ```
 
-This comprehensive memory system guide covers all aspects of Claude-Flow's advanced memory capabilities, from basic storage to sophisticated semantic search and collaborative memory management.
+This comprehensive memory system guide covers all aspects of Gemini-Flow's advanced memory capabilities, from basic storage to sophisticated semantic search and collaborative memory management.

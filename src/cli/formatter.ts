@@ -224,12 +224,12 @@ export function formatDuration(ms: number): string {
 }
 
 /**
- * Displays the Claude-Flow banner
+ * Displays the Gemini-Flow banner
  */
 export function displayBanner(version: string): void {
   const banner = `
 ${chalk.cyan.bold('╔══════════════════════════════════════════════════════════════╗')}
-${chalk.cyan.bold('║')}             ${chalk.white.bold('🧠 Claude-Flow')} ${chalk.gray('v' + version)}                        ${chalk.cyan.bold('║')}
+${chalk.cyan.bold('║')}             ${chalk.white.bold('🧠 Gemini-Flow')} ${chalk.gray('v' + version)}                        ${chalk.cyan.bold('║')}
 ${chalk.cyan.bold('║')}          ${chalk.gray('Advanced AI Agent Orchestration')}               ${chalk.cyan.bold('║')}
 ${chalk.cyan.bold('╚══════════════════════════════════════════════════════════════╝')}
 `;
@@ -241,7 +241,7 @@ ${chalk.cyan.bold('╚═══════════════════�
  */
 export function displayVersion(version: string, buildDate: string): void {
   const info = [
-    chalk.cyan.bold('Claude-Flow Version Information'),
+    chalk.cyan.bold('Gemini-Flow Version Information'),
     '',
     chalk.white('Version:    ') + chalk.yellow(version),
     chalk.white('Build Date: ') + chalk.yellow(buildDate),
@@ -256,7 +256,7 @@ export function displayVersion(version: string, buildDate: string): void {
     chalk.white('  • MCP Server'),
     chalk.white('  • Task Coordination'),
     '',
-    chalk.blue('Homepage: ') + chalk.underline('https://github.com/ruvnet/claude-flow'),
+    chalk.blue('Homepage: ') + chalk.underline('https://github.com/ruvnet/gemini-flow'),
   ];
   
   console.log(info.join('\n'));

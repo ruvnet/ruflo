@@ -15,7 +15,7 @@ The ruv-swarm package dependency was failing to install due to an incorrect file
 ### Solution Implemented
 
 #### 1. Path Correction
-Fixed the relative path in `/workspaces/ruv-FANN/claude-code-flow/claude-code-flow/package.json`:
+Fixed the relative path in `/workspaces/ruv-FANN/gemini-flow/gemini-flow/package.json`:
 
 ```json
 // BEFORE (incorrect):
@@ -75,7 +75,7 @@ For future installations or when working with similar projects:
 
 1. **Check File Paths**: Always verify relative paths in package.json
    ```bash
-   cd /workspaces/ruv-FANN/claude-code-flow/claude-code-flow
+   cd /workspaces/ruv-FANN/gemini-flow/gemini-flow
    ls ../../ruv-swarm/npm/  # Should exist and contain package.json
    ```
 
@@ -105,7 +105,7 @@ The ruv-swarm package is now fully functional and provides:
 - **🧠 Neural Networks**: Advanced AI agent coordination
 - **💾 Memory Persistence**: Cross-session state management
 - **⚡ Performance Optimization**: WASM-powered neural processing
-- **🔧 Claude Code Integration**: MCP tools and hooks support
+- **🔧 Gemini CLI Integration**: MCP tools and hooks support
 
 ### Next Steps
 

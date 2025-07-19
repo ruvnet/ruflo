@@ -14,8 +14,8 @@ I have successfully implemented comprehensive memory optimizations for the Hive 
 - **Pool Analytics**: Real-time monitoring of pool efficiency and reuse rates
 
 **Files Modified:**
-- `/workspaces/claude-code-flow/src/cli/simple-commands/hive-mind/memory.js`
-- `/workspaces/claude-code-flow/src/hive-mind/core/Memory.ts`
+- `/workspaces/gemini-flow/src/cli/simple-commands/hive-mind/memory.js`
+- `/workspaces/gemini-flow/src/hive-mind/core/Memory.ts`
 
 ### 2. **High-Performance LRU Cache System**
 - **Optimized LRU Cache**: Custom implementation with memory pressure handling
@@ -130,19 +130,19 @@ class DatabaseManager {
 ### Available Commands
 ```bash
 # Analyze current memory performance
-claude hive-mind optimize-memory --analyze
+gemini hive-mind optimize-memory --analyze
 
 # Run comprehensive optimization
-claude hive-mind optimize-memory --optimize
+gemini hive-mind optimize-memory --optimize
 
 # Start real-time monitoring dashboard
-claude hive-mind optimize-memory --monitor
+gemini hive-mind optimize-memory --monitor
 
 # Generate detailed performance report
-claude hive-mind optimize-memory --report
+gemini hive-mind optimize-memory --report
 
 # Perform memory cleanup operations
-claude hive-mind optimize-memory --cleanup
+gemini hive-mind optimize-memory --cleanup
 ```
 
 ### Configuration Options

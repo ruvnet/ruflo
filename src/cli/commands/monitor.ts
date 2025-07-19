@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../../utils/error-handler.js';
 /**
- * Monitor command for Claude-Flow - Live dashboard mode
+ * Monitor command for Gemini-Flow - Live dashboard mode
  */
 
 import { Command } from 'commander';
@@ -169,7 +169,7 @@ class Dashboard {
 
   private renderHeader(data: MonitorData): void {
     const time = data.timestamp.toLocaleTimeString();
-    console.log(chalk.cyan.bold('Claude-Flow Live Monitor') + chalk.gray(` - ${time}`));
+    console.log(chalk.cyan.bold('Gemini-Flow Live Monitor') + chalk.gray(` - ${time}`));
     console.log('═'.repeat(80));
   }
 
@@ -328,8 +328,8 @@ class Dashboard {
     console.log('─'.repeat(40));
     
     if ((error as Error).message.includes('ECONNREFUSED')) {
-      console.log(chalk.red('✗ Cannot connect to Claude-Flow'));
-      console.log(chalk.gray('Make sure Claude-Flow is running with: claude-flow start'));
+      console.log(chalk.red('✗ Cannot connect to Gemini-Flow'));
+      console.log(chalk.gray('Make sure Gemini-Flow is running with: gemini-flow start'));
     } else {
       console.log(chalk.red('Error:'), (error as Error).message);
     }
@@ -441,7 +441,7 @@ class Dashboard {
   
   private async checkSystemRunning(): Promise<boolean> {
     try {
-      return await existsSync('.claude-flow.pid');
+      return await existsSync('.gemini-flow.pid');
     } catch {
       return false;
     }

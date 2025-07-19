@@ -1,16 +1,16 @@
-# Claude Flow v2.0.0 Quick Start Guide
+# Gemini Flow v2.0.0 Quick Start Guide
 
-Get Claude Flow v2.0.0 up and running in 10 minutes! This guide focuses on the revolutionary new features including Hive Mind system, 87 MCP tools, and intelligent swarm coordination.
+Get Gemini Flow v2.0.0 up and running in 10 minutes! This guide focuses on the revolutionary new features including Hive Mind system, 87 MCP tools, and intelligent swarm coordination.
 
 ## 🎯 What's New in v2.0.0
 
-Claude Flow v2.0.0 is a complete reimagining of AI agent orchestration:
+Gemini Flow v2.0.0 is a complete reimagining of AI agent orchestration:
 
 - **🧠 Hive Mind System**: Queen-led swarm intelligence with collective memory
 - **🛠️ 87 MCP Tools**: Complete integration ecosystem
 - **🤖 Neural Networks**: Real WASM neural processing with training capabilities
 - **⚡ Performance**: 2.8-4.4x speed improvements, 32.3% token reduction
-- **🎯 Claude Code Integration**: Seamless MCP protocol integration
+- **🎯 Gemini CLI Integration**: Seamless MCP protocol integration
 - **🐝 Intelligent Coordination**: Advanced swarm topologies and orchestration
 
 ## Prerequisites
@@ -22,34 +22,34 @@ Claude Flow v2.0.0 is a complete reimagining of AI agent orchestration:
 
 ## Installation Methods
 
-### Option 1: Claude Code Integration (Recommended)
+### Option 1: Gemini CLI Integration (Recommended)
 
-The best way to use Claude Flow v2.0.0 is through Claude Code's MCP system:
+The best way to use Gemini Flow v2.0.0 is through Gemini CLI's MCP system:
 
 ```bash
-# Add Claude Flow MCP server to Claude Code
-claude mcp add claude-flow npx claude-flow mcp start
+# Add Gemini Flow MCP server to Gemini CLI
+gemini mcp add gemini-flow npx gemini-flow mcp start
 
 # Verify integration
-claude mcp list
+gemini mcp list
 ```
 
 ### Option 2: Standalone Installation
 
 ```bash
 # Global installation
-npm install -g claude-flow@2.0.0
+npm install -g gemini-flow@2.0.0
 
 # Or use directly with npx
-npx claude-flow@2.0.0 --version
+npx gemini-flow@2.0.0 --version
 ```
 
 ### Option 3: Development Setup
 
 ```bash
 # Clone and build from source
-git clone https://github.com/ruvnet/claude-code-flow.git
-cd claude-code-flow
+git clone https://github.com/ruvnet/gemini-flow.git
+cd gemini-flow
 npm install
 npm run build
 ```
@@ -58,14 +58,14 @@ npm run build
 
 ### 1. Initialize Hive Mind System
 
-Claude Flow v2.0.0 introduces the Hive Mind - an intelligent coordination system:
+Gemini Flow v2.0.0 introduces the Hive Mind - an intelligent coordination system:
 
 ```bash
 # Interactive wizard (recommended for first-time users)
-claude-flow hive-mind wizard
+gemini-flow hive-mind wizard
 
 # Or direct initialization
-claude-flow hive-mind init --topology mesh --agents 6
+gemini-flow hive-mind init --topology mesh --agents 6
 ```
 
 The wizard will guide you through:
@@ -77,7 +77,7 @@ The wizard will guide you through:
 ### 2. Verify Hive Mind Status
 
 ```bash
-claude-flow hive-mind status
+gemini-flow hive-mind status
 ```
 
 Expected output:
@@ -107,12 +107,12 @@ With v2.0.0, agents are truly intelligent and specialized:
 
 ```bash
 # Auto-spawn optimal agent constellation
-claude-flow swarm auto-spawn --task "build REST API" --complexity high
+gemini-flow swarm auto-spawn --task "build REST API" --complexity high
 
 # Or manual agent creation
-claude-flow agent spawn researcher --specialty "api-design" --neural-model "coordination"
-claude-flow agent spawn coder --specialty "node-backend" --neural-model "optimization"
-claude-flow agent spawn tester --specialty "api-testing" --neural-model "prediction"
+gemini-flow agent spawn researcher --specialty "api-design" --neural-model "coordination"
+gemini-flow agent spawn coder --specialty "node-backend" --neural-model "optimization"
+gemini-flow agent spawn tester --specialty "api-testing" --neural-model "prediction"
 ```
 
 ### 2. Orchestrate Complex Tasks
@@ -121,13 +121,13 @@ The new orchestration engine coordinates multiple agents intelligently:
 
 ```bash
 # Intelligent task orchestration
-claude-flow task orchestrate "Build a complete user authentication system with JWT, password hashing, and rate limiting" \
+gemini-flow task orchestrate "Build a complete user authentication system with JWT, password hashing, and rate limiting" \
   --strategy parallel \
   --priority high \
   --auto-assign
 
 # Monitor real-time progress
-claude-flow swarm monitor --live --neural-insights
+gemini-flow swarm monitor --live --neural-insights
 ```
 
 ### 3. Neural Pattern Training
@@ -136,10 +136,10 @@ v2.0.0 includes real neural networks that learn from your workflows:
 
 ```bash
 # Train neural patterns from successful tasks
-claude-flow neural train --pattern coordination --data "recent-tasks" --epochs 50
+gemini-flow neural train --pattern coordination --data "recent-tasks" --epochs 50
 
 # View neural insights
-claude-flow neural analyze --pattern optimization --show-weights
+gemini-flow neural analyze --pattern optimization --show-weights
 ```
 
 ## Hive Mind Collective Memory
@@ -150,23 +150,23 @@ The Hive Mind maintains persistent collective memory across all sessions:
 
 ```bash
 # Store strategic decisions in collective memory
-claude-flow memory store --key "project/architecture" --value '{"pattern":"microservices","auth":"jwt","db":"postgresql"}' --collective
+gemini-flow memory store --key "project/architecture" --value '{"pattern":"microservices","auth":"jwt","db":"postgresql"}' --collective
 
 # Query collective intelligence
-claude-flow memory search --pattern "authentication" --collective --limit 10
+gemini-flow memory search --pattern "authentication" --collective --limit 10
 
 # Memory analytics and insights  
-claude-flow memory analytics --timeframe 7d --show-patterns
+gemini-flow memory analytics --timeframe 7d --show-patterns
 ```
 
 ### Cross-Session Learning
 
 ```bash
 # Export learnings for backup
-claude-flow memory export --collective --format enhanced-json --file hive-learnings.json
+gemini-flow memory export --collective --format enhanced-json --file hive-learnings.json
 
 # Restore from previous sessions
-claude-flow memory restore --file hive-learnings.json --merge-strategy intelligent
+gemini-flow memory restore --file hive-learnings.json --merge-strategy intelligent
 ```
 
 ## MCP Tools Integration (87 Tools Available)
@@ -175,62 +175,62 @@ claude-flow memory restore --file hive-learnings.json --merge-strategy intellige
 
 ```bash
 # Initialize swarm coordination
-claude-flow mcp swarm-init --topology hierarchical --max-agents 8
+gemini-flow mcp swarm-init --topology hierarchical --max-agents 8
 
 # Spawn and coordinate agents
-claude-flow mcp agent-spawn --type architect --capabilities '["system-design","api-architecture"]'
+gemini-flow mcp agent-spawn --type architect --capabilities '["system-design","api-architecture"]'
 
 # Advanced task orchestration
-claude-flow mcp task-orchestrate --task "implement microservice" --strategy adaptive
+gemini-flow mcp task-orchestrate --task "implement microservice" --strategy adaptive
 ```
 
 ### Neural and Memory Tools
 
 ```bash
 # Neural network operations
-claude-flow mcp neural-train --pattern-type coordination --training-data ./workflow-logs
+gemini-flow mcp neural-train --pattern-type coordination --training-data ./workflow-logs
 
 # Memory management
-claude-flow mcp memory-usage --action store --key "optimization/results" --ttl 3600
+gemini-flow mcp memory-usage --action store --key "optimization/results" --ttl 3600
 
 # Performance monitoring
-claude-flow mcp performance-report --format detailed --timeframe 24h
+gemini-flow mcp performance-report --format detailed --timeframe 24h
 ```
 
 ### GitHub Integration Tools
 
 ```bash
 # Repository analysis with AI
-claude-flow mcp github-repo-analyze --repo "myorg/myrepo" --analysis-type code-quality
+gemini-flow mcp github-repo-analyze --repo "myorg/myrepo" --analysis-type code-quality
 
 # Intelligent PR management
-claude-flow mcp github-pr-manage --repo "myorg/myrepo" --action review --pr-number 42
+gemini-flow mcp github-pr-manage --repo "myorg/myrepo" --action review --pr-number 42
 
 # Automated workflow management
-claude-flow mcp github-workflow-auto --repo "myorg/myrepo" --workflow-type ci-cd
+gemini-flow mcp github-workflow-auto --repo "myorg/myrepo" --workflow-type ci-cd
 ```
 
 ## Real-World Example: Full-Stack Application
 
-Let's build a complete application using Claude Flow v2.0.0's new capabilities:
+Let's build a complete application using Gemini Flow v2.0.0's new capabilities:
 
 ### 1. Initialize Project with Hive Mind
 
 ```bash
 # Start with intelligent project analysis
-claude-flow hive-mind wizard --project-type "full-stack-app" --complexity enterprise
+gemini-flow hive-mind wizard --project-type "full-stack-app" --complexity enterprise
 
 # Configure for development workflow
-claude-flow config set --key "development.auto-testing" --value true
-claude-flow config set --key "development.neural-assistance" --value true
-claude-flow config set --key "development.collective-memory" --value true
+gemini-flow config set --key "development.auto-testing" --value true
+gemini-flow config set --key "development.neural-assistance" --value true
+gemini-flow config set --key "development.collective-memory" --value true
 ```
 
 ### 2. Create Intelligent Swarm
 
 ```bash
 # Auto-spawn optimal agent constellation for full-stack development
-claude-flow swarm auto-spawn \
+gemini-flow swarm auto-spawn \
   --task "Build enterprise todo app with React frontend, Node.js backend, PostgreSQL database" \
   --agents architect,frontend-dev,backend-dev,db-specialist,tester,devops \
   --topology hierarchical \
@@ -241,7 +241,7 @@ claude-flow swarm auto-spawn \
 
 ```bash
 # Intelligent task orchestration with dependency management
-claude-flow task orchestrate \
+gemini-flow task orchestrate \
   --workflow-file enterprise-todo-workflow.json \
   --strategy adaptive \
   --parallel-execution true \
@@ -253,7 +253,7 @@ claude-flow task orchestrate \
 
 ```bash
 # Real-time monitoring with AI insights
-claude-flow swarm monitor \
+gemini-flow swarm monitor \
   --live \
   --neural-insights \
   --performance-analysis \
@@ -265,13 +265,13 @@ claude-flow swarm monitor \
 
 ```bash
 # Train neural networks from project patterns
-claude-flow neural train \
+gemini-flow neural train \
   --pattern-type development \
   --training-data "project-logs,git-history,performance-metrics" \
   --auto-improve true
 
 # Analyze and optimize swarm performance
-claude-flow swarm optimize \
+gemini-flow swarm optimize \
   --analyze-patterns \
   --suggest-improvements \
   --auto-apply-safe
@@ -281,7 +281,7 @@ claude-flow swarm optimize \
 
 ### Neural Network Configuration
 
-Create `claude-flow.neural.json`:
+Create `gemini-flow.neural.json`:
 
 ```json
 {
@@ -312,7 +312,7 @@ Create `claude-flow.neural.json`:
 
 ### Hive Mind Collective Memory
 
-Configure `claude-flow.memory.json`:
+Configure `gemini-flow.memory.json`:
 
 ```json
 {
@@ -335,7 +335,7 @@ Configure `claude-flow.memory.json`:
 
 ### Swarm Coordination Settings
 
-Configure `claude-flow.swarm.json`:
+Configure `gemini-flow.swarm.json`:
 
 ```json
 {
@@ -354,7 +354,7 @@ Configure `claude-flow.swarm.json`:
 
 ## Performance Benchmarks
 
-Claude Flow v2.0.0 delivers significant performance improvements:
+Gemini Flow v2.0.0 delivers significant performance improvements:
 
 ### Speed Improvements
 - **Task Orchestration**: 2.8x faster than v1.0.0
@@ -372,55 +372,55 @@ Claude Flow v2.0.0 delivers significant performance improvements:
 
 ```bash
 # Run comprehensive benchmarks
-claude-flow benchmark run --suite comprehensive --neural-optimization true
+gemini-flow benchmark run --suite comprehensive --neural-optimization true
 
 # Performance analysis
-claude-flow benchmark analyze --timeframe 30d --compare-baseline
+gemini-flow benchmark analyze --timeframe 30d --compare-baseline
 
 # Optimization recommendations
-claude-flow benchmark optimize --auto-apply-safe --neural-insights
+gemini-flow benchmark optimize --auto-apply-safe --neural-insights
 ```
 
 ## Common Commands Reference (v2.0.0)
 
 ### Hive Mind Operations
 ```bash
-claude-flow hive-mind wizard              # Interactive setup
-claude-flow hive-mind status              # System status
-claude-flow hive-mind optimize            # Auto-optimization
-claude-flow hive-mind backup              # Backup collective memory
+gemini-flow hive-mind wizard              # Interactive setup
+gemini-flow hive-mind status              # System status
+gemini-flow hive-mind optimize            # Auto-optimization
+gemini-flow hive-mind backup              # Backup collective memory
 ```
 
 ### Intelligent Swarm Management
 ```bash
-claude-flow swarm auto-spawn              # Intelligent agent spawning
-claude-flow swarm monitor --live          # Real-time monitoring
-claude-flow swarm optimize                # Performance optimization
-claude-flow swarm coordinate              # Manual coordination
+gemini-flow swarm auto-spawn              # Intelligent agent spawning
+gemini-flow swarm monitor --live          # Real-time monitoring
+gemini-flow swarm optimize                # Performance optimization
+gemini-flow swarm coordinate              # Manual coordination
 ```
 
 ### Neural Network Operations
 ```bash
-claude-flow neural train                  # Train neural models
-claude-flow neural predict                # Make predictions
-claude-flow neural analyze                # Analyze patterns
-claude-flow neural optimize               # Optimize models
+gemini-flow neural train                  # Train neural models
+gemini-flow neural predict                # Make predictions
+gemini-flow neural analyze                # Analyze patterns
+gemini-flow neural optimize               # Optimize models
 ```
 
 ### Advanced Memory Operations
 ```bash
-claude-flow memory search --collective    # Collective memory search
-claude-flow memory analytics              # Memory analytics
-claude-flow memory compress               # Intelligent compression
-claude-flow memory sync                   # Cross-session sync
+gemini-flow memory search --collective    # Collective memory search
+gemini-flow memory analytics              # Memory analytics
+gemini-flow memory compress               # Intelligent compression
+gemini-flow memory sync                   # Cross-session sync
 ```
 
 ### MCP Tools (87 Available)
 ```bash
-claude-flow mcp list-tools                # List all MCP tools
-claude-flow mcp swarm-init                # Initialize swarm coordination
-claude-flow mcp neural-train              # Neural network training
-claude-flow mcp github-repo-analyze       # GitHub repository analysis
+gemini-flow mcp list-tools                # List all MCP tools
+gemini-flow mcp swarm-init                # Initialize swarm coordination
+gemini-flow mcp neural-train              # Neural network training
+gemini-flow mcp github-repo-analyze       # GitHub repository analysis
 ```
 
 ## Getting Help & Troubleshooting
@@ -429,31 +429,31 @@ claude-flow mcp github-repo-analyze       # GitHub repository analysis
 
 ```bash
 # Comprehensive system health check
-claude-flow health-check --comprehensive --neural-analysis
+gemini-flow health-check --comprehensive --neural-analysis
 
 # Auto-diagnosis and repair
-claude-flow diagnose --auto-repair --neural-assistance
+gemini-flow diagnose --auto-repair --neural-assistance
 
 # Performance bottleneck analysis
-claude-flow bottleneck-analysis --real-time --suggestions
+gemini-flow bottleneck-analysis --real-time --suggestions
 ```
 
 ### Debug Mode with Neural Insights
 
 ```bash
 # Enable comprehensive debugging
-DEBUG=claude-flow:* claude-flow swarm monitor --neural-debug
+DEBUG=gemini-flow:* gemini-flow swarm monitor --neural-debug
 
 # Neural pattern analysis
-claude-flow neural debug --pattern coordination --visualize
+gemini-flow neural debug --pattern coordination --visualize
 
 # Memory access patterns
-claude-flow memory debug --access-patterns --optimization-hints
+gemini-flow memory debug --access-patterns --optimization-hints
 ```
 
 ### Community and Support
 
-1. **GitHub Discussions**: [Advanced v2.0.0 topics](https://github.com/ruvnet/claude-code-flow/discussions)
+1. **GitHub Discussions**: [Advanced v2.0.0 topics](https://github.com/ruvnet/gemini-flow/discussions)
 2. **Documentation**: [Complete v2.0.0 guide](./README.md)
 3. **Neural Network Guide**: [Training and optimization](./neural-networks.md)
 4. **Hive Mind Manual**: [Collective intelligence setup](./hive-mind/README.md)
@@ -490,4 +490,4 @@ After completing this quick start, explore these advanced v2.0.0 features:
 4. **WASM Acceleration**: Enable WASM neural processing for real-time inference
 5. **Intelligent Caching**: Use neural-powered caching for 60% faster operations
 
-Welcome to the future of AI agent orchestration with Claude Flow v2.0.0! 🚀
+Welcome to the future of AI agent orchestration with Gemini Flow v2.0.0! 🚀

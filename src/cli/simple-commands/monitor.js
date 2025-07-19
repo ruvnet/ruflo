@@ -42,7 +42,7 @@ async function runContinuousMonitoring(interval, format) {
     }
     
     console.clear(); // Clear screen for fresh output
-    console.log(`🔄 Monitoring Claude-Flow System - Update #${iteration}`);
+    console.log(`🔄 Monitoring Gemini-Flow System - Update #${iteration}`);
     console.log(`⏰ ${new Date().toLocaleTimeString()}\n`);
     
     const metrics = await collectMetrics();
@@ -172,8 +172,8 @@ export function showMonitorHelp() {
   console.log('  --watch                          Continuous monitoring mode');
   console.log();
   console.log('Examples:');
-  console.log('  claude-flow monitor              # Show current metrics');
-  console.log('  claude-flow monitor --watch      # Continuous monitoring');
-  console.log('  claude-flow monitor --interval 1000 --watch  # Fast updates');
-  console.log('  claude-flow monitor --format json            # JSON output');
+  console.log('  gemini-flow monitor              # Show current metrics');
+  console.log('  gemini-flow monitor --watch      # Continuous monitoring');
+  console.log('  gemini-flow monitor --interval 1000 --watch  # Fast updates');
+  console.log('  gemini-flow monitor --format json            # JSON output');
 }

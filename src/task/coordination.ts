@@ -1,7 +1,7 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
  * Task Coordination Layer - Integrates with TodoWrite/TodoRead and Memory for orchestration
- * Provides seamless coordination between task management and Claude Code batch tools
+ * Provides seamless coordination between task management and Gemini Code batch tools
  */
 
 import { EventEmitter } from 'events';

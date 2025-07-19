@@ -1,6 +1,6 @@
 /**
  * Console Terminal Comprehensive Test Suite
- * Tests all functionality of the Claude Code Console Terminal
+ * Tests all functionality of the Gemini Code Console Terminal
  */
 
 import puppeteer from 'puppeteer';
@@ -546,7 +546,7 @@ class ConsoleTerminalTester {
       // Save report to file
       const fs = await import('fs/promises');
       await fs.writeFile(
-        '/workspaces/claude-code-flow/tests/console-terminal-test-report.json',
+        '/workspaces/gemini-flow/tests/console-terminal-test-report.json',
         JSON.stringify(report, null, 2)
       );
       

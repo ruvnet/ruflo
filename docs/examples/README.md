@@ -1,35 +1,35 @@
 # Examples and Use Cases
 
-This directory contains practical examples and real-world use cases for Claude-Flow's multi-agent orchestration system.
+This directory contains practical examples and real-world use cases for Gemini-Flow's multi-agent orchestration system.
 
 ## Quick Examples
 
 ### Basic Agent Workflow
 
 ```bash
-# 1. Start Claude-Flow
-npx claude-flow start
+# 1. Start Gemini-Flow
+npx gemini-flow start
 
 # 2. Create a research agent
-claude-flow agent spawn researcher --name "AI Research Assistant"
+gemini-flow agent spawn researcher --name "AI Research Assistant"
 
 # 3. Assign a research task
-claude-flow task create research "Analyze the latest developments in Large Language Models"
+gemini-flow task create research "Analyze the latest developments in Large Language Models"
 
 # 4. Monitor progress
-claude-flow task list --watch
+gemini-flow task list --watch
 ```
 
 ### Multi-Agent Collaboration
 
 ```bash
 # Spawn specialized agents
-claude-flow agent spawn researcher --name "Data Researcher"
-claude-flow agent spawn analyst --name "Data Analyst"
-claude-flow agent spawn coordinator --name "Project Manager"
+gemini-flow agent spawn researcher --name "Data Researcher"
+gemini-flow agent spawn analyst --name "Data Analyst"
+gemini-flow agent spawn coordinator --name "Project Manager"
 
 # Create coordinated workflow
-claude-flow workflow execute ./examples/research-analysis-workflow.json
+gemini-flow workflow execute ./examples/research-analysis-workflow.json
 ```
 
 ## Example Categories
@@ -152,7 +152,7 @@ Ready-to-use workflow templates for common scenarios:
 ```typescript
 // VSCode extension integration example
 import { workspace, window } from 'vscode';
-import { ClaudeFlow } from 'claude-flow';
+import { ClaudeFlow } from 'gemini-flow';
 
 export class ClaudeFlowExtension {
   private claudeFlow: ClaudeFlow;
@@ -171,7 +171,7 @@ export class ClaudeFlowExtension {
     await this.claudeFlow.start();
     
     // Register commands
-    vscode.commands.registerCommand('claude-flow.analyzeCode', 
+    vscode.commands.registerCommand('gemini-flow.analyzeCode', 
       () => this.analyzeCurrentFile());
   }
 
@@ -206,7 +206,7 @@ export class ClaudeFlowExtension {
 ```typescript
 // Express.js API integration
 import express from 'express';
-import { ClaudeFlow } from 'claude-flow';
+import { ClaudeFlow } from 'gemini-flow';
 
 const app = express();
 const claudeFlow = new ClaudeFlow();
@@ -238,7 +238,7 @@ app.post('/api/analyze', async (req, res) => {
 });
 
 app.listen(3000, () => {
-  console.log('Claude-Flow API server running on port 3000');
+  console.log('Gemini-Flow API server running on port 3000');
 });
 ```
 
@@ -287,7 +287,7 @@ app.listen(3000, () => {
 
 ```typescript
 // Efficient batch processing
-import { ClaudeFlow } from 'claude-flow';
+import { ClaudeFlow } from 'gemini-flow';
 
 async function processBatch(items: any[]) {
   const claudeFlow = new ClaudeFlow();
@@ -401,9 +401,9 @@ class DistributedClaudeFlow {
 ### Unit Testing
 
 ```typescript
-// Testing Claude-Flow workflows
+// Testing Gemini-Flow workflows
 import { describe, it, expect } from 'vitest';
-import { ClaudeFlow, MockAgent } from 'claude-flow/testing';
+import { ClaudeFlow, MockAgent } from 'gemini-flow/testing';
 
 describe('Research Workflow', () => {
   let claudeFlow: ClaudeFlow;
@@ -535,4 +535,4 @@ class ResourceManagedClaudeFlow {
 }
 ```
 
-This examples directory provides comprehensive, practical guidance for using Claude-Flow in real-world scenarios, from simple tasks to complex distributed systems.
+This examples directory provides comprehensive, practical guidance for using Gemini-Flow in real-world scenarios, from simple tasks to complex distributed systems.

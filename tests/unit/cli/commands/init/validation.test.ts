@@ -39,8 +39,8 @@ describe("Init Command Validation Tests", () => {
 
       await command.output();
 
-      // Validate claude-flow-data.json
-      const dataPath = join(testDir, "memory/claude-flow-data.json");
+      // Validate gemini-flow-data.json
+      const dataPath = join(testDir, "memory/gemini-flow-data.json");
       assertExists(await exists(dataPath));
 
       const dataContent = await Deno.readTextFile(dataPath);
@@ -185,7 +185,7 @@ describe("Init Command Validation Tests", () => {
 
       await command.output();
 
-      const executablePath = join(testDir, "claude-flow");
+      const executablePath = join(testDir, "gemini-flow");
       assertExists(await exists(executablePath));
 
       // Check file stats
@@ -284,7 +284,7 @@ describe("Init Command Validation Tests", () => {
       assertExists(await exists(join(testDir, ".roo/README.md")));
       assertExists(await exists(join(testDir, ".roo/workflows/basic-tdd.json")));
 
-      // Validate Claude commands for SPARC
+      // Validate Gemini commands for SPARC
       assertExists(await exists(join(testDir, ".claude/commands/sparc")));
     });
 
@@ -307,7 +307,7 @@ describe("Init Command Validation Tests", () => {
 
       // Should have essential sections
       const requiredSections = [
-        "# Claude Code Configuration",
+        "# Gemini Code Configuration",
         "## Project Overview",
         "## Key Commands",
         "## Code Style"
@@ -318,8 +318,8 @@ describe("Init Command Validation Tests", () => {
       }
 
       // Should include command examples
-      assertStringIncludes(claudeContent, "claude-flow");
-      assertStringIncludes(claudeContent, "./claude-flow");
+      assertStringIncludes(claudeContent, "gemini-flow");
+      assertStringIncludes(claudeContent, "./gemini-flow");
     });
 
     it("should validate SPARC CLAUDE.md content", async () => {
@@ -357,9 +357,9 @@ describe("Init Command Validation Tests", () => {
       }
 
       // Should include SPARC command examples
-      assertStringIncludes(claudeContent, "npx claude-flow sparc modes");
-      assertStringIncludes(claudeContent, "npx claude-flow sparc run");
-      assertStringIncludes(claudeContent, "npx claude-flow sparc tdd");
+      assertStringIncludes(claudeContent, "npx gemini-flow sparc modes");
+      assertStringIncludes(claudeContent, "npx gemini-flow sparc run");
+      assertStringIncludes(claudeContent, "npx gemini-flow sparc tdd");
 
       // Should include all SPARC modes
       const sparcModes = [
@@ -477,9 +477,9 @@ describe("Init Command Validation Tests", () => {
       const coordContent = await Deno.readTextFile(join(testDir, "coordination.md"));
 
       // All should reference the local executable
-      assertStringIncludes(claudeContent, "./claude-flow");
-      assertStringIncludes(memoryContent, "claude-flow");
-      assertStringIncludes(coordContent, "claude-flow");
+      assertStringIncludes(claudeContent, "./gemini-flow");
+      assertStringIncludes(memoryContent, "gemini-flow");
+      assertStringIncludes(coordContent, "gemini-flow");
 
       // All should reference the memory system consistently
       assertStringIncludes(claudeContent, "memory");
@@ -569,7 +569,7 @@ describe("Init Command Validation Tests", () => {
 
       await command.output();
 
-      const dataContent = await Deno.readTextFile(join(testDir, "memory/claude-flow-data.json"));
+      const dataContent = await Deno.readTextFile(join(testDir, "memory/gemini-flow-data.json"));
       const data = JSON.parse(dataContent);
 
       // Validate timestamp format

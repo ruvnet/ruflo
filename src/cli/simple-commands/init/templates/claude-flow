@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Claude Flow CLI - AI-Driven Development Toolkit
+ * Gemini Flow CLI - AI-Driven Development Toolkit
  * 
- * This is the main entry point for the Claude Flow command-line interface.
- * It provides powerful AI coordination capabilities for Claude Code.
+ * This is the main entry point for the Gemini Flow command-line interface.
+ * It provides powerful AI coordination capabilities for Gemini Code.
  */
 
 const { spawn } = require('child_process');
@@ -29,6 +29,6 @@ child.on('exit', (code) => {
 
 // Handle errors
 child.on('error', (err) => {
-  console.error('Failed to start Claude Flow:', err);
+  console.error('Failed to start Gemini Flow:', err);
   process.exit(1);
 });

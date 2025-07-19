@@ -1,5 +1,5 @@
 /**
- * Analysis & Monitoring Tools for Claude Flow Web UI
+ * Analysis & Monitoring Tools for Gemini Flow Web UI
  * Agent 2 - Analysis & Monitoring Tools Developer
  * 
  * Features:

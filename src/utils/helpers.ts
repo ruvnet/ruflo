@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Utility helper functions for Claude-Flow
+ * Utility helper functions for Gemini-Flow
  */
 
 import { promisify } from 'util';

@@ -5,7 +5,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 /**
- * Claude Optimized Template Manager
+ * Gemini Optimized Template Manager
  * Unified interface for template operations
  */
 
@@ -23,7 +23,7 @@ const commands = {
     const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
     const version = fs.readFileSync('VERSION', 'utf8').trim();
     
-    console.log('Claude Optimized Template');
+    console.log('Gemini Optimized Template');
     console.log('========================');
     console.log(`Version: ${version}`);
     console.log(`Files: ${manifest.files.length}`);
@@ -58,7 +58,7 @@ const commands = {
   test: () => {
     console.log('Running template test suite...');
     if (fs.existsSync('.claude/tests/test-harness.js')) {
-      execSync('cd .claude && node tests/test-harness.js', { stdio: 'inherit' });
+      execSync('cd .gemini && node tests/test-harness.js', { stdio: 'inherit' });
     } else {
       console.log('Test harness not found. Run "install" first.');
     }
@@ -68,7 +68,7 @@ const commands = {
 // Main execution
 const args = process.argv.slice(2);
 if (args.length === 0) {
-  console.log('Claude Optimized Template Manager');
+  console.log('Gemini Optimized Template Manager');
   console.log('Usage: node template-manager.js <command> [args]');
   console.log('\nCommands:');
   console.log('  install  - Install template files from source');

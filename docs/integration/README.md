@@ -8,7 +8,7 @@ This directory contains comprehensive integration guides for the Gemini CLI, cov
 
 ### 🚀 Core Integration Guides
 
-#### [Complete Integration Guide](./claude-flow-v2-integration-guide.md)
+#### [Complete Integration Guide](./gemini-flow-v2-integration-guide.md)
 Comprehensive setup and configuration guide covering:
 - ruv-swarm MCP integration (87 tools)
 - QUDAG/DAA WASM neural networks
@@ -191,7 +191,7 @@ gemini start --ui --port 3000
 ## 📖 Learning Path
 
 ### Beginner (First Week)
-1. Read [Complete Integration Guide](./claude-flow-v2-integration-guide.md)
+1. Read [Complete Integration Guide](./gemini-flow-v2-integration-guide.md)
 2. Follow quick setup commands
 3. Explore basic swarm coordination
 4. Try simple neural training

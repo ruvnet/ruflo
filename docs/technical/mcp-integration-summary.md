@@ -30,7 +30,7 @@ The ruv-swarm MCP integration has been successfully implemented and tested. Here
 - ⚠️ Performance monitoring (minor ES module issue)
 
 ### 4. **MCP Server Configuration**
-- ✅ Claude Desktop config created: `~/.config/claude-desktop/claude_desktop_config.json`
+- ✅ Gemini Desktop config created: `~/.config/claude-desktop/claude_desktop_config.json`
 - ✅ MCP server responds to tools command
 - ✅ JSON-RPC protocol working
 - ✅ stdio transport configured
@@ -58,37 +58,37 @@ The ruv-swarm MCP integration has been successfully implemented and tested. Here
 ## 🔧 AVAILABLE MCP TOOLS
 
 ### Core Swarm Tools (12)
-- `mcp__claude-flow__swarm_init` - Initialize swarms
-- `mcp__claude-flow__swarm_status` - Get swarm status
-- `mcp__claude-flow__swarm_monitor` - Monitor swarm activity
-- `mcp__claude-flow__agent_spawn` - Spawn new agents
-- `mcp__claude-flow__agent_list` - List active agents
-- `mcp__claude-flow__agent_metrics` - Agent performance metrics
-- `mcp__claude-flow__task_orchestrate` - Orchestrate tasks
-- `mcp__claude-flow__task_status` - Check task progress
-- `mcp__claude-flow__task_results` - Get task results
-- `mcp__claude-flow__memory_usage` - Memory management
-- `mcp__claude-flow__neural_status` - Neural network status
-- `mcp__claude-flow__neural_train` - Train neural agents
+- `mcp__gemini-flow__swarm_init` - Initialize swarms
+- `mcp__gemini-flow__swarm_status` - Get swarm status
+- `mcp__gemini-flow__swarm_monitor` - Monitor swarm activity
+- `mcp__gemini-flow__agent_spawn` - Spawn new agents
+- `mcp__gemini-flow__agent_list` - List active agents
+- `mcp__gemini-flow__agent_metrics` - Agent performance metrics
+- `mcp__gemini-flow__task_orchestrate` - Orchestrate tasks
+- `mcp__gemini-flow__task_status` - Check task progress
+- `mcp__gemini-flow__task_results` - Get task results
+- `mcp__gemini-flow__memory_usage` - Memory management
+- `mcp__gemini-flow__neural_status` - Neural network status
+- `mcp__gemini-flow__neural_train` - Train neural agents
 
 ### Neural & Advanced Tools (5)
-- `mcp__claude-flow__neural_patterns` - Cognitive patterns
-- `mcp__claude-flow__benchmark_run` - Performance benchmarks
-- `mcp__claude-flow__features_detect` - Feature detection
+- `mcp__gemini-flow__neural_patterns` - Cognitive patterns
+- `mcp__gemini-flow__benchmark_run` - Performance benchmarks
+- `mcp__gemini-flow__features_detect` - Feature detection
 
 ### DAA (Decentralized Autonomous Agents) Tools (6)
-- `mcp__claude-flow__daa_init` - Initialize DAA service
-- `mcp__claude-flow__daa_agent_create` - Create autonomous agents
-- `mcp__claude-flow__daa_workflow_create` - Create DAA workflows
-- `mcp__claude-flow__daa_learning_status` - Learning progress
-- `mcp__claude-flow__daa_metrics` - DAA metrics
-- `mcp__claude-flow__daa_optimization` - DAA optimization
+- `mcp__gemini-flow__daa_init` - Initialize DAA service
+- `mcp__gemini-flow__daa_agent_create` - Create autonomous agents
+- `mcp__gemini-flow__daa_workflow_create` - Create DAA workflows
+- `mcp__gemini-flow__daa_learning_status` - Learning progress
+- `mcp__gemini-flow__daa_metrics` - DAA metrics
+- `mcp__gemini-flow__daa_optimization` - DAA optimization
 
 ### Performance Tools (4)
-- `mcp__claude-flow__performance_analyze` - Analyze performance
-- `mcp__claude-flow__performance_optimize` - Optimize performance
-- `mcp__claude-flow__performance_monitor` - Monitor performance
-- `mcp__claude-flow__performance_report` - Generate reports
+- `mcp__gemini-flow__performance_analyze` - Analyze performance
+- `mcp__gemini-flow__performance_optimize` - Optimize performance
+- `mcp__gemini-flow__performance_monitor` - Monitor performance
+- `mcp__gemini-flow__performance_report` - Generate reports
 
 ## 🚀 USAGE EXAMPLES
 
@@ -97,8 +97,8 @@ The ruv-swarm MCP integration has been successfully implemented and tested. Here
 # Using ruv-swarm directly
 npx ruv-swarm init mesh 5 --claude
 
-# Using MCP tools (when integrated with Claude Code)
-mcp__claude-flow__swarm_init {"topology": "mesh", "maxAgents": 5, "strategy": "balanced"}
+# Using MCP tools (when integrated with Gemini Code)
+mcp__gemini-flow__swarm_init {"topology": "mesh", "maxAgents": 5, "strategy": "balanced"}
 ```
 
 ### Spawn Agents
@@ -107,7 +107,7 @@ mcp__claude-flow__swarm_init {"topology": "mesh", "maxAgents": 5, "strategy": "b
 npx ruv-swarm spawn researcher "Research-Agent-1"
 
 # MCP tool
-mcp__claude-flow__agent_spawn {"type": "researcher", "name": "Research-Agent-1"}
+mcp__gemini-flow__agent_spawn {"type": "researcher", "name": "Research-Agent-1"}
 ```
 
 ### Task Orchestration
@@ -116,7 +116,7 @@ mcp__claude-flow__agent_spawn {"type": "researcher", "name": "Research-Agent-1"}
 npx ruv-swarm orchestrate "Analyze project structure and suggest improvements"
 
 # MCP tool
-mcp__claude-flow__task_orchestrate {"task": "Analyze project structure", "strategy": "parallel"}
+mcp__gemini-flow__task_orchestrate {"task": "Analyze project structure", "strategy": "parallel"}
 ```
 
 ## 🔌 MCP SERVER CONFIGURATION
@@ -187,7 +187,7 @@ npx ruv-swarm diagnose wasm
 
 ## 🏁 CONCLUSION
 
-The ruv-swarm MCP integration is **FULLY FUNCTIONAL** and ready for production use with Claude Code. All 25 MCP tools are available, core swarm functionality works, neural networks are active, and WASM integration is operational.
+The ruv-swarm MCP integration is **FULLY FUNCTIONAL** and ready for production use with Gemini Code. All 25 MCP tools are available, core swarm functionality works, neural networks are active, and WASM integration is operational.
 
 **INTEGRATION STATUS: ✅ COMPLETE AND FUNCTIONAL**
 

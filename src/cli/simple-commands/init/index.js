@@ -70,9 +70,9 @@ async function setupMcpServers(dryRun = false) {
   
   const servers = [
     {
-      name: 'claude-flow',
-      command: 'npx claude-flow@alpha mcp start',
-      description: 'Claude Flow MCP server with swarm orchestration (alpha)'
+      name: 'gemini-flow',
+      command: 'npx gemini-flow@alpha mcp start',
+      description: 'Gemini Flow MCP server with swarm orchestration (alpha)'
     },
     {
       name: 'ruv-swarm',
@@ -113,7 +113,7 @@ export async function initCommand(subArgs, flags) {
     return;
   }
   
-  // Default to enhanced Claude Flow v2 init
+  // Default to enhanced Gemini Flow v2 init
   // Use --basic flag for old behavior
   if (!flags.basic && !flags.minimal && !flags.sparc) {
     return await enhancedClaudeFlowInit(flags, subArgs);
@@ -350,17 +350,17 @@ export async function initCommand(subArgs, flags) {
       lastUpdated: Date.now()
     };
     if (!initDryRun) {
-      await Deno.writeTextFile('memory/claude-flow-data.json', JSON.stringify(initialData, null, 2));
-      console.log('  ✓ Created memory/claude-flow-data.json (persistence database)');
+      await Deno.writeTextFile('memory/gemini-flow-data.json', JSON.stringify(initialData, null, 2));
+      console.log('  ✓ Created memory/gemini-flow-data.json (persistence database)');
     } else {
-      console.log('  [DRY RUN] Would create memory/claude-flow-data.json (persistence database)');
+      console.log('  [DRY RUN] Would create memory/gemini-flow-data.json (persistence database)');
     }
     
-    // Create local claude-flow executable wrapper
+    // Create local gemini-flow executable wrapper
     if (!initDryRun) {
       await createLocalExecutable(workingDir);
     } else {
-      console.log('  [DRY RUN] Would create local claude-flow executable wrapper');
+      console.log('  [DRY RUN] Would create local gemini-flow executable wrapper');
     }
     
     // SPARC initialization
@@ -370,7 +370,7 @@ export async function initCommand(subArgs, flags) {
       if (initDryRun) {
         console.log('  [DRY RUN] Would run: npx -y create-sparc init --force');
         console.log('  [DRY RUN] Would create SPARC environment with all modes');
-        console.log('  [DRY RUN] Would create Claude slash commands' + (initOptimized ? ' (Batchtools-optimized)' : ''));
+        console.log('  [DRY RUN] Would create Gemini slash commands' + (initOptimized ? ' (Batchtools-optimized)' : ''));
         if (selectedModes) {
           console.log(`  [DRY RUN] Would create commands for selected modes: ${selectedModes.join(', ')}`);
         }
@@ -410,7 +410,7 @@ export async function initCommand(subArgs, flags) {
           sparcInitialized = true; // Manual creation still counts as initialized
         }
         
-        // Always create Claude slash commands after SPARC initialization
+        // Always create Gemini slash commands after SPARC initialization
         if (sparcInitialized) {
           try {
             if (initOptimized) {
@@ -432,7 +432,7 @@ export async function initCommand(subArgs, flags) {
       console.log(`  • Template type: ${initOptimized ? 'Optimized for parallel processing' : 'Standard'}`);
       console.log('  • Core files: CLAUDE.md, memory-bank.md, coordination.md');
       console.log('  • Directory structure: memory/, coordination/, .claude/');
-      console.log('  • Local executable: ./claude-flow');
+      console.log('  • Local executable: ./gemini-flow');
       if (initSparc) {
         console.log(`  • Gemini CLI slash commands: ${selectedModes ? selectedModes.length : 'All'} SPARC mode commands`);
         console.log('  • SPARC environment with all development modes');
@@ -457,8 +457,8 @@ export async function initCommand(subArgs, flags) {
       console.log(`  ✅ memory-bank.md (${initOptimized ? 'With parallel processing' : 'Standard memory system'})`);
       console.log(`  ✅ coordination.md (${initOptimized ? 'Enhanced with batchtools' : 'Standard coordination'})`);
       console.log('  ✅ Directory structure with memory/ and coordination/');
-      console.log('  ✅ Local executable at ./claude-flow');
-      console.log('  ✅ Persistence database at memory/claude-flow-data.json');
+      console.log('  ✅ Local executable at ./gemini-flow');
+      console.log('  ✅ Persistence database at memory/gemini-flow-data.json');
       
       if (initSparc) {
         const modeCount = selectedModes ? selectedModes.length : '20+';
@@ -468,26 +468,26 @@ export async function initCommand(subArgs, flags) {
       
       console.log('\n🚀 Next steps:');
       console.log('1. Review and customize the generated files for your project');
-      console.log('2. Run \'./claude-flow start\' to begin the orchestration system');
-      console.log('3. Use \'./claude-flow\' instead of \'npx claude-flow\' for all commands');
-      console.log('4. Use \'claude --dangerously-skip-permissions\' for unattended operation');
+      console.log('2. Run \'./gemini-flow start\' to begin the orchestration system');
+      console.log('3. Use \'./gemini-flow\' instead of \'npx gemini-flow\' for all commands');
+      console.log('4. Use \'gemini --dangerously-skip-permissions\' for unattended operation');
       
       if (initSparc) {
         console.log('5. Use Gemini CLI slash commands: /sparc, /sparc-architect, /sparc-tdd, etc.');
-        console.log('6. Explore SPARC modes with \'./claude-flow sparc modes\'');
-        console.log('7. Try TDD workflow with \'./claude-flow sparc tdd "your task"\'');
+        console.log('6. Explore SPARC modes with \'./gemini-flow sparc modes\'');
+        console.log('7. Try TDD workflow with \'./gemini-flow sparc tdd "your task"\'');
         
         if (initOptimized) {
           console.log('8. Use batchtools commands: /batchtools, /performance for optimization');
           console.log('9. Enable parallel processing with --parallel flags');
-          console.log('10. Monitor performance with \'./claude-flow performance monitor\'');
+          console.log('10. Monitor performance with \'./gemini-flow performance monitor\'');
         }
       }
       
       console.log('\n💡 Tips:');
       console.log('  • Type \'/\' in Gemini CLI to see all available slash commands');
-      console.log('  • Use \'./claude-flow status\' to check system health');
-      console.log('  • Store important context with \'./claude-flow memory store\'');
+      console.log('  • Use \'./gemini-flow status\' to check system health');
+      console.log('  • Store important context with \'./gemini-flow memory store\'');
       
       if (initOptimized) {
         console.log('  • Use --parallel flags for concurrent operations');
@@ -509,7 +509,7 @@ export async function initCommand(subArgs, flags) {
         console.log('\n⚠️  Gemini CLI not detected!');
         console.log('  📥 Install with: npm install -g @google/gemini-cli');
         console.log('  📋 Then add MCP servers manually with:');
-        console.log('     gemini mcp add claude-flow claude-flow mcp start');
+        console.log('     gemini mcp add gemini-flow gemini-flow mcp start');
         console.log('     gemini mcp add ruv-swarm npx ruv-swarm mcp start');
       }
     }
@@ -941,7 +941,7 @@ async function createDirectoryStructure(workingDir, dryRun = false) {
 async function setupMemorySystem(workingDir, dryRun = false) {
   if (!dryRun) {
     const initialData = { agents: [], tasks: [], lastUpdated: Date.now() };
-    await Deno.writeTextFile(`${workingDir}/memory/claude-flow-data.json`, JSON.stringify(initialData, null, 2));
+    await Deno.writeTextFile(`${workingDir}/memory/gemini-flow-data.json`, JSON.stringify(initialData, null, 2));
     
     await Deno.writeTextFile(`${workingDir}/memory/agents/README.md`, createAgentsReadme());
     await Deno.writeTextFile(`${workingDir}/memory/sessions/README.md`, createSessionsReadme());
@@ -954,10 +954,10 @@ async function setupCoordinationSystem(workingDir, dryRun = false) {
 }
 
 /**
- * Enhanced Claude Flow v2.0.0 initialization
+ * Enhanced Gemini Flow v2.0.0 initialization
  */
 async function enhancedClaudeFlowInit(flags, subArgs = []) {
-  console.log('🚀 Initializing Claude Flow v2.0.0 with enhanced features...');
+  console.log('🚀 Initializing Gemini Flow v2.0.0 with enhanced features...');
   
   const workingDir = process.cwd();
   const force = flags.force || flags.f;
@@ -991,20 +991,20 @@ async function enhancedClaudeFlowInit(flags, subArgs = []) {
     // Create CLAUDE.md
     if (!dryRun) {
       await Deno.writeTextFile(`${workingDir}/CLAUDE.md`, createEnhancedClaudeMd());
-      printSuccess('✓ Created CLAUDE.md (Claude Flow v2.0.0)');
+      printSuccess('✓ Created CLAUDE.md (Gemini Flow v2.0.0)');
     } else {
-      console.log('[DRY RUN] Would create CLAUDE.md (Claude Flow v2.0.0)');
+      console.log('[DRY RUN] Would create CLAUDE.md (Gemini Flow v2.0.0)');
     }
     
-    // Create .claude directory structure
+    // Create .gemini directory structure
     const claudeDir = `${workingDir}/.claude`;
     if (!dryRun) {
       await Deno.mkdir(claudeDir, { recursive: true });
       await Deno.mkdir(`${claudeDir}/commands`, { recursive: true });
       await Deno.mkdir(`${claudeDir}/helpers`, { recursive: true });
-      printSuccess('✓ Created .claude directory structure');
+      printSuccess('✓ Created .gemini directory structure');
     } else {
-      console.log('[DRY RUN] Would create .claude directory structure');
+      console.log('[DRY RUN] Would create .gemini directory structure');
     }
     
     // Create settings.json
@@ -1020,7 +1020,7 @@ async function enhancedClaudeFlowInit(flags, subArgs = []) {
       "permissions": {
         "allow": [
           "mcp__ruv-swarm",
-          "mcp__claude-flow"
+          "mcp__gemini-flow"
         ],
         "deny": []
       }
@@ -1043,7 +1043,7 @@ async function enhancedClaudeFlowInit(flags, subArgs = []) {
         // Create category README
         const categoryReadme = `# ${category.charAt(0).toUpperCase() + category.slice(1)} Commands
 
-Commands for ${category} operations in Claude Flow.
+Commands for ${category} operations in Gemini Flow.
 
 ## Available Commands
 
@@ -1069,14 +1069,14 @@ ${commands.map(cmd => `- [${cmd}](./${cmd}.md)`).join('\n')}
     if (!dryRun) {
       // Unix wrapper - now uses universal ES module compatible wrapper
       const unixWrapper = createWrapperScript('unix');
-      await Deno.writeTextFile(`${workingDir}/claude-flow`, unixWrapper);
-      await fs.chmod(`${workingDir}/claude-flow`, 0o755);
+      await Deno.writeTextFile(`${workingDir}/gemini-flow`, unixWrapper);
+      await fs.chmod(`${workingDir}/gemini-flow`, 0o755);
       
       // Windows wrapper
-      await Deno.writeTextFile(`${workingDir}/claude-flow.bat`, createWrapperScript('windows'));
+      await Deno.writeTextFile(`${workingDir}/gemini-flow.bat`, createWrapperScript('windows'));
       
       // PowerShell wrapper
-      await Deno.writeTextFile(`${workingDir}/claude-flow.ps1`, createWrapperScript('powershell'));
+      await Deno.writeTextFile(`${workingDir}/gemini-flow.ps1`, createWrapperScript('powershell'));
       
       printSuccess('✓ Created platform-specific wrapper scripts');
     } else {
@@ -1124,7 +1124,7 @@ ${commands.map(cmd => `- [${cmd}](./${cmd}.md)`).join('\n')}
       
       // Initialize memory system
       const initialData = { agents: [], tasks: [], lastUpdated: Date.now() };
-      await fs.writeFile(`${workingDir}/memory/claude-flow-data.json`, JSON.stringify(initialData, null, 2));
+      await fs.writeFile(`${workingDir}/memory/gemini-flow-data.json`, JSON.stringify(initialData, null, 2));
       
       // Create README files
       await fs.writeFile(`${workingDir}/memory/agents/README.md`, createAgentsReadme());
@@ -1156,7 +1156,7 @@ ${commands.map(cmd => `- [${cmd}](./${cmd}.md)`).join('\n')}
       } else {
         console.log('  ℹ️  Skipping MCP setup (--skip-mcp flag used)');
         console.log('\n  📋 To add MCP servers manually:');
-        console.log('     gemini mcp add claude-flow claude-flow mcp start');
+        console.log('     gemini mcp add gemini-flow gemini-flow mcp start');
         console.log('     gemini mcp add ruv-swarm npx ruv-swarm mcp start');
       }
     } else if (!dryRun && !isGeminiInstalled()) {
@@ -1164,22 +1164,22 @@ ${commands.map(cmd => `- [${cmd}](./${cmd}.md)`).join('\n')}
       console.log('\n  📥 To install Gemini CLI:');
       console.log('     npm install -g @google/gemini-cli');
       console.log('\n  📋 After installing, add MCP servers:');
-      console.log('     gemini mcp add claude-flow claude-flow mcp start');
+      console.log('     gemini mcp add gemini-flow gemini-flow mcp start');
       console.log('     gemini mcp add ruv-swarm npx ruv-swarm mcp start');
     }
     
     // Final instructions
-    console.log('\n🎉 Claude Flow v2.0.0 initialization complete!');
+    console.log('\n🎉 Gemini Flow v2.0.0 initialization complete!');
     console.log('\n📚 Quick Start:');
     if (isGeminiInstalled()) {
       console.log('1. View available commands: ls .claude/commands/');
-      console.log('2. Start a swarm: npx claude-flow swarm init');
+      console.log('2. Start a swarm: npx gemini-flow swarm init');
       console.log('3. Use MCP tools in Gemini CLI for enhanced coordination');
     } else {
       console.log('1. Install Gemini CLI: npm install -g @google/gemini-cli');
       console.log('2. Add MCP servers (see instructions above)');
       console.log('3. View available commands: ls .claude/commands/');
-      console.log('4. Start a swarm: npx claude-flow swarm init');
+      console.log('4. Start a swarm: npx gemini-flow swarm init');
     }
     console.log('\n💡 Tips:');
     console.log('• Check .claude/commands/ for detailed documentation');
@@ -1187,6 +1187,6 @@ ${commands.map(cmd => `- [${cmd}](./${cmd}.md)`).join('\n')}
     console.log('• Enable GitHub integration with .claude/helpers/github-setup.sh');
     
   } catch (err) {
-    printError(`Failed to initialize Claude Flow v2.0.0: ${err.message}`);
+    printError(`Failed to initialize Gemini Flow v2.0.0: ${err.message}`);
   }
 }

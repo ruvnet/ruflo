@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Claude-Flow Root Directory Cleanup Script
+# Gemini-Flow Root Directory Cleanup Script
 # This script organizes test files and documentation into appropriate directories
 
-echo "🧹 Starting Claude-Flow root directory cleanup..."
+echo "🧹 Starting Gemini-Flow root directory cleanup..."
 
 # Create archive directories if they don't exist
 mkdir -p archive/reports
@@ -37,7 +37,7 @@ mv -v deployment-audit.log archive/reports/ 2>/dev/null || true
 # Keep only essential files in root:
 # - README.md (main documentation)
 # - CHANGELOG.md (version history)
-# - CLAUDE.md (Claude Code integration guide)
+# - CLAUDE.md (Gemini Code integration guide)
 # - LICENSE
 # - package.json, package-lock.json
 # - configuration files
@@ -47,11 +47,11 @@ echo ""
 echo "✅ Essential files kept in root:"
 echo "- README.md (main documentation)"
 echo "- CHANGELOG.md (version history)"
-echo "- CLAUDE.md (Claude Code integration)"
+echo "- CLAUDE.md (Gemini Code integration)"
 echo "- LICENSE"
 echo "- package.json & package-lock.json"
 echo "- Configuration files (.gitignore, .npmignore, etc.)"
-echo "- Main entry points (cli.js, claude-flow)"
+echo "- Main entry points (cli.js, gemini-flow)"
 
 echo ""
 echo "📊 Cleanup Summary:"

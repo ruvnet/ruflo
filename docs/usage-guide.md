@@ -1,23 +1,23 @@
-# 📖 Claude Flow v2.0.0 Usage Guide
+# 📖 Gemini Flow v2.0.0 Usage Guide
 
 ## 🎯 Quick Start
 
 ### ⚡ Immediate Usage (NPX - Recommended)
 
-The fastest way to start using Claude Flow v2.0.0 is through NPX:
+The fastest way to start using Gemini Flow v2.0.0 is through NPX:
 
 ```bash
 # Check version and availability
-npx claude-flow@2.0.0 --version
+npx gemini-flow@2.0.0 --version
 
 # Show complete help system
-npx claude-flow@2.0.0 --help
+npx gemini-flow@2.0.0 --help
 
 # Check system status
-npx claude-flow@2.0.0 status
+npx gemini-flow@2.0.0 status
 
 # Initialize project with enterprise features
-npx claude-flow@2.0.0 init --sparc
+npx gemini-flow@2.0.0 init --sparc
 ```
 
 ## 🐝 Swarm Intelligence Operations
@@ -26,20 +26,20 @@ npx claude-flow@2.0.0 init --sparc
 
 ```bash
 # Simple objective-based swarm
-npx claude-flow@2.0.0 swarm "Build a REST API with authentication"
+npx gemini-flow@2.0.0 swarm "Build a REST API with authentication"
 
 # Research-focused swarm with monitoring
-npx claude-flow@2.0.0 swarm "Research modern web frameworks" --strategy research --monitor
+npx gemini-flow@2.0.0 swarm "Research modern web frameworks" --strategy research --monitor
 
 # Development swarm with parallel execution
-npx claude-flow@2.0.0 swarm "Implement user management system" --strategy development --parallel
+npx gemini-flow@2.0.0 swarm "Implement user management system" --strategy development --parallel
 ```
 
 ### Advanced Swarm Configurations
 
 ```bash
 # Enterprise-scale swarm (8 agents, mesh topology)
-npx claude-flow@2.0.0 swarm "Optimize database performance" \
+npx gemini-flow@2.0.0 swarm "Optimize database performance" \
   --max-agents 8 \
   --mode mesh \
   --parallel \
@@ -47,7 +47,7 @@ npx claude-flow@2.0.0 swarm "Optimize database performance" \
   --ui
 
 # Background processing with quality controls
-npx claude-flow@2.0.0 swarm "Analyze codebase for security issues" \
+npx gemini-flow@2.0.0 swarm "Analyze codebase for security issues" \
   --strategy analysis \
   --background \
   --review \
@@ -55,7 +55,7 @@ npx claude-flow@2.0.0 swarm "Analyze codebase for security issues" \
   --quality-threshold 0.9
 
 # Distributed coordination with encryption
-npx claude-flow@2.0.0 swarm "Process sensitive data analysis" \
+npx gemini-flow@2.0.0 swarm "Process sensitive data analysis" \
   --distributed \
   --encryption \
   --memory-namespace secure \
@@ -90,41 +90,41 @@ npx claude-flow@2.0.0 swarm "Process sensitive data analysis" \
 
 ```bash
 # List all available modes
-npx claude-flow@2.0.0 sparc modes
+npx gemini-flow@2.0.0 sparc modes
 
 # Get detailed information about a mode
-npx claude-flow@2.0.0 sparc info architect
+npx gemini-flow@2.0.0 sparc info architect
 
 # Use specific mode
-npx claude-flow@2.0.0 sparc architect "design microservices architecture"
+npx gemini-flow@2.0.0 sparc architect "design microservices architecture"
 ```
 
 ### SPARC Mode Examples
 
 ```bash
 # System Architecture & Design
-npx claude-flow@2.0.0 sparc architect "design scalable e-commerce platform"
+npx gemini-flow@2.0.0 sparc architect "design scalable e-commerce platform"
 
 # Code Generation & Implementation
-npx claude-flow@2.0.0 sparc code "implement JWT authentication middleware"
+npx gemini-flow@2.0.0 sparc code "implement JWT authentication middleware"
 
 # Test-Driven Development
-npx claude-flow@2.0.0 sparc tdd "user registration with validation"
+npx gemini-flow@2.0.0 sparc tdd "user registration with validation"
 
 # Security Analysis
-npx claude-flow@2.0.0 sparc security "audit API endpoints for vulnerabilities"
+npx gemini-flow@2.0.0 sparc security "audit API endpoints for vulnerabilities"
 
 # Performance Debugging
-npx claude-flow@2.0.0 sparc debug "investigate memory leaks in Node.js app"
+npx gemini-flow@2.0.0 sparc debug "investigate memory leaks in Node.js app"
 
 # Code Refactoring
-npx claude-flow@2.0.0 sparc refactor "optimize database queries for performance"
+npx gemini-flow@2.0.0 sparc refactor "optimize database queries for performance"
 
 # API Design
-npx claude-flow@2.0.0 sparc api "design REST API for social media platform"
+npx gemini-flow@2.0.0 sparc api "design REST API for social media platform"
 
 # DevOps & Infrastructure
-npx claude-flow@2.0.0 sparc ops "set up CI/CD pipeline with Docker"
+npx gemini-flow@2.0.0 sparc ops "set up CI/CD pipeline with Docker"
 ```
 
 ## 🤖 Agent Management
@@ -133,18 +133,18 @@ npx claude-flow@2.0.0 sparc ops "set up CI/CD pipeline with Docker"
 
 ```bash
 # Basic agent spawning
-npx claude-flow@2.0.0 agent spawn researcher "Lead Researcher"
+npx gemini-flow@2.0.0 agent spawn researcher "Lead Researcher"
 
 # Agent with specific capabilities
-npx claude-flow@2.0.0 agent spawn coder "API Developer" \
+npx gemini-flow@2.0.0 agent spawn coder "API Developer" \
   --capabilities "rest-api,database,testing" \
   --max-tasks 5 \
   --priority high
 
 # Multiple agents for different roles
-npx claude-flow@2.0.0 agent spawn architect "System Architect"
-npx claude-flow@2.0.0 agent spawn tester "QA Engineer" 
-npx claude-flow@2.0.0 agent spawn reviewer "Code Reviewer"
+npx gemini-flow@2.0.0 agent spawn architect "System Architect"
+npx gemini-flow@2.0.0 agent spawn tester "QA Engineer" 
+npx gemini-flow@2.0.0 agent spawn reviewer "Code Reviewer"
 ```
 
 ### Agent Types & Capabilities
@@ -163,13 +163,13 @@ npx claude-flow@2.0.0 agent spawn reviewer "Code Reviewer"
 
 ```bash
 # List all active agents
-npx claude-flow@2.0.0 agent list
+npx gemini-flow@2.0.0 agent list
 
 # Filter by type or status
-npx claude-flow@2.0.0 agent list --type researcher --status active
+npx gemini-flow@2.0.0 agent list --type researcher --status active
 
 # Get JSON output for scripting
-npx claude-flow@2.0.0 agent list --json
+npx gemini-flow@2.0.0 agent list --json
 ```
 
 ## 💾 Memory & Task Management
@@ -178,32 +178,32 @@ npx claude-flow@2.0.0 agent list --json
 
 ```bash
 # Store data in shared memory
-npx claude-flow@2.0.0 memory store "project-config" '{"api_version": "v2", "db_type": "postgresql"}'
+npx gemini-flow@2.0.0 memory store "project-config" '{"api_version": "v2", "db_type": "postgresql"}'
 
 # Retrieve data
-npx claude-flow@2.0.0 memory get "project-config"
+npx gemini-flow@2.0.0 memory get "project-config"
 
 # Search memory entries
-npx claude-flow@2.0.0 memory search "api" --limit 10
+npx gemini-flow@2.0.0 memory search "api" --limit 10
 
 # Store in specific partition
-npx claude-flow@2.0.0 memory store "secrets" "api-key-123" --partition secure
+npx gemini-flow@2.0.0 memory store "secrets" "api-key-123" --partition secure
 ```
 
 ### Task Management
 
 ```bash
 # Create tasks with different priorities
-npx claude-flow@2.0.0 task create "Implement user authentication" --priority high
+npx gemini-flow@2.0.0 task create "Implement user authentication" --priority high
 
 # Create task with dependencies
-npx claude-flow@2.0.0 task create "Deploy to production" \
+npx gemini-flow@2.0.0 task create "Deploy to production" \
   --dependencies "testing,review" \
   --deadline "2024-01-15"
 
 # List tasks with filters
-npx claude-flow@2.0.0 task list --status in_progress
-npx claude-flow@2.0.0 task list --priority critical --agent researcher-1
+npx gemini-flow@2.0.0 task list --status in_progress
+npx gemini-flow@2.0.0 task list --priority critical --agent researcher-1
 ```
 
 ## 🐙 GitHub Integration
@@ -212,22 +212,22 @@ npx claude-flow@2.0.0 task list --priority critical --agent researcher-1
 
 ```bash
 # PR management with multi-reviewer coordination
-npx claude-flow@2.0.0 github pr-manager "coordinate feature review for authentication module"
+npx gemini-flow@2.0.0 github pr-manager "coordinate feature review for authentication module"
 
 # Automated issue tracking
-npx claude-flow@2.0.0 github issue-tracker "track and update progress on performance improvements"
+npx gemini-flow@2.0.0 github issue-tracker "track and update progress on performance improvements"
 
 # Release coordination
-npx claude-flow@2.0.0 github release-manager "prepare and coordinate v2.1.0 release"
+npx gemini-flow@2.0.0 github release-manager "prepare and coordinate v2.1.0 release"
 
 # Repository architecture management
-npx claude-flow@2.0.0 github repo-architect "optimize repository structure for monorepo"
+npx gemini-flow@2.0.0 github repo-architect "optimize repository structure for monorepo"
 
 # Cross-repository synchronization
-npx claude-flow@2.0.0 github sync-coordinator "sync dependencies across microservices"
+npx gemini-flow@2.0.0 github sync-coordinator "sync dependencies across microservices"
 
 # GitHub Actions workflow automation
-npx claude-flow@2.0.0 github workflow-automation "create CI/CD pipeline for Node.js app"
+npx gemini-flow@2.0.0 github workflow-automation "create CI/CD pipeline for Node.js app"
 ```
 
 ## 📊 Monitoring & Analytics
@@ -236,23 +236,23 @@ npx claude-flow@2.0.0 github workflow-automation "create CI/CD pipeline for Node
 
 ```bash
 # Start real-time monitoring
-npx claude-flow@2.0.0 monitor --realtime
+npx gemini-flow@2.0.0 monitor --realtime
 
 # Monitor specific components
-npx claude-flow@2.0.0 monitor --agents --tasks --metrics
+npx gemini-flow@2.0.0 monitor --agents --tasks --metrics
 
 # Status with detailed metrics
-npx claude-flow@2.0.0 status --detailed --json
+npx gemini-flow@2.0.0 status --detailed --json
 ```
 
 ### System Status Components
 
 ```bash
 # Check all system components
-npx claude-flow@2.0.0 status
+npx gemini-flow@2.0.0 status
 
 # Expected output:
-# ✅ Claude-Flow System Status:
+# ✅ Gemini-Flow System Status:
 # 🟢 Orchestrator: Running
 # 🟢 MCP Server: Connected  
 # 🟢 Memory Bank: Active (1.2GB)
@@ -266,13 +266,13 @@ npx claude-flow@2.0.0 status
 
 ```bash
 # Start MCP server
-npx claude-flow@2.0.0 mcp start --port 3001
+npx gemini-flow@2.0.0 mcp start --port 3001
 
 # List available MCP tools (27 total)
-npx claude-flow@2.0.0 mcp tools
+npx gemini-flow@2.0.0 mcp tools
 
 # Start with specific tools enabled
-npx claude-flow@2.0.0 mcp start --tools "swarm_init,agent_spawn,task_orchestrate"
+npx gemini-flow@2.0.0 mcp start --tools "swarm_init,agent_spawn,task_orchestrate"
 ```
 
 ### Available MCP Tools
@@ -299,16 +299,16 @@ npx claude-flow@2.0.0 mcp start --tools "swarm_init,agent_spawn,task_orchestrate
 
 ```bash
 # Full enterprise setup with SPARC methodology
-npx claude-flow@2.0.0 init --sparc
+npx gemini-flow@2.0.0 init --sparc
 
 # Minimal setup
-npx claude-flow@2.0.0 init --minimal
+npx gemini-flow@2.0.0 init --minimal
 
 # Docker-ready setup
-npx claude-flow@2.0.0 init --docker
+npx gemini-flow@2.0.0 init --docker
 
 # CI/CD friendly setup (no prompts)
-npx claude-flow@2.0.0 init --ci --sparc
+npx gemini-flow@2.0.0 init --ci --sparc
 ```
 
 ### What `--sparc` Creates
@@ -334,37 +334,37 @@ project/
 ```bash
 # Error: LoadBalancer is not defined
 # Solution: Use latest NPX version
-npx claude-flow@2.0.0 swarm "your objective"
+npx gemini-flow@2.0.0 swarm "your objective"
 ```
 
 #### Issue: Module Resolution Errors
 ```bash
 # Local build errors with TypeScript
 # Solution: Use NPX version instead
-npx claude-flow@2.0.0 <command>
+npx gemini-flow@2.0.0 <command>
 ```
 
 #### Issue: Permission Errors
 ```bash
 # Permission denied errors
 # Solution: Check file permissions
-chmod +x claude-flow
+chmod +x gemini-flow
 ```
 
 ### Debug Commands
 
 ```bash
 # Comprehensive system check
-npx claude-flow@2.0.0 status --detailed
+npx gemini-flow@2.0.0 status --detailed
 
 # Validate installation
-npx claude-flow@2.0.0 --version
+npx gemini-flow@2.0.0 --version
 
 # Test basic functionality
-npx claude-flow@2.0.0 --help
+npx gemini-flow@2.0.0 --help
 
 # Reset to clean state
-npx claude-flow@2.0.0 init --sparc --force
+npx gemini-flow@2.0.0 init --sparc --force
 ```
 
 ## 📈 Performance Tips
@@ -393,55 +393,55 @@ npx claude-flow@2.0.0 init --sparc --force
 
 ```bash
 # 1. Initialize enterprise project
-npx claude-flow@2.0.0 init --sparc
+npx gemini-flow@2.0.0 init --sparc
 
 # 2. Research phase
-npx claude-flow@2.0.0 swarm "research modern authentication patterns" \
+npx gemini-flow@2.0.0 swarm "research modern authentication patterns" \
   --strategy research --monitor
 
 # 3. Architecture design
-npx claude-flow@2.0.0 sparc architect "design scalable auth microservice"
+npx gemini-flow@2.0.0 sparc architect "design scalable auth microservice"
 
 # 4. Implementation phase
-npx claude-flow@2.0.0 swarm "implement JWT authentication service" \
+npx gemini-flow@2.0.0 swarm "implement JWT authentication service" \
   --strategy development --parallel --review
 
 # 5. Testing phase
-npx claude-flow@2.0.0 swarm "comprehensive testing of auth service" \
+npx gemini-flow@2.0.0 swarm "comprehensive testing of auth service" \
   --strategy testing --quality-threshold 0.95
 
 # 6. GitHub integration
-npx claude-flow@2.0.0 github pr-manager "coordinate auth service review"
+npx gemini-flow@2.0.0 github pr-manager "coordinate auth service review"
 ```
 
 ### Data Analysis Workflow
 
 ```bash
 # Research data processing techniques
-npx claude-flow@2.0.0 swarm "research time series analysis methods" \
+npx gemini-flow@2.0.0 swarm "research time series analysis methods" \
   --strategy research
 
 # Analyze existing dataset
-npx claude-flow@2.0.0 swarm "analyze sales data for trends and patterns" \
+npx gemini-flow@2.0.0 swarm "analyze sales data for trends and patterns" \
   --strategy analysis --max-agents 4
 
 # Create visualization dashboard
-npx claude-flow@2.0.0 sparc ui "create interactive dashboard for sales metrics"
+npx gemini-flow@2.0.0 sparc ui "create interactive dashboard for sales metrics"
 ```
 
 ### Performance Optimization Workflow
 
 ```bash
 # Analyze performance bottlenecks
-npx claude-flow@2.0.0 swarm "identify performance bottlenecks in web app" \
+npx gemini-flow@2.0.0 swarm "identify performance bottlenecks in web app" \
   --strategy analysis --monitor
 
 # Optimize critical paths
-npx claude-flow@2.0.0 swarm "optimize database queries and API endpoints" \
+npx gemini-flow@2.0.0 swarm "optimize database queries and API endpoints" \
   --strategy optimization --parallel
 
 # Validate improvements
-npx claude-flow@2.0.0 swarm "benchmark and validate performance improvements" \
+npx gemini-flow@2.0.0 swarm "benchmark and validate performance improvements" \
   --strategy testing --quality-threshold 0.9
 ```
 
@@ -450,8 +450,8 @@ npx claude-flow@2.0.0 swarm "benchmark and validate performance improvements" \
 ### CI/CD Pipeline Integration
 
 ```yaml
-# .github/workflows/claude-flow.yml
-name: Claude Flow CI/CD
+# .github/workflows/gemini-flow.yml
+name: Gemini Flow CI/CD
 on:
   push:
     branches: [main]
@@ -459,17 +459,17 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  claude-flow:
+  gemini-flow:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run Claude Flow Analysis
+      - name: Run Gemini Flow Analysis
         run: |
-          npx claude-flow@2.0.0 swarm "analyze code changes and run tests" \
+          npx gemini-flow@2.0.0 swarm "analyze code changes and run tests" \
             --strategy testing --parallel --ci
       - name: GitHub Integration
         run: |
-          npx claude-flow@2.0.0 github workflow-automation \
+          npx gemini-flow@2.0.0 github workflow-automation \
             "update PR with analysis results"
 ```
 
@@ -480,9 +480,9 @@ jobs:
 FROM node:20-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm install -g claude-flow@2.0.0
+RUN npm install -g gemini-flow@2.0.0
 COPY . .
-CMD ["npx", "claude-flow@2.0.0", "start", "--ui", "--port", "3000"]
+CMD ["npx", "gemini-flow@2.0.0", "start", "--ui", "--port", "3000"]
 ```
 
 ## 📚 Advanced Topics
@@ -491,7 +491,7 @@ CMD ["npx", "claude-flow@2.0.0", "start", "--ui", "--port", "3000"]
 
 ```bash
 # Spawn agent with custom capabilities
-npx claude-flow@2.0.0 agent spawn coder "ML Engineer" \
+npx gemini-flow@2.0.0 agent spawn coder "ML Engineer" \
   --capabilities "python,tensorflow,data-science,ml-ops" \
   --max-tasks 3 \
   --priority high
@@ -501,16 +501,16 @@ npx claude-flow@2.0.0 agent spawn coder "ML Engineer" \
 
 ```bash
 # Organize memory by domains
-npx claude-flow@2.0.0 memory store "db-config" '{"host":"localhost"}' --partition infrastructure
-npx claude-flow@2.0.0 memory store "api-keys" "secret-key" --partition security  
-npx claude-flow@2.0.0 memory store "user-prefs" '{"theme":"dark"}' --partition application
+npx gemini-flow@2.0.0 memory store "db-config" '{"host":"localhost"}' --partition infrastructure
+npx gemini-flow@2.0.0 memory store "api-keys" "secret-key" --partition security  
+npx gemini-flow@2.0.0 memory store "user-prefs" '{"theme":"dark"}' --partition application
 ```
 
 ### Quality Control Workflows
 
 ```bash
 # High-quality development with review gates
-npx claude-flow@2.0.0 swarm "implement critical payment processing" \
+npx gemini-flow@2.0.0 swarm "implement critical payment processing" \
   --strategy development \
   --review \
   --testing \
@@ -520,11 +520,11 @@ npx claude-flow@2.0.0 swarm "implement critical payment processing" \
 
 ## 🎓 Learning Path
 
-### Beginner (New to Claude Flow)
-1. Start with `npx claude-flow@2.0.0 --help`
-2. Try basic swarm: `npx claude-flow@2.0.0 swarm "simple task"`
-3. Explore SPARC modes: `npx claude-flow@2.0.0 sparc modes`
-4. Initialize project: `npx claude-flow@2.0.0 init --sparc`
+### Beginner (New to Gemini Flow)
+1. Start with `npx gemini-flow@2.0.0 --help`
+2. Try basic swarm: `npx gemini-flow@2.0.0 swarm "simple task"`
+3. Explore SPARC modes: `npx gemini-flow@2.0.0 sparc modes`
+4. Initialize project: `npx gemini-flow@2.0.0 init --sparc`
 
 ### Intermediate (Familiar with basics)
 1. Use advanced swarm options: `--parallel`, `--monitor`, `--strategy`
@@ -542,10 +542,10 @@ npx claude-flow@2.0.0 swarm "implement critical payment processing" \
 
 ## 📞 Support & Resources
 
-- **GitHub Repository**: https://github.com/ruvnet/claude-code-flow
-- **Issue Tracker**: https://github.com/ruvnet/claude-code-flow/issues
+- **GitHub Repository**: https://github.com/ruvnet/gemini-flow
+- **Issue Tracker**: https://github.com/ruvnet/gemini-flow/issues
 - **ruv-swarm Integration**: https://github.com/ruvnet/ruv-FANN/tree/main/ruv-swarm
-- **NPM Package**: https://www.npmjs.com/package/claude-flow/v/alpha
+- **NPM Package**: https://www.npmjs.com/package/gemini-flow/v/alpha
 
 ---
 

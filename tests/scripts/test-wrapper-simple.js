@@ -9,7 +9,7 @@ async function test() {
   
   const transport = new StdioClientTransport({
     command: 'npx',
-    args: ['tsx', 'src/mcp/claude-code-wrapper.ts'],
+    args: ['tsx', 'src/mcp/gemini-cli-wrapper.ts'],
   });
 
   const client = new Client({

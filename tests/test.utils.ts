@@ -1,5 +1,5 @@
 /**
- * Test utilities for Claude-Flow
+ * Test utilities for Gemini-Flow
  */
 
 import { assertEquals, assertExists, assertRejects, assertThrows } from 'https://deno.land/std@0.220.0/assert/mod.ts';

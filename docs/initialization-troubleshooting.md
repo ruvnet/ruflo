@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide helps resolve common issues encountered during Claude-Flow initialization, particularly when using the optimized `--sparc --force` setup. Each issue includes symptoms, causes, and step-by-step solutions.
+This guide helps resolve common issues encountered during Gemini-Flow initialization, particularly when using the optimized `--sparc --force` setup. Each issue includes symptoms, causes, and step-by-step solutions.
 
 ## Quick Diagnostic Commands
 
@@ -14,11 +14,11 @@ node --version
 npm --version
 npx --version
 
-# Check Claude-Flow version
-npx claude-flow@latest --version
+# Check Gemini-Flow version
+npx gemini-flow@latest --version
 
 # Check network connectivity
-curl -I https://registry.npmjs.org/claude-flow
+curl -I https://registry.npmjs.org/gemini-flow
 
 # Check directory permissions
 ls -la
@@ -31,8 +31,8 @@ pwd
 
 #### Symptoms
 ```
-Error: EACCES: permission denied, mkdir '.claude'
-Error: EACCES: permission denied, open 'CLAUDE.md'
+Error: EACCES: permission denied, mkdir '.gemini'
+Error: EACCES: permission denied, open 'GEMINI.md'
 ```
 
 #### Causes
@@ -55,7 +55,7 @@ chmod 755 .
 chmod 644 package.json 2>/dev/null || true
 
 # Retry initialization
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 ```
 
 **Solution 2: Use Different Directory**
@@ -65,13 +65,13 @@ mkdir ~/my-project
 cd ~/my-project
 
 # Initialize there
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 ```
 
 **Solution 3: Run with Sudo (NOT recommended)**
 ```bash
 # Only if other solutions fail and you understand the security implications
-sudo npx claude-flow@latest init --sparc --force
+sudo npx gemini-flow@latest init --sparc --force
 sudo chown -R $USER:$USER .
 ```
 
@@ -79,7 +79,7 @@ sudo chown -R $USER:$USER .
 
 #### Symptoms
 ```
-npm ERR! network request to https://registry.npmjs.org/claude-flow failed
+npm ERR! network request to https://registry.npmjs.org/gemini-flow failed
 Error: create-sparc failed, creating basic SPARC structure manually...
 ```
 
@@ -95,7 +95,7 @@ Error: create-sparc failed, creating basic SPARC structure manually...
 ```bash
 # Test connectivity
 ping registry.npmjs.org
-curl -I https://registry.npmjs.org/claude-flow
+curl -I https://registry.npmjs.org/gemini-flow
 
 # Check npm configuration
 npm config list
@@ -115,7 +115,7 @@ npm cache clean --force
 rm -rf ~/.npm/_npx/
 
 # Retry initialization
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 ```
 
 **Solution 3: Use Alternative Registry**
@@ -124,8 +124,8 @@ npx -y claude-flow@latest init --sparc --force
 npm config set registry https://registry.yarnpkg.com/
 
 # Or use yarn
-yarn global add claude-flow
-claude-flow init --sparc --force
+yarn global add gemini-flow
+gemini-flow init --sparc --force
 
 # Restore original registry
 npm config set registry https://registry.npmjs.org/
@@ -135,7 +135,7 @@ npm config set registry https://registry.npmjs.org/
 
 #### Symptoms
 ```
-Warning: The following files already exist: CLAUDE.md, .roomodes
+Warning: The following files already exist: GEMINI.md, .roomodes
 Use --force to overwrite existing files
 ```
 
@@ -150,25 +150,25 @@ Use --force to overwrite existing files
 ```bash
 # Create timestamped backup
 mkdir backup-$(date +%Y%m%d-%H%M%S)
-cp CLAUDE.md .roomodes backup-$(date +%Y%m%d-%H%M%S)/ 2>/dev/null || true
-cp -r .claude backup-$(date +%Y%m%d-%H%M%S)/ 2>/dev/null || true
+cp GEMINI.md .roomodes backup-$(date +%Y%m%d-%H%M%S)/ 2>/dev/null || true
+cp -r .gemini backup-$(date +%Y%m%d-%H%M%S)/ 2>/dev/null || true
 
 # Force overwrite with optimized templates
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 
 # Review and merge important customizations
 # Compare backup files with new versions
-diff backup-*/CLAUDE.md CLAUDE.md || echo "Files are different - review changes"
+diff backup-*/GEMINI.md GEMINI.md || echo "Files are different - review changes"
 ```
 
 **Solution 2: Selective File Handling**
 ```bash
 # Remove specific files you want to regenerate
-rm CLAUDE.md .roomodes
-rm -rf .claude/commands/
+rm GEMINI.md .roomodes
+rm -rf .gemini/commands/
 
 # Initialize (will only create missing files)
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 ```
 
 **Solution 3: Clean Slate Approach**
@@ -177,20 +177,20 @@ npx claude-flow@latest init --sparc --force
 mkdir ../project-backup-$(date +%Y%m%d)
 cp -r . ../project-backup-$(date +%Y%m%d)/
 
-# Remove Claude-Flow related files
-rm -f CLAUDE.md memory-bank.md coordination.md .roomodes
-rm -rf .claude/ memory/ coordination/
-rm -f ./claude-flow
+# Remove Gemini-Flow related files
+rm -f GEMINI.md memory-bank.md coordination.md .roomodes
+rm -rf .gemini/ memory/ coordination/
+rm -f ./gemini-flow
 
 # Fresh initialization
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 ```
 
 ### 4. Template Generation Errors
 
 #### Symptoms
 ```
-Error: Failed to generate template: ReferenceError: createSparcClaudeMd is not defined
+Error: Failed to generate template: ReferenceError: createSparcGeminiMd is not defined
 TypeError: Cannot read property 'generateOptimizedTemplate' of undefined
 ```
 
@@ -204,41 +204,41 @@ TypeError: Cannot read property 'generateOptimizedTemplate' of undefined
 **Solution 1: Force Fresh Installation**
 ```bash
 # Uninstall any global installation
-npm uninstall -g claude-flow
+npm uninstall -g gemini-flow
 
 # Clear all caches
 npm cache clean --force
 rm -rf ~/.npm/
 
 # Use latest version with -y flag
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 ```
 
 **Solution 2: Check Version Compatibility**
 ```bash
 # Check what version is being used
-npx claude-flow@latest --version
+npx gemini-flow@latest --version
 
 # If version is outdated, force latest
-npx claude-flow@$(npm show claude-flow version) init --sparc --force
+npx gemini-flow@$(npm show gemini-flow version) init --sparc --force
 ```
 
 **Solution 3: Manual Template Generation**
 ```bash
 # If automated generation fails, create basic structure manually
-mkdir -p .claude/commands memory coordination
+mkdir -p .gemini/commands memory coordination
 
-# Create minimal CLAUDE.md
-cat > CLAUDE.md << 'EOF'
-# Claude Code Configuration - SPARC Development Environment
+# Create minimal GEMINI.md
+cat > GEMINI.md << 'EOF'
+# Gemini CLI Configuration - SPARC Development Environment
 
 ## Project Overview
-This project uses Claude-Flow with SPARC methodology for AI-assisted development.
+This project uses Gemini-Flow with SPARC methodology for AI-assisted development.
 
 ## Quick Start
-- Use `./claude-flow sparc "your task"` for development
+- Use `./gemini-flow sparc "your task"` for development
 - Available modes: architect, code, tdd, debug, security-review
-- Memory system: `./claude-flow memory store/query`
+- Memory system: `./gemini-flow memory store/query`
 
 ## Best Practices
 - Write tests first (TDD)
@@ -273,8 +273,8 @@ echo "✅ Basic structure created manually"
 #### Symptoms
 ```
 Error: SPARC modes not found
-./claude-flow sparc modes returns empty list
-Command not found: ./claude-flow
+./gemini-flow sparc modes returns empty list
+Command not found: ./gemini-flow
 ```
 
 #### Causes
@@ -287,44 +287,44 @@ Command not found: ./claude-flow
 **Solution 1: Verify Complete Installation**
 ```bash
 # Check for required files
-ls -la | grep -E "(CLAUDE.md|\.roomodes|claude-flow)"
+ls -la | grep -E "(GEMINI.md|\.roomodes|gemini-flow)"
 
-# If claude-flow executable missing, recreate it
-if [ ! -f "./claude-flow" ]; then
-  npx claude-flow@latest init --sparc --force
+# If gemini-flow executable missing, recreate it
+if [ ! -f "./gemini-flow" ]; then
+  npx gemini-flow@latest init --sparc --force
 fi
 
 # Make executable if needed
-chmod +x ./claude-flow
+chmod +x ./gemini-flow
 
 # Test SPARC modes
-./claude-flow sparc modes
+./gemini-flow sparc modes
 ```
 
 **Solution 2: Fix Path and Working Directory**
 ```bash
 # Ensure you're in the right directory
 pwd
-ls -la CLAUDE.md || echo "Not in project directory"
+ls -la GEMINI.md || echo "Not in project directory"
 
 # If in wrong directory, navigate to project root
 cd /path/to/your/project
 
 # Verify initialization
-./claude-flow --version
+./gemini-flow --version
 ```
 
 **Solution 3: Regenerate SPARC Configuration**
 ```bash
 # Remove and regenerate SPARC files
 rm -f .roomodes
-rm -rf .claude/
+rm -rf .gemini/
 
 # Reinitialize SPARC components
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 
 # Verify modes are loaded
-./claude-flow sparc modes --verbose
+./gemini-flow sparc modes --verbose
 ```
 
 ### 6. Memory System Initialization Issues
@@ -333,7 +333,7 @@ npx claude-flow@latest init --sparc --force
 ```
 Error: Cannot initialize memory system
 Memory directory not accessible
-./claude-flow memory stats fails
+./gemini-flow memory stats fails
 ```
 
 #### Causes
@@ -358,10 +358,10 @@ chmod 755 memory/agents/
 chmod 755 memory/sessions/
 
 # Initialize memory database
-echo '{"agents":[],"tasks":[],"lastUpdated":'$(date +%s)'}' > memory/claude-flow-data.json
+echo '{"agents":[],"tasks":[],"lastUpdated":'$(date +%s)'}' > memory/gemini-flow-data.json
 
 # Test memory system
-./claude-flow memory stats
+./gemini-flow memory stats
 ```
 
 **Solution 2: Check Disk Space**
@@ -375,21 +375,21 @@ rm -rf node_modules/
 rm -rf .git/logs/ 2>/dev/null || true
 
 # Retry initialization
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 ```
 
-### 7. Claude Code Integration Issues
+### 7. Gemini CLI Integration Issues
 
 #### Symptoms
 ```
-Claude Code slash commands not appearing
-/sparc command not found in Claude Code
-.claude/commands/ directory empty
+Gemini CLI slash commands not appearing
+/sparc command not found in Gemini CLI
+.gemini/commands/ directory empty
 ```
 
 #### Causes
 - Incomplete slash command generation
-- Claude Code not reading configuration
+- Gemini CLI not reading configuration
 - File permission issues
 
 #### Solutions
@@ -397,38 +397,38 @@ Claude Code slash commands not appearing
 **Solution 1: Regenerate Slash Commands**
 ```bash
 # Remove and recreate slash commands
-rm -rf .claude/commands/
+rm -rf .gemini/commands/
 
 # Force regeneration
-npx claude-flow@latest init --sparc --force
+npx gemini-flow@latest init --sparc --force
 
 # Verify slash commands created
-ls -la .claude/commands/
-ls -la .claude/commands/sparc/
+ls -la .gemini/commands/
+ls -la .gemini/commands/sparc/
 
 # Check for specific commands
-ls .claude/commands/ | grep sparc
+ls .gemini/commands/ | grep sparc
 ```
 
-**Solution 2: Verify Claude Code Integration**
+**Solution 2: Verify Gemini CLI Integration**
 ```bash
-# Check CLAUDE.md exists and is readable
-cat CLAUDE.md | head -10
+# Check GEMINI.md exists and is readable
+cat GEMINI.md | head -10
 
-# Ensure .claude directory structure is correct
-find .claude -type f -name "*.md" | head -5
+# Ensure .gemini directory structure is correct
+find .gemini -type f -name "*.md" | head -5
 
-# Restart Claude Code to pick up changes
-# (In Claude Code, reload window or restart application)
+# Restart Gemini CLI to pick up changes
+# (In Gemini CLI, reload window or restart application)
 ```
 
 **Solution 3: Manual Slash Command Creation**
 ```bash
 # Create slash commands directory
-mkdir -p .claude/commands/sparc
+mkdir -p .gemini/commands/sparc
 
 # Create basic /sparc command
-cat > .claude/commands/sparc.md << 'EOF'
+cat > .gemini/commands/sparc.md << 'EOF'
 # SPARC Development Command
 
 Execute SPARC methodology workflows for systematic development.
@@ -442,7 +442,7 @@ Use this command to run SPARC development tasks with AI assistance.
 - `/sparc "design database schema"`
 
 ## Available Modes
-Run `./claude-flow sparc modes` to see all available development modes.
+Run `./gemini-flow sparc modes` to see all available development modes.
 EOF
 
 echo "✅ Basic slash commands created"
@@ -467,35 +467,35 @@ AI responses not meeting quality expectations
 **Solution 1: Verify Optimized Configuration Applied**
 ```bash
 # Check if optimized templates were used
-grep -q "optimized" CLAUDE.md && echo "✅ Optimized template" || echo "❌ Standard template"
+grep -q "optimized" GEMINI.md && echo "✅ Optimized template" || echo "❌ Standard template"
 
 # Check .roomodes for optimization markers
 grep -q "systemPrompt.*focus" .roomodes && echo "✅ Optimized prompts" || echo "❌ Standard prompts"
 
 # Reinitialize if needed
-if ! grep -q "optimized" CLAUDE.md; then
-  npx claude-flow@latest init --sparc --force
+if ! grep -q "optimized" GEMINI.md; then
+  npx gemini-flow@latest init --sparc --force
 fi
 ```
 
 **Solution 2: Monitor Performance**
 ```bash
 # Enable performance monitoring
-./claude-flow config set monitoring.enabled true
-./claude-flow config set logging.level debug
+./gemini-flow config set monitoring.enabled true
+./gemini-flow config set logging.level debug
 
 # Test with timing
-time ./claude-flow sparc "simple hello world function"
+time ./gemini-flow sparc "simple hello world function"
 
 # Check memory usage
-./claude-flow memory stats
+./gemini-flow memory stats
 ```
 
 **Solution 3: Optimize for Your Use Case**
 ```bash
 # Customize for your project type
-./claude-flow config set project.type "web-app"  # or "api", "mobile", etc.
-./claude-flow config set team.experience "senior"  # or "junior", "mixed"
+./gemini-flow config set project.type "web-app"  # or "api", "mobile", etc.
+./gemini-flow config set team.experience "senior"  # or "junior", "mixed"
 
 # Update prompts for your domain
 # Edit .roomodes to include domain-specific context
@@ -510,14 +510,14 @@ time ./claude-flow sparc "simple hello world function"
 # PowerShell execution policy
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-# Path issues with ./claude-flow
-# Use .\claude-flow.cmd instead
-npx claude-flow@latest init --sparc --force
-.\claude-flow.cmd sparc modes
+# Path issues with ./gemini-flow
+# Use .\gemini-flow.cmd instead
+npx gemini-flow@latest init --sparc --force
+.\gemini-flow.cmd sparc modes
 
 # If .cmd file missing, create it
 @echo off
-npx claude-flow %*
+npx gemini-flow %*
 ```
 
 ### macOS Users
@@ -558,31 +558,31 @@ nvm use --lts
 
 ```bash
 # Enable comprehensive debugging
-export DEBUG=claude-flow:*
+export DEBUG=gemini-flow:*
 export NODE_ENV=development
 
 # Run with debug output
-npx claude-flow@latest init --sparc --force --verbose
+npx gemini-flow@latest init --sparc --force --verbose
 
 # Check debug logs
-ls -la .claude/logs/
-tail -f .claude/logs/debug.log
+ls -la .gemini/logs/
+tail -f .gemini/logs/debug.log
 ```
 
 ### Clean Environment Test
 
 ```bash
 # Test in completely clean environment
-mkdir /tmp/claude-flow-test
-cd /tmp/claude-flow-test
+mkdir /tmp/gemini-flow-test
+cd /tmp/gemini-flow-test
 
 # Initialize fresh
-npx -y claude-flow@latest init --sparc --force
+npx -y gemini-flow@latest init --sparc --force
 
 # Test basic functionality
-./claude-flow --version
-./claude-flow sparc modes
-./claude-flow status
+./gemini-flow --version
+./gemini-flow sparc modes
+./gemini-flow status
 ```
 
 ### System Requirements Verification
@@ -611,9 +611,9 @@ if (version[0] < 16) {
 
 ### Community Support
 
-1. **GitHub Issues**: https://github.com/ruvnet/claude-code-flow/issues
-2. **Documentation**: https://github.com/ruvnet/claude-code-flow/docs
-3. **Discussions**: https://github.com/ruvnet/claude-code-flow/discussions
+1. **GitHub Issues**: https://github.com/ruvnet/gemini-flow/issues
+2. **Documentation**: https://github.com/ruvnet/gemini-flow/docs
+3. **Discussions**: https://github.com/ruvnet/gemini-flow/discussions
 
 ### Reporting Bugs
 
@@ -621,10 +621,10 @@ When reporting issues, include:
 
 ```bash
 # Generate diagnostic report
-./claude-flow diagnostic > claude-flow-diagnostic.txt
+./gemini-flow diagnostic > gemini-flow-diagnostic.txt
 
 # Include this information:
-echo "Claude-Flow Version: $(npx claude-flow --version)"
+echo "Gemini-Flow Version: $(npx gemini-flow --version)"
 echo "Node.js Version: $(node --version)"
 echo "npm Version: $(npm --version)"
 echo "Operating System: $(uname -a)"
@@ -641,20 +641,20 @@ If everything fails and you need to start over:
 ```bash
 # Complete cleanup script
 #!/bin/bash
-echo "🚨 Emergency cleanup - this will remove ALL Claude-Flow files"
+echo "🚨 Emergency cleanup - this will remove ALL Gemini-Flow files"
 read -p "Are you sure? (type 'yes'): " confirm
 
 if [ "$confirm" = "yes" ]; then
-  # Remove all Claude-Flow files
-  rm -f CLAUDE.md memory-bank.md coordination.md .roomodes
-  rm -rf .claude/ memory/ coordination/
-  rm -f claude-flow claude-flow.cmd
+  # Remove all Gemini-Flow files
+  rm -f GEMINI.md memory-bank.md coordination.md .roomodes
+  rm -rf .gemini/ memory/ coordination/
+  rm -f gemini-flow gemini-flow.cmd
   
   # Clear npm cache
   npm cache clean --force
   
   # Fresh start
-  npx -y claude-flow@latest init --sparc --force
+  npx -y gemini-flow@latest init --sparc --force
   
   echo "✅ Emergency recovery complete"
 else
@@ -667,7 +667,7 @@ fi
 1. **Always backup before major changes**
 2. **Use version control** to track configuration changes
 3. **Test in development environment** before production
-4. **Keep Claude-Flow updated** regularly
+4. **Keep Gemini-Flow updated** regularly
 5. **Monitor performance** after changes
 6. **Document customizations** for your team
 

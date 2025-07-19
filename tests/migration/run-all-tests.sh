@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Claude Flow Migration Test Runner
+# Gemini Flow Migration Test Runner
 # Runs all migration tests and generates a comprehensive report
 
 set -e
@@ -65,7 +65,7 @@ check_prerequisites() {
 
 # Main test execution
 main() {
-    echo -e "${BLUE}Claude Flow Migration Test Suite${NC}"
+    echo -e "${BLUE}Gemini Flow Migration Test Suite${NC}"
     echo -e "${BLUE}================================${NC}"
     
     # Check prerequisites

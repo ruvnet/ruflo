@@ -229,7 +229,7 @@ function showAutomationHelp() {
 🤖 Automation Commands - Intelligent Agent & Workflow Management
 
 USAGE:
-  claude-flow automation <command> [options]
+  gemini-flow automation <command> [options]
 
 COMMANDS:
   auto-agent        Automatically spawn optimal agents based on task complexity
@@ -254,16 +254,16 @@ WORKFLOW-SELECT OPTIONS:
 
 EXAMPLES:
   # Auto-spawn for complex enterprise task
-  claude-flow automation auto-agent --task-complexity enterprise --swarm-id swarm-123
+  gemini-flow automation auto-agent --task-complexity enterprise --swarm-id swarm-123
 
   # Smart spawn for web development
-  claude-flow automation smart-spawn --requirement "web-development" --max-agents 8
+  gemini-flow automation smart-spawn --requirement "web-development" --max-agents 8
 
   # Select workflow for API project optimized for speed
-  claude-flow automation workflow-select --project-type api --priority speed
+  gemini-flow automation workflow-select --project-type api --priority speed
 
   # Auto-spawn for simple task
-  claude-flow automation auto-agent --task-complexity low
+  gemini-flow automation auto-agent --task-complexity low
 
 🎯 Automation benefits:
   • Optimal resource allocation

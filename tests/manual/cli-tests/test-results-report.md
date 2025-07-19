@@ -31,7 +31,7 @@
 
 ### 📋 Package Info
 
-**Name:** claude-flow
+**Name:** gemini-flow
 **Version:** 1.0.71
 **Main:** cli.js
 
@@ -42,10 +42,10 @@
 🧠 Claude-Flow v1.0.71 - Advanced AI Agent Orchestration System
 
 USAGE:
-  claude-flow <command> [options]
+  gemini-flow <command> [options]
 
 INSTALLATION & SETUP:
-  npx claude-flow@latest init --sparc  # Initialize SPARC development environment
+  npx gemini-flow@latest init --sparc  # Initialize SPARC development environment
   
   The --sparc flag creates:
   • .roomodes file with 17 pre-configured SPARC modes
@@ -53,7 +53,7 @@ INSTALLATION & SETUP:
   • Ready-to-use TDD and code generation environment
 
 KEY COMMANDS:
-  init [--sparc]                       Initialize project with Claude integration
+  init [--sparc]                       Initialize project with Gemini integration
   start [--ui]                         Start orchestration (--ui for enhanced UI)
   spawn <type> [--name <name>]         Create AI agent (alias for agent spawn)
   agent spawn <type> [--name <name>]   Create AI agent (researcher, coder, analyst)

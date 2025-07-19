@@ -35,17 +35,17 @@ commandRegistry.set('start-ui', {
 ```
 
 ### Testing Confirmed:
-- ✅ `claude-flow start --ui` works correctly
-- ✅ `claude-flow start-ui` works correctly as an alias
-- ✅ `claude-flow start-ui --help` displays proper help text
+- ✅ `gemini-flow start --ui` works correctly
+- ✅ `gemini-flow start-ui` works correctly as an alias
+- ✅ `gemini-flow start-ui --help` displays proper help text
 - ✅ Both commands support the same flags (--port, --web, etc.)
 
 ### Documentation Updates:
 Updated all 6 occurrences in README.md to show both methods:
 ```bash
 # Start coordinated development (both methods work)
-npx claude-flow@2.0.0 start --ui     # Primary method
-npx claude-flow@2.0.0 start-ui       # Convenient alias
+npx gemini-flow@2.0.0 start --ui     # Primary method
+npx gemini-flow@2.0.0 start-ui       # Convenient alias
 ```
 
 ### Benefits of This Approach:
@@ -54,4 +54,4 @@ npx claude-flow@2.0.0 start-ui       # Convenient alias
 3. **Future Flexibility** - Can deprecate one method later if needed
 4. **Better UX** - Users can choose their preferred syntax
 
-The fix is complete and ready for testing in the `claude-flow-v2.0.0` branch.
+The fix is complete and ready for testing in the `gemini-flow-v2.0.0` branch.

@@ -1,5 +1,5 @@
 /**
- * Test configuration for Claude-Flow
+ * Test configuration for Gemini-Flow
  */
 
 export const TEST_CONFIG = {

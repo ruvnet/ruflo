@@ -1,8 +1,8 @@
-# 🧠 Claude-Flow Hive Mind System v2.0.0
+# 🧠 Gemini-Flow Hive Mind System v2.0.0
 
 ## Overview
 
-The Hive Mind system is an advanced swarm intelligence implementation for Claude-Flow that introduces collective decision-making, shared memory, and queen-led coordination. It builds upon the existing swarm system with enhanced capabilities for complex, enterprise-scale projects.
+The Hive Mind system is an advanced swarm intelligence implementation for Gemini-Flow that introduces collective decision-making, shared memory, and queen-led coordination. It builds upon the existing swarm system with enhanced capabilities for complex, enterprise-scale projects.
 
 ## Key Features
 
@@ -45,7 +45,7 @@ The Hive Mind system is an advanced swarm intelligence implementation for Claude
 
 ### 1. Initialize Hive Mind
 ```bash
-claude-flow hive-mind init
+gemini-flow hive-mind init
 ```
 
 This creates:
@@ -55,7 +55,7 @@ This creates:
 
 ### 2. Interactive Setup
 ```bash
-claude-flow hive-mind wizard
+gemini-flow hive-mind wizard
 ```
 
 The wizard guides you through:
@@ -68,10 +68,10 @@ The wizard guides you through:
 ### 3. Quick Start
 ```bash
 # Spawn a swarm with objective
-claude-flow hive-mind spawn "Build microservices architecture"
+gemini-flow hive-mind spawn "Build microservices architecture"
 
 # With options
-claude-flow hive-mind spawn "Develop REST API" \
+gemini-flow hive-mind spawn "Develop REST API" \
   --queen-type strategic \
   --max-workers 6 \
   --consensus weighted \
@@ -85,23 +85,23 @@ claude-flow hive-mind spawn "Develop REST API" \
 
 ```bash
 # View status of all active swarms
-claude-flow hive-mind status
+gemini-flow hive-mind status
 
 # View consensus decisions
-claude-flow hive-mind consensus
+gemini-flow hive-mind consensus
 
 # View performance metrics
-claude-flow hive-mind metrics
+gemini-flow hive-mind metrics
 
 # Manage collective memory
-claude-flow hive-mind memory
+gemini-flow hive-mind memory
 ```
 
 ### Advanced Configurations
 
 ```bash
 # Enterprise development swarm
-claude-flow hive-mind spawn "Build enterprise SaaS platform" \
+gemini-flow hive-mind spawn "Build enterprise SaaS platform" \
   --queen-type strategic \
   --max-workers 12 \
   --consensus byzantine \
@@ -110,13 +110,13 @@ claude-flow hive-mind spawn "Build enterprise SaaS platform" \
   --monitor
 
 # Research and analysis swarm
-claude-flow hive-mind spawn "Research AI architectures" \
+gemini-flow hive-mind spawn "Research AI architectures" \
   --queen-type adaptive \
   --worker-types "researcher,analyst,documenter" \
   --auto-scale
 
 # Rapid prototyping swarm
-claude-flow hive-mind spawn "Create MVP for startup" \
+gemini-flow hive-mind spawn "Create MVP for startup" \
   --queen-type tactical \
   --max-workers 4 \
   --consensus majority
@@ -214,7 +214,7 @@ The Hive Mind system integrates all 87 MCP tools across 8 categories:
 
 ```bash
 # Real-time monitoring
-claude-flow hive-mind spawn "objective" --monitor
+gemini-flow hive-mind spawn "objective" --monitor
 
 # Displays:
 # - Active agents and their status
@@ -252,7 +252,7 @@ claude-flow hive-mind spawn "objective" --monitor
 
 1. **"Hive Mind not initialized"**
    ```bash
-   claude-flow hive-mind init
+   gemini-flow hive-mind init
    ```
 
 2. **"No consensus reached"**
@@ -269,10 +269,10 @@ claude-flow hive-mind spawn "objective" --monitor
 
 ```bash
 # Enable verbose logging
-claude-flow hive-mind spawn "objective" --verbose
+gemini-flow hive-mind spawn "objective" --verbose
 
 # Check system health
-claude-flow hive-mind status --verbose
+gemini-flow hive-mind status --verbose
 ```
 
 ## Integration with Existing Systems
@@ -280,14 +280,14 @@ claude-flow hive-mind status --verbose
 ### With Standard Swarm
 ```bash
 # Upgrade existing swarm to hive mind
-claude-flow hive-mind init
-claude-flow hive-mind spawn "Continue existing project"
+gemini-flow hive-mind init
+gemini-flow hive-mind spawn "Continue existing project"
 ```
 
 ### With GitHub Workflows
 ```bash
 # Automated PR management
-claude-flow hive-mind spawn "Review and merge PRs" \
+gemini-flow hive-mind spawn "Review and merge PRs" \
   --worker-types "reviewer,tester" \
   --queen-type tactical
 ```
@@ -295,8 +295,8 @@ claude-flow hive-mind spawn "Review and merge PRs" \
 ### With SPARC Modes
 ```bash
 # Combine with SPARC development
-claude-flow sparc architect "Design system"
-claude-flow hive-mind spawn "Implement designed system"
+gemini-flow sparc architect "Design system"
+gemini-flow hive-mind spawn "Implement designed system"
 ```
 
 ## Future Enhancements
@@ -310,8 +310,8 @@ claude-flow hive-mind spawn "Implement designed system"
 
 ## Support
 
-- **Documentation**: [GitHub Wiki](https://github.com/ruvnet/claude-code-flow)
-- **Issues**: [GitHub Issues](https://github.com/ruvnet/claude-code-flow/issues)
+- **Documentation**: [GitHub Wiki](https://github.com/ruvnet/gemini-flow)
+- **Issues**: [GitHub Issues](https://github.com/ruvnet/gemini-flow/issues)
 - **Discord**: [Community Chat](https://discord.gg/claudeflow)
 
 ---

@@ -1,7 +1,7 @@
 # WebUI Cross-Platform Implementation Summary
 
 ## Overview
-Successfully implemented cross-platform WebUI functionality for Claude-Flow swarm orchestration, addressing GitHub issue #111. The solution provides seamless operation across both Node.js and Deno environments.
+Successfully implemented cross-platform WebUI functionality for Gemini-Flow swarm orchestration, addressing GitHub issue #111. The solution provides seamless operation across both Node.js and Deno environments.
 
 ## Key Achievements
 
@@ -108,7 +108,7 @@ export class UnifiedTerminalIO {
 ### Launch WebUI
 ```bash
 # Start with enhanced WebUI
-claude-flow start --ui
+gemini-flow start --ui
 
 # Alternative CLI access
 node src/cli/simple-commands/start-wrapper.js --ui

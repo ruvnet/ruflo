@@ -1,5 +1,5 @@
 @echo off
-:: Claude Flow CLI for Windows
+:: Gemini Flow CLI for Windows
 :: AI-Driven Development Toolkit
 
 setlocal
@@ -12,7 +12,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Run Claude Flow CLI
-node "%~dp0claude-flow" %*
+:: Run Gemini Flow CLI
+node "%~dp0gemini-flow" %*
 
 endlocal

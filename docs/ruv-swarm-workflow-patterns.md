@@ -1,6 +1,6 @@
 # ruv-swarm Workflow Patterns
 
-This document outlines proven workflow patterns for using ruv-swarm coordination with Claude Code across different development scenarios.
+This document outlines proven workflow patterns for using ruv-swarm coordination with Gemini CLI across different development scenarios.
 
 ## 🏗️ Development Workflow Patterns
 
@@ -13,17 +13,17 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 ```javascript
 // Step 1: Initialize rapid prototype swarm
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "star", 
     maxAgents: 4, 
     strategy: "development",
     mode: "rapid-prototype" 
   })
   
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "Prototype Designer" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Full-Stack Developer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Quick Tester" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Prototype Manager" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "Prototype Designer" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Full-Stack Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Quick Tester" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Prototype Manager" })
   
   TodoWrite({ todos: [
     { id: "mvp_design", content: "Design minimal viable prototype", status: "in_progress", priority: "high" },
@@ -49,7 +49,7 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 ```javascript
 // Step 1: Enterprise swarm initialization
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "hierarchical", 
     maxAgents: 12, 
     strategy: "development",
@@ -58,24 +58,24 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
   })
   
   // Leadership tier
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "Solution Architect" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Tech Lead" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "Solution Architect" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Tech Lead" })
   
   // Development tiers
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Backend Lead" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Frontend Lead" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "API Developer" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Database Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Backend Lead" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Frontend Lead" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "API Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Database Developer" })
   
   // Quality tiers
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "QA Lead" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Security Tester" })
-  mcp__claude-flow__agent_spawn({ type: "reviewer", name: "Code Reviewer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "QA Lead" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Security Tester" })
+  mcp__gemini-flow__agent_spawn({ type: "reviewer", name: "Code Reviewer" })
   
   // Operations tier
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "DevOps Engineer" })
-  mcp__claude-flow__agent_spawn({ type: "documenter", name: "Technical Writer" })
-  mcp__claude-flow__agent_spawn({ type: "monitor", name: "Performance Analyst" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "DevOps Engineer" })
+  mcp__gemini-flow__agent_spawn({ type: "documenter", name: "Technical Writer" })
+  mcp__gemini-flow__agent_spawn({ type: "monitor", name: "Performance Analyst" })
 ```
 
 ### Pattern 3: Microservices Development Workflow
@@ -87,7 +87,7 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 ```javascript
 // Step 1: Microservices mesh coordination
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "mesh", 
     maxAgents: 18, 
     strategy: "development",
@@ -97,29 +97,29 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
   
   // Service teams (per service: architect, coder, tester)
   // User Service Team
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "User Service Architect" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "User Service Developer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "User Service Tester" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "User Service Architect" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "User Service Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "User Service Tester" })
   
   // Payment Service Team
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "Payment Service Architect" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Payment Service Developer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Payment Service Tester" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "Payment Service Architect" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Payment Service Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Payment Service Tester" })
   
   // Order Service Team
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "Order Service Architect" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Order Service Developer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Order Service Tester" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "Order Service Architect" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Order Service Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Order Service Tester" })
   
   // Cross-cutting concerns
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "API Gateway Architect" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Gateway Developer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Integration Tester" })
-  mcp__claude-flow__agent_spawn({ type: "monitor", name: "Service Monitor" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Microservices Coordinator" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "API Gateway Architect" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Gateway Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Integration Tester" })
+  mcp__gemini-flow__agent_spawn({ type: "monitor", name: "Service Monitor" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Microservices Coordinator" })
   
   // Store service boundaries and dependencies
-  mcp__claude-flow__memory_usage({
+  mcp__gemini-flow__memory_usage({
     action: "store",
     key: "microservices/architecture/boundaries",
     value: {
@@ -144,19 +144,19 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 
 ```javascript
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "mesh", 
     maxAgents: 6, 
     strategy: "research",
     methodology: "systematic-review" 
   })
   
-  mcp__claude-flow__agent_spawn({ type: "researcher", name: "Literature Searcher" })
-  mcp__claude-flow__agent_spawn({ type: "researcher", name: "Paper Analyzer" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Data Synthesizer" })
-  mcp__claude-flow__agent_spawn({ type: "reviewer", name: "Quality Assessor" })
-  mcp__claude-flow__agent_spawn({ type: "documenter", name: "Report Writer" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Research Lead" })
+  mcp__gemini-flow__agent_spawn({ type: "researcher", name: "Literature Searcher" })
+  mcp__gemini-flow__agent_spawn({ type: "researcher", name: "Paper Analyzer" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Data Synthesizer" })
+  mcp__gemini-flow__agent_spawn({ type: "reviewer", name: "Quality Assessor" })
+  mcp__gemini-flow__agent_spawn({ type: "documenter", name: "Report Writer" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Research Lead" })
   
   // Define research phases
   TodoWrite({ todos: [
@@ -177,20 +177,20 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 
 ```javascript
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "star", 
     maxAgents: 7, 
     strategy: "research",
     focus: "market-analysis" 
   })
   
-  mcp__claude-flow__agent_spawn({ type: "researcher", name: "Market Researcher" })
-  mcp__claude-flow__agent_spawn({ type: "researcher", name: "Competitor Analyst" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Trend Analyzer" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Data Scientist" })
-  mcp__claude-flow__agent_spawn({ type: "researcher", name: "Consumer Insights" })
-  mcp__claude-flow__agent_spawn({ type: "documenter", name: "Report Specialist" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Research Director" })
+  mcp__gemini-flow__agent_spawn({ type: "researcher", name: "Market Researcher" })
+  mcp__gemini-flow__agent_spawn({ type: "researcher", name: "Competitor Analyst" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Trend Analyzer" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Data Scientist" })
+  mcp__gemini-flow__agent_spawn({ type: "researcher", name: "Consumer Insights" })
+  mcp__gemini-flow__agent_spawn({ type: "documenter", name: "Report Specialist" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Research Director" })
 ```
 
 ## 🧪 Testing Workflow Patterns
@@ -203,7 +203,7 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 
 ```javascript
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "hierarchical", 
     maxAgents: 8, 
     strategy: "testing",
@@ -211,21 +211,21 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
   })
   
   // Test management tier
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Test Manager" })
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "Test Architect" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Test Manager" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "Test Architect" })
   
   // Test implementation tier
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Unit Test Developer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Integration Test Developer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "E2E Test Developer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Performance Test Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Unit Test Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Integration Test Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "E2E Test Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Performance Test Developer" })
   
   // Quality assurance tier
-  mcp__claude-flow__agent_spawn({ type: "reviewer", name: "Test Reviewer" })
-  mcp__claude-flow__agent_spawn({ type: "monitor", name: "Coverage Analyst" })
+  mcp__gemini-flow__agent_spawn({ type: "reviewer", name: "Test Reviewer" })
+  mcp__gemini-flow__agent_spawn({ type: "monitor", name: "Coverage Analyst" })
   
   // Test strategy definition
-  mcp__claude-flow__memory_usage({
+  mcp__gemini-flow__memory_usage({
     action: "store",
     key: "testing/strategy/pyramid",
     value: {
@@ -249,18 +249,18 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 
 ```javascript
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "ring", 
     maxAgents: 5, 
     strategy: "debugging",
     priority: "critical" 
   })
   
-  mcp__claude-flow__agent_spawn({ type: "debugger", name: "Bug Investigator" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Root Cause Analyzer" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Fix Implementer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Fix Validator" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Bug Manager" })
+  mcp__gemini-flow__agent_spawn({ type: "debugger", name: "Bug Investigator" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Root Cause Analyzer" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Fix Implementer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Fix Validator" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Bug Manager" })
 ```
 
 ## 🚀 Deployment Workflow Patterns
@@ -273,7 +273,7 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 
 ```javascript
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "hierarchical", 
     maxAgents: 10, 
     strategy: "deployment",
@@ -281,22 +281,22 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
   })
   
   // Pipeline design tier
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "Pipeline Architect" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "DevOps Lead" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "Pipeline Architect" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "DevOps Lead" })
   
   // Build and test tier
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Build Engineer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Pipeline Tester" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Quality Gate Analyst" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Build Engineer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Pipeline Tester" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Quality Gate Analyst" })
   
   // Deployment tier
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Deployment Engineer" })
-  mcp__claude-flow__agent_spawn({ type: "monitor", name: "Deployment Monitor" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Deployment Engineer" })
+  mcp__gemini-flow__agent_spawn({ type: "monitor", name: "Deployment Monitor" })
   
   // Operations tier
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Infrastructure Analyst" })
-  mcp__claude-flow__agent_spawn({ type: "monitor", name: "Performance Monitor" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Release Manager" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Infrastructure Analyst" })
+  mcp__gemini-flow__agent_spawn({ type: "monitor", name: "Performance Monitor" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Release Manager" })
 ```
 
 ### Pattern 2: Blue-Green Deployment
@@ -307,19 +307,19 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 
 ```javascript
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "star", 
     maxAgents: 6, 
     strategy: "deployment",
     pattern: "blue-green" 
   })
   
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Deployment Controller" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Environment Manager" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Smoke Test Engineer" })
-  mcp__claude-flow__agent_spawn({ type: "monitor", name: "Health Monitor" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Traffic Analyzer" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Rollback Coordinator" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Deployment Controller" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Environment Manager" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Smoke Test Engineer" })
+  mcp__gemini-flow__agent_spawn({ type: "monitor", name: "Health Monitor" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Traffic Analyzer" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Rollback Coordinator" })
 ```
 
 ## 🔄 Maintenance Workflow Patterns
@@ -332,21 +332,21 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 
 ```javascript
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "mesh", 
     maxAgents: 8, 
     strategy: "maintenance",
     focus: "technical-debt" 
   })
   
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Debt Analyzer" })
-  mcp__claude-flow__agent_spawn({ type: "architect", name: "Refactoring Architect" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Refactoring Developer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Regression Tester" })
-  mcp__claude-flow__agent_spawn({ type: "reviewer", name: "Code Quality Reviewer" })
-  mcp__claude-flow__agent_spawn({ type: "monitor", name: "Metrics Tracker" })
-  mcp__claude-flow__agent_spawn({ type: "documenter", name: "Documentation Updater" })
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Debt Manager" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Debt Analyzer" })
+  mcp__gemini-flow__agent_spawn({ type: "architect", name: "Refactoring Architect" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Refactoring Developer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Regression Tester" })
+  mcp__gemini-flow__agent_spawn({ type: "reviewer", name: "Code Quality Reviewer" })
+  mcp__gemini-flow__agent_spawn({ type: "monitor", name: "Metrics Tracker" })
+  mcp__gemini-flow__agent_spawn({ type: "documenter", name: "Documentation Updater" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Debt Manager" })
 ```
 
 ### Pattern 2: Security Audit and Hardening
@@ -357,7 +357,7 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 
 ```javascript
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "hierarchical", 
     maxAgents: 9, 
     strategy: "security",
@@ -365,21 +365,21 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
   })
   
   // Security leadership
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "Security Lead" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Threat Modeler" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "Security Lead" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Threat Modeler" })
   
   // Code security tier
-  mcp__claude-flow__agent_spawn({ type: "reviewer", name: "Security Code Reviewer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Penetration Tester" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Vulnerability Scanner" })
+  mcp__gemini-flow__agent_spawn({ type: "reviewer", name: "Security Code Reviewer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Penetration Tester" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Vulnerability Scanner" })
   
   // Infrastructure security tier
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Infrastructure Auditor" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "Security Engineer" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Infrastructure Auditor" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "Security Engineer" })
   
   // Compliance tier
-  mcp__claude-flow__agent_spawn({ type: "documenter", name: "Compliance Documenter" })
-  mcp__claude-flow__agent_spawn({ type: "monitor", name: "Security Monitor" })
+  mcp__gemini-flow__agent_spawn({ type: "documenter", name: "Compliance Documenter" })
+  mcp__gemini-flow__agent_spawn({ type: "monitor", name: "Security Monitor" })
 ```
 
 ## 📊 Data Science Workflow Patterns
@@ -392,21 +392,21 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 
 ```javascript
 [BatchTool]:
-  mcp__claude-flow__swarm_init({ 
+  mcp__gemini-flow__swarm_init({ 
     topology: "star", 
     maxAgents: 8, 
     strategy: "analysis",
     domain: "machine-learning" 
   })
   
-  mcp__claude-flow__agent_spawn({ type: "coordinator", name: "ML Lead" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Data Scientist" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "ML Engineer" })
-  mcp__claude-flow__agent_spawn({ type: "analyst", name: "Feature Engineer" })
-  mcp__claude-flow__agent_spawn({ type: "tester", name: "Model Validator" })
-  mcp__claude-flow__agent_spawn({ type: "monitor", name: "Performance Monitor" })
-  mcp__claude-flow__agent_spawn({ type: "coder", name: "MLOps Engineer" })
-  mcp__claude-flow__agent_spawn({ type: "documenter", name: "Model Documenter" })
+  mcp__gemini-flow__agent_spawn({ type: "coordinator", name: "ML Lead" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Data Scientist" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "ML Engineer" })
+  mcp__gemini-flow__agent_spawn({ type: "analyst", name: "Feature Engineer" })
+  mcp__gemini-flow__agent_spawn({ type: "tester", name: "Model Validator" })
+  mcp__gemini-flow__agent_spawn({ type: "monitor", name: "Performance Monitor" })
+  mcp__gemini-flow__agent_spawn({ type: "coder", name: "MLOps Engineer" })
+  mcp__gemini-flow__agent_spawn({ type: "documenter", name: "Model Documenter" })
 ```
 
 ## 🎯 Workflow Pattern Selection Guide
@@ -438,7 +438,7 @@ This document outlines proven workflow patterns for using ruv-swarm coordination
 
 ```javascript
 // Define custom hybrid topology
-mcp__claude-flow__swarm_init({ 
+mcp__gemini-flow__swarm_init({ 
   topology: "hybrid",
   customStructure: {
     core: ["architect", "coordinator"],
@@ -460,7 +460,7 @@ mcp__claude-flow__swarm_init({
 
 ```javascript
 // Auto-scale agents based on workload
-mcp__claude-flow__agent_spawn({ 
+mcp__gemini-flow__agent_spawn({ 
   type: "auto-scaler", 
   name: "Workload Manager",
   config: {
@@ -480,7 +480,7 @@ mcp__claude-flow__agent_spawn({
 
 ```javascript
 // Track workflow performance
-mcp__claude-flow__memory_usage({
+mcp__gemini-flow__memory_usage({
   action: "store",
   key: "workflow/metrics/performance",
   value: {

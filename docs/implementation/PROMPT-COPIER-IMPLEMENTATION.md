@@ -2,7 +2,7 @@
 
 ## Overview
 
-I have successfully implemented a comprehensive, enterprise-grade prompt copying mechanism for the Claude-Flow project. This system provides efficient, reliable, and safe copying of prompt files with advanced features including:
+I have successfully implemented a comprehensive, enterprise-grade prompt copying mechanism for the Gemini-Flow project. This system provides efficient, reliable, and safe copying of prompt files with advanced features including:
 
 - ✅ **Parallel Processing**: Multi-threaded copying using worker threads
 - ✅ **Conflict Resolution**: Intelligent handling of file conflicts (skip, overwrite, backup, merge)
@@ -194,7 +194,7 @@ npx prompt-copier config --profiles
 - **Content Validation**: Check for common prompt file issues
 - **Metadata Preservation**: Maintain file timestamps and permissions
 
-## Integration with Claude-Flow
+## Integration with Gemini-Flow
 
 ### SPARC Methodology Support
 - **Specialized Profiles**: Optimized for SPARC prompt patterns
@@ -203,7 +203,7 @@ npx prompt-copier config --profiles
 - **Workflow Integration**: Seamless integration with SPARC workflows
 
 ### Memory System Integration
-- **State Persistence**: Store copying state in Claude-Flow memory
+- **State Persistence**: Store copying state in Gemini-Flow memory
 - **Progress Tracking**: Track copying progress across sessions
 - **Configuration Sharing**: Share configurations between team members
 - **Audit Trail**: Maintain records of all copying operations
@@ -225,7 +225,7 @@ npx prompt-copier config --profiles
 
 ## Conclusion
 
-The robust prompt copying mechanism provides a comprehensive solution for managing prompt files in Claude-Flow projects. It combines high performance with reliability, offering both simple and advanced features to meet different use cases.
+The robust prompt copying mechanism provides a comprehensive solution for managing prompt files in Gemini-Flow projects. It combines high performance with reliability, offering both simple and advanced features to meet different use cases.
 
 Key achievements:
 - ✅ **Robust Architecture**: Modular design with clear separation of concerns
@@ -236,4 +236,4 @@ Key achievements:
 - ✅ **Well-Tested**: Comprehensive test suite with high coverage
 - ✅ **Documented**: Detailed documentation and examples
 
-The system is ready for production use and provides a solid foundation for prompt management in Claude-Flow projects.
+The system is ready for production use and provides a solid foundation for prompt management in Gemini-Flow projects.

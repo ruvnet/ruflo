@@ -8,21 +8,21 @@ export function getSpecPseudocodeOrchestration(taskDescription, memoryNamespace)
    - Extract functional requirements
    - Identify constraints and edge cases
    - Define success criteria
-   - Store requirements: \`npx claude-flow memory store ${memoryNamespace}_requirements "..."\`
+   - Store requirements: \`npx gemini-flow memory store ${memoryNamespace}_requirements "..."\`
 
 2. **Specification Writing** (20 mins)
    - Create detailed specifications
    - Define input/output contracts
    - Document business rules
    - Specify error conditions
-   - Store specs: \`npx claude-flow memory store ${memoryNamespace}_specifications "..."\`
+   - Store specs: \`npx gemini-flow memory store ${memoryNamespace}_specifications "..."\`
 
 3. **Pseudocode Development** (20 mins)
    - Write high-level algorithms
    - Define data structures
    - Map process flows
    - Include TDD anchors
-   - Store pseudocode: \`npx claude-flow memory store ${memoryNamespace}_pseudocode "..."\`
+   - Store pseudocode: \`npx gemini-flow memory store ${memoryNamespace}_pseudocode "..."\`
 
 4. **Modular Design** (10 mins)
    - Break into logical modules

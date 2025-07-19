@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../../utils/error-handler.js';
 /**
- * Session management commands for Claude-Flow
+ * Session management commands for Gemini-Flow
  */
 
 import { Command } from 'commander';
@@ -14,7 +14,7 @@ import chalk from 'chalk';
 
 export const sessionCommand = new Command()
   .name('session')
-  .description('Manage Claude-Flow sessions')
+  .description('Manage Gemini-Flow sessions')
   .action(() => {
     sessionCommand.help();
   });

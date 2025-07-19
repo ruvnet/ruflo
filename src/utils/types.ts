@@ -1,5 +1,5 @@
 /**
- * Core type definitions for Claude-Flow
+ * Core type definitions for Gemini-Flow
  */
 
 // Logging configuration interface

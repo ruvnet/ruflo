@@ -1,9 +1,9 @@
 # Phase 5: Deployment and Completion
-## Claude-Flow Production Deployment Guide
+## Gemini-Flow Production Deployment Guide
 
 ### Deployment Overview
 
-This phase covers the final steps to prepare Claude-Flow for production deployment, including packaging, distribution, monitoring, and maintenance strategies.
+This phase covers the final steps to prepare Gemini-Flow for production deployment, including packaging, distribution, monitoring, and maintenance strategies.
 
 ### Pre-Deployment Checklist
 
@@ -71,7 +71,7 @@ terminal:
   
 memory:
   backend: sqlite
-  path: /var/lib/claude-flow/prod.db
+  path: /var/lib/gemini-flow/prod.db
   wal_mode: true
   cache_size: 100MB
   
@@ -93,24 +93,24 @@ security:
 
 #### 3. Cloud Deployment
 ```yaml
-# kubernetes/claude-flow.yaml
+# kubernetes/gemini-flow.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: claude-flow
+  name: gemini-flow
 
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: claude-flow-config
-  namespace: claude-flow
+  name: gemini-flow-config
+  namespace: gemini-flow
 data:
   config.yaml: |
     environment: production
     terminal:
       mode: kubernetes
-      namespace: claude-flow-agents
+      namespace: gemini-flow-agents
     memory:
       backend: distributed
       redis:
@@ -124,17 +124,17 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: claude-flow-orchestrator
-  namespace: claude-flow
+  name: gemini-flow-orchestrator
+  namespace: gemini-flow
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: claude-flow-orchestrator
+      app: gemini-flow-orchestrator
   template:
     metadata:
       labels:
-        app: claude-flow-orchestrator
+        app: gemini-flow-orchestrator
     spec:
       containers:
       - name: orchestrator
@@ -171,17 +171,17 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: claude-flow-config
+          name: gemini-flow-config
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: claude-flow-api
-  namespace: claude-flow
+  name: gemini-flow-api
+  namespace: gemini-flow
 spec:
   selector:
-    app: claude-flow-orchestrator
+    app: gemini-flow-orchestrator
   ports:
   - name: api
     port: 8080
@@ -201,11 +201,11 @@ spec:
 ```json
 // package.json
 {
-  "name": "@claude-flow/cli",
+  "name": "@gemini-flow/cli",
   "version": "1.0.0",
-  "description": "Multi-terminal orchestration for Claude Code",
+  "description": "Multi-terminal orchestration for Gemini Code",
   "bin": {
-    "claude-flow": "./dist/cli.js"
+    "gemini-flow": "./dist/cli.js"
   },
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
@@ -225,7 +225,7 @@ spec:
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/claude-flow/claude-flow.git"
+    "url": "https://github.com/gemini-flow/gemini-flow.git"
   },
   "publishConfig": {
     "access": "public",
@@ -251,13 +251,13 @@ for platform in "${platforms[@]}"; do
   deno compile \
     --target="$platform" \
     --allow-all \
-    --output="dist/claude-flow-$platform" \
+    --output="dist/gemini-flow-$platform" \
     src/cli/index.ts
 done
 
 # Create archives
 cd dist
-for file in claude-flow-*; do
+for file in gemini-flow-*; do
   if [[ "$file" == *"windows"* ]]; then
     zip "$file.zip" "$file"
   else
@@ -282,12 +282,12 @@ RUN apk add --no-cache \
     ca-certificates \
     tini
 
-COPY --from=builder /app/dist/claude-flow /usr/local/bin/
+COPY --from=builder /app/dist/gemini-flow /usr/local/bin/
 
 EXPOSE 8080 8081 9090
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["claude-flow", "server"]
+CMD ["gemini-flow", "server"]
 ```
 
 ### Monitoring Setup
@@ -337,7 +337,7 @@ export class MetricsExporter {
 ```json
 {
   "dashboard": {
-    "title": "Claude Flow Monitoring",
+    "title": "Gemini Flow Monitoring",
     "panels": [
       {
         "title": "Active Agents",
@@ -406,20 +406,20 @@ groups:
 #!/bin/bash
 # scripts/backup.sh
 
-BACKUP_DIR="/var/backups/claude-flow"
+BACKUP_DIR="/var/backups/gemini-flow"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Backup SQLite database
-sqlite3 /var/lib/claude-flow/prod.db ".backup $BACKUP_DIR/db_$TIMESTAMP.sqlite"
+sqlite3 /var/lib/gemini-flow/prod.db ".backup $BACKUP_DIR/db_$TIMESTAMP.sqlite"
 
 # Backup configuration
-tar -czf "$BACKUP_DIR/config_$TIMESTAMP.tar.gz" /etc/claude-flow/
+tar -czf "$BACKUP_DIR/config_$TIMESTAMP.tar.gz" /etc/gemini-flow/
 
 # Backup session data
-tar -czf "$BACKUP_DIR/sessions_$TIMESTAMP.tar.gz" /var/lib/claude-flow/sessions/
+tar -czf "$BACKUP_DIR/sessions_$TIMESTAMP.tar.gz" /var/lib/gemini-flow/sessions/
 
 # Upload to S3
-aws s3 sync "$BACKUP_DIR" "s3://claude-flow-backups/"
+aws s3 sync "$BACKUP_DIR" "s3://gemini-flow-backups/"
 
 # Cleanup old backups (keep 30 days)
 find "$BACKUP_DIR" -name "*.tar.gz" -mtime +30 -delete
@@ -563,13 +563,13 @@ export class RuntimeOptimizer {
 echo "Running smoke tests..."
 
 # Test CLI availability
-claude-flow --version || exit 1
+gemini-flow --version || exit 1
 
 # Test basic commands
-claude-flow init test-project || exit 1
-claude-flow spawn 2 || exit 1
-claude-flow status || exit 1
-claude-flow shutdown || exit 1
+gemini-flow init test-project || exit 1
+gemini-flow spawn 2 || exit 1
+gemini-flow status || exit 1
+gemini-flow shutdown || exit 1
 
 # Test MCP endpoint
 curl -f http://localhost:8081/health || exit 1

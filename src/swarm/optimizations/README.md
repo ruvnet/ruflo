@@ -1,6 +1,6 @@
 # Swarm Performance Optimizations
 
-This directory contains performance optimizations for the Claude Code Flow swarm system, implementing the recommendations from the optimization analysis to achieve **2.5x performance improvement**.
+This directory contains performance optimizations for the Gemini Code Flow swarm system, implementing the recommendations from the optimization analysis to achieve **2.5x performance improvement**.
 
 ## 🚀 Quick Start
 
@@ -25,7 +25,7 @@ await stack.shutdown();
 ## 📦 Components
 
 ### 1. **Connection Pool** (`connection-pool.ts`)
-- Manages reusable Claude API connections
+- Manages reusable Gemini API connections
 - Reduces connection overhead by 95%
 - Automatic health checks and eviction
 

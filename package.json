@@ -1,10 +1,10 @@
 {
-  "name": "claude-flow",
+  "name": "gemini-flow",
   "version": "2.0.0-alpha.43",
   "description": "Enterprise-grade AI agent orchestration with ruv-swarm integration (Alpha Release)",
   "main": "cli.mjs",
   "bin": {
-    "claude-flow": "./bin/claude-flow"
+    "gemini-flow": "./bin/gemini-flow"
   },
   "scripts": {
     "dev": "tsx src/cli/main.ts",
@@ -14,8 +14,8 @@
     "build:esm": "tsc",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:ts": "npm run build:esm && npm run build:cjs",
-    "build:binary": "pkg dist/cli/main.js --targets node20-linux-x64,node20-macos-x64,node20-win-x64 --output bin/claude-flow",
-    "build:simple": "npm run build:ts && pkg dist/cli/simple-cli.js --output bin/claude-flow-simple",
+    "build:binary": "pkg dist/cli/main.js --targets node20-linux-x64,node20-macos-x64,node20-win-x64 --output bin/gemini-flow",
+    "build:simple": "npm run build:ts && pkg dist/cli/simple-cli.js --output bin/gemini-flow-simple",
     "typecheck": "tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch",
     "dev:build": "tsc --watch",
@@ -56,7 +56,7 @@
     "prepare-publish": "node scripts/prepare-publish.js"
   },
   "keywords": [
-    "claude",
+    "gemini",
     "ai",
     "agent",
     "orchestration",
@@ -79,12 +79,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-code-flow.git"
+    "url": "https://github.com/ruvnet/gemini-flow.git"
   },
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-code-flow/issues"
+    "url": "https://github.com/ruvnet/gemini-flow/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-code-flow#readme",
+  "homepage": "https://github.com/ruvnet/gemini-flow#readme",
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=9.0.0"
@@ -94,7 +94,7 @@
     "bin/",
     "dist/",
     "src/",
-    ".claude/",
+    ".gemini/",
     "docker-test/",
     "scripts/",
     "README.md",

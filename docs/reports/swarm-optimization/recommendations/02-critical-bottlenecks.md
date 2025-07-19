@@ -18,7 +18,7 @@ async executeTask(task: Task) {
 - **Throughput**: Limited to 1 task per agent
 
 ### Root Causes
-1. No connection pooling for Claude API
+1. No connection pooling for Gemini API
 2. Synchronous file I/O operations
 3. Sequential task processing
 4. No request batching

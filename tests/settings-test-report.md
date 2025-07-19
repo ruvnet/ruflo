@@ -1,7 +1,7 @@
 # Settings Dialog Test Report
 
 ## Overview
-Comprehensive testing of the Claude Code Console settings dialog functionality.
+Comprehensive testing of the Gemini Code Console settings dialog functionality.
 
 ## File Analysis
 

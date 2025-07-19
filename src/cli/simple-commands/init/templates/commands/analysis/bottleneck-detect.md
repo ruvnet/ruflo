@@ -5,7 +5,7 @@ Analyze performance bottlenecks in swarm operations and suggest optimizations.
 ## Usage
 
 ```bash
-npx claude-flow bottleneck detect [options]
+npx gemini-flow bottleneck detect [options]
 ```
 
 ## Options
@@ -20,22 +20,22 @@ npx claude-flow bottleneck detect [options]
 
 ### Basic bottleneck detection
 ```bash
-npx claude-flow bottleneck detect
+npx gemini-flow bottleneck detect
 ```
 
 ### Analyze specific swarm
 ```bash
-npx claude-flow bottleneck detect --swarm-id swarm-123
+npx gemini-flow bottleneck detect --swarm-id swarm-123
 ```
 
 ### Last 24 hours with export
 ```bash
-npx claude-flow bottleneck detect -t 24h -e bottlenecks.json
+npx gemini-flow bottleneck detect -t 24h -e bottlenecks.json
 ```
 
 ### Auto-fix detected issues
 ```bash
-npx claude-flow bottleneck detect --fix --threshold 15
+npx gemini-flow bottleneck detect --fix --threshold 15
 ```
 
 ## Metrics Analyzed
@@ -131,11 +131,11 @@ Typical improvements after bottleneck resolution:
 - **Memory**: 40-60% fewer cache misses
 - **Overall**: 25-45% performance improvement
 
-## Integration with Claude Code
+## Integration with Gemini Code
 
 ```javascript
-// Check for bottlenecks in Claude Code
-mcp__claude-flow__bottleneck_detect { 
+// Check for bottlenecks in Gemini Code
+mcp__gemini-flow__bottleneck_detect { 
   timeRange: "1h",
   threshold: 20,
   autoFix: false

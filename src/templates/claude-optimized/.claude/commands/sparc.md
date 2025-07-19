@@ -30,7 +30,7 @@ SPARC with batchtools enables parallel execution of development phases, concurre
 ### Parallel Mode Execution:
 ```bash
 # Execute multiple modes concurrently
-npx claude-flow sparc batch-run --modes '{
+npx gemini-flow sparc batch-run --modes '{
   "architect": "Design user service",
   "code": "Implement auth module",
   "tdd": "Create test suite",
@@ -38,7 +38,7 @@ npx claude-flow sparc batch-run --modes '{
 }' --parallel
 
 # Pipeline execution with dependencies
-npx claude-flow sparc pipeline --stages '[
+npx gemini-flow sparc pipeline --stages '[
   { "mode": "spec-pseudocode", "tasks": ["auth", "user", "api"] },
   { "mode": "architect", "depends": ["spec-pseudocode"] },
   { "mode": "tdd", "parallel": true },
@@ -49,7 +49,7 @@ npx claude-flow sparc pipeline --stages '[
 ### Batch TDD Workflow:
 ```bash
 # Parallel TDD for multiple features
-npx claude-flow sparc batch-tdd --features '{
+npx gemini-flow sparc batch-tdd --features '{
   "authentication": { "priority": "high", "coverage": "95%" },
   "user-management": { "priority": "medium", "coverage": "90%" },
   "api-gateway": { "priority": "high", "coverage": "95%" }
@@ -59,7 +59,7 @@ npx claude-flow sparc batch-tdd --features '{
 ### Concurrent Analysis:
 ```bash
 # Analyze multiple components in parallel
-npx claude-flow sparc batch-analyze --components '{
+npx gemini-flow sparc batch-analyze --components '{
   "frontend": ["architecture", "performance", "security"],
   "backend": ["architecture", "performance", "security", "scalability"],
   "database": ["schema", "performance", "security"]
@@ -71,7 +71,7 @@ npx claude-flow sparc batch-analyze --components '{
 ### 1. **Parallel Specification Phase**
 ```bash
 # Define specifications for multiple components concurrently
-npx claude-flow sparc batch-spec --components '[
+npx gemini-flow sparc batch-spec --components '[
   { "name": "auth-service", "requirements": "OAuth2, JWT, MFA" },
   { "name": "user-service", "requirements": "CRUD, profiles, preferences" },
   { "name": "notification-service", "requirements": "email, SMS, push" }
@@ -81,7 +81,7 @@ npx claude-flow sparc batch-spec --components '[
 ### 2. **Concurrent Pseudocode Development**
 ```bash
 # Generate pseudocode for multiple algorithms
-npx claude-flow sparc batch-pseudocode --algorithms '{
+npx gemini-flow sparc batch-pseudocode --algorithms '{
   "data-processing": ["sorting", "filtering", "aggregation"],
   "authentication": ["login", "refresh", "logout"],
   "caching": ["get", "set", "invalidate"]
@@ -91,7 +91,7 @@ npx claude-flow sparc batch-pseudocode --algorithms '{
 ### 3. **Distributed Architecture Design**
 ```bash
 # Design architecture for microservices in parallel
-npx claude-flow sparc distributed-architect --services '[
+npx gemini-flow sparc distributed-architect --services '[
   "auth", "user", "product", "order", "payment", "notification"
 ]' --patterns "microservices" --concurrent --visualize
 ```
@@ -99,7 +99,7 @@ npx claude-flow sparc distributed-architect --services '[
 ### 4. **Massive Parallel TDD Implementation**
 ```bash
 # Execute TDD across multiple modules
-npx claude-flow sparc parallel-tdd --config '{
+npx gemini-flow sparc parallel-tdd --config '{
   "modules": {
     "core": { "tests": 50, "workers": 3 },
     "api": { "tests": 100, "workers": 5 },
@@ -112,7 +112,7 @@ npx claude-flow sparc parallel-tdd --config '{
 ### 5. **Batch Integration & Validation**
 ```bash
 # Integrate and validate multiple components
-npx claude-flow sparc batch-integrate --components '[
+npx gemini-flow sparc batch-integrate --components '[
   { "name": "frontend", "deps": ["api"] },
   { "name": "api", "deps": ["database", "cache"] },
   { "name": "workers", "deps": ["queue", "storage"] }
@@ -124,14 +124,14 @@ npx claude-flow sparc batch-integrate --components '[
 ### Parallel Memory Operations
 ```bash
 # Store analysis results concurrently
-npx claude-flow sparc batch-memory-store --data '{
+npx gemini-flow sparc batch-memory-store --data '{
   "arch_decisions": { "namespace": "architecture", "parallel": true },
   "test_results": { "namespace": "testing", "compress": true },
   "perf_metrics": { "namespace": "performance", "index": true }
 }'
 
 # Query across multiple namespaces
-npx claude-flow sparc batch-memory-query --queries '[
+npx gemini-flow sparc batch-memory-query --queries '[
   { "pattern": "auth*", "namespace": "specs" },
   { "pattern": "test*", "namespace": "testing" },
   { "pattern": "perf*", "namespace": "metrics" }
@@ -143,7 +143,7 @@ npx claude-flow sparc batch-memory-query --queries '[
 ### Multi-Mode Swarm Execution
 ```bash
 # Complex project with parallel SPARC modes
-npx claude-flow sparc swarm-batch --project "enterprise-app" --config '{
+npx gemini-flow sparc swarm-batch --project "enterprise-app" --config '{
   "phases": [
     {
       "name": "design",
@@ -172,7 +172,7 @@ npx claude-flow sparc swarm-batch --project "enterprise-app" --config '{
 ### Intelligent Work Distribution
 ```bash
 # Distribute SPARC tasks based on complexity
-npx claude-flow sparc distribute --analysis '{
+npx gemini-flow sparc distribute --analysis '{
   "complexity": { "weight": 0.4, "method": "cyclomatic" },
   "dependencies": { "weight": 0.3, "method": "graph" },
   "priority": { "weight": 0.3, "method": "user-defined" }
@@ -182,7 +182,7 @@ npx claude-flow sparc distribute --analysis '{
 ### Caching and Memoization
 ```bash
 # Enable smart caching for SPARC operations
-npx claude-flow sparc cache-config --settings '{
+npx gemini-flow sparc cache-config --settings '{
   "specifications": { "ttl": "7d", "size": "100MB" },
   "architecture": { "ttl": "3d", "size": "500MB" },
   "test-results": { "ttl": "1d", "size": "1GB" },
@@ -195,7 +195,7 @@ npx claude-flow sparc cache-config --settings '{
 ### Enterprise Application Development
 ```bash
 # Full SPARC workflow with maximum parallelization
-npx claude-flow sparc enterprise-flow --project "fintech-platform" --parallel-config '{
+npx gemini-flow sparc enterprise-flow --project "fintech-platform" --parallel-config '{
   "specification": {
     "teams": ["payments", "accounts", "reporting", "compliance"],
     "parallel": true,
@@ -221,7 +221,7 @@ npx claude-flow sparc enterprise-flow --project "fintech-platform" --parallel-co
 ### Microservices Migration
 ```bash
 # Parallel SPARC-driven migration
-npx claude-flow sparc migrate-batch --from "monolith" --to "microservices" --strategy '{
+npx gemini-flow sparc migrate-batch --from "monolith" --to "microservices" --strategy '{
   "analysis": { "parallel": 5, "tools": ["dependency", "complexity", "coupling"] },
   "decomposition": { "parallel": 3, "method": "domain-driven" },
   "implementation": { "parallel": 10, "pattern": "strangler-fig" },
@@ -232,7 +232,7 @@ npx claude-flow sparc migrate-batch --from "monolith" --to "microservices" --str
 ### AI/ML Pipeline Development
 ```bash
 # SPARC for ML pipeline with parallel processing
-npx claude-flow sparc ml-pipeline --config '{
+npx gemini-flow sparc ml-pipeline --config '{
   "data-pipeline": {
     "stages": ["ingestion", "cleaning", "transformation", "validation"],
     "parallel": 4
@@ -254,7 +254,7 @@ npx claude-flow sparc ml-pipeline --config '{
 ### Real-time Batch Monitoring
 ```bash
 # Monitor all SPARC operations
-npx claude-flow sparc monitor-batch --dashboards '[
+npx gemini-flow sparc monitor-batch --dashboards '[
   "specification-progress",
   "architecture-reviews",
   "tdd-coverage",
@@ -266,7 +266,7 @@ npx claude-flow sparc monitor-batch --dashboards '[
 ### Performance Analytics
 ```bash
 # Analyze SPARC workflow efficiency
-npx claude-flow sparc analyze-performance --metrics '{
+npx gemini-flow sparc analyze-performance --metrics '{
   "throughput": ["tasks/hour", "loc/day"],
   "quality": ["bug-density", "test-coverage"],
   "efficiency": ["reuse-ratio", "automation-level"]

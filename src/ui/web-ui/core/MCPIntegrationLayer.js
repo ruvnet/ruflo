@@ -1,5 +1,5 @@
 /**
- * MCP Integration Layer - Bridge between UI and Claude Flow MCP Tools
+ * MCP Integration Layer - Bridge between UI and Gemini Flow MCP Tools
  * Handles all MCP tool execution, caching, and result processing
  */
 
@@ -285,7 +285,7 @@ export class MCPIntegrationLayer {
   async executeRealTool(toolName, params) {
     // This would call the actual MCP tool
     // For now, we'll simulate the call
-    const mcpToolName = `mcp__claude-flow__${toolName}`;
+    const mcpToolName = `mcp__gemini-flow__${toolName}`;
     
     if (typeof window !== 'undefined' && window.claudeFlowMCP) {
       return await window.claudeFlowMCP.execute(mcpToolName, params);

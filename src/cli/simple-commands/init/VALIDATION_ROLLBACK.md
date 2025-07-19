@@ -43,16 +43,16 @@ Use the enhanced initialization for maximum safety:
 
 ```bash
 # Safest initialization with full validation and rollback
-claude-flow init --enhanced --sparc
+gemini-flow init --enhanced --sparc
 
 # Enhanced with specific options
-claude-flow init --safe --sparc --force
+gemini-flow init --safe --sparc --force
 
 # Validation only (no initialization)
-claude-flow init --validate-only
+gemini-flow init --validate-only
 
 # Skip specific validations if needed
-claude-flow init --enhanced --skip-pre-validation --skip-backup
+gemini-flow init --enhanced --skip-pre-validation --skip-backup
 ```
 
 ### Validation Commands
@@ -61,13 +61,13 @@ Run validation checks independently:
 
 ```bash
 # Full validation suite
-claude-flow init --validate
+gemini-flow init --validate
 
 # Skip specific validation phases
-claude-flow init --validate --skip-pre-init --skip-config --skip-mode-test
+gemini-flow init --validate --skip-pre-init --skip-config --skip-mode-test
 
 # Pre-initialization check only
-claude-flow init --validate --pre-init-only
+gemini-flow init --validate --pre-init-only
 ```
 
 ### Rollback Commands
@@ -76,16 +76,16 @@ Rollback previous initialization:
 
 ```bash
 # Full system rollback
-claude-flow init --rollback --full
+gemini-flow init --rollback --full
 
 # Partial rollback for specific phase
-claude-flow init --rollback --partial --phase sparc-init
+gemini-flow init --rollback --partial --phase sparc-init
 
 # Interactive rollback (shows available points)
-claude-flow init --rollback
+gemini-flow init --rollback
 
 # List available backups and checkpoints
-claude-flow init --list-backups
+gemini-flow init --list-backups
 ```
 
 ## Validation Phases
@@ -133,7 +133,7 @@ claude-flow init --list-backups
 - Coordination system setup
 - Executable creation
 - SPARC initialization (if enabled)
-- Claude command creation
+- Gemini command creation
 
 ### Phase 4: Post-initialization Validation
 
@@ -187,7 +187,7 @@ Completely reverts system to pre-initialization state:
 Reverts specific components or phases:
 
 - **sparc-init**: Remove SPARC-specific files and configurations
-- **claude-commands**: Remove Claude Code slash commands
+- **claude-commands**: Remove Gemini Code slash commands
 - **memory-setup**: Reset memory system
 - **coordination-setup**: Remove coordination files
 - **executable-creation**: Remove local executable
@@ -335,7 +335,7 @@ Test categories:
 
 - **Retention**: Keeps last 5 backups by default
 - **Cleanup**: Automatic cleanup of old backups
-- **Storage**: Backups stored in `.claude-flow-backups/`
+- **Storage**: Backups stored in `.gemini-flow-backups/`
 - **Compression**: Future enhancement for large projects
 
 ## Troubleshooting
@@ -346,31 +346,31 @@ Test categories:
    ```bash
    # Fix permissions
    chmod -R 755 .
-   claude-flow init --enhanced --sparc
+   gemini-flow init --enhanced --sparc
    ```
 
 2. **Disk Space Low**
    ```bash
    # Clean and retry
-   claude-flow init --rollback --full
+   gemini-flow init --rollback --full
    df -h  # Check space
-   claude-flow init --enhanced --sparc
+   gemini-flow init --enhanced --sparc
    ```
 
 3. **Validation Failures**
    ```bash
    # Check what's failing
-   claude-flow init --validate
+   gemini-flow init --validate
    # Fix issues and retry
-   claude-flow init --enhanced --sparc
+   gemini-flow init --enhanced --sparc
    ```
 
 4. **Partial Initialization**
    ```bash
    # Complete missing components
-   claude-flow init --enhanced --sparc --force
+   gemini-flow init --enhanced --sparc --force
    # Or start fresh
-   claude-flow init --rollback --full
+   gemini-flow init --rollback --full
    ```
 
 ### Emergency Recovery
@@ -380,21 +380,21 @@ If all automated recovery fails:
 1. **Manual Backup Restore**
    ```bash
    # Find backup
-   ls .claude-flow-backups/
+   ls .gemini-flow-backups/
    # Manual restore from backup directory
    ```
 
 2. **Clean State Reset**
    ```bash
    # Remove all artifacts manually
-   rm -rf .claude .roo CLAUDE.md memory-bank.md coordination.md
-   rm -rf memory/ coordination/ claude-flow
+   rm -rf .gemini .roo CLAUDE.md memory-bank.md coordination.md
+   rm -rf memory/ coordination/ gemini-flow
    ```
 
 3. **Fresh Installation**
    ```bash
    # Start completely fresh
-   npx claude-flow@latest init --sparc --force
+   npx gemini-flow@latest init --sparc --force
    ```
 
 ## Future Enhancements

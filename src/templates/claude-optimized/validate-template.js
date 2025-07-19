@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Validate Claude optimized template installation
+ * Validate Gemini optimized template installation
  * This script verifies that all required files are present and properly formatted
  */
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Claude-Flow Migration Tool
+ * Gemini-Flow Migration Tool
  * Helps existing projects migrate to optimized prompts and configurations
  */
 
@@ -16,8 +16,8 @@ import * as path from 'path';
 const program = new Command();
 
 program
-  .name('claude-flow-migrate')
-  .description('Migrate existing claude-flow projects to optimized prompts')
+  .name('gemini-flow-migrate')
+  .description('Migrate existing gemini-flow projects to optimized prompts')
   .version('1.0.0');
 
 program

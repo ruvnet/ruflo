@@ -212,7 +212,7 @@ class SwarmCoordinationTester {
     if (passed >= 5) {
       console.log('🟢 EXCELLENT: ruv-swarm MCP integration is fully functional');
       console.log('   ✅ All major features working: swarm, agents, tasks, neural, WASM');
-      console.log('   ✅ Ready for production use with Claude Code');
+      console.log('   ✅ Ready for production use with Gemini Code');
     } else if (passed >= 3) {
       console.log('🟡 GOOD: ruv-swarm MCP integration is mostly functional');
       console.log('   ✅ Core features working');
@@ -239,7 +239,7 @@ class SwarmCoordinationTester {
     };
 
     fs.writeFile(
-      '/workspaces/claude-code-flow/swarm-coordination-test-results.json',
+      '/workspaces/gemini-flow/swarm-coordination-test-results.json',
       JSON.stringify(reportData, null, 2)
     ).then(() => {
       console.log('\n📄 Full report saved to: swarm-coordination-test-results.json');

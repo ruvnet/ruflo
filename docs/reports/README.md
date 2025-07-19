@@ -1,6 +1,6 @@
 # Analysis Reports and Performance Data
 
-This directory contains various analysis reports, performance metrics, and optimization data for Claude Flow.
+This directory contains various analysis reports, performance metrics, and optimization data for Gemini Flow.
 
 ## Contents
 

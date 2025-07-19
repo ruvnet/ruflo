@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Claude-Flow MCP Server - Wrapper Mode
+ * Gemini-Flow MCP Server - Wrapper Mode
  * 
- * This version uses the Claude Code MCP wrapper approach instead of templates.
+ * This version uses the Gemini Code MCP wrapper approach instead of templates.
  */
 
-import { ClaudeCodeMCPWrapper } from './claude-code-wrapper.js';
+import { GeminiCliMCPWrapper } from './gemini-cli-wrapper.js';
 
 // Check if running as wrapper mode
 const isWrapperMode = process.env.CLAUDE_FLOW_WRAPPER_MODE === 'true' || 
@@ -14,12 +14,12 @@ const isWrapperMode = process.env.CLAUDE_FLOW_WRAPPER_MODE === 'true' ||
 
 async function main() {
   if (isWrapperMode) {
-    console.error('Starting Claude-Flow MCP in wrapper mode...');
-    const wrapper = new ClaudeCodeMCPWrapper();
+    console.error('Starting Gemini-Flow MCP in wrapper mode...');
+    const wrapper = new GeminiCliMCPWrapper();
     await wrapper.run();
   } else {
     // Fall back to original server
-    console.error('Starting Claude-Flow MCP in direct mode...');
+    console.error('Starting Gemini-Flow MCP in direct mode...');
     const { runMCPServer } = await import('./server.js');
     await runMCPServer();
   }

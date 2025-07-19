@@ -9,7 +9,7 @@ echo "./bin/claude-flow swarm \"Build a REST API in examples/\" --strategy devel
 echo ""
 
 # Create the REST API structure
-API_DIR="/workspaces/claude-code-flow/examples/rest-api"
+API_DIR="/workspaces/gemini-flow/examples/rest-api"
 rm -rf "$API_DIR"
 mkdir -p "$API_DIR"
 

@@ -1,5 +1,5 @@
 /**
- * Command Handler for Claude Code Console
+ * Command Handler for Gemini Code Console
  * Processes and executes console commands
  */
 
@@ -24,9 +24,9 @@ export class CommandHandler {
       'version': this.showVersion.bind(this)
     };
     
-    // Claude Flow commands
+    // Gemini Flow commands
     this.claudeFlowCommands = {
-      'claude-flow': this.executeClaudeFlow.bind(this),
+      'gemini-flow': this.executeClaudeFlow.bind(this),
       'swarm': this.executeSwarm.bind(this),
       'init': this.initializeProject.bind(this),
       'config': this.manageConfig.bind(this),
@@ -107,7 +107,7 @@ export class CommandHandler {
       return;
     }
     
-    this.terminal.writeInfo('Claude Flow Console Commands:');
+    this.terminal.writeInfo('Gemini Flow Console Commands:');
     this.terminal.writeLine('');
     
     this.terminal.writeInfo('Built-in Commands:');
@@ -116,7 +116,7 @@ export class CommandHandler {
     });
     
     this.terminal.writeLine('');
-    this.terminal.writeInfo('Claude Flow Commands:');
+    this.terminal.writeInfo('Gemini Flow Commands:');
     Object.keys(this.claudeFlowCommands).forEach(cmd => {
       this.terminal.writeLine(`  ${cmd.padEnd(12)} - ${this.getCommandDescription(cmd)}`);
     });
@@ -129,7 +129,7 @@ export class CommandHandler {
     this.terminal.writeLine('  swarm/orchestrate    - Swarm operations (status, create, start, stop)');
     this.terminal.writeLine('  sparc/execute        - Execute SPARC modes (coder, architect, etc.)');
     this.terminal.writeLine('  benchmark/run        - Run benchmarks (default, memory, cpu, network)');
-    this.terminal.writeLine('  claude-flow/execute  - Execute Claude Flow commands');
+    this.terminal.writeLine('  gemini-flow/execute  - Execute Gemini Flow commands');
     
     this.terminal.writeLine('');
     this.terminal.writeInfo('Use "help <command>" for detailed information about a specific command.');
@@ -144,7 +144,7 @@ export class CommandHandler {
       'help': 'Show help information',
       'clear': 'Clear console output',
       'status': 'Show connection and system status',
-      'connect': 'Connect to Claude Code server',
+      'connect': 'Connect to Gemini Code server',
       'disconnect': 'Disconnect from server',
       'tools': 'List available tools',
       'health': 'Check server health',
@@ -152,7 +152,7 @@ export class CommandHandler {
       'export': 'Export session data',
       'theme': 'Change console theme',
       'version': 'Show version information',
-      'claude-flow': 'Execute Claude Flow commands',
+      'gemini-flow': 'Execute Gemini Flow commands',
       'swarm': 'Manage and execute swarms',
       'init': 'Initialize new project',
       'config': 'Manage configuration',
@@ -176,7 +176,7 @@ Show help information for all commands or a specific command.
 
 Examples:
   help              - Show all commands
-  help claude-flow  - Show help for claude-flow command`,
+  help gemini-flow  - Show help for gemini-flow command`,
       
       'clear': `
 Usage: clear
@@ -184,7 +184,7 @@ Clear the console output. You can also use Ctrl+L.`,
       
       'connect': `
 Usage: connect [url] [token]
-Connect to Claude Code server.
+Connect to Gemini Code server.
 
 Arguments:
   url     - WebSocket URL (default: ws://localhost:3000/ws)
@@ -195,20 +195,20 @@ Examples:
   connect ws://localhost:3000/ws
   connect ws://localhost:3000/ws my-auth-token`,
       
-      'claude-flow': `
-Usage: claude-flow <subcommand> [options]
-Execute Claude Flow commands.
+      'gemini-flow': `
+Usage: gemini-flow <subcommand> [options]
+Execute Gemini Flow commands.
 
 Subcommands:
-  start [mode]     - Start Claude Flow in specified mode
-  stop             - Stop Claude Flow
-  status           - Show Claude Flow status
+  start [mode]     - Start Gemini Flow in specified mode
+  stop             - Stop Gemini Flow
+  status           - Show Gemini Flow status
   modes            - List available SPARC modes
   
 Examples:
-  claude-flow start coder
-  claude-flow status
-  claude-flow modes`,
+  gemini-flow start coder
+  gemini-flow status
+  gemini-flow modes`,
       
       'swarm': `
 Usage: swarm <action> [options]
@@ -300,7 +300,7 @@ Examples:
       await this.wsClient.initializeSession();
       
       this.terminal.writeSuccess('Connected successfully');
-      this.terminal.setPrompt('claude-flow>');
+      this.terminal.setPrompt('gemini-flow>');
     } catch (error) {
       this.terminal.writeError(`Connection failed: ${error.message}`);
     }
@@ -437,13 +437,13 @@ Examples:
    * Show version information
    */
   async showVersion() {
-    this.terminal.writeInfo('🌊 Claude Flow v2.0.0');
+    this.terminal.writeInfo('🌊 Gemini Flow v2.0.0');
     this.terminal.writeLine('Advanced swarm orchestration platform');
     this.terminal.writeLine('Built with modern web technologies');
   }
   
   /**
-   * Execute Claude Flow command
+   * Execute Gemini Flow command
    */
   async executeClaudeFlow(args) {
     if (!this.wsClient.isConnected) {
@@ -452,7 +452,7 @@ Examples:
     }
     
     if (args.length === 0) {
-      this.terminal.writeError('Usage: claude-flow <subcommand> [options]');
+      this.terminal.writeError('Usage: gemini-flow <subcommand> [options]');
       return;
     }
     
@@ -460,17 +460,17 @@ Examples:
     const subArgs = args.slice(1);
     
     try {
-      const result = await this.wsClient.executeCommand('claude-flow', {
+      const result = await this.wsClient.executeCommand('gemini-flow', {
         subcommand,
         args: subArgs
       });
       
-      this.terminal.writeSuccess(`Claude Flow ${subcommand} executed successfully`);
+      this.terminal.writeSuccess(`Gemini Flow ${subcommand} executed successfully`);
       if (result && result.output) {
         this.terminal.writeLine(result.output);
       }
     } catch (error) {
-      this.terminal.writeError(`Claude Flow command failed: ${error.message}`);
+      this.terminal.writeError(`Gemini Flow command failed: ${error.message}`);
     }
   }
   
@@ -766,7 +766,7 @@ Examples:
           };
           break;
           
-        case 'claude-flow/execute':
+        case 'gemini-flow/execute':
           toolArgs = {
             command: args[0] || 'status',
             args: args.slice(1)

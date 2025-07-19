@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Claude-Flow CLI - Core implementation using Node.js
+ * Gemini-Flow CLI - Core implementation using Node.js
  */
 
 import chalk from "chalk";
@@ -161,7 +161,7 @@ class CLI {
   }
 
   private async loadConfig(configPath?: string): Promise<Record<string, unknown> | undefined> {
-    const configFile = configPath || "claude-flow.config.json";
+    const configFile = configPath || "gemini-flow.config.json";
     try {
       const content = await fs.readFile(configFile, 'utf8');
       return JSON.parse(content);
@@ -245,10 +245,10 @@ ${chalk.bold("EXAMPLES:")}
 For more detailed help on specific commands, use:
   ${this.name} [COMMAND] --help
 
-Documentation: https://github.com/ruvnet/claude-code-flow
-Issues: https://github.com/ruvnet/claude-code-flow/issues
+Documentation: https://github.com/ruvnet/gemini-flow
+Issues: https://github.com/ruvnet/gemini-flow/issues
 
-Created by rUv - Built with ❤️ for the Claude community
+Created by rUv - Built with ❤️ for the Gemini community
 `);
   }
 
@@ -294,7 +294,7 @@ export type { Command, CommandContext, Option };
 // Main CLI setup if running directly
 async function main() {
   if (process.argv[1] && (process.argv[1].endsWith('cli-core.js') || process.argv[1].endsWith('cli-core.ts'))) {
-    const cli = new CLI("claude-flow", "Advanced AI Agent Orchestration System");
+    const cli = new CLI("gemini-flow", "Advanced AI Agent Orchestration System");
 
     // Import and register all commands
     const { setupCommands } = await import("./commands/index.js");

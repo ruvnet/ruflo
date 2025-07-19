@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-all
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Claude-Flow CLI entry point
+ * Gemini-Flow CLI entry point
  * This redirects to simple-cli.ts for remote execution compatibility
  */
 
@@ -33,13 +33,13 @@ const BUILD_DATE = new Date().toISOString().split('T')[0];
 
 // Main CLI command
 const cli = new Command()
-  .name('claude-flow')
+  .name('gemini-flow')
   .version(VERSION)
-  .description('Claude-Flow: Advanced AI agent orchestration system for multi-agent coordination')
+  .description('Gemini-Flow: Advanced AI agent orchestration system for multi-agent coordination')
   // .meta() commented out - not available
   // .meta() commented out - not available
   .globalOption('-c, --config <path:string>', 'Path to configuration file', {
-    default: './claude-flow.config.json',
+    default: './gemini-flow.config.json',
   })
   .globalOption('-v, --verbose', 'Enable verbose logging')
   .globalOption('-q, --quiet', 'Suppress non-essential output')
@@ -130,7 +130,7 @@ async function handleError(error: unknown, options?: any): Promise<void> {
   // Suggest helpful actions
   if (!options?.quiet) {
     console.error(chalk.gray('\nTry running with --verbose for more details'));
-    console.error(chalk.gray('Or use "claude-flow help" to see available commands'));
+    console.error(chalk.gray('Or use "gemini-flow help" to see available commands'));
   }
   
   process.exit(1);
@@ -157,7 +157,7 @@ async function setupLogging(options: any): Promise<void> {
     } else {
       // Try to load default config file if it exists
       try {
-        await configManager.load('./claude-flow.config.json');
+        await configManager.load('./gemini-flow.config.json');
       } catch {
         // Use default config if no file found
         configManager.loadDefault();

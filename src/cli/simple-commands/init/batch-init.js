@@ -398,7 +398,7 @@ async function initializeProject(projectPath, options = {}) {
       lastUpdated: Date.now()
     };
     fileCreationTasks.push(
-      Deno.writeTextFile('memory/claude-flow-data.json', JSON.stringify(initialData, null, 2))
+      Deno.writeTextFile('memory/gemini-flow-data.json', JSON.stringify(initialData, null, 2))
     );
 
     // Environment configuration

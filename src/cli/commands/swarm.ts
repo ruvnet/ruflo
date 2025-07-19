@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../../utils/error-handler.js';
 /**
- * Claude Swarm Mode - Self-orchestrating agent swarms using claude-flow
+ * Gemini Swarm Mode - Self-orchestrating agent swarms using gemini-flow
  */
 
 import { generateId } from '../../utils/helpers.js';
@@ -23,8 +23,8 @@ export async function swarmAction(ctx: CommandContext) {
   if (!objective) {
     error("Usage: swarm <objective>");
     console.log("\nExamples:");
-    console.log('  claude-flow swarm "Build a REST API"');
-    console.log('  claude-flow swarm "Research cloud architecture"');
+    console.log('  gemini-flow swarm "Build a REST API"');
+    console.log('  gemini-flow swarm "Research cloud architecture"');
     console.log("\nOptions:");
     console.log('  --dry-run              Show configuration without executing');
     console.log('  --strategy <type>      Strategy: auto, research, development, analysis');
@@ -118,7 +118,7 @@ export async function swarmAction(ctx: CommandContext) {
     }
   }
   
-  success(`🐝 Initializing Claude Swarm: ${swarmId}`);
+  success(`🐝 Initializing Gemini Swarm: ${swarmId}`);
   console.log(`📋 Objective: ${objective}`);
   console.log(`🎯 Strategy: ${options.strategy}`);
   
@@ -195,7 +195,7 @@ export async function swarmAction(ctx: CommandContext) {
     console.log(`\n🚀 Swarm execution started...`);
 
     if (options.background) {
-      console.log(`Running in background mode. Check status with: claude-flow swarm status ${swarmId}`);
+      console.log(`Running in background mode. Check status with: gemini-flow swarm status ${swarmId}`);
       
       // Save coordinator state and exit
       await fs.writeFile(`${swarmDir}/coordinator.json`, JSON.stringify({
@@ -373,12 +373,12 @@ async function executeAgentTask(agentId: string, task: any, options: any, agentD
   console.log(`    → Executing: ${task.type} task`);
   
   try {
-    // Check if claude CLI is available and not in simulation mode
-    const checkClaude = new Deno.Command('which', { args: ['claude'] });
+    // Check if gemini CLI is available and not in simulation mode
+    const checkGemini = new Deno.Command('which', { args: ['claude'] });
     const checkResult = await checkClaude.output();
     
     if (checkResult.success && options.simulate !== true) {
-      // Write prompt to a file for claude to read
+      // Write prompt to a file for gemini to read
       const promptFile = `${agentDir}/prompt.txt`;
       const prompt = `You are an AI agent with ID: ${agentId}
 
@@ -396,7 +396,7 @@ When you're done, please end with "TASK COMPLETED" on its own line.`;
 
       await fs.writeFile(promptFile, prompt);
       
-      // Build claude command using bash to pipe the prompt
+      // Build gemini command using bash to pipe the prompt
       let tools = 'View,GlobTool,GrepTool,LS';
       if (task.type === 'research' || options.research) {
         tools = 'WebFetchTool,WebSearch';
@@ -404,7 +404,7 @@ When you're done, please end with "TASK COMPLETED" on its own line.`;
         tools = 'View,Edit,Replace,GlobTool,GrepTool,LS,Bash';
       }
       
-      // Build claude command arguments for non-interactive mode
+      // Build gemini command arguments for non-interactive mode
       const claudeArgs = [
         '-p',  // Non-interactive print mode
         task.description,  // The prompt
@@ -413,7 +413,7 @@ When you're done, please end with "TASK COMPLETED" on its own line.`;
       ];
       
       // Write command to file for tracking
-      await fs.writeFile(`${agentDir}/command.txt`, `claude ${claudeArgs.join(' ')}`);
+      await fs.writeFile(`${agentDir}/command.txt`, `gemini ${claudeArgs.join(' ')}`);
       
       console.log(`    → Running: ${task.description}`);
       
@@ -422,14 +422,14 @@ When you're done, please end with "TASK COMPLETED" on its own line.`;
       
       // Create a wrapper script that will tee the output
       const wrapperScript = `#!/bin/bash
-claude ${claudeArgs.map(arg => `"${arg}"`).join(' ')} | tee "${agentDir}/output.txt"
+gemini ${claudeArgs.map(arg => `"${arg}"`).join(' ')} | tee "${agentDir}/output.txt"
 exit \${PIPESTATUS[0]}`;
       
       const wrapperPath = `${agentDir}/wrapper.sh`;
       await fs.writeFile(wrapperPath, wrapperScript);
       await Deno.chmod(wrapperPath, 0o755);
       
-      console.log(`    ┌─ Claude Output ─────────────────────────────`);
+      console.log(`    ┌─ Gemini Output ─────────────────────────────`);
       
       const command = new Deno.Command('bash', {
         args: [wrapperPath],
@@ -444,7 +444,7 @@ exit \${PIPESTATUS[0]}`;
         console.log(`    └─────────────────────────────────────────────`);
         
         if (!success) {
-          throw new Error(`Claude exited with code ${code}`);
+          throw new Error(`Gemini exited with code ${code}`);
         }
         
         console.log(`    ✓ Task completed`);
@@ -453,10 +453,10 @@ exit \${PIPESTATUS[0]}`;
         throw err;
       }
     } else {
-      // Simulate execution if claude CLI not available
-      console.log(`    → Simulating: ${task.type} (claude CLI not available)`);
+      // Simulate execution if gemini CLI not available
+      console.log(`    → Simulating: ${task.type} (gemini CLI not available)`);
       
-      // For now, let's use the claude-flow claude spawn command instead
+      // For now, let's use the gemini-flow gemini spawn command instead
       const claudeFlowArgs = ['claude', 'spawn', task.description];
       
       if (task.type === 'research' || options.research) {
@@ -467,14 +467,14 @@ exit \${PIPESTATUS[0]}`;
         claudeFlowArgs.push('--parallel');
       }
       
-      console.log(`    → Using: claude-flow ${claudeFlowArgs.join(' ')}`);
+      console.log(`    → Using: gemini-flow ${claudeFlowArgs.join(' ')}`);
       
-      // Get the path to claude-flow binary
+      // Get the path to gemini-flow binary
       const claudeFlowPath = new URL(import.meta.url).pathname;
       const projectRoot = claudeFlowPath.substring(0, claudeFlowPath.indexOf('/src/'));
-      const claudeFlowBin = `${projectRoot}/bin/claude-flow`;
+      const claudeFlowBin = `${projectRoot}/bin/gemini-flow`;
       
-      // Execute claude-flow command
+      // Execute gemini-flow command
       const command = new Deno.Command(claudeFlowBin, {
         args: claudeFlowArgs,
         stdout: 'piped',

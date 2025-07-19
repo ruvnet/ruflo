@@ -1,12 +1,12 @@
-# Claude Code Configuration
+# Gemini Code Configuration
 
 ## Build Commands
 - `npm run build`: Build the project using Deno compile
 - `npm run test`: Run the full test suite
 - `npm run lint`: Run ESLint and format checks
 - `npm run typecheck`: Run TypeScript type checking
-- `./claude-flow start`: Start the orchestration system
-- `./claude-flow --help`: Show all available commands
+- `./gemini-flow start`: Start the orchestration system
+- `./gemini-flow --help`: Show all available commands
 
 ## Code Style Preferences
 - Use ES modules (import/export) syntax, not CommonJS (require)
@@ -30,17 +30,17 @@ This is a Claude-Flow AI agent orchestration system with the following component
 - **Orchestrator**: Core engine for coordinating agents and tasks
 - **Memory System**: Persistent storage and retrieval of information
 - **Terminal Management**: Automated terminal session handling
-- **MCP Integration**: Model Context Protocol server for Claude integration
+- **MCP Integration**: Model Context Protocol server for Gemini integration
 - **Agent Coordination**: Multi-agent task distribution and management
 
 ## Important Notes
-- Use `claude --dangerously-skip-permissions` for unattended operation
+- Use `gemini --dangerously-skip-permissions` for unattended operation
 - The system supports both daemon and interactive modes
 - Memory persistence is handled automatically
 - All components are event-driven for scalability
 
 ## Debugging
-- Check logs in `./claude-flow.log`
-- Use `./claude-flow status` to check system health
-- Monitor with `./claude-flow monitor` for real-time updates
+- Check logs in `./gemini-flow.log`
+- Use `./gemini-flow status` to check system health
+- Monitor with `./gemini-flow monitor` for real-time updates
 - Verbose output available with `--verbose` flag on most commands

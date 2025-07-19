@@ -33,10 +33,10 @@ export const commandRegistry = new Map();
 export function registerCoreCommands() {
   commandRegistry.set('init', {
     handler: initCommand,
-    description: 'Initialize Claude Code integration files and SPARC development environment',
+    description: 'Initialize Gemini Code integration files and SPARC development environment',
     usage: 'init [--force] [--minimal] [--sparc]',
     examples: [
-      'npx claude-flow@latest init --sparc  # Recommended: Full SPARC setup',
+      'npx gemini-flow@latest init --sparc  # Recommended: Full SPARC setup',
       'init --sparc                         # Initialize with SPARC modes',
       'init --force --minimal               # Minimal setup, overwrite existing',
       'init --sparc --force                 # Force SPARC setup'
@@ -48,12 +48,12 @@ The --sparc flag creates a complete development environment:
   • Pre-configured modes: architect, code, tdd, debug, security, and more
   • Ready for TDD workflows and automated code generation
   
-First-time users should run: npx claude-flow@latest init --sparc`
+First-time users should run: npx gemini-flow@latest init --sparc`
   });
 
   commandRegistry.set('start', {
     handler: startCommand,
-    description: 'Start the Claude-Flow orchestration system',
+    description: 'Start the Gemini-Flow orchestration system',
     usage: 'start [--daemon] [--port <port>] [--verbose] [--ui] [--web]',
     examples: [
       'start                    # Start in interactive mode',
@@ -312,8 +312,8 @@ Batch operations support:
   • Configuration validation and estimation tools
   
 Use with init command:
-  claude-flow init --batch-init project1,project2,project3
-  claude-flow init --config batch-config.json --parallel`
+  gemini-flow init --batch-init project1,project2,project3
+  gemini-flow init --config batch-config.json --parallel`
   });
 
   commandRegistry.set('github', {
@@ -454,7 +454,7 @@ Enables automated preparation & cleanup, performance tracking, and coordination 
   • Make your system unresponsive
 
 Hook Safety commands:
-  • validate: Check Claude Code settings for dangerous patterns
+  • validate: Check Gemini Code settings for dangerous patterns
   • status: Show current safety status and execution context
   • reset: Reset circuit breakers and execution counters  
   • safe-mode: Enable/disable safe mode (skips all hooks)
@@ -462,10 +462,10 @@ Hook Safety commands:
 SAFE ALTERNATIVES:
   • Use PostToolUse hooks instead of Stop hooks
   • Implement flag-based update patterns
-  • Use 'claude --skip-hooks' for manual updates
+  • Use 'gemini --skip-hooks' for manual updates
   • Create conditional execution scripts
 
-For more information: https://github.com/ruvnet/claude-flow/issues/166`
+For more information: https://github.com/ruvnet/gemini-flow/issues/166`
   });
 
   commandRegistry.set('hive', {
@@ -618,7 +618,7 @@ Commands:
     ],
     details: `
 Advanced configuration management features:
-  • Unified configuration across Claude-Flow and ruv-swarm
+  • Unified configuration across Gemini-Flow and ruv-swarm
   • Configuration presets for different environments
   • Automatic synchronization between config systems
   • Import/export capabilities with validation
@@ -704,7 +704,7 @@ export function showCommandHelp(name) {
   
   console.log(`Command: ${name}`);
   console.log(`Description: ${command.description}`);
-  console.log(`Usage: claude-flow ${command.usage}`);
+  console.log(`Usage: gemini-flow ${command.usage}`);
   
   if (command.details) {
     console.log(command.details);
@@ -716,7 +716,7 @@ export function showCommandHelp(name) {
       if (example.startsWith('npx')) {
         console.log(`  ${example}`);
       } else {
-        console.log(`  claude-flow ${example}`);
+        console.log(`  gemini-flow ${example}`);
       }
     }
   }
@@ -734,7 +734,7 @@ export function showAllCommands() {
   }
   
   console.log();
-  console.log('Use "claude-flow help <command>" for detailed usage information');
+  console.log('Use "gemini-flow help <command>" for detailed usage information');
 }
 
 // Initialize the command registry

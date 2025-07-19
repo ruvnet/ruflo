@@ -82,7 +82,7 @@ async function listSparcModes(subArgs) {
       console.log(`Please ensure .roomodes file exists in: ${workingDir}`);
       console.log();
       console.log('To enable SPARC development modes, run:');
-      console.log('  npx claude-flow@latest init --sparc');
+      console.log('  npx gemini-flow@latest init --sparc');
       console.log();
       console.log('This will create:');
       console.log('  • .roomodes file with 17+ SPARC development modes');
@@ -134,7 +134,7 @@ async function showModeInfo(subArgs) {
       console.log(`Please ensure .roomodes file exists in: ${workingDir}`);
       console.log();
       console.log('To enable SPARC development modes, run:');
-      console.log('  npx claude-flow@latest init --sparc');
+      console.log('  npx gemini-flow@latest init --sparc');
       return;
     }
     const config = JSON.parse(configContent);
@@ -189,7 +189,7 @@ async function runSparcMode(subArgs, flags) {
       console.log(`Please ensure .roomodes file exists in: ${workingDir}`);
       console.log();
       console.log('To enable SPARC development modes, run:');
-      console.log('  npx claude-flow@latest init --sparc');
+      console.log('  npx gemini-flow@latest init --sparc');
       return;
     }
     const config = JSON.parse(configContent);
@@ -253,13 +253,13 @@ async function runSparcMode(subArgs, flags) {
       console.log();
       
       // Show debug info immediately for non-interactive mode
-      console.log('🔍 Debug: Preparing claude command...');
+      console.log('🔍 Debug: Preparing gemini command...');
       console.log(`Enhanced prompt length: ${enhancedTask.length} characters`);
       console.log(`First 200 chars of prompt: ${enhancedTask.substring(0, 200)}...`);
     }
     console.log();
     
-    // Execute Claude with SPARC configuration
+    // Execute Gemini with SPARC configuration
     await executeClaude(enhancedTask, toolsList, instanceId, memoryNamespace, subArgs);
     
   } catch (err) {
@@ -369,7 +369,7 @@ async function executeClaude(enhancedTask, toolsList, instanceId, memoryNamespac
   
   // Show debug info for non-interactive mode or when verbose
   if (isNonInteractive || subArgs.includes('--verbose') || subArgs.includes('-v')) {
-    console.log('\n🔍 Debug: Executing claude with:');
+    console.log('\n🔍 Debug: Executing gemini with:');
     console.log('Command: claude');
     console.log('Permissions:', enablePermissions ? '✅ Enabled (will prompt)' : '⚡ Skipped (--dangerously-skip-permissions)');
     console.log('Tools:', enablePermissions ? `Specified: ${toolsList}` : 'ALL tools enabled (MCP, WebSearch, etc.)');
@@ -388,7 +388,7 @@ async function executeClaude(enhancedTask, toolsList, instanceId, memoryNamespac
         }
       });
       console.log('\nFull command structure:');
-      console.log('claude "<SPARC prompt>" ' + claudeArgs.slice(1).join(' '));
+      console.log('gemini "<SPARC prompt>" ' + claudeArgs.slice(1).join(' '));
     }
     console.log();
   }
@@ -400,7 +400,7 @@ async function executeClaude(enhancedTask, toolsList, instanceId, memoryNamespac
     console.log(`Working Directory: ${cwd()}`);
     console.log(`Number of args: ${claudeArgs.length}`);
     
-    // Check if claude command exists
+    // Check if gemini command exists
     try {
       const checkCommand = new Deno.Command('which', {
         args: ['claude'],
@@ -409,14 +409,14 @@ async function executeClaude(enhancedTask, toolsList, instanceId, memoryNamespac
       });
       const checkResult = await checkCommand.output();
       if (!checkResult.success) {
-        console.error('❌ Error: claude command not found in PATH');
-        console.error('Please ensure claude CLI is installed and in your PATH');
+        console.error('❌ Error: gemini command not found in PATH');
+        console.error('Please ensure gemini CLI is installed and in your PATH');
         return;
       }
       const claudePath = new TextDecoder().decode(checkResult.stdout).trim();
-      console.log(`Claude path: ${claudePath}`);
+      console.log(`Gemini path: ${claudePath}`);
     } catch (e) {
-      console.warn('⚠️  Could not verify claude command location');
+      console.warn('⚠️  Could not verify gemini command location');
     }
     
     const command = new Deno.Command('claude', {
@@ -435,7 +435,7 @@ async function executeClaude(enhancedTask, toolsList, instanceId, memoryNamespac
       stderr: 'inherit',
     });
     
-    console.log('\n📡 Spawning claude process...\n');
+    console.log('\n📡 Spawning gemini process...\n');
     const child = command.spawn();
     const status = await child.status;
     
@@ -459,27 +459,27 @@ function showSparcHelp() {
   console.log('  tdd <task>               Run Test-Driven Development workflow');
   console.log();
   console.log('Examples:');
-  console.log('  claude-flow sparc "orchestrate app development"    # Uses sparc orchestrator');
-  console.log('  claude-flow sparc modes --verbose');
-  console.log('  claude-flow sparc info architect');
-  console.log('  claude-flow sparc run code "implement user authentication"');
-  console.log('  claude-flow sparc run code "add login feature" --non-interactive');
-  console.log('  claude-flow sparc run tdd "create test suite" --namespace tests');
-  console.log('  claude-flow sparc tdd "payment processing system" --interactive');
+  console.log('  gemini-flow sparc "orchestrate app development"    # Uses sparc orchestrator');
+  console.log('  gemini-flow sparc modes --verbose');
+  console.log('  gemini-flow sparc info architect');
+  console.log('  gemini-flow sparc run code "implement user authentication"');
+  console.log('  gemini-flow sparc run code "add login feature" --non-interactive');
+  console.log('  gemini-flow sparc run tdd "create test suite" --namespace tests');
+  console.log('  gemini-flow sparc tdd "payment processing system" --interactive');
   console.log();
   console.log('Parallel Execution with BatchTool:');
   console.log('  # Run multiple SPARC modes concurrently');
   console.log('  batchtool run --parallel \\');
-  console.log('    "npx claude-flow sparc run code \'user service\' --non-interactive" \\');
-  console.log('    "npx claude-flow sparc run code \'auth service\' --non-interactive" \\');
-  console.log('    "npx claude-flow sparc run tdd \'test suite\' --non-interactive"');
+  console.log('    "npx gemini-flow sparc run code \'user service\' --non-interactive" \\');
+  console.log('    "npx gemini-flow sparc run code \'auth service\' --non-interactive" \\');
+  console.log('    "npx gemini-flow sparc run tdd \'test suite\' --non-interactive"');
   console.log();
   console.log('  # Boomerang orchestration pattern');
   console.log('  batchtool orchestrate --boomerang \\');
-  console.log('    --research "npx claude-flow sparc run ask \'requirements\' --non-interactive" \\');
-  console.log('    --design "npx claude-flow sparc run architect \'system\' --non-interactive" \\');
-  console.log('    --implement "npx claude-flow sparc run code \'features\' --non-interactive" \\');
-  console.log('    --test "npx claude-flow sparc run tdd \'validation\' --non-interactive"');
+  console.log('    --research "npx gemini-flow sparc run ask \'requirements\' --non-interactive" \\');
+  console.log('    --design "npx gemini-flow sparc run architect \'system\' --non-interactive" \\');
+  console.log('    --implement "npx gemini-flow sparc run code \'features\' --non-interactive" \\');
+  console.log('    --test "npx gemini-flow sparc run tdd \'validation\' --non-interactive"');
   console.log();
   console.log('Flags:');
   console.log('  --dry-run, -d            Show configuration without executing');
@@ -495,7 +495,7 @@ function showSparcHelp() {
   console.log('  Use --enable-permissions to restore permission prompts if needed');
   console.log();
   console.log('Non-Interactive Mode:');
-  console.log('  When using --non-interactive, claude will be executed with:');
+  console.log('  When using --non-interactive, gemini will be executed with:');
   console.log('  - --dangerously-skip-permissions (unless --enable-permissions is set)');
   console.log('  - -p (print mode for streaming output)');
   console.log('  - --output-format stream-json (structured output format)');

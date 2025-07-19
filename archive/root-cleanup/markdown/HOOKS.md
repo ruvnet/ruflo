@@ -430,6 +430,6 @@ CLAUDE_FLOW_METRIC_FORMAT=json  # or csv, yaml
 ## Support
 
 For issues or questions about hooks:
-- GitHub Issues: https://github.com/ruvnet/claude-code-flow/issues
-- Documentation: https://github.com/ruvnet/claude-code-flow
+- GitHub Issues: https://github.com/ruvnet/gemini-flow/issues
+- Documentation: https://github.com/ruvnet/gemini-flow
 - Examples: `.claude/commands/` directory in your project

@@ -8,21 +8,21 @@ export function getMonitoringOrchestration(taskDescription, memoryNamespace) {
    - Identify key metrics
    - Set up logging infrastructure
    - Configure alerting rules
-   - Store setup: \`npx claude-flow memory store ${memoryNamespace}_monitoring_setup "..."\`
+   - Store setup: \`npx gemini-flow memory store ${memoryNamespace}_monitoring_setup "..."\`
 
 2. **Metric Collection** (20 mins)
    - Implement performance metrics
    - Add business metrics
    - Set up error tracking
    - Configure uptime monitoring
-   - Store metrics: \`npx claude-flow memory store ${memoryNamespace}_metrics "..."\`
+   - Store metrics: \`npx gemini-flow memory store ${memoryNamespace}_metrics "..."\`
 
 3. **Dashboard Creation** (15 mins)
    - Build monitoring dashboards
    - Create alert configurations
    - Set up automated reports
    - Document metric meanings
-   - Store dashboards: \`npx claude-flow memory store ${memoryNamespace}_dashboards "..."\`
+   - Store dashboards: \`npx gemini-flow memory store ${memoryNamespace}_dashboards "..."\`
 
 4. **Baseline Establishment** (10 mins)
    - Collect initial metrics

@@ -1,6 +1,6 @@
 import { getErrorMessage } from '../utils/error-handler.js';
 /**
- * Persistence layer for Claude-Flow using SQLite
+ * Persistence layer for Gemini-Flow using SQLite
  */
 
 import Database from "better-sqlite3";
@@ -39,7 +39,7 @@ export class PersistenceManager {
   private dbPath: string;
 
   constructor(dataDir: string = "./memory") {
-    this.dbPath = join(dataDir, "claude-flow.db");
+    this.dbPath = join(dataDir, "gemini-flow.db");
   }
 
   async initialize(): Promise<void> {

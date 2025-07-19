@@ -421,7 +421,7 @@ describe("Init Command Rollback Tests", () => {
       // We can't easily interrupt mid-execution, so we simulate the aftermath
 
       // Create partial state as if init was interrupted
-      await Deno.writeTextFile(join(testDir, "CLAUDE.md"), "# Claude Code Configuration\n\nIncomplete...");
+      await Deno.writeTextFile(join(testDir, "CLAUDE.md"), "# Gemini Code Configuration\n\nIncomplete...");
       await Deno.mkdir(join(testDir, "memory"), { recursive: true });
       // Missing other files and directories
 

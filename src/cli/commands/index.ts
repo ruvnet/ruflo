@@ -56,7 +56,7 @@ export function setupCommands(cli: CLI): void {
   // Init command
   cli.command({
     name: "init",
-    description: "Initialize Claude Code integration files",
+    description: "Initialize Gemini Code integration files",
     options: [
       {
         name: "force",
@@ -73,7 +73,7 @@ export function setupCommands(cli: CLI): void {
     ],
     action: async (ctx: CommandContext) => {
       try {
-        success("Initializing Claude Code integration files...");
+        success("Initializing Gemini Code integration files...");
         
         const force = ctx.flags.force as boolean || ctx.flags.f as boolean;
         const minimal = ctx.flags.minimal as boolean || ctx.flags.m as boolean;
@@ -158,11 +158,11 @@ export function setupCommands(cli: CLI): void {
         await writeFile("memory/gemini-flow-data.json", JSON.stringify(initialData, null, 2));
         console.log("  ✓ Created memory/gemini-flow-data.json (persistence database)");
         
-        success("Claude Code integration files initialized successfully!");
+        success("Gemini Code integration files initialized successfully!");
         console.log("\nNext steps:");
         console.log("1. Review and customize the generated files for your project");
         console.log("2. Run 'npx gemini-flow start' to begin the orchestration system");
-        console.log("3. Use 'claude --dangerously-skip-permissions' for unattended operation");
+        console.log("3. Use 'gemini --dangerously-skip-permissions' for unattended operation");
         console.log("\nNote: Persistence database initialized at memory/gemini-flow-data.json");
         
       } catch (err) {
@@ -191,7 +191,7 @@ export function setupCommands(cli: CLI): void {
       },
     ],
     action: async (ctx: CommandContext) => {
-      success("Starting Claude-Flow orchestration system...");
+      success("Starting Gemini-Flow orchestration system...");
       
       try {
         const orch = await getOrchestrator();
@@ -360,7 +360,7 @@ export function setupCommands(cli: CLI): void {
               warning("Workflow execution would start here (not yet implemented)");
               // TODO: Implement workflow execution
             } else {
-              info("To execute this workflow, ensure Claude-Flow is running");
+              info("To execute this workflow, ensure Gemini-Flow is running");
             }
           } catch (err) {
             error(`Failed to load workflow: ${(err as Error).message}`);
@@ -539,7 +539,7 @@ export function setupCommands(cli: CLI): void {
         const { access } = await import("fs/promises");
         const isRunning = await access("orchestrator.log").then(() => true).catch(() => false);
         
-        success("Claude-Flow System Status:");
+        success("Gemini-Flow System Status:");
         console.log(`🟢 Status: ${isRunning ? 'Running' : 'Stopped'}`);
         console.log(`🤖 Agents: ${stats.activeAgents} active (${stats.totalAgents} total)`);
         console.log(`📋 Tasks: ${stats.pendingTasks} in queue (${stats.totalTasks} total)`);
@@ -596,7 +596,7 @@ export function setupCommands(cli: CLI): void {
           const { access } = await import("fs/promises");
           const isRunning = await access("orchestrator.log").then(() => true).catch(() => false);
           
-          success("Claude-Flow System Status:");
+          success("Gemini-Flow System Status:");
           console.log(`🟢 Status: ${isRunning ? 'Running' : 'Stopped'}`);
           console.log(`🤖 Agents: ${stats.activeAgents} active (${stats.totalAgents} total)`);
           console.log(`📋 Tasks: ${stats.pendingTasks} in queue (${stats.totalTasks} total)`);
@@ -923,10 +923,10 @@ export function setupCommands(cli: CLI): void {
     },
   });
 
-  // Claude command
+  // Gemini command
   cli.command({
     name: "claude",
-    description: "Spawn Claude instances with specific configurations",
+    description: "Spawn Gemini instances with specific configurations",
     aliases: ["cl"],
     options: [
       {
@@ -1005,7 +1005,7 @@ export function setupCommands(cli: CLI): void {
           
           const task = ctx.args.slice(1, taskEndIndex).join(" ");
           if (!task) {
-            error("Usage: claude spawn <task description>");
+            error("Usage: gemini spawn <task description>");
             break;
           }
           
@@ -1023,15 +1023,15 @@ export function setupCommands(cli: CLI): void {
             
             const instanceId = `claude-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             
-            // Build enhanced task with Claude-Flow guidance
-            let enhancedTask = `# Claude-Flow Enhanced Task
+            // Build enhanced task with Gemini-Flow guidance
+            let enhancedTask = `# Gemini-Flow Enhanced Task
 
 ## Your Task
 ${task}
 
-## Claude-Flow System Context
+## Gemini-Flow System Context
 
-You are running within the Claude-Flow orchestration system, which provides powerful features for complex task management:
+You are running within the Gemini-Flow orchestration system, which provides powerful features for complex task management:
 
 ### Available Features
 
@@ -1040,7 +1040,7 @@ You are running within the Claude-Flow orchestration system, which provides powe
    - Retrieve data: \`npx gemini-flow memory query <key>\` - Access previously stored information
    - Check status: \`npx gemini-flow status\` - View current system/task status
    - List agents: \`npx gemini-flow agent list\` - See active agents
-   - Memory persists across Claude instances in the same namespace
+   - Memory persists across Gemini instances in the same namespace
 
 2. **Tool Access**
    - You have access to these tools: ${tools}`;
@@ -1090,7 +1090,7 @@ You are running within the Claude-Flow orchestration system, which provides powe
 
 ## Example Commands
 
-To interact with Claude-Flow, use the Bash tool:
+To interact with Gemini-Flow, use the Bash tool:
 
 \`\`\`bash
 # Check for previous work
@@ -1109,7 +1109,7 @@ Bash("npx gemini-flow agent spawn researcher --name auth-researcher")
 
 Now, please proceed with the task: ${task}`;
             
-            // Build Claude command with enhanced task
+            // Build Gemini command with enhanced task
             const claudeCmd = ["claude", enhancedTask];
             claudeCmd.push("--allowedTools", tools);
             
@@ -1127,7 +1127,7 @@ Now, please proceed with the task: ${task}`;
             
             if (ctx.flags.dryRun || ctx.flags["dry-run"] || ctx.flags.d) {
               warning("DRY RUN - Would execute:");
-              console.log(`Command: claude "<enhanced task with guidance>" --allowedTools ${tools}`);
+              console.log(`Command: gemini "<enhanced task with guidance>" --allowedTools ${tools}`);
               console.log(`Instance ID: ${instanceId}`);
               console.log(`Original Task: ${task}`);
               console.log(`Tools: ${tools}`);
@@ -1137,17 +1137,17 @@ Now, please proceed with the task: ${task}`;
               console.log(`\nEnhanced Features:`);
               console.log(`  - Memory Bank enabled via: npx gemini-flow memory commands`);
               console.log(`  - Coordination ${ctx.flags.parallel ? 'enabled' : 'disabled'}`);
-              console.log(`  - Access Claude-Flow features through Bash tool`);
+              console.log(`  - Access Gemini-Flow features through Bash tool`);
               return;
             }
             
-            success(`Spawning Claude instance: ${instanceId}`);
+            success(`Spawning Gemini instance: ${instanceId}`);
             console.log(`📝 Original Task: ${task}`);
             console.log(`🔧 Tools: ${tools}`);
             console.log(`⚙️  Mode: ${ctx.flags.mode || "full"}`);
             console.log(`📊 Coverage: ${ctx.flags.coverage || 80}%`);
             console.log(`💾 Commit: ${ctx.flags.commit || "phase"}`);
-            console.log(`✨ Enhanced with Claude-Flow guidance for memory and coordination`);
+            console.log(`✨ Enhanced with Gemini-Flow guidance for memory and coordination`);
             console.log('');
             console.log('📋 Task will be enhanced with:');
             console.log('  - Memory Bank instructions (store/retrieve)');
@@ -1155,7 +1155,7 @@ Now, please proceed with the task: ${task}`;
             console.log('  - Best practices for multi-agent workflows');
             console.log('');
             
-            // Execute Claude command
+            // Execute Gemini command
             const { spawn } = await import("child_process");
             const child = spawn("claude", claudeCmd.slice(1).map(arg => arg.replace(/^"|"$/g, '')), {
               env: {
@@ -1164,7 +1164,7 @@ Now, please proceed with the task: ${task}`;
                 CLAUDE_FLOW_MODE: ctx.flags.mode as string || "full",
                 CLAUDE_FLOW_COVERAGE: (ctx.flags.coverage || 80).toString(),
                 CLAUDE_FLOW_COMMIT: ctx.flags.commit as string || "phase",
-                // Add Claude-Flow specific features
+                // Add Gemini-Flow specific features
                 CLAUDE_FLOW_MEMORY_ENABLED: 'true',
                 CLAUDE_FLOW_MEMORY_NAMESPACE: 'default',
                 CLAUDE_FLOW_COORDINATION_ENABLED: ctx.flags.parallel ? 'true' : 'false',
@@ -1180,9 +1180,9 @@ Now, please proceed with the task: ${task}`;
             });
             
             if ((status as any).success) {
-              success(`Claude instance ${instanceId} completed successfully`);
+              success(`Gemini instance ${instanceId} completed successfully`);
             } else {
-              error(`Claude instance ${instanceId} exited with code ${(status as any).code}`);
+              error(`Gemini instance ${instanceId} exited with code ${(status as any).code}`);
             }
             
           } catch (err) {
@@ -1194,7 +1194,7 @@ Now, please proceed with the task: ${task}`;
         case "batch": {
           const workflowFile = ctx.args[1];
           if (!workflowFile) {
-            error("Usage: claude batch <workflow-file>");
+            error("Usage: gemini batch <workflow-file>");
             break;
           }
           
@@ -1239,7 +1239,7 @@ Now, please proceed with the task: ${task}`;
                 continue;
               }
               
-              console.log(`\n🚀 Spawning Claude for task: ${task.name || taskId}`);
+              console.log(`\n🚀 Spawning Gemini for task: ${task.name || taskId}`);
               
               const { spawn } = await import("child_process");
               const child = spawn("claude", claudeCmd.slice(1).map(arg => arg.replace(/^"|"$/g, '')), {
@@ -1271,7 +1271,7 @@ Now, please proceed with the task: ${task}`;
             }
             
             if (workflow.parallel && promises.length > 0) {
-              success("All Claude instances spawned in parallel mode");
+              success("All Gemini instances spawned in parallel mode");
               const results = await Promise.all(promises);
               const failed = results.filter((s: any) => !s.success).length;
               if (failed > 0) {
@@ -1290,9 +1290,9 @@ Now, please proceed with the task: ${task}`;
         default: {
           console.log("Available subcommands: spawn, batch");
           console.log("\nExamples:");
-          console.log("  gemini-flow claude spawn \"implement user authentication\" --research --parallel");
-          console.log("  gemini-flow claude spawn \"fix bug in payment system\" --no-permissions");
-          console.log("  gemini-flow claude batch workflow.json --dry-run");
+          console.log("  gemini-flow gemini spawn \"implement user authentication\" --research --parallel");
+          console.log("  gemini-flow gemini spawn \"fix bug in payment system\" --no-permissions");
+          console.log("  gemini-flow gemini batch workflow.json --dry-run");
           break;
         }
       }
@@ -1358,7 +1358,7 @@ Now, please proceed with the task: ${task}`;
             const tasks = await persist.getActiveTasks();
             
             // Enhanced header
-            success("Claude-Flow Enhanced Live Monitor");
+            success("Gemini-Flow Enhanced Live Monitor");
             console.log("═".repeat(60));
             console.log(`Update #${++cycles} • ${new Date().toLocaleTimeString()} • Interval: ${options.interval}s`);
             
@@ -1497,7 +1497,7 @@ Now, please proceed with the task: ${task}`;
           while (running) {
             console.clear();
             const stats = await persist.getStats();
-            success("Claude-Flow Live Monitor");
+            success("Gemini-Flow Live Monitor");
             console.log(`🟢 Status: Running`);
             console.log(`🤖 Agents: ${stats.activeAgents} active`);
             console.log(`📋 Tasks: ${stats.pendingTasks} pending`);
@@ -1514,7 +1514,7 @@ Now, please proceed with the task: ${task}`;
   // Swarm command
   cli.command({
     name: "swarm",
-    description: "Create self-orchestrating Claude agent swarms",
+    description: "Create self-orchestrating Gemini agent swarms",
     options: [
       {
         name: "strategy",
@@ -1609,12 +1609,12 @@ Now, please proceed with the task: ${task}`;
       },
       {
         name: "claude",
-        description: "Launch Claude Code with swarm coordination prompt",
+        description: "Launch Gemini Code with swarm coordination prompt",
         type: "boolean",
       },
       {
         name: "executor",
-        description: "Use built-in executor instead of Claude Code",
+        description: "Use built-in executor instead of Gemini Code",
         type: "boolean",
       },
     ],
@@ -1711,7 +1711,7 @@ Now, please proceed with the task: ${task}`;
   // Swarm UI command (convenience wrapper)
   cli.command({
     name: "swarm-ui",
-    description: "Create self-orchestrating Claude agent swarms with blessed UI",
+    description: "Create self-orchestrating Gemini agent swarms with blessed UI",
     options: [
       {
         name: "strategy",
@@ -1837,7 +1837,7 @@ Now, please proceed with the task: ${task}`;
   // Enhanced orchestration start command integration
   try {
     const enhancedStartAction = async (ctx: CommandContext) => {
-      console.log(chalk.cyan('🧠 Enhanced Claude-Flow Orchestration System'));
+      console.log(chalk.cyan('🧠 Enhanced Gemini-Flow Orchestration System'));
       console.log('Features: Service Management + Health Checks + Auto-Recovery + Process UI');
       console.log();
       
@@ -1934,13 +1934,13 @@ Now, please proceed with the task: ${task}`;
       const command = ctx.args[0];
       
       if (command === "claude") {
-        console.log(bold(blue("Claude Instance Management")));
+        console.log(bold(blue("Gemini Instance Management")));
         console.log();
-        console.log("Spawn and manage Claude Code instances with specific configurations.");
+        console.log("Spawn and manage Gemini Code instances with specific configurations.");
         console.log();
         console.log(bold("Subcommands:"));
-        console.log("  spawn <task>    Spawn Claude with specific configuration");
-        console.log("  batch <file>    Execute multiple Claude instances from workflow");
+        console.log("  spawn <task>    Spawn Gemini with specific configuration");
+        console.log("  batch <file>    Execute multiple Gemini instances from workflow");
         console.log();
         console.log(bold("Spawn Options:"));
         console.log("  -t, --tools <tools>        Allowed tools (comma-separated)");
@@ -1955,15 +1955,15 @@ Now, please proceed with the task: ${task}`;
         console.log("  -d, --dry-run              Show what would be executed without running");
         console.log();
         console.log(bold("Examples:"));
-        console.log(`  ${blue("gemini-flow claude spawn")} "implement user authentication" --research --parallel`);
-        console.log(`  ${blue("gemini-flow claude spawn")} "fix payment bug" --tools "View,Edit,Bash" --no-permissions`);
-        console.log(`  ${blue("gemini-flow claude batch")} workflow.json --dry-run`);
+        console.log(`  ${blue("gemini-flow gemini spawn")} "implement user authentication" --research --parallel`);
+        console.log(`  ${blue("gemini-flow gemini spawn")} "fix payment bug" --tools "View,Edit,Bash" --no-permissions`);
+        console.log(`  ${blue("gemini-flow gemini batch")} workflow.json --dry-run`);
         console.log();
-        console.log("For more information, see: https://github.com/ruvnet/claude-code-flow/docs/11-claude-spawning.md");
+        console.log("For more information, see: https://github.com/ruvnet/gemini-flow/docs/11-claude-spawning.md");
       } else if (command === "swarm" || command === "swarm-ui") {
-        console.log(bold(blue("Claude Swarm Mode")));
+        console.log(bold(blue("Gemini Swarm Mode")));
         console.log();
-        console.log("Create self-orchestrating Claude agent swarms to tackle complex objectives.");
+        console.log("Create self-orchestrating Gemini agent swarms to tackle complex objectives.");
         console.log();
         console.log(bold("Usage:"));
         console.log("  gemini-flow swarm <objective> [options]");
@@ -1998,8 +1998,8 @@ Now, please proceed with the task: ${task}`;
         console.log(`  - ${blue("gemini-flow swarm")} <objective> --ui`);
         console.log();
         console.log("For more information, see:");
-        console.log("  - https://github.com/ruvnet/claude-code-flow/docs/12-swarm.md");
-        console.log("  - https://github.com/ruvnet/claude-code-flow/SWARM_TTY_SOLUTION.md");
+        console.log("  - https://github.com/ruvnet/gemini-flow/docs/12-swarm.md");
+        console.log("  - https://github.com/ruvnet/gemini-flow/SWARM_TTY_SOLUTION.md");
       } else if (command === "sparc") {
         console.log(bold(blue("SPARC Development Mode")));
         console.log();
@@ -2037,11 +2037,11 @@ Now, please proceed with the task: ${task}`;
         console.log(`  ${blue("gemini-flow sparc tdd")} "payment processing system"    # Full TDD workflow`);
         console.log(`  ${blue("gemini-flow sparc workflow")} project-workflow.json     # Custom workflow`);
         console.log();
-        console.log("For more information, see: https://github.com/ruvnet/claude-code-flow/docs/sparc.md");
+        console.log("For more information, see: https://github.com/ruvnet/gemini-flow/docs/sparc.md");
       } else if (command === "start") {
         console.log(bold(blue("Enhanced Start Command")));
         console.log();
-        console.log("Start the Claude-Flow orchestration system with comprehensive service management.");
+        console.log("Start the Gemini-Flow orchestration system with comprehensive service management.");
         console.log();
         console.log(bold("Usage:"));
         console.log("  gemini-flow start [options]");
@@ -2066,7 +2066,7 @@ Now, please proceed with the task: ${task}`;
       } else if (command === "status") {
         console.log(bold(blue("Enhanced Status Command")));
         console.log();
-        console.log("Show comprehensive Claude-Flow system status with detailed reporting.");
+        console.log("Show comprehensive Gemini-Flow system status with detailed reporting.");
         console.log();
         console.log(bold("Usage:"));
         console.log("  gemini-flow status [options]");
@@ -2134,7 +2134,7 @@ Now, please proceed with the task: ${task}`;
         console.log(`  ${blue("gemini-flow session validate --fix")}   # Validate and fix`);
       } else {
         // Show general help with enhanced commands
-        console.log(bold(blue("Claude-Flow Enhanced Orchestration System")));
+        console.log(bold(blue("Gemini-Flow Enhanced Orchestration System")));
         console.log();
         console.log("Available commands:");
         console.log("  start        Enhanced orchestration system startup");
@@ -2147,7 +2147,7 @@ Now, please proceed with the task: ${task}`;
         console.log("  task         Task creation and management");
         console.log("  memory       Memory bank operations");
         console.log("  mcp          MCP server management");
-        console.log("  claude       Claude instance spawning");
+        console.log("  gemini       Gemini instance spawning");
         console.log();
         console.log("For detailed help on any command, use:");
         console.log(`  ${blue("gemini-flow help <command>")}`);
@@ -2317,7 +2317,7 @@ function getDefaultPromptForType(type: string): string {
 
 // Template creation functions
 function createMinimalClaudeMd(): string {
-  return `# Claude Code Configuration
+  return `# Gemini Code Configuration
 
 ## Build Commands
 - \`npm run build\`: Build the project
@@ -2330,12 +2330,12 @@ function createMinimalClaudeMd(): string {
 - Run typecheck before committing
 
 ## Project Info
-This is a Claude-Flow AI agent orchestration system.
+This is a Gemini-Flow AI agent orchestration system.
 `;
 }
 
 function createFullClaudeMd(): string {
-  return `# Claude Code Configuration
+  return `# Gemini Code Configuration
 
 ## Build Commands
 - \`npm run build\`: Build the project using Deno compile
@@ -2362,16 +2362,16 @@ function createFullClaudeMd(): string {
 - Ensure all tests pass before merging
 
 ## Project Architecture
-This is a Claude-Flow AI agent orchestration system with the following components:
+This is a Gemini-Flow AI agent orchestration system with the following components:
 - **CLI Interface**: Command-line tools for managing the system
 - **Orchestrator**: Core engine for coordinating agents and tasks
 - **Memory System**: Persistent storage and retrieval of information
 - **Terminal Management**: Automated terminal session handling
-- **MCP Integration**: Model Context Protocol server for Claude integration
+- **MCP Integration**: Model Context Protocol server for Gemini integration
 - **Agent Coordination**: Multi-agent task distribution and management
 
 ## Important Notes
-- Use \`claude --dangerously-skip-permissions\` for unattended operation
+- Use \`gemini --dangerously-skip-permissions\` for unattended operation
 - The system supports both daemon and interactive modes
 - Memory persistence is handled automatically
 - All components are event-driven for scalability
@@ -2402,7 +2402,7 @@ function createFullMemoryBankMd(): string {
   return `# Memory Bank Configuration
 
 ## Overview
-The Claude-Flow memory system provides persistent storage and intelligent retrieval of information across agent sessions. It uses a hybrid approach combining SQL databases with semantic search capabilities.
+The Gemini-Flow memory system provides persistent storage and intelligent retrieval of information across agent sessions. It uses a hybrid approach combining SQL databases with semantic search capabilities.
 
 ## Storage Backends
 - **Primary**: JSON database (\`./memory/gemini-flow-data.json\`)
@@ -2477,7 +2477,7 @@ function createFullCoordinationMd(): string {
   return `# Agent Coordination System
 
 ## Overview
-The Claude-Flow coordination system manages multiple AI agents working together on complex tasks. It provides intelligent task distribution, resource management, and inter-agent communication.
+The Gemini-Flow coordination system manages multiple AI agents working together on complex tasks. It provides intelligent task distribution, resource management, and inter-agent communication.
 
 ## Agent Types and Capabilities
 - **Researcher**: Web search, information gathering, knowledge synthesis
@@ -2569,7 +2569,7 @@ function createAgentsReadme(): string {
   return `# Agent Memory Storage
 
 ## Purpose
-This directory stores agent-specific memory data, configurations, and persistent state information for individual Claude agents in the orchestration system.
+This directory stores agent-specific memory data, configurations, and persistent state information for individual Gemini agents in the orchestration system.
 
 ## Structure
 Each agent gets its own subdirectory for isolated memory storage:
@@ -2604,7 +2604,7 @@ function createSessionsReadme(): string {
   return `# Session Memory Storage
 
 ## Purpose
-This directory stores session-based memory data, conversation history, and contextual information for development sessions using the Claude-Flow orchestration system.
+This directory stores session-based memory data, conversation history, and contextual information for development sessions using the Gemini-Flow orchestration system.
 
 ## Structure
 Sessions are organized by date and session ID for easy retrieval:

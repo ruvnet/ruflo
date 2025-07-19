@@ -368,7 +368,7 @@ class CoverageAnalyzer {
     const html = `<!DOCTYPE html>
 <html>
 <head>
-    <title>Claude-Flow Coverage Report</title>
+    <title>Gemini-Flow Coverage Report</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f8f9fa; }
         .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -424,7 +424,7 @@ class CoverageAnalyzer {
 </head>
 <body>
     <div class="header">
-        <h1>📊 Claude-Flow Coverage Report</h1>
+        <h1>📊 Gemini-Flow Coverage Report</h1>
         <div class="timestamp">Generated: ${report.timestamp}</div>
     </div>
     
@@ -479,7 +479,7 @@ class CoverageAnalyzer {
     </div>
     
     <div class="footer">
-        <p>Claude-Flow Coverage Report - Advanced AI Agent Orchestration System</p>
+        <p>Gemini-Flow Coverage Report - Advanced AI Agent Orchestration System</p>
     </div>
 </body>
 </html>`;
@@ -625,7 +625,7 @@ async function main(): Promise<void> {
 
   if (args.help) {
     console.log(`
-📊 Claude-Flow Coverage Analysis Tool
+📊 Gemini-Flow Coverage Analysis Tool
 
 USAGE:
   coverage-report.ts [OPTIONS]

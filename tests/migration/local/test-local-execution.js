@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Local Execution Tests for Claude Flow Migration
+ * Local Execution Tests for Gemini Flow Migration
  * Tests all functionality works with pure Node.js/npm (no Deno)
  */
 
@@ -11,8 +11,8 @@ const path = require('path');
 const os = require('os');
 
 // Test configuration
-const TEST_DIR = path.join(os.tmpdir(), 'claude-flow-local-test-' + Date.now());
-const CLAUDE_FLOW_BIN = path.resolve(__dirname, '../../../bin/claude-flow');
+const TEST_DIR = path.join(os.tmpdir(), 'gemini-flow-local-test-' + Date.now());
+const CLAUDE_FLOW_BIN = path.resolve(__dirname, '../../../bin/gemini-flow');
 
 // Color codes for output
 const colors = {
@@ -91,7 +91,7 @@ process.chdir(TEST_DIR);
 // Test 1: CLI is executable without Deno
 runTest('CLI is executable without Deno', () => {
   const output = exec(`node ${CLAUDE_FLOW_BIN} --version`);
-  if (!output.includes('claude-flow')) {
+  if (!output.includes('gemini-flow')) {
     throw new Error('Version output not found');
   }
 });
@@ -110,12 +110,12 @@ runTest('Init creates expected files', () => {
   
   // Check all expected files
   assertFileExists(path.join(TEST_DIR, 'CLAUDE.md'));
-  assertFileExists(path.join(TEST_DIR, 'claude-flow'));
-  assertFileExists(path.join(TEST_DIR, 'claude-flow.config.json'));
+  assertFileExists(path.join(TEST_DIR, 'gemini-flow'));
+  assertFileExists(path.join(TEST_DIR, 'gemini-flow.config.json'));
   
   // Check file contents
-  assertFileContains(path.join(TEST_DIR, 'CLAUDE.md'), 'Claude Code Configuration');
-  assertFileContains(path.join(TEST_DIR, 'claude-flow'), '#!/usr/bin/env node');
+  assertFileContains(path.join(TEST_DIR, 'CLAUDE.md'), 'Gemini Code Configuration');
+  assertFileContains(path.join(TEST_DIR, 'gemini-flow'), '#!/usr/bin/env node');
 });
 
 // Test 4: Config command works
@@ -161,7 +161,7 @@ runTest('Memory commands work', () => {
 
 // Test 9: No Deno imports in generated files
 runTest('No Deno imports in generated files', () => {
-  const claudeFlowScript = fs.readFileSync(path.join(TEST_DIR, 'claude-flow'), 'utf8');
+  const claudeFlowScript = fs.readFileSync(path.join(TEST_DIR, 'gemini-flow'), 'utf8');
   if (claudeFlowScript.includes('deno') || claudeFlowScript.includes('Deno')) {
     throw new Error('Generated script contains Deno references');
   }
@@ -170,19 +170,19 @@ runTest('No Deno imports in generated files', () => {
 // Test 10: Cross-platform script execution
 runTest('Cross-platform script execution', () => {
   const isWindows = process.platform === 'win32';
-  const scriptPath = path.join(TEST_DIR, 'claude-flow');
+  const scriptPath = path.join(TEST_DIR, 'gemini-flow');
   
   if (isWindows) {
     // Test Windows execution
     const output = exec(`node ${scriptPath} --version`);
-    if (!output.includes('claude-flow')) {
+    if (!output.includes('gemini-flow')) {
       throw new Error('Windows script execution failed');
     }
   } else {
     // Test Unix execution
     fs.chmodSync(scriptPath, '755');
     const output = exec(`${scriptPath} --version`);
-    if (!output.includes('claude-flow')) {
+    if (!output.includes('gemini-flow')) {
       throw new Error('Unix script execution failed');
     }
   }
@@ -213,8 +213,8 @@ runTest('Package.json scripts generation', () => {
   
   // Check scripts were added
   const updatedPackage = JSON.parse(fs.readFileSync(path.join(TEST_DIR, 'package.json'), 'utf8'));
-  if (!updatedPackage.scripts['claude-flow']) {
-    throw new Error('Claude Flow scripts not added to package.json');
+  if (!updatedPackage.scripts['gemini-flow']) {
+    throw new Error('Gemini Flow scripts not added to package.json');
   }
 });
 

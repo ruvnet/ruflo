@@ -61,7 +61,7 @@ class HiveMindPerformanceIntegrationTest {
     // Create a test swarm using the actual MCP tools
     try {
       // Import the MCP tools dynamically
-      const swarmInitResult = await this.executeCommand('mcp__claude-flow__swarm_init', {
+      const swarmInitResult = await this.executeCommand('mcp__gemini-flow__swarm_init', {
         topology: 'mesh',
         maxAgents: 8,
         strategy: 'auto'
@@ -70,7 +70,7 @@ class HiveMindPerformanceIntegrationTest {
       if (swarmInitResult.success) {
         this.swarmIds.push(swarmInitResult.swarmId);
         
-        const swarmStatus = await this.executeCommand('mcp__claude-flow__swarm_status', {
+        const swarmStatus = await this.executeCommand('mcp__gemini-flow__swarm_status', {
           swarmId: swarmInitResult.swarmId
         });
         
@@ -131,7 +131,7 @@ class HiveMindPerformanceIntegrationTest {
       const spawnStart = performance.now();
       
       try {
-        const result = await this.executeCommand('mcp__claude-flow__agent_spawn', {
+        const result = await this.executeCommand('mcp__gemini-flow__agent_spawn', {
           type: agentType,
           swarmId,
           name: `seq-${agentType}-${Date.now()}`
@@ -224,7 +224,7 @@ class HiveMindPerformanceIntegrationTest {
       const taskStart = performance.now();
       
       try {
-        const result = await this.executeCommand('mcp__claude-flow__task_orchestrate', {
+        const result = await this.executeCommand('mcp__gemini-flow__task_orchestrate', {
           task: tasks[i],
           strategy: i % 2 === 0 ? 'parallel' : 'sequential',
           priority: ['high', 'medium', 'low'][i % 3],
@@ -306,7 +306,7 @@ class HiveMindPerformanceIntegrationTest {
       const phaseAgents = [];
       for (const agentType of phase.agents) {
         try {
-          const agent = await this.executeCommand('mcp__claude-flow__agent_spawn', {
+          const agent = await this.executeCommand('mcp__gemini-flow__agent_spawn', {
             type: agentType,
             name: `${phase.name.toLowerCase().replace(' ', '-')}-${agentType}`
           });
@@ -328,7 +328,7 @@ class HiveMindPerformanceIntegrationTest {
         const taskStart = performance.now();
         
         try {
-          const task = await this.executeCommand('mcp__claude-flow__task_orchestrate', {
+          const task = await this.executeCommand('mcp__gemini-flow__task_orchestrate', {
             task: `${phase.name} - Task ${i + 1}`,
             strategy: 'adaptive',
             priority: i === 0 ? 'high' : 'medium'
@@ -409,7 +409,7 @@ class HiveMindPerformanceIntegrationTest {
     
     for (const operation of operations) {
       try {
-        const result = await this.executeCommand('mcp__claude-flow__memory_usage', {
+        const result = await this.executeCommand('mcp__gemini-flow__memory_usage', {
           action: 'store',
           key: `test/${operation.toLowerCase().replace(' ', '-')}`,
           value: JSON.stringify({
@@ -479,7 +479,7 @@ class HiveMindPerformanceIntegrationTest {
       const reportStart = performance.now();
       
       try {
-        const report = await this.executeCommand('mcp__claude-flow__performance_report', {
+        const report = await this.executeCommand('mcp__gemini-flow__performance_report', {
           format,
           timeframe: '24h'
         });
@@ -539,7 +539,7 @@ class HiveMindPerformanceIntegrationTest {
     
     // Simulate realistic responses based on tool type
     switch (tool) {
-      case 'mcp__claude-flow__swarm_init':
+      case 'mcp__gemini-flow__swarm_init':
         return {
           success: true,
           swarmId: `swarm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -548,7 +548,7 @@ class HiveMindPerformanceIntegrationTest {
           strategy: params.strategy || 'auto'
         };
         
-      case 'mcp__claude-flow__swarm_status':
+      case 'mcp__gemini-flow__swarm_status':
         return {
           success: true,
           swarmId: params.swarmId,
@@ -557,7 +557,7 @@ class HiveMindPerformanceIntegrationTest {
           tasks: Math.floor(Math.random() * 10) + 1
         };
         
-      case 'mcp__claude-flow__agent_spawn':
+      case 'mcp__gemini-flow__agent_spawn':
         return {
           success: true,
           agentId: `agent_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
@@ -566,7 +566,7 @@ class HiveMindPerformanceIntegrationTest {
           status: 'active'
         };
         
-      case 'mcp__claude-flow__task_orchestrate':
+      case 'mcp__gemini-flow__task_orchestrate':
         return {
           success: Math.random() > 0.05, // 95% success rate
           taskId: `task_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
@@ -575,7 +575,7 @@ class HiveMindPerformanceIntegrationTest {
           priority: params.priority
         };
         
-      case 'mcp__claude-flow__memory_usage':
+      case 'mcp__gemini-flow__memory_usage':
         return {
           success: true,
           action: params.action,
@@ -583,7 +583,7 @@ class HiveMindPerformanceIntegrationTest {
           namespace: params.namespace
         };
         
-      case 'mcp__claude-flow__performance_report':
+      case 'mcp__gemini-flow__performance_report':
         return {
           success: true,
           format: params.format,
@@ -612,7 +612,7 @@ class HiveMindPerformanceIntegrationTest {
     
     for (const swarmId of this.swarmIds) {
       try {
-        await this.executeCommand('mcp__claude-flow__swarm_destroy', { swarmId });
+        await this.executeCommand('mcp__gemini-flow__swarm_destroy', { swarmId });
         console.log(`  ✓ Cleaned up swarm: ${swarmId}`);
       } catch (error) {
         console.log(`  ⚠️ Cleanup simulation for swarm: ${swarmId}`);

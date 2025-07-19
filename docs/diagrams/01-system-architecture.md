@@ -1,16 +1,16 @@
-# Claude Flow v2.0.0 System Architecture Diagrams
+# Gemini Flow v2.0.0 System Architecture Diagrams
 
 ## 1. Overall System Architecture
 
 ```mermaid
 graph TB
-    subgraph "Claude Code Integration"
+    subgraph "Gemini Code Integration"
         CC[Gemini CLI]
         MCP_INT[MCP Integration Layer]
         TOOLS[87 MCP Tools]
     end
     
-    subgraph "Claude Flow v2.0.0 Core"
+    subgraph "Gemini Flow v2.0.0 Core"
         WEB_UI[Web Interface]
         ORCHESTRATOR[Central Orchestrator]
         NEURAL_ENGINE[Neural Processing Engine]

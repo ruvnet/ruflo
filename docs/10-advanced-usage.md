@@ -1,12 +1,12 @@
 # Advanced Usage Patterns and Production Deployment
 
-This guide covers sophisticated usage patterns, enterprise deployment strategies, and production-ready configurations for Claude-Flow. Learn how to build scalable, resilient, and high-performance AI agent orchestration systems.
+This guide covers sophisticated usage patterns, enterprise deployment strategies, and production-ready configurations for Gemini-Flow. Learn how to build scalable, resilient, and high-performance AI agent orchestration systems.
 
 ## Multi-Project Orchestration
 
 ### Project Isolation and Management
 
-Claude-Flow supports sophisticated multi-project environments with strong isolation boundaries and resource management.
+Gemini-Flow supports sophisticated multi-project environments with strong isolation boundaries and resource management.
 
 **Creating Isolated Project Environments:**
 ```bash
@@ -1218,4 +1218,4 @@ spec:
     threshold: 1MB
 ```
 
-This comprehensive advanced usage guide provides enterprise-grade patterns and configurations for deploying Claude-Flow at scale. Use these patterns to build robust, scalable, and production-ready AI agent orchestration systems.
+This comprehensive advanced usage guide provides enterprise-grade patterns and configurations for deploying Gemini-Flow at scale. Use these patterns to build robust, scalable, and production-ready AI agent orchestration systems.

@@ -1,6 +1,6 @@
-# Claude Optimized Template Changelog
+# Gemini Optimized Template Changelog
 
-All notable changes to the Claude optimized template will be documented in this file.
+All notable changes to the Gemini optimized template will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-06-16
 
 ### Added
-- Initial release of optimized Claude Code templates
+- Initial release of optimized Gemini Code templates
 - Complete set of SPARC methodology slash commands
 - Batch tools integration for improved performance
 - Comprehensive test suite structure
@@ -17,10 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - BATCHTOOLS_BEST_PRACTICES.md - Best practices and examples
   - MIGRATION_GUIDE.md - Migration guide for existing projects
   - PERFORMANCE_BENCHMARKS.md - Performance comparison data
-- Claude Flow integration commands:
-  - claude-flow-help - Help and documentation access
-  - claude-flow-memory - Memory system interaction
-  - claude-flow-swarm - Swarm coordination
+- Gemini Flow integration commands:
+  - gemini-flow-help - Help and documentation access
+  - gemini-flow-memory - Memory system interaction
+  - gemini-flow-swarm - Swarm coordination
 - SPARC mode commands:
   - architect - System design and architecture
   - code - Clean code implementation
@@ -59,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compatible with Gemini CLI
 - Requires Node.js for test execution
 - Supports all major SPARC methodology phases
-- Integrated with Claude Flow orchestration
+- Integrated with Gemini Flow orchestration
 - Designed for maintainability and extensibility
 
 ## Version History

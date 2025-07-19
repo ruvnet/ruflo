@@ -51,7 +51,7 @@ test_package_structure() {
     
     run_test "package.json exists" "[ -f package.json ]"
     run_test "package.json is valid JSON" "node -e 'JSON.parse(require(\"fs\").readFileSync(\"package.json\", \"utf8\"))'"
-    run_test "Entry point exists" "[ -f cli.js ] || [ -f bin/claude-flow ]"
+    run_test "Entry point exists" "[ -f cli.js ] || [ -f bin/gemini-flow ]"
     run_test "Dependencies are declared" "node -e 'const pkg = JSON.parse(require(\"fs\").readFileSync(\"package.json\", \"utf8\")); console.log(Object.keys(pkg.dependencies || {}).length > 0 ? \"Dependencies found\" : \"No dependencies\")'"
     run_test "Scripts are defined" "node -e 'const pkg = JSON.parse(require(\"fs\").readFileSync(\"package.json\", \"utf8\")); console.log(Object.keys(pkg.scripts || {}).length > 0 ? \"Scripts found\" : \"No scripts\")'"
     run_test "Bin configuration exists" "node -e 'const pkg = JSON.parse(require(\"fs\").readFileSync(\"package.json\", \"utf8\")); console.log(pkg.bin ? \"Binary defined\" : \"No binary\")'"
@@ -66,13 +66,13 @@ test_local_installation() {
     cd "$test_dir"
     
     run_test "Initialize test project" "npm init -y"
-    run_test "Install claude-flow locally" "npm install /workspaces/ruv-FANN/claude-code-flow/claude-code-flow --no-save"
-    run_test "Binary is symlinked" "[ -L node_modules/.bin/claude-flow ] || [ -f node_modules/.bin/claude-flow ]"
-    run_test "Can execute via npx" "timeout 10 npx claude-flow --version | grep -E '[0-9]+\.[0-9]+\.[0-9]+'"
-    run_test "Can execute via direct path" "timeout 10 ./node_modules/.bin/claude-flow --version | grep -E '[0-9]+\.[0-9]+\.[0-9]+'"
+    run_test "Install gemini-flow locally" "npm install /workspaces/ruv-FANN/gemini-flow/gemini-flow --no-save"
+    run_test "Binary is symlinked" "[ -L node_modules/.bin/gemini-flow ] || [ -f node_modules/.bin/gemini-flow ]"
+    run_test "Can execute via npx" "timeout 10 npx gemini-flow --version | grep -E '[0-9]+\.[0-9]+\.[0-9]+'"
+    run_test "Can execute via direct path" "timeout 10 ./node_modules/.bin/gemini-flow --version | grep -E '[0-9]+\.[0-9]+\.[0-9]+'"
     
     # Clean up
-    cd /workspaces/ruv-FANN/claude-code-flow/claude-code-flow
+    cd /workspaces/ruv-FANN/gemini-flow/gemini-flow
     rm -rf "$test_dir"
 }
 
@@ -88,17 +88,17 @@ test_global_installation() {
     export NPM_CONFIG_PREFIX="$test_dir/npm-global"
     mkdir -p "$NPM_CONFIG_PREFIX"
     
-    run_test "Global install simulation" "npm install /workspaces/ruv-FANN/claude-code-flow/claude-code-flow -g --prefix $NPM_CONFIG_PREFIX"
-    run_test "Global binary exists" "[ -f $NPM_CONFIG_PREFIX/bin/claude-flow ]"
-    run_test "Global binary is executable" "[ -x $NPM_CONFIG_PREFIX/bin/claude-flow ]"
+    run_test "Global install simulation" "npm install /workspaces/ruv-FANN/gemini-flow/gemini-flow -g --prefix $NPM_CONFIG_PREFIX"
+    run_test "Global binary exists" "[ -f $NPM_CONFIG_PREFIX/bin/gemini-flow ]"
+    run_test "Global binary is executable" "[ -x $NPM_CONFIG_PREFIX/bin/gemini-flow ]"
     
     # Test execution (add to PATH temporarily)
     export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
-    run_test "Can execute global binary" "timeout 10 claude-flow --version | grep -E '[0-9]+\.[0-9]+\.[0-9]+'"
+    run_test "Can execute global binary" "timeout 10 gemini-flow --version | grep -E '[0-9]+\.[0-9]+\.[0-9]+'"
     
     # Clean up
     unset NPM_CONFIG_PREFIX
-    cd /workspaces/ruv-FANN/claude-code-flow/claude-code-flow
+    cd /workspaces/ruv-FANN/gemini-flow/gemini-flow
     rm -rf "$test_dir"
 }
 

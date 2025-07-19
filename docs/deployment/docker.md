@@ -1,4 +1,4 @@
-# 🐳 Claude Flow v2.0.0 Docker Deployment Guide
+# 🐳 Gemini Flow v2.0.0 Docker Deployment Guide
 
 ## 📋 Table of Contents
 1. [Overview](#overview)
@@ -14,7 +14,7 @@
 
 ## 🎯 Overview
 
-Claude Flow v2.0.0 provides enterprise-grade Docker support with:
+Gemini Flow v2.0.0 provides enterprise-grade Docker support with:
 - **✅ Multi-stage builds** - 60% smaller images, faster deployments
 - **✅ Security hardening** - Non-root user, minimal attack surface
 - **✅ Health checks** - Automatic container recovery
@@ -26,26 +26,26 @@ Claude Flow v2.0.0 provides enterprise-grade Docker support with:
 ### Pull and Run
 ```bash
 # Pull the latest image
-docker pull ruvnet/claude-flow:2.0.0
+docker pull ruvnet/gemini-flow:2.0.0
 
 # Run with interactive shell
-docker run -it -p 3000:3000 ruvnet/claude-flow:2.0.0
+docker run -it -p 3000:3000 ruvnet/gemini-flow:2.0.0
 
 # Run with volume mounting
-docker run -it -v $(pwd):/app -p 3000:3000 ruvnet/claude-flow:2.0.0 init --sparc
+docker run -it -v $(pwd):/app -p 3000:3000 ruvnet/gemini-flow:2.0.0 init --sparc
 ```
 
 ### Build from Source
 ```bash
 # Clone repository
-git clone https://github.com/ruvnet/claude-code-flow.git
-cd claude-code-flow
+git clone https://github.com/ruvnet/gemini-flow.git
+cd gemini-flow
 
 # Build Docker image
-docker build -t claude-flow:local .
+docker build -t gemini-flow:local .
 
 # Run local build
-docker run -it -p 3000:3000 claude-flow:local
+docker run -it -p 3000:3000 gemini-flow:local
 ```
 
 ## 🏗️ Docker Images
@@ -61,9 +61,9 @@ docker run -it -p 3000:3000 claude-flow:local
 ### Multi-Architecture Support
 ```bash
 # Available architectures
-docker pull ruvnet/claude-flow:2.0.0 --platform linux/amd64
-docker pull ruvnet/claude-flow:2.0.0 --platform linux/arm64
-docker pull ruvnet/claude-flow:2.0.0 --platform linux/arm/v7
+docker pull ruvnet/gemini-flow:2.0.0 --platform linux/amd64
+docker pull ruvnet/gemini-flow:2.0.0 --platform linux/arm64
+docker pull ruvnet/gemini-flow:2.0.0 --platform linux/arm/v7
 ```
 
 ## ⚙️ Container Configuration
@@ -95,8 +95,8 @@ RUN npm run build
 FROM node:20-alpine
 
 # Security: Create non-root user
-RUN addgroup -g 1001 -S claude && \
-    adduser -S claude -u 1001
+RUN addgroup -g 1001 -S gemini && \
+    adduser -S gemini -u 1001
 
 # Install runtime dependencies only
 RUN apk add --no-cache tini
@@ -105,16 +105,16 @@ RUN apk add --no-cache tini
 WORKDIR /app
 
 # Copy built application
-COPY --from=builder --chown=claude:claude /app/dist ./dist
-COPY --from=builder --chown=claude:claude /app/node_modules ./node_modules
-COPY --from=builder --chown=claude:claude /app/package*.json ./
+COPY --from=builder --chown=claude:gemini /app/dist ./dist
+COPY --from=builder --chown=claude:gemini /app/node_modules ./node_modules
+COPY --from=builder --chown=claude:gemini /app/package*.json ./
 
 # Copy configuration templates
-COPY --chown=claude:claude .claude .claude
-COPY --chown=claude:claude CLAUDE.md ./
+COPY --chown=claude:gemini .gemini .claude
+COPY --chown=claude:gemini CLAUDE.md ./
 
 # Create necessary directories
-RUN mkdir -p logs memory && chown -R claude:claude .
+RUN mkdir -p logs memory && chown -R claude:gemini .
 
 # Switch to non-root user
 USER claude
@@ -169,9 +169,9 @@ SSL_ENABLED=false
 version: '3.8'
 
 services:
-  claude-flow:
-    image: ruvnet/claude-flow:2.0.0-dev
-    container_name: claude-flow-dev
+  gemini-flow:
+    image: ruvnet/gemini-flow:2.0.0-dev
+    container_name: gemini-flow-dev
     ports:
       - "3000:3000"
       - "3001:3001"
@@ -203,9 +203,9 @@ networks:
 version: '3.8'
 
 services:
-  claude-flow:
-    image: ruvnet/claude-flow:2.0.0
-    container_name: claude-flow-prod
+  gemini-flow:
+    image: ruvnet/gemini-flow:2.0.0
+    container_name: gemini-flow-prod
     restart: unless-stopped
     ports:
       - "80:3000"
@@ -248,7 +248,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
     depends_on:
-      - claude-flow
+      - gemini-flow
     networks:
       - claude-network
 
@@ -274,8 +274,8 @@ networks:
 version: '3.8'
 
 services:
-  claude-flow:
-    image: ruvnet/claude-flow:2.0.0
+  gemini-flow:
+    image: ruvnet/gemini-flow:2.0.0
     deploy:
       replicas: 3
       update_config:
@@ -304,7 +304,7 @@ services:
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     depends_on:
-      - claude-flow
+      - gemini-flow
     networks:
       - claude-network
 ```
@@ -319,29 +319,29 @@ docker build \
   --build-arg VERSION=2.0.0 \
   --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
   --build-arg VCS_REF=$(git rev-parse --short HEAD) \
-  -t claude-flow:production \
+  -t gemini-flow:production \
   -f Dockerfile.prod .
 ```
 
 ### 2. Security Scanning
 ```bash
 # Scan for vulnerabilities
-docker scan claude-flow:production
+docker scan gemini-flow:production
 
 # Use Trivy for detailed scanning
-trivy image claude-flow:production
+trivy image gemini-flow:production
 
 # Check with Snyk
-snyk test --docker claude-flow:production
+snyk test --docker gemini-flow:production
 ```
 
 ### 3. Push to Registry
 ```bash
 # Tag for registry
-docker tag claude-flow:production myregistry.com/claude-flow:2.0.0
+docker tag gemini-flow:production myregistry.com/gemini-flow:2.0.0
 
 # Push to registry
-docker push myregistry.com/claude-flow:2.0.0
+docker push myregistry.com/gemini-flow:2.0.0
 ```
 
 ### 4. Deploy Script
@@ -350,50 +350,50 @@ docker push myregistry.com/claude-flow:2.0.0
 # deploy.sh
 
 # Pull latest image
-docker pull myregistry.com/claude-flow:2.0.0
+docker pull myregistry.com/gemini-flow:2.0.0
 
 # Stop existing container
-docker stop claude-flow || true
-docker rm claude-flow || true
+docker stop gemini-flow || true
+docker rm gemini-flow || true
 
 # Run new container
 docker run -d \
-  --name claude-flow \
+  --name gemini-flow \
   --restart unless-stopped \
   -p 80:3000 \
-  -v /opt/claude-flow/config:/app/.claude \
-  -v /opt/claude-flow/memory:/app/memory \
-  -v /opt/claude-flow/logs:/app/logs \
+  -v /opt/gemini-flow/config:/app/.gemini \
+  -v /opt/gemini-flow/memory:/app/memory \
+  -v /opt/gemini-flow/logs:/app/logs \
   -e NODE_ENV=production \
   -e CLAUDE_FLOW_PORT=3000 \
   --memory="4g" \
   --cpus="2" \
-  myregistry.com/claude-flow:2.0.0
+  myregistry.com/gemini-flow:2.0.0
 ```
 
 ## ☸️ Kubernetes Deployment
 
 ### Deployment Manifest
 ```yaml
-# claude-flow-deployment.yaml
+# gemini-flow-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: claude-flow
+  name: gemini-flow
   namespace: claude-system
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: claude-flow
+      app: gemini-flow
   template:
     metadata:
       labels:
-        app: claude-flow
+        app: gemini-flow
     spec:
       containers:
-      - name: claude-flow
-        image: ruvnet/claude-flow:2.0.0
+      - name: gemini-flow
+        image: ruvnet/gemini-flow:2.0.0
         ports:
         - containerPort: 3000
           name: http
@@ -437,19 +437,19 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: claude-flow-config
+          name: gemini-flow-config
       - name: memory
         persistentVolumeClaim:
-          claimName: claude-flow-memory
+          claimName: gemini-flow-memory
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: claude-flow-service
+  name: gemini-flow-service
   namespace: claude-system
 spec:
   selector:
-    app: claude-flow
+    app: gemini-flow
   ports:
   - port: 80
     targetPort: 3000
@@ -463,8 +463,8 @@ spec:
 ### Helm Chart
 ```bash
 # Install with Helm
-helm repo add claude-flow https://charts.claude-flow.io
-helm install claude-flow claude-flow/claude-flow \
+helm repo add gemini-flow https://charts.gemini-flow.io
+helm install gemini-flow gemini-flow/gemini-flow \
   --namespace claude-system \
   --create-namespace \
   --set image.tag=2.0.0 \
@@ -498,7 +498,7 @@ COPY --chown=node:node . .
 ```yaml
 # docker-compose.security.yml
 services:
-  claude-flow:
+  gemini-flow:
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -545,16 +545,16 @@ fluentd:
     - ./fluent.conf:/fluentd/etc/fluent.conf
     - claude-logs:/logs
   links:
-    - claude-flow
+    - gemini-flow
 ```
 
 ### 3. Health Monitoring
 ```bash
 # Monitor container health
-docker inspect claude-flow --format='{{.State.Health.Status}}'
+docker inspect gemini-flow --format='{{.State.Health.Status}}'
 
 # View health check logs
-docker inspect claude-flow --format='{{range .State.Health.Log}}{{.End}} | {{.ExitCode}} | {{.Output}}{{end}}'
+docker inspect gemini-flow --format='{{range .State.Health.Log}}{{.End}} | {{.ExitCode}} | {{.Output}}{{end}}'
 ```
 
 ## 🔧 Troubleshooting
@@ -564,10 +564,10 @@ docker inspect claude-flow --format='{{range .State.Health.Log}}{{.End}} | {{.Ex
 #### 1. Container Exits Immediately
 ```bash
 # Check logs
-docker logs claude-flow
+docker logs gemini-flow
 
 # Run with debug
-docker run -it --entrypoint /bin/sh ruvnet/claude-flow:2.0.0
+docker run -it --entrypoint /bin/sh ruvnet/gemini-flow:2.0.0
 ```
 
 #### 2. Permission Errors
@@ -585,14 +585,14 @@ docker run --user $(id -u):$(id -g) ...
 docker run --memory="8g" --memory-swap="8g" ...
 
 # Check memory usage
-docker stats claude-flow
+docker stats gemini-flow
 ```
 
 #### 4. Network Connectivity
 ```bash
 # Test from container
-docker exec claude-flow ping google.com
-docker exec claude-flow curl http://localhost:3000/health
+docker exec gemini-flow ping google.com
+docker exec gemini-flow curl http://localhost:3000/health
 
 # Check network
 docker network inspect bridge
@@ -601,13 +601,13 @@ docker network inspect bridge
 ### Debugging Commands
 ```bash
 # Interactive shell
-docker exec -it claude-flow /bin/sh
+docker exec -it gemini-flow /bin/sh
 
 # View processes
-docker top claude-flow
+docker top gemini-flow
 
 # Export container
-docker export claude-flow > claude-flow.tar
+docker export gemini-flow > gemini-flow.tar
 
 # System information
 docker system df
@@ -623,4 +623,4 @@ docker system prune -a
 
 ---
 
-**🎉 Claude Flow v2.0.0 - Production-Ready Docker Deployment!**
+**🎉 Gemini Flow v2.0.0 - Production-Ready Docker Deployment!**

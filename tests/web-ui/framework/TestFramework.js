@@ -1,5 +1,5 @@
 /**
- * Comprehensive Test Framework for Claude Flow Web UI
+ * Comprehensive Test Framework for Gemini Flow Web UI
  * Base framework for testing all 71+ MCP tools and UI components
  */
 
@@ -24,7 +24,7 @@ class TestFramework extends EventEmitter {
    * Initialize test framework
    */
   async initialize() {
-    console.log('🧪 Initializing Claude Flow Test Framework');
+    console.log('🧪 Initializing Gemini Flow Test Framework');
     console.log(`📊 Testing ${this.getTotalToolCount()} tools across ${Object.keys(testConfig.testCategories).length} categories`);
     
     this.startTime = Date.now();

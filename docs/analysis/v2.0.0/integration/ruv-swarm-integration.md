@@ -12,7 +12,7 @@ The current integration consists of multiple layers:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Claude Code                          │
+│                    Gemini Code                          │
 ├─────────────────────────────────────────────────────────┤
 │                  MCP Protocol Layer                     │
 ├─────────────────────────────────────────────────────────┤
@@ -41,7 +41,7 @@ The current integration consists of multiple layers:
 #### 2.1 Complexity and Duplication
 - **Two parallel swarm implementations**: Built-in swarm and ruv-swarm
 - **Redundant configuration systems**: Multiple config managers
-- **Confusing tool naming**: Both `swarm/*` and `mcp__claude-flow__*` tools
+- **Confusing tool naming**: Both `swarm/*` and `mcp__gemini-flow__*` tools
 - **Command duplication**: CLI commands exist for both systems
 
 #### 2.2 Integration Challenges
@@ -61,16 +61,16 @@ The current integration consists of multiple layers:
 #### 3.1 MCP Tool Usage
 ```javascript
 // Current pattern - verbose and process-heavy
-mcp__claude-flow__swarm_init({ topology: "mesh", maxAgents: 6 })
-mcp__claude-flow__agent_spawn({ type: "researcher" })
-mcp__claude-flow__task_orchestrate({ task: "Research AI patterns" })
+mcp__gemini-flow__swarm_init({ topology: "mesh", maxAgents: 6 })
+mcp__gemini-flow__agent_spawn({ type: "researcher" })
+mcp__gemini-flow__task_orchestrate({ task: "Research AI patterns" })
 ```
 
 #### 3.2 CLI Command Usage
 ```bash
 # Current pattern - requires shell execution
-claude-flow ruv-swarm init --topology mesh --max-agents 8
-claude-flow ruv-swarm spawn researcher --name "AI Researcher"
+gemini-flow ruv-swarm init --topology mesh --max-agents 8
+gemini-flow ruv-swarm spawn researcher --name "AI Researcher"
 ```
 
 #### 3.3 Configuration Management
@@ -87,7 +87,7 @@ const integration = getRuvSwarmIntegration();
 
 ```typescript
 // New simplified architecture
-import { RuvSwarm } from '@claude-flow/ruv-swarm-sdk';
+import { RuvSwarm } from '@gemini-flow/ruv-swarm-sdk';
 
 const swarm = new RuvSwarm({
   topology: 'mesh',
@@ -104,7 +104,7 @@ const result = await swarm.orchestrate('Research neural architectures');
 ### 2. SDK Module Structure
 
 ```
-@claude-flow/ruv-swarm-sdk/
+@gemini-flow/ruv-swarm-sdk/
 ├── src/
 │   ├── index.ts              # Main SDK entry
 │   ├── client/
@@ -252,9 +252,9 @@ class MCPBridge {
   
   private mapToMCPTool(sdkMethod: string): string {
     const mapping: Record<string, string> = {
-      'swarm.init': 'mcp__claude-flow__swarm_init',
-      'agent.spawn': 'mcp__claude-flow__agent_spawn',
-      'task.orchestrate': 'mcp__claude-flow__task_orchestrate',
+      'swarm.init': 'mcp__gemini-flow__swarm_init',
+      'agent.spawn': 'mcp__gemini-flow__agent_spawn',
+      'task.orchestrate': 'mcp__gemini-flow__task_orchestrate',
       // ... more mappings
     };
     return mapping[sdkMethod] || sdkMethod;
@@ -294,7 +294,7 @@ class RuvSwarmProcess {
 ### 5. Migration Strategy
 
 #### 5.1 Phase 1: SDK Development
-1. Create `@claude-flow/ruv-swarm-sdk` package
+1. Create `@gemini-flow/ruv-swarm-sdk` package
 2. Implement core SDK functionality
 3. Add preset configurations
 4. Create comprehensive examples
@@ -316,7 +316,7 @@ class RuvSwarmProcess {
 #### 6.1 Simple Development Task
 
 ```typescript
-import { RuvSwarm } from '@claude-flow/ruv-swarm-sdk';
+import { RuvSwarm } from '@gemini-flow/ruv-swarm-sdk';
 
 // Before: Complex multi-step process
 // After: Simple and intuitive
@@ -461,7 +461,7 @@ const metrics = await swarm.metrics.export('prometheus');
 ### 10. Testing Support
 
 ```typescript
-import { MockSwarm } from '@claude-flow/ruv-swarm-sdk/testing';
+import { MockSwarm } from '@gemini-flow/ruv-swarm-sdk/testing';
 
 // Easy testing with mock swarm
 const mockSwarm = new MockSwarm();

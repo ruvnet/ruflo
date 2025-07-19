@@ -16,7 +16,7 @@ Deno.test('E2E - CLI should show help', async () => {
   const output = new TextDecoder().decode(stdout);
 
   assertEquals(code, 0);
-  assertEquals(output.includes('Claude-Flow: Advanced AI agent orchestration system'), true);
+  assertEquals(output.includes('Gemini-Flow: Advanced AI agent orchestration system'), true);
   assertEquals(output.includes('COMMANDS'), true);
 });
 

@@ -14,7 +14,7 @@ import { glob } from 'glob';
 export class MigrationAnalyzer {
   private optimizedCommands = [
     'sparc', 'sparc-architect', 'sparc-code', 'sparc-tdd',
-    'claude-flow-help', 'claude-flow-memory', 'claude-flow-swarm'
+    'gemini-flow-help', 'gemini-flow-memory', 'gemini-flow-swarm'
   ];
 
   async analyze(projectPath: string): Promise<MigrationAnalysis> {
@@ -32,7 +32,7 @@ export class MigrationAnalyzer {
       timestamp: new Date()
     };
 
-    // Check for .claude folder
+    // Check for .gemini folder
     const claudePath = path.join(projectPath, '.claude');
     if (await fs.pathExists(claudePath)) {
       analysis.hasClaudeFolder = true;
@@ -175,11 +175,11 @@ export class MigrationAnalyzer {
       });
     }
 
-    // Low risk: No .claude folder
+    // Low risk: No .gemini folder
     if (!analysis.hasClaudeFolder) {
       analysis.migrationRisks.push({
         level: 'low',
-        description: 'No existing .claude folder found',
+        description: 'No existing .gemini folder found',
         mitigation: 'Fresh installation will be performed'
       });
     }
@@ -237,7 +237,7 @@ export class MigrationAnalyzer {
     
     // Status
     console.log(chalk.bold('\n📋 Current Status:'));
-    console.log(`  • .claude folder: ${analysis.hasClaudeFolder ? chalk.green('✓') : chalk.red('✗')}`);
+    console.log(`  • .gemini folder: ${analysis.hasClaudeFolder ? chalk.green('✓') : chalk.red('✗')}`);
     console.log(`  • Optimized prompts: ${analysis.hasOptimizedPrompts ? chalk.green('✓') : chalk.red('✗')}`);
     console.log(`  • Custom commands: ${analysis.customCommands.length > 0 ? chalk.yellow(analysis.customCommands.length) : chalk.green('0')}`);
     console.log(`  • Conflicts: ${analysis.conflictingFiles.length > 0 ? chalk.yellow(analysis.conflictingFiles.length) : chalk.green('0')}`);

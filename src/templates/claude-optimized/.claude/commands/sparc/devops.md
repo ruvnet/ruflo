@@ -106,17 +106,17 @@ Use `new_task` with batch specifications to:
 
 **Multi-Service Deployment**:
 ```bash
-npx claude-flow sparc run devops --batch-deploy "services:api,web,worker regions:us,eu,asia"
+npx gemini-flow sparc run devops --batch-deploy "services:api,web,worker regions:us,eu,asia"
 ```
 
 **Parallel Infrastructure Update**:
 ```bash
-npx claude-flow sparc run devops --parallel-infra "update all Lambda functions to Node 20"
+npx gemini-flow sparc run devops --parallel-infra "update all Lambda functions to Node 20"
 ```
 
 **Concurrent Rollback**:
 ```bash
-npx claude-flow sparc run devops --batch-rollback "all services to version 1.2.3"
+npx gemini-flow sparc run devops --batch-rollback "all services to version 1.2.3"
 ```
 
 Return `attempt_completion` with:
@@ -152,25 +152,25 @@ Return `attempt_completion` with:
 
 To use this SPARC mode, you can:
 
-1. Run directly: `npx claude-flow sparc run devops "your task"`
+1. Run directly: `npx gemini-flow sparc run devops "your task"`
 2. Use in workflow: Include `devops` in your SPARC workflow
 3. Delegate tasks: Use `new_task` to assign work to this mode
-4. Batch operations: `npx claude-flow sparc run devops --batch "deploy all microservices"`
+4. Batch operations: `npx gemini-flow sparc run devops --batch "deploy all microservices"`
 
 ## Example
 
 ```bash
 # Standard deployment
-npx claude-flow sparc run devops "deploy user authentication service"
+npx gemini-flow sparc run devops "deploy user authentication service"
 
 # Batch deployment across regions
-npx claude-flow sparc run devops --batch-regions "deploy API to us-east-1,eu-west-1,ap-south-1"
+npx gemini-flow sparc run devops --batch-regions "deploy API to us-east-1,eu-west-1,ap-south-1"
 
 # Parallel infrastructure update
-npx claude-flow sparc run devops --parallel "update all container images"
+npx gemini-flow sparc run devops --parallel "update all container images"
 
 # Concurrent monitoring setup
-npx claude-flow sparc run devops --monitor-all "set up monitoring for all services"
+npx gemini-flow sparc run devops --monitor-all "set up monitoring for all services"
 ```
 
 ## Advanced Batchtools Examples

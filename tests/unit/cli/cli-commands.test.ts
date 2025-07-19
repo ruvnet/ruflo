@@ -178,7 +178,7 @@ describe('CLI Commands - Comprehensive Tests', () => {
     beforeEach(() => {
       cli.command({
         name: 'start',
-        description: 'Start the Claude-Flow orchestrator',
+        description: 'Start the Gemini-Flow orchestrator',
         options: [
           { name: 'config', type: 'string', description: 'Configuration file path' },
           { name: 'port', type: 'number', description: 'Server port', default: 8080 },
@@ -186,7 +186,7 @@ describe('CLI Commands - Comprehensive Tests', () => {
           { name: 'log-level', type: 'string', description: 'Log level', default: 'info' },
         ],
         handler: async (args) => {
-          cli.stdout('Claude-Flow orchestrator starting...');
+          cli.stdout('Gemini-Flow orchestrator starting...');
           
           if (args.config) {
             cli.stdout(`Using config file: ${args.config}`);
@@ -253,7 +253,7 @@ describe('CLI Commands - Comprehensive Tests', () => {
     beforeEach(() => {
       cli.command({
         name: 'agent',
-        description: 'Manage Claude agents',
+        description: 'Manage Gemini agents',
         options: [
           { name: 'action', type: 'string', required: true, description: 'Action: create, list, delete' },
           { name: 'name', type: 'string', description: 'Agent name' },
@@ -659,8 +659,8 @@ describe('CLI Commands - Comprehensive Tests', () => {
             cli.stdout(`Help for command: ${args.command}`);
             cli.stdout('Usage, options, and examples would be shown here');
           } else {
-            cli.stdout('Claude-Flow CLI');
-            cli.stdout('Usage: claude-flow <command> [options]');
+            cli.stdout('Gemini-Flow CLI');
+            cli.stdout('Usage: gemini-flow <command> [options]');
             cli.stdout('');
             cli.stdout('Commands:');
             cli.stdout('  start     Start the orchestrator');
@@ -677,7 +677,7 @@ describe('CLI Commands - Comprehensive Tests', () => {
         name: 'version',
         description: 'Show version information',
         handler: async () => {
-          cli.stdout('Claude-Flow v1.0.0');
+          cli.stdout('Gemini-Flow v1.0.0');
           cli.stdout('Deno Runtime v1.40.0');
           cli.stdout('Build: 2024-01-01T00:00:00Z');
           return 0;
@@ -690,7 +690,7 @@ describe('CLI Commands - Comprehensive Tests', () => {
       const output = cli.getOutput();
       
       assertEquals(exitCode, 0);
-      assertStringIncludes(output.stdout.join(' '), 'Claude-Flow CLI');
+      assertStringIncludes(output.stdout.join(' '), 'Gemini-Flow CLI');
       assertStringIncludes(output.stdout.join(' '), 'Commands:');
       assertStringIncludes(output.stdout.join(' '), 'start');
       assertStringIncludes(output.stdout.join(' '), 'agent');
@@ -711,7 +711,7 @@ describe('CLI Commands - Comprehensive Tests', () => {
       const output = cli.getOutput();
       
       assertEquals(exitCode, 0);
-      assertStringIncludes(output.stdout.join(' '), 'Claude-Flow v1.0.0');
+      assertStringIncludes(output.stdout.join(' '), 'Gemini-Flow v1.0.0');
       assertStringIncludes(output.stdout.join(' '), 'Deno Runtime');
       assertStringIncludes(output.stdout.join(' '), 'Build:');
     });

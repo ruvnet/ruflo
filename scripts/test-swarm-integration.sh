@@ -1,29 +1,29 @@
 #!/bin/bash
-# Integration test for Claude-Flow Swarm Mode
+# Integration test for Gemini-Flow Swarm Mode
 
-echo "Claude-Flow Swarm Mode Integration Test"
+echo "Gemini-Flow Swarm Mode Integration Test"
 echo "======================================="
 echo
 
 # Test 1: Binary exists
 echo "Test 1: Checking binary files..."
-if [ -f "./bin/claude-flow" ]; then
-    echo "✅ claude-flow binary found"
+if [ -f "./bin/gemini-flow" ]; then
+    echo "✅ gemini-flow binary found"
 else
-    echo "❌ claude-flow binary not found"
+    echo "❌ gemini-flow binary not found"
     exit 1
 fi
 
-if [ -f "./bin/claude-flow-swarm" ]; then
-    echo "✅ claude-flow-swarm wrapper found"
+if [ -f "./bin/gemini-flow-swarm" ]; then
+    echo "✅ gemini-flow-swarm wrapper found"
 else
-    echo "❌ claude-flow-swarm wrapper not found"
+    echo "❌ gemini-flow-swarm wrapper not found"
     exit 1
 fi
 
 # Test 2: Help command
 echo -e "\nTest 2: Testing help command..."
-if ./bin/claude-flow help swarm | grep -q "Claude Swarm Mode"; then
+if ./bin/gemini-flow help swarm | grep -q "Gemini Swarm Mode"; then
     echo "✅ Swarm help command works"
 else
     echo "❌ Swarm help command failed"
@@ -32,7 +32,7 @@ fi
 
 # Test 3: Swarm listed in main help
 echo -e "\nTest 3: Checking swarm in main help..."
-if ./bin/claude-flow --help | grep -q "swarm"; then
+if ./bin/gemini-flow --help | grep -q "swarm"; then
     echo "✅ Swarm command listed in main help"
 else
     echo "❌ Swarm command not listed in main help"
@@ -41,7 +41,7 @@ fi
 
 # Test 4: Standalone swarm dry-run
 echo -e "\nTest 4: Testing standalone swarm dry-run..."
-if ./bin/claude-flow-swarm "Test objective" --dry-run | grep -q "DRY RUN"; then
+if ./bin/gemini-flow-swarm "Test objective" --dry-run | grep -q "DRY RUN"; then
     echo "✅ Standalone swarm dry-run works"
 else
     echo "❌ Standalone swarm dry-run failed"
@@ -50,7 +50,7 @@ fi
 
 # Test 5: Complex swarm configuration
 echo -e "\nTest 5: Testing complex swarm configuration..."
-OUTPUT=$(./bin/claude-flow-swarm "Complex test" --strategy research --max-agents 10 --coordinator --review --parallel --dry-run)
+OUTPUT=$(./bin/gemini-flow-swarm "Complex test" --strategy research --max-agents 10 --coordinator --review --parallel --dry-run)
 if echo "$OUTPUT" | grep -q "Strategy: research" && \
    echo "$OUTPUT" | grep -q "Max Agents: 10" && \
    echo "$OUTPUT" | grep -q "Coordinator: true" && \
@@ -85,8 +85,8 @@ echo -e "\n======================================="
 echo "✅ All integration tests passed!"
 echo
 echo "Swarm mode is ready to use:"
-echo "  1. ./bin/claude-flow swarm \"Your objective\" [options]"
-echo "  2. ./bin/claude-flow-swarm \"Your objective\" [options]"
-echo "  3. npx claude-flow swarm \"Your objective\" [options]"
+echo "  1. ./bin/gemini-flow swarm \"Your objective\" [options]"
+echo "  2. ./bin/gemini-flow-swarm \"Your objective\" [options]"
+echo "  3. npx gemini-flow swarm \"Your objective\" [options]"
 echo
-echo "For more info: ./bin/claude-flow help swarm"
+echo "For more info: ./bin/gemini-flow help swarm"

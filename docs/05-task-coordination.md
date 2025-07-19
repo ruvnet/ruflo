@@ -1,6 +1,6 @@
 # Task Coordination and Workflow Creation Guide
 
-Claude-Flow provides sophisticated task coordination capabilities with support for complex dependencies, priority management, workflow orchestration, and advanced scheduling. This guide covers everything from basic task creation to complex multi-agent workflows.
+Gemini-Flow provides sophisticated task coordination capabilities with support for complex dependencies, priority management, workflow orchestration, and advanced scheduling. This guide covers everything from basic task creation to complex multi-agent workflows.
 
 ## Task Types and Categories
 
@@ -210,7 +210,7 @@ claude-flow task create coordination "Coordinate multi-team sprint execution" \
 
 ### Priority Levels
 
-Claude-Flow supports 5 priority levels with sophisticated scheduling algorithms.
+Gemini-Flow supports 5 priority levels with sophisticated scheduling algorithms.
 
 **Priority Configuration:**
 ```bash
@@ -958,4 +958,4 @@ claude-flow task predictive-balance \
   --optimization-goal "minimize-completion-time"
 ```
 
-This comprehensive task coordination guide provides all the tools and patterns needed to build sophisticated, scalable workflows with Claude-Flow. Use these examples and best practices to orchestrate complex multi-agent systems effectively.
+This comprehensive task coordination guide provides all the tools and patterns needed to build sophisticated, scalable workflows with Gemini-Flow. Use these examples and best practices to orchestrate complex multi-agent systems effectively.

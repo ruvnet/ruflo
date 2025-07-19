@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for claude-code-flow testing
+# Multi-stage Dockerfile for gemini-flow testing
 # Optimized for both development and production environments
 
 # =================== BASE STAGE ===================

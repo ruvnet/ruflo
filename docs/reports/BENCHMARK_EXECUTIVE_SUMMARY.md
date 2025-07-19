@@ -1,4 +1,4 @@
-# 📊 Claude-Flow Benchmark Executive Summary
+# 📊 Gemini-Flow Benchmark Executive Summary
 
 **Date**: 2025-07-06  
 **Coordinator**: Benchmark-Coordinator Agent  

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Build script for Claude-Flow Migration System
+# Build script for Gemini-Flow Migration System
 
 set -e
 
-echo "🚀 Building Claude-Flow Migration System..."
+echo "🚀 Building Gemini-Flow Migration System..."
 
 # Check if we're in the right directory
 if [ ! -f "package.json" ]; then
@@ -41,7 +41,7 @@ cp src/migration/migration-manifest.json dist/migration/
 # Copy source templates for development
 echo "📋 Copying templates..."
 mkdir -p dist/migration/templates
-cp -r .claude/ dist/migration/templates/claude || echo "⚠️  .claude folder not found, skipping..."
+cp -r .claude/ dist/migration/templates/gemini || echo "⚠️  .gemini folder not found, skipping..."
 cp CLAUDE.md dist/migration/templates/ || echo "⚠️  CLAUDE.md not found, skipping..."
 cp .roomodes dist/migration/templates/ || echo "⚠️  .roomodes not found, skipping..."
 
@@ -51,7 +51,7 @@ chmod +x dist/migration/index.js
 # Create symlink for global usage
 echo "🔗 Creating symlinks..."
 mkdir -p bin
-ln -sf ../dist/migration/index.js bin/claude-flow-migrate
+ln -sf ../dist/migration/index.js bin/gemini-flow-migrate
 
 # Run tests
 echo "🧪 Running tests..."
@@ -62,7 +62,7 @@ cd ../..
 # Create package info
 echo "📄 Creating package information..."
 cat > dist/migration/INSTALL.md << 'EOF'
-# Claude-Flow Migration System Installation
+# Gemini-Flow Migration System Installation
 
 ## Quick Install
 
@@ -71,20 +71,20 @@ cat > dist/migration/INSTALL.md << 'EOF'
 npm install -g ./dist/migration
 
 # Or use directly
-./bin/claude-flow-migrate --help
+./bin/gemini-flow-migrate --help
 ```
 
 ## Usage
 
 ```bash
 # Analyze project
-claude-flow-migrate analyze
+gemini-flow-migrate analyze
 
 # Migrate with selective strategy
-claude-flow-migrate --strategy selective --preserve-custom
+gemini-flow-migrate --strategy selective --preserve-custom
 
 # Rollback if needed
-claude-flow-migrate rollback
+gemini-flow-migrate rollback
 ```
 
 ## Documentation
@@ -95,11 +95,11 @@ EOF
 echo "✅ Build completed successfully!"
 echo ""
 echo "📋 Next steps:"
-echo "   1. Test installation: ./bin/claude-flow-migrate --help"
-echo "   2. Run on test project: ./bin/claude-flow-migrate analyze /path/to/project"
+echo "   1. Test installation: ./bin/gemini-flow-migrate --help"
+echo "   2. Run on test project: ./bin/gemini-flow-migrate analyze /path/to/project"
 echo "   3. Create distribution: npm pack dist/migration"
 echo ""
 echo "📦 Built files:"
 echo "   - dist/migration/ - Complete migration system"
-echo "   - bin/claude-flow-migrate - Executable symlink"
+echo "   - bin/gemini-flow-migrate - Executable symlink"
 echo ""
