@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { createMachine, interpret, State } from 'xstate';
 import { v4 as uuidv4 } from 'uuid';
+import { WorkflowStateManager, SQLiteWorkflowStateStore } from './persistence/workflow-state-manager';
 
 export interface WorkflowStep {
   id: string;
@@ -51,9 +52,18 @@ export class WorkflowEngine extends EventEmitter {
   private workflows: Map<string, WorkflowDefinition> = new Map();
   private executions: Map<string, WorkflowExecution> = new Map();
   private machines: Map<string, any> = new Map();
+  private stateManager: WorkflowStateManager;
+  private enablePersistence: boolean;
 
-  constructor() {
+  constructor(options: { enablePersistence?: boolean; dbPath?: string } = {}) {
     super();
+    this.enablePersistence = options.enablePersistence ?? true;
+    
+    if (this.enablePersistence) {
+      const store = new SQLiteWorkflowStateStore(options.dbPath);
+      this.stateManager = new WorkflowStateManager(store);
+      this.setupStateManagerEvents();
+    }
   }
 
   async createWorkflow(definition: WorkflowDefinition): Promise<void> {
@@ -66,6 +76,11 @@ export class WorkflowEngine extends EventEmitter {
     // Store workflow and machine
     this.workflows.set(definition.id, definition);
     this.machines.set(definition.id, machine);
+    
+    // Persist workflow definition
+    if (this.enablePersistence) {
+      await this.stateManager.saveWorkflow(definition);
+    }
     
     this.emit('workflow:created', { workflowId: definition.id });
   }
@@ -88,6 +103,11 @@ export class WorkflowEngine extends EventEmitter {
     };
 
     this.executions.set(executionId, execution);
+    
+    // Persist initial execution state
+    if (this.enablePersistence) {
+      await this.stateManager.saveExecution(execution);
+    }
     
     // Start execution
     this.startExecution(execution);
@@ -156,6 +176,11 @@ export class WorkflowEngine extends EventEmitter {
       execution.results[step.id] = result;
       this.logExecution(execution, 'info', `Step completed: ${step.name}`, step.id);
       
+      // Persist execution state after step completion
+      if (this.enablePersistence) {
+        await this.stateManager.updateExecution(execution);
+      }
+      
       // Execute next steps
       await this.executeNextSteps(execution, step, result);
       
@@ -171,96 +196,141 @@ export class WorkflowEngine extends EventEmitter {
   }
 
   private async executeAgentTask(execution: WorkflowExecution, step: WorkflowStep): Promise<any> {
-    const { agentType, goal, provider } = step.config;
+    const { StepExecutorFactory } = await import('./executors/step-executors');
+    const executor = StepExecutorFactory.getExecutor('agent-task');
     
-    // This would integrate with the agent system
-    // For now, simulate agent execution
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          agentType,
-          goal,
-          result: `Agent task completed: ${goal}`,
-          timestamp: new Date()
-        });
-      }, 1000);
-    });
+    const context = {
+      execution,
+      step,
+      variables: execution.variables,
+      results: execution.results,
+      logger: (level: 'info' | 'warn' | 'error', message: string, stepId?: string) => {
+        this.logExecution(execution, level, message, stepId);
+      }
+    };
+
+    const result = await executor.execute(context);
+    if (!result.success) {
+      throw result.error || new Error('Agent task execution failed');
+    }
+    
+    return result.result;
   }
 
   private async executeParallel(execution: WorkflowExecution, step: WorkflowStep): Promise<any> {
-    const { steps: parallelSteps } = step.config;
-    const workflow = this.workflows.get(execution.workflowId)!;
+    const { StepExecutorFactory } = await import('./executors/step-executors');
+    const executor = StepExecutorFactory.getExecutor('parallel');
     
-    const promises = parallelSteps.map((stepId: string) => {
-      const parallelStep = workflow.steps.find(s => s.id === stepId);
-      if (!parallelStep) {
-        throw new Error(`Step ${stepId} not found for parallel execution`);
+    const context = {
+      execution,
+      step,
+      variables: execution.variables,
+      results: execution.results,
+      logger: (level: 'info' | 'warn' | 'error', message: string, stepId?: string) => {
+        this.logExecution(execution, level, message, stepId);
       }
-      return this.executeStep(execution, parallelStep);
-    });
+    };
+
+    const result = await executor.execute(context);
+    if (!result.success) {
+      throw result.error || new Error('Parallel execution failed');
+    }
     
-    return Promise.all(promises);
+    return result.result;
   }
 
   private async executeCondition(execution: WorkflowExecution, step: WorkflowStep): Promise<any> {
-    const { condition, trueStep, falseStep } = step.config;
+    const { StepExecutorFactory } = await import('./executors/step-executors');
+    const executor = StepExecutorFactory.getExecutor('condition');
     
-    // Evaluate condition against execution variables and results
-    const conditionResult = this.evaluateCondition(condition, execution);
-    
-    const nextStepId = conditionResult ? trueStep : falseStep;
-    if (nextStepId) {
-      await this.executeNextStep(execution, nextStepId);
+    const context = {
+      execution,
+      step,
+      variables: execution.variables,
+      results: execution.results,
+      logger: (level: 'info' | 'warn' | 'error', message: string, stepId?: string) => {
+        this.logExecution(execution, level, message, stepId);
+      }
+    };
+
+    const result = await executor.execute(context);
+    if (!result.success) {
+      throw result.error || new Error('Condition evaluation failed');
     }
     
-    return { condition, result: conditionResult, nextStep: nextStepId };
+    // Handle next step execution based on condition result
+    const { nextStep } = result.result;
+    if (nextStep) {
+      await this.executeNextStep(execution, nextStep);
+    }
+    
+    return result.result;
   }
 
   private async executeLoop(execution: WorkflowExecution, step: WorkflowStep): Promise<any> {
-    const { condition, loopStep, maxIterations = 10 } = step.config;
-    const results = [];
-    let iterations = 0;
+    const { StepExecutorFactory } = await import('./executors/step-executors');
+    const executor = StepExecutorFactory.getExecutor('loop');
     
-    while (this.evaluateCondition(condition, execution) && iterations < maxIterations) {
-      const result = await this.executeNextStep(execution, loopStep);
-      results.push(result);
-      iterations++;
+    const context = {
+      execution,
+      step,
+      variables: execution.variables,
+      results: execution.results,
+      logger: (level: 'info' | 'warn' | 'error', message: string, stepId?: string) => {
+        this.logExecution(execution, level, message, stepId);
+      }
+    };
+
+    const result = await executor.execute(context);
+    if (!result.success) {
+      throw result.error || new Error('Loop execution failed');
     }
     
-    return { iterations, results };
+    return result.result;
   }
 
   private async executeHttpRequest(execution: WorkflowExecution, step: WorkflowStep): Promise<any> {
-    const { method, url, headers, body } = step.config;
+    const { StepExecutorFactory } = await import('./executors/step-executors');
+    const executor = StepExecutorFactory.getExecutor('http');
     
-    // This would make actual HTTP requests
-    // For now, simulate HTTP request
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          status: 200,
-          data: { message: `HTTP ${method} to ${url} completed` },
-          timestamp: new Date()
-        });
-      }, 500);
-    });
+    const context = {
+      execution,
+      step,
+      variables: execution.variables,
+      results: execution.results,
+      logger: (level: 'info' | 'warn' | 'error', message: string, stepId?: string) => {
+        this.logExecution(execution, level, message, stepId);
+      }
+    };
+
+    const result = await executor.execute(context);
+    if (!result.success) {
+      throw result.error || new Error('HTTP request failed');
+    }
+    
+    return result.result;
   }
 
   private async executeScript(execution: WorkflowExecution, step: WorkflowStep): Promise<any> {
-    const { script, language = 'javascript' } = step.config;
+    const { StepExecutorFactory } = await import('./executors/step-executors');
+    const executor = StepExecutorFactory.getExecutor('script');
     
-    // This would execute scripts in a sandboxed environment
-    // For now, simulate script execution
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          language,
-          script: script.substring(0, 100) + '...',
-          result: 'Script executed successfully',
-          timestamp: new Date()
-        });
-      }, 300);
-    });
+    const context = {
+      execution,
+      step,
+      variables: execution.variables,
+      results: execution.results,
+      logger: (level: 'info' | 'warn' | 'error', message: string, stepId?: string) => {
+        this.logExecution(execution, level, message, stepId);
+      }
+    };
+
+    const result = await executor.execute(context);
+    if (!result.success) {
+      throw result.error || new Error('Script execution failed');
+    }
+    
+    return result.result;
   }
 
   private async executeNextSteps(execution: WorkflowExecution, step: WorkflowStep, result: any): Promise<void> {
@@ -275,6 +345,13 @@ export class WorkflowEngine extends EventEmitter {
       execution.status = 'completed';
       execution.endTime = new Date();
       this.logExecution(execution, 'info', 'Workflow completed successfully');
+      
+      // Persist final state
+      if (this.enablePersistence) {
+        await this.stateManager.updateExecution(execution);
+        await this.stateManager.cleanup(execution.id);
+      }
+      
       this.emit('workflow:completed', { executionId: execution.id });
     }
   }
@@ -365,6 +442,11 @@ export class WorkflowEngine extends EventEmitter {
     
     execution.logs.push(log);
     this.emit('workflow:log', { executionId: execution.id, log });
+    
+    // Persist logs periodically (every 10 logs)
+    if (this.enablePersistence && execution.logs.length % 10 === 0) {
+      await this.stateManager.updateExecution(execution);
+    }
   }
 
   // Public API methods
@@ -394,6 +476,175 @@ export class WorkflowEngine extends EventEmitter {
     execution.status = 'cancelled';
     execution.endTime = new Date();
     this.logExecution(execution, 'info', 'Execution cancelled');
+    
+    // Persist cancelled state
+    if (this.enablePersistence) {
+      await this.stateManager.updateExecution(execution);
+      await this.stateManager.cleanup(execution.id);
+    }
+    
     this.emit('workflow:cancelled', { executionId });
+  }
+
+  // Workflow resume capability
+  async resumeWorkflow(executionId: string): Promise<void> {
+    if (!this.enablePersistence) {
+      throw new Error('Persistence is disabled, cannot resume workflow');
+    }
+
+    // Load execution from persistence
+    const execution = await this.stateManager.getExecution(executionId);
+    if (!execution) {
+      throw new Error(`Execution ${executionId} not found`);
+    }
+
+    if (execution.status !== 'paused' && execution.status !== 'failed') {
+      throw new Error(`Cannot resume workflow in status ${execution.status}`);
+    }
+
+    // Load workflow definition
+    const workflow = await this.stateManager.getWorkflow(execution.workflowId);
+    if (!workflow) {
+      throw new Error(`Workflow definition ${execution.workflowId} not found`);
+    }
+
+    // Restore to in-memory maps
+    this.workflows.set(execution.workflowId, workflow);
+    this.executions.set(executionId, execution);
+
+    // Create XState machine
+    const machine = this.createStateMachine(workflow);
+    this.machines.set(execution.workflowId, machine);
+
+    // Resume from current step
+    execution.status = 'running';
+    await this.stateManager.updateExecution(execution);
+
+    if (execution.currentStep) {
+      const currentStep = workflow.steps.find(s => s.id === execution.currentStep);
+      if (currentStep) {
+        this.logExecution(execution, 'info', `Resuming workflow from step: ${currentStep.name}`);
+        await this.executeStep(execution, currentStep);
+      }
+    }
+
+    this.emit('workflow:resumed', { executionId });
+  }
+
+  // Pause workflow execution
+  async pauseWorkflow(executionId: string): Promise<void> {
+    const execution = this.executions.get(executionId);
+    if (!execution) {
+      throw new Error(`Execution ${executionId} not found`);
+    }
+
+    if (execution.status !== 'running') {
+      throw new Error(`Cannot pause workflow in status ${execution.status}`);
+    }
+
+    execution.status = 'paused';
+    this.logExecution(execution, 'info', 'Workflow paused');
+
+    if (this.enablePersistence) {
+      await this.stateManager.updateExecution(execution);
+      await this.stateManager.createSnapshot(executionId, execution);
+    }
+
+    this.emit('workflow:paused', { executionId });
+  }
+
+  // Enable auto-snapshots for running workflows
+  async enableAutoSnapshots(executionId: string, intervalMs = 60000): Promise<void> {
+    if (!this.enablePersistence) {
+      throw new Error('Persistence is disabled, cannot enable auto-snapshots');
+    }
+
+    await this.stateManager.enableAutoSnapshots(executionId, intervalMs);
+  }
+
+  // Setup state manager event handlers
+  private setupStateManagerEvents(): void {
+    if (!this.stateManager) return;
+
+    this.stateManager.on('execution:saved', (data) => {
+      this.emit('persistence:execution-saved', data);
+    });
+
+    this.stateManager.on('execution:updated', (data) => {
+      this.emit('persistence:execution-updated', data);
+    });
+
+    this.stateManager.on('snapshot:created', (data) => {
+      this.emit('persistence:snapshot-created', data);
+    });
+
+    this.stateManager.on('workflow:saved', (data) => {
+      this.emit('persistence:workflow-saved', data);
+    });
+
+    this.stateManager.on('error', (data) => {
+      this.emit('persistence:error', data);
+    });
+  }
+
+  // Cleanup and shutdown
+  async shutdown(): Promise<void> {
+    // Cancel all running executions
+    for (const [executionId, execution] of this.executions) {
+      if (execution.status === 'running') {
+        await this.cancelExecution(executionId);
+      }
+    }
+
+    // Shutdown state manager
+    if (this.stateManager) {
+      await this.stateManager.shutdown();
+    }
+
+    // Clear all data
+    this.workflows.clear();
+    this.executions.clear();
+    this.machines.clear();
+
+    this.removeAllListeners();
+  }
+
+  // Get workflow execution metrics
+  getExecutionMetrics(executionId: string): any {
+    const execution = this.executions.get(executionId);
+    if (!execution) return null;
+
+    const totalSteps = execution.results ? Object.keys(execution.results).length : 0;
+    const duration = execution.endTime 
+      ? execution.endTime.getTime() - execution.startTime.getTime()
+      : Date.now() - execution.startTime.getTime();
+
+    return {
+      executionId,
+      status: execution.status,
+      totalSteps,
+      duration,
+      startTime: execution.startTime,
+      endTime: execution.endTime,
+      currentStep: execution.currentStep,
+      logs: execution.logs.length,
+      errors: execution.logs.filter(l => l.level === 'error').length
+    };
+  }
+
+  // List all executions with optional filtering
+  listExecutions(filter?: { status?: string; workflowId?: string }): WorkflowExecution[] {
+    let executions = Array.from(this.executions.values());
+
+    if (filter) {
+      if (filter.status) {
+        executions = executions.filter(e => e.status === filter.status);
+      }
+      if (filter.workflowId) {
+        executions = executions.filter(e => e.workflowId === filter.workflowId);
+      }
+    }
+
+    return executions;
   }
 }

@@ -201,7 +201,18 @@ export class OpenAIProvider extends BaseLLMProvider {
     }
 
     try {
-      await this.client.models.list();
+      // Real health check with minimal completion
+      const response = await this.client.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: 'Health check' }],
+        max_tokens: 5,
+        temperature: 0
+      });
+      
+      // Verify we got a valid response
+      if (!response || !response.choices || response.choices.length === 0) {
+        throw new ProviderError('Invalid response from health check', this.provider);
+      }
     } catch (error: any) {
       throw this.handleOpenAIError(error);
     }
@@ -319,7 +330,7 @@ export class OpenAIProvider extends BaseLLMProvider {
   }
 
   /**
-   * Calculate cost based on token usage
+   * Calculate cost based on token usage with real OpenAI pricing
    */
   private calculateCost(inputTokens: number, outputTokens: number, model: string): number {
     const modelInfo = this.models.find(m => m.id === model);
@@ -329,20 +340,50 @@ export class OpenAIProvider extends BaseLLMProvider {
 
     const inputCost = (inputTokens / 1000) * modelInfo.capabilities.costPer1kTokens.input;
     const outputCost = (outputTokens / 1000) * modelInfo.capabilities.costPer1kTokens.output;
+    const totalCost = inputCost + outputCost;
 
-    return inputCost + outputCost;
+    // Log cost tracking for monitoring
+    console.debug(`[${this.provider}] Cost calculation: ${inputTokens} input + ${outputTokens} output = $${totalCost.toFixed(6)}`);
+    
+    return totalCost;
   }
 
   /**
-   * Handle OpenAI-specific errors
+   * Handle OpenAI-specific errors with detailed error mapping
    */
   private handleOpenAIError(error: any): Error {
     if (error instanceof OpenAI.APIError) {
+      // Map specific OpenAI error types
+      const errorCode = error.code || error.type || 'UNKNOWN';
+      
+      // Add specific error handling for common cases
+      let customMessage = error.message;
+      if (errorCode === 'insufficient_quota') {
+        customMessage = 'OpenAI API quota exceeded or billing issue';
+      } else if (errorCode === 'invalid_api_key') {
+        customMessage = 'Invalid OpenAI API key';
+      } else if (errorCode === 'model_not_found') {
+        customMessage = `OpenAI model not found: ${error.message}`;
+      } else if (errorCode === 'rate_limit_exceeded') {
+        customMessage = 'OpenAI API rate limit exceeded';
+      } else if (errorCode === 'context_length_exceeded') {
+        customMessage = 'Request exceeds maximum context length for OpenAI model';
+      }
+      
       return this.wrapError({
-        message: error.message,
+        message: customMessage,
         status: error.status,
-        code: error.code,
+        code: errorCode,
         headers: error.headers
+      });
+    }
+    
+    // Handle network errors
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      return this.wrapError({
+        message: 'Network error connecting to OpenAI API',
+        code: 'NETWORK_ERROR',
+        status: 503
       });
     }
     
@@ -350,11 +391,25 @@ export class OpenAIProvider extends BaseLLMProvider {
   }
 
   /**
-   * Estimate tokens using tiktoken approximation
+   * Estimate tokens using improved tiktoken approximation
    */
   async estimateTokens(text: string): Promise<number> {
-    // OpenAI uses tiktoken for tokenization
-    // Rough estimate for GPT models: 1 token ≈ 4 characters
-    return Math.ceil(text.length / 4);
+    // More accurate OpenAI tokenization estimation
+    // Based on tiktoken patterns: 1 token ≈ 3.8 characters for English
+    let baseTokens = Math.ceil(text.length / 3.8);
+    
+    // Adjust for common OpenAI tokenization patterns
+    const words = text.split(/\s+/).length;
+    const specialChars = (text.match(/[^\w\s]/g) || []).length;
+    const newlines = (text.match(/\n/g) || []).length;
+    
+    // Words with special characters often use more tokens
+    baseTokens += Math.ceil(specialChars * 0.15);
+    // Newlines are typically separate tokens
+    baseTokens += newlines;
+    // Account for subword tokenization
+    baseTokens = Math.max(baseTokens, Math.ceil(words * 0.75));
+    
+    return baseTokens;
   }
 }

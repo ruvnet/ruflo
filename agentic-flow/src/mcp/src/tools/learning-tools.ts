@@ -4,6 +4,9 @@
 
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { LearningEngine } from '../core/learning-engine';
+import { ProductionMLEngine } from '../core/production-ml-engine';
+import { ModelManagementSystem } from '../core/model-management';
+import { MLPipeline } from '../core/ml-pipeline';
 import {
   LearningTrainSchema,
   LearningPredictSchema,
@@ -13,13 +16,18 @@ import {
 import { logger } from '../utils/logger';
 
 export class LearningTools {
-  constructor(private learningEngine: LearningEngine) {}
+  constructor(
+    private learningEngine: LearningEngine,
+    private productionMLEngine?: ProductionMLEngine,
+    private modelManager?: ModelManagementSystem,
+    private mlPipeline?: MLPipeline
+  ) {}
 
   /**
    * Get all learning-related tools
    */
   getTools(): Tool[] {
-    return [
+    const basicTools = [
       this.getLearningTrainTool(),
       this.getLearningPredictTool(),
       this.getModelListTool(),
@@ -29,6 +37,36 @@ export class LearningTools {
       this.getModelImportTool(),
       this.getModelDeleteTool()
     ];
+
+    // Add production ML tools if available
+    if (this.productionMLEngine) {
+      basicTools.push(
+        this.getProductionTrainTool(),
+        this.getHyperparameterOptimizationTool(),
+        this.getModelEvaluationTool(),
+        this.getDriftDetectionTool()
+      );
+    }
+
+    // Add model management tools if available
+    if (this.modelManager) {
+      basicTools.push(
+        this.getModelDeploymentTool(),
+        this.getABTestTool(),
+        this.getModelMonitoringTool()
+      );
+    }
+
+    // Add pipeline tools if available
+    if (this.mlPipeline) {
+      basicTools.push(
+        this.getPipelineCreateTool(),
+        this.getPipelineExecuteTool(),
+        this.getPipelineStatusTool()
+      );
+    }
+
+    return basicTools;
   }
 
   /**
@@ -326,13 +364,20 @@ export class LearningTools {
       throw new Error('Training data cannot be empty');
     }
 
-    // Train model
-    const model = await this.learningEngine.trainModel(
-      validated.type,
-      validated.data,
-      validated.parameters,
-      validated.modelId
-    );
+    // Use production ML engine if available, otherwise fallback to basic engine
+    const model = this.productionMLEngine 
+      ? await this.productionMLEngine.trainModel(
+          validated.type,
+          validated.data,
+          validated.parameters,
+          validated.modelId
+        )
+      : await this.learningEngine.trainModel(
+          validated.type,
+          validated.data,
+          validated.parameters,
+          validated.modelId
+        );
 
     return {
       success: true,
@@ -883,5 +928,373 @@ export class LearningTools {
       case 'medium': return '1-10ms';
       case 'high': return '10-100ms';
     }
+  }
+
+  // Production ML Tools
+
+  /**
+   * Production training tool with real TensorFlow.js
+   */
+  private getProductionTrainTool(): Tool {
+    return {
+      name: 'production_train',
+      description: 'Train a model using production TensorFlow.js with real neural networks',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          modelType: {
+            type: 'string',
+            enum: Object.values(ModelType),
+            description: 'Type of model to train'
+          },
+          data: {
+            type: 'object',
+            properties: {
+              features: {
+                type: 'array',
+                items: {
+                  type: 'array',
+                  items: { type: 'number' }
+                },
+                description: 'Training features (2D array)'
+              },
+              labels: {
+                type: 'array',
+                description: 'Training labels'
+              }
+            },
+            required: ['features', 'labels']
+          },
+          parameters: {
+            type: 'object',
+            properties: {
+              epochs: { type: 'number', minimum: 1, maximum: 1000 },
+              batchSize: { type: 'number', minimum: 1, maximum: 512 },
+              learningRate: { type: 'number', minimum: 0.0001, maximum: 1 },
+              architecture: {
+                type: 'object',
+                properties: {
+                  layers: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        type: { type: 'string' },
+                        units: { type: 'number' },
+                        activation: { type: 'string' }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          enableNormalization: {
+            type: 'boolean',
+            default: true,
+            description: 'Enable feature normalization'
+          }
+        },
+        required: ['modelType', 'data']
+      }
+    };
+  }
+
+  /**
+   * Hyperparameter optimization tool
+   */
+  private getHyperparameterOptimizationTool(): Tool {
+    return {
+      name: 'hyperparameter_optimization',
+      description: 'Optimize model hyperparameters using grid search',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          modelType: {
+            type: 'string',
+            enum: Object.values(ModelType)
+          },
+          data: {
+            type: 'object',
+            properties: {
+              features: { type: 'array' },
+              labels: { type: 'array' }
+            },
+            required: ['features', 'labels']
+          },
+          searchSpace: {
+            type: 'object',
+            properties: {
+              learningRate: {
+                type: 'array',
+                items: { type: 'number' }
+              },
+              batchSize: {
+                type: 'array', 
+                items: { type: 'number' }
+              },
+              epochs: {
+                type: 'array',
+                items: { type: 'number' }
+              }
+            }
+          },
+          maxTrials: {
+            type: 'number',
+            default: 10,
+            minimum: 1,
+            maximum: 100
+          }
+        },
+        required: ['modelType', 'data', 'searchSpace']
+      }
+    };
+  }
+
+  /**
+   * Model evaluation tool
+   */
+  private getModelEvaluationTool(): Tool {
+    return {
+      name: 'model_evaluation',
+      description: 'Evaluate model performance on test data',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          modelId: {
+            type: 'string',
+            description: 'ID of the model to evaluate'
+          },
+          testData: {
+            type: 'object',
+            properties: {
+              features: { type: 'array' },
+              labels: { type: 'array' }
+            },
+            required: ['features', 'labels']
+          },
+          metrics: {
+            type: 'array',
+            items: { type: 'string' },
+            default: ['accuracy', 'loss', 'precision', 'recall']
+          }
+        },
+        required: ['modelId', 'testData']
+      }
+    };
+  }
+
+  /**
+   * Drift detection tool
+   */
+  private getDriftDetectionTool(): Tool {
+    return {
+      name: 'drift_detection',
+      description: 'Detect data drift in model performance',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          modelId: {
+            type: 'string',
+            description: 'ID of the model to check for drift'
+          },
+          newData: {
+            type: 'object',
+            properties: {
+              features: { type: 'array' },
+              labels: { type: 'array' }
+            },
+            required: ['features', 'labels']
+          },
+          threshold: {
+            type: 'number',
+            default: 0.1,
+            minimum: 0,
+            maximum: 1,
+            description: 'Drift detection threshold'
+          }
+        },
+        required: ['modelId', 'newData']
+      }
+    };
+  }
+
+  /**
+   * Model deployment tool
+   */
+  private getModelDeploymentTool(): Tool {
+    return {
+      name: 'model_deployment',
+      description: 'Deploy model to production environment',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          modelId: { type: 'string' },
+          environment: {
+            type: 'string',
+            enum: ['development', 'staging', 'production']
+          },
+          autoScale: {
+            type: 'boolean',
+            default: false
+          },
+          minInstances: {
+            type: 'number',
+            default: 1,
+            minimum: 1
+          },
+          maxInstances: {
+            type: 'number',
+            default: 3,
+            minimum: 1
+          }
+        },
+        required: ['modelId', 'environment']
+      }
+    };
+  }
+
+  /**
+   * A/B testing tool
+   */
+  private getABTestTool(): Tool {
+    return {
+      name: 'ab_test',
+      description: 'Setup A/B test between two models',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          modelA: { type: 'string' },
+          modelB: { type: 'string' },
+          trafficSplit: {
+            type: 'number',
+            default: 0.5,
+            minimum: 0,
+            maximum: 1
+          },
+          duration: {
+            type: 'number',
+            default: 604800000,
+            description: 'Duration in milliseconds'
+          },
+          metrics: {
+            type: 'array',
+            items: { type: 'string' },
+            default: ['accuracy', 'latency', 'error_rate']
+          }
+        },
+        required: ['name', 'modelA', 'modelB']
+      }
+    };
+  }
+
+  /**
+   * Model monitoring tool
+   */
+  private getModelMonitoringTool(): Tool {
+    return {
+      name: 'model_monitoring',
+      description: 'Monitor model performance and health',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          modelId: { type: 'string' },
+          timeWindow: {
+            type: 'string',
+            enum: ['1h', '6h', '24h', '7d'],
+            default: '24h'
+          },
+          includeRecommendations: {
+            type: 'boolean',
+            default: true
+          }
+        },
+        required: ['modelId']
+      }
+    };
+  }
+
+  /**
+   * Pipeline creation tool
+   */
+  private getPipelineCreateTool(): Tool {
+    return {
+      name: 'pipeline_create',
+      description: 'Create ML pipeline for automated training and deployment',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          description: { type: 'string' },
+          stages: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                type: {
+                  type: 'string',
+                  enum: ['data_collection', 'preprocessing', 'feature_engineering', 
+                         'training', 'validation', 'deployment', 'monitoring']
+                },
+                config: { type: 'object' }
+              },
+              required: ['name', 'type']
+            }
+          },
+          schedule: {
+            type: 'object',
+            properties: {
+              cron: { type: 'string' },
+              timezone: { type: 'string' }
+            }
+          }
+        },
+        required: ['name', 'stages']
+      }
+    };
+  }
+
+  /**
+   * Pipeline execution tool
+   */
+  private getPipelineExecuteTool(): Tool {
+    return {
+      name: 'pipeline_execute',
+      description: 'Execute ML pipeline',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pipelineId: { type: 'string' },
+          trigger: {
+            type: 'string',
+            default: 'manual'
+          },
+          inputs: {
+            type: 'object',
+            description: 'Input parameters for pipeline execution'
+          }
+        },
+        required: ['pipelineId']
+      }
+    };
+  }
+
+  /**
+   * Pipeline status tool
+   */
+  private getPipelineStatusTool(): Tool {
+    return {
+      name: 'pipeline_status',
+      description: 'Get pipeline execution status and results',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          executionId: { type: 'string' }
+        },
+        required: ['executionId']
+      }
+    };
   }
 }

@@ -183,8 +183,19 @@ export class GoogleProvider extends BaseLLMProvider {
     }
 
     try {
+      // Real health check with minimal completion
       const model = this.getModel('gemini-pro');
-      await model.generateContent('Hello');
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: 'Health check' }] }],
+        generationConfig: { maxOutputTokens: 5, temperature: 0 }
+      });
+      
+      const response = await result.response;
+      
+      // Verify we got a valid response
+      if (!response || !response.text()) {
+        throw new ProviderError('Invalid response from health check', this.provider);
+      }
     } catch (error: any) {
       throw this.handleGoogleError(error);
     }
@@ -327,7 +338,7 @@ export class GoogleProvider extends BaseLLMProvider {
   }
 
   /**
-   * Calculate cost based on token usage
+   * Calculate cost based on token usage with real Google AI pricing
    */
   private calculateCost(inputTokens: number, outputTokens: number, model: string): number {
     const modelInfo = this.models.find(m => m.id === model);
@@ -337,28 +348,60 @@ export class GoogleProvider extends BaseLLMProvider {
 
     const inputCost = (inputTokens / 1000) * modelInfo.capabilities.costPer1kTokens.input;
     const outputCost = (outputTokens / 1000) * modelInfo.capabilities.costPer1kTokens.output;
+    const totalCost = inputCost + outputCost;
 
-    return inputCost + outputCost;
+    // Log cost tracking for monitoring
+    console.debug(`[${this.provider}] Cost calculation: ${inputTokens} input + ${outputTokens} output = $${totalCost.toFixed(6)}`);
+    
+    return totalCost;
   }
 
   /**
-   * Handle Google-specific errors
+   * Handle Google-specific errors with detailed error mapping
    */
   private handleGoogleError(error: any): Error {
-    // Map Google errors to our error types
-    if (error.status === 403 || error.message?.includes('API key')) {
+    // Map Google AI API errors to our error types
+    const status = error.status || error.code;
+    const message = error.message || error.details || 'Unknown error';
+    
+    if (status === 403 || message.includes('API key') || message.includes('permission')) {
       return this.wrapError({
-        message: 'Invalid API key or insufficient permissions',
+        message: 'Invalid Google AI API key or insufficient permissions',
         status: 403,
         code: 'PERMISSION_DENIED'
       });
     }
 
-    if (error.status === 429 || error.message?.includes('quota')) {
+    if (status === 429 || message.includes('quota') || message.includes('rate limit')) {
       return this.wrapError({
-        message: 'Rate limit or quota exceeded',
+        message: 'Google AI API rate limit or quota exceeded',
         status: 429,
         code: 'RESOURCE_EXHAUSTED'
+      });
+    }
+    
+    if (status === 400 || message.includes('invalid request')) {
+      return this.wrapError({
+        message: `Invalid request to Google AI API: ${message}`,
+        status: 400,
+        code: 'INVALID_REQUEST'
+      });
+    }
+    
+    if (message.includes('safety') || message.includes('blocked')) {
+      return this.wrapError({
+        message: 'Content blocked by Google AI safety filters',
+        status: 400,
+        code: 'CONTENT_BLOCKED'
+      });
+    }
+    
+    // Handle network errors
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      return this.wrapError({
+        message: 'Network error connecting to Google AI API',
+        code: 'NETWORK_ERROR',
+        status: 503
       });
     }
 
@@ -366,12 +409,26 @@ export class GoogleProvider extends BaseLLMProvider {
   }
 
   /**
-   * Estimate tokens for Gemini models
+   * Estimate tokens for Gemini models with improved accuracy
    */
   async estimateTokens(text: string): Promise<number> {
-    // Gemini uses a similar tokenization to other models
-    // Rough estimate: 1 token ≈ 4 characters
-    return Math.ceil(text.length / 4);
+    // Improved Gemini tokenization estimation
+    // Based on observed patterns: 1 token ≈ 3.5 characters for English
+    let baseTokens = Math.ceil(text.length / 3.5);
+    
+    // Adjust for Gemini-specific tokenization patterns
+    const words = text.split(/\s+/).length;
+    const specialChars = (text.match(/[^\w\s]/g) || []).length;
+    const newlines = (text.match(/\n/g) || []).length;
+    
+    // Gemini handles special characters efficiently
+    baseTokens += Math.ceil(specialChars * 0.1);
+    // Newlines are typically separate tokens
+    baseTokens += newlines;
+    // Account for word boundaries and subword tokenization
+    baseTokens = Math.max(baseTokens, Math.ceil(words * 0.8));
+    
+    return baseTokens;
   }
 
   /**

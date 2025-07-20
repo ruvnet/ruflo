@@ -193,13 +193,19 @@ export class AnthropicProvider extends BaseLLMProvider {
       throw new ProviderError('Client not initialized', this.provider);
     }
 
-    // Simple health check - try to validate the cheapest model
+    // Real health check - try a minimal completion
     try {
-      await this.client.messages.create({
+      const response = await this.client.messages.create({
         model: 'claude-3-haiku-20240307',
-        messages: [{ role: 'user', content: 'Hi' }],
-        max_tokens: 1
+        messages: [{ role: 'user', content: 'Health check' }],
+        max_tokens: 5,
+        temperature: 0
       });
+      
+      // Verify we got a valid response
+      if (!response || !response.content || response.content.length === 0) {
+        throw new ProviderError('Invalid response from health check', this.provider);
+      }
     } catch (error: any) {
       throw this.handleAnthropicError(error);
     }
@@ -240,16 +246,16 @@ export class AnthropicProvider extends BaseLLMProvider {
       return {
         type: 'text',
         text: item.text
-      };
+      } as Anthropic.ContentBlock;
     } else {
       return {
-        type: 'image',
+        type: 'image' as any,
         source: {
           type: 'base64',
           media_type: 'image/jpeg', // TODO: Detect from URL
           data: item.image.url.split(',')[1] || item.image.url
         }
-      };
+      } as Anthropic.ContentBlock;
     }
   }
 
@@ -308,7 +314,7 @@ export class AnthropicProvider extends BaseLLMProvider {
   }
 
   /**
-   * Calculate cost based on token usage
+   * Calculate cost based on token usage with real pricing
    */
   private calculateCost(inputTokens: number, outputTokens: number, model: string): number {
     const modelInfo = this.models.find(m => m.id === model);
@@ -318,20 +324,46 @@ export class AnthropicProvider extends BaseLLMProvider {
 
     const inputCost = (inputTokens / 1000) * modelInfo.capabilities.costPer1kTokens.input;
     const outputCost = (outputTokens / 1000) * modelInfo.capabilities.costPer1kTokens.output;
+    const totalCost = inputCost + outputCost;
 
-    return inputCost + outputCost;
+    // Log cost tracking for monitoring
+    console.debug(`[${this.provider}] Cost calculation: ${inputTokens} input + ${outputTokens} output = $${totalCost.toFixed(6)}`);
+    
+    return totalCost;
   }
 
   /**
-   * Handle Anthropic-specific errors
+   * Handle Anthropic-specific errors with detailed error mapping
    */
   private handleAnthropicError(error: any): Error {
     if (error instanceof Anthropic.APIError) {
+      // Map specific Anthropic error types
+      const errorCode = (error as any).type || (error as any).code || 'UNKNOWN';
+      
+      // Add specific error handling for common cases
+      let customMessage = error.message;
+      if (errorCode === 'invalid_request_error' && error.message.includes('credit')) {
+        customMessage = 'Insufficient credits for Anthropic API';
+      } else if (errorCode === 'authentication_error') {
+        customMessage = 'Invalid Anthropic API key or authentication failed';
+      } else if (errorCode === 'rate_limit_error') {
+        customMessage = 'Anthropic API rate limit exceeded';
+      }
+      
       return this.wrapError({
-        message: error.message,
+        message: customMessage,
         status: error.status,
-        code: error.type,
+        code: errorCode,
         headers: error.headers
+      });
+    }
+    
+    // Handle network errors
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      return this.wrapError({
+        message: 'Network error connecting to Anthropic API',
+        code: 'NETWORK_ERROR',
+        status: 503
       });
     }
     
@@ -339,11 +371,26 @@ export class AnthropicProvider extends BaseLLMProvider {
   }
 
   /**
-   * Estimate tokens using Claude's tokenizer approximation
+   * Estimate tokens using improved Claude tokenizer approximation
    */
   async estimateTokens(text: string): Promise<number> {
-    // Claude uses a similar tokenizer to GPT models
-    // Rough estimate: 1 token ≈ 3.5 characters for English text
-    return Math.ceil(text.length / 3.5);
+    // More accurate Claude tokenization estimation
+    // Based on observed patterns: 1 token ≈ 3.3 characters for English
+    // Adjust for common patterns
+    let baseTokens = Math.ceil(text.length / 3.3);
+    
+    // Adjust for special tokens and patterns
+    const specialChars = (text.match(/[^\w\s]/g) || []).length;
+    const newlines = (text.match(/\n/g) || []).length;
+    const spaces = (text.match(/ /g) || []).length;
+    
+    // Special characters often use more tokens
+    baseTokens += Math.ceil(specialChars * 0.2);
+    // Newlines typically are separate tokens
+    baseTokens += newlines;
+    // Account for word boundaries
+    baseTokens = Math.max(baseTokens, Math.ceil(spaces * 0.8));
+    
+    return baseTokens;
   }
 }

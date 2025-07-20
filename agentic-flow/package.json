@@ -9,11 +9,20 @@
     "dev": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:integration": "node -r ts-node/register tests/integration/test-runner.ts",
+    "test:integration:integration": "jest --testPathPattern=tests/integration --testNamePattern=\"Provider Integration|Agent Coordination|Workflow Execution|Cross-Component\" --verbose",
+    "test:integration:e2e": "jest --testPathPattern=tests/integration/end-to-end-scenarios.test.ts --verbose",
+    "test:integration:performance": "jest --testPathPattern=tests/integration/performance-load.test.ts --verbose --detectOpenHandles",
+    "test:integration:security": "jest --testPathPattern=tests/integration/security-reliability.test.ts --verbose",
+    "test:integration:all": "jest --testPathPattern=tests/integration --verbose --maxWorkers=4",
+    "test:integration:parallel": "node -r ts-node/register tests/integration/test-runner.ts --parallel --categories integration e2e performance security",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "ci:setup": "node -r ts-node/register -e \"require('./tests/integration/ci-integration').setupCI(process.argv[1], process.argv[2])\"",
+    "ci:test": "node -r ts-node/register -e \"require('./tests/integration/ci-integration').runCITests(process.argv[1])\""
   },
   "keywords": [
     "autonomous-agents",
@@ -54,11 +63,69 @@
     "@typescript-eslint/parser": "^6.15.0",
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
+    "jest-html-reporters": "^3.1.5",
+    "jest-junit": "^16.0.0",
     "prettier": "^3.1.1",
     "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
     "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": ["<rootDir>/src", "<rootDir>/tests"],
+    "testMatch": ["**/__tests__/**/*.ts", "**/?(*.)+(spec|test).ts"],
+    "transform": {
+      "^.+\\.ts$": ["ts-jest", {
+        "tsconfig": {
+          "module": "commonjs"
+        }
+      }]
+    },
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/types/**/*.ts",
+      "!src/**/*.test.ts",
+      "!src/**/*.spec.ts"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "html", "cobertura"],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    },
+    "testTimeout": 30000,
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.ts"],
+    "reporters": [
+      "default",
+      [
+        "jest-html-reporters",
+        {
+          "publicPath": "./test-reports",
+          "filename": "report.html",
+          "expand": true
+        }
+      ],
+      [
+        "jest-junit",
+        {
+          "outputDirectory": "./test-reports",
+          "outputName": "junit.xml",
+          "classNameTemplate": "{classname}",
+          "titleTemplate": "{title}",
+          "ancestorSeparator": " › ",
+          "usePathForSuiteName": true
+        }
+      ]
+    ]
   }
 }

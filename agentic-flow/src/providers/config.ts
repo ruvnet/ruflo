@@ -1,9 +1,10 @@
 /**
  * Provider Configuration Types and Defaults
- * Configuration management for LLM providers
+ * Configuration management for LLM providers with security and validation
  */
 
-import { LLMProvider, ProviderConfig, FallbackStrategy } from './types';
+import { LLMProvider, ProviderConfig, FallbackStrategy, ProviderManagerConfig } from './types';
+import { CircuitBreakerConfig } from './circuit-breaker';
 
 /**
  * Environment variable names for provider API keys
@@ -354,3 +355,296 @@ export const COST_PRESETS: CostPreset[] = [
     fallbackStrategy: FallbackStrategy.LATENCY_OPTIMIZE
   }
 ];
+
+/**
+ * Circuit breaker configurations for different providers
+ */
+export const CIRCUIT_BREAKER_CONFIGS: Record<LLMProvider, CircuitBreakerConfig> = {
+  [LLMProvider.ANTHROPIC]: {
+    failureThreshold: 5,
+    recoveryTimeout: 30000,
+    monitoringPeriod: 60000,
+    successThreshold: 3,
+  },
+  [LLMProvider.OPENAI]: {
+    failureThreshold: 5,
+    recoveryTimeout: 30000,
+    monitoringPeriod: 60000,
+    successThreshold: 3,
+  },
+  [LLMProvider.GOOGLE]: {
+    failureThreshold: 3,
+    recoveryTimeout: 60000,
+    monitoringPeriod: 60000,
+    successThreshold: 2,
+  },
+  [LLMProvider.COHERE]: {
+    failureThreshold: 3,
+    recoveryTimeout: 45000,
+    monitoringPeriod: 60000,
+    successThreshold: 2,
+  },
+  [LLMProvider.OLLAMA]: {
+    failureThreshold: 2,
+    recoveryTimeout: 15000,
+    monitoringPeriod: 30000,
+    successThreshold: 1,
+  },
+  [LLMProvider.HUGGINGFACE]: {
+    failureThreshold: 3,
+    recoveryTimeout: 120000,
+    monitoringPeriod: 120000,
+    successThreshold: 2,
+  },
+};
+
+/**
+ * Enhanced configuration loader with security and validation
+ */
+export class ProviderConfigLoader {
+  /**
+   * Load configuration from environment variables with validation
+   */
+  static loadFromEnvironment(): ProviderManagerConfig {
+    const providers: Record<LLMProvider, ProviderConfig> = {} as any;
+    
+    // Load each provider configuration
+    for (const provider of Object.values(LLMProvider)) {
+      const config = createProviderConfigFromEnv(provider);
+      const validationErrors = validateProviderConfig(provider, config);
+      
+      if (validationErrors.length === 0) {
+        // Additional security validation
+        if (this.validateSecurityConfig(provider, config)) {
+          providers[provider] = config;
+        }
+      } else {
+        console.warn(`Skipping provider ${provider}: ${validationErrors.join(', ')}`);
+      }
+    }
+
+    const managerConfig: ProviderManagerConfig = {
+      providers,
+      fallbackStrategy: this.getFallbackStrategy(),
+      healthCheckInterval: this.getEnvNumber('LLM_HEALTH_CHECK_INTERVAL', 30000),
+      metricsEnabled: this.getEnvBoolean('LLM_METRICS_ENABLED', true),
+      costThreshold: this.getEnvNumber('LLM_COST_THRESHOLD', 10.00),
+      latencyThreshold: this.getEnvNumber('LLM_LATENCY_THRESHOLD', 30000),
+    };
+
+    // Validate the final configuration
+    const configErrors = this.validateManagerConfig(managerConfig);
+    if (configErrors.length > 0) {
+      throw new Error(`Configuration validation failed: ${configErrors.join(', ')}`);
+    }
+
+    return managerConfig;
+  }
+
+  /**
+   * Validate security aspects of provider configuration
+   */
+  private static validateSecurityConfig(provider: LLMProvider, config: ProviderConfig): boolean {
+    const features = PROVIDER_FEATURES[provider];
+    
+    // Check API key format if required
+    if (features.requiresApiKey && config.apiKey) {
+      if (!this.validateApiKeyFormat(provider, config.apiKey)) {
+        console.warn(`Invalid API key format for ${provider}`);
+        return false;
+      }
+      
+      if (this.isTestKey(config.apiKey)) {
+        console.warn(`Test/example API key detected for ${provider}`);
+        return false;
+      }
+    }
+
+    // Validate base URL security
+    if (config.baseUrl && !features.isLocal) {
+      try {
+        const url = new URL(config.baseUrl);
+        if (url.protocol !== 'https:') {
+          console.warn(`Insecure HTTP URL for cloud provider ${provider}`);
+          return false;
+        }
+      } catch {
+        console.warn(`Invalid base URL for ${provider}`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Validate API key format for different providers
+   */
+  private static validateApiKeyFormat(provider: LLMProvider, apiKey: string): boolean {
+    if (!apiKey) return false;
+
+    switch (provider) {
+      case LLMProvider.ANTHROPIC:
+        return apiKey.startsWith('sk-ant-') && apiKey.length > 20;
+      case LLMProvider.OPENAI:
+        return apiKey.startsWith('sk-') && apiKey.length > 20;
+      case LLMProvider.GOOGLE:
+        return apiKey.length >= 20;
+      case LLMProvider.COHERE:
+        return apiKey.length >= 20;
+      case LLMProvider.HUGGINGFACE:
+        return apiKey.startsWith('hf_') && apiKey.length > 20;
+      default:
+        return apiKey.length >= 10;
+    }
+  }
+
+  /**
+   * Check if API key appears to be a test/example key
+   */
+  private static isTestKey(apiKey: string): boolean {
+    const testPatterns = [
+      'test', 'example', 'demo', 'placeholder', 'your-', 'replace-me',
+      'sk-1234', 'sk-test', 'sk-example', 'sk-proj-'
+    ];
+    
+    return testPatterns.some(pattern => 
+      apiKey.toLowerCase().includes(pattern)
+    );
+  }
+
+  /**
+   * Get fallback strategy from environment
+   */
+  private static getFallbackStrategy(): FallbackStrategy {
+    const strategy = process.env.LLM_FALLBACK_STRATEGY?.toLowerCase();
+    
+    switch (strategy) {
+      case 'sequential':
+        return FallbackStrategy.SEQUENTIAL;
+      case 'load_balance':
+        return FallbackStrategy.LOAD_BALANCE;
+      case 'cost_optimize':
+        return FallbackStrategy.COST_OPTIMIZE;
+      case 'latency_optimize':
+        return FallbackStrategy.LATENCY_OPTIMIZE;
+      default:
+        return FallbackStrategy.SEQUENTIAL;
+    }
+  }
+
+  /**
+   * Validate manager configuration
+   */
+  private static validateManagerConfig(config: ProviderManagerConfig): string[] {
+    const errors: string[] = [];
+    
+    if (Object.keys(config.providers).length === 0) {
+      errors.push('No providers configured - check API keys in environment');
+    }
+
+    if (config.costThreshold && config.costThreshold < 0) {
+      errors.push('Cost threshold must be positive');
+    }
+
+    if (config.latencyThreshold && config.latencyThreshold < 1000) {
+      errors.push('Latency threshold should be at least 1000ms');
+    }
+
+    if (config.healthCheckInterval && config.healthCheckInterval < 5000) {
+      errors.push('Health check interval should be at least 5000ms');
+    }
+
+    return errors;
+  }
+
+  /**
+   * Get environment variable as number
+   */
+  private static getEnvNumber(key: string, defaultValue: number): number {
+    const value = process.env[key];
+    if (!value) return defaultValue;
+    
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? defaultValue : parsed;
+  }
+
+  /**
+   * Get environment variable as boolean
+   */
+  private static getEnvBoolean(key: string, defaultValue: boolean): boolean {
+    const value = process.env[key]?.toLowerCase();
+    if (!value) return defaultValue;
+    
+    return value === 'true' || value === '1' || value === 'yes';
+  }
+
+  /**
+   * Mask sensitive configuration for logging
+   */
+  static maskSensitiveConfig(config: ProviderManagerConfig): any {
+    const masked = JSON.parse(JSON.stringify(config));
+    
+    for (const [providerName, providerConfig] of Object.entries(masked.providers)) {
+      if (providerConfig.apiKey) {
+        providerConfig.apiKey = `${providerConfig.apiKey.substring(0, 8)}***`;
+      }
+    }
+    
+    return masked;
+  }
+}
+
+/**
+ * Security utilities for API key management
+ */
+export class SecurityUtils {
+  /**
+   * Generate secure headers for API requests
+   */
+  static generateSecureHeaders(provider: LLMProvider, config: ProviderConfig): Record<string, string> {
+    const headers: Record<string, string> = {
+      'User-Agent': 'Agentic-Flow/2.0',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      ...config.headers
+    };
+
+    // Add request ID for tracing
+    headers['X-Request-ID'] = this.generateRequestId();
+    
+    // Provider-specific headers
+    if (provider === LLMProvider.ANTHROPIC && config.apiKey) {
+      headers['x-api-key'] = config.apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+    } else if (provider === LLMProvider.OPENAI && config.apiKey) {
+      headers['Authorization'] = `Bearer ${config.apiKey}`;
+    } else if (provider === LLMProvider.GOOGLE && config.apiKey) {
+      // Google uses API key in URL params, not headers
+    }
+    
+    return headers;
+  }
+
+  /**
+   * Generate unique request ID
+   */
+  private static generateRequestId(): string {
+    return `af-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  }
+
+  /**
+   * Sanitize URL for logging (remove API keys)
+   */
+  static sanitizeUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      if (parsed.searchParams.has('key')) {
+        parsed.searchParams.set('key', '***');
+      }
+      return parsed.toString();
+    } catch {
+      return url.replace(/key=[^&]+/gi, 'key=***');
+    }
+  }
+}
