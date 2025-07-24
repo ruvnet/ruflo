@@ -2420,7 +2420,7 @@ function getWorkerTypeInstructions(workerType) {
 async function showSessions(flags) {
   try {
     const sessionManager = new HiveMindSessionManager();
-    const sessions = sessionManager.getActiveSessions();
+    const sessions = await sessionManager.getActiveSessions();
 
     if (sessions.length === 0) {
       console.log(chalk.gray('No active or paused sessions found'));
