@@ -2493,7 +2493,7 @@ async function resumeSession(args, flags) {
     const sessionManager = new HiveMindSessionManager();
 
     // Get session details
-    const session = sessionManager.getSession(sessionId);
+    const session = await sessionManager.getSession(sessionId);
 
     if (!session) {
       spinner.fail(`Session ${sessionId} not found`);
@@ -2597,7 +2597,7 @@ async function stopSession(args, flags) {
     const sessionManager = new HiveMindSessionManager();
 
     // Get session details
-    const session = sessionManager.getSession(sessionId);
+    const session = await sessionManager.getSession(sessionId);
 
     if (!session) {
       spinner.fail(`Session ${sessionId} not found`);

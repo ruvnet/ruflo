@@ -502,7 +502,7 @@ To enable persistence, see: https://github.com/ruvnet/claude-code-flow/docs/wind
    * Resume any previous session (paused, stopped, or inactive)
    */
   async resumeSession(sessionId) {
-    const session = this.getSession(sessionId);
+    const session = await this.getSession(sessionId);
 
     if (!session) {
       throw new Error(`Session ${sessionId} not found`);
