@@ -502,7 +502,7 @@ To enable persistence, see: https://github.com/ruvnet/claude-code-flow/docs/wind
    * Resume any previous session (paused, stopped, or inactive)
    */
   async resumeSession(sessionId) {
-    const session = this.getSession(sessionId);
+    const session = await this.getSession(sessionId);
 
     if (!session) {
       throw new Error(`Session ${sessionId} not found`);
@@ -513,44 +513,61 @@ To enable persistence, see: https://github.com/ruvnet/claude-code-flow/docs/wind
 
     // If session was stopped, log that we're restarting it
     if (session.status === 'stopped') {
-      this.logSessionEvent(
+      await this.logSessionEvent(
         sessionId,
         'info',
         `Restarting stopped session with original configuration`,
       );
     }
 
-    // Update session status
-    const stmt = this.db.prepare(`
-      UPDATE sessions 
-      SET status = 'active', resumed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `);
+    if (this.isInMemory) {
+      // Handle in-memory mode
+      const sessionData = this.memoryStore.sessions.get(sessionId);
+      if (sessionData) {
+        sessionData.status = 'active';
+        sessionData.resumed_at = new Date().toISOString();
+        sessionData.updated_at = new Date().toISOString();
+      }
+      
+      await this.logSessionEvent(sessionId, 'info', 'Session resumed', null, {
+        pausedDuration: session.paused_at ? new Date() - new Date(session.paused_at) : null,
+      });
+      
+      return session;
+    } else {
+      // Handle SQLite database mode
+      // Update session status
+      const stmt = this.db.prepare(`
+        UPDATE sessions 
+        SET status = 'active', resumed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `);
 
-    stmt.run(sessionId);
+      stmt.run(sessionId);
 
-    // Update swarm status
-    this.db.prepare('UPDATE swarms SET status = ? WHERE id = ?').run('active', session.swarm_id);
+      // Update swarm status
+      this.db.prepare('UPDATE swarms SET status = ? WHERE id = ?').run('active', session.swarm_id);
 
-    // Update agent statuses
-    this.db
-      .prepare(
-        `
-      UPDATE agents 
-      SET status = CASE 
-        WHEN role = 'queen' THEN 'active'
-        ELSE 'idle'
-      END
-      WHERE swarm_id = ?
-    `,
-      )
-      .run(session.swarm_id);
+      // Update agent statuses
+      this.db
+        .prepare(
+          `
+        UPDATE agents 
+        SET status = CASE 
+          WHEN role = 'queen' THEN 'active'
+          ELSE 'idle'
+        END
+        WHERE swarm_id = ?
+      `,
+        )
+        .run(session.swarm_id);
 
-    this.logSessionEvent(sessionId, 'info', 'Session resumed', null, {
-      pausedDuration: session.paused_at ? new Date() - new Date(session.paused_at) : null,
-    });
+      await this.logSessionEvent(sessionId, 'info', 'Session resumed', null, {
+        pausedDuration: session.paused_at ? new Date() - new Date(session.paused_at) : null,
+      });
 
-    return session;
+      return session;
+    }
   }
 
   /**
@@ -925,8 +942,8 @@ To enable persistence, see: https://github.com/ruvnet/claude-code-flow/docs/wind
   /**
    * Get active sessions with process information
    */
-  getActiveSessionsWithProcessInfo() {
-    const sessions = this.getActiveSessions();
+  async getActiveSessionsWithProcessInfo() {
+    const sessions = await this.getActiveSessions();
 
     // Add process info to each session
     return sessions.map((session) => {

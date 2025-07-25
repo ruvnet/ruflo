@@ -19,9 +19,9 @@ export const psCommand = new Command('ps')
 
     try {
       const sessions = options.all
-        ? sessionManager.getActiveSessionsWithProcessInfo()
-        : sessionManager
-            .getActiveSessionsWithProcessInfo()
+        ? await sessionManager.getActiveSessionsWithProcessInfo()
+        : (await sessionManager
+            .getActiveSessionsWithProcessInfo())
             .filter((s: any) => s.status === 'active' || s.status === 'paused');
 
       if (sessions.length === 0) {

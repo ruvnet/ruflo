@@ -13,9 +13,9 @@ export CLAUDE_WORKING_DIR="${PROJECT_DIR}"
 # Check common locations for npm/npx installations
 
 # Development mode - use local bin
-if [ -f "/workspaces/claude-code-flow/bin/claude-flow" ]; then
+if [ -f "${PROJECT_DIR}/bin/claude-flow" ]; then
   cd "${PROJECT_DIR}"
-  exec "/workspaces/claude-code-flow/bin/claude-flow" "$@"
+  exec "${PROJECT_DIR}/bin/claude-flow" "$@"
 fi
 
 # 1. Local node_modules (npm install claude-flow)
