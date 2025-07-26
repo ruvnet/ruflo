@@ -6,17 +6,18 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0',
-    port: 3000,
+    port: 5173,
     strictPort: false,
     hmr: {
-      clientPort: 443,
-      protocol: 'wss',
+      host: 'localhost',
+      port: 5173,
+      protocol: 'ws',
       timeout: 120000
     }
   },
   preview: {
     host: '0.0.0.0',
-    port: 3000
+    port: 5173
   },
   resolve: {
     alias: {

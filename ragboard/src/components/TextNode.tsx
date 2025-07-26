@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
+import type { Node } from '@xyflow/react';
 import { Type, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useBoardStore } from '../store/boardStore';
@@ -14,7 +15,9 @@ interface TextNodeData {
   onDelete: (id: string) => void;
 }
 
-export const TextNode: React.FC<NodeProps<TextNodeData>> = ({ data, selected }) => {
+type TextNodeProps = Node<TextNodeData>;
+
+export const TextNode: React.FC<{ data: TextNodeData; selected?: boolean }> = ({ data, selected }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(data.metadata?.content || 'Double-click to edit...');
   const textareaRef = useRef<HTMLTextAreaElement>(null);

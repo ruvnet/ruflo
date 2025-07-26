@@ -1,12 +1,12 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { Resource, AIChat, Message } from '../types';
-import { API_CONFIG } from '../config/api';
+import { API_BASE_URL, API_V1_PREFIX } from '../config/api';
 
 // Create axios instance with default configuration
 const apiClient: AxiosInstance = axios.create({
-  baseURL: API_CONFIG.BASE_URL,
-  timeout: API_CONFIG.TIMEOUT,
+  baseURL: API_BASE_URL,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },

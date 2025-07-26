@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Test</title>
+</head>
+<body>
+    <h1>Testing Ragboard Frontend Access</h1>
+    <div id="status">Checking frontend...</div>
+    
+    <script>
+        async function testFrontend() {
+            const statusDiv = document.getElementById('status');
+            
+            try {
+                // Test frontend
+                const frontendResponse = await fetch('http://localhost:5173', {mode: 'no-cors'});
+                statusDiv.innerHTML += '<br>✅ Frontend server is responding';
+                
+                // Test backend
+                const backendResponse = await fetch('http://localhost:8000/api/v1/docs');
+                if (backendResponse.ok) {
+                    statusDiv.innerHTML += '<br>✅ Backend API is accessible';
+                }
+                
+                // Try loading the actual app
+                statusDiv.innerHTML += '<br><br><a href="http://localhost:5173" target="_blank">Open Ragboard App</a>';
+                statusDiv.innerHTML += '<br><a href="http://localhost:8000/api/v1/docs" target="_blank">Open API Docs</a>';
+                
+            } catch (error) {
+                statusDiv.innerHTML += '<br>❌ Error: ' + error.message;
+            }
+        }
+        
+        testFrontend();
+    </script>
+</body>
+</html>
