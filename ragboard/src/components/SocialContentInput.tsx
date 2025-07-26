@@ -31,8 +31,10 @@ export const SocialContentInput: React.FC<SocialContentInputProps> = ({ onAdd })
     if (!url || platform === 'unknown') return;
 
     onAdd({
-      type: 'social',
+      type: 'url',
       title: `${platform.charAt(0).toUpperCase() + platform.slice(1)} Content`,
+      url: url,
+      platform: platform as any,
       metadata: {
         url,
         platform,

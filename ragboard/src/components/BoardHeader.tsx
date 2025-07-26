@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Edit2, Check, X } from 'lucide-react';
 import { clsx } from 'clsx';
+import { BoardMenu } from './BoardMenu';
 
 interface BoardHeaderProps {
   boardName: string;
@@ -92,9 +93,12 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
           </div>
         </div>
 
-        {/* Future: Add board switching and other controls here */}
+        {/* Board controls */}
         <div className="flex items-center gap-2">
-          {/* Placeholder for future controls */}
+          <BoardMenu 
+            boardName={boardName} 
+            onBoardNameChange={onBoardNameChange} 
+          />
         </div>
       </div>
     </div>

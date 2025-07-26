@@ -123,6 +123,13 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
           }
         };
         
+        mediaRecorder.current.onstop = async () => {
+          // Recording has stopped, audio data is ready
+          if (audioChunks.current.length > 0) {
+            console.log('Audio recording ready, chunks:', audioChunks.current.length);
+          }
+        };
+        
         mediaRecorder.current.start();
         setIsRecording(true);
       } catch (error) {
@@ -192,7 +199,20 @@ export const AddResourceModal: React.FC<AddResourceModalProps> = ({
 
           {type === 'image' && (
             <div className="space-y-4">
-              <ImageDropzone onImagesSelected={handleMultipleImages} />
+              <ImageDropzone onImagesSelected={setFiles} />
+              <button
+                onClick={() => handleMultipleImages(files)}
+                disabled={uploading || files.length === 0}
+                className={clsx(
+                  'w-full py-2 px-4 rounded-lg transition-colors font-medium flex items-center justify-center gap-2',
+                  uploading || files.length === 0
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                )}
+              >
+                {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {uploading ? 'Processing...' : `Add ${files.length} Image${files.length !== 1 ? 's' : ''} to Board`}
+              </button>
             </div>
           )}
 

@@ -30,6 +30,11 @@ interface BoardStore extends BoardState {
   
   // Drag actions
   setDraggedResource: (id: string | null) => void;
+  
+  // Node actions for React Flow compatibility
+  addNode: (node: any) => void;
+  deleteNode: (id: string) => void;
+  updateNode: (id: string, data: any) => void;
 }
 
 export const useBoardStore = create<BoardStore>((set, get) => ({
@@ -288,5 +293,27 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   
   setDraggedResource: (id) => {
     set({ draggedResource: id });
+  },
+  
+  // Node actions for React Flow compatibility
+  addNode: (node) => {
+    // Add node is handled by addResource
+    const resource: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'> = {
+      type: node.type || 'text',
+      title: node.data?.title || 'New Node',
+      position: node.position || { x: 100, y: 100 },
+      metadata: node.data?.metadata || {},
+    };
+    get().addResource(resource);
+  },
+  
+  deleteNode: (id) => {
+    // Delete node is the same as delete resource
+    get().deleteResource(id);
+  },
+  
+  updateNode: (id, data) => {
+    // Update node data
+    get().updateResource(id, data);
   },
 }));

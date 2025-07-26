@@ -19,6 +19,8 @@ import { AddResourceModal } from './AddResourceModal';
 import { EmptyState } from './EmptyState';
 import { AIChatFloating } from './AIChatFloating';
 import { AIChatFullScreen } from './AIChatFullScreen';
+import { AIChatFullScreenNew } from './AIChatFullScreenNew';
+import { AIChatMinimized } from './AIChatMinimized';
 import { BoardHeader } from './BoardHeader';
 import wsService from '../services/websocket';
 import { Header } from './Header';
@@ -43,7 +45,7 @@ export const BoardCanvas: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<string>('');
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const [chatMode, setChatMode] = useState<'closed' | 'floating' | 'fullscreen'>('closed');
+  const [chatMode, setChatMode] = useState<'closed' | 'minimized' | 'floating' | 'fullscreen'>('closed');
   const [boardId] = useState(() => new URLSearchParams(window.location.search).get('board_id') || 'default');
   const [boardName, setBoardName] = useState('Untitled Board');
 
@@ -146,7 +148,7 @@ export const BoardCanvas: React.FC = () => {
       // Create AI chat node
       const chatId = createAIChat({ x: 300, y: 300 });
       setSelectedChatId(chatId);
-      setChatMode('floating');
+      setChatMode('minimized');
     } else if (type === 'folder') {
       // Create folder
       const folder: Omit<Resource, 'id' | 'createdAt' | 'updatedAt'> & { type: 'folder'; isExpanded: boolean; children: string[] } = {
@@ -252,6 +254,16 @@ export const BoardCanvas: React.FC = () => {
       />
       
       {/* Chat Components */}
+      {selectedChatId && chatMode === 'minimized' && (
+        <AIChatMinimized
+          onExpand={() => setChatMode('floating')}
+          onClose={() => {
+            setChatMode('closed');
+            setSelectedChatId(null);
+          }}
+        />
+      )}
+      
       {selectedChatId && chatMode === 'floating' && (
         <AIChatFloating
           chatId={selectedChatId}
@@ -264,12 +276,13 @@ export const BoardCanvas: React.FC = () => {
       )}
       
       {selectedChatId && chatMode === 'fullscreen' && (
-        <AIChatFullScreen
+        <AIChatFullScreenNew
           chatId={selectedChatId}
           onClose={() => {
             setChatMode('closed');
             setSelectedChatId(null);
           }}
+          onMinimize={() => setChatMode('minimized')}
         />
       )}
     </div>

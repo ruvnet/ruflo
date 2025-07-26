@@ -100,33 +100,37 @@ export const AIChatFloating: React.FC<AIChatFloatingProps> = ({
 
   return (
     <>
-      {/* Floating buttons that appear on hover */}
-      {showButtons && (
-        <div 
-          className="fixed flex gap-2 z-[101]"
-          style={{
-            bottom: isMinimized ? '90px' : '450px',
-            right: '24px',
-          }}
+      {/* Floating buttons that appear on hover - keep them visible longer */}
+      <div 
+        className={`chat-action-buttons fixed flex gap-2 z-[101] transition-all duration-300 ${
+          showButtons ? 'opacity-100 visible' : 'opacity-0 invisible'
+        }`}
+        style={{
+          bottom: isMinimized ? '90px' : '450px',
+          right: '24px',
+        }}
+        onMouseEnter={() => setShowButtons(true)}
+        onMouseLeave={() => setTimeout(() => setShowButtons(false), 100)}
+      >
+        <button
+          onClick={onFullScreen}
+          className="px-3 py-1.5 bg-white text-gray-700 text-sm rounded-md shadow-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+          onMouseEnter={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={onFullScreen}
-            className="px-3 py-1.5 bg-white text-gray-700 text-sm rounded-md shadow-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
-          >
-            <Maximize2 className="w-4 h-4" />
-            Full Screen
-          </button>
-          <button
-            onClick={() => {/* Add zoom functionality */}}
-            className="px-3 py-1.5 bg-white text-gray-700 text-sm rounded-md shadow-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-            </svg>
-            Zoom
-          </button>
-        </div>
-      )}
+          <Maximize2 className="w-4 h-4" />
+          Full Screen
+        </button>
+        <button
+          onClick={() => {/* Add zoom functionality */}}
+          className="px-3 py-1.5 bg-white text-gray-700 text-sm rounded-md shadow-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+          onMouseEnter={(e) => e.stopPropagation()}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+          </svg>
+          Zoom
+        </button>
+      </div>
 
       {/* Chat window */}
       <div
@@ -139,7 +143,13 @@ export const AIChatFloating: React.FC<AIChatFloatingProps> = ({
           zIndex: 100,
         }}
         onMouseEnter={() => setShowButtons(true)}
-        onMouseLeave={() => setShowButtons(false)}
+        onMouseLeave={(e) => {
+          // Don't hide if moving to buttons
+          const relatedTarget = e.relatedTarget as HTMLElement;
+          if (!relatedTarget?.closest('.chat-action-buttons')) {
+            setTimeout(() => setShowButtons(false), 300);
+          }
+        }}
       >
         {/* Header */}
         <div className="bg-purple-600 text-white px-4 py-3 flex items-center justify-between">

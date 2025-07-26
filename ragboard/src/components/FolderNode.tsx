@@ -62,7 +62,12 @@ export const FolderNode = memo<NodeProps<FolderNodeData>>(({ data, selected }) =
         <div className="flex items-center justify-between p-3 bg-amber-50">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => data.onToggle?.(data.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (data.onToggle) {
+                  data.onToggle(data.id);
+                }
+              }}
               className="p-1 hover:bg-amber-100 rounded transition-colors"
             >
               <ChevronIcon className="w-4 h-4 text-gray-600" />
@@ -79,7 +84,12 @@ export const FolderNode = memo<NodeProps<FolderNodeData>>(({ data, selected }) =
           </div>
           {data.onDelete && (
             <button
-              onClick={() => data.onDelete?.(data.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (data.onDelete) {
+                  data.onDelete(data.id);
+                }
+              }}
               className="p-1 hover:bg-amber-100 rounded transition-colors"
             >
               <X className="w-4 h-4 text-gray-500" />

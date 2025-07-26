@@ -19,6 +19,7 @@ from app.models.conversation import (
     MessageRole,
     ConversationType
 )
+from app.models.board import Board
 
 # Export all models
 __all__ = [
@@ -40,4 +41,7 @@ __all__ = [
     "SavedPrompt",
     "MessageRole",
     "ConversationType",
+    
+    # Board models
+    "Board",
 ]

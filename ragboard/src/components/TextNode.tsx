@@ -42,7 +42,8 @@ export const TextNode: React.FC<{ data: TextNodeData; selected?: boolean }> = ({
     }
   }, [isEditing]);
 
-  const handleDoubleClick = () => {
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsEditing(true);
   };
 
@@ -89,7 +90,12 @@ export const TextNode: React.FC<{ data: TextNodeData; selected?: boolean }> = ({
           <span className="text-sm font-medium text-gray-700">Text Note</span>
         </div>
         <button
-          onClick={() => data.onDelete(data.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (data.onDelete) {
+              data.onDelete(data.id);
+            }
+          }}
           className="p-1 hover:bg-yellow-100 rounded transition-colors"
         >
           <X className="w-3 h-3 text-gray-500" />

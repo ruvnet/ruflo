@@ -15,11 +15,16 @@ interface URLNodeData {
 }
 
 const URLNode: React.FC<NodeProps<URLNodeData>> = ({ data, selected, id }) => {
-  const deleteNode = useBoardStore((state) => state.deleteNode);
+  const deleteResource = useBoardStore((state) => state.deleteResource);
 
   const getPlatformIcon = () => {
     // In a real app, would have specific icons for each platform
     return <Link className="w-5 h-5" />;
+  };
+  
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteResource(id);
   };
 
   return (
@@ -34,7 +39,7 @@ const URLNode: React.FC<NodeProps<URLNodeData>> = ({ data, selected, id }) => {
       <Handle type="source" position={Position.Right} />
 
       <button
-        onClick={() => deleteNode(id)}
+        onClick={handleDelete}
         className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600 z-10"
       >
         <X className="w-4 h-4" />

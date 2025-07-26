@@ -131,7 +131,7 @@ export class ApiService {
     connectedResources: string[],
     onChunk: (chunk: string) => void
   ): Promise<void> {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/chats/${chatId}/stream`, {
+    const response = await fetch(`${API_BASE_URL}${API_V1_PREFIX}/chats/${chatId}/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -190,8 +190,35 @@ export class ApiService {
     return response.data;
   }
 
-  static async saveBoard(boardId: string, data: any): Promise<void> {
-    await apiClient.put(`/boards/${boardId}`, data);
+  static async saveBoard(boardData: {
+    name: string;
+    resources: Resource[];
+    connections: any[];
+    aiChats: AIChat[];
+  }): Promise<void> {
+    await apiClient.post('/boards/save', boardData);
+  }
+
+  static async loadBoard(boardId: string): Promise<{
+    name: string;
+    resources: Resource[];
+    connections: any[];
+    aiChats: AIChat[];
+  }> {
+    const response = await apiClient.get(`/boards/${boardId}/load`);
+    return response.data;
+  }
+
+  static async listBoards(): Promise<Array<{
+    id: string;
+    name: string;
+    updatedAt: Date;
+  }>> {
+    const response = await apiClient.get('/boards');
+    return response.data.map((board: any) => ({
+      ...board,
+      updatedAt: new Date(board.updatedAt || board.updated_at)
+    }));
   }
 
   // Vector search endpoints
