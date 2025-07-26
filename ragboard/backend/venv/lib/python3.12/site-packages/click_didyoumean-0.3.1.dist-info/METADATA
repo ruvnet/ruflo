@@ -1,0 +1,153 @@
+Metadata-Version: 2.1
+Name: click-didyoumean
+Version: 0.3.1
+Summary: Enables git-like *did-you-mean* feature in click
+Home-page: https://github.com/click-contrib/click-didyoumean
+License: MIT
+Author: Timo Furrer
+Author-email: timo.furrer@roche.com
+Requires-Python: >=3.6.2
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Dist: click (>=7)
+Project-URL: Repository, https://github.com/click-contrib/click-didyoumean
+Description-Content-Type: text/x-rst
+
+click-didyoumean
+================
+|pypi| |build| |license|
+
+Enable git-like *did-you-mean* feature in click.
+
+It's as simple as this:
+
+.. code:: python
+
+    import click
+    from click_didyoumean import DYMGroup
+
+    @click.group(cls=DYMGroup)
+    def cli():
+        ...
+
+|demo|
+
+Usage
+-----
+
+Install this extension with pip:
+
+.. code::
+
+    pip install click-didyoumean
+
+
+Use specific *did-you-mean* `group` class for your cli:
+
+
+.. code:: python
+
+    import click
+    from click_didyoumean import DYMGroup
+
+    @click.group(cls=DYMGroup)
+    def cli():
+        pass
+
+    @cli.command()
+    def foo():
+        pass
+
+    @cli.command()
+    def bar():
+        pass
+
+    @cli.command()
+    def barrr():
+        pass
+
+    if __name__ == "__main__":
+        cli()
+
+
+Or you it in a `CommandCollection`:
+
+.. code:: python
+
+    import click
+    from click_didyoumean import DYMCommandCollection
+
+    @click.group()
+    def cli1():
+        pass
+
+    @cli1.command()
+    def foo():
+        pass
+
+    @cli1.command()
+    def bar():
+        pass
+
+    @click.group()
+    def cli2():
+        pass
+
+    @cli2.command()
+    def barrr():
+        pass
+
+    cli = DYMCommandCollection(sources=[cli1, cli2])
+
+    if __name__ == "__main__":
+        cli()
+
+
+Change configuration
+--------------------
+
+There are two configuration for the ``DYMGroup`` and ``DYMCommandCollection``:
+
++-----------------+-------+---------+---------------------------------------------------------------------------+
+| Parameter       | Type  | Default | Description                                                               |
++=================+=======+=========+===========================================================================+
+| max_suggestions | int   | 3       | Maximal number of *did-you-mean* suggestions                              |
++-----------------+-------+---------+---------------------------------------------------------------------------+
+| cutoff          | float | 0.5     | Possibilities that don’t score at least that similar to word are ignored. |
++-----------------+-------+---------+---------------------------------------------------------------------------+
+
+Examples
+~~~~~~~~
+
+.. code:: python
+
+    @cli.group(cls=DYMGroup, max_suggestions=2, cutoff=0.7)
+    def cli():
+        pass
+
+    ... or ...
+
+    cli = DYMCommandCollection(sources=[cli1, cli2], max_suggestions=2, cutoff=0.7)
+
+
+.. |pypi| image:: https://img.shields.io/pypi/v/click-didyoumean.svg?style=flat&label=version
+    :target: https://pypi.python.org/pypi/click-didyoumean
+    :alt: Latest version released on PyPi
+
+.. |build| image:: https://img.shields.io/travis/click-contrib/click-didyoumean/master.svg?style=flat
+    :target: http://travis-ci.org/click-contrib/click-didyoumean
+    :alt: Build status of the master branch
+
+.. |demo| image:: https://raw.githubusercontent.com/click-contrib/click-didyoumean/master/examples/asciicast.gif
+    :alt: Demo
+
+.. |license| image:: https://img.shields.io/badge/license-MIT-blue.svg?style=flat
+    :target: https://raw.githubusercontent.com/click-contrib/click-didyoumean/master/LICENSE
+    :alt: Package license
+

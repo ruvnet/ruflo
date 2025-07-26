@@ -1,0 +1,28 @@
+{
+  "pagination": {
+    "ListGraphSnapshots": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "graphSnapshots"
+    },
+    "ListGraphs": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "graphs"
+    },
+    "ListImportTasks": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "tasks"
+    },
+    "ListPrivateGraphEndpoints": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "privateGraphEndpoints"
+    }
+  }
+}

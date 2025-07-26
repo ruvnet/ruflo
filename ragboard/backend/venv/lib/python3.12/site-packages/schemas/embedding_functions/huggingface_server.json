@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "HuggingFace Embedding Server Schema",
+    "description": "Schema for the HuggingFace embedding server configuration",
+    "version": "1.0.0",
+    "type": "object",
+    "properties": {
+        "url": {
+            "type": "string",
+            "description": "The URL of the HuggingFace Embedding Server"
+        },
+        "api_key_env_var": {
+            "type": "string",
+            "description": "The environment variable name that contains your API key for the HuggingFace API"
+        }
+    },
+    "required": [
+        "url"
+    ],
+    "additionalProperties": false
+}

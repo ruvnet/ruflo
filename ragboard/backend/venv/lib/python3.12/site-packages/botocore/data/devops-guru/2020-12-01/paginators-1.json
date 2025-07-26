@@ -1,0 +1,125 @@
+{
+  "pagination": {
+    "DescribeResourceCollectionHealth": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": [
+        "CloudFormation",
+        "Service",
+        "Tags"
+      ]
+    },
+    "GetResourceCollection": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": [
+        "ResourceCollection.CloudFormation.StackNames",
+        "ResourceCollection.Tags"
+      ],
+      "non_aggregate_keys": [
+        "ResourceCollection"
+      ]
+    },
+    "ListAnomaliesForInsight": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": [
+        "ReactiveAnomalies",
+        "ProactiveAnomalies"
+      ]
+    },
+    "ListEvents": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Events"
+    },
+    "ListInsights": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": [
+        "ProactiveInsights",
+        "ReactiveInsights"
+      ]
+    },
+    "ListNotificationChannels": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Channels"
+    },
+    "ListRecommendations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Recommendations"
+    },
+    "SearchInsights": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": [
+        "ProactiveInsights",
+        "ReactiveInsights"
+      ]
+    },
+    "GetCostEstimation": {
+      "input_token": "NextToken",
+      "non_aggregate_keys": [
+        "Status",
+        "TotalCost",
+        "TimeRange",
+        "ResourceCollection"
+      ],
+      "output_token": "NextToken",
+      "result_key": [
+        "Costs"
+      ]
+    },
+    "DescribeOrganizationResourceCollectionHealth": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": [
+        "CloudFormation",
+        "Account",
+        "Service",
+        "Tags"
+      ]
+    },
+    "ListOrganizationInsights": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": [
+        "ProactiveInsights",
+        "ReactiveInsights"
+      ]
+    },
+    "SearchOrganizationInsights": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": [
+        "ProactiveInsights",
+        "ReactiveInsights"
+      ]
+    },
+    "ListAnomalousLogGroups": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": [
+        "InsightId",
+        "AnomalousLogGroups"
+      ]
+    },
+    "ListMonitoredResources": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": [
+        "MonitoredResourceIdentifiers"
+      ]
+    }
+  }
+}

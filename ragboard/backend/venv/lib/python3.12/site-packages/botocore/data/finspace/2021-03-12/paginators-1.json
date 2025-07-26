@@ -1,0 +1,10 @@
+{
+  "pagination": {
+    "ListKxEnvironments": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "environments"
+    }
+  }
+}

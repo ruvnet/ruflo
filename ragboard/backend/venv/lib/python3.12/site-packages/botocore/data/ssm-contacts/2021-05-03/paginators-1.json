@@ -1,0 +1,69 @@
+{
+  "pagination": {
+    "ListContactChannels": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ContactChannels"
+    },
+    "ListContacts": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Contacts"
+    },
+    "ListEngagements": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Engagements"
+    },
+    "ListPageReceipts": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Receipts"
+    },
+    "ListPagesByContact": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Pages"
+    },
+    "ListPagesByEngagement": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Pages"
+    },
+    "ListPageResolutions": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "PageResolutions"
+    },
+    "ListPreviewRotationShifts": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "RotationShifts"
+    },
+    "ListRotationOverrides": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "RotationOverrides"
+    },
+    "ListRotationShifts": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "RotationShifts"
+    },
+    "ListRotations": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Rotations"
+    }
+  }
+}

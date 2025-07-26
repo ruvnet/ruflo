@@ -1,0 +1,22 @@
+{
+  "pagination": {
+    "ListWorkspaces": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "workspaces"
+    },
+    "ListRuleGroupsNamespaces": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "ruleGroupsNamespaces"
+    },
+    "ListScrapers": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "scrapers"
+    }
+  }
+}

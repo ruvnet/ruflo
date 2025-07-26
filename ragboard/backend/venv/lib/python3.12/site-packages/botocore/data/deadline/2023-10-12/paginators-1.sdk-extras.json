@@ -1,0 +1,13 @@
+ {
+   "version": 1.0,
+   "merge": {
+     "pagination": {
+       "GetSessionsStatisticsAggregation": {
+         "non_aggregate_keys": [
+           "status",
+           "statusMessage"
+         ]
+       }
+     }
+   }
+ }

@@ -1,0 +1,22 @@
+{
+  "pagination": {
+    "ListAttachedLinks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Items"
+    },
+    "ListLinks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Items"
+    },
+    "ListSinks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Items"
+    }
+  }
+}

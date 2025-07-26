@@ -1,0 +1,52 @@
+{
+  "pagination": {
+    "ListComplianceStatus": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "PolicyComplianceStatusList"
+    },
+    "ListMemberAccounts": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "MemberAccounts"
+    },
+    "ListPolicies": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "PolicyList"
+    },
+    "ListAppsLists": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "AppsLists"
+    },
+    "ListProtocolsLists": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ProtocolsLists"
+    },
+    "ListThirdPartyFirewallFirewallPolicies": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ThirdPartyFirewallFirewallPolicies"
+    },
+    "ListAdminAccountsForOrganization": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "AdminAccounts"
+    },
+    "ListAdminsManagingAccount": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "AdminAccounts"
+    }
+  }
+}

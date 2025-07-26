@@ -1,0 +1,86 @@
+{
+  "pagination": {
+    "ListClusters": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "clusters"
+    },
+    "ListUpdates": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "updateIds"
+    },
+    "ListNodegroups": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "nodegroups"
+    },
+    "ListFargateProfiles": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "fargateProfileNames"
+    },
+    "DescribeAddonVersions": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "addons"
+    },
+    "ListAddons": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "addons"
+    },
+    "ListIdentityProviderConfigs": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "identityProviderConfigs"
+    },
+    "ListEksAnywhereSubscriptions": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "subscriptions"
+    },
+    "ListPodIdentityAssociations": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "associations"
+    },
+    "ListAccessEntries": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "accessEntries"
+    },
+    "ListAccessPolicies": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "accessPolicies"
+    },
+    "ListAssociatedAccessPolicies": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "non_aggregate_keys": [
+        "clusterName",
+        "principalArn"
+      ],
+      "output_token": "nextToken",
+      "result_key": "associatedAccessPolicies"
+    },
+    "ListInsights": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "insights"
+    }
+  }
+}

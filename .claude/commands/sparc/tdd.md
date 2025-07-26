@@ -1,18 +1,33 @@
-# SPARC TDD Mode
+---
+name: sparc-tdd
+description: 🧪 Tester (TDD) - You implement Test-Driven Development (TDD, London School), writing tests first and refactoring a...
+---
 
-## Purpose
-Test-driven development with TodoWrite planning and comprehensive testing.
+# 🧪 Tester (TDD)
 
-## Activation
+## Role Definition
+You implement Test-Driven Development (TDD, London School), writing tests first and refactoring after minimal implementation passes.
+
+## Custom Instructions
+Write failing tests first. Implement only enough code to pass. Refactor after green. Ensure tests do not hardcode secrets. Keep files < 500 lines. Validate modularity, test coverage, and clarity before using `attempt_completion`.
+
+## Available Tools
+- **read**: File reading and viewing
+- **edit**: File modification and creation
+- **browser**: Web browsing capabilities
+- **mcp**: Model Context Protocol tools
+- **command**: Command execution
+
+## Usage
 
 ### Option 1: Using MCP Tools (Preferred in Claude Code)
 ```javascript
 mcp__claude-flow__sparc_mode {
   mode: "tdd",
-  task_description: "shopping cart feature",
+  task_description: "create user authentication tests",
   options: {
-    coverage_target: 90,
-    test_framework: "jest"
+    namespace: "tdd",
+    non_interactive: false
   }
 }
 ```
@@ -20,35 +35,49 @@ mcp__claude-flow__sparc_mode {
 ### Option 2: Using NPX CLI (Fallback when MCP not available)
 ```bash
 # Use when running from terminal or MCP tools unavailable
-npx claude-flow sparc run tdd "shopping cart feature"
+npx claude-flow sparc run tdd "create user authentication tests"
 
 # For alpha features
-npx claude-flow@alpha sparc run tdd "shopping cart feature"
+npx claude-flow@alpha sparc run tdd "create user authentication tests"
+
+# With namespace
+npx claude-flow sparc run tdd "your task" --namespace tdd
+
+# Non-interactive mode
+npx claude-flow sparc run tdd "your task" --non-interactive
 ```
 
 ### Option 3: Local Installation
 ```bash
 # If claude-flow is installed locally
-./claude-flow sparc run tdd "shopping cart feature"
+./claude-flow sparc run tdd "create user authentication tests"
 ```
 
-## Core Capabilities
-- Test-first development
-- Red-green-refactor cycle
-- Test suite design
-- Coverage optimization
-- Continuous testing
+## Memory Integration
 
-## TDD Workflow
-1. Write failing tests
-2. Implement minimum code
-3. Make tests pass
-4. Refactor code
-5. Repeat cycle
+### Using MCP Tools (Preferred)
+```javascript
+// Store mode-specific context
+mcp__claude-flow__memory_usage {
+  action: "store",
+  key: "tdd_context",
+  value: "important decisions",
+  namespace: "tdd"
+}
 
-## Testing Strategies
-- Unit testing
-- Integration testing
-- End-to-end testing
-- Performance testing
-- Security testing
+// Query previous work
+mcp__claude-flow__memory_search {
+  pattern: "tdd",
+  namespace: "tdd",
+  limit: 5
+}
+```
+
+### Using NPX CLI (Fallback)
+```bash
+# Store mode-specific context
+npx claude-flow memory store "tdd_context" "important decisions" --namespace tdd
+
+# Query previous work
+npx claude-flow memory query "tdd" --limit 5
+```

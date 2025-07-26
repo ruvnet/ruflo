@@ -1,0 +1,2 @@
+[console_scripts]
+youtube_transcript_api = youtube_transcript_api.__main__:main

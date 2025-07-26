@@ -1,0 +1,71 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "OpenAI Embedding Function Schema",
+    "description": "Schema for the OpenAI embedding function configuration",
+    "version": "1.0.0",
+    "type": "object",
+    "properties": {
+        "model_name": {
+            "type": "string",
+            "description": "The name of the model to use for text embeddings"
+        },
+        "organization_id": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "The OpenAI organization ID if applicable"
+        },
+        "api_base": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "The base path for the API"
+        },
+        "api_type": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "The type of the API deployment"
+        },
+        "api_version": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "The api version for the API"
+        },
+        "deployment_id": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Deployment ID for Azure OpenAI"
+        },
+        "default_headers": {
+            "type": [
+                "object",
+                "null"
+            ],
+            "description": "A mapping of default headers to be sent with each API request"
+        },
+        "dimensions": {
+            "type": [
+                "integer",
+                "null"
+            ],
+            "description": "The number of dimensions for the embeddings"
+        },
+        "api_key_env_var": {
+            "type": "string",
+            "description": "Environment variable name that contains your API key for the OpenAI API"
+        }
+    },
+    "required": [
+        "api_key_env_var",
+        "model_name"
+    ],
+    "additionalProperties": false
+}

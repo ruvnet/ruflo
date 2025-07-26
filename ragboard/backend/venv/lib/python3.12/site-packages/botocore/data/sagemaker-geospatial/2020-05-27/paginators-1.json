@@ -1,0 +1,22 @@
+{
+  "pagination": {
+    "ListEarthObservationJobs": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "EarthObservationJobSummaries"
+    },
+    "ListRasterDataCollections": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "RasterDataCollectionSummaries"
+    },
+    "ListVectorEnrichmentJobs": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "VectorEnrichmentJobSummaries"
+    }
+  }
+}

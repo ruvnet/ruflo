@@ -1,0 +1,63 @@
+Metadata-Version: 2.4
+Name: opentelemetry-proto
+Version: 1.35.0
+Summary: OpenTelemetry Python Proto
+Project-URL: Homepage, https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-proto
+Project-URL: Repository, https://github.com/open-telemetry/opentelemetry-python
+Author-email: OpenTelemetry Authors <cncf-opentelemetry-contributors@lists.cncf.io>
+License-Expression: Apache-2.0
+License-File: LICENSE
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Framework :: OpenTelemetry
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Requires-Python: >=3.9
+Requires-Dist: protobuf<7.0,>=5.0
+Description-Content-Type: text/x-rst
+
+OpenTelemetry Python Proto
+==========================
+
+|pypi|
+
+.. |pypi| image:: https://badge.fury.io/py/opentelemetry-proto.svg
+   :target: https://pypi.org/project/opentelemetry-proto/
+
+This library contains the generated code for OpenTelemetry protobuf data model. The code in the current
+package was generated using the v1.7.0 release_ of opentelemetry-proto.
+
+.. _release: https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v1.7.0
+
+Installation
+------------
+
+::
+
+    pip install opentelemetry-proto
+
+Code Generation
+---------------
+
+These files were generated automatically from code in opentelemetry-proto_.
+To regenerate the code, run ``../scripts/proto_codegen.sh``.
+
+To build against a new release or specific commit of opentelemetry-proto_,
+update the ``PROTO_REPO_BRANCH_OR_COMMIT`` variable in
+``../scripts/proto_codegen.sh``. Then run the script and commit the changes
+as well as any fixes needed in the OTLP exporter.
+
+.. _opentelemetry-proto: https://github.com/open-telemetry/opentelemetry-proto
+
+
+References
+----------
+
+* `OpenTelemetry Project <https://opentelemetry.io/>`_
+* `OpenTelemetry Proto <https://github.com/open-telemetry/opentelemetry-proto>`_
+* `proto_codegen.sh script <https://github.com/open-telemetry/opentelemetry-python/blob/main/scripts/proto_codegen.sh>`_

@@ -1,0 +1,130 @@
+{
+  "pagination": {
+    "GetAssetPropertyAggregates": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "aggregatedValues"
+    },
+    "GetAssetPropertyValueHistory": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assetPropertyValueHistory"
+    },
+    "ListAccessPolicies": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "accessPolicySummaries"
+    },
+    "ListAssetModels": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assetModelSummaries"
+    },
+    "ListAssets": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assetSummaries"
+    },
+    "ListAssociatedAssets": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assetSummaries"
+    },
+    "ListDashboards": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "dashboardSummaries"
+    },
+    "ListGateways": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "gatewaySummaries"
+    },
+    "ListPortals": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "portalSummaries"
+    },
+    "ListProjectAssets": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assetIds"
+    },
+    "ListProjects": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "projectSummaries"
+    },
+    "ListAssetRelationships": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assetRelationshipSummaries"
+    },
+    "GetInterpolatedAssetPropertyValues": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "interpolatedAssetPropertyValues"
+    },
+    "ListTimeSeries": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "TimeSeriesSummaries"
+    },
+    "ListBulkImportJobs": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "jobSummaries"
+    },
+    "ListAssetModelProperties": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assetModelPropertySummaries"
+    },
+    "ListAssetProperties": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assetPropertySummaries"
+    },
+    "ExecuteQuery": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "rows"
+    },
+    "ListActions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "actionSummaries"
+    },
+    "ListAssetModelCompositeModels": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assetModelCompositeModelSummaries"
+    },
+    "ListCompositionRelationships": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "compositionRelationshipSummaries"
+    }
+  }
+}

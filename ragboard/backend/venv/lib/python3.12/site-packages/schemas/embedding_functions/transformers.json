@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Transformers Embedding Function Schema",
+    "description": "Schema for the Transformers embedding function configuration",
+    "version": "1.0.0",
+    "type": "object",
+    "properties": {
+        "model": {
+            "type": "string",
+            "description": "Identifier of the SentenceTransformer model"
+        },
+        "revision": {
+            "type": "string",
+            "description": "Specific model version to use (can be a branch, tag name, or commit id)"
+        },
+        "quantized": {
+            "type": "boolean",
+            "description": "Whether to load the 8-bit quantized version of the model"
+        }
+    },
+    "required": [
+        "model",
+        "revision",
+        "quantized"
+    ],
+    "additionalProperties": false
+}

@@ -1,0 +1,13 @@
+This is a test document for RAG pipeline testing.
+
+The document contains sample text about artificial intelligence and machine learning.
+AI systems can process natural language and generate human-like responses.
+Vector databases enable semantic search across large document collections.
+
+Key concepts:
+- Retrieval-Augmented Generation (RAG)
+- Embeddings and vector similarity
+- Document chunking and processing
+- ChromaDB for vector storage
+
+This text will be processed, chunked, and stored as embeddings for testing the RAG functionality.

@@ -1,0 +1,54 @@
+{
+  "pagination": {
+    "ListBootstrapActions": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "result_key": "BootstrapActions"
+    },
+    "ListClusters": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "result_key": "Clusters"
+    },
+    "ListInstanceGroups": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "result_key": "InstanceGroups"
+    },
+    "ListInstances": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "result_key": "Instances"
+    },
+    "ListSteps": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "result_key": "Steps"
+    },
+    "ListInstanceFleets": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "result_key": "InstanceFleets"
+    },
+    "ListSecurityConfigurations": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "result_key": "SecurityConfigurations"
+    },
+    "ListNotebookExecutions": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "result_key": "NotebookExecutions"
+    },
+    "ListStudioSessionMappings": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "result_key": "SessionMappings"
+    },
+    "ListStudios": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "result_key": "Studios"
+    }
+  }
+}

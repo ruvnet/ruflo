@@ -1,0 +1,16 @@
+{
+  "pagination": {
+    "ListClusterSnapshots": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "snapshots"
+    },
+    "ListClusters": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "clusters"
+    }
+  }
+}

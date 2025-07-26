@@ -1,0 +1,70 @@
+{
+  "pagination": {
+    "GetDevicePositionHistory": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "DevicePositions",
+      "limit_key": "MaxResults"
+    },
+    "ListGeofenceCollections": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Entries"
+    },
+    "ListGeofences": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Entries",
+      "limit_key": "MaxResults"
+    },
+    "ListMaps": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Entries"
+    },
+    "ListPlaceIndexes": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Entries"
+    },
+    "ListTrackerConsumers": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ConsumerArns"
+    },
+    "ListTrackers": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Entries"
+    },
+    "ListDevicePositions": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Entries"
+    },
+    "ListRouteCalculators": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Entries"
+    },
+    "ListKeys": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Entries"
+    },
+    "ForecastGeofenceEvents": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ForecastedEvents"
+    }
+  }
+}

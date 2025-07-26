@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListConnectors": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Connectors"
+    },
+    "ListDirectoryRegistrations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "DirectoryRegistrations"
+    },
+    "ListServicePrincipalNames": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ServicePrincipalNames"
+    },
+    "ListTemplateGroupAccessControlEntries": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "AccessControlEntries"
+    },
+    "ListTemplates": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Templates"
+    }
+  }
+}

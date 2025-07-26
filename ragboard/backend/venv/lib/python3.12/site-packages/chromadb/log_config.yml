@@ -1,0 +1,37 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+  default:
+    "()": uvicorn.logging.DefaultFormatter
+    format: '%(levelprefix)s [%(asctime)s] %(message)s'
+    use_colors: null
+    datefmt: '%d-%m-%Y %H:%M:%S'
+  access:
+    "()": uvicorn.logging.AccessFormatter
+    format: '%(levelprefix)s [%(asctime)s] %(client_addr)s - "%(request_line)s" %(status_code)s'
+    datefmt: '%d-%m-%Y %H:%M:%S'
+handlers:
+  default:
+    formatter: default
+    class: logging.StreamHandler
+    stream: ext://sys.stderr
+  access:
+    formatter: access
+    class: logging.StreamHandler
+    stream: ext://sys.stdout
+  console:
+    class: logging.StreamHandler
+    stream: ext://sys.stdout
+    formatter: default
+  file:
+    class : logging.handlers.RotatingFileHandler
+    filename: chroma.log
+    formatter: default
+loggers:
+  root:
+    level: WARN
+    handlers: [console, file]
+  chromadb:
+    level: DEBUG
+  uvicorn:
+    level: INFO

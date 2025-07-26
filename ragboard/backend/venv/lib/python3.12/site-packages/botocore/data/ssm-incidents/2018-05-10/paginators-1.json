@@ -1,0 +1,46 @@
+{
+  "pagination": {
+    "GetResourcePolicies": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "resourcePolicies"
+    },
+    "ListIncidentRecords": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "incidentRecordSummaries"
+    },
+    "ListRelatedItems": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "relatedItems"
+    },
+    "ListReplicationSets": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "replicationSetArns"
+    },
+    "ListResponsePlans": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "responsePlanSummaries"
+    },
+    "ListTimelineEvents": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "eventSummaries"
+    },
+    "ListIncidentFindings": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "findings"
+    }
+  }
+}

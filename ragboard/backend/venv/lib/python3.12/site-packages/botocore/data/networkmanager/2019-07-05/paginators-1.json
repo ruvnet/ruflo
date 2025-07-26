@@ -1,0 +1,130 @@
+{
+  "pagination": {
+    "DescribeGlobalNetworks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "GlobalNetworks"
+    },
+    "GetCustomerGatewayAssociations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "CustomerGatewayAssociations"
+    },
+    "GetDevices": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Devices"
+    },
+    "GetLinkAssociations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "LinkAssociations"
+    },
+    "GetLinks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Links"
+    },
+    "GetSites": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Sites"
+    },
+    "GetTransitGatewayRegistrations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "TransitGatewayRegistrations"
+    },
+    "GetConnections": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Connections"
+    },
+    "GetTransitGatewayConnectPeerAssociations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "TransitGatewayConnectPeerAssociations"
+    },
+    "GetNetworkResourceCounts": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "NetworkResourceCounts"
+    },
+    "GetNetworkResourceRelationships": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Relationships"
+    },
+    "GetNetworkResources": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "NetworkResources"
+    },
+    "GetNetworkTelemetry": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "NetworkTelemetry"
+    },
+    "GetConnectPeerAssociations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ConnectPeerAssociations"
+    },
+    "GetCoreNetworkChangeSet": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "CoreNetworkChanges"
+    },
+    "ListAttachments": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Attachments"
+    },
+    "ListConnectPeers": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ConnectPeers"
+    },
+    "ListCoreNetworkPolicyVersions": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "CoreNetworkPolicyVersions"
+    },
+    "ListCoreNetworks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "CoreNetworks"
+    },
+    "GetCoreNetworkChangeEvents": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "CoreNetworkChangeEvents"
+    },
+    "ListPeerings": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Peerings"
+    }
+  }
+}

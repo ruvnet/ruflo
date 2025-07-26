@@ -1,0 +1,43 @@
+{
+  "pagination": {
+    "DescribeStream": {
+      "input_token": "ExclusiveStartShardId",
+      "limit_key": "Limit",
+      "more_results": "StreamDescription.HasMoreShards",
+      "output_token": "StreamDescription.Shards[-1].ShardId",
+      "result_key": "StreamDescription.Shards",
+      "non_aggregate_keys": [
+        "StreamDescription.StreamARN",
+        "StreamDescription.StreamName",
+        "StreamDescription.StreamStatus",
+        "StreamDescription.RetentionPeriodHours",
+        "StreamDescription.EnhancedMonitoring",
+        "StreamDescription.EncryptionType",
+        "StreamDescription.KeyId",
+        "StreamDescription.StreamCreationTimestamp"
+      ]
+    },
+    "ListStreams": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "more_results": "HasMoreStreams",
+      "output_token": "NextToken",
+      "result_key": [
+        "StreamNames",
+        "StreamSummaries"
+      ]
+    },
+    "ListShards": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Shards"
+    },
+    "ListStreamConsumers": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Consumers"
+    }
+  }
+}

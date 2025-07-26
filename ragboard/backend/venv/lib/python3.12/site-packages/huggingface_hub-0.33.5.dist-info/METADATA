@@ -1,0 +1,332 @@
+Metadata-Version: 2.1
+Name: huggingface-hub
+Version: 0.33.5
+Summary: Client library to download and publish models, datasets and other repos on the huggingface.co hub
+Home-page: https://github.com/huggingface/huggingface_hub
+Author: Hugging Face, Inc.
+Author-email: julien@huggingface.co
+License: Apache
+Keywords: model-hub machine-learning models natural-language-processing deep-learning pytorch pretrained-models
+Platform: UNKNOWN
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Education
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.8.0
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: filelock
+Requires-Dist: fsspec>=2023.5.0
+Requires-Dist: packaging>=20.9
+Requires-Dist: pyyaml>=5.1
+Requires-Dist: requests
+Requires-Dist: tqdm>=4.42.1
+Requires-Dist: typing-extensions>=3.7.4.3
+Requires-Dist: hf-xet<2.0.0,>=1.1.2; platform_machine == "x86_64" or platform_machine == "amd64" or platform_machine == "arm64" or platform_machine == "aarch64"
+Provides-Extra: all
+Requires-Dist: InquirerPy==0.3.4; extra == "all"
+Requires-Dist: aiohttp; extra == "all"
+Requires-Dist: authlib>=1.3.2; extra == "all"
+Requires-Dist: fastapi; extra == "all"
+Requires-Dist: httpx; extra == "all"
+Requires-Dist: itsdangerous; extra == "all"
+Requires-Dist: jedi; extra == "all"
+Requires-Dist: Jinja2; extra == "all"
+Requires-Dist: pytest<8.2.2,>=8.1.1; extra == "all"
+Requires-Dist: pytest-cov; extra == "all"
+Requires-Dist: pytest-env; extra == "all"
+Requires-Dist: pytest-xdist; extra == "all"
+Requires-Dist: pytest-vcr; extra == "all"
+Requires-Dist: pytest-asyncio; extra == "all"
+Requires-Dist: pytest-rerunfailures; extra == "all"
+Requires-Dist: pytest-mock; extra == "all"
+Requires-Dist: urllib3<2.0; extra == "all"
+Requires-Dist: soundfile; extra == "all"
+Requires-Dist: Pillow; extra == "all"
+Requires-Dist: gradio>=4.0.0; extra == "all"
+Requires-Dist: numpy; extra == "all"
+Requires-Dist: ruff>=0.9.0; extra == "all"
+Requires-Dist: libcst==1.4.0; extra == "all"
+Requires-Dist: typing-extensions>=4.8.0; extra == "all"
+Requires-Dist: types-PyYAML; extra == "all"
+Requires-Dist: types-requests; extra == "all"
+Requires-Dist: types-simplejson; extra == "all"
+Requires-Dist: types-toml; extra == "all"
+Requires-Dist: types-tqdm; extra == "all"
+Requires-Dist: types-urllib3; extra == "all"
+Requires-Dist: mypy<1.15.0,>=1.14.1; python_version == "3.8" and extra == "all"
+Requires-Dist: mypy==1.15.0; python_version >= "3.9" and extra == "all"
+Provides-Extra: cli
+Requires-Dist: InquirerPy==0.3.4; extra == "cli"
+Provides-Extra: dev
+Requires-Dist: InquirerPy==0.3.4; extra == "dev"
+Requires-Dist: aiohttp; extra == "dev"
+Requires-Dist: authlib>=1.3.2; extra == "dev"
+Requires-Dist: fastapi; extra == "dev"
+Requires-Dist: httpx; extra == "dev"
+Requires-Dist: itsdangerous; extra == "dev"
+Requires-Dist: jedi; extra == "dev"
+Requires-Dist: Jinja2; extra == "dev"
+Requires-Dist: pytest<8.2.2,>=8.1.1; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+Requires-Dist: pytest-env; extra == "dev"
+Requires-Dist: pytest-xdist; extra == "dev"
+Requires-Dist: pytest-vcr; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"
+Requires-Dist: pytest-rerunfailures; extra == "dev"
+Requires-Dist: pytest-mock; extra == "dev"
+Requires-Dist: urllib3<2.0; extra == "dev"
+Requires-Dist: soundfile; extra == "dev"
+Requires-Dist: Pillow; extra == "dev"
+Requires-Dist: gradio>=4.0.0; extra == "dev"
+Requires-Dist: numpy; extra == "dev"
+Requires-Dist: ruff>=0.9.0; extra == "dev"
+Requires-Dist: libcst==1.4.0; extra == "dev"
+Requires-Dist: typing-extensions>=4.8.0; extra == "dev"
+Requires-Dist: types-PyYAML; extra == "dev"
+Requires-Dist: types-requests; extra == "dev"
+Requires-Dist: types-simplejson; extra == "dev"
+Requires-Dist: types-toml; extra == "dev"
+Requires-Dist: types-tqdm; extra == "dev"
+Requires-Dist: types-urllib3; extra == "dev"
+Requires-Dist: mypy<1.15.0,>=1.14.1; python_version == "3.8" and extra == "dev"
+Requires-Dist: mypy==1.15.0; python_version >= "3.9" and extra == "dev"
+Provides-Extra: fastai
+Requires-Dist: toml; extra == "fastai"
+Requires-Dist: fastai>=2.4; extra == "fastai"
+Requires-Dist: fastcore>=1.3.27; extra == "fastai"
+Provides-Extra: hf_transfer
+Requires-Dist: hf-transfer>=0.1.4; extra == "hf-transfer"
+Provides-Extra: hf_xet
+Requires-Dist: hf-xet<2.0.0,>=1.1.2; extra == "hf-xet"
+Provides-Extra: inference
+Requires-Dist: aiohttp; extra == "inference"
+Provides-Extra: mcp
+Requires-Dist: mcp>=1.8.0; extra == "mcp"
+Requires-Dist: typer; extra == "mcp"
+Requires-Dist: aiohttp; extra == "mcp"
+Provides-Extra: oauth
+Requires-Dist: authlib>=1.3.2; extra == "oauth"
+Requires-Dist: fastapi; extra == "oauth"
+Requires-Dist: httpx; extra == "oauth"
+Requires-Dist: itsdangerous; extra == "oauth"
+Provides-Extra: quality
+Requires-Dist: ruff>=0.9.0; extra == "quality"
+Requires-Dist: libcst==1.4.0; extra == "quality"
+Requires-Dist: mypy<1.15.0,>=1.14.1; python_version == "3.8" and extra == "quality"
+Requires-Dist: mypy==1.15.0; python_version >= "3.9" and extra == "quality"
+Provides-Extra: tensorflow
+Requires-Dist: tensorflow; extra == "tensorflow"
+Requires-Dist: pydot; extra == "tensorflow"
+Requires-Dist: graphviz; extra == "tensorflow"
+Provides-Extra: tensorflow-testing
+Requires-Dist: tensorflow; extra == "tensorflow-testing"
+Requires-Dist: keras<3.0; extra == "tensorflow-testing"
+Provides-Extra: testing
+Requires-Dist: InquirerPy==0.3.4; extra == "testing"
+Requires-Dist: aiohttp; extra == "testing"
+Requires-Dist: authlib>=1.3.2; extra == "testing"
+Requires-Dist: fastapi; extra == "testing"
+Requires-Dist: httpx; extra == "testing"
+Requires-Dist: itsdangerous; extra == "testing"
+Requires-Dist: jedi; extra == "testing"
+Requires-Dist: Jinja2; extra == "testing"
+Requires-Dist: pytest<8.2.2,>=8.1.1; extra == "testing"
+Requires-Dist: pytest-cov; extra == "testing"
+Requires-Dist: pytest-env; extra == "testing"
+Requires-Dist: pytest-xdist; extra == "testing"
+Requires-Dist: pytest-vcr; extra == "testing"
+Requires-Dist: pytest-asyncio; extra == "testing"
+Requires-Dist: pytest-rerunfailures; extra == "testing"
+Requires-Dist: pytest-mock; extra == "testing"
+Requires-Dist: urllib3<2.0; extra == "testing"
+Requires-Dist: soundfile; extra == "testing"
+Requires-Dist: Pillow; extra == "testing"
+Requires-Dist: gradio>=4.0.0; extra == "testing"
+Requires-Dist: numpy; extra == "testing"
+Provides-Extra: torch
+Requires-Dist: torch; extra == "torch"
+Requires-Dist: safetensors[torch]; extra == "torch"
+Provides-Extra: typing
+Requires-Dist: typing-extensions>=4.8.0; extra == "typing"
+Requires-Dist: types-PyYAML; extra == "typing"
+Requires-Dist: types-requests; extra == "typing"
+Requires-Dist: types-simplejson; extra == "typing"
+Requires-Dist: types-toml; extra == "typing"
+Requires-Dist: types-tqdm; extra == "typing"
+Requires-Dist: types-urllib3; extra == "typing"
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://huggingface.co/datasets/huggingface/documentation-images/raw/main/huggingface_hub-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://huggingface.co/datasets/huggingface/documentation-images/raw/main/huggingface_hub.svg">
+    <img alt="huggingface_hub library logo" src="https://huggingface.co/datasets/huggingface/documentation-images/raw/main/huggingface_hub.svg" width="352" height="59" style="max-width: 100%;">
+  </picture>
+  <br/>
+  <br/>
+</p> 
+
+<p align="center">
+    <i>The official Python client for the Huggingface Hub.</i>
+</p>
+
+<p align="center">
+    <a href="https://huggingface.co/docs/huggingface_hub/en/index"><img alt="Documentation" src="https://img.shields.io/website/http/huggingface.co/docs/huggingface_hub/index.svg?down_color=red&down_message=offline&up_message=online&label=doc"></a>
+    <a href="https://github.com/huggingface/huggingface_hub/releases"><img alt="GitHub release" src="https://img.shields.io/github/release/huggingface/huggingface_hub.svg"></a>
+    <a href="https://github.com/huggingface/huggingface_hub"><img alt="PyPi version" src="https://img.shields.io/pypi/pyversions/huggingface_hub.svg"></a>
+    <a href="https://pypi.org/project/huggingface-hub"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/huggingface_hub"></a>
+    <a href="https://codecov.io/gh/huggingface/huggingface_hub"><img alt="Code coverage" src="https://codecov.io/gh/huggingface/huggingface_hub/branch/main/graph/badge.svg?token=RXP95LE2XL"></a>
+</p>
+
+<h4 align="center">
+    <p>
+        <b>English</b> |
+        <a href="https://github.com/huggingface/huggingface_hub/blob/main/i18n/README_de.md">Deutsch</a> |
+        <a href="https://github.com/huggingface/huggingface_hub/blob/main/i18n/README_hi.md">हिंदी</a> |
+        <a href="https://github.com/huggingface/huggingface_hub/blob/main/i18n/README_ko.md">한국어</a> |
+        <a href="https://github.com/huggingface/huggingface_hub/blob/main/i18n/README_cn.md">中文（简体）</a>
+    <p>
+</h4>
+
+---
+
+**Documentation**: <a href="https://hf.co/docs/huggingface_hub" target="_blank">https://hf.co/docs/huggingface_hub</a>
+
+**Source Code**: <a href="https://github.com/huggingface/huggingface_hub" target="_blank">https://github.com/huggingface/huggingface_hub</a>
+
+---
+
+## Welcome to the huggingface_hub library
+
+The `huggingface_hub` library allows you to interact with the [Hugging Face Hub](https://huggingface.co/), a platform democratizing open-source Machine Learning for creators and collaborators. Discover pre-trained models and datasets for your projects or play with the thousands of machine learning apps hosted on the Hub. You can also create and share your own models, datasets and demos with the community. The `huggingface_hub` library provides a simple way to do all these things with Python.
+
+## Key features
+
+- [Download files](https://huggingface.co/docs/huggingface_hub/en/guides/download) from the Hub.
+- [Upload files](https://huggingface.co/docs/huggingface_hub/en/guides/upload) to the Hub.
+- [Manage your repositories](https://huggingface.co/docs/huggingface_hub/en/guides/repository).
+- [Run Inference](https://huggingface.co/docs/huggingface_hub/en/guides/inference) on deployed models.
+- [Search](https://huggingface.co/docs/huggingface_hub/en/guides/search) for models, datasets and Spaces.
+- [Share Model Cards](https://huggingface.co/docs/huggingface_hub/en/guides/model-cards) to document your models.
+- [Engage with the community](https://huggingface.co/docs/huggingface_hub/en/guides/community) through PRs and comments.
+
+## Installation
+
+Install the `huggingface_hub` package with [pip](https://pypi.org/project/huggingface-hub/):
+
+```bash
+pip install huggingface_hub
+```
+
+If you prefer, you can also install it with [conda](https://huggingface.co/docs/huggingface_hub/en/installation#install-with-conda).
+
+In order to keep the package minimal by default, `huggingface_hub` comes with optional dependencies useful for some use cases. For example, if you want have a complete experience for Inference, run:
+
+```bash
+pip install huggingface_hub[inference]
+```
+
+To learn more installation and optional dependencies, check out the [installation guide](https://huggingface.co/docs/huggingface_hub/en/installation).
+
+## Quick start
+
+### Download files
+
+Download a single file
+
+```py
+from huggingface_hub import hf_hub_download
+
+hf_hub_download(repo_id="tiiuae/falcon-7b-instruct", filename="config.json")
+```
+
+Or an entire repository
+
+```py
+from huggingface_hub import snapshot_download
+
+snapshot_download("stabilityai/stable-diffusion-2-1")
+```
+
+Files will be downloaded in a local cache folder. More details in [this guide](https://huggingface.co/docs/huggingface_hub/en/guides/manage-cache).
+
+### Login
+
+The Hugging Face Hub uses tokens to authenticate applications (see [docs](https://huggingface.co/docs/hub/security-tokens)). To log in your machine, run the following CLI:
+
+```bash
+huggingface-cli login
+# or using an environment variable
+huggingface-cli login --token $HUGGINGFACE_TOKEN
+```
+
+### Create a repository
+
+```py
+from huggingface_hub import create_repo
+
+create_repo(repo_id="super-cool-model")
+```
+
+### Upload files
+
+Upload a single file
+
+```py
+from huggingface_hub import upload_file
+
+upload_file(
+    path_or_fileobj="/home/lysandre/dummy-test/README.md",
+    path_in_repo="README.md",
+    repo_id="lysandre/test-model",
+)
+```
+
+Or an entire folder
+
+```py
+from huggingface_hub import upload_folder
+
+upload_folder(
+    folder_path="/path/to/local/space",
+    repo_id="username/my-cool-space",
+    repo_type="space",
+)
+```
+
+For details in the [upload guide](https://huggingface.co/docs/huggingface_hub/en/guides/upload).
+
+## Integrating to the Hub.
+
+We're partnering with cool open source ML libraries to provide free model hosting and versioning. You can find the existing integrations [here](https://huggingface.co/docs/hub/libraries).
+
+The advantages are:
+
+- Free model or dataset hosting for libraries and their users.
+- Built-in file versioning, even with very large files, thanks to a git-based approach.
+- Serverless inference API for all models publicly available.
+- In-browser widgets to play with the uploaded models.
+- Anyone can upload a new model for your library, they just need to add the corresponding tag for the model to be discoverable.
+- Fast downloads! We use Cloudfront (a CDN) to geo-replicate downloads so they're blazing fast from anywhere on the globe.
+- Usage stats and more features to come.
+
+If you would like to integrate your library, feel free to open an issue to begin the discussion. We wrote a [step-by-step guide](https://huggingface.co/docs/hub/adding-a-library) with ❤️ showing how to do this integration.
+
+## Contributions (feature requests, bugs, etc.) are super welcome 💙💚💛💜🧡❤️
+
+Everyone is welcome to contribute, and we value everybody's contribution. Code is not the only way to help the community.
+Answering questions, helping others, reaching out and improving the documentations are immensely valuable to the community.
+We wrote a [contribution guide](https://github.com/huggingface/huggingface_hub/blob/main/CONTRIBUTING.md) to summarize
+how to get started to contribute to this repository.
+
+

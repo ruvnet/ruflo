@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListSolFunctionInstances": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "functionInstances"
+    },
+    "ListSolFunctionPackages": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "functionPackages"
+    },
+    "ListSolNetworkInstances": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "networkInstances"
+    },
+    "ListSolNetworkOperations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "networkOperations"
+    },
+    "ListSolNetworkPackages": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "networkPackages"
+    }
+  }
+}

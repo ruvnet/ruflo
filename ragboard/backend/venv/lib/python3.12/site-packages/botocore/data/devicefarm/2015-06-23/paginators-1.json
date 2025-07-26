@@ -1,0 +1,110 @@
+{
+  "pagination": {
+    "ListArtifacts": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "artifacts"
+    },
+    "ListDevicePools": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "devicePools"
+    },
+    "ListDevices": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "devices"
+    },
+    "ListJobs": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "jobs"
+    },
+    "ListProjects": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "projects"
+    },
+    "ListRuns": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "runs"
+    },
+    "ListSamples": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "samples"
+    },
+    "ListSuites": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "suites"
+    },
+    "ListTests": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "tests"
+    },
+    "ListUniqueProblems": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "uniqueProblems"
+    },
+    "ListUploads": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "uploads"
+    },
+    "GetOfferingStatus": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": [
+        "current",
+        "nextPeriod"
+      ]
+    },
+    "ListOfferingTransactions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "offeringTransactions"
+    },
+    "ListOfferings": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "offerings"
+    },
+    "ListDeviceInstances": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "deviceInstances"
+    },
+    "ListInstanceProfiles": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "instanceProfiles"
+    },
+    "ListNetworkProfiles": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "networkProfiles"
+    },
+    "ListOfferingPromotions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "offeringPromotions"
+    },
+    "ListRemoteAccessSessions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "remoteAccessSessions"
+    },
+    "ListVPCEConfigurations": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "vpceConfigurations"
+    }
+  }
+}

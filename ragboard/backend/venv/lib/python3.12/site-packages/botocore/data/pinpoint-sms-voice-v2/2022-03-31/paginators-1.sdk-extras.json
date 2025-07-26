@@ -1,0 +1,55 @@
+{
+  "version": 1.0,
+  "merge": {
+    "pagination": {
+      "DescribeKeywords": {
+        "non_aggregate_keys": [
+          "OriginationIdentity",
+          "OriginationIdentityArn"
+        ]
+      },
+      "DescribeRegistrationFieldDefinitions": {
+        "non_aggregate_keys": [
+          "RegistrationType"
+        ]
+      },
+      "DescribeRegistrationFieldValues": {
+        "non_aggregate_keys": [
+          "RegistrationId",
+          "RegistrationArn",
+          "VersionNumber"
+        ]
+      },
+      "DescribeRegistrationSectionDefinitions": {
+        "non_aggregate_keys": [
+          "RegistrationType"
+        ]
+      },
+      "DescribeRegistrationVersions": {
+        "non_aggregate_keys": [
+          "RegistrationId",
+          "RegistrationArn"
+        ]
+      },
+      "DescribeOptedOutNumbers": {
+        "non_aggregate_keys": [
+          "OptOutListArn",
+          "OptOutListName"
+        ]
+      },
+      "ListPoolOriginationIdentities": {
+        "non_aggregate_keys": [
+          "PoolArn",
+          "PoolId"
+        ]
+      },
+      "ListRegistrationAssociations": {
+        "non_aggregate_keys": [
+          "RegistrationId",
+          "RegistrationArn",
+          "RegistrationType"
+        ]
+      }
+    }
+  }
+}

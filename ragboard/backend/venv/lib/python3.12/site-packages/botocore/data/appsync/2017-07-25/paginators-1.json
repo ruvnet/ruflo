@@ -1,0 +1,64 @@
+{
+  "pagination": {
+    "ListApiKeys": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "apiKeys"
+    },
+    "ListDataSources": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "dataSources"
+    },
+    "ListFunctions": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "functions"
+    },
+    "ListGraphqlApis": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "graphqlApis"
+    },
+    "ListResolvers": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "resolvers"
+    },
+    "ListResolversByFunction": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "resolvers"
+    },
+    "ListTypes": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "types"
+    },
+    "ListDomainNames": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "domainNameConfigs"
+    },
+    "ListSourceApiAssociations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "sourceApiAssociationSummaries"
+    },
+    "ListTypesByAssociation": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "types"
+    }
+  }
+}

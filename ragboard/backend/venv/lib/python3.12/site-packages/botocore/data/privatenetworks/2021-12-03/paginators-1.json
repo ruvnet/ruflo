@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListDeviceIdentifiers": {
+      "input_token": "startToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "deviceIdentifiers"
+    },
+    "ListNetworkResources": {
+      "input_token": "startToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "networkResources"
+    },
+    "ListNetworkSites": {
+      "input_token": "startToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "networkSites"
+    },
+    "ListNetworks": {
+      "input_token": "startToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "networks"
+    },
+    "ListOrders": {
+      "input_token": "startToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "orders"
+    }
+  }
+}

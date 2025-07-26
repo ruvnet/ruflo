@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListChannels": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "channels"
+    },
+    "ListStreamKeys": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "streamKeys"
+    },
+    "ListStreams": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "streams"
+    },
+    "ListPlaybackKeyPairs": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "keyPairs"
+    },
+    "ListRecordingConfigurations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "recordingConfigurations"
+    }
+  }
+}

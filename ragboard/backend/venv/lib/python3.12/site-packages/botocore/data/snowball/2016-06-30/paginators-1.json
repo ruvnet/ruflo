@@ -1,0 +1,40 @@
+{
+  "pagination": {
+    "ListJobs": {
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "result_key": "JobListEntries"
+    },
+    "DescribeAddresses": {
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "result_key": "Addresses"
+    },
+    "ListClusterJobs": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "JobListEntries"
+    },
+    "ListClusters": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ClusterListEntries"
+    },
+    "ListCompatibleImages": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "CompatibleImages"
+    },
+    "ListLongTermPricing": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "LongTermPricingEntries"
+    }
+  }
+}

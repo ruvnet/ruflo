@@ -1,0 +1,183 @@
+Metadata-Version: 2.1
+Name: boto3
+Version: 1.34.14
+Summary: The AWS SDK for Python
+Home-page: https://github.com/boto/boto3
+Author: Amazon Web Services
+License: Apache License 2.0
+Project-URL: Documentation, https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
+Project-URL: Source, https://github.com/boto/boto3
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Natural Language :: English
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >= 3.8
+License-File: LICENSE
+License-File: NOTICE
+Requires-Dist: botocore (<1.35.0,>=1.34.14)
+Requires-Dist: jmespath (<2.0.0,>=0.7.1)
+Requires-Dist: s3transfer (<0.11.0,>=0.10.0)
+Provides-Extra: crt
+Requires-Dist: botocore[crt] (<2.0a0,>=1.21.0) ; extra == 'crt'
+
+===============================
+Boto3 - The AWS SDK for Python
+===============================
+
+|Version| |Python| |License|
+
+Boto3 is the Amazon Web Services (AWS) Software Development Kit (SDK) for
+Python, which allows Python developers to write software that makes use
+of services like Amazon S3 and Amazon EC2. You can find the latest, most
+up to date, documentation at our `doc site`_, including a list of
+services that are supported.
+
+Boto3 is maintained and published by `Amazon Web Services`_.
+
+Boto (pronounced boh-toh) was named after the fresh water dolphin native to the Amazon river. The name was chosen by the author of the original Boto library, Mitch Garnaat, as a reference to the company.
+
+Notices
+-------
+
+On 2023-12-13, support for Python 3.7 ended for Boto3. This follows the
+Python Software Foundation `end of support <https://peps.python.org/pep-0537/#lifespan>`__
+for the runtime which occurred on 2023-06-27.
+For more information, see this `blog post <https://aws.amazon.com/blogs/developer/python-support-policy-updates-for-aws-sdks-and-tools/>`__.
+
+.. _boto: https://docs.pythonboto.org/
+.. _`doc site`: https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
+.. _`Amazon Web Services`: https://aws.amazon.com/what-is-aws/
+.. |Python| image:: https://img.shields.io/pypi/pyversions/boto3.svg?style=flat
+    :target: https://pypi.python.org/pypi/boto3/
+    :alt: Python Versions
+.. |Version| image:: http://img.shields.io/pypi/v/boto3.svg?style=flat
+    :target: https://pypi.python.org/pypi/boto3/
+    :alt: Package Version
+.. |License| image:: http://img.shields.io/pypi/l/boto3.svg?style=flat
+    :target: https://github.com/boto/boto3/blob/develop/LICENSE
+    :alt: License
+
+Getting Started
+---------------
+Assuming that you have a supported version of Python installed, you can first
+set up your environment with:
+
+.. code-block:: sh
+
+    $ python -m venv .venv
+    ...
+    $ . .venv/bin/activate
+
+Then, you can install boto3 from PyPI with:
+
+.. code-block:: sh
+
+    $ python -m pip install boto3
+
+or install from source with:
+
+.. code-block:: sh
+
+    $ git clone https://github.com/boto/boto3.git
+    $ cd boto3
+    $ python -m pip install -r requirements.txt
+    $ python -m pip install -e .
+
+
+Using Boto3
+~~~~~~~~~~~~~~
+After installing boto3
+
+Next, set up credentials (in e.g. ``~/.aws/credentials``):
+
+.. code-block:: ini
+
+    [default]
+    aws_access_key_id = YOUR_KEY
+    aws_secret_access_key = YOUR_SECRET
+
+Then, set up a default region (in e.g. ``~/.aws/config``):
+
+.. code-block:: ini
+
+   [default]
+   region=us-east-1
+
+Other credential configuration methods can be found `here <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html>`__
+
+Then, from a Python interpreter:
+
+.. code-block:: python
+
+    >>> import boto3
+    >>> s3 = boto3.resource('s3')
+    >>> for bucket in s3.buckets.all():
+            print(bucket.name)
+
+Running Tests
+~~~~~~~~~~~~~
+You can run tests in all supported Python versions using ``tox``. By default,
+it will run all of the unit and functional tests, but you can also specify your own
+``pytest`` options. Note that this requires that you have all supported
+versions of Python installed, otherwise you must pass ``-e`` or run the
+``pytest`` command directly:
+
+.. code-block:: sh
+
+    $ tox
+    $ tox -- unit/test_session.py
+    $ tox -e py26,py33 -- integration/
+
+You can also run individual tests with your default Python version:
+
+.. code-block:: sh
+
+    $ pytest tests/unit
+
+
+Getting Help
+------------
+
+We use GitHub issues for tracking bugs and feature requests and have limited
+bandwidth to address them. Please use these community resources for getting
+help:
+
+* Ask a question on `Stack Overflow <https://stackoverflow.com/>`__ and tag it with `boto3 <https://stackoverflow.com/questions/tagged/boto3>`__
+* Open a support ticket with `AWS Support <https://console.aws.amazon.com/support/home#/>`__
+* If it turns out that you may have found a bug, please `open an issue <https://github.com/boto/boto3/issues/new>`__
+
+
+Contributing
+------------
+
+We value feedback and contributions from our community. Whether it's a bug report, new feature, correction, or additional documentation, we welcome your issues and pull requests. Please read through this `CONTRIBUTING <https://github.com/boto/boto3/blob/develop/CONTRIBUTING.rst>`__ document before submitting any issues or pull requests to ensure we have all the necessary information to effectively respond to your contribution.
+
+
+Maintenance and Support for SDK Major Versions
+----------------------------------------------
+
+Boto3 was made generally available on 06/22/2015 and is currently in the full support phase of the availability life cycle.
+
+For information about maintenance and support for SDK major versions and their underlying dependencies, see the following in the AWS SDKs and Tools Shared Configuration and Credentials Reference Guide:
+
+* `AWS SDKs and Tools Maintenance Policy <https://docs.aws.amazon.com/sdkref/latest/guide/maint-policy.html>`__
+* `AWS SDKs and Tools Version Support Matrix <https://docs.aws.amazon.com/sdkref/latest/guide/version-support-matrix.html>`__
+
+
+More Resources
+--------------
+
+* `NOTICE <https://github.com/boto/boto3/blob/develop/NOTICE>`__
+* `Changelog <https://github.com/boto/boto3/blob/develop/CHANGELOG.rst>`__
+* `License <https://github.com/boto/boto3/blob/develop/LICENSE>`__
+
+

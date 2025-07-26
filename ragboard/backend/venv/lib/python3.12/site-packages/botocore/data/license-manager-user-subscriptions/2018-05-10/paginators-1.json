@@ -1,0 +1,28 @@
+{
+  "pagination": {
+    "ListIdentityProviders": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "IdentityProviderSummaries"
+    },
+    "ListInstances": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "InstanceSummaries"
+    },
+    "ListProductSubscriptions": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ProductUserSummaries"
+    },
+    "ListUserAssociations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "InstanceUserSummaries"
+    }
+  }
+}

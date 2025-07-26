@@ -1,0 +1,106 @@
+{
+  "pagination": {
+    "ListBackupJobs": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "BackupJobs"
+    },
+    "ListBackupPlanTemplates": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "BackupPlanTemplatesList"
+    },
+    "ListBackupPlanVersions": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "BackupPlanVersionsList"
+    },
+    "ListBackupPlans": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "BackupPlansList"
+    },
+    "ListBackupSelections": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "BackupSelectionsList"
+    },
+    "ListBackupVaults": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "BackupVaultList"
+    },
+    "ListCopyJobs": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "CopyJobs"
+    },
+    "ListProtectedResources": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Results"
+    },
+    "ListRecoveryPointsByBackupVault": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "RecoveryPoints"
+    },
+    "ListRecoveryPointsByResource": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "RecoveryPoints"
+    },
+    "ListRestoreJobs": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "RestoreJobs"
+    },
+    "ListLegalHolds": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "LegalHolds"
+    },
+    "ListRecoveryPointsByLegalHold": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "RecoveryPoints"
+    },
+    "ListProtectedResourcesByBackupVault": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Results"
+    },
+    "ListRestoreJobsByProtectedResource": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "RestoreJobs"
+    },
+    "ListRestoreTestingPlans": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "RestoreTestingPlans"
+    },
+    "ListRestoreTestingSelections": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "RestoreTestingSelections"
+    }
+  }
+}

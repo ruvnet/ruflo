@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "waiters": {
+    "CacheClusterAvailable": {
+      "delay": 30,
+      "operation": "DescribeCacheClusters",
+      "maxAttempts": 60,
+      "acceptors": [
+        {
+          "expected": "available",
+          "matcher": "pathAll",
+          "state": "success",
+          "argument": "CacheClusters[].CacheClusterStatus"
+        },
+        {
+          "expected": "deleted",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "CacheClusters[].CacheClusterStatus"
+        },
+        {
+          "expected": "deleting",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "CacheClusters[].CacheClusterStatus"
+        },
+        {
+          "expected": "incompatible-network",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "CacheClusters[].CacheClusterStatus"
+        },
+        {
+          "expected": "restore-failed",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "CacheClusters[].CacheClusterStatus"
+        }
+      ]
+    },
+    "CacheClusterDeleted": {
+      "delay": 30,
+      "operation": "DescribeCacheClusters",
+      "maxAttempts": 60,
+      "acceptors": [
+        {
+          "expected": "CacheClusterNotFound",
+          "matcher": "error",
+          "state": "success"
+        },
+        {
+          "expected": "creating",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "CacheClusters[].CacheClusterStatus"
+        },
+        {
+          "expected": "modifying",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "CacheClusters[].CacheClusterStatus"
+        },
+        {
+          "expected": "rebooting",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "CacheClusters[].CacheClusterStatus"
+        }
+      ]
+    },
+    "ReplicationGroupAvailable": {
+      "delay": 30,
+      "operation": "DescribeReplicationGroups",
+      "maxAttempts": 60,
+      "acceptors": [
+        {
+          "expected": "available",
+          "matcher": "pathAll",
+          "state": "success",
+          "argument": "ReplicationGroups[].Status"
+        },
+        {
+          "expected": "deleted",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "ReplicationGroups[].Status"
+        },
+        {
+          "expected": "deleting",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "ReplicationGroups[].Status"
+        },
+        {
+          "expected": "incompatible-network",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "ReplicationGroups[].Status"
+        },
+        {
+          "expected": "restore-failed",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "ReplicationGroups[].Status"
+        }
+      ]
+    },
+    "ReplicationGroupDeleted": {
+      "delay": 30,
+      "operation": "DescribeReplicationGroups",
+      "maxAttempts": 60,
+      "acceptors": [
+        {
+          "expected": "ReplicationGroupNotFoundFault",
+          "matcher": "error",
+          "state": "success"
+        },
+        {
+          "expected": "creating",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "ReplicationGroups[].Status"
+        },
+        {
+          "expected": "modifying",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "ReplicationGroups[].Status"
+        },
+        {
+          "expected": "rebooting",
+          "matcher": "pathAny",
+          "state": "failure",
+          "argument": "ReplicationGroups[].Status"
+        }
+      ]
+    }
+  }
+}

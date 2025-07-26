@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "waiters": {
+    "FindingRevealed": {
+      "description": "Wait until the sensitive data occurrences are ready.",
+      "delay": 2,
+      "maxAttempts": 60,
+      "operation": "GetSensitiveDataOccurrences",
+      "acceptors": [
+        {
+          "matcher": "path",
+          "argument": "status",
+          "state": "success",
+          "expected": "SUCCESS"
+        },
+        {
+          "matcher": "path",
+          "argument": "status",
+          "state": "success",
+          "expected": "ERROR"
+        }
+      ]
+    }
+  }
+}

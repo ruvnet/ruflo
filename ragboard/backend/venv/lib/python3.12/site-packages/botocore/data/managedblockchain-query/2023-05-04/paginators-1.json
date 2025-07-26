@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListTokenBalances": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "tokenBalances"
+    },
+    "ListTransactionEvents": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "events"
+    },
+    "ListTransactions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "transactions"
+    },
+    "ListAssetContracts": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "contracts"
+    },
+    "ListFilteredTransactionEvents": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "events"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+mmh3-5.1.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+mmh3-5.1.0.dist-info/LICENSE,sha256=TYW5OTbKaXxPyE8hQqR9uUeqWdvE58bi1m71LixmhlY,1074
+mmh3-5.1.0.dist-info/METADATA,sha256=TYQ_E05jt2CXIGH2I0Jp_3nz2W59oQXbHZaf6jBSYII,16198
+mmh3-5.1.0.dist-info/RECORD,,
+mmh3-5.1.0.dist-info/WHEEL,sha256=WFtUgumtZEg5oPeVziecKJ1CVstsivqFbgCXdlWOrXw,224
+mmh3-5.1.0.dist-info/top_level.txt,sha256=3Wxu1FBsOTbiKh0WIPJ8WVI1_uJJvsFAdmlxe6Rn-B8,5
+mmh3.cpython-312-x86_64-linux-gnu.so,sha256=XMfgkcH1xUbJcG_kGocRi8lK89xgqu3nq9VxkTCGERw,300208
+mmh3/__init__.pyi,sha256=_nuntEyJxBQisyy8uEkPBB_sazi6ly4nOSOYH8ZI_ww,2527
+mmh3/hashlib.h,sha256=gqO8pfKmjhWOu1a4V-ccbe4986J9RydBY6ibuPUOYqU,4730
+mmh3/mmh3module.c,sha256=Zctuom3G0bDlJwo3lBwSDy1poksfn2ZX_gVJTGARGMo,75295
+mmh3/murmurhash3.c,sha256=NNAFXyiGRig5uwEgAWtWbCjz7LDpl7lwuvBukcF3mwo,8373
+mmh3/murmurhash3.h,sha256=Y4dRMCJbY_WD7HB6Pre1Lsk1Sb14XCJllDMZqTMpsQo,7609
+mmh3/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0

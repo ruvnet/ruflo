@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Jina Embedding Function Schema",
+  "description": "Schema for the jina embedding function configuration",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "model_name": {
+      "type": "string",
+      "description": "Parameter model_name for the jina embedding function"
+    },
+    "api_key_env_var": {
+      "type": "string",
+      "description": "Parameter api_key_env_var for the jina embedding function"
+    },
+    "task": {
+      "type": "string",
+      "description": "Parameter task for the jina embedding function"
+    },
+    "late_chunking": {
+      "type": "boolean",
+      "description": "Parameter late_chunking for the jina embedding function"
+    },
+    "truncate": {
+      "type": "boolean",
+      "description": "Parameter truncate for the jina embedding function"
+    },
+    "dimensions": {
+      "type": "integer",
+      "description": "Parameter dimensions for the jina embedding function"
+    },
+    "embedding_type": {
+      "type": "string",
+      "description": "Parameter embedding_type for the jina embedding function"
+    },
+    "normalized": {
+      "type": "boolean",
+      "description": "Parameter normalized for the jina embedding function"
+    }
+  },
+  "required": [
+    "api_key_env_var",
+    "model_name"
+  ],
+  "additionalProperties": false
+}

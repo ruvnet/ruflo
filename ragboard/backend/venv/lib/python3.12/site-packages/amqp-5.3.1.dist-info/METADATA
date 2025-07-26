@@ -1,0 +1,239 @@
+Metadata-Version: 2.1
+Name: amqp
+Version: 5.3.1
+Summary: Low-level AMQP client for Python (fork of amqplib).
+Home-page: http://github.com/celery/py-amqp
+Author: Barry Pederson
+Author-email: auvipy@gmail.com
+Maintainer: Asif Saif Uddin, Matus Valo
+License: BSD
+Keywords: amqp rabbitmq cloudamqp messaging
+Platform: any
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Intended Audience :: Developers
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/x-rst
+License-File: LICENSE
+Requires-Dist: vine<6.0.0,>=5.0.0
+
+=====================================================================
+ Python AMQP 0.9.1 client library
+=====================================================================
+
+|build-status| |coverage| |license| |wheel| |pyversion| |pyimp|
+
+:Version: 5.3.1
+:Web: https://amqp.readthedocs.io/
+:Download: https://pypi.org/project/amqp/
+:Source: http://github.com/celery/py-amqp/
+:Keywords: amqp, rabbitmq
+
+About
+=====
+
+This is a fork of amqplib_ which was originally written by Barry Pederson.
+It is maintained by the Celery_ project, and used by `kombu`_ as a pure python
+alternative when `librabbitmq`_ is not available.
+
+This library should be API compatible with `librabbitmq`_.
+
+.. _amqplib: https://pypi.org/project/amqplib/
+.. _Celery: http://celeryproject.org/
+.. _kombu: https://kombu.readthedocs.io/
+.. _librabbitmq: https://pypi.org/project/librabbitmq/
+
+Differences from `amqplib`_
+===========================
+
+- Supports draining events from multiple channels (``Connection.drain_events``)
+- Support for timeouts
+- Channels are restored after channel error, instead of having to close the
+  connection.
+- Support for heartbeats
+
+    - ``Connection.heartbeat_tick(rate=2)`` must called at regular intervals
+      (half of the heartbeat value if rate is 2).
+    - Or some other scheme by using ``Connection.send_heartbeat``.
+- Supports RabbitMQ extensions:
+    - Consumer Cancel Notifications
+        - by default a cancel results in ``ChannelError`` being raised
+        - but not if a ``on_cancel`` callback is passed to ``basic_consume``.
+    - Publisher confirms
+        - ``Channel.confirm_select()`` enables publisher confirms.
+        - ``Channel.events['basic_ack'].append(my_callback)`` adds a callback
+          to be called when a message is confirmed. This callback is then
+          called with the signature ``(delivery_tag, multiple)``.
+    - Exchange-to-exchange bindings: ``exchange_bind`` / ``exchange_unbind``.
+        - ``Channel.confirm_select()`` enables publisher confirms.
+        - ``Channel.events['basic_ack'].append(my_callback)`` adds a callback
+          to be called when a message is confirmed. This callback is then
+          called with the signature ``(delivery_tag, multiple)``.
+    - Authentication Failure Notifications
+        Instead of just closing the connection abruptly on invalid
+        credentials, py-amqp will raise an ``AccessRefused`` error
+        when connected to rabbitmq-server 3.2.0 or greater.
+- Support for ``basic_return``
+- Uses AMQP 0-9-1 instead of 0-8.
+    - ``Channel.access_request`` and ``ticket`` arguments to methods
+      **removed**.
+    - Supports the ``arguments`` argument to ``basic_consume``.
+    - ``internal`` argument to ``exchange_declare`` removed.
+    - ``auto_delete`` argument to ``exchange_declare`` deprecated
+    - ``insist`` argument to ``Connection`` removed.
+    - ``Channel.alerts`` has been removed.
+    - Support for ``Channel.basic_recover_async``.
+    - ``Channel.basic_recover`` deprecated.
+- Exceptions renamed to have idiomatic names:
+    - ``AMQPException`` -> ``AMQPError``
+    - ``AMQPConnectionException`` -> ConnectionError``
+    - ``AMQPChannelException`` -> ChannelError``
+    - ``Connection.known_hosts`` removed.
+    - ``Connection`` no longer supports redirects.
+    - ``exchange`` argument to ``queue_bind`` can now be empty
+      to use the "default exchange".
+- Adds ``Connection.is_alive`` that tries to detect
+  whether the connection can still be used.
+- Adds ``Connection.connection_errors`` and ``.channel_errors``,
+  a list of recoverable errors.
+- Exposes the underlying socket as ``Connection.sock``.
+- Adds ``Channel.no_ack_consumers`` to keep track of consumer tags
+  that set the no_ack flag.
+- Slightly better at error recovery
+
+Quick overview
+==============
+
+Simple producer publishing messages to ``test`` queue using default exchange:
+
+.. code:: python
+
+    import amqp
+
+    with amqp.Connection('broker.example.com') as c:
+        ch = c.channel()
+        ch.basic_publish(amqp.Message('Hello World'), routing_key='test')
+
+Producer publishing to ``test_exchange`` exchange with publisher confirms enabled and using virtual_host ``test_vhost``:
+
+.. code:: python
+
+    import amqp
+
+    with amqp.Connection(
+        'broker.example.com', exchange='test_exchange',
+        confirm_publish=True, virtual_host='test_vhost'
+    ) as c:
+        ch = c.channel()
+        ch.basic_publish(amqp.Message('Hello World'), routing_key='test')
+
+Consumer with acknowledgments enabled:
+
+.. code:: python
+
+    import amqp
+
+    with amqp.Connection('broker.example.com') as c:
+        ch = c.channel()
+        def on_message(message):
+            print('Received message (delivery tag: {}): {}'.format(message.delivery_tag, message.body))
+            ch.basic_ack(message.delivery_tag)
+        ch.basic_consume(queue='test', callback=on_message)
+        while True:
+            c.drain_events()
+
+
+Consumer with acknowledgments disabled:
+
+.. code:: python
+
+    import amqp
+
+    with amqp.Connection('broker.example.com') as c:
+        ch = c.channel()
+        def on_message(message):
+            print('Received message (delivery tag: {}): {}'.format(message.delivery_tag, message.body))
+        ch.basic_consume(queue='test', callback=on_message, no_ack=True)
+        while True:
+            c.drain_events()
+
+Speedups
+========
+
+This library has **experimental** support of speedups. Speedups are implemented using Cython. To enable speedups, ``CELERY_ENABLE_SPEEDUPS`` environment variable must be set during building/installation.
+Currently speedups can be installed:
+
+1. using source package (using ``--no-binary`` switch):
+
+.. code:: shell
+
+    CELERY_ENABLE_SPEEDUPS=true pip install --no-binary :all: amqp
+
+
+2. building directly source code:
+
+.. code:: shell
+
+    CELERY_ENABLE_SPEEDUPS=true python setup.py install
+
+Further
+=======
+
+- Differences between AMQP 0.8 and 0.9.1
+
+    http://www.rabbitmq.com/amqp-0-8-to-0-9-1.html
+
+- AMQP 0.9.1 Quick Reference
+
+    http://www.rabbitmq.com/amqp-0-9-1-quickref.html
+
+- RabbitMQ Extensions
+
+    http://www.rabbitmq.com/extensions.html
+
+- For more information about AMQP, visit
+
+    http://www.amqp.org
+
+- For other Python client libraries see:
+
+    http://www.rabbitmq.com/devtools.html#python-dev
+
+.. |build-status| image:: https://github.com/celery/py-amqp/actions/workflows/ci.yaml/badge.svg
+    :alt: Build status
+    :target: https://github.com/celery/py-amqp/actions/workflows/ci.yaml
+
+.. |coverage| image:: https://codecov.io/github/celery/py-amqp/coverage.svg?branch=main
+    :target: https://codecov.io/github/celery/py-amqp?branch=main
+
+.. |license| image:: https://img.shields.io/pypi/l/amqp.svg
+    :alt: BSD License
+    :target: https://opensource.org/licenses/BSD-3-Clause
+
+.. |wheel| image:: https://img.shields.io/pypi/wheel/amqp.svg
+    :alt: Python AMQP can be installed via wheel
+    :target: https://pypi.org/project/amqp/
+
+.. |pyversion| image:: https://img.shields.io/pypi/pyversions/amqp.svg
+    :alt: Supported Python versions.
+    :target: https://pypi.org/project/amqp/
+
+.. |pyimp| image:: https://img.shields.io/pypi/implementation/amqp.svg
+    :alt: Support Python implementations.
+    :target: https://pypi.org/project/amqp/
+
+py-amqp as part of the Tidelift Subscription
+============================================
+
+The maintainers of py-amqp and thousands of other packages are working with Tidelift to deliver commercial support and maintenance for the open source dependencies you use to build your applications. Save time, reduce risk, and improve code health, while paying the maintainers of the exact dependencies you use. [Learn more.](https://tidelift.com/subscription/pkg/pypi-amqp?utm_source=pypi-amqp&utm_medium=referral&utm_campaign=readme&utm_term=repo)
+

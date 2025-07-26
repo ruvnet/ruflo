@@ -1,0 +1,16 @@
+{
+  "pagination": {
+    "ListDeviceEvents": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Events"
+    },
+    "ListDevices": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Devices"
+    }
+  }
+}

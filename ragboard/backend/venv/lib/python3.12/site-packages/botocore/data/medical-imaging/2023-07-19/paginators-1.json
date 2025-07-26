@@ -1,0 +1,28 @@
+{
+  "pagination": {
+    "ListDICOMImportJobs": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "jobSummaries"
+    },
+    "ListDatastores": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "datastoreSummaries"
+    },
+    "ListImageSetVersions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "imageSetPropertiesList"
+    },
+    "SearchImageSets": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "imageSetsMetadataSummaries"
+    }
+  }
+}

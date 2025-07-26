@@ -1,0 +1,22 @@
+{
+  "pagination": {
+    "ListRuleNamesByTarget": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "Limit",
+      "result_key": "RuleNames"
+    },
+    "ListRules": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "Limit",
+      "result_key": "Rules"
+    },
+    "ListTargetsByRule": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "Limit",
+      "result_key": "Targets"
+    }
+  }
+}

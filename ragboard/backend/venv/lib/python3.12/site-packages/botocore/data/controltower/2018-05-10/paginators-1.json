@@ -1,0 +1,40 @@
+{
+  "pagination": {
+    "ListEnabledControls": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "enabledControls"
+    },
+    "ListLandingZones": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "landingZones"
+    },
+    "ListBaselines": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "baselines"
+    },
+    "ListEnabledBaselines": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "enabledBaselines"
+    },
+    "ListControlOperations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "controlOperations"
+    },
+    "ListLandingZoneOperations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "landingZoneOperations"
+    }
+  }
+}

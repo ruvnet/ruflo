@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "DescribeRecommendationExportJobs": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "recommendationExportJobs"
+    },
+    "GetEnrollmentStatusesForOrganization": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "accountEnrollmentStatuses"
+    },
+    "GetLambdaFunctionRecommendations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "lambdaFunctionRecommendations"
+    },
+    "GetRecommendationPreferences": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "recommendationPreferencesDetails"
+    },
+    "GetRecommendationSummaries": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "recommendationSummaries"
+    }
+  }
+}

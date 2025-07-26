@@ -1,0 +1,12 @@
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions = usr_cert
+
+[req_distinguished_name]
+CN = localhost
+
+[usr_cert]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost

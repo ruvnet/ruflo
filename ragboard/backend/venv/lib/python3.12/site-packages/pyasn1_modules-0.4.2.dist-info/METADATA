@@ -1,0 +1,73 @@
+Metadata-Version: 2.4
+Name: pyasn1_modules
+Version: 0.4.2
+Summary: A collection of ASN.1-based protocols modules
+Home-page: https://github.com/pyasn1/pyasn1-modules
+Author: Ilya Etingof
+Author-email: etingof@gmail.com
+Maintainer: pyasn1 maintenance organization
+Maintainer-email: Christian Heimes <christian@python.org>
+License: BSD
+Project-URL: Source, https://github.com/pyasn1/pyasn1-modules
+Project-URL: Issues, https://github.com/pyasn1/pyasn1-modules/issues
+Project-URL: Changelog, https://github.com/pyasn1/pyasn1-modules/blob/master/CHANGES.txt
+Platform: any
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Education
+Classifier: Intended Audience :: Information Technology
+Classifier: Intended Audience :: System Administrators
+Classifier: Intended Audience :: Telecommunications Industry
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: Topic :: Communications
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+Requires-Dist: pyasn1<0.7.0,>=0.6.1
+Dynamic: license-file
+
+
+ASN.1 modules for Python
+------------------------
+[![PyPI](https://img.shields.io/pypi/v/pyasn1-modules.svg?maxAge=2592000)](https://pypi.org/project/pyasn1-modules)
+[![Python Versions](https://img.shields.io/pypi/pyversions/pyasn1-modules.svg)](https://pypi.org/project/pyasn1-modules/)
+[![Build status](https://github.com/pyasn1/pyasn1-modules/actions/workflows/main.yml/badge.svg)](https://github.com/pyasn1/pyasn1-modules/actions/workflows/main.yml)
+[![Coverage Status](https://img.shields.io/codecov/c/github/pyasn1/pyasn1-modules.svg)](https://codecov.io/github/pyasn1/pyasn1-modules)
+[![GitHub license](https://img.shields.io/badge/license-BSD-blue.svg)](https://raw.githubusercontent.com/pyasn1/pyasn1-modules/master/LICENSE.txt)
+
+The `pyasn1-modules` package contains a collection of
+[ASN.1](https://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-X.208-198811-W!!PDF-E&type=items)
+data structures expressed as Python classes based on [pyasn1](https://github.com/pyasn1/pyasn1)
+data model.
+
+If ASN.1 module you need is not present in this collection, try using
+[Asn1ate](https://github.com/kimgr/asn1ate) tool that compiles ASN.1 documents
+into pyasn1 code.
+
+**NOTE:** The package is now maintained by *Christian Heimes* and
+*Simon Pichugin* in project https://github.com/pyasn1/pyasn1-modules.
+
+Feedback
+--------
+
+If something does not work as expected, 
+[open an issue](https://github.com/pyasn1/pyasn1-modules/issues) at GitHub
+or post your question [on Stack Overflow](https://stackoverflow.com/questions/ask)
+ 
+New modules contributions are welcome via GitHub pull requests.
+
+Copyright (c) 2005-2020, [Ilya Etingof](mailto:etingof@gmail.com).
+All rights reserved.

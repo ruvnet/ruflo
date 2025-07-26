@@ -1,0 +1,15 @@
+[opentelemetry_context]
+contextvars_context = opentelemetry.context.contextvars_context:ContextVarsRuntimeContext
+
+[opentelemetry_environment_variables]
+api = opentelemetry.environment_variables
+
+[opentelemetry_meter_provider]
+default_meter_provider = opentelemetry.metrics:NoOpMeterProvider
+
+[opentelemetry_propagator]
+baggage = opentelemetry.baggage.propagation:W3CBaggagePropagator
+tracecontext = opentelemetry.trace.propagation.tracecontext:TraceContextTextMapPropagator
+
+[opentelemetry_tracer_provider]
+default_tracer_provider = opentelemetry.trace:NoOpTracerProvider

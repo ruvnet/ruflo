@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListAssociatedRoute53HealthChecks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "HealthCheckIds"
+    },
+    "ListClusters": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Clusters"
+    },
+    "ListControlPanels": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ControlPanels"
+    },
+    "ListRoutingControls": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "RoutingControls"
+    },
+    "ListSafetyRules": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "SafetyRules"
+    }
+  }
+}

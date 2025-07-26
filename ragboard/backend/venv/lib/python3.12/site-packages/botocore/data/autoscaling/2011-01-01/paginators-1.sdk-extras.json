@@ -1,0 +1,12 @@
+{
+  "version": 1.0,
+  "merge": {
+    "pagination": {
+      "DescribeWarmPool": {
+        "non_aggregate_keys": [
+          "WarmPoolConfiguration"
+        ]
+      }
+    }
+  }
+}

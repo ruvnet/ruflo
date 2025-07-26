@@ -1,0 +1,69 @@
+{
+  "pagination": {
+    "BatchGetTraces": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Traces",
+      "non_aggregate_keys": [
+        "UnprocessedTraceIds"
+      ]
+    },
+    "GetServiceGraph": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Services",
+      "non_aggregate_keys": [
+        "StartTime",
+        "EndTime",
+        "ContainsOldGroupVersions"
+      ]
+    },
+    "GetTraceGraph": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Services"
+    },
+    "GetTraceSummaries": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "TraceSummaries",
+      "non_aggregate_keys": [
+        "TracesProcessedCount",
+        "ApproximateTime"
+      ]
+    },
+    "GetGroups": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Groups"
+    },
+    "GetSamplingRules": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "SamplingRuleRecords"
+    },
+    "GetSamplingStatisticSummaries": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "SamplingStatisticSummaries"
+    },
+    "GetTimeSeriesServiceStatistics": {
+      "input_token": "NextToken",
+      "non_aggregate_keys": [
+        "ContainsOldGroupVersions"
+      ],
+      "output_token": "NextToken",
+      "result_key": "TimeSeriesServiceStatistics"
+    },
+    "ListResourcePolicies": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "ResourcePolicies"
+    },
+    "ListTagsForResource": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Tags"
+    }
+  }
+}

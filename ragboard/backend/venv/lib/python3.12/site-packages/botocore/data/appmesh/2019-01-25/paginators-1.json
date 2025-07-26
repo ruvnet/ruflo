@@ -1,0 +1,52 @@
+{
+  "pagination": {
+    "ListMeshes": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "meshes"
+    },
+    "ListRoutes": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "routes"
+    },
+    "ListVirtualNodes": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "virtualNodes"
+    },
+    "ListVirtualRouters": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "virtualRouters"
+    },
+    "ListVirtualServices": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "virtualServices"
+    },
+    "ListTagsForResource": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "tags"
+    },
+    "ListGatewayRoutes": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "gatewayRoutes"
+    },
+    "ListVirtualGateways": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "virtualGateways"
+    }
+  }
+}

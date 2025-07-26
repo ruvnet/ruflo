@@ -1,0 +1,13 @@
+{
+  "version": 1.0,
+  "merge": {
+    "pagination": {
+      "GetNetworkInsightsAccessScopeAnalysisFindings": {
+        "non_aggregate_keys": [
+          "AnalysisStatus",
+          "NetworkInsightsAccessScopeAnalysisId"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Google PaLM Embedding Function Schema",
+  "description": "Schema for the Google PaLM embedding function configuration",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "model_name": {
+      "type": "string",
+      "description": "The name of the model to use for text embeddings"
+    },
+    "api_key_env_var": {
+      "type": "string",
+      "description": "Environment variable name that contains your API key for the Google PaLM API"
+    }
+  },
+  "required": [
+    "api_key_env_var",
+    "model_name"
+  ],
+  "additionalProperties": false
+}

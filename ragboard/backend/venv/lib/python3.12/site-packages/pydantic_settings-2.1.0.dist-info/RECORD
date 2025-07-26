@@ -1,0 +1,17 @@
+pydantic_settings-2.1.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+pydantic_settings-2.1.0.dist-info/METADATA,sha256=weItgAVplEi-1bMbNmn5_-JA9eN6TFZuLQB9hPhk9Ag,2931
+pydantic_settings-2.1.0.dist-info/RECORD,,
+pydantic_settings-2.1.0.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+pydantic_settings-2.1.0.dist-info/WHEEL,sha256=9QBuHhg6FNW7lppboF2vKVbCGTVzsFykgRQjjlajrhA,87
+pydantic_settings-2.1.0.dist-info/licenses/LICENSE,sha256=6zVadT4CA0bTPYO_l2kTW4n8YQVorFMaAcKVvO5_2Zg,1103
+pydantic_settings/__init__.py,sha256=h0HRyW_I6s0YYFIB-qx8gNZOtDI8vCbXnwPbp4BqwzE,482
+pydantic_settings/__pycache__/__init__.cpython-312.pyc,,
+pydantic_settings/__pycache__/main.cpython-312.pyc,,
+pydantic_settings/__pycache__/sources.cpython-312.pyc,,
+pydantic_settings/__pycache__/utils.cpython-312.pyc,,
+pydantic_settings/__pycache__/version.cpython-312.pyc,,
+pydantic_settings/main.py,sha256=DPJPyjM9g7CgaB8-zuoydot1iYVuLOb05rJZUXDt1-o,7178
+pydantic_settings/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+pydantic_settings/sources.py,sha256=fHJdp-zCGae4-X8JyDmPS8eYsHJtMET_yIS5NsWTC3Y,24707
+pydantic_settings/utils.py,sha256=nomYSaFO_IegfWSL9KJ8SAtLZgyhcruLgE3dTHwSmgo,557
+pydantic_settings/version.py,sha256=s5F39ikwvanccisuElhg0gEoVBisSR9dXR281TnsnzQ,18

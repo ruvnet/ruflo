@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Amazon Bedrock Embedding Function Schema",
+  "description": "Schema for the Amazon Bedrock embedding function configuration",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "session_args": {
+      "type": "object",
+      "description": "The arguments to pass to the boto3 session"
+    },
+    "model_name": {
+      "type": "string",
+      "description": "The name of the model to use for embeddings"
+    },
+    "kwargs": {
+      "type": "object",
+      "description": "Additional arguments to pass to the Amazon Bedrock client"
+    }
+  },
+  "required": [
+    "session_args",
+    "model_name",
+    "kwargs"
+  ],
+  "additionalProperties": false
+}

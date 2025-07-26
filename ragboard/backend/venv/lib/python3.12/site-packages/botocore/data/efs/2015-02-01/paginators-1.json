@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "DescribeFileSystems": {
+      "input_token": "Marker",
+      "output_token": "NextMarker",
+      "limit_key": "MaxItems",
+      "result_key": "FileSystems"
+    },
+    "DescribeMountTargets": {
+      "input_token": "Marker",
+      "output_token": "NextMarker",
+      "limit_key": "MaxItems",
+      "result_key": "MountTargets"
+    },
+    "DescribeTags": {
+      "input_token": "Marker",
+      "output_token": "NextMarker",
+      "limit_key": "MaxItems",
+      "result_key": "Tags"
+    },
+    "DescribeAccessPoints": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "AccessPoints"
+    },
+    "DescribeReplicationConfigurations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Replications"
+    }
+  }
+}

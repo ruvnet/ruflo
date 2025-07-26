@@ -1,0 +1,64 @@
+{
+  "pagination": {
+    "ListCollections": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": [
+        "CollectionIds",
+        "FaceModelVersions"
+      ]
+    },
+    "ListFaces": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Faces",
+      "non_aggregate_keys": [
+        "FaceModelVersion"
+      ]
+    },
+    "ListStreamProcessors": {
+      "result_key": "StreamProcessors",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "DescribeProjectVersions": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ProjectVersionDescriptions"
+    },
+    "DescribeProjects": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ProjectDescriptions"
+    },
+    "ListDatasetEntries": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "DatasetEntries"
+    },
+    "ListDatasetLabels": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "DatasetLabelDescriptions"
+    },
+    "ListProjectPolicies": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ProjectPolicies"
+    },
+    "ListUsers": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Users"
+    }
+  }
+}

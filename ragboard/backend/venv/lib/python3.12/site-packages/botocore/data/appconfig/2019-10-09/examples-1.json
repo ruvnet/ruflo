@@ -1,0 +1,720 @@
+{
+  "version": "1.0",
+  "examples": {
+    "CreateApplication": [
+      {
+        "input": {
+          "Description": "An application used for creating an example.",
+          "Name": "example-application"
+        },
+        "output": {
+          "Description": "An application used for creating an example.",
+          "Id": "339ohji",
+          "Name": "example-application"
+        },
+        "comments": {
+        },
+        "description": "The following create-application example creates an application in AWS AppConfig.",
+        "id": "to-create-an-application-1632264511615",
+        "title": "To create an application"
+      }
+    ],
+    "CreateConfigurationProfile": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "LocationUri": "ssm-parameter://Example-Parameter",
+          "Name": "Example-Configuration-Profile",
+          "RetrievalRoleArn": "arn:aws:iam::111122223333:role/Example-App-Config-Role"
+        },
+        "output": {
+          "ApplicationId": "339ohji",
+          "Id": "ur8hx2f",
+          "LocationUri": "ssm-parameter://Example-Parameter",
+          "Name": "Example-Configuration-Profile",
+          "RetrievalRoleArn": "arn:aws:iam::111122223333:role/Example-App-Config-Role"
+        },
+        "comments": {
+        },
+        "description": "The following create-configuration-profile example creates a configuration profile using a configuration stored in Parameter Store, a capability of Systems Manager.",
+        "id": "to-create-a-configuration-profile-1632264580336",
+        "title": "To create a configuration profile"
+      }
+    ],
+    "CreateDeploymentStrategy": [
+      {
+        "input": {
+          "DeploymentDurationInMinutes": 15,
+          "GrowthFactor": 25,
+          "Name": "Example-Deployment",
+          "ReplicateTo": "SSM_DOCUMENT"
+        },
+        "output": {
+          "DeploymentDurationInMinutes": 15,
+          "FinalBakeTimeInMinutes": 0,
+          "GrowthFactor": 25,
+          "GrowthType": "LINEAR",
+          "Id": "1225qzk",
+          "Name": "Example-Deployment",
+          "ReplicateTo": "SSM_DOCUMENT"
+        },
+        "comments": {
+        },
+        "description": "The following create-deployment-strategy example creates a deployment strategy called Example-Deployment that takes 15 minutes and deploys the configuration to 25% of the application at a time. The strategy is also copied to an SSM Document.",
+        "id": "to-create-a-deployment-strategy-1632264783812",
+        "title": "To create a deployment strategy"
+      }
+    ],
+    "CreateEnvironment": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "Name": "Example-Environment"
+        },
+        "output": {
+          "ApplicationId": "339ohji",
+          "Id": "54j1r29",
+          "Name": "Example-Environment",
+          "State": "READY_FOR_DEPLOYMENT"
+        },
+        "comments": {
+        },
+        "description": "The following create-environment example creates an AWS AppConfig environment named Example-Environment using the application you created using create-application",
+        "id": "to-create-an-environment-1632265124975",
+        "title": "To create an environment"
+      }
+    ],
+    "CreateHostedConfigurationVersion": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "ConfigurationProfileId": "ur8hx2f",
+          "Content": "eyAiTmFtZSI6ICJFeGFtcGxlQXBwbGljYXRpb24iLCAiSWQiOiBFeGFtcGxlSUQsICJSYW5rIjogNyB9",
+          "ContentType": "text",
+          "LatestVersionNumber": 1
+        },
+        "output": {
+          "ApplicationId": "339ohji",
+          "ConfigurationProfileId": "ur8hx2f",
+          "ContentType": "text",
+          "VersionNumber": 1
+        },
+        "comments": {
+        },
+        "description": "The following create-hosted-configuration-version example creates a new configuration in the AWS AppConfig configuration store.",
+        "id": "to-create-a-hosted-configuration-version-1632265196980",
+        "title": "To create a hosted configuration version"
+      }
+    ],
+    "DeleteApplication": [
+      {
+        "input": {
+          "ApplicationId": "339ohji"
+        },
+        "comments": {
+        },
+        "description": "The following delete-application example deletes the specified application. \n",
+        "id": "to-delete-an-application-1632265343951",
+        "title": "To delete an application"
+      }
+    ],
+    "DeleteConfigurationProfile": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "ConfigurationProfileId": "ur8hx2f"
+        },
+        "comments": {
+        },
+        "description": "The following delete-configuration-profile example deletes the specified configuration profile.",
+        "id": "to-delete-a-configuration-profile-1632265401308",
+        "title": "To delete a configuration profile"
+      }
+    ],
+    "DeleteDeploymentStrategy": [
+      {
+        "input": {
+          "DeploymentStrategyId": "1225qzk"
+        },
+        "comments": {
+        },
+        "description": "The following delete-deployment-strategy example deletes the specified deployment strategy.",
+        "id": "to-delete-a-deployment-strategy-1632265473708",
+        "title": "To delete a deployment strategy"
+      }
+    ],
+    "DeleteEnvironment": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "EnvironmentId": "54j1r29"
+        },
+        "comments": {
+        },
+        "description": "The following delete-environment example deletes the specified application environment.",
+        "id": "to-delete-an-environment-1632265641044",
+        "title": "To delete an environment"
+      }
+    ],
+    "DeleteHostedConfigurationVersion": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "ConfigurationProfileId": "ur8hx2f",
+          "VersionNumber": 1
+        },
+        "comments": {
+        },
+        "description": "The following delete-hosted-configuration-version example deletes a configuration version hosted in the AWS AppConfig configuration store.",
+        "id": "to-delete-a-hosted-configuration-version-1632265720740",
+        "title": "To delete a hosted configuration version"
+      }
+    ],
+    "GetApplication": [
+      {
+        "input": {
+          "ApplicationId": "339ohji"
+        },
+        "output": {
+          "Id": "339ohji",
+          "Name": "example-application"
+        },
+        "comments": {
+        },
+        "description": "The following get-application example lists the details of the specified application.",
+        "id": "to-list-details-of-an-application-1632265864702",
+        "title": "To list details of an application"
+      }
+    ],
+    "GetConfiguration": [
+      {
+        "input": {
+          "Application": "example-application",
+          "ClientId": "example-id",
+          "Configuration": "Example-Configuration-Profile",
+          "Environment": "Example-Environment"
+        },
+        "output": {
+          "ConfigurationVersion": "1",
+          "ContentType": "application/octet-stream"
+        },
+        "comments": {
+        },
+        "description": "The following get-configuration example returns the configuration details of the example application. On subsequent calls to get-configuration, use the client-configuration-version parameter to only update the configuration of your application if the version has changed. Only updating the configuration when the version has changed avoids excess charges incurred by calling get-configuration.",
+        "id": "to-retrieve-configuration-details-1632265954314",
+        "title": "To retrieve configuration details"
+      }
+    ],
+    "GetConfigurationProfile": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "ConfigurationProfileId": "ur8hx2f"
+        },
+        "output": {
+          "ApplicationId": "339ohji",
+          "Id": "ur8hx2f",
+          "LocationUri": "ssm-parameter://Example-Parameter",
+          "Name": "Example-Configuration-Profile",
+          "RetrievalRoleArn": "arn:aws:iam::111122223333:role/Example-App-Config-Role"
+        },
+        "comments": {
+        },
+        "description": "The following get-configuration-profile example returns the details of the specified configuration profile.",
+        "id": "to-retrieve-configuration-profile-details-1632266081013",
+        "title": "To retrieve configuration profile details"
+      }
+    ],
+    "GetDeployment": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "DeploymentNumber": 1,
+          "EnvironmentId": "54j1r29"
+        },
+        "output": {
+          "ApplicationId": "339ohji",
+          "CompletedAt": "2021-09-17T21:59:03.888000+00:00",
+          "ConfigurationLocationUri": "ssm-parameter://Example-Parameter",
+          "ConfigurationName": "Example-Configuration-Profile",
+          "ConfigurationProfileId": "ur8hx2f",
+          "ConfigurationVersion": "1",
+          "DeploymentDurationInMinutes": 15,
+          "DeploymentNumber": 1,
+          "DeploymentStrategyId": "1225qzk",
+          "EnvironmentId": "54j1r29",
+          "EventLog": [
+            {
+              "Description": "Deployment completed",
+              "EventType": "DEPLOYMENT_COMPLETED",
+              "OccurredAt": "2021-09-17T21:59:03.888000+00:00",
+              "TriggeredBy": "APPCONFIG"
+            },
+            {
+              "Description": "Deployment bake time started",
+              "EventType": "BAKE_TIME_STARTED",
+              "OccurredAt": "2021-09-17T21:58:57.722000+00:00",
+              "TriggeredBy": "APPCONFIG"
+            },
+            {
+              "Description": "Configuration available to 100.00% of clients",
+              "EventType": "PERCENTAGE_UPDATED",
+              "OccurredAt": "2021-09-17T21:55:56.816000+00:00",
+              "TriggeredBy": "APPCONFIG"
+            },
+            {
+              "Description": "Configuration available to 75.00% of clients",
+              "EventType": "PERCENTAGE_UPDATED",
+              "OccurredAt": "2021-09-17T21:52:56.567000+00:00",
+              "TriggeredBy": "APPCONFIG"
+            },
+            {
+              "Description": "Configuration available to 50.00% of clients",
+              "EventType": "PERCENTAGE_UPDATED",
+              "OccurredAt": "2021-09-17T21:49:55.737000+00:00",
+              "TriggeredBy": "APPCONFIG"
+            },
+            {
+              "Description": "Configuration available to 25.00% of clients",
+              "EventType": "PERCENTAGE_UPDATED",
+              "OccurredAt": "2021-09-17T21:46:55.187000+00:00",
+              "TriggeredBy": "APPCONFIG"
+            },
+            {
+              "Description": "Deployment started",
+              "EventType": "DEPLOYMENT_STARTED",
+              "OccurredAt": "2021-09-17T21:43:54.205000+00:00",
+              "TriggeredBy": "USER"
+            }
+          ],
+          "FinalBakeTimeInMinutes": 0,
+          "GrowthFactor": 25,
+          "GrowthType": "LINEAR",
+          "PercentageComplete": 100,
+          "StartedAt": "2021-09-17T21:43:54.205000+00:00",
+          "State": "COMPLETE"
+        },
+        "comments": {
+        },
+        "description": "The following get-deployment example lists details of the deployment to the application in the specified environment and deployment.",
+        "id": "to-retrieve-deployment-details-1633976766883",
+        "title": "To retrieve deployment details"
+      }
+    ],
+    "GetDeploymentStrategy": [
+      {
+        "input": {
+          "DeploymentStrategyId": "1225qzk"
+        },
+        "output": {
+          "DeploymentDurationInMinutes": 15,
+          "FinalBakeTimeInMinutes": 0,
+          "GrowthFactor": 25,
+          "GrowthType": "LINEAR",
+          "Id": "1225qzk",
+          "Name": "Example-Deployment",
+          "ReplicateTo": "SSM_DOCUMENT"
+        },
+        "comments": {
+        },
+        "description": "The following get-deployment-strategy example lists the details of the specified deployment strategy.",
+        "id": "to-retrieve-details-of-a-deployment-strategy-1632266385805",
+        "title": "To retrieve details of a deployment strategy"
+      }
+    ],
+    "GetEnvironment": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "EnvironmentId": "54j1r29"
+        },
+        "output": {
+          "ApplicationId": "339ohji",
+          "Id": "54j1r29",
+          "Name": "Example-Environment",
+          "State": "READY_FOR_DEPLOYMENT"
+        },
+        "comments": {
+        },
+        "description": "The following get-environment example returns the details and state of the specified environment.",
+        "id": "to-retrieve-environment-details-1632266924806",
+        "title": "To retrieve environment details"
+      }
+    ],
+    "GetHostedConfigurationVersion": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "ConfigurationProfileId": "ur8hx2f",
+          "VersionNumber": 1
+        },
+        "output": {
+          "ApplicationId": "339ohji",
+          "ConfigurationProfileId": "ur8hx2f",
+          "ContentType": "application/json",
+          "VersionNumber": 1
+        },
+        "comments": {
+        },
+        "description": "The following get-hosted-configuration-version example retrieves the configuration details of the AWS AppConfig hosted configuration.",
+        "id": "to-retrieve-hosted-configuration-details-1632267003527",
+        "title": "To retrieve hosted configuration details"
+      }
+    ],
+    "ListApplications": [
+      {
+        "input": {
+        },
+        "output": {
+          "Items": [
+            {
+              "Description": "An application used for creating an example.",
+              "Id": "339ohji",
+              "Name": "test-application"
+            },
+            {
+              "Id": "rwalwu7",
+              "Name": "Test-Application"
+            }
+          ]
+        },
+        "comments": {
+        },
+        "description": "The following list-applications example lists the available applications in your AWS account.",
+        "id": "to-list-the-available-applications-1632267111131",
+        "title": "To list the available applications"
+      }
+    ],
+    "ListConfigurationProfiles": [
+      {
+        "input": {
+          "ApplicationId": "339ohji"
+        },
+        "output": {
+          "Items": [
+            {
+              "ApplicationId": "339ohji",
+              "Id": "ur8hx2f",
+              "LocationUri": "ssm-parameter://Example-Parameter",
+              "Name": "Example-Configuration-Profile"
+            }
+          ]
+        },
+        "comments": {
+        },
+        "description": "The following list-configuration-profiles example lists the available configuration profiles for the specified application.",
+        "id": "to-list-the-available-configuration-profiles-1632267193265",
+        "title": "To list the available configuration profiles"
+      }
+    ],
+    "ListDeploymentStrategies": [
+      {
+        "input": {
+        },
+        "output": {
+          "Items": [
+            {
+              "DeploymentDurationInMinutes": 15,
+              "FinalBakeTimeInMinutes": 0,
+              "GrowthFactor": 25,
+              "GrowthType": "LINEAR",
+              "Id": "1225qzk",
+              "Name": "Example-Deployment",
+              "ReplicateTo": "SSM_DOCUMENT"
+            }
+          ]
+        },
+        "comments": {
+        },
+        "description": "The following list-deployment-strategies example lists the available deployment strategies in your AWS account.",
+        "id": "to-list-the-available-deployment-strategies-1632267364180",
+        "title": "To list the available deployment strategies"
+      }
+    ],
+    "ListDeployments": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "EnvironmentId": "54j1r29"
+        },
+        "output": {
+          "Items": [
+            {
+              "CompletedAt": "2021-09-17T21:59:03.888000+00:00",
+              "ConfigurationName": "Example-Configuration-Profile",
+              "ConfigurationVersion": "1",
+              "DeploymentDurationInMinutes": 15,
+              "DeploymentNumber": 1,
+              "FinalBakeTimeInMinutes": 0,
+              "GrowthFactor": 25,
+              "GrowthType": "LINEAR",
+              "PercentageComplete": 100,
+              "StartedAt": "2021-09-17T21:43:54.205000+00:00",
+              "State": "COMPLETE"
+            }
+          ]
+        },
+        "comments": {
+        },
+        "description": "The following list-deployments example lists the available deployments in your AWS account for the specified application and environment.",
+        "id": "to-list-the-available-deployments-1632267282025",
+        "title": "To list the available deployments"
+      }
+    ],
+    "ListEnvironments": [
+      {
+        "input": {
+          "ApplicationId": "339ohji"
+        },
+        "output": {
+          "Items": [
+            {
+              "ApplicationId": "339ohji",
+              "Id": "54j1r29",
+              "Name": "Example-Environment",
+              "State": "READY_FOR_DEPLOYMENT"
+            }
+          ]
+        },
+        "comments": {
+        },
+        "description": "The following list-environments example lists the available environments in your AWS account for the specified application.",
+        "id": "to-list-the-available-environments-1632267474389",
+        "title": "To list the available environments"
+      }
+    ],
+    "ListHostedConfigurationVersions": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "ConfigurationProfileId": "ur8hx2f"
+        },
+        "output": {
+          "Items": [
+            {
+              "ApplicationId": "339ohji",
+              "ConfigurationProfileId": "ur8hx2f",
+              "ContentType": "application/json",
+              "VersionNumber": 1
+            }
+          ]
+        },
+        "comments": {
+        },
+        "description": "The following list-hosted-configuration-versions example lists the configurations versions hosted in the AWS AppConfig hosted configuration store for the specified application and configuration profile.",
+        "id": "to-list-the-available-hosted-configuration-versions-1632267647667",
+        "title": "To list the available hosted configuration versions"
+      }
+    ],
+    "ListTagsForResource": [
+      {
+        "input": {
+          "ResourceArn": "arn:aws:appconfig:us-east-1:111122223333:application/339ohji"
+        },
+        "output": {
+          "Tags": {
+            "group1": "1"
+          }
+        },
+        "comments": {
+        },
+        "description": "The following list-tags-for-resource example lists the tags of a specified application.",
+        "id": "to-list-the-tags-of-an-application-1632328796560",
+        "title": "To list the tags of an application"
+      }
+    ],
+    "StartDeployment": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "ConfigurationProfileId": "ur8hx2f",
+          "ConfigurationVersion": "1",
+          "DeploymentStrategyId": "1225qzk",
+          "Description": "",
+          "EnvironmentId": "54j1r29",
+          "Tags": {
+          }
+        },
+        "output": {
+          "ApplicationId": "339ohji",
+          "ConfigurationLocationUri": "ssm-parameter://Example-Parameter",
+          "ConfigurationName": "Example-Configuration-Profile",
+          "ConfigurationProfileId": "ur8hx2f",
+          "ConfigurationVersion": "1",
+          "DeploymentDurationInMinutes": 15,
+          "DeploymentNumber": 1,
+          "DeploymentStrategyId": "1225qzk",
+          "EnvironmentId": "54j1r29",
+          "EventLog": [
+            {
+              "Description": "Deployment started",
+              "EventType": "DEPLOYMENT_STARTED",
+              "OccurredAt": "2021-09-17T21:43:54.205000+00:00",
+              "TriggeredBy": "USER"
+            }
+          ],
+          "FinalBakeTimeInMinutes": 0,
+          "GrowthFactor": 25,
+          "GrowthType": "LINEAR",
+          "PercentageComplete": 1.0,
+          "StartedAt": "2021-09-17T21:43:54.205000+00:00",
+          "State": "DEPLOYING"
+        },
+        "comments": {
+        },
+        "description": "The following start-deployment example starts a deployment to the application using the specified environment, deployment strategy, and configuration profile.",
+        "id": "to-start-a-configuration-deployment-1632328956790",
+        "title": "To start a configuration deployment"
+      }
+    ],
+    "StopDeployment": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "DeploymentNumber": 2,
+          "EnvironmentId": "54j1r29"
+        },
+        "output": {
+          "DeploymentDurationInMinutes": 15,
+          "DeploymentNumber": 2,
+          "FinalBakeTimeInMinutes": 0,
+          "GrowthFactor": 25.0,
+          "PercentageComplete": 1.0
+        },
+        "comments": {
+        },
+        "description": "The following stop-deployment example stops the deployment of an application configuration to the specified environment.",
+        "id": "to-stop-configuration-deployment-1632329139126",
+        "title": "To stop configuration deployment"
+      }
+    ],
+    "TagResource": [
+      {
+        "input": {
+          "ResourceArn": "arn:aws:appconfig:us-east-1:111122223333:application/339ohji",
+          "Tags": {
+            "group1": "1"
+          }
+        },
+        "comments": {
+        },
+        "description": "The following tag-resource example tags an application resource.",
+        "id": "to-tag-an-application-1632330350645",
+        "title": "To tag an application"
+      }
+    ],
+    "UntagResource": [
+      {
+        "input": {
+          "ResourceArn": "arn:aws:appconfig:us-east-1:111122223333:application/339ohji",
+          "TagKeys": [
+            "group1"
+          ]
+        },
+        "comments": {
+        },
+        "description": "The following untag-resource example removes the group1 tag from the specified application.",
+        "id": "to-remove-a-tag-from-an-application-1632330429881",
+        "title": "To remove a tag from an application"
+      }
+    ],
+    "UpdateApplication": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "Description": "",
+          "Name": "Example-Application"
+        },
+        "output": {
+          "Description": "An application used for creating an example.",
+          "Id": "339ohji",
+          "Name": "Example-Application"
+        },
+        "comments": {
+        },
+        "description": "The following update-application example updates the name of the specified application.",
+        "id": "to-update-an-application-1632330585893",
+        "title": "To update an application"
+      }
+    ],
+    "UpdateConfigurationProfile": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "ConfigurationProfileId": "ur8hx2f",
+          "Description": "Configuration profile used for examples."
+        },
+        "output": {
+          "ApplicationId": "339ohji",
+          "Description": "Configuration profile used for examples.",
+          "Id": "ur8hx2f",
+          "LocationUri": "ssm-parameter://Example-Parameter",
+          "Name": "Example-Configuration-Profile",
+          "RetrievalRoleArn": "arn:aws:iam::111122223333:role/Example-App-Config-Role"
+        },
+        "comments": {
+        },
+        "description": "The following update-configuration-profile example updates the description of the specified configuration profile.",
+        "id": "to-update-a-configuration-profile-1632330721974",
+        "title": "To update a configuration profile"
+      }
+    ],
+    "UpdateDeploymentStrategy": [
+      {
+        "input": {
+          "DeploymentStrategyId": "1225qzk",
+          "FinalBakeTimeInMinutes": 20
+        },
+        "output": {
+          "DeploymentDurationInMinutes": 15,
+          "FinalBakeTimeInMinutes": 20,
+          "GrowthFactor": 25,
+          "GrowthType": "LINEAR",
+          "Id": "1225qzk",
+          "Name": "Example-Deployment",
+          "ReplicateTo": "SSM_DOCUMENT"
+        },
+        "comments": {
+        },
+        "description": "The following update-deployment-strategy example updates final bake time to 20 minutes in the specified deployment strategy. ::\n",
+        "id": "to-update-a-deployment-strategy-1632330896602",
+        "title": "To update a deployment strategy"
+      }
+    ],
+    "UpdateEnvironment": [
+      {
+        "input": {
+          "ApplicationId": "339ohji",
+          "Description": "An environment for examples.",
+          "EnvironmentId": "54j1r29"
+        },
+        "output": {
+          "ApplicationId": "339ohji",
+          "Description": "An environment for examples.",
+          "Id": "54j1r29",
+          "Name": "Example-Environment",
+          "State": "ROLLED_BACK"
+        },
+        "comments": {
+        },
+        "description": "The following update-environment example updates an environment's description.",
+        "id": "to-update-an-environment-1632331382428",
+        "title": "To update an environment"
+      }
+    ],
+    "ValidateConfiguration": [
+      {
+        "input": {
+          "ApplicationId": "abc1234",
+          "ConfigurationProfileId": "ur8hx2f",
+          "ConfigurationVersion": "1"
+        },
+        "comments": {
+        },
+        "description": "The following validate-configuration example uses the validators in a configuration profile to validate a configuration.",
+        "id": "to-validate-a-configuration-1632331491365",
+        "title": "To validate a configuration"
+      }
+    ]
+  }
+}

@@ -1,0 +1,2 @@
+[console_scripts]
+pytesseract = pytesseract.pytesseract:main

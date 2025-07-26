@@ -1,0 +1,22 @@
+{
+  "pagination": {
+    "ListApplicationDependencies": {
+      "input_token": "NextToken",
+      "limit_key": "MaxItems",
+      "output_token": "NextToken",
+      "result_key": "Dependencies"
+    },
+    "ListApplicationVersions": {
+      "input_token": "NextToken",
+      "limit_key": "MaxItems",
+      "output_token": "NextToken",
+      "result_key": "Versions"
+    },
+    "ListApplications": {
+      "input_token": "NextToken",
+      "limit_key": "MaxItems",
+      "output_token": "NextToken",
+      "result_key": "Applications"
+    }
+  }
+}

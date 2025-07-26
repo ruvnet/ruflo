@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Instructor Embedding Function Schema",
+  "description": "Schema for the instructor embedding function configuration",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "model_name": {
+      "type": "string",
+      "description": "Parameter model_name for the instructor embedding function"
+    },
+    "device": {
+      "type": "string",
+      "description": "Parameter device for the instructor embedding function"
+    },
+    "instruction": {
+      "type": "string",
+      "description": "Parameter instruction for the instructor embedding function"
+    }
+  },
+  "required": [
+    "model_name",
+    "device"
+  ],
+  "additionalProperties": false
+}

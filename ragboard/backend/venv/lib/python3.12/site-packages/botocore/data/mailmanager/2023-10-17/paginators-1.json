@@ -1,0 +1,58 @@
+{
+  "pagination": {
+    "ListAddonInstances": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "PageSize",
+      "result_key": "AddonInstances"
+    },
+    "ListAddonSubscriptions": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "PageSize",
+      "result_key": "AddonSubscriptions"
+    },
+    "ListArchiveExports": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "PageSize",
+      "result_key": "Exports"
+    },
+    "ListArchiveSearches": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "PageSize",
+      "result_key": "Searches"
+    },
+    "ListArchives": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "PageSize",
+      "result_key": "Archives"
+    },
+    "ListIngressPoints": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "PageSize",
+      "result_key": "IngressPoints"
+    },
+    "ListRelays": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "PageSize",
+      "result_key": "Relays"
+    },
+    "ListRuleSets": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "PageSize",
+      "result_key": "RuleSets"
+    },
+    "ListTrafficPolicies": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "PageSize",
+      "result_key": "TrafficPolicies"
+    }
+  }
+}

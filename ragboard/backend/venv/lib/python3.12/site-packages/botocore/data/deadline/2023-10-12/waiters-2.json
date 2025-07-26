@@ -1,0 +1,131 @@
+{
+  "version" : 2,
+  "waiters" : {
+    "FleetActive" : {
+      "description" : "Wait until a Fleet is activated. Use this after invoking CreateFleet or UpdateFleet.",
+      "delay" : 5,
+      "maxAttempts" : 180,
+      "operation" : "GetFleet",
+      "acceptors" : [ {
+        "matcher" : "path",
+        "argument" : "status",
+        "state" : "success",
+        "expected" : "ACTIVE"
+      }, {
+        "matcher" : "path",
+        "argument" : "status",
+        "state" : "failure",
+        "expected" : "CREATE_FAILED"
+      }, {
+        "matcher" : "path",
+        "argument" : "status",
+        "state" : "failure",
+        "expected" : "UPDATE_FAILED"
+      } ]
+    },
+    "JobCreateComplete" : {
+      "description" : "Wait until a Job is created. Use this after invoking CreateJob.",
+      "delay" : 1,
+      "maxAttempts" : 120,
+      "operation" : "GetJob",
+      "acceptors" : [ {
+        "matcher" : "path",
+        "argument" : "lifecycleStatus",
+        "state" : "success",
+        "expected" : "CREATE_COMPLETE"
+      }, {
+        "matcher" : "path",
+        "argument" : "lifecycleStatus",
+        "state" : "success",
+        "expected" : "UPDATE_IN_PROGRESS"
+      }, {
+        "matcher" : "path",
+        "argument" : "lifecycleStatus",
+        "state" : "success",
+        "expected" : "UPDATE_FAILED"
+      }, {
+        "matcher" : "path",
+        "argument" : "lifecycleStatus",
+        "state" : "success",
+        "expected" : "UPDATE_SUCCEEDED"
+      }, {
+        "matcher" : "path",
+        "argument" : "lifecycleStatus",
+        "state" : "failure",
+        "expected" : "UPLOAD_FAILED"
+      }, {
+        "matcher" : "path",
+        "argument" : "lifecycleStatus",
+        "state" : "failure",
+        "expected" : "CREATE_FAILED"
+      } ]
+    },
+    "LicenseEndpointDeleted" : {
+      "description" : "Wait until a LicenseEndpoint is Deleted. Use this after invoking DeleteLicenseEndpoint.",
+      "delay" : 10,
+      "maxAttempts" : 234,
+      "operation" : "GetLicenseEndpoint",
+      "acceptors" : [ {
+        "matcher" : "error",
+        "state" : "success",
+        "expected" : "ResourceNotFoundException"
+      }, {
+        "matcher" : "path",
+        "argument" : "status",
+        "state" : "failure",
+        "expected" : "NOT_READY"
+      } ]
+    },
+    "LicenseEndpointValid" : {
+      "description" : "Wait until a LicenseEndpoint is Ready. Use this after invoking CreateLicenseEndpoint.",
+      "delay" : 10,
+      "maxAttempts" : 114,
+      "operation" : "GetLicenseEndpoint",
+      "acceptors" : [ {
+        "matcher" : "path",
+        "argument" : "status",
+        "state" : "success",
+        "expected" : "READY"
+      }, {
+        "matcher" : "path",
+        "argument" : "status",
+        "state" : "failure",
+        "expected" : "NOT_READY"
+      } ]
+    },
+    "QueueFleetAssociationStopped" : {
+      "description" : "Wait until a QueueFleetAssociation is stopped. Use this after setting the status to STOP_SCHEDULING_AND_COMPLETE_TASKS or STOP_SCHEDULING_AND_CANCEL_TASKS to wait for a QueueFleetAssociation to reach STOPPED",
+      "delay" : 10,
+      "maxAttempts" : 60,
+      "operation" : "GetQueueFleetAssociation",
+      "acceptors" : [ {
+        "matcher" : "path",
+        "argument" : "status",
+        "state" : "success",
+        "expected" : "STOPPED"
+      } ]
+    },
+    "QueueScheduling" : {
+      "delay" : 10,
+      "maxAttempts" : 70,
+      "operation" : "GetQueue",
+      "acceptors" : [ {
+        "matcher" : "path",
+        "argument" : "status",
+        "state" : "success",
+        "expected" : "SCHEDULING"
+      } ]
+    },
+    "QueueSchedulingBlocked" : {
+      "delay" : 10,
+      "maxAttempts" : 30,
+      "operation" : "GetQueue",
+      "acceptors" : [ {
+        "matcher" : "path",
+        "argument" : "status",
+        "state" : "success",
+        "expected" : "SCHEDULING_BLOCKED"
+      } ]
+    }
+  }
+}

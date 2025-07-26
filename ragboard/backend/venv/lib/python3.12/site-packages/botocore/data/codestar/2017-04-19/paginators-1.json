@@ -1,0 +1,28 @@
+{
+  "pagination": {
+    "ListProjects": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "projects"
+    },
+    "ListResources": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "resources"
+    },
+    "ListTeamMembers": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "teamMembers"
+    },
+    "ListUserProfiles": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "userProfiles"
+    }
+  }
+}

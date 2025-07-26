@@ -1,0 +1,31 @@
+{
+    "version": 1.0,
+    "merge": {
+      "pagination": {
+        "ListServiceDependencies": {
+          "non_aggregate_keys": [
+            "StartTime",
+            "EndTime"
+          ]
+        },
+        "ListServiceDependents": {
+            "non_aggregate_keys": [
+              "StartTime",
+              "EndTime"
+            ]
+          },
+          "ListServiceOperations": {
+            "non_aggregate_keys": [
+              "StartTime",
+              "EndTime"
+            ]
+          },
+          "ListServices": {
+            "non_aggregate_keys": [
+              "StartTime",
+              "EndTime"
+            ]
+          }
+      }
+    }
+  }

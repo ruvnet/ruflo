@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "GetWorkUnits": {
+      "input_token": "NextToken",
+      "limit_key": "PageSize",
+      "output_token": "NextToken",
+      "result_key": "WorkUnitRanges"
+    },
+    "ListDataCellsFilter": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "DataCellsFilters"
+    },
+    "ListLFTags": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "LFTags"
+    },
+    "SearchDatabasesByLFTags": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "DatabaseList"
+    },
+    "SearchTablesByLFTags": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "TableList"
+    }
+  }
+}

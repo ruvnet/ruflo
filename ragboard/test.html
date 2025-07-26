@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAGBoard Test</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const App = () => {
+            const [count, setCount] = React.useState(0);
+            const [time, setTime] = React.useState(new Date().toLocaleTimeString());
+            
+            React.useEffect(() => {
+                const timer = setInterval(() => {
+                    setTime(new Date().toLocaleTimeString());
+                }, 1000);
+                return () => clearInterval(timer);
+            }, []);
+            
+            return (
+                <div className="container">
+                    <h1>RAGBoard Test Page</h1>
+                    <div className="status success">
+                        ✅ React is working correctly!
+                    </div>
+                    
+                    <div className="status info">
+                        <strong>Current Time:</strong> {time}
+                    </div>
+                    
+                    <div className="status info">
+                        <strong>RequestyAPI Key:</strong> Configured ✓
+                    </div>
+                    
+                    <div style={{marginTop: '20px'}}>
+                        <button 
+                            onClick={() => setCount(count + 1)}
+                            style={{
+                                padding: '10px 20px',
+                                fontSize: '16px',
+                                backgroundColor: '#007bff',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Counter: {count}
+                        </button>
+                    </div>
+                    
+                    <div style={{marginTop: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px'}}>
+                        <h3>Next Steps:</h3>
+                        <ol>
+                            <li>The main app should be accessible at the Codespaces URL on port 5173</li>
+                            <li>Check the PORTS tab in VS Code to find the correct URL</li>
+                            <li>If this test page works but the main app doesn't, there may be a build issue</li>
+                        </ol>
+                    </div>
+                </div>
+            );
+        };
+        
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+Wheel-Version: 1.0
+Generator: maturin (1.4.0)
+Root-Is-Purelib: false
+Tag: cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64

@@ -1,0 +1,16 @@
+{
+  "pagination": {
+    "DescribeScalingPlanResources": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ScalingPlanResources"
+    },
+    "DescribeScalingPlans": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ScalingPlans"
+    }
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "pagination": {
+    "DescribeComplianceByConfigRule": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "ComplianceByConfigRules"
+    },
+    "DescribeComplianceByResource": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "ComplianceByResources",
+      "limit_key": "Limit"
+    },
+    "DescribeConfigRules": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "ConfigRules"
+    },
+    "GetComplianceDetailsByConfigRule": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "EvaluationResults",
+      "limit_key": "Limit"
+    },
+    "GetComplianceDetailsByResource": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "EvaluationResults"
+    },
+    "GetResourceConfigHistory": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "configurationItems",
+      "limit_key": "limit"
+    },
+    "ListDiscoveredResources": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "resourceIdentifiers",
+      "limit_key": "limit"
+    },
+    "DescribeAggregateComplianceByConfigRules": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "AggregateComplianceByConfigRules"
+    },
+    "DescribeAggregationAuthorizations": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "AggregationAuthorizations"
+    },
+    "DescribeConfigRuleEvaluationStatus": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "ConfigRulesEvaluationStatus"
+    },
+    "DescribeConfigurationAggregatorSourcesStatus": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "AggregatedSourceStatusList"
+    },
+    "DescribeConfigurationAggregators": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "ConfigurationAggregators"
+    },
+    "DescribePendingAggregationRequests": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "PendingAggregationRequests"
+    },
+    "DescribeRetentionConfigurations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "RetentionConfigurations"
+    },
+    "GetAggregateComplianceDetailsByConfigRule": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "AggregateEvaluationResults"
+    },
+    "ListAggregateDiscoveredResources": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "ResourceIdentifiers"
+    },
+    "DescribeRemediationExecutionStatus": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "RemediationExecutionStatuses"
+    },
+    "DescribeAggregateComplianceByConformancePacks": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "AggregateComplianceByConformancePacks"
+    },
+    "DescribeConformancePackStatus": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "ConformancePackStatusDetails"
+    },
+    "DescribeConformancePacks": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "ConformancePackDetails"
+    },
+    "DescribeOrganizationConfigRuleStatuses": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "OrganizationConfigRuleStatuses"
+    },
+    "DescribeOrganizationConfigRules": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "OrganizationConfigRules"
+    },
+    "DescribeOrganizationConformancePackStatuses": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "OrganizationConformancePackStatuses"
+    },
+    "DescribeOrganizationConformancePacks": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "OrganizationConformancePacks"
+    },
+    "GetConformancePackComplianceSummary": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "ConformancePackComplianceSummaryList"
+    },
+    "GetOrganizationConfigRuleDetailedStatus": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "OrganizationConfigRuleDetailedStatus"
+    },
+    "GetOrganizationConformancePackDetailedStatus": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "OrganizationConformancePackDetailedStatuses"
+    },
+    "ListTagsForResource": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "Tags"
+    },
+    "SelectAggregateResourceConfig": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "non_aggregate_keys": [
+        "QueryInfo"
+      ],
+      "output_token": "NextToken",
+      "result_key": "Results"
+    },
+    "SelectResourceConfig": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "non_aggregate_keys": [
+        "QueryInfo"
+      ],
+      "output_token": "NextToken",
+      "result_key": "Results"
+    },
+    "ListResourceEvaluations": {
+      "input_token": "NextToken",
+      "limit_key": "Limit",
+      "output_token": "NextToken",
+      "result_key": "ResourceEvaluations"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "pagination": {
+    "ListGroups": {
+      "result_key": [
+        "GroupIdentifiers",
+        "Groups"
+      ],
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "SearchResources": {
+      "result_key": "ResourceIdentifiers",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "ListGroupResources": {
+      "result_key": [
+        "ResourceIdentifiers",
+        "Resources"
+      ],
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    }
+  }
+}

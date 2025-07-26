@@ -1,0 +1,33 @@
+{
+  "pagination": {
+    "ListIdentities": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxItems",
+      "result_key": "Identities"
+    },
+    "ListCustomVerificationEmailTemplates": {
+      "result_key": "CustomVerificationEmailTemplates",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "ListConfigurationSets": {
+      "input_token": "NextToken",
+      "limit_key": "MaxItems",
+      "output_token": "NextToken",
+      "result_key": "ConfigurationSets"
+    },
+    "ListReceiptRuleSets": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "RuleSets"
+    },
+    "ListTemplates": {
+      "input_token": "NextToken",
+      "limit_key": "MaxItems",
+      "output_token": "NextToken",
+      "result_key": "TemplatesMetadata"
+    }
+  }
+}

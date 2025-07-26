@@ -1,0 +1,18 @@
+{
+  "version": 1.0,
+  "merge": {
+    "pagination": {
+      "ListWorkspaceServiceAccounts": {
+        "non_aggregate_keys": [
+          "workspaceId"
+        ]
+      },
+      "ListWorkspaceServiceAccountTokens": {
+        "non_aggregate_keys": [
+          "serviceAccountId",
+          "workspaceId"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,138 @@
+Metadata-Version: 2.4
+Name: posthog
+Version: 5.4.0
+Summary: Integrate PostHog into any python application.
+Home-page: https://github.com/posthog/posthog-python
+Author: Posthog
+Author-email: PostHog <hey@posthog.com>
+Maintainer: PostHog
+Maintainer-email: PostHog <hey@posthog.com>
+License: MIT
+Project-URL: Homepage, https://github.com/posthog/posthog-python
+Project-URL: Repository, https://github.com/posthog/posthog-python
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Operating System :: OS Independent
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests<3.0,>=2.7
+Requires-Dist: six>=1.5
+Requires-Dist: python-dateutil>=2.2
+Requires-Dist: backoff>=1.10.0
+Requires-Dist: distro>=1.5.0
+Provides-Extra: langchain
+Requires-Dist: langchain>=0.2.0; extra == "langchain"
+Provides-Extra: dev
+Requires-Dist: django-stubs; extra == "dev"
+Requires-Dist: lxml; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: mypy-baseline; extra == "dev"
+Requires-Dist: types-mock; extra == "dev"
+Requires-Dist: types-python-dateutil; extra == "dev"
+Requires-Dist: types-requests; extra == "dev"
+Requires-Dist: types-setuptools; extra == "dev"
+Requires-Dist: types-six; extra == "dev"
+Requires-Dist: pre-commit; extra == "dev"
+Requires-Dist: pydantic; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: setuptools; extra == "dev"
+Requires-Dist: packaging; extra == "dev"
+Requires-Dist: wheel; extra == "dev"
+Requires-Dist: twine; extra == "dev"
+Requires-Dist: tomli; extra == "dev"
+Requires-Dist: tomli_w; extra == "dev"
+Provides-Extra: test
+Requires-Dist: mock>=2.0.0; extra == "test"
+Requires-Dist: freezegun==1.5.1; extra == "test"
+Requires-Dist: coverage; extra == "test"
+Requires-Dist: pytest; extra == "test"
+Requires-Dist: pytest-timeout; extra == "test"
+Requires-Dist: pytest-asyncio; extra == "test"
+Requires-Dist: django; extra == "test"
+Requires-Dist: openai; extra == "test"
+Requires-Dist: anthropic; extra == "test"
+Requires-Dist: langgraph>=0.4.8; extra == "test"
+Requires-Dist: langchain-core>=0.3.65; extra == "test"
+Requires-Dist: langchain-community>=0.3.25; extra == "test"
+Requires-Dist: langchain-openai>=0.3.22; extra == "test"
+Requires-Dist: langchain-anthropic>=0.3.15; extra == "test"
+Requires-Dist: google-genai; extra == "test"
+Requires-Dist: pydantic; extra == "test"
+Requires-Dist: parameterized>=0.8.1; extra == "test"
+Dynamic: author
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: maintainer
+
+# PostHog Python
+
+<p align="center">
+  <img alt="posthoglogo" src="https://user-images.githubusercontent.com/65415371/205059737-c8a4f836-4889-4654-902e-f302b187b6a0.png">
+</p>
+<p align="center">
+   <a href="https://pypi.org/project/posthog/"><img alt="pypi installs" src="https://img.shields.io/pypi/v/posthog"/></a>
+   <img alt="GitHub contributors" src="https://img.shields.io/github/contributors/posthog/posthog-python">
+  <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/posthog/posthog-python"/>
+  <img alt="GitHub closed issues" src="https://img.shields.io/github/issues-closed/posthog/posthog-python"/>
+</p>
+
+Please see the [Python integration docs](https://posthog.com/docs/integrations/python-integration) for details.
+
+## Development
+
+### Testing Locally
+
+We recommend using [uv](https://docs.astral.sh/uv/). It's super fast.
+
+1. Run `uv venv env` (creates virtual environment called "env")
+    * or `python3 -m venv env`
+2. Run `source env/bin/activate` (activates the virtual environment)
+3. Run `uv sync --extra dev --extra test` (installs the package in develop mode, along with test dependencies)
+    * or `pip install -e ".[dev,test]"`
+4. you have to run `pre-commit install` to have auto linting pre commit
+5. Run `make test`
+  1. To run a specific test do `pytest -k test_no_api_key`
+
+## PostHog recommends `uv` so...
+
+```bash
+uv python install 3.9.19
+uv python pin 3.9.19
+uv venv env
+source env/bin/activate
+uv sync --extra dev --extra test
+pre-commit install
+make test
+```
+
+### Running Locally
+
+Assuming you have a [local version of PostHog](https://posthog.com/docs/developing-locally) running, you can run `python3 example.py` to see the library in action.
+
+### Releasing Versions
+
+Updates are released using GitHub Actions: after bumping `version.py` in `master` and adding to `CHANGELOG.md`, go to [our release workflow's page](https://github.com/PostHog/posthog-python/actions/workflows/release.yaml) and dispatch it manually, using workflow from `master`.
+
+
+### Testing changes locally with the PostHog app
+
+You can run `make prep_local`, and it'll create a new folder alongside the SDK repo one called `posthog-python-local`, which you can then import into the posthog project by changing pyproject.toml to look like this:
+```toml
+dependencies = [
+    ...
+    "posthoganalytics" #NOTE: no version number
+    ...
+]
+...
+[tools.uv.sources]
+posthoganalytics = { path = "../posthog-python-local" }
+```
+This'll let you build and test SDK changes fully locally, incorporating them into your local posthog app stack. It mainly takes care of the `posthog -> posthoganalytics` module renaming. You'll need to re-run `make prep_local` each time you make a change, and re-run `uv sync --active` in the posthog app project.

@@ -1,0 +1,51 @@
+Metadata-Version: 2.4
+Name: kubernetes
+Version: 33.1.0
+Summary: Kubernetes python client
+Home-page: https://github.com/kubernetes-client/python
+Author: Kubernetes
+Author-email: 
+License: Apache License Version 2.0
+Keywords: Swagger,OpenAPI,Kubernetes
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Topic :: Utilities
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Information Technology
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.6
+License-File: LICENSE
+Requires-Dist: certifi>=14.05.14
+Requires-Dist: six>=1.9.0
+Requires-Dist: python-dateutil>=2.5.3
+Requires-Dist: pyyaml>=5.4.1
+Requires-Dist: google-auth>=1.0.1
+Requires-Dist: websocket-client!=0.40.0,!=0.41.*,!=0.42.*,>=0.32.0
+Requires-Dist: requests
+Requires-Dist: requests-oauthlib
+Requires-Dist: oauthlib>=3.2.2
+Requires-Dist: urllib3>=1.24.2
+Requires-Dist: durationpy>=0.7
+Provides-Extra: adal
+Requires-Dist: adal>=1.0.2; extra == "adal"
+Dynamic: author
+Dynamic: classifier
+Dynamic: description
+Dynamic: home-page
+Dynamic: keywords
+Dynamic: license
+Dynamic: license-file
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+Python client for kubernetes http://kubernetes.io/

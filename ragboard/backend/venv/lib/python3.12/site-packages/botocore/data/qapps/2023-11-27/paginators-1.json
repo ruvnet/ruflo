@@ -1,0 +1,16 @@
+{
+  "pagination": {
+    "ListLibraryItems": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "limit",
+      "result_key": "libraryItems"
+    },
+    "ListQApps": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "limit",
+      "result_key": "apps"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Open_clip Embedding Function Schema",
+  "description": "Schema for the open_clip embedding function configuration",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "model_name": {
+      "type": "string",
+      "description": "Parameter model_name for the open_clip embedding function"
+    },
+    "checkpoint": {
+      "type": "string",
+      "description": "Parameter checkpoint for the open_clip embedding function"
+    },
+    "device": {
+      "type": "string",
+      "description": "Parameter device for the open_clip embedding function"
+    }
+  },
+  "required": [
+    "model_name",
+    "checkpoint",
+    "device"
+  ],
+  "additionalProperties": false
+}

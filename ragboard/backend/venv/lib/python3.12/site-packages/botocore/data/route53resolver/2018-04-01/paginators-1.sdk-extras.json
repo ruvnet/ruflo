@@ -1,0 +1,39 @@
+{
+  "version": 1.0,
+  "merge": {
+    "pagination": {
+      "ListResolverEndpointIpAddresses": {
+        "non_aggregate_keys": [
+          "MaxResults"
+        ]
+      },
+      "ListResolverEndpoints": {
+        "non_aggregate_keys": [
+          "MaxResults"
+        ]
+      },
+      "ListResolverQueryLogConfigAssociations": {
+        "non_aggregate_keys": [
+          "TotalCount",
+          "TotalFilteredCount"
+        ]
+      },
+      "ListResolverQueryLogConfigs": {
+        "non_aggregate_keys": [
+          "TotalCount",
+          "TotalFilteredCount"
+        ]
+      },
+      "ListResolverRuleAssociations": {
+        "non_aggregate_keys": [
+          "MaxResults"
+        ]
+      },
+      "ListResolverRules": {
+        "non_aggregate_keys": [
+          "MaxResults"
+        ]
+      }
+    }
+  }
+}

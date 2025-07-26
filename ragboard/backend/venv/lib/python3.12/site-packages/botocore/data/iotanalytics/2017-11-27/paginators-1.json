@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListChannels": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "channelSummaries"
+    },
+    "ListDatasetContents": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "datasetContentSummaries"
+    },
+    "ListDatasets": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "datasetSummaries"
+    },
+    "ListDatastores": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "datastoreSummaries"
+    },
+    "ListPipelines": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "pipelineSummaries"
+    }
+  }
+}

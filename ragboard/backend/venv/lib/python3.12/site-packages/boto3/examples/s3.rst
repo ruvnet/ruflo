@@ -1,0 +1,185 @@
+List objects in an Amazon S3 bucket
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following example shows how to use an Amazon S3 bucket resource to list
+the objects in the bucket.
+
+.. code-block:: python
+
+    import boto3
+
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket('my-bucket')
+    for obj in bucket.objects.all():
+        print(obj.key)
+
+
+List top-level common prefixes in Amazon S3 bucket
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This example shows how to list all of the top-level common prefixes in an
+Amazon S3 bucket:
+
+.. code-block:: python
+
+    import boto3
+
+    client = boto3.client('s3')
+    paginator = client.get_paginator('list_objects')
+    result = paginator.paginate(Bucket='my-bucket', Delimiter='/')
+    for prefix in result.search('CommonPrefixes'):
+        print(prefix.get('Prefix'))
+
+
+Restore Glacier objects in an Amazon S3 bucket
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following example shows how to initiate restoration of glacier objects in
+an Amazon S3 bucket, determine if a restoration is on-going, and determine if a
+restoration is finished.
+
+.. code-block:: python
+
+    import boto3
+
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket('glacier-bucket')
+    for obj_sum in bucket.objects.all():
+        obj = s3.Object(obj_sum.bucket_name, obj_sum.key)
+        if obj.storage_class == 'GLACIER':
+            # Try to restore the object if the storage class is glacier and
+            # the object does not have a completed or ongoing restoration
+            # request.
+            if obj.restore is None:
+                print('Submitting restoration request: %s' % obj.key)
+                obj.restore_object(RestoreRequest={'Days': 1})
+            # Print out objects whose restoration is on-going
+            elif 'ongoing-request="true"' in obj.restore:
+                print('Restoration in-progress: %s' % obj.key)
+            # Print out objects whose restoration is complete
+            elif 'ongoing-request="false"' in obj.restore:
+                print('Restoration complete: %s' % obj.key)
+
+
+Uploading/downloading files using SSE KMS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This example shows how to use SSE-KMS to upload objects using
+server side encryption with a key managed by KMS.
+
+We can either use the default KMS master key, or create a
+custom key in AWS and use it to encrypt the object by passing in its
+key id.
+
+With KMS, nothing else needs to be provided for getting the
+object; S3 already knows how to decrypt the object.
+
+
+.. code-block:: python
+
+    import boto3
+    import os
+
+    BUCKET = 'your-bucket-name'
+    s3 = boto3.client('s3')
+    keyid = '<the key id>'
+
+    print("Uploading S3 object with SSE-KMS")
+    s3.put_object(Bucket=BUCKET,
+                  Key='encrypt-key',
+                  Body=b'foobar',
+                  ServerSideEncryption='aws:kms',
+                  # Optional: SSEKMSKeyId
+                  SSEKMSKeyId=keyid)
+    print("Done")
+
+    # Getting the object:
+    print("Getting S3 object...")
+    response = s3.get_object(Bucket=BUCKET,
+                             Key='encrypt-key')
+    print("Done, response body:")
+    print(response['Body'].read())
+
+
+Uploading/downloading files using SSE Customer Keys
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This example shows how to use SSE-C to upload objects using
+server side encryption with a customer provided key.
+
+First, we'll need a 32 byte key.  For this example, we'll
+randomly generate a key but you can use any 32 byte key
+you want.  Remember, you must the same key to download
+the object.  If you lose the encryption key, you lose
+the object.
+
+Also note how we don't have to provide the SSECustomerKeyMD5.
+Boto3 will automatically compute this value for us.
+
+
+.. code-block:: python
+
+    import boto3
+    import os
+
+    BUCKET = 'your-bucket-name'
+    KEY = os.urandom(32)
+    s3 = boto3.client('s3')
+
+    print("Uploading S3 object with SSE-C")
+    s3.put_object(Bucket=BUCKET,
+                  Key='encrypt-key',
+                  Body=b'foobar',
+                  SSECustomerKey=KEY,
+                  SSECustomerAlgorithm='AES256')
+    print("Done")
+
+    # Getting the object:
+    print("Getting S3 object...")
+    # Note how we're using the same ``KEY`` we
+    # created earlier.
+    response = s3.get_object(Bucket=BUCKET,
+                             Key='encrypt-key',
+                             SSECustomerKey=KEY,
+                             SSECustomerAlgorithm='AES256')
+    print("Done, response body:")
+    print(response['Body'].read())
+
+
+Downloading a specific version of an S3 object
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This example shows how to download a specific version of an
+S3 object.
+
+.. code-block:: python
+
+    import boto3
+    s3 = boto3.client('s3')
+
+    s3.download_file(
+        "bucket-name", "key-name", "tmp.txt",
+        ExtraArgs={"VersionId": "my-version-id"}
+    )
+
+
+Filter objects by last modified time using JMESPath
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This example shows how to filter objects by last modified time
+using JMESPath.
+
+.. code-block:: python
+
+    import boto3
+    s3 = boto3.client("s3")
+
+    s3_paginator = s3.get_paginator('list_objects_v2')
+    s3_iterator = s3_paginator.paginate(Bucket='your-bucket-name')
+
+    filtered_iterator = s3_iterator.search(
+        "Contents[?to_string(LastModified)>='\"2022-01-05 08:05:37+00:00\"'].Key"
+    )
+
+    for key_data in filtered_iterator:
+        print(key_data)

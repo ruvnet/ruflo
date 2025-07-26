@@ -1,0 +1,53 @@
+Metadata-Version: 2.1
+Name: pydantic-settings
+Version: 2.1.0
+Summary: Settings management using Pydantic
+Project-URL: Homepage, https://github.com/pydantic/pydantic-settings
+Project-URL: Funding, https://github.com/sponsors/samuelcolvin
+Project-URL: Source, https://github.com/pydantic/pydantic-settings
+Project-URL: Changelog, https://github.com/pydantic/pydantic-settings/releases
+Project-URL: Documentation, https://docs.pydantic.dev/dev-v2/concepts/pydantic_settings/
+Author-email: Samuel Colvin <s@muelcolvin.com>, Eric Jolibois <em.jolibois@gmail.com>, Hasan Ramezani <hasan.r67@gmail.com>
+License-Expression: MIT
+License-File: LICENSE
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Console
+Classifier: Environment :: MacOS X
+Classifier: Framework :: Pydantic
+Classifier: Framework :: Pydantic :: 2
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Information Technology
+Classifier: Intended Audience :: System Administrators
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Operating System :: Unix
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Internet
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.8
+Requires-Dist: pydantic>=2.3.0
+Requires-Dist: python-dotenv>=0.21.0
+Description-Content-Type: text/markdown
+
+# pydantic-settings
+
+[![CI](https://github.com/pydantic/pydantic-settings/workflows/CI/badge.svg?event=push)](https://github.com/pydantic/pydantic-settings/actions?query=event%3Apush+branch%3Amain+workflow%3ACI)
+[![Coverage](https://codecov.io/gh/pydantic/pydantic-settings/branch/main/graph/badge.svg)](https://codecov.io/gh/pydantic/pydantic-settings)
+[![pypi](https://img.shields.io/pypi/v/pydantic-settings.svg)](https://pypi.python.org/pypi/pydantic-settings)
+[![license](https://img.shields.io/github/license/pydantic/pydantic-settings.svg)](https://github.com/pydantic/pydantic-settings/blob/main/LICENSE)
+
+Settings management using Pydantic, this is the new official home of Pydantic's `BaseSettings`.
+
+This package was kindly donated to the [Pydantic organisation](https://github.com/pydantic) by Daniel Daniels, see [pydantic/pydantic#4492](https://github.com/pydantic/pydantic/pull/4492) for discussion.
+
+For the old "Hipster-orgazmic tool to mange application settings" package, see [version 0.2.5](https://pypi.org/project/pydantic-settings/0.2.5/).
+
+
+See [documentation](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) for more details.

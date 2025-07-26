@@ -1,0 +1,5 @@
+Authors
+=======
+
+Kevin Wurster <wursterk@gmail.com>
+Sean Gillies <sean.gillies@gmail.com>

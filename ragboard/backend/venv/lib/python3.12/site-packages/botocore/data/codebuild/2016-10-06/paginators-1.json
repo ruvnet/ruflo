@@ -1,0 +1,73 @@
+{
+  "pagination": {
+    "ListBuilds": {
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "result_key": "ids"
+    },
+    "ListProjects": {
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "result_key": "projects"
+    },
+    "ListBuildsForProject": {
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "result_key": "ids"
+    },
+    "DescribeTestCases": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "testCases"
+    },
+    "ListReportGroups": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "reportGroups"
+    },
+    "ListReports": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "reports"
+    },
+    "ListReportsForReportGroup": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "reports"
+    },
+    "ListSharedProjects": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "projects"
+    },
+    "ListSharedReportGroups": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "reportGroups"
+    },
+    "DescribeCodeCoverages": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "codeCoverages"
+    },
+    "ListBuildBatches": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "ids"
+    },
+    "ListBuildBatchesForProject": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "ids"
+    }
+  }
+}

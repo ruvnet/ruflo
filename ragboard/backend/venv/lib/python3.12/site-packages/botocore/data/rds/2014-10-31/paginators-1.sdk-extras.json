@@ -1,0 +1,12 @@
+{
+  "version": 1.0,
+  "merge": {
+    "pagination": {
+      "DescribeCertificates": {
+        "non_aggregate_keys": [
+          "DefaultCertificateForNewLaunches"
+        ]
+      }
+    }
+  }
+}

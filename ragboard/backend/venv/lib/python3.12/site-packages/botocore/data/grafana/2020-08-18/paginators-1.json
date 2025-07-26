@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListPermissions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "permissions"
+    },
+    "ListWorkspaces": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "workspaces"
+    },
+    "ListVersions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "grafanaVersions"
+    },
+    "ListWorkspaceServiceAccountTokens": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "serviceAccountTokens"
+    },
+    "ListWorkspaceServiceAccounts": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "serviceAccounts"
+    }
+  }
+}

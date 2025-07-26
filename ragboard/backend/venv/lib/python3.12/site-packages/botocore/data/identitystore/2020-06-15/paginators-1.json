@@ -1,0 +1,28 @@
+{
+  "pagination": {
+    "ListGroupMemberships": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "GroupMemberships"
+    },
+    "ListGroupMembershipsForMember": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "GroupMemberships"
+    },
+    "ListGroups": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Groups"
+    },
+    "ListUsers": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Users"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "DescribeServices": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Services",
+      "non_aggregate_keys": [
+        "FormatVersion"
+      ]
+    },
+    "GetAttributeValues": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "AttributeValues"
+    },
+    "GetProducts": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "PriceList",
+      "non_aggregate_keys": [
+        "FormatVersion"
+      ]
+    },
+    "ListPriceLists": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "PriceLists"
+    }
+  }
+}

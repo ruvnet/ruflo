@@ -1,0 +1,20 @@
+Metadata-Version: 2.1
+Name: flatbuffers
+Version: 25.2.10
+Summary: The FlatBuffers serialization format for Python
+Home-page: https://google.github.io/flatbuffers/
+Author: Derek Bailey
+Author-email: derekbailey@google.com
+License: Apache 2.0
+Project-URL: Documentation, https://google.github.io/flatbuffers/
+Project-URL: Source, https://github.com/google/flatbuffers
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+License-File: ../LICENSE
+
+Python runtime library for use with the `Flatbuffers <https://google.github.io/flatbuffers/>`_ serialization format.

@@ -1,0 +1,5 @@
+[console_scripts]
+typer = typer.cli:main
+
+[gui_scripts]
+

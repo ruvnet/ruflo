@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ollama Embedding Function Schema",
+  "description": "Schema for the Ollama embedding function configuration",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "description": "The URL of the Ollama server"
+    },
+    "model_name": {
+      "type": "string",
+      "description": "The name of the model to use for embeddings"
+    },
+    "timeout": {
+      "type": "integer",
+      "description": "Timeout in seconds for the API request"
+    }
+  },
+  "required": [
+    "url",
+    "model_name"
+  ],
+  "additionalProperties": false
+}

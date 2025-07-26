@@ -1,0 +1,292 @@
+{
+  "definitions": {
+    "throttling": {
+      "applies_when": {
+        "response": {
+          "service_error_code": "Throttling",
+          "http_status_code": 400
+        }
+      }
+    },
+    "throttling_exception": {
+      "applies_when": {
+        "response": {
+          "service_error_code": "ThrottlingException",
+          "http_status_code": 400
+        }
+      }
+    },
+    "throttled_exception": {
+      "applies_when": {
+        "response": {
+          "service_error_code": "ThrottledException",
+          "http_status_code": 400
+        }
+      }
+    },
+    "request_throttled_exception": {
+      "applies_when": {
+        "response": {
+          "service_error_code": "RequestThrottledException",
+          "http_status_code": 400
+        }
+      }
+    },
+    "too_many_requests": {
+      "applies_when": {
+        "response": {
+          "http_status_code": 429
+        }
+      }
+    },
+    "general_socket_errors": {
+      "applies_when": {
+        "socket_errors": ["GENERAL_CONNECTION_ERROR"]
+      }
+    },
+    "general_server_error": {
+      "applies_when": {
+        "response": {
+          "http_status_code": 500
+        }
+      }
+    },
+    "bad_gateway": {
+      "applies_when": {
+        "response": {
+          "http_status_code": 502
+        }
+      }
+    },
+    "service_unavailable": {
+      "applies_when": {
+        "response": {
+          "http_status_code": 503
+        }
+      }
+    },
+    "gateway_timeout": {
+      "applies_when": {
+        "response": {
+          "http_status_code": 504
+        }
+      }
+    },
+    "limit_exceeded": {
+      "applies_when": {
+        "response": {
+          "http_status_code": 509
+        }
+      }
+    },
+    "throughput_exceeded": {
+      "applies_when": {
+        "response": {
+          "service_error_code": "ProvisionedThroughputExceededException",
+          "http_status_code": 400
+        }
+      }
+    }
+  },
+  "retry": {
+    "__default__": {
+      "max_attempts": 5,
+      "delay": {
+        "type": "exponential",
+        "base": "rand",
+        "growth_factor": 2
+      },
+      "policies": {
+          "general_socket_errors": {"$ref": "general_socket_errors"},
+          "general_server_error": {"$ref": "general_server_error"},
+          "bad_gateway": {"$ref": "bad_gateway"},
+          "service_unavailable": {"$ref": "service_unavailable"},
+          "gateway_timeout": {"$ref": "gateway_timeout"},
+          "limit_exceeded": {"$ref": "limit_exceeded"},
+          "throttling_exception": {"$ref": "throttling_exception"},
+          "throttled_exception": {"$ref": "throttled_exception"},
+          "request_throttled_exception": {"$ref": "request_throttled_exception"},
+          "throttling": {"$ref": "throttling"},
+          "too_many_requests": {"$ref": "too_many_requests"},
+          "throughput_exceeded": {"$ref": "throughput_exceeded"}
+      }
+    },
+    "organizations": {
+      "__default__": {
+        "policies": {
+          "too_many_requests": {
+            "applies_when": {
+              "response": {
+                "service_error_code": "TooManyRequestsException",
+                "http_status_code": 400
+              }
+            }
+          }
+        }
+      }
+    },
+    "dynamodb": {
+      "__default__": {
+        "max_attempts": 10,
+        "delay": {
+          "type": "exponential",
+          "base": 0.05,
+          "growth_factor": 2
+        },
+        "policies": {
+	  "still_processing": {
+	    "applies_when": {
+	      "response": {
+		"service_error_code": "TransactionInProgressException",
+		"http_status_code": 400
+	      }
+	    }
+	  },
+          "crc32": {
+            "applies_when": {
+              "response": {
+                "crc32body": "x-amz-crc32"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ec2": {
+      "__default__": {
+        "policies": {
+          "request_limit_exceeded": {
+            "applies_when": {
+              "response": {
+                "service_error_code": "RequestLimitExceeded",
+                "http_status_code": 503
+              }
+            }
+          },
+          "ec2_throttled_exception": {
+            "applies_when": {
+              "response": {
+                "service_error_code": "EC2ThrottledException",
+                "http_status_code": 503
+              }
+            }
+          }
+        }
+      }
+    },
+    "cloudsearch": {
+      "__default__": {
+        "policies": {
+          "request_limit_exceeded": {
+            "applies_when": {
+              "response": {
+                "service_error_code": "BandwidthLimitExceeded",
+                "http_status_code": 509
+              }
+            }
+          }
+        }
+      }
+    },
+    "kinesis": {
+      "__default__": {
+        "policies": {
+          "request_limit_exceeded": {
+            "applies_when": {
+              "response": {
+                "service_error_code": "LimitExceededException",
+                "http_status_code": 400
+              }
+            }
+          }
+        }
+      }
+    },
+    "sqs": {
+      "__default__": {
+        "policies": {
+          "request_limit_exceeded": {
+            "applies_when": {
+              "response": {
+                "service_error_code": "RequestThrottled",
+                "http_status_code": 403
+              }
+            }
+          }
+        }
+      }
+    },
+    "s3": {
+      "__default__": {
+        "policies": {
+          "timeouts": {
+            "applies_when": {
+              "response": {
+                "http_status_code": 400,
+                "service_error_code": "RequestTimeout"
+              }
+            }
+          },
+          "contentmd5": {
+            "applies_when": {
+              "response": {
+                "http_status_code": 400,
+                "service_error_code": "BadDigest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "glacier": {
+      "__default__": {
+        "policies": {
+          "timeouts": {
+            "applies_when": {
+              "response": {
+                "http_status_code": 408,
+                "service_error_code": "RequestTimeoutException"
+              }
+            }
+          }
+        }
+      }
+    },
+    "route53": {
+      "__default__": {
+        "policies": {
+          "request_limit_exceeded": {
+            "applies_when": {
+              "response": {
+                "service_error_code": "Throttling",
+                "http_status_code": 400
+              }
+            }
+          },
+          "still_processing": {
+            "applies_when": {
+              "response": {
+                "service_error_code": "PriorRequestNotComplete",
+                "http_status_code": 400
+              }
+            }
+          }
+        }
+      }
+    },
+    "sts": {
+      "__default__": {
+        "policies": {
+          "idp_unreachable_error": {
+            "applies_when": {
+              "response": {
+                "service_error_code": "IDPCommunicationError",
+                "http_status_code": 400
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

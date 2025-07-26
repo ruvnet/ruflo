@@ -1,0 +1,11 @@
+Metadata-Version: 2.1
+Name: durationpy
+Version: 0.10
+Summary: Module for converting between datetime.timedelta and Go's Duration strings.
+Home-page: https://github.com/icholy/durationpy
+Download-URL: https://github.com/icholy/durationpy/tarball/0.10
+Author: Ilia Choly
+Author-email: ilia.choly@gmail.com
+License: MIT
+License-File: LICENSE
+

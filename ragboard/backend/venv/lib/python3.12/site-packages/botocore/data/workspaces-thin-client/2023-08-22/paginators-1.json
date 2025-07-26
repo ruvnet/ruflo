@@ -1,0 +1,22 @@
+{
+  "pagination": {
+    "ListDevices": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "devices"
+    },
+    "ListEnvironments": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "environments"
+    },
+    "ListSoftwareSets": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "softwareSets"
+    }
+  }
+}

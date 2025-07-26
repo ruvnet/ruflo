@@ -1,0 +1,47 @@
+ {
+  "version": 1.0,
+  "merge": {
+    "shapes": {
+      "CopyDBClusterSnapshotMessage": {
+        "members": {
+          "SourceRegion": {
+            "shape": "String",
+            "documentation": "<p>The ID of the region that contains the snapshot to be copied.</p>"
+          }
+        }
+      },
+      "CreateDBClusterMessage": {
+        "members": {
+          "SourceRegion": {
+            "shape": "String",
+            "documentation": "<p>The ID of the region that contains the source for the db cluster.</p>"
+          }
+        }
+      },
+      "CopyDBSnapshotMessage": {
+        "members": {
+          "SourceRegion": {
+            "shape": "String",
+            "documentation": "<p>The ID of the region that contains the snapshot to be copied.</p>"
+          }
+        }
+      },
+      "CreateDBInstanceReadReplicaMessage": {
+        "members": {
+          "SourceRegion": {
+            "shape": "String",
+            "documentation": "<p>The ID of the region that contains the source for the read replica.</p>"
+          }
+        }
+      },
+      "StartDBInstanceAutomatedBackupsReplicationMessage": {
+        "members": {
+          "SourceRegion": {
+            "shape": "String",
+            "documentation": "<p>The ID of the region that contains the source for the db instance.</p>"
+          }
+        }
+      }
+    }
+  }
+}

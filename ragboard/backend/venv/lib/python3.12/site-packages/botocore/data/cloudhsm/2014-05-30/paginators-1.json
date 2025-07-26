@@ -1,0 +1,19 @@
+{
+  "pagination": {
+    "ListHapgs": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "HapgList"
+    },
+    "ListHsms": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "HsmList"
+    },
+    "ListLunaClients": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "ClientList"
+    }
+  }
+}

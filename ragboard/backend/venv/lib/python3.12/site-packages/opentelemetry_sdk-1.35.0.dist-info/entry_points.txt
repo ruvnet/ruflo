@@ -1,0 +1,37 @@
+[opentelemetry_environment_variables]
+sdk = opentelemetry.sdk.environment_variables
+
+[opentelemetry_id_generator]
+random = opentelemetry.sdk.trace.id_generator:RandomIdGenerator
+
+[opentelemetry_logger_provider]
+sdk_logger_provider = opentelemetry.sdk._logs:LoggerProvider
+
+[opentelemetry_logs_exporter]
+console = opentelemetry.sdk._logs.export:ConsoleLogExporter
+
+[opentelemetry_meter_provider]
+sdk_meter_provider = opentelemetry.sdk.metrics:MeterProvider
+
+[opentelemetry_metrics_exporter]
+console = opentelemetry.sdk.metrics.export:ConsoleMetricExporter
+
+[opentelemetry_resource_detector]
+host = opentelemetry.sdk.resources:_HostResourceDetector
+os = opentelemetry.sdk.resources:OsResourceDetector
+otel = opentelemetry.sdk.resources:OTELResourceDetector
+process = opentelemetry.sdk.resources:ProcessResourceDetector
+
+[opentelemetry_tracer_provider]
+sdk_tracer_provider = opentelemetry.sdk.trace:TracerProvider
+
+[opentelemetry_traces_exporter]
+console = opentelemetry.sdk.trace.export:ConsoleSpanExporter
+
+[opentelemetry_traces_sampler]
+always_off = opentelemetry.sdk.trace.sampling:_AlwaysOff
+always_on = opentelemetry.sdk.trace.sampling:_AlwaysOn
+parentbased_always_off = opentelemetry.sdk.trace.sampling:_ParentBasedAlwaysOff
+parentbased_always_on = opentelemetry.sdk.trace.sampling:_ParentBasedAlwaysOn
+parentbased_traceidratio = opentelemetry.sdk.trace.sampling:ParentBasedTraceIdRatio
+traceidratio = opentelemetry.sdk.trace.sampling:TraceIdRatioBased

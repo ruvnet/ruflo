@@ -1,0 +1,14 @@
+{
+    "version": 1.0,
+    "merge": {
+        "pagination": {
+            "GetChatControlsConfiguration": {
+                "non_aggregate_keys": [
+                    "responseScope",
+                    "blockedPhrases",
+                    "creatorModeConfiguration"
+                ]
+            }
+        }
+    }
+}

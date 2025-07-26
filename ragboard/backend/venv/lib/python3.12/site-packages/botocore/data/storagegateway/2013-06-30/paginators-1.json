@@ -1,0 +1,79 @@
+{
+  "pagination": {
+    "DescribeTapeArchives": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "TapeArchives"
+    },
+    "DescribeTapeRecoveryPoints": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "TapeRecoveryPointInfos"
+    },
+    "DescribeTapes": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "Tapes"
+    },
+    "DescribeVTLDevices": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "VTLDevices"
+    },
+    "ListGateways": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "Gateways"
+    },
+    "ListVolumes": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "VolumeInfos"
+    },
+    "ListTapes": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "TapeInfos"
+    },
+    "ListFileShares": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "non_aggregate_keys": [
+        "Marker"
+      ],
+      "output_token": "NextMarker",
+      "result_key": "FileShareInfoList"
+    },
+    "ListTagsForResource": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "non_aggregate_keys": [
+        "ResourceARN"
+      ],
+      "output_token": "Marker",
+      "result_key": "Tags"
+    },
+    "ListTapePools": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "PoolInfos"
+    },
+    "ListFileSystemAssociations": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "non_aggregate_keys": [
+        "Marker"
+      ],
+      "output_token": "NextMarker",
+      "result_key": "FileSystemAssociationSummaryList"
+    }
+  }
+}

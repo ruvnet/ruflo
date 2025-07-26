@@ -1,0 +1,16 @@
+click_repl-0.3.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+click_repl-0.3.0.dist-info/LICENSE,sha256=w5qXIkFz5heQemLXVoSEvYPgWlplXqlCQH3DWjIetDE,1141
+click_repl-0.3.0.dist-info/METADATA,sha256=DF4pXhK8sH8aQ33WNAfX-umqGuIG8fgTmjehMdmBqG0,3553
+click_repl-0.3.0.dist-info/RECORD,,
+click_repl-0.3.0.dist-info/WHEEL,sha256=G16H4A3IeoQmnOrYV4ueZGKSjhipXx8zc8nu9FGlvMA,92
+click_repl-0.3.0.dist-info/top_level.txt,sha256=F6rJUNCBcNeCP3tglg54K9NGWoA0azS09pH1B3V5LbQ,11
+click_repl/__init__.py,sha256=t3mMAVXruN3TZ72aXXHqk__ySRx7yyia8S8QnFd8Oq8,514
+click_repl/__pycache__/__init__.cpython-312.pyc,,
+click_repl/__pycache__/_completer.cpython-312.pyc,,
+click_repl/__pycache__/_repl.cpython-312.pyc,,
+click_repl/__pycache__/exceptions.cpython-312.pyc,,
+click_repl/__pycache__/utils.cpython-312.pyc,,
+click_repl/_completer.py,sha256=0otlzltYbyc6BLv-kGV1S-jKPASd-ZJPfyiXsR9BkLE,9760
+click_repl/_repl.py,sha256=ABz22IoLkKEcfU7_gHbXTk7e96oxrUgDuumyjMs-ja8,4513
+click_repl/exceptions.py,sha256=b2623jlSGVISztcC07xZ6Dg1OwGbsyhwGDkEWRlQ2yU,445
+click_repl/utils.py,sha256=2r--kMG24BaF8d_RypX2KSpfKdrWkPI2YEHd5cFCbMY,6119

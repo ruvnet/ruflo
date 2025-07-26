@@ -1,0 +1,16 @@
+{
+  "pagination": {
+    "ListAppAssessmentResourceDrifts": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "resourceDrifts"
+    },
+    "ListResourceGroupingRecommendations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "groupingRecommendations"
+    }
+  }
+}

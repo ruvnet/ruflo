@@ -1,0 +1,22 @@
+{
+  "pagination": {
+    "ListGateways": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Gateways"
+    },
+    "ListHypervisors": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Hypervisors"
+    },
+    "ListVirtualMachines": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "VirtualMachines"
+    }
+  }
+}

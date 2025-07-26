@@ -1,0 +1,8 @@
+[opentelemetry_logs_exporter]
+otlp_proto_grpc = opentelemetry.exporter.otlp.proto.grpc._log_exporter:OTLPLogExporter
+
+[opentelemetry_metrics_exporter]
+otlp_proto_grpc = opentelemetry.exporter.otlp.proto.grpc.metric_exporter:OTLPMetricExporter
+
+[opentelemetry_traces_exporter]
+otlp_proto_grpc = opentelemetry.exporter.otlp.proto.grpc.trace_exporter:OTLPSpanExporter

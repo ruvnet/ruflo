@@ -1,0 +1,40 @@
+{
+  "pagination": {
+    "GetResourcePolicies": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "policies"
+    },
+    "GetResourceShareAssociations": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "resourceShareAssociations"
+    },
+    "GetResourceShareInvitations": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "resourceShareInvitations"
+    },
+    "GetResourceShares": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "resourceShares"
+    },
+    "ListPrincipals": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "principals"
+    },
+    "ListResources": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "resources"
+    }
+  }
+}

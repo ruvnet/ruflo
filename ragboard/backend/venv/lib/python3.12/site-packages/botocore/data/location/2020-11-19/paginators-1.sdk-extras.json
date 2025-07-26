@@ -1,0 +1,13 @@
+{
+  "version": 1.0,
+  "merge": {
+    "pagination": {
+      "ForecastGeofenceEvents": {
+        "non_aggregate_keys": [
+          "DistanceUnit",
+          "SpeedUnit"
+        ]
+      }
+    }
+  }
+}

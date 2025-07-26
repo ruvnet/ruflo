@@ -1,0 +1,149 @@
+Metadata-Version: 2.1
+Name: botocore
+Version: 1.34.162
+Summary: Low-level, data-driven core of boto 3.
+Home-page: https://github.com/boto/botocore
+Author: Amazon Web Services
+License: Apache License 2.0
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: System Administrators
+Classifier: Natural Language :: English
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >= 3.8
+License-File: LICENSE.txt
+License-File: NOTICE
+Requires-Dist: jmespath (<2.0.0,>=0.7.1)
+Requires-Dist: python-dateutil (<3.0.0,>=2.1)
+Requires-Dist: urllib3 (<1.27,>=1.25.4) ; python_version < "3.10"
+Requires-Dist: urllib3 (!=2.2.0,<3,>=1.25.4) ; python_version >= "3.10"
+Provides-Extra: crt
+Requires-Dist: awscrt (==0.21.2) ; extra == 'crt'
+
+botocore
+========
+
+|Version| |Python| |License|
+
+A low-level interface to a growing number of Amazon Web Services. The
+botocore package is the foundation for the
+`AWS CLI <https://github.com/aws/aws-cli>`__ as well as
+`boto3 <https://github.com/boto/boto3>`__.
+
+Botocore is maintained and published by `Amazon Web Services`_.
+
+Notices
+-------
+
+On 2023-12-13, support was dropped for Python 3.7. This follows the
+Python Software Foundation `end of support <https://www.python.org/dev/peps/pep-0537/#lifespan>`__
+for the runtime which occurred on 2023-06-27.
+For more information, see this `blog post <https://aws.amazon.com/blogs/developer/python-support-policy-updates-for-aws-sdks-and-tools/>`__.
+
+.. _`Amazon Web Services`: https://aws.amazon.com/what-is-aws/
+.. |Python| image:: https://img.shields.io/pypi/pyversions/botocore.svg?style=flat
+    :target: https://pypi.python.org/pypi/botocore/
+    :alt: Python Versions
+.. |Version| image:: http://img.shields.io/pypi/v/botocore.svg?style=flat
+    :target: https://pypi.python.org/pypi/botocore/
+    :alt: Package Version
+.. |License| image:: http://img.shields.io/pypi/l/botocore.svg?style=flat
+    :target: https://github.com/boto/botocore/blob/develop/LICENSE.txt
+    :alt: License
+
+Getting Started
+---------------
+Assuming that you have Python and ``virtualenv`` installed, set up your environment and install the required dependencies like this or you can install the library using ``pip``:
+
+.. code-block:: sh
+
+    $ git clone https://github.com/boto/botocore.git
+    $ cd botocore
+    $ virtualenv venv
+    ...
+    $ . venv/bin/activate
+    $ pip install -r requirements.txt
+    $ pip install -e .
+
+.. code-block:: sh
+
+    $ pip install botocore
+
+Using Botocore
+~~~~~~~~~~~~~~
+After installing botocore
+
+Next, set up credentials (in e.g. ``~/.aws/credentials``):
+
+.. code-block:: ini
+
+    [default]
+    aws_access_key_id = YOUR_KEY
+    aws_secret_access_key = YOUR_SECRET
+
+Then, set up a default region (in e.g. ``~/.aws/config``):
+
+.. code-block:: ini
+
+   [default]
+   region=us-east-1
+
+Other credentials configuration method can be found `here <https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html>`__
+
+Then, from a Python interpreter:
+
+.. code-block:: python
+
+    >>> import botocore.session
+    >>> session = botocore.session.get_session()
+    >>> client = session.create_client('ec2')
+    >>> print(client.describe_instances())
+
+
+Getting Help
+------------
+
+We use GitHub issues for tracking bugs and feature requests and have limited
+bandwidth to address them. Please use these community resources for getting
+help. Please note many of the same resources available for ``boto3`` are
+applicable for ``botocore``:
+
+* Ask a question on `Stack Overflow <https://stackoverflow.com/>`__ and tag it with `boto3 <https://stackoverflow.com/questions/tagged/boto3>`__
+* Open a support ticket with `AWS Support <https://console.aws.amazon.com/support/home#/>`__
+* If it turns out that you may have found a bug, please `open an issue <https://github.com/boto/botocore/issues/new/choose>`__
+
+
+Contributing
+------------
+
+We value feedback and contributions from our community. Whether it's a bug report, new feature, correction, or additional documentation, we welcome your issues and pull requests. Please read through this `CONTRIBUTING <https://github.com/boto/botocore/blob/develop/CONTRIBUTING.rst>`__ document before submitting any issues or pull requests to ensure we have all the necessary information to effectively respond to your contribution.
+
+
+Maintenance and Support for SDK Major Versions
+----------------------------------------------
+
+Botocore was made generally available on 06/22/2015 and is currently in the full support phase of the availability life cycle.
+
+For information about maintenance and support for SDK major versions and their underlying dependencies, see the following in the AWS SDKs and Tools Reference Guide:
+
+* `AWS SDKs and Tools Maintenance Policy <https://docs.aws.amazon.com/sdkref/latest/guide/maint-policy.html>`__
+* `AWS SDKs and Tools Version Support Matrix <https://docs.aws.amazon.com/sdkref/latest/guide/version-support-matrix.html>`__
+
+
+More Resources
+--------------
+
+* `NOTICE <https://github.com/boto/botocore/blob/develop/NOTICE>`__
+* `Changelog <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>`__
+* `License <https://github.com/boto/botocore/blob/develop/LICENSE.txt>`__
+
+

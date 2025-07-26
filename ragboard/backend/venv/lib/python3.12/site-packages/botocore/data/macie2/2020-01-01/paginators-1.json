@@ -1,0 +1,106 @@
+{
+  "pagination": {
+    "DescribeBuckets": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "buckets"
+    },
+    "GetUsageStatistics": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "records",
+      "non_aggregate_keys": [
+        "timeRange"
+      ]
+    },
+    "ListClassificationJobs": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "items"
+    },
+    "ListCustomDataIdentifiers": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "items"
+    },
+    "ListFindings": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "findingIds"
+    },
+    "ListFindingsFilters": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "findingsFilterListItems"
+    },
+    "ListInvitations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "invitations"
+    },
+    "ListMembers": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "members"
+    },
+    "ListOrganizationAdminAccounts": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "adminAccounts"
+    },
+    "SearchResources": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "matchingResources"
+    },
+    "ListClassificationScopes": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "classificationScopes"
+    },
+    "ListAllowLists": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "allowLists"
+    },
+    "ListManagedDataIdentifiers": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "items"
+    },
+    "ListResourceProfileDetections": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "detections"
+    },
+    "ListSensitivityInspectionTemplates": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "sensitivityInspectionTemplates"
+    },
+    "ListResourceProfileArtifacts": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "artifacts"
+    },
+    "ListAutomatedDiscoveryAccounts": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "items"
+    }
+  }
+}

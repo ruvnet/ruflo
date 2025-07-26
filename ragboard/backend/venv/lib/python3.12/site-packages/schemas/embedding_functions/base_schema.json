@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Embedding Function Base Schema",
+    "description": "Base schema for all embedding functions in Chroma",
+    "type": "object",
+    "properties": {
+        "version": {
+            "type": "string",
+            "description": "Schema version for the embedding function"
+        },
+        "name": {
+            "type": "string",
+            "description": "Name of the embedding function"
+        },
+        "config": {
+            "type": "object",
+            "description": "Configuration parameters for the embedding function"
+        }
+    },
+    "required": [
+        "version",
+        "name",
+        "config"
+    ],
+    "additionalProperties": false
+}

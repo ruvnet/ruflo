@@ -1,0 +1,46 @@
+{
+  "pagination": {
+    "DescribeAgents": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "agentsInfo"
+    },
+    "DescribeContinuousExports": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "descriptions"
+    },
+    "DescribeExportConfigurations": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "exportsInfo"
+    },
+    "DescribeExportTasks": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "exportsInfo"
+    },
+    "DescribeTags": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "tags"
+    },
+    "ListConfigurations": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "configurations"
+    },
+    "DescribeImportTasks": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "tasks"
+    }
+  }
+}

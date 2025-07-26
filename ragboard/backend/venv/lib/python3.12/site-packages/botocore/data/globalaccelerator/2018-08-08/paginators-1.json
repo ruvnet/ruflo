@@ -1,0 +1,70 @@
+{
+  "pagination": {
+    "ListAccelerators": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Accelerators"
+    },
+    "ListEndpointGroups": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "EndpointGroups"
+    },
+    "ListListeners": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Listeners"
+    },
+    "ListByoipCidrs": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ByoipCidrs"
+    },
+    "ListCustomRoutingAccelerators": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Accelerators"
+    },
+    "ListCustomRoutingListeners": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Listeners"
+    },
+    "ListCustomRoutingPortMappings": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "PortMappings"
+    },
+    "ListCustomRoutingPortMappingsByDestination": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "DestinationPortMappings"
+    },
+    "ListCustomRoutingEndpointGroups": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "EndpointGroups"
+    },
+    "ListCrossAccountAttachments": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "CrossAccountAttachments"
+    },
+    "ListCrossAccountResources": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "CrossAccountResources"
+    }
+  }
+}

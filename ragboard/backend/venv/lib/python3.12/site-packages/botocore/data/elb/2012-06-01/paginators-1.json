@@ -1,0 +1,16 @@
+{
+  "pagination": {
+    "DescribeLoadBalancers": {
+      "input_token": "Marker",
+      "output_token": "NextMarker",
+      "result_key": "LoadBalancerDescriptions",
+      "limit_key": "PageSize"
+    },
+    "DescribeAccountLimits": {
+      "input_token": "Marker",
+      "limit_key": "PageSize",
+      "output_token": "NextMarker",
+      "result_key": "Limits"
+    }
+  }
+}

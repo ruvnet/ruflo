@@ -1,0 +1,28 @@
+{
+  "pagination": {
+    "ListCapabilities": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "capabilities"
+    },
+    "ListPartnerships": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "partnerships"
+    },
+    "ListProfiles": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "profiles"
+    },
+    "ListTransformers": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "transformers"
+    }
+  }
+}

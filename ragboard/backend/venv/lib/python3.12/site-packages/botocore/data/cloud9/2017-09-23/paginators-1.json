@@ -1,0 +1,16 @@
+{
+  "pagination": {
+    "DescribeEnvironmentMemberships": {
+      "result_key": "memberships",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "ListEnvironments": {
+      "result_key": "environmentIds",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    }
+  }
+}

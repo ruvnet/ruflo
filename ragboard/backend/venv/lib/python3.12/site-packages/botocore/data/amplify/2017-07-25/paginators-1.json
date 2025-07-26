@@ -1,0 +1,28 @@
+{
+  "pagination": {
+    "ListApps": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "apps"
+    },
+    "ListBranches": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "branches"
+    },
+    "ListDomainAssociations": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "domainAssociations"
+    },
+    "ListJobs": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "jobSummaries"
+    }
+  }
+}

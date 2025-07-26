@@ -1,0 +1,50 @@
+{
+  "pagination": {
+    "ListNamedQueries": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "NamedQueryIds"
+    },
+    "ListQueryExecutions": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "QueryExecutionIds"
+    },
+    "GetQueryResults": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ResultSet.Rows",
+      "non_aggregate_keys": [
+        "ResultSet.ResultSetMetadata",
+        "UpdateCount"
+      ]
+    },
+    "ListDataCatalogs": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "DataCatalogsSummary"
+    },
+    "ListDatabases": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "DatabaseList"
+    },
+    "ListTableMetadata": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "TableMetadataList"
+    },
+    "ListTagsForResource": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Tags"
+    }
+  }
+}

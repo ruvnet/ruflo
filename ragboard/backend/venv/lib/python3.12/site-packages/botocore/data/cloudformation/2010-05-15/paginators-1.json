@@ -1,0 +1,124 @@
+{
+  "pagination": {
+    "DescribeAccountLimits": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "AccountLimits"
+    },
+    "DescribeChangeSet": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Changes",
+      "non_aggregate_keys": [
+        "ChangeSetName",
+        "ChangeSetId",
+        "StackId",
+        "StackName",
+        "Description",
+        "Parameters",
+        "CreationTime",
+        "ExecutionStatus",
+        "Status",
+        "StatusReason",
+        "NotificationARNs",
+        "RollbackConfiguration",
+        "Capabilities",
+        "Tags",
+        "ParentChangeSetId",
+        "IncludeNestedStacks",
+        "RootChangeSetId",
+        "OnStackFailure",
+        "ImportExistingResources"
+      ]
+    },
+    "DescribeStackEvents": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "StackEvents"
+    },
+    "DescribeStacks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Stacks"
+    },
+    "ListChangeSets": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Summaries"
+    },
+    "ListStackInstances": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Summaries"
+    },
+    "ListStackResources": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "StackResourceSummaries"
+    },
+    "ListStacks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "StackSummaries"
+    },
+    "ListStackSetOperationResults": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Summaries"
+    },
+    "ListStackSetOperations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Summaries"
+    },
+    "ListStackSets": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Summaries"
+    },
+    "ListExports": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Exports"
+    },
+    "ListImports": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Imports"
+    },
+    "ListTypes": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "TypeSummaries"
+    },
+    "ListGeneratedTemplates": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Summaries"
+    },
+    "ListResourceScanRelatedResources": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "RelatedResources"
+    },
+    "ListResourceScanResources": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Resources"
+    },
+    "ListResourceScans": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ResourceScanSummaries"
+    }
+  }
+}

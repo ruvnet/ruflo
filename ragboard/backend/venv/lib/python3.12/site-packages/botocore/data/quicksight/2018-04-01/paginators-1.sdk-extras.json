@@ -1,0 +1,197 @@
+{
+  "version": 1.0,
+  "merge": {
+    "pagination": {
+      "ListAnalyses": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListDashboardVersions": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListTemplateAliases": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListTemplateVersions": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListTemplates": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListThemeVersions": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListThemes": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "SearchAnalyses": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "SearchDashboards": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "SearchDataSets": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "SearchDataSources": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListNamespaces": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListIngestions": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListDataSources": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListDataSets": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListDashboards": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListAssetBundleExportJobs": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListAssetBundleImportJobs": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListGroupMemberships": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListGroups": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListIAMPolicyAssignments": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListIAMPolicyAssignmentsForUser": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListUserGroups": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListUsers": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "SearchGroups": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListFolders": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "ListFolderMembers": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "SearchFolders": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      },
+      "DescribeFolderPermissions": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId",
+          "Arn",
+          "FolderId"
+        ]
+      },
+      "DescribeFolderResolvedPermissions": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId",
+          "Arn",
+          "FolderId"
+        ]
+      },
+      "ListRoleMemberships": {
+        "non_aggregate_keys": [
+          "Status",
+          "RequestId"
+        ]
+      }
+    }
+  }
+}

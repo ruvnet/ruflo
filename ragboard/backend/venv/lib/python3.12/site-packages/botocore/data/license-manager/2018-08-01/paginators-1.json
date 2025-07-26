@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListAssociationsForLicenseConfiguration": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "LicenseConfigurationAssociations"
+    },
+    "ListLicenseConfigurations": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "LicenseConfigurations"
+    },
+    "ListLicenseSpecificationsForResource": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "LicenseSpecifications"
+    },
+    "ListResourceInventory": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "ResourceInventoryList"
+    },
+    "ListUsageForLicenseConfiguration": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "LicenseConfigurationUsageList"
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "pagination": {
+    "DescribeDirectoryConfigs": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "DirectoryConfigs"
+    },
+    "DescribeFleets": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Fleets"
+    },
+    "DescribeImageBuilders": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ImageBuilders"
+    },
+    "DescribeImages": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Images"
+    },
+    "DescribeSessions": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "Limit",
+      "result_key": "Sessions"
+    },
+    "DescribeStacks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Stacks"
+    },
+    "DescribeUserStackAssociations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "UserStackAssociations"
+    },
+    "DescribeUsers": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Users"
+    },
+    "ListAssociatedFleets": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Names"
+    },
+    "ListAssociatedStacks": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Names"
+    }
+  }
+}

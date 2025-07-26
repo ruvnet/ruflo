@@ -1,0 +1,46 @@
+{
+  "pagination": {
+    "ListMatchingJobs": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "jobs"
+    },
+    "ListMatchingWorkflows": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "workflowSummaries"
+    },
+    "ListSchemaMappings": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "schemaList"
+    },
+    "ListIdMappingJobs": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "jobs"
+    },
+    "ListIdMappingWorkflows": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "workflowSummaries"
+    },
+    "ListProviderServices": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "providerServiceSummaries"
+    },
+    "ListIdNamespaces": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "idNamespaceSummaries"
+    }
+  }
+}

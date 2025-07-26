@@ -1,0 +1,170 @@
+.tokenized-text {
+    width:100%;
+    padding:2rem;
+    max-height: 400px;
+    overflow-y: auto;
+    box-sizing:border-box;
+    line-height:4rem; /* Lots of space between lines */
+    font-family: "Roboto Light", "Ubuntu Light", "Ubuntu", monospace;
+    box-shadow: 2px 2px 2px rgba(0,0,0,0.2);
+    background-color: rgba(0,0,0,0.01);
+    letter-spacing:2px; /* Give some extra separation between chars */
+}
+.non-token{
+    /* White space and other things the tokenizer ignores*/
+    white-space: pre;
+    letter-spacing:4px;
+    border-top:1px solid #A0A0A0; /* A gentle border on top and bottom makes tabs more ovious*/
+    border-bottom:1px solid #A0A0A0;
+    line-height: 1rem;
+    height: calc(100% - 2px);
+}
+
+.token {
+    white-space: pre;
+    position:relative;
+    color:black;
+    letter-spacing:2px;
+}
+
+.annotation{
+    white-space:nowrap; /* Important - ensures that annotations appears even if the annotated text wraps a line */
+    border-radius:4px;
+    position:relative;
+    width:fit-content;
+}
+.annotation:before {
+    /*The before holds the text and the after holds the background*/
+    z-index:1000; /* Make sure this is above the background */
+    content:attr(data-label); /* The annotations label is on a data attribute */
+    color:white;
+    position:absolute;
+    font-size:1rem;
+    text-align:center;
+    font-weight:bold;
+
+    top:1.75rem;
+    line-height:0;
+    left:0;
+    width:100%;
+    padding:0.5rem 0;
+    /* These make it so an annotation doesn't stretch beyond the annotated text if the label is longer*/
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow:ellipsis;
+}
+
+.annotation:after {
+    content:attr(data-label); /* The content defines the width of the annotation*/
+    position:absolute;
+    font-size:0.75rem;
+    text-align:center;
+    font-weight:bold;
+    text-overflow:ellipsis;
+    top:1.75rem;
+    line-height:0;
+    overflow: hidden;
+    white-space: nowrap;
+
+    left:0;
+    width:100%; /* 100% of the parent, which is the annotation whose width is the tokens inside it*/
+
+    padding:0.5rem 0;
+    /* Nast hack below:
+    We set the annotations color in code because we don't know the colors at css time.
+    But you can't pass a color as a data attribute to get it into the pseudo element (this thing)
+    So to get around that, annotations have the color set on them with a style attribute and then we
+    can get the color with currentColor.
+    Annotations wrap tokens and tokens set the color back to black
+     */
+    background-color: currentColor;
+}
+.annotation:hover::after, .annotation:hover::before{
+    /* When the user hovers over an annotation expand the label to display in full
+     */
+    min-width: fit-content;
+}
+
+.annotation:hover{
+    /* Emphasize the annotation start end with a border on hover*/
+    border-color: currentColor;
+    border: 2px solid;
+}
+.special-token:not(:empty){
+    /*
+    A none empty special token is like UNK (as opposed to CLS which has no representation in the text )
+     */
+    position:relative;
+}
+.special-token:empty::before{
+    /* Special tokens that don't have text are displayed as pseudo elements so we dont select them with the mouse*/
+    content:attr(data-stok);
+    background:#202020;
+    font-size:0.75rem;
+    color:white;
+    margin: 0 0.25rem;
+    padding: 0.25rem;
+    border-radius:4px
+}
+
+.special-token:not(:empty):before {
+    /* Special tokens that have text (UNK) are displayed above the actual text*/
+    content:attr(data-stok);
+    position:absolute;
+    bottom:1.75rem;
+    min-width:100%;
+    width:100%;
+    height:1rem;
+    line-height:1rem;
+    font-size:1rem;
+    text-align:center;
+    color:white;
+    font-weight:bold;
+    background:#202020;
+    border-radius:10%;
+}
+/*
+We want to alternate the color of tokens, but we can't use nth child because tokens might be broken up by annotations
+instead we apply even and odd class at generation time and color them that way
+ */
+.even-token{
+    background:#DCDCDC	;
+    border: 1px solid #DCDCDC;
+}
+.odd-token{
+    background:#A0A0A0;
+    border: 1px solid #A0A0A0;
+}
+.even-token.multi-token,.odd-token.multi-token{
+    background:  repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 1px,
+    #ccc 1px,
+    #ccc 1px
+    ),
+    /* on "bottom" */
+    linear-gradient(
+    to bottom,
+    #FFB6C1,
+    #999
+    );
+}
+
+.multi-token:hover::after {
+    content:"This char has more than 1 token"; /* The content defines the width of the annotation*/
+    color:white;
+    background-color: black;
+    position:absolute;
+    font-size:0.75rem;
+    text-align:center;
+    font-weight:bold;
+    text-overflow:ellipsis;
+    top:1.75rem;
+    line-height:0;
+    overflow: hidden;
+    white-space: nowrap;
+    left:0;
+    width:fit-content; /* 100% of the parent, which is the annotation whose width is the tokens inside it*/
+    padding:0.5rem 0;
+}

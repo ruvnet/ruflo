@@ -1,0 +1,13 @@
+{
+  "version": 1.0,
+  "merge": {
+    "pagination": {
+      "Search": {
+        "non_aggregate_keys": [
+          "ViewArn",
+          "Count"
+        ]
+      }
+    }
+  }
+}

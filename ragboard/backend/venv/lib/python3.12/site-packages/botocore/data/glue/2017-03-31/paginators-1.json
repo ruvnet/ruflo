@@ -1,0 +1,153 @@
+{
+  "pagination": {
+    "GetJobs": {
+      "result_key": "Jobs",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetPartitions": {
+      "result_key": "Partitions",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetDatabases": {
+      "result_key": "DatabaseList",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetClassifiers": {
+      "result_key": "Classifiers",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetTableVersions": {
+      "result_key": "TableVersions",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetCrawlers": {
+      "result_key": "Crawlers",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetDevEndpoints": {
+      "result_key": "DevEndpoints",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetJobRuns": {
+      "result_key": "JobRuns",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetTriggers": {
+      "result_key": "Triggers",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetTables": {
+      "result_key": "TableList",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetUserDefinedFunctions": {
+      "result_key": "UserDefinedFunctions",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetCrawlerMetrics": {
+      "result_key": "CrawlerMetricsList",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetConnections": {
+      "result_key": "ConnectionList",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    },
+    "GetSecurityConfigurations": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "SecurityConfigurations"
+    },
+    "GetPartitionIndexes": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "PartitionIndexDescriptorList"
+    },
+    "GetResourcePolicies": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "GetResourcePoliciesResponseList"
+    },
+    "ListRegistries": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Registries"
+    },
+    "ListSchemaVersions": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Schemas"
+    },
+    "ListSchemas": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Schemas"
+    },
+    "ListUsageProfiles": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Profiles"
+    },
+    "GetWorkflowRuns": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Runs"
+    },
+    "ListBlueprints": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Blueprints"
+    },
+    "ListJobs": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "JobNames"
+    },
+    "ListTriggers": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "TriggerNames"
+    },
+    "ListWorkflows": {
+      "input_token": "NextToken",
+      "limit_key": "MaxResults",
+      "output_token": "NextToken",
+      "result_key": "Workflows"
+    }
+  }
+}

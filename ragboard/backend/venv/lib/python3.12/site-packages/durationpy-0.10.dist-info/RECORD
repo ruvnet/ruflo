@@ -1,0 +1,12 @@
+durationpy-0.10.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+durationpy-0.10.dist-info/LICENSE,sha256=tsWt_u1LpDhepqszxOm3MP0ik3NQsuF_hirhafjZDck,1050
+durationpy-0.10.dist-info/METADATA,sha256=OtTGVRbBoAor1FFjc6NA1fsKIE7xiigzG2Xc_J1kHSk,340
+durationpy-0.10.dist-info/RECORD,,
+durationpy-0.10.dist-info/WHEEL,sha256=oiQVh_5PnQM0E3gPdiz09WCNmwiHDMaGer_elqB3coM,92
+durationpy-0.10.dist-info/top_level.txt,sha256=p7gmD18378orviNj9EISnsA9BgoM8cTKvKdyV6GYESM,11
+durationpy/__init__.py,sha256=oBoToPf3F8iaNjvdfCiHWypw66f6zqV1PDjAqmd26iA,78
+durationpy/__init__.pyi,sha256=O_CmkSScwiMwwgb0autUDk2h4qf9Lp8QFzsZvvJDAdg,188
+durationpy/__pycache__/__init__.cpython-312.pyc,,
+durationpy/__pycache__/duration.cpython-312.pyc,,
+durationpy/duration.py,sha256=Xl5Xq0xvzRIGmHbsCZUF8-nsRJZYXt7z13D4kLvAQ6I,4093
+durationpy/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0

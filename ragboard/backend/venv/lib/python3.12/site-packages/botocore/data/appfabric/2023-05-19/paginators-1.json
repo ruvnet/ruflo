@@ -1,0 +1,28 @@
+{
+  "pagination": {
+    "ListAppAuthorizations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "appAuthorizationSummaryList"
+    },
+    "ListAppBundles": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "appBundleSummaryList"
+    },
+    "ListIngestionDestinations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "ingestionDestinations"
+    },
+    "ListIngestions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "ingestions"
+    }
+  }
+}

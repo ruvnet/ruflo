@@ -1,0 +1,22 @@
+{
+  "pagination": {
+    "DescribeDirectConnectGatewayAssociations": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "directConnectGatewayAssociations"
+    },
+    "DescribeDirectConnectGatewayAttachments": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "directConnectGatewayAttachments"
+    },
+    "DescribeDirectConnectGateways": {
+      "input_token": "nextToken",
+      "limit_key": "maxResults",
+      "output_token": "nextToken",
+      "result_key": "directConnectGateways"
+    }
+  }
+}

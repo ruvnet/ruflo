@@ -1,0 +1,44 @@
+{
+  "pagination": {
+    "ListBranches": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "branches"
+    },
+    "ListRepositories": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "repositories"
+    },
+    "GetCommentsForComparedCommit": {
+      "result_key": "commentsForComparedCommitData",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "DescribePullRequestEvents": {
+      "result_key": "pullRequestEvents",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetCommentsForPullRequest": {
+      "result_key": "commentsForPullRequestData",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "ListPullRequests": {
+      "result_key": "pullRequestIds",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetDifferences": {
+      "result_key": "differences",
+      "output_token": "NextToken",
+      "input_token": "NextToken",
+      "limit_key": "MaxResults"
+    }
+  }
+}

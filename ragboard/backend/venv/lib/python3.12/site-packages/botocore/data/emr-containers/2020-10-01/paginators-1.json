@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListJobRuns": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "jobRuns"
+    },
+    "ListManagedEndpoints": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "endpoints"
+    },
+    "ListVirtualClusters": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "virtualClusters"
+    },
+    "ListJobTemplates": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "templates"
+    },
+    "ListSecurityConfigurations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "securityConfigurations"
+    }
+  }
+}

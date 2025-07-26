@@ -1,0 +1,67 @@
+{
+  "pagination": {
+    "DescribeDocumentVersions": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "DocumentVersions"
+    },
+    "DescribeFolderContents": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": [
+        "Folders",
+        "Documents"
+      ]
+    },
+    "DescribeUsers": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "Users"
+    },
+    "DescribeActivities": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "UserActivities"
+    },
+    "DescribeComments": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "Comments"
+    },
+    "DescribeGroups": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "Groups"
+    },
+    "DescribeNotificationSubscriptions": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "Subscriptions"
+    },
+    "DescribeResourcePermissions": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "Principals"
+    },
+    "DescribeRootFolders": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "Folders"
+    },
+    "SearchResources": {
+      "input_token": "Marker",
+      "limit_key": "Limit",
+      "output_token": "Marker",
+      "result_key": "Items"
+    }
+  }
+}

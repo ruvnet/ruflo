@@ -1,0 +1,28 @@
+{
+  "pagination": {
+    "ListCommonControls": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "CommonControls"
+    },
+    "ListDomains": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Domains"
+    },
+    "ListObjectives": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Objectives"
+    },
+    "ListControls": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Controls"
+    }
+  }
+}

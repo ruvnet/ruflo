@@ -1,0 +1,61 @@
+Metadata-Version: 2.4
+Name: opentelemetry-semantic-conventions
+Version: 0.56b0
+Summary: OpenTelemetry Semantic Conventions
+Project-URL: Homepage, https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-semantic-conventions
+Project-URL: Repository, https://github.com/open-telemetry/opentelemetry-python
+Author-email: OpenTelemetry Authors <cncf-opentelemetry-contributors@lists.cncf.io>
+License-Expression: Apache-2.0
+License-File: LICENSE
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Framework :: OpenTelemetry
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Requires-Python: >=3.9
+Requires-Dist: opentelemetry-api==1.35.0
+Requires-Dist: typing-extensions>=4.5.0
+Description-Content-Type: text/x-rst
+
+OpenTelemetry Semantic Conventions
+==================================
+
+|pypi|
+
+.. |pypi| image:: https://badge.fury.io/py/opentelemetry-semantic-conventions.svg
+   :target: https://pypi.org/project/opentelemetry-semantic-conventions/
+
+This library contains generated code for the semantic conventions defined by the OpenTelemetry specification.
+
+Installation
+------------
+
+::
+
+    pip install opentelemetry-semantic-conventions
+
+Code Generation
+---------------
+
+These files were generated automatically from code in semconv_.
+To regenerate the code, run ``../scripts/semconv/generate.sh``.
+
+To build against a new release or specific commit of opentelemetry-specification_,
+update the ``SPEC_VERSION`` variable in
+``../scripts/semconv/generate.sh``. Then run the script and commit the changes.
+
+.. _opentelemetry-specification: https://github.com/open-telemetry/opentelemetry-specification
+.. _semconv: https://github.com/open-telemetry/opentelemetry-python/tree/main/scripts/semconv
+
+
+References
+----------
+
+* `OpenTelemetry Project <https://opentelemetry.io/>`_
+* `OpenTelemetry Semantic Conventions Definitions <https://github.com/open-telemetry/semantic-conventions/blob/main/docs/README.md>`_
+* `generate.sh script <https://github.com/open-telemetry/opentelemetry-python/blob/main/scripts/semconv/generate.sh>`_

@@ -1,0 +1,220 @@
+{
+  "pagination": {
+    "DescribeClusterParameterGroups": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "ParameterGroups"
+    },
+    "DescribeClusterParameters": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "Parameters"
+    },
+    "DescribeClusterSecurityGroups": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "ClusterSecurityGroups"
+    },
+    "DescribeClusterSnapshots": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "Snapshots"
+    },
+    "DescribeClusterSubnetGroups": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "ClusterSubnetGroups"
+    },
+    "DescribeClusterVersions": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "ClusterVersions"
+    },
+    "DescribeClusters": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "Clusters"
+    },
+    "DescribeDefaultClusterParameters": {
+      "input_token": "Marker",
+      "output_token": "DefaultClusterParameters.Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "DefaultClusterParameters.Parameters"
+    },
+    "DescribeEventSubscriptions": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "EventSubscriptionsList"
+    },
+    "DescribeEvents": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "Events"
+    },
+    "DescribeHsmClientCertificates": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "HsmClientCertificates"
+    },
+    "DescribeHsmConfigurations": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "HsmConfigurations"
+    },
+    "DescribeOrderableClusterOptions": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "OrderableClusterOptions"
+    },
+    "DescribeReservedNodeOfferings": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "ReservedNodeOfferings"
+    },
+    "DescribeReservedNodes": {
+      "input_token": "Marker",
+      "output_token": "Marker",
+      "limit_key": "MaxRecords",
+      "result_key": "ReservedNodes"
+    },
+    "DescribeClusterDbRevisions": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "ClusterDbRevisions"
+    },
+    "DescribeClusterTracks": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "MaintenanceTracks"
+    },
+    "DescribeSnapshotCopyGrants": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "SnapshotCopyGrants"
+    },
+    "DescribeSnapshotSchedules": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "SnapshotSchedules"
+    },
+    "DescribeTableRestoreStatus": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "TableRestoreStatusDetails"
+    },
+    "DescribeTags": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "TaggedResources"
+    },
+    "GetReservedNodeExchangeOfferings": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "ReservedNodeOfferings"
+    },
+    "DescribeNodeConfigurationOptions": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "NodeConfigurationOptionList"
+    },
+    "DescribeScheduledActions": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "ScheduledActions"
+    },
+    "DescribeUsageLimits": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "UsageLimits"
+    },
+    "DescribeEndpointAccess": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "EndpointAccessList"
+    },
+    "DescribeEndpointAuthorization": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "EndpointAuthorizationList"
+    },
+    "DescribeDataShares": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "DataShares"
+    },
+    "DescribeDataSharesForConsumer": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "DataShares"
+    },
+    "DescribeDataSharesForProducer": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "DataShares"
+    },
+    "DescribeReservedNodeExchangeStatus": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "ReservedNodeExchangeStatusDetails"
+    },
+    "GetReservedNodeExchangeConfigurationOptions": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "ReservedNodeConfigurationOptionList"
+    },
+    "DescribeCustomDomainAssociations": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "Associations"
+    },
+    "DescribeInboundIntegrations": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "InboundIntegrations"
+    },
+    "DescribeRedshiftIdcApplications": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "RedshiftIdcApplications"
+    },
+    "ListRecommendations": {
+      "input_token": "Marker",
+      "limit_key": "MaxRecords",
+      "output_token": "Marker",
+      "result_key": "Recommendations"
+    }
+  }
+}

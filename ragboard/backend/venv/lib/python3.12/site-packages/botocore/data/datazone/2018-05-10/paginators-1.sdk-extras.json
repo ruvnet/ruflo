@@ -1,0 +1,22 @@
+{
+  "version": 1.0,
+  "merge": {
+    "pagination": {
+      "Search": {
+        "non_aggregate_keys": [
+          "totalMatchCount"
+        ]
+      },
+      "SearchListings": {
+        "non_aggregate_keys": [
+          "totalMatchCount"
+        ]
+      },
+      "SearchTypes": {
+        "non_aggregate_keys": [
+          "totalMatchCount"
+        ]
+      }
+    }
+  }
+}

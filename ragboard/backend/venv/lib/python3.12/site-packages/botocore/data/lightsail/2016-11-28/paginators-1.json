@@ -1,0 +1,104 @@
+{
+  "pagination": {
+    "GetActiveNames": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "activeNames"
+    },
+    "GetBlueprints": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "blueprints"
+    },
+    "GetBundles": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "bundles"
+    },
+    "GetDomains": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "domains"
+    },
+    "GetInstanceSnapshots": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "instanceSnapshots"
+    },
+    "GetInstances": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "instances"
+    },
+    "GetKeyPairs": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "keyPairs"
+    },
+    "GetOperations": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "operations"
+    },
+    "GetStaticIps": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "staticIps"
+    },
+    "GetCloudFormationStackRecords": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "cloudFormationStackRecords"
+    },
+    "GetDiskSnapshots": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "diskSnapshots"
+    },
+    "GetDisks": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "disks"
+    },
+    "GetExportSnapshotRecords": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "exportSnapshotRecords"
+    },
+    "GetLoadBalancers": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "loadBalancers"
+    },
+    "GetRelationalDatabaseBlueprints": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "blueprints"
+    },
+    "GetRelationalDatabaseBundles": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "bundles"
+    },
+    "GetRelationalDatabaseEvents": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "relationalDatabaseEvents"
+    },
+    "GetRelationalDatabaseParameters": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "parameters"
+    },
+    "GetRelationalDatabaseSnapshots": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "relationalDatabaseSnapshots"
+    },
+    "GetRelationalDatabases": {
+      "input_token": "pageToken",
+      "output_token": "nextPageToken",
+      "result_key": "relationalDatabases"
+    }
+  }
+}

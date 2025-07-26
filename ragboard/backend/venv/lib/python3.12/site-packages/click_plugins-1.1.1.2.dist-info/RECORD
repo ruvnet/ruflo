@@ -1,0 +1,14 @@
+__pycache__/click_plugins.cpython-312.pyc,,
+click_plugins-1.1.1.2.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+click_plugins-1.1.1.2.dist-info/METADATA,sha256=yAp8lvQhJ3_U6dtzp0zfh181qntYtIRBLs-_Mn5KPGw,6461
+click_plugins-1.1.1.2.dist-info/RECORD,,
+click_plugins-1.1.1.2.dist-info/WHEEL,sha256=JNWh1Fm1UdwIQV075glCn4MVuCRs0sotJIq-J6rbxCU,109
+click_plugins-1.1.1.2.dist-info/licenses/AUTHORS.txt,sha256=FUhD9wZxX5--d9KS7hUB-wnHgyS67pdnWvADk8lrLeE,90
+click_plugins-1.1.1.2.dist-info/licenses/LICENSE.txt,sha256=-hmG0Gx9O6d2NSRgTbqzn69bGonHgSqNXZMufdcANtI,1517
+click_plugins-1.1.1.2.dist-info/top_level.txt,sha256=oB_GDZcOeOKX1eKKCfqSMR4tfJS6iL3zJshaJJPSQUI,14
+click_plugins-1.1.1.2.dist-info/zip-safe,sha256=AbpHGcgLb-kRsJGnwFEktk7uzpZOCcBY74-YBdrKVGs,1
+click_plugins.py,sha256=6E91i5df3URifE6VP0DA2iQKcvbTuHsEO6DeRr-QeFU,8095
+click_plugins/__init__.py,sha256=BvL0vYsRX1ho7W5YCFmeEeiXwoiPa-EIcBvvWdezMoM,2249
+click_plugins/__pycache__/__init__.cpython-312.pyc,,
+click_plugins/__pycache__/core.cpython-312.pyc,,
+click_plugins/core.py,sha256=4hhmUpFi6MSYsvxogksNu5dlKEWNscbiE9ynUy5dPdE,2475

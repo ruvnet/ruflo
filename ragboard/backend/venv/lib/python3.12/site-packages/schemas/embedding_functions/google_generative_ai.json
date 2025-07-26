@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Google Generative AI Embedding Function Schema",
+  "description": "Schema for the Google Generative AI embedding function configuration",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "model_name": {
+      "type": "string",
+      "description": "The name of the model to use for text embeddings"
+    },
+    "task_type": {
+      "type": "string",
+      "description": "The task type for the embeddings (e.g., RETRIEVAL_DOCUMENT)"
+    },
+    "api_key_env_var": {
+      "type": "string",
+      "description": "Environment variable name that contains your API key for the Google Generative AI API"
+    }
+  },
+  "required": [
+    "api_key_env_var",
+    "model_name",
+    "task_type"
+  ],
+  "additionalProperties": false
+}

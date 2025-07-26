@@ -1,0 +1,64 @@
+{
+  "pagination": {
+    "ListEndpointAccess": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "endpoints"
+    },
+    "ListNamespaces": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "namespaces"
+    },
+    "ListRecoveryPoints": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "recoveryPoints"
+    },
+    "ListSnapshots": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "snapshots"
+    },
+    "ListUsageLimits": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "usageLimits"
+    },
+    "ListWorkgroups": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "workgroups"
+    },
+    "ListTableRestoreStatus": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "tableRestoreStatuses"
+    },
+    "ListCustomDomainAssociations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "associations"
+    },
+    "ListScheduledActions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "scheduledActions"
+    },
+    "ListSnapshotCopyConfigurations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "snapshotCopyConfigurations"
+    }
+  }
+}

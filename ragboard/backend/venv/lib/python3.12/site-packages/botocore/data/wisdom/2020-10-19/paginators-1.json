@@ -1,0 +1,64 @@
+{
+  "pagination": {
+    "ListAssistantAssociations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assistantAssociationSummaries"
+    },
+    "ListAssistants": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "assistantSummaries"
+    },
+    "ListContents": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "contentSummaries"
+    },
+    "ListKnowledgeBases": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "knowledgeBaseSummaries"
+    },
+    "QueryAssistant": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "results"
+    },
+    "SearchContent": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "contentSummaries"
+    },
+    "SearchSessions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "sessionSummaries"
+    },
+    "ListImportJobs": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "importJobSummaries"
+    },
+    "ListQuickResponses": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "quickResponseSummaries"
+    },
+    "SearchQuickResponses": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "results"
+    }
+  }
+}

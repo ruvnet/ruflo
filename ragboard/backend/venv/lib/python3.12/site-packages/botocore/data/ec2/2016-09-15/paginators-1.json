@@ -1,0 +1,63 @@
+{
+  "pagination": {
+    "DescribeInstanceStatus": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "InstanceStatuses"
+    },
+    "DescribeInstances": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Reservations"
+    },
+    "DescribeReservedInstancesOfferings": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ReservedInstancesOfferings"
+    },
+    "DescribeReservedInstancesModifications": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "ReservedInstancesModifications"
+    },
+    "DescribeSnapshots": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Snapshots"
+    },
+    "DescribeSpotFleetRequests": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "SpotFleetRequestConfigs"
+    },
+    "DescribeSpotPriceHistory": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "SpotPriceHistory"
+    },
+    "DescribeTags": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Tags"
+    },
+    "DescribeVolumeStatus": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "VolumeStatuses"
+    },
+    "DescribeVolumes": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Volumes"
+    }
+  }
+}

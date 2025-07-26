@@ -1,0 +1,1025 @@
+import pytest
+import platform
+import numpy as np
+from numpy.testing import (TestCase, assert_array_almost_equal,
+                           assert_array_equal, assert_, assert_allclose,
+                           assert_equal)
+from scipy._lib._gcutils import assert_deallocated
+from scipy._lib._util import MapWrapper
+from scipy.sparse import csr_array
+from scipy.sparse.linalg import LinearOperator
+from scipy.optimize._differentiable_functions import (ScalarFunction,
+                                                      VectorFunction,
+                                                      LinearVectorFunction,
+                                                      IdentityVectorFunction)
+from scipy.optimize import rosen, rosen_der, rosen_hess
+from scipy.optimize._hessian_update_strategy import BFGS
+
+
+class ExScalarFunction:
+
+    def __init__(self):
+        self.nfev = 0
+        self.ngev = 0
+        self.nhev = 0
+
+    def fun(self, x):
+        self.nfev += 1
+        return 2*(x[0]**2 + x[1]**2 - 1) - x[0]
+
+    def grad(self, x):
+        self.ngev += 1
+        return np.array([4*x[0]-1, 4*x[1]])
+
+    def hess(self, x):
+        self.nhev += 1
+        return 4*np.eye(2)
+
+
+class TestScalarFunction(TestCase):
+
+    def test_finite_difference_grad(self):
+        ex = ExScalarFunction()
+        nfev = 0
+        ngev = 0
+
+        x0 = [1.0, 0.0]
+        analit = ScalarFunction(ex.fun, x0, (), ex.grad,
+                                ex.hess, None, (-np.inf, np.inf))
+        nfev += 1
+        ngev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev, nfev)
+        approx = ScalarFunction(ex.fun, x0, (), '2-point',
+                                ex.hess, None, (-np.inf, np.inf))
+        nfev += 3
+        ngev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_equal(analit.f, approx.f)
+        assert_array_almost_equal(analit.g, approx.g)
+
+        x = [10, 0.3]
+        f_analit = analit.fun(x)
+        g_analit = analit.grad(x)
+        nfev += 1
+        ngev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        f_approx = approx.fun(x)
+        g_approx = approx.grad(x)
+        nfev += 3
+        ngev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_almost_equal(f_analit, f_approx)
+        assert_array_almost_equal(g_analit, g_approx)
+
+        x = [2.0, 1.0]
+        g_analit = analit.grad(x)
+        ngev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+
+        g_approx = approx.grad(x)
+        nfev += 3
+        ngev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_almost_equal(g_analit, g_approx)
+
+        x = [2.5, 0.3]
+        f_analit = analit.fun(x)
+        g_analit = analit.grad(x)
+        nfev += 1
+        ngev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        f_approx = approx.fun(x)
+        g_approx = approx.grad(x)
+        nfev += 3
+        ngev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_almost_equal(f_analit, f_approx)
+        assert_array_almost_equal(g_analit, g_approx)
+
+        x = [2, 0.3]
+        f_analit = analit.fun(x)
+        g_analit = analit.grad(x)
+        nfev += 1
+        ngev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        f_approx = approx.fun(x)
+        g_approx = approx.grad(x)
+        nfev += 3
+        ngev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_almost_equal(f_analit, f_approx)
+        assert_array_almost_equal(g_analit, g_approx)
+
+    @pytest.mark.fail_slow(5.0)
+    def test_workers(self):
+        x0 = np.array([2.0, 0.3])
+        ex = ExScalarFunction()
+        ex2 = ExScalarFunction()
+        with MapWrapper(2) as mapper:
+            approx = ScalarFunction(ex.fun, x0, (), '2-point',
+                                    ex.hess, None, (-np.inf, np.inf),
+                                    workers=mapper)
+            approx_series = ScalarFunction(ex2.fun, x0, (), '2-point',
+                                           ex2.hess, None, (-np.inf, np.inf),
+                                           )
+            assert_allclose(approx.grad(x0), ex.grad(x0))
+            assert_allclose(approx_series.grad(x0), ex.grad(x0))
+            assert_allclose(approx_series.hess(x0), ex.hess(x0))
+            assert_allclose(approx.hess(x0), ex.hess(x0))
+            assert_equal(approx.nfev, approx_series.nfev)
+            assert_equal(approx_series.nfev, ex2.nfev)
+            assert_equal(approx.ngev, approx_series.ngev)
+            assert_equal(approx.nhev, approx_series.nhev)
+            assert_equal(approx_series.nhev, ex2.nhev)
+
+            ex = ExScalarFunction()
+            ex2 = ExScalarFunction()
+            approx = ScalarFunction(ex.fun, x0, (), '3-point',
+                                    ex.hess, None, (-np.inf, np.inf),
+                                    workers=mapper)
+            approx_series = ScalarFunction(ex2.fun, x0, (), '3-point',
+                                           ex2.hess, None, (-np.inf, np.inf),
+                                          )
+            assert_allclose(approx.grad(x0), ex.grad(x0))
+            assert_allclose(approx_series.grad(x0), ex.grad(x0))
+            assert_allclose(approx_series.hess(x0), ex.hess(x0))
+            assert_allclose(approx.hess(x0), ex.hess(x0))
+            assert_equal(approx.nfev, approx_series.nfev)
+            assert_equal(approx_series.nfev, ex2.nfev)
+            assert_equal(approx.ngev, approx_series.ngev)
+            assert_equal(approx.nhev, approx_series.nhev)
+            assert_equal(approx_series.nhev, ex2.nhev)
+
+            ex = ExScalarFunction()
+            ex2 = ExScalarFunction()
+            x1 = np.array([3.0, 4.0])
+
+            approx = ScalarFunction(ex.fun, x0, (), ex.grad,
+                                    '3-point', None, (-np.inf, np.inf),
+                                    workers=mapper)
+            approx_series = ScalarFunction(ex2.fun, x0, (), ex2.grad,
+                                           '3-point', None, (-np.inf, np.inf),
+                                           )
+            assert_allclose(approx.grad(x1), ex.grad(x1))
+            assert_allclose(approx_series.grad(x1), ex.grad(x1))
+            approx_series.hess(x1)
+            approx.hess(x1)
+            assert_equal(approx.nfev, approx_series.nfev)
+            assert_equal(approx_series.nfev, ex2.nfev)
+            assert_equal(approx.ngev, approx_series.ngev)
+            assert_equal(approx_series.ngev, ex2.ngev)
+            assert_equal(approx.nhev, approx_series.nhev)
+            assert_equal(approx_series.nhev, ex2.nhev)
+
+    def test_fun_and_grad(self):
+        ex = ExScalarFunction()
+
+        def fg_allclose(x, y):
+            assert_allclose(x[0], y[0])
+            assert_allclose(x[1], y[1])
+
+        # with analytic gradient
+        x0 = [2.0, 0.3]
+        analit = ScalarFunction(ex.fun, x0, (), ex.grad,
+                                ex.hess, None, (-np.inf, np.inf))
+
+        fg = ex.fun(x0), ex.grad(x0)
+        fg_allclose(analit.fun_and_grad(x0), fg)
+        assert analit.ngev == 1
+
+        x0[1] = 1.
+        fg = ex.fun(x0), ex.grad(x0)
+        fg_allclose(analit.fun_and_grad(x0), fg)
+
+        # with finite difference gradient
+        x0 = [2.0, 0.3]
+        sf = ScalarFunction(ex.fun, x0, (), '3-point',
+                                ex.hess, None, (-np.inf, np.inf))
+        assert sf.ngev == 1
+        fg = ex.fun(x0), ex.grad(x0)
+        fg_allclose(sf.fun_and_grad(x0), fg)
+        assert sf.ngev == 1
+
+        x0[1] = 1.
+        fg = ex.fun(x0), ex.grad(x0)
+        fg_allclose(sf.fun_and_grad(x0), fg)
+
+    def test_finite_difference_hess_linear_operator(self):
+        ex = ExScalarFunction()
+        nfev = 0
+        ngev = 0
+        nhev = 0
+
+        x0 = [1.0, 0.0]
+        analit = ScalarFunction(ex.fun, x0, (), ex.grad,
+                                ex.hess, None, (-np.inf, np.inf))
+        nfev += 1
+        ngev += 1
+        nhev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev, ngev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev, nhev)
+        approx = ScalarFunction(ex.fun, x0, (), ex.grad,
+                                '2-point', None, (-np.inf, np.inf))
+        assert_(isinstance(approx.H, LinearOperator))
+        for v in ([1.0, 2.0], [3.0, 4.0], [5.0, 2.0]):
+            assert_array_equal(analit.f, approx.f)
+            assert_array_almost_equal(analit.g, approx.g)
+            assert_array_almost_equal(analit.H.dot(v), approx.H.dot(v))
+        nfev += 1
+        ngev += 4
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+
+        x = [2.0, 1.0]
+        H_analit = analit.hess(x)
+        nhev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+        H_approx = approx.hess(x)
+        assert_(isinstance(H_approx, LinearOperator))
+        for v in ([1.0, 2.0], [3.0, 4.0], [5.0, 2.0]):
+            assert_array_almost_equal(H_analit.dot(v), H_approx.dot(v))
+        ngev += 4
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+
+        x = [2.1, 1.2]
+        H_analit = analit.hess(x)
+        nhev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+        H_approx = approx.hess(x)
+        assert_(isinstance(H_approx, LinearOperator))
+        for v in ([1.0, 2.0], [3.0, 4.0], [5.0, 2.0]):
+            assert_array_almost_equal(H_analit.dot(v), H_approx.dot(v))
+        ngev += 4
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+
+        x = [2.5, 0.3]
+        _ = analit.grad(x)
+        H_analit = analit.hess(x)
+        ngev += 1
+        nhev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+        _ = approx.grad(x)
+        H_approx = approx.hess(x)
+        assert_(isinstance(H_approx, LinearOperator))
+        for v in ([1.0, 2.0], [3.0, 4.0], [5.0, 2.0]):
+            assert_array_almost_equal(H_analit.dot(v), H_approx.dot(v))
+        ngev += 4
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+
+        x = [5.2, 2.3]
+        _ = analit.grad(x)
+        H_analit = analit.hess(x)
+        ngev += 1
+        nhev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+        _ = approx.grad(x)
+        H_approx = approx.hess(x)
+        assert_(isinstance(H_approx, LinearOperator))
+        for v in ([1.0, 2.0], [3.0, 4.0], [5.0, 2.0]):
+            assert_array_almost_equal(H_analit.dot(v), H_approx.dot(v))
+        ngev += 4
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.ngev, ngev)
+        assert_array_equal(analit.ngev+approx.ngev, ngev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+
+    @pytest.mark.thread_unsafe
+    def test_x_storage_overlap(self):
+        # Scalar_Function should not store references to arrays, it should
+        # store copies - this checks that updating an array in-place causes
+        # Scalar_Function.x to be updated.
+
+        def f(x):
+            return np.sum(np.asarray(x) ** 2)
+
+        x = np.array([1., 2., 3.])
+        sf = ScalarFunction(f, x, (), '3-point', lambda x: x, None, (-np.inf, np.inf))
+
+        assert x is not sf.x
+        assert_equal(sf.fun(x), 14.0)
+        assert x is not sf.x
+
+        x[0] = 0.
+        f1 = sf.fun(x)
+        assert_equal(f1, 13.0)
+
+        x[0] = 1
+        f2 = sf.fun(x)
+        assert_equal(f2, 14.0)
+        assert x is not sf.x
+
+        # now test with a HessianUpdate strategy specified
+        hess = BFGS()
+        x = np.array([1., 2., 3.])
+        sf = ScalarFunction(f, x, (), '3-point', hess, None, (-np.inf, np.inf))
+
+        assert x is not sf.x
+        assert_equal(sf.fun(x), 14.0)
+        assert x is not sf.x
+
+        x[0] = 0.
+        f1 = sf.fun(x)
+        assert_equal(f1, 13.0)
+
+        x[0] = 1
+        f2 = sf.fun(x)
+        assert_equal(f2, 14.0)
+        assert x is not sf.x
+
+        # gh13740 x is changed in user function
+        def ff(x):
+            x *= x    # overwrite x
+            return np.sum(x)
+
+        x = np.array([1., 2., 3.])
+        sf = ScalarFunction(
+            ff, x, (), '3-point', lambda x: x, None, (-np.inf, np.inf)
+        )
+        assert x is not sf.x
+        assert_equal(sf.fun(x), 14.0)
+        assert_equal(sf.x, np.array([1., 2., 3.]))
+        assert x is not sf.x
+
+    def test_lowest_x(self):
+        # ScalarFunction should remember the lowest func(x) visited.
+        x0 = np.array([2, 3, 4])
+        sf = ScalarFunction(rosen, x0, (), rosen_der, rosen_hess,
+                            None, None)
+        sf.fun([1, 1, 1])
+        sf.fun(x0)
+        sf.fun([1.01, 1, 1.0])
+        sf.grad([1.01, 1, 1.0])
+        assert_equal(sf._lowest_f, 0.0)
+        assert_equal(sf._lowest_x, [1.0, 1.0, 1.0])
+
+        sf = ScalarFunction(rosen, x0, (), '2-point', rosen_hess,
+                            None, (-np.inf, np.inf))
+        sf.fun([1, 1, 1])
+        sf.fun(x0)
+        sf.fun([1.01, 1, 1.0])
+        sf.grad([1.01, 1, 1.0])
+        assert_equal(sf._lowest_f, 0.0)
+        assert_equal(sf._lowest_x, [1.0, 1.0, 1.0])
+
+    def test_float_size(self):
+        x0 = np.array([2, 3, 4]).astype(np.float32)
+
+        # check that ScalarFunction/approx_derivative always send the correct
+        # float width
+        def rosen_(x):
+            assert x.dtype == np.float32
+            return rosen(x)
+
+        sf = ScalarFunction(rosen_, x0, (), '2-point', rosen_hess,
+                            None, (-np.inf, np.inf))
+        res = sf.fun(x0)
+        assert res.dtype == np.float32
+
+
+class ExVectorialFunction:
+
+    def __init__(self):
+        self.nfev = 0
+        self.njev = 0
+        self.nhev = 0
+
+    def fun(self, x):
+        self.nfev += 1
+        return np.array([2*(x[0]**2 + x[1]**2 - 1) - x[0],
+                         4*(x[0]**3 + x[1]**2 - 4) - 3*x[0]], dtype=x.dtype)
+
+    def jac(self, x):
+        self.njev += 1
+        return np.array([[4*x[0]-1, 4*x[1]],
+                         [12*x[0]**2-3, 8*x[1]]], dtype=x.dtype)
+
+    def hess(self, x, v):
+        self.nhev += 1
+        return v[0]*4*np.eye(2) + v[1]*np.array([[24*x[0], 0],
+                                                 [0, 8]])
+
+
+class TestVectorialFunction(TestCase):
+
+    def test_finite_difference_jac(self):
+        ex = ExVectorialFunction()
+        nfev = 0
+        njev = 0
+
+        x0 = [1.0, 0.0]
+        analit = VectorFunction(ex.fun, x0, ex.jac, ex.hess, None, None,
+                                (-np.inf, np.inf), None)
+        nfev += 1
+        njev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev, njev)
+        # create with defaults for the keyword arguments, to
+        # ensure that the defaults work
+        approx = VectorFunction(ex.fun, x0, '2-point', ex.hess)
+        nfev += 3
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_equal(analit.f, approx.f)
+        assert_array_almost_equal(analit.J, approx.J)
+
+        x = [10, 0.3]
+        f_analit = analit.fun(x)
+        J_analit = analit.jac(x)
+        nfev += 1
+        njev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        f_approx = approx.fun(x)
+        J_approx = approx.jac(x)
+        nfev += 3
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_almost_equal(f_analit, f_approx)
+        assert_array_almost_equal(J_analit, J_approx, decimal=4)
+
+        x = [2.0, 1.0]
+        J_analit = analit.jac(x)
+        njev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        J_approx = approx.jac(x)
+        nfev += 3
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_almost_equal(J_analit, J_approx)
+
+        x = [2.5, 0.3]
+        f_analit = analit.fun(x)
+        J_analit = analit.jac(x)
+        nfev += 1
+        njev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        f_approx = approx.fun(x)
+        J_approx = approx.jac(x)
+        nfev += 3
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_almost_equal(f_analit, f_approx)
+        assert_array_almost_equal(J_analit, J_approx)
+
+        x = [2, 0.3]
+        f_analit = analit.fun(x)
+        J_analit = analit.jac(x)
+        nfev += 1
+        njev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        f_approx = approx.fun(x)
+        J_approx = approx.jac(x)
+        nfev += 3
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_almost_equal(f_analit, f_approx)
+        assert_array_almost_equal(J_analit, J_approx)
+
+    def test_updating_on_initial_setup(self):
+        # Check that memoisation works with the freshly created VectorFunction
+        # On initialization vf.f_updated attribute wasn't being set correctly.
+        x0 = np.array([2.5, 3.0])
+        ex = ExVectorialFunction()
+        vf = VectorFunction(ex.fun, x0, ex.jac, ex.hess)
+        assert vf.f_updated
+        assert vf.nfev == 1
+        assert vf.njev == 1
+        assert ex.nfev == 1
+        assert ex.njev == 1
+        vf.fun(x0)
+        vf.jac(x0)
+        assert vf.nfev == 1
+        assert vf.njev == 1
+        assert ex.nfev == 1
+        assert ex.njev == 1
+
+    @pytest.mark.fail_slow(5.0)
+    def test_workers(self):
+        x0 = np.array([2.5, 3.0])
+        ex = ExVectorialFunction()
+        ex2 = ExVectorialFunction()
+        v = np.array([1.0, 2.0])
+
+        with MapWrapper(2) as mapper:
+            approx = VectorFunction(ex.fun, x0, '2-point',
+                                    ex.hess, None, None, (-np.inf, np.inf),
+                                    False, workers=mapper)
+            approx_series = VectorFunction(ex2.fun, x0, '2-point',
+                                           ex2.hess, None, None, (-np.inf, np.inf),
+                                           False)
+
+            assert_allclose(approx.jac(x0), ex.jac(x0))
+            assert_allclose(approx_series.jac(x0), ex.jac(x0))
+            assert_allclose(approx_series.hess(x0, v), ex.hess(x0, v))
+            assert_allclose(approx.hess(x0, v), ex.hess(x0, v))
+            assert_equal(approx.nfev, approx_series.nfev)
+            assert_equal(approx_series.nfev, ex2.nfev)
+            assert_equal(approx.njev, approx_series.njev)
+            assert_equal(approx.nhev, approx_series.nhev)
+            assert_equal(approx_series.nhev, ex2.nhev)
+
+            ex.nfev = ex.njev = ex.nhev = 0
+            ex2.nfev = ex2.njev = ex2.nhev = 0
+            approx = VectorFunction(ex.fun, x0, '3-point',
+                                    ex.hess, None, None, (-np.inf, np.inf),
+                                    False, workers=mapper)
+            approx_series = VectorFunction(ex2.fun, x0, '3-point',
+                                           ex2.hess, None, None, (-np.inf, np.inf),
+                                           False)
+            assert_allclose(approx.jac(x0), ex.jac(x0))
+            assert_allclose(approx_series.jac(x0), ex.jac(x0))
+            assert_allclose(approx_series.hess(x0, v), ex.hess(x0, v))
+            assert_allclose(approx.hess(x0, v), ex.hess(x0, v))
+
+            assert_equal(approx.nfev, approx_series.nfev)
+            assert_equal(approx_series.nfev, ex2.nfev)
+            assert_equal(approx.njev, approx_series.njev)
+            assert_equal(approx.nhev, approx_series.nhev)
+            assert_equal(approx_series.nhev, ex2.nhev)
+
+            # The following tests are somewhat redundant because the LinearOperator
+            # produced by VectorFunction.hess does not use any parallelisation.
+            # The tests are left for completeness, in case that situation changes.
+            ex.nfev = ex.njev = ex.nhev = 0
+            ex2.nfev = ex2.njev = ex2.nhev = 0
+            approx = VectorFunction(ex.fun, x0, ex.jac,
+                                    '2-point', None, None, (-np.inf, np.inf),
+                                    False, workers=mapper)
+            approx_series = VectorFunction(ex2.fun, x0, ex2.jac,
+                                           '2-point', None, None, (-np.inf, np.inf),
+                                           False)
+            assert_allclose(approx.jac(x0), ex.jac(x0))
+            assert_allclose(approx_series.jac(x0), ex.jac(x0))
+
+            H_analit = ex2.hess(x0, v)
+            H_approx_series = approx_series.hess(x0, v)
+            H_approx = approx.hess(x0, v)
+            x = [5, 2.0]
+            assert_allclose(H_approx.dot(x), H_analit.dot(x))
+            assert_allclose(H_approx_series.dot(x), H_analit.dot(x))
+
+            assert_equal(approx.nfev, approx_series.nfev)
+            assert_equal(approx_series.nfev, ex2.nfev)
+            assert_equal(approx.njev, approx_series.njev)
+            assert_equal(approx.nhev, approx_series.nhev)
+
+    def test_finite_difference_hess_linear_operator(self):
+        ex = ExVectorialFunction()
+        nfev = 0
+        njev = 0
+        nhev = 0
+
+        x0 = [1.0, 0.0]
+        v0 = [1.0, 2.0]
+        analit = VectorFunction(ex.fun, x0, ex.jac, ex.hess, None, None,
+                                (-np.inf, np.inf), None)
+        nfev += 1
+        njev += 1
+        nhev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev, njev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev, nhev)
+        approx = VectorFunction(ex.fun, x0, ex.jac, '2-point', None, None,
+                                (-np.inf, np.inf), None)
+        assert_(isinstance(approx.H, LinearOperator))
+        for p in ([1.0, 2.0], [3.0, 4.0], [5.0, 2.0]):
+            assert_array_equal(analit.f, approx.f)
+            assert_array_almost_equal(analit.J, approx.J)
+            assert_array_almost_equal(analit.H.dot(p), approx.H.dot(p))
+        nfev += 1
+        njev += 4
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+
+        x = [2.0, 1.0]
+        H_analit = analit.hess(x, v0)
+        nhev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+        H_approx = approx.hess(x, v0)
+        assert_(isinstance(H_approx, LinearOperator))
+        for p in ([1.0, 2.0], [3.0, 4.0], [5.0, 2.0]):
+            assert_array_almost_equal(H_analit.dot(p), H_approx.dot(p),
+                                      decimal=5)
+        njev += 4
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+
+        x = [2.1, 1.2]
+        v = [1.0, 1.0]
+        H_analit = analit.hess(x, v)
+        nhev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+        H_approx = approx.hess(x, v)
+        assert_(isinstance(H_approx, LinearOperator))
+        for v in ([1.0, 2.0], [3.0, 4.0], [5.0, 2.0]):
+            assert_array_almost_equal(H_analit.dot(v), H_approx.dot(v))
+        njev += 4
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+
+        x = [2.5, 0.3]
+        _ = analit.jac(x)
+        H_analit = analit.hess(x, v0)
+        njev += 1
+        nhev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+        _ = approx.jac(x)
+        H_approx = approx.hess(x, v0)
+        assert_(isinstance(H_approx, LinearOperator))
+        for v in ([1.0, 2.0], [3.0, 4.0], [5.0, 2.0]):
+            assert_array_almost_equal(H_analit.dot(v), H_approx.dot(v), decimal=4)
+        njev += 4
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+
+        x = [5.2, 2.3]
+        v = [2.3, 5.2]
+        _ = analit.jac(x)
+        H_analit = analit.hess(x, v)
+        njev += 1
+        nhev += 1
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+        _ = approx.jac(x)
+        H_approx = approx.hess(x, v)
+        assert_(isinstance(H_approx, LinearOperator))
+        for v in ([1.0, 2.0], [3.0, 4.0], [5.0, 2.0]):
+            assert_array_almost_equal(H_analit.dot(v), H_approx.dot(v), decimal=4)
+        njev += 4
+        assert_array_equal(ex.nfev, nfev)
+        assert_array_equal(analit.nfev+approx.nfev, nfev)
+        assert_array_equal(ex.njev, njev)
+        assert_array_equal(analit.njev+approx.njev, njev)
+        assert_array_equal(ex.nhev, nhev)
+        assert_array_equal(analit.nhev+approx.nhev, nhev)
+
+        # Test VectorFunction.hess_wrapped with J0=None
+        x = np.array([1.5, 0.5])
+        v = np.array([1.0, 2.0])
+        njev_before = approx.hess_wrapped.njev
+        H = approx.hess_wrapped(x, v, J0=None)
+        assert isinstance(H, LinearOperator)
+        # The njev counter should be incremented by exactly 1
+        assert approx.hess_wrapped.njev == njev_before + 1
+
+    def test_fgh_overlap(self):
+        # VectorFunction.fun/jac should return copies to internal attributes
+        ex = ExVectorialFunction()
+        x0 = np.array([1.0, 0.0])
+
+        vf = VectorFunction(ex.fun, x0, '3-point', ex.hess, None, None,
+                            (-np.inf, np.inf), None)
+        f = vf.fun(np.array([1.1, 0.1]))
+        J = vf.jac([1.1, 0.1])
+        assert vf.f is not f
+        assert vf.J is not J
+        assert_equal(f, vf.f)
+        assert_equal(J, vf.J)
+
+        vf = VectorFunction(ex.fun, x0, ex.jac, ex.hess, None, None,
+                            (-np.inf, np.inf), None)
+        f = vf.fun(np.array([1.1, 0.1]))
+        J = vf.jac([1.1, 0.1])
+        assert vf.f is not f
+        assert vf.J is not J
+        assert_equal(f, vf.f)
+        assert_equal(J, vf.J)
+
+    @pytest.mark.thread_unsafe
+    def test_x_storage_overlap(self):
+        # VectorFunction should not store references to arrays, it should
+        # store copies - this checks that updating an array in-place causes
+        # Scalar_Function.x to be updated.
+        ex = ExVectorialFunction()
+        x0 = np.array([1.0, 0.0])
+
+        vf = VectorFunction(ex.fun, x0, '3-point', ex.hess, None, None,
+                            (-np.inf, np.inf), None)
+
+        assert x0 is not vf.x
+        assert_equal(vf.fun(x0), ex.fun(x0))
+        assert x0 is not vf.x
+
+        x0[0] = 2.
+        assert_equal(vf.fun(x0), ex.fun(x0))
+        assert x0 is not vf.x
+
+        x0[0] = 1.
+        assert_equal(vf.fun(x0), ex.fun(x0))
+        assert x0 is not vf.x
+
+        # now test with a HessianUpdate strategy specified
+        hess = BFGS()
+        x0 = np.array([1.0, 0.0])
+        vf = VectorFunction(ex.fun, x0, '3-point', hess, None, None,
+                            (-np.inf, np.inf), None)
+
+        with pytest.warns(UserWarning):
+            # filter UserWarning because ExVectorialFunction is linear and
+            # a quasi-Newton approximation is used for the Hessian.
+            assert x0 is not vf.x
+            assert_equal(vf.fun(x0), ex.fun(x0))
+            assert x0 is not vf.x
+
+            x0[0] = 2.
+            assert_equal(vf.fun(x0), ex.fun(x0))
+            assert x0 is not vf.x
+
+            x0[0] = 1.
+            assert_equal(vf.fun(x0), ex.fun(x0))
+            assert x0 is not vf.x
+
+    def test_float_size(self):
+        ex = ExVectorialFunction()
+        x0 = np.array([1.0, 0.0]).astype(np.float32)
+
+        vf = VectorFunction(ex.fun, x0, ex.jac, ex.hess, None, None,
+                            (-np.inf, np.inf), None)
+
+        res = vf.fun(x0)
+        assert res.dtype == np.float32
+
+        res = vf.jac(x0)
+        assert res.dtype == np.float32
+
+    def test_sparse_analytic_jac(self):
+        ex = ExVectorialFunction()
+        x0 = np.array([1.0, 0.0])
+        def sparse_adapter(func):
+            def inner(x):
+                f_x = func(x)
+                return csr_array(f_x)
+            return inner
+
+        # jac(x) returns dense jacobian
+        vf1 = VectorFunction(ex.fun, x0, ex.jac, ex.hess, None, None,
+                            (-np.inf, np.inf), sparse_jacobian=None)
+        # jac(x) returns sparse jacobian, but sparse_jacobian=False requests dense
+        vf2 = VectorFunction(ex.fun, x0, sparse_adapter(ex.jac), ex.hess, None, None,
+                            (-np.inf, np.inf), sparse_jacobian=False)
+
+        res1 = vf1.jac(x0 + 1)
+        res2 = vf2.jac(x0 + 1)
+        assert_equal(res1, res2)
+
+    def test_sparse_numerical_jac(self):
+        ex = ExVectorialFunction()
+        x0 = np.array([1.0, 0.0])
+        N = len(x0)
+
+        # normal dense numerical difference
+        vf1 = VectorFunction(ex.fun, x0, '2-point', ex.hess, None, None,
+                             (-np.inf, np.inf), sparse_jacobian=None)
+        # use sparse numerical difference, but ask it to be converted to dense
+        finite_diff_jac_sparsity = csr_array(np.ones((N, N)))
+        vf2 = VectorFunction(ex.fun, x0, '2-point', ex.hess, None,
+                             finite_diff_jac_sparsity, (-np.inf, np.inf),
+                             sparse_jacobian=False)
+
+        res1 = vf1.jac(x0 + 1)
+        res2 = vf2.jac(x0 + 1)
+        assert_equal(res1, res2)
+
+
+def test_LinearVectorFunction():
+    A_dense = np.array([
+        [-1, 2, 0],
+        [0, 4, 2]
+    ])
+    x0 = np.zeros(3)
+    A_sparse = csr_array(A_dense)
+    x = np.array([1, -1, 0])
+    v = np.array([-1, 1])
+    Ax = np.array([-3, -4])
+
+    f1 = LinearVectorFunction(A_dense, x0, None)
+    assert_(not f1.sparse_jacobian)
+
+    f2 = LinearVectorFunction(A_dense, x0, True)
+    assert_(f2.sparse_jacobian)
+
+    f3 = LinearVectorFunction(A_dense, x0, False)
+    assert_(not f3.sparse_jacobian)
+
+    f4 = LinearVectorFunction(A_sparse, x0, None)
+    assert_(f4.sparse_jacobian)
+
+    f5 = LinearVectorFunction(A_sparse, x0, True)
+    assert_(f5.sparse_jacobian)
+
+    f6 = LinearVectorFunction(A_sparse, x0, False)
+    assert_(not f6.sparse_jacobian)
+
+    assert_array_equal(f1.fun(x), Ax)
+    assert_array_equal(f2.fun(x), Ax)
+    assert_array_equal(f1.jac(x), A_dense)
+    assert_array_equal(f2.jac(x).toarray(), A_sparse.toarray())
+    assert_array_equal(f1.hess(x, v).toarray(), np.zeros((3, 3)))
+
+
+def test_LinearVectorFunction_memoization():
+    A = np.array([[-1, 2, 0], [0, 4, 2]])
+    x0 = np.array([1, 2, -1])
+    fun = LinearVectorFunction(A, x0, False)
+
+    assert_array_equal(x0, fun.x)
+    assert_array_equal(A.dot(x0), fun.f)
+
+    x1 = np.array([-1, 3, 10])
+    assert_array_equal(A, fun.jac(x1))
+    assert_array_equal(x1, fun.x)
+    assert_array_equal(A.dot(x0), fun.f)
+    assert_array_equal(A.dot(x1), fun.fun(x1))
+    assert_array_equal(A.dot(x1), fun.f)
+
+
+def test_IdentityVectorFunction():
+    x0 = np.zeros(3)
+
+    f1 = IdentityVectorFunction(x0, None)
+    f2 = IdentityVectorFunction(x0, False)
+    f3 = IdentityVectorFunction(x0, True)
+
+    assert_(f1.sparse_jacobian)
+    assert_(not f2.sparse_jacobian)
+    assert_(f3.sparse_jacobian)
+
+    x = np.array([-1, 2, 1])
+    v = np.array([-2, 3, 0])
+
+    assert_array_equal(f1.fun(x), x)
+    assert_array_equal(f2.fun(x), x)
+
+    assert_array_equal(f1.jac(x).toarray(), np.eye(3))
+    assert_array_equal(f2.jac(x), np.eye(3))
+
+    assert_array_equal(f1.hess(x, v).toarray(), np.zeros((3, 3)))
+
+
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="assert_deallocate not available on PyPy"
+)
+def test_ScalarFunctionNoReferenceCycle():
+    """Regression test for gh-20768."""
+    ex = ExScalarFunction()
+    x0 = np.zeros(3)
+    with assert_deallocated(lambda: ScalarFunction(ex.fun, x0, (), ex.grad,
+                            ex.hess, None, (-np.inf, np.inf))):
+        pass
+
+
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="assert_deallocate not available on PyPy"
+)
+def test_VectorFunctionNoReferenceCycle():
+    """Regression test for gh-20768."""
+    ex = ExVectorialFunction()
+    x0 = [1.0, 0.0]
+    with assert_deallocated(lambda: VectorFunction(ex.fun, x0, ex.jac,
+                            ex.hess, None, None, (-np.inf, np.inf), None)):
+        pass
+
+
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="assert_deallocate not available on PyPy"
+)
+def test_LinearVectorFunctionNoReferenceCycle():
+    """Regression test for gh-20768."""
+    A_dense = np.array([
+        [-1, 2, 0],
+        [0, 4, 2]
+    ])
+    x0 = np.zeros(3)
+    A_sparse = csr_array(A_dense)
+    with assert_deallocated(lambda: LinearVectorFunction(A_sparse, x0, None)):
+        pass

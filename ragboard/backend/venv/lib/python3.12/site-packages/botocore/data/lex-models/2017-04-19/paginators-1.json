@@ -1,0 +1,64 @@
+{
+  "pagination": {
+    "GetSlotTypeVersions": {
+      "result_key": "slotTypes",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetSlotTypes": {
+      "result_key": "slotTypes",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetIntents": {
+      "result_key": "intents",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetBotChannelAssociations": {
+      "result_key": "botChannelAssociations",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetBots": {
+      "result_key": "bots",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetBuiltinSlotTypes": {
+      "result_key": "slotTypes",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetIntentVersions": {
+      "result_key": "intents",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetBotAliases": {
+      "result_key": "BotAliases",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetBuiltinIntents": {
+      "result_key": "intents",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "GetBotVersions": {
+      "result_key": "bots",
+      "output_token": "nextToken",
+      "input_token": "nextToken",
+      "limit_key": "maxResults"
+    }
+  }
+}

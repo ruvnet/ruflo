@@ -1,0 +1,88 @@
+Metadata-Version: 2.4
+Name: kombu
+Version: 5.5.4
+Summary: Messaging library for Python.
+Home-page: https://kombu.readthedocs.io
+Author: Ask Solem
+Author-email: auvipy@gmail.com
+License: BSD-3-Clause
+Project-URL: Source, https://github.com/celery/kombu
+Keywords: messaging message amqp rabbitmq redis actor producer consumer
+Platform: any
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Communications
+Classifier: Topic :: System :: Distributed Computing
+Classifier: Topic :: System :: Networking
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.8
+License-File: LICENSE
+Requires-Dist: amqp<6.0.0,>=5.1.1
+Requires-Dist: vine==5.1.0
+Requires-Dist: backports.zoneinfo[tzdata]>=0.2.1; python_version < "3.9"
+Requires-Dist: tzdata>=2025.2; python_version >= "3.9"
+Requires-Dist: packaging
+Provides-Extra: msgpack
+Requires-Dist: msgpack==1.1.0; extra == "msgpack"
+Provides-Extra: yaml
+Requires-Dist: PyYAML>=3.10; extra == "yaml"
+Provides-Extra: redis
+Requires-Dist: redis!=4.5.5,!=5.0.2,<=5.2.1,>=4.5.2; extra == "redis"
+Provides-Extra: mongodb
+Requires-Dist: pymongo==4.10.1; extra == "mongodb"
+Provides-Extra: sqs
+Requires-Dist: boto3>=1.26.143; extra == "sqs"
+Requires-Dist: urllib3>=1.26.16; extra == "sqs"
+Provides-Extra: gcpubsub
+Requires-Dist: google-cloud-pubsub>=2.18.4; extra == "gcpubsub"
+Requires-Dist: google-cloud-monitoring>=2.16.0; extra == "gcpubsub"
+Requires-Dist: grpcio==1.67.0; extra == "gcpubsub"
+Requires-Dist: protobuf==4.25.5; extra == "gcpubsub"
+Provides-Extra: zookeeper
+Requires-Dist: kazoo>=2.8.0; extra == "zookeeper"
+Provides-Extra: sqlalchemy
+Requires-Dist: sqlalchemy<2.1,>=1.4.48; extra == "sqlalchemy"
+Provides-Extra: librabbitmq
+Requires-Dist: librabbitmq>=2.0.0; python_version < "3.11" and extra == "librabbitmq"
+Provides-Extra: pyro
+Requires-Dist: pyro4==4.82; extra == "pyro"
+Provides-Extra: slmq
+Requires-Dist: softlayer_messaging>=1.0.3; extra == "slmq"
+Provides-Extra: azurestoragequeues
+Requires-Dist: azure-storage-queue>=12.6.0; extra == "azurestoragequeues"
+Requires-Dist: azure-identity>=1.12.0; extra == "azurestoragequeues"
+Provides-Extra: azureservicebus
+Requires-Dist: azure-servicebus>=7.10.0; extra == "azureservicebus"
+Provides-Extra: qpid
+Requires-Dist: qpid-python>=0.26; extra == "qpid"
+Requires-Dist: qpid-tools>=0.26; extra == "qpid"
+Provides-Extra: consul
+Requires-Dist: python-consul2==0.1.5; extra == "consul"
+Provides-Extra: confluentkafka
+Requires-Dist: confluent-kafka>=2.2.0; extra == "confluentkafka"
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: home-page
+Dynamic: keywords
+Dynamic: license
+Dynamic: license-file
+Dynamic: platform
+Dynamic: project-url
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
