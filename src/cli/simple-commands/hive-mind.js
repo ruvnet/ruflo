@@ -2420,7 +2420,7 @@ function getWorkerTypeInstructions(workerType) {
 async function showSessions(flags) {
   try {
     const sessionManager = new HiveMindSessionManager();
-    const sessions = sessionManager.getActiveSessions();
+    const sessions = await sessionManager.getActiveSessions();
 
     if (sessions.length === 0) {
       console.log(chalk.gray('No active or paused sessions found'));
@@ -2493,7 +2493,7 @@ async function resumeSession(args, flags) {
     const sessionManager = new HiveMindSessionManager();
 
     // Get session details
-    const session = sessionManager.getSession(sessionId);
+    const session = await sessionManager.getSession(sessionId);
 
     if (!session) {
       spinner.fail(`Session ${sessionId} not found`);
@@ -2597,7 +2597,7 @@ async function stopSession(args, flags) {
     const sessionManager = new HiveMindSessionManager();
 
     // Get session details
-    const session = sessionManager.getSession(sessionId);
+    const session = await sessionManager.getSession(sessionId);
 
     if (!session) {
       spinner.fail(`Session ${sessionId} not found`);
