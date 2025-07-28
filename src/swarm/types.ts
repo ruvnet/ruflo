@@ -28,11 +28,12 @@ export interface TaskId {
 
 // ===== AGENT TYPES =====
 
-export type AgentType =
+// Base agent types for backward compatibility
+export type BaseAgentType =
   | 'coordinator' // Orchestrates and manages other agents
   | 'researcher' // Performs research and data gathering
-  | 'coder' // Writes and maintains code (was 'coder')
-  | 'analyst' // Analyzes data and generates insights (was 'analyst')
+  | 'coder' // Writes and maintains code
+  | 'analyst' // Analyzes data and generates insights
   | 'architect' // Designs system architecture and solutions
   | 'tester' // Tests and validates functionality
   | 'reviewer' // Reviews and validates work
@@ -40,6 +41,9 @@ export type AgentType =
   | 'documenter' // Creates and maintains documentation
   | 'monitor' // Monitors system health and performance
   | 'specialist'; // Domain-specific specialized agent
+
+// Extended agent type that supports dynamic types from Claude Code subagents
+export type AgentType = BaseAgentType | string;
 
 export type AgentStatus =
   | 'initializing' // Agent is starting up

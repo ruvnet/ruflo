@@ -5,6 +5,7 @@
 import type { MCPTool, MCPContext, AgentProfile, Task, MemoryEntry } from '../utils/types.js';
 import type { ILogger } from '../core/logger.js';
 import type { Permissions } from './auth.js';
+import { agentTypesRegistry } from '../agents/agent-types-registry.js';
 
 export interface ClaudeFlowToolContext extends MCPContext {
   orchestrator?: any; // Reference to orchestrator instance
@@ -54,6 +55,9 @@ export function createClaudeFlowTools(logger: ILogger): MCPTool[] {
     createExecuteCommandTool(logger),
     createListTerminalsTool(logger),
     createCreateTerminalTool(logger),
+
+    // Agent types management
+    createListAgentTypesTool(logger),
   ];
 }
 
@@ -66,20 +70,7 @@ function createSpawnAgentTool(logger: ILogger): MCPTool {
       properties: {
         type: {
           type: 'string',
-          enum: [
-            'coordinator',
-            'researcher',
-            'coder',
-            'analyst',
-            'architect',
-            'tester',
-            'reviewer',
-            'optimizer',
-            'documenter',
-            'monitor',
-            'specialist',
-          ],
-          description: 'Type of agent to spawn',
+          description: 'Type of agent to spawn (supports all Claude Code subagent types)',
         },
         name: {
           type: 'string',
@@ -122,12 +113,29 @@ function createSpawnAgentTool(logger: ILogger): MCPTool {
         throw new Error('Orchestrator not available');
       }
 
+      // Validate and resolve agent type
+      const isValid = await agentTypesRegistry.isValidAgentType(input.type);
+      if (!isValid) {
+        const validationError = await agentTypesRegistry.getValidationError(input.type);
+        logger.warn('Invalid agent type requested', { 
+          requestedType: input.type, 
+          error: validationError.error,
+          suggestions: validationError.suggestions 
+        });
+        
+        // Use fallback type
+        input.type = validationError.fallback;
+        logger.info('Using fallback agent type', { fallbackType: input.type });
+      }
+
+      const resolvedType = await agentTypesRegistry.resolveAgentType(input.type);
+
       const profile: AgentProfile = {
         id: `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: input.name,
-        type: input.type,
+        type: resolvedType,
         capabilities: input.capabilities || [],
-        systemPrompt: input.systemPrompt || getDefaultSystemPrompt(input.type),
+        systemPrompt: input.systemPrompt || getDefaultSystemPrompt(resolvedType),
         maxConcurrentTasks: input.maxConcurrentTasks || 3,
         priority: input.priority || 5,
         environment: input.environment,
@@ -142,6 +150,8 @@ function createSpawnAgentTool(logger: ILogger): MCPTool {
         profile,
         status: 'spawned',
         timestamp: new Date().toISOString(),
+        originalType: input.type !== resolvedType ? input.type : undefined,
+        resolvedType: resolvedType,
       };
     },
   };
@@ -161,20 +171,7 @@ function createListAgentsTool(logger: ILogger): MCPTool {
         },
         filterByType: {
           type: 'string',
-          enum: [
-            'coordinator',
-            'researcher',
-            'coder',
-            'analyst',
-            'architect',
-            'tester',
-            'reviewer',
-            'optimizer',
-            'documenter',
-            'monitor',
-            'specialist',
-          ],
-          description: 'Filter agents by type',
+          description: 'Filter agents by type (supports all Claude Code subagent types)',
         },
       },
     },
@@ -1303,18 +1300,110 @@ function createCreateTerminalTool(logger: ILogger): MCPTool {
   };
 }
 
+function createListAgentTypesTool(logger: ILogger): MCPTool {
+  return {
+    name: 'agents/types',
+    description: 'List all available agent types from Claude Code subagents system',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        category: {
+          type: 'string',
+          description: 'Filter by agent category (coordination, development, testing, etc.)',
+        },
+        includeDescriptions: {
+          type: 'boolean',
+          default: false,
+          description: 'Include detailed descriptions for each agent type',
+        },
+      },
+    },
+    handler: async (input: any, context?: ClaudeFlowToolContext) => {
+      logger.info('Listing agent types', { input, sessionId: context?.sessionId });
+
+      try {
+        let agentTypes: string[];
+        
+        if (input.category) {
+          const agentsByCategory = await agentTypesRegistry.getAgentsByCategory(input.category);
+          agentTypes = agentsByCategory.map(agent => agent.name);
+        } else {
+          agentTypes = await agentTypesRegistry.getAvailableAgentTypes();
+        }
+
+        const result: any = {
+          agentTypes,
+          totalCount: agentTypes.length,
+          timestamp: new Date().toISOString(),
+        };
+
+        if (input.includeDescriptions) {
+          const descriptions = {};
+          for (const type of agentTypes) {
+            const info = await agentTypesRegistry.getAgentInfo(type);
+            if (info) {
+              descriptions[type] = {
+                description: info.description,
+                category: info.category,
+                tools: info.tools,
+              };
+            }
+          }
+          result.descriptions = descriptions;
+        }
+
+        return result;
+      } catch (error) {
+        logger.error('Failed to list agent types', { error, sessionId: context?.sessionId });
+        throw new Error(`Failed to list agent types: ${error.message}`);
+      }
+    },
+  };
+}
+
 function getDefaultSystemPrompt(type: string): string {
   const prompts = {
-    coordinator:
-      'You are a coordinator agent responsible for planning, delegating, and orchestrating tasks across multiple agents.',
-    researcher:
-      'You are a research agent specialized in gathering, analyzing, and synthesizing information from various sources.',
-    implementer:
-      'You are an implementation agent focused on writing code, creating solutions, and executing technical tasks.',
-    analyst:
-      'You are an analysis agent that identifies patterns, generates insights, and provides data-driven recommendations.',
-    custom: 'You are a specialized agent with custom capabilities defined by your configuration.',
+    // Base agent types
+    coordinator: 'You are a coordinator agent responsible for planning, delegating, and orchestrating tasks across multiple agents.',
+    researcher: 'You are a research agent specialized in gathering, analyzing, and synthesizing information from various sources.',
+    coder: 'You are a coding agent focused on writing, reviewing, and maintaining code with best practices.',
+    analyst: 'You are an analysis agent that identifies patterns, generates insights, and provides data-driven recommendations.',
+    architect: 'You are an architecture agent that designs system structure, components, and technical solutions.',
+    tester: 'You are a testing agent specialized in creating, running, and validating tests and quality assurance.',
+    reviewer: 'You are a code review agent focused on ensuring code quality, standards, and best practices.',
+    optimizer: 'You are an optimization agent that improves performance, efficiency, and resource utilization.',
+    documenter: 'You are a documentation agent specialized in creating clear, comprehensive technical documentation.',
+    monitor: 'You are a monitoring agent that tracks system health, performance, and operational metrics.',
+    specialist: 'You are a domain-specific specialist agent with expertise in particular technologies or domains.',
+    
+    // Claude Code subagent types
+    'general-purpose': 'You are a versatile general-purpose agent capable of handling diverse tasks across multiple domains.',
+    'system-architect': 'You are a system architect focused on high-level design, scalability, and technical strategy.',
+    'code-analyzer': 'You are a code analysis agent specialized in static analysis, code quality assessment, and technical debt identification.',
+    'performance-benchmarker': 'You are a performance testing agent focused on benchmarking, profiling, and optimization analysis.',
+    'security-manager': 'You are a security agent specialized in identifying vulnerabilities, implementing security measures, and compliance.',
+    'api-docs': 'You are an API documentation agent focused on creating comprehensive, accurate, and user-friendly API documentation.',
+    
+    // Default fallback
+    custom: 'You are a specialized agent with capabilities defined by your configuration and context.',
   };
 
-  return prompts[type as keyof typeof prompts] || prompts.custom;
+  // Handle hyphenated agent types
+  const normalizedType = type.toLowerCase().replace(/-/g, '');
+  
+  // Direct match
+  if (prompts[type]) {
+    return prompts[type];
+  }
+  
+  // Try normalized match
+  for (const [key, prompt] of Object.entries(prompts)) {
+    if (key.toLowerCase().replace(/-/g, '') === normalizedType) {
+      return prompt;
+    }
+  }
+  
+  // Generate dynamic prompt based on agent name
+  const humanReadableName = type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return `You are a ${humanReadableName} agent specialized in ${type.replace(/-/g, ' ')} tasks and capabilities.`;
 }
