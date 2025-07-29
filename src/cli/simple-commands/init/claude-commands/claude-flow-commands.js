@@ -1,4 +1,5 @@
 // claude-flow-commands.js - Claude-Flow specific slash commands
+import { Deno } from '../../node-compat.js';
 
 // Create Claude-Flow specific commands
 export async function createClaudeFlowCommands(workingDir) {
