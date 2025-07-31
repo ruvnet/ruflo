@@ -706,10 +706,14 @@ export function setupCommands(cli: CLI): void {
             if (health.mcp) {
               const config = await getConfigManager();
               const mcpConfig = config.get().mcp;
-              console.log(`📍 Address: ${mcpConfig.host}:${mcpConfig.port}`);
-              console.log(`🔐 Authentication: ${mcpConfig.auth ? 'Enabled' : 'Disabled'}`);
-              console.log(`🔧 Tools: Available`);
-              console.log(`📊 Metrics: Collecting`);
+              if (mcpConfig) {
+                const host = (mcpConfig as any).host || 'localhost';
+                const auth = (mcpConfig as any).auth;
+                console.log(`📍 Address: ${host}:${mcpConfig.port || 3000}`);
+                console.log(`🔐 Authentication: ${auth ? 'Enabled' : 'Disabled'}`);
+                console.log(`🔧 Tools: Available`);
+                console.log(`📊 Metrics: Collecting`);
+              }
             }
           } catch (err) {
             error(`Failed to get MCP status: ${(err as Error).message}`);

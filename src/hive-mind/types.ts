@@ -1,10 +1,15 @@
 /**
  * Hive Mind Type Definitions
  *
- * Core types and interfaces for the Hive Mind system
+ * Core types and interfaces for the Hive Mind system.
+ * This file imports centralized agent types and defines hive-mind specific types.
  */
 
-// Swarm types
+// Import centralized agent types
+import type { AgentType } from '../constants/agent-types.js';
+
+// ===== SWARM CONFIGURATION TYPES =====
+
 export type SwarmTopology = 'mesh' | 'hierarchical' | 'ring' | 'star' | 'specs-driven';
 export type QueenMode = 'centralized' | 'distributed' | 'strategic';
 
@@ -23,65 +28,70 @@ export interface HiveMindConfig {
   createdAt?: Date;
 }
 
-// Agent types
-export type AgentType =
-  | 'coordinator'
-  | 'researcher'
-  | 'coder'
-  | 'analyst'
-  | 'architect'
-  | 'tester'
-  | 'reviewer'
-  | 'optimizer'
-  | 'documenter'
-  | 'monitor'
-  | 'specialist'
-  // Maestro specs-driven agent types
-  | 'requirements_analyst'
-  | 'design_architect'
-  | 'task_planner'
-  | 'implementation_coder'
-  | 'quality_reviewer'
-  | 'steering_documenter';
+// ===== AGENT TYPES (Re-export centralized types) =====
+
+// Re-export centralized AgentType
+export type { AgentType } from '../constants/agent-types.js';
 
 export type AgentStatus = 'idle' | 'busy' | 'active' | 'error' | 'offline';
 
+/**
+ * Comprehensive agent capabilities for hive mind operations
+ */
 export type AgentCapability =
+  // Core coordination capabilities
   | 'task_management'
   | 'resource_allocation'
   | 'consensus_building'
+  
+  // Research and analysis capabilities
   | 'information_gathering'
   | 'pattern_recognition'
   | 'knowledge_synthesis'
-  | 'code_generation'
-  | 'refactoring'
-  | 'debugging'
   | 'data_analysis'
   | 'performance_metrics'
   | 'bottleneck_detection'
+  
+  // Development capabilities
+  | 'code_generation'
+  | 'refactoring'
+  | 'debugging'
+  | 'test_generation'
+  | 'quality_assurance'
+  | 'edge_case_detection'
+  
+  // Architecture capabilities
   | 'system_design'
   | 'architecture'
   | 'architecture_patterns'
   | 'integration_planning'
-  | 'technical_writing'
-  | 'test_generation'
-  | 'quality_assurance'
-  | 'edge_case_detection'
+  
+  // Review and quality capabilities
   | 'code_review'
   | 'standards_enforcement'
   | 'best_practices'
+  
+  // Optimization capabilities
   | 'performance_optimization'
   | 'resource_optimization'
   | 'algorithm_improvement'
+  
+  // Documentation capabilities
   | 'documentation_generation'
+  | 'technical_writing'
   | 'api_docs'
   | 'user_guides'
+  
+  // Monitoring capabilities
   | 'system_monitoring'
   | 'health_checks'
   | 'alerting'
+  
+  // Specialized capabilities
   | 'domain_expertise'
   | 'custom_capabilities'
   | 'problem_solving'
+  
   // Maestro specs-driven capabilities
   | 'requirements_analysis'
   | 'user_story_creation'
@@ -117,7 +127,8 @@ export interface AgentEnvironment {
   };
 }
 
-// Task types
+// ===== TASK TYPES =====
+
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 export type TaskStrategy = 'parallel' | 'sequential' | 'adaptive' | 'consensus';
 export type TaskStatus =
@@ -172,7 +183,8 @@ export interface TaskAssignment {
   canRunParallel: boolean;
 }
 
-// Communication types
+// ===== COMMUNICATION TYPES =====
+
 export type MessageType =
   | 'direct'
   | 'broadcast'
@@ -215,7 +227,8 @@ export interface CommunicationStats {
   throughput: number;
 }
 
-// Memory types
+// ===== MEMORY TYPES =====
+
 export interface MemoryEntry {
   key: string;
   namespace: string;
@@ -269,7 +282,8 @@ export interface MemoryPattern {
   frequency: number;
 }
 
-// Consensus types
+// ===== CONSENSUS TYPES =====
+
 export interface ConsensusProposal {
   id: string;
   swarmId: string;
@@ -322,7 +336,8 @@ export interface ConsensusMetrics {
   avgParticipation: number;
 }
 
-// Orchestration types
+// ===== ORCHESTRATION TYPES =====
+
 export interface ExecutionPlan {
   taskId: string;
   strategy: TaskStrategy;
@@ -351,7 +366,8 @@ export interface ExecutionResult {
   metadata?: any;
 }
 
-// Queen types
+// ===== QUEEN COORDINATION TYPES =====
+
 export interface QueenDecision {
   id: string;
   taskId: string;
@@ -372,7 +388,8 @@ export interface CoordinationStrategy {
   suitable_for: string[];
 }
 
-// Status types
+// ===== STATUS AND MONITORING TYPES =====
+
 export interface SwarmStatus {
   swarmId: string;
   name: string;
@@ -417,7 +434,8 @@ export interface SwarmStatus {
   warnings: string[];
 }
 
-// Neural pattern types
+// ===== NEURAL PATTERN TYPES =====
+
 export interface NeuralPattern {
   id: string;
   swarmId: string;
@@ -430,7 +448,8 @@ export interface NeuralPattern {
   lastUsedAt?: Date;
 }
 
-// Performance types
+// ===== PERFORMANCE TYPES =====
+
 export interface PerformanceMetric {
   swarmId: string;
   agentId?: string;
@@ -438,4 +457,35 @@ export interface PerformanceMetric {
   metricValue: number;
   timestamp: Date;
   metadata?: any;
+}
+
+// ===== TYPE UTILITIES =====
+
+/**
+ * Type guard to check if a value is a valid AgentType
+ */
+export function isValidAgentType(type: string): type is AgentType {
+  const validTypes = [
+    'coordinator', 'researcher', 'coder', 'analyst', 'architect', 'tester',
+    'reviewer', 'optimizer', 'documenter', 'monitor', 'specialist',
+    'requirements_analyst', 'design_architect', 'task_planner',
+    'implementation_coder', 'quality_reviewer', 'steering_documenter'
+  ];
+  return validTypes.includes(type as AgentType);
+}
+
+/**
+ * Type guard to check if a value is a valid TaskStatus
+ */
+export function isValidTaskStatus(status: string): status is TaskStatus {
+  const validStatuses: TaskStatus[] = ['pending', 'assigned', 'in_progress', 'completed', 'failed', 'cancelled'];
+  return validStatuses.includes(status as TaskStatus);
+}
+
+/**
+ * Type guard to check if a value is a valid AgentStatus
+ */
+export function isValidAgentStatus(status: string): status is AgentStatus {
+  const validStatuses: AgentStatus[] = ['idle', 'busy', 'active', 'error', 'offline'];
+  return validStatuses.includes(status as AgentStatus);
 }

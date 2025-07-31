@@ -1,14 +1,15 @@
 #!/usr/bin/env node
+
 /**
  * Hive Mind PS (Process Status) Command
  *
  * Show active sessions and their processes
  */
 
-import { Command } from 'commander';
 import chalk from 'chalk';
-import { HiveMindSessionManager } from '../../simple-commands/hive-mind/session-manager.js';
 import Table from 'cli-table3';
+import { Command } from 'commander';
+import { HiveMindSessionManager } from '../../simple-commands/hive-mind/session-manager.js';
 
 export const psCommand = new Command('ps')
   .description('Show active hive mind sessions and processes')
@@ -18,11 +19,10 @@ export const psCommand = new Command('ps')
     const sessionManager = new HiveMindSessionManager();
 
     try {
+      const allSessions = await sessionManager.getActiveSessionsWithProcessInfo();
       const sessions = options.all
-        ? sessionManager.getActiveSessionsWithProcessInfo()
-        : sessionManager
-            .getActiveSessionsWithProcessInfo()
-            .filter((s: any) => s.status === 'active' || s.status === 'paused');
+        ? allSessions
+        : allSessions.filter((s: any) => s.status === 'active' || s.status === 'paused');
 
       if (sessions.length === 0) {
         console.log(chalk.yellow('No sessions found'));
@@ -94,12 +94,12 @@ export const psCommand = new Command('ps')
           console.log(chalk.gray(`  Agents: ${session.agent_count || 0}`));
           console.log(
             chalk.gray(
-              `  Tasks: ${session.task_count || 0} (${session.completed_tasks || 0} completed)`,
-            ),
+              `  Tasks: ${session.task_count || 0} (${session.completed_tasks || 0} completed)`
+            )
           );
 
           if (session.child_pids.length > 0) {
-            console.log(chalk.gray(`  Active Processes:`));
+            console.log(chalk.gray('  Active Processes:'));
             for (const pid of session.child_pids) {
               console.log(chalk.gray(`    - PID ${pid}`));
             }

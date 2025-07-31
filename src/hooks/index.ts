@@ -1,21 +1,71 @@
 /**
- * Legacy Hook System - Migration Notice
+ * DEPRECATED: Legacy Hook System - Fully Migrated
  * 
- * This hook system has been consolidated with the more advanced agentic-flow-hooks system.
+ * This hook system has been COMPLETELY MIGRATED to the agentic-flow-hooks service.
  * All functionality is now available through the modern implementation at:
  * src/services/agentic-flow-hooks/
  * 
- * This file provides backward compatibility redirects while we complete the migration.
+ * This file now serves as a complete redirect to the modern system.
  */
 
-// Re-export the modern agentic-flow-hooks system
+// Full re-export of the modern agentic-flow-hooks system
 export {
   agenticHookManager,
   initializeAgenticFlowHooks,
+  shutdownAgenticFlowHooks,
+  getHookSystemStatus,
+  createHookContext,
 } from '../services/agentic-flow-hooks/index.js';
 
-// Re-export modern types with compatibility aliases
+// Complete type re-exports with modern and legacy aliases
 export type {
+  // Modern types (preferred)
+  AgenticHookContext,
+  HookRegistration,
+  HookPayload,
+  AgenticHookType,
+  HookHandlerResult,
+  HookHandler,
+  HookFilter,
+  HookOptions,
+  HookPipeline,
+  PipelineStage,
+  PipelineMetrics,
+  SideEffect,
+  
+  // LLM Hook Types
+  LLMHookType,
+  LLMHookPayload,
+  LLMRequest,
+  LLMResponse,
+  LLMMetrics,
+  
+  // Memory Hook Types
+  MemoryHookType,
+  MemoryHookPayload,
+  
+  // Neural Hook Types
+  NeuralHookType,
+  NeuralHookPayload,
+  Pattern,
+  TrainingData,
+  Prediction,
+  Adaptation,
+  
+  // Performance Hook Types
+  PerformanceHookType,
+  PerformanceHookPayload,
+  PerformanceMetric,
+  BottleneckAnalysis,
+  OptimizationSuggestion,
+  
+  // Workflow Hook Types
+  WorkflowHookType,
+  WorkflowHookPayload,
+  WorkflowDecision,
+  WorkflowMetrics,
+  
+  // Legacy aliases (deprecated)
   AgenticHookContext as HookExecutionContext,
   HookRegistration as AgentHook,
   HookPayload as EventPayload,
@@ -23,170 +73,114 @@ export type {
   HookHandlerResult as HookExecutionResult,
 } from '../services/agentic-flow-hooks/types.js';
 
-// Legacy hook templates for backward compatibility
+// ===== DEPRECATED LEGACY EXPORTS =====
+// These exports are provided for backward compatibility only.
+// Use the modern agentic-flow-hooks service instead.
+
+/**
+ * @deprecated Use the modern hook templates from agentic-flow-hooks service
+ * Import from: '../services/agentic-flow-hooks/index.js'
+ */
 export const QUALITY_HOOKS = {
-  CODE_QUALITY: {
-    name: 'Code Quality Monitor',
-    description: 'Automatically runs code quality checks on file changes',
-    type: 'workflow-step' as const,
-    priority: 8,
-    enabled: true
-  },
-  SECURITY_SCAN: {
-    name: 'Security Scanner', 
-    description: 'Scans for security vulnerabilities and credential leaks',
-    type: 'workflow-step' as const,
-    priority: 9,
-    enabled: true
-  },
-  DOCUMENTATION_SYNC: {
-    name: 'Documentation Sync',
-    description: 'Automatically updates documentation when specifications change',
-    type: 'workflow-step' as const,
-    priority: 7,
-    enabled: true
-  },
-  PERFORMANCE_MONITOR: {
-    name: 'Performance Monitor',
-    description: 'Analyzes performance impact of code changes', 
-    type: 'workflow-step' as const,
-    priority: 6,
-    enabled: true
-  }
-};
-
-// Legacy constants for backward compatibility
-export const DEFAULT_HOOK_CONFIG = {
-  maxConcurrentHooks: 10,
-  defaultThrottleMs: 1000,
-  defaultDebounceMs: 500,
-  eventQueueSize: 1000,
-  agentPoolSize: 50,
-  enableMetrics: true,
-  enablePersistence: true,
-  logLevel: 'info' as const,
-  watchPatterns: ['**/*.md', '**/*.ts', '**/*.js', '**/*.json'],
-  ignorePatterns: ['node_modules/**', '.git/**', 'dist/**', 'build/**']
-};
-
-export const HOOK_TRIGGERS = {
-  FILE_SAVE: 'workflow-step',
-  FILE_CHANGE: 'workflow-step',
-  FILE_CREATE: 'workflow-start',
-  FILE_DELETE: 'workflow-complete',
-  TASK_COMPLETE: 'workflow-complete',
-  TASK_FAIL: 'workflow-error',
-  SPEC_UPDATE: 'workflow-step',
-  CODE_CHANGE: 'workflow-step',
-  AGENT_SPAWN: 'workflow-start',
-  WORKFLOW_PHASE: 'workflow-step',
-  TIME_INTERVAL: 'performance-metric'
-} as const;
-
-export const AGENT_TYPES = {
-  QUALITY_ASSURANCE: 'quality_assurance',
-  SECURITY_SCAN: 'security_scan', 
-  DOCUMENTATION_SYNC: 'documentation_sync',
-  PERFORMANCE_ANALYSIS: 'performance_analysis'
+  CODE_QUALITY: { name: 'Code Quality Monitor', type: 'workflow-step', priority: 8, enabled: true },
+  SECURITY_SCAN: { name: 'Security Scanner', type: 'workflow-step', priority: 9, enabled: true },
+  DOCUMENTATION_SYNC: { name: 'Documentation Sync', type: 'workflow-step', priority: 7, enabled: true },
+  PERFORMANCE_MONITOR: { name: 'Performance Monitor', type: 'workflow-step', priority: 6, enabled: true }
 } as const;
 
 /**
- * Migration utility class
- * Provides backward compatibility while encouraging migration to agentic-flow-hooks
+ * @deprecated Use the modern configuration from agentic-flow-hooks service
+ * Import from: '../services/agentic-flow-hooks/index.js'
+ */
+export const DEFAULT_HOOK_CONFIG = {
+  maxConcurrentHooks: 20,
+  defaultTimeout: 30000,
+  enableMetrics: true,
+  enablePersistence: true,
+  logLevel: 'info' as const
+} as const;
+
+/**
+ * @deprecated Use the modern hook types from agentic-flow-hooks service
+ * Import from: '../services/agentic-flow-hooks/types.js'
+ */
+export const HOOK_TRIGGERS = {
+  FILE_SAVE: 'workflow-step',
+  FILE_CHANGE: 'workflow-step', 
+  TASK_COMPLETE: 'workflow-complete',
+  AGENT_SPAWN: 'workflow-start'
+} as const;
+
+/**
+ * @deprecated Use the centralized agent types from src/constants/agent-types.ts
+ */
+export const AGENT_TYPES = {
+  QUALITY_ASSURANCE: 'quality_assurance',
+  SECURITY_SCAN: 'security_scan'
+} as const;
+
+// ===== DEPRECATED LEGACY UTILITIES =====
+
+/**
+ * @deprecated Use agenticHookManager and createHookContext from agentic-flow-hooks service
  */
 export class HookUtils {
   /**
-   * @deprecated Use agenticHookManager.register() instead
+   * @deprecated Use agenticHookManager.register() with HookFilter instead
    */
-  static createFilePatternCondition(pattern: string) {
-    console.warn('HookUtils.createFilePatternCondition is deprecated. Use agenticHookManager.register() with proper HookFilter instead.');
-    return { type: 'file_pattern', pattern };
+  static createFilePatternCondition() {
+    throw new Error('HookUtils.createFilePatternCondition is deprecated. Use agenticHookManager.register() with HookFilter instead.');
   }
 
   /**
-   * @deprecated Use agenticHookManager.register() instead
+   * @deprecated Use agenticHookManager.register() with hook handlers instead
    */
-  static createSpawnAgentAction(agentType: string, config: Record<string, any>) {
-    console.warn('HookUtils.createSpawnAgentAction is deprecated. Use agenticHookManager.register() with proper hook handlers instead.');
-    return { type: 'spawn_agent', agentType, agentConfig: config };
+  static createSpawnAgentAction() {
+    throw new Error('HookUtils.createSpawnAgentAction is deprecated. Use agenticHookManager.register() with hook handlers instead.');
   }
 
   /**
-   * @deprecated Use agenticHookManager.register() instead
+   * @deprecated Use agenticHookManager.register() with workflow-step hooks instead
    */
-  static createQualityHook(options: any) {
-    console.warn('HookUtils.createQualityHook is deprecated. Use agenticHookManager.register() with workflow-step hooks instead.');
-    return QUALITY_HOOKS.CODE_QUALITY;
+  static createQualityHook() {
+    throw new Error('HookUtils.createQualityHook is deprecated. Use agenticHookManager.register() with workflow-step hooks instead.');
   }
 
   /**
-   * @deprecated Use agenticHookManager.register() instead  
+   * @deprecated Use agenticHookManager.register() with workflow-step hooks instead
    */
-  static createSecurityHook(options: any) {
-    console.warn('HookUtils.createSecurityHook is deprecated. Use agenticHookManager.register() with workflow-step hooks instead.');
-    return QUALITY_HOOKS.SECURITY_SCAN;
+  static createSecurityHook() {
+    throw new Error('HookUtils.createSecurityHook is deprecated. Use agenticHookManager.register() with workflow-step hooks instead.');
   }
 
   /**
-   * @deprecated Use agenticHookManager.register() instead
+   * @deprecated Use agenticHookManager.register() with workflow-step hooks instead
    */
-  static createDocumentationHook(options: any) {
-    console.warn('HookUtils.createDocumentationHook is deprecated. Use agenticHookManager.register() with workflow-step hooks instead.');
-    return QUALITY_HOOKS.DOCUMENTATION_SYNC;
+  static createDocumentationHook() {
+    throw new Error('HookUtils.createDocumentationHook is deprecated. Use agenticHookManager.register() with workflow-step hooks instead.');
   }
 
   /**
-   * @deprecated Use agenticHookManager.register() instead
+   * @deprecated Use agenticHookManager.register() with performance-metric hooks instead
    */
-  static createPerformanceHook(options: any) {
-    console.warn('HookUtils.createPerformanceHook is deprecated. Use agenticHookManager.register() with performance-metric hooks instead.');
-    return QUALITY_HOOKS.PERFORMANCE_MONITOR;
+  static createPerformanceHook() {
+    throw new Error('HookUtils.createPerformanceHook is deprecated. Use agenticHookManager.register() with performance-metric hooks instead.');
   }
 }
 
 /**
- * @deprecated Use initializeAgenticFlowHooks() instead
+ * @deprecated Use initializeAgenticFlowHooks() and agenticHookManager instead
  */
-export function createHookEngine(config?: any) {
-  console.warn('createHookEngine is deprecated. Use initializeAgenticFlowHooks() and agenticHookManager instead.');
-  return {
-    registerHook: () => console.warn('Use agenticHookManager.register() instead'),
-    start: () => console.warn('Hooks are automatically initialized with agenticHookManager'),
-    stop: () => console.warn('Use agenticHookManager shutdown methods instead')
-  };
+export function createHookEngine() {
+  throw new Error('createHookEngine is deprecated. Use initializeAgenticFlowHooks() and agenticHookManager instead.');
 }
 
 /**
  * @deprecated Use agenticHookManager.register() for individual hooks instead
  */
-export async function setupDefaultHooks(engine?: any) {
-  console.warn('setupDefaultHooks is deprecated. Use agenticHookManager.register() to register specific hooks instead.');
-  console.info('Consider migrating to agentic-flow-hooks for advanced pipeline management and neural integration.');
-  return 4; // Return count for backward compatibility
+export async function setupDefaultHooks() {
+  throw new Error('setupDefaultHooks is deprecated. Use agenticHookManager.register() for individual hooks instead.');
 }
 
-// Migration notice for users
-console.info(`
-🔄 MIGRATION NOTICE: Hook System Consolidation
-
-The legacy hook system in src/hooks/ has been consolidated with the advanced
-agentic-flow-hooks system for better performance and functionality.
-
-✅ New System Features:
-  - Advanced pipeline management
-  - Neural pattern learning  
-  - Performance optimization
-  - Memory coordination hooks
-  - LLM integration hooks
-
-📖 Migration Guide:
-  - Replace AgentHookEngine with agenticHookManager
-  - Update hook registrations to use modern HookRegistration interface
-  - Leverage new hook types: LLM, memory, neural, performance, workflow
-  - See docs/maestro/specs/hooks-refactoring-plan.md for details
-
-🚀 Get Started:
-  import { agenticHookManager, initializeAgenticFlowHooks } from '../services/agentic-flow-hooks/'
-  await initializeAgenticFlowHooks()
-  agenticHookManager.register({ ... })
-`);
+// Migration completed - all functionality moved to agentic-flow-hooks service
+// For documentation, see: docs/maestro/specs/hooks-system/

@@ -2,8 +2,9 @@
  * JSON-based persistence layer for Claude-Flow
  */
 
-import { join } from 'path';
-import { mkdir, access, readFile, writeFile } from 'fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { Logger } from './logger.js';
 
 export interface PersistedAgent {
   id: string;
@@ -62,7 +63,10 @@ export class JsonPersistenceManager {
       this.data = JSON.parse(content);
     } catch (error) {
       // File doesn't exist or can't be read, keep default empty data
-      console.error('Failed to load persistence data:', error);
+      const logger = new Logger();
+      logger.warn('Failed to load persistence data', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -113,7 +117,7 @@ export class JsonPersistenceManager {
 
   async getActiveTasks(): Promise<PersistedTask[]> {
     return this.data.tasks.filter(
-      (t) => t.status === 'pending' || t.status === 'in_progress' || t.status === 'assigned',
+      (t) => t.status === 'pending' || t.status === 'in_progress' || t.status === 'assigned'
     );
   }
 
@@ -152,11 +156,11 @@ export class JsonPersistenceManager {
     completedTasks: number;
   }> {
     const activeAgents = this.data.agents.filter(
-      (a) => a.status === 'active' || a.status === 'idle',
+      (a) => a.status === 'active' || a.status === 'idle'
     ).length;
 
     const pendingTasks = this.data.tasks.filter(
-      (t) => t.status === 'pending' || t.status === 'in_progress' || t.status === 'assigned',
+      (t) => t.status === 'pending' || t.status === 'in_progress' || t.status === 'assigned'
     ).length;
 
     const completedTasks = this.data.tasks.filter((t) => t.status === 'completed').length;

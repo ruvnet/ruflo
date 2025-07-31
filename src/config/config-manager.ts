@@ -2,9 +2,10 @@
  * Node.js-compatible Configuration management for Claude-Flow
  */
 
-import { promises as fs } from 'fs';
-import path from 'path';
-import os from 'os';
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { Logger } from '../core/logger.js';
 
 export interface Config {
   orchestrator: {
@@ -156,10 +157,12 @@ export class ConfigManager {
   private config: Config;
   private configPath?: string;
   private userConfigDir: string;
+  private logger: Logger;
 
   private constructor() {
     this.config = this.deepClone(DEFAULT_CONFIG);
     this.userConfigDir = path.join(os.homedir(), '.claude-flow');
+    this.logger = new Logger();
   }
 
   /**
@@ -178,11 +181,11 @@ export class ConfigManager {
   async init(configPath = 'claude-flow.config.json'): Promise<void> {
     try {
       await this.load(configPath);
-      console.log(`✅ Configuration loaded from: ${configPath}`);
-    } catch (error) {
+      this.logger.info('Configuration loaded', { path: configPath });
+    } catch (_error) {
       // Create default config file if it doesn't exist
       await this.createDefaultConfig(configPath);
-      console.log(`✅ Default configuration created: ${configPath}`);
+      this.logger.info('Default configuration created', { path: configPath });
     }
   }
 
@@ -348,7 +351,7 @@ export class ConfigManager {
     // ruv-swarm validation
     if (!['mesh', 'hierarchical', 'ring', 'star'].includes(config.ruvSwarm.defaultTopology)) {
       throw new ConfigError(
-        'ruvSwarm.defaultTopology must be one of: mesh, hierarchical, ring, star',
+        'ruvSwarm.defaultTopology must be one of: mesh, hierarchical, ring, star'
       );
     }
     if (config.ruvSwarm.maxAgents < 1 || config.ruvSwarm.maxAgents > 100) {
@@ -356,7 +359,7 @@ export class ConfigManager {
     }
     if (!['balanced', 'specialized', 'adaptive'].includes(config.ruvSwarm.defaultStrategy)) {
       throw new ConfigError(
-        'ruvSwarm.defaultStrategy must be one of: balanced, specialized, adaptive',
+        'ruvSwarm.defaultStrategy must be one of: balanced, specialized, adaptive'
       );
     }
 
@@ -525,7 +528,7 @@ export class ConfigManager {
    */
   createTemplate(name: string, config: any): void {
     // Implementation for creating templates
-    console.log(`Creating template: ${name}`, config);
+    this.logger.debug('Creating configuration template', { name, config });
   }
 
   /**
@@ -548,7 +551,7 @@ export class ConfigManager {
   validateFile(path: string): boolean {
     try {
       // Basic validation - file exists and is valid JSON
-      require('fs').readFileSync(path, 'utf8');
+      require('node:fs').readFileSync(path, 'utf8');
       return true;
     } catch {
       return false;
@@ -576,7 +579,7 @@ export class ConfigManager {
     const backupPath = `${path}.backup.${Date.now()}`;
     const content = JSON.stringify(this.config, null, 2);
     await fs.writeFile(backupPath, content, 'utf8');
-    console.log(`Configuration backed up to: ${backupPath}`);
+    this.logger.info('Configuration backed up', { backupPath });
   }
 
   /**
@@ -585,7 +588,7 @@ export class ConfigManager {
   async restore(path: string): Promise<void> {
     const content = await fs.readFile(path, 'utf8');
     this.config = JSON.parse(content);
-    console.log(`Configuration restored from: ${path}`);
+    this.logger.info('Configuration restored', { path });
   }
 
   /**

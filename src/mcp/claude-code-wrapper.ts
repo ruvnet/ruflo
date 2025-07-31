@@ -3,17 +3,18 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
-  ListToolsRequestSchema,
-  Tool,
-  CallToolResult,
-  TextContent,
-  ImageContent,
+  type CallToolResult,
   EmbeddedResource,
+  ImageContent,
+  ListToolsRequestSchema,
+  TextContent,
+  type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { SparcMode, loadSparcModes } from './sparc-modes.js';
+import { loadSparcModes, type SparcMode } from './sparc-modes.js';
+
 // Simple ID generation
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -64,7 +65,7 @@ export class ClaudeCodeMCPWrapper {
         capabilities: {
           tools: {},
         },
-      },
+      }
     );
 
     this.setupHandlers();
@@ -88,7 +89,7 @@ export class ClaudeCodeMCPWrapper {
     }));
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) =>
-      this.handleToolCall(request.params.name, request.params.arguments || {}),
+      this.handleToolCall(request.params.name, request.params.arguments || {})
     );
   }
 
@@ -190,7 +191,7 @@ export class ClaudeCodeMCPWrapper {
             },
           },
         },
-      },
+      }
     );
 
     return tools;
@@ -239,18 +240,19 @@ export class ClaudeCodeMCPWrapper {
 
     // Execute the SPARC mode directly
     try {
-      // Import the execution function dynamically to avoid circular dependencies
-      // const { executeSparcMode } = await import('../cli/mcp-stdio-server.js');
-      // TODO: Implement proper SPARC mode execution or fix import path
-      const executeSparcMode = (mode: string, task: string, tools: any[], context: any) => {
-        throw new Error('SPARC mode execution not yet implemented in wrapper');
+      // SPARC mode execution is handled by the main MCP server
+      // This wrapper provides the interface but delegates to the core implementation
+      const executeSparcMode = async (mode: string, task: string, tools: any[], context: any) => {
+        throw new Error(
+          `SPARC mode '${mode}' execution must be handled by the main MCP server. This wrapper provides tool definitions only.`
+        );
       };
 
       const result = await executeSparcMode(
         mode,
         args.task,
         sparcMode.tools || [],
-        args.context || {},
+        args.context || {}
       );
 
       return {
@@ -283,7 +285,7 @@ export class ClaudeCodeMCPWrapper {
 
     // Add available tools
     if (mode.tools && mode.tools.length > 0) {
-      parts.push(`## Available Tools`);
+      parts.push('## Available Tools');
       mode.tools.forEach((tool) => {
         parts.push(`- **${tool}**: ${this.getToolDescription(tool)}`);
       });
@@ -297,7 +299,7 @@ export class ClaudeCodeMCPWrapper {
 
     // Add best practices
     if (mode.bestPractices) {
-      parts.push(`## Best Practices`);
+      parts.push('## Best Practices');
       mode.bestPractices.forEach((practice) => {
         parts.push(`- ${practice}`);
       });
@@ -306,7 +308,7 @@ export class ClaudeCodeMCPWrapper {
 
     // Add integration capabilities
     if (mode.integrationCapabilities) {
-      parts.push(`## Integration Capabilities\nThis mode integrates with:`);
+      parts.push('## Integration Capabilities\nThis mode integrates with:');
       mode.integrationCapabilities.forEach((capability) => {
         parts.push(`- ${capability}`);
       });
@@ -330,7 +332,7 @@ export class ClaudeCodeMCPWrapper {
         parts.push(`**Memory Key:** \`${context.memoryKey}\``);
       }
       if (context.parallel) {
-        parts.push(`**Parallel Execution:** Enabled`);
+        parts.push('**Parallel Execution:** Enabled');
       }
       if (context.workingDirectory) {
         parts.push(`**Working Directory:** ${context.workingDirectory}`);
@@ -565,7 +567,7 @@ Use the appropriate tools for each phase and maintain progress in TodoWrite.`;
               message: 'Swarm coordination initiated',
             },
             null,
-            2,
+            2
           ),
         },
       ],
@@ -596,7 +598,7 @@ Use the appropriate tools for each phase and maintain progress in TodoWrite.`;
             mode: 'documenter',
             task: `Document research results: ${objective}`,
             status: 'pending',
-          },
+          }
         );
         break;
 
@@ -620,7 +622,7 @@ Use the appropriate tools for each phase and maintain progress in TodoWrite.`;
             mode: 'reviewer',
             task: `Review code: ${objective}`,
             status: 'pending',
-          },
+          }
         );
         break;
 
@@ -632,7 +634,7 @@ Use the appropriate tools for each phase and maintain progress in TodoWrite.`;
             mode: 'optimizer',
             task: `Optimize based on analysis: ${objective}`,
             status: 'pending',
-          },
+          }
         );
         break;
 
@@ -649,7 +651,7 @@ Use the appropriate tools for each phase and maintain progress in TodoWrite.`;
             mode: 'debugger',
             task: `Debug issues: ${objective}`,
             status: 'pending',
-          },
+          }
         );
         break;
 
@@ -666,7 +668,7 @@ Use the appropriate tools for each phase and maintain progress in TodoWrite.`;
             mode: 'optimizer',
             task: `Optimize: ${objective}`,
             status: 'pending',
-          },
+          }
         );
         break;
 
@@ -689,7 +691,7 @@ Use the appropriate tools for each phase and maintain progress in TodoWrite.`;
             mode: 'documenter',
             task: `Update documentation: ${objective}`,
             status: 'pending',
-          },
+          }
         );
         break;
     }
@@ -781,7 +783,7 @@ Use the appropriate tools for each phase and maintain progress in TodoWrite.`;
               modeName,
               args.prompt || '',
               mode.tools || [],
-              {},
+              {}
             );
 
             return {

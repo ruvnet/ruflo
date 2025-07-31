@@ -2,23 +2,25 @@
  * Comprehensive agent management system
  */
 
+import { type ChildProcess, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { spawn, ChildProcess } from 'node:child_process';
-import type { ILogger } from '../core/logger.js';
 import type { IEventBus } from '../core/event-bus.js';
+import type { ILogger } from '../core/logger.js';
+import type { DistributedMemorySystem } from '../memory/distributed-memory.js';
 import type {
-  AgentId,
-  AgentType,
-  AgentStatus,
-  AgentState,
   AgentCapabilities,
   AgentConfig,
   AgentEnvironment,
-  AgentMetrics,
   AgentError,
+  AgentId,
+  AgentMetrics,
+  AgentState,
+  AgentStatus,
+  AgentType,
 } from '../swarm/types.js';
-import type { DistributedMemorySystem } from '../memory/distributed-memory.js';
 import { generateId } from '../utils/helpers.js';
+import { agentLoader, type AgentDefinition } from './agent-loader.js';
+import { CapabilityMapper } from './capability-mapper.js';
 
 export interface AgentManagerConfig {
   maxAgents: number;
@@ -142,7 +144,6 @@ export class AgentManager extends EventEmitter {
 
   // Scaling and policies
   private scalingPolicies = new Map<string, ScalingPolicy>();
-  private scalingOperations = new Map<string, { timestamp: Date; type: string }>();
 
   // Resource tracking
   private resourceUsage = new Map<string, { cpu: number; memory: number; disk: number }>();
@@ -152,7 +153,7 @@ export class AgentManager extends EventEmitter {
     config: Partial<AgentManagerConfig>,
     logger: ILogger,
     eventBus: IEventBus,
-    memory: DistributedMemorySystem,
+    memory: DistributedMemorySystem
   ) {
     super();
     this.logger = logger;
@@ -185,7 +186,7 @@ export class AgentManager extends EventEmitter {
     };
 
     this.setupEventHandlers();
-    this.initializeDefaultTemplates();
+    // Dynamic template loading will be initialized in initialize() method
   }
 
   private setupEventHandlers(): void {
@@ -221,7 +222,80 @@ export class AgentManager extends EventEmitter {
     });
   }
 
-  private initializeDefaultTemplates(): void {
+  /**
+   * Initialize dynamic templates from .claude/agents/ directory
+   */
+  private async initializeDynamicTemplates(): Promise<void> {
+    try {
+      const agentCategories = await agentLoader.getAgentCategories();
+      let loadedCount = 0;
+
+      for (const category of agentCategories) {
+        for (const agent of category.agents) {
+          try {
+            const template = CapabilityMapper.convertAgentDefinitionToTemplate(agent);
+            this.templates.set(agent.name, template);
+            loadedCount++;
+          } catch (error) {
+            this.logger.warn(`Failed to convert agent ${agent.name}:`, error);
+          }
+        }
+      }
+
+      this.logger.info(`Loaded ${loadedCount} dynamic agent templates from ${agentCategories.length} categories`);
+    } catch (error) {
+      this.logger.error('Failed to load dynamic templates, falling back to legacy agents:', error);
+      // Fallback to a minimal set if dynamic loading fails
+      await this.initializeFallbackTemplates();
+    }
+  }
+
+  /**
+   * Fallback template initialization if dynamic loading fails
+   */
+  private async initializeFallbackTemplates(): Promise<void> {
+    // Minimal fallback templates for core functionality
+    const coreTemplates = [
+      {
+        name: 'researcher',
+        type: 'researcher',
+        capabilities: ['research', 'analysis', 'documentation_research']
+      },
+      {
+        name: 'coder', 
+        type: 'coder',
+        capabilities: ['code_generation', 'implementation', 'refactoring']
+      },
+      {
+        name: 'tester',
+        type: 'tester', 
+        capabilities: ['testing', 'quality_assurance', 'test_generation']
+      },
+      {
+        name: 'planner',
+        type: 'planner',
+        capabilities: ['task_management', 'workflow_orchestration']
+      }
+    ];
+
+    for (const templateDef of coreTemplates) {
+      const template = CapabilityMapper.convertAgentDefinitionToTemplate({
+        name: templateDef.name,
+        type: templateDef.type,
+        description: `Fallback ${templateDef.name} agent`,
+        capabilities: templateDef.capabilities
+      });
+      this.templates.set(templateDef.name, template);
+    }
+
+    this.logger.info(`Loaded ${coreTemplates.length} fallback agent templates`);
+  }
+
+  // DEPRECATED: Legacy static template methods - will be removed
+  private legacyInitializeDefaultTemplates(): void {
+    // This method is deprecated and replaced by initializeDynamicTemplates()
+    // Keeping for reference during migration period
+    
     // Research agent template
     this.templates.set('researcher', {
       name: 'Research Agent',
@@ -330,502 +404,24 @@ export class AgentManager extends EventEmitter {
       startupScript: './scripts/start-developer.ts',
     });
 
-    // Add more templates...
-    this.initializeSpecializedTemplates();
+    // Legacy static templates removed - now using dynamic loading
   }
 
-  private initializeSpecializedTemplates(): void {
-    // Analyzer template
-    this.templates.set('analyst', {
-      name: 'Analyzer Agent',
-      type: 'analyst',
-      capabilities: {
-        codeGeneration: false,
-        codeReview: true,
-        testing: false,
-        documentation: true,
-        research: false,
-        analysis: true,
-        webSearch: false,
-        apiIntegration: true,
-        fileSystem: true,
-        terminalAccess: false,
-        languages: ['python', 'r', 'sql'],
-        frameworks: ['pandas', 'numpy', 'matplotlib'],
-        domains: ['data-analysis', 'statistics', 'visualization'],
-        tools: ['data-processor', 'chart-generator', 'statistical-analyzer'],
-        maxConcurrentTasks: 4,
-        maxMemoryUsage: 1024 * 1024 * 1024,
-        maxExecutionTime: 900000,
-        reliability: 0.9,
-        speed: 0.75,
-        quality: 0.9,
-      },
-      config: {
-        autonomyLevel: 0.7,
-        learningEnabled: true,
-        adaptationEnabled: true,
-        maxTasksPerHour: 15,
-        maxConcurrentTasks: 4,
-        timeoutThreshold: 900000,
-        reportingInterval: 45000,
-        heartbeatInterval: 12000,
-        permissions: ['file-read', 'data-access'],
-        trustedAgents: [],
-        expertise: { analysis: 0.95, visualization: 0.8, statistics: 0.85 },
-        preferences: { outputFormat: 'detailed', includeCharts: true },
-      },
-      environment: {
-        runtime: 'deno',
-        version: '1.40.0',
-        workingDirectory: './agents/analyzer',
-        tempDirectory: './tmp/analyzer',
-        logDirectory: './logs/analyzer',
-        apiEndpoints: {},
-        credentials: {},
-        availableTools: ['data-processor', 'chart-gen', 'stats-calc'],
-        toolConfigs: {},
-      },
-      startupScript: './scripts/start-analyzer.ts',
-    });
-
-    // Requirements Engineer Agent Template
-    this.templates.set('requirements-engineer', {
-      name: 'Requirements Engineer Agent',
-      type: 'requirements-engineer',
-      capabilities: {
-        codeGeneration: false,
-        codeReview: false,
-        testing: false,
-        documentation: true,
-        research: true,
-        analysis: true,
-        webSearch: true,
-        apiIntegration: false,
-        fileSystem: true,
-        terminalAccess: false,
-        languages: [],
-        frameworks: [],
-        domains: ['requirements-engineering', 'user-stories', 'ears-notation'],
-        tools: ['document-writer', 'nlp-processor', 'web-search'],
-        maxConcurrentTasks: 2,
-        maxMemoryUsage: 256 * 1024 * 1024,
-        maxExecutionTime: 300000,
-        reliability: 0.95,
-        speed: 0.8,
-        quality: 0.95,
-      },
-      config: {
-        autonomyLevel: 0.8,
-        learningEnabled: true,
-        adaptationEnabled: true,
-        maxTasksPerHour: 10,
-        maxConcurrentTasks: 2,
-        timeoutThreshold: 300000,
-        reportingInterval: 30000,
-        heartbeatInterval: 10000,
-        permissions: ['file-read', 'file-write'],
-        trustedAgents: [],
-        expertise: { requirements: 0.95, documentation: 0.9, analysis: 0.8 },
-        preferences: { format: 'markdown', style: 'formal' },
-      },
-      environment: {
-        runtime: 'deno',
-        version: '1.40.0',
-        workingDirectory: './agents/requirements-engineer',
-        tempDirectory: './tmp/requirements-engineer',
-        logDirectory: './logs/requirements-engineer',
-        apiEndpoints: {},
-        credentials: {},
-        availableTools: ['document-writer', 'nlp-processor'],
-        toolConfigs: {},
-      },
-      startupScript: './scripts/start-requirements-engineer.ts',
-    });
-
-    // Design Architect Agent Template
-    this.templates.set('design-architect', {
-      name: 'Design Architect Agent',
-      type: 'design-architect',
-      capabilities: {
-        codeGeneration: false,
-        codeReview: true,
-        testing: false,
-        documentation: true,
-        research: true,
-        analysis: true,
-        webSearch: false,
-        apiIntegration: true,
-        fileSystem: true,
-        terminalAccess: false,
-        languages: ['typescript', 'javascript', 'python'],
-        frameworks: [],
-        domains: ['software-architecture', 'system-design', 'data-modeling'],
-        tools: ['diagram-generator', 'code-analyzer', 'api-designer'],
-        maxConcurrentTasks: 1,
-        maxMemoryUsage: 512 * 1024 * 1024,
-        maxExecutionTime: 600000,
-        reliability: 0.9,
-        speed: 0.7,
-        quality: 0.95,
-      },
-      config: {
-        autonomyLevel: 0.7,
-        learningEnabled: true,
-        adaptationEnabled: true,
-        maxTasksPerHour: 5,
-        maxConcurrentTasks: 1,
-        timeoutThreshold: 600000,
-        reportingInterval: 60000,
-        heartbeatInterval: 15000,
-        permissions: ['file-read', 'file-write'],
-        trustedAgents: [],
-        expertise: { architecture: 0.95, design: 0.9, modeling: 0.85 },
-        preferences: { diagramFormat: 'mermaid', detailLevel: 'high' },
-      },
-      environment: {
-        runtime: 'deno',
-        version: '1.40.0',
-        workingDirectory: './agents/design-architect',
-        tempDirectory: './tmp/design-architect',
-        logDirectory: './logs/design-architect',
-        apiEndpoints: {},
-        credentials: {},
-        availableTools: ['diagram-gen', 'code-analyzer'],
-        toolConfigs: {},
-      },
-      startupScript: './scripts/start-design-architect.ts',
-    });
-
-    // Task Planner Agent Template
-    this.templates.set('task-planner', {
-      name: 'Task Planner Agent',
-      type: 'task-planner',
-      capabilities: {
-        codeGeneration: false,
-        codeReview: false,
-        testing: false,
-        documentation: true,
-        research: false,
-        analysis: true,
-        webSearch: false,
-        apiIntegration: false,
-        fileSystem: true,
-        terminalAccess: false,
-        languages: [],
-        frameworks: [],
-        domains: ['project-management', 'task-breakdown', 'agile-planning'],
-        tools: ['task-scheduler', 'dependency-analyzer'],
-        maxConcurrentTasks: 3,
-        maxMemoryUsage: 256 * 1024 * 1024,
-        maxExecutionTime: 300000,
-        reliability: 0.95,
-        speed: 0.85,
-        quality: 0.9,
-      },
-      config: {
-        autonomyLevel: 0.8,
-        learningEnabled: true,
-        adaptationEnabled: true,
-        maxTasksPerHour: 20,
-        maxConcurrentTasks: 3,
-        timeoutThreshold: 300000,
-        reportingInterval: 30000,
-        heartbeatInterval: 10000,
-        permissions: ['file-read', 'file-write'],
-        trustedAgents: [],
-        expertise: { planning: 0.95, 'task-management': 0.9, optimization: 0.8 },
-        preferences: { outputFormat: 'markdown-checkbox', granularity: 'fine' },
-      },
-      environment: {
-        runtime: 'deno',
-        version: '1.40.0',
-        workingDirectory: './agents/task-planner',
-        tempDirectory: './tmp/task-planner',
-        logDirectory: './logs/task-planner',
-        apiEndpoints: {},
-        credentials: {},
-        availableTools: ['task-scheduler', 'dependency-analyzer'],
-        toolConfigs: {},
-      },
-      startupScript: './scripts/start-task-planner.ts',
-    });
-
-    // Developer Agent Template (already exists, but ensure it's aligned)
-    this.templates.set('developer', {
-      name: 'Developer Agent',
-      type: 'developer',
-      capabilities: {
-        codeGeneration: true,
-        codeReview: true,
-        testing: true,
-        documentation: true,
-        research: false,
-        analysis: true,
-        webSearch: false,
-        apiIntegration: true,
-        fileSystem: true,
-        terminalAccess: true,
-        languages: ['typescript', 'javascript', 'python', 'rust'],
-        frameworks: ['deno', 'node', 'react', 'svelte'],
-        domains: ['web-development', 'backend', 'api-design'],
-        tools: ['git', 'editor', 'debugger', 'linter', 'formatter'],
-        maxConcurrentTasks: 3,
-        maxMemoryUsage: 512 * 1024 * 1024,
-        maxExecutionTime: 1200000,
-        reliability: 0.95,
-        speed: 0.7,
-        quality: 0.95,
-      },
-      config: {
-        autonomyLevel: 0.6,
-        learningEnabled: true,
-        adaptationEnabled: true,
-        maxTasksPerHour: 10,
-        maxConcurrentTasks: 3,
-        timeoutThreshold: 1200000,
-        reportingInterval: 60000,
-        heartbeatInterval: 15000,
-        permissions: ['file-read', 'file-write', 'terminal-access', 'git-access'],
-        trustedAgents: [],
-        expertise: { coding: 0.95, testing: 0.8, debugging: 0.9 },
-        preferences: { codeStyle: 'functional', testFramework: 'deno-test' },
-      },
-      environment: {
-        runtime: 'deno',
-        version: '1.40.0',
-        workingDirectory: './agents/developer',
-        tempDirectory: './tmp/developer',
-        logDirectory: './logs/developer',
-        apiEndpoints: {},
-        credentials: {},
-        availableTools: ['git', 'deno', 'editor', 'debugger'],
-        toolConfigs: {},
-      },
-      startupScript: './scripts/start-developer.ts',
-    });
-
-    // System Architect Agent Template  
-    this.templates.set('system-architect', {
-      name: 'System Architect Agent',
-      type: 'system-architect',
-      capabilities: {
-        codeGeneration: false,
-        codeReview: true,
-        testing: false,
-        documentation: true,
-        research: true,
-        analysis: true,
-        webSearch: false,
-        apiIntegration: true,
-        fileSystem: true,
-        terminalAccess: false,
-        languages: ['typescript', 'javascript', 'python'],
-        frameworks: ['microservices', 'distributed-systems'],
-        domains: ['system-architecture', 'scalability', 'performance', 'distributed-systems'],
-        tools: ['architecture-analyzer', 'system-modeler', 'performance-analyzer'],
-        maxConcurrentTasks: 1,
-        maxMemoryUsage: 512 * 1024 * 1024,
-        maxExecutionTime: 900000,
-        reliability: 0.95,
-        speed: 0.7,
-        quality: 0.95,
-      },
-      config: {
-        autonomyLevel: 0.8,
-        learningEnabled: true,
-        adaptationEnabled: true,
-        maxTasksPerHour: 5,
-        maxConcurrentTasks: 1,
-        timeoutThreshold: 900000,
-        reportingInterval: 60000,
-        heartbeatInterval: 15000,
-        permissions: ['file-read', 'file-write'],
-        trustedAgents: [],
-        expertise: { 'system-architecture': 0.95, scalability: 0.9, performance: 0.85 },
-        preferences: { scope: 'system-wide', focusArea: 'architecture' },
-      },
-      environment: {
-        runtime: 'deno',
-        version: '1.40.0',
-        workingDirectory: './agents/system-architect',
-        tempDirectory: './tmp/system-architect',
-        logDirectory: './logs/system-architect',
-        apiEndpoints: {},
-        credentials: {},
-        availableTools: ['architecture-analyzer', 'system-modeler'],
-        toolConfigs: {},
-      },
-      startupScript: './scripts/start-system-architect.ts',
-    });
-
-    // Tester Agent Template
-    this.templates.set('tester', {
-      name: 'Testing Agent',
-      type: 'tester',
-      capabilities: {
-        codeGeneration: false,
-        codeReview: true,
-        testing: true,
-        documentation: true,
-        research: false,
-        analysis: true,
-        webSearch: false,
-        apiIntegration: true,
-        fileSystem: true,
-        terminalAccess: true,
-        languages: ['typescript', 'javascript', 'python'],
-        frameworks: ['deno-test', 'jest', 'vitest', 'cypress'],
-        domains: ['testing', 'quality-assurance', 'test-automation'],
-        tools: ['test-runner', 'coverage-analyzer', 'test-generator'],
-        maxConcurrentTasks: 3,
-        maxMemoryUsage: 256 * 1024 * 1024,
-        maxExecutionTime: 600000,
-        reliability: 0.9,
-        speed: 0.8,
-        quality: 0.9,
-      },
-      config: {
-        autonomyLevel: 0.7,
-        learningEnabled: true,
-        adaptationEnabled: true,
-        maxTasksPerHour: 15,
-        maxConcurrentTasks: 3,
-        timeoutThreshold: 600000,
-        reportingInterval: 45000,
-        heartbeatInterval: 12000,
-        permissions: ['file-read', 'file-write', 'terminal-access'],
-        trustedAgents: [],
-        expertise: { testing: 0.9, 'quality-assurance': 0.85, automation: 0.8 },
-        preferences: { testFramework: 'deno-test', coverage: 'comprehensive' },
-      },
-      environment: {
-        runtime: 'deno',
-        version: '1.40.0',
-        workingDirectory: './agents/tester',
-        tempDirectory: './tmp/tester',
-        logDirectory: './logs/tester',
-        apiEndpoints: {},
-        credentials: {},
-        availableTools: ['test-runner', 'coverage-tool', 'test-gen'],
-        toolConfigs: {},
-      },
-      startupScript: './scripts/start-tester.ts',
-    });
-
-    // Code Reviewer Agent Template
-    this.templates.set('reviewer', {
-      name: 'Code Review Agent',
-      type: 'reviewer',
-      capabilities: {
-        codeGeneration: false,
-        codeReview: true,
-        testing: false,
-        documentation: true,
-        research: false,
-        analysis: true,
-        webSearch: false,
-        apiIntegration: false,
-        fileSystem: true,
-        terminalAccess: false,
-        languages: ['typescript', 'javascript', 'python', 'rust'],
-        frameworks: ['static-analysis', 'code-quality'],
-        domains: ['code-review', 'quality-assurance', 'best-practices'],
-        tools: ['static-analyzer', 'code-quality-checker', 'security-scanner'],
-        maxConcurrentTasks: 2,
-        maxMemoryUsage: 256 * 1024 * 1024,
-        maxExecutionTime: 450000,
-        reliability: 0.95,
-        speed: 0.8,
-        quality: 0.95,
-      },
-      config: {
-        autonomyLevel: 0.8,
-        learningEnabled: true,
-        adaptationEnabled: true,
-        maxTasksPerHour: 12,
-        maxConcurrentTasks: 2,
-        timeoutThreshold: 450000,
-        reportingInterval: 30000,
-        heartbeatInterval: 10000,
-        permissions: ['file-read'],
-        trustedAgents: [],
-        expertise: { 'code-review': 0.95, 'quality-assurance': 0.9, security: 0.8 },
-        preferences: { style: 'thorough', focus: 'quality-and-security' },
-      },
-      environment: {
-        runtime: 'deno',
-        version: '1.40.0',
-        workingDirectory: './agents/reviewer',
-        tempDirectory: './tmp/reviewer',
-        logDirectory: './logs/reviewer',
-        apiEndpoints: {},
-        credentials: {},
-        availableTools: ['static-analyzer', 'quality-checker'],
-        toolConfigs: {},
-      },
-      startupScript: './scripts/start-reviewer.ts',
-    });
-
-    // Steering Author Agent Template
-    this.templates.set('steering-author', {
-      name: 'Steering Author Agent',
-      type: 'steering-author',
-      capabilities: {
-        codeGeneration: false,
-        codeReview: true,
-        testing: false,
-        documentation: true,
-        research: true,
-        analysis: true,
-        webSearch: false,
-        apiIntegration: false,
-        fileSystem: true,
-        terminalAccess: false,
-        languages: [],
-        frameworks: [],
-        domains: ['documentation', 'knowledge-management', 'governance'],
-        tools: ['document-writer', 'content-analyzer'],
-        maxConcurrentTasks: 1,
-        maxMemoryUsage: 256 * 1024 * 1024,
-        maxExecutionTime: 300000,
-        reliability: 0.95,
-        speed: 0.7,
-        quality: 0.98,
-      },
-      config: {
-        autonomyLevel: 0.7,
-        learningEnabled: true,
-        adaptationEnabled: true,
-        maxTasksPerHour: 5,
-        maxConcurrentTasks: 1,
-        timeoutThreshold: 300000,
-        reportingInterval: 30000,
-        heartbeatInterval: 10000,
-        permissions: ['file-read', 'file-write'],
-        trustedAgents: [],
-        expertise: { documentation: 0.98, governance: 0.9, 'content-creation': 0.85 },
-        preferences: { style: 'concise', tone: 'formal' },
-      },
-      environment: {
-        runtime: 'deno',
-        version: '1.40.0',
-        workingDirectory: './agents/steering-author',
-        tempDirectory: './tmp/steering-author',
-        logDirectory: './logs/steering-author',
-        apiEndpoints: {},
-        credentials: {},
-        availableTools: ['document-writer', 'content-analyzer'],
-        toolConfigs: {},
-      },
-      startupScript: './scripts/start-steering-author.ts',
-    });
-  }
+  // DEPRECATED: All static template methods removed
+  // Previously contained 400+ lines of hardcoded agent templates  
+  // Now replaced by dynamic loading from .claude/agents/ directory
 
   async initialize(): Promise<void> {
     this.logger.info('Initializing agent manager', {
       maxAgents: this.config.maxAgents,
       templates: this.templates.size,
+    });
+
+    // Initialize dynamic templates from .claude/agents/
+    await this.initializeDynamicTemplates();
+
+    this.logger.info('Dynamic templates loaded', {
+      totalTemplates: this.templates.size,
     });
 
     // Start health monitoring
@@ -849,7 +445,7 @@ export class AgentManager extends EventEmitter {
 
     // Gracefully shutdown all agents
     const shutdownPromises = Array.from(this.agents.keys()).map((agentId) =>
-      this.stopAgent(agentId, 'shutdown'),
+      this.stopAgent(agentId, 'shutdown')
     );
 
     await Promise.all(shutdownPromises);
@@ -865,7 +461,7 @@ export class AgentManager extends EventEmitter {
       name?: string;
       config?: Partial<AgentConfig>;
       environment?: Partial<AgentEnvironment>;
-    } = {},
+    } = {}
   ): Promise<string> {
     if (this.agents.size >= this.config.maxAgents) {
       throw new Error('Maximum agent limit reached');
@@ -1086,7 +682,7 @@ export class AgentManager extends EventEmitter {
       autoScale?: boolean;
       scaleUpThreshold?: number;
       scaleDownThreshold?: number;
-    },
+    }
   ): Promise<string> {
     const template = this.templates.get(templateName);
     if (!template) {
@@ -1140,7 +736,7 @@ export class AgentManager extends EventEmitter {
 
     if (targetSize < pool.minSize || targetSize > pool.maxSize) {
       throw new Error(
-        `Target size ${targetSize} outside pool limits [${pool.minSize}, ${pool.maxSize}]`,
+        `Target size ${targetSize} outside pool limits [${pool.minSize}, ${pool.maxSize}]`
       );
     }
 
@@ -1200,7 +796,7 @@ export class AgentManager extends EventEmitter {
 
   private async performHealthChecks(): Promise<void> {
     const healthPromises = Array.from(this.agents.keys()).map((agentId) =>
-      this.checkAgentHealth(agentId),
+      this.checkAgentHealth(agentId)
     );
 
     await Promise.allSettled(healthPromises);
@@ -1271,7 +867,7 @@ export class AgentManager extends EventEmitter {
       } else {
         return 1.0; // Responsive
       }
-    } catch (error) {
+    } catch (_error) {
       return 0; // Failed to respond
     }
   }
@@ -1312,7 +908,7 @@ export class AgentManager extends EventEmitter {
     return Math.max(0, (memoryScore + cpuScore + diskScore) / 3);
   }
 
-  private detectHealthIssues(agentId: string, health: AgentHealth): void {
+  private detectHealthIssues(_agentId: string, health: AgentHealth): void {
     const issues: HealthIssue[] = [];
 
     if (health.components.responsiveness < 0.5) {
@@ -1567,7 +1163,7 @@ export class AgentManager extends EventEmitter {
 
   private updateResourceUsage(
     agentId: string,
-    usage: { cpu: number; memory: number; disk: number },
+    usage: { cpu: number; memory: number; disk: number }
   ): void {
     this.resourceUsage.set(agentId, usage);
   }

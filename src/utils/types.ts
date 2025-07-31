@@ -2,6 +2,9 @@
  * Core type definitions for Claude-Flow
  */
 
+// Import centralized agent types
+import type { AgentType } from '../constants/agent-types.js';
+
 // Configuration interface
 export interface Config {
   env: 'development' | 'production' | 'test';
@@ -102,7 +105,7 @@ export interface OrchestratorMetrics {
 export interface AgentProfile {
   id: string;
   name: string;
-  type: 'coordinator' | 'researcher' | 'implementer' | 'analyst' | 'custom';
+  type: AgentType;
   capabilities: string[];
   systemPrompt?: string;
   maxConcurrentTasks: number;

@@ -17,7 +17,8 @@ import { trainingAction } from './simple-commands/training.js';
 import { analysisAction } from './simple-commands/analysis.js';
 import { automationAction } from './simple-commands/automation.js';
 import { coordinationAction } from './simple-commands/coordination.js';
-import { hooksAction } from './simple-commands/hooks.js';
+// Legacy hooks removed - use modern agentic-flow-hooks system
+// import { hooksAction } from './simple-commands/hooks.js';
 import { hookSafetyCommand } from './simple-commands/hook-safety.js';
 import { hiveMindCommand } from './simple-commands/hive-mind.js';
 import { HelpFormatter } from './help-formatter.js';
@@ -26,7 +27,8 @@ import {
   showUnifiedMetrics,
   fixTaskAttribution,
 } from './simple-commands/swarm-metrics-integration.js';
-import { migrateHooksCommand, migrateHooksCommandConfig } from './simple-commands/migrate-hooks.js';
+// Migration completed - hooks already migrated to agentic-flow-hooks
+// import { migrateHooksCommand, migrateHooksCommandConfig } from './simple-commands/migrate-hooks.js';
 import {
   fixHookVariablesCommand,
   fixHookVariablesCommandConfig,
@@ -123,26 +125,48 @@ First-time users should run: npx claude-flow@latest init --sparc`,
     ],
   });
 
-  // Note: Maestro commands are now handled by TypeScript module
-  // See src/cli/commands/maestro.ts for the clean implementation
+  // Maestro Bridge - Canonical implementation with swarm coordination
   commandRegistry.set('maestro', {
-    handler: () => {
-      console.log('⚠️  Maestro commands have been moved to TypeScript.');
-      console.log('Please use: npx claude-flow maestro help');
-      console.log('Or import from: ./commands/maestro.js after compilation');
+    handler: async (args, flags) => {
+      const { maestroUnifiedAction } = await import('./simple-commands/maestro.js');
+      return maestroUnifiedAction(args, flags);
     },
-    description: 'Maestro: Specs-Driven Development with Hive Mind Integration',
+    description: 'Maestro: Specs-Driven Development with Native Hive Mind Swarm Coordination',
     usage: 'maestro <subcommand> [options]',
     examples: [
-      'maestro create-spec my-feature --request "Implement user auth"',
+      'maestro workflow user-auth "JWT authentication" --swarm',
+      'maestro create-spec my-feature "Implement user auth"',
       'maestro generate-design my-feature',
       'maestro generate-tasks my-feature',
-      'maestro implement-task my-feature 1',
-      'maestro approve-phase my-feature',
-      'maestro status my-feature --detailed',
+      'maestro implement-task my-feature 1 --swarm',
+      'maestro status my-feature',
       'maestro init-steering api-design',
+      'maestro performance',
       'maestro help',
     ],
+    details: `
+Native Hive Mind Integration Features:
+  • MaestroSwarmCoordinator as primary entry point
+  • TypeScript architecture merged with JavaScript implementation
+  • Specs-driven topology with 8-agent capacity
+  • Consensus validation (66% threshold by default)
+  • Collective memory with 24-hour TTL
+  • Performance monitoring and real-time metrics
+  • Auto-spawning specialized agents
+  • Event-driven coordination with caching
+
+Swarm Options:
+  --swarm                   Enable native hive-mind coordination
+  --consensus               Enable/disable consensus validation (default: true)
+  --verbose                 Detailed output with performance metrics
+
+Advanced Features:
+  • Complete end-to-end workflow with swarm coordination
+  • File-based progress tracking with swarm context
+  • Seamless hive-mind system integration
+  • Quality gate validation through consensus
+  • Auto-spawning agent coordination
+  • Comprehensive error handling and recovery`,
   });
 
   commandRegistry.set('agent', {
@@ -445,17 +469,20 @@ Coordination commands:
 Enables intelligent task distribution, agent synchronization, and shared memory coordination.`,
   });
 
+  // Legacy hooks command removed - use modern agentic-flow-hooks system
+  // Access hooks via: import { agenticHookManager } from '../services/agentic-flow-hooks/index.js'
+  /*
   commandRegistry.set('hooks', {
     handler: hooksAction,
-    description: 'Lifecycle event management',
-    usage: 'hooks <command> [options]',
+    description: '[LEGACY] Lifecycle event management - Use agentic-flow-hooks system instead',
+    usage: 'hooks <command> [options] [DEPRECATED]',
     examples: [
       'hooks pre-task --description "Build API" --task-id task-123',
       'hooks post-task --task-id task-123 --analyze-performance --generate-insights',
       'hooks session-end --export-metrics --generate-summary',
     ],
     details: `
-Hooks commands:
+[DEPRECATED] Legacy hooks commands - Use modern agentic-flow-hooks system:
   • pre-task: Execute before task begins (preparation & setup)
   • post-task: Execute after task completion (analysis & cleanup)
   • pre-edit: Execute before file modifications (backup & validation)
@@ -464,6 +491,7 @@ Hooks commands:
   
 Enables automated preparation & cleanup, performance tracking, and coordination synchronization.`,
   });
+  */
 
   commandRegistry.set('hook-safety', {
     handler: hookSafetyCommand,
@@ -497,7 +525,8 @@ SAFE ALTERNATIVES:
 For more information: https://github.com/ruvnet/claude-flow/issues/166`,
   });
 
-  commandRegistry.set('migrate-hooks', migrateHooksCommandConfig);
+  // Migration completed - hooks already migrated to agentic-flow-hooks system
+  // commandRegistry.set('migrate-hooks', migrateHooksCommandConfig);
 
   commandRegistry.set('fix-hook-variables', {
     handler: fixHookVariablesCommand,

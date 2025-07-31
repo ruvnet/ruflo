@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Hive Mind Agent Spawn Command
  *
@@ -6,13 +7,13 @@
  * with automatic capability assignment and coordination.
  */
 
-import { Command } from 'commander';
 import chalk from 'chalk';
-import ora from 'ora';
+import { Command } from 'commander';
 import inquirer from 'inquirer';
+import ora from 'ora';
 import { HiveMind } from '../../../hive-mind/core/HiveMind.js';
-import { AgentType, AgentCapability } from '../../../hive-mind/types.js';
-import { formatSuccess, formatError, formatInfo, formatWarning } from '../../formatter.js';
+import type { AgentCapability, AgentType } from '../../../hive-mind/types.js';
+import { formatError, formatInfo, formatSuccess, formatWarning } from '../../formatter.js';
 
 const AGENT_TYPES: AgentType[] = [
   'coordinator',
@@ -28,11 +29,8 @@ const AGENT_TYPES: AgentType[] = [
   'specialist',
   'requirements_analyst',
   'design_architect',
-  'system-architect',
   'task_planner',
-  'task-planner',
   'implementation_coder',
-  'developer',
   'quality_reviewer',
   'steering_documenter',
 ];
@@ -51,13 +49,10 @@ const CAPABILITY_MAP: Record<AgentType, AgentCapability[]> = {
   specialist: ['domain_expertise', 'custom_capabilities', 'problem_solving'],
   requirements_analyst: ['requirements_analysis', 'user_story_creation', 'acceptance_criteria'],
   design_architect: ['system_design', 'architecture', 'specs_driven_design'],
-  'system-architect': ['system_design', 'architecture_patterns', 'integration_planning'],
   task_planner: ['task_management', 'workflow_orchestration'],
-  'task-planner': ['task_management', 'workflow_orchestration'],
-  implementation_coder: ['code_generation', 'implementation', 'debugging'],
-  developer: ['code_generation', 'implementation', 'debugging'],
-  quality_reviewer: ['code_review', 'quality_assurance', 'testing'],
-  steering_documenter: ['documentation_generation', 'governance']
+  implementation_coder: ['code_generation', 'debugging'],
+  quality_reviewer: ['code_review', 'quality_assurance'],
+  steering_documenter: ['documentation_generation', 'governance'],
 };
 
 export const spawnCommand = new Command('spawn')

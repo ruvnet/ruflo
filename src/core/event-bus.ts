@@ -2,9 +2,10 @@
  * Event bus implementation for Claude-Flow
  */
 
-import { SystemEvents } from '../utils/types.js';
-import type { EventMap } from '../utils/types.js';
 import { TypedEventEmitter } from '../utils/helpers.js';
+import type { EventMap } from '../utils/types.js';
+import { SystemEvents } from '../utils/types.js';
+import { Logger } from './logger.js';
 
 export interface IEventBus {
   emit(event: string, data?: unknown): void;
@@ -31,7 +32,8 @@ class TypedEventBus extends TypedEventEmitter<EventMap> {
    */
   override emit<K extends keyof EventMap>(event: K, data: EventMap[K]): void {
     if (this.debug) {
-      console.debug(`[EventBus] Emitting event: ${String(event)}`, data);
+      const logger = new Logger();
+      logger.debug('EventBus emitting event', { event: String(event), data });
     }
 
     // Track event metrics
@@ -152,7 +154,7 @@ export class EventBus implements IEventBus {
   onFiltered(
     event: string,
     filter: (data: unknown) => boolean,
-    handler: (data: unknown) => void,
+    handler: (data: unknown) => void
   ): void {
     this.on(event, (data) => {
       if (filter(data)) {

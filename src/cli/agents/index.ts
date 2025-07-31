@@ -237,11 +237,8 @@ export class AgentFactory {
       specialist: 'Provides domain-specific expertise and specialized knowledge',
       requirements_analyst: 'Analyzes requirements and creates user stories with acceptance criteria',
       design_architect: 'Creates technical designs and system architecture for features',
-      'system-architect': 'High-level system architecture and design patterns',
       task_planner: 'Plans implementation tasks and orchestrates workflow execution', 
-      'task-planner': 'Plans implementation tasks and orchestrates workflow execution',
       implementation_coder: 'Implements code based on designs with quality focus',
-      developer: 'General purpose software development and implementation',
       quality_reviewer: 'Reviews code quality and ensures standards compliance',
       steering_documenter: 'Maintains governance documentation and project steering'
     };

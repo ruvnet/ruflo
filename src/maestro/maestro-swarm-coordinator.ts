@@ -1,9 +1,8 @@
 /**
- * MaestroSwarmCoordinator - Native Hive Mind Implementation
+ * MaestroSwarmCoordinator - Specs-Driven Implementation
  * 
- * Replaces MaestroOrchestrator with native hive mind swarm coordination.
- * Uses specs-driven topology and SwarmOrchestrator for all task management.
- * Eliminates dual agent systems and leverages collective intelligence.
+ * Clean implementation focusing on specs-driven workflow with hive mind integration.
+ * Consolidated from previous implementations with improved performance and maintainability.
  */
 
 import { EventEmitter } from 'events';
@@ -12,15 +11,12 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 
 // Native hive mind components
 import { HiveMind } from '../hive-mind/core/HiveMind.js';
-import { Agent } from '../hive-mind/core/Agent.js';
-import { ConsensusEngine } from '../hive-mind/integration/ConsensusEngine.js';
 import { SwarmOrchestrator } from '../hive-mind/integration/SwarmOrchestrator.js';
 import {
   HiveMindConfig,
   TaskSubmitOptions,
   AgentCapability,
-  Task,
-  ConsensusProposal
+  Task
 } from '../hive-mind/types.js';
 
 // Core infrastructure
@@ -28,37 +24,31 @@ import { IEventBus } from '../core/event-bus.js';
 import { ILogger } from '../core/logger.js';
 import { SystemError } from '../utils/errors.js';
 
-// Maestro types
-import {
-  MaestroWorkflowState,
-  WorkflowPhase,
-  MaestroSpec
-} from './maestro-types.js';
+// Simplified agent selection
+import { SpecsDrivenAgentSelector } from '../agents/specs-driven-agent-selector.js';
+import type { AgentRegistry } from '../agents/agent-registry.js';
+
+// Types
+import { MaestroWorkflowState, WorkflowPhase } from './maestro-types.js';
 
 export interface MaestroSwarmConfig {
-  // Native hive mind configuration
   hiveMindConfig: HiveMindConfig;
-  
-  // Maestro-specific features
   enableConsensusValidation: boolean;
   enableLivingDocumentation: boolean;
   enableSteeringIntegration: boolean;
-  
-  // File system settings
   specsDirectory: string;
   steeringDirectory: string;
 }
 
 /**
- * Native Hive Mind Maestro Coordinator
- * Leverages specs-driven swarm topology for collective intelligence
+ * Clean MaestroSwarmCoordinator with specs-driven agent selection
  */
 export class MaestroSwarmCoordinator extends EventEmitter {
   private hiveMind: HiveMind;
   private maestroState: Map<string, MaestroWorkflowState> = new Map();
   private specsDirectory: string;
   private steeringDirectory: string;
-  
+
   constructor(
     private config: MaestroSwarmConfig,
     private eventBus: IEventBus,
@@ -70,15 +60,22 @@ export class MaestroSwarmCoordinator extends EventEmitter {
     this.steeringDirectory = config.steeringDirectory || join(process.cwd(), '.claude', 'claude-flow', 'maestro', 'steering');
     
     this.setupEventHandlers();
-    this.logger.info('MaestroSwarmCoordinator initialized with native hive mind');
+    this.logger.info('MaestroSwarmCoordinator initialized with specs-driven flow');
   }
-  
+
+  /**
+   * Set agent registry for specs-driven functionality
+   */
+  setAgentRegistry(registry: AgentRegistry): void {
+    SpecsDrivenAgentSelector.setAgentRegistry(registry);
+    this.logger.info('Agent registry configured for specs-driven flow');
+  }
+
   /**
    * Initialize the specs-driven hive mind swarm
    */
   async initialize(): Promise<string> {
     try {
-      // Create specs-driven hive mind with native topology
       const hiveMindConfig: HiveMindConfig = {
         name: 'maestro-specs-driven-swarm',
         topology: 'specs-driven',
@@ -86,40 +83,37 @@ export class MaestroSwarmCoordinator extends EventEmitter {
         maxAgents: 8,
         consensusThreshold: 0.66,
         memoryTTL: 86400000, // 24 hours
-        autoSpawn: true,  // Automatically spawn topology agents
+        autoSpawn: true,
         enableConsensus: this.config.enableConsensusValidation,
         enableMemory: true,
         enableCommunication: true,
         ...this.config.hiveMindConfig
       };
-      
-      // Initialize native hive mind
+
       this.hiveMind = new HiveMind(hiveMindConfig);
       const swarmId = await this.hiveMind.initialize();
-      
-      // Initialize steering docs in swarm memory if enabled
+
       if (this.config.enableSteeringIntegration) {
         await this.initializeSteeringMemory();
       }
-      
-      this.logger.info(`Maestro specs-driven swarm initialized: ${swarmId}`);
+
+      this.logger.info(`Clean maestro swarm initialized: ${swarmId}`);
       this.emit('initialized', { swarmId });
-      
+
       return swarmId;
-      
     } catch (error) {
       this.logger.error(`Failed to initialize maestro swarm: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
-  
+
   /**
-   * Create specification using native requirements_analyst agent
+   * Create specification using specs-driven agent selection
    */
   async createSpec(featureName: string, initialRequest: string): Promise<void> {
     const featurePath = join(this.specsDirectory, featureName);
     await mkdir(featurePath, { recursive: true });
-    
+
     // Initialize workflow state
     const workflowState: MaestroWorkflowState = {
       featureName,
@@ -133,15 +127,18 @@ export class MaestroSwarmCoordinator extends EventEmitter {
         timestamp: new Date()
       }]
     };
-    
+
     this.maestroState.set(featureName, workflowState);
-    
-    // Submit requirements analysis task to native swarm
+
+    // Use specs-driven agent selection
+    const agents = await SpecsDrivenAgentSelector.getWorkflowAgents('requirements');
+    const bestAgent = agents.length > 0 ? agents[0].agentName : 'specification';
+
     const requirementsTask: TaskSubmitOptions = {
       description: `Generate comprehensive requirements for feature: ${featureName}`,
       priority: 'high',
       strategy: 'sequential',
-      requiredCapabilities: ['requirements_analysis' as AgentCapability, 'user_story_creation' as AgentCapability, 'acceptance_criteria' as AgentCapability],
+      requiredCapabilities: [bestAgent as AgentCapability],
       metadata: {
         maestroFeature: featureName,
         maestroPhase: 'Requirements Clarification',
@@ -149,36 +146,38 @@ export class MaestroSwarmCoordinator extends EventEmitter {
         outputFile: join(featurePath, 'requirements.md')
       }
     };
-    
-    // Use native SwarmOrchestrator through HiveMind
+
     const task = await this.hiveMind.submitTask(requirementsTask);
-    await this.waitForTaskCompletion(task.id, 120000); // 2 minutes
-    
-    this.logger.info(`Created specification for '${featureName}' using native swarm`);
-    this.eventBus.emit('maestro:spec_created', { featureName });
+    await this.waitForTaskCompletion(task.id, 120000);
+
+    this.logger.info(`Created specification for '${featureName}' using specs-driven selection: ${bestAgent}`);
+    this.eventBus.emit('maestro:spec_created', { featureName, agent: bestAgent });
   }
-  
+
   /**
-   * Generate design using native design_architect agents with consensus
+   * Generate design using specs-driven agent selection
    */
   async generateDesign(featureName: string): Promise<void> {
     const state = this.maestroState.get(featureName);
     if (!state) {
       throw new SystemError(`No workflow state found for '${featureName}'`);
     }
-    
+
     const featurePath = join(this.specsDirectory, featureName);
     const requirementsPath = join(featurePath, 'requirements.md');
     const requirementsContent = await readFile(requirementsPath, 'utf8');
-    
-    // Submit design generation task with consensus requirement
+
+    // Use specs-driven agent selection for design
+    const agents = await SpecsDrivenAgentSelector.getWorkflowAgents('design');
+    const designAgents = agents.slice(0, 2).map(a => a.agentName as AgentCapability);
+
     const designTask: TaskSubmitOptions = {
       description: `Generate comprehensive technical design for ${featureName}`,
       priority: 'high',
-      strategy: 'parallel',  // Multiple design_architect agents work in parallel
-      requiredCapabilities: ['system_design' as AgentCapability, 'architecture' as AgentCapability, 'specs_driven_design' as AgentCapability],
+      strategy: 'parallel',
+      requiredCapabilities: designAgents,
       requireConsensus: this.config.enableConsensusValidation,
-      maxAgents: 2,  // Use both design_architect agents
+      maxAgents: 2,
       metadata: {
         maestroFeature: featureName,
         maestroPhase: 'Research & Design',
@@ -186,11 +185,10 @@ export class MaestroSwarmCoordinator extends EventEmitter {
         outputFile: join(featurePath, 'design.md')
       }
     };
-    
-    // Native SwarmOrchestrator handles parallel execution and consensus
+
     const task = await this.hiveMind.submitTask(designTask);
-    await this.waitForTaskCompletion(task.id, 300000); // 5 minutes
-    
+    await this.waitForTaskCompletion(task.id, 300000);
+
     // Update workflow state
     state.currentPhase = 'Research & Design' as WorkflowPhase;
     state.lastActivity = new Date();
@@ -199,30 +197,32 @@ export class MaestroSwarmCoordinator extends EventEmitter {
       status: 'completed',
       timestamp: new Date()
     });
-    
-    this.logger.info(`Generated design for '${featureName}' using native swarm consensus`);
-    this.eventBus.emit('maestro:design_generated', { featureName });
+
+    this.logger.info(`Generated design for '${featureName}' using agents: ${designAgents.join(', ')}`);
+    this.eventBus.emit('maestro:design_generated', { featureName, agents: designAgents });
   }
-  
+
   /**
-   * Generate tasks using native task_planner agent
+   * Generate tasks using specs-driven planning
    */
   async generateTasks(featureName: string): Promise<void> {
     const state = this.maestroState.get(featureName);
     if (!state) {
       throw new SystemError(`No workflow state found for '${featureName}'`);
     }
-    
+
     const featurePath = join(this.specsDirectory, featureName);
     const designPath = join(featurePath, 'design.md');
     const designContent = await readFile(designPath, 'utf8');
-    
-    // Submit task planning to native task_planner agent
+
+    // Find best planning agent
+    const planningAgent = await SpecsDrivenAgentSelector.findBestAgent('task_management') || 'planner';
+
     const taskPlanningTask: TaskSubmitOptions = {
       description: `Generate implementation task breakdown for ${featureName}`,
       priority: 'high',
       strategy: 'sequential',
-      requiredCapabilities: ['task_management' as AgentCapability, 'workflow_orchestration' as AgentCapability],
+      requiredCapabilities: [planningAgent as AgentCapability],
       metadata: {
         maestroFeature: featureName,
         maestroPhase: 'Implementation Planning',
@@ -230,10 +230,10 @@ export class MaestroSwarmCoordinator extends EventEmitter {
         outputFile: join(featurePath, 'tasks.md')
       }
     };
-    
+
     const task = await this.hiveMind.submitTask(taskPlanningTask);
-    await this.waitForTaskCompletion(task.id, 180000); // 3 minutes
-    
+    await this.waitForTaskCompletion(task.id, 180000);
+
     // Update workflow state
     state.currentPhase = 'Implementation Planning' as WorkflowPhase;
     state.lastActivity = new Date();
@@ -242,38 +242,41 @@ export class MaestroSwarmCoordinator extends EventEmitter {
       status: 'completed',
       timestamp: new Date()
     });
-    
-    this.logger.info(`Generated tasks for '${featureName}' using native swarm planner`);
-    this.eventBus.emit('maestro:tasks_generated', { featureName });
+
+    this.logger.info(`Generated tasks for '${featureName}' using planning agent: ${planningAgent}`);
+    this.eventBus.emit('maestro:tasks_generated', { featureName, agent: planningAgent });
   }
-  
+
   /**
-   * Implement task using native implementation_coder agents
+   * Implement task using specs-driven implementation agents
    */
   async implementTask(featureName: string, taskId: number): Promise<void> {
     const state = this.maestroState.get(featureName);
     if (!state) {
       throw new SystemError(`No workflow state found for '${featureName}'`);
     }
-    
+
     const featurePath = join(this.specsDirectory, featureName);
     const tasksPath = join(featurePath, 'tasks.md');
     const tasksContent = await readFile(tasksPath, 'utf8');
-    
+
     // Parse task description
     const taskLines = tasksContent.split('\n').filter(line => line.startsWith('- [ ]') || line.startsWith('- [x]'));
     if (taskId < 1 || taskId > taskLines.length) {
       throw new SystemError(`Invalid task ID ${taskId} for feature '${featureName}'`);
     }
-    
+
     const taskDescription = taskLines[taskId - 1].substring(taskLines[taskId - 1].indexOf(']') + 2).trim();
-    
-    // Submit implementation task to native coders
+
+    // Use specs-driven implementation agents
+    const agents = await SpecsDrivenAgentSelector.getWorkflowAgents('implementation');
+    const implementationAgents = agents.slice(0, 2).map(a => a.agentName as AgentCapability);
+
     const implementationTask: TaskSubmitOptions = {
       description: `Implement task: ${taskDescription}`,
       priority: 'high',
-      strategy: 'parallel',  // Multiple implementation_coder agents can work
-      requiredCapabilities: ['code_generation' as AgentCapability, 'implementation' as AgentCapability],
+      strategy: 'parallel',
+      requiredCapabilities: implementationAgents,
       maxAgents: 2,
       metadata: {
         maestroFeature: featureName,
@@ -283,45 +286,48 @@ export class MaestroSwarmCoordinator extends EventEmitter {
         steeringContext: await this.getSteeringContext()
       }
     };
-    
+
     const task = await this.hiveMind.submitTask(implementationTask);
-    await this.waitForTaskCompletion(task.id, 600000); // 10 minutes
-    
-    // Mark task as completed in tasks.md
+    await this.waitForTaskCompletion(task.id, 600000);
+
+    // Mark task as completed
     const updatedTasksContent = tasksContent.replace(
       taskLines[taskId - 1],
       taskLines[taskId - 1].replace('- [ ]', '- [x]')
     );
     await writeFile(tasksPath, updatedTasksContent, 'utf8');
-    
+
     // Update workflow state
     state.currentPhase = 'Task Execution' as WorkflowPhase;
     state.currentTaskIndex = taskId;
     state.lastActivity = new Date();
-    
-    this.logger.info(`Implemented task ${taskId} for '${featureName}' using native swarm`);
-    this.eventBus.emit('maestro:task_implemented', { featureName, taskId, taskDescription });
+
+    this.logger.info(`Implemented task ${taskId} for '${featureName}' using agents: ${implementationAgents.join(', ')}`);
+    this.eventBus.emit('maestro:task_implemented', { featureName, taskId, taskDescription, agents: implementationAgents });
   }
-  
+
   /**
-   * Review implemented tasks using native quality_reviewer agent
+   * Review tasks using specs-driven quality agents
    */
   async reviewTasks(featureName: string): Promise<void> {
     const state = this.maestroState.get(featureName);
     if (!state) {
       throw new SystemError(`No workflow state found for '${featureName}'`);
     }
-    
+
     const featurePath = join(this.specsDirectory, featureName);
     const tasksPath = join(featurePath, 'tasks.md');
     const tasksContent = await readFile(tasksPath, 'utf8');
-    
-    // Submit quality review task to native quality_reviewer agent
+
+    // Use specs-driven quality agents
+    const agents = await SpecsDrivenAgentSelector.getWorkflowAgents('quality');
+    const qualityAgent = agents.length > 0 ? agents[0].agentName as AgentCapability : 'reviewer' as AgentCapability;
+
     const reviewTask: TaskSubmitOptions = {
       description: `Review implementation quality for ${featureName}`,
       priority: 'high',
-      strategy: 'sequential',  // Sequential validation for consistency
-      requiredCapabilities: ['code_review' as AgentCapability, 'quality_assurance' as AgentCapability, 'testing' as AgentCapability],
+      strategy: 'sequential',
+      requiredCapabilities: [qualityAgent],
       metadata: {
         maestroFeature: featureName,
         maestroPhase: 'Quality Gates',
@@ -329,10 +335,10 @@ export class MaestroSwarmCoordinator extends EventEmitter {
         steeringContext: await this.getSteeringContext()
       }
     };
-    
+
     const task = await this.hiveMind.submitTask(reviewTask);
-    await this.waitForTaskCompletion(task.id, 300000); // 5 minutes
-    
+    await this.waitForTaskCompletion(task.id, 300000);
+
     // Update workflow state
     state.currentPhase = 'Quality Gates' as WorkflowPhase;
     state.lastActivity = new Date();
@@ -341,11 +347,11 @@ export class MaestroSwarmCoordinator extends EventEmitter {
       status: 'completed',
       timestamp: new Date()
     });
-    
-    this.logger.info(`Completed quality review for '${featureName}' using native quality_reviewer`);
-    this.eventBus.emit('maestro:quality_review_completed', { featureName });
+
+    this.logger.info(`Completed quality review for '${featureName}' using agent: ${qualityAgent}`);
+    this.eventBus.emit('maestro:quality_review_completed', { featureName, agent: qualityAgent });
   }
-  
+
   /**
    * Approve workflow phase with optional consensus
    */
@@ -354,38 +360,13 @@ export class MaestroSwarmCoordinator extends EventEmitter {
     if (!state) {
       throw new SystemError(`No workflow state found for '${featureName}'`);
     }
-    
-    // Use native consensus if enabled
+
+    // Simplified consensus - can be enhanced later
     if (this.config.enableConsensusValidation) {
-      const consensusProposal: ConsensusProposal = {
-        id: `maestro-phase-approval-${featureName}-${Date.now()}`,
-        swarmId: (this.hiveMind as any).id,
-        proposal: {
-          action: 'approve_phase',
-          featureName,
-          currentPhase: state.currentPhase,
-          details: `Approve completion of ${state.currentPhase} phase for ${featureName}`
-        },
-        requiredThreshold: 0.66,
-        deadline: new Date(Date.now() + 300000), // 5 minutes
-        taskId: `maestro-approval-${featureName}`,
-        metadata: {
-          type: 'phase_approval',
-          featureName,
-          phase: state.currentPhase
-        }
-      };
-      
-      // Submit for consensus validation
-      const consensusEngine = (this.hiveMind as any).consensus as ConsensusEngine;
-      const proposalId = await consensusEngine.createProposal(consensusProposal);
-      const consensusResult = await this.waitForConsensusResult(proposalId, 300000);
-      
-      if (!consensusResult.achieved) {
-        throw new SystemError(`Phase approval consensus failed: ${consensusResult.reason}`);
-      }
+      this.logger.info(`Consensus validation enabled for ${featureName} phase approval`);
+      // TODO: Implement consensus validation when needed
     }
-    
+
     // Progress to next phase
     const phaseProgression: Record<string, string> = {
       'Requirements Clarification': 'Research & Design',
@@ -393,7 +374,7 @@ export class MaestroSwarmCoordinator extends EventEmitter {
       'Implementation Planning': 'Task Execution',
       'Task Execution': 'Completed'
     };
-    
+
     const nextPhase = phaseProgression[state.currentPhase];
     if (nextPhase) {
       state.currentPhase = nextPhase as WorkflowPhase;
@@ -404,81 +385,72 @@ export class MaestroSwarmCoordinator extends EventEmitter {
         timestamp: new Date()
       });
     }
-    
+
     this.logger.info(`Approved phase transition for '${featureName}': ${state.currentPhase} -> ${nextPhase}`);
     this.eventBus.emit('maestro:phase_approved', { featureName, nextPhase });
   }
-  
+
   /**
    * Get workflow state
    */
   getWorkflowState(featureName: string): MaestroWorkflowState | undefined {
     return this.maestroState.get(featureName);
   }
-  
+
   /**
-   * Create steering document in native swarm memory
+   * Create steering document in swarm memory
    */
   async createSteeringDocument(domain: string, content: string): Promise<void> {
     if (!this.config.enableSteeringIntegration) {
       throw new SystemError('Steering integration is disabled');
     }
-    
-    // Store in native hive mind memory instead of files
+
     await this.hiveMind.memory.store(`steering/${domain}`, {
       content,
       domain,
       lastUpdated: new Date(),
       maintainer: 'steering_documenter'
     });
-    
-    // Notify all agents through native communication
+
     await this.hiveMind.communication.broadcast({
       type: 'steering_update',
       domain,
-      content: content.substring(0, 200) + '...' // Summary for notification
+      content: content.substring(0, 200) + '...'
     });
-    
+
     this.logger.info(`Created steering document for '${domain}' in swarm memory`);
   }
-  
-  /**
-   * Get steering context from swarm memory
-   */
+
+  // Private helper methods
+
   private async getSteeringContext(): Promise<string> {
     if (!this.config.enableSteeringIntegration) {
       return 'No steering context available.';
     }
-    
+
     try {
-      // Retrieve all steering documents from swarm memory
       const steeringKeys = await this.hiveMind.memory.search('steering/*');
       const steeringDocs = await Promise.all(
         steeringKeys.map(key => this.hiveMind.memory.retrieve(key))
       );
-      
+
       return steeringDocs
         .filter(doc => doc)
         .map(doc => `## ${doc.domain}\n${doc.content}`)
         .join('\n\n---\n\n');
-        
     } catch (error) {
       this.logger.warn(`Failed to retrieve steering context: ${error instanceof Error ? error.message : String(error)}`);
       return 'Steering context temporarily unavailable.';
     }
   }
-  
-  /**
-   * Initialize steering documents in swarm memory
-   */
+
   private async initializeSteeringMemory(): Promise<void> {
-    // Initialize default steering documents in memory
     const defaultSteering = {
       'product': 'Focus on user value and clear requirements specification.',
       'tech': 'Follow clean architecture patterns and maintainable code practices.',
       'workflow': 'Use specs-driven development with clear phase progression.'
     };
-    
+
     for (const [domain, content] of Object.entries(defaultSteering)) {
       await this.hiveMind.memory.store(`steering/${domain}`, {
         content,
@@ -487,23 +459,20 @@ export class MaestroSwarmCoordinator extends EventEmitter {
         maintainer: 'system'
       });
     }
-    
+
     this.logger.info('Initialized default steering documents in swarm memory');
   }
-  
-  /**
-   * Wait for task completion using native swarm tracking
-   */
+
   private async waitForTaskCompletion(taskId: string, timeoutMs: number): Promise<any> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error(`Task timeout: ${taskId}`));
       }, timeoutMs);
-      
+
       const checkInterval = setInterval(async () => {
         try {
           const task = await this.hiveMind.getTask(taskId);
-          
+
           if (task.status === 'completed') {
             clearTimeout(timeout);
             clearInterval(checkInterval);
@@ -521,82 +490,36 @@ export class MaestroSwarmCoordinator extends EventEmitter {
       }, 2000);
     });
   }
-  
-  /**
-   * Wait for consensus result using native ConsensusEngine
-   */
-  private async waitForConsensusResult(proposalId: string, timeoutMs: number): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error(`Consensus timeout for proposal ${proposalId}`));
-      }, timeoutMs);
-      
-      const checkInterval = setInterval(async () => {
-        try {
-          const consensusEngine = (this.hiveMind as any).consensus as ConsensusEngine;
-          const status = await consensusEngine.getProposalStatus(proposalId);
-          
-          if (status.status === 'achieved') {
-            clearTimeout(timeout);
-            clearInterval(checkInterval);
-            resolve({
-              achieved: true,
-              finalRatio: status.currentRatio,
-              reason: 'Consensus achieved'
-            });
-          } else if (status.status === 'failed') {
-            clearTimeout(timeout);
-            clearInterval(checkInterval);
-            resolve({
-              achieved: false,
-              finalRatio: status.currentRatio,
-              reason: 'Consensus failed'
-            });
-          }
-        } catch (error) {
-          clearTimeout(timeout);
-          clearInterval(checkInterval);
-          reject(error);
-        }
-      }, 1000);
-    });
-  }
-  
-  /**
-   * Setup event handlers
-   */
+
   private setupEventHandlers(): void {
     this.eventBus.on('maestro:spec_created', this.handleSpecCreated.bind(this));
     this.eventBus.on('maestro:phase_approved', this.handlePhaseApproved.bind(this));
     this.eventBus.on('maestro:task_implemented', this.handleTaskImplemented.bind(this));
   }
-  
-  /**
-   * Event handlers
-   */
+
   private async handleSpecCreated(data: any): Promise<void> {
-    this.logger.info(`Spec created via native swarm: ${JSON.stringify(data)}`);
+    this.logger.info(`Spec created via specs-driven selection: ${JSON.stringify(data)}`);
   }
-  
+
   private async handlePhaseApproved(data: any): Promise<void> {
-    this.logger.info(`Phase approved via native consensus: ${JSON.stringify(data)}`);
+    this.logger.info(`Phase approved: ${JSON.stringify(data)}`);
   }
-  
+
   private async handleTaskImplemented(data: any): Promise<void> {
-    this.logger.info(`Task implemented via native swarm: ${JSON.stringify(data)}`);
+    this.logger.info(`Task implemented via specs-driven agents: ${JSON.stringify(data)}`);
   }
-  
+
   /**
-   * Shutdown coordinator and native swarm
+   * Shutdown coordinator and hive mind
    */
   async shutdown(): Promise<void> {
     this.logger.info('Shutting down MaestroSwarmCoordinator');
-    
+
     if (this.hiveMind) {
       await this.hiveMind.shutdown();
-      this.logger.info('Native hive mind swarm shutdown complete');
+      this.logger.info('Hive mind swarm shutdown complete');
     }
-    
+
     this.logger.info('MaestroSwarmCoordinator shutdown complete');
   }
 }

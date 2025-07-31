@@ -198,11 +198,26 @@ class AgentLoader {
     const lowerQuery = query.toLowerCase();
     
     return Array.from(this.agentCache.values()).filter(agent => {
+      // Handle different capability structures
+      let hasCapabilityMatch = false;
+      if (Array.isArray(agent.capabilities)) {
+        hasCapabilityMatch = agent.capabilities.some(cap => cap.toLowerCase().includes(lowerQuery));
+      } else if (agent.capabilities && typeof agent.capabilities === 'object') {
+        // Check in complex capability objects
+        const caps = agent.capabilities as any;
+        if (caps.allowed_tools) {
+          hasCapabilityMatch = caps.allowed_tools.some((tool: string) => tool.toLowerCase().includes(lowerQuery));
+        }
+        if (!hasCapabilityMatch && caps.domains) {
+          hasCapabilityMatch = caps.domains.some((domain: string) => domain.toLowerCase().includes(lowerQuery));
+        }
+      }
+      
       return (
         agent.name.toLowerCase().includes(lowerQuery) ||
         agent.description.toLowerCase().includes(lowerQuery) ||
-        agent.capabilities?.some(cap => cap.toLowerCase().includes(lowerQuery)) ||
-        false
+        hasCapabilityMatch ||
+        (agent.type && agent.type.toLowerCase().includes(lowerQuery))
       );
     });
   }

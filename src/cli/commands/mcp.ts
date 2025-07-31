@@ -87,9 +87,11 @@ export const mcpCommand = new Command()
         console.log(`🌐 Status: ${isRunning ? chalk.green('Running') : chalk.red('Stopped')}`);
 
         if (isRunning) {
-          console.log(`📍 Address: ${config.mcp.host}:${config.mcp.port}`);
+          const host = (config.mcp as any)?.host || 'localhost';
+          const auth = (config.mcp as any)?.auth;
+          console.log(`📍 Address: ${host}:${config.mcp?.port || 3000}`);
           console.log(
-            `🔐 Authentication: ${config.mcp.auth ? chalk.green('Enabled') : chalk.yellow('Disabled')}`,
+            `🔐 Authentication: ${auth ? chalk.green('Enabled') : chalk.yellow('Disabled')}`,
           );
           console.log(`🔧 Tools: ${chalk.green('Available')}`);
           console.log(`📊 Metrics: ${chalk.green('Collecting')}`);
@@ -151,11 +153,15 @@ export const mcpCommand = new Command()
 
         console.log(chalk.yellow('🔄 Starting MCP server...'));
         const config = await configManager.load();
-        mcpServer = new MCPServer(config.mcp, eventBus, logger);
+        if (!config.mcp) {
+          throw new Error('MCP configuration not found');
+        }
+        mcpServer = new MCPServer(config.mcp as any, eventBus, logger);
         await mcpServer.start();
 
+        const host = (config.mcp as any)?.host || 'localhost';
         console.log(
-          chalk.green(`✅ MCP server restarted on ${config.mcp.host}:${config.mcp.port}`),
+          chalk.green(`✅ MCP server restarted on ${host}:${config.mcp.port || 3000}`),
         );
       } catch (error) {
         console.error(chalk.red(`❌ Failed to restart MCP server: ${(error as Error).message}`));
