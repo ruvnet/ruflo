@@ -25,11 +25,11 @@ export async function memoryCommand(subArgs, flags) {
 
   switch (memorySubcommand) {
     case 'store':
-      await storeMemory(subArgs, loadMemory, saveMemory);
+      await storeMemory(subArgs, loadMemory, saveMemory, flags);
       break;
 
     case 'query':
-      await queryMemory(subArgs, loadMemory);
+      await queryMemory(subArgs, loadMemory, flags);
       break;
 
     case 'stats':
@@ -37,7 +37,7 @@ export async function memoryCommand(subArgs, flags) {
       break;
 
     case 'export':
-      await exportMemory(subArgs, loadMemory);
+      await exportMemory(subArgs, loadMemory, flags);
       break;
 
     case 'import':
@@ -45,7 +45,7 @@ export async function memoryCommand(subArgs, flags) {
       break;
 
     case 'clear':
-      await clearMemory(subArgs, saveMemory);
+      await clearMemory(subArgs, saveMemory, flags);
       break;
 
     case 'list':
@@ -57,7 +57,8 @@ export async function memoryCommand(subArgs, flags) {
   }
 }
 
-async function storeMemory(subArgs, loadMemory, saveMemory) {
+async function storeMemory(subArgs, loadMemory, saveMemory, flags = {}) {
+  // No need to filter args anymore since flags are separated
   const key = subArgs[1];
   const value = subArgs.slice(2).join(' ');
 
@@ -68,7 +69,8 @@ async function storeMemory(subArgs, loadMemory, saveMemory) {
 
   try {
     const data = await loadMemory();
-    const namespace = getNamespaceFromArgs(subArgs) || 'default';
+    // Get namespace from flags or subArgs (for backward compatibility)
+    const namespace = flags.namespace || flags.ns || getNamespaceFromArgs(subArgs) || 'default';
 
     if (!data[namespace]) {
       data[namespace] = [];
@@ -95,7 +97,7 @@ async function storeMemory(subArgs, loadMemory, saveMemory) {
   }
 }
 
-async function queryMemory(subArgs, loadMemory) {
+async function queryMemory(subArgs, loadMemory, flags = {}) {
   const search = subArgs.slice(1).join(' ');
 
   if (!search) {
@@ -105,7 +107,7 @@ async function queryMemory(subArgs, loadMemory) {
 
   try {
     const data = await loadMemory();
-    const namespace = getNamespaceFromArgs(subArgs);
+    const namespace = flags.namespace || flags.ns || getNamespaceFromArgs(subArgs);
     const results = [];
 
     for (const [ns, entries] of Object.entries(data)) {
@@ -174,12 +176,12 @@ async function showMemoryStats(loadMemory) {
   }
 }
 
-async function exportMemory(subArgs, loadMemory) {
+async function exportMemory(subArgs, loadMemory, flags = {}) {
   const filename = subArgs[1] || `memory-export-${Date.now()}.json`;
 
   try {
     const data = await loadMemory();
-    const namespace = getNamespaceFromArgs(subArgs);
+    const namespace = flags.namespace || flags.ns || getNamespaceFromArgs(subArgs);
 
     let exportData = data;
     if (namespace) {
@@ -238,8 +240,8 @@ async function importMemory(subArgs, saveMemory) {
   }
 }
 
-async function clearMemory(subArgs, saveMemory) {
-  const namespace = getNamespaceFromArgs(subArgs);
+async function clearMemory(subArgs, saveMemory, flags = {}) {
+  const namespace = flags.namespace || flags.ns || getNamespaceFromArgs(subArgs);
 
   if (!namespace) {
     printError('Usage: memory clear --namespace <namespace>');
