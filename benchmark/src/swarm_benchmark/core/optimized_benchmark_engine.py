@@ -11,13 +11,9 @@ from ..strategies import create_strategy
 from ..output.json_writer import JSONWriter
 from ..output.sqlite_manager import SQLiteManager
 
-# Import optimizations from the main swarm package
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.parent.parent.parent))
-
+# Import optimizations from the local optimization module
 try:
-    from src.swarm.optimizations import (
+    from ..optimization import (
         OptimizedExecutor,
         CircularBuffer,
         TTLMap,
