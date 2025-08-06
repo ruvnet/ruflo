@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "command": [
+    "/workspaces/claude-code-flow/claude-flow",
+    "hive-mind",
+    "spawn",
+    "--non-interactive",
+    "Design hello world in ./hello-bench/",
+    "--count",
+    "2",
+    "--coordination",
+    "majority"
+  ],
+  "exit_code": 0,
+  "duration": 7.8389153480529785,
+  "stdout_lines": [
+    "\u001b[32m?\u001b[39m \u001b[1mWhat is the swarm objective?\u001b[22m\u001b[0m \u001b[0m\u001b[31D\u001b[31C"
+  ],
+  "stderr_lines": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "total_tokens": 0,
+  "agents_spawned": 0,
+  "tasks_completed": 0,
+  "tool_calls": [],
+  "tool_results": [],
+  "errors": [],
+  "warnings": [],
+  "first_response_time": null,
+  "completion_time": 7.8389153480529785
+}
