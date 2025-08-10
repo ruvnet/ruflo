@@ -230,7 +230,7 @@ async function createSwarmWizard() {
   }
 
   // Create swarm
-  const spinner = require('ora')('Creating Hive Mind swarm...').start();
+  const ora = require('ora'); const spinner = ora('Creating Hive Mind swarm...').start();
 
   try {
     const hiveMind = new HiveMind({
@@ -338,7 +338,7 @@ async function spawnAgentInteractive(hiveMind: HiveMind) {
     },
   ]);
 
-  const spinner = require('ora')(`Spawning ${answers.count} ${answers.type} agent(s)...`).start();
+  import spinner from 'ora'(`Spawning ${answers.count} ${answers.type} agent(s)...`).start();
 
   try {
     const agents = [];
@@ -465,7 +465,7 @@ async function submitTaskWizard() {
     },
   ]);
 
-  const spinner = require('ora')('Submitting task...').start();
+  import spinner from 'ora'('Submitting task...').start();
 
   try {
     const task = await hiveMind.submitTask({
@@ -505,7 +505,7 @@ async function viewStatusWizard() {
   ]);
 
   // Execute the status command with appropriate flags
-  const statusCmd = require('./status').statusCommand;
+  import statusCmd from './status'.statusCommand;
   const args = ['status'];
 
   switch (view) {
@@ -548,7 +548,7 @@ async function removeAgentInteractive(hiveMind: HiveMind) {
 }
 
 async function rebalanceAgentsInteractive(hiveMind: HiveMind) {
-  const spinner = require('ora')('Rebalancing agents...').start();
+  import spinner from 'ora'('Rebalancing agents...').start();
 
   try {
     await hiveMind.rebalanceAgents();
