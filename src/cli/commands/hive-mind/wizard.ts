@@ -465,7 +465,7 @@ async function submitTaskWizard() {
     },
   ]);
 
-  import spinner from 'ora'('Submitting task...').start();
+  const ora2 = require('ora'); const spinner = ora2('Submitting task...').start();
 
   try {
     const task = await hiveMind.submitTask({
