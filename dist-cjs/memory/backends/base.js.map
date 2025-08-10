@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/memory/backends/base.ts"],
+  "sourcesContent": ["/**\n * Base interface for memory backends\n */\n\nimport type { MemoryEntry, MemoryQuery } from '../../utils/types.js';\n\nexport interface IMemoryBackend {\n  initialize(): Promise<void>;\n  shutdown(): Promise<void>;\n  store(entry: MemoryEntry): Promise<void>;\n  retrieve(id: string): Promise<MemoryEntry | undefined>;\n  update(id: string, entry: MemoryEntry): Promise<void>;\n  delete(id: string): Promise<void>;\n  query(query: MemoryQuery): Promise<MemoryEntry[]>;\n  getAllEntries(): Promise<MemoryEntry[]>;\n  getHealthStatus(): Promise<{\n    healthy: boolean;\n    error?: string;\n    metrics?: Record<string, number>;\n  }>;\n  performMaintenance?(): Promise<void>;\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;AAAA;AAAA;",
+  "names": []
+}

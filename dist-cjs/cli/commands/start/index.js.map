@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../src/cli/commands/start/index.ts"],
+  "sourcesContent": ["/**\n * Modular start command implementation\n * Consolidates all start functionality into a single, extensible structure\n */\n\nexport { startCommand } from './start-command.js';\nexport { ProcessManager } from './process-manager.js';\nexport { ProcessUI } from './process-ui.js';\nexport { SystemMonitor } from './system-monitor.js';\nexport type { ProcessInfo, ProcessStatus, SystemStats } from './types.js';\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAKA,2BAA6B;AAC7B,6BAA+B;AAC/B,wBAA0B;AAC1B,4BAA8B;",
+  "names": []
+}
