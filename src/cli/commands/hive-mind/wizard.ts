@@ -548,7 +548,7 @@ async function removeAgentInteractive(hiveMind: HiveMind) {
 }
 
 async function rebalanceAgentsInteractive(hiveMind: HiveMind) {
-  import spinner from 'ora'('Rebalancing agents...').start();
+  const ora3 = require('ora'); const spinner = ora3('Rebalancing agents...').start();
 
   try {
     await hiveMind.rebalanceAgents();
