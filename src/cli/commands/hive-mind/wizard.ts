@@ -505,7 +505,7 @@ async function viewStatusWizard() {
   ]);
 
   // Execute the status command with appropriate flags
-  import statusCmd from './status'.statusCommand;
+  const statusModule = require('./status'); const statusCmd = statusModule.statusCommand;
   const args = ['status'];
 
   switch (view) {
