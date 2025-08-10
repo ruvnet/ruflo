@@ -145,7 +145,8 @@ export class PromptPathResolver {
 
   private directoryExists(dirPath: string): boolean {
     try {
-      const stats = (await import('fs')).statSync(dirPath);
+      const fs = require('fs');
+      const stats = fs.statSync(dirPath);
       return stats.isDirectory();
     } catch {
       return false;
