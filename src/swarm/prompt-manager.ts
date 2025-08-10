@@ -213,7 +213,7 @@ export class PromptManager extends EventEmitter {
     dirPath: string,
     issues: ValidationReport['issues'],
   ): Promise<void> {
-    import { promises as fs } from 'fs';
+    const fs = require('fs').promises;
 
     try {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
