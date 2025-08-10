@@ -2618,7 +2618,7 @@ Ensure your implementation is complete, well-structured, and follows best practi
       await Deno.mkdir(projectDir, { recursive: true });
 
       // Create main API file
-      const apiCode = `const express = require('express');
+      const apiCode = `import express from 'express';
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -2692,7 +2692,7 @@ app.listen(port, () => {
   console.log('Created by Claude Flow Swarm');
 });
 
-module.exports = app;
+// FIXME: Remove CommonJS export - module.exports = app;
 `;
 
       await fs.writeFile(`${projectDir}/server.js`, apiCode);
@@ -2818,7 +2818,7 @@ console.log('Generated at: ${new Date().toISOString()}');
 
 // Export for testing
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { message: 'Hello, World!' };
+  // FIXME: Remove CommonJS export - module.exports = { message: 'Hello, World!' };
 }
 `;
 
@@ -3000,7 +3000,7 @@ ${task.instructions}
     const testCode = `// Test suite for: ${task.name}
 // ${task.description}
 
-const assert = require('assert');
+import assert from 'assert';
 
 describe('${task.name}', () => {
   it('should pass basic test', () => {

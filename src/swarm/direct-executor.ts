@@ -313,11 +313,11 @@ export class DirectTaskExecutor {
   }
 }
 
-module.exports = Calculator;
+// FIXME: Remove CommonJS export - module.exports = Calculator;
 `,
       'cli.js': `#!/usr/bin/env node
-const Calculator = require('./calculator');
-const readline = require('readline');
+import Calculator from './calculator';
+import readline from 'readline';
 
 const calc = new Calculator();
 const rl = readline.createInterface({
@@ -389,8 +389,8 @@ function prompt() {
 
 prompt();
 `,
-      'test.js': `const Calculator = require('./calculator');
-const assert = require('assert');
+      'test.js': `import Calculator from './calculator';
+import assert from 'assert';
 
 const calc = new Calculator();
 
@@ -453,7 +453,7 @@ node cli.js
 
 ### Programmatic Usage
 \`\`\`javascript
-const Calculator = require('./calculator');
+import Calculator from './calculator';
 const calc = new Calculator();
 
 console.log(calc.add(5, 3)); // 8
@@ -649,8 +649,8 @@ See the generated API documentation.
 
   // Helper methods for generating code
   private generateRestAPIServer(task: TaskDefinition): string {
-    return `const express = require('express');
-const cors = require('cors');
+    return `import express from 'express';
+import cors from 'cors';
 require('dotenv').config();
 
 const app = express();
@@ -679,12 +679,12 @@ app.listen(port, () => {
   console.log(\`Server running on port \${port}\`);
 });
 
-module.exports = app;
+// FIXME: Remove CommonJS export - module.exports = app;
 `;
   }
 
   private generateUserRoutes(): string {
-    return `const express = require('express');
+    return `import express from 'express';
 const router = express.Router();
 
 // In-memory storage (replace with database)
@@ -736,16 +736,16 @@ router.delete('/:id', (req, res) => {
   res.status(204).send();
 });
 
-module.exports = router;
+// FIXME: Remove CommonJS export - module.exports = router;
 `;
   }
 
   private generateTodoApp(task: TaskDefinition): string {
     return `#!/usr/bin/env node
 const { program } = require('commander');
-const chalk = require('chalk');
-const fs = require('fs').promises;
-const path = require('path');
+import chalk from 'chalk';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 const TODO_FILE = path.join(__dirname, 'todos.json');
 
@@ -838,10 +838,10 @@ program.parse(process.argv);
   }
 
   private generateChatServer(task: TaskDefinition): string {
-    return `const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const path = require('path');
+    return `import express from 'express';
+import http from 'http';
+import socketIo from 'socket.io';
+import path from 'path';
 
 const app = express();
 const server = http.createServer(app);
@@ -984,9 +984,9 @@ function updateUserCount(count) {
   }
 
   private generateAuthServer(task: TaskDefinition): string {
-    return `const express = require('express');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+    return `import express from 'express';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 require('dotenv').config();
 
 const app = express();
@@ -1074,9 +1074,9 @@ app.listen(port, () => {
   }
 
   private generateAuthMiddleware(): string {
-    return `const jwt = require('jsonwebtoken');
+    return `import jwt from 'jsonwebtoken';
 
-module.exports = (req, res, next) => {
+// FIXME: Remove CommonJS export - module.exports = (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
   
   if (!token) {
@@ -1163,7 +1163,7 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { main };
+// FIXME: Remove CommonJS export - module.exports = { main };
 `;
   }
 

@@ -699,7 +699,7 @@ class Application {
   }
 }
 
-module.exports = Application;
+// FIXME: Remove CommonJS export - module.exports = Application;
 `,
       python: `
 # ${requirements}
@@ -760,7 +760,7 @@ describe('${description}', () => {
 });
 `,
       javascript: `
-const Application = require('../src/main');
+import Application from '../src/main';
 
 describe('${description}', () => {
   let app;

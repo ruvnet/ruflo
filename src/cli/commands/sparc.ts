@@ -334,7 +334,7 @@ async function runSparcWorkflow(ctx: CommandContext): Promise<void> {
       if (workflow.sequential !== false && i < workflow.steps.length - 1) {
         console.log('Step completed. Press Enter to continue, or Ctrl+C to stop...');
         await new Promise<void>((resolve) => {
-          const readline = require('readline');
+          import readline from 'readline';
           const rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout,
