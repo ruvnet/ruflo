@@ -9,7 +9,7 @@
   "scripts": {
     "preinstall": "node -e \"if(process.platform === 'win32' && process.env.npm_config_user_agent && process.env.npm_config_user_agent.includes('npm')) { console.warn('⚠️  Warning: On Windows, it is recommended to use pnpm to install this package to avoid potential native dependency build issues.'); console.warn('💡 Try: pnpm install or pnpx claude-flow@alpha'); }\"",
     "dev": "tsx src/cli/main.ts",
-    "build": "npm run clean && npm run update-version && npm run build:esm && npm run build:cjs && npm run build:binary",
+    "build": "npm run clean && npm run update-version && npm run build:ts-safe && npm run build:binary",
     "update-version": "node scripts/update-bin-version.js",
     "clean": "rm -rf dist dist-cjs",
     "build:esm": "tsc",
