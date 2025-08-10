@@ -107,11 +107,18 @@ export async function swarmCommand(args, flags) {
     // Default behavior: spawn Claude Code with comprehensive swarm MCP instructions
     try {
       const { execSync, spawn } = await import('child_process');
-      
+      const os = await import('node:os');
+
       // Check if claude command exists
       let claudeAvailable = false;
       try {
-        execSync('which claude', { stdio: 'ignore' });
+        if (os.platform() === 'win32') {
+          // Windows: Use 'where' command
+          execSync('where claude', { stdio: 'ignore' });
+        } else {
+          // Unix-like systems: Use 'which' command
+          execSync('which claude', { stdio: 'ignore' });
+        }
         claudeAvailable = true;
       } catch {
         console.log('⚠️  Claude Code CLI not found in PATH');
@@ -857,10 +864,16 @@ exit 0
       // Try to use Claude wrapper approach like SPARC does
       try {
         const { execSync } = await import('child_process');
-        
+        const os = await import('node:os');
         // Check if claude command exists
         try {
-          execSync('which claude', { stdio: 'ignore' });
+          if (os.platform() === 'win32') {
+            // Windows: Use 'where' command
+            execSync('where claude', { stdio: 'ignore' });
+          } else {
+            // Unix-like systems: Use 'which' command
+            execSync('which claude', { stdio: 'ignore' });
+          }
         } catch (e) {
           // Claude not found, show fallback message
           console.log(`✅ Swarm initialized with ID: ${swarmId}`);

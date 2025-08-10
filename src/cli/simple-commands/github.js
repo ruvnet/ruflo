@@ -148,9 +148,15 @@ export async function githubCommand(args, flags) {
   try {
     // Check if Claude is available
     const { execSync } = await import('child_process');
-    
+    const os = await import('node:os');
     try {
-      execSync('which claude', { stdio: 'ignore' });
+      if (os.platform() === 'win32') {
+        // Windows: Use 'where' command
+        execSync('where claude', { stdio: 'ignore' });
+      } else {
+        // Unix-like systems: Use 'which' command
+        execSync('which claude', { stdio: 'ignore' });
+      }
     } catch (e) {
       printWarning('⚠️  Claude CLI not found. GitHub automation requires Claude.');
       console.log('Install Claude: https://claude.ai/code');

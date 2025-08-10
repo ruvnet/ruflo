@@ -1480,10 +1480,17 @@ async function spawnClaudeCodeInstances(swarmId, swarmName, objective, workers, 
     try {
       // Check if claude command exists
       const { spawn: childSpawn, execSync } = await import('child_process');
+      const os = await import('node:os');
       let claudeAvailable = false;
       
       try {
-        execSync('which claude', { stdio: 'ignore' });
+        if (os.platform() === 'win32') {
+          // Windows: Use 'where' command
+          execSync('where claude', { stdio: 'ignore' });
+        } else {
+          // Unix-like systems: Use 'which' command
+          execSync('which claude', { stdio: 'ignore' });
+        }
         claudeAvailable = true;
       } catch {
         console.log(chalk.yellow('\n⚠️  Claude Code CLI not found in PATH'));

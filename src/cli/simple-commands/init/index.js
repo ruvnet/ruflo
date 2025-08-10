@@ -53,11 +53,27 @@ import {
 /**
  * Check if Claude Code CLI is installed
  */
-function isClaudeCodeInstalled() {
+// At the top of your module
+let claudeCodeInstalledPromise = null;
+
+async function isClaudeCodeInstalled() {
+  if (claudeCodeInstalledPromise) {
+    return claudeCodeInstalledPromise;
+  }
+  
+  claudeCodeInstalledPromise = checkClaudeCodeInstallation();
+  return claudeCodeInstalledPromise;
+}
+
+async function checkClaudeCodeInstallation() {
   try {
-    execSync('which claude', { stdio: 'ignore' });
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    await execAsync('claude --version');
     return true;
-  } catch {
+  } catch (error) {
     return false;
   }
 }
@@ -1132,7 +1148,7 @@ ${commands.map(cmd => `- [${cmd}](./${cmd}.md)`).join('\n')}
     // Final instructions
     console.log('\n🎉 Claude Flow v2.0.0 initialization complete!');
     console.log('\n📚 Quick Start:');
-    if (isClaudeCodeInstalled()) {
+    if (await isClaudeCodeInstalled()) {
       console.log('1. View available commands: ls .claude/commands/');
       console.log('2. Start a swarm: npx claude-flow swarm init');
       console.log('3. Use MCP tools in Claude Code for enhanced coordination');

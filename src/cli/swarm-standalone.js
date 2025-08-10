@@ -109,10 +109,15 @@ if (!swarmPath) {
   // Try to use Claude wrapper approach
   try {
     const { execSync } = await import('child_process');
-    
+    const os = await import('node:os');
     // Check if claude command exists
     try {
-      execSync('which claude', { stdio: 'ignore' });
+      if (os.platform() === 'win32') {
+        // Windows: Use 'where' command
+        execSync('where claude', { stdio: 'ignore' });
+      } else {
+        execSync('which claude', { stdio: 'ignore' });
+      }
     } catch (e) {
       // Claude not found, show fallback message
       console.log(`✅ Swarm initialized with ID: ${swarmId}`);
