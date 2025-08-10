@@ -245,7 +245,7 @@ async function watchTaskProgress(hiveMind: HiveMind, taskId: string) {
   let lastProgress = -1;
   let completed = false;
 
-  const progressBar = require('cli-progress');
+  import progressBar from 'cli-progress';
   const bar = new progressBar.SingleBar({
     format: 'Progress |' + chalk.cyan('{bar}') + '| {percentage}% | {status}',
     barCompleteChar: '\u2588',
