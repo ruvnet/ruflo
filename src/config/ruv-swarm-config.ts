@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import type { ILogger } from '../core/logger.js';
 import { deepMerge } from '../utils/helpers.js';
+import fs from 'fs';
 
 /**
  * ruv-swarm integration configuration
@@ -190,7 +191,6 @@ export class RuvSwarmConfigManager {
 
       // Ensure config directory exists
       if (!existsSync(configDir)) {
-        const fs = require('fs');
         fs.mkdirSync(configDir, { recursive: true });
       }
 
