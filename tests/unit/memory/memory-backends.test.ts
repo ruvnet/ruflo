@@ -440,9 +440,11 @@ describe('Memory Backends - Comprehensive Tests', () => {
         }
 
         // Try to initialize with corrupted database
-        const corruptedBackend = new SQLiteMemoryBackend({
-          dbPath: `${tempDir}/test-memory.db`,
-        });
+        const mockLogger = { info: () => {}, error: () => {}, warn: () => {}, debug: () => {}, trace: () => {} };
+        const corruptedBackend = new SQLiteMemoryBackend(
+          `${tempDir}/test-memory.db`,
+          mockLogger as any
+        );
 
         await TestAssertions.assertThrowsAsync(
           () => corruptedBackend.initialize(),
