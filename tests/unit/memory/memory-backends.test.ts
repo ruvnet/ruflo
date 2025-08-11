@@ -840,9 +840,11 @@ function hello() {
     describe('Error Handling and Edge Cases', () => {
       it('should handle filesystem errors gracefully', async () => {
         // Try to write to read-only location (if possible to simulate)
-        const readOnlyBackend = new MarkdownMemoryBackend({
-          baseDir: '/read-only-path-that-does-not-exist',
-        });
+        const mockLogger = { info: () => {}, error: () => {}, warn: () => {}, debug: () => {}, trace: () => {} };
+        const readOnlyBackend = new MarkdownMemoryBackend(
+          '/read-only-path-that-does-not-exist',
+          mockLogger as any
+        );
 
         await TestAssertions.assertThrowsAsync(
           () => readOnlyBackend.initialize(),
