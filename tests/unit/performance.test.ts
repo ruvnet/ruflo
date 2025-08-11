@@ -3,7 +3,15 @@
  */
 
 import { jest, describe, test, beforeEach, expect } from '@jest/globals';
-import { perfHelpers } from '../utils/test-utils.js';
+// Simple performance measurement helper
+const perfHelpers = {
+  async measureTime<T>(fn: () => T | Promise<T>): Promise<{ result: T, duration: number }> {
+    const start = Date.now();
+    const result = await fn();
+    const duration = Date.now() - start;
+    return { result, duration };
+  }
+};
 import fs from 'fs-extra';
 import { parseFlags } from '../../src/cli/utils.js';
 import { deepMerge } from '../../src/utils/helpers.js';
