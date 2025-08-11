@@ -14,10 +14,10 @@ jest.mock('child_process');
 jest.mock('ora');
 
 describe('Swarm Command', () => {
-  let consoleLogSpy;
-  let consoleErrorSpy;
-  let mockSpinner;
-  let mockSpawnProcess;
+  let consoleLogSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
+  let mockSpinner: any;
+  let mockSpawnProcess: any;
 
   beforeEach(() => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
@@ -51,8 +51,8 @@ describe('Swarm Command', () => {
   describe('main swarm command', () => {
     test('should initialize swarm with objective', async () => {
       const swarmDir = path.join(process.cwd(), '.claude', 'swarm');
-      fs.ensureDir.mockResolvedValue(undefined);
-      fs.writeJson.mockResolvedValue(undefined);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
+      (fs.writeJson as any).mockResolvedValue(undefined);
 
       // Mock spawn process events
       mockSpawnProcess.on.mockImplementation((event, callback) => {
@@ -66,7 +66,7 @@ describe('Swarm Command', () => {
       expect(mockSpinner.start).toHaveBeenCalledWith('Initializing swarm...');
       expect(fs.ensureDir).toHaveBeenCalledWith(swarmDir);
 
-      const writeJsonCall = fs.writeJson.mock.calls[0];
+      const writeJsonCall = (fs.writeJson as any).mock.calls[0];
       expect(writeJsonCall[0]).toBe(path.join(swarmDir, 'swarm.json'));
       expect(writeJsonCall[1]).toMatchObject({
         objective: 'Build a REST API',
@@ -77,8 +77,8 @@ describe('Swarm Command', () => {
     });
 
     test('should handle custom strategy', async () => {
-      fs.ensureDir.mockResolvedValue(undefined);
-      fs.writeJson.mockResolvedValue(undefined);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
+      (fs.writeJson as any).mockResolvedValue(undefined);
 
       mockSpawnProcess.on.mockImplementation((event, callback) => {
         if (event === 'close') callback(0);
@@ -86,13 +86,13 @@ describe('Swarm Command', () => {
 
       await swarmCommand(['Research task'], { strategy: 'research' });
 
-      const writeJsonCall = fs.writeJson.mock.calls[0];
+      const writeJsonCall = (fs.writeJson as any).mock.calls[0];
       expect(writeJsonCall[1].strategy).toBe('research');
     });
 
     test('should handle custom topology mode', async () => {
-      fs.ensureDir.mockResolvedValue(undefined);
-      fs.writeJson.mockResolvedValue(undefined);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
+      (fs.writeJson as any).mockResolvedValue(undefined);
 
       mockSpawnProcess.on.mockImplementation((event, callback) => {
         if (event === 'close') callback(0);
@@ -100,13 +100,13 @@ describe('Swarm Command', () => {
 
       await swarmCommand(['Task'], { mode: 'mesh' });
 
-      const writeJsonCall = fs.writeJson.mock.calls[0];
+      const writeJsonCall = (fs.writeJson as any).mock.calls[0];
       expect(writeJsonCall[1].topology).toBe('mesh');
     });
 
     test('should set max agents', async () => {
-      fs.ensureDir.mockResolvedValue(undefined);
-      fs.writeJson.mockResolvedValue(undefined);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
+      (fs.writeJson as any).mockResolvedValue(undefined);
 
       mockSpawnProcess.on.mockImplementation((event, callback) => {
         if (event === 'close') callback(0);
@@ -114,13 +114,13 @@ describe('Swarm Command', () => {
 
       await swarmCommand(['Task'], { 'max-agents': '10' });
 
-      const writeJsonCall = fs.writeJson.mock.calls[0];
+      const writeJsonCall = (fs.writeJson as any).mock.calls[0];
       expect(writeJsonCall[1].maxAgents).toBe(10);
     });
 
     test('should enable parallel execution', async () => {
-      fs.ensureDir.mockResolvedValue(undefined);
-      fs.writeJson.mockResolvedValue(undefined);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
+      (fs.writeJson as any).mockResolvedValue(undefined);
 
       mockSpawnProcess.on.mockImplementation((event, callback) => {
         if (event === 'close') callback(0);
@@ -128,13 +128,13 @@ describe('Swarm Command', () => {
 
       await swarmCommand(['Task'], { parallel: true });
 
-      const writeJsonCall = fs.writeJson.mock.calls[0];
+      const writeJsonCall = (fs.writeJson as any).mock.calls[0];
       expect(writeJsonCall[1].parallel).toBe(true);
     });
 
     test('should enable monitoring', async () => {
-      fs.ensureDir.mockResolvedValue(undefined);
-      fs.writeJson.mockResolvedValue(undefined);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
+      (fs.writeJson as any).mockResolvedValue(undefined);
 
       mockSpawnProcess.on.mockImplementation((event, callback) => {
         if (event === 'close') callback(0);
@@ -169,8 +169,8 @@ describe('Swarm Command', () => {
         },
       };
 
-      fs.pathExists.mockResolvedValue(true);
-      fs.readJson.mockResolvedValue(mockSwarmData);
+      (fs.pathExists as any).mockResolvedValue(true);
+      (fs.readJson as any).mockResolvedValue(mockSwarmData);
 
       await swarmCommand(['status'], {});
 
@@ -184,7 +184,7 @@ describe('Swarm Command', () => {
     });
 
     test('should show no active swarm message', async () => {
-      fs.pathExists.mockResolvedValue(false);
+      (fs.pathExists as any).mockResolvedValue(false);
 
       await swarmCommand(['status'], {});
 
@@ -200,10 +200,10 @@ describe('Swarm Command', () => {
         agents: [{ id: 'agent-1' }, { id: 'agent-2' }],
       };
 
-      fs.pathExists.mockResolvedValue(true);
-      fs.readJson.mockResolvedValue(mockSwarmData);
+      (fs.pathExists as any).mockResolvedValue(true);
+      (fs.readJson as any).mockResolvedValue(mockSwarmData);
       fs.writeJson.mockResolvedValue(undefined);
-      fs.remove.mockResolvedValue(undefined);
+      (fs.remove as any).mockResolvedValue(undefined);
 
       await swarmCommand(['stop'], {});
 
@@ -215,7 +215,7 @@ describe('Swarm Command', () => {
 
     test('should handle stop with force flag', async () => {
       fs.pathExists.mockResolvedValue(true);
-      fs.remove.mockResolvedValue(undefined);
+      (fs.remove as any).mockResolvedValue(undefined);
 
       await swarmCommand(['stop'], { force: true });
 
@@ -231,8 +231,8 @@ describe('Swarm Command', () => {
         status: 'active',
       };
 
-      fs.pathExists.mockResolvedValue(true);
-      fs.readJson.mockResolvedValue(mockSwarmData);
+      (fs.pathExists as any).mockResolvedValue(true);
+      (fs.readJson as any).mockResolvedValue(mockSwarmData);
       fs.writeJson.mockResolvedValue(undefined);
 
       await swarmCommand(['pause'], {});
@@ -248,8 +248,8 @@ describe('Swarm Command', () => {
         status: 'paused',
       };
 
-      fs.pathExists.mockResolvedValue(true);
-      fs.readJson.mockResolvedValue(mockSwarmData);
+      (fs.pathExists as any).mockResolvedValue(true);
+      (fs.readJson as any).mockResolvedValue(mockSwarmData);
       fs.writeJson.mockResolvedValue(undefined);
 
       await swarmCommand(['resume'], {});
@@ -327,8 +327,8 @@ describe('Swarm Command', () => {
     });
 
     test('should handle invalid strategy', async () => {
-      fs.ensureDir.mockResolvedValue(undefined);
-      fs.writeJson.mockResolvedValue(undefined);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
+      (fs.writeJson as any).mockResolvedValue(undefined);
 
       await swarmCommand(['Task'], { strategy: 'invalid-strategy' });
 
@@ -336,8 +336,8 @@ describe('Swarm Command', () => {
     });
 
     test('should handle spawn process errors', async () => {
-      fs.ensureDir.mockResolvedValue(undefined);
-      fs.writeJson.mockResolvedValue(undefined);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
+      (fs.writeJson as any).mockResolvedValue(undefined);
 
       mockSpawnProcess.on.mockImplementation((event, callback) => {
         if (event === 'error') callback(new Error('Spawn failed'));
