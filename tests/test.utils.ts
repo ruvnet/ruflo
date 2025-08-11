@@ -6,13 +6,6 @@ export { describe, it, beforeEach, afterEach, expect, beforeAll, afterAll } from
 // Test utilities
 export const spy = jest.fn;
 export const stub = jest.fn;
-export const assertEquals = (actual: any, expected: any, message?: string) => {
-  if (message) {
-    expect(actual).toBe(expected);
-  } else {
-    expect(actual).toBe(expected);
-  }
-};
 export const assertExists = (value: any) => expect(value).toBeDefined();
 
 // Mock logger utilities
@@ -73,41 +66,7 @@ export const createMockLogger = () => ({
   getInstance: jest.fn()
 });
 
-// Fake time utilities for testing
-export class FakeTime {
-  private currentTime = 0;
-  
-  advance(ms: number) {
-    this.currentTime += ms;
-  }
-  
-  now() {
-    return this.currentTime;
-  }
-}
 
-// Test data builder
-export class TestDataBuilder {
-  static createTask(overrides = {}) {
-    return {
-      id: 'test-task-' + Date.now(),
-      description: 'Test task',
-      status: 'pending',
-      priority: 'medium',
-      ...overrides
-    };
-  }
-  
-  static createAgent(overrides = {}) {
-    return {
-      id: 'test-agent-' + Date.now(),
-      type: 'test',
-      status: 'idle',
-      capabilities: [],
-      ...overrides
-    };
-  }
-}
 
 // Async test utilities
 export class AsyncTestUtils {
@@ -178,11 +137,6 @@ export { jest } from '@jest/globals';
 export { describe, it, test, beforeEach, afterEach, beforeAll, afterAll, expect } from '@jest/globals';
 
 // Export assertion utilities
-export const assert = (condition: boolean, message?: string) => {
-  if (!condition) {
-    throw new Error(message || 'Assertion failed');
-  }
-};
 
 export const assertEquals = (actual: any, expected: any, message?: string) => {
   expect(actual).toEqual(expected);
