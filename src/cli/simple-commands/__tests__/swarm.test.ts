@@ -31,18 +31,14 @@ describe('Swarm Command', () => {
       warn: jest.fn().mockReturnThis(),
       text: '',
     };
-    mockOra.mockReturnValue(mockSpinner);
-    
-    jest.replaceProperty(ora, 'default', mockOra);
+    (ora as any).mockReturnValue(mockSpinner);
 
     mockSpawnProcess = {
       stdout: { on: jest.fn() },
       stderr: { on: jest.fn() },
       on: jest.fn(),
     };
-    mockSpawn.mockReturnValue(mockSpawnProcess);
-    
-    jest.replaceProperty({ spawn }, 'spawn', mockSpawn);
+    (spawn as any).mockReturnValue(mockSpawnProcess);
 
     jest.clearAllMocks();
   });
