@@ -204,7 +204,7 @@ describe('Hive Mind Database Schema - Issue #403', () => {
           swarm_id TEXT,
           name TEXT NOT NULL,
           type TEXT NOT NULL,
-          role TEXT NOT NULL, -- This is the problematic constraint
+          role TEXT, -- This should be nullable
           status TEXT DEFAULT 'idle',
           capabilities TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
