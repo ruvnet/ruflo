@@ -523,11 +523,17 @@ describe('Memory Backends - Comprehensive Tests', () => {
     let backend: MarkdownMemoryBackend;
 
     beforeEach(async () => {
-      backend = new MarkdownMemoryBackend({
-        baseDir: `${tempDir}/markdown-memory`,
-        enableGitHistory: false, // Disable for tests
-        enableSearch: true,
-      });
+      const mockLogger = {
+        info: () => {},
+        error: () => {},
+        warn: () => {},
+        debug: () => {},
+        trace: () => {}
+      };
+      backend = new MarkdownMemoryBackend(
+        `${tempDir}/markdown-memory`,
+        mockLogger as any
+      );
       
       await backend.initialize();
     });
