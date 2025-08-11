@@ -9,6 +9,7 @@ lerna-debug.log*
 
 # Build outputs
 dist/
+dist-cjs/
 build/
 out/
 *.exe
