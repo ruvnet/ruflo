@@ -2,16 +2,30 @@
  * Tests for swarm command
  */
 
-import { jest } from '@jest/globals';
+import { jest, describe, test, beforeEach, afterEach, expect } from '@jest/globals';
 import { swarmCommand } from '../swarm.js';
 import fs from 'fs-extra';
 import path from 'path';
 import { spawn } from 'child_process';
 import ora from 'ora';
 
-jest.mock('fs-extra');
-jest.mock('child_process');
-jest.mock('ora');
+jest.unstable_mockModule('fs-extra', () => ({
+  default: {
+    ensureDir: jest.fn(),
+    writeJson: jest.fn(),
+    pathExists: jest.fn(),
+    readJson: jest.fn(),
+    remove: jest.fn()
+  }
+}));
+
+jest.unstable_mockModule('child_process', () => ({
+  spawn: jest.fn()
+}));
+
+jest.unstable_mockModule('ora', () => ({
+  default: jest.fn()
+}));
 
 describe('Swarm Command', () => {
   let consoleLogSpy;
