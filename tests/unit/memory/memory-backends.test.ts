@@ -7,7 +7,7 @@ import { expect } from "@jest/globals";
 // FakeTime equivalent available in test.utils.ts
 
 import { SQLiteMemoryBackend } from '../../../src/memory/backends/sqlite.ts';
-import { MarkdownMemoryBackend } from '../../../src/memory/backends/markdown.ts';
+import { MarkdownBackend as MarkdownMemoryBackend } from '../../../src/memory/backends/markdown.ts';
 import { 
   AsyncTestUtils, 
   MemoryTestUtils, 
