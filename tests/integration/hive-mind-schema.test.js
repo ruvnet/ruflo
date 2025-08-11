@@ -237,7 +237,7 @@ describe('Hive Mind Database Schema - Issue #403', () => {
       const insertAgent = () => {
         db.prepare(`
           INSERT INTO agents (id, swarm_id, name, type, status, capabilities)
-          VALUES (?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?)
         `).run(agentId, swarmId, 'Test Agent', 'coordinator', 'active', '["coordination"]');
       };
       
