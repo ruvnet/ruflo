@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../src/hive-mind/index.ts"],
-  "sourcesContent": ["/**\n * Hive Mind Module Export\n *\n * Main entry point for the Hive Mind collective intelligence system\n */\n\n// Core classes\nexport { HiveMind } from './core/HiveMind.js';\nexport { Queen } from './core/Queen.js';\nexport { Agent } from './core/Agent.js';\nexport { Memory } from './core/Memory.js';\nexport { Communication } from './core/Communication.js';\nexport { DatabaseManager } from './core/DatabaseManager.js';\n\n// Integration layer\nexport { MCPToolWrapper } from './integration/MCPToolWrapper.js';\nexport { SwarmOrchestrator } from './integration/SwarmOrchestrator.js';\nexport { ConsensusEngine } from './integration/ConsensusEngine.js';\n\n// Types\nexport * from './types.js';\n\n// Default export\nexport { HiveMind as default } from './core/HiveMind.js';\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAOA,sBAAyB;AACzB,mBAAsB;AACtB,mBAAsB;AACtB,oBAAuB;AACvB,2BAA8B;AAC9B,6BAAgC;AAGhC,4BAA+B;AAC/B,+BAAkC;AAClC,6BAAgC;AAGhC,8BAAc,uBApBd;AAuBA,IAAAA,mBAAoC;",
-  "names": ["import_HiveMind"]
-}
