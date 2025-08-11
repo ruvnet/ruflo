@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS agents (
         'coordinator', 'researcher', 'coder', 'analyst', 'architect',
         'tester', 'reviewer', 'optimizer', 'documenter', 'monitor', 'specialist'
     )),
+    role TEXT, -- Optional role field for compatibility
     status TEXT NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'busy', 'active', 'error', 'offline')),
     capabilities TEXT NOT NULL, -- JSON array of capabilities
     current_task_id TEXT,
