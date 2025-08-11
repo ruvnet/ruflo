@@ -1,6 +1,7 @@
 /**
  * Logger mock for Jest testing environment
  */
+import { jest } from '@jest/globals';
 
 export const mockLogger = {
   info: jest.fn(),
@@ -15,7 +16,7 @@ export const mockLogger = {
   destination: 'console'
 };
 
-export class MockLogger {
+export class Logger {
   constructor(config) {
     this.config = config || { level: 'error', format: 'text', destination: 'console' };
     Object.assign(this, mockLogger);
@@ -24,7 +25,17 @@ export class MockLogger {
   static getInstance() {
     return mockLogger;
   }
+  
+  info = jest.fn()
+  error = jest.fn() 
+  warn = jest.fn()
+  debug = jest.fn()
+  trace = jest.fn()
+  configure = jest.fn().mockResolvedValue(undefined)
+  level = 'test'
 }
 
+export class MockLogger extends Logger {}
+
 // Export as default for compatibility
-export default MockLogger;
+export default Logger;
