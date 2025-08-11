@@ -120,16 +120,16 @@ describe('Hive Mind Database Schema - Issue #403', () => {
       // Create a swarm
       const swarmId = 'test-swarm-' + Date.now();
       db.prepare(`
-        INSERT INTO swarms (id, name, objective, topology, status)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(swarmId, 'Test Swarm', 'Test Objective', 'mesh', 'active');
+        INSERT INTO swarms (id, name, topology, queen_mode, max_agents, consensus_threshold, memory_ttl, config, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(swarmId, 'Test Swarm', 'mesh', 'distributed', 8, 0.66, 86400, '{}', 'active');
       
-      // Insert agent with role
+      // Insert agent with type (equivalent to role)
       const agentId = 'test-agent-' + Date.now();
       db.prepare(`
-        INSERT INTO agents (id, swarm_id, name, type, role, status)
+        INSERT INTO agents (id, swarm_id, name, type, status, capabilities)
         VALUES (?, ?, ?, ?, ?, ?)
-      `).run(agentId, swarmId, 'Test Agent', 'coordinator', 'leader', 'active');
+      `).run(agentId, swarmId, 'Test Agent', 'coordinator', 'active', '["coordination"]');
       
       // Verify agent was inserted with role
       const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId);
