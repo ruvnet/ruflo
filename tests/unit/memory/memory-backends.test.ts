@@ -889,13 +889,16 @@ function hello() {
     let markdownBackend: MarkdownMemoryBackend;
 
     beforeEach(async () => {
-      sqliteBackend = new SQLiteMemoryBackend({
-        dbPath: `${tempDir}/comparison.db`,
-      });
+      const mockLogger = { info: () => {}, error: () => {}, warn: () => {}, debug: () => {}, trace: () => {} };
+      sqliteBackend = new SQLiteMemoryBackend(
+        `${tempDir}/comparison.db`,
+        mockLogger as any
+      );
       
-      markdownBackend = new MarkdownMemoryBackend({
-        baseDir: `${tempDir}/comparison-md`,
-      });
+      markdownBackend = new MarkdownMemoryBackend(
+        `${tempDir}/comparison-md`,
+        mockLogger as any
+      );
 
       await Promise.all([
         sqliteBackend.initialize(),
