@@ -1,0 +1,1 @@
+{"checkpoint": "task-20250810-201322", "task": "add the dist-cjs directory to the .gitignore file, then remove dist-cjs from the git repo commit ", "timestamp": "2025-08-11T00:13:22Z", "commit": "325dd4bb9ac96a01edbb38b2f1be95f4ca984fba", "github_release": "true"}
