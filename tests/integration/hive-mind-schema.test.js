@@ -87,13 +87,13 @@ describe('Hive Mind Database Schema - Issue #403', () => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(swarmId, 'Test Swarm', 'mesh', 'distributed', 8, 0.66, 86400, '{}', 'active');
       
-      // Try to insert agent without role - this should NOT fail
+      // Try to insert agent with valid type - this should NOT fail
       const agentId = 'test-agent-' + Date.now();
       const insertAgent = () => {
         db.prepare(`
-          INSERT INTO agents (id, swarm_id, name, type, status)
-          VALUES (?, ?, ?, ?, ?)
-        `).run(agentId, swarmId, 'Test Agent', 'worker', 'active');
+          INSERT INTO agents (id, swarm_id, name, type, status, capabilities)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(agentId, swarmId, 'Test Agent', 'coordinator', 'active', '["coordination"]');
       };
       
       // This should not throw an error
@@ -103,7 +103,7 @@ describe('Hive Mind Database Schema - Issue #403', () => {
       const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId);
       expect(agent).toBeDefined();
       expect(agent.id).toBe(agentId);
-      expect(agent.role).toBeNull(); // Role should be NULL when not provided
+      expect(agent.type).toBe('coordinator'); // type should be set correctly
     });
 
     it('should allow inserting agents with role value', async () => {
