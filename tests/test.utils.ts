@@ -6,7 +6,13 @@ export { describe, it, beforeEach, afterEach, expect, beforeAll, afterAll } from
 // Test utilities
 export const spy = jest.fn;
 export const stub = jest.fn;
-export const assertEquals = (actual: any, expected: any) => expect(actual).toBe(expected);
+export const assertEquals = (actual: any, expected: any, message?: string) => {
+  if (message) {
+    expect(actual).toBe(expected);
+  } else {
+    expect(actual).toBe(expected);
+  }
+};
 export const assertExists = (value: any) => expect(value).toBeDefined();
 
 // Mock logger utilities
