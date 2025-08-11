@@ -132,9 +132,8 @@ export const teardownTestEnvironment = () => {
   delete process.env.LOG_LEVEL;
 };
 
-// Re-export commonly used test utilities
-export { jest } from '@jest/globals';
-export { describe, it, test, beforeEach, afterEach, beforeAll, afterAll, expect } from '@jest/globals';
+// Additional test exports
+export { test } from '@jest/globals';
 
 // Export assertion utilities
 
