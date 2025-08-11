@@ -55,7 +55,7 @@ const CONFIG = {
 /**
  * Custom error classes for better error handling
  */
-class GitHubCliError extends Error {
+export class GitHubCliError extends Error {
   constructor(message, code = 'GITHUB_CLI_ERROR', details = {}) {
     super(message);
     this.name = 'GitHubCliError';
@@ -65,21 +65,21 @@ class GitHubCliError extends Error {
   }
 }
 
-class GitHubCliTimeoutError extends GitHubCliError {
+export class GitHubCliTimeoutError extends GitHubCliError {
   constructor(timeout, command) {
     super(`Command timed out after ${timeout}ms: ${command}`, 'TIMEOUT', { timeout, command });
     this.name = 'GitHubCliTimeoutError';
   }
 }
 
-class GitHubCliValidationError extends GitHubCliError {
+export class GitHubCliValidationError extends GitHubCliError {
   constructor(message, field, value) {
     super(message, 'VALIDATION_ERROR', { field, value });
     this.name = 'GitHubCliValidationError';
   }
 }
 
-class GitHubCliRateLimitError extends GitHubCliError {
+export class GitHubCliRateLimitError extends GitHubCliError {
   constructor(message) {
     super(message, 'RATE_LIMIT_ERROR');
     this.name = 'GitHubCliRateLimitError';
