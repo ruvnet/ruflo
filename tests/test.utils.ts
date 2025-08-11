@@ -3,9 +3,7 @@ import { jest } from '@jest/globals';
 // Re-export Jest globals for easy import
 export { describe, it, beforeEach, afterEach, expect, beforeAll, afterAll } from '@jest/globals';
 
-// Test utilities
-export const spy = jest.fn;
-export const stub = jest.fn;
+// Test utilities (initial exports removed to avoid duplicates)
 
 // Mock logger utilities
 export const mockLogger = {
