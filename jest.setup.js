@@ -64,12 +64,8 @@ class MockLogger {
 global.mockLogger = mockLogger;
 global.MockLogger = MockLogger;
 
-// Mock Jest environment to prevent jest globals issues
-global.jest = global.jest || {
-  fn: () => jest.fn ? jest.fn() : (() => {}),
-  spyOn: (obj, method) => jest.spyOn ? jest.spyOn(obj, method) : (() => {}),
-  clearAllMocks: () => jest.clearAllMocks ? jest.clearAllMocks() : (() => {})
-};
+// Ensure jest globals are available
+global.jest = jest;
 
 // Provide default logger configuration for test environment
 process.env.CLAUDE_FLOW_LOG_LEVEL = 'error';
