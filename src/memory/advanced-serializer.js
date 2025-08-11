@@ -571,17 +571,75 @@ export class SessionDeserializationError extends DeserializationError {
 }
 
 /**
+ * SessionSerializer class for specialized session data handling
+ */
+export class SessionSerializer extends AdvancedSerializer {
+  constructor(options = {}) {
+    super({
+      enableCompression: true,
+      maxDepth: 50,
+      preserveUndefined: true,
+      preserveFunctions: false,
+      preserveSymbols: false,
+      customSerializers: new Map(),
+      ...options
+    });
+  }
+
+  /**
+   * Serialize session-specific data with additional metadata
+   */
+  serializeSessionData(sessionData) {
+    return this.serialize({
+      ...sessionData,
+      __sessionType__: 'session',
+      __timestamp__: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Deserialize session-specific data
+   */
+  deserializeSessionData(serializedData, options = {}) {
+    try {
+      const data = this.deserialize(serializedData);
+      if (options.allowFallback && (!data || !data.__sessionType__)) {
+        // Fallback for legacy data
+        return JSON.parse(serializedData);
+      }
+      return data;
+    } catch (error) {
+      if (options.allowFallback) {
+        return JSON.parse(serializedData);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Serialize checkpoint data
+   */
+  serializeCheckpointData(checkpointData) {
+    return this.serialize({
+      ...checkpointData,
+      __checkpointType__: 'checkpoint',
+      __timestamp__: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Deserialize checkpoint data
+   */
+  deserializeCheckpointData(serializedData) {
+    return this.deserialize(serializedData);
+  }
+}
+
+/**
  * Factory function for creating pre-configured serializers
  */
 export function createSessionSerializer(options = {}) {
-  return new AdvancedSerializer({
-    preserveUndefined: true,
-    preserveFunctions: false, // Disabled for security
-    preserveSymbols: false,
-    enableCompression: true,
-    maxDepth: 50,
-    ...options
-  });
+  return new SessionSerializer(options);
 }
 
 /**
@@ -606,6 +664,9 @@ export function deserializeSessionMetadata(serializedMetadata) {
   const serializer = createSessionSerializer({ maxDepth: 20 });
   return serializer.deserialize(serializedMetadata);
 }
+
+// Default session serializer instance
+export const sessionSerializer = new SessionSerializer();
 
 // Export default instance for convenience
 export default new AdvancedSerializer();
