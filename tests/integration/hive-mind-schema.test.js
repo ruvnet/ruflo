@@ -1,6 +1,6 @@
 /**
  * Test for Hive Mind database schema - specifically for issue #403
- * Issue #403: Error: SQLITE_CONSTRAINT: NOT NULL constraint failed: agents.role
+ * Issue #403: Error: SQLITE_CONSTRAINT: NOT NULL constraint failed: agents.type
  * 
  * This test verifies that the database schema is created correctly
  * and that agents can be inserted with or without a role value.
@@ -135,7 +135,7 @@ describe('Hive Mind Database Schema - Issue #403', () => {
       const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId);
       expect(agent).toBeDefined();
       expect(agent.id).toBe(agentId);
-      expect(agent.role).toBe('leader');
+      expect(agent.type).toBe('leader');
     });
   });
 
@@ -229,16 +229,16 @@ describe('Hive Mind Database Schema - Issue #403', () => {
       // Check if we can now insert without role
       const swarmId = 'test-swarm-' + Date.now();
       db.prepare(`
-        INSERT INTO swarms (id, name, objective, topology, status)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(swarmId, 'Test Swarm', 'Test Objective', 'mesh', 'active');
+        INSERT INTO swarms (id, name, topology, queen_mode, max_agents, consensus_threshold, memory_ttl, config, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(swarmId, 'Test Swarm', 'mesh', 'distributed', 8, 0.66, 86400, '{}', 'active');
       
       const agentId = 'test-agent-' + Date.now();
       const insertAgent = () => {
         db.prepare(`
-          INSERT INTO agents (id, swarm_id, name, type, status)
+          INSERT INTO agents (id, swarm_id, name, type, status, capabilities)
           VALUES (?, ?, ?, ?, ?)
-        `).run(agentId, swarmId, 'Test Agent', 'worker', 'active');
+        `).run(agentId, swarmId, 'Test Agent', 'coordinator', 'active', '["coordination"]');
       };
       
       // This should work now
