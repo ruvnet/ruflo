@@ -42,7 +42,7 @@ describe('Hive Mind Database Schema - Issue #403', () => {
   describe('Database Initialization via Init Command', () => {
     it('should create database with correct schema through init command', async () => {
       // Run init command
-      execSync('npx claude-flow init', {
+      execSync('npx claude-flow hive-mind init', {
         cwd: testDir,
         stdio: 'pipe',
         env: { ...process.env, PATH: `/workspaces/claude-code-flow/node_modules/.bin:${process.env.PATH}` }
@@ -71,7 +71,7 @@ describe('Hive Mind Database Schema - Issue #403', () => {
 
     it('should allow inserting agents without role value', async () => {
       // Run init command
-      execSync('npx claude-flow init', {
+      execSync('npx claude-flow hive-mind init', {
         cwd: testDir,
         stdio: 'pipe',
         env: { ...process.env, PATH: `/workspaces/claude-code-flow/node_modules/.bin:${process.env.PATH}` }
@@ -108,7 +108,7 @@ describe('Hive Mind Database Schema - Issue #403', () => {
 
     it('should allow inserting agents with role value', async () => {
       // Run init command
-      execSync('npx claude-flow init', {
+      execSync('npx claude-flow hive-mind init', {
         cwd: testDir,
         stdio: 'pipe',
         env: { ...process.env, PATH: `/workspaces/claude-code-flow/node_modules/.bin:${process.env.PATH}` }
@@ -249,7 +249,7 @@ describe('Hive Mind Database Schema - Issue #403', () => {
   describe('Schema Consistency Tests', () => {
     it('should have consistent schema across all database creation paths', async () => {
       // Test schema from init command
-      execSync('npx claude-flow init', {
+      execSync('npx claude-flow hive-mind init', {
         cwd: testDir,
         stdio: 'pipe',
         env: { ...process.env, PATH: `/workspaces/claude-code-flow/node_modules/.bin:${process.env.PATH}` }
