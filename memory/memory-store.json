@@ -521,6 +521,12 @@
       "value": "test value 2 in default",
       "namespace": "default",
       "timestamp": 1754403771773
+    },
+    {
+      "key": "key10",
+      "value": "value10",
+      "namespace": "default",
+      "timestamp": 1754884761760
     }
   ]
 }
