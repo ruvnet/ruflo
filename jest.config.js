@@ -32,7 +32,9 @@ export default {
     '^(\\.{1,2}/.*)\\.js$': '$1',
     '^~/(.*)$': '<rootDir>/src/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^@tests/(.*)$': '<rootDir>/tests/$1'
+    '^@tests/(.*)$': '<rootDir>/tests/$1',
+    '^.*\\/logger\\.js$': '<rootDir>/tests/mocks/logger.js',
+    '^.*\\/core\\/logger\\.ts$': '<rootDir>/tests/mocks/logger.js'
   },
   modulePathIgnorePatterns: [
     '<rootDir>/dist/',
