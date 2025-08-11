@@ -248,7 +248,7 @@ describe('ProcessManager', () => {
         'orchestrator'
       ];
       
-      expect(startedProcesses.slice(0).toBe(5), expectedOrder.slice(0, 5));
+      expect(startedProcesses.slice(0, 5)).toEqual(expectedOrder.slice(0, 5));
       // Orchestrator might fail due to missing dependencies, that's ok
     });
 
