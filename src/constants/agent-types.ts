@@ -14,8 +14,9 @@ import {
 // Dynamic agent type - will be a string that matches available agents
 export type AgentType = string;
 
-// Re-export legacy mapping from agent-loader
+// Re-export functions and constants from agent-loader
 export const LEGACY_AGENT_MAPPING = LEGACY_MAPPING;
+export { getAvailableAgentTypes, getAgentTypeSchema };
 
 /**
  * Get all valid agent types dynamically
