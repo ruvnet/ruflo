@@ -2,8 +2,7 @@
  * Comprehensive unit tests for Memory Backends (SQLite and Markdown)
  */
 
-import { describe, it, beforeEach, afterEach  } from "../../test.utils";
-import { expect } from "@jest/globals";
+import { describe, it, beforeEach, afterEach, expect, FakeTime, setupTestEnvironment, teardownTestEnvironment } from "../../test.utils";
 // FakeTime equivalent available in test.utils.ts
 
 import { SQLiteBackend as SQLiteMemoryBackend } from '../../../src/memory/backends/sqlite.ts';
