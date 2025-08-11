@@ -2,7 +2,7 @@
  * Integration tests for the start command
  */
 
-import { describe, it, beforeEach, afterEach, expect } from "./test.utils";
+import { describe, it, beforeEach, afterEach, expect } from "../test.utils";
 import { startCommand } from '../../src/cli/commands/start/start-command.ts';
 import { Command } from '@cliffy/command';
 
