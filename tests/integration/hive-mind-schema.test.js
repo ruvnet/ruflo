@@ -83,9 +83,9 @@ describe('Hive Mind Database Schema - Issue #403', () => {
       // First, create a swarm (required for foreign key) 
       const swarmId = 'test-swarm-' + Date.now();
       db.prepare(`
-        INSERT INTO swarms (id, name, topology, queen_mode, max_agents, consensus_threshold, memory_ttl, config, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(swarmId, 'Test Swarm', 'mesh', 'distributed', 8, 0.66, 86400, '{}', 'active');
+        INSERT INTO swarms (id, name, objective, status)
+        VALUES (?, ?, ?, ?)
+      `).run(swarmId, 'Test Swarm', 'Test objective', 'active');
       
       // Try to insert agent with valid type - this should NOT fail
       const agentId = 'test-agent-' + Date.now();
@@ -120,9 +120,9 @@ describe('Hive Mind Database Schema - Issue #403', () => {
       // Create a swarm
       const swarmId = 'test-swarm-' + Date.now();
       db.prepare(`
-        INSERT INTO swarms (id, name, topology, queen_mode, max_agents, consensus_threshold, memory_ttl, config, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(swarmId, 'Test Swarm', 'mesh', 'distributed', 8, 0.66, 86400, '{}', 'active');
+        INSERT INTO swarms (id, name, objective, status)
+        VALUES (?, ?, ?, ?)
+      `).run(swarmId, 'Test Swarm', 'Test objective', 'active');
       
       // Insert agent with type (equivalent to role)
       const agentId = 'test-agent-' + Date.now();
@@ -229,9 +229,9 @@ describe('Hive Mind Database Schema - Issue #403', () => {
       // Check if we can now insert without role
       const swarmId = 'test-swarm-' + Date.now();
       db.prepare(`
-        INSERT INTO swarms (id, name, topology, queen_mode, max_agents, consensus_threshold, memory_ttl, config, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(swarmId, 'Test Swarm', 'mesh', 'distributed', 8, 0.66, 86400, '{}', 'active');
+        INSERT INTO swarms (id, name, objective, status)
+        VALUES (?, ?, ?, ?)
+      `).run(swarmId, 'Test Swarm', 'Test objective', 'active');
       
       const agentId = 'test-agent-' + Date.now();
       const insertAgent = () => {
