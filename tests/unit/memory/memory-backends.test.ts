@@ -39,6 +39,13 @@ const generateEdgeCaseData = () => ({
 const setupTestEnv = setupTestEnvironment;
 const cleanupTestEnv = teardownTestEnvironment;
 
+// Cross-runtime compatibility helpers
+import { promises as fs } from 'fs';
+const Deno = typeof globalThis.Deno !== 'undefined' ? globalThis.Deno : {
+  writeTextFile: fs.writeFile,
+  stat: fs.stat
+};
+
 describe('Memory Backends - Comprehensive Tests', () => {
   let tempDir: string;
   let fakeTime: FakeTime;
