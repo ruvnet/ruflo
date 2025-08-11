@@ -2,7 +2,7 @@
  * Comprehensive test suite for ProcessManager
  */
 
-import { describe, it, beforeEach, afterEach, expect } from "../../../test.utils";
+import { describe, it, beforeEach, afterEach, expect, assertRejects } from "../../../test.utils";
 import { ProcessManager } from '../../../../src/cli/commands/start/process-manager.ts';
 import { ProcessStatus, ProcessType } from '../../../../src/cli/commands/start/types.ts';
 
