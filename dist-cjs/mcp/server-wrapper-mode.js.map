@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../src/mcp/server-wrapper-mode.ts"],
-  "sourcesContent": ["#!/usr/bin/env node\n/**\n * Claude-Flow MCP Server - Wrapper Mode\n *\n * This version uses the Claude Code MCP wrapper approach instead of templates.\n */\n\nimport { ClaudeCodeMCPWrapper } from './claude-code-wrapper.js';\n\n// Check if running as wrapper mode\nconst isWrapperMode =\n  process.env.CLAUDE_FLOW_WRAPPER_MODE === 'true' || process.argv.includes('--wrapper');\n\nasync function main() {\n  if (isWrapperMode) {\n    console.error('Starting Claude-Flow MCP in wrapper mode...');\n    const wrapper = new ClaudeCodeMCPWrapper();\n    await wrapper.run();\n  } else {\n    // Fall back to original server\n    console.error('Starting Claude-Flow MCP in direct mode...');\n    const { runMCPServer } = await import('./server.js');\n    await runMCPServer();\n  }\n}\n\nmain().catch((error) => {\n  console.error('Fatal error:', error);\n  process.exit(1);\n});\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;AAOA,iCAAqC;AAGrC,MAAM,gBACJ,QAAQ,IAAI,6BAA6B,UAAU,QAAQ,KAAK,SAAS,WAAW;AAEtF,eAAe,OAAO;AACpB,MAAI,eAAe;AACjB,YAAQ,MAAM,6CAA6C;AAC3D,UAAM,UAAU,IAAI,gDAAqB;AACzC,UAAM,QAAQ,IAAI;AAAA,EACpB,OAAO;AAEL,YAAQ,MAAM,4CAA4C;AAC1D,UAAM,EAAE,aAAa,IAAI,MAAM,OAAO,aAAa;AACnD,UAAM,aAAa;AAAA,EACrB;AACF;AAXe;AAaf,KAAK,EAAE,MAAM,CAAC,UAAU;AACtB,UAAQ,MAAM,gBAAgB,KAAK;AACnC,UAAQ,KAAK,CAAC;AAChB,CAAC;",
-  "names": []
-}
