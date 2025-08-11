@@ -7,8 +7,7 @@ import {
   getAvailableAgentTypes, 
   isValidAgentType as validateAgentType,
   resolveLegacyAgentType as resolveLegacy,
-  LEGACY_AGENT_MAPPING as LEGACY_MAPPING,
-  getAgentTypeSchema
+  LEGACY_AGENT_MAPPING as LEGACY_MAPPING
 } from '../agents/agent-loader.js';
 
 // Dynamic agent type - will be a string that matches available agents
