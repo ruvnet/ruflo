@@ -9,23 +9,25 @@ import path from 'path';
 import { spawn } from 'child_process';
 import ora from 'ora';
 
-jest.unstable_mockModule('fs-extra', () => ({
-  default: {
-    ensureDir: jest.fn(),
-    writeJson: jest.fn(),
-    pathExists: jest.fn(),
-    readJson: jest.fn(),
-    remove: jest.fn()
-  }
-}));
+// Mock using spies for ESM compatibility
+const mockFs = {
+  ensureDir: jest.fn(),
+  writeJson: jest.fn(),
+  pathExists: jest.fn(),
+  readJson: jest.fn(),
+  remove: jest.fn()
+};
 
-jest.unstable_mockModule('child_process', () => ({
-  spawn: jest.fn()
-}));
+const mockSpawn = jest.fn();
+const mockOra = jest.fn();
 
-jest.unstable_mockModule('ora', () => ({
-  default: jest.fn()
-}));
+beforeEach(() => {
+  jest.replaceProperty(fs, 'ensureDir', mockFs.ensureDir);
+  jest.replaceProperty(fs, 'writeJson', mockFs.writeJson);
+  jest.replaceProperty(fs, 'pathExists', mockFs.pathExists);
+  jest.replaceProperty(fs, 'readJson', mockFs.readJson);
+  jest.replaceProperty(fs, 'remove', mockFs.remove);
+});
 
 describe('Swarm Command', () => {
   let consoleLogSpy;
@@ -45,14 +47,18 @@ describe('Swarm Command', () => {
       warn: jest.fn().mockReturnThis(),
       text: '',
     };
-    ora.mockReturnValue(mockSpinner);
+    mockOra.mockReturnValue(mockSpinner);
+    
+    jest.replaceProperty(ora, 'default', mockOra);
 
     mockSpawnProcess = {
       stdout: { on: jest.fn() },
       stderr: { on: jest.fn() },
       on: jest.fn(),
     };
-    spawn.mockReturnValue(mockSpawnProcess);
+    mockSpawn.mockReturnValue(mockSpawnProcess);
+    
+    jest.replaceProperty({ spawn }, 'spawn', mockSpawn);
 
     jest.clearAllMocks();
   });
