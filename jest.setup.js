@@ -3,6 +3,9 @@
  * Configure test environment and global settings
  */
 
+// Import Jest globals for setup file
+import { jest } from '@jest/globals';
+
 // Set test environment flags
 process.env.CLAUDE_FLOW_ENV = 'test';
 process.env.NODE_ENV = 'test';
