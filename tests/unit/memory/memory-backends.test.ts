@@ -66,12 +66,17 @@ describe('Memory Backends - Comprehensive Tests', () => {
     let backend: SQLiteMemoryBackend;
 
     beforeEach(async () => {
-      backend = new SQLiteMemoryBackend({
-        dbPath: `${tempDir}/test-memory.db`,
-        maxConnections: 10,
-        busyTimeout: 5000,
-        enableWal: true,
-      });
+      const mockLogger = {
+        info: () => {},
+        error: () => {},
+        warn: () => {},
+        debug: () => {},
+        trace: () => {}
+      };
+      backend = new SQLiteMemoryBackend(
+        `${tempDir}/test-memory.db`,
+        mockLogger as any
+      );
       
       await backend.initialize();
     });
