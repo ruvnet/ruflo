@@ -69,9 +69,9 @@ describe('Performance Tests', () => {
   describe('Command Performance', () => {
     beforeEach(() => {
       // Mock file system operations for performance testing
-      jest.spyOn(fs, 'pathExists').mockResolvedValue(true);
-      jest.spyOn(fs, 'readJson').mockResolvedValue({ entries: [] });
-      jest.spyOn(fs, 'writeJson').mockResolvedValue(undefined);
+      (fs.pathExists as any) = jest.fn().mockResolvedValue(true);
+      (fs.readJson as any) = jest.fn().mockResolvedValue({ entries: [] });
+      (fs.writeJson as any) = jest.fn().mockResolvedValue(undefined);
     });
 
     test('agent list command should respond quickly', async () => {
@@ -96,7 +96,7 @@ describe('Performance Tests', () => {
         }))
       };
 
-      jest.spyOn(fs, 'readJson').mockResolvedValue(largeMemoryData);
+      (fs.readJson as any) = jest.fn().mockResolvedValue(largeMemoryData);
 
       const { duration } = await perfHelpers.measureTime(async () => {
         try {
@@ -118,7 +118,7 @@ describe('Performance Tests', () => {
         }))
       };
 
-      jest.spyOn(fs, 'readJson').mockResolvedValue(searchableData);
+      (fs.readJson as any) = jest.fn().mockResolvedValue(searchableData);
 
       const { duration } = await perfHelpers.measureTime(async () => {
         try {
@@ -165,8 +165,8 @@ describe('Performance Tests', () => {
   describe('Concurrent Operations', () => {
     test('should handle concurrent memory operations efficiently', async () => {
       const mockData = { entries: [] };
-      jest.spyOn(fs, 'readJson').mockResolvedValue(mockData);
-      jest.spyOn(fs, 'writeJson').mockResolvedValue(undefined);
+      (fs.readJson as any) = jest.fn().mockResolvedValue(mockData);
+      (fs.writeJson as any) = jest.fn().mockResolvedValue(undefined);
 
       const { duration } = await perfHelpers.measureTime(async () => {
         const operations = [];
@@ -198,7 +198,7 @@ describe('Performance Tests', () => {
         }))
       };
       
-      jest.spyOn(fs, 'readJson').mockResolvedValue(mockSwarmData);
+      (fs.readJson as any) = jest.fn().mockResolvedValue(mockSwarmData);
 
       const { duration } = await perfHelpers.measureTime(async () => {
         const operations = [];
@@ -293,8 +293,8 @@ describe('Performance Tests', () => {
     });
 
     test('should meet performance benchmarks for swarm initialization', async () => {
-      jest.spyOn(fs, 'ensureDir').mockResolvedValue(undefined);
-      jest.spyOn(fs, 'writeJson').mockResolvedValue(undefined);
+      (fs.ensureDir as any) = jest.fn().mockResolvedValue(undefined);
+      (fs.writeJson as any) = jest.fn().mockResolvedValue(undefined);
 
       const mockSwarmInit = async () => {
         // Simulate swarm initialization
