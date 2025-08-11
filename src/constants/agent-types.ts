@@ -15,7 +15,7 @@ export type AgentType = string;
 
 // Re-export functions and constants from agent-loader
 export const LEGACY_AGENT_MAPPING = LEGACY_MAPPING;
-export { getAvailableAgentTypes, getAgentTypeSchema };
+export { getAvailableAgentTypes };
 
 /**
  * Get all valid agent types dynamically
