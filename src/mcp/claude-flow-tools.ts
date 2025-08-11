@@ -4,7 +4,7 @@
 
 import type { MCPTool, MCPContext, AgentProfile, Task, MemoryEntry } from '../utils/types.js';
 import type { ILogger } from '../core/logger.js';
-import { getAvailableAgentTypes, getAgentTypeSchema } from '../constants/agent-types.js';
+import { getAvailableAgentTypes } from '../constants/agent-types.js';
 import type { Permissions } from './auth.js';
 
 export interface ClaudeFlowToolContext extends MCPContext {
