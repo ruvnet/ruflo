@@ -1,5 +1,14 @@
 import { jest } from '@jest/globals';
 
+// Re-export Jest globals for easy import
+export { describe, it, beforeEach, afterEach, expect, beforeAll, afterAll } from '@jest/globals';
+
+// Test utilities
+export const spy = jest.fn;
+export const stub = jest.fn;
+export const assertEquals = (actual: any, expected: any) => expect(actual).toBe(expected);
+export const assertExists = (value: any) => expect(value).toBeDefined();
+
 // Mock logger utilities
 export const mockLogger = {
   info: jest.fn(),
