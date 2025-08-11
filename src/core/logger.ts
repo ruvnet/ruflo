@@ -73,16 +73,22 @@ export class Logger implements ILogger {
   static getInstance(config?: LoggingConfig): Logger {
     if (!Logger.instance) {
       if (!config) {
-        // Use default config if none provided and not in test environment
+        // Use default config if none provided
         const isTestEnv = process.env.CLAUDE_FLOW_ENV === 'test';
         if (isTestEnv) {
-          throw new Error('Logger configuration required for initialization');
+          // Use environment variables for test configuration
+          config = {
+            level: (process.env.CLAUDE_FLOW_LOG_LEVEL as LogLevel) || 'error',
+            format: (process.env.CLAUDE_FLOW_LOG_FORMAT as LogFormat) || 'json',
+            destination: (process.env.CLAUDE_FLOW_LOG_DESTINATION as LogDestination) || 'console',
+          };
+        } else {
+          config = {
+            level: 'info',
+            format: 'json',
+            destination: 'console',
+          };
         }
-        config = {
-          level: 'info',
-          format: 'json',
-          destination: 'console',
-        };
       }
       Logger.instance = new Logger(config);
     }
