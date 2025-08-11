@@ -23,20 +23,50 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Mock logger for tests to prevent initialization errors
 const mockLogger = {
-  info: () => {},
-  error: () => {},
-  warn: () => {},
-  debug: () => {},
-  trace: () => {},
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+  trace: jest.fn(),
   getInstance: () => mockLogger,
-  configure: () => {},
+  configure: jest.fn().mockResolvedValue(undefined),
   level: 'test',
-  format: 'test',
-  destination: 'test'
+  format: 'text',
+  destination: 'console'
 };
+
+// Mock the Logger class constructor
+class MockLogger {
+  constructor(config) {
+    this.config = config || { level: 'error', format: 'text', destination: 'console' };
+    return mockLogger;
+  }
+  
+  static getInstance() {
+    return mockLogger;
+  }
+  
+  info = jest.fn()
+  error = jest.fn()
+  warn = jest.fn()
+  debug = jest.fn()
+  trace = jest.fn()
+  configure = jest.fn().mockResolvedValue(undefined)
+  level = 'test'
+  format = 'text'
+  destination = 'console'
+}
 
 // Set up logger mock globally for test environment
 global.mockLogger = mockLogger;
+global.MockLogger = MockLogger;
+
+// Mock Jest environment to prevent jest globals issues
+global.jest = global.jest || {
+  fn: () => jest.fn ? jest.fn() : (() => {}),
+  spyOn: (obj, method) => jest.spyOn ? jest.spyOn(obj, method) : (() => {}),
+  clearAllMocks: () => jest.clearAllMocks ? jest.clearAllMocks() : (() => {})
+};
 
 // Provide default logger configuration for test environment
 process.env.CLAUDE_FLOW_LOG_LEVEL = 'error';
