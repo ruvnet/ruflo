@@ -23,25 +23,20 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Mock logger for tests to prevent initialization errors
 const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-  trace: jest.fn(),
-  getInstance: jest.fn(() => mockLogger),
-  configure: jest.fn(),
+  info: () => {},
+  error: () => {},
+  warn: () => {},
+  debug: () => {},
+  trace: () => {},
+  getInstance: () => mockLogger,
+  configure: () => {},
   level: 'test',
   format: 'test',
   destination: 'test'
 };
 
-// Set up logger mock before any imports
+// Set up logger mock globally for test environment
 global.mockLogger = mockLogger;
-
-// Mock the logger module
-jest.mock('./src/core/logger.js', () => ({
-  Logger: mockLogger
-}), { virtual: true });
 
 // Provide default logger configuration for test environment
 process.env.CLAUDE_FLOW_LOG_LEVEL = 'error';
