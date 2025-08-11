@@ -57,6 +57,65 @@ export const createMockAgent = (id: string, type: string = 'test') => ({
   shutdown: jest.fn()
 });
 
+// Mock logger creation helper
+export const createMockLogger = () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+  trace: jest.fn(),
+  getInstance: jest.fn()
+});
+
+// Fake time utilities for testing
+export class FakeTime {
+  private currentTime = 0;
+  
+  advance(ms: number) {
+    this.currentTime += ms;
+  }
+  
+  now() {
+    return this.currentTime;
+  }
+}
+
+// Test data builder
+export class TestDataBuilder {
+  static createTask(overrides = {}) {
+    return {
+      id: 'test-task-' + Date.now(),
+      description: 'Test task',
+      status: 'pending',
+      priority: 'medium',
+      ...overrides
+    };
+  }
+  
+  static createAgent(overrides = {}) {
+    return {
+      id: 'test-agent-' + Date.now(),
+      type: 'test',
+      status: 'idle',
+      capabilities: [],
+      ...overrides
+    };
+  }
+}
+
+// Async test utilities
+export class AsyncTestUtils {
+  static async waitFor(condition: () => boolean, timeout = 5000) {
+    const start = Date.now();
+    while (!condition() && Date.now() - start < timeout) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    if (!condition()) {
+      throw new Error('Condition not met within timeout');
+    }
+  }
+}
+
 export const createMockTask = (id: string, description: string) => ({
   id,
   description,
