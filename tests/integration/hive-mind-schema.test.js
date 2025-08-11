@@ -135,7 +135,7 @@ describe('Hive Mind Database Schema - Issue #403', () => {
       const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId);
       expect(agent).toBeDefined();
       expect(agent.id).toBe(agentId);
-      expect(agent.type).toBe('leader');
+      expect(agent.type).toBe('coordinator');
     });
   });
 
