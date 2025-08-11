@@ -216,7 +216,7 @@ describe('Hive Mind Database Schema - Issue #403', () => {
       db.close();
       
       // Now run init command which should handle the existing schema
-      execSync('npx claude-flow init --force', {
+      execSync('npx claude-flow hive-mind init --force', {
         cwd: testDir,
         stdio: 'pipe',
         env: { ...process.env, PATH: `/workspaces/claude-code-flow/node_modules/.bin:${process.env.PATH}` }
