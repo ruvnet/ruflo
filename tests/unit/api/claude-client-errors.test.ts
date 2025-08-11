@@ -13,7 +13,7 @@ import {
   ClaudeAuthenticationError,
   getUserFriendlyError,
 } from '../../../src/api/claude-api-errors.js';
-import { createMockLogger } from '../../test.utils.js';
+import { createMockLogger } from '../../test.utils';
 import { ConfigManager } from '../../../src/config/config-manager.js';
 
 // Mock fetch

@@ -2,7 +2,7 @@
  * Comprehensive unit tests for Terminal Manager
  */
 
-import { describe, it, beforeEach, afterEach, spy, stub, FakeTime } from "../../../test.utils";
+import { describe, it, beforeEach, afterEach, spy, stub, FakeTime } from "../../test.utils";
 import { expect } from "@jest/globals";
 
 import { TerminalManager } from '../../../src/terminal/manager.ts';

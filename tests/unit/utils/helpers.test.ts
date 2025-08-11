@@ -13,7 +13,7 @@ import {
   assertThrows,
   spy,
   FakeTime,
-} from '../../../test.utils';
+} from '../../test.utils';
 import {
   generateId,
   delay,

@@ -13,7 +13,7 @@ import {
   spy,
   assertSpyCalls,
   FakeTime,
-} from '../../../test.utils';
+} from '../../test.utils';
 import { CoordinationManager } from '../../../src/coordination/manager.ts';
 import { TaskScheduler } from '../../../src/coordination/scheduler.ts';
 import { ResourceManager } from '../../../src/coordination/resources.ts';
@@ -24,7 +24,7 @@ import { CircuitBreaker, CircuitState } from '../../../src/coordination/circuit-
 import { ConflictResolver } from '../../../src/coordination/conflict-resolution.ts';
 import { SystemEvents } from '../../../src/utils/types.ts';
 import { createMocks } from '../../mocks/index.ts';
-import { TestDataBuilder } from '../../../test.utils';
+import { TestDataBuilder } from '../../test.utils';
 import { cleanupTestEnv, setupTestEnv } from '../../test.config';
 
 describe('CoordinationManager', () => {
