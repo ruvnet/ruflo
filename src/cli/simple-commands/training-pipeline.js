@@ -819,7 +819,7 @@ export async function trainingPipelineCommand(args, flags) {
         profiles = pipeline.getDefaultProfiles();
       }
 
-      console.log('\n📊 Real Training Pipeline Status');
+      console.log('\n📊 Training Pipeline Status');
       console.log('━'.repeat(50));
       
       console.log('\n🤖 Strategy Profiles:');
