@@ -375,20 +375,12 @@ async function executeStreamStep(prompt, inputStream, isLast, flags = {}) {
     // Build command arguments
     const args = ['-p'];
     
-    // Add input format if we have input stream
-    if (inputStream) {
-      args.push('--input-format', 'stream-json');
-      // When input format is stream-json, output format must also be stream-json
+    // For now, avoid stream-json input chaining due to format complexity
+    // Each step runs independently for better reliability
+    if (!isLast || flags.json) {
       args.push('--output-format', 'stream-json');
       // stream-json output requires --verbose
       args.push('--verbose');
-    } else {
-      // Add output format unless it's the last step and user wants text
-      if (!isLast || flags.json) {
-        args.push('--output-format', 'stream-json');
-        // stream-json output requires --verbose
-        args.push('--verbose');
-      }
     }
     
     // Add the prompt
