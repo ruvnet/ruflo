@@ -41,9 +41,6 @@ async function setupTelemetry() {
   if (!isEnabled) {
     // Set the environment variable for current session
     process.env.CLAUDE_CODE_ENABLE_TELEMETRY = '1';
-    // Disable console output for telemetry to avoid interference
-    process.env.OTEL_METRICS_EXPORTER = 'none';
-    process.env.OTEL_LOGS_EXPORTER = 'none';
     
     console.log(`✅ Telemetry ENABLED for this session!\n`);
     
