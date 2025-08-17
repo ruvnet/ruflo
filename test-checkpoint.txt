@@ -1,0 +1,10 @@
+This is a test file to verify checkpoint hooks are working.
+The hooks should:
+1. Create a pre-edit checkpoint before writing
+2. Create a post-edit checkpoint after writing
+3. Create a GitHub release for the checkpoint
+
+Timestamp: 2025-07-30 22:08:00
+
+UPDATE: Testing edit checkpoint functionality
+This edit should trigger post-edit checkpoint with GitHub release

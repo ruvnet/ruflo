@@ -1,0 +1,152 @@
+{
+  "timestamp": "2025-07-06T14:02:01.879Z",
+  "system": {
+    "memory": "              total        used        free      shared  buff/cache   available\nMem:          64297        9233        4930          60       50133       54277\nSwap:             0           0           0\n",
+    "cpu_cores": 16
+  },
+  "tests": {
+    "hive_help": {
+      "duration_ms": 1034,
+      "output_lines": 12,
+      "output_size": 314
+    },
+    "hive_mind_help": {
+      "duration_ms": 1044,
+      "output_lines": 55,
+      "output_size": 1710
+    },
+    "hive_mind_status": {
+      "duration_ms": 1027,
+      "output_lines": 60,
+      "output_size": 1250
+    },
+    "hive_mind_metrics": {
+      "duration_ms": 1052,
+      "output_lines": 24,
+      "output_size": 456
+    },
+    "db_count_swarms": {
+      "duration_ms": 5,
+      "result_lines": 1
+    },
+    "db_count_agents": {
+      "duration_ms": 4,
+      "result_lines": 1
+    },
+    "db_count_tasks": {
+      "duration_ms": 4,
+      "result_lines": 1
+    },
+    "db_join_swarms_agents": {
+      "duration_ms": 4,
+      "result_lines": 2
+    },
+    "init_hierarchical_5agents": {
+      "duration_ms": 977,
+      "topology": "hierarchical",
+      "agent_count": 5,
+      "output_size": 314
+    },
+    "init_hierarchical_8agents": {
+      "duration_ms": 1079,
+      "topology": "hierarchical",
+      "agent_count": 8,
+      "output_size": 314
+    },
+    "init_hierarchical_12agents": {
+      "duration_ms": 1034,
+      "topology": "hierarchical",
+      "agent_count": 12,
+      "output_size": 314
+    },
+    "init_mesh_5agents": {
+      "duration_ms": 983,
+      "topology": "mesh",
+      "agent_count": 5,
+      "output_size": 314
+    },
+    "init_mesh_8agents": {
+      "duration_ms": 992,
+      "topology": "mesh",
+      "agent_count": 8,
+      "output_size": 314
+    },
+    "init_mesh_12agents": {
+      "duration_ms": 979,
+      "topology": "mesh",
+      "agent_count": 12,
+      "output_size": 314
+    },
+    "init_ring_5agents": {
+      "duration_ms": 1001,
+      "topology": "ring",
+      "agent_count": 5,
+      "output_size": 314
+    },
+    "init_ring_8agents": {
+      "duration_ms": 981,
+      "topology": "ring",
+      "agent_count": 8,
+      "output_size": 314
+    },
+    "init_ring_12agents": {
+      "duration_ms": 1018,
+      "topology": "ring",
+      "agent_count": 12,
+      "output_size": 314
+    },
+    "init_star_5agents": {
+      "duration_ms": 1007,
+      "topology": "star",
+      "agent_count": 5,
+      "output_size": 314
+    },
+    "init_star_8agents": {
+      "duration_ms": 1026,
+      "topology": "star",
+      "agent_count": 8,
+      "output_size": 314
+    },
+    "init_star_12agents": {
+      "duration_ms": 998,
+      "topology": "star",
+      "agent_count": 12,
+      "output_size": 314
+    },
+    "database_size": {
+      "size_bytes": 53248,
+      "size_mb": "0.05"
+    },
+    "hive_mind_directory_size": {
+      "size": "64K"
+    },
+    "consensus_quorum": {
+      "duration_ms": 996,
+      "consensus_type": "quorum",
+      "coordination_tested": true
+    },
+    "consensus_unanimous": {
+      "duration_ms": 991,
+      "consensus_type": "unanimous",
+      "coordination_tested": true
+    },
+    "consensus_weighted": {
+      "duration_ms": 997,
+      "consensus_type": "weighted",
+      "coordination_tested": true
+    },
+    "consensus_leader": {
+      "duration_ms": 1017,
+      "consensus_type": "leader",
+      "coordination_tested": true
+    }
+  },
+  "summary": {
+    "total_tests": 26,
+    "successful_tests": 26,
+    "failed_tests": 0,
+    "average_duration_ms": 779,
+    "min_duration_ms": 4,
+    "max_duration_ms": 1079
+  }
+}
