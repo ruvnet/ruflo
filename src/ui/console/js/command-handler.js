@@ -306,7 +306,11 @@ Examples:
    * Connect to server
    */
   async connectToServer(args) {
-    const url = args[0] || 'ws://localhost:3000/ws';
+    // Use dynamic port from config
+    const defaultUrl = window.configManager ? 
+      window.configManager.getWebSocketUrl('/ws') : 
+      'ws://localhost:3000/ws';
+    const url = args[0] || defaultUrl;
     const token = args[1] || '';
 
     this.terminal.writeInfo(`Connecting to ${url}...`);

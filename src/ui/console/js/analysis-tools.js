@@ -30,7 +30,11 @@ class AnalysisTools {
 
   setupWebSocket() {
     try {
-      this.ws = new WebSocket('ws://localhost:3000/analysis');
+      // Use dynamic port from config
+      const wsUrl = window.configManager ? 
+        window.configManager.getWebSocketUrl('/analysis') : 
+        'ws://localhost:3000/analysis';
+      this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         this.isConnected = true;
