@@ -42,8 +42,8 @@ jobs:
   # Detect failure conditions
   failure-detection:
     name: 🚨 Failure Detection
+    if: (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true') && (github.event_name == 'workflow_run' || github.event_name == 'push')
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_run' || github.event_name == 'push'
     outputs:
       rollback-required: ${{ steps.detect.outputs.rollback-required }}
       failure-type: ${{ steps.detect.outputs.failure-type }}
@@ -165,9 +165,9 @@ jobs:
   # Pre-rollback validation
   pre-rollback-validation:
     name: 🔍 Pre-Rollback Validation
+    if: (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true') && (needs.failure-detection.outputs.rollback-required == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     needs: failure-detection
-    if: needs.failure-detection.outputs.rollback-required == 'true' || github.event_name == 'workflow_dispatch'
     outputs:
       validation-passed: ${{ steps.validate.outputs.validation-passed }}
       backup-created: ${{ steps.validate.outputs.backup-created }}
@@ -276,9 +276,9 @@ jobs:
   # Execute rollback
   execute-rollback:
     name: 🔄 Execute Rollback
+    if: (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true') && needs.pre-rollback-validation.outputs.validation-passed == 'true' && (needs.failure-detection.outputs.failure-severity == 'high' || github.event.inputs.emergency_mode == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     needs: [failure-detection, pre-rollback-validation]
-    if: needs.pre-rollback-validation.outputs.validation-passed == 'true' && (needs.failure-detection.outputs.failure-severity == 'high' || github.event.inputs.emergency_mode == 'true' || github.event_name == 'workflow_dispatch')
     environment: 
       name: rollback-approval
     outputs:
@@ -404,9 +404,9 @@ jobs:
   # Post-rollback verification
   post-rollback-verification:
     name: ✅ Post-Rollback Verification
+    if: (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true') && needs.execute-rollback.outputs.rollback-executed == 'true'
     runs-on: ubuntu-latest
     needs: [failure-detection, execute-rollback]
-    if: needs.execute-rollback.outputs.rollback-executed == 'true'
     steps:
       - name: Checkout rolled back code
         uses: actions/checkout@v4
@@ -507,9 +507,9 @@ jobs:
   # Rollback monitoring
   rollback-monitoring:
     name: 📊 Rollback Monitoring
+    if: (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true') && needs.execute-rollback.outputs.rollback-executed == 'true'
     runs-on: ubuntu-latest
     needs: [failure-detection, execute-rollback, post-rollback-verification]
-    if: needs.execute-rollback.outputs.rollback-executed == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -642,9 +642,9 @@ jobs:
   # Manual rollback approval (for non-emergency cases)
   manual-rollback-approval:
     name: ⏳ Manual Rollback Approval
+    if: (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true') && needs.failure-detection.outputs.rollback-required == 'true' && needs.failure-detection.outputs.failure-severity != 'high' && github.event.inputs.emergency_mode != 'true'
     runs-on: ubuntu-latest
     needs: [failure-detection, pre-rollback-validation]
-    if: needs.failure-detection.outputs.rollback-required == 'true' && needs.failure-detection.outputs.failure-severity != 'high' && github.event.inputs.emergency_mode != 'true'
     environment: 
       name: rollback-manual-approval
     steps:

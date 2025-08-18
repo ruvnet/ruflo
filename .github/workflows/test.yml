@@ -8,6 +8,7 @@ on:
 
 jobs:
   test:
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     
     strategy:
@@ -37,6 +38,7 @@ jobs:
       run: npm run test:coverage
 
   code-quality:
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     
     steps:

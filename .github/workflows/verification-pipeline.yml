@@ -25,6 +25,7 @@ jobs:
   # Pre-verification setup and validation
   setup-verification:
     name: 🚀 Setup Verification
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     outputs:
       verification-id: ${{ steps.setup.outputs.verification-id }}
@@ -66,6 +67,7 @@ jobs:
   # Security verification
   security-verification:
     name: 🛡️ Security Verification
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: setup-verification
     steps:
@@ -119,6 +121,7 @@ jobs:
   # Code quality verification
   code-quality:
     name: 📝 Code Quality
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: setup-verification
     steps:
@@ -176,6 +179,7 @@ jobs:
   # Multi-platform testing
   test-verification:
     name: 🧪 Test Verification (${{ matrix.os }}, Node ${{ matrix.node }})
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ${{ matrix.os }}
     needs: [setup-verification, security-verification]
     strategy:
@@ -229,6 +233,7 @@ jobs:
   # Build verification
   build-verification:
     name: 🏗️ Build Verification
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: [setup-verification, code-quality]
     steps:
@@ -287,6 +292,7 @@ jobs:
   # Documentation verification
   docs-verification:
     name: 📚 Documentation Verification
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: setup-verification
     steps:
@@ -321,9 +327,9 @@ jobs:
   # Performance benchmarking
   performance-verification:
     name: ⚡ Performance Verification
+    if: (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true') && (github.event_name == 'push' || github.event.inputs.verification_mode == 'full')
     runs-on: ubuntu-latest
     needs: [setup-verification, build-verification]
-    if: github.event_name == 'push' || github.event.inputs.verification_mode == 'full'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -364,6 +370,7 @@ jobs:
   # Final verification report
   verification-report:
     name: 📊 Verification Report
+    if: always() && (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true')
     runs-on: ubuntu-latest
     needs: [
       setup-verification,
@@ -374,7 +381,6 @@ jobs:
       docs-verification,
       performance-verification
     ]
-    if: always()
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
