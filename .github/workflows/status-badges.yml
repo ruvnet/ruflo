@@ -13,7 +13,7 @@ jobs:
   update-badges:
     name: 📊 Update Status Badges
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true') && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

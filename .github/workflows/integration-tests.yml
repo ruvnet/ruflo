@@ -39,6 +39,7 @@ jobs:
   # Setup integration test environment
   integration-setup:
     name: 🚀 Integration Test Setup
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     outputs:
       test-session-id: ${{ steps.setup.outputs.test-session-id }}
@@ -138,6 +139,7 @@ jobs:
   # Test agent coordination
   test-agent-coordination:
     name: 🤝 Agent Coordination Tests
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: integration-setup
     strategy:
@@ -290,6 +292,7 @@ jobs:
   # Test memory sharing integration
   test-memory-integration:
     name: 🧠 Memory Sharing Integration
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: integration-setup
     steps:
@@ -412,6 +415,7 @@ jobs:
   # Test fault tolerance
   test-fault-tolerance:
     name: 🛡️ Fault Tolerance Tests
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: integration-setup
     steps:
@@ -540,6 +544,7 @@ jobs:
   # Test performance under load
   test-performance-integration:
     name: ⚡ Performance Integration Tests
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: integration-setup
     steps:
@@ -681,6 +686,7 @@ jobs:
   # Generate integration test report
   integration-test-report:
     name: 📊 Integration Test Report
+    if: always() && (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true')
     runs-on: ubuntu-latest
     needs: [
       integration-setup,
@@ -689,7 +695,6 @@ jobs:
       test-fault-tolerance,
       test-performance-integration
     ]
-    if: always()
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

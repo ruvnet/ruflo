@@ -16,6 +16,7 @@ jobs:
   # Code quality and security checks
   security:
     name: Security & Code Quality
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -52,6 +53,7 @@ jobs:
   # All tests
   test:
     name: Test Suite
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -87,6 +89,7 @@ jobs:
   # Documentation generation
   docs:
     name: Documentation & Examples
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     
     steps:
@@ -107,6 +110,7 @@ jobs:
   # Build and package
   build:
     name: Build & Package
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: [security, test]
     
@@ -152,7 +156,7 @@ jobs:
     name: Deploy & Release
     runs-on: ubuntu-latest
     needs: [build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true') && github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
       - name: Checkout code
@@ -173,7 +177,7 @@ jobs:
     name: CI Status
     runs-on: ubuntu-latest
     needs: [security, test, build]
-    if: always()
+    if: always() && (github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true')
     
     steps:
       - name: Check overall status

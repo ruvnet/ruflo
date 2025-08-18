@@ -31,6 +31,7 @@ jobs:
   # Initialize truth scoring session
   truth-scoring-setup:
     name: 🚀 Truth Scoring Setup
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     outputs:
       scoring-session-id: ${{ steps.setup.outputs.scoring-session-id }}
@@ -92,6 +93,7 @@ jobs:
   # Code accuracy scoring
   code-accuracy-scoring:
     name: 📝 Code Accuracy Scoring
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: truth-scoring-setup
     steps:
@@ -203,6 +205,7 @@ jobs:
   # Test coverage truth scoring
   test-coverage-scoring:
     name: 🧪 Test Coverage Scoring
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: truth-scoring-setup
     steps:
@@ -291,6 +294,7 @@ jobs:
   # Performance regression scoring
   performance-regression-scoring:
     name: ⚡ Performance Regression Scoring
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: truth-scoring-setup
     steps:
@@ -398,6 +402,7 @@ jobs:
   # Documentation truth scoring
   documentation-scoring:
     name: 📚 Documentation Scoring
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: truth-scoring-setup
     steps:
@@ -497,6 +502,7 @@ jobs:
   # Final truth score calculation
   truth-score-calculation:
     name: 🎯 Truth Score Calculation
+    if: github.event.repository.fork != true || vars.ENABLE_CI_IN_FORK == 'true'
     runs-on: ubuntu-latest
     needs: [
       truth-scoring-setup,
