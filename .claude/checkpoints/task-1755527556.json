@@ -1,0 +1,1 @@
+{"checkpoint": "task-20250818-113234", "task": "Why: evitar CI rodando em forks. What: adicionar if: github.repository == 'ORG/REPO' em cada job. # ", "timestamp": "2025-08-18T14:32:36Z", "commit": "111288bf7f290136a7f1ee0ba55549071d6dacca", "github_release": "true"}
