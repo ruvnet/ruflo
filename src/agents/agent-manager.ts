@@ -1,4 +1,3 @@
-import { getErrorMessage } from '../utils/error-handler.js';
 /**
  * Comprehensive agent management system
  */
@@ -16,9 +15,7 @@ import type {
   AgentConfig, 
   AgentEnvironment, 
   AgentMetrics,
-  AgentError,
-  TaskId,
-  TaskDefinition
+  AgentError
 } from '../swarm/types.js';
 import type { DistributedMemorySystem } from '../memory/distributed-memory.js';
 import { generateId } from '../utils/helpers.js';
@@ -814,7 +811,7 @@ export class AgentManager extends EventEmitter {
 
   private async checkResponsiveness(agentId: string): Promise<number> {
     // Send ping and measure response time
-    const startTime = Date.now();
+    const _startTime = Date.now();
     
     try {
       // This would send an actual ping to the agent

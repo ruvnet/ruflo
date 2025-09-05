@@ -33,7 +33,7 @@ interface ApiEndpoint {
   rateLimit: string;
 }
 
-interface MicroserviceComponent {
+interface _MicroserviceComponent {
   service: string;
   purpose: string;
 }
@@ -53,7 +53,7 @@ interface DatabaseComponent {
   size: string;
 }
 
-interface InfrastructureComponent {
+interface _InfrastructureComponent {
   name: string;
   type: string;
   purpose: string;
