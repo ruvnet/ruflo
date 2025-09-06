@@ -1041,15 +1041,15 @@ Specialized agents for Flow Nexus operations available in \`.claude/agents/flow-
 
 Detailed Flow Nexus command documentation available in \`.claude/commands/flow-nexus/\`:
 
-- \\`login-registration.md\\` - Authentication workflows
-- \\`sandbox.md\\` - E2B sandbox management
-- \\`swarm.md\\` - AI swarm deployment
-- \\`workflow.md\\` - Automation workflows
-- \\`neural-network.md\\` - ML model training
-- \\`challenges.md\\` - Coding challenges
-- \\`app-store.md\\` - App marketplace
-- \\`payments.md\\` - Credit and billing
-- \\`user-tools.md\\` - User utilities
+- \`login-registration.md\` - Authentication workflows
+- \`sandbox.md\` - E2B sandbox management
+- \`swarm.md\` - AI swarm deployment
+- \`workflow.md\` - Automation workflows
+- \`neural-network.md\` - ML model training
+- \`challenges.md\` - Coding challenges
+- \`app-store.md\` - App marketplace
+- \`payments.md\` - Credit and billing
+- \`user-tools.md\` - User utilities
 
 ### 💡 Example: Deploy a Swarm
 \\`\\`\\`javascript
