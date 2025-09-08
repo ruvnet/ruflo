@@ -977,10 +977,17 @@ export function hasCommand(name) {
 
 // Execute a command
 export async function executeCommand(name, subArgs, flags) {
+  console.log('\x1b[31m\x1b[1m🔍 REGISTRY DEBUG: executeCommand called with:\x1b[0m');
+  console.log('\x1b[33mCommand:\x1b[0m', name);
+  console.log('\x1b[33mSubArgs:\x1b[0m', subArgs);
+  console.log('\x1b[33mFlags:\x1b[0m', Object.keys(flags));
+  
   const command = commandRegistry.get(name);
   if (!command) {
     throw new Error(`Unknown command: ${name}`);
   }
+  
+  console.log('\x1b[32m✓ Command found, executing handler...\x1b[0m');
 
   try {
     // Track command execution for performance metrics

@@ -38,6 +38,8 @@ import { CollectiveMemory } from './hive-mind/memory.js';
 import { SwarmCommunication } from './hive-mind/communication.js';
 import { HiveMindSessionManager } from './hive-mind/session-manager.js';
 import { createAutoSaveMiddleware } from './hive-mind/auto-save-middleware.js';
+// INTEGRATION FIX: Use JavaScript coordination bridge for task execution
+import { CoordinationBridge } from './coordination-bridge.js';
 
 function showHiveMindHelp() {
   console.log(`
@@ -778,6 +780,244 @@ async function spawnSwarm(args, flags) {
       encryption: hiveMind.config.encryption,
     });
 
+    // ===============================
+    // FIX: CREATE BASIC TASKS FROM OBJECTIVE
+    // ===============================
+    console.log(chalk.magenta('🚀 TASK CREATION FIX: Decomposing objective into tasks'));
+    console.log(chalk.yellow('Objective:'), objective);
+    console.log(chalk.yellow('SwarmId:'), swarmId);
+    
+    // DEBUG: Check actual database schema
+    try {
+      const tableInfo = db.prepare("PRAGMA table_info(tasks)").all();
+      console.log(chalk.gray('DEBUG: Actual tasks table columns:'));
+      tableInfo.forEach(col => console.log(chalk.gray(`  - ${col.name} (${col.type})`)));
+    } catch (e) {
+      console.log(chalk.gray('DEBUG: Could not get table info:'), e.message);
+    }
+    
+    try {
+      // Simple task decomposition based on objective content
+      const tasks = [];
+      const objectiveLower = objective.toLowerCase();
+      
+      // Generate tasks based on objective keywords
+      if (objectiveLower.includes('create') || objectiveLower.includes('build') || objectiveLower.includes('develop')) {
+        tasks.push({
+          id: `task-${Date.now()}-1`,
+          description: `Research and analyze requirements for: ${objective}`,
+          type: 'research',
+          priority: 'high',
+          assigned_to: workers.find(w => w.type === 'researcher')?.id || workers[0].id,
+          status: 'pending'
+        });
+        
+        tasks.push({
+          id: `task-${Date.now()}-2`, 
+          description: `Implement solution for: ${objective}`,
+          type: 'development',
+          priority: 'high',
+          assigned_to: workers.find(w => w.type === 'coder')?.id || workers[1].id,
+          status: 'pending'
+        });
+        
+        tasks.push({
+          id: `task-${Date.now()}-3`,
+          description: `Test and validate: ${objective}`,
+          type: 'testing', 
+          priority: 'medium',
+          assigned_to: workers.find(w => w.type === 'tester')?.id || workers[2].id,
+          status: 'pending'
+        });
+      } else {
+        // Default task for any objective
+        tasks.push({
+          id: `task-${Date.now()}-1`,
+          description: `Complete objective: ${objective}`,
+          type: 'general',
+          priority: 'high', 
+          assigned_to: workers[0].id,
+          status: 'pending'
+        });
+      }
+      
+      // Insert tasks using ACTUAL database schema
+      const insertTask = db.prepare(`
+        INSERT INTO tasks (id, swarm_id, agent_id, description, status, priority, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      for (const task of tasks) {
+        insertTask.run(
+          task.id,
+          swarmId,
+          task.assigned_to, // agent_id
+          task.description,
+          task.status,
+          task.priority === 'high' ? 3 : task.priority === 'medium' ? 2 : 1, // priority as INTEGER
+          new Date().toISOString() // created_at
+        );
+        console.log(chalk.green('✓ Created task:'), task.description);
+      }
+      
+      console.log(chalk.magenta.bold(`🎉 SUCCESS! Created ${tasks.length} tasks for workers! 🎉`));
+      
+      // ===============================
+      // COORDINATION FIX: START SWARM COORDINATOR
+      // ===============================
+      console.log(chalk.blue.bold('\n🤖 STARTING SWARM COORDINATION ENGINE...'));
+      
+      try {
+        // Initialize CoordinationBridge with optimized settings and error handling
+        const coordinator = new CoordinationBridge({
+          backgroundTaskInterval: 2000,  // Fast polling for responsiveness
+          healthCheckInterval: 5000,
+          enableMonitoring: true,
+          enableWorkStealing: true,
+          coordinationStrategy: 'hybrid',
+          maxConcurrentTasks: Math.min(workers.length, 3),
+          maxRetries: 3,
+          backoffMultiplier: 2
+        });
+        
+        // Start the coordinator
+        await coordinator.start();
+        console.log(chalk.green('✓ CoordinationBridge started successfully'));
+        
+        // Register agents with coordinator (with error handling)
+        const registeredAgents = [];
+        for (const worker of workers) {
+          try {
+            const agentId = await coordinator.registerAgent(
+              worker.name, 
+              worker.type, 
+              worker.capabilities || ['general']
+            );
+            registeredAgents.push({ worker, agentId });
+            console.log(chalk.green(`✓ Registered agent: ${worker.name} (${agentId})`));
+          } catch (regError) {
+            console.log(chalk.yellow(`⚠️  Warning: Failed to register agent ${worker.name}: ${regError.message}`));
+            // Continue with other agents
+          }
+        }
+        
+        if (registeredAgents.length === 0) {
+          throw new Error('No agents could be registered with coordinator');
+        }
+        
+        // Bridge database tasks to coordinator
+        console.log(chalk.yellow('🔗 Bridging database tasks to coordinator...'));
+        
+        // Read tasks from database
+        const dbTasks = db.prepare(`
+          SELECT id, description, status, priority, agent_id, created_at 
+          FROM tasks 
+          WHERE swarm_id = ?
+        `).all(swarmId);
+        
+        // Create coordinator tasks for each database task (with error handling)
+        let successfulBridges = 0;
+        for (const dbTask of dbTasks) {
+          try {
+            const coordTask = await coordinator.createTask(
+              dbTask.description,
+              'general', // task type
+              dbTask.priority, // priority
+              [], // dependencies
+              30000, // timeout (30 seconds)
+              {} // parameters
+            );
+            
+            console.log(chalk.green(`✓ Bridged task: ${dbTask.description.substring(0, 50)}...`));
+            successfulBridges++;
+            
+            // Update database with coordinator task ID for tracking
+            try {
+              db.prepare(`
+                UPDATE tasks 
+                SET result = ? 
+                WHERE id = ?
+              `).run(`coordinator_task_id:${coordTask}`, dbTask.id);
+            } catch (dbUpdateError) {
+              console.log(chalk.yellow(`⚠️  Warning: Could not update database for task ${dbTask.id}: ${dbUpdateError.message}`));
+            }
+            
+          } catch (bridgeError) {
+            console.log(chalk.yellow(`⚠️  Warning: Failed to bridge task "${dbTask.description.substring(0, 30)}...": ${bridgeError.message}`));
+            // Continue with other tasks
+          }
+        }
+        
+        if (successfulBridges === 0) {
+          throw new Error('No tasks could be bridged to coordinator');
+        }
+        
+        console.log(chalk.blue.bold(`🚀 COORDINATION ENGINE ACTIVE! Processing ${successfulBridges} tasks...`));
+        console.log(chalk.gray('Tasks will be automatically assigned and executed by available agents.'));
+        console.log(chalk.cyan(`📊 Coordination Status: ${registeredAgents.length} agents, ${successfulBridges} tasks queued`));
+        
+        // Store coordinator reference for session management
+        global.hiveMindCoordinator = coordinator;
+        
+        // ===============================
+        // SESSION LIFECYCLE INTEGRATION
+        // ===============================
+        
+        // Graceful shutdown handlers
+        const gracefulShutdown = async (signal) => {
+          console.log(chalk.yellow(`\n🛑 Received ${signal} - Shutting down swarm coordinator gracefully...`));
+          
+          if (global.hiveMindCoordinator) {
+            try {
+              console.log(chalk.blue('🔄 Stopping background task processing...'));
+              await global.hiveMindCoordinator.stop();
+              console.log(chalk.green('✓ CoordinationBridge stopped successfully'));
+              
+              // Clear global reference
+              global.hiveMindCoordinator = null;
+            } catch (error) {
+              console.log(chalk.red('❌ Error stopping coordinator:'), error.message);
+            }
+          }
+          
+          console.log(chalk.gray('Swarm session terminated.'));
+          process.exit(0);
+        };
+        
+        // Register signal handlers
+        process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+        process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+        
+        // Handle process exit
+        process.on('exit', () => {
+          if (global.hiveMindCoordinator) {
+            console.log(chalk.yellow('⚠️  Force stopping coordinator on process exit...'));
+            // Note: Cannot use async here, but coordinator should handle this
+          }
+        });
+        
+        // Store session info for later management
+        const sessionInfo = {
+          coordinator: coordinator,
+          swarmId: swarmId,
+          sessionId: sessionId,
+          startTime: new Date(),
+          workers: workers.length
+        };
+        global.hiveMindSessionInfo = sessionInfo;
+        
+      } catch (coordError) {
+        console.log(chalk.red.bold('❌ COORDINATION STARTUP FAILED:'));
+        console.log(chalk.red('Error:'), coordError.message);
+        console.log(chalk.yellow('Swarm will run without coordination (tasks may remain unprocessed)'));
+      }
+      
+    } catch (error) {
+      console.log(chalk.red.bold('❌ TASK CREATION FAILED:'));
+      console.log(chalk.red('Error:'), error.message);
+      console.log(chalk.gray('Will continue with empty task queue'));
+    }
+
     db.close();
 
     spinner.succeed('Hive Mind swarm spawned successfully!');
@@ -1507,6 +1747,10 @@ async function configureWizard() {
  * Main hive mind command handler
  */
 export async function hiveMindCommand(args, flags) {
+  console.log(chalk.red.bold('🔥🔥🔥 DEBUG: hiveMindCommand called with:'));
+  console.log(chalk.yellow('Args:'), args);
+  console.log(chalk.yellow('Flags:'), Object.keys(flags));
+  
   const subcommand = args[0];
   const subArgs = args.slice(1);
 
@@ -2758,6 +3002,20 @@ async function stopSession(args, flags) {
       console.log('\nRun "claude-flow hive-mind sessions" to see available sessions');
       sessionManager.close();
       return;
+    }
+
+    // ===============================
+    // COORDINATOR LIFECYCLE CLEANUP
+    // ===============================
+    if (global.hiveMindCoordinator) {
+      try {
+        spinner.text = 'Stopping swarm coordinator...';
+        await global.hiveMindCoordinator.stop();
+        console.log('\n' + chalk.green('✓ CoordinationBridge stopped successfully'));
+        global.hiveMindCoordinator = null;
+      } catch (error) {
+        console.log(chalk.yellow('⚠️  Warning: Could not stop coordinator cleanly:'), error.message);
+      }
     }
 
     // Stop the session
