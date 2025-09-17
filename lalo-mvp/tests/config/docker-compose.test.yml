@@ -1,0 +1,289 @@
+# LALO MVP Test Environment Docker Compose
+# Provides isolated test environment with all required services
+
+version: '3.8'
+
+services:
+  # PostgreSQL for data storage
+  postgres-test:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: lalo_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d lalo_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lalo-test-network
+
+  # Redis for caching and session storage
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    command: redis-server --requirepass test_redis_password
+    volumes:
+      - redis_test_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "test_redis_password", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - lalo-test-network
+
+  # Elasticsearch for RAG vector storage
+  elasticsearch-test:
+    image: elasticsearch:8.8.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - cluster.name=lalo-test-cluster
+      - node.name=lalo-test-node
+    ports:
+      - "9201:9200"
+      - "9301:9300"
+    volumes:
+      - elasticsearch_test_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - lalo-test-network
+
+  # MinIO for file storage testing
+  minio-test:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: test_access_key
+      MINIO_ROOT_PASSWORD: test_secret_key
+    ports:
+      - "9001:9000"
+      - "9091:9090"
+    command: server /data --console-address ":9090"
+    volumes:
+      - minio_test_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - lalo-test-network
+
+  # LALO MVP Application (Test Mode)
+  lalo-app-test:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.test
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test_user:test_password@postgres-test:5432/lalo_test
+      REDIS_URL: redis://:test_redis_password@redis-test:6379
+      ELASTICSEARCH_URL: http://elasticsearch-test:9200
+      MINIO_ENDPOINT: minio-test:9000
+      MINIO_ACCESS_KEY: test_access_key
+      MINIO_SECRET_KEY: test_secret_key
+      JWT_SECRET: test_jwt_secret_key_for_testing_only
+      ENCRYPTION_KEY: test_encryption_key_32_characters
+      LOG_LEVEL: debug
+      CLAUDE_FLOW_ENABLED: true
+      HIVE_MIND_ENABLED: true
+      MCP_COORDINATOR_ENABLED: true
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      elasticsearch-test:
+        condition: service_healthy
+      minio-test:
+        condition: service_healthy
+    volumes:
+      - ../../src:/app/src
+      - ../../tests:/app/tests
+      - app_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - lalo-test-network
+
+  # Mock External Services
+  mock-auth-service:
+    image: nginx:alpine
+    ports:
+      - "8081:80"
+    volumes:
+      - ./mocks/auth-service.conf:/etc/nginx/conf.d/default.conf
+      - ./mocks/auth-responses:/usr/share/nginx/html
+    networks:
+      - lalo-test-network
+
+  mock-ml-service:
+    image: nginx:alpine
+    ports:
+      - "8082:80"
+    volumes:
+      - ./mocks/ml-service.conf:/etc/nginx/conf.d/default.conf
+      - ./mocks/ml-responses:/usr/share/nginx/html
+    networks:
+      - lalo-test-network
+
+  # Test Data Generator
+  test-data-generator:
+    build:
+      context: ../utils
+      dockerfile: Dockerfile.data-generator
+    environment:
+      DATABASE_URL: postgresql://test_user:test_password@postgres-test:5432/lalo_test
+      ELASTICSEARCH_URL: http://elasticsearch-test:9200
+      REDIS_URL: redis://:test_redis_password@redis-test:6379
+      DATA_VOLUME: medium
+      INCLUDE_SENSITIVE_DATA: true
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      elasticsearch-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    volumes:
+      - ./fixtures:/app/fixtures
+    networks:
+      - lalo-test-network
+    profiles:
+      - data-generation
+
+  # Performance Testing Tools
+  artillery-load-tester:
+    image: artilleryio/artillery:latest
+    volumes:
+      - ../performance:/app/tests
+      - artillery_reports:/app/reports
+    command: run /app/tests/load-test.yml --output /app/reports/load-test-results.json
+    depends_on:
+      lalo-app-test:
+        condition: service_healthy
+    networks:
+      - lalo-test-network
+    profiles:
+      - performance-testing
+
+  # Security Scanner
+  zap-security-scanner:
+    image: owasp/zap2docker-stable
+    command: zap-baseline.py -t http://lalo-app-test:3000 -J zap-report.json -r zap-report.html
+    volumes:
+      - security_reports:/zap/wrk
+    depends_on:
+      lalo-app-test:
+        condition: service_healthy
+    networks:
+      - lalo-test-network
+    profiles:
+      - security-testing
+
+  # Test Results Collector
+  test-results-collector:
+    image: alpine:latest
+    volumes:
+      - test_results:/results
+      - ../reports:/app/reports
+      - artillery_reports:/artillery
+      - security_reports:/security
+      - app_logs:/logs
+    command: |
+      sh -c "
+        echo 'Collecting test results...'
+        cp -r /app/reports/* /results/ 2>/dev/null || echo 'No app reports found'
+        cp -r /artillery/* /results/performance/ 2>/dev/null || echo 'No artillery reports found'
+        cp -r /security/* /results/security/ 2>/dev/null || echo 'No security reports found'
+        cp -r /logs/* /results/logs/ 2>/dev/null || echo 'No logs found'
+        echo 'Test results collection complete'
+        tail -f /dev/null
+      "
+    profiles:
+      - collect-results
+
+  # Monitoring and Observability
+  prometheus-test:
+    image: prom/prometheus:latest
+    ports:
+      - "9092:9090"
+    volumes:
+      - ./monitoring/prometheus.test.yml:/etc/prometheus/prometheus.yml
+      - prometheus_test_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=1h'
+    networks:
+      - lalo-test-network
+    profiles:
+      - monitoring
+
+  grafana-test:
+    image: grafana/grafana:latest
+    ports:
+      - "3002:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: test_admin_password
+    volumes:
+      - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./monitoring/grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./monitoring/dashboards:/var/lib/grafana/dashboards
+      - grafana_test_data:/var/lib/grafana
+    depends_on:
+      - prometheus-test
+    networks:
+      - lalo-test-network
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_test_data:
+    driver: local
+  redis_test_data:
+    driver: local
+  elasticsearch_test_data:
+    driver: local
+  minio_test_data:
+    driver: local
+  prometheus_test_data:
+    driver: local
+  grafana_test_data:
+    driver: local
+  app_logs:
+    driver: local
+  test_results:
+    driver: local
+  artillery_reports:
+    driver: local
+  security_reports:
+    driver: local
+
+networks:
+  lalo-test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

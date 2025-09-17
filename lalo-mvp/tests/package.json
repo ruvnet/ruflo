@@ -1,0 +1,96 @@
+{
+  "name": "lalo-mvp-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive testing suite for LALO MVP",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "jest tests/unit --coverage --detectOpenHandles",
+    "test:integration": "jest tests/integration --runInBand --detectOpenHandles",
+    "test:e2e": "playwright test tests/e2e",
+    "test:performance": "artillery run tests/performance/load-test.yml",
+    "test:security": "npm audit && npm run test:security:snyk && npm run test:security:custom",
+    "test:security:snyk": "snyk test",
+    "test:security:custom": "jest tests/security --detectOpenHandles",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --coverageReporters=text --coverageReporters=html",
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "benchmark": "node tests/performance/benchmark.js",
+    "lint:tests": "eslint tests/**/*.{js,ts}",
+    "format:tests": "prettier --write tests/**/*.{js,ts}",
+    "setup:test-env": "docker-compose -f tests/config/docker-compose.test.yml up -d",
+    "teardown:test-env": "docker-compose -f tests/config/docker-compose.test.yml down"
+  },
+  "keywords": [
+    "testing",
+    "lalo",
+    "langgraph",
+    "governance",
+    "mcp",
+    "rag",
+    "nl2sql",
+    "hive-mind"
+  ],
+  "author": "LALO MVP Testing Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.6.0",
+    "@types/supertest": "^2.0.12",
+    "@playwright/test": "^1.38.0",
+    "artillery": "^2.0.0",
+    "eslint": "^8.49.0",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
+    "prettier": "^3.0.3",
+    "snyk": "^1.1038.0",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "axios": "^1.5.0",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.0"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": ["<rootDir>/tests"],
+    "testMatch": [
+      "**/tests/**/*.test.{js,ts}",
+      "**/tests/**/*.spec.{js,ts}"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{js,ts}",
+      "!src/**/*.d.ts",
+      "!src/**/*.test.{js,ts}",
+      "!src/**/*.spec.{js,ts}"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 75,
+        "functions": 80,
+        "lines": 85,
+        "statements": 85
+      }
+    },
+    "setupFilesAfterEnv": ["<rootDir>/tests/config/jest.setup.js"],
+    "testTimeout": 30000,
+    "maxWorkers": 4,
+    "reporters": [
+      "default",
+      [
+        "jest-html-reporters",
+        {
+          "publicPath": "./tests/reports/html",
+          "filename": "test-report.html"
+        }
+      ]
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

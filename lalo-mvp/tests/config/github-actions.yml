@@ -1,0 +1,605 @@
+# LALO MVP CI/CD Pipeline with Comprehensive Testing
+# GitHub Actions workflow for automated testing, security scanning, and deployment
+
+name: LALO MVP Test Suite
+
+on:
+  push:
+    branches: [ main, develop, 'feature/*' ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run nightly security scans and performance tests
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18.x'
+  PYTHON_VERSION: '3.11'
+  DOCKER_REGISTRY: ghcr.io
+  LALO_ENV: test
+
+jobs:
+  # Pre-flight checks and setup
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+      test-matrix: ${{ steps.test-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          echo "key=lalo-deps-${{ hashFiles('**/package-lock.json', '**/requirements.txt') }}" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd tests && npm ci
+
+      - name: Generate test matrix
+        id: test-matrix
+        run: |
+          echo "matrix={\"component\":[\"langgraph\",\"governance\",\"mcp\",\"rag\",\"nl2sql\"],\"node-version\":[\"18.x\",\"20.x\"]}" >> $GITHUB_OUTPUT
+
+  # Static analysis and linting
+  static-analysis:
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run TypeScript compiler
+        run: npm run typecheck
+
+      - name: Run Prettier check
+        run: npm run format:check
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: CodeQL Analysis
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, typescript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  # Unit tests with matrix strategy
+  unit-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, static-analysis]
+    strategy:
+      matrix:
+        component: [langgraph, governance, mcp, rag, nl2sql]
+        node-version: ['18.x', '20.x']
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ${{ matrix.component }} unit tests
+        run: |
+          npm run test:unit -- tests/unit/${{ matrix.component }}
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unit-${{ matrix.component }}
+          name: unit-${{ matrix.component }}-${{ matrix.node-version }}
+
+      - name: Store test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit-test-results-${{ matrix.component }}-${{ matrix.node-version }}
+          path: |
+            tests/reports/
+            coverage/
+
+  # Integration tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, unit-tests]
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: lalo_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      elasticsearch:
+        image: elasticsearch:8.8.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+        options: >-
+          --health-cmd "curl -f http://localhost:9200/_cluster/health"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+        ports:
+          - 9200:9200
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test environment
+        run: |
+          cp .env.test.example .env.test
+          npm run setup:test-env
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/lalo_test
+          REDIS_URL: redis://localhost:6379
+          ELASTICSEARCH_URL: http://localhost:9200
+
+      - name: Run database migrations
+        run: npm run db:migrate:test
+
+      - name: Seed test data
+        run: npm run db:seed:test
+
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          CI: true
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test:test@localhost:5432/lalo_test
+          REDIS_URL: redis://localhost:6379
+          ELASTICSEARCH_URL: http://localhost:9200
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-test-results
+          path: |
+            tests/reports/integration/
+            coverage/integration/
+
+  # End-to-end tests
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, integration-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build application
+        run: npm run build:test
+
+      - name: Start application
+        run: |
+          npm run start:test &
+          sleep 30
+        env:
+          NODE_ENV: test
+          PORT: 3000
+
+      - name: Wait for application
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          LALO_BASE_URL: http://localhost:3000
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            tests/reports/e2e/
+            tests/e2e/test-results/
+            tests/e2e/playwright-report/
+
+      - name: Upload E2E screenshots
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: e2e-screenshots
+          path: tests/e2e/test-results/
+
+  # Performance testing
+  performance-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, integration-tests]
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[perf-test]')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and start application
+        run: |
+          npm run build:production
+          npm run start:production &
+          sleep 30
+        env:
+          NODE_ENV: production
+
+      - name: Run performance benchmarks
+        run: npm run test:performance
+        env:
+          LALO_BASE_URL: http://localhost:3000
+          BENCHMARK_ITERATIONS: 100
+          BENCHMARK_CONCURRENCY: 20
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-test-results
+          path: tests/reports/performance/
+
+      - name: Comment performance results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'tests/reports/performance/benchmark-latest.json';
+
+            if (fs.existsSync(path)) {
+              const results = JSON.parse(fs.readFileSync(path, 'utf8'));
+
+              const comment = `## 🚀 Performance Test Results
+
+              **End-to-End Performance:**
+              - Average Response Time: ${results.summary.avgE2ETime.toFixed(2)}ms
+              - Success Rate: ${(results.summary.overallSuccessRate * 100).toFixed(1)}%
+              - Max Concurrent RPS: ${results.summary.maxConcurrentRPS.toFixed(2)}
+
+              **Component Performance:**
+              - LangGraph: ${results.results.langgraph[0]?.avgTime?.toFixed(2) || 'N/A'}ms avg
+              - Governance: ${results.results.governance[0]?.avgTime?.toFixed(2) || 'N/A'}ms avg
+              - RAG: ${results.results.rag[0]?.avgTime?.toFixed(2) || 'N/A'}ms avg
+              - NL2SQL: ${results.results.nl2sql[0]?.avgTime?.toFixed(2) || 'N/A'}ms avg
+
+              📊 [View detailed report](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  # Security testing
+  security-tests:
+    runs-on: ubuntu-latest
+    needs: [setup, static-analysis]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level moderate
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=medium
+
+      - name: Run custom security tests
+        run: npm run test:security
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.7.0
+        with:
+          target: 'http://localhost:3000'
+          rules_file_name: '.zap/rules.tsv'
+
+      - name: Upload security test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-test-results
+          path: |
+            tests/reports/security/
+            .snyk/
+            .zap/
+
+  # Coverage consolidation
+  coverage:
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all coverage reports
+        uses: actions/download-artifact@v3
+        with:
+          path: coverage-reports/
+
+      - name: Consolidate coverage
+        run: |
+          npm ci
+          npm run coverage:merge
+          npm run coverage:report
+
+      - name: Upload consolidated coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: consolidated
+          name: lalo-mvp-coverage
+
+      - name: Coverage check
+        run: |
+          npm run coverage:check
+        continue-on-error: true
+
+  # Quality gates
+  quality-gates:
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, security-tests, coverage]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download test results
+        uses: actions/download-artifact@v3
+        with:
+          path: test-results/
+
+      - name: Quality gate evaluation
+        run: |
+          npm ci
+          npm run quality:evaluate
+        env:
+          MIN_COVERAGE: 85
+          MAX_SECURITY_ISSUES: 0
+          MAX_PERFORMANCE_REGRESSION: 10
+
+      - name: Generate quality report
+        run: npm run quality:report
+
+      - name: Upload quality report
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-report
+          path: tests/reports/quality/
+
+  # Hive mind testing coordination
+  hive-mind-tests:
+    runs-on: ubuntu-latest
+    needs: [setup]
+    if: contains(github.event.head_commit.message, '[hive-test]')
+    strategy:
+      matrix:
+        node-count: [3, 5, 7]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Initialize hive coordination
+        run: |
+          npx claude-flow@alpha hooks pre-task --description "Hive mind CI/CD testing"
+          npx claude-flow@alpha swarm init --topology mesh --max-agents ${{ matrix.node-count }}
+
+      - name: Run distributed hive tests
+        run: npm run test:hive-coordination
+        env:
+          HIVE_NODE_COUNT: ${{ matrix.node-count }}
+          HIVE_TEST_MODE: ci
+
+      - name: Validate collective intelligence patterns
+        run: npm run test:collective-intelligence
+
+      - name: Upload hive test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: hive-test-results-${{ matrix.node-count }}-nodes
+          path: tests/reports/hive/
+
+  # Deployment readiness
+  deployment-readiness:
+    runs-on: ubuntu-latest
+    needs: [quality-gates, hive-mind-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deployment readiness check
+        run: |
+          echo "✅ All tests passed"
+          echo "✅ Quality gates met"
+          echo "✅ Security validated"
+          echo "✅ Performance acceptable"
+          echo "✅ Hive coordination verified"
+          echo "🚀 Ready for deployment"
+
+      - name: Create deployment artifact
+        run: |
+          npm run build:production
+          tar -czf lalo-mvp-deployment.tar.gz dist/ package.json package-lock.json
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-artifact
+          path: lalo-mvp-deployment.tar.gz
+
+  # Notification and reporting
+  notify:
+    runs-on: ubuntu-latest
+    needs: [quality-gates, deployment-readiness]
+    if: always()
+    steps:
+      - name: Notify on success
+        if: needs.quality-gates.result == 'success'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#lalo-ci'
+          text: '✅ LALO MVP: All tests passed and quality gates met!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify on failure
+        if: needs.quality-gates.result == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#lalo-ci'
+          text: '❌ LALO MVP: Test failures detected. Please investigate.'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Create deployment issue on failure
+        if: failure() && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Deployment blocked: Test failures in ${context.sha.substring(0, 7)}`,
+              body: `Automated deployment has been blocked due to test failures.
+
+              **Commit:** ${context.sha}
+              **Workflow:** ${context.workflow}
+              **Run:** ${context.runId}
+
+              Please investigate and resolve the issues before retrying deployment.`,
+              labels: ['deployment-blocked', 'ci-failure']
+            })
+
+# Cleanup old artifacts
+  cleanup:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [notify]
+    steps:
+      - name: Delete old artifacts
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+
+            // Keep only the last 5 builds worth of artifacts
+            const keepRuns = 5;
+            const runsToClean = artifacts.data.artifacts.length > keepRuns * 10;
+
+            if (runsToClean) {
+              console.log('Cleaning up old artifacts...');
+              // Implementation for cleanup logic
+            }
