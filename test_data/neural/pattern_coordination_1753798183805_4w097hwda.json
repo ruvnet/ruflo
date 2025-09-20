@@ -1,0 +1,35 @@
+{
+  "id": "coordination_1753798183805_4w097hwda",
+  "type": "coordination",
+  "context": {
+    "type": "swarm_init",
+    "complexity": "low",
+    "agents": 1,
+    "resources": {
+      "cpu": 6
+    },
+    "constraints": [],
+    "timestamp": 1753798183805
+  },
+  "action": {
+    "type": "coordination_action",
+    "method": "parallel",
+    "parameters": {},
+    "priority": "low"
+  },
+  "outcome": {
+    "success": true,
+    "result": null,
+    "duration": 459.12049401447285,
+    "quality": 0.7365146755870379,
+    "errors": []
+  },
+  "strength": 0.9,
+  "confidence": 1,
+  "agentId": "training_agent_6",
+  "learnedAt": "2025-07-29T14:09:43.805Z",
+  "usageCount": 0,
+  "successCount": 0,
+  "lastUsed": null,
+  "adaptations": []
+}

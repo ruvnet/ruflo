@@ -1,0 +1,69 @@
+{
+  "id": "81ceec9d748044df",
+  "key": "python-ml",
+  "value": {
+    "content": "Python machine learning libraries like scikit-learn for data analysis and prediction"
+  },
+  "originalValue": {
+    "content": "Python machine learning libraries like scikit-learn for data analysis and prediction"
+  },
+  "namespace": "default",
+  "category": "learning",
+  "tags": [
+    "python",
+    "machine-learning",
+    "data"
+  ],
+  "metadata": {
+    "agentId": null,
+    "priority": "medium",
+    "size": 98,
+    "compressed": true,
+    "version": 1
+  },
+  "timestamps": {
+    "created": "2025-07-29T14:38:40.149Z",
+    "modified": "2025-07-29T14:38:40.149Z",
+    "accessed": "2025-07-29T14:38:40.149Z",
+    "expires": null
+  },
+  "access": {
+    "count": 0,
+    "lastAccessed": null,
+    "accessHistory": []
+  },
+  "relationships": {
+    "related": [],
+    "dependencies": [],
+    "references": []
+  },
+  "vectorData": {
+    "text": "python-ml {\"content\":\"python machine learning libraries like scikit-learn for data analysis and prediction\"} python machine-learning data",
+    "keywords": {
+      "python": 3,
+      "content": 1,
+      "machine": 2,
+      "learn": 3,
+      "libraries": 1,
+      "like": 1,
+      "scikit": 1,
+      "data": 2,
+      "analysis": 1,
+      "predic": 1
+    },
+    "tfidf": {
+      "python": 0.3017696085813938,
+      "content": 0.10058986952713127,
+      "machine": 0.20117973905426254,
+      "learn": 0.3017696085813938,
+      "libraries": 0.10058986952713127,
+      "like": 0.10058986952713127,
+      "scikit": 0.10058986952713127,
+      "data": 0.20117973905426254,
+      "analysis": 0.10058986952713127,
+      "predic": 0.10058986952713127
+    },
+    "magnitude": 0.5690222308904366,
+    "timestamp": "2025-07-29T14:38:40.149Z"
+  }
+}

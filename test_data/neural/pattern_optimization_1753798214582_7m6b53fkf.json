@@ -1,0 +1,33 @@
+{
+  "id": "optimization_1753798214582_7m6b53fkf",
+  "type": "optimization",
+  "context": {
+    "type": "batch_processing",
+    "complexity": "high",
+    "agents": 8,
+    "resources": {},
+    "constraints": [],
+    "timestamp": 1753798214582
+  },
+  "action": {
+    "type": "parallel_execution",
+    "method": "batch",
+    "parameters": {},
+    "priority": "high"
+  },
+  "outcome": {
+    "success": true,
+    "result": null,
+    "duration": 1500,
+    "quality": 0.9,
+    "errors": []
+  },
+  "strength": 1,
+  "confidence": 0.8,
+  "agentId": "system_default",
+  "learnedAt": "2025-07-29T14:10:14.582Z",
+  "usageCount": 0,
+  "successCount": 0,
+  "lastUsed": null,
+  "adaptations": []
+}

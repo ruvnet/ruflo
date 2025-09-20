@@ -1,0 +1,69 @@
+{
+  "id": "4454937bab1377fb",
+  "key": "node-api",
+  "value": {
+    "content": "Node.js Express API development with middleware and routing for backend services"
+  },
+  "originalValue": {
+    "content": "Node.js Express API development with middleware and routing for backend services"
+  },
+  "namespace": "default",
+  "category": "learning",
+  "tags": [
+    "nodejs",
+    "api",
+    "backend"
+  ],
+  "metadata": {
+    "agentId": null,
+    "priority": "medium",
+    "size": 94,
+    "compressed": true,
+    "version": 1
+  },
+  "timestamps": {
+    "created": "2025-07-29T14:38:40.149Z",
+    "modified": "2025-07-29T14:38:40.149Z",
+    "accessed": "2025-07-29T14:38:40.149Z",
+    "expires": null
+  },
+  "access": {
+    "count": 0,
+    "lastAccessed": null,
+    "accessHistory": []
+  },
+  "relationships": {
+    "related": [],
+    "dependencies": [],
+    "references": []
+  },
+  "vectorData": {
+    "text": "node-api {\"content\":\"node.js express api development with middleware and routing for backend services\"} nodejs api backend",
+    "keywords": {
+      "node": 2,
+      "api": 3,
+      "content": 1,
+      "express": 1,
+      "development": 1,
+      "middleware": 1,
+      "rout": 1,
+      "backend": 2,
+      "services": 1,
+      "nodejs": 1
+    },
+    "tfidf": {
+      "node": 0.1569446126668728,
+      "api": 0.23541691900030917,
+      "content": 0.0784723063334364,
+      "express": 0.0784723063334364,
+      "development": 0.0784723063334364,
+      "middleware": 0.0784723063334364,
+      "rout": 0.0784723063334364,
+      "backend": 0.1569446126668728,
+      "services": 0.0784723063334364,
+      "nodejs": 0.0784723063334364
+    },
+    "magnitude": 0.3844342189125837,
+    "timestamp": "2025-07-29T14:38:40.149Z"
+  }
+}

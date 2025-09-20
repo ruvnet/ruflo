@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Flow MCP - Real-Time Monitoring Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #00d4ff, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.healthy {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+        
+        .status-dot.warning {
+            background: #ffaa00;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+        
+        .status-dot.critical {
+            background: #ff3366;
+            box-shadow: 0 0 10px #ff3366;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f172a 100%);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        .metric-card h2 {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: #a0a0a0;
+        }
+        
+        .metric-value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #00d4ff, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .metric-chart {
+            height: 100px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .alert-container {
+            grid-column: 1 / -1;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .alert {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .alert.warning {
+            background: rgba(255, 170, 0, 0.1);
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+        
+        .alert.critical {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+        }
+        
+        .alert-icon {
+            font-size: 20px;
+        }
+        
+        .component-grid {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        
+        .component {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .component.healthy {
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .component.error {
+            border: 1px solid rgba(255, 51, 102, 0.3);
+        }
+        
+        .component-name {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .component-status {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .controls {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #00d4ff, #0099ff);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            color: #00d4ff;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.3);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">Connecting to monitoring system...</div>
+    
+    <div class="dashboard" style="display: none;">
+        <div class="header">
+            <h1>Claude Flow MCP - System Monitor</h1>
+            <div class="status-indicator">
+                <span>System Status:</span>
+                <div class="status-dot healthy" id="system-status"></div>
+                <span id="status-text">Healthy</span>
+            </div>
+        </div>
+        
+        <div class="alert-container" id="alerts"></div>
+        
+        <div class="metric-card">
+            <h2>CPU Usage</h2>
+            <div class="metric-value" id="cpu-value">0%</div>
+            <div class="metric-chart">
+                <canvas class="chart-canvas" id="cpu-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h2>Memory Usage</h2>
+            <div class="metric-value" id="memory-value">0%</div>
+            <div class="metric-chart">
+                <canvas class="chart-canvas" id="memory-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h2>Active Agents</h2>
+            <div class="metric-value" id="agents-value">0</div>
+            <div class="metric-chart">
+                <canvas class="chart-canvas" id="agents-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h2>Task Queue</h2>
+            <div class="metric-value" id="queue-value">0</div>
+            <div class="metric-chart">
+                <canvas class="chart-canvas" id="queue-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h2>Success Rate</h2>
+            <div class="metric-value" id="success-value">100%</div>
+            <div class="metric-chart">
+                <canvas class="chart-canvas" id="success-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h2>Avg Response Time</h2>
+            <div class="metric-value" id="response-value">0ms</div>
+            <div class="metric-chart">
+                <canvas class="chart-canvas" id="response-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h2>Throughput</h2>
+            <div class="metric-value" id="throughput-value">0/s</div>
+            <div class="metric-chart">
+                <canvas class="chart-canvas" id="throughput-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <h2>Error Rate</h2>
+            <div class="metric-value" id="error-value">0%</div>
+            <div class="metric-chart">
+                <canvas class="chart-canvas" id="error-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="component-grid" id="components"></div>
+        
+        <div class="controls">
+            <button onclick="clearAlerts()">Clear Alerts</button>
+            <button onclick="resetMetrics()">Reset Metrics</button>
+            <button onclick="takeSnapshot()">Take Snapshot</button>
+        </div>
+    </div>
+    
+    <script>
+        let ws = null;
+        const charts = {};
+        const chartData = {};
+        const maxDataPoints = 60;
+        
+        // Initialize WebSocket connection
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}`);
+            
+            ws.onopen = () => {
+                console.log('Connected to monitoring system');
+                document.querySelector('.loading').style.display = 'none';
+                document.querySelector('.dashboard').style.display = 'grid';
+                
+                // Subscribe to all channels
+                ws.send(JSON.stringify({
+                    type: 'subscribe',
+                    channels: ['all']
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleMessage(message);
+            };
+            
+            ws.onclose = () => {
+                console.log('Disconnected from monitoring system');
+                document.querySelector('.loading').style.display = 'block';
+                document.querySelector('.loading').textContent = 'Connection lost. Reconnecting...';
+                document.querySelector('.dashboard').style.display = 'none';
+                
+                // Reconnect after 2 seconds
+                setTimeout(connect, 2000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+        
+        // Handle incoming messages
+        function handleMessage(message) {
+            switch (message.type) {
+                case 'init':
+                    initializeDashboard(message.data);
+                    break;
+                    
+                case 'system-metrics':
+                    updateSystemMetrics(message.data);
+                    break;
+                    
+                case 'swarm-metrics':
+                    updateSwarmMetrics(message.data);
+                    break;
+                    
+                case 'performance-metrics':
+                    updatePerformanceMetrics(message.data);
+                    break;
+                    
+                case 'component-status':
+                    updateComponentStatus(message.data);
+                    break;
+                    
+                case 'alert-created':
+                    addAlert(message.data);
+                    break;
+                    
+                case 'alert-cleared':
+                    removeAlert(message.data.id);
+                    break;
+                    
+                case 'command-result':
+                    console.log('Command result:', message.result);
+                    break;
+                    
+                case 'command-error':
+                    console.error('Command error:', message.error);
+                    break;
+            }
+        }
+        
+        // Initialize dashboard with initial data
+        function initializeDashboard(data) {
+            // Update status
+            updateSystemStatus(data.status);
+            
+            // Initialize components
+            if (data.components) {
+                data.components.forEach(component => {
+                    addComponent(component);
+                });
+            }
+            
+            // Initialize alerts
+            if (data.alerts) {
+                data.alerts.forEach(alert => {
+                    addAlert(alert);
+                });
+            }
+            
+            // Initialize charts
+            initializeCharts();
+        }
+        
+        // Initialize charts
+        function initializeCharts() {
+            const chartIds = ['cpu', 'memory', 'agents', 'queue', 'success', 'response', 'throughput', 'error'];
+            
+            chartIds.forEach(id => {
+                const canvas = document.getElementById(`${id}-chart`);
+                const ctx = canvas.getContext('2d');
+                
+                // Set canvas size
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                
+                // Initialize data
+                chartData[id] = [];
+                
+                // Store context
+                charts[id] = ctx;
+            });
+        }
+        
+        // Update chart
+        function updateChart(chartId, value) {
+            const ctx = charts[chartId];
+            if (!ctx) return;
+            
+            const canvas = ctx.canvas;
+            const data = chartData[chartId];
+            
+            // Add new data point
+            data.push(value);
+            if (data.length > maxDataPoints) {
+                data.shift();
+            }
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw chart
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            const stepX = canvas.width / (maxDataPoints - 1);
+            const maxValue = Math.max(...data, 1);
+            
+            data.forEach((point, index) => {
+                const x = index * stepX;
+                const y = canvas.height - (point / maxValue) * canvas.height * 0.9;
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            ctx.stroke();
+            
+            // Fill gradient
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(0, 212, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 212, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+        }
+        
+        // Update system status
+        function updateSystemStatus(status) {
+            const statusDot = document.getElementById('system-status');
+            const statusText = document.getElementById('status-text');
+            
+            if (status.alerts.critical > 0) {
+                statusDot.className = 'status-dot critical';
+                statusText.textContent = 'Critical';
+            } else if (status.alerts.active > 0) {
+                statusDot.className = 'status-dot warning';
+                statusText.textContent = 'Warning';
+            } else {
+                statusDot.className = 'status-dot healthy';
+                statusText.textContent = 'Healthy';
+            }
+        }
+        
+        // Update system metrics
+        function updateSystemMetrics(data) {
+            // CPU
+            const cpuValue = (data.cpu * 100).toFixed(1);
+            document.getElementById('cpu-value').textContent = `${cpuValue}%`;
+            updateChart('cpu', data.cpu * 100);
+            
+            // Memory
+            const memValue = (data.memory * 100).toFixed(1);
+            document.getElementById('memory-value').textContent = `${memValue}%`;
+            updateChart('memory', data.memory * 100);
+        }
+        
+        // Update swarm metrics
+        function updateSwarmMetrics(data) {
+            // Active agents
+            if (data.activeAgents !== undefined) {
+                document.getElementById('agents-value').textContent = data.activeAgents;
+                updateChart('agents', data.activeAgents);
+            }
+            
+            // Task queue
+            if (data.queuedTasks !== undefined) {
+                document.getElementById('queue-value').textContent = data.queuedTasks;
+                updateChart('queue', data.queuedTasks);
+            }
+            
+            // Success rate
+            if (data.successRate !== undefined) {
+                const successValue = (data.successRate * 100).toFixed(1);
+                document.getElementById('success-value').textContent = `${successValue}%`;
+                updateChart('success', data.successRate * 100);
+            }
+            
+            // Response time
+            if (data.avgResponseTime !== undefined) {
+                document.getElementById('response-value').textContent = `${data.avgResponseTime.toFixed(0)}ms`;
+                updateChart('response', data.avgResponseTime);
+            }
+        }
+        
+        // Update performance metrics
+        function updatePerformanceMetrics(data) {
+            // Throughput
+            if (data.throughput !== undefined) {
+                document.getElementById('throughput-value').textContent = `${data.throughput.toFixed(1)}/s`;
+                updateChart('throughput', data.throughput);
+            }
+            
+            // Error rate
+            if (data.errorRate !== undefined) {
+                const errorValue = (data.errorRate * 100).toFixed(2);
+                document.getElementById('error-value').textContent = `${errorValue}%`;
+                updateChart('error', data.errorRate * 100);
+            }
+        }
+        
+        // Add component
+        function addComponent(component) {
+            const container = document.getElementById('components');
+            
+            const div = document.createElement('div');
+            div.className = 'component';
+            div.id = `component-${component.id}`;
+            div.innerHTML = `
+                <div class="component-name">${component.name}</div>
+                <div class="component-status">Unknown</div>
+            `;
+            
+            container.appendChild(div);
+        }
+        
+        // Update component status
+        function updateComponentStatus(components) {
+            components.forEach(({ id, status }) => {
+                const element = document.getElementById(`component-${id}`);
+                if (element) {
+                    element.className = `component ${status}`;
+                    element.querySelector('.component-status').textContent = status;
+                }
+            });
+        }
+        
+        // Add alert
+        function addAlert(alert) {
+            const container = document.getElementById('alerts');
+            
+            // Check if alert already exists
+            if (document.getElementById(`alert-${alert.id}`)) {
+                return;
+            }
+            
+            const div = document.createElement('div');
+            div.className = `alert ${alert.severity}`;
+            div.id = `alert-${alert.id}`;
+            div.innerHTML = `
+                <span class="alert-icon">${alert.severity === 'critical' ? '⚠️' : '⚡'}</span>
+                <span>${alert.message}</span>
+            `;
+            
+            container.appendChild(div);
+        }
+        
+        // Remove alert
+        function removeAlert(alertId) {
+            const element = document.getElementById(`alert-${alertId}`);
+            if (element) {
+                element.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => element.remove(), 300);
+            }
+        }
+        
+        // Control functions
+        function clearAlerts() {
+            ws.send(JSON.stringify({
+                type: 'command',
+                command: 'clear-alerts'
+            }));
+            
+            document.getElementById('alerts').innerHTML = '';
+        }
+        
+        function resetMetrics() {
+            if (confirm('Are you sure you want to reset all metrics?')) {
+                ws.send(JSON.stringify({
+                    type: 'command',
+                    command: 'reset-metrics'
+                }));
+                
+                // Clear chart data
+                Object.keys(chartData).forEach(key => {
+                    chartData[key] = [];
+                });
+            }
+        }
+        
+        function takeSnapshot() {
+            ws.send(JSON.stringify({
+                type: 'command',
+                command: 'snapshot'
+            }));
+            
+            alert('Snapshot requested. Check console for results.');
+        }
+        
+        // Start connection
+        connect();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            Object.keys(charts).forEach(id => {
+                const canvas = charts[id].canvas;
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            });
+        });
+    </script>
+</body>
+</html>

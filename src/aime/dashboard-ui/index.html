@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 AIME Mission Dashboard | Real-time Progress Tracking</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.0.0/marked.min.js"></script>
+    <link rel="stylesheet" href="hierarchical-view.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .session-info {
+            background: #f7fafc;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-card, .activity-card, .agents-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-card h3, .activity-card h3, .agents-card h3 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .stat-value.completed { color: #38a169; }
+        .stat-value.in-progress { color: #3182ce; }
+        .stat-value.pending { color: #d69e2e; }
+        .stat-value.failed { color: #e53e3e; }
+
+        .progress-ring {
+            width: 80px;
+            height: 80px;
+            margin: 20px auto;
+        }
+
+        .progress-content {
+            font-family: 'Courier New', monospace;
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+
+        .activity-feed {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-time {
+            color: #718096;
+            font-size: 12px;
+        }
+
+        .activity-message {
+            margin-top: 5px;
+            color: #4a5568;
+        }
+
+        .activity-agent {
+            color: #805ad5;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.active { background: #38a169; }
+        .status-indicator.inactive { background: #a0aec0; }
+
+        .agent-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .agent-item:last-child {
+            border-bottom: none;
+        }
+
+        .agent-name {
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .agent-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: #edf2f7;
+            color: #718096;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+        }
+
+        .connection-status.connected {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .connection-status.disconnected {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            color: #e2e8f0;
+            margin: 20px 0 10px 0;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-left: 20px;
+        }
+
+        .markdown-content li {
+            margin: 5px 0;
+        }
+
+        .markdown-content code {
+            background: #2d3748;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .realtime-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #38a169;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #5a67d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div>
+                <h1>🎯 AIME Mission Dashboard</h1>
+                <p>Real-time Multi-Agent Progress Tracking</p>
+            </div>
+            <div class="session-info">
+                <span id="session-id">Session: Loading...</span>
+                <span class="realtime-indicator"></span>
+                <button class="refresh-btn" onclick="requestUpdate()">Refresh</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="progress-content" id="progress-content">
+                <div style="text-align: center; color: #a0aec0; margin: 50px 0;">
+                    <h3>⏳ Loading mission progress...</h3>
+                    <p>Connecting to AIME Progress Management Module</p>
+                </div>
+            </div>
+            <div id="hierarchy-container"></div>
+        </div>
+
+        <div class="sidebar">
+            <div class="stats-card">
+                <h3>📊 Mission Statistics</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Total Tasks</span>
+                    <span class="stat-value" id="total-tasks">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">✅ Completed</span>
+                    <span class="stat-value completed" id="completed-tasks">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">🔄 In Progress</span>
+                    <span class="stat-value in-progress" id="in-progress-tasks">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">⭕ Pending</span>
+                    <span class="stat-value pending" id="pending-tasks">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">❌ Failed</span>
+                    <span class="stat-value failed" id="failed-tasks">0</span>
+                </div>
+                <canvas id="progress-chart" class="progress-ring"></canvas>
+            </div>
+
+            <div class="activity-card">
+                <h3>🔄 Live Activity Feed</h3>
+                <div class="activity-feed" id="activity-feed">
+                    <div style="text-align: center; color: #a0aec0; padding: 20px;">
+                        Waiting for agent activity...
+                    </div>
+                </div>
+            </div>
+
+            <div class="agents-card">
+                <h3>🤖 Active Agents</h3>
+                <div id="agents-list">
+                    <div style="text-align: center; color: #a0aec0; padding: 20px;">
+                        No agents active
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="connection-status disconnected" id="connection-status">
+        🔌 Connecting to AIME Dashboard...
+    </div>
+
+    <script src="hierarchical-view.js"></script>
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        let progressData = {};
+        let activityHistory = [];
+        let activeAgents = new Map();
+
+        // Connection status handling
+        socket.on('connect', () => {
+            updateConnectionStatus(true);
+            console.log('🔌 Connected to AIME Dashboard Server');
+        });
+
+        socket.on('disconnect', () => {
+            updateConnectionStatus(false);
+            console.log('🔌 Disconnected from AIME Dashboard Server');
+        });
+
+        // Initial data load
+        socket.on('initialData', (data) => {
+            console.log('📊 Received initial data:', data);
+            progressData = data;
+            updateSessionInfo(data.sessionId);
+            updateProgressDisplay(data.markdown);
+            updateStatistics(data.progressList);
+            updateProgressChart(data.progressList);
+            
+            // Update hierarchical view if available
+            if (data.hierarchy) {
+                hierarchyView.render(data.hierarchy);
+            }
+        });
+
+        // Real-time progress updates
+        socket.on('realtimeUpdate', (data) => {
+            console.log('🔄 Real-time update:', data);
+            addActivityItem(data);
+            updateProgressDisplay(data.progressList);
+            trackAgent(data.agentId, 'active');
+            
+            // Update hierarchical view with real-time data
+            if (data.hierarchy) {
+                hierarchyView.render(data.hierarchy);
+            }
+        });
+
+        // Task completion events
+        socket.on('taskCompleted', (data) => {
+            console.log('✅ Task completed:', data);
+            addActivityItem({
+                type: 'completion',
+                agentId: data.agentId,
+                taskId: data.taskId,
+                message: `Task completed: ${data.taskId}`,
+                timestamp: data.timestamp
+            });
+        });
+
+        // Obstacle encountered events
+        socket.on('obstacleEncountered', (data) => {
+            console.log('🚧 Obstacle encountered:', data);
+            addActivityItem({
+                type: 'obstacle',
+                agentId: data.agentId,
+                taskId: data.taskId,
+                message: `Obstacle: ${data.obstacle}`,
+                timestamp: data.timestamp,
+                severity: data.severity
+            });
+        });
+
+        // Progress list initialization
+        socket.on('progressListInitialized', (data) => {
+            console.log('🎯 Progress list initialized:', data);
+            addActivityItem({
+                type: 'initialization',
+                message: `Mission initialized with ${data.taskCount} tasks`,
+                timestamp: data.timestamp
+            });
+        });
+
+        // Sync updates
+        socket.on('syncUpdate', (data) => {
+            // Update connection indicator
+            const indicator = document.querySelector('.realtime-indicator');
+            if (indicator) {
+                indicator.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => {
+                    indicator.style.animation = 'pulse 2s infinite';
+                }, 500);
+            }
+        });
+
+        // Update functions
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connection-status');
+            if (connected) {
+                status.className = 'connection-status connected';
+                status.textContent = '🟢 Connected to AIME Dashboard';
+            } else {
+                status.className = 'connection-status disconnected';
+                status.textContent = '🔴 Disconnected from AIME Dashboard';
+            }
+        }
+
+        function updateSessionInfo(sessionId) {
+            document.getElementById('session-id').textContent = `Session: ${sessionId}`;
+        }
+
+        function updateProgressDisplay(markdown) {
+            const content = document.getElementById('progress-content');
+            if (markdown) {
+                // Convert markdown to HTML
+                const html = marked.parse(markdown);
+                content.innerHTML = html;
+                content.classList.add('markdown-content');
+            }
+        }
+
+        function updateStatistics(progressList) {
+            if (!progressList) return;
+
+            const tasks = Object.values(progressList);
+            const stats = {
+                total: tasks.length,
+                completed: tasks.filter(t => t.status === 'completed').length,
+                in_progress: tasks.filter(t => t.status === 'in_progress').length,
+                pending: tasks.filter(t => t.status === 'pending').length,
+                failed: tasks.filter(t => t.status === 'failed' || t.status === 'blocked').length
+            };
+
+            document.getElementById('total-tasks').textContent = stats.total;
+            document.getElementById('completed-tasks').textContent = stats.completed;
+            document.getElementById('in-progress-tasks').textContent = stats.in_progress;
+            document.getElementById('pending-tasks').textContent = stats.pending;
+            document.getElementById('failed-tasks').textContent = stats.failed;
+
+            updateProgressChart(stats);
+        }
+
+        function updateProgressChart(data) {
+            const canvas = document.getElementById('progress-chart');
+            const ctx = canvas.getContext('2d');
+            
+            if (window.progressChart) {
+                window.progressChart.destroy();
+            }
+
+            const stats = typeof data === 'object' && data.total ? data : {
+                total: 0,
+                completed: 0,
+                in_progress: 0,
+                pending: 0,
+                failed: 0
+            };
+
+            window.progressChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'In Progress', 'Pending', 'Failed'],
+                    datasets: [{
+                        data: [stats.completed, stats.in_progress, stats.pending, stats.failed],
+                        backgroundColor: ['#38a169', '#3182ce', '#d69e2e', '#e53e3e'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function addActivityItem(data) {
+            const feed = document.getElementById('activity-feed');
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            
+            const time = new Date(data.timestamp || Date.now()).toLocaleTimeString();
+            const typeIcon = getActivityIcon(data.type || data.updateData?.type);
+            const severity = data.severity ? ` (${data.severity})` : '';
+            
+            item.innerHTML = `
+                <div class="activity-time">${time}</div>
+                <div class="activity-message">
+                    ${typeIcon} 
+                    ${data.agentId ? `<span class="activity-agent">${data.agentId}</span>: ` : ''}
+                    ${data.message}${severity}
+                </div>
+            `;
+            
+            feed.insertBefore(item, feed.firstChild);
+            
+            // Keep only latest 50 items
+            while (feed.children.length > 50) {
+                feed.removeChild(feed.lastChild);
+            }
+            
+            // Clear empty state
+            const emptyState = feed.querySelector('[style*="text-align: center"]');
+            if (emptyState) emptyState.remove();
+        }
+
+        function getActivityIcon(type) {
+            switch (type) {
+                case 'milestone': return '🏆';
+                case 'obstacle': return '🚧';
+                case 'completion': return '✅';
+                case 'progress': return '📈';
+                case 'initialization': return '🎯';
+                default: return '🔄';
+            }
+        }
+
+        function trackAgent(agentId, status) {
+            if (agentId) {
+                activeAgents.set(agentId, {
+                    status,
+                    lastSeen: new Date()
+                });
+                updateAgentsList();
+            }
+        }
+
+        function updateAgentsList() {
+            const agentsList = document.getElementById('agents-list');
+            const agents = Array.from(activeAgents.entries());
+            
+            if (agents.length === 0) {
+                agentsList.innerHTML = '<div style="text-align: center; color: #a0aec0; padding: 20px;">No agents active</div>';
+                return;
+            }
+            
+            agentsList.innerHTML = agents.map(([agentId, data]) => `
+                <div class="agent-item">
+                    <div>
+                        <span class="status-indicator ${data.status}"></span>
+                        <span class="agent-name">${agentId}</span>
+                    </div>
+                    <span class="agent-status">${data.status}</span>
+                </div>
+            `).join('');
+        }
+
+        function requestUpdate() {
+            socket.emit('requestUpdate');
+        }
+
+        // Initialize dashboard
+        console.log('🎯 AIME Dashboard initialized');
+        console.log('🔌 Connecting to server...');
+    </script>
+</body>
+</html>

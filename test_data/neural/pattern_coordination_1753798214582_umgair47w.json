@@ -1,0 +1,33 @@
+{
+  "id": "coordination_1753798214582_umgair47w",
+  "type": "coordination",
+  "context": {
+    "type": "swarm_init",
+    "complexity": "medium",
+    "agents": 5,
+    "resources": {},
+    "constraints": [],
+    "timestamp": 1753798214582
+  },
+  "action": {
+    "type": "hierarchical_spawn",
+    "method": "parallel",
+    "parameters": {},
+    "priority": "high"
+  },
+  "outcome": {
+    "success": true,
+    "result": null,
+    "duration": 2000,
+    "quality": 0.8,
+    "errors": []
+  },
+  "strength": 0.9,
+  "confidence": 0.8,
+  "agentId": "system_default",
+  "learnedAt": "2025-07-29T14:10:14.581Z",
+  "usageCount": 0,
+  "successCount": 0,
+  "lastUsed": null,
+  "adaptations": []
+}

@@ -1,0 +1,67 @@
+{
+  "id": "9e3ba73a1ba62135",
+  "key": "javascript-concepts",
+  "value": {
+    "content": "JavaScript closures and promises are fundamental concepts for asynchronous programming"
+  },
+  "originalValue": {
+    "content": "JavaScript closures and promises are fundamental concepts for asynchronous programming"
+  },
+  "namespace": "default",
+  "category": "learning",
+  "tags": [
+    "javascript",
+    "programming",
+    "async"
+  ],
+  "metadata": {
+    "agentId": null,
+    "priority": "medium",
+    "size": 100,
+    "compressed": true,
+    "version": 1
+  },
+  "timestamps": {
+    "created": "2025-07-29T14:38:40.148Z",
+    "modified": "2025-07-29T14:38:40.148Z",
+    "accessed": "2025-07-29T14:38:40.148Z",
+    "expires": null
+  },
+  "access": {
+    "count": 0,
+    "lastAccessed": null,
+    "accessHistory": []
+  },
+  "relationships": {
+    "related": [],
+    "dependencies": [],
+    "references": []
+  },
+  "vectorData": {
+    "text": "javascript-concepts {\"content\":\"javascript closures and promises are fundamental concepts for asynchronous programming\"} javascript programming async",
+    "keywords": {
+      "javascript": 3,
+      "concepts": 2,
+      "content": 1,
+      "closures": 1,
+      "promises": 1,
+      "fundamental": 1,
+      "asynchronous": 1,
+      "programm": 2,
+      "async": 1
+    },
+    "tfidf": {
+      "javascript": 0,
+      "concepts": 0,
+      "content": 0,
+      "closures": 0,
+      "promises": 0,
+      "fundamental": 0,
+      "asynchronous": 0,
+      "programm": 0,
+      "async": 0
+    },
+    "magnitude": 0,
+    "timestamp": "2025-07-29T14:38:40.149Z"
+  }
+}
