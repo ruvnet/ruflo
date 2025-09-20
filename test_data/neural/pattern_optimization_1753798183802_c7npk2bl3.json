@@ -1,0 +1,36 @@
+{
+  "id": "optimization_1753798183802_c7npk2bl3",
+  "type": "optimization",
+  "context": {
+    "type": "batch_processing",
+    "complexity": "medium",
+    "agents": 4,
+    "resources": {},
+    "constraints": [
+      "memory_limit",
+      "time_limit"
+    ],
+    "timestamp": 1753798183802
+  },
+  "action": {
+    "type": "parallel_execution",
+    "method": "batch",
+    "parameters": {},
+    "priority": "medium"
+  },
+  "outcome": {
+    "success": true,
+    "result": null,
+    "duration": 800,
+    "quality": 0.9,
+    "errors": []
+  },
+  "strength": 1,
+  "confidence": 1,
+  "agentId": "test_optimizer",
+  "learnedAt": "2025-07-29T14:09:43.802Z",
+  "usageCount": 0,
+  "successCount": 0,
+  "lastUsed": null,
+  "adaptations": []
+}

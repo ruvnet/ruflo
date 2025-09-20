@@ -1,0 +1,67 @@
+{
+  "id": "635536afda239ee7",
+  "key": "database-design",
+  "value": {
+    "content": "Database schema design principles and normalization for efficient data storage"
+  },
+  "originalValue": {
+    "content": "Database schema design principles and normalization for efficient data storage"
+  },
+  "namespace": "default",
+  "category": "learning",
+  "tags": [
+    "database",
+    "design",
+    "data"
+  ],
+  "metadata": {
+    "agentId": null,
+    "priority": "medium",
+    "size": 92,
+    "compressed": true,
+    "version": 1
+  },
+  "timestamps": {
+    "created": "2025-07-29T14:38:40.149Z",
+    "modified": "2025-07-29T14:38:40.149Z",
+    "accessed": "2025-07-29T14:38:40.149Z",
+    "expires": null
+  },
+  "access": {
+    "count": 0,
+    "lastAccessed": null,
+    "accessHistory": []
+  },
+  "relationships": {
+    "related": [],
+    "dependencies": [],
+    "references": []
+  },
+  "vectorData": {
+    "text": "database-design {\"content\":\"database schema design principles and normalization for efficient data storage\"} database design data",
+    "keywords": {
+      "database": 3,
+      "design": 3,
+      "content": 1,
+      "schema": 1,
+      "principles": 1,
+      "normaliza": 1,
+      "efficient": 1,
+      "data": 2,
+      "storage": 1
+    },
+    "tfidf": {
+      "database": 0.29706307738283366,
+      "design": 0.29706307738283366,
+      "content": 0.09902102579427789,
+      "schema": 0.09902102579427789,
+      "principles": 0.09902102579427789,
+      "normaliza": 0.09902102579427789,
+      "efficient": 0.09902102579427789,
+      "data": 0.19804205158855578,
+      "storage": 0.09902102579427789
+    },
+    "magnitude": 0.5239700176363428,
+    "timestamp": "2025-07-29T14:38:40.149Z"
+  }
+}

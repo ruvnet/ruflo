@@ -1,0 +1,38 @@
+{
+  "id": "coordination_1753798183802_7xq0q7nmw",
+  "type": "coordination",
+  "context": {
+    "type": "swarm_init",
+    "complexity": "high",
+    "agents": 8,
+    "resources": {
+      "cpu": 4,
+      "memory": "8GB"
+    },
+    "constraints": [],
+    "timestamp": 1753798183802
+  },
+  "action": {
+    "type": "hierarchical_spawn",
+    "method": "parallel",
+    "parameters": {
+      "topology": "hierarchical"
+    },
+    "priority": "high"
+  },
+  "outcome": {
+    "success": true,
+    "result": "swarm_initialized",
+    "duration": 1500,
+    "quality": 0.85,
+    "errors": []
+  },
+  "strength": 1,
+  "confidence": 1,
+  "agentId": "test_coordinator",
+  "learnedAt": "2025-07-29T14:09:43.802Z",
+  "usageCount": 0,
+  "successCount": 0,
+  "lastUsed": null,
+  "adaptations": []
+}

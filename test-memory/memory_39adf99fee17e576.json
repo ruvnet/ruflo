@@ -1,0 +1,73 @@
+{
+  "id": "39adf99fee17e576",
+  "key": "react-components",
+  "value": {
+    "content": "React functional components with hooks provide powerful state management capabilities"
+  },
+  "originalValue": {
+    "content": "React functional components with hooks provide powerful state management capabilities"
+  },
+  "namespace": "default",
+  "category": "learning",
+  "tags": [
+    "react",
+    "javascript",
+    "frontend"
+  ],
+  "metadata": {
+    "agentId": null,
+    "priority": "medium",
+    "size": 99,
+    "compressed": true,
+    "version": 1
+  },
+  "timestamps": {
+    "created": "2025-07-29T14:38:40.149Z",
+    "modified": "2025-07-29T14:38:40.149Z",
+    "accessed": "2025-07-29T14:38:40.149Z",
+    "expires": null
+  },
+  "access": {
+    "count": 0,
+    "lastAccessed": null,
+    "accessHistory": []
+  },
+  "relationships": {
+    "related": [],
+    "dependencies": [],
+    "references": []
+  },
+  "vectorData": {
+    "text": "react-components {\"content\":\"react functional components with hooks provide powerful state management capabilities\"} react javascript frontend",
+    "keywords": {
+      "react": 3,
+      "components": 2,
+      "content": 1,
+      "functional": 1,
+      "hooks": 1,
+      "provide": 1,
+      "powerful": 1,
+      "state": 1,
+      "management": 1,
+      "capabilities": 1,
+      "javascript": 1,
+      "frontend": 1
+    },
+    "tfidf": {
+      "react": 0.13862943611198905,
+      "components": 0.09241962407465937,
+      "content": 0.046209812037329684,
+      "functional": 0.046209812037329684,
+      "hooks": 0.046209812037329684,
+      "provide": 0.046209812037329684,
+      "powerful": 0.046209812037329684,
+      "state": 0.046209812037329684,
+      "management": 0.046209812037329684,
+      "capabilities": 0.046209812037329684,
+      "javascript": 0.046209812037329684,
+      "frontend": 0.046209812037329684
+    },
+    "magnitude": 0.2216144732549813,
+    "timestamp": "2025-07-29T14:38:40.149Z"
+  }
+}

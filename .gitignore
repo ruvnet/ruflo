@@ -134,3 +134,53 @@ claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
 .claude-flow/.claude-flow/metrics/*.json
+
+# AIME and Agentic Enhancements
+aime_dashboard_data/
+aime_progress_data/
+data/neural/
+data/agents/
+
+# Generated reports and documentation
+*_REPORT.md
+*_STATUS_REPORT.md
+*_VALIDATION_REPORT.md
+*_SUMMARY.md
+*_COMPLETE.md
+COMPREHENSIVE_*.md
+TECHNICAL_VALIDATION_SUMMARY.json
+tool-test-report.json
+test_results_*.json
+
+# Backup files
+*.backup
+*.backup_*
+*.backup-*
+*-backup-*
+*.old
+mcp-server-*.js
+server.js.backup*
+
+# Debug and test files
+debug-*.js
+*-debug.js
+test-*.js
+test-*.py
+test-*.mjs
+
+# Cache directories
+cache/
+*.cache
+.cache/
+
+# Frontend builds
+frontend/
+backend/
+ai-consulting-landing/
+
+# Research and architecture docs
+research/
+architecture/
+
+# Template files
+templates/

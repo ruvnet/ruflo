@@ -1,0 +1,33 @@
+{
+  "id": "coordination_1753798183803_qzfnxrfoj",
+  "type": "coordination",
+  "context": {
+    "type": "unknown",
+    "complexity": "medium",
+    "agents": 1,
+    "resources": {},
+    "constraints": [],
+    "timestamp": 1753798183803
+  },
+  "action": {
+    "type": "unknown",
+    "method": "default",
+    "parameters": {},
+    "priority": "medium"
+  },
+  "outcome": {
+    "success": false,
+    "result": null,
+    "duration": 0,
+    "quality": 0.5,
+    "errors": []
+  },
+  "strength": 0.5,
+  "confidence": 0.6,
+  "agentId": "test_low",
+  "learnedAt": "2025-07-29T14:09:43.803Z",
+  "usageCount": 0,
+  "successCount": 0,
+  "lastUsed": null,
+  "adaptations": []
+}

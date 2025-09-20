@@ -1,0 +1,35 @@
+{
+  "id": "coordination_1753798214592_91cu6lkvp",
+  "type": "coordination",
+  "context": {
+    "type": "task_orchestrate",
+    "complexity": "medium",
+    "agents": 6,
+    "resources": {
+      "cpu": 2
+    },
+    "constraints": [],
+    "timestamp": 1753798214592
+  },
+  "action": {
+    "type": "coordination_action",
+    "method": "sequential",
+    "parameters": {},
+    "priority": "medium"
+  },
+  "outcome": {
+    "success": false,
+    "result": null,
+    "duration": 2469.873125473389,
+    "quality": 0.19060967232118942,
+    "errors": []
+  },
+  "strength": 0.6,
+  "confidence": 1,
+  "agentId": "training_agent_1",
+  "learnedAt": "2025-07-29T14:10:14.592Z",
+  "usageCount": 0,
+  "successCount": 0,
+  "lastUsed": null,
+  "adaptations": []
+}
