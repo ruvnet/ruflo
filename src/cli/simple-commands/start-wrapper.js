@@ -13,7 +13,21 @@ export async function startCommand(subArgs, flags) {
 
   // Parse start options
   const daemon = subArgs.includes('--daemon') || subArgs.includes('-d') || flags.daemon;
-  const port = flags.port || getArgValue(subArgs, '--port') || getArgValue(subArgs, '-p') || 3000;
+  
+  // Try to read port from config file first
+  let defaultPort = 3000;
+  try {
+    const configFile = 'claude-flow.config.json';
+    if (existsSync(configFile)) {
+      const config = JSON.parse(await fs.readFile(configFile, 'utf8'));
+      // Check both server.port and mcp.port for compatibility
+      defaultPort = config?.server?.port || config?.mcp?.port || 3000;
+    }
+  } catch (err) {
+    // Ignore config read errors, use default
+  }
+  
+  const port = flags.port || getArgValue(subArgs, '--port') || getArgValue(subArgs, '-p') || defaultPort;
   const verbose = subArgs.includes('--verbose') || subArgs.includes('-v') || flags.verbose;
   const ui = subArgs.includes('--ui') || subArgs.includes('-u') || flags.ui;
   const web = subArgs.includes('--web') || subArgs.includes('-w') || flags.web;

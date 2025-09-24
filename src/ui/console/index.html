@@ -60,7 +60,7 @@
             <h3>Connection</h3>
             <div class="setting-item">
               <label for="serverUrl">Server URL:</label>
-              <input type="text" id="serverUrl" value="ws://localhost:3000/ws" />
+              <input type="text" id="serverUrl" value="" placeholder="Will use current host" />
             </div>
             <div class="setting-item">
               <label for="authToken">Auth Token:</label>
@@ -246,6 +246,7 @@
     </div>
 
     <!-- JavaScript modules -->
+    <script src="js/config.js"></script>
     <script type="module" src="js/console.js"></script>
     <script type="module" src="js/websocket-client.js"></script>
     <script type="module" src="js/settings.js"></script>
