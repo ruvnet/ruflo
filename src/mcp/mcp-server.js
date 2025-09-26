@@ -48,7 +48,7 @@ const __dirname = path.dirname(__filename);
 // Legacy agent type mapping for backward compatibility
 const LEGACY_AGENT_MAPPING = {
   analyst: 'code-analyzer',
-  coordinator: 'task-orchestrator', 
+  coordinator: 'task-orchestrator',
   optimizer: 'perf-analyzer',
   documenter: 'api-docs',
   monitor: 'performance-benchmarker',
@@ -63,7 +63,7 @@ function resolveLegacyAgentType(legacyType) {
 
 class ClaudeFlowMCPServer {
   constructor() {
-    this.version = '2.0.0-alpha.59';
+    this.version = require('../../package.json').version;
     this.memoryStore = memoryStore; // Use shared singleton instance
     // Use the same memory system that already works
     this.capabilities = {
@@ -1081,7 +1081,7 @@ class ClaudeFlowMCPServer {
     switch (name) {
       case 'swarm_init':
         const swarmId = `swarm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         // Track swarm creation
         if (global.agentTracker) {
           global.agentTracker.trackSwarm(swarmId, {
@@ -1090,7 +1090,7 @@ class ClaudeFlowMCPServer {
             strategy: args.strategy || 'balanced',
           });
         }
-        
+
         const swarmData = {
           id: swarmId,
           name: `Swarm-${new Date().toISOString().split('T')[0]}`,
@@ -1186,7 +1186,7 @@ class ClaudeFlowMCPServer {
             capabilities: args.capabilities || [],
           });
         }
-        
+
         return {
           success: true,
           agentId: agentId,
@@ -1450,7 +1450,7 @@ class ClaudeFlowMCPServer {
         if (global.agentTracker) {
           const swarmId = args.swarmId || (await this.getActiveSwarmId());
           const trackedAgents = global.agentTracker.getAgents(swarmId);
-          
+
           if (trackedAgents.length > 0) {
             return {
               success: true,
@@ -1461,7 +1461,7 @@ class ClaudeFlowMCPServer {
             };
           }
         }
-        
+
         if (this.databaseManager) {
           try {
             const swarmId = args.swarmId || (await this.getActiveSwarmId());
@@ -1546,7 +1546,7 @@ class ClaudeFlowMCPServer {
               timestamp: new Date().toISOString(),
             };
           }
-          
+
           // Check agent tracker for real counts
           if (global.agentTracker) {
             const status = global.agentTracker.getSwarmStatus(swarmId);
@@ -1555,7 +1555,7 @@ class ClaudeFlowMCPServer {
                 namespace: 'swarms',
               });
               const swarm = swarmDataRaw ? (typeof swarmDataRaw === 'string' ? JSON.parse(swarmDataRaw) : swarmDataRaw) : {};
-              
+
               return {
                 success: true,
                 swarmId: swarmId,
@@ -1671,7 +1671,7 @@ class ClaudeFlowMCPServer {
 
       case 'task_orchestrate':
         const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         // Track task creation
         if (global.agentTracker) {
           global.agentTracker.trackTask(taskId, {
@@ -1745,7 +1745,7 @@ class ClaudeFlowMCPServer {
           error: 'DAA manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'daa_capability_match':
         if (global.daaManager) {
           return global.daaManager.daa_capability_match(args);
@@ -1755,7 +1755,7 @@ class ClaudeFlowMCPServer {
           error: 'DAA manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'daa_resource_alloc':
         if (global.daaManager) {
           return global.daaManager.daa_resource_alloc(args);
@@ -1765,7 +1765,7 @@ class ClaudeFlowMCPServer {
           error: 'DAA manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'daa_lifecycle_manage':
         if (global.daaManager) {
           return global.daaManager.daa_lifecycle_manage(args);
@@ -1775,7 +1775,7 @@ class ClaudeFlowMCPServer {
           error: 'DAA manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'daa_communication':
         if (global.daaManager) {
           return global.daaManager.daa_communication(args);
@@ -1785,7 +1785,7 @@ class ClaudeFlowMCPServer {
           error: 'DAA manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'daa_consensus':
         if (global.daaManager) {
           return global.daaManager.daa_consensus(args);
@@ -1795,7 +1795,7 @@ class ClaudeFlowMCPServer {
           error: 'DAA manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       // Workflow Tools Implementation
       case 'workflow_create':
         if (global.workflowManager) {
@@ -1806,7 +1806,7 @@ class ClaudeFlowMCPServer {
           error: 'Workflow manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'workflow_execute':
         if (global.workflowManager) {
           return global.workflowManager.workflow_execute(args);
@@ -1816,7 +1816,7 @@ class ClaudeFlowMCPServer {
           error: 'Workflow manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'parallel_execute':
         if (global.workflowManager) {
           return global.workflowManager.parallel_execute(args);
@@ -1826,7 +1826,7 @@ class ClaudeFlowMCPServer {
           error: 'Workflow manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'batch_process':
         if (global.workflowManager) {
           return global.workflowManager.batch_process(args);
@@ -1836,7 +1836,7 @@ class ClaudeFlowMCPServer {
           error: 'Workflow manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'workflow_export':
         if (global.workflowManager) {
           return global.workflowManager.workflow_export(args);
@@ -1846,7 +1846,7 @@ class ClaudeFlowMCPServer {
           error: 'Workflow manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'workflow_template':
         if (global.workflowManager) {
           return global.workflowManager.workflow_template(args);
@@ -1856,7 +1856,7 @@ class ClaudeFlowMCPServer {
           error: 'Workflow manager not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       // Performance Tools Implementation
       case 'performance_report':
         if (global.performanceMonitor) {
@@ -1867,7 +1867,7 @@ class ClaudeFlowMCPServer {
           error: 'Performance monitor not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'bottleneck_analyze':
         if (global.performanceMonitor) {
           return global.performanceMonitor.bottleneck_analyze(args);
@@ -1877,7 +1877,7 @@ class ClaudeFlowMCPServer {
           error: 'Performance monitor not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       case 'memory_analytics':
         if (global.performanceMonitor) {
           return global.performanceMonitor.memory_analytics(args);
@@ -1887,7 +1887,7 @@ class ClaudeFlowMCPServer {
           error: 'Performance monitor not initialized',
           timestamp: new Date().toISOString(),
         };
-        
+
       default:
         return {
           success: true,
