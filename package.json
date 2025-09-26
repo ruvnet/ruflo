@@ -1,6 +1,6 @@
 {
   "name": "claude-flow",
-  "version": "2.0.0-alpha.125",
+  "version": "2.0.0-alpha.126",
   "description": "Enterprise-grade AI agent orchestration with ruv-swarm integration",
   "mcpName": "io.github.ruvnet/claude-flow",
   "main": "cli.mjs",
