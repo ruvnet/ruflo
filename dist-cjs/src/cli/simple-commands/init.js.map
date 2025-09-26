@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../../../src/cli/simple-commands/init.js"],"sourcesContent":["// init.js - Initialize Claude Code integration files\n// This file now re-exports from the modular init structure\n\nexport { initCommand } from './init/index.js';\n"],"names":["initCommand"],"mappings":"AAGA,SAASA,WAAW,QAAQ,kBAAkB"}

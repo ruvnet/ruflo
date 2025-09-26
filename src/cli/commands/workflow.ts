@@ -3,7 +3,7 @@ import { getErrorMessage } from '../../utils/error-handler.js';
  * Workflow execution commands for Claude-Flow
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import { promises as fs } from 'node:fs';
 import chalk from 'chalk';
 import inquirer from 'inquirer';

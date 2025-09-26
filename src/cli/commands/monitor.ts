@@ -2,7 +2,7 @@
  * Monitor command for Claude-Flow - Live dashboard mode
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import { promises as fs } from 'node:fs';
 import { existsSync } from 'fs';
 import chalk from 'chalk';

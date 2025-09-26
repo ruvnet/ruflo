@@ -101,7 +101,6 @@ export class HiveMindCore extends EventEmitter {
   _initializePerformanceMonitoring() {
     // Listen to performance optimizer events
     this.performanceOptimizer.on('auto_tune', (data) => {
-      console.log(`Performance auto-tuned: ${data.type} = ${data.newValue}`);
       this.emit('performance:auto_tuned', data);
     });
 

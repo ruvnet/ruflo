@@ -6,7 +6,7 @@
  * and collective intelligence capabilities.
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import chalk from 'chalk';
 import ora from 'ora';
 import { HiveMind } from '../../../hive-mind/core/HiveMind.js';

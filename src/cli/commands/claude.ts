@@ -3,7 +3,7 @@
  */
 import { promises as fs } from 'node:fs';
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import chalk from 'chalk';
 import { spawn } from 'node:child_process';
 import { generateId } from '../../utils/helpers.js';

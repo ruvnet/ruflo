@@ -3,7 +3,7 @@ import chalk from 'chalk';
  * Memory management commands
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import { promises as fs } from 'node:fs';
 import * as Table from 'cli-table3';
 

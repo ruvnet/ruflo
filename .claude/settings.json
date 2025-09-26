@@ -110,7 +110,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/bin/bash -c 'INPUT=$(cat); TASK=$(echo \"$INPUT\" | jq -r \".prompt // empty\" 2>/dev/null | head -c 100 | tr \"\\n\" \" \"); if [ -z \"$TASK\" ]; then TASK=\"Task checkpoint\"; fi; if [ -n \"$TASK\" ]; then CHECKPOINT_NAME=\"task-$(date +%Y%m%d-%H%M%S)\"; git add -A && git commit -m \"🔖 Task: $TASK...\" --quiet || true; if command -v gh &> /dev/null; then echo \"🚀 Creating GitHub release for checkpoint...\"; gh release create \"$CHECKPOINT_NAME\" --title \"Checkpoint: $(date +\"%Y-%m-%d %H:%M\")\" --notes \"Task: $TASK\n\n## Checkpoint Details\n- Branch: $(git branch --show-current)\n- Commit: $(git rev-parse HEAD)\n- Files changed: $(git diff HEAD~1 --stat 2>/dev/null | wc -l || echo 0) files\n\n## Rollback Instructions\n\\`\\`\\`bash\n# To rollback to this checkpoint:\ngit checkout $CHECKPOINT_NAME\n\\`\\`\\`\" --prerelease || echo \"⚠️  Failed to create GitHub release\"; fi; mkdir -p .claude/checkpoints && echo \"{\\\"checkpoint\\\": \\\"$CHECKPOINT_NAME\\\", \\\"task\\\": \\\"$TASK\\\", \\\"timestamp\\\": \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"commit\\\": \\\"$(git rev-parse HEAD)\\\", \\\"github_release\\\": \\\"$(command -v gh &> /dev/null && echo true || echo false)\\\"}\" > \".claude/checkpoints/task-$(date +%s).json\" && echo \"✅ Created task checkpoint: $CHECKPOINT_NAME\"; fi'"
+            "command": "/bin/bash -c 'TASK=$(echo \"{{user_prompt}}\" | head -c 100 | tr \"\\n\" \" \"); if [ -n \"$TASK\" ]; then CHECKPOINT_NAME=\"task-$(date +%Y%m%d-%H%M%S)\"; git add -A && git commit -m \"🔖 Task checkpoint: $TASK...\" --quiet || true; if command -v gh &> /dev/null; then echo \"🚀 Creating GitHub release for checkpoint...\"; gh release create \"$CHECKPOINT_NAME\" --title \"Checkpoint: $(date +\"%Y-%m-%d %H:%M\")\" --notes \"Task: $TASK\n\n## Checkpoint Details\n- Branch: $(git branch --show-current)\n- Commit: $(git rev-parse HEAD)\n- Files changed: $(git diff HEAD~1 --stat 2>/dev/null | wc -l || echo 0) files\n\n## Rollback Instructions\n\\`\\`\\`bash\n# To rollback to this checkpoint:\ngit checkout $CHECKPOINT_NAME\n\\`\\`\\`\" --prerelease || echo \"⚠️  Failed to create GitHub release\"; fi; mkdir -p .claude/checkpoints && echo \"{\\\"checkpoint\\\": \\\"$CHECKPOINT_NAME\\\", \\\"task\\\": \\\"$TASK\\\", \\\"timestamp\\\": \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"commit\\\": \\\"$(git rev-parse HEAD)\\\", \\\"github_release\\\": \\\"$(command -v gh &> /dev/null && echo true || echo false)\\\"}\" > \".claude/checkpoints/task-$(date +%s).json\" && echo \"✅ Created task checkpoint: $CHECKPOINT_NAME\"; fi'"
           }
         ]
       }
@@ -149,10 +149,6 @@
         ]
       }
     ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "input=$(cat); model_name=$(echo \"$input\" | jq -r '.model.display_name'); current_dir=$(echo \"$input\" | jq -r '.workspace.current_dir'); project_dir=$(echo \"$input\" | jq -r '.workspace.project_dir'); relative_path=$(echo \"${current_dir#$project_dir}\"); if [ \"$relative_path\" = \"$current_dir\" ]; then display_path=$(basename \"$current_dir\"); else display_path=\"$(basename \"$project_dir\")${relative_path}\"; fi; printf \"$(whoami)@$(hostname -s):${display_path} [${model_name}]\""
   },
   "includeCoAuthoredBy": true,
   "enabledMcpjsonServers": [

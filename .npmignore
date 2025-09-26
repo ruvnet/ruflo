@@ -46,6 +46,8 @@ docs/
 !README.md
 !SWARM_TTY_SOLUTION.md
 !SWARM_VISIBILITY.md
+# Include agent markdown files
+!.claude/agents/**/*.md
 
 # Development configs
 .eslintrc*

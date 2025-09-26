@@ -2,7 +2,7 @@
  * Simple MCP command implementation for Node.js compatibility
  */
 
-import { Command } from 'commander';
+import { Command } from './commander-fix.js';
 import http from 'http';
 
 function printSuccess(message: string) {

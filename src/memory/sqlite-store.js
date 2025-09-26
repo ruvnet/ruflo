@@ -8,6 +8,7 @@ import { promises as fs } from 'fs';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { createDatabase } from './sqlite-wrapper.js';
+import { getSwarmDir } from '../utils/project-root.js';
 import { sessionSerializer } from './enhanced-session-serializer.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -28,12 +29,12 @@ class SqliteMemoryStore {
 
   /**
    * Determine the best directory for memory storage
-   * Uses .swarm directory in current working directory (consistent with hive-mind approach)
+   * Uses .swarm directory in project root (consistent with hive-mind approach)
    */
   _getMemoryDirectory() {
-    // Always use .swarm directory in the current working directory
+    // Always use .swarm directory in the project root
     // This ensures consistency whether running locally or via npx
-    return path.join(process.cwd(), '.swarm');
+    return getSwarmDir();
   }
 
   _directoryExists(dir) {

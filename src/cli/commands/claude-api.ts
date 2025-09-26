@@ -4,7 +4,7 @@
 
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import { ConfigManager } from '../../config/config-manager.js';
 import { ClaudeAPIClient, ClaudeModel } from '../../api/claude-client.js';
 import { Logger } from '../../core/logger.js';

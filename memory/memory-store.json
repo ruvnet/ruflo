@@ -1,0 +1,22 @@
+{
+  "default": [
+    {
+      "key": "project-name",
+      "value": "claude-flow-demo",
+      "namespace": "default",
+      "timestamp": 1758288473182
+    },
+    {
+      "key": "version",
+      "value": "2.0.0-alpha",
+      "namespace": "default",
+      "timestamp": 1758288474782
+    },
+    {
+      "key": "test-results",
+      "value": "passing",
+      "namespace": "default",
+      "timestamp": 1758288476266
+    }
+  ]
+}

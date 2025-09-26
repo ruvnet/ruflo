@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import * as path from 'path';
 import { copyPrompts, copyPromptsEnhanced } from './prompt-copier-enhanced.js';
 import {

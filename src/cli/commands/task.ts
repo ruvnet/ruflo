@@ -3,7 +3,7 @@ import { getErrorMessage } from '../../utils/error-handler.js';
  * Task management commands
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import { promises as fs } from 'node:fs';
 import chalk from 'chalk';
 import { generateId } from '../../utils/helpers.js';

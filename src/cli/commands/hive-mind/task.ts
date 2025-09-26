@@ -6,7 +6,7 @@
  * with automatic agent assignment and consensus coordination.
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';

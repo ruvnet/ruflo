@@ -352,18 +352,35 @@ To enable persistence, see: https://github.com/ruvnet/claude-code-flow/docs/wind
     await this.ensureInitialized();
     
     if (this.isInMemory) {
-      // Use in-memory storage
+      // Use in-memory storage with real counts
       const sessions = [];
       for (const [sessionId, session] of this.memoryStore.sessions) {
         if (session.status === 'active' || session.status === 'paused') {
+          // Get real agent count from memory
+          const agentCount = this.memoryStore.agents 
+            ? Array.from(this.memoryStore.agents.values()).filter(a => a.swarm_id === session.swarm_id).length 
+            : 0;
+          
+          // Get real task counts from memory
+          const tasks = this.memoryStore.tasks 
+            ? Array.from(this.memoryStore.tasks.values()).filter(t => t.swarm_id === session.swarm_id)
+            : [];
+          
+          const taskCount = tasks.length;
+          const completedTasks = tasks.filter(t => t.status === 'completed').length;
+          const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
+          const pendingTasks = tasks.filter(t => t.status === 'pending').length;
+          
           sessions.push({
             ...session,
             metadata: session.metadata ? sessionSerializer.deserializeMetadata(session.metadata) : {},
             checkpoint_data: session.checkpoint_data ? sessionSerializer.deserializeCheckpointData(session.checkpoint_data) : null,
-            agent_count: 0, // Not tracked in memory mode
-            task_count: 0,  // Not tracked in memory mode
-            completed_tasks: 0, // Not tracked in memory mode
-            completion_percentage: 0
+            agent_count: agentCount,
+            task_count: taskCount,
+            completed_tasks: completedTasks,
+            in_progress_tasks: inProgressTasks,
+            pending_tasks: pendingTasks,
+            completion_percentage: taskCount > 0 ? Math.round((completedTasks / taskCount) * 100) : 0
           });
         }
       }

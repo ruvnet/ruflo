@@ -5,7 +5,7 @@
  * Resume paused swarm sessions
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import chalk from 'chalk';
 import { HiveMindSessionManager } from '../../simple-commands/hive-mind/session-manager.js';
 import inquirer from 'inquirer';

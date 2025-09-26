@@ -3,11 +3,12 @@ import { promises as fs } from 'node:fs';
  * Status command for Claude-Flow
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import { formatHealthStatus, formatDuration, formatStatusIndicator } from '../formatter.js';
 import { VERSION } from '../../core/version.js';
+import { MetricsReader } from '../../utils/metrics-reader.js';
 
 export const statusCommand = new Command()
   .name('status')
@@ -264,65 +265,65 @@ function showComponentStatus(status: any, componentName: string): void {
 }
 
 async function getSystemStatus(): Promise<any> {
-  // In a real implementation, this would connect to the orchestrator
-  // For now, return mock data
+  const reader = new MetricsReader();
+  
+  // Get real metrics from files
+  const [systemMetrics, perfMetrics, agents, recentTasks, overallHealth] = await Promise.all([
+    reader.getSystemMetrics(),
+    reader.getPerformanceMetrics(),
+    reader.getActiveAgents(),
+    reader.getRecentTasks(5),
+    reader.getOverallHealth()
+  ]);
+  
+  // Calculate uptime and memory in MB
+  const uptime = systemMetrics ? systemMetrics.uptime * 1000 : 0; // Convert to ms
+  const memUsedMB = systemMetrics ? Math.round(systemMetrics.memoryUsed / (1024 * 1024)) : 0;
+  const memTotalMB = systemMetrics ? Math.round(systemMetrics.memoryTotal / (1024 * 1024)) : 512;
+  
+  // Determine component health based on metrics
+  const orchestratorStatus = perfMetrics && perfMetrics.totalTasks > 0 ? 'healthy' : 'idle';
+  const agentsStatus = agents.length > 0 ? 'healthy' : 'idle';
+  const memoryStatus = systemMetrics && systemMetrics.memoryUsagePercent < 80 ? 'healthy' : 
+                       systemMetrics && systemMetrics.memoryUsagePercent < 90 ? 'warning' : 'error';
+  
+  // Count active agents
+  const activeAgentCount = agents.filter(a => a.status === 'active' || a.status === 'busy').length;
+  
   return {
-    overall: 'healthy',
+    overall: overallHealth,
     version: VERSION,
-    uptime: 3600000,
-    startTime: Date.now() - 3600000,
+    uptime: uptime,
+    startTime: Date.now() - uptime,
     components: {
       orchestrator: {
-        status: 'healthy',
-        uptime: 3600000,
-        details: 'Running smoothly',
+        status: orchestratorStatus,
+        uptime: uptime,
+        details: perfMetrics ? `${perfMetrics.totalTasks} tasks processed` : 'No tasks yet',
       },
       agents: {
-        status: 'healthy',
-        uptime: 3600000,
-        details: '5 active agents',
+        status: agentsStatus,
+        uptime: uptime,
+        details: `${activeAgentCount} active, ${agents.length} total agents`,
       },
       memory: {
-        status: 'healthy',
-        uptime: 3600000,
-        details: 'Using 128MB of 512MB',
+        status: memoryStatus,
+        uptime: uptime,
+        details: `Using ${memUsedMB}MB of ${memTotalMB}MB`,
       },
     },
     resources: {
       memory: {
-        used: 128,
-        total: 512,
+        used: memUsedMB,
+        total: memTotalMB,
       },
       cpu: {
-        used: 25,
+        used: systemMetrics ? Math.round(systemMetrics.cpuLoad * 100) : 0,
         total: 100,
       },
     },
-    agents: [
-      {
-        id: 'agent-001',
-        name: 'Research Agent',
-        type: 'research',
-        status: 'active',
-        activeTasks: 2,
-      },
-      {
-        id: 'agent-002',
-        name: 'Code Agent',
-        type: 'coding',
-        status: 'idle',
-        activeTasks: 0,
-      },
-    ],
-    recentTasks: [
-      {
-        id: 'task-001',
-        type: 'research',
-        status: 'completed',
-        startTime: Date.now() - 300000,
-        assignedTo: 'agent-001',
-      },
-    ],
+    agents: agents,
+    recentTasks: recentTasks,
   };
 }
 

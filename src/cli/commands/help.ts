@@ -3,7 +3,7 @@
  * Follows Unix/Linux conventions for help output
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import { HelpFormatter, CommandInfo, CommandItem, OptionItem } from '../help-formatter.js';
 import chalk from 'chalk';
 import Table from 'cli-table3';

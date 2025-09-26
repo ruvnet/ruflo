@@ -1,0 +1,10 @@
+{
+  "default": [
+    {
+      "key": "test-key",
+      "value": "test-value",
+      "namespace": "default",
+      "timestamp": 1758563464507
+    }
+  ]
+}

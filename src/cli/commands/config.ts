@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import chalk from 'chalk';
 import { readFileSync, writeFileSync } from 'fs';
 import { ConfigManager } from '../../core/config.js';

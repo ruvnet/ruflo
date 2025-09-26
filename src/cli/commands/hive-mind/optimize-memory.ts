@@ -4,7 +4,7 @@
  * Provides comprehensive memory optimization tools for the Hive Mind system.
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import { CollectiveMemory, MemoryOptimizer } from '../../simple-commands/hive-mind/memory.js';
 import { MemoryMonitor } from '../../../hive-mind/core/MemoryMonitor.js';
 import { Memory } from '../../../hive-mind/core/Memory.js';

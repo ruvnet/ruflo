@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-alpha.118] - 2025-09-24
+
+> **🧹 CLEANUP RELEASE**: Removed sublinear-time-solver MCP dependency for cleaner initialization and focused core functionality.
+
+### 🗑️ Removed
+- **Sublinear-time-solver Integration**: Removed sublinear-time-solver MCP server from initialization
+  - Deleted `.claude/agents/sublinear/` folder creation during init
+  - Removed `--sublinear` flag from init command
+  - Removed sublinear MCP server setup and configuration
+  - Simplified initialization to focus on core MCP servers (claude-flow, ruv-swarm, flow-nexus)
+  - Updated help documentation to remove sublinear references
+
+### ✨ Improved
+- **Cleaner Initialization**: `npx claude-flow init` now sets up only core, stable MCP servers
+- **Streamlined Documentation**: Removed experimental sublinear references from templates
+- **Simplified Configuration**: Reduced complexity in MCP server setup
+
+### 🔧 Technical Changes
+- Removed `sublinear-copier.js` and related initialization code
+- Updated CLAUDE.md templates with claude-flow MCP tools instead of sublinear examples
+- Cleaned up help text and example commands
+
 ## [2.0.0-alpha.110] - 2025-09-18
 
 > **🧠 Neural & Goal Modules Simplified**: Streamlined `neural init` and `goal init` commands to create only essential agent files. Updated wiki documentation with new AI Modules section.

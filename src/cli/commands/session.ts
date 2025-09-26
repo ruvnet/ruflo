@@ -2,7 +2,7 @@
  * Session management commands for Claude-Flow
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import { promises as fs, existsSync } from 'node:fs';
 import * as path from 'node:path';
 import Table from 'cli-table3';

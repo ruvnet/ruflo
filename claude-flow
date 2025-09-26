@@ -1,37 +1,40 @@
-#!/usr/bin/env node
+#!/usr/bin/env bash
+# Claude-Flow local wrapper
+# This script ensures claude-flow runs from your project directory
 
-/**
- * Claude Flow CLI - Development Wrapper
- * Points to local bin/claude-flow.js for development
- */
+# Save the current directory
+PROJECT_DIR="${PWD}"
 
-import { spawn } from 'child_process';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { existsSync } from 'fs';
+# Set environment to ensure correct working directory
+export PWD="${PROJECT_DIR}"
+export CLAUDE_WORKING_DIR="${PROJECT_DIR}"
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+# Try to find claude-flow binary
+# Check common locations for npm/npx installations
 
-// Point to local bin/claude-flow.js
-const localBin = resolve(__dirname, 'bin', 'claude-flow.js');
+# Development mode - use local bin
+if [ -f "/workspaces/claude-code-flow/bin/claude-flow" ]; then
+  cd "${PROJECT_DIR}"
+  exec "/workspaces/claude-code-flow/bin/claude-flow" "$@"
+fi
 
-if (existsSync(localBin)) {
-  const child = spawn('node', [localBin, ...process.argv.slice(2)], {
-    stdio: 'inherit',
-    shell: false
-  });
-  
-  child.on('error', (error) => {
-    console.error('❌ Error executing claude-flow:', error.message);
-    process.exit(1);
-  });
-  
-  child.on('exit', (code) => {
-    process.exit(code || 0);
-  });
-} else {
-  console.error('❌ Could not find bin/claude-flow.js');
-  console.error('Make sure you are in the claude-flow project directory');
-  process.exit(1);
-}
+# 1. Local node_modules (npm install claude-flow)
+if [ -f "${PROJECT_DIR}/node_modules/.bin/claude-flow" ]; then
+  cd "${PROJECT_DIR}"
+  exec "${PROJECT_DIR}/node_modules/.bin/claude-flow" "$@"
+
+# 2. Parent directory node_modules (monorepo setup)
+elif [ -f "${PROJECT_DIR}/../node_modules/.bin/claude-flow" ]; then
+  cd "${PROJECT_DIR}"
+  exec "${PROJECT_DIR}/../node_modules/.bin/claude-flow" "$@"
+
+# 3. Global installation (npm install -g claude-flow)
+elif command -v claude-flow &> /dev/null; then
+  cd "${PROJECT_DIR}"
+  exec claude-flow "$@"
+
+# 4. Fallback to npx (will download if needed)
+else
+  cd "${PROJECT_DIR}"
+  exec npx claude-flow@latest "$@"
+fi

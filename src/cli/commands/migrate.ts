@@ -2,7 +2,7 @@
  * Migration CLI Command Integration
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import { MigrationRunner } from '../../migration/migration-runner.js';
 import { MigrationAnalyzer } from '../../migration/migration-analyzer.js';
 import { RollbackManager } from '../../migration/rollback-manager.js';

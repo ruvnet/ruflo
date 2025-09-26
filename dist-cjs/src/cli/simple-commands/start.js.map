@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../../../src/cli/simple-commands/start.js"],"sourcesContent":["// start.js - Re-export the wrapper to maintain backward compatibility\nexport { startCommand } from './start-wrapper.js';\n"],"names":["startCommand"],"mappings":"AACA,SAASA,YAAY,QAAQ,qBAAqB"}

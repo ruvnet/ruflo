@@ -3,7 +3,7 @@
  */
 
 // Converted from @cliffy to commander.js for Node.js compatibility
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import Table from 'cli-table3';
 import chalk from 'chalk';
 import inquirer from 'inquirer';

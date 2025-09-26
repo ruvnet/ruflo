@@ -3,7 +3,7 @@
  * Follows Unix/Linux conventions for help output
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import { HelpFormatter, CommandInfo } from '../help-formatter.js';
 
 export const helpCommand = new Command()

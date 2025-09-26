@@ -6,7 +6,7 @@
  * with guided workflows and visual feedback.
  */
 
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import figlet from 'figlet';

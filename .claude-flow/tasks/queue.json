@@ -1,0 +1,32 @@
+[
+  {
+    "id": "task_1758290420668_64s4duyk2",
+    "type": "research",
+    "description": "Analyze performance bottlenecks in the codebase",
+    "priority": 5,
+    "status": "queued",
+    "createdAt": 1758290420668,
+    "assignedTo": null,
+    "progress": 0
+  },
+  {
+    "id": "task_1758290432801_kot4nh2sm",
+    "type": "code",
+    "description": "Implement caching layer for database queries",
+    "priority": 5,
+    "status": "queued",
+    "createdAt": 1758290432801,
+    "assignedTo": null,
+    "progress": 0
+  },
+  {
+    "id": "task_1758290434891_3vltxz2sm",
+    "type": "analysis",
+    "description": "Generate performance report",
+    "priority": 5,
+    "status": "queued",
+    "createdAt": 1758290434891,
+    "assignedTo": null,
+    "progress": 0
+  }
+]

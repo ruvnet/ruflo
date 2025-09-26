@@ -535,12 +535,7 @@ async function getTemplateContent(templatePath) {
     'claude-flow-universal': async () => {
       return await fs.readFile(join(__dirname, 'templates', 'claude-flow-universal'), 'utf8');
     },
-    'claude-flow.bat': async () => {
-      return await fs.readFile(join(__dirname, 'templates', 'claude-flow.bat'), 'utf8');
-    },
-    'claude-flow.ps1': async () => {
-      return await fs.readFile(join(__dirname, 'templates', 'claude-flow.ps1'), 'utf8');
-    },
+    // Removed Windows wrapper templates per user request
   };
 
   const generator = templateGenerators[filename] || templateGenerators[filename.replace(/\.(sparc|minimal|optimized|enhanced)$/, '')];

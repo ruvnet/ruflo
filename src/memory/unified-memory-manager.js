@@ -6,13 +6,16 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { existsSync } from '../cli/node-compat.js';
+import { getProjectRoot, getClaudeFlowDir } from '../utils/project-root.js';
 
 export class UnifiedMemoryManager {
   constructor(options = {}) {
+    const claudeFlowDir = getClaudeFlowDir();
+    const projectRoot = getProjectRoot();
     this.config = {
-      primaryStore: './.claude-flow/memory/unified-memory.db',
-      fallbackStore: './memory/memory-store.json',
-      configPath: './.claude-flow/memory-config.json',
+      primaryStore: path.join(claudeFlowDir, 'memory', 'unified-memory.db'),
+      fallbackStore: path.join(projectRoot, 'memory', 'memory-store.json'),
+      configPath: path.join(claudeFlowDir, 'memory-config.json'),
       ...options
     };
     

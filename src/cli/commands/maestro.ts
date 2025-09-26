@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command } from '../commander-fix.js';
 import chalk from 'chalk';
 import { MaestroCLIBridge } from '../maestro-cli-bridge.js';
 

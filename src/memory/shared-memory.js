@@ -10,6 +10,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { EventEmitter } from 'events';
 import { performance } from 'perf_hooks';
+import { getProjectRoot, getSwarmDir, getHiveMindDir } from '../utils/project-root.js';
 
 /**
  * Migration definitions for schema evolution
@@ -218,10 +219,12 @@ export class SharedMemory extends EventEmitter {
 
     try {
       // Ensure directory exists
-      await fs.mkdir(path.join(process.cwd(), this.options.directory), { recursive: true });
+      const projectRoot = getProjectRoot();
+      const fullDirPath = path.join(projectRoot, this.options.directory);
+      await fs.mkdir(fullDirPath, { recursive: true });
 
       // Open database
-      const dbPath = path.join(process.cwd(), this.options.directory, this.options.filename);
+      const dbPath = path.join(fullDirPath, this.options.filename);
       this.db = new Database(dbPath);
 
       // Configure for performance

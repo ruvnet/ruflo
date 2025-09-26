@@ -1,5 +1,5 @@
 ---
-name: code-analyzer
+name: analyst
 type: code-analyzer
 color: indigo
 priority: high

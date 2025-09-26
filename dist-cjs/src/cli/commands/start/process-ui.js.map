@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../../../../src/cli/commands/start/process-ui.ts"],"sourcesContent":["/**\n * Process UI - Re-export the simplified version for compatibility\n */\n\nexport { ProcessUI } from './process-ui-simple.js';\n"],"names":["ProcessUI"],"mappings":"AAIA,SAASA,SAAS,QAAQ,yBAAyB"}

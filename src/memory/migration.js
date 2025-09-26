@@ -11,13 +11,14 @@ import path from 'path';
 import fs from 'fs/promises';
 import { SharedMemory } from './shared-memory.js';
 import { SwarmMemory } from './swarm-memory.js';
+import { getProjectRoot, getSwarmDir, getHiveMindDir } from '../utils/project-root.js';
 
 export class MemoryMigration {
   constructor(options = {}) {
     this.options = {
-      oldDbPath: path.join(process.cwd(), '.hive-mind', 'hive.db'),
-      newDbPath: path.join(process.cwd(), '.hive-mind', 'memory.db'),
-      swarmDbPath: path.join(process.cwd(), '.swarm', 'swarm-memory.db'),
+      oldDbPath: path.join(getHiveMindDir(), 'hive.db'),
+      newDbPath: path.join(getHiveMindDir(), 'memory.db'),
+      swarmDbPath: path.join(getSwarmDir(), 'swarm-memory.db'),
       dryRun: options.dryRun || false,
       verbose: options.verbose || false,
       ...options,

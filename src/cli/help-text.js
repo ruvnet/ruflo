@@ -24,9 +24,9 @@ export const MAIN_HELP = `
   🔧 Production-Ready Infrastructure - Enterprise-grade reliability and performance
 
 USAGE:
-  npx claude-flow@alpha <command> [options]    # Run latest alpha version
-  npx claude-flow@alpha <command> --help       # Get detailed help for any command
-  npx claude-flow@alpha --help                 # Show this help
+  npx claude-flow <command> [options]    # Run latest alpha version
+  npx claude-flow <command> --help       # Get detailed help for any command
+  npx claude-flow --help                 # Show this help
   
   # After local install:
   claude-flow <command> [options]
@@ -34,7 +34,7 @@ USAGE:
 
 🚀 QUICK START:
   # First time setup (creates CLAUDE.md & .claude/commands)
-  npx claude-flow@alpha init
+  npx claude-flow init
   
   # 🌐 FLOW NEXUS CLOUD (NEW!):
   mcp__flow-nexus__user_register         # Register for cloud features
@@ -92,14 +92,14 @@ USAGE:
   stream-chain <workflow>  Stream-JSON chaining for multi-agent pipelines (NEW!)
 
 🔍 GET HELP:
-  npx claude-flow@alpha --help                Show this help
-  npx claude-flow@alpha <command> --help      Detailed command help
+  npx claude-flow --help                Show this help
+  npx claude-flow <command> --help      Detailed command help
 
 🎯 RECOMMENDED FOR NEW USERS:
-  npx claude-flow@alpha hive-mind wizard     # Start here! Interactive guided setup
-  npx claude-flow@alpha init                 # Initialize Claude Flow
-  npx claude-flow@alpha help hive-mind       # Learn about Hive Mind features
-  npx claude-flow@alpha swarm "Build API" --claude  # Quick start with Claude Code CLI
+  npx claude-flow hive-mind wizard     # Start here! Interactive guided setup
+  npx claude-flow init                 # Initialize Claude Flow
+  npx claude-flow help hive-mind       # Learn about Hive Mind features
+  npx claude-flow swarm "Build API" --claude  # Quick start with Claude Code CLI
 
 📚 Documentation: https://github.com/ruvnet/claude-flow
 🐝 Hive Mind Guide: https://github.com/ruvnet/claude-flow/tree/main/docs/hive-mind
@@ -451,8 +451,8 @@ WHAT claude-flow init CREATES (DEFAULT):
   • Enterprise security features
 
 EXAMPLES:
-  npx claude-flow@alpha init              # Standard init with local checkpoints
-  npx claude-flow@alpha github init       # GitHub-enhanced init with releases
+  npx claude-flow init              # Standard init with local checkpoints
+  npx claude-flow github init       # GitHub-enhanced init with releases
   claude-flow init --force                # Overwrite existing configuration
   claude-flow github init --force         # Force GitHub mode (overwrite)
   claude-flow init --dry-run              # Preview what will be created
@@ -1021,7 +1021,7 @@ export function getMainHelp(plain = false) {
       },
     ],
     examples: [
-      'npx claude-flow@alpha init',
+      'npx claude-flow init',
       'claude-flow hive-mind wizard',
       'claude-flow swarm "Build REST API"',
       'claude-flow agent spawn researcher --name "Research Bot"',
