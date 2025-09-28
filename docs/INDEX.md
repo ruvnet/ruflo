@@ -517,6 +517,28 @@ npx claude-flow@alpha --agents 10 swarm "full enterprise application"
 
 ---
 
+## 📚 **Reference Documentation**
+
+### 🔗 **Protocols & Standards**
+- **[A2A Protocol Integration](reference/a2a-protocol/)** - Official Agent2Agent Protocol compliance
+  - [Specification](reference/a2a-protocol/specification.md) - Complete A2A protocol specification
+  - [Implementation Plan](reference/a2a-protocol/implementation-plan.md) - 4-phase refactoring strategy
+  - [Technical Reference](reference/a2a-protocol/technical-reference.md) - Implementation details
+  - [Analysis Report](reference/a2a-protocol/analysis-report.md) - Integration analysis and validation
+
+### 🛠️ **Core Components**
+- **[Agents Reference](reference/AGENTS.md)** - Complete agent catalog and capabilities
+- **[MCP Tools](reference/MCP_TOOLS.md)** - Model Context Protocol tools and integrations
+- **[SPARC Methodology](reference/SPARC.md)** - Structured development methodology
+- **[Swarm Intelligence](reference/SWARM.md)** - Multi-agent coordination and orchestration
+
+### 🏗️ **Architecture & APIs**
+- **[API Documentation](api/API_DOCUMENTATION.md)** - Complete endpoint reference
+- **[System Architecture](architecture/ARCHITECTURE.md)** - High-level system design
+- **[Development Workflow](development/DEVELOPMENT_WORKFLOW.md)** - Best practices and standards
+
+---
+
 ## 📞 **Getting Support**
 
 ### 🆘 **Immediate Help**

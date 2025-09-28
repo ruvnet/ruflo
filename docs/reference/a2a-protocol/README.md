@@ -2,7 +2,11 @@
 
 ## Overview
 
-This directory contains the complete implementation of the **Agent2Agent (A2A) Protocol** integration with Claude-Flow infrastructure. The A2A Protocol is an official open standard developed by Google Cloud with support from 50+ technology partners, designed to enable communication and interoperability between independent AI agent systems.
+This directory contains the complete documentation and implementation of the **Agent2Agent (A2A) Protocol** integration with Claude-Flow infrastructure. The A2A Protocol is an official open standard developed by Google Cloud with support from 50+ technology partners, designed to enable communication and interoperability between independent AI agent systems.
+
+**Location**: `docs/reference/a2a-protocol/`  
+**Status**: Documentation and Implementation Plan  
+**Integration**: Official A2A Protocol v0.3.0 compliance
 
 ## Key Benefits
 
