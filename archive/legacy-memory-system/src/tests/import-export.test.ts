@@ -2,7 +2,7 @@
  * SPARC Memory Bank - Import/Export Tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { ImportExportManager } from '../io/import-export';
 import { MemoryItem } from '../types';
 

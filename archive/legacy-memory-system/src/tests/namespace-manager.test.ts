@@ -2,7 +2,7 @@
  * SPARC Memory Bank - Namespace Manager Tests
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from '@jest/globals';
 import { NamespaceManager } from '../namespaces/namespace-manager';
 import { SqliteBackend } from '../backends/sqlite-backend';
 import { MemoryNamespace } from '../types';
@@ -425,9 +425,9 @@ describe('NamespaceManager', () => {
 
   describe('Event Emissions', () => {
     it('should emit events for namespace operations', async () => {
-      const createdHandler = vi.fn();
-      const updatedHandler = vi.fn();
-      const deletedHandler = vi.fn();
+      const createdHandler = jest.fn();
+      const updatedHandler = jest.fn();
+      const deletedHandler = jest.fn();
 
       namespaceManager.on('namespace-created', createdHandler);
       namespaceManager.on('namespace-updated', updatedHandler);
@@ -452,8 +452,8 @@ describe('NamespaceManager', () => {
     });
 
     it('should emit session events', () => {
-      const sessionCreatedHandler = vi.fn();
-      const sessionRevokedHandler = vi.fn();
+      const sessionCreatedHandler = jest.fn();
+      const sessionRevokedHandler = jest.fn();
 
       namespaceManager.on('session-created', sessionCreatedHandler);
       namespaceManager.on('session-revoked', sessionRevokedHandler);

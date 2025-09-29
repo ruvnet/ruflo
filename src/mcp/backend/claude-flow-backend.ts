@@ -8,8 +8,12 @@ import { resolve } from 'node:path';
 // Make port and host configurable for tests and multi-instance dev
 const config = {
   transport: 'http' as const,
-  host: process.env.HOST ?? 'localhost',
-  port: parseInt(process.env.PORT ?? '3001'),
+  host: (process.env.HOST && process.env.HOST.trim()) ? process.env.HOST : 'localhost',
+  port: (() => {
+    const raw = process.env.PORT?.trim();
+    const n = raw ? Number(raw) : 3001;
+    return Number.isFinite(n) && n > 0 && n <= 65535 ? n : 3001;
+  })(),
   tlsEnabled: false,
 };
 

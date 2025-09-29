@@ -2,7 +2,7 @@
  * SPARC Memory Bank - Memory Manager Tests
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from '@jest/globals';
 import { MemoryManager } from '../core/memory-manager';
 import { MemoryItem } from '../types';
 import * as fs from 'fs/promises';
@@ -297,7 +297,7 @@ describe('MemoryManager', () => {
       expect(read1).toBeDefined();
 
       // Second read - should be cache hit
-      const hitHandler = vi.fn();
+      const hitHandler = jest.fn();
       memoryManager.on('cache-hit', hitHandler);
 
       const read2 = await memoryManager.get('cache-test', 'cached-item');

@@ -498,10 +498,34 @@ export class MCPServer implements IMCPServer {
         required: ['query']
       },
       handler: async (input: unknown) => {
-        const params = input as { query: string; limit?: number };
+        if (!input || typeof input !== 'object') {
+          throw new Error('Invalid params: expected object');
+        }
+
+        const params = input as { query: string; limit?: unknown };
+        
+        // Validate query
+        if (typeof params.query !== 'string' || !params.query.trim()) {
+          throw new Error('Invalid params: query must be a non-empty string');
+        }
+
+        // Validate and coerce limit
+        let validLimit: number = 10; // Default value
+        if (params.limit !== undefined) {
+          const limitNum = Number(params.limit);
+          if (!Number.isInteger(limitNum) || limitNum < 1 || limitNum > 100) {
+            this.logger.warn('Invalid limit parameter', { 
+              provided: params.limit,
+              fallback: validLimit
+            });
+          } else {
+            validLimit = limitNum;
+          }
+        }
+
         const tools = await this.discoveryService.discoverTools({
-          query: params.query,
-          limit: params.limit ?? 10
+          query: params.query.trim(),
+          limit: validLimit
         });
         return tools;
       }

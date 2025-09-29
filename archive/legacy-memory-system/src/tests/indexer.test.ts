@@ -2,7 +2,7 @@
  * SPARC Memory Bank - Indexer Tests
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from '@jest/globals';
 import { MemoryIndexer } from '../indexer/memory-indexer';
 import { SqliteBackend } from '../backends/sqlite-backend';
 import { MemoryItem } from '../types';
@@ -378,8 +378,8 @@ describe('MemoryIndexer', () => {
 
   describe('Event Emissions', () => {
     it('should emit events on operations', async () => {
-      const indexedHandler = vi.fn();
-      const removedHandler = vi.fn();
+      const indexedHandler = jest.fn();
+      const removedHandler = jest.fn();
 
       indexer.on('indexed', indexedHandler);
       indexer.on('removed', removedHandler);

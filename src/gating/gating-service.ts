@@ -1,5 +1,6 @@
 import { DiscoveryService } from './discovery-service.js';
 import { MCPTool } from '../utils/types.js';
+import { tokenSizer } from '../utils/token-sizer.js';
 import { EventEmitter } from 'events';
 
 interface ProvisionOptions {
@@ -48,10 +49,9 @@ export class GatingService extends EventEmitter {
       maxTokens: safeMaxTokens,
     });
     
-    // Calculate actual tokens used (simplified - you may want to use actual token counting)
+    // Calculate actual tokens used with canonical tokenSizer
     const tokensUsed = provisionedTools.reduce((sum, tool) => {
-      const toolTokens = JSON.stringify(tool).length / 4; // Rough approximation
-      return sum + toolTokens;
+      return sum + tokenSizer(tool);
     }, 0);
 
     // Emit metrics for observability
@@ -59,7 +59,7 @@ export class GatingService extends EventEmitter {
       toolsDiscovered: discoveredTools.length,
       toolsProvisioned: provisionedTools.length,
       tokensBudgeted: safeMaxTokens,
-      tokensUsed: Math.floor(tokensUsed)
+      tokensUsed: tokensUsed // Already an integer from tokenSizer
     });
 
     return provisionedTools;

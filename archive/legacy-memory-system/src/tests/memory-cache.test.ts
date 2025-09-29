@@ -2,7 +2,7 @@
  * SPARC Memory Bank - Cache Tests
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from '@jest/globals';
 import { MemoryCache } from '../cache/memory-cache';
 import { MemoryItem } from '../types';
 
@@ -218,7 +218,7 @@ describe('MemoryCache', () => {
 
   describe('Eviction Callback', () => {
     it('should call onEvict callback', () => {
-      const onEvict = vi.fn();
+      const onEvict = jest.fn();
       
       cache = new MemoryCache({
         maxSize: 50,

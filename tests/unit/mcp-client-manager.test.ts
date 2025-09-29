@@ -5,7 +5,7 @@
   Focus: Unit tests for connect, disconnect, listTools, executeTool, and error paths.
   Notes:
   - Uses a lightweight mock for ILogger with .info as a spy-capable function (vi.fn/jest.fn fallback).
-  - If using Vitest: import { describe, it, expect, vi } from 'vitest'
+  - If using Vitest: import { describe, it, expect, vi } from '@jest/globals'
   - If using Jest: the global jest.fn is used; adjust imports if required by your setup.
 */
 
@@ -20,7 +20,7 @@ const isFn = (f: any) => typeof f === 'function';
 const makeSpy = () => {
   // vitest's vi.fn or jest.fn or a simple manual spy fallback
   const g: any = (globalThis as any);
-  if (g.vi && isFn(g.vi.fn)) return g.vi.fn();
+  if (g.vi && isFn(g.vi.fn)) return g.jest.fn();
   if (g.jest && isFn(g.jest.fn)) return g.jest.fn();
   // minimal manual spy
   const calls: any[] = [];

@@ -18,9 +18,9 @@ async function buildProject() {
   }
 
   try {
-    // Find all TypeScript files
+    // Find all TypeScript files (excluding declaration files)
     const entryPoints = glob.sync('src/**/*.ts', {
-      ignore: ['**/*.test.ts', '**/*.spec.ts', '**/test/**']
+      ignore: ['**/*.d.ts', '**/*.test.ts', '**/*.spec.ts', '**/test/**']
     });
 
     // Build all files

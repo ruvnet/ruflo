@@ -2,8 +2,8 @@
  * Tests for MCP transport implementations
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, jest } from 'vitest';
-import { EventEmitter } from 'node:events';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { PassThrough } from 'node:stream';
 import { createServer } from 'node:http';
 import { Server as WebSocketServer } from 'ws';
 import { StdioTransport } from '../../src/mcp/transports/stdio.js';
@@ -14,11 +14,11 @@ import type { ILogger, MCPRequest, MCPResponse, MCPNotification } from '../../sr
 
 // Mock logger implementation
 const createMockLogger = (): ILogger => ({
-  debug: vi.fn(),
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-  configure: vi.fn().mockResolvedValue(undefined),
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  configure: jest.fn().mockResolvedValue(undefined),
 });
 
 describe('MCP Transports', () => {
@@ -26,14 +26,14 @@ describe('MCP Transports', () => {
   
   beforeEach(() => {
     mockLogger = createMockLogger();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('StdioTransport', () => {
     let transport: StdioTransport;
     let originalStdoutWrite: typeof process.stdout.write;
     let originalStdin: typeof process.stdin;
-    let mockStdin: EventEmitter;
+    let mockStdin: PassThrough;
 
     beforeEach(() => {
       transport = new StdioTransport(mockLogger);
@@ -42,8 +42,8 @@ describe('MCP Transports', () => {
       // Save the original stdin
       originalStdin = process.stdin;
       
-      // Create a mock stdin EventEmitter
-      mockStdin = new EventEmitter();
+      // Create a mock stdin as a PassThrough stream
+      mockStdin = new PassThrough();
       
       // Mock process.stdin directly on the global object
       // This ensures the already-imported stdin reference sees the mock
@@ -75,7 +75,7 @@ describe('MCP Transports', () => {
     });
 
     it('should handle incoming JSON-RPC requests', async () => {
-      const requestHandler = vi.fn().mockResolvedValue({
+      const requestHandler = jest.fn().mockResolvedValue({
         jsonrpc: '2.0',
         id: 'test-id',
         result: { success: true }
@@ -92,7 +92,7 @@ describe('MCP Transports', () => {
         params: { test: 'value' }
       });
       
-      mockStdin.emit('line', message);
+      mockStdin.write(message + '\n');
       
       // Give time for async processing
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -106,7 +106,7 @@ describe('MCP Transports', () => {
     });
 
     it('should handle incoming JSON-RPC notifications', async () => {
-      const notificationHandler = vi.fn();
+      const notificationHandler = jest.fn();
       
       transport.onNotification(notificationHandler);
       await transport.start();
@@ -131,17 +131,17 @@ describe('MCP Transports', () => {
     });
 
     it('should handle malformed JSON messages', async () => {
-      const requestHandler = vi.fn();
+      const requestHandler = jest.fn();
       
       transport.onRequest(requestHandler);
       await transport.start();
       
       // Mock stdout.write to capture error response
-      const stdoutWrite = vi.fn();
+      const stdoutWrite = jest.fn();
       process.stdout.write = stdoutWrite as any;
       
       // Simulate malformed JSON
-      mockStdin.emit('line', '{ invalid json }');
+      mockStdin.write('{ invalid json }\n');
       
       // Give time for async processing
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -167,13 +167,13 @@ describe('MCP Transports', () => {
     });
 
     it('should handle invalid JSON-RPC messages', async () => {
-      const requestHandler = vi.fn();
+      const requestHandler = jest.fn();
       
       transport.onRequest(requestHandler);
       await transport.start();
       
       // Mock stdout.write to capture error response
-      const stdoutWrite = vi.fn();
+      const stdoutWrite = jest.fn();
       process.stdout.write = stdoutWrite as any;
       
       // Simulate invalid JSON-RPC (missing version)
@@ -182,7 +182,7 @@ describe('MCP Transports', () => {
         method: 'test.method'
       });
       
-      mockStdin.emit('line', message);
+      mockStdin.write(message + '\n');
       
       // Give time for async processing
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -246,7 +246,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Mock stdout.write to capture output
-      const stdoutWrite = vi.fn();
+      const stdoutWrite = jest.fn();
       process.stdout.write = stdoutWrite as any;
       
       const notification: MCPNotification = {
@@ -379,7 +379,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Set up mock response handler
-      requestHandler = vi.fn().mockResolvedValue({
+      requestHandler = jest.fn().mockResolvedValue({
         jsonrpc: '2.0',
         id: 'test-id',
         result: { success: true }
@@ -407,7 +407,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Set up mock notification handler
-      notificationHandler = vi.fn();
+      notificationHandler = jest.fn();
       
       const notification: MCPNotification = {
         jsonrpc: '2.0',
@@ -424,7 +424,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Set up a handler that doesn't respond
-      requestHandler = vi.fn().mockImplementation(() => {
+      requestHandler = jest.fn().mockImplementation(() => {
         return new Promise(() => {
           // Never resolve
         });
@@ -446,7 +446,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Set up a handler that returns an error
-      requestHandler = vi.fn().mockRejectedValue(new Error('Server error'));
+      requestHandler = jest.fn().mockRejectedValue(new Error('Server error'));
       
       const request: MCPRequest = {
         jsonrpc: '2.0',
@@ -488,7 +488,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Set up request handler on transport
-      const transportRequestHandler = vi.fn().mockResolvedValue({
+      const transportRequestHandler = jest.fn().mockResolvedValue({
         jsonrpc: '2.0',
         id: 'client-id',
         result: { processed: true }
@@ -629,7 +629,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Set up mock response handler
-      requestHandler = vi.fn().mockResolvedValue({
+      requestHandler = jest.fn().mockResolvedValue({
         jsonrpc: '2.0',
         id: 'test-id',
         result: { success: true }
@@ -657,7 +657,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Set up mock notification handler
-      notificationHandler = vi.fn();
+      notificationHandler = jest.fn();
       
       const notification: MCPNotification = {
         jsonrpc: '2.0',
@@ -674,7 +674,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Set up a handler that doesn't respond
-      requestHandler = vi.fn().mockImplementation(() => {
+      requestHandler = jest.fn().mockImplementation(() => {
         return new Promise(() => {
           // Never resolve
         });
@@ -696,7 +696,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Set up a handler that returns an error
-      requestHandler = vi.fn().mockRejectedValue(new Error('Server error'));
+      requestHandler = jest.fn().mockRejectedValue(new Error('Server error'));
       
       const request: MCPRequest = {
         jsonrpc: '2.0',
@@ -774,7 +774,7 @@ describe('MCP Transports', () => {
       await transport.start();
       
       // Set up request handler on transport
-      const transportRequestHandler = vi.fn().mockResolvedValue({
+      const transportRequestHandler = jest.fn().mockResolvedValue({
         jsonrpc: '2.0',
         id: 'client-id',
         result: { processed: true }

@@ -2,7 +2,7 @@
  * Tests for Claude API enhanced error handling
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, Mock } from '@jest/globals';
 import { ClaudeAPIClient } from '../../../src/api/claude-client.js';
 import { 
   ClaudeInternalServerError,
@@ -17,7 +17,7 @@ import { createMockLogger } from '../../test.utils.js';
 import { ConfigManager } from '../../../src/config/config-manager.js';
 
 // Mock fetch
-global.fetch = vi.fn();
+global.fetch = jest.fn();
 
 describe('Claude API Enhanced Error Handling', () => {
   let client: ClaudeAPIClient;
@@ -28,7 +28,7 @@ describe('Claude API Enhanced Error Handling', () => {
   beforeEach(() => {
     mockLogger = createMockLogger();
     mockConfigManager = {
-      get: vi.fn().mockReturnValue(null),
+      get: jest.fn().mockReturnValue(null),
     };
     
     // Set up client with API key
@@ -42,7 +42,7 @@ describe('Claude API Enhanced Error Handling', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     delete process.env.ANTHROPIC_API_KEY;
     if (client) {
       client.destroy();

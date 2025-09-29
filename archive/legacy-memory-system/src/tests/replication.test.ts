@@ -2,7 +2,7 @@
  * SPARC Memory Bank - Replication Tests
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from '@jest/globals';
 import { ReplicationManager } from '../replication/replication-manager';
 import { SqliteBackend } from '../backends/sqlite-backend';
 import { MemoryItem, ReplicationConfig } from '../types';
@@ -11,7 +11,7 @@ import * as path from 'path';
 import axios from 'axios';
 
 // Mock axios
-vi.mock('axios');
+jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('ReplicationManager', () => {
@@ -41,11 +41,11 @@ describe('ReplicationManager', () => {
 
     // Mock axios.create
     mockedAxios.create.mockReturnValue({
-      get: vi.fn(),
-      post: vi.fn(),
+      get: jest.fn(),
+      post: jest.fn(),
       interceptors: {
         response: {
-          use: vi.fn()
+          use: jest.fn()
         }
       }
     } as any);
@@ -61,12 +61,12 @@ describe('ReplicationManager', () => {
     await replicationManager.close();
     await backend.close();
     await fs.rm(testDir, { recursive: true, force: true });
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('Initialization', () => {
     it('should initialize replication manager', async () => {
-      const initHandler = vi.fn();
+      const initHandler = jest.fn();
       replicationManager.on('initialized', initHandler);
 
       await replicationManager.initialize();
@@ -96,11 +96,11 @@ describe('ReplicationManager', () => {
 
     beforeEach(async () => {
       mockClient = {
-        get: vi.fn(),
-        post: vi.fn().mockResolvedValue({ status: 200 }),
+        get: jest.fn(),
+        post: jest.fn().mockResolvedValue({ status: 200 }),
         interceptors: {
           response: {
-            use: vi.fn()
+            use: jest.fn()
           }
         }
       };
@@ -157,7 +157,7 @@ describe('ReplicationManager', () => {
     });
 
     it('should emit events on successful replication', async () => {
-      const replicatedHandler = vi.fn();
+      const replicatedHandler = jest.fn();
       replicationManager.on('replicated', replicatedHandler);
 
       const noSyncConfig = { ...mockConfig, syncInterval: undefined };
@@ -181,7 +181,7 @@ describe('ReplicationManager', () => {
     });
 
     it('should handle replication failures', async () => {
-      const failHandler = vi.fn();
+      const failHandler = jest.fn();
       replicationManager.on('replication-failed', failHandler);
 
       mockClient.post.mockRejectedValueOnce(new Error('Network error'));
@@ -231,9 +231,9 @@ describe('ReplicationManager', () => {
 
     it('should replicate from master to slaves', async () => {
       const mockClient = {
-        post: vi.fn().mockResolvedValue({ status: 200 }),
-        get: vi.fn(),
-        interceptors: { response: { use: vi.fn() } }
+        post: jest.fn().mockResolvedValue({ status: 200 }),
+        get: jest.fn(),
+        interceptors: { response: { use: jest.fn() } }
       };
       
       mockedAxios.create.mockReturnValue(mockClient);
@@ -257,9 +257,9 @@ describe('ReplicationManager', () => {
 
     beforeEach(async () => {
       mockClient = {
-        get: vi.fn(),
-        post: vi.fn().mockResolvedValue({ status: 200 }),
-        interceptors: { response: { use: vi.fn() } }
+        get: jest.fn(),
+        post: jest.fn().mockResolvedValue({ status: 200 }),
+        interceptors: { response: { use: jest.fn() } }
       };
       
       mockedAxios.create.mockReturnValue(mockClient);
@@ -281,7 +281,7 @@ describe('ReplicationManager', () => {
 
       mockClient.get.mockResolvedValueOnce({ data: remoteState });
 
-      const syncCompleteHandler = vi.fn();
+      const syncCompleteHandler = jest.fn();
       replicationManager.on('sync-complete', syncCompleteHandler);
 
       await replicationManager.syncWithNode('node1');
@@ -293,7 +293,7 @@ describe('ReplicationManager', () => {
     it('should handle sync failures', async () => {
       mockClient.get.mockRejectedValueOnce(new Error('Connection refused'));
 
-      const syncFailedHandler = vi.fn();
+      const syncFailedHandler = jest.fn();
       replicationManager.on('sync-failed', syncFailedHandler);
 
       await expect(
@@ -314,9 +314,9 @@ describe('ReplicationManager', () => {
       vi.useFakeTimers();
       
       mockClient = {
-        get: vi.fn(),
-        post: vi.fn(),
-        interceptors: { response: { use: vi.fn() } }
+        get: jest.fn(),
+        post: jest.fn(),
+        interceptors: { response: { use: jest.fn() } }
       };
       
       mockedAxios.create.mockReturnValue(mockClient);

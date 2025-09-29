@@ -2,7 +2,7 @@
  * SPARC Memory Bank - Backend Tests
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { SqliteBackend } from '../backends/sqlite-backend';
 import { MarkdownBackend } from '../backends/markdown-backend';
 import { MemoryItem, MemoryBackend } from '../types';

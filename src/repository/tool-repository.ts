@@ -11,20 +11,40 @@ import type { MCPTool } from '../utils/types.js';
 export class InMemoryToolRepository {
   private tools: Map<string, MCPTool> = new Map();
   private toolsByCategory: Map<string, Set<string>> = new Map();
+  private toolCategoryByName: Map<string, string> = new Map();
 
   /**
    * Add a tool to the repository
    */
   addTool(tool: MCPTool): void {
+    // Check for existing category
+    const existingCategory = this.toolCategoryByName.get(tool.name) ?? this.extractCategory(tool.name);
+    const newCategory = this.extractCategory(tool.name);
+    
+    // If tool exists and category changed, remove from old category
+    if (existingCategory && existingCategory !== newCategory) {
+      const categorySet = this.toolsByCategory.get(existingCategory);
+      if (categorySet) {
+        categorySet.delete(tool.name);
+        // Clean up empty category sets
+        if (categorySet.size === 0) {
+          this.toolsByCategory.delete(existingCategory);
+        }
+      }
+    }
+
+    // Add/update tool
     this.tools.set(tool.name, tool);
     
-    // Index by category if present
-    const category = this.extractCategory(tool.name);
-    if (category) {
-      if (!this.toolsByCategory.has(category)) {
-        this.toolsByCategory.set(category, new Set());
+    // Update category indexing
+    if (newCategory) {
+      if (!this.toolsByCategory.has(newCategory)) {
+        this.toolsByCategory.set(newCategory, new Set());
       }
-      this.toolsByCategory.get(category)!.add(tool.name);
+      this.toolsByCategory.get(newCategory)!.add(tool.name);
+      this.toolCategoryByName.set(tool.name, newCategory);
+    } else {
+      this.toolCategoryByName.delete(tool.name);
     }
   }
 
@@ -106,6 +126,36 @@ export class InMemoryToolRepository {
   clear(): void {
     this.tools.clear();
     this.toolsByCategory.clear();
+    this.toolCategoryByName.clear();
+  }
+
+  /**
+   * Remove a tool from the repository
+   * @returns true if the tool was found and removed, false otherwise
+   */
+  removeTool(name: string): boolean {
+    // Check if tool exists
+    if (!this.tools.has(name)) {
+      return false;
+    }
+
+    // Remove from category index
+    const category = this.toolCategoryByName.get(name);
+    if (category) {
+      const categorySet = this.toolsByCategory.get(category);
+      if (categorySet) {
+        categorySet.delete(name);
+        // Clean up empty category sets
+        if (categorySet.size === 0) {
+          this.toolsByCategory.delete(category);
+        }
+      }
+      this.toolCategoryByName.delete(name);
+    }
+
+    // Remove the tool
+    this.tools.delete(name);
+    return true;
   }
 
   /**
