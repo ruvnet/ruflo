@@ -1,8 +1,8 @@
-# Abstract Subagent Architecture - Technical Specifications
+# Subagents Integration - Technical Specifications
 
 ## System Overview
 
-The Abstract Subagent Architecture provides a unified interface for multiple AI coding agents through an adapter pattern implementation. The system consists of core interfaces, communication protocols, coordination mechanisms, and configuration management components.
+The Subagents Integration system provides a unified interface for multiple AI coding agents through an adapter pattern implementation. The system consists of core interfaces, communication protocols, coordination mechanisms, and configuration management components.
 
 ## Interface Specifications
 
@@ -480,7 +480,6 @@ interface MetricsCollection {
 ## References
 
 - [Requirements Document](./REQUIREMENTS.md)
-- [Architecture Design Document](./ARCHITECTURE.md)
-- [API Documentation](./API.md)
-- [Integration Guide](./INTEGRATION.md)
+- [Steering Document](./STEERING.md)
+- [Detailed Documentation](./detailed/)
 - [Claude-Flow Core Documentation](../../../README.md)

@@ -1,19 +1,14 @@
-# Abstract Subagent Architecture - Requirements Document
+# Subagents Integration - Requirements
 
 ## Executive Summary
 
-The Abstract Subagent Architecture enables running subagents with any coding agents like Codex, Cursor-agent, Gemini, Claude Code and others through a unified interface. This system provides a provider-agnostic layer that allows seamless integration of multiple AI coding agents while maintaining consistency, reliability, and performance.
+The Subagents Integration system enables running subagents with any coding agents like Codex, Cursor-agent, Gemini, Claude Code and others through a unified interface. This document defines the essential requirements for implementing a provider-agnostic AI coding agent coordination system.
 
 ## Functional Requirements
 
 ### FR-001: Multi-Provider Support
-**Priority**: MUST HAVE
-**Description**: The system MUST support multiple AI coding agents including:
-- Anthropic Claude Code
-- OpenAI Codex
-- Google Gemini
-- Cursor AI
-- Extensible to future providers
+**Priority**: MUST HAVE  
+**Description**: The system MUST support multiple AI coding agents including Anthropic Claude Code, OpenAI Codex, Google Gemini, and Cursor AI, with extensibility for future providers.
 
 **Acceptance Criteria**:
 - System can instantiate agents from any supported provider
@@ -22,7 +17,7 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Provider-specific configurations are properly handled
 
 ### FR-002: Unified Interface
-**Priority**: MUST HAVE
+**Priority**: MUST HAVE  
 **Description**: The system MUST provide a consistent interface regardless of underlying provider.
 
 **Acceptance Criteria**:
@@ -30,10 +25,9 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Task execution follows standardized CodingTask format
 - Results are returned in standardized CodingResult format
 - Agent capabilities are reported consistently
-- Health checks follow standard protocol
 
 ### FR-003: Task Delegation
-**Priority**: MUST HAVE
+**Priority**: MUST HAVE  
 **Description**: The system MUST intelligently delegate tasks to appropriate agents based on capabilities, load, and performance.
 
 **Acceptance Criteria**:
@@ -41,10 +35,9 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Suitable agents are identified based on capabilities
 - Load balancing is performed across available agents
 - Fallback mechanisms are in place for failed delegations
-- Delegation metrics are tracked and reported
 
 ### FR-004: Multi-Agent Coordination
-**Priority**: MUST HAVE
+**Priority**: MUST HAVE  
 **Description**: The system MUST support various coordination strategies for multi-agent workflows.
 
 **Acceptance Criteria**:
@@ -53,11 +46,9 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Pipeline coordination: Tasks executed in stages
 - Consensus coordination: Agents vote on decisions
 - Voting coordination: Majority rule decision making
-- Hierarchical coordination: Centralized decision making
-- Peer-to-peer coordination: Distributed decision making
 
 ### FR-005: Configuration Management
-**Priority**: MUST HAVE
+**Priority**: MUST HAVE  
 **Description**: The system MUST allow dynamic configuration of agents and providers.
 
 **Acceptance Criteria**:
@@ -65,10 +56,9 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Provider configurations are centrally managed
 - Configuration validation is performed
 - Configuration templates are supported
-- Configuration persistence is implemented
 
 ### FR-006: Health Monitoring
-**Priority**: MUST HAVE
+**Priority**: MUST HAVE  
 **Description**: The system MUST monitor agent health and performance.
 
 **Acceptance Criteria**:
@@ -76,10 +66,9 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Performance metrics are collected and reported
 - Health checks are performed at configurable intervals
 - Unhealthy agents are automatically detected
-- Health status is reported through standard interface
 
 ### FR-007: Conflict Resolution
-**Priority**: MUST HAVE
+**Priority**: MUST HAVE  
 **Description**: The system MUST handle conflicts between agents.
 
 **Acceptance Criteria**:
@@ -87,10 +76,9 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Conflict resolution strategies are implemented
 - Conflict reports are generated
 - Resolution outcomes are tracked
-- Escalation mechanisms are in place
 
 ### FR-008: Event Communication
-**Priority**: MUST HAVE
+**Priority**: MUST HAVE  
 **Description**: The system MUST support event-driven communication between agents.
 
 **Acceptance Criteria**:
@@ -98,10 +86,9 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Message routing is implemented
 - Event filtering is supported
 - Communication protocols are standardized
-- Message queuing is handled
 
 ### FR-009: Result Aggregation
-**Priority**: MUST HAVE
+**Priority**: MUST HAVE  
 **Description**: The system MUST aggregate results from multiple agents.
 
 **Acceptance Criteria**:
@@ -109,10 +96,9 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Quality assessment is performed
 - Consensus building is supported
 - Result validation is implemented
-- Aggregation strategies are configurable
 
 ### FR-010: Error Handling
-**Priority**: MUST HAVE
+**Priority**: MUST HAVE  
 **Description**: The system MUST handle errors gracefully with fallback mechanisms.
 
 **Acceptance Criteria**:
@@ -120,12 +106,11 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Fallback mechanisms are triggered on failures
 - Error recovery is attempted
 - Error reporting is comprehensive
-- Error metrics are tracked
 
 ## Non-Functional Requirements
 
 ### NFR-001: Performance
-**Priority**: SHOULD HAVE
+**Priority**: SHOULD HAVE  
 **Description**: The system SHOULD respond to tasks within acceptable time limits.
 
 **Acceptance Criteria**:
@@ -136,7 +121,7 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Memory usage < 512MB per agent instance
 
 ### NFR-002: Scalability
-**Priority**: SHOULD HAVE
+**Priority**: SHOULD HAVE  
 **Description**: The system SHOULD handle increasing numbers of agents and tasks.
 
 **Acceptance Criteria**:
@@ -144,21 +129,19 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Support for 1000+ concurrent tasks
 - Horizontal scaling capabilities
 - Load balancing across multiple instances
-- Resource utilization optimization
 
 ### NFR-003: Reliability
-**Priority**: SHOULD HAVE
+**Priority**: SHOULD HAVE  
 **Description**: The system SHOULD have high availability and fault tolerance.
 
 **Acceptance Criteria**:
 - 99.9% uptime availability
 - Automatic failover mechanisms
 - Graceful degradation on failures
-- Data consistency guarantees
 - Recovery time < 5 minutes
 
 ### NFR-004: Security
-**Priority**: SHOULD HAVE
+**Priority**: SHOULD HAVE  
 **Description**: The system SHOULD protect sensitive data and API keys.
 
 **Acceptance Criteria**:
@@ -166,21 +149,19 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Secure communication channels
 - Access control and authorization
 - Audit logging for security events
-- Data privacy protection
 
 ### NFR-005: Maintainability
-**Priority**: SHOULD HAVE
+**Priority**: SHOULD HAVE  
 **Description**: The system SHOULD be easy to extend with new providers.
 
 **Acceptance Criteria**:
 - New providers can be added in < 1 day
 - Code is well-documented and structured
 - Unit test coverage > 80%
-- Integration test coverage > 70%
 - Clear separation of concerns
 
 ### NFR-006: Usability
-**Priority**: SHOULD HAVE
+**Priority**: SHOULD HAVE  
 **Description**: The system SHOULD be easy to configure and use.
 
 **Acceptance Criteria**:
@@ -188,27 +169,24 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 - Clear error messages and documentation
 - Intuitive interface design
 - Minimal learning curve
-- Comprehensive examples and tutorials
 
 ### NFR-007: Compatibility
-**Priority**: SHOULD HAVE
+**Priority**: SHOULD HAVE  
 **Description**: The system SHOULD integrate seamlessly with existing Claude-Flow.
 
 **Acceptance Criteria**:
 - No breaking changes to existing Claude-Flow APIs
 - Backward compatibility maintained
 - Integration points are clearly defined
-- Migration path is provided
 - Performance impact is minimal
 
 ### NFR-008: Observability
-**Priority**: SHOULD HAVE
+**Priority**: SHOULD HAVE  
 **Description**: The system SHOULD provide comprehensive logging and metrics.
 
 **Acceptance Criteria**:
 - Structured logging with appropriate levels
 - Metrics collection for all key operations
-- Distributed tracing support
 - Performance monitoring dashboards
 - Alerting for critical issues
 
@@ -217,8 +195,8 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 ### UC-001: Multi-Provider Code Generation
 **Description**: User wants to generate code using multiple AI providers for comparison and quality assurance.
 
-**Actors**: Developer, System
-**Preconditions**: Multiple AI providers are configured and available
+**Actors**: Developer, System  
+**Preconditions**: Multiple AI providers are configured and available  
 **Main Flow**:
 1. Developer submits coding task
 2. System delegates task to multiple providers
@@ -231,8 +209,8 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 ### UC-002: Load Balancing Across Providers
 **Description**: System automatically distributes tasks across available providers to optimize performance and costs.
 
-**Actors**: System, Multiple AI Providers
-**Preconditions**: Multiple providers are configured with different capabilities and costs
+**Actors**: System, Multiple AI Providers  
+**Preconditions**: Multiple providers are configured with different capabilities and costs  
 **Main Flow**:
 1. System receives high volume of tasks
 2. System analyzes provider capabilities and current load
@@ -245,8 +223,8 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 ### UC-003: Fault Tolerance and Fallback
 **Description**: System continues operating when individual providers fail by automatically switching to alternatives.
 
-**Actors**: System, AI Providers
-**Preconditions**: Multiple providers are configured with fallback relationships
+**Actors**: System, AI Providers  
+**Preconditions**: Multiple providers are configured with fallback relationships  
 **Main Flow**:
 1. Primary provider fails or becomes unavailable
 2. System detects failure through health checks
@@ -259,8 +237,8 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 ### UC-004: Provider Performance Comparison
 **Description**: System tracks and compares performance metrics across different providers for optimization.
 
-**Actors**: System Administrator, System
-**Preconditions**: Multiple providers are active and processing tasks
+**Actors**: System Administrator, System  
+**Preconditions**: Multiple providers are active and processing tasks  
 **Main Flow**:
 1. System collects performance metrics from all providers
 2. System analyzes metrics for trends and patterns
@@ -324,8 +302,7 @@ The Abstract Subagent Architecture enables running subagents with any coding age
 
 ## References
 
-- [Abstract Subagent Architecture Specification](./SPECIFICATIONS.md)
-- [Architecture Design Document](./ARCHITECTURE.md)
-- [API Documentation](./API.md)
-- [Integration Guide](./INTEGRATION.md)
+- [Technical Specifications](./SPECIFICATIONS.md)
+- [Steering Document](./STEERING.md)
+- [Detailed Documentation](./detailed/)
 - [Claude-Flow Core Documentation](../../../README.md)

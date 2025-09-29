@@ -1,110 +1,38 @@
-# Abstract Subagent Architecture Documentation
+# Subagents Integration Documentation
 
 ## Overview
 
-The Abstract Subagent Architecture enables running subagents with any coding agents like Codex, Cursor-agent, Gemini, Claude Code and others through a unified interface. This comprehensive documentation provides everything needed to understand, implement, and deploy the system.
+The Subagents Integration system enables running subagents with any coding agents like Codex, Cursor-agent, Gemini, Claude Code and others through a unified interface. This documentation provides everything needed to understand, implement, and integrate the subagents system.
 
-## Documentation Structure
+## Core Documentation
 
-### 📋 Core Documentation
+### 📋 [Requirements](./REQUIREMENTS.md)
+**What the system must do**
+- Functional requirements for multi-provider AI agent support
+- Non-functional requirements for performance, security, and reliability
+- Use cases and acceptance criteria
+- Constraints and dependencies
 
-#### [Requirements Document](./REQUIREMENTS.md)
-Comprehensive functional and non-functional requirements for the Abstract Subagent Architecture.
-- **Functional Requirements**: Multi-provider support, unified interface, task delegation, coordination
-- **Non-Functional Requirements**: Performance, scalability, reliability, security
-- **Use Cases**: Multi-provider code generation, load balancing, fault tolerance
-- **Constraints and Assumptions**: System limitations and dependencies
+### 🔧 [Specifications](./SPECIFICATIONS.md)
+**How the system works technically**
+- Interface specifications and data models
+- Communication protocols and event types
+- Configuration schemas and validation
+- Error handling and performance specifications
+- Integration specifications with Claude-Flow
 
-#### [Technical Specifications](./SPECIFICATIONS.md)
-Detailed technical specifications and API documentation.
-- **Interface Specifications**: Core interfaces and data models
-- **Communication Protocols**: Event-driven communication patterns
-- **Configuration Specifications**: Agent and provider configuration schemas
-- **Error Handling**: Comprehensive error handling strategies
-- **Performance Specifications**: Performance targets and metrics
-
-#### [Architecture Design Document](./ARCHITECTURE.md)
-Architecture overview with design decisions and principles.
-- **Design Principles**: Provider agnostic, extensibility, fault tolerance
-- **Architecture Decisions**: ADRs with rationale and consequences
-- **Component Architecture**: Core components and interactions
-- **Integration Architecture**: Claude-Flow integration points
-- **Security Architecture**: Multi-layered security approach
-
-### 🔧 Implementation Guides
-
-#### [API Documentation](./API.md)
-Complete API documentation with examples and SDKs.
-- **Authentication and Authorization**: Multi-factor authentication
-- **Core API Interfaces**: AbstractCodingAgent, AgentCoordinator, TaskDelegator
-- **Data Models**: CodingTask, CodingResult, AgentCapabilities
-- **API Endpoints**: RESTful API with comprehensive examples
-- **SDK Documentation**: TypeScript and Python SDKs
-
-#### [Integration Guide](./INTEGRATION.md)
-Comprehensive integration guide for Claude-Flow.
-- **Claude-Flow Integration Points**: Event Bus, Memory System, Configuration
-- **Integration Patterns**: Adapter, Observer, Strategy, Factory patterns
-- **Migration Path**: Step-by-step migration from existing systems
-- **Best Practices**: Configuration, error handling, performance optimization
-- **Troubleshooting**: Common issues and solutions
-
-### 🧪 Testing and Quality
-
-#### [Testing Strategy](./TESTING.md)
-Comprehensive testing strategy and frameworks.
-- **Testing Pyramid**: Unit tests (70%), Integration tests (20%), E2E tests (10%)
-- **Testing Frameworks**: Jest, Mocha, Chai, Sinon, Supertest
-- **Unit Testing**: Agent interfaces, adapters, configuration
-- **Integration Testing**: Provider integration, multi-agent coordination
-- **Performance Testing**: Load testing, stress testing, benchmarks
-
-### 🚀 Deployment and Operations
-
-#### [Deployment Guide](./DEPLOYMENT.md)
-Complete deployment and configuration guide.
-- **Installation Methods**: NPM, Docker, Kubernetes
-- **Configuration**: Environment-specific configurations
-- **Deployment Strategies**: Single instance, multi-instance, distributed
-- **Monitoring and Observability**: Prometheus, Grafana, logging
-- **Security Configuration**: SSL/TLS, firewall, authentication
-
-#### [Performance Requirements](./PERFORMANCE.md)
-Performance requirements and optimization strategies.
-- **Performance Requirements**: Response times, throughput, scalability
-- **Performance Benchmarks**: Baseline and load testing benchmarks
-- **Optimization Strategies**: Caching, asynchronous processing, resource optimization
-- **Performance Monitoring**: Metrics collection and dashboards
-- **Performance Testing**: Load testing, stress testing, optimization guidelines
-
-### 🔒 Security and Compliance
-
-#### [Security Best Practices](./SECURITY.md)
-Comprehensive security requirements and best practices.
-- **Authentication and Authorization**: Multi-factor authentication, RBAC
-- **Data Protection**: Encryption standards, data classification
-- **Network Security**: HTTPS, certificate management, firewall
-- **Security Implementation**: JWT management, API key management, encryption
-- **Security Compliance**: GDPR, SOC 2, ISO 27001, NIST framework
-
-### 🔄 Migration and Maintenance
-
-#### [Migration Guide](./MIGRATION.md)
-Complete migration guide for existing systems.
-- **Migration Strategies**: Big bang, gradual, parallel, strangler fig
-- **Pre-Migration Assessment**: System analysis, risk assessment
-- **Migration Planning**: Timeline, checklist, implementation
-- **Testing and Validation**: Parallel testing, data validation
-- **Rollback Procedures**: Automated and manual rollback strategies
+### 🎯 [Steering Document](./STEERING.md)
+**Why and how to implement**
+- Architecture decisions and rationale
+- Design principles and integration guidelines
+- Implementation best practices and standards
+- Code organization and testing guidelines
+- Standards and conventions
 
 ## Quick Start
 
 ### 1. Installation
 ```bash
-# Install globally
-npm install -g @claude-flow/abstract-agents
-
-# Or install locally
 npm install @claude-flow/abstract-agents
 ```
 
@@ -262,30 +190,35 @@ src/abstract-agents/
 - Comprehensive audit logging
 - Compliance with industry standards
 
+## Detailed Documentation
+
+For comprehensive implementation details, see the [detailed documentation](./detailed/):
+
+- **[API Documentation](./detailed/API.md)** - Complete API reference with examples
+- **[Architecture Design](./detailed/ARCHITECTURE.md)** - Detailed architecture and design decisions
+- **[Deployment Guide](./detailed/DEPLOYMENT.md)** - Complete deployment and configuration guide
+- **[Integration Guide](./detailed/INTEGRATION.md)** - Comprehensive integration patterns
+- **[Migration Guide](./detailed/MIGRATION.md)** - Migration strategies and procedures
+- **[Performance Guide](./detailed/PERFORMANCE.md)** - Performance optimization and monitoring
+- **[Security Guide](./detailed/SECURITY.md)** - Security best practices and compliance
+- **[Testing Guide](./detailed/TESTING.md)** - Comprehensive testing strategies
+
 ## Getting Help
 
 ### 📚 Documentation
-- [Requirements Document](./REQUIREMENTS.md) - System requirements
-- [Technical Specifications](./SPECIFICATIONS.md) - Technical details
-- [Architecture Design Document](./ARCHITECTURE.md) - Architecture overview
-- [API Documentation](./API.md) - Complete API reference
-- [Integration Guide](./INTEGRATION.md) - Integration instructions
-- [Testing Strategy](./TESTING.md) - Testing guidelines
-- [Deployment Guide](./DEPLOYMENT.md) - Deployment instructions
-- [Performance Requirements](./PERFORMANCE.md) - Performance guidelines
-- [Security Best Practices](./SECURITY.md) - Security guidelines
-- [Migration Guide](./MIGRATION.md) - Migration instructions
+- [Requirements](./REQUIREMENTS.md) - System requirements
+- [Specifications](./SPECIFICATIONS.md) - Technical specifications
+- [Steering Document](./STEERING.md) - Architecture and implementation guidance
+- [Detailed Documentation](./detailed/) - Comprehensive implementation guides
 
 ### 🆘 Support
 - **Issues**: [GitHub Issues](https://github.com/ruvnet/claude-flow/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/ruvnet/claude-flow/discussions)
 - **Documentation**: [Claude-Flow Docs](https://github.com/ruvnet/claude-flow)
-- **Examples**: [Example Projects](https://github.com/ruvnet/claude-flow/examples)
 
 ### 🤝 Contributing
 - **Contributing Guide**: [CONTRIBUTING.md](https://github.com/ruvnet/claude-flow/CONTRIBUTING.md)
 - **Code of Conduct**: [CODE_OF_CONDUCT.md](https://github.com/ruvnet/claude-flow/CODE_OF_CONDUCT.md)
-- **Development Setup**: [DEVELOPMENT.md](https://github.com/ruvnet/claude-flow/DEVELOPMENT.md)
 
 ## Version History
 
@@ -297,13 +230,6 @@ src/abstract-agents/
 
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/ruvnet/claude-flow/LICENSE) file for details.
 
-## Acknowledgments
-
-- **Claude-Flow Team**: Core architecture and implementation
-- **AI Provider Communities**: Anthropic, OpenAI, Google, Cursor AI
-- **Open Source Contributors**: Community contributions and feedback
-- **Beta Testers**: Early testing and feedback
-
 ---
 
-**Abstract Subagent Architecture** - Enabling seamless multi-provider AI coding agent coordination through a unified interface.
+**Subagents Integration** - Enabling seamless multi-provider AI coding agent coordination through a unified interface.
