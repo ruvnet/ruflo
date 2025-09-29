@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "claude-flow-test": {
+      "command": "$HOME/claude-flow-optimized/claude-flow/node_modules/.bin/tsx",
+      "args": ["src/mcp/server-with-wrapper.ts"],
+      "env": {
+        "NODE_ENV": "development",
+        "CLAUDE_FLOW_LOG_LEVEL": "debug",
+        "CLAUDE_FLOW_DEBUG": "true"
+      }
+    }
+  }
+}

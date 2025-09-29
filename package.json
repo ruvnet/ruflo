@@ -169,7 +169,7 @@
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.0",
     "tsx": "^4.6.2",
-    "typescript": "^5.9.2",
+    "typescript": "^5.8.3",
     "typescript-eslint": "^8.37.0"
   },
   "pkg": {

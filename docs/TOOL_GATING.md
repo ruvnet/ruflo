@@ -279,6 +279,11 @@ console.log('Backend status:', healthCheck);
 - **Advanced Load Balancing**: Weighted routing and failover
 - **Tool Versioning**: Support multiple tool versions
 - **A/B Testing**: Compare different provisioning strategies
+- **Ruv-Swarm Context Slimming** *(roadmap)*:
+  - Audit the current `ruv-swarm` MCP prompt/template to identify the 11k token baseline.
+  - Port the proxy/gating pattern used for `claude-flow` so `ruv-swarm` only loads tool/toolset metadata on demand.
+  - Introduce per-toolset TTL/LRU rules and semantic discovery hooks to keep active context under 5k tokens.
+  - Provide migration guidance so downstream users can toggle the trimmed profile set or fall back to the legacy, full-context mode during rollout.
 
 ### Performance Improvements
 - **Connection Pooling**: Reuse backend connections
