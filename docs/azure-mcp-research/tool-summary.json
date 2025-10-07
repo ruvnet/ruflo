@@ -1,0 +1,237 @@
+{
+  "research_metadata": {
+    "date": "2025-10-07",
+    "status": "Public Preview",
+    "repository": "https://github.com/Azure/azure-mcp",
+    "documentation": "https://learn.microsoft.com/en-us/azure/developer/azure-mcp-server/",
+    "total_services": 30,
+    "total_tools": 100
+  },
+  "authentication": {
+    "methods": [
+      "EnvironmentCredential",
+      "VisualStudioCredential",
+      "AzureCliCredential",
+      "AzurePowerShellCredential",
+      "AzureDeveloperCliCredential",
+      "InteractiveBrowserCredential"
+    ],
+    "environment_variables": {
+      "AZURE_MCP_ONLY_USE_BROKER_CREDENTIAL": "Enable broker-enabled interactive auth",
+      "AZURE_MCP_INCLUDE_PRODUCTION_CREDENTIALS": "Enable workload identity and managed identity",
+      "AZURE_CLIENT_ID": "Service principal client ID",
+      "AZURE_CLIENT_SECRET": "Service principal secret",
+      "AZURE_TENANT_ID": "Azure tenant ID"
+    }
+  },
+  "services_by_category": {
+    "ai_services": {
+      "azure_ai_search": {
+        "tool_count": 3,
+        "tools": ["List accounts", "Get index details", "Query index"]
+      },
+      "azure_ai_speech": {
+        "tool_count": 1,
+        "tools": ["Manage speech-to-text services"]
+      }
+    },
+    "database_services": {
+      "azure_sql": {
+        "tool_count": 12,
+        "tools": [
+          "Create database", "Delete database", "List databases",
+          "Rename database", "Show database details", "Update database",
+          "Create server", "Delete server", "List servers",
+          "Show server", "List Microsoft Entra administrators", "List firewall rules"
+        ]
+      },
+      "azure_postgresql": {
+        "tool_count": 8,
+        "tools": [
+          "List databases", "Execute database query", "List tables",
+          "Get table schema", "List servers", "Get server configuration",
+          "Get server parameter", "Set server parameter"
+        ]
+      },
+      "azure_mysql": {
+        "tool_count": 4,
+        "tools": ["List databases", "Query databases", "List tables", "Get table schema"]
+      },
+      "azure_cosmos_db": {
+        "tool_count": 4,
+        "tools": ["List accounts", "List databases", "List containers", "Query container items"]
+      }
+    },
+    "data_analytics": {
+      "azure_data_explorer": {
+        "tool_count": 7,
+        "tools": [
+          "List clusters", "Get cluster details", "List databases",
+          "List tables", "Get table schema", "Execute query", "Sample table data"
+        ]
+      }
+    },
+    "storage_services": {
+      "azure_storage": {
+        "tool_count": 6,
+        "tools": [
+          "Create account", "Get account details", "Create container",
+          "Get container details", "Get blob details", "Upload blob"
+        ]
+      }
+    },
+    "container_kubernetes": {
+      "azure_kubernetes_service": {
+        "tool_count": 4,
+        "tools": ["List clusters", "Get cluster details", "List node pools", "Get node pool details"]
+      },
+      "azure_container_registry": {
+        "tool_count": 1,
+        "tools": ["List registries"]
+      },
+      "azure_functions": {
+        "tool_count": 1,
+        "tools": ["List functions"]
+      }
+    },
+    "messaging_events": {
+      "azure_service_bus": {
+        "tool_count": 3,
+        "tools": [
+          "Get queue runtime details",
+          "Get topic runtime details",
+          "Get topic subscription runtime details"
+        ]
+      },
+      "azure_event_grid": {
+        "tool_count": 2,
+        "tools": ["Manage topics", "Manage subscriptions"]
+      },
+      "azure_event_hubs": {
+        "tool_count": 2,
+        "tools": ["Manage namespaces", "Manage event hubs"]
+      }
+    },
+    "monitoring_operations": {
+      "azure_monitor": {
+        "tool_count": 7,
+        "tools": [
+          "List workspaces", "List tables", "Query logs",
+          "List recommendations", "Get entity health", "Query metrics", "List metric definitions"
+        ]
+      },
+      "azure_managed_grafana": {
+        "tool_count": 1,
+        "tools": ["Manage Grafana instances"]
+      }
+    },
+    "security_configuration": {
+      "azure_key_vault": {
+        "tool_count": 3,
+        "tools": ["Manage keys", "Manage secrets", "Manage certificates"]
+      },
+      "azure_app_configuration": {
+        "tool_count": 2,
+        "tools": ["Manage settings", "Manage feature flags"]
+      }
+    },
+    "application_services": {
+      "azure_app_service": {
+        "tool_count": 2,
+        "tools": ["Manage database connections", "Manage app services"]
+      },
+      "azure_redis": {
+        "tool_count": 3,
+        "tools": ["Manage instances", "Manage clusters", "Manage access policies"]
+      }
+    },
+    "deployment_development": {
+      "azure_deploy": {
+        "tool_count": 5,
+        "tools": [
+          "Get logs", "Generate Mermaid diagram", "IaC guidance",
+          "Pipeline guidance", "Create deployment plan"
+        ]
+      },
+      "azure_developer_cli": {
+        "tool_count": 1,
+        "tools": ["Azure Developer CLI integration"]
+      },
+      "azure_bicep": {
+        "tool_count": 1,
+        "tools": ["Bicep schema support"]
+      }
+    },
+    "architecture_advisory": {
+      "azure_cloud_architect": {
+        "tool_count": 1,
+        "tools": ["Architecture insights"]
+      },
+      "azure_best_practices": {
+        "tool_count": 1,
+        "tools": ["Best practices recommendations"]
+      },
+      "azure_app_lens": {
+        "tool_count": 1,
+        "tools": ["Application assessment"]
+      }
+    }
+  },
+  "use_cases": {
+    "deployment": [
+      "Deploy containerized applications",
+      "Manage Kubernetes clusters",
+      "Execute infrastructure as code",
+      "Generate deployment plans",
+      "Fetch deployment logs"
+    ],
+    "security": [
+      "Manage secrets and certificates",
+      "Configure firewall rules",
+      "Manage Entra administrators",
+      "Implement least-privilege access",
+      "Audit authentication"
+    ],
+    "monitoring": [
+      "Query application logs",
+      "Analyze performance metrics",
+      "Get health status",
+      "Retrieve optimization recommendations",
+      "Monitor messaging services"
+    ],
+    "administration": [
+      "Create and manage databases",
+      "Execute queries",
+      "Manage schemas",
+      "Configure server parameters",
+      "Inspect database objects"
+    ],
+    "debugging": [
+      "Fetch deployment logs",
+      "Query error logs",
+      "Analyze performance issues",
+      "Monitor resource health",
+      "Troubleshoot applications"
+    ]
+  },
+  "integration_support": {
+    "ides": [
+      "Visual Studio Code",
+      "Visual Studio",
+      "Cursor",
+      "Cline"
+    ],
+    "frameworks": [
+      "GitHub Copilot",
+      "OpenAI Agents SDK",
+      "Semantic Kernel",
+      "Python MCP libraries",
+      ".NET MCP libraries"
+    ]
+  },
+  "installation": {
+    "npx": "npx -y @azure/mcp@latest server start",
+    "vscode_extension": "ms-azuretools.vscode-azure-mcp-server",
+    "docker": "Microsoft Artifact Registry"
+  }
+}
