@@ -75,14 +75,14 @@ Complete automation toolkit covering file operations, system management, GitHub 
 ## 📚 Complete Documentation Suite
 
 ### 🏃‍♂️ Getting Started
-- **[README-NEW.md](../README.md)** - Complete project overview and quick start
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Installation, setup, and production deployment
+- **[README.md](../README.md)** - Complete project overview and quick start
+- **[DEPLOYMENT.md](development/DEPLOYMENT.md)** - Installation, setup, and production deployment
 - **System Requirements**: Node.js v20+, 2GB RAM minimum, 8GB recommended
 
-### 🏗️ Architecture & Development  
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design, patterns, and scalability
-- **[DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md)** - Development process and best practices
-- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** - Complete API reference and examples
+### 🏗️ Architecture & Development
+- **[ARCHITECTURE.md](architecture/ARCHITECTURE.md)** - System design, patterns, and scalability
+- **[DEVELOPMENT_WORKFLOW.md](development/DEVELOPMENT_WORKFLOW.md)** - Development process and best practices
+- **[API_DOCUMENTATION.md](api/API_DOCUMENTATION.md)** - Complete API reference and examples
 
 ### 🎯 Core Concepts
 - **Agent Management**: Spawn, coordinate, and monitor AI agents
@@ -285,28 +285,20 @@ docs/
 ### 🎯 **By User Type**
 
 #### 👨‍💻 **Developers**
-1. [Quick Start Guide](../README.md#-quick-start) - Get up and running in 5 minutes
-2. [SPARC Development](../README.md#-sparc-development-environment) - Structured development methodology
-3. [API Reference](API_DOCUMENTATION.md) - Complete endpoint documentation
-4. [Development Workflow](DEVELOPMENT_WORKFLOW.md) - Best practices and standards
+1. [Quick Start Guide](../README.md) - Get up and running in 5 minutes
+2. [API Reference](api/API_DOCUMENTATION.md) - Complete endpoint documentation
+3. [Development Workflow](development/DEVELOPMENT_WORKFLOW.md) - Best practices and standards
 
-#### 🏢 **DevOps/Operations**  
-1. [Deployment Guide](DEPLOYMENT.md) - Production deployment strategies
-2. [Architecture Overview](ARCHITECTURE.md) - System design and scaling
-3. [Monitoring Setup](DEPLOYMENT.md#monitoring--maintenance) - Health checks and metrics
-4. [Security Implementation](ARCHITECTURE.md#security-architecture) - Security best practices
+#### 🏢 **DevOps/Operations**
+1. [Deployment Guide](development/DEPLOYMENT.md) - Production deployment strategies
+2. [Architecture Overview](architecture/ARCHITECTURE.md) - System design and scaling
 
 #### 👑 **Technical Leaders**
-1. [System Architecture](ARCHITECTURE.md#system-overview) - High-level system design
-2. [Performance Metrics](../README.md#-performance-metrics) - Benchmarks and optimization
-3. [Swarm Intelligence](../README.md#-swarm-intelligence) - Distributed coordination strategies
-4. [Enterprise Features](DEPLOYMENT.md#production-setup) - Production-grade capabilities
+1. [System Architecture](architecture/ARCHITECTURE.md) - High-level system design
+2. [Performance Metrics](../README.md) - Benchmarks and optimization
 
 #### 🚀 **Product Managers**
-1. [Feature Overview](../README.md#-key-features) - Complete capability matrix
-2. [Use Cases](../README.md#-use-cases) - Real-world applications
-3. [Integration Capabilities](../README.md#-integration-capabilities) - Platform compatibility
-4. [Roadmap](../README.md#-roadmap) - Future development plans
+1. [Feature Overview](../README.md) - Complete capability matrix
 
 ### System Requirements
 
