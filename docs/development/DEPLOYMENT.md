@@ -2343,6 +2343,6 @@ kubectl get events --sort-by='.metadata.creationTimestamp' -n claude-flow  # Rec
 
 [📚 Documentation Home](./INDEX.md) | [🏗️ Architecture](./ARCHITECTURE.md) | [📖 API Reference](./API_DOCUMENTATION.md) | [⚡ Development](./DEVELOPMENT_WORKFLOW.md)
 
-[🐙 GitHub Repository](https://github.com/ruvnet/claude-flow) | [🐛 Report Issues](https://github.com/ruvnet/claude-flow/issues) | [💬 Community Support](https://discord.gg/claude-flow)
+[🐙 GitHub Repository](https://github.com/ruvnet/claude-flow) | [🐛 Report Issues](https://github.com/ruvnet/claude-flow/issues) | [💬 Community Support](https://discord.com/invite/dfxmpwkG2D)
 
 </div>

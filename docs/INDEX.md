@@ -564,7 +564,7 @@ npx claude-flow@alpha --agents 10 swarm "full enterprise application"
 
 ### 🔗 **Community Links**
 - **GitHub**: [ruvnet/claude-flow](https://github.com/ruvnet/claude-flow)
-- **Discord**: [Join Community](https://discord.gg/claude-flow)
+- **Discord**: [Join Community](https://discord.com/invite/dfxmpwkG2D)
 - **Stack Overflow**: [claude-flow tag](https://stackoverflow.com/questions/tagged/claude-flow)
 - **Reddit**: [r/claudeflow](https://reddit.com/r/claudeflow)
 
@@ -588,7 +588,7 @@ npx claude-flow@alpha init --force
 
 ### **🌟 Join Thousands of Developers Building with Claude Flow**
 
-[**🚀 Quick Start**](../README.md#-quick-start) • [**📚 Documentation**](../README.md) • [**💬 Community**](https://discord.gg/claude-flow) • [**🐛 Issues**](https://github.com/ruvnet/claude-flow/issues)
+[**🚀 Quick Start**](../README.md#-quick-start) • [**📚 Documentation**](../README.md) • [**💬 Community**](https://discord.com/invite/dfxmpwkG2D) • [**🐛 Issues**](https://github.com/ruvnet/claude-flow/issues)
 
 ---
 

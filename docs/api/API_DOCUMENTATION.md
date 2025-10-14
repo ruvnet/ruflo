@@ -704,7 +704,7 @@ npx claude-flow@alpha --version
 ```
 
 ### Community
-- **Discord**: [Join our community](https://discord.gg/claude-flow)
+- **Discord**: [Join our community](https://discord.com/invite/dfxmpwkG2D)
 - **GitHub Issues**: [Report bugs](https://github.com/ruvnet/claude-flow/issues)
 - **Discussions**: [Feature requests](https://github.com/ruvnet/claude-flow/discussions)
 
