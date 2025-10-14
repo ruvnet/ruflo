@@ -38,7 +38,6 @@
 
 - **Node.js 18+** (LTS recommended)
 - **npm 9+** or equivalent package manager
-- **Windows users**: See [Windows Installation Guide](./docs/windows-installation.md) for special instructions
 
 ⚠️ **IMPORTANT**: Claude Code must be installed first:
 
@@ -306,7 +305,6 @@ npx claude-flow@alpha memory query "microservices patterns" --reasoningbank
 ### **Configuration**
 - **[CLAUDE.md Templates](./docs/CLAUDE-MD-TEMPLATES.md)** - Project configs
 - **[SPARC Methodology](./docs/SPARC.md)** - TDD patterns
-- **[Windows Installation](./docs/windows-installation.md)** - Windows setup
 
 ---
 
