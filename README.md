@@ -38,7 +38,6 @@
 
 - **Node.js 18+** (LTS recommended)
 - **npm 9+** or equivalent package manager
-- **Windows users**: See [Windows Installation Guide](./docs/windows-installation.md) for special instructions
 
 ⚠️ **IMPORTANT**: Claude Code must be installed first:
 
@@ -201,7 +200,7 @@ claude mcp add flow-nexus npx flow-nexus@latest mcp start
 **Performance Tools:**
 - `benchmark_run`, `performance_report`, `bottleneck_analyze`
 
-📚 **Full Reference**: [MCP Tools Documentation](./docs/MCP-TOOLS.md)
+📚 **Full Reference**: [MCP Tools Documentation](./docs/reference/MCP_TOOLS.md)
 
 ---
 
@@ -287,10 +286,8 @@ npx claude-flow@alpha memory query "microservices patterns" --reasoningbank
 ## 📚 **Documentation**
 
 ### **Core Documentation**
-- **[Installation Guide](./docs/INSTALLATION.md)** - Setup instructions
-- **[Memory System Guide](./docs/MEMORY-SYSTEM.md)** - ReasoningBank usage
-- **[MCP Tools Reference](./docs/MCP-TOOLS.md)** - Complete tool catalog
-- **[Agent System](./docs/AGENT-SYSTEM.md)** - All 64 agents
+- **[MCP Tools Reference](./docs/reference/MCP_TOOLS.md)** - Complete tool catalog
+- **[Agent System](./docs/reference/AGENTS.md)** - All 64 agents
 
 ### **Release Notes**
 - **[v2.7.0-alpha.10](./docs/RELEASE-NOTES-v2.7.0-alpha.10.md)** - Semantic search fix
@@ -298,15 +295,10 @@ npx claude-flow@alpha memory query "microservices patterns" --reasoningbank
 - **[Changelog](./CHANGELOG.md)** - Full version history
 
 ### **Advanced Topics**
-- **[Neural Module](./docs/NEURAL-MODULE.md)** - SAFLA self-learning
-- **[Goal Module](./docs/GOAL-MODULE.md)** - GOAP intelligent planning
-- **[Hive-Mind Intelligence](./docs/HIVE-MIND.md)** - Queen-led coordination
-- **[GitHub Integration](./docs/GITHUB-INTEGRATION.md)** - Repository automation
+_Documentation coming soon_
 
 ### **Configuration**
-- **[CLAUDE.md Templates](./docs/CLAUDE-MD-TEMPLATES.md)** - Project configs
-- **[SPARC Methodology](./docs/SPARC.md)** - TDD patterns
-- **[Windows Installation](./docs/windows-installation.md)** - Windows setup
+- **[SPARC Methodology](./docs/reference/SPARC.md)** - TDD patterns
 
 ---
 
