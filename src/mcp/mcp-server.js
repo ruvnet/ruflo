@@ -9,8 +9,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { EnhancedMemory } from '../memory/enhanced-memory.js';
-// Use the same memory system that npx commands use - singleton instance
-import { memoryStore } from '../memory/fallback-store.js';
+// Use UnifiedMemoryManager for consistent storage with ReasoningBank support
+import { getUnifiedMemory } from '../memory/unified-memory-manager.js';
 
 // Initialize agent tracker
 await import('./implementations/agent-tracker.js').catch(() => {
@@ -64,8 +64,7 @@ function resolveLegacyAgentType(legacyType) {
 class ClaudeFlowMCPServer {
   constructor() {
     this.version = '2.5.0-alpha.131'; // Updated with Phase 4 SDK integration tools
-    this.memoryStore = memoryStore; // Use shared singleton instance
-    // Use the same memory system that already works
+    this.memoryManager = getUnifiedMemory(); // Use UnifiedMemoryManager with ReasoningBank support
     this.capabilities = {
       tools: {
         listChanged: true,
@@ -79,24 +78,26 @@ class ClaudeFlowMCPServer {
     this.tools = this.initializeTools();
     this.resources = this.initializeResources();
 
-    // Initialize shared memory store (same as npx commands)
+    // Initialize unified memory manager (supports ReasoningBank auto-detection)
     this.initializeMemory().catch((err) => {
       console.error(
-        `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Failed to initialize shared memory:`,
+        `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Failed to initialize memory:`,
         err,
       );
     });
-
-    // Database operations now use the same shared memory store as npx commands
   }
 
   async initializeMemory() {
-    await this.memoryStore.initialize();
+    await this.memoryManager.initialize();
+    const storageInfo = this.memoryManager.getStorageInfo();
     console.error(
-      `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Shared memory store initialized (same as npx)`,
+      `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Unified memory initialized`,
     );
     console.error(
-      `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Using ${this.memoryStore.isUsingFallback() ? 'in-memory' : 'SQLite'} storage`,
+      `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Storage: ${storageInfo.type}${storageInfo.semanticSearch ? ' (with semantic search)' : ''}`,
+    );
+    console.error(
+      `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Path: ${storageInfo.path}`,
     );
   }
 
@@ -1193,15 +1194,15 @@ class ClaudeFlowMCPServer {
           }),
         };
 
-        // Store swarm data in memory store (same as npx commands)
+        // Store swarm data in unified memory
         try {
-          await this.memoryStore.store(`swarm:${swarmId}`, JSON.stringify(swarmData), {
-            namespace: 'swarms',
-            metadata: { type: 'swarm_data', sessionId: this.sessionId },
+          await this.memoryManager.store(`swarm:${swarmId}`, JSON.stringify(swarmData), 'swarms', {
+            type: 'swarm_data',
+            sessionId: this.sessionId
           });
-          await this.memoryStore.store('active_swarm', swarmId, {
-            namespace: 'system',
-            metadata: { type: 'active_swarm', sessionId: this.sessionId },
+          await this.memoryManager.store('active_swarm', swarmId, 'system', {
+            type: 'active_swarm',
+            sessionId: this.sessionId
           });
           console.error(
             `[${new Date().toISOString()}] INFO [claude-flow-mcp] Swarm persisted to memory: ${swarmId}`,
@@ -1241,19 +1242,20 @@ class ClaudeFlowMCPServer {
           }),
         };
 
-        // Store agent data in memory store (same as npx commands)
+        // Store agent data in unified memory
         try {
           const swarmId = agentData.swarmId || (await this.getActiveSwarmId());
           if (swarmId) {
-            await this.memoryStore.store(`agent:${swarmId}:${agentId}`, JSON.stringify(agentData), {
-              namespace: 'agents',
-              metadata: { type: 'agent_data', swarmId: swarmId, sessionId: this.sessionId },
+            await this.memoryManager.store(`agent:${swarmId}:${agentId}`, JSON.stringify(agentData), 'agents', {
+              type: 'agent_data',
+              swarmId: swarmId,
+              sessionId: this.sessionId
             });
           } else {
             // Fallback to old format if no swarm ID
-            await this.memoryStore.store(`agent:${agentId}`, JSON.stringify(agentData), {
-              namespace: 'agents',
-              metadata: { type: 'agent_data', sessionId: this.sessionId },
+            await this.memoryManager.store(`agent:${agentId}`, JSON.stringify(agentData), 'agents', {
+              type: 'agent_data',
+              sessionId: this.sessionId
             });
           }
           console.error(
@@ -1616,6 +1618,9 @@ class ClaudeFlowMCPServer {
       case 'memory_usage':
         return await this.handleMemoryUsage(args);
 
+      case 'memory_search':
+        return await this.handleMemorySearch(args);
+
       case 'performance_report':
         return {
           success: true,
@@ -1918,12 +1923,11 @@ class ClaudeFlowMCPServer {
 
       case 'swarm_status':
         try {
-          // Get active swarm ID from memory store
+          // Get active swarm ID from unified memory manager
           let swarmId = args.swarmId;
           if (!swarmId) {
-            swarmId = await this.memoryStore.retrieve('active_swarm', {
-              namespace: 'system',
-            });
+            const entry = await this.memoryManager.get('active_swarm', 'system');
+            swarmId = entry?.value || null;
           }
 
           if (!swarmId) {
@@ -1938,9 +1942,8 @@ class ClaudeFlowMCPServer {
           if (global.agentTracker) {
             const status = global.agentTracker.getSwarmStatus(swarmId);
             if (status.agentCount > 0) {
-              const swarmDataRaw = await this.memoryStore.retrieve(`swarm:${swarmId}`, {
-                namespace: 'swarms',
-              });
+              const swarmEntry = await this.memoryManager.get(`swarm:${swarmId}`, 'swarms');
+              const swarmDataRaw = swarmEntry?.value || null;
               const swarm = swarmDataRaw ? (typeof swarmDataRaw === 'string' ? JSON.parse(swarmDataRaw) : swarmDataRaw) : {};
               
               return {
@@ -1957,10 +1960,9 @@ class ClaudeFlowMCPServer {
             }
           }
 
-          // Retrieve swarm data from memory store
-          const swarmDataRaw = await this.memoryStore.retrieve(`swarm:${swarmId}`, {
-            namespace: 'swarms',
-          });
+          // Retrieve swarm data from unified memory manager
+          const swarmEntry = await this.memoryManager.get(`swarm:${swarmId}`, 'swarms');
+          const swarmDataRaw = swarmEntry?.value || null;
 
           if (!swarmDataRaw) {
             return {
@@ -1972,36 +1974,36 @@ class ClaudeFlowMCPServer {
 
           const swarm = typeof swarmDataRaw === 'string' ? JSON.parse(swarmDataRaw) : swarmDataRaw;
 
-          // Retrieve agents from memory
-          const agentsData = await this.memoryStore.list({
+          // Retrieve agents from unified memory using search
+          const agentsData = await this.memoryManager.query(`agent:${swarmId}:`, {
             namespace: 'agents',
             limit: 100,
           });
 
-          // Filter agents for this swarm
+          // Parse agent data
           const swarmAgents = agentsData
-            .filter((entry) => entry.key.startsWith(`agent:${swarmId}:`))
             .map((entry) => {
               try {
-                return JSON.parse(entry.value);
+                const value = typeof entry === 'object' && entry.value ? entry.value : entry;
+                return typeof value === 'string' ? JSON.parse(value) : value;
               } catch (e) {
                 return null;
               }
             })
             .filter((agent) => agent !== null);
 
-          // Retrieve tasks from memory
-          const tasksData = await this.memoryStore.list({
+          // Retrieve tasks from unified memory using search
+          const tasksData = await this.memoryManager.query(`task:${swarmId}:`, {
             namespace: 'tasks',
             limit: 100,
           });
 
-          // Filter tasks for this swarm
+          // Parse task data
           const swarmTasks = tasksData
-            .filter((entry) => entry.key.startsWith(`task:${swarmId}:`))
             .map((entry) => {
               try {
-                return JSON.parse(entry.value);
+                const value = typeof entry === 'object' && entry.value ? entry.value : entry;
+                return typeof value === 'string' ? JSON.parse(value) : value;
               } catch (e) {
                 return null;
               }
@@ -2089,16 +2091,18 @@ class ClaudeFlowMCPServer {
           }),
         };
 
-        // Store task data in memory store
+        // Store task data in unified memory manager
         try {
           if (swarmIdForTask) {
-            await this.memoryStore.store(
+            await this.memoryManager.store(
               `task:${swarmIdForTask}:${taskId}`,
               JSON.stringify(taskData),
+              'tasks',
               {
-                namespace: 'tasks',
-                metadata: { type: 'task_data', swarmId: swarmIdForTask, sessionId: this.sessionId },
-              },
+                type: 'task_data',
+                swarmId: swarmIdForTask,
+                sessionId: this.sessionId
+              }
             );
             console.error(
               `[${new Date().toISOString()}] INFO [claude-flow-mcp] Task persisted to memory: ${taskId}`,
@@ -2337,120 +2341,116 @@ class ClaudeFlowMCPServer {
   }
 
   async handleMemoryUsage(args) {
-    if (!this.memoryStore) {
+    if (!this.memoryManager) {
       return {
         success: false,
-        error: 'Shared memory system not initialized',
+        error: 'Memory system not initialized',
         timestamp: new Date().toISOString(),
       };
     }
 
     try {
+      const storageInfo = this.memoryManager.getStorageInfo();
+      const namespace = args.namespace || 'default';
+
       switch (args.action) {
         case 'store':
-          const storeResult = await this.memoryStore.store(args.key, args.value, {
-            namespace: args.namespace || 'default',
+          const storeResult = await this.memoryManager.store(args.key, args.value, namespace, {
+            sessionId: this.sessionId,
+            storedBy: 'mcp-server',
+            type: 'knowledge',
             ttl: args.ttl,
-            metadata: {
-              sessionId: this.sessionId,
-              storedBy: 'mcp-server',
-              type: 'knowledge',
-            },
           });
 
           console.error(
-            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Stored in shared memory: ${args.key} (namespace: ${args.namespace || 'default'})`,
+            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Stored: ${args.key} (namespace: ${namespace}, mode: ${storageInfo.type})`,
           );
 
           return {
             success: true,
             action: 'store',
             key: args.key,
-            namespace: args.namespace || 'default',
+            namespace,
             stored: true,
-            size: storeResult.size || args.value.length,
-            id: storeResult.id,
-            storage_type: this.memoryStore.isUsingFallback() ? 'in-memory' : 'sqlite',
+            size: args.value.length,
+            memoryId: storeResult.memoryId,
+            storage_type: storageInfo.type,
+            semantic_search: storageInfo.semanticSearch || false,
             timestamp: new Date().toISOString(),
           };
 
         case 'retrieve':
-          const value = await this.memoryStore.retrieve(args.key, {
-            namespace: args.namespace || 'default',
-          });
+          const entry = await this.memoryManager.get(args.key, namespace);
 
           console.error(
-            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Retrieved from shared memory: ${args.key} (found: ${value !== null})`,
+            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Retrieved: ${args.key} (found: ${entry !== null})`,
           );
 
           return {
             success: true,
             action: 'retrieve',
             key: args.key,
-            value: value,
-            found: value !== null,
-            namespace: args.namespace || 'default',
-            storage_type: this.memoryStore.isUsingFallback() ? 'in-memory' : 'sqlite',
+            value: entry?.value || null,
+            found: entry !== null,
+            namespace,
+            storage_type: storageInfo.type,
             timestamp: new Date().toISOString(),
           };
 
         case 'list':
-          const entries = await this.memoryStore.list({
-            namespace: args.namespace || 'default',
-            limit: 100,
-          });
+          const namespaces = await this.memoryManager.listNamespaces();
+          const targetNs = namespaces.find(ns => ns.namespace === namespace);
 
           console.error(
-            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Listed shared memory entries: ${entries.length} (namespace: ${args.namespace || 'default'})`,
+            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Listed namespace: ${namespace} (${targetNs?.count || 0} entries)`,
           );
 
           return {
             success: true,
             action: 'list',
-            namespace: args.namespace || 'default',
-            entries: entries,
-            count: entries.length,
-            storage_type: this.memoryStore.isUsingFallback() ? 'in-memory' : 'sqlite',
+            namespace,
+            namespaces: [targetNs || { namespace, count: 0 }],
+            count: targetNs?.count || 0,
+            storage_type: storageInfo.type,
             timestamp: new Date().toISOString(),
           };
 
         case 'delete':
-          const deleted = await this.memoryStore.delete(args.key, {
-            namespace: args.namespace || 'default',
-          });
+          await this.memoryManager.delete(args.key, namespace);
 
           console.error(
-            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Deleted from shared memory: ${args.key} (success: ${deleted})`,
+            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Deleted: ${args.key} (namespace: ${namespace})`,
           );
 
           return {
             success: true,
             action: 'delete',
             key: args.key,
-            namespace: args.namespace || 'default',
-            deleted: deleted,
-            storage_type: this.memoryStore.isUsingFallback() ? 'in-memory' : 'sqlite',
+            namespace,
+            deleted: true,
+            storage_type: storageInfo.type,
             timestamp: new Date().toISOString(),
           };
 
         case 'search':
-          const results = await this.memoryStore.search(args.value || '', {
-            namespace: args.namespace || 'default',
-            limit: 50,
+          const searchResults = await this.memoryManager.query(args.value || args.pattern || '', {
+            namespace,
+            limit: args.limit || 50,
           });
 
           console.error(
-            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Searched shared memory: ${results.length} results for "${args.value}"`,
+            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Searched: "${args.value}" (${searchResults.length} results, mode: ${storageInfo.type})`,
           );
 
           return {
             success: true,
             action: 'search',
-            pattern: args.value,
-            namespace: args.namespace || 'default',
-            results: results,
-            count: results.length,
-            storage_type: this.memoryStore.isUsingFallback() ? 'in-memory' : 'sqlite',
+            pattern: args.value || args.pattern,
+            namespace,
+            results: searchResults,
+            count: searchResults.length,
+            storage_type: storageInfo.type,
+            semantic_search: storageInfo.semanticSearch || false,
             timestamp: new Date().toISOString(),
           };
 
@@ -2463,21 +2463,21 @@ class ClaudeFlowMCPServer {
       }
     } catch (error) {
       console.error(
-        `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Shared memory operation failed:`,
+        `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Memory operation failed:`,
         error,
       );
       return {
         success: false,
         error: error.message,
         action: args.action,
-        storage_type: this.memoryStore?.isUsingFallback() ? 'in-memory' : 'sqlite',
+        storage_type: this.memoryManager?.getStorageInfo()?.type || 'unknown',
         timestamp: new Date().toISOString(),
       };
     }
   }
 
   async handleMemorySearch(args) {
-    if (!this.memoryStore) {
+    if (!this.memoryManager) {
       return {
         success: false,
         error: 'Memory system not initialized',
@@ -2486,7 +2486,8 @@ class ClaudeFlowMCPServer {
     }
 
     try {
-      const results = await this.sharedMemory.search(args.pattern, {
+      const storageInfo = this.memoryManager.getStorageInfo();
+      const results = await this.memoryManager.query(args.pattern, {
         namespace: args.namespace || 'default',
         limit: args.limit || 10,
       });
@@ -2497,6 +2498,8 @@ class ClaudeFlowMCPServer {
         namespace: args.namespace || 'default',
         results: results,
         count: results.length,
+        storage_type: storageInfo.type,
+        semantic_search: storageInfo.semanticSearch || false,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -2514,10 +2517,8 @@ class ClaudeFlowMCPServer {
 
   async getActiveSwarmId() {
     try {
-      const activeSwarmId = await this.memoryStore.retrieve('active_swarm', {
-        namespace: 'system',
-      });
-      return activeSwarmId || null;
+      const entry = await this.memoryManager.get('active_swarm', 'system');
+      return entry?.value || null;
     } catch (error) {
       console.error(
         `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Failed to get active swarm:`,

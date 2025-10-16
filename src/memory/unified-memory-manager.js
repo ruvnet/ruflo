@@ -1,6 +1,7 @@
 /**
  * Unified Memory Manager
  * Provides a single interface for all memory operations across the system
+ * Integrates with ReasoningBank for semantic search when available
  */
 
 import { promises as fs } from 'fs';
@@ -15,13 +16,16 @@ export class UnifiedMemoryManager {
     this.config = {
       primaryStore: path.join(claudeFlowDir, 'memory', 'unified-memory.db'),
       fallbackStore: path.join(projectRoot, 'memory', 'memory-store.json'),
+      reasoningBankPath: path.join(projectRoot, '.swarm', 'memory.db'),
       configPath: path.join(claudeFlowDir, 'memory-config.json'),
       ...options
     };
-    
+
     this.isInitialized = false;
     this.useSqlite = false;
+    this.useReasoningBank = false;
     this.db = null;
+    this.reasoningBankAdapter = null;
   }
 
   /**
@@ -30,32 +34,53 @@ export class UnifiedMemoryManager {
   async initialize() {
     if (this.isInitialized) return;
 
-    // Check if we have a unified database
-    if (existsSync(this.config.primaryStore)) {
+    // Priority 1: Check for ReasoningBank (best - has semantic search)
+    if (existsSync(this.config.reasoningBankPath)) {
+      try {
+        // Lazy load ReasoningBank adapter
+        const adapter = await import('../reasoningbank/reasoningbank-adapter.js');
+        await adapter.initializeReasoningBank();
+        this.reasoningBankAdapter = adapter;
+        this.useReasoningBank = true;
+        console.log('[UnifiedMemory] Using ReasoningBank with semantic search');
+      } catch (err) {
+        console.warn('[UnifiedMemory] ReasoningBank detected but initialization failed:', err.message);
+        this.useReasoningBank = false;
+      }
+    }
+
+    // Priority 2: Check for unified SQLite database
+    if (!this.useReasoningBank && existsSync(this.config.primaryStore)) {
       try {
         // Try to load SQLite modules
         const sqlite3Module = await import('sqlite3');
         const sqliteModule = await import('sqlite');
-        
+
         this.sqlite3 = sqlite3Module.default;
         this.sqliteOpen = sqliteModule.open;
         this.useSqlite = true;
-        
+
         // Open database connection
         this.db = await this.sqliteOpen({
           filename: this.config.primaryStore,
           driver: this.sqlite3.Database
         });
-        
+
         // Enable WAL mode for better performance
         await this.db.exec('PRAGMA journal_mode = WAL');
-        
+        console.log('[UnifiedMemory] Using SQLite database');
+
       } catch (err) {
-        console.warn('SQLite not available, falling back to JSON store');
+        console.warn('[UnifiedMemory] SQLite not available, falling back to JSON store');
         this.useSqlite = false;
       }
     }
-    
+
+    // Priority 3: JSON fallback (always available)
+    if (!this.useReasoningBank && !this.useSqlite) {
+      console.log('[UnifiedMemory] Using JSON file storage');
+    }
+
     this.isInitialized = true;
   }
 
@@ -64,11 +89,41 @@ export class UnifiedMemoryManager {
    */
   async store(key, value, namespace = 'default', metadata = {}) {
     await this.initialize();
-    
-    if (this.useSqlite) {
+
+    if (this.useReasoningBank) {
+      return await this.storeReasoningBank(key, value, namespace, metadata);
+    } else if (this.useSqlite) {
       return await this.storeSqlite(key, value, namespace, metadata);
     } else {
       return await this.storeJson(key, value, namespace, metadata);
+    }
+  }
+
+  /**
+   * Store in ReasoningBank with semantic embeddings
+   */
+  async storeReasoningBank(key, value, namespace, metadata) {
+    try {
+      const memoryId = await this.reasoningBankAdapter.storeMemory(key, value, {
+        namespace,
+        agent: metadata.agent || 'unified-memory',
+        domain: namespace,
+        confidence: metadata.confidence || 0.8,
+        ...metadata
+      });
+
+      return {
+        key,
+        value,
+        namespace,
+        timestamp: Date.now(),
+        memoryId,
+        searchable: true,
+        mode: 'reasoningbank'
+      };
+    } catch (error) {
+      console.error('[UnifiedMemory] ReasoningBank store failed:', error.message);
+      throw error;
     }
   }
 
@@ -115,15 +170,48 @@ export class UnifiedMemoryManager {
   }
 
   /**
-   * Query memory entries
+   * Query memory entries (with semantic search if ReasoningBank is available)
    */
   async query(search, options = {}) {
     await this.initialize();
-    
-    if (this.useSqlite) {
+
+    if (this.useReasoningBank) {
+      return await this.queryReasoningBank(search, options);
+    } else if (this.useSqlite) {
       return await this.querySqlite(search, options);
     } else {
       return await this.queryJson(search, options);
+    }
+  }
+
+  /**
+   * Query ReasoningBank with semantic search
+   */
+  async queryReasoningBank(search, options) {
+    try {
+      const { namespace, limit = 10, minConfidence = 0.3 } = options;
+
+      const results = await this.reasoningBankAdapter.queryMemories(search, {
+        namespace,
+        limit,
+        minConfidence
+      });
+
+      // Map ReasoningBank results to our format
+      return results.map(result => ({
+        key: result.key,
+        value: result.value,
+        namespace: result.namespace,
+        timestamp: new Date(result.created_at).getTime(),
+        score: result.score,
+        confidence: result.confidence,
+        usage_count: result.usage_count,
+        searchable: true,
+        mode: 'reasoningbank'
+      }));
+    } catch (error) {
+      console.error('[UnifiedMemory] ReasoningBank query failed:', error.message);
+      return [];
     }
   }
 
@@ -184,15 +272,21 @@ export class UnifiedMemoryManager {
    */
   async get(key, namespace = 'default') {
     await this.initialize();
-    
-    if (this.useSqlite) {
+
+    if (this.useReasoningBank) {
+      // Use query with exact key match for ReasoningBank
+      const results = await this.queryReasoningBank(key, { namespace, limit: 10 });
+      // Find exact key match
+      const exactMatch = results.find(r => r.key === key);
+      return exactMatch || null;
+    } else if (this.useSqlite) {
       const result = await this.db.get(`
-        SELECT * FROM memory_entries 
+        SELECT * FROM memory_entries
         WHERE key = ? AND namespace = ?
         ORDER BY timestamp DESC
         LIMIT 1
       `, key, namespace);
-      
+
       return result;
     } else {
       const data = await this.loadJsonData();
@@ -209,10 +303,15 @@ export class UnifiedMemoryManager {
    */
   async delete(key, namespace = 'default') {
     await this.initialize();
-    
-    if (this.useSqlite) {
+
+    if (this.useReasoningBank) {
+      // ReasoningBank doesn't have direct delete by key
+      // We would need to implement deleteMemory in the adapter
+      console.warn('[UnifiedMemory] Delete not fully supported in ReasoningBank mode');
+      return;
+    } else if (this.useSqlite) {
       await this.db.run(`
-        DELETE FROM memory_entries 
+        DELETE FROM memory_entries
         WHERE key = ? AND namespace = ?
       `, key, namespace);
     } else {
@@ -229,13 +328,17 @@ export class UnifiedMemoryManager {
    */
   async clearNamespace(namespace) {
     await this.initialize();
-    
-    if (this.useSqlite) {
+
+    if (this.useReasoningBank) {
+      // ReasoningBank doesn't have direct clear namespace
+      console.warn('[UnifiedMemory] Clear namespace not fully supported in ReasoningBank mode');
+      return 0;
+    } else if (this.useSqlite) {
       const result = await this.db.run(`
-        DELETE FROM memory_entries 
+        DELETE FROM memory_entries
         WHERE namespace = ?
       `, namespace);
-      
+
       return result.changes;
     } else {
       const data = await this.loadJsonData();
@@ -251,27 +354,51 @@ export class UnifiedMemoryManager {
    */
   async getStats() {
     await this.initialize();
-    
-    if (this.useSqlite) {
+
+    if (this.useReasoningBank) {
+      try {
+        const rbStats = await this.reasoningBankAdapter.getStatus();
+        return {
+          totalEntries: rbStats.total_memories || 0,
+          namespaces: rbStats.total_categories || 0,
+          namespaceStats: {},
+          sizeBytes: 0,
+          storageType: 'reasoningbank',
+          avgConfidence: rbStats.avg_confidence,
+          totalEmbeddings: rbStats.total_embeddings,
+          totalTrajectories: rbStats.total_trajectories
+        };
+      } catch (error) {
+        console.error('[UnifiedMemory] Failed to get ReasoningBank stats:', error.message);
+        return {
+          totalEntries: 0,
+          namespaces: 0,
+          namespaceStats: {},
+          sizeBytes: 0,
+          storageType: 'reasoningbank',
+          error: error.message
+        };
+      }
+    } else if (this.useSqlite) {
       const stats = await this.db.get(`
-        SELECT 
+        SELECT
           COUNT(*) as totalEntries,
           COUNT(DISTINCT namespace) as namespaces
         FROM memory_entries
       `);
-      
+
       const namespaceStats = await this.db.all(`
-        SELECT namespace, COUNT(*) as count 
-        FROM memory_entries 
+        SELECT namespace, COUNT(*) as count
+        FROM memory_entries
         GROUP BY namespace
       `);
-      
+
       // Get database size
       const dbInfo = await this.db.get(`
-        SELECT page_count * page_size as sizeBytes 
+        SELECT page_count * page_size as sizeBytes
         FROM pragma_page_count(), pragma_page_size()
       `);
-      
+
       return {
         totalEntries: stats.totalEntries,
         namespaces: stats.namespaces,
@@ -286,12 +413,12 @@ export class UnifiedMemoryManager {
       const data = await this.loadJsonData();
       let totalEntries = 0;
       const namespaceStats = {};
-      
+
       for (const [namespace, entries] of Object.entries(data)) {
         namespaceStats[namespace] = entries.length;
         totalEntries += entries.length;
       }
-      
+
       return {
         totalEntries,
         namespaces: Object.keys(data).length,
@@ -307,15 +434,20 @@ export class UnifiedMemoryManager {
    */
   async listNamespaces() {
     await this.initialize();
-    
-    if (this.useSqlite) {
+
+    if (this.useReasoningBank) {
+      // ReasoningBank doesn't have a direct namespace listing
+      // Return empty array for now
+      console.warn('[UnifiedMemory] List namespaces not fully supported in ReasoningBank mode');
+      return [];
+    } else if (this.useSqlite) {
       const namespaces = await this.db.all(`
-        SELECT DISTINCT namespace, COUNT(*) as count 
-        FROM memory_entries 
+        SELECT DISTINCT namespace, COUNT(*) as count
+        FROM memory_entries
         GROUP BY namespace
         ORDER BY namespace
       `);
-      
+
       return namespaces;
     } else {
       const data = await this.loadJsonData();
@@ -419,32 +551,63 @@ export class UnifiedMemoryManager {
   }
 
   /**
-   * Close database connection
+   * Close database connection and cleanup
    */
   async close() {
+    if (this.reasoningBankAdapter && this.reasoningBankAdapter.cleanup) {
+      this.reasoningBankAdapter.cleanup();
+      this.reasoningBankAdapter = null;
+    }
     if (this.db) {
       await this.db.close();
       this.db = null;
-      this.isInitialized = false;
     }
+    this.isInitialized = false;
+    this.useReasoningBank = false;
+    this.useSqlite = false;
   }
 
   /**
    * Check if using unified store
    */
   isUnified() {
-    return this.useSqlite;
+    return this.useReasoningBank || this.useSqlite;
+  }
+
+  /**
+   * Check if ReasoningBank is active
+   */
+  isReasoningBankActive() {
+    return this.useReasoningBank;
   }
 
   /**
    * Get storage info
    */
   getStorageInfo() {
-    return {
-      type: this.useSqlite ? 'sqlite' : 'json',
-      path: this.useSqlite ? this.config.primaryStore : this.config.fallbackStore,
-      unified: this.useSqlite
-    };
+    if (this.useReasoningBank) {
+      return {
+        type: 'reasoningbank',
+        path: this.config.reasoningBankPath,
+        unified: true,
+        semanticSearch: true,
+        features: ['semantic_search', 'embeddings', 'similarity_scores']
+      };
+    } else if (this.useSqlite) {
+      return {
+        type: 'sqlite',
+        path: this.config.primaryStore,
+        unified: true,
+        semanticSearch: false
+      };
+    } else {
+      return {
+        type: 'json',
+        path: this.config.fallbackStore,
+        unified: false,
+        semanticSearch: false
+      };
+    }
   }
 }
 
