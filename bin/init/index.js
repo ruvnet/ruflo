@@ -42,6 +42,7 @@ import { promises as fs } from 'fs';
 import { copyTemplates } from './template-copier.js';
 import { copyRevisedTemplates, validateTemplatesExist } from './copy-revised-templates.js';
 import { copyAgentFiles, createAgentDirectories, validateAgentSystem, copyCommandFiles } from './agent-copier.js';
+import { copySkillFiles, createSkillDirectories, validateSkillSystem } from './skills-copier.js';
 import { showInitHelp } from './help.js';
 import { batchInitCommand, batchInitFromConfig, validateBatchOptions } from './batch-init.js';
 import { ValidationSystem, runFullValidation } from './validation/index.js';
@@ -109,11 +110,6 @@ async function setupMcpServers(dryRun = false) {
       name: 'ruv-swarm',
       command: 'npx ruv-swarm mcp start',
       description: 'ruv-swarm MCP server for enhanced coordination',
-    },
-    {
-      name: 'flow-nexus',
-      command: 'npx flow-nexus@latest mcp start',
-      description: 'Flow Nexus Complete MCP server for advanced AI orchestration',
     },
   ];
   
@@ -567,7 +563,9 @@ export async function initCommand(subArgs, flags) {
         console.log('  📋 Then add MCP servers manually with:');
         console.log('     claude mcp add claude-flow@alpha npx claude-flow@alpha mcp start');
         console.log('     claude mcp add ruv-swarm npx ruv-swarm mcp start');
-        console.log('     claude mcp add flow-nexus npx flow-nexus@latest mcp start');
+        console.log('');
+        console.log('  📦 Optional MCP servers (flow-nexus is already installed as a dependency):');
+        console.log('     claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Cloud features');
       }
     }
   } catch (err) {
@@ -1226,6 +1224,12 @@ async function enhancedClaudeFlowInit(flags, subArgs = []) {
           args: ['ruv-swarm@latest', 'mcp', 'start'],
           type: 'stdio',
         },
+        // Optional: Uncomment to enable Flow Nexus cloud features
+        // 'flow-nexus': {
+        //   command: 'npx',
+        //   args: ['flow-nexus@latest', 'mcp', 'start'],
+        //   type: 'stdio',
+        // },
       },
     };
 
@@ -1436,7 +1440,9 @@ ${commands.map((cmd) => `- [${cmd}](./${cmd}.md)`).join('\n')}
         console.log('\n  📋 To add MCP servers manually:');
         console.log('     claude mcp add claude-flow@alpha npx claude-flow@alpha mcp start');
         console.log('     claude mcp add ruv-swarm npx ruv-swarm@latest mcp start');
-        console.log('     claude mcp add flow-nexus npx flow-nexus@latest mcp start');
+        console.log('');
+        console.log('  📦 Optional MCP servers (flow-nexus is already installed as a dependency):');
+        console.log('     claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Cloud features');
         console.log('\n  💡 MCP servers are defined in .mcp.json (project scope)');
       }
     } else if (!dryRun && !isClaudeCodeInstalled()) {
@@ -1446,7 +1452,9 @@ ${commands.map((cmd) => `- [${cmd}](./${cmd}.md)`).join('\n')}
       console.log('\n  📋 After installing, add MCP servers:');
       console.log('     claude mcp add claude-flow npx claude-flow@alpha mcp start');
       console.log('     claude mcp add ruv-swarm npx ruv-swarm@latest mcp start');
-      console.log('     claude mcp add flow-nexus npx flow-nexus@latest mcp start');
+      console.log('');
+      console.log('  📦 Optional MCP servers (flow-nexus is already installed as a dependency):');
+      console.log('     claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Cloud features');
       console.log('\n  💡 MCP servers are defined in .mcp.json (project scope)');
     }
 
@@ -1475,7 +1483,21 @@ ${commands.map((cmd) => `- [${cmd}](./${cmd}.md)`).join('\n')}
         } else {
           console.log('⚠️  Command system setup failed:', commandResult.error);
         }
-        
+
+        // Copy skill files including skill-builder
+        console.log('\n🎯 Setting up skill system...');
+        const skillResult = await copySkillFiles(workingDir, {
+          force: force,
+          dryRun: dryRun
+        });
+
+        if (skillResult.success) {
+          await validateSkillSystem(workingDir);
+          console.log('✅ ✓ Skill system setup complete with skill-builder');
+        } else {
+          console.log('⚠️  Skill system setup failed:', skillResult.error);
+        }
+
         console.log('✅ ✓ Agent system setup complete with 64 specialized agents');
       } else {
         console.log('⚠️  Agent system setup failed:', agentResult.error);

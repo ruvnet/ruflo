@@ -17,6 +17,7 @@
 
 ### 🎯 **Key Features**
 
+- **🎨 25 Claude Skills**: Natural language-activated skills for development, GitHub, memory, and automation
 - **🧠 ReasoningBank Memory**: Persistent SQLite storage with semantic search (2-3ms latency)
 - **🔍 Semantic Search**: Hash-based embeddings - works without API keys
 - **🐝 Hive-Mind Intelligence**: Queen-led AI coordination with specialized worker agents
@@ -62,6 +63,30 @@ npm install -g claude-flow@alpha
 claude-flow --version
 # v2.7.0-alpha.10
 ```
+
+---
+
+## 🎨 **Skills System**
+
+Claude-Flow includes **25 specialized skills** that activate automatically via natural language - no commands to memorize:
+
+```bash
+# Just describe what you want - skills activate automatically
+"Let's pair program on this feature"        → pair-programming skill
+"Review this PR for security issues"       → github-code-review skill
+"Use vector search to find similar code"   → agentdb-vector-search skill
+"Create a swarm to build this API"         → swarm-orchestration skill
+```
+
+**Skill Categories:**
+- **Development & Methodology** (3) - SPARC, pair programming, skill builder
+- **Intelligence & Memory** (6) - AgentDB integration with 150x-12,500x performance
+- **Swarm Coordination** (3) - Multi-agent orchestration and hive-mind
+- **GitHub Integration** (5) - PR review, workflows, releases, multi-repo
+- **Automation & Quality** (4) - Hooks, verification, performance analysis
+- **Flow Nexus Platform** (3) - Cloud sandboxes and neural training
+
+📚 **[Complete Skills Tutorial](./docs/skills-tutorial.md)** - Full guide with usage examples
 
 ---
 
@@ -287,6 +312,7 @@ npx claude-flow@alpha memory query "microservices patterns" --reasoningbank
 ## 📚 **Documentation**
 
 ### **Core Documentation**
+- **[Skills Tutorial](./docs/skills-tutorial.md)** - Complete guide to 25 Claude Flow skills with natural language invocation
 - **[Installation Guide](./docs/INSTALLATION.md)** - Setup instructions
 - **[Memory System Guide](./docs/MEMORY-SYSTEM.md)** - ReasoningBank usage
 - **[MCP Tools Reference](./docs/MCP-TOOLS.md)** - Complete tool catalog

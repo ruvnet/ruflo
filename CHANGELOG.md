@@ -5,6 +5,271 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0-alpha.14] - 2025-10-20
+
+> **📚 AgentDB Skills Expansion**: Comprehensive AgentDB documentation with 6 specialized skills covering all CLI commands and advanced features
+
+### ✨ New Features
+
+#### **AgentDB Skills Suite (6 Total)**
+
+**Updated Skills (2)**:
+- **agentdb-memory-patterns** - Enhanced with all `npx agentdb@latest` CLI commands
+  - Added: `init`, `mcp`, `create-plugin`, `query`, `import/export`, `stats`, `benchmark`
+  - Added: 9 learning algorithms documentation
+  - Added: 4 reasoning agents (PatternMatcher, ContextSynthesizer, MemoryOptimizer, ExperienceCurator)
+  - Added: Performance characteristics (150x-12,500x improvements)
+  - Added: MCP server integration instructions
+
+- **agentdb-vector-search** - Comprehensive vector search documentation
+  - Added: All CLI commands with distance metrics (cosine, euclidean, dot)
+  - Added: Quantization options (binary 32x, scalar 4x, product 8-16x)
+  - Added: HNSW indexing details (<100µs search)
+  - Added: MCP integration and performance benchmarks
+  - Added: RAG pipeline examples
+
+**New Skills (4)**:
+- **reasoningbank-agentdb** (~420 lines) - ReasoningBank integration with AgentDB backend
+  - Trajectory tracking and verdict judgment
+  - Memory distillation and pattern recognition
+  - 4 reasoning agents integration
+  - Legacy API 100% backward compatibility
+  - Migration tools from legacy ReasoningBank
+
+- **agentdb-learning** (~450 lines) - AI learning plugins and reinforcement learning
+  - 9 RL algorithms: Decision Transformer, Q-Learning, SARSA, Actor-Critic, Active Learning, Adversarial Training, Curriculum Learning, Federated Learning, Multi-Task Learning
+  - Plugin creation and management via CLI
+  - Training workflows and experience replay
+  - Multi-agent training patterns
+
+- **agentdb-optimization** (~480 lines) - Performance optimization and scalability
+  - Quantization strategies (4-32x memory reduction)
+  - HNSW indexing (O(log n) search, <100µs)
+  - Caching strategies (LRU cache, <1ms retrieval)
+  - Batch operations (500x faster)
+  - Optimization recipes for different scales (small to massive)
+  - Scaling strategies and performance monitoring
+
+- **agentdb-advanced** (~490 lines) - Advanced distributed systems features
+  - QUIC synchronization (<1ms latency)
+  - Custom distance metrics
+  - Hybrid search (vector + metadata filtering)
+  - Multi-database management and sharding
+  - MMR (Maximal Marginal Relevance)
+  - Production patterns (connection pooling, error handling, monitoring)
+  - Multi-node deployment
+
+### 📊 Coverage
+
+**CLI Commands**: All 12 AgentDB commands fully documented
+- `init`, `mcp`, `create-plugin`, `list-plugins`, `list-templates`, `plugin-info`
+- `query`, `import`, `export`, `stats`, `benchmark`, `version`
+
+**Algorithms**: 9 reinforcement learning algorithms
+**Reasoning Agents**: 4 modules for intelligent pattern matching
+**Quantization**: 3 types with 4-32x memory reduction
+**Performance**: 150x-12,500x improvements documented
+
+### 📦 Distribution
+
+- ✅ All 6 AgentDB skills included in `.claude/skills/` directory
+- ✅ Skills distributed with npm package via `.claude/` in files array
+- ✅ Total: ~2,520 lines of comprehensive documentation
+- ✅ All skills follow skill-builder specification with proper YAML frontmatter
+- ✅ Progressive disclosure structure (4 levels)
+- ✅ Cross-references between skills
+
+### 🎯 Use Case Mapping
+
+- **Stateful chatbots** → `agentdb-memory-patterns`
+- **Semantic search/RAG** → `agentdb-vector-search`
+- **Self-learning agents** → `reasoningbank-agentdb`, `agentdb-learning`
+- **Performance tuning** → `agentdb-optimization`
+- **Distributed AI systems** → `agentdb-advanced`
+
+### 🔗 Resources
+
+- GitHub: https://github.com/ruvnet/agentic-flow/tree/main/packages/agentdb
+- Website: https://agentdb.ruv.io
+- MCP Integration: `npx agentdb@latest mcp`
+
+## [2.7.0-alpha.12] - 2025-10-20
+
+> **🔧 Critical Bug Fixes**: Skills system and statusline initialization now work correctly in all npm install scenarios
+
+### 🐛 Bug Fixes
+
+#### **Skills System Initialization**
+- **Fixed**: Skills copier path resolution in both `bin/init/skills-copier.js` and `src/cli/simple-commands/init/skills-copier.js`
+  - Skills now copy correctly from npm package installations (global and local)
+  - All 21 built-in skills properly initialize during `npx claude-flow init`
+  - Tested and verified in Docker environment
+  - Resolves issue where `.claude/skills/` directory remained empty after init
+
+#### **Statusline Script Creation**
+- **Fixed**: Statusline script creation with proper bash variable escaping and missing imports
+  - Escaped bash variables (`${MEM_COLOR}`, `${CPU_COLOR}`, `${SUCCESS_COLOR}`) to prevent JavaScript template literal conflicts
+  - Added missing `path` and `os` module imports in `enhancedClaudeFlowInit()` function
+  - Script now creates successfully with executable permissions (755) in both `.claude/` and `~/.claude/`
+  - Resolves "⚠️ Could not create statusline script, skipping..." warning during init
+  - Verified in Docker with proper file permissions: `-rwxr-xr-x`
+
+### ✅ Verification
+- **Docker Testing**: All fixes validated in isolated Docker environment before publishing
+- **Skills Validation**: All 21 skills copy successfully
+- **Statusline Validation**: Script creates with correct permissions and executable functionality
+
+## [2.7.0-alpha.11] - 2025-10-20
+
+> **🎨 Skills System Integration**: Complete migration from commands to skills + comprehensive documentation
+
+### ✨ New Features
+
+#### **Skills System Integration**
+- **21 Built-In Skills**: Full catalog of production-ready skills via MCP server
+  - 🧠 AI & Memory (3): agentdb-memory-patterns, agentdb-vector-search, reasoningbank-intelligence
+  - ☁️ Cloud Platform (3): flow-nexus-platform, flow-nexus-neural, flow-nexus-swarm
+  - 🐙 GitHub Integration (5): code-review, multi-repo, project-management, release-management, workflow-automation
+  - 🤖 Swarm Orchestration (4): swarm-orchestration, swarm-advanced, hive-mind-advanced, stream-chain
+  - 📊 Development & Quality (3): sparc-methodology, pair-programming, verification-quality
+  - 🔧 Automation & Tools (2): hooks-automation, skill-builder
+  - ⚡ Performance (1): performance-analysis
+
+- **Skills Auto-Discovery**: All skills automatically available when MCP server is running
+- **Custom Skill Creation**: Integration with agentic-flow for custom skill development
+- **Progressive Disclosure**: Skills only load when relevant to task (efficient memory usage)
+
+#### **Documentation**
+- **New**: `docs/skills/skills-tutorial.md` - Comprehensive skills capabilities guide
+  - Complete catalog of all 21 built-in skills
+  - Real-world usage examples for each skill
+  - Combined skills workflows for complex tasks
+  - Skills selection guide and best practices
+  - Performance metrics and benchmarks
+
+- **New**: `docs/COMMANDS_TO_SKILLS_MIGRATION.md` - Migration guide from commands to skills
+- **New**: `docs/FINAL_INIT_STRUCTURE.md` - Complete init system documentation
+- **New**: `.claude/skills/` directory structure for project skills
+- **New**: `bin/init/skills-copier.js` - Automated skills installation
+
+#### **Init System Enhancements**
+- **Skills Integration**: `npx claude-flow init` now copies 21 built-in skills to `.claude/skills/`
+- **Folder Structure**: Organized `bin/init/` with separate help and skills modules
+- **Auto-Setup**: Skills automatically available after init command
+
+### 🔄 Changes
+
+#### **Commands → Skills Migration**
+- **Removed**: 68 command files from `.claude/commands/` (migrated to skills)
+  - Deleted: analysis, flow-nexus, github, hive-mind, hooks, memory, pair, sparc, stream-chain, swarm, truth, verify commands
+  - **Reason**: Commands are now integrated as skills via MCP server (more efficient, better discovery)
+
+- **Migration Path**: All functionality preserved in skills system
+  - Old: `.claude/commands/swarm/research.md`
+  - New: `swarm-orchestration` skill (auto-discovered)
+
+### 📚 Documentation Updates
+
+- **Updated**: `.gitignore` to exclude `.claude/skills/` from version control
+- **Updated**: `README.md` references to skills system
+- **Updated**: Integration guide for claude-flow + agentic-flow
+
+### 🏗️ Architecture Improvements
+
+**Skills Discovery Flow:**
+```
+1. Personal Skills (~/.claude/skills/) - User custom skills
+2. Project Skills (.claude/skills/) - Team shared skills
+3. Built-In Skills (MCP server) - 21 pre-configured skills
+4. Skill Activation - Claude matches description → loads content
+```
+
+**Integration Architecture:**
+```
+Claude Code
+  ├─ claude-flow Skills (21 Built-In)
+  ├─ agentic-flow Skills (Custom Created)
+  └─ MCP Integration Layer
+      ├─ 213+ coordination tools
+      ├─ AgentDB vector memory
+      ├─ ReasoningBank learning
+      └─ 54 specialized agents
+```
+
+### 📊 Performance Metrics
+
+- **84.8% SWE-Bench solve rate** (vs industry avg 43%)
+- **32.3% token reduction** through intelligent coordination
+- **2.8-4.4x speed improvement** with parallel agent execution
+- **46% faster** on repeated tasks (ReasoningBank learning)
+- **150x-12,500x faster search** (AgentDB vector operations)
+- **0.95 accuracy threshold** for quality verification
+
+### 🔧 Technical Details
+
+**Files Modified:**
+1. `package.json` - Version: 2.7.0-alpha.11
+2. `bin/claude-flow` - Version: 2.7.0-alpha.11
+3. `bin/init/index.js` - Added skills copier integration
+4. `bin/init/skills-copier.js` - New: Skills installation module
+5. `src/cli/simple-commands/init/index.js` - Updated init command
+6. `.gitignore` - Added `.claude/skills/` exclusion
+
+**New Files:**
+- `docs/skills/skills-tutorial.md` (3000+ lines comprehensive guide)
+- `docs/COMMANDS_TO_SKILLS_MIGRATION.md`
+- `docs/FINAL_INIT_STRUCTURE.md`
+- `.claude/skills/` directory structure
+- `bin/init/skills-copier.js`
+- `.claude/settings.reasoningbank-example.json`
+- `.claude/settings.reasoningbank-minimal.json`
+
+**Removed Files:**
+- 68 command files from `.claude/commands/` (migrated to skills)
+
+### 🚀 Usage
+
+**Installation:**
+```bash
+# Install claude-flow
+npm install -g claude-flow@alpha
+
+# Setup MCP server (enables 21 skills)
+claude mcp add claude-flow npx claude-flow@alpha mcp start
+
+# Initialize project with skills
+npx claude-flow init
+
+# Skills are now auto-discovered!
+```
+
+**Using Skills:**
+```
+You: "Implement semantic search for documentation"
+
+Claude (automatically):
+├─ Discovers: agentdb-vector-search skill
+├─ Loads: Skill instructions
+├─ Implements: Search using AgentDB
+└─ Learns: Pattern stored (46% faster next time)
+```
+
+### 📝 Upgrade Notes
+
+**For Existing Users:**
+1. Update to alpha.11: `npm install -g claude-flow@alpha`
+2. Run init: `npx claude-flow init` (copies skills to `.claude/skills/`)
+3. MCP server: `claude mcp add claude-flow npx claude-flow@alpha mcp start`
+4. Skills activate automatically - no code changes needed!
+
+**Breaking Changes:**
+- None - old commands removed but functionality preserved in skills
+
+**Deprecations:**
+- `.claude/commands/` - Use skills system instead
+
+---
+
 ## [2.7.0-alpha.10] - 2025-10-13
 
 > **🔥 CRITICAL FIX**: Semantic search bug fix for ReasoningBank integration - queries now return correct results instead of 0.

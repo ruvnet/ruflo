@@ -106,5 +106,15 @@ export function showInitHelp() {
   console.log('  • devops - Deployment and infrastructure');
   console.log('  • And 7+ more specialized modes...');
   console.log();
+  console.log('🔌 MCP Servers (Auto-installed):');
+  console.log('  • claude-flow@alpha - Core orchestration (required)');
+  console.log('  • ruv-swarm - Enhanced coordination (required)');
+  console.log();
+  console.log('📦 Optional MCP Servers (flow-nexus included as dependency):');
+  console.log('  To enable cloud features, manually add:');
+  console.log('  claude mcp add flow-nexus npx flow-nexus@latest mcp start');
+  console.log();
+  console.log('  Or uncomment in .mcp.json after init');
+  console.log();
   console.log('Learn more: https://github.com/ruvnet/claude-code-flow');
 }

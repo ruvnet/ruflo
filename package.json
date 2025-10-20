@@ -1,8 +1,7 @@
 {
   "name": "claude-flow",
-  "version": "2.7.0-alpha.10",
-  "description": "Enterprise-grade AI agent orchestration with WASM-powered ReasoningBank memory (agentic-flow@1.5.13 auto-backend)",
-  "packageManager": "npm@10.9.2",
+  "version": "2.7.0-alpha.14",
+  "description": "Enterprise-grade AI agent orchestration with WASM-powered ReasoningBank memory and AgentDB vector database (always uses latest agentic-flow)",
   "mcpName": "io.github.ruvnet/claude-flow",
   "main": "cli.mjs",
   "bin": {
@@ -122,8 +121,9 @@
     "@anthropic-ai/sdk": "^0.65.0",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "@types/better-sqlite3": "^7.6.13",
-    "agentic-flow": "^1.5.13",
+    "agentic-flow": "*",
     "blessed": "^0.1.81",
+    "flow-nexus": "^0.1.128",
     "chalk": "^4.1.2",
     "cli-table3": "^0.6.3",
     "commander": "^11.1.0",
