@@ -241,12 +241,15 @@ Skills have metadata (name, description, tags) that Claude scans at startup. Whe
 - Building custom workflows combining skills + swarms
 
 **Example Combining Both:**
-```bash
-# Pattern 1 (New Feature) + SPARC Skill + ReasoningBank Skill
+```
+# Natural Language (Recommended):
+"Build user authentication with JWT using SPARC and remember the patterns"
+# → Activates SPARC + ReasoningBank skills automatically
+
+# Legacy CLI (still works):
 npx claude-flow@alpha swarm "Build user authentication with JWT" \
   --sparc \
   --reasoningbank-enabled
-# → Activates SPARC + ReasoningBank skills automatically
 ```
 
 ### Installing Skills
@@ -283,7 +286,12 @@ ls -la .claude/skills/
 
 **Why SPARC:** SPARC (Specification → Pseudocode → Architecture → Refinement → Completion) enforces validation gates at each phase, ensuring quality and catching issues early. Combined with ReasoningBank, it learns from every build and gets smarter over time.
 
-**Just use it:**
+**Natural Language (Recommended):**
+```
+"Build user authentication with JWT tokens and password reset using SPARC methodology and ReasoningBank for self-learning"
+```
+
+**Legacy CLI (still works):**
 ```bash
 npx claude-flow@alpha swarm "Build user authentication with JWT tokens and password reset" \
   --sparc \
@@ -315,7 +323,12 @@ npx claude-flow@alpha swarm "Build user authentication with JWT tokens and passw
 
 **Why research strategy:** Optimized for information gathering with minimal code generation. Creates comprehensive analysis reports you can review.
 
-**Just use it:**
+**Natural Language (Recommended):**
+```
+"Research best practices for GraphQL federation with microservices and store findings in memory"
+```
+
+**Legacy CLI (still works):**
 ```bash
 npx claude-flow@alpha swarm "Research best practices for GraphQL federation with microservices" \
   --strategy research \
@@ -347,7 +360,12 @@ npx claude-flow@alpha swarm "Research best practices for GraphQL federation with
 
 **Why this works:** ReasoningBank learns from each bug fix. First time: analyzes and solves. Second time: applies learned solution automatically. By the 5th similar bug, it's nearly instant.
 
-**Just use it:**
+**Natural Language (Recommended):**
+```
+"Fix CSRF token missing error in checkout flow and remember the solution for future bugs"
+```
+
+**Legacy CLI (still works):**
 ```bash
 npx claude-flow@alpha swarm "Fix CSRF token missing error in checkout flow" \
   --strategy maintenance \
@@ -371,7 +389,12 @@ npx claude-flow@alpha swarm "Fix CSRF token missing error in checkout flow" \
 
 **Why refinement mode:** Focuses on improving existing code while maintaining functionality. Emphasizes testing to prevent regressions.
 
-**Just use it:**
+**Natural Language (Recommended):**
+```
+"Refactor user service to use dependency injection and improve testability with high quality standards"
+```
+
+**Legacy CLI (still works):**
 ```bash
 npx claude-flow@alpha swarm "Refactor user service to use dependency injection and improve testability" \
   --strategy refactoring \
@@ -431,7 +454,12 @@ npx claude-flow hive-mind task "Build 3 microservices: auth-service, payment-ser
 
 **Why review swarm:** Multi-agent review catches more issues than single-pass analysis. Combines code quality, security, performance, and best practices checks.
 
-**Just use it:**
+**Natural Language (Recommended):**
+```
+"Review PR #42 for code quality, security vulnerabilities, and performance issues"
+```
+
+**Legacy CLI (still works):**
 ```bash
 npx claude-flow@alpha swarm "Review PR #42: Add user notification system" \
   --strategy review \
@@ -455,7 +483,12 @@ npx claude-flow@alpha swarm "Review PR #42: Add user notification system" \
 
 **Why specialized strategy:** Optimized for data generation with realistic distributions, edge cases, and validation.
 
-**Just use it:**
+**Natural Language (Recommended):**
+```
+"Generate 1000 realistic user records with addresses, orders, and payment methods for testing"
+```
+
+**Legacy CLI (still works):**
 ```bash
 npx claude-flow@alpha swarm "Generate 1000 realistic user records with addresses, orders, and payment methods for testing" \
   --strategy testing \
@@ -484,7 +517,12 @@ npx claude-flow@alpha swarm "Generate e-commerce test data: 500 users, 2000 prod
 
 **Why workflow automation:** Pre-configured agents for GitHub Actions, Docker, Kubernetes, and cloud platforms. Follows security best practices by default.
 
-**Just use it:**
+**Natural Language (Recommended):**
+```
+"Create GitHub Actions workflow for: build, test, lint, security scan, deploy to staging on PR"
+```
+
+**Legacy CLI (still works):**
 ```bash
 npx claude-flow@alpha swarm "Create GitHub Actions workflow for: build, test, lint, security scan, deploy to staging on PR" \
   --strategy devops \
@@ -515,7 +553,12 @@ npx claude-flow@alpha swarm "Create K8s manifests: deployment, service, ingress,
 
 **Why multi-repo tools:** Coordinates changes across repositories while maintaining consistency and handling dependencies.
 
-**Just use it:**
+**Natural Language (Recommended):**
+```
+"Update all repos (backend-api, frontend-web, mobile-app) to use Node.js 20 LTS and update package.json engines field"
+```
+
+**Legacy CLI (still works):**
 ```bash
 npx claude-flow@alpha swarm "Update all repos to use Node.js 20 LTS and update package.json engines field" \
   --strategy maintenance \
@@ -537,7 +580,12 @@ npx claude-flow@alpha swarm "Update all repos to use Node.js 20 LTS and update p
 
 **Why optimization strategy:** Profiles first, then optimizes based on data. Prevents premature optimization.
 
-**Just use it:**
+**Natural Language (Recommended):**
+```
+"Optimize API response time from 800ms to under 200ms by profiling and fixing bottlenecks"
+```
+
+**Legacy CLI (still works):**
 ```bash
 npx claude-flow@alpha swarm "Optimize API response time (currently 800ms, target: <200ms)" \
   --strategy optimization \

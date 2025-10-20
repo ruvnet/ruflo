@@ -64,7 +64,14 @@ Claude Flow includes **25 specialized skills**. This guide covers the 10 most es
 4. **Refinement** - Implements with TDD
 5. **Completion** - Integrates and validates
 
-**CLI usage:**
+**Natural Language (Recommended):**
+```
+"Build shopping cart feature using SPARC with TDD"
+"Design architecture for user authentication"
+"Specify and pseudocode the payment flow"
+```
+
+**Legacy CLI (still works):**
 ```bash
 # Full SPARC workflow
 npx claude-flow sparc tdd "shopping cart feature"
