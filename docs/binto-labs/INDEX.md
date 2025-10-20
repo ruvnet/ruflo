@@ -13,6 +13,7 @@ This fork adds **39 comprehensive documentation files** organized under `docs/bi
 | **[Fork README](README.md)** | Fork mission, contribution guidelines, and overview |
 | **[Practical Guide](guides/practical-guide-2025.md)** | Complete user guide (1,606 lines) - your main starting point |
 | **[Architecture Guide](guides/architecture-guide-2025.md)** | System architecture and design patterns |
+| **[Skills Quick Start](guides/skills-quickstart.md)** | Essential Skills that activate automatically with natural language |
 
 ---
 

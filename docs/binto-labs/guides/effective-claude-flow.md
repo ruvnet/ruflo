@@ -172,6 +172,109 @@ echo "CLAUDE_API_KEY=your-api-key-here" > .env
 
 ---
 
+## 🎯 Skills System Overview
+
+**New in v2.7.0:** Skills replace slash commands with automatic, context-aware activation.
+
+### What Are Skills?
+
+Skills are modular instruction sets that Claude discovers and activates automatically based on your task description. Instead of memorizing `/commands`, just describe what you want in natural language.
+
+**Example:**
+```
+# Old way (still works, but deprecated):
+/sparc tdd "user authentication"
+
+# New way (automatic):
+"Build user authentication with tests"
+# → SPARC methodology skill activates automatically
+```
+
+**Why Skills Are Better:**
+- **40% less context pollution** - Only loads relevant skills
+- **Natural language activation** - No commands to memorize
+- **Automatic discovery** - Claude picks the right skill
+- **Composable** - Skills can use other skills internally
+
+### Essential Skills You'll Use Daily
+
+**Development:**
+- `sparc-methodology` - Systematic feature building with TDD
+- `pair-programming` - Driver/navigator collaborative coding
+
+**Memory & Intelligence:**
+- `agentdb-vector-search` - Semantic code search (find similar patterns)
+- `reasoningbank-agentdb` - Self-learning memory (150x faster than legacy)
+
+**GitHub Integration:**
+- `github-code-review` - AI-powered PR reviews
+- `github-workflow-automation` - CI/CD pipeline generation
+
+**Coordination:**
+- `swarm-orchestration` - Multi-agent parallel execution
+- `hive-mind-advanced` - Queen-led hierarchical coordination
+
+**See all 25 skills:** [docs/skills-tutorial.md](../../skills-tutorial.md) (upstream complete catalog)
+
+### How Skills Activate
+
+Skills have metadata (name, description, tags) that Claude scans at startup. When you describe a task, Claude matches your intent to relevant skills and loads them on-demand.
+
+**Example Activations:**
+```
+"Find similar authentication code" → agentdb-vector-search
+"Review this PR for security" → github-code-review
+"Build checkout with TDD" → sparc-methodology
+"Spawn 5 agents to refactor services" → swarm-orchestration
+```
+
+### Skills vs Patterns (When to Use Each)
+
+**Use Skills directly when:**
+- Task requires specialized knowledge (SPARC, GitHub, AgentDB)
+- You need automatic tool selection and coordination
+- Building complex features with multiple phases
+
+**Use Patterns (from this guide) when:**
+- Simple task that doesn't need specialized skills
+- Coordinating multiple skills together
+- Building custom workflows combining skills + swarms
+
+**Example Combining Both:**
+```bash
+# Pattern 1 (New Feature) + SPARC Skill + ReasoningBank Skill
+npx claude-flow@alpha swarm "Build user authentication with JWT" \
+  --sparc \
+  --reasoningbank-enabled
+# → Activates SPARC + ReasoningBank skills automatically
+```
+
+### Installing Skills
+
+```bash
+# Initialize skills in your project
+npx claude-flow@alpha init --force
+
+# What this creates:
+# .claude/skills/         ← All 25 skills installed here
+# .claude-flow/          ← Configuration
+# .swarm/                ← Memory database
+
+# Verify installation
+ls -la .claude/skills/
+# Should show 25 skill directories
+```
+
+**After installation:** Skills activate automatically - no configuration needed.
+
+### Learn More
+
+- **Complete Skills Catalog:** [docs/skills-tutorial.md](../../skills-tutorial.md) - Full upstream documentation
+- **Build Custom Skills:** Use the `skill-builder` skill to create your own
+- **Skills Quick Start:** [guides/skills-quickstart.md](./skills-quickstart.md) - Essential skills with examples
+
+---
+
 ## 📋 The Essential Patterns
 
 ### Pattern 1: New Feature Development → SPARC + ReasoningBank
