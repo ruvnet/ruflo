@@ -13,10 +13,12 @@ export class UnifiedMemoryManager {
   constructor(options = {}) {
     const claudeFlowDir = getClaudeFlowDir();
     const projectRoot = getProjectRoot();
+    // Use process.cwd() for ReasoningBank path - it should be in the user's working directory
+    const workingDir = process.cwd();
     this.config = {
       primaryStore: path.join(claudeFlowDir, 'memory', 'unified-memory.db'),
-      fallbackStore: path.join(projectRoot, 'memory', 'memory-store.json'),
-      reasoningBankPath: path.join(projectRoot, '.swarm', 'memory.db'),
+      fallbackStore: path.join(workingDir, 'memory', 'memory-store.json'),
+      reasoningBankPath: path.join(workingDir, '.swarm', 'memory.db'),
       configPath: path.join(claudeFlowDir, 'memory-config.json'),
       ...options
     };
