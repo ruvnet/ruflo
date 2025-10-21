@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Read JSON input from stdin
@@ -15,14 +16,14 @@ fi
 BRANCH=$(cd "$CWD" 2>/dev/null && git branch --show-current 2>/dev/null)
 
 # Start building statusline
-echo -ne "\033[1m$MODEL\033[0m in \033[36m$DIR\033[0m"
-[ -n "$BRANCH" ] && echo -ne " on \033[33m⎇ $BRANCH\033[0m"
+printf "\033[1m$MODEL\033[0m in \033[36m$DIR\033[0m"
+[ -n "$BRANCH" ] && printf " on \033[33m⎇ $BRANCH\033[0m"
 
 # Claude-Flow integration
 FLOW_DIR="$CWD/.claude-flow"
 
 if [ -d "$FLOW_DIR" ]; then
-  echo -ne " │"
+  printf " │"
 
   # 1. Swarm Configuration & Topology
   if [ -f "$FLOW_DIR/swarm-config.json" ]; then
@@ -35,12 +36,12 @@ if [ -d "$FLOW_DIR" ]; then
         "aggressive") TOPO_ICON="⚡ring" ;;
         *) TOPO_ICON="⚡$STRATEGY" ;;
       esac
-      echo -ne " \033[35m$TOPO_ICON\033[0m"
+      printf " \033[35m$TOPO_ICON\033[0m"
 
       # Count agent profiles as "configured agents"
       AGENT_COUNT=$(jq -r '.agentProfiles | length' "$FLOW_DIR/swarm-config.json" 2>/dev/null)
       if [ -n "$AGENT_COUNT" ] && [ "$AGENT_COUNT" != "null" ] && [ "$AGENT_COUNT" -gt 0 ]; then
-        echo -ne "  \033[35m🤖 $AGENT_COUNT\033[0m"
+        printf "  \033[35m🤖 $AGENT_COUNT\033[0m"
       fi
     fi
   fi
@@ -62,7 +63,7 @@ if [ -d "$FLOW_DIR" ]; then
         else
           MEM_COLOR="\033[31m"  # Red
         fi
-        echo -ne "  ${MEM_COLOR}💾 ${MEM_PERCENT}%\033[0m"
+        printf "  ${MEM_COLOR}💾 ${MEM_PERCENT}%\033[0m"
       fi
 
       # CPU load
@@ -76,7 +77,7 @@ if [ -d "$FLOW_DIR" ]; then
         else
           CPU_COLOR="\033[31m"  # Red
         fi
-        echo -ne "  ${CPU_COLOR}⚙ ${CPU_LOAD}%\033[0m"
+        printf "  ${CPU_COLOR}⚙ ${CPU_LOAD}%\033[0m"
       fi
     fi
   fi
@@ -89,7 +90,7 @@ if [ -d "$FLOW_DIR" ]; then
     if [ "$ACTIVE" = "true" ] && [ -n "$SESSION_ID" ]; then
       # Show abbreviated session ID
       SHORT_ID=$(echo "$SESSION_ID" | cut -d'-' -f1)
-      echo -ne "  \033[34m🔄 $SHORT_ID\033[0m"
+      printf "  \033[34m🔄 $SHORT_ID\033[0m"
     fi
   fi
 
@@ -130,7 +131,7 @@ if [ -d "$FLOW_DIR" ]; then
         else
           SUCCESS_COLOR="\033[31m"  # Red
         fi
-        echo -ne "  ${SUCCESS_COLOR}🎯 ${SUCCESS_RATE}%\033[0m"
+        printf "  ${SUCCESS_COLOR}🎯 ${SUCCESS_RATE}%\033[0m"
       fi
 
       # Average Time
@@ -144,13 +145,13 @@ if [ -d "$FLOW_DIR" ]; then
         else
           TIME_STR=$(echo "$AVG_TIME" | awk '{printf "%.1fh", $1/3600}')
         fi
-        echo -ne "  \033[36m⏱️  $TIME_STR\033[0m"
+        printf "  \033[36m⏱️  $TIME_STR\033[0m"
       fi
 
       # Streak (only show if > 0)
       STREAK=$(echo "$METRICS" | jq -r '.streak // 0')
       if [ -n "$STREAK" ] && [ "$STREAK" -gt 0 ]; then
-        echo -ne "  \033[91m🔥 $STREAK\033[0m"
+        printf "  \033[91m🔥 $STREAK\033[0m"
       fi
     fi
   fi
@@ -159,7 +160,7 @@ if [ -d "$FLOW_DIR" ]; then
   if [ -d "$FLOW_DIR/tasks" ]; then
     TASK_COUNT=$(find "$FLOW_DIR/tasks" -name "*.json" -type f 2>/dev/null | wc -l)
     if [ "$TASK_COUNT" -gt 0 ]; then
-      echo -ne "  \033[36m📋 $TASK_COUNT\033[0m"
+      printf "  \033[36m📋 $TASK_COUNT\033[0m"
     fi
   fi
 
@@ -167,7 +168,7 @@ if [ -d "$FLOW_DIR" ]; then
   if [ -f "$FLOW_DIR/hooks-state.json" ]; then
     HOOKS_ACTIVE=$(jq -r '.enabled // false' "$FLOW_DIR/hooks-state.json" 2>/dev/null)
     if [ "$HOOKS_ACTIVE" = "true" ]; then
-      echo -ne " \033[35m🔗\033[0m"
+      printf " \033[35m🔗\033[0m"
     fi
   fi
 fi

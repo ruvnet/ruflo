@@ -1,31 +1,5 @@
 # Claude Code Configuration - SPARC Development Environment
 
-## 📚 FORK MISSION STATEMENT
-
-**This is a PURE DOCUMENTATION FORK of [ruvnet/claude-flow](https://github.com/ruvnet/claude-flow)**
-
-**Mission:** Create comprehensive, user-friendly documentation that helps developers learn and master claude-flow.
-
-**Fork Policy:**
-- ✅ **Documentation Only** - No code customizations (except security improvements)
-- ✅ **Sync Upstream Regularly** - Stay current with latest claude-flow features
-- ✅ **Enhanced Security** - Improved .gitignore to prevent credential leaks
-- ✅ **Focus on Users** - Practical guides, examples, and troubleshooting
-- ✅ **Contribute Back** - Documentation improvements contributed upstream when possible
-
-**What's Here:**
-- 39 fork-specific documentation files in `docs/binto-labs/`
-- 137 upstream documentation files (preserved as-is)
-- Total: 176 markdown files
-- Only customizations: Documentation + enhanced .gitignore
-
-**See:** [Binto Labs Documentation Index](docs/binto-labs/INDEX.md) for navigation
-
-**Upstream Repository:** https://github.com/ruvnet/claude-flow
-**Fork Repository:** https://github.com/binto-labs/claude-flow
-
----
-
 ## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 
 **ABSOLUTE RULES**:
