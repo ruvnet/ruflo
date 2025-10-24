@@ -257,13 +257,10 @@ docs/
 ├── 📄 README.md & INDEX.md                    # Core entry points
 │
 ├── 🚀 releases/                               # Release Notes & Changelogs
-│   ├── v2.7.1/                                # Current stable release
-│   │   ├── RELEASE_v2.7.1.md                  # Release notes
-│   │   └── RELEASE_SUMMARY_v2.7.1.md          # Release summary
-│   ├── v2.7.0-alpha.10/                       # Alpha release
-│   │   └── RELEASE-NOTES-v2.7.0-alpha.10.md   # Release notes
-│   ├── v2.7.0-alpha.9/                        # Previous alpha
-│   │   └── RELEASE-NOTES-v2.7.0-alpha.9.md    # Release notes
+│   ├── RELEASE_v2.7.1.md                      # v2.7.1 release notes
+│   ├── RELEASE_SUMMARY_v2.7.1.md              # v2.7.1 summary
+│   ├── RELEASE-NOTES-v2.7.0-alpha.10.md       # Alpha 10 release notes
+│   ├── RELEASE-NOTES-v2.7.0-alpha.9.md        # Alpha 9 release notes
 │   └── ALPHA_TAG_UPDATE.md                    # Alpha versioning guide
 │
 ├── 🧠 agentdb/                                # AgentDB v1.3.9 Integration
