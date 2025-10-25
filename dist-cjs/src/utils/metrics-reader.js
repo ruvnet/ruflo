@@ -1,11 +1,13 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 const execAsync = promisify(exec);
-export class MetricsReader {
-    metricsDir = '.claude-flow/metrics';
-    sessionsDir = '.claude-flow/sessions';
+let MetricsReader = class MetricsReader {
+    constructor(){
+        this.metricsDir = '.claude-flow/metrics';
+        this.sessionsDir = '.claude-flow/sessions';
+    }
     async getSystemMetrics() {
         try {
             const filePath = path.join(this.metricsDir, 'system-metrics.json');
@@ -14,6 +16,15 @@ export class MetricsReader {
             return metrics.length > 0 ? metrics[metrics.length - 1] : null;
         } catch (error) {
             return null;
+        }
+    }
+    async getTaskQueue() {
+        try {
+            const queueFile = '.claude-flow/tasks/queue.json';
+            const content = await fs.readFile(queueFile, 'utf8');
+            return JSON.parse(content);
+        } catch (error) {
+            return [];
         }
     }
     async getTaskMetrics() {
@@ -36,30 +47,30 @@ export class MetricsReader {
     }
     async getActiveAgents() {
         try {
-            const perfMetrics = await this.getPerformanceMetrics();
-            const sessionFiles = await this.getSessionFiles();
             const agents = [];
-            for (const file of sessionFiles){
-                try {
-                    const content = await fs.readFile(path.join(this.sessionsDir, 'pair', file), 'utf8');
-                    const sessionData = JSON.parse(content);
-                    if (sessionData.agents && Array.isArray(sessionData.agents)) {
-                        agents.push(...sessionData.agents);
+            const agentsDir = '.claude-flow/agents';
+            try {
+                const agentFiles = await fs.readdir(agentsDir);
+                for (const file of agentFiles){
+                    if (file.endsWith('.json')) {
+                        try {
+                            const content = await fs.readFile(path.join(agentsDir, file), 'utf8');
+                            const agent = JSON.parse(content);
+                            agents.push(agent);
+                        } catch  {}
                     }
-                } catch  {}
-            }
-            if (agents.length === 0 && perfMetrics) {
-                const activeCount = perfMetrics.activeAgents || 0;
-                const totalCount = perfMetrics.totalAgents || 0;
-                for(let i = 0; i < totalCount; i++){
-                    agents.push({
-                        id: `agent-${i + 1}`,
-                        name: `Agent ${i + 1}`,
-                        type: i === 0 ? 'orchestrator' : 'worker',
-                        status: i < activeCount ? 'active' : 'idle',
-                        activeTasks: i < activeCount ? 1 : 0,
-                        lastActivity: Date.now() - i * 1000
-                    });
+                }
+            } catch  {}
+            if (agents.length === 0) {
+                const sessionFiles = await this.getSessionFiles();
+                for (const file of sessionFiles){
+                    try {
+                        const content = await fs.readFile(path.join(this.sessionsDir, 'pair', file), 'utf8');
+                        const sessionData = JSON.parse(content);
+                        if (sessionData.agents && Array.isArray(sessionData.agents)) {
+                            agents.push(...sessionData.agents);
+                        }
+                    } catch  {}
                 }
             }
             return agents;
@@ -135,7 +146,7 @@ export class MetricsReader {
     }
     async getMCPServerStatus() {
         try {
-            const { stdout } = await execAsync('ps aux | grep -E "mcp-server\\.js|claude-flow mcp start" | grep -v grep | wc -l');
+            const { stdout } = await execAsync('ps aux | grep -E "mcp" | grep -v grep | wc -l');
             const processCount = parseInt(stdout.trim(), 10);
             const { stdout: orchestratorOut } = await execAsync('ps aux | grep -E "claude-flow start" | grep -v grep | wc -l');
             const orchestratorRunning = parseInt(orchestratorOut.trim(), 10) > 0;
@@ -158,15 +169,6 @@ export class MetricsReader {
             return {
                 running: false,
                 processCount: 0,
-                orchestratorRunning: false,
-                port: null,
-                connections: 0
-            };
-        }
-    }
-}
-
-//# sourceMappingURL=metrics-reader.js.map               processCount: 0,
                 orchestratorRunning: false,
                 port: null,
                 connections: 0

@@ -85,9 +85,4 @@ export class HelpFormatter {
     }
 }
 
-//# sourceMappingURL=help-formatter.js.map/\s+/g, ' ');
-        return text;
-    }
-}
-
 //# sourceMappingURL=help-formatter.js.map
