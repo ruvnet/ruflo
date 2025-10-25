@@ -88,16 +88,30 @@ export class UnifiedMemoryManager {
 
   /**
    * Store a key-value pair
+   * Supports both APIs for backward compatibility:
+   * - New API: store(key, value, namespace, metadata)
+   * - Old API: store(key, value, {namespace, ttl, metadata})
    */
-  async store(key, value, namespace = 'default', metadata = {}) {
+  async store(key, value, namespaceOrOptions = 'default', metadata = {}) {
     await this.initialize();
 
-    if (this.useReasoningBank) {
-      return await this.storeReasoningBank(key, value, namespace, metadata);
-    } else if (this.useSqlite) {
-      return await this.storeSqlite(key, value, namespace, metadata);
+    // Handle old memoryStore API: store(key, value, {namespace, ttl, metadata})
+    let namespace, actualMetadata;
+    if (typeof namespaceOrOptions === 'object') {
+      namespace = namespaceOrOptions.namespace || 'default';
+      actualMetadata = namespaceOrOptions.metadata || {};
+      // Ignore TTL for now - memoryManager doesn't support it yet
     } else {
-      return await this.storeJson(key, value, namespace, metadata);
+      namespace = namespaceOrOptions;
+      actualMetadata = metadata;
+    }
+
+    if (this.useReasoningBank) {
+      return await this.storeReasoningBank(key, value, namespace, actualMetadata);
+    } else if (this.useSqlite) {
+      return await this.storeSqlite(key, value, namespace, actualMetadata);
+    } else {
+      return await this.storeJson(key, value, namespace, actualMetadata);
     }
   }
 
@@ -610,6 +624,29 @@ export class UnifiedMemoryManager {
         semanticSearch: false
       };
     }
+  }
+
+  /**
+   * Backward compatibility: retrieve() method for old memoryStore API
+   * @param {string} key - Key to retrieve
+   * @param {object} options - Options object with namespace
+   * @returns {Promise<string|null>} - Value or null
+   */
+  async retrieve(key, options = {}) {
+    const namespace = options.namespace || 'default';
+    const entry = await this.get(key, namespace);
+    return entry?.value || null;
+  }
+
+  /**
+   * Backward compatibility: list() method for old memoryStore API
+   * @param {object} options - Options object with namespace and limit
+   * @returns {Promise<Array>} - List of entries
+   */
+  async list(options = {}) {
+    const namespace = options.namespace || 'default';
+    const limit = options.limit || 100;
+    return await this.query('', { namespace, limit });
   }
 }
 

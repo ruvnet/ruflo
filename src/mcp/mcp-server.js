@@ -65,6 +65,7 @@ class ClaudeFlowMCPServer {
   constructor() {
     this.version = '2.5.0-alpha.131'; // Updated with Phase 4 SDK integration tools
     this.memoryManager = getUnifiedMemory(); // Use UnifiedMemoryManager with ReasoningBank support
+    this.memoryStore = this.memoryManager; // Backward compatibility alias for v2.7.1 neural_train code
     this.capabilities = {
       tools: {
         listChanged: true,
