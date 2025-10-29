@@ -156,6 +156,8 @@ claude-flow.config.json
 .swarm/
 .hive-mind/
 .claude-flow/
+# Metrics (generated runtime telemetry) - explicitly ignore metrics subfolder
+.claude-flow/metrics/
 memory/
 coordination/
 memory/claude-flow-data.json
