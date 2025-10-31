@@ -119,39 +119,138 @@ npx claude-flow@alpha memory init
 
 ### Step 3: Load Pre-Trained Intelligence (Highly Recommended!)
 
-**Why:** Start with 11,000+ proven patterns instead of learning from scratch. This is like hiring an expert team on day one.
+**Why:** Start with 1,500-3,000 proven patterns instead of learning from scratch. This is like hiring an expert team on day one.
+
+**⚠️ Important:** Models are NOT pre-built. You must **train them** (takes 30-90 seconds per model).
+
+---
+
+#### 🚀 Quick Start: Train Code-Reasoning Model (Recommended)
+
+**Best for:** Programming, debugging, architecture, SOLID principles, algorithm optimization
 
 ```bash
-# Download SAFLA model (self-learning systems - 2,000 patterns)
-curl -o safla-memory.db https://raw.githubusercontent.com/ruvnet/claude-flow/main/docs/reasoningbank/models/safla/memory.db.backup
-
-# Install into ReasoningBank
-mkdir -p .swarm
-cp safla-memory.db .swarm/memory.db
-```
-
-**Verify:**
-```bash
-npx claude-flow@alpha memory stats
-# Should show: Total memories stored in .swarm/memory.db
-```
-
-**Alternative models** (all 5 pre-trained databases available):
-```bash
-# Clone all pre-trained models (google-research, code-reasoning, problem-solving, domain-expert)
-git clone --depth 1 --filter=blob:none --sparse https://github.com/ruvnet/claude-flow.git
-cd claude-flow
+# Step 1: Download training script
+cd /workspaces/claude-flow
+git clone --depth 1 --filter=blob:none --sparse https://github.com/ruvnet/claude-flow.git temp-models
+cd temp-models
 git sparse-checkout set docs/reasoningbank/models
 
-# Available models:
-# - safla/memory.db (2,000 patterns, 10.35 MB) - Self-learning systems
-# - google-research/memory.db (3,000 patterns, 8.92 MB) - Research methodologies
-# - code-reasoning/memory.db (2,500 patterns, 2.66 MB) - Code analysis
-# - problem-solving/memory.db (2,000 patterns, 5.85 MB) - Problem-solving patterns
-# - domain-expert/memory.db (1,500 patterns, 2.39 MB) - Domain-specific expertise
+# Step 2: Copy training script
+cp docs/reasoningbank/models/code-reasoning/train-code.js /workspaces/claude-flow/
 
-# Copy desired model to your project
-cp docs/reasoningbank/models/<model-name>/memory.db /path/to/your/project/.swarm/
+# Step 3: Run training (takes ~30 seconds)
+cd /workspaces/claude-flow
+node train-code.js
+
+# Step 4: Verify
+sqlite3 .swarm/memory.db "SELECT COUNT(*) FROM patterns;"
+# Should show: 2600
+
+# Step 5: Cleanup
+rm train-code.js
+rm -rf temp-models
+```
+
+**You now have:** 2,600 programming patterns ready to use!
+
+---
+
+#### 📚 All 5 Available ReasoningBank Models
+
+| Model | Patterns | Script | Specialty |
+|-------|----------|--------|-----------|
+| **code-reasoning** ⭐ | 2,600 | `train-code.js` | SOLID, design patterns, algorithms, debugging (JS/TS, Python, Go, Rust, Java) |
+| **problem-solving** | 2,000 | `train-problem.js` | Convergent, divergent, lateral, systems, critical thinking patterns |
+| **google-research** | 3,000 | `train-google.js` | ReasoningBank paper implementation (strategy-level learning, MaTTS scaling) |
+| **safla** | 2,000 | `train-safla.js` | Self-learning, feedback loops, Bayesian confidence, recursive improvement |
+| **domain-expert** | 1,500 | `train-domain.js` | DevOps, data engineering, security, API design, performance |
+
+---
+
+#### 🔧 Train Any Model (Generic Instructions)
+
+```bash
+# Replace <MODEL> with: code-reasoning, problem-solving, google-research, safla, or domain-expert
+
+# Step 1: Setup
+cd /workspaces/claude-flow
+mkdir -p .swarm
+
+# Step 2: Download models repo (if not already done)
+git clone --depth 1 --filter=blob:none --sparse https://github.com/ruvnet/claude-flow.git temp-models
+cd temp-models
+git sparse-checkout set docs/reasoningbank/models
+
+# Step 3: Copy training script
+cp docs/reasoningbank/models/<MODEL>/train-*.js /workspaces/claude-flow/train-model.js
+
+# Step 4: Edit script to fix database path
+cd /workspaces/claude-flow
+# Edit line that sets DB_PATH to: /workspaces/claude-flow/.swarm/memory.db
+sed -i "s|join(__dirname, 'memory.db')|'/workspaces/claude-flow/.swarm/memory.db'|g" train-model.js
+sed -i "s|join(__dirname, '.swarm', 'memory.db')|'/workspaces/claude-flow/.swarm/memory.db'|g" train-model.js
+
+# Step 5: Run training
+node train-model.js
+
+# Step 6: Verify
+sqlite3 .swarm/memory.db "SELECT COUNT(*) FROM patterns;"
+
+# Step 7: Cleanup
+rm train-model.js
+rm -rf temp-models
+```
+
+---
+
+#### 🎯 Which Model Should You Choose?
+
+**For most users:** Start with **code-reasoning** (2,600 programming patterns)
+- SOLID principles, design patterns, architecture patterns
+- Algorithm optimization (O(n²) → O(n))
+- Code quality, refactoring, debugging
+- Language-specific best practices (5 languages)
+
+**For problem-solving:** Use **problem-solving** (2,000 cognitive patterns)
+- Convergent thinking (logical deduction)
+- Divergent thinking (brainstorming)
+- Lateral thinking (unconventional solutions)
+- Systems thinking (holistic analysis)
+
+**For academic research:** Use **google-research** (3,000 patterns)
+- Based on arXiv:2509.25140 paper
+- Strategy-level memory (not task-level)
+- MaTTS parallel/sequential scaling
+- Closed-loop learning cycles
+
+**For self-learning AI:** Use **safla** (2,000 patterns)
+- Self-aware feedback loops
+- Bayesian confidence adjustment
+- Success/failure distillation
+- Recursive improvement cycles
+
+**For specialized domains:** Use **domain-expert** (1,500 patterns)
+- DevOps & Infrastructure (300 patterns)
+- Data Engineering & ML (300 patterns)
+- Security & Compliance (300 patterns)
+- API Design & Integration (300 patterns)
+- Performance & Scalability (300 patterns)
+
+---
+
+#### ⚠️ Training Notes
+
+**Important:**
+- ⚠️ Training **overwrites** existing `.swarm/memory.db` - backup first!
+- ⏱️ Training takes 30-90 seconds depending on model size
+- 💾 Resulting database: 2-15 MB
+- 🔧 Requires `better-sqlite3` (already installed in claude-flow)
+- 📍 Must run from `/workspaces/claude-flow` directory (where dependencies exist)
+
+**Backup before training:**
+```bash
+cp .swarm/memory.db .swarm/memory.db.backup-$(date +%Y%m%d-%H%M%S)
 ```
 
 ---
