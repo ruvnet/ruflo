@@ -2,7 +2,7 @@
 
 > **The opinionated guide to getting maximum value from claude-flow with minimum friction.**
 
-**Last Updated:** 2025-10-17 | **Version:** claude-flow v2.7.0-alpha.10
+**Last Updated:** 2025-10-31 | **Version:** claude-flow v2.7.26 (npm) / v2.7.0-alpha.14 (dev)
 
 ---
 
@@ -92,7 +92,7 @@ npx claude-flow@alpha --version
 **Verify:**
 ```bash
 npx claude-flow@alpha --version
-# Should show: v2.7.0-alpha.10 or newer
+# Should show: v2.7.26 or newer
 ```
 
 ---
@@ -107,7 +107,7 @@ cd /path/to/your/project
 npx claude-flow@alpha init --force
 
 # Initialize ReasoningBank for self-learning memory
-npx claude-flow@alpha memory init --reasoningbank
+npx claude-flow@alpha memory init
 ```
 
 **What this creates:**
@@ -122,28 +122,36 @@ npx claude-flow@alpha memory init --reasoningbank
 **Why:** Start with 11,000+ proven patterns instead of learning from scratch. This is like hiring an expert team on day one.
 
 ```bash
-# Download full-stack expert model (backend + frontend + devops + testing + security)
-curl -o full-stack-expert.json https://raw.githubusercontent.com/ruvnet/claude-flow/main/docs/reasoningbank/models/full-stack-complete.json
+# Download SAFLA model (self-learning systems - 2,000 patterns)
+curl -o safla-memory.db https://raw.githubusercontent.com/ruvnet/claude-flow/main/docs/reasoningbank/models/safla/memory.db.backup
 
-# Import into your ReasoningBank
-npx claude-flow@alpha memory import full-stack-expert.json --reasoningbank
+# Install into ReasoningBank
+mkdir -p .swarm
+cp safla-memory.db .swarm/memory.db
 ```
 
 **Verify:**
 ```bash
-npx claude-flow@alpha memory status --reasoningbank
-# Should show: Total memories: 11,000+, Average confidence: 85%
+npx claude-flow@alpha memory stats
+# Should show: Total memories stored in .swarm/memory.db
 ```
 
-**Alternative models** (choose based on your stack):
+**Alternative models** (all 5 pre-trained databases available):
 ```bash
-# Backend only (Node.js, Python, APIs, databases)
-curl -o backend.json https://raw.githubusercontent.com/ruvnet/claude-flow/main/docs/reasoningbank/models/backend-expert.json
-npx claude-flow@alpha memory import backend.json --reasoningbank
+# Clone all pre-trained models (google-research, code-reasoning, problem-solving, domain-expert)
+git clone --depth 1 --filter=blob:none --sparse https://github.com/ruvnet/claude-flow.git
+cd claude-flow
+git sparse-checkout set docs/reasoningbank/models
 
-# Frontend only (React, Vue, state management, UX)
-curl -o frontend.json https://raw.githubusercontent.com/ruvnet/claude-flow/main/docs/reasoningbank/models/frontend-expert.json
-npx claude-flow@alpha memory import frontend.json --reasoningbank
+# Available models:
+# - safla/memory.db (2,000 patterns, 10.35 MB) - Self-learning systems
+# - google-research/memory.db (3,000 patterns, 8.92 MB) - Research methodologies
+# - code-reasoning/memory.db (2,500 patterns, 2.66 MB) - Code analysis
+# - problem-solving/memory.db (2,000 patterns, 5.85 MB) - Problem-solving patterns
+# - domain-expert/memory.db (1,500 patterns, 2.39 MB) - Domain-specific expertise
+
+# Copy desired model to your project
+cp docs/reasoningbank/models/<model-name>/memory.db /path/to/your/project/.swarm/
 ```
 
 ---
@@ -196,25 +204,189 @@ Skills are modular instruction sets that Claude discovers and activates automati
 - **Automatic discovery** - Claude picks the right skill
 - **Composable** - Skills can use other skills internally
 
-### Essential Skills You'll Use Daily
+### All 25 Skills Available
 
-**Development:**
-- `sparc-methodology` - Systematic feature building with TDD
-- `pair-programming` - Driver/navigator collaborative coding
+Claude Flow includes 25 specialized skills that activate automatically based on your task description. Here's the complete catalog:
 
-**Memory & Intelligence:**
-- `agentdb-vector-search` - Semantic code search (find similar patterns)
-- `reasoningbank-agentdb` - Self-learning memory (150x faster than legacy)
+#### Development & Methodology (3 skills)
 
-**GitHub Integration:**
-- `github-code-review` - AI-powered PR reviews
-- `github-workflow-automation` - CI/CD pipeline generation
+**1. `sparc-methodology`** - Systematic feature building with TDD
+- **When to use:** "Build user authentication with SPARC and tests"
+- **What it does:** 5-phase development (Specification → Pseudocode → Architecture → Refinement → Completion)
+- **Activates on:** sparc, tdd, systematic, methodology, architecture
 
-**Coordination:**
-- `swarm-orchestration` - Multi-agent parallel execution
-- `hive-mind-advanced` - Queen-led hierarchical coordination
+**2. `pair-programming`** - Driver/navigator collaborative coding
+- **When to use:** "Let's pair program on this React component"
+- **What it does:** Real-time collaboration with role switching, quality monitoring, TDD sessions
+- **Activates on:** pair, collaborate, driver, navigator, debugging
 
-**See all 25 skills:** [docs/skills-tutorial.md](../../skills-tutorial.md) (upstream complete catalog)
+**3. `skill-builder`** - Create custom Claude Code skills
+- **When to use:** "Create a skill for our API patterns"
+- **What it does:** Builds new skills with YAML frontmatter and progressive disclosure
+- **Activates on:** create skill, build skill, custom skill, new workflow
+
+#### Intelligence & Memory (6 skills)
+
+**4. `agentdb-memory-patterns`** - Persistent agent memory
+- **When to use:** "Store our API design decisions in memory"
+- **What it does:** Session memory, long-term storage, pattern learning, context management
+- **Activates on:** memory, persist, remember, store context, session
+
+**5. `agentdb-vector-search`** - Semantic code search
+- **When to use:** "Find similar authentication code"
+- **What it does:** Semantic similarity matching, RAG systems, intelligent document retrieval
+- **Activates on:** find similar, search, semantic, vector search, patterns
+
+**6. `reasoningbank-agentdb`** - Self-learning memory (150x-12,500x faster)
+- **When to use:** "Remember this bug fix for future similar issues"
+- **What it does:** Experience learning, trajectory tracking, verdict judgment, pattern recognition
+- **Performance:** 150x faster pattern retrieval (<100µs vs 15ms), 12,500x faster at 1M patterns
+- **Activates on:** reasoningbank, learn from experience, remember solution, pattern tracking
+
+**7. `reasoningbank-intelligence`** - Adaptive learning & optimization
+- **When to use:** "Learn from this deployment and optimize future ones"
+- **What it does:** Pattern recognition, strategy optimization, continuous improvement
+- **Activates on:** adaptive learning, optimize strategy, continuous improvement, learn patterns
+
+**8. `agentdb-learning`** - 9 reinforcement learning algorithms
+- **When to use:** "Train a Q-Learning agent on deployment data"
+- **What it does:** Decision Transformer, Q-Learning, SARSA, Actor-Critic, Curiosity-Driven learning
+- **Performance:** 10-100x faster training with WASM acceleration
+- **Activates on:** reinforcement learning, train agent, learning algorithm, decision transformer
+
+**9. `agentdb-optimization`** - Performance optimization (4-32x compression)
+- **When to use:** "Optimize database with binary quantization"
+- **What it does:** Binary/scalar/product quantization, HNSW indexing, caching, batch operations
+- **Performance:** 500x faster batch ops, 32x memory reduction with binary quantization
+- **Activates on:** optimize, quantization, performance, compression, benchmarking
+
+#### Swarm Coordination (3 skills)
+
+**10. `swarm-orchestration`** - Multi-agent parallel execution
+- **When to use:** "Create swarm: researcher, coder, tester, reviewer"
+- **What it does:** Parallel task execution, dynamic topology (mesh/hierarchical/ring/star)
+- **Performance:** 2.8-4.4x faster than sequential
+- **Activates on:** swarm, multi-agent, parallel, coordinate, mesh, orchestrate
+
+**11. `swarm-advanced`** - Advanced swarm patterns
+- **When to use:** "Deploy research swarm for market analysis"
+- **What it does:** Specialized patterns for research, development, testing, complex workflows
+- **Activates on:** advanced swarm, research swarm, development swarm, complex workflow
+
+**12. `hive-mind-advanced`** - Queen-led hierarchical coordination
+- **When to use:** "Deploy hive mind with queen coordinator and worker agents"
+- **What it does:** Collective intelligence, consensus mechanisms, persistent memory, 5-20 agents
+- **Activates on:** hive mind, queen, collective intelligence, consensus, hierarchical
+
+#### GitHub Integration (5 skills)
+
+**13. `github-code-review`** - AI-powered PR reviews
+- **When to use:** "Review PR #42 for security and performance"
+- **What it does:** Multi-agent analysis, security audits, quality checks, best practices
+- **Activates on:** review pr, code review, pull request, security audit
+
+**14. `github-workflow-automation`** - CI/CD pipeline generation
+- **When to use:** "Create GitHub Actions workflow for Node.js testing"
+- **What it does:** Intelligent pipeline creation, optimization, self-healing workflows
+- **Activates on:** github actions, ci/cd, workflow, pipeline, deployment
+
+**15. `github-project-management`** - Issue tracking & sprint planning
+- **When to use:** "Triage open issues and categorize by priority"
+- **What it does:** Issue triage, project board automation, sprint planning, progress tracking
+- **Activates on:** issue triage, project board, sprint, tracking, planning
+
+**16. `github-release-management`** - Release orchestration
+- **When to use:** "Create release v2.1.0 with changelog"
+- **What it does:** Versioning, changelog generation, deployment, rollback management
+- **Activates on:** release, changelog, deploy, version, rollback
+
+**17. `github-multi-repo`** - Cross-repository synchronization
+- **When to use:** "Sync dependency versions across all microservice repos"
+- **What it does:** Multi-repo coordination, version alignment, cross-repo refactoring
+- **Activates on:** multi-repo, cross-repo, sync repos, monorepo, dependency sync
+
+#### Automation & Quality (4 skills)
+
+**18. `hooks-automation`** - Pre/post task automation
+- **When to use:** "Setup pre-commit hooks for code formatting"
+- **What it does:** Automated formatting, learning, session management, Git integration
+- **Activates on:** hooks, automation, pre-task, post-task, session, formatting
+
+**19. `verification-quality`** - Truth scoring & automatic rollback
+- **When to use:** "Check truth scores for this PR"
+- **What it does:** 0.95 accuracy threshold, automatic rollback, quality verification
+- **Activates on:** verify, quality, truth score, rollback, accuracy, reliability
+
+**20. `performance-analysis`** - Bottleneck detection
+- **When to use:** "Why is my swarm running slowly?"
+- **What it does:** Performance analysis, bottleneck identification, optimization recommendations
+- **Activates on:** performance, bottleneck, slow, optimize, analyze speed
+
+**21. `stream-chain`** - Pipeline processing
+- **When to use:** "Chain: fetch data → transform → validate → store"
+- **What it does:** Stream-JSON chaining, multi-agent pipelines, data transformation
+- **Activates on:** pipeline, chain, stream, sequential workflow, data flow
+
+#### Advanced Features (3 skills)
+
+**22. `agentdb-advanced`** - QUIC sync & hybrid search
+- **When to use:** "Setup QUIC sync between database nodes"
+- **What it does:** Sub-millisecond cross-node sync (<1ms), custom distance metrics, hybrid search
+- **Performance:** <1ms QUIC synchronization, maintains <100µs base search speed
+- **Activates on:** quic, distributed, sync, hybrid search, custom metrics, multi-node
+
+**23. `flow-nexus-platform`** - Cloud platform management
+- **When to use:** "Create sandbox for testing Node.js app"
+- **What it does:** Authentication, sandboxes, app deployment, payments, challenges
+- **Activates on:** flow nexus, cloud, sandbox, deploy, authentication
+
+**24. `flow-nexus-swarm`** - Cloud-based swarm deployment
+- **When to use:** "Deploy 50-agent swarm in cloud"
+- **What it does:** Event-driven workflows, scalable execution, distributed processing
+- **Activates on:** cloud swarm, event-driven, distributed, scale, flow nexus swarm
+
+**25. `flow-nexus-neural`** - Distributed neural training
+- **When to use:** "Train neural network across 10 sandboxes"
+- **What it does:** Cloud neural training, distributed ML, model deployment, E2B sandboxes
+- **Activates on:** neural, train model, distributed training, machine learning, cloud compute
+
+### AgentDB Performance Metrics
+
+**Why AgentDB Matters:** The original ReasoningBank and vector search used ChromaDB and legacy databases. AgentDB provides native TypeScript implementation with 150x-12,500x performance improvements and 4-32x memory reduction.
+
+**Proven Performance Improvements:**
+
+**Pattern Retrieval:**
+- Legacy ChromaDB: 15ms per query
+- AgentDB HNSW: <100µs per query
+- **Speedup: 150x faster**
+
+**Batch Operations:**
+- Legacy: 1 second (100 vectors)
+- AgentDB: 2ms (100 vectors)
+- **Speedup: 500x faster**
+
+**Large-Scale Queries:**
+- Legacy: 100 seconds (1M vectors)
+- AgentDB: 8ms (1M vectors)
+- **Speedup: 12,500x faster**
+
+**Memory Efficiency:**
+- Binary quantization: 32x reduction (3GB → 96MB)
+- Scalar quantization: 4x reduction (3GB → 768MB)
+- Product quantization: 8-16x reduction
+- Trade-off: 1-5% accuracy loss (negligible for most use cases)
+
+**QUIC Synchronization:**
+- Cross-node latency: <1ms
+- Automatic retry and recovery
+- Built-in encryption (TLS 1.3)
+- Multiplexed streams for efficient multi-node coordination
+
+**Learn more:**
+- **Complete Skills Tutorial:** [docs/skills-tutorial.md](../../skills-tutorial.md) - Full upstream documentation with examples
+- **Skills Quick Start:** [guides/skills-quickstart.md](./skills-quickstart.md) - Essential skills with practical examples
+- **Skills Best Practices:** [guides/skills-best-practices.md](./skills-best-practices.md) - Natural language patterns and optimization
 
 ### How Skills Activate
 
