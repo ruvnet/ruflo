@@ -122,19 +122,23 @@ cd /path/to/this-project
 # - Project-specific patterns
 ```
 
-### Terminal 2: Code Review (Separate Terminal)
+### Terminal 2: Code Review (SAME Directory - In-Place!)
 ```bash
-cd /workspaces/claude-flow
+cd /path/to/this-project
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/memory.db
+
 # Claude uses ReasoningBank (2,600 patterns):
 # - SOLID principles
 # - Design patterns
 # - Algorithm optimizations
 # - Best practices (unbiased by your project decisions)
 
-# Copy file for review:
-cp /path/to/this-project/src/component.tsx /tmp/review.tsx
+# Review files in-place (no copying needed):
+# "Review src/component.tsx for SOLID violations, bugs, and optimizations"
+# "Analyze src/api/auth.ts for security issues"
 
-# Ask: "Review /tmp/review.tsx for SOLID violations, bugs, and optimizations"
+# Switch back to project memory:
+unset CLAUDE_FLOW_DB_PATH
 ```
 
 ## Don't Merge (Yet)
@@ -163,6 +167,94 @@ EOF
 
 ---
 
+## 🔄 Switching Between ReasoningBanks
+
+**You can install multiple ReasoningBanks and switch between them using environment variables:**
+
+### Quick Switch (Environment Variable)
+
+```bash
+# Terminal 2: Code Review with different ReasoningBanks
+cd /path/to/your-project
+
+# Use code-reasoning (programming, SOLID, algorithms)
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/code-reasoning.db
+# "Review src/auth.ts for SOLID violations"
+
+# Use problem-solving (cognitive thinking, brainstorming)
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/problem-solving.db
+# "Help me brainstorm alternative architectures"
+
+# Use google-research (academic research methods)
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/google-research.db
+# "Analyze this approach using research methodology"
+
+# Back to project memory
+unset CLAUDE_FLOW_DB_PATH
+```
+
+### Shell Aliases (Recommended)
+
+Add to `~/.bashrc` or `~/.zshrc`:
+
+```bash
+# ReasoningBank switching aliases
+export RB_DIR=/workspaces/claude-flow/.swarm
+alias rb-code='export CLAUDE_FLOW_DB_PATH=$RB_DIR/code-reasoning.db'
+alias rb-think='export CLAUDE_FLOW_DB_PATH=$RB_DIR/problem-solving.db'
+alias rb-research='export CLAUDE_FLOW_DB_PATH=$RB_DIR/google-research.db'
+alias rb-learn='export CLAUDE_FLOW_DB_PATH=$RB_DIR/safla.db'
+alias rb-domain='export CLAUDE_FLOW_DB_PATH=$RB_DIR/domain-expert.db'
+alias rb-off='unset CLAUDE_FLOW_DB_PATH'
+```
+
+**Usage:**
+```bash
+cd /path/to/your-project
+
+rb-code      # Switch to code-reasoning
+# "Review this file for bugs"
+
+rb-think     # Switch to problem-solving
+# "Help me brainstorm solutions"
+
+rb-off       # Back to project memory
+# Continue development
+```
+
+### Managing Multiple Models
+
+**Install multiple ReasoningBanks:**
+```bash
+cd /workspaces/claude-flow
+
+# Train code-reasoning
+# (follow instructions from Step 3 above)
+mv .swarm/memory.db .swarm/code-reasoning.db
+
+# Train problem-solving
+# (train and rename)
+mv .swarm/memory.db .swarm/problem-solving.db
+
+# Train google-research
+# (train and rename)
+mv .swarm/memory.db .swarm/google-research.db
+
+# Set default symlink
+ln -s code-reasoning.db .swarm/memory.db
+```
+
+**Result:**
+```
+/workspaces/claude-flow/.swarm/
+├── code-reasoning.db (2,600 patterns)
+├── problem-solving.db (2,000 patterns)
+├── google-research.db (3,000 patterns)
+└── memory.db → code-reasoning.db (symlink)
+```
+
+---
+
 ## 💡 Daily Workflow
 
 ### Scenario 1: Building a Feature
@@ -177,16 +269,14 @@ cd /path/to/your-project
 # ✅ "Auth routes are in /api/auth/"
 ```
 
-### Scenario 2: Code Review
+### Scenario 2: Code Review (In-Place)
 
-**Terminal 2 (Review):**
+**Terminal 2 (Review - SAME directory):**
 ```bash
-cd /workspaces/claude-flow
+cd /path/to/your-project
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/memory.db
 
-# Copy file for review (keeps projects separate)
-cp /path/to/your-project/src/auth/jwt.ts /tmp/review-jwt.ts
-
-# Ask Claude: "Review /tmp/review-jwt.ts for security issues and SOLID principles"
+# Ask Claude: "Review src/auth/jwt.ts for security issues and SOLID principles"
 # Claude uses ReasoningBank (unbiased):
 # ✅ "Consider adding rate limiting (429 responses)"
 # ✅ "Extract token validation into separate class (SRP violation)"

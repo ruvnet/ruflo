@@ -4,26 +4,36 @@
 
 ---
 
-## 🎯 Two-Terminal Approach
+## 🎯 In-Place Review Strategy (Recommended)
 
-### **Terminal 1: Project Work (This Terminal)**
+**No file copying needed!** Use environment variable to switch databases.
+
+### **Terminal 1: Project Work**
 ```bash
 cd /path/to/this-project
-# Claude builds project-specific memory in .swarm/memory.db
-# Learns YOUR architecture decisions, bug patterns, edge cases
+# Default: uses .swarm/memory.db (project memory)
+# Work normally - Claude learns YOUR decisions
 ```
 
-### **Terminal 2: Code Review (Separate Terminal)**
+### **Terminal 2: Code Review (SAME Directory!)**
 ```bash
-cd /workspaces/claude-flow
-# Claude uses ReasoningBank (2,600+ universal patterns)
-# Provides objective best practices without project bias
+cd /path/to/this-project
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/memory.db
 
-# Copy file for review:
-cp /path/to/this-project/src/component.tsx /tmp/review.tsx
+# Review files in-place:
+# "Review src/auth.ts for SOLID violations and security issues"
+# "Analyze src/api/users.ts for bugs and optimizations"
 
-# Ask: "Review /tmp/review.tsx for SOLID violations, bugs, optimizations"
+# Switch back to project memory:
+unset CLAUDE_FLOW_DB_PATH
 ```
+
+**Why this is better:**
+- ✅ No file copying needed
+- ✅ Review files in actual location
+- ✅ See full project context
+- ✅ Switch ReasoningBanks instantly
+- ✅ No temp files to clean up
 
 ---
 
@@ -66,7 +76,7 @@ rm train-code.js && rm -rf temp-models
 
 **Building a feature:**
 ```bash
-# Terminal 1 (Project)
+# Terminal 1 (Development)
 cd /path/to/this-project
 # "Build user authentication with JWT"
 # Claude learns: "This project uses 7-day refresh tokens in httpOnly cookies"
@@ -74,11 +84,49 @@ cd /path/to/this-project
 
 **Code review:**
 ```bash
-# Terminal 2 (Review)
-cd /workspaces/claude-flow
-cp /path/to/this-project/src/auth/jwt.ts /tmp/review.ts
-# "Review /tmp/review.ts for security and SOLID principles"
+# Terminal 2 (Review - SAME directory)
+cd /path/to/this-project
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/memory.db
+
+# "Review src/auth/jwt.ts for security and SOLID principles"
 # Claude suggests: "Add rate limiting, extract validation (SRP)"
+# File stays in place - no copying!
+
+# Done reviewing? Switch back
+unset CLAUDE_FLOW_DB_PATH
+```
+
+---
+
+## 🔄 Switching Between ReasoningBanks
+
+**You can have multiple ReasoningBanks and switch between them:**
+
+```bash
+# Use code-reasoning (SOLID, algorithms, debugging)
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/code-reasoning.db
+
+# Use problem-solving (cognitive thinking, brainstorming)
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/problem-solving.db
+
+# Use google-research (academic, research methods)
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/google-research.db
+
+# Back to project memory
+unset CLAUDE_FLOW_DB_PATH
+```
+
+**Pro tip - Add shell aliases:**
+```bash
+# Add to ~/.bashrc or ~/.zshrc:
+alias rb-code='export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/code-reasoning.db'
+alias rb-think='export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/problem-solving.db'
+alias rb-off='unset CLAUDE_FLOW_DB_PATH'
+
+# Usage:
+rb-code   # Switch to code-reasoning
+rb-think  # Switch to problem-solving
+rb-off    # Back to project memory
 ```
 
 ---

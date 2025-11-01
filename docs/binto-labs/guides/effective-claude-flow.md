@@ -255,6 +255,63 @@ cp .swarm/memory.db .swarm/memory.db.backup-$(date +%Y%m%d-%H%M%S)
 
 ---
 
+#### 🔄 Switching Between ReasoningBanks
+
+**Install multiple models and switch between them:**
+
+```bash
+# Train multiple models (rename after each training)
+cd /workspaces/claude-flow
+
+# Train code-reasoning
+node train-code.js
+mv .swarm/memory.db .swarm/code-reasoning.db
+
+# Train problem-solving
+node train-problem.js
+mv .swarm/memory.db .swarm/problem-solving.db
+
+# Train google-research
+node train-google.js
+mv .swarm/memory.db .swarm/google-research.db
+
+# Create default symlink
+ln -s code-reasoning.db .swarm/memory.db
+```
+
+**Switch using environment variable:**
+
+```bash
+# Use code-reasoning
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/code-reasoning.db
+
+# Use problem-solving
+export CLAUDE_FLOW_DB_PATH=/workspaces/claude-flow/.swarm/problem-solving.db
+
+# Back to default
+unset CLAUDE_FLOW_DB_PATH
+```
+
+**Shell aliases (recommended):**
+
+```bash
+# Add to ~/.bashrc or ~/.zshrc:
+export RB_DIR=/workspaces/claude-flow/.swarm
+alias rb-code='export CLAUDE_FLOW_DB_PATH=$RB_DIR/code-reasoning.db'
+alias rb-think='export CLAUDE_FLOW_DB_PATH=$RB_DIR/problem-solving.db'
+alias rb-research='export CLAUDE_FLOW_DB_PATH=$RB_DIR/google-research.db'
+alias rb-learn='export CLAUDE_FLOW_DB_PATH=$RB_DIR/safla.db'
+alias rb-domain='export CLAUDE_FLOW_DB_PATH=$RB_DIR/domain-expert.db'
+alias rb-off='unset CLAUDE_FLOW_DB_PATH'
+
+# Usage:
+rb-code   # Switch to code-reasoning
+rb-think  # Switch to problem-solving
+rb-off    # Back to default
+```
+
+---
+
 ### Step 4: API Key Setup (Optional for Claude Max users)
 
 **If you have Claude Max:** You can skip this step! Claude Code (via claude.ai) provides API access automatically when you use natural language prompts.
