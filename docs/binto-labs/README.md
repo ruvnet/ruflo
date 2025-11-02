@@ -7,11 +7,12 @@ This is a **pure documentation fork** of [ruvnet/claude-flow](https://github.com
 ## 📚 What Makes This Fork Different
 
 ### Documentation Focus
-- **175+ documentation files** - Comprehensive coverage of all features
+- **Comprehensive documentation** - Complete coverage of all features
 - **User-friendly guides** - Practical examples and real-world scenarios
 - **Working code examples** - Copy-paste ready TypeScript/JavaScript
 - **Troubleshooting guides** - Common issues and solutions
 - **Architecture Decision Records** - Understanding design choices
+- **ReasoningBank setup** - Production-ready self-contained approach
 
 ### Enhanced Security
 - **Improved .gitignore** - 192 lines of security-focused patterns
@@ -27,7 +28,15 @@ This is a **pure documentation fork** of [ruvnet/claude-flow](https://github.com
 
 ## 📖 Documentation Structure
 
-### `/docs` Directory (175 Files)
+### `/docs/binto-labs/` Directory
+
+**Root Files:**
+- `README.md` - This file (fork overview)
+- `index.md` - Navigation hub for all binto-labs documentation
+- `project-reasoningbank-readme.md` - Production ReasoningBank setup guide
+- `evaluation-system-summary.md` - Documentation quality framework
+
+**Subdirectories:**
 
 #### **Practical Guides**
 - `claude-flow-practical-guide-2025.md` - Complete user guide (1,606 lines)
@@ -103,11 +112,11 @@ This is a **pure documentation fork** of [ruvnet/claude-flow](https://github.com
 
 | Metric | Value |
 |--------|-------|
-| **Total Markdown Files** | 175 |
-| **Documentation Lines** | 26,256+ |
-| **Code Changes** | <6 lines (wrapper script cleanup) |
-| **Security Improvements** | 140 lines (.gitignore) |
-| **Fork Focus** | 94% documentation, 6% security |
+| **Root Documentation** | 4 files (README, index, ReasoningBank, evaluation) |
+| **Subdirectory Docs** | Technical, SDK, DevOps, ADR, Investigation, Guides, Examples |
+| **Code Examples** | 3 TypeScript files (SDK examples) |
+| **Security Improvements** | 192 lines (.gitignore with security patterns) |
+| **Fork Focus** | 95% documentation, 5% security + tooling |
 
 ## 🔄 Upstream Sync Policy
 
@@ -119,9 +128,10 @@ This fork regularly syncs with [ruvnet/claude-flow](https://github.com/ruvnet/cl
 - **Frequency:** Sync every major upstream release
 
 ### Recent Syncs
-- **2025-10-16:** Merged v2.7.0-alpha (ReasoningBank, Agent Booster, SDK improvements)
-- **2025-10-15:** Enhanced .gitignore security patterns
-- **2025-10-14:** Added comprehensive technical references
+- **2025-11-02:** Documentation cleanup - removed obsolete files, standardized naming
+- **2025-11-01:** Added production ReasoningBank setup guide (self-contained approach)
+- **2025-10-31:** Quality review and accuracy validation of documentation
+- **2025-10-16:** Merged v2.7.0-alpha.14 (ReasoningBank, Agent Booster, SDK improvements)
 
 ## 🤝 Contributing Back to Upstream
 

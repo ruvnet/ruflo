@@ -2,7 +2,7 @@
 
 **Quick navigation to fork-specific documentation in `docs/binto-labs/`**
 
-This fork adds **39 comprehensive documentation files** organized under `docs/binto-labs/`. All upstream documentation (137 files) remains in the main `docs/` directory.
+This fork adds comprehensive documentation organized under `docs/binto-labs/`. All upstream documentation remains in the main `docs/` directory.
 
 ---
 
@@ -11,6 +11,8 @@ This fork adds **39 comprehensive documentation files** organized under `docs/bi
 | Document | Description |
 |----------|-------------|
 | **[Fork README](README.md)** | Fork mission, contribution guidelines, and overview |
+| **[ReasoningBank Setup](project-reasoningbank-readme.md)** | Production-ready self-contained ReasoningBank setup guide |
+| **[Evaluation System](evaluation-system-summary.md)** | User guide quality evaluation framework and scoring |
 | **[Practical Guide](guides/practical-guide-2025.md)** | Complete user guide (1,606 lines) - your main starting point |
 | **[Architecture Guide](guides/architecture-guide-2025.md)** | System architecture and design patterns |
 | **[Skills Quick Start](guides/skills-quickstart.md)** | Essential Skills that activate with natural language (no commands to memorize!) |
@@ -109,11 +111,9 @@ Deep-dive analysis and research findings.
 
 | Metric | Value |
 |--------|-------|
-| **Fork-Original Docs** | 39 files in `docs/binto-labs/` |
-| **Upstream Docs** | 137 files in main `docs/` |
-| **Total Docs (fork + upstream)** | 176 files |
-| **Documentation Lines Added** | 26,256+ lines |
-| **Working Code Examples** | 3 TypeScript files |
+| **Root Documentation** | 3 files (README, index, evaluation-system, ReasoningBank setup) |
+| **Subdirectory Documentation** | Technical, SDK, DevOps, Architecture, ADR, Investigation, Examples |
+| **Working Code Examples** | 3 TypeScript files in sdk/examples/ |
 | **Coverage Areas** | Technical, SDK, DevOps, Architecture, Investigation |
 
 ---
@@ -185,7 +185,7 @@ See [Fork README](README.md) for contribution guidelines. We focus on:
 
 ---
 
-**Last Updated:** 2025-10-16
-**Fork Version:** v2.7.0-alpha with comprehensive documentation
-**Upstream Sync:** Current with ruvnet/claude-flow v2.7.0-alpha.10
+**Last Updated:** 2025-11-02
+**Fork Version:** v2.7.0-alpha.14 with comprehensive documentation
+**Upstream Sync:** Current with ruvnet/claude-flow v2.7.0-alpha.14
 **Customizations:** Documentation only + enhanced .gitignore
