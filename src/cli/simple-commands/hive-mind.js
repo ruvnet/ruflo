@@ -2006,7 +2006,7 @@ async function spawnClaudeCodeInstances(swarmId, swarmName, objective, workers, 
   try {
     // Generate comprehensive Hive Mind prompt
     const workerGroups = groupWorkersByType(workers);
-    const hiveMindPrompt = generateHiveMindPrompt(
+    let hiveMindPrompt = generateHiveMindPrompt(
       swarmId,
       swarmName,
       objective,

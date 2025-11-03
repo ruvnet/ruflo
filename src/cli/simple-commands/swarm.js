@@ -378,7 +378,7 @@ export async function swarmCommand(args, flags) {
         flags.sparc !== false && (strategy === 'development' || strategy === 'auto');
 
       // Build the complete swarm prompt before checking for claude
-      const swarmPrompt = `You are orchestrating a Claude Flow Swarm using Claude Code's Task tool for agent execution.
+      let swarmPrompt = `You are orchestrating a Claude Flow Swarm using Claude Code's Task tool for agent execution.
 
 🚨 CRITICAL INSTRUCTION: Use Claude Code's Task Tool for ALL Agent Spawning!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
