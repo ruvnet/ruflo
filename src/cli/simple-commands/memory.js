@@ -407,10 +407,26 @@ async function detectMemoryMode(flags, subArgs) {
     return 'basic';
   }
 
-  // Default: AUTO MODE (smart selection with JSON fallback)
-  // Automatically use ReasoningBank if initialized, otherwise fall back to basic mode
+  // Default: AUTO MODE with SQLite preference
+  // Try to use ReasoningBank (SQLite) by default, initialize if needed
   const initialized = await isReasoningBankInitialized();
-  return initialized ? 'reasoningbank' : 'basic';
+
+  if (initialized) {
+    return 'reasoningbank';
+  }
+
+  // Not initialized yet - try to auto-initialize on first use
+  try {
+    const { initializeReasoningBank } = await import('../../reasoningbank/reasoningbank-adapter.js');
+    await initializeReasoningBank();
+    printInfo('🗄️  Initialized SQLite backend (.swarm/memory.db)');
+    return 'reasoningbank';
+  } catch (error) {
+    // SQLite initialization failed - fall back to JSON
+    printWarning(`⚠️  SQLite unavailable, using JSON fallback`);
+    printWarning(`   Reason: ${error.message}`);
+    return 'basic';
+  }
 }
 
 // NEW: Check if ReasoningBank is initialized

@@ -1,7 +1,6 @@
 import { printSuccess, printError, printWarning } from '../../utils.js';
 import { existsSync } from 'fs';
 import process from 'process';
-import os from 'os';
 import { spawn, execSync } from 'child_process';
 function runCommand(command, args, options = {}) {
     return new Promise((resolve, reject)=>{
@@ -46,6 +45,7 @@ import { promises as fs } from 'fs';
 import { copyTemplates } from './template-copier.js';
 import { copyRevisedTemplates, validateTemplatesExist } from './copy-revised-templates.js';
 import { copyAgentFiles, createAgentDirectories, validateAgentSystem, copyCommandFiles } from './agent-copier.js';
+import { copySkillFiles, validateSkillSystem } from './skills-copier.js';
 import { showInitHelp } from './help.js';
 import { batchInitCommand, batchInitFromConfig, validateBatchOptions } from './batch-init.js';
 import { ValidationSystem, runFullValidation } from './validation/index.js';
@@ -139,14 +139,14 @@ fi
 BRANCH=$(cd "$CWD" 2>/dev/null && git branch --show-current 2>/dev/null)
 
 # Start building statusline
-echo -ne "\\033[1m$MODEL\\033[0m in \\033[36m$DIR\\033[0m"
-[ -n "$BRANCH" ] && echo -ne " on \\033[33m⎇ $BRANCH\\033[0m"
+printf "\\033[1m$MODEL\\033[0m in \\033[36m$DIR\\033[0m"
+[ -n "$BRANCH" ] && printf " on \\033[33m⎇ $BRANCH\\033[0m"
 
 # Claude-Flow integration
 FLOW_DIR="$CWD/.claude-flow"
 
 if [ -d "$FLOW_DIR" ]; then
-  echo -ne " │"
+  printf " │"
 
   # 1. Swarm Configuration & Topology
   if [ -f "$FLOW_DIR/swarm-config.json" ]; then
@@ -159,12 +159,12 @@ if [ -d "$FLOW_DIR" ]; then
         "aggressive") TOPO_ICON="⚡ring" ;;
         *) TOPO_ICON="⚡$STRATEGY" ;;
       esac
-      echo -ne " \\033[35m$TOPO_ICON\\033[0m"
+      printf " \\033[35m$TOPO_ICON\\033[0m"
 
       # Count agent profiles as "configured agents"
       AGENT_COUNT=$(jq -r \'.agentProfiles | length\' "$FLOW_DIR/swarm-config.json" 2>/dev/null)
       if [ -n "$AGENT_COUNT" ] && [ "$AGENT_COUNT" != "null" ] && [ "$AGENT_COUNT" -gt 0 ]; then
-        echo -ne "  \\033[35m🤖 $AGENT_COUNT\\033[0m"
+        printf "  \\033[35m🤖 $AGENT_COUNT\\033[0m"
       fi
     fi
   fi
@@ -186,7 +186,7 @@ if [ -d "$FLOW_DIR" ]; then
         else
           MEM_COLOR="\\033[31m"  # Red
         fi
-        echo -ne "  ${MEM_COLOR}💾 ${MEM_PERCENT}%\\033[0m"
+        printf "  \${MEM_COLOR}💾 \${MEM_PERCENT}%\\033[0m"
       fi
 
       # CPU load
@@ -200,7 +200,7 @@ if [ -d "$FLOW_DIR" ]; then
         else
           CPU_COLOR="\\033[31m"  # Red
         fi
-        echo -ne "  ${CPU_COLOR}⚙ ${CPU_LOAD}%\\033[0m"
+        printf "  \${CPU_COLOR}⚙ \${CPU_LOAD}%\\033[0m"
       fi
     fi
   fi
@@ -213,7 +213,7 @@ if [ -d "$FLOW_DIR" ]; then
     if [ "$ACTIVE" = "true" ] && [ -n "$SESSION_ID" ]; then
       # Show abbreviated session ID
       SHORT_ID=$(echo "$SESSION_ID" | cut -d\'-\' -f1)
-      echo -ne "  \\033[34m🔄 $SHORT_ID\\033[0m"
+      printf "  \\033[34m🔄 $SHORT_ID\\033[0m"
     fi
   fi
 
@@ -254,7 +254,7 @@ if [ -d "$FLOW_DIR" ]; then
         else
           SUCCESS_COLOR="\\033[31m"  # Red
         fi
-        echo -ne "  ${SUCCESS_COLOR}🎯 ${SUCCESS_RATE}%\\033[0m"
+        printf "  \${SUCCESS_COLOR}🎯 \${SUCCESS_RATE}%\\033[0m"
       fi
 
       # Average Time
@@ -268,13 +268,13 @@ if [ -d "$FLOW_DIR" ]; then
         else
           TIME_STR=$(echo "$AVG_TIME" | awk \'{printf "%.1fh", $1/3600}\')
         fi
-        echo -ne "  \\033[36m⏱️  $TIME_STR\\033[0m"
+        printf "  \\033[36m⏱️  $TIME_STR\\033[0m"
       fi
 
       # Streak (only show if > 0)
       STREAK=$(echo "$METRICS" | jq -r \'.streak // 0\')
       if [ -n "$STREAK" ] && [ "$STREAK" -gt 0 ]; then
-        echo -ne "  \\033[91m🔥 $STREAK\\033[0m"
+        printf "  \\033[91m🔥 $STREAK\\033[0m"
       fi
     fi
   fi
@@ -283,7 +283,7 @@ if [ -d "$FLOW_DIR" ]; then
   if [ -d "$FLOW_DIR/tasks" ]; then
     TASK_COUNT=$(find "$FLOW_DIR/tasks" -name "*.json" -type f 2>/dev/null | wc -l)
     if [ "$TASK_COUNT" -gt 0 ]; then
-      echo -ne "  \\033[36m📋 $TASK_COUNT\\033[0m"
+      printf "  \\033[36m📋 $TASK_COUNT\\033[0m"
     fi
   fi
 
@@ -291,7 +291,7 @@ if [ -d "$FLOW_DIR" ]; then
   if [ -f "$FLOW_DIR/hooks-state.json" ]; then
     HOOKS_ACTIVE=$(jq -r \'.enabled // false\' "$FLOW_DIR/hooks-state.json" 2>/dev/null)
     if [ "$HOOKS_ACTIVE" = "true" ]; then
-      echo -ne " \\033[35m🔗\\033[0m"
+      printf " \\033[35m🔗\\033[0m"
     fi
   fi
 fi
@@ -972,13 +972,13 @@ async function setupCoordinationSystem(workingDir, dryRun1 = false) {}
 async function setupMonitoring(workingDir) {
     console.log('  📈 Configuring token usage tracking...');
     const fs = await import('fs/promises');
-    const path1 = await import('path');
+    const path = await import('path');
     try {
-        const trackingDir = path1.join(workingDir, '.claude-flow@alpha');
+        const trackingDir = path.join(workingDir, '.claude-flow@alpha');
         await fs.mkdir(trackingDir, {
             recursive: true
         });
-        const tokenUsageFile = path1.join(trackingDir, 'token-usage.json');
+        const tokenUsageFile = path.join(trackingDir, 'token-usage.json');
         const initialData = {
             total: 0,
             input: 0,
@@ -988,7 +988,7 @@ async function setupMonitoring(workingDir) {
         };
         await fs.writeFile(tokenUsageFile, JSON.stringify(initialData, null, 2));
         printSuccess('  ✓ Created token usage tracking file');
-        const settingsPath = path1.join(workingDir, '.claude', 'settings.json');
+        const settingsPath = path.join(workingDir, '.claude', 'settings.json');
         try {
             const settingsContent = await fs.readFile(settingsPath, 'utf8');
             const settings = JSON.parse(settingsContent);
@@ -1024,7 +1024,7 @@ async function setupMonitoring(workingDir) {
                 rotation: 'monthly'
             }
         };
-        const configPath = path1.join(trackingDir, 'monitoring.config.json');
+        const configPath = path.join(trackingDir, 'monitoring.config.json');
         await fs.writeFile(configPath, JSON.stringify(monitoringConfig, null, 2));
         printSuccess('  ✓ Created monitoring configuration');
         const envSnippet = `
@@ -1035,7 +1035,7 @@ export CLAUDE_CODE_ENABLE_TELEMETRY=1
 # Optional: Set custom metrics path
 # export CLAUDE_METRICS_PATH="$HOME/.claude/metrics"
 `;
-        const envPath = path1.join(trackingDir, 'env-setup.sh');
+        const envPath = path.join(trackingDir, 'env-setup.sh');
         await fs.writeFile(envPath, envSnippet.trim());
         printSuccess("  ✓ Created environment setup script");
         console.log('\n  📋 To enable Claude Code telemetry:');
@@ -1059,6 +1059,8 @@ async function enhancedClaudeFlowInit(flags, subArgs = []) {
     const options = flags || {};
     const fs = await import('fs/promises');
     const { chmod } = fs;
+    const path = await import('path');
+    const os = await import('os');
     try {
         const existingFiles = [];
         const filesToCheck = [
@@ -1126,6 +1128,7 @@ async function enhancedClaudeFlowInit(flags, subArgs = []) {
         } catch (err) {
             if (!dryRun1) {
                 console.log("  ⚠️  Could not create statusline script, skipping...");
+                console.log(`  ℹ️  Error: ${err.message}`);
             }
         }
         const settingsLocal = {
@@ -1439,6 +1442,17 @@ ${commands.map((cmd)=>`- [${cmd}](./${cmd}.md)`).join('\n')}
                 } else {
                     console.log('⚠️  Command system setup failed:', commandResult.error);
                 }
+                console.log('\n🎯 Setting up skill system...');
+                const skillResult = await copySkillFiles(workingDir, {
+                    force: force,
+                    dryRun: dryRun1
+                });
+                if (skillResult.success) {
+                    await validateSkillSystem(workingDir);
+                    console.log('✅ ✓ Skill system setup complete with skill-builder');
+                } else {
+                    console.log('⚠️  Skill system setup failed:', skillResult.error);
+                }
                 console.log('✅ ✓ Agent system setup complete with 64 specialized agents');
             } else {
                 console.log('⚠️  Agent system setup failed:', agentResult.error);
@@ -1450,9 +1464,9 @@ ${commands.map((cmd)=>`- [${cmd}](./${cmd}.md)`).join('\n')}
                     await fs.mkdir(reasoningAgentsDir, {
                         recursive: true
                     });
-                    const path1 = await import('path');
+                    const path = await import('path');
                     const { fileURLToPath } = await import('url');
-                    const { dirname, join } = path1.default;
+                    const { dirname, join } = path.default;
                     const __filename = fileURLToPath(import.meta.url);
                     const __dirname1 = dirname(__filename);
                     const sourceReasoningDir = join(__dirname1, '../../../../.claude/agents/reasoning');

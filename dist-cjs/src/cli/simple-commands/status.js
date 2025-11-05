@@ -25,7 +25,7 @@ async function getSystemStatus(verbose = false) {
     const activeAgentCount = agents.filter((a)=>a.status === 'active' || a.status === 'busy').length;
     const status = {
         timestamp: Date.now(),
-        version: '2.0.0-alpha.83',
+        version: '2.7.0',
         orchestrator: {
             running: perfMetrics && perfMetrics.totalTasks > 0,
             uptime: systemMetrics ? systemMetrics.uptime : 0,

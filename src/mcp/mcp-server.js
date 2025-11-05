@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import { EnhancedMemory } from '../memory/enhanced-memory.js';
 // Use the same memory system that npx commands use - singleton instance
 import { memoryStore } from '../memory/fallback-store.js';
+import { VERSION } from '../core/version.js';
 
 // Initialize agent tracker
 await import('./implementations/agent-tracker.js').catch(() => {
@@ -18,7 +19,7 @@ await import('./implementations/agent-tracker.js').catch(() => {
   try {
     require('./implementations/agent-tracker');
   } catch (e) {
-    console.log('Agent tracker not loaded');
+    console.error('Agent tracker not loaded');
   }
 });
 
@@ -28,7 +29,7 @@ await import('./implementations/daa-tools.js').catch(() => {
   try {
     require('./implementations/daa-tools');
   } catch (e) {
-    console.log('DAA manager not loaded');
+    console.error('DAA manager not loaded');
   }
 });
 
@@ -38,7 +39,7 @@ await import('./implementations/workflow-tools.js').catch(() => {
   try {
     require('./implementations/workflow-tools');
   } catch (e) {
-    console.log('Workflow tools not loaded');
+    console.error('Workflow tools not loaded');
   }
 });
 
@@ -63,7 +64,7 @@ function resolveLegacyAgentType(legacyType) {
 
 class ClaudeFlowMCPServer {
   constructor() {
-    this.version = '2.5.0-alpha.131'; // Updated with Phase 4 SDK integration tools
+    this.version = VERSION; // Use version from package.json
     this.memoryStore = memoryStore; // Use shared singleton instance
     // Use the same memory system that already works
     this.capabilities = {
@@ -1300,9 +1301,10 @@ class ClaudeFlowMCPServer {
         const timePerEpoch = 0.08;
         const trainingTime = baseTime + epochs * timePerEpoch + (Math.random() * 2 - 1);
 
-        return {
+        const modelId = `model_${args.pattern_type || 'general'}_${Date.now()}`;
+        const patternData = {
           success: true,
-          modelId: `model_${args.pattern_type || 'general'}_${Date.now()}`,
+          modelId: modelId,
           pattern_type: args.pattern_type || 'coordination',
           epochs: epochs,
           accuracy: Math.min(finalAccuracy, maxAccuracy),
@@ -1311,7 +1313,306 @@ class ClaudeFlowMCPServer {
           improvement_rate: epochFactor > 1 ? 'converged' : 'improving',
           data_source: args.training_data || 'recent',
           timestamp: new Date().toISOString(),
+          training_metadata: {
+            baseAccuracy: baseAccuracy,
+            maxAccuracy: maxAccuracy,
+            epochFactor: epochFactor,
+            finalAccuracy: Math.min(finalAccuracy, maxAccuracy),
+          },
         };
+
+        // Persist the trained pattern to memory
+        if (this.memoryStore) {
+          try {
+            await this.memoryStore.store(modelId, JSON.stringify(patternData), {
+              namespace: 'patterns',
+              ttl: 30 * 24 * 60 * 60 * 1000, // 30 days TTL
+              metadata: {
+                sessionId: this.sessionId,
+                pattern_type: args.pattern_type || 'coordination',
+                accuracy: patternData.accuracy,
+                epochs: epochs,
+                storedBy: 'neural_train',
+                type: 'neural_pattern',
+              },
+            });
+
+            // Also store in pattern-stats namespace for quick statistics retrieval
+            const statsKey = `stats_${args.pattern_type || 'coordination'}`;
+            const existingStats = await this.memoryStore.retrieve(statsKey, {
+              namespace: 'pattern-stats',
+            });
+
+            let stats = existingStats ? JSON.parse(existingStats) : {
+              pattern_type: args.pattern_type || 'coordination',
+              total_trainings: 0,
+              avg_accuracy: 0,
+              max_accuracy: 0,
+              min_accuracy: 1,
+              total_epochs: 0,
+              models: [],
+            };
+
+            stats.total_trainings += 1;
+            stats.avg_accuracy = (stats.avg_accuracy * (stats.total_trainings - 1) + patternData.accuracy) / stats.total_trainings;
+            stats.max_accuracy = Math.max(stats.max_accuracy, patternData.accuracy);
+            stats.min_accuracy = Math.min(stats.min_accuracy, patternData.accuracy);
+            stats.total_epochs += epochs;
+            stats.models.push({
+              modelId: modelId,
+              accuracy: patternData.accuracy,
+              timestamp: patternData.timestamp,
+            });
+
+            // Keep only last 50 models in stats
+            if (stats.models.length > 50) {
+              stats.models = stats.models.slice(-50);
+            }
+
+            await this.memoryStore.store(statsKey, JSON.stringify(stats), {
+              namespace: 'pattern-stats',
+              ttl: 30 * 24 * 60 * 60 * 1000, // 30 days TTL
+              metadata: {
+                pattern_type: args.pattern_type || 'coordination',
+                storedBy: 'neural_train',
+                type: 'pattern_statistics',
+              },
+            });
+
+            console.error(
+              `[${new Date().toISOString()}] INFO [claude-flow-mcp] Neural pattern stored: ${modelId} (accuracy: ${patternData.accuracy.toFixed(4)})`,
+            );
+          } catch (error) {
+            console.error(
+              `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Failed to persist pattern: ${error.message}`,
+            );
+          }
+        }
+
+        return patternData;
+
+      case 'neural_patterns':
+        if (!this.memoryStore) {
+          return {
+            success: false,
+            error: 'Shared memory system not initialized',
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+        try {
+          switch (args.action) {
+            case 'analyze':
+              // Retrieve and analyze a specific pattern or all patterns
+              if (args.metadata && args.metadata.modelId) {
+                const patternValue = await this.memoryStore.retrieve(args.metadata.modelId, {
+                  namespace: 'patterns',
+                });
+
+                if (!patternValue) {
+                  return {
+                    success: false,
+                    action: 'analyze',
+                    error: 'Pattern not found',
+                    modelId: args.metadata.modelId,
+                    timestamp: new Date().toISOString(),
+                  };
+                }
+
+                const pattern = JSON.parse(patternValue);
+                return {
+                  success: true,
+                  action: 'analyze',
+                  pattern: pattern,
+                  analysis: {
+                    quality: pattern.accuracy > 0.9 ? 'excellent' : pattern.accuracy > 0.75 ? 'good' : 'fair',
+                    confidence: pattern.accuracy,
+                    pattern_type: pattern.pattern_type,
+                    training_epochs: pattern.epochs,
+                    improvement_rate: pattern.improvement_rate,
+                    data_source: pattern.data_source,
+                  },
+                  timestamp: new Date().toISOString(),
+                };
+              } else {
+                // List all patterns
+                const allPatterns = await this.memoryStore.list({
+                  namespace: 'patterns',
+                  limit: 100,
+                });
+
+                return {
+                  success: true,
+                  action: 'analyze',
+                  total_patterns: allPatterns.length,
+                  patterns: allPatterns.map((p) => {
+                    try {
+                      const data = JSON.parse(p.value);
+                      return {
+                        modelId: data.modelId,
+                        pattern_type: data.pattern_type,
+                        accuracy: data.accuracy,
+                        timestamp: data.timestamp,
+                      };
+                    } catch (e) {
+                      return { error: 'Failed to parse pattern data' };
+                    }
+                  }),
+                  timestamp: new Date().toISOString(),
+                };
+              }
+
+            case 'learn':
+              // Store a learning experience
+              if (!args.operation || !args.outcome) {
+                return {
+                  success: false,
+                  action: 'learn',
+                  error: 'operation and outcome are required for learning',
+                  timestamp: new Date().toISOString(),
+                };
+              }
+
+              const learningId = `learning_${Date.now()}`;
+              const learningData = {
+                learningId: learningId,
+                operation: args.operation,
+                outcome: args.outcome,
+                metadata: args.metadata || {},
+                timestamp: new Date().toISOString(),
+              };
+
+              await this.memoryStore.store(learningId, JSON.stringify(learningData), {
+                namespace: 'patterns',
+                ttl: 30 * 24 * 60 * 60 * 1000, // 30 days TTL
+                metadata: {
+                  sessionId: this.sessionId,
+                  storedBy: 'neural_patterns',
+                  type: 'learning_experience',
+                  operation: args.operation,
+                },
+              });
+
+              return {
+                success: true,
+                action: 'learn',
+                learningId: learningId,
+                stored: true,
+                timestamp: new Date().toISOString(),
+              };
+
+            case 'predict':
+              // Predict based on stored patterns
+              const patternType = (args.metadata && args.metadata.pattern_type) || 'coordination';
+              const statsKey = `stats_${patternType}`;
+              const statsValue = await this.memoryStore.retrieve(statsKey, {
+                namespace: 'pattern-stats',
+              });
+
+              if (!statsValue) {
+                return {
+                  success: true,
+                  action: 'predict',
+                  prediction: {
+                    confidence: 0.5,
+                    recommendation: 'No historical data available for this pattern type',
+                    pattern_type: patternType,
+                  },
+                  timestamp: new Date().toISOString(),
+                };
+              }
+
+              const stats = JSON.parse(statsValue);
+              return {
+                success: true,
+                action: 'predict',
+                prediction: {
+                  confidence: stats.avg_accuracy,
+                  expected_accuracy: stats.avg_accuracy,
+                  pattern_type: patternType,
+                  recommendation:
+                    stats.avg_accuracy > 0.85
+                      ? 'High confidence - pattern is well-established'
+                      : stats.avg_accuracy > 0.7
+                        ? 'Moderate confidence - more training recommended'
+                        : 'Low confidence - significant training needed',
+                  historical_trainings: stats.total_trainings,
+                  best_accuracy: stats.max_accuracy,
+                },
+                timestamp: new Date().toISOString(),
+              };
+
+            case 'stats':
+              // Return statistics for all pattern types or specific type
+              const requestedType = (args.metadata && args.metadata.pattern_type) || null;
+
+              if (requestedType) {
+                const statsKey = `stats_${requestedType}`;
+                const statsValue = await this.memoryStore.retrieve(statsKey, {
+                  namespace: 'pattern-stats',
+                });
+
+                if (!statsValue) {
+                  return {
+                    success: true,
+                    action: 'stats',
+                    pattern_type: requestedType,
+                    statistics: {
+                      total_trainings: 0,
+                      message: 'No training data available for this pattern type',
+                    },
+                    timestamp: new Date().toISOString(),
+                  };
+                }
+
+                const stats = JSON.parse(statsValue);
+                return {
+                  success: true,
+                  action: 'stats',
+                  pattern_type: requestedType,
+                  statistics: stats,
+                  timestamp: new Date().toISOString(),
+                };
+              } else {
+                // Get stats for all pattern types
+                const allStats = await this.memoryStore.list({
+                  namespace: 'pattern-stats',
+                  limit: 100,
+                });
+
+                return {
+                  success: true,
+                  action: 'stats',
+                  total_pattern_types: allStats.length,
+                  statistics: allStats.map((s) => {
+                    try {
+                      return JSON.parse(s.value);
+                    } catch (e) {
+                      return { error: 'Failed to parse stats data' };
+                    }
+                  }),
+                  timestamp: new Date().toISOString(),
+                };
+              }
+
+            default:
+              return {
+                success: false,
+                error: `Unknown action: ${args.action}. Valid actions are: analyze, learn, predict, stats`,
+                timestamp: new Date().toISOString(),
+              };
+          }
+        } catch (error) {
+          console.error(
+            `[${new Date().toISOString()}] ERROR [claude-flow-mcp] neural_patterns error: ${error.message}`,
+          );
+          return {
+            success: false,
+            action: args.action,
+            error: error.message,
+            timestamp: new Date().toISOString(),
+          };
+        }
 
       case 'memory_usage':
         return await this.handleMemoryUsage(args);
@@ -2245,7 +2546,8 @@ async function startMCPServer() {
   console.error(
     `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${server.sessionId}) Claude-Flow MCP server starting in stdio mode`,
   );
-  console.error({
+  // Log server info as a JSON string to stderr to ensure it doesn't corrupt stdout
+  console.error(JSON.stringify({
     arch: process.arch,
     mode: 'mcp-stdio',
     nodeVersion: process.version,
@@ -2254,7 +2556,7 @@ async function startMCPServer() {
     protocol: 'stdio',
     sessionId: server.sessionId,
     version: server.version,
-  });
+  }));
 
   // Send server capabilities
   console.log(

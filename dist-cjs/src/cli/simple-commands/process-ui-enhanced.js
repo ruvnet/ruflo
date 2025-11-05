@@ -139,7 +139,7 @@ export class EnhancedProcessUI {
     }
     async start() {
         console.clear();
-        printSuccess('🧠 Claude-Flow Process Management UI v2.0.0-alpha.80');
+        printSuccess('🧠 Claude-Flow Process Management UI v2.7.0-alpha.14-alpha.80');
         console.log('─'.repeat(80));
         console.log();
         this.render();

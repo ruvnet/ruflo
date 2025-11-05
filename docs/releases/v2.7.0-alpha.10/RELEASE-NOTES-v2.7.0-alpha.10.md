@@ -263,7 +263,7 @@ All core functionality now working:
 ### With OpenAI API Key (Optional)
 - Enhanced embeddings (text-embedding-3-small, 1536 dimensions)
 - Better semantic accuracy
-- Set via: `export OPENAI_API_KEY=$YOUR_API_KEY`
+- Set via environment variable: `OPENAI_API_KEY` (see ReasoningBank docs)
 
 ---
 

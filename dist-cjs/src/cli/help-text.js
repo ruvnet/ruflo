@@ -4,15 +4,15 @@ export { VERSION };
 export const MAIN_HELP = `
 🌊 Claude-Flow v${VERSION} - Enterprise-Grade AI Agent Orchestration Platform
 
-🚀 v2.5.0-alpha.130 - SDK Integration & Performance Breakthrough
+🚀 v2.7.6 - MCP Stdio Fix & Production Ready
 
-🔥 NEW IN v2.5.0-alpha.130:
-  ⚡ 10-20x Faster Agent Spawning - Parallel agent execution with session forking
-  🎮 Real-Time Query Control - Pause, resume, terminate queries mid-execution
-  🔄 Dynamic Model Switching - Change Claude models during execution (cost optimization)
-  🔐 Dynamic Permissions - Change permission modes on-the-fly
-  📊 90 MCP Tools - 87 existing + 3 new Phase 4 tools
-  🚄 500-2000x Potential Speedup - Combined performance stack (In-Process + Parallel + Hooks)
+🔥 NEW IN v2.7.6:
+  ✅ MCP Server Stdio Mode Fixed - Clean JSON-RPC protocol on stdout (#835)
+  🔧 Smart Logging Helpers - Auto-route output based on mode (stdio vs HTTP)
+  🐛 Protocol Corruption Resolved - Now compatible with standard MCP clients
+  📦 AgentDB Integration - 150x faster vector search with persistent memory
+  🧠 ReasoningBank Support - Self-learning with trajectory tracking
+  🎯 Backward Compatible - HTTP mode unchanged, stdio mode now works correctly
 
 🎯 ENTERPRISE FEATURES:
   • Complete ruv-swarm integration with 90+ MCP tools

@@ -11,6 +11,7 @@ async function checkSqliteBindings() {
     db.close();
     return true;
   } catch (error) {
+    // Silently fail - this is expected when better-sqlite3 doesn't compile
     return false;
   }
 }
@@ -75,4 +76,8 @@ async function main() {
 }
 
 // Run the installation enhancement
-main().catch(console.error);
+// Exit with 0 even if there are errors - this is a best-effort script
+main().catch(() => {
+  // Silently ignore errors - better-sqlite3 is optional
+  process.exit(0);
+});

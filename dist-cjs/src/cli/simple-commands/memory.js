@@ -319,7 +319,19 @@ async function detectMemoryMode(flags, subArgs) {
         return 'basic';
     }
     const initialized = await isReasoningBankInitialized();
-    return initialized ? 'reasoningbank' : 'basic';
+    if (initialized) {
+        return 'reasoningbank';
+    }
+    try {
+        const { initializeReasoningBank } = await import('../../reasoningbank/reasoningbank-adapter.js');
+        await initializeReasoningBank();
+        printInfo('🗄️  Initialized SQLite backend (.swarm/memory.db)');
+        return 'reasoningbank';
+    } catch (error) {
+        printWarning(`⚠️  SQLite unavailable, using JSON fallback`);
+        printWarning(`   Reason: ${error.message}`);
+        return 'basic';
+    }
 }
 async function isReasoningBankInitialized() {
     try {
