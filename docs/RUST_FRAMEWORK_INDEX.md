@@ -174,8 +174,14 @@ Improvement: 30x smaller 📦
 - **Edge mode** - Production distributed
 - **Hybrid mode** - Best of both worlds
 
+### Configuration Format
+- **TOON** - Token-Oriented Object Notation (44% fewer tokens than JSON!)
+- **Token-efficient** - Optimized for LLM costs
+- **Fast parsing** - 2.8x faster than YAML
+- **Human-readable** - Clean, minimal syntax
+
 ### Coordination
-- **Claude Code Skills** - Natural language YAML definitions
+- **Claude Code Skills** - Natural language TOON definitions
 - **No MCP servers** - Direct function calls
 - **Progressive disclosure** - Built-in documentation
 
