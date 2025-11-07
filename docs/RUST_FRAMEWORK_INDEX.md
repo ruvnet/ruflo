@@ -79,7 +79,26 @@
 
 ---
 
-### 4. [Comparison: Rust vs TypeScript](rust-vs-typescript-comparison.md) ⭐ DECISION GUIDE
+### 4. [Shape Up for Agent Swarms](shape-up-agent-methodology.md) ⭐ METHODOLOGY
+**Shopify's agile methodology adapted for autonomous agents**
+
+**What you'll discover:**
+- 6-week cycles with 2-week cooldown
+- Appetite-based planning (Small/Medium/Big)
+- Automated hill chart progress tracking
+- AI-driven betting table for project selection
+- Scope decomposition for agent coordination
+- Rabbit holes and no-gos (clear boundaries)
+- Cooldown periods for learning and experiments
+
+**Key implementations:**
+- Cycle manager in Rust
+- Hill chart automatic tracking
+- Betting table algorithms
+- Pitch structure (TOON format)
+- Progress confidence scoring
+
+### 5. [Comparison: Rust vs TypeScript](rust-vs-typescript-comparison.md) ⭐ DECISION GUIDE
 **Comprehensive analysis proving Rust superiority**
 
 **What you'll discover:**
@@ -184,6 +203,7 @@ Improvement: 30x smaller 📦
 - **Claude Code Skills** - Natural language TOON definitions
 - **No MCP servers** - Direct function calls
 - **Progressive disclosure** - Built-in documentation
+- **Shape Up Methodology** - Shopify's 6-week cycles with appetite-based planning
 
 ### Web Framework
 - **Axum** - Fast, ergonomic web framework
