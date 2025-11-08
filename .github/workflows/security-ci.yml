@@ -1,0 +1,89 @@
+name: security-ci
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - hardening/**
+  schedule:
+    - cron: "0 3 * * *"   # nightly @ 03:00 UTC
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    name: SBOM + OSV + Trivy + Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node (pnpm cache only)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+
+      - name: Install Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+            | sudo sh -s -- -b /usr/local/bin
+
+      - name: Install Trivy
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sudo sh -s -- -b /usr/local/bin
+
+      - name: Install OSV-Scanner
+        run: |
+          curl -sSfL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 \
+            -o /usr/local/bin/osv-scanner
+          sudo chmod +x /usr/local/bin/osv-scanner
+
+      - name: Install Gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_linux_x64.tar.gz \
+            | sudo tar xz -C /usr/local/bin gitleaks
+
+      - name: Create SBOM
+        run: syft dir:. -o cyclonedx-json > sbom.cdx.json
+
+      - name: OSV dependency scan
+        run: |
+          if osv-scanner --help | grep -q -- '--json'; then
+            osv-scanner -r . --json > osv.json
+          else
+            osv-scanner -r . --format json > osv.json
+          fi
+
+      - name: Trivy filesystem scan
+        run: >
+          trivy fs . --scanners vuln,misconfig,secret
+          --ignore-unfixed
+          --skip-dirs .venv,__pycache__
+          --format json --output trivy-fs.json
+
+      - name: Gitleaks scan
+        run: gitleaks detect --redact --report-format json --report-path gitleaks.json
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            sbom.cdx.json
+            osv.json
+            trivy-fs.json
+            gitleaks.json
+          if-no-files-found: ignore
+
+  codeql:
+    name: CodeQL (JS/TS)
+    uses: github/codeql-action/.github/workflows/codeql.yml@v3
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    with:
+      languages: "javascript"
