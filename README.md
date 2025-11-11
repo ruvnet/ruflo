@@ -246,6 +246,9 @@ claude mcp add ruv-swarm npx ruv-swarm mcp start
 
 # Optional: Cloud features (requires registration)
 claude mcp add flow-nexus npx flow-nexus@latest mcp start
+
+# Optional: Microsoft Outlook/365 integration
+claude mcp add outlook npx @pnp/cli-microsoft365-mcp-server
 ```
 
 ### **Available MCP Tools (100 Total)**
