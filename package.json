@@ -1,6 +1,6 @@
 {
   "name": "claude-flow",
-  "version": "2.7.33",
+  "version": "2.7.34",
   "description": "Enterprise-grade AI agent orchestration with WASM-powered ReasoningBank memory and AgentDB vector database (always uses latest agentic-flow)",
   "mcpName": "io.github.ruvnet/claude-flow",
   "main": "cli.mjs",
