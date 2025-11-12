@@ -1,7 +1,8 @@
 #!/bin/sh
 # Claude-Flow Smart Dispatcher - Detects and uses the best available runtime
+# Enhanced with NPX cache error handling and retry logic
 
-VERSION="2.7.15"
+VERSION="2.7.31"
 
 # Determine the correct path based on how the script is invoked
 if [ -L "$0" ]; then
@@ -48,16 +49,69 @@ for arg in "$@"; do
   fi
 done
 
+# Function to clean NPX cache on ENOTEMPTY errors
+cleanup_npx_cache() {
+  if [ -d "$HOME/.npm/_npx" ]; then
+    echo "⚠️  Detected NPX cache issue, cleaning stale cache..." >&2
+    # Only remove directories older than 1 hour to avoid disrupting concurrent operations
+    find "$HOME/.npm/_npx" -type d -mmin +60 -exec rm -rf {} + 2>/dev/null || true
+  fi
+}
+
+# Function to execute with retry logic for npx tsx
+execute_with_retry() {
+  local cmd="$1"
+  local max_retries=3
+  local retry_count=0
+  local wait_time=2
+
+  while [ $retry_count -lt $max_retries ]; do
+    # Try to execute the command
+    if eval "$cmd" 2>/tmp/claude-flow-error.log; then
+      # Success - clean up error log
+      rm -f /tmp/claude-flow-error.log 2>/dev/null
+      return 0
+    else
+      # Check if error is ENOTEMPTY
+      if grep -q "ENOTEMPTY" /tmp/claude-flow-error.log 2>/dev/null; then
+        retry_count=$((retry_count + 1))
+
+        if [ $retry_count -lt $max_retries ]; then
+          echo "⚠️  NPM cache conflict detected (attempt $retry_count/$max_retries), retrying in ${wait_time}s..." >&2
+          cleanup_npx_cache
+          sleep $wait_time
+          wait_time=$((wait_time * 2))  # Exponential backoff
+        else
+          echo "❌ Failed after $max_retries attempts. Please try:" >&2
+          echo "   1. Clear NPX cache: rm -rf ~/.npm/_npx" >&2
+          echo "   2. Use global installation: npm install -g claude-flow" >&2
+          echo "   3. Report issue: https://github.com/ruvnet/claude-flow/issues/856" >&2
+          cat /tmp/claude-flow-error.log >&2
+          rm -f /tmp/claude-flow-error.log 2>/dev/null
+          return 1
+        fi
+      else
+        # Different error - don't retry
+        cat /tmp/claude-flow-error.log >&2
+        rm -f /tmp/claude-flow-error.log 2>/dev/null
+        return 1
+      fi
+    fi
+  done
+}
+
 # Use Node.js with TypeScript support and WASM modules enabled
 if [ -f "$ROOT_DIR/src/cli/simple-cli.js" ]; then
-  # Use node for JavaScript version with WASM support
+  # Use node for JavaScript version with WASM support (no retry needed)
   exec node --experimental-wasm-modules "$ROOT_DIR/src/cli/simple-cli.js" "$@"
 elif command -v tsx >/dev/null 2>&1 && [ -f "$ROOT_DIR/src/cli/simple-cli.ts" ]; then
-  # Use tsx for TypeScript functionality with WASM support
+  # Use tsx for TypeScript functionality with WASM support (no retry needed)
   exec tsx --experimental-wasm-modules "$ROOT_DIR/src/cli/simple-cli.ts" "$@"
 elif [ -f "$ROOT_DIR/src/cli/simple-cli.ts" ]; then
-  # Try to use npx tsx as fallback with WASM support
-  exec npx tsx --experimental-wasm-modules "$ROOT_DIR/src/cli/simple-cli.ts" "$@"
+  # Try to use npx tsx as fallback with WASM support (with retry logic)
+  # Use --prefer-offline to reduce cache conflicts and --yes to avoid prompts
+  execute_with_retry "npx --yes --prefer-offline tsx --experimental-wasm-modules '$ROOT_DIR/src/cli/simple-cli.ts' \"\$@\""
+  exit $?
 else
   # No runtime available, show help
   echo "🧠 Claude-Flow v$VERSION - Advanced AI Agent Orchestration System"

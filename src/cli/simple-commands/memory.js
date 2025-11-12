@@ -49,6 +49,7 @@ export async function memoryCommand(subArgs, flags) {
   }
 
   // NEW: Delegate to ReasoningBank for regular commands if mode is set
+  // Note: 'stats' is handled in switch statement for unified output
   if (mode === 'reasoningbank' && ['store', 'query', 'list'].includes(memorySubcommand)) {
     return await handleReasoningBankCommand(memorySubcommand, subArgs, flags);
   }
@@ -63,7 +64,9 @@ export async function memoryCommand(subArgs, flags) {
       break;
 
     case 'stats':
-      await showMemoryStats(loadMemory);
+      // Always use showMemoryStats for unified output
+      // It will detect mode and show appropriate stats
+      await showMemoryStats(loadMemory, mode);
       break;
 
     case 'export':
@@ -214,28 +217,95 @@ async function queryMemory(subArgs, loadMemory, namespace, enableRedaction = fal
   }
 }
 
-async function showMemoryStats(loadMemory) {
+async function showMemoryStats(loadMemory, mode) {
   try {
-    const data = await loadMemory();
-    let totalEntries = 0;
-    const namespaceStats = {};
+    const rbInitialized = await isReasoningBankInitialized();
 
-    for (const [namespace, entries] of Object.entries(data)) {
-      namespaceStats[namespace] = entries.length;
-      totalEntries += entries.length;
-    }
+    // If in auto mode and ReasoningBank is initialized, show unified stats
+    if (mode === 'reasoningbank' || (rbInitialized && mode !== 'basic')) {
+      // Show unified statistics for both backends
+      printSuccess('Memory Bank Statistics:\n');
 
-    printSuccess('Memory Bank Statistics:');
-    console.log(`   Total Entries: ${totalEntries}`);
-    console.log(`   Namespaces: ${Object.keys(data).length}`);
-    console.log(
-      `   Size: ${(new TextEncoder().encode(JSON.stringify(data)).length / 1024).toFixed(2)} KB`,
-    );
+      // JSON Storage stats
+      const data = await loadMemory();
+      let totalEntries = 0;
+      const namespaceStats = {};
 
-    if (Object.keys(data).length > 0) {
-      console.log('\n📁 Namespace Breakdown:');
-      for (const [namespace, count] of Object.entries(namespaceStats)) {
-        console.log(`   ${namespace}: ${count} entries`);
+      for (const [namespace, entries] of Object.entries(data)) {
+        namespaceStats[namespace] = entries.length;
+        totalEntries += entries.length;
+      }
+
+      console.log('📁 JSON Storage (./memory/memory-store.json):');
+      console.log(`   Total Entries: ${totalEntries}`);
+      console.log(`   Namespaces: ${Object.keys(data).length}`);
+      console.log(
+        `   Size: ${(new TextEncoder().encode(JSON.stringify(data)).length / 1024).toFixed(2)} KB`,
+      );
+
+      if (Object.keys(data).length > 0) {
+        console.log('   Namespace Breakdown:');
+        for (const [namespace, count] of Object.entries(namespaceStats)) {
+          console.log(`     ${namespace}: ${count} entries`);
+        }
+      }
+
+      // ReasoningBank stats
+      if (rbInitialized) {
+        try {
+          const { getStatus } = await import('../../reasoningbank/reasoningbank-adapter.js');
+          const rbStats = await getStatus();
+
+          console.log('\n🧠 ReasoningBank Storage (.swarm/memory.db):');
+          console.log(`   Total Memories: ${rbStats.total_memories}`);
+          console.log(`   Categories: ${rbStats.total_categories}`);
+          console.log(`   Average Confidence: ${(rbStats.avg_confidence * 100).toFixed(1)}%`);
+          console.log(`   Embeddings: ${rbStats.total_embeddings}`);
+          console.log(`   Trajectories: ${rbStats.total_trajectories}`);
+
+          // Get database file size
+          try {
+            const dbPath = rbStats.database_path || '.swarm/memory.db';
+            const stats = await fs.stat(dbPath);
+            console.log(`   Database Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+          } catch (sizeErr) {
+            // Ignore size calculation errors
+          }
+
+          console.log('\n💡 Active Mode: ReasoningBank (auto-selected)');
+          console.log('   Use --basic flag to force JSON-only statistics');
+        } catch (rbErr) {
+          console.log('\n⚠️  ReasoningBank stats unavailable:', rbErr.message);
+        }
+      }
+    } else {
+      // Basic mode - JSON only
+      const data = await loadMemory();
+      let totalEntries = 0;
+      const namespaceStats = {};
+
+      for (const [namespace, entries] of Object.entries(data)) {
+        namespaceStats[namespace] = entries.length;
+        totalEntries += entries.length;
+      }
+
+      printSuccess('Memory Bank Statistics (JSON Mode):');
+      console.log(`   Total Entries: ${totalEntries}`);
+      console.log(`   Namespaces: ${Object.keys(data).length}`);
+      console.log(
+        `   Size: ${(new TextEncoder().encode(JSON.stringify(data)).length / 1024).toFixed(2)} KB`,
+      );
+
+      if (Object.keys(data).length > 0) {
+        console.log('\n📁 Namespace Breakdown:');
+        for (const [namespace, count] of Object.entries(namespaceStats)) {
+          console.log(`   ${namespace}: ${count} entries`);
+        }
+      }
+
+      if (!rbInitialized) {
+        console.log('\n💡 Tip: Initialize ReasoningBank for AI-powered memory');
+        console.log('   Run: memory init --reasoningbank');
       }
     }
   } catch (err) {
@@ -418,14 +488,41 @@ async function detectMemoryMode(flags, subArgs) {
   // Not initialized yet - try to auto-initialize on first use
   try {
     const { initializeReasoningBank } = await import('../../reasoningbank/reasoningbank-adapter.js');
-    await initializeReasoningBank();
+    const initialized = await initializeReasoningBank();
+
+    // Check if initialization succeeded (returns true) or failed (returns false)
+    if (!initialized) {
+      // Initialization failed but didn't throw - fall back to JSON
+      const isNpx = process.env.npm_config_user_agent?.includes('npx') ||
+                    process.cwd().includes('_npx');
+      if (isNpx) {
+        console.log('\n✅ Automatically using JSON fallback for this command\n');
+      } else {
+        printWarning(`⚠️  SQLite unavailable, using JSON fallback`);
+      }
+      return 'basic';
+    }
+
     printInfo('🗄️  Initialized SQLite backend (.swarm/memory.db)');
     return 'reasoningbank';
   } catch (error) {
     // SQLite initialization failed - fall back to JSON
-    printWarning(`⚠️  SQLite unavailable, using JSON fallback`);
-    printWarning(`   Reason: ${error.message}`);
-    return 'basic';
+    const isSqliteError = error.message?.includes('BetterSqlite3') ||
+                          error.message?.includes('better-sqlite3') ||
+                          error.message?.includes('could not run migrations') ||
+                          error.message?.includes('ReasoningBank initialization failed');
+    const isNpx = process.env.npm_config_user_agent?.includes('npx') ||
+                  process.cwd().includes('_npx');
+
+    if (isSqliteError && isNpx) {
+      // Silent fallback for npx - error already shown by adapter
+      console.log('\n✅ Automatically using JSON fallback for this command\n');
+      return 'basic';
+    } else {
+      printWarning(`⚠️  SQLite unavailable, using JSON fallback`);
+      printWarning(`   Reason: ${error.message}`);
+      return 'basic';
+    }
   }
 }
 
@@ -548,6 +645,10 @@ async function handleReasoningBankCommand(command, subArgs, flags) {
         break;
 
       case 'status':
+        await handleReasoningBankStatus(getStatus);
+        break;
+
+      case 'stats':
         await handleReasoningBankStatus(getStatus);
         break;
 
@@ -867,6 +968,9 @@ function showMemoryHelp() {
   console.log('Options:');
   console.log('  --namespace <ns>       Specify namespace for operations');
   console.log('  --ns <ns>              Short form of --namespace');
+  console.log('  --limit <n>            Limit number of results (default: 10)');
+  console.log('  --sort <field>         Sort results by: recent, oldest, key, value');
+  console.log('  --format <type>        Export format: json, yaml');
   console.log('  --redact               🔒 Enable API key redaction (security feature)');
   console.log('  --secure               Alias for --redact');
   console.log();
@@ -891,7 +995,9 @@ function showMemoryHelp() {
   console.log('  # ReasoningBank mode (AI-powered, opt-in)');
   console.log('  memory init --reasoningbank  # One-time setup');
   console.log('  memory store api_pattern "Always use env vars" --reasoningbank');
-  console.log('  memory query "API configuration" --reasoningbank  # Semantic search!');
+  console.log('  memory query "API configuration" --reasoningbank --limit 5  # Semantic search!');
+  console.log('  memory list --reasoningbank --sort recent --limit 20');
+  console.log('  memory export backup.json --format json --reasoningbank');
   console.log('  memory status --reasoningbank  # Show AI metrics');
   console.log();
   console.log('  # Auto-detect mode (smart selection)');
@@ -907,4 +1013,14 @@ function showMemoryHelp() {
   console.log('  • JSON fallback: Always available, fast, simple key-value storage');
   console.log('  • Initialize ReasoningBank once: "memory init --reasoningbank"');
   console.log('  • Always use --redact when storing API keys or secrets!');
+  console.log();
+  console.log('🚀 Semantic Search (NEW in v2.7.25):');
+  console.log('  NPX Mode:              Uses hash-based embeddings (text similarity)');
+  console.log('                         • Fast, offline, zero dependencies');
+  console.log('                         • Good for exact/partial text matching');
+  console.log('  Local Install:         Uses transformer embeddings (semantic AI)');
+  console.log('                         • Finds conceptually related content');
+  console.log('                         • 384-dimensional vectors (Xenova/all-MiniLM-L6-v2)');
+  console.log('                         • Install: npm install -g claude-flow@alpha');
+  console.log('  Both modes work perfectly - choose based on your needs!');
 }

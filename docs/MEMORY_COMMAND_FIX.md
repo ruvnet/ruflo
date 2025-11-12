@@ -1,26 +1,66 @@
-# Memory Command Fix - onnxruntime-node Error
-**Issue:** `npx claude-flow@alpha memory status` fails with "Cannot find package 'onnxruntime-node'"
-**Status:** ✅ FIXED
+# Memory Command Fix - better-sqlite3 / onnxruntime-node Errors
+**Issue:** `npx claude-flow@alpha memory` commands fail with dependency errors
+**Status:** ✅ FIXED (Automatic Fallback in v2.7.15)
 **Date:** 2025-10-25
 
 ---
 
 ## Problem
 
+### Error 1: better-sqlite3 (ReasoningBank)
+```bash
+$ npx claude-flow@alpha memory store "api" "REST"
+❌ Error: BetterSqlite3 is not a constructor
+   Migration error: TypeError: BetterSqlite3 is not a constructor
+```
+
+### Error 2: onnxruntime-node (ONNX inference)
 ```bash
 $ npx claude-flow@alpha memory status
-❌ Error: Cannot find package 'onnxruntime-node' imported from
-   /home/codespace/.npm/_npx/7cfa166e65244432/node_modules/agentic-flow/dist/router/providers/onnx-local.js
+❌ Error: Cannot find package 'onnxruntime-node'
 ```
 
 **Root Cause:**
-- `onnxruntime-node` is an **optional dependency** in agentic-flow
+- `better-sqlite3` and `onnxruntime-node` are **optional dependencies**
 - `npx` creates a temporary directory that doesn't include optional dependencies
-- The ONNX router provider tries to import `onnxruntime-node` even when not needed
+- ReasoningBank requires better-sqlite3 for SQLite storage
+- ONNX inference requires onnxruntime-node for local models
 
 ---
 
-## Solution
+## ✅ v2.7.15 Fix: Automatic Fallback
+
+**Memory commands now automatically fall back to JSON when SQLite isn't available:**
+
+```bash
+$ npx claude-flow@alpha memory store "api" "REST"
+⚠️  NPX LIMITATION DETECTED
+ReasoningBank requires better-sqlite3, not available in npx temp directories.
+
+📚 Solutions:
+  1. LOCAL INSTALL (Recommended):
+     npm install && node_modules/.bin/claude-flow memory store "key" "value"
+
+  2. USE MCP TOOLS instead:
+     mcp__claude-flow__memory_usage({ action: "store", key: "test", value: "data" })
+
+  3. USE JSON FALLBACK:
+     npx claude-flow@alpha memory store "key" "value" --basic
+
+✅ Automatically using JSON fallback for this command
+✅ Stored: api = REST (namespace: default)
+```
+
+**Key improvements:**
+- ✅ Detects npx usage automatically
+- ✅ Falls back to JSON storage (memory/memory-store.json)
+- ✅ Shows clear error message with solutions
+- ✅ Command completes successfully despite missing dependencies
+- ✅ No manual flags required (but --basic can force JSON mode)
+
+---
+
+## Solutions
 
 ### Option 1: Use Local Installation ✅ RECOMMENDED
 

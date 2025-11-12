@@ -1,6 +1,6 @@
 {
   "name": "claude-flow",
-  "version": "2.7.15",
+  "version": "2.7.32",
   "description": "Enterprise-grade AI agent orchestration with WASM-powered ReasoningBank memory and AgentDB vector database (always uses latest agentic-flow)",
   "mcpName": "io.github.ruvnet/claude-flow",
   "main": "cli.mjs",
@@ -50,7 +50,7 @@
     "format": "prettier --write 'src/**/*.{ts,js,json}'",
     "diagnostics": "node -e \"import('./dist/monitoring/diagnostics.js').then(m => m.DiagnosticManager.quickDiagnostic().then(console.log))\"",
     "health-check": "node -e \"import('./dist/monitoring/health-check.js').then(m => new m.HealthCheckManager().performHealthCheck().then(console.log))\"",
-    "postinstall": "node scripts/install-arm64.js || true && bash scripts/fix-agentdb-imports.sh || true",
+    "postinstall": "node scripts/install-arm64.js || true && bash scripts/fix-agentdb-imports.sh || true && bash scripts/fix-agentic-flow-sqlite.sh || true && bash scripts/fix-agentic-flow-enabled-log.sh || true",
     "prepublishOnly": "npm run update-version",
     "publish:alpha": "npm publish --tag alpha",
     "publish:major": "npm version major && npm publish",
@@ -120,7 +120,7 @@
     "@anthropic-ai/claude-code": "^2.0.1",
     "@anthropic-ai/sdk": "^0.65.0",
     "@modelcontextprotocol/sdk": "^1.0.4",
-    "agentic-flow": "*",
+    "agentic-flow": "^1.9.4",
     "blessed": "^0.1.81",
     "chalk": "^4.1.2",
     "cli-table3": "^0.6.3",
@@ -138,15 +138,15 @@
     "p-queue": "^8.1.0",
     "ruv-swarm": "^1.0.14",
     "ws": "^8.18.3",
-    "yaml": "^2.8.0"
+    "yaml": "^2.8.0",
+    "yoctocolors-cjs": "^2.1.3"
   },
   "optionalDependencies": {
     "@types/better-sqlite3": "^7.6.13",
-    "agentdb": "^1.3.9",
+    "agentdb": "^1.6.1",
     "better-sqlite3": "^12.2.0",
     "diskusage": "^1.1.3",
-    "node-pty": "^1.0.0",
-    "onnxruntime-node": "^1.23.0"
+    "node-pty": "^1.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
