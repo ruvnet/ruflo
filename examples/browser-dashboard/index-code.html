@@ -326,6 +326,306 @@
             height: 120px;
             border-radius: 4px;
         }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 1024px) {
+            .sidebar {
+                width: 220px;
+            }
+
+            .bottom-panel {
+                height: 200px;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            body {
+                overflow: auto;
+            }
+
+            .header {
+                padding: 10px 16px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .header-title {
+                font-size: 13px;
+            }
+
+            .logo {
+                width: 20px;
+                height: 20px;
+            }
+
+            .connection-status {
+                font-size: 11px;
+            }
+
+            .main-container {
+                flex-direction: column;
+                height: auto;
+                min-height: calc(100vh - 100px);
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid #3e3e42;
+            }
+
+            .sidebar-section {
+                padding: 10px;
+            }
+
+            .agent-list {
+                max-height: none;
+                display: flex;
+                gap: 8px;
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+
+            .agent-item {
+                min-width: 140px;
+                flex-shrink: 0;
+            }
+
+            .swarm-canvas-container {
+                display: none;
+            }
+
+            .editor-container {
+                min-height: 400px;
+            }
+
+            .toolbar {
+                padding: 6px 10px;
+                flex-wrap: wrap;
+            }
+
+            .btn {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+
+            .editor-tabs {
+                overflow-x: auto;
+                padding: 0 6px;
+            }
+
+            .editor-tab {
+                padding: 6px 12px;
+                font-size: 12px;
+                white-space: nowrap;
+            }
+
+            #editor {
+                min-height: 300px;
+            }
+
+            .bottom-panel {
+                height: 180px;
+                position: relative;
+            }
+
+            .panel-tabs {
+                overflow-x: auto;
+                padding: 0 6px;
+            }
+
+            .panel-tab {
+                padding: 6px 12px;
+                font-size: 11px;
+                white-space: nowrap;
+            }
+
+            .panel-content {
+                padding: 10px;
+                font-size: 12px;
+            }
+
+            .consensus-tracker {
+                padding: 10px;
+            }
+
+            .consensus-bar {
+                height: 20px;
+            }
+
+            .consensus-fill {
+                font-size: 10px;
+            }
+
+            .consensus-info {
+                font-size: 10px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .header {
+                padding: 8px 12px;
+            }
+
+            .header-title {
+                font-size: 12px;
+                flex-wrap: wrap;
+            }
+
+            .header-title span:last-child {
+                flex-basis: 100%;
+                margin-top: 4px;
+            }
+
+            .logo {
+                width: 18px;
+                height: 18px;
+            }
+
+            .connection-status {
+                font-size: 10px;
+            }
+
+            .status-dot {
+                width: 6px;
+                height: 6px;
+            }
+
+            .sidebar-section {
+                padding: 8px;
+            }
+
+            .sidebar-title {
+                font-size: 10px;
+            }
+
+            .agent-item {
+                min-width: 120px;
+                padding: 6px;
+                font-size: 11px;
+            }
+
+            .agent-status {
+                font-size: 9px;
+                padding: 2px 4px;
+            }
+
+            .btn {
+                padding: 8px 10px;
+                font-size: 10px;
+            }
+
+            .toolbar {
+                padding: 6px 8px;
+                gap: 6px;
+            }
+
+            .editor-tabs {
+                padding: 0 4px;
+            }
+
+            .editor-tab {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            .bottom-panel {
+                height: 150px;
+            }
+
+            .panel-tabs {
+                padding: 0 4px;
+            }
+
+            .panel-tab {
+                padding: 6px 10px;
+                font-size: 10px;
+            }
+
+            .panel-content {
+                padding: 8px;
+                font-size: 11px;
+            }
+
+            .consensus-tracker {
+                padding: 8px;
+            }
+
+            .consensus-bar {
+                height: 18px;
+            }
+
+            .consensus-fill {
+                font-size: 9px;
+            }
+
+            .consensus-info {
+                font-size: 9px;
+            }
+
+            .log-timestamp {
+                font-size: 10px;
+            }
+        }
+
+        /* Landscape mobile optimization */
+        @media screen and (max-width: 768px) and (orientation: landscape) {
+            .main-container {
+                flex-direction: row;
+            }
+
+            .sidebar {
+                width: 200px;
+                max-height: none;
+                border-right: 1px solid #3e3e42;
+                border-bottom: none;
+            }
+
+            .sidebar-section {
+                padding: 8px;
+            }
+
+            .sidebar-title {
+                font-size: 10px;
+            }
+
+            .agent-list {
+                flex-direction: column;
+            }
+
+            .agent-item {
+                min-width: auto;
+            }
+
+            .swarm-canvas-container {
+                display: block;
+            }
+
+            #swarmCanvas {
+                height: 80px;
+            }
+
+            .bottom-panel {
+                height: 150px;
+            }
+        }
+
+        /* Touch-friendly adjustments */
+        @media (hover: none) and (pointer: coarse) {
+            .btn, .editor-tab, .panel-tab {
+                min-height: 44px;
+                min-width: 44px;
+            }
+
+            .toolbar {
+                gap: 10px;
+            }
+
+            .file-item, .agent-item {
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>

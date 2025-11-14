@@ -476,6 +476,257 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 1024px) {
+            .right-panel {
+                width: 400px;
+            }
+
+            .sidebar {
+                width: 240px;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 200px;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+                overflow-y: auto;
+            }
+
+            .sidebar-section {
+                padding: 12px;
+            }
+
+            .agent-grid {
+                display: flex;
+                gap: 8px;
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+
+            .agent-card {
+                min-width: 140px;
+                flex-shrink: 0;
+            }
+
+            .main-content {
+                height: calc(100vh - 200px);
+            }
+
+            .chat-header {
+                padding: 12px 16px;
+            }
+
+            .chat-title {
+                font-size: 14px;
+            }
+
+            .chat-messages {
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .message-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 16px;
+            }
+
+            .message-text {
+                font-size: 13px;
+            }
+
+            .code-body pre {
+                font-size: 12px;
+            }
+
+            .chat-input-container {
+                padding: 12px 16px;
+            }
+
+            .chat-input {
+                font-size: 13px;
+                padding: 10px 14px;
+            }
+
+            .send-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            .right-panel {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                z-index: 1000;
+            }
+
+            .toggle-editor-btn {
+                right: 16px;
+                bottom: 70px;
+                width: 44px;
+                height: 44px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .sidebar {
+                max-height: 150px;
+            }
+
+            .sidebar-header {
+                padding: 12px;
+            }
+
+            .sidebar-title {
+                font-size: 11px;
+                margin-bottom: 8px;
+            }
+
+            .status-badge {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+
+            .main-content {
+                height: calc(100vh - 150px);
+            }
+
+            .chat-header {
+                padding: 10px 12px;
+            }
+
+            .chat-title {
+                font-size: 13px;
+            }
+
+            .logo {
+                width: 20px;
+                height: 20px;
+            }
+
+            .chat-messages {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .message-avatar {
+                width: 24px;
+                height: 24px;
+                font-size: 14px;
+            }
+
+            .message-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+
+            .message-author {
+                font-size: 13px;
+            }
+
+            .message-time {
+                font-size: 11px;
+            }
+
+            .message-text {
+                font-size: 12px;
+            }
+
+            .code-header {
+                padding: 6px 10px;
+            }
+
+            .code-language {
+                font-size: 11px;
+            }
+
+            .code-action-btn {
+                padding: 3px 8px;
+                font-size: 11px;
+            }
+
+            .code-body {
+                padding: 12px;
+            }
+
+            .code-body pre {
+                font-size: 11px;
+            }
+
+            .chat-input-container {
+                padding: 10px 12px;
+            }
+
+            .chat-input {
+                min-height: 40px;
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+
+            .send-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+
+            .btn {
+                padding: 8px;
+                font-size: 12px;
+            }
+
+            .toggle-editor-btn {
+                right: 12px;
+                bottom: 60px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            .consensus-mini {
+                padding: 10px;
+            }
+
+            .consensus-bar {
+                height: 16px;
+            }
+
+            .consensus-fill {
+                font-size: 10px;
+            }
+
+            .consensus-text {
+                font-size: 10px;
+            }
+        }
+
+        /* Touch-friendly adjustments */
+        @media (hover: none) and (pointer: coarse) {
+            .btn, .send-btn, .code-action-btn, .toggle-editor-btn {
+                min-height: 44px;
+            }
+
+            .agent-card {
+                padding: 12px;
+            }
+
+            .file-item, .agent-item {
+                padding: 12px;
+            }
+        }
     </style>
 </head>
 <body>
