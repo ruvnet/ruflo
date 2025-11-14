@@ -4,16 +4,6 @@ export { VERSION };
 export const MAIN_HELP = `
 🌊 Claude-Flow v${VERSION} - Enterprise-Grade AI Agent Orchestration Platform
 
-🚀 v2.7.6 - MCP Stdio Fix & Production Ready
-
-🔥 NEW IN v2.7.6:
-  ✅ MCP Server Stdio Mode Fixed - Clean JSON-RPC protocol on stdout (#835)
-  🔧 Smart Logging Helpers - Auto-route output based on mode (stdio vs HTTP)
-  🐛 Protocol Corruption Resolved - Now compatible with standard MCP clients
-  📦 AgentDB Integration - 150x faster vector search with persistent memory
-  🧠 ReasoningBank Support - Self-learning with trajectory tracking
-  🎯 Backward Compatible - HTTP mode unchanged, stdio mode now works correctly
-
 🎯 ENTERPRISE FEATURES:
   • Complete ruv-swarm integration with 90+ MCP tools
   • Flow Nexus cloud platform with distributed sandboxes

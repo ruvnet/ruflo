@@ -86,11 +86,6 @@ async function setupMcpServers(dryRun1 = false) {
             name: 'flow-nexus',
             command: 'npx flow-nexus@latest mcp start',
             description: 'Flow Nexus Complete MCP server for advanced AI orchestration'
-        },
-        {
-            name: 'agentic-payments',
-            command: 'npx agentic-payments@latest mcp',
-            description: 'Agentic Payments MCP server for autonomous agent payment authorization'
         }
     ];
     for (const server of servers){
@@ -617,7 +612,6 @@ export async function initCommand(subArgs, flags) {
                 console.log('     claude mcp add claude-flow npx claude-flow@alpha mcp start');
                 console.log('     claude mcp add ruv-swarm npx ruv-swarm mcp start');
                 console.log('     claude mcp add flow-nexus npx flow-nexus@latest mcp start');
-                console.log('     claude mcp add agentic-payments npx agentic-payments@latest mcp');
             }
         }
     } catch (err) {
@@ -1175,14 +1169,6 @@ async function enhancedClaudeFlowInit(flags, subArgs = []) {
                         'start'
                     ],
                     type: 'stdio'
-                },
-                'agentic-payments': {
-                    command: 'npx',
-                    args: [
-                        'agentic-payments@latest',
-                        'mcp'
-                    ],
-                    type: 'stdio'
                 }
             }
         };
@@ -1409,7 +1395,6 @@ ${commands.map((cmd)=>`- [${cmd}](./${cmd}.md)`).join('\n')}
                 console.log('     claude mcp add claude-flow npx claude-flow@alpha mcp start');
                 console.log('     claude mcp add ruv-swarm npx ruv-swarm@latest mcp start');
                 console.log('     claude mcp add flow-nexus npx flow-nexus@latest mcp start');
-                console.log('     claude mcp add agentic-payments npx agentic-payments@latest mcp');
                 console.log('\n  💡 MCP servers are defined in .mcp.json (project scope)');
             }
         } else if (!dryRun1 && !isClaudeCodeInstalled()) {
@@ -1420,7 +1405,6 @@ ${commands.map((cmd)=>`- [${cmd}](./${cmd}.md)`).join('\n')}
             console.log('     claude mcp add claude-flow@alpha npx claude-flow@alpha mcp start');
             console.log('     claude mcp add ruv-swarm npx ruv-swarm@latest mcp start');
             console.log('     claude mcp add flow-nexus npx flow-nexus@latest mcp start');
-            console.log('     claude mcp add agentic-payments npx agentic-payments@latest mcp');
             console.log('\n  💡 MCP servers are defined in .mcp.json (project scope)');
         }
         console.log('\n🤖 Setting up agent system...');

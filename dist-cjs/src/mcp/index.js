@@ -2,6 +2,14 @@ export { InProcessMCPServer, createInProcessServer } from './in-process-server.j
 export { ClaudeFlowToolRegistry, createToolRegistry, createClaudeFlowSdkServer } from './tool-registry.js';
 export { SDKIntegration, initializeSDKIntegration, getSDKIntegration, createInProcessQuery, getInProcessServerConfig, measurePerformance } from './sdk-integration.js';
 export { MCPServer } from './server.js';
+export { MCP2025Server } from './server-mcp-2025.js';
+export { MCPServerFactory, createMCPServer, isMCP2025Available, getServerCapabilities } from './server-factory.js';
+export { VersionNegotiator, BackwardCompatibilityAdapter } from './protocol/version-negotiation.js';
+export { MCPAsyncJobManager } from './async/job-manager-mcp25.js';
+export { MCPRegistryClient } from './registry/mcp-registry-client-2025.js';
+export { SchemaValidator, upgradeToolSchema } from './validation/schema-validator-2025.js';
+export { ProgressiveToolRegistry, createProgressiveToolRegistry, createProgressiveClaudeFlowSdkServer } from './tool-registry-progressive.js';
+export { DynamicToolLoader } from './tools/loader.js';
 export { MCPLifecycleManager, LifecycleState } from './lifecycle-manager.js';
 export { ToolRegistry } from './tools.js';
 export { MCPProtocolManager } from './protocol-manager.js';

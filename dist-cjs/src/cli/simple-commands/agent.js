@@ -1,126 +1,95 @@
-import { printSuccess, printError, printWarning } from '../utils.js';
-import { onAgentSpawn } from './performance-hooks.js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-const execAsync = promisify(exec);
-export async function agentCommand(subArgs, flags) {
-    const agentCmd = subArgs[0];
-    if (flags.help || flags.h || agentCmd === '--help' || agentCmd === '-h') {
-        showAgentHelp();
-        return;
-    }
-    switch(agentCmd){
-        case 'run':
-        case 'execute':
-            await executeAgentTask(subArgs, flags);
-            break;
-        case 'spawn':
-            await spawnAgent(subArgs, flags);
-            break;
-        case 'list':
-            await listAgents(subArgs, flags);
-            break;
-        case 'agents':
-            await listAgenticFlowAgents(subArgs, flags);
-            break;
-        case 'create':
-            await createAgent(subArgs, flags);
-            break;
-        case 'info':
-            await getAgentInfo(subArgs, flags);
-            break;
-        case 'conflicts':
-            await checkAgentConflicts(subArgs, flags);
-            break;
-        case 'memory':
-            await memoryCommand(subArgs, flags);
-            break;
-        case 'config':
-        case 'configure':
-            await configAgenticFlow(subArgs, flags);
-            break;
-        case 'mcp':
-        case 'mcp-server':
-            await mcpAgenticFlow(subArgs, flags);
-            break;
-        case 'hierarchy':
-            await manageHierarchy(subArgs, flags);
-            break;
-        case 'network':
-            await manageNetwork(subArgs, flags);
-            break;
-        case 'ecosystem':
-            await manageEcosystem(subArgs, flags);
-            break;
-        case 'provision':
-            await provisionAgent(subArgs, flags);
-            break;
-        case 'terminate':
-            await terminateAgent(subArgs, flags);
-            break;
-        case 'booster':
-            const { agentBoosterCommand } = await import('./agent-booster.js');
-            await agentBoosterCommand(subArgs, flags);
-            break;
-        default:
-            showAgentHelp();
-    }
+import { Command } from 'commander';
+import chalk from 'chalk';
+import ora from 'ora';
+import { AgentExecutor } from '../../execution/agent-executor.js';
+import { ProviderManager } from '../../execution/provider-manager.js';
+export function createAgentCommand() {
+    const agent = new Command('agent').description('Execute and manage AI agents with multi-provider support');
+    agent.command('run').description('Execute an agent with a specific task').argument('<agent-name>', 'Agent to execute (e.g., coder, researcher)').argument('<task>', "Task description for the agent").option('-p, --provider <provider>', 'Provider to use (anthropic, openrouter, onnx, gemini)').option('-m, --model <model>', 'Model to use').option('-t, --temperature <temp>', 'Temperature (0.0-1.0)', parseFloat).option('--max-tokens <tokens>', 'Maximum tokens', parseInt).option('-f, --format <format>', 'Output format (text, json, markdown)', 'text').option('--stream', 'Enable streaming output').option('-v, --verbose', 'Verbose output').action(async (agentName, task, options)=>{
+        const spinner = ora('Executing agent...').start();
+        try {
+            const executor = new AgentExecutor();
+            const providerManager = new ProviderManager();
+            const provider = options.provider || providerManager.getDefaultProvider();
+            const result = await executor.execute({
+                agent: agentName,
+                task: task,
+                provider: provider,
+                model: options.model,
+                temperature: options.temperature,
+                maxTokens: options.maxTokens,
+                outputFormat: options.format,
+                stream: options.stream,
+                verbose: options.verbose
+            });
+            spinner.stop();
+            if (result.success) {
+                console.log(chalk.green('✓ Agent execution completed\n'));
+                console.log(result.output);
+                if (options.verbose) {
+                    console.log(chalk.gray(`\nProvider: ${result.provider}`));
+                    console.log(chalk.gray(`Duration: ${result.duration}ms`));
+                    if (result.tokens) console.log(chalk.gray(`Tokens: ${result.tokens}`));
+                    if (result.cost) console.log(chalk.gray(`Cost: $${result.cost.toFixed(4)}`));
+                }
+            } else {
+                console.error(chalk.red('✗ Agent execution failed'));
+                console.error(result.error);
+                process.exit(1);
+            }
+        } catch (error) {
+            spinner.stop();
+            console.error(chalk.red('✗ Error:'), error.message);
+            process.exit(1);
+        }
+    });
+    agent.command('list').description('List available agents').option('-s, --source <source>', 'Filter by source (all, package, local)', 'all').option('-f, --format <format>', 'Output format (text, json)', 'text').action(async (options)=>{
+        const spinner = ora('Loading agents...').start();
+        try {
+            const executor = new AgentExecutor();
+            const agents = await executor.listAgents(options.source);
+            spinner.stop();
+            if (options.format === 'json') {
+                console.log(JSON.stringify(agents, null, 2));
+            } else {
+                console.log(chalk.cyan(`\n📋 Available Agents (${agents.length}):\n`));
+                agents.forEach((agent)=>{
+                    console.log(chalk.white(`  • ${agent}`));
+                });
+                console.log('');
+            }
+        } catch (error) {
+            spinner.stop();
+            console.error(chalk.red('✗ Error:'), error.message);
+            process.exit(1);
+        }
+    });
+    agent.command('info').description('Get information about a specific agent').argument('<agent-name>', 'Agent name').action(async (agentName)=>{
+        const spinner = ora('Loading agent info...').start();
+        try {
+            const executor = new AgentExecutor();
+            const info = await executor.getAgentInfo(agentName);
+            spinner.stop();
+            if (info) {
+                console.log(chalk.cyan(`\n📝 Agent: ${agentName}\n`));
+                console.log(chalk.white(`Description: ${info.description || 'N/A'}`));
+                console.log(chalk.white(`Category: ${info.category || 'N/A'}`));
+                console.log(chalk.white(`Source: ${info.source || 'N/A'}`));
+                console.log('');
+            } else {
+                console.error(chalk.red('✗ Agent not found'));
+                process.exit(1);
+            }
+        } catch (error) {
+            spinner.stop();
+            console.error(chalk.red('✗ Error:'), error.message);
+            process.exit(1);
+        }
+    });
+    return agent;
 }
-async function executeAgentTask(subArgs, flags) {
-    const agentType = subArgs[1];
-    const task = subArgs[2];
-    if (!agentType || !task) {
-        printError('Usage: agent run <agent-type> "<task>" [--provider <provider>] [--model <model>]');
-        console.log('\nExamples:');
-        console.log('  claude-flow agent run coder "Create a REST API"');
-        console.log('  claude-flow agent run researcher "Research AI trends" --provider openrouter');
-        console.log('  claude-flow agent run reviewer "Review code for security" --provider onnx');
-        return;
-    }
-    if (flags.enableMemory || flags.memory) {
-        const { checkEnvConfig, showEnvSetupInstructions } = await import('./env-template.js');
-        const envCheck = await checkEnvConfig(process.cwd());
-        if (!envCheck.exists) {
-            printWarning('⚠️  ReasoningBank memory requires .env configuration');
-            showEnvSetupInstructions();
-            console.log('❌ Cannot use --enable-memory without .env file\n');
-            process.exit(1);
-        }
-        if (!envCheck.hasApiKeys) {
-            printWarning('⚠️  No API keys found in .env file');
-            console.log('\n⚠️  ReasoningBank will fall back to heuristic mode (regex matching)');
-            console.log('   Without API keys, memory will NOT learn from experience!\n');
-            showEnvSetupInstructions();
-            console.log('❌ Add API keys to .env to enable actual learning\n');
-            process.exit(1);
-        }
-        console.log('✅ API keys configured:');
-        if (envCheck.keys.anthropic) console.log('   • Anthropic (Claude)');
-        if (envCheck.keys.openrouter) console.log('   • OpenRouter (cost optimization available)');
-        if (envCheck.keys.gemini) console.log('   • Gemini (free tier available)');
-        console.log('');
-    }
-    printSuccess(`🚀 Executing ${agentType} agent with agentic-flow...`);
-    console.log(`Task: ${task}`);
-    const provider = flags.provider || 'anthropic';
-    if (flags.provider) {
-        console.log(`Provider: ${provider}`);
-    }
-    try {
-        const cmd = buildAgenticFlowCommand(agentType, task, flags);
-        console.log('\n⏳ Running agent... (this may take a moment)\n');
-        const { stdout, stderr } = await execAsync(cmd, {
-            timeout: flags.timeout || 300000,
-            maxBuffer: 10 * 1024 * 1024
-        });
-        if (stdout) {
-            console.log(stdout);
-        }
-        if (stderr && flags.verbose) {
-            console.warn('\nWarnings:', stderr);
-        }
-        printSuccess('✅ Agent task completed successfully!');
-    } catch (error) {
+
+//# sourceMappingURL=agent.js.mapatch (error) {
         printError('❌ Agent execution failed');
         console.error(error.message);
         if (error.stderr) {

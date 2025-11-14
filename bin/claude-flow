@@ -2,7 +2,7 @@
 # Claude-Flow Smart Dispatcher - Detects and uses the best available runtime
 # Enhanced with NPX cache error handling and retry logic
 
-VERSION="2.7.31"
+VERSION="2.7.34"
 
 # Determine the correct path based on how the script is invoked
 if [ -L "$0" ]; then

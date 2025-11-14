@@ -2,6 +2,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { memoryStore } from '../memory/fallback-store.js';
+import { VERSION } from '../core/version.js';
 await import('./implementations/agent-tracker.js').catch(()=>{
     try {
         require('./implementations/agent-tracker');
@@ -39,7 +40,7 @@ function resolveLegacyAgentType(legacyType) {
 }
 let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
     constructor(){
-        this.version = '2.5.0-alpha.131';
+        this.version = VERSION;
         this.memoryStore = memoryStore;
         this.capabilities = {
             tools: {

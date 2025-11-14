@@ -23,4 +23,4 @@ export function displayVersion() {
     console.log(getVersionString());
 }
 
-//# sourceMappingURL=version.js.mapp
+//# sourceMappingURL=version.js.map

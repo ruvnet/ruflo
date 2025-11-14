@@ -6,10 +6,17 @@ import { Command } from '@cliffy/command';
 import chalk from 'chalk';
 import { logger } from '../../core/logger.js';
 import { configManager } from '../../core/config.js';
-import { MCPServer } from '../../mcp/server.js';
+import { MCPServer, type IMCPServer } from '../../mcp/server.js';
 import { eventBus } from '../../core/event-bus.js';
+import {
+  createMCPServer,
+  isMCP2025Available,
+  getServerCapabilities,
+  type ExtendedMCPConfig,
+} from '../../mcp/server-factory.js';
+import type { MCP2025Server } from '../../mcp/server-mcp-2025.js';
 
-let mcpServer: MCPServer | null = null;
+let mcpServer: IMCPServer | MCP2025Server | null = null;
 
 export const mcpCommand = new Command()
   .description('Manage MCP server and tools')
@@ -32,29 +39,95 @@ export const mcpCommand = new Command()
       .option('--transport <transport:string>', 'Transport type (stdio, http)', {
         default: 'stdio',
       })
+      .option('--mcp2025', 'Enable MCP 2025-11 features (version negotiation, async jobs, etc.)', {
+        default: false,
+      })
+      .option('--no-legacy', 'Disable legacy client support', { default: false })
       .action(async (options: any) => {
         try {
           const config = await configManager.load();
 
-          // Override with CLI options
-          const mcpConfig = {
+          // Check if MCP 2025-11 dependencies are available
+          const mcp2025Available = isMCP2025Available();
+          const enableMCP2025 = options.mcp2025 && mcp2025Available;
+
+          if (options.mcp2025 && !mcp2025Available) {
+            console.log(
+              chalk.yellow(
+                '⚠️  MCP 2025-11 dependencies not found. Install with: npm install uuid ajv ajv-formats ajv-errors'
+              )
+            );
+            console.log(chalk.yellow('   Falling back to legacy MCP server...'));
+          }
+
+          // Build extended configuration
+          const mcpConfig: ExtendedMCPConfig = {
             ...config.mcp,
             port: options.port,
             host: options.host,
             transport: options.transport,
+            features: {
+              enableMCP2025,
+              supportLegacyClients: options.legacy !== false,
+              enableVersionNegotiation: enableMCP2025,
+              enableAsyncJobs: enableMCP2025,
+              enableRegistryIntegration: false, // Opt-in via env var
+              enableSchemaValidation: enableMCP2025,
+              enableProgressiveDisclosure: true, // Phase 1 feature (always enabled)
+            },
+            mcp2025: enableMCP2025
+              ? {
+                  async: {
+                    enabled: true,
+                    maxJobs: 100,
+                    jobTTL: 3600000,
+                  },
+                  registry: {
+                    enabled: process.env.MCP_REGISTRY_ENABLED === 'true',
+                    url: process.env.MCP_REGISTRY_URL,
+                    apiKey: process.env.MCP_REGISTRY_API_KEY,
+                  },
+                  validation: {
+                    enabled: true,
+                    strictMode: false,
+                  },
+                }
+              : undefined,
           };
 
-          mcpServer = new MCPServer(mcpConfig, eventBus, logger);
+          // Create server using factory
+          mcpServer = await createMCPServer(mcpConfig, eventBus, logger, {
+            autoDetectFeatures: false, // Use explicit config
+          });
+
           await mcpServer.start();
 
+          // Get capabilities
+          const capabilities = getServerCapabilities(mcpConfig);
+
           console.log(chalk.green(`✅ MCP server started on ${options.host}:${options.port}`));
-          console.log(chalk.cyan(`📡 Server URL: http://${options.host}:${options.port}`));
-          console.log(chalk.cyan(`🔧 Available tools: Research, Code, Terminal, Memory`));
           console.log(
-            chalk.cyan(`📚 API documentation: http://${options.host}:${options.port}/docs`),
+            chalk.cyan(`🎯 Mode: ${enableMCP2025 ? 'MCP 2025-11 Enhanced' : 'Legacy Compatible'}`)
           );
+          console.log(chalk.cyan(`📡 Transport: ${options.transport}`));
+
+          if (capabilities.length > 0) {
+            console.log(chalk.cyan(`✨ Capabilities: ${capabilities.join(', ')}`));
+          }
+
+          if (enableMCP2025) {
+            console.log(chalk.green('   • Version negotiation (YYYY-MM format)'));
+            console.log(chalk.green('   • Async job support (poll/resume)'));
+            console.log(chalk.green('   • JSON Schema 1.1 validation'));
+            console.log(chalk.green('   • Progressive disclosure (98.7% token reduction)'));
+          }
+
+          if (options.transport === 'http') {
+            console.log(chalk.cyan(`📚 Server URL: http://${options.host}:${options.port}`));
+          }
         } catch (error) {
           console.error(chalk.red(`❌ Failed to start MCP server: ${(error as Error).message}`));
+          logger.error('MCP server startup failed', { error });
           process.exit(1);
         }
       }),
@@ -151,7 +224,11 @@ export const mcpCommand = new Command()
 
         console.log(chalk.yellow('🔄 Starting MCP server...'));
         const config = await configManager.load();
-        mcpServer = new MCPServer(config.mcp, eventBus, logger);
+
+        // Use factory to create server with same capabilities as before
+        mcpServer = await createMCPServer(config.mcp, eventBus, logger, {
+          autoDetectFeatures: true, // Auto-detect on restart
+        });
         await mcpServer.start();
 
         console.log(

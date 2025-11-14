@@ -1,6 +1,6 @@
 {
   "name": "claude-flow",
-  "version": "2.7.32",
+  "version": "2.7.34",
   "description": "Enterprise-grade AI agent orchestration with WASM-powered ReasoningBank memory and AgentDB vector database (always uses latest agentic-flow)",
   "mcpName": "io.github.ruvnet/claude-flow",
   "main": "cli.mjs",
@@ -121,6 +121,9 @@
     "@anthropic-ai/sdk": "^0.65.0",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "agentic-flow": "^1.9.4",
+    "ajv": "^8.17.1",
+    "ajv-errors": "^3.0.0",
+    "ajv-formats": "^3.0.1",
     "blessed": "^0.1.81",
     "chalk": "^4.1.2",
     "cli-table3": "^0.6.3",
@@ -137,6 +140,7 @@
     "ora": "^7.0.1",
     "p-queue": "^8.1.0",
     "ruv-swarm": "^1.0.14",
+    "uuid": "^13.0.0",
     "ws": "^8.18.3",
     "yaml": "^2.8.0",
     "yoctocolors-cjs": "^2.1.3"
