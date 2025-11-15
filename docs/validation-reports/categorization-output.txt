@@ -1,0 +1,123 @@
+Total agent files: 74
+Unique agent names: 72
+
+Duplicates:
+  - goal-planner: 2 files
+  - pr-manager: 2 files
+
+=== AGENT CATEGORIZATION ===
+
+analysis: 2 unique agents
+  - analyst
+  - code-analyzer
+
+architecture: 1 unique agents
+  - system-architect
+
+consensus: 7 unique agents
+  - byzantine-coordinator
+  - crdt-synchronizer
+  - gossip-coordinator
+  - performance-benchmarker
+  - quorum-manager
+  - raft-manager
+  - security-manager
+
+core: 5 unique agents
+  - coder
+  - planner
+  - researcher
+  - reviewer
+  - tester
+
+data: 1 unique agents
+  - ml-developer
+
+development: 1 unique agents
+  - backend-dev
+
+devops: 1 unique agents
+  - cicd-engineer
+
+documentation: 1 unique agents
+  - api-docs
+
+flow-nexus: 9 unique agents
+  - flow-nexus-app-store
+  - flow-nexus-auth
+  - flow-nexus-challenges
+  - flow-nexus-neural
+  - flow-nexus-payments
+  - flow-nexus-sandbox
+  - flow-nexus-swarm
+  - flow-nexus-user-tools
+  - flow-nexus-workflow
+
+github: 13 unique agents
+  - code-review-swarm
+  - github-modes
+  - issue-tracker
+  - multi-repo-swarm
+  - pr-manager
+  - project-board-sync
+  - release-manager
+  - release-swarm
+  - repo-architect
+  - swarm-issue
+  - swarm-pr
+  - sync-coordinator
+  - workflow-automation
+
+goal: 1 unique agents
+  - goal-planner
+
+hive-mind: 5 unique agents
+  - collective-intelligence-coordinator
+  - queen-coordinator
+  - scout-explorer
+  - swarm-memory-manager
+  - worker-specialist
+
+neural: 1 unique agents
+  - safla-neural
+
+optimization: 5 unique agents
+  - Benchmark Suite
+  - Load Balancing Coordinator
+  - Performance Monitor
+  - Resource Allocator
+  - Topology Optimizer
+
+reasoning: 2 unique agents
+  - goal-planner
+  - sublinear-goal-planner
+
+sparc: 4 unique agents
+  - architecture
+  - pseudocode
+  - refinement
+  - specification
+
+specialized: 1 unique agents
+  - mobile-dev
+
+swarm: 3 unique agents
+  - adaptive-coordinator
+  - hierarchical-coordinator
+  - mesh-coordinator
+
+templates: 9 unique agents
+  - memory-coordinator
+  - migration-planner
+  - perf-analyzer
+  - pr-manager
+  - smart-agent
+  - sparc-coder
+  - sparc-coord
+  - swarm-init
+  - task-orchestrator
+
+testing: 2 unique agents
+  - production-validator
+  - tdd-london-swarm
+

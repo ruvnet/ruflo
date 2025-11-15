@@ -1,0 +1,63 @@
+{
+  "timestamp": "2025-11-15T17:55:18.415Z",
+  "benchmark": "swarm-parallel-speedup",
+  "configuration": {
+    "task_count": 100,
+    "task_duration_ms": 10,
+    "worker_configs": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "baseline": {
+    "mode": "sequential",
+    "duration_ms": 1013.73
+  },
+  "parallel_results": [
+    {
+      "workers": 2,
+      "duration_ms": 507.33,
+      "speedup_factor": 2,
+      "efficiency_percent": 99.9
+    },
+    {
+      "workers": 3,
+      "duration_ms": 346.76,
+      "speedup_factor": 2.92,
+      "efficiency_percent": 97.4
+    },
+    {
+      "workers": 4,
+      "duration_ms": 255.09,
+      "speedup_factor": 3.97,
+      "efficiency_percent": 99.4
+    },
+    {
+      "workers": 5,
+      "duration_ms": 205.89,
+      "speedup_factor": 4.92,
+      "efficiency_percent": 98.5
+    },
+    {
+      "workers": 6,
+      "duration_ms": 178.47,
+      "speedup_factor": 5.68,
+      "efficiency_percent": 94.7
+    }
+  ],
+  "best_performance": {
+    "workers": 6,
+    "speedup_factor": 5.68,
+    "efficiency_percent": 94.7
+  },
+  "validation": {
+    "claimed_speedup": "2.8-4.4x",
+    "actual_speedup": 5.68,
+    "status": "FAIL",
+    "verdict": "✗ Claim NOT validated - Speedup outside expected range",
+    "analysis": "Achieved 5.68x speedup with 6 workers"
+  }
+}

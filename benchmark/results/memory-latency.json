@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-11-15T17:54:51.653Z",
+  "benchmark": "memory-query-latency",
+  "configuration": {
+    "dataset_size": 1000,
+    "query_iterations": 100,
+    "scan_iterations": 10
+  },
+  "results": {
+    "retrieval": {
+      "avg_latency_ms": 0.0137,
+      "p50_latency_ms": 0.0012,
+      "p95_latency_ms": 0.0052,
+      "p99_latency_ms": 1.1468,
+      "min_latency_ms": 0.0007,
+      "max_latency_ms": 1.1468
+    },
+    "namespace_scan": {
+      "avg_latency_ms": 0.9671
+    }
+  },
+  "validation": {
+    "claimed_latency_ms": "2-3",
+    "actual_avg_ms": 0.0137,
+    "status": "PASS",
+    "verdict": "✓ Claim validated - Average latency within target",
+    "margin": "99.5% under target"
+  }
+}

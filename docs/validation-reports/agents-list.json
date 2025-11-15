@@ -1,0 +1,530 @@
+Error parsing /home/user/claude-flow/.claude/agents/base-template-generator.md: Nested mappings are not allowed in compact mappings at line 2, column 14:
+
+description: Use this agent when you need to create foundational templates, boi…
+             ^
+
+Error parsing /home/user/claude-flow/.claude/agents/goal/code-goal-planner.md: Nested mappings are not allowed in compact mappings at line 2, column 14:
+
+description: Code-centric Goal-Oriented Action Planning specialist that creates…
+             ^
+
+[
+  {
+    "name": "adaptive-coordinator",
+    "type": "coordinator",
+    "category": "swarm",
+    "description": "Dynamic topology switching coordinator with self-organizing swarm patterns and real-time optimization",
+    "file": "swarm/adaptive-coordinator.md"
+  },
+  {
+    "name": "analyst",
+    "type": "code-analyzer",
+    "category": "analysis",
+    "description": "Advanced code quality analysis agent for comprehensive code reviews and improvements",
+    "file": "analysis/code-analyzer.md"
+  },
+  {
+    "name": "api-docs",
+    "type": "documentation",
+    "category": "documentation/api-docs",
+    "description": "Expert agent for creating and maintaining OpenAPI/Swagger documentation",
+    "file": "documentation/api-docs/docs-api-openapi.md"
+  },
+  {
+    "name": "architecture",
+    "type": "architect",
+    "category": "sparc",
+    "description": "SPARC Architecture phase specialist for system design",
+    "file": "sparc/architecture.md"
+  },
+  {
+    "name": "backend-dev",
+    "type": "development",
+    "category": "development/backend",
+    "description": "Specialized agent for backend API development, including REST and GraphQL endpoints",
+    "file": "development/backend/dev-backend-api.md"
+  },
+  {
+    "name": "Benchmark Suite",
+    "type": "agent",
+    "category": "optimization",
+    "description": "Comprehensive performance benchmarking, regression detection and performance validation",
+    "file": "optimization/benchmark-suite.md"
+  },
+  {
+    "name": "byzantine-coordinator",
+    "type": "coordinator",
+    "category": "consensus",
+    "description": "Coordinates Byzantine fault-tolerant consensus protocols with malicious actor detection",
+    "file": "consensus/byzantine-coordinator.md"
+  },
+  {
+    "name": "cicd-engineer",
+    "type": "devops",
+    "category": "devops/ci-cd",
+    "description": "Specialized agent for GitHub Actions CI/CD pipeline creation and optimization",
+    "file": "devops/ci-cd/ops-cicd-github.md"
+  },
+  {
+    "name": "code-analyzer",
+    "type": "analysis",
+    "category": "analysis/code-review",
+    "description": "Advanced code quality analysis agent for comprehensive code reviews and improvements",
+    "file": "analysis/code-review/analyze-code-quality.md"
+  },
+  {
+    "name": "code-review-swarm",
+    "type": "development",
+    "category": "github",
+    "description": "Deploy specialized AI agents to perform comprehensive, intelligent code reviews that go beyond traditional static analysis",
+    "file": "github/code-review-swarm.md"
+  },
+  {
+    "name": "coder",
+    "type": "developer",
+    "category": "core",
+    "description": "Implementation specialist for writing clean, efficient code",
+    "file": "core/coder.md"
+  },
+  {
+    "name": "collective-intelligence-coordinator",
+    "type": "unknown",
+    "category": "hive-mind",
+    "description": "Orchestrates distributed cognitive processes across the hive mind, ensuring coherent collective decision-making through memory synchronization and consensus protocols",
+    "file": "hive-mind/collective-intelligence-coordinator.md"
+  },
+  {
+    "name": "crdt-synchronizer",
+    "type": "synchronizer",
+    "category": "consensus",
+    "description": "Implements Conflict-free Replicated Data Types for eventually consistent state synchronization",
+    "file": "consensus/crdt-synchronizer.md"
+  },
+  {
+    "name": "flow-nexus-app-store",
+    "type": "unknown",
+    "category": "flow-nexus",
+    "description": "Application marketplace and template management specialist. Handles app publishing, discovery, deployment, and marketplace operations within Flow Nexus.",
+    "file": "flow-nexus/app-store.md"
+  },
+  {
+    "name": "flow-nexus-auth",
+    "type": "unknown",
+    "category": "flow-nexus",
+    "description": "Flow Nexus authentication and user management specialist. Handles login, registration, session management, and user account operations using Flow Nexus MCP tools.",
+    "file": "flow-nexus/authentication.md"
+  },
+  {
+    "name": "flow-nexus-challenges",
+    "type": "unknown",
+    "category": "flow-nexus",
+    "description": "Coding challenges and gamification specialist. Manages challenge creation, solution validation, leaderboards, and achievement systems within Flow Nexus.",
+    "file": "flow-nexus/challenges.md"
+  },
+  {
+    "name": "flow-nexus-neural",
+    "type": "unknown",
+    "category": "flow-nexus",
+    "description": "Neural network training and deployment specialist. Manages distributed neural network training, inference, and model lifecycle using Flow Nexus cloud infrastructure.",
+    "file": "flow-nexus/neural-network.md"
+  },
+  {
+    "name": "flow-nexus-payments",
+    "type": "unknown",
+    "category": "flow-nexus",
+    "description": "Credit management and billing specialist. Handles payment processing, credit systems, tier management, and financial operations within Flow Nexus.",
+    "file": "flow-nexus/payments.md"
+  },
+  {
+    "name": "flow-nexus-sandbox",
+    "type": "unknown",
+    "category": "flow-nexus",
+    "description": "E2B sandbox deployment and management specialist. Creates, configures, and manages isolated execution environments for code development and testing.",
+    "file": "flow-nexus/sandbox.md"
+  },
+  {
+    "name": "flow-nexus-swarm",
+    "type": "unknown",
+    "category": "flow-nexus",
+    "description": "AI swarm orchestration and management specialist. Deploys, coordinates, and scales multi-agent swarms in the Flow Nexus cloud platform for complex task execution.",
+    "file": "flow-nexus/swarm.md"
+  },
+  {
+    "name": "flow-nexus-user-tools",
+    "type": "unknown",
+    "category": "flow-nexus",
+    "description": "User management and system utilities specialist. Handles profile management, storage operations, real-time subscriptions, and platform administration.",
+    "file": "flow-nexus/user-tools.md"
+  },
+  {
+    "name": "flow-nexus-workflow",
+    "type": "unknown",
+    "category": "flow-nexus",
+    "description": "Event-driven workflow automation specialist. Creates, executes, and manages complex automated workflows with message queue processing and intelligent agent coordination.",
+    "file": "flow-nexus/workflow.md"
+  },
+  {
+    "name": "github-modes",
+    "type": "development",
+    "category": "github",
+    "description": "Comprehensive GitHub integration modes for workflow orchestration, PR management, and repository coordination with batch optimization",
+    "file": "github/github-modes.md"
+  },
+  {
+    "name": "goal-planner",
+    "type": "unknown",
+    "category": "goal",
+    "description": "Goal-Oriented Action Planning (GOAP) specialist that dynamically creates intelligent plans to achieve complex objectives. Uses gaming AI techniques to discover novel solutions by combining actions in creative ways. Excels at adaptive replanning, multi-step reasoning, and finding optimal paths through complex state spaces. Examples: <example>Context: User needs to optimize a complex workflow with many dependencies. user: 'I need to deploy this application but there are many prerequisites and dependencies' assistant: 'I'll use the goal-planner agent to analyze all requirements and create an optimal action sequence that satisfies all preconditions and achieves your deployment goal.' <commentary>Complex multi-step planning with dependencies requires the goal-planner agent's GOAP algorithm to find the optimal path.</commentary></example> <example>Context: User has a high-level goal but isn't sure of the steps. user: 'Make my application production-ready' assistant: 'I'll use the goal-planner agent to break down this goal into concrete actions, analyze preconditions, and create an adaptive plan that achieves production readiness.' <commentary>High-level goals that need intelligent decomposition and planning benefit from the goal-planner agent's capabilities.</commentary></example>",
+    "file": "goal/goal-planner.md"
+  },
+  {
+    "name": "goal-planner",
+    "type": "unknown",
+    "category": "reasoning",
+    "description": "Goal-Oriented Action Planning (GOAP) specialist that dynamically creates intelligent plans to achieve complex objectives. Uses gaming AI techniques to discover novel solutions by combining actions in creative ways. Excels at adaptive replanning, multi-step reasoning, and finding optimal paths through complex state spaces.",
+    "file": "reasoning/goal-planner.md"
+  },
+  {
+    "name": "gossip-coordinator",
+    "type": "coordinator",
+    "category": "consensus",
+    "description": "Coordinates gossip-based consensus protocols for scalable eventually consistent systems",
+    "file": "consensus/gossip-coordinator.md"
+  },
+  {
+    "name": "hierarchical-coordinator",
+    "type": "coordinator",
+    "category": "swarm",
+    "description": "Queen-led hierarchical swarm coordination with specialized worker delegation",
+    "file": "swarm/hierarchical-coordinator.md"
+  },
+  {
+    "name": "issue-tracker",
+    "type": "development",
+    "category": "github",
+    "description": "Intelligent issue management and project coordination with automated tracking, progress monitoring, and team coordination",
+    "file": "github/issue-tracker.md"
+  },
+  {
+    "name": "Load Balancing Coordinator",
+    "type": "agent",
+    "category": "optimization",
+    "description": "Dynamic task distribution, work-stealing algorithms and adaptive load balancing",
+    "file": "optimization/load-balancer.md"
+  },
+  {
+    "name": "memory-coordinator",
+    "type": "coordination",
+    "category": "templates",
+    "description": "Manage persistent memory across sessions and facilitate cross-agent memory sharing",
+    "file": "templates/memory-coordinator.md"
+  },
+  {
+    "name": "mesh-coordinator",
+    "type": "coordinator",
+    "category": "swarm",
+    "description": "Peer-to-peer mesh network swarm with distributed decision making and fault tolerance",
+    "file": "swarm/mesh-coordinator.md"
+  },
+  {
+    "name": "migration-planner",
+    "type": "planning",
+    "category": "templates",
+    "description": "Comprehensive migration plan for converting commands to agent-based system",
+    "file": "templates/migration-plan.md"
+  },
+  {
+    "name": "ml-developer",
+    "type": "data",
+    "category": "data/ml",
+    "description": "Specialized agent for machine learning model development, training, and deployment",
+    "file": "data/ml/data-ml-model.md"
+  },
+  {
+    "name": "mobile-dev",
+    "type": "specialized",
+    "category": "specialized/mobile",
+    "description": "Expert agent for React Native mobile application development across iOS and Android",
+    "file": "specialized/mobile/spec-mobile-react-native.md"
+  },
+  {
+    "name": "multi-repo-swarm",
+    "type": "coordination",
+    "category": "github",
+    "description": "Cross-repository swarm orchestration for organization-wide automation and intelligent collaboration",
+    "file": "github/multi-repo-swarm.md"
+  },
+  {
+    "name": "perf-analyzer",
+    "type": "analysis",
+    "category": "templates",
+    "description": "Performance bottleneck analyzer for identifying and resolving workflow inefficiencies",
+    "file": "templates/performance-analyzer.md"
+  },
+  {
+    "name": "Performance Monitor",
+    "type": "agent",
+    "category": "optimization",
+    "description": "Real-time metrics collection, bottleneck analysis, SLA monitoring and anomaly detection",
+    "file": "optimization/performance-monitor.md"
+  },
+  {
+    "name": "performance-benchmarker",
+    "type": "analyst",
+    "category": "consensus",
+    "description": "Implements comprehensive performance benchmarking for distributed consensus protocols",
+    "file": "consensus/performance-benchmarker.md"
+  },
+  {
+    "name": "planner",
+    "type": "coordinator",
+    "category": "core",
+    "description": "Strategic planning and task orchestration agent",
+    "file": "core/planner.md"
+  },
+  {
+    "name": "pr-manager",
+    "type": "development",
+    "category": "github",
+    "description": "Comprehensive pull request management with swarm coordination for automated reviews, testing, and merge workflows",
+    "file": "github/pr-manager.md"
+  },
+  {
+    "name": "pr-manager",
+    "type": "development",
+    "category": "templates",
+    "description": "Complete pull request lifecycle management and GitHub workflow coordination",
+    "file": "templates/github-pr-manager.md"
+  },
+  {
+    "name": "production-validator",
+    "type": "validator",
+    "category": "testing/validation",
+    "description": "Production validation specialist ensuring applications are fully implemented and deployment-ready",
+    "file": "testing/validation/production-validator.md"
+  },
+  {
+    "name": "project-board-sync",
+    "type": "coordination",
+    "category": "github",
+    "description": "Synchronize AI swarms with GitHub Projects for visual task management, progress tracking, and team coordination",
+    "file": "github/project-board-sync.md"
+  },
+  {
+    "name": "pseudocode",
+    "type": "architect",
+    "category": "sparc",
+    "description": "SPARC Pseudocode phase specialist for algorithm design",
+    "file": "sparc/pseudocode.md"
+  },
+  {
+    "name": "queen-coordinator",
+    "type": "unknown",
+    "category": "hive-mind",
+    "description": "The sovereign orchestrator of hierarchical hive operations, managing strategic decisions, resource allocation, and maintaining hive coherence through centralized-decentralized hybrid control",
+    "file": "hive-mind/queen-coordinator.md"
+  },
+  {
+    "name": "quorum-manager",
+    "type": "coordinator",
+    "category": "consensus",
+    "description": "Implements dynamic quorum adjustment and intelligent membership management",
+    "file": "consensus/quorum-manager.md"
+  },
+  {
+    "name": "raft-manager",
+    "type": "coordinator",
+    "category": "consensus",
+    "description": "Manages Raft consensus algorithm with leader election and log replication",
+    "file": "consensus/raft-manager.md"
+  },
+  {
+    "name": "refinement",
+    "type": "developer",
+    "category": "sparc",
+    "description": "SPARC Refinement phase specialist for iterative improvement",
+    "file": "sparc/refinement.md"
+  },
+  {
+    "name": "release-manager",
+    "type": "development",
+    "category": "github",
+    "description": "Automated release coordination and deployment with ruv-swarm orchestration for seamless version management, testing, and deployment across multiple packages",
+    "file": "github/release-manager.md"
+  },
+  {
+    "name": "release-swarm",
+    "type": "coordination",
+    "category": "github",
+    "description": "Orchestrate complex software releases using AI swarms that handle everything from changelog generation to multi-platform deployment",
+    "file": "github/release-swarm.md"
+  },
+  {
+    "name": "repo-architect",
+    "type": "architecture",
+    "category": "github",
+    "description": "Repository structure optimization and multi-repo management with ruv-swarm coordination for scalable project architecture and development workflows",
+    "file": "github/repo-architect.md"
+  },
+  {
+    "name": "researcher",
+    "type": "analyst",
+    "category": "core",
+    "description": "Deep research and information gathering specialist",
+    "file": "core/researcher.md"
+  },
+  {
+    "name": "Resource Allocator",
+    "type": "agent",
+    "category": "optimization",
+    "description": "Adaptive resource allocation, predictive scaling and intelligent capacity planning",
+    "file": "optimization/resource-allocator.md"
+  },
+  {
+    "name": "reviewer",
+    "type": "validator",
+    "category": "core",
+    "description": "Code review and quality assurance specialist",
+    "file": "core/reviewer.md"
+  },
+  {
+    "name": "safla-neural",
+    "type": "unknown",
+    "category": "neural",
+    "description": "Self-Aware Feedback Loop Algorithm (SAFLA) neural specialist that creates intelligent, memory-persistent AI systems with self-learning capabilities. Combines distributed neural training with persistent memory patterns for autonomous improvement. Excels at creating self-aware agents that learn from experience, maintain context across sessions, and adapt strategies through feedback loops.",
+    "file": "neural/safla-neural.md"
+  },
+  {
+    "name": "scout-explorer",
+    "type": "unknown",
+    "category": "hive-mind",
+    "description": "Information reconnaissance specialist that explores unknown territories, gathers intelligence, and reports findings to the hive mind through continuous memory updates",
+    "file": "hive-mind/scout-explorer.md"
+  },
+  {
+    "name": "security-manager",
+    "type": "security",
+    "category": "consensus",
+    "description": "Implements comprehensive security mechanisms for distributed consensus protocols",
+    "file": "consensus/security-manager.md"
+  },
+  {
+    "name": "smart-agent",
+    "type": "automation",
+    "category": "templates",
+    "description": "Intelligent agent coordination and dynamic spawning specialist",
+    "file": "templates/automation-smart-agent.md"
+  },
+  {
+    "name": "sparc-coder",
+    "type": "development",
+    "category": "templates",
+    "description": "Transform specifications into working code with TDD practices",
+    "file": "templates/implementer-sparc-coder.md"
+  },
+  {
+    "name": "sparc-coord",
+    "type": "coordination",
+    "category": "templates",
+    "description": "SPARC methodology orchestrator for systematic development phase coordination",
+    "file": "templates/sparc-coordinator.md"
+  },
+  {
+    "name": "specification",
+    "type": "analyst",
+    "category": "sparc",
+    "description": "SPARC Specification phase specialist for requirements analysis",
+    "file": "sparc/specification.md"
+  },
+  {
+    "name": "sublinear-goal-planner",
+    "type": "unknown",
+    "category": "reasoning",
+    "description": "Goal-Oriented Action Planning (GOAP) specialist that dynamically creates intelligent plans to achieve complex objectives. Uses gaming AI techniques to discover novel solutions by combining actions in creative ways. Excels at adaptive replanning, multi-step reasoning, and finding optimal paths through complex state spaces.",
+    "file": "reasoning/agent.md"
+  },
+  {
+    "name": "swarm-init",
+    "type": "coordination",
+    "category": "templates",
+    "description": "Swarm initialization and topology optimization specialist",
+    "file": "templates/coordinator-swarm-init.md"
+  },
+  {
+    "name": "swarm-issue",
+    "type": "coordination",
+    "category": "github",
+    "description": "GitHub issue-based swarm coordination agent that transforms issues into intelligent multi-agent tasks with automatic decomposition and progress tracking",
+    "file": "github/swarm-issue.md"
+  },
+  {
+    "name": "swarm-memory-manager",
+    "type": "unknown",
+    "category": "hive-mind",
+    "description": "Manages distributed memory across the hive mind, ensuring data consistency, persistence, and efficient retrieval through advanced caching and synchronization protocols",
+    "file": "hive-mind/swarm-memory-manager.md"
+  },
+  {
+    "name": "swarm-pr",
+    "type": "development",
+    "category": "github",
+    "description": "Pull request swarm management agent that coordinates multi-agent code review, validation, and integration workflows with automated PR lifecycle management",
+    "file": "github/swarm-pr.md"
+  },
+  {
+    "name": "sync-coordinator",
+    "type": "coordination",
+    "category": "github",
+    "description": "Multi-repository synchronization coordinator that manages version alignment, dependency synchronization, and cross-package integration with intelligent swarm orchestration",
+    "file": "github/sync-coordinator.md"
+  },
+  {
+    "name": "system-architect",
+    "type": "architecture",
+    "category": "architecture/system-design",
+    "description": "Expert agent for system architecture design, patterns, and high-level technical decisions",
+    "file": "architecture/system-design/arch-system-design.md"
+  },
+  {
+    "name": "task-orchestrator",
+    "type": "orchestration",
+    "category": "templates",
+    "description": "Central coordination agent for task decomposition, execution planning, and result synthesis",
+    "file": "templates/orchestrator-task.md"
+  },
+  {
+    "name": "tdd-london-swarm",
+    "type": "tester",
+    "category": "testing/unit",
+    "description": "TDD London School specialist for mock-driven development within swarm coordination",
+    "file": "testing/unit/tdd-london-swarm.md"
+  },
+  {
+    "name": "tester",
+    "type": "validator",
+    "category": "core",
+    "description": "Comprehensive testing and quality assurance specialist",
+    "file": "core/tester.md"
+  },
+  {
+    "name": "Topology Optimizer",
+    "type": "agent",
+    "category": "optimization",
+    "description": "Dynamic swarm topology reconfiguration and communication pattern optimization",
+    "file": "optimization/topology-optimizer.md"
+  },
+  {
+    "name": "worker-specialist",
+    "type": "unknown",
+    "category": "hive-mind",
+    "description": "Dedicated task execution specialist that carries out assigned work with precision, continuously reporting progress through memory coordination",
+    "file": "hive-mind/worker-specialist.md"
+  },
+  {
+    "name": "workflow-automation",
+    "type": "automation",
+    "category": "github",
+    "description": "GitHub Actions workflow automation agent that creates intelligent, self-organizing CI/CD pipelines with adaptive multi-agent coordination and automated optimization",
+    "file": "github/workflow-automation.md"
+  }
+]
