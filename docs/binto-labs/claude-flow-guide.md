@@ -1026,6 +1026,48 @@ npx claude-flow hive-mind spawn "$(cat docs/prompts/e-commerce-platform.md)" \
 
 ## 🔍 Troubleshooting
 
+### Issue: Hive-mind session won't resume
+
+**Symptoms**: `hive-mind resume` fails or shows empty session
+
+**Solutions**:
+```bash
+# 1. Check database exists
+ls -la .hive-mind/hive.db
+
+# 2. List sessions to verify session ID
+npx claude-flow hive-mind ps
+
+# 3. Check database integrity
+sqlite3 .hive-mind/hive.db "SELECT COUNT(*) FROM swarms;"
+
+# 4. If corrupted, check for backup
+ls .hive-mind/backups/
+
+# 5. Last resort: Export any readable data, reinitialize
+npx claude-flow memory export rescue.json
+rm .hive-mind/hive.db
+npx claude-flow hive-mind spawn "Resume project" --namespace recovered
+```
+
+---
+
+### Issue: Lost session state after crash
+
+**Symptoms**: Session exists but appears empty or outdated
+
+**Root Cause**: Hive-mind auto-saves periodically, not every change
+
+**Solutions**:
+1. ✅ Check last saved state: `npx claude-flow hive-mind status`
+2. ✅ Resume from last checkpoint: `npx claude-flow hive-mind resume`
+3. ✅ Verify collective memory: `npx claude-flow memory list --namespace <ns>`
+4. ✅ Re-plan from last known state using memory entries
+
+**Prevention**: Manually pause before risky operations or expected interruptions
+
+---
+
 ### Issue: `--claude` flag doesn't spawn agents
 
 **Symptoms**: Command runs but no Claude Code instance opens
