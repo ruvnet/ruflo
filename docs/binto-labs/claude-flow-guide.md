@@ -19,6 +19,7 @@
 
 **Command Reference**
 - [Command Decision Tree](#command-decision-tree) - When to use swarm vs hive-mind
+- [Hive-Mind Deep Dive](#hive-mind-deep-dive) - Multi-session workflows and persistence
 - [Essential Commands](#essential-commands) - swarm, hive-mind, memory
 
 **Practical Examples**
@@ -446,28 +447,181 @@ mcp__claude-flow__performance_report({ format: "summary", timeframe: "24h" })
 
 ### When to Use What?
 
+**First Principles:**
+- **Single session, clear scope** → `swarm`
+- **Unknown duration, complex scope** → `hive-mind`
+- **Need to pause/resume** → `hive-mind`
+- **Multiple interdependent features** → `hive-mind`
+
 ```
-Need to continue previous work?
-  YES → npx claude-flow hive-mind resume <session-id>
+Can you complete this in one sitting (2-4 hours)?
+  YES → npx claude-flow swarm "task" --claude
   NO  → Continue
 
-Multi-day project with persistent memory?
+Need to pause and resume across days?
   YES → npx claude-flow hive-mind spawn "task" --claude
   NO  → Continue
 
-Single feature or bug fix?
-  YES → npx claude-flow swarm "task" --claude
+Already started with hive-mind?
+  YES → npx claude-flow hive-mind resume <session-id>
 ```
 
 ### Quick Comparison
 
 | Criteria | `swarm` | `hive-mind` |
 |----------|---------|-------------|
-| **Duration** | Single session | Multi-day project |
-| **Memory** | Task-scoped | Persistent (SQLite) |
+| **Duration** | Single session (2-4h) | Multi-session (days/weeks) |
+| **Memory** | Task-scoped (volatile) | Persistent (SQLite) |
 | **Team Size** | 1-5 agents | 5-15 agents |
-| **Resume** | No | Yes |
-| **Use Case** | Bug fix, single feature | Full application, research |
+| **Resume** | No | Yes (across restarts) |
+| **Overhead** | Minimal | DB + session management |
+| **Use Case** | Feature, bug fix | Full app, research project |
+| **When uncertain** | Default choice | Use if swarm feels limiting |
+
+[↑ Back to TOC](#-table-of-contents)
+
+---
+
+## 🧠 Hive-Mind Deep Dive
+
+### When to Use Hive-Mind
+
+**Use hive-mind when:**
+- ✅ Work spans multiple days/weeks
+- ✅ Uncertain about total scope/duration
+- ✅ Need to pause between work sessions
+- ✅ Building complete application (not single feature)
+- ✅ Research projects with evolving objectives
+- ✅ Want persistent learning across sessions
+
+**Use swarm when:**
+- ✅ Clear, bounded task (2-4 hours)
+- ✅ Single feature or bug fix
+- ✅ One-time task, no need to resume
+- ✅ Prototyping/experimentation
+
+### Multi-Session Workflow
+
+**Day 1: Initialization (4 hours)**
+```bash
+# Spawn with persistence
+npx claude-flow hive-mind spawn "Build e-commerce platform" \
+  --namespace ecommerce \
+  --queen-type strategic \
+  --max-workers 8 \
+  --claude
+
+# Work happens... agents coordinate via memory
+
+# Before ending session:
+npx claude-flow hive-mind ps  # Note your session-id
+# Session auto-saves to .hive-mind/hive.db
+```
+
+**Day 2: Resume (4 hours)**
+```bash
+# Check available sessions
+npx claude-flow hive-mind ps
+
+# Review what was completed
+npx claude-flow hive-mind status --session <id>
+npx claude-flow memory list --namespace ecommerce
+
+# Resume exactly where you left off
+npx claude-flow hive-mind resume --session <id>
+# OR interactive selection:
+npx claude-flow hive-mind resume
+```
+
+**Day 3: Completion**
+```bash
+# Resume and finish
+npx claude-flow hive-mind resume --session <id>
+
+# Export learnings
+npx claude-flow memory export ecommerce-learnings.json
+```
+
+### What Persists vs What Doesn't
+
+**✅ Persists Across Sessions:**
+- Swarm state (agents, tasks, status)
+- Collective memory (decisions, patterns, learnings)
+- Consensus decisions
+- Completion percentage
+- Session metadata
+
+**❌ Does NOT Persist:**
+- Claude Code window state (you'll spawn new instances)
+- Running processes (agents re-execute on resume)
+- Terminal output/logs
+- File system state (handled by git, not hive-mind)
+
+**Key Insight:** Hive-mind persists *coordination state*, not *execution state*. Files changed by agents persist via git/filesystem. Hive-mind tracks *what was decided* and *what was done*.
+
+### Queen Types & Consensus Algorithms
+
+**Queen Types:**
+
+| Type | Strategy | Use When |
+|------|----------|----------|
+| `strategic` | Long-term planning, optimization | Complex projects, research (default) |
+| `tactical` | Execution-focused, faster decisions | Clear requirements, tight deadlines |
+| `adaptive` | Self-adjusting based on context | Evolving scope, uncertain requirements |
+
+**Consensus Algorithms:**
+
+| Algorithm | Speed | Accuracy | Use When |
+|-----------|-------|----------|----------|
+| `majority` | Fast | Good | Standard tasks, low risk (default) |
+| `weighted` | Medium | Better | Agent expertise varies |
+| `byzantine` | Slow | Best | Critical decisions, high reliability needs |
+
+**First Principle:** Start with defaults (`strategic` + `majority`). Only change if you have specific needs.
+
+### Namespace Strategy
+
+**One namespace per project:**
+```bash
+# Separate projects = separate namespaces
+npx claude-flow hive-mind spawn "Auth service" --namespace auth
+npx claude-flow hive-mind spawn "Payment service" --namespace payments
+```
+
+**Benefits:**
+- Isolated memory spaces
+- Clear organization
+- Easy export/backup per project
+- No cross-contamination of decisions
+
+**Cleanup:**
+```bash
+# Export before cleanup
+npx claude-flow memory export auth-backup.json --namespace auth
+
+# Sessions auto-clean after completion
+# Manual DB cleanup if needed:
+rm .hive-mind/hive.db  # Nuclear option - loses ALL sessions
+```
+
+### Session Management Commands
+
+```bash
+# List all sessions (active, paused, completed)
+npx claude-flow hive-mind ps
+
+# Check specific session
+npx claude-flow hive-mind status --session <id>
+
+# Pause current work
+npx claude-flow hive-mind pause
+
+# Resume later
+npx claude-flow hive-mind resume --session <id>
+
+# Stop and archive
+npx claude-flow hive-mind stop --session <id>
+```
 
 [↑ Back to TOC](#-table-of-contents)
 
