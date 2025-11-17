@@ -38,7 +38,7 @@ jobs:
       comparison-strategy: ${{ steps.setup.outputs.comparison-strategy }}
     steps:
       - name: Checkout PR code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -96,7 +96,7 @@ jobs:
     needs: truth-scoring-setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -207,7 +207,7 @@ jobs:
     needs: truth-scoring-setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -295,7 +295,7 @@ jobs:
     needs: truth-scoring-setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -402,7 +402,7 @@ jobs:
     needs: truth-scoring-setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -507,7 +507,7 @@ jobs:
     ]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download all scoring artifacts
         uses: actions/download-artifact@v4
