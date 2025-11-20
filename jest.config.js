@@ -38,7 +38,9 @@ export default {
     '^(\\.{1,2}/.*)\\.js$': '$1',
     '^~/(.*)$': '<rootDir>/src/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^@tests/(.*)$': '<rootDir>/tests/$1'
+    '^@tests/(.*)$': '<rootDir>/tests/$1',
+    // Better ESM module resolution
+    '^(\\.{1,2}/.*)$': '$1'
   },
   modulePathIgnorePatterns: [
     '<rootDir>/dist/',

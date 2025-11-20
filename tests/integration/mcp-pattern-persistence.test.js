@@ -84,9 +84,8 @@ class TestMcpServer {
           namespace: 'pattern-stats',
         });
 
-        let stats = existingStats
-          ? JSON.parse(existingStats)
-          : {
+        // Note: memoryStore.retrieve() returns deserialized object
+        let stats = existingStats || {
               pattern_type: args.pattern_type || 'coordination',
               total_trainings: 0,
               avg_accuracy: 0,
@@ -392,7 +391,8 @@ describe('MCP Pattern Persistence Integration Tests', () => {
       });
 
       expect(storedPattern).toBeDefined();
-      const patternData = JSON.parse(storedPattern);
+      // Note: memoryStore.retrieve() returns deserialized object, not JSON string
+      const patternData = storedPattern;
       expect(patternData.modelId).toBe(trainResult.modelId);
       expect(patternData.pattern_type).toBe('coordination');
       expect(patternData.accuracy).toBe(trainResult.accuracy);
@@ -422,7 +422,8 @@ describe('MCP Pattern Persistence Integration Tests', () => {
       });
 
       expect(storedStats).toBeDefined();
-      const stats = JSON.parse(storedStats);
+      // Note: memoryStore.retrieve() returns deserialized object
+      const stats = storedStats;
       expect(stats.total_trainings).toBe(2);
       expect(stats.pattern_type).toBe('optimization');
       expect(stats.total_epochs).toBe(90); // 30 + 60
@@ -454,8 +455,9 @@ describe('MCP Pattern Persistence Integration Tests', () => {
       expect(coordStats).toBeDefined();
       expect(predStats).toBeDefined();
 
-      const coordData = JSON.parse(coordStats);
-      const predData = JSON.parse(predStats);
+      // Note: memoryStore.retrieve() returns deserialized objects
+      const coordData = coordStats;
+      const predData = predStats;
 
       expect(coordData.pattern_type).toBe('coordination');
       expect(predData.pattern_type).toBe('prediction');
@@ -550,7 +552,8 @@ describe('MCP Pattern Persistence Integration Tests', () => {
       });
 
       expect(storedLearning).toBeDefined();
-      const learningData = JSON.parse(storedLearning);
+      // Note: memoryStore.retrieve() returns deserialized object
+      const learningData = storedLearning;
       expect(learningData.operation).toBe('test_operation');
       expect(learningData.outcome).toBe('successful');
     });
