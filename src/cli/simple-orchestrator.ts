@@ -77,7 +77,7 @@ function startWebUI(host: string, port: number) {
   const activeConnections: Set<any> = new Set();
 
   // CLI output capture system
-  let cliProcess: any = null;
+  const cliProcess: any = null;
 
   const consoleHTML = `
     <!DOCTYPE html>

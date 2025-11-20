@@ -228,7 +228,7 @@ export class LoadBalancer extends EventEmitter {
 
     try {
       // Filter agents based on constraints
-      let candidates = this.filterAgentsByConstraints(availableAgents, task, constraints);
+      const candidates = this.filterAgentsByConstraints(availableAgents, task, constraints);
 
       if (candidates.length === 0) {
         throw new Error('No suitable agents available for task');

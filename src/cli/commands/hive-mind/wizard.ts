@@ -383,7 +383,7 @@ async function submitTaskWizard() {
   ]);
 
   let taskDescription = '';
-  let taskConfig: any = {};
+  const taskConfig: any = {};
 
   if (template === 'custom') {
     const answers = await inquirer.prompt([

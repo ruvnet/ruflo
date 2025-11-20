@@ -445,7 +445,7 @@ export class StateManager extends EventEmitter {
     const filename = `${snapshot.id}.snapshot.json`;
     const filepath = join(this.snapshotDir, filename);
 
-    let content = JSON.stringify(snapshot, null, 2);
+    const content = JSON.stringify(snapshot, null, 2);
     
     if (this.compressionEnabled) {
       const compressed = await gzipAsync(Buffer.from(content, 'utf-8'));
@@ -1298,7 +1298,7 @@ export class RollbackHistory extends EventEmitter {
     const filename = `${entry.id}.history.json`;
     const filepath = join(this.historyDir, filename);
 
-    let content = JSON.stringify(entry, null, 2);
+    const content = JSON.stringify(entry, null, 2);
     
     if (this.compressionEnabled) {
       const compressed = await gzipAsync(Buffer.from(content, 'utf-8'));

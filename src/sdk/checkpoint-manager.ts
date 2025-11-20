@@ -70,7 +70,7 @@ export class RealCheckpointManager extends EventEmitter {
     queryGenerator: Query,
     autoCheckpoint: boolean = false
   ): Promise<void> {
-    let messages = this.sessionMessages.get(sessionId) || [];
+    const messages = this.sessionMessages.get(sessionId) || [];
     this.sessionMessages.set(sessionId, messages);
 
     let messageCount = this.messageCounters.get(sessionId) || 0;

@@ -81,7 +81,7 @@ const FORMAT_PARSERS: Record<string, FormatParser> = {
       // Simple YAML parser for basic key-value pairs
       const lines = content.split('\n');
       const result: any = {};
-      let current = result;
+      const current = result;
       const stack: any[] = [result];
 
       for (const line of lines) {

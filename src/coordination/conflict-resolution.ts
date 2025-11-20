@@ -277,7 +277,7 @@ export class ConflictResolver {
     }
 
     // Build context based on conflict type
-    let context: any = {};
+    const context: any = {};
 
     if (preferredStrategy === 'priority') {
       // In a real implementation, fetch agent priorities from configuration
