@@ -84,34 +84,64 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 - **Clean Architecture**: Separate concerns
 - **Documentation**: Keep updated
 
-## 🚀 Available Agents (54 Total)
+## 🚀 Available Agents (72 Total)
 
-### Core Development
-`coder`, `reviewer`, `tester`, `planner`, `researcher`
+### Core Development (5 agents)
+`coder`, `planner`, `researcher`, `reviewer`, `tester`
 
-### Swarm Coordination
-`hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`, `collective-intelligence-coordinator`, `swarm-memory-manager`
+### Analysis & Code Quality (2 agents)
+`analyst`, `code-analyzer`
 
-### Consensus & Distributed
-`byzantine-coordinator`, `raft-manager`, `gossip-coordinator`, `consensus-builder`, `crdt-synchronizer`, `quorum-manager`, `security-manager`
+### Architecture & Design (1 agent)
+`system-architect`
 
-### Performance & Optimization
-`perf-analyzer`, `performance-benchmarker`, `task-orchestrator`, `memory-coordinator`, `smart-agent`
+### Backend Development (1 agent)
+`backend-dev`
 
-### GitHub & Repository
-`github-modes`, `pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`, `workflow-automation`, `project-board-sync`, `repo-architect`, `multi-repo-swarm`
+### Mobile Development (1 agent)
+`mobile-dev`
 
-### SPARC Methodology
-`sparc-coord`, `sparc-coder`, `specification`, `pseudocode`, `architecture`, `refinement`
+### Data & Machine Learning (1 agent)
+`ml-developer`
 
-### Specialized Development
-`backend-dev`, `mobile-dev`, `ml-developer`, `cicd-engineer`, `api-docs`, `system-architect`, `code-analyzer`, `base-template-generator`
+### DevOps & CI/CD (1 agent)
+`cicd-engineer`
 
-### Testing & Validation
-`tdd-london-swarm`, `production-validator`
+### Documentation (1 agent)
+`api-docs`
 
-### Migration & Planning
-`migration-planner`, `swarm-init`
+### Consensus & Distributed Systems (7 agents)
+`byzantine-coordinator`, `crdt-synchronizer`, `gossip-coordinator`, `performance-benchmarker`, `quorum-manager`, `raft-manager`, `security-manager`
+
+### Flow-Nexus Cloud Platform (9 agents)
+`flow-nexus-app-store`, `flow-nexus-auth`, `flow-nexus-challenges`, `flow-nexus-neural`, `flow-nexus-payments`, `flow-nexus-sandbox`, `flow-nexus-swarm`, `flow-nexus-user-tools`, `flow-nexus-workflow`
+
+### GitHub Integration & Repository Management (13 agents)
+`code-review-swarm`, `github-modes`, `issue-tracker`, `multi-repo-swarm`, `pr-manager`, `project-board-sync`, `release-manager`, `release-swarm`, `repo-architect`, `swarm-issue`, `swarm-pr`, `sync-coordinator`, `workflow-automation`
+
+### Hive Mind Collective Intelligence (5 agents)
+`collective-intelligence-coordinator`, `queen-coordinator`, `scout-explorer`, `swarm-memory-manager`, `worker-specialist`
+
+### Neural AI (1 agent)
+`safla-neural` - Self-Aware Feedback Loop Algorithm specialist
+
+### Performance Optimization (5 agents)
+`Benchmark Suite`, `Load Balancing Coordinator`, `Performance Monitor`, `Resource Allocator`, `Topology Optimizer`
+
+### Goal Planning & Reasoning (2 agents)
+`goal-planner`, `sublinear-goal-planner`
+
+### SPARC Methodology (4 agents)
+`architecture`, `pseudocode`, `refinement`, `specification`
+
+### Swarm Coordination (3 agents)
+`adaptive-coordinator`, `hierarchical-coordinator`, `mesh-coordinator`
+
+### Templates & Utilities (9 agents)
+`memory-coordinator`, `migration-planner`, `perf-analyzer`, `smart-agent`, `sparc-coder`, `sparc-coord`, `swarm-init`, `task-orchestrator`
+
+### Testing & Validation (2 agents)
+`production-validator`, `tdd-london-swarm`
 
 ## 🎯 Claude Code vs MCP Tools
 
