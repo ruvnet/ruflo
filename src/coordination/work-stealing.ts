@@ -216,3 +216,6 @@ export class WorkStealingCoordinator {
     return stats;
   }
 }
+
+// Export alias for backward compatibility
+export { WorkStealingCoordinator as WorkStealingScheduler };

@@ -483,3 +483,6 @@ export class AdvancedTaskScheduler extends TaskScheduler {
     };
   }
 }
+
+// Export alias for backward compatibility
+export { AdvancedTaskScheduler as AdvancedScheduler };

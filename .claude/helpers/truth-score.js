@@ -5,9 +5,9 @@
  * Calculates and tracks truth scores for agent claims vs reality
  */
 
-const fs = require('fs').promises;
-const path = require('path');
-const { execSync } = require('child_process');
+import { promises as fs } from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
 
 class TruthScoreCalculator {
   constructor() {
@@ -316,8 +316,10 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+// ES Module export
+export default TruthScoreCalculator;
+
+// CLI execution
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error);
 }
-
-module.exports = TruthScoreCalculator;

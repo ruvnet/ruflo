@@ -17,6 +17,7 @@ import * as os from 'os';
 
 // Import verification components
 import TruthScoreCalculator from '../../../../.claude/helpers/truth-score.js';
+import { DeceptionDetector } from '../../deception-detector.js';
 
 interface MockAgent {
   id: string;
