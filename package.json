@@ -46,7 +46,7 @@
     "test:health": "NODE_OPTIONS='--experimental-vm-modules' jest src/__tests__/integration/system-integration.test.ts --testNamePattern='Health'",
     "test:swarm": "NODE_OPTIONS='--experimental-vm-modules' jest src/__tests__/e2e/swarm-coordination.test.ts",
     "test:benchmark": "NODE_OPTIONS='--experimental-vm-modules' jest src/__tests__/performance/benchmark.test.ts",
-    "lint": "eslint src --ext .ts --max-warnings 0",
+    "lint": "eslint src --max-warnings 0",
     "format": "prettier --write 'src/**/*.{ts,js,json}'",
     "diagnostics": "node -e \"import('./dist/monitoring/diagnostics.js').then(m => m.DiagnosticManager.quickDiagnostic().then(console.log))\"",
     "health-check": "node -e \"import('./dist/monitoring/health-check.js').then(m => new m.HealthCheckManager().performHealthCheck().then(console.log))\"",
@@ -164,8 +164,6 @@
     "@types/node": "^20.19.7",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.10",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
     "@vercel/ncc": "^0.38.3",
     "babel-jest": "^29.7.0",
     "eslint": "^8.57.1",
@@ -179,7 +177,7 @@
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.0",
     "tsx": "^4.6.2",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.37.0"
   },
   "pkg": {
