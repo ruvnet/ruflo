@@ -271,8 +271,8 @@ jobs:
       - name: Verify CLI functionality
         run: |
           echo "✅ Testing CLI functionality..."
-          node dist/cli/main.js --version
-          node dist/cli/main.js --help
+          node dist/src/cli/main.js --version
+          node dist/src/cli/main.js --help
 
       - name: Package for distribution
         run: |

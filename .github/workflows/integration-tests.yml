@@ -849,13 +849,14 @@ jobs:
       - name: Comment PR with integration results
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
           script: |
             const fs = require('fs');
-            
+
             try {
               const report = fs.readFileSync('final-report/integration-test-report.md', 'utf8');
-              
+
               github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
