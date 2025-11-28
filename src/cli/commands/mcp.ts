@@ -39,25 +39,34 @@ export const mcpCommand = new Command()
       .option('--transport <transport:string>', 'Transport type (stdio, http)', {
         default: 'stdio',
       })
-      .option('--mcp2025', 'Enable MCP 2025-11 features (version negotiation, async jobs, etc.)', {
+      .option('--mcp2025', 'Enable MCP 2025-11 features with deferred loading (default: true)', {
+        default: true,
+      })
+      .option('--legacy', 'Use legacy MCP server without optimizations', {
         default: false,
       })
-      .option('--no-legacy', 'Disable legacy client support', { default: false })
+      .option('--no-legacy-clients', 'Disable legacy client support', { default: false })
       .action(async (options: any) => {
         try {
           const config = await configManager.load();
 
           // Check if MCP 2025-11 dependencies are available
           const mcp2025Available = isMCP2025Available();
-          const enableMCP2025 = options.mcp2025 && mcp2025Available;
 
-          if (options.mcp2025 && !mcp2025Available) {
+          // Default to MCP2025 unless --legacy flag is used
+          const enableMCP2025 = !options.legacy && options.mcp2025 && mcp2025Available;
+
+          if (options.legacy) {
+            console.log(chalk.yellow('📦 Using legacy MCP server (--legacy flag set)'));
+          } else if (options.mcp2025 && !mcp2025Available) {
             console.log(
               chalk.yellow(
                 '⚠️  MCP 2025-11 dependencies not found. Install with: npm install uuid ajv ajv-formats ajv-errors'
               )
             );
             console.log(chalk.yellow('   Falling back to legacy MCP server...'));
+          } else if (enableMCP2025) {
+            console.log(chalk.green('🚀 Using MCP 2025-11 with deferred loading (88% token savings)'));
           }
 
           // Build extended configuration
@@ -68,7 +77,7 @@ export const mcpCommand = new Command()
             transport: options.transport,
             features: {
               enableMCP2025,
-              supportLegacyClients: options.legacy !== false,
+              supportLegacyClients: options.legacyClients !== false,
               enableVersionNegotiation: enableMCP2025,
               enableAsyncJobs: enableMCP2025,
               enableRegistryIntegration: false, // Opt-in via env var

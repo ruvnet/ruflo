@@ -18,6 +18,13 @@ import { createSearchToolsTool } from './tools/system/search.js';
 import { logger } from '../core/logger.js';
 import type { MCPTool } from '../utils/types.js';
 import { join } from 'path';
+import {
+  CORE_TOOLS,
+  DEFERRED_TOOLS,
+  calculateTokenSavings,
+  shouldLoadImmediately,
+} from './schemas/deferred-loading.js';
+import { createBatchTools } from './programmatic/batch-tools.js';
 
 // Conditional SDK imports (optional dependency)
 // These will be lazily loaded when needed
@@ -96,24 +103,33 @@ export class ProgressiveToolRegistry {
    * Key difference from old approach:
    * - OLD: Load all 50+ tool definitions upfront (~150k tokens)
    * - NEW: Scan metadata only (~2k tokens), load tools on-demand
+   *
+   * Based on Anthropic's Tool Search Tool pattern for 85% token reduction.
    */
   async initialize(): Promise<void> {
-    logger.info('Initializing progressive tool registry...');
+    logger.info('Initializing progressive tool registry with deferred loading...');
 
     // Scan for tool metadata (lightweight operation)
     await this.toolLoader.scanTools();
 
     const stats = this.toolLoader.getStats();
+    const tokenSavings = calculateTokenSavings();
+
     logger.info('Tool metadata scan complete', {
       totalTools: stats.totalTools,
       categories: stats.categories,
       toolsByCategory: stats.toolsByCategory,
       mode: 'metadata-only',
-      tokenSavings: '98.7%',
+      coreTools: CORE_TOOLS.length,
+      deferredTools: DEFERRED_TOOLS.length,
+      estimatedTokenSavings: tokenSavings.savingsPercent,
     });
 
-    // Register core system tools that are always loaded
+    // Register core system tools that are always loaded (defer_loading: false)
     await this.registerCoreTools();
+
+    // Register batch tools for programmatic calling
+    await this.registerBatchTools();
 
     // Create in-process server if enabled
     if (this.config.enableInProcess) {
@@ -123,24 +139,76 @@ export class ProgressiveToolRegistry {
     logger.info('Progressive tool registry initialized', {
       totalToolsDiscovered: stats.totalTools,
       coreToolsLoaded: this.toolCache.size,
-      approach: 'progressive-disclosure',
+      approach: 'deferred-loading',
+      tokenSavings: tokenSavings.savingsPercent,
     });
   }
 
   /**
-   * Register core tools that are always loaded
-   * These are lightweight system tools like tools/search
+   * Register core tools that are always loaded (defer_loading: false)
+   * These are high-frequency tools essential for basic operations.
+   *
+   * Based on Anthropic's recommendation to keep frequently-used tools
+   * immediately available while deferring specialized tools.
    */
   private async registerCoreTools(): Promise<void> {
-    logger.info('Registering core system tools...');
+    logger.info('Registering core system tools (defer_loading: false)...');
 
     // Register tools/search capability (progressive disclosure)
     const searchTool = createSearchToolsTool(this.toolLoader, logger);
     this.toolCache.set(searchTool.name, searchTool);
 
+    // Load other core tools from configuration
+    for (const coreToolConfig of CORE_TOOLS) {
+      if (coreToolConfig.name === 'tools/search') continue; // Already added
+
+      try {
+        const tool = await this.toolLoader.loadTool(coreToolConfig.name, logger);
+        if (tool) {
+          this.toolCache.set(coreToolConfig.name, tool);
+          logger.debug('Core tool loaded', {
+            name: coreToolConfig.name,
+            priority: coreToolConfig.priority,
+          });
+        }
+      } catch (error) {
+        logger.warn('Failed to load core tool', {
+          name: coreToolConfig.name,
+          error: error instanceof Error ? error.message : 'Unknown',
+        });
+      }
+    }
+
     logger.info('Core tools registered', {
       coreTools: Array.from(this.toolCache.keys()),
+      count: this.toolCache.size,
     });
+  }
+
+  /**
+   * Register batch tools for programmatic calling
+   * These tools enable multi-operation workflows with aggregated results.
+   */
+  private async registerBatchTools(): Promise<void> {
+    logger.info('Registering batch operation tools...');
+
+    try {
+      const batchTools = createBatchTools(logger);
+
+      for (const tool of batchTools) {
+        this.toolCache.set(tool.name, tool);
+        logger.debug('Batch tool registered', { name: tool.name });
+      }
+
+      logger.info('Batch tools registered', {
+        count: batchTools.length,
+        tools: batchTools.map(t => t.name),
+      });
+    } catch (error) {
+      logger.warn('Failed to register batch tools', {
+        error: error instanceof Error ? error.message : 'Unknown',
+      });
+    }
   }
 
   /**
