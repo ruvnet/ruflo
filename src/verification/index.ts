@@ -46,6 +46,23 @@ export {
   RateLimitError
 } from './types.js';
 
+// Truth DB Adapter for persistent storage
+export {
+  TruthDBAdapter,
+  truthDBAdapter,
+  type TruthScoreDocument,
+  type SnapshotDocument
+} from './truth-db-adapter.js';
+
+// Verification Hooks (with persistence)
+export {
+  VerificationHookManager,
+  verificationHookManager,
+  type VerificationConfig,
+  type VerificationContext,
+  type StateSnapshot
+} from './hooks.js';
+
 /**
  * Factory function to create a configured security system
  */

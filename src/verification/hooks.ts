@@ -16,6 +16,7 @@ import type {
   PerformanceHookPayload,
   MemoryHookPayload,
 } from '../services/agentic-flow-hooks/types.js';
+import { TruthDBAdapter, type TruthScoreDocument, type SnapshotDocument } from './truth-db-adapter.js';
 
 const logger = new Logger({
   level: 'info',
@@ -219,13 +220,28 @@ export const DEFAULT_VERIFICATION_CONFIG: VerificationConfig = {
 
 export class VerificationHookManager {
   private config: VerificationConfig;
-  private contexts: Map<string, VerificationContext> = new Map();
-  private snapshots: Map<string, StateSnapshot[]> = new Map();
+  private contexts: Map<string, VerificationContext> = new Map();  // In-memory cache
+  private snapshots: Map<string, StateSnapshot[]> = new Map();     // In-memory cache
+  private db: TruthDBAdapter;  // Persistent storage
 
   constructor(config: Partial<VerificationConfig> = {}) {
     this.config = { ...DEFAULT_VERIFICATION_CONFIG, ...config };
+    this.db = new TruthDBAdapter();
+    this.initializeDB();
     this.registerHooks();
     this.startTelemetryReporting();
+  }
+
+  /**
+   * Initialize the persistent storage adapter
+   */
+  private async initializeDB(): Promise<void> {
+    try {
+      await this.db.initialize();
+      logger.info('TruthDBAdapter initialized for persistent storage');
+    } catch (error) {
+      logger.warn('TruthDBAdapter initialization failed, using in-memory fallback:', error);
+    }
   }
 
   /**
@@ -895,7 +911,7 @@ export class VerificationHookManager {
   // ===== Helper Methods =====
 
   private createVerificationContext(
-    payload: WorkflowHookPayload, 
+    payload: WorkflowHookPayload,
     context: AgenticHookContext
   ): VerificationContext {
     const verificationContext: VerificationContext = {
@@ -923,8 +939,35 @@ export class VerificationHookManager {
       }
     };
 
+    // Save to in-memory cache (fast access)
     this.contexts.set(verificationContext.taskId, verificationContext);
+
+    // Persist to AgentDB (async, fire-and-forget to not block)
+    this.persistContext(verificationContext).catch(err =>
+      logger.warn(`Failed to persist context ${verificationContext.taskId}:`, err)
+    );
+
     return verificationContext;
+  }
+
+  /**
+   * Persist verification context to AgentDB
+   */
+  private async persistContext(context: VerificationContext): Promise<void> {
+    const doc: TruthScoreDocument = {
+      taskId: context.taskId,
+      sessionId: context.sessionId,
+      timestamp: context.timestamp,
+      phase: context.state.phase,
+      accuracyScore: context.metrics.accuracyScore,
+      confidenceScore: context.metrics.confidenceScore,
+      passed: context.state.checksFailed.length === 0,
+      checksPassed: context.state.checksPassed,
+      checksFailed: context.state.checksFailed,
+      errorCount: context.state.errors.length,
+      metadata: context.metadata
+    };
+    await this.db.saveContext(context.taskId, doc);
   }
 
   private getVerificationContext(taskId: string): VerificationContext | undefined {
@@ -949,7 +992,7 @@ export class VerificationHookManager {
   }
 
   private async createSnapshot(
-    context: VerificationContext, 
+    context: VerificationContext,
     phase: string
   ): Promise<void> {
     const snapshot: StateSnapshot = {
@@ -960,12 +1003,25 @@ export class VerificationHookManager {
       metadata: JSON.parse(JSON.stringify(context.metadata))
     };
 
+    // Save to in-memory cache
     if (!this.snapshots.has(context.taskId)) {
       this.snapshots.set(context.taskId, []);
     }
-
     this.snapshots.get(context.taskId)!.push(snapshot);
     context.snapshots.push(snapshot);
+
+    // Persist snapshot to AgentDB
+    const snapshotDoc: SnapshotDocument = {
+      snapshotId: snapshot.id,
+      taskId: context.taskId,
+      timestamp: snapshot.timestamp,
+      phase: snapshot.phase,
+      state: snapshot.state,
+      metadata: snapshot.metadata
+    };
+    this.db.saveSnapshot(context.taskId, snapshotDoc).catch(err =>
+      logger.warn(`Failed to persist snapshot ${snapshot.id}:`, err)
+    );
 
     logger.debug(`Created snapshot '${snapshot.id}' for task '${context.taskId}' in phase '${phase}'`);
   }
@@ -1091,6 +1147,25 @@ export class VerificationHookManager {
    */
   public getMetrics(): any {
     return this.aggregateMetrics();
+  }
+
+  /**
+   * Get persistent storage statistics
+   */
+  public async getStorageStats(): Promise<{
+    initialized: boolean;
+    vectorCount?: number;
+    dbPath?: string;
+    error?: string;
+  }> {
+    return this.db.getStats();
+  }
+
+  /**
+   * Check if persistent storage is available
+   */
+  public isStorageReady(): boolean {
+    return this.db.isReady();
   }
 
   /**
