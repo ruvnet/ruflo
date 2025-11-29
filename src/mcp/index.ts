@@ -27,6 +27,66 @@ export type { SDKIntegrationConfig } from './sdk-integration.js';
 // Core MCP Server
 export { MCPServer, type IMCPServer } from './server.js';
 
+// MCP 2025-11 Server and Components
+export { MCP2025Server, type MCP2025ServerConfig } from './server-mcp-2025.js';
+export {
+  MCPServerFactory,
+  createMCPServer,
+  isMCP2025Available,
+  getServerCapabilities,
+  type MCPFeatureFlags,
+  type ExtendedMCPConfig,
+} from './server-factory.js';
+
+// MCP 2025-11 Protocol Components
+export {
+  VersionNegotiator,
+  BackwardCompatibilityAdapter,
+  type MCPHandshake,
+  type MCPVersion,
+  type MCPCapability,
+  type NegotiationResult as MCP2025NegotiationResult,
+} from './protocol/version-negotiation.js';
+
+// MCP 2025-11 Async Job Management
+export {
+  MCPAsyncJobManager,
+  type MCPToolRequest,
+  type MCPJobHandle,
+  type MCPJobResult,
+  type AsyncJob,
+  type JobStatus,
+} from './async/job-manager-mcp25.js';
+
+// MCP 2025-11 Registry Integration
+export {
+  MCPRegistryClient,
+  type RegistryConfig,
+  type ServerRegistryEntry,
+} from './registry/mcp-registry-client-2025.js';
+
+// MCP 2025-11 Schema Validation
+export {
+  SchemaValidator,
+  upgradeToolSchema,
+  type ValidationResult,
+} from './validation/schema-validator-2025.js';
+
+// Progressive Tool Registry (Phase 1 & 2)
+export {
+  ProgressiveToolRegistry,
+  createProgressiveToolRegistry,
+  createProgressiveClaudeFlowSdkServer,
+  type ProgressiveToolRegistryConfig,
+} from './tool-registry-progressive.js';
+
+// Dynamic Tool Loader (Phase 1)
+export {
+  DynamicToolLoader,
+  type ToolMetadata,
+  type ToolSearchQuery,
+} from './tools/loader.js';
+
 // Lifecycle Management
 export {
   MCPLifecycleManager,

@@ -330,8 +330,10 @@ export class EnhancedClaudeAPIClient extends EventEmitter {
             case 403:
                 return new ClaudeAuthenticationError(message, errorData);
             case 429:
-                const retryAfter = errorData.error?.retry_after;
-                return new ClaudeRateLimitError(message, retryAfter, errorData);
+                {
+                    const retryAfter = errorData.error?.retry_after;
+                    return new ClaudeRateLimitError(message, retryAfter, errorData);
+                }
             case 500:
                 return new ClaudeInternalServerError(message, errorData);
             case 503:

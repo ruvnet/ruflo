@@ -24,7 +24,7 @@ export class RealCheckpointManager extends EventEmitter {
         } catch (error) {}
     }
     async trackSession(sessionId, queryGenerator, autoCheckpoint = false) {
-        let messages = this.sessionMessages.get(sessionId) || [];
+        const messages = this.sessionMessages.get(sessionId) || [];
         this.sessionMessages.set(sessionId, messages);
         let messageCount = this.messageCounters.get(sessionId) || 0;
         for await (const message of queryGenerator){

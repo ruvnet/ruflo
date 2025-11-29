@@ -190,8 +190,8 @@ export class OpenAIProvider extends BaseProvider {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let totalPromptTokens = 0;
-            let totalCompletionTokens = 0;
+            const totalPromptTokens = 0;
+            const totalCompletionTokens = 0;
             while(true){
                 const { done, value } = await reader.read();
                 if (done) break;

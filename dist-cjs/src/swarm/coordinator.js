@@ -870,7 +870,7 @@ export class SwarmCoordinator extends EventEmitter {
     calculateCapabilityMatch(agent, task) {
         const requiredCapabilities = task.requirements.capabilities;
         let matches = 0;
-        let total = requiredCapabilities.length;
+        const total = requiredCapabilities.length;
         for (const capability of requiredCapabilities){
             if (this.agentHasCapability(agent, capability)) {
                 matches++;

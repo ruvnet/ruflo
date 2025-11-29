@@ -461,7 +461,7 @@ async function submitTaskWizard() {
         }
     ]);
     let taskDescription = '';
-    let taskConfig = {};
+    const taskConfig = {};
     if (template === 'custom') {
         const answers = await inquirer.prompt([
             {

@@ -156,8 +156,7 @@ export class DeceptionDetector {
     confidence: number;
     indicators: string[];
   } {
-    const indicators: string[];
-    = [];
+    const indicators: string[] = [];
     let fabricationScore = 0;
 
     // Check for suspiciously perfect results

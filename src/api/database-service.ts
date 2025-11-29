@@ -4,8 +4,7 @@
  */
 
 import { ILogger } from '../core/logger.js';
-import { ConfigManager } from '../config/config-manager.js';
-import { SwarmError, DatabaseError } from '../utils/errors.js';
+import { DatabaseError } from '../utils/errors.js';
 import { nanoid } from 'nanoid';
 
 export interface DatabaseConfig {

@@ -256,27 +256,52 @@ npx claude-flow@alpha --agents 3 swarm "task description"
 docs/
 ├── 📄 README.md & INDEX.md                    # Core entry points
 │
+├── 🚀 releases/                               # Release Notes & Changelogs
+│   ├── RELEASE_v2.7.1.md                      # v2.7.1 release notes
+│   ├── RELEASE_SUMMARY_v2.7.1.md              # v2.7.1 summary
+│   ├── RELEASE-NOTES-v2.7.0-alpha.10.md       # Alpha 10 release notes
+│   ├── RELEASE-NOTES-v2.7.0-alpha.9.md        # Alpha 9 release notes
+│   └── ALPHA_TAG_UPDATE.md                    # Alpha versioning guide
+│
+├── 🧠 agentdb/                                # AgentDB v1.3.9 Integration
+│   ├── SWARM_IMPLEMENTATION_COMPLETE.md       # 3-agent swarm (180 tests)
+│   ├── AGENTDB_INTEGRATION_PLAN.md            # Integration planning
+│   ├── BACKWARD_COMPATIBILITY_GUARANTEE.md    # 100% compatibility
+│   ├── PUBLISHING_CHECKLIST.md                # Pre-release verification
+│   ├── agentdb-integration-summary.md         # Quick overview
+│   ├── PRODUCTION_READINESS.md                # Deployment guide
+│   └── OPTIMIZATION_REPORT.md                 # Performance analysis
+│
+├── ⚡ performance/                            # Performance Optimization
+│   ├── PERFORMANCE-JSON-IMPROVEMENTS.md       # JSON optimization
+│   └── PERFORMANCE-METRICS-GUIDE.md           # Metrics tracking
+│
+├── 🔧 fixes/                                  # Bug Fixes & Patches
+│   ├── PATTERN_PERSISTENCE_FIX.md             # v2.7.1 critical fix
+│   ├── PATTERN_FIX_CONFIRMATION.md            # Verification results
+│   └── CLI-MEMORY-COMMANDS-WORKING.md         # Memory command fixes
+│
+├── 🛠️ development/                            # Development Reports
+│   ├── AGENT1_COMPLETION_REPORT.md            # AgentDB integration agent
+│   ├── FINAL_INIT_STRUCTURE.md                # Initialization architecture
+│   └── COMMANDS_TO_SKILLS_MIGRATION.md        # Migration guide
+│
+├── ✅ validation/                             # Testing & Validation
+│   └── DOCKER_VERIFICATION_REPORT.md          # Docker testing results
+│
+├── 📚 guides/                                 # User Guides & Tutorials
+│   └── skills-tutorial.md                     # 25 Claude Flow skills
+│
 ├── 🔌 integrations/                           # Platform Integrations
 │   ├── reasoningbank/                         # ReasoningBank AI integration (16 docs)
 │   ├── agentic-flow/                          # Agentic Flow system (5 docs)
 │   ├── agent-booster/                         # Agent performance optimization
 │   └── epic-sdk/                              # Epic SDK integration
 │
-├── 📊 reports/                                # Analysis & Reports
-│   ├── validation/                            # Validation & testing reports (7 docs)
-│   ├── releases/                              # Release notes & summaries (4 docs)
-│   └── analysis/                              # Deep analysis & reviews (2 docs)
-│
-├── 🔧 technical/                              # Technical Details
-│   ├── fixes/                                 # Technical fix summaries (2 docs)
-│   └── performance/                           # Performance reports & metrics
-│
 ├── 🏗️ architecture/                           # Architecture documentation
-├── 📚 guides/                                 # User guides & tutorials
 ├── 🔬 experimental/                           # Experimental features
 ├── 📘 reference/                              # API & command reference
-├── ⚙️ setup/                                  # Setup & configuration (+ ENV-SETUP-GUIDE)
-├── ✅ validation/                             # Validation frameworks
+├── ⚙️ setup/                                  # Setup & configuration
 ├── 🔄 ci-cd/                                  # CI/CD workflows
 ├── 📦 sdk/                                    # SDK documentation
 └── 📖 wiki/                                   # Additional wiki content

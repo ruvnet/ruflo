@@ -385,7 +385,7 @@ async function getStepOptimizations(workflowId, step, context) {
     return await context.memory.cache.get(optKey) || [];
 }
 function applyStepOptimizations(state, optimizations) {
-    let optimizedState = {
+    const optimizedState = {
         ...state
     };
     for (const opt of optimizations){

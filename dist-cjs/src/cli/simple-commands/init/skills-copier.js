@@ -6,7 +6,7 @@ const __dirname = dirname(__filename);
 export async function copySkillFiles(targetDir, options = {}) {
     console.log('  🚀 copySkillFiles function called');
     console.log(`  📂 Target directory: ${targetDir}`);
-    console.log(`  ⚙️  Options:`, options);
+    console.log(`  ⚙️  Options: { force: ${options.force || 'false'}, dryRun: ${options.dryRun || 'false'} }`);
     console.log(`  📍 __dirname: ${__dirname}`);
     const { force = false, dryRun = false } = options;
     const packageSkillsDir = join(__dirname, '../../../../.claude/skills');

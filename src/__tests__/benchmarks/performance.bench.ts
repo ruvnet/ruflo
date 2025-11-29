@@ -5,11 +5,10 @@
  * Benchmarks session forking, hook matchers, and in-process MCP
  */
 
+/* eslint-disable no-console */
+
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { performance } from 'perf_hooks';
-import { ClaudeFlowSDKAdapter } from '../../sdk/sdk-config.js';
-import { TaskExecutorSDK } from '../../swarm/executor-sdk.js';
-import { ClaudeClientV25 } from '../../api/claude-client-v2.5.js';
 
 interface BenchmarkResult {
   name: string;
@@ -89,31 +88,9 @@ class PerformanceBenchmark {
 
 describe('Performance Benchmarks', () => {
   let benchmark: PerformanceBenchmark;
-  let adapter: ClaudeFlowSDKAdapter;
-  let executor: TaskExecutorSDK;
-  let client: ClaudeClientV25;
 
   beforeAll(() => {
     benchmark = new PerformanceBenchmark();
-
-    adapter = new ClaudeFlowSDKAdapter({
-      apiKey: 'test-api-key',
-      swarmMode: true,
-      persistenceEnabled: true,
-    });
-
-    executor = new TaskExecutorSDK({
-      apiKey: 'test-api-key',
-      swarmMode: true,
-    });
-
-    client = new ClaudeClientV25(
-      {
-        apiKey: 'test-api-key',
-        enableSwarmMode: true,
-      },
-      undefined
-    );
   });
 
   afterAll(() => {

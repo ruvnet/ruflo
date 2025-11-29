@@ -9,6 +9,15 @@ export const mockLogger = {
   trace: jest.fn()
 };
 
+// Mock event bus utilities
+export const mockEventBus = {
+  emit: jest.fn(),
+  on: jest.fn(),
+  off: jest.fn(),
+  once: jest.fn(),
+  removeAllListeners: jest.fn()
+};
+
 // Mock coordination system utilities
 export const mockCoordinationSystem = {
   initialize: jest.fn(),

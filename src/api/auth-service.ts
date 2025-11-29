@@ -4,7 +4,7 @@
  */
 
 import { ILogger } from '../core/logger.js';
-import { AuthenticationError, AuthorizationError } from '../utils/errors.js';
+import { AuthenticationError } from '../utils/errors.js';
 import { nanoid } from 'nanoid';
 import { createHash, createHmac, timingSafeEqual } from 'crypto';
 

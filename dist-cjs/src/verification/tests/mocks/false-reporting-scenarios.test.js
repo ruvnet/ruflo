@@ -1,7 +1,9 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import TruthScoreCalculator from '../../../../.claude/helpers/truth-score.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const TruthScoreCalc = require('../../../../.claude/helpers/truth-score.js');
 describe('False Reporting Detection Scenarios', ()=>{
     let tempDir;
     let truthCalculator;
@@ -9,7 +11,7 @@ describe('False Reporting Detection Scenarios', ()=>{
     let mockAgents;
     beforeEach(async ()=>{
         tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'false-reporting-test-'));
-        truthCalculator = new TruthScoreCalculator();
+        truthCalculator = new TruthScoreCalc();
         truthCalculator.configPath = path.join(tempDir, 'verification.json');
         truthCalculator.memoryPath = path.join(tempDir, 'truth-scores');
         await truthCalculator.init();

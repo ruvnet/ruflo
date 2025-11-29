@@ -3,19 +3,17 @@
  * Tests deadlock detection, task scheduling, and resource management
  */
 
-import { describe, it, beforeEach, afterEach  } from "../../test.utils";
+import { describe, it, beforeEach, afterEach, mockLogger, mockEventBus, FakeTime, spy, stub  } from "../../test.utils";
 import { expect } from "@jest/globals";
-// FakeTime equivalent available in test.utils.ts
-import { spy, stub  } from "../../test.utils";
 
 import { CoordinationManager } from '../../../src/coordination/manager.ts';
 import { TaskScheduler } from '../../../src/coordination/scheduler.ts';
 import { ResourceManager } from '../../../src/coordination/resources.ts';
 import { ConflictResolver } from '../../../src/coordination/conflict-resolution.ts';
 import { CircuitBreaker } from '../../../src/coordination/circuit-breaker.ts';
-import { WorkStealingScheduler } from '../../../src/coordination/work-stealing.ts';
+import { WorkStealingCoordinator } from '../../../src/coordination/work-stealing.ts';
 import { DependencyGraph } from '../../../src/coordination/dependency-graph.ts';
-import { AdvancedScheduler } from '../../../src/coordination/advanced-scheduler.ts';
+import { AdvancedTaskScheduler } from '../../../src/coordination/advanced-scheduler.ts';
 import { 
   AsyncTestUtils, 
   MemoryTestUtils, 
@@ -48,10 +46,10 @@ describe('Coordination System - Comprehensive Tests', () => {
       retryAttempts: 3,
     });
 
-    conflictResolver = new ConflictResolver({
-      enableConflictDetection: true,
-      resolutionStrategy: 'priority',
-    });
+    conflictResolver = new ConflictResolver(
+      mockLogger,
+      mockEventBus
+    );
 
     coordinationManager = new CoordinationManager({
       scheduler,
@@ -679,17 +677,17 @@ describe('Coordination System - Comprehensive Tests', () => {
   });
 
   describe('Advanced Scheduling Features', () => {
-    let advancedScheduler: AdvancedScheduler;
-    let workStealingScheduler: WorkStealingScheduler;
+    let advancedScheduler: AdvancedTaskScheduler;
+    let workStealingScheduler: WorkStealingCoordinator;
 
     beforeEach(async () => {
-      advancedScheduler = new AdvancedScheduler({
+      advancedScheduler = new AdvancedTaskScheduler({
         enableWorkStealing: true,
         enablePriorityAging: true,
         enableLoadBalancing: true,
       });
 
-      workStealingScheduler = new WorkStealingScheduler({
+      workStealingScheduler = new WorkStealingCoordinator({
         maxWorkersPerQueue: 3,
         stealingThreshold: 2,
         balancingInterval: 100,
@@ -794,7 +792,7 @@ describe('Coordination System - Comprehensive Tests', () => {
     });
 
     it('should handle load balancing across multiple schedulers', async () => {
-      const schedulers = Array.from({ length: 3 }, () => new AdvancedScheduler({
+      const schedulers = Array.from({ length: 3 }, () => new AdvancedTaskScheduler({
         enableLoadBalancing: true,
       }));
 

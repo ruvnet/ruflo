@@ -35,13 +35,10 @@ export class Logger {
         if (!Logger.instance) {
             if (!config) {
                 const isTestEnv = process.env.CLAUDE_FLOW_ENV === 'test';
-                if (isTestEnv) {
-                    throw new Error('Logger configuration required for initialization');
-                }
                 config = {
-                    level: 'info',
+                    level: isTestEnv ? 'error' : 'info',
                     format: 'json',
-                    destination: 'console'
+                    destination: isTestEnv ? 'null' : 'console'
                 };
             }
             Logger.instance = new Logger(config);

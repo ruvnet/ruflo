@@ -60,7 +60,7 @@ function startWebUI(host, port) {
     });
     const outputHistory = [];
     const activeConnections = new Set();
-    let cliProcess = null;
+    const cliProcess = null;
     const consoleHTML = `
     <!DOCTYPE html>
     <html lang="en">

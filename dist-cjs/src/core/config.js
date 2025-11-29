@@ -57,7 +57,7 @@ const FORMAT_PARSERS = {
         parse: (content)=>{
             const lines = content.split('\n');
             const result = {};
-            let current = result;
+            const current = result;
             const stack = [
                 result
             ];

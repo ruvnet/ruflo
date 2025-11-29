@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { performance } from 'perf_hooks';
-import { ClaudeFlowSDKAdapter } from '../../sdk/sdk-config.js';
-import { TaskExecutorSDK } from '../../swarm/executor-sdk.js';
-import { ClaudeClientV25 } from '../../api/claude-client-v2.5.js';
 let PerformanceBenchmark = class PerformanceBenchmark {
     results = [];
     async benchmark(name, fn, iterations = 100) {
@@ -54,24 +51,8 @@ let PerformanceBenchmark = class PerformanceBenchmark {
 };
 describe('Performance Benchmarks', ()=>{
     let benchmark;
-    let adapter;
-    let executor;
-    let client;
     beforeAll(()=>{
         benchmark = new PerformanceBenchmark();
-        adapter = new ClaudeFlowSDKAdapter({
-            apiKey: 'test-api-key',
-            swarmMode: true,
-            persistenceEnabled: true
-        });
-        executor = new TaskExecutorSDK({
-            apiKey: 'test-api-key',
-            swarmMode: true
-        });
-        client = new ClaudeClientV25({
-            apiKey: 'test-api-key',
-            enableSwarmMode: true
-        }, undefined);
     });
     afterAll(()=>{
         benchmark.printResults();

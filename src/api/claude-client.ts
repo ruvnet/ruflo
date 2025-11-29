@@ -6,7 +6,6 @@
 import { EventEmitter } from 'events';
 import { ILogger } from '../core/logger.js';
 import { ConfigManager } from '../config/config-manager.js';
-import { getErrorMessage } from '../utils/error-handler.js';
 import { 
   ClaudeAPIError,
   ClaudeInternalServerError,
@@ -655,9 +654,10 @@ export class ClaudeAPIClient extends EventEmitter {
       case 401:
       case 403:
         return new ClaudeAuthenticationError(message, errorData);
-      case 429:
+      case 429: {
         const retryAfter = errorData.error?.retry_after;
         return new ClaudeRateLimitError(message, retryAfter, errorData);
+      }
       case 500:
         return new ClaudeInternalServerError(message, errorData);
       case 503:

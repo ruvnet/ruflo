@@ -291,7 +291,7 @@ export class AuditManager extends EventEmitter {
         let totalEntries = 0;
         let verifiedEntries = 0;
         let corruptedEntries = 0;
-        let missingEntries = 0;
+        const missingEntries = 0;
         const trails = trailId ? [
             this.auditTrails.get(trailId)
         ].filter(Boolean) : Array.from(this.auditTrails.values());

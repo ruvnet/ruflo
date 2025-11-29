@@ -48,7 +48,7 @@ export class SwarmApi {
             }
             next();
         });
-        this.router.use((err, req, res, next)=>{
+        this.router.use((err, req, res, _next)=>{
             this.logger.error('Swarm API error', {
                 error: err.message,
                 stack: err.stack,

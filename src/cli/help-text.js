@@ -11,16 +11,6 @@ export { VERSION };
 export const MAIN_HELP = `
 🌊 Claude-Flow v${VERSION} - Enterprise-Grade AI Agent Orchestration Platform
 
-🚀 v2.5.0-alpha.130 - SDK Integration & Performance Breakthrough
-
-🔥 NEW IN v2.5.0-alpha.130:
-  ⚡ 10-20x Faster Agent Spawning - Parallel agent execution with session forking
-  🎮 Real-Time Query Control - Pause, resume, terminate queries mid-execution
-  🔄 Dynamic Model Switching - Change Claude models during execution (cost optimization)
-  🔐 Dynamic Permissions - Change permission modes on-the-fly
-  📊 90 MCP Tools - 87 existing + 3 new Phase 4 tools
-  🚄 500-2000x Potential Speedup - Combined performance stack (In-Process + Parallel + Hooks)
-
 🎯 ENTERPRISE FEATURES:
   • Complete ruv-swarm integration with 90+ MCP tools
   • Flow Nexus cloud platform with distributed sandboxes

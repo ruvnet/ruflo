@@ -149,57 +149,6 @@ export class MCPIntegrator {
       ],
       status: 'disconnected'
     });
-
-    // Agentic Payments MCP tools (optional)
-    this.tools.set('agentic-payments', {
-      name: 'agentic-payments',
-      server: 'npx agentic-payments@latest mcp',
-      functions: [
-        {
-          name: 'create_active_mandate',
-          description: 'Create Active Mandate for autonomous payment authorization',
-          parameters: { agent: 'string', holder: 'string', amount: 'number', currency: 'string', period: 'string', kind: 'string' },
-          required: ['agent', 'holder', 'amount', 'currency', 'period', 'kind']
-        },
-        {
-          name: 'sign_mandate',
-          description: 'Sign mandate with Ed25519 cryptographic proof',
-          parameters: { mandate: 'object', private_key: 'string' },
-          required: ['mandate', 'private_key']
-        },
-        {
-          name: 'verify_mandate',
-          description: 'Verify mandate signature and execution guards',
-          parameters: { signed_mandate: 'object', check_guards: 'boolean' },
-          required: ['signed_mandate']
-        },
-        {
-          name: 'revoke_mandate',
-          description: 'Revoke mandate by ID',
-          parameters: { mandate_id: 'string', reason: 'string' },
-          required: ['mandate_id']
-        },
-        {
-          name: 'generate_agent_identity',
-          description: 'Generate Ed25519 keypair for agent',
-          parameters: { include_private_key: 'boolean' },
-          required: []
-        },
-        {
-          name: 'create_intent_mandate',
-          description: 'Create intent-based payment mandate',
-          parameters: { merchant_id: 'string', customer_id: 'string', intent: 'string', max_amount: 'number' },
-          required: ['merchant_id', 'customer_id', 'intent', 'max_amount']
-        },
-        {
-          name: 'create_cart_mandate',
-          description: 'Create cart-based payment mandate',
-          parameters: { merchant_id: 'string', customer_id: 'string', items: 'array' },
-          required: ['merchant_id', 'customer_id', 'items']
-        }
-      ],
-      status: 'disconnected'
-    });
   }
 
   /**

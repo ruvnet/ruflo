@@ -7,10 +7,9 @@ node_modules/
 
 # Test files with TS config issues
 src/verification/tests/
-*.test.ts
-*.test.js
-*.spec.ts
-*.spec.js
+**/*.test.ts
+**/*.spec.ts
+src/__tests__/**
 
 # Generated files
 *.log
@@ -21,3 +20,6 @@ src/verification/tests/
 .benchmark-data/
 .test-data/
 .swarm/
+
+# Upstream additions
+src/cli/commands/swarm-new.ts

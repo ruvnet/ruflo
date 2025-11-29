@@ -5,19 +5,31 @@ export class DatabaseManager {
     dbType;
     dbPath;
     initialized = false;
+    retryCount = 0;
+    maxRetries = 3;
     constructor(dbType = 'sqlite', dbPath){
         this.dbType = dbType;
         this.dbPath = dbPath || this.getDefaultPath();
         if (this.dbType === 'sqlite') {
-            try {
-                this.provider = new SQLiteProvider(this.dbPath);
-            } catch (error) {
-                console.warn('SQLite not available, falling back to JSON storage:', error);
-                this.provider = new JSONProvider(this.dbPath.replace('.sqlite', '.json'));
-                this.dbType = 'json';
-            }
+            this.provider = this.initializeSQLiteWithRecovery();
         } else {
             this.provider = new JSONProvider(this.dbPath);
+        }
+    }
+    initializeSQLiteWithRecovery() {
+        try {
+            return new SQLiteProvider(this.dbPath);
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            if (errorMsg.includes('ENOTEMPTY') || errorMsg.includes('better-sqlite3')) {
+                console.warn('⚠️  SQLite initialization failed due to npm cache error');
+                console.warn('   Will attempt automatic recovery during initialize()');
+            } else {
+                console.warn('SQLite not available, falling back to JSON storage:', error);
+            }
+            this.provider = new JSONProvider(this.dbPath.replace('.sqlite', '.json'));
+            this.dbType = 'json';
+            return this.provider;
         }
     }
     getDefaultPath() {
@@ -26,8 +38,26 @@ export class DatabaseManager {
     }
     async initialize() {
         await fs.ensureDir(path.dirname(this.dbPath));
-        await this.provider.initialize();
-        this.initialized = true;
+        try {
+            await this.provider.initialize();
+            this.initialized = true;
+        } catch (error) {
+            if (this.dbType === 'json') {
+                throw error;
+            }
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            if (this.retryCount < this.maxRetries) {
+                console.warn(`⚠️  Database initialization failed (attempt ${this.retryCount + 1}/${this.maxRetries})`);
+                console.warn(`   Error: ${errorMsg}`);
+                console.log('🔄 Switching to JSON storage as fallback...');
+                this.provider = new JSONProvider(this.dbPath.replace('.sqlite', '.json'));
+                this.dbType = 'json';
+                this.retryCount++;
+                await this.initialize();
+            } else {
+                throw error;
+            }
+        }
     }
     async store(key, value, namespace = 'default') {
         if (!this.initialized) {

@@ -30,15 +30,6 @@ if (args.length === 0) {
 for (const arg of args) {
   if (arg === '--version' || arg === '-v') {
     console.log(`v${VERSION}`);
-    console.log('');
-    console.log('⚡ Alpha 128 - Build Optimization & Memory Coordination');
-    console.log('  • Build System Fixed - Removed 32 UI files, clean compilation');
-    console.log('  • Memory Coordination Validated - MCP tools fully operational');
-    console.log('  • Agent Updates - All core agents with MCP tool integration');
-    console.log('  • Hive-Mind Agents - 5 new agents with memory coordination');
-    console.log('  • Command System - All CLI commands tested and working');
-    console.log('');
-    console.log('📚 Docs: https://github.com/ruvnet/claude-flow');
     process.exit(0);
   }
 }

@@ -2,25 +2,26 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { memoryStore } from '../memory/fallback-store.js';
+import { VERSION } from '../core/version.js';
 await import('./implementations/agent-tracker.js').catch(()=>{
     try {
         require('./implementations/agent-tracker');
     } catch (e) {
-        console.log('Agent tracker not loaded');
+        console.error('Agent tracker not loaded');
     }
 });
 await import('./implementations/daa-tools.js').catch(()=>{
     try {
         require('./implementations/daa-tools');
     } catch (e) {
-        console.log('DAA manager not loaded');
+        console.error('DAA manager not loaded');
     }
 });
 await import('./implementations/workflow-tools.js').catch(()=>{
     try {
         require('./implementations/workflow-tools');
     } catch (e) {
-        console.log('Workflow tools not loaded');
+        console.error('Workflow tools not loaded');
     }
 });
 const __filename = fileURLToPath(import.meta.url);
@@ -39,7 +40,7 @@ function resolveLegacyAgentType(legacyType) {
 }
 let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
     constructor(){
-        this.version = '2.5.0-alpha.131';
+        this.version = VERSION;
         this.memoryStore = memoryStore;
         this.capabilities = {
             tools: {
@@ -1998,7 +1999,7 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
                 };
                 if (this.memoryStore) {
                     try {
-                        await this.memoryStore.store(modelId, JSON.stringify(patternData), {
+                        await this.memoryStore.store(modelId, patternData, {
                             namespace: 'patterns',
                             ttl: 30 * 24 * 60 * 60 * 1000,
                             metadata: {
@@ -2014,7 +2015,7 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
                         const existingStats = await this.memoryStore.retrieve(statsKey, {
                             namespace: 'pattern-stats'
                         });
-                        let stats = existingStats ? JSON.parse(existingStats) : {
+                        let stats = existingStats || {
                             pattern_type: args.pattern_type || 'coordination',
                             total_trainings: 0,
                             avg_accuracy: 0,
@@ -2036,7 +2037,7 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
                         if (stats.models.length > 50) {
                             stats.models = stats.models.slice(-50);
                         }
-                        await this.memoryStore.store(statsKey, JSON.stringify(stats), {
+                        await this.memoryStore.store(statsKey, stats, {
                             namespace: 'pattern-stats',
                             ttl: 30 * 24 * 60 * 60 * 1000,
                             metadata: {
@@ -2075,18 +2076,17 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
                                         timestamp: new Date().toISOString()
                                     };
                                 }
-                                const pattern = JSON.parse(patternValue);
                                 return {
                                     success: true,
                                     action: 'analyze',
-                                    pattern: pattern,
+                                    pattern: patternValue,
                                     analysis: {
-                                        quality: pattern.accuracy > 0.9 ? 'excellent' : pattern.accuracy > 0.75 ? 'good' : 'fair',
-                                        confidence: pattern.accuracy,
-                                        pattern_type: pattern.pattern_type,
-                                        training_epochs: pattern.epochs,
-                                        improvement_rate: pattern.improvement_rate,
-                                        data_source: pattern.data_source
+                                        quality: patternValue.accuracy > 0.9 ? 'excellent' : patternValue.accuracy > 0.75 ? 'good' : 'fair',
+                                        confidence: patternValue.accuracy,
+                                        pattern_type: patternValue.pattern_type,
+                                        training_epochs: patternValue.epochs,
+                                        improvement_rate: patternValue.improvement_rate,
+                                        data_source: patternValue.data_source
                                     },
                                     timestamp: new Date().toISOString()
                                 };
@@ -2100,19 +2100,13 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
                                     action: 'analyze',
                                     total_patterns: allPatterns.length,
                                     patterns: allPatterns.map((p)=>{
-                                        try {
-                                            const data = JSON.parse(p.value);
-                                            return {
-                                                modelId: data.modelId,
-                                                pattern_type: data.pattern_type,
-                                                accuracy: data.accuracy,
-                                                timestamp: data.timestamp
-                                            };
-                                        } catch (e) {
-                                            return {
-                                                error: 'Failed to parse pattern data'
-                                            };
-                                        }
+                                        const data = p.value || p;
+                                        return {
+                                            modelId: data.modelId,
+                                            pattern_type: data.pattern_type,
+                                            accuracy: data.accuracy,
+                                            timestamp: data.timestamp
+                                        };
                                     }),
                                     timestamp: new Date().toISOString()
                                 };
@@ -2134,7 +2128,7 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
                                 metadata: args.metadata || {},
                                 timestamp: new Date().toISOString()
                             };
-                            await this.memoryStore.store(learningId, JSON.stringify(learningData), {
+                            await this.memoryStore.store(learningId, learningData, {
                                 namespace: 'patterns',
                                 ttl: 30 * 24 * 60 * 60 * 1000,
                                 metadata: {
@@ -2169,17 +2163,16 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
                                     timestamp: new Date().toISOString()
                                 };
                             }
-                            const stats = JSON.parse(statsValue);
                             return {
                                 success: true,
                                 action: 'predict',
                                 prediction: {
-                                    confidence: stats.avg_accuracy,
-                                    expected_accuracy: stats.avg_accuracy,
+                                    confidence: statsValue.avg_accuracy,
+                                    expected_accuracy: statsValue.avg_accuracy,
                                     pattern_type: patternType,
-                                    recommendation: stats.avg_accuracy > 0.85 ? 'High confidence - pattern is well-established' : stats.avg_accuracy > 0.7 ? 'Moderate confidence - more training recommended' : 'Low confidence - significant training needed',
-                                    historical_trainings: stats.total_trainings,
-                                    best_accuracy: stats.max_accuracy
+                                    recommendation: statsValue.avg_accuracy > 0.85 ? 'High confidence - pattern is well-established' : statsValue.avg_accuracy > 0.7 ? 'Moderate confidence - more training recommended' : 'Low confidence - significant training needed',
+                                    historical_trainings: statsValue.total_trainings,
+                                    best_accuracy: statsValue.max_accuracy
                                 },
                                 timestamp: new Date().toISOString()
                             };
@@ -2202,12 +2195,11 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
                                         timestamp: new Date().toISOString()
                                     };
                                 }
-                                const stats = JSON.parse(statsValue);
                                 return {
                                     success: true,
                                     action: 'stats',
                                     pattern_type: requestedType,
-                                    statistics: stats,
+                                    statistics: statsValue,
                                     timestamp: new Date().toISOString()
                                 };
                             } else {
@@ -2219,15 +2211,7 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
                                     success: true,
                                     action: 'stats',
                                     total_pattern_types: allStats.length,
-                                    statistics: allStats.map((s)=>{
-                                        try {
-                                            return JSON.parse(s.value);
-                                        } catch (e) {
-                                            return {
-                                                error: 'Failed to parse stats data'
-                                            };
-                                        }
-                                    }),
+                                    statistics: allStats.map((s)=>s.value || s),
                                     timestamp: new Date().toISOString()
                                 };
                             }
@@ -3066,7 +3050,7 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
 async function startMCPServer() {
     const server = new ClaudeFlowMCPServer();
     console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] (${server.sessionId}) Claude-Flow MCP server starting in stdio mode`);
-    console.error({
+    console.error(JSON.stringify({
         arch: process.arch,
         mode: 'mcp-stdio',
         nodeVersion: process.version,
@@ -3075,7 +3059,7 @@ async function startMCPServer() {
         protocol: 'stdio',
         sessionId: server.sessionId,
         version: server.version
-    });
+    }));
     console.log(JSON.stringify({
         jsonrpc: '2.0',
         method: 'server.initialized',

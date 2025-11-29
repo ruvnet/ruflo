@@ -11,7 +11,7 @@ import { ICoordinationManager } from '../coordination/manager.js';
 import { SwarmCoordinator } from '../swarm/coordinator.js';
 import { AgentManager } from '../agents/agent-manager.js';
 import { ResourceManager } from '../resources/resource-manager.js';
-import { Task, Agent, SwarmConfig, SwarmStatus } from '../utils/types.js';
+import { SwarmConfig } from '../utils/types.js';
 import { ValidationError, SwarmError } from '../utils/errors.js';
 import { nanoid } from 'nanoid';
 
@@ -123,7 +123,7 @@ export class SwarmApi {
     });
 
     // Error handling
-    this.router.use((err: Error, req: any, res: any, next: any) => {
+    this.router.use((err: Error, req: any, res: any, _next: any) => {
       this.logger.error('Swarm API error', {
         error: err.message,
         stack: err.stack,

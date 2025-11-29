@@ -184,7 +184,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Validate rollback target
         id: validate
@@ -249,22 +249,26 @@ jobs:
       - name: Test rollback target viability
         if: steps.validate.outputs.validation-passed == 'true'
         run: |
+          set -e  # Exit on any error
           echo "🧪 Testing rollback target viability..."
-          
+
           ROLLBACK_TARGET="${{ github.event.inputs.rollback_target || needs.failure-detection.outputs.rollback-target }}"
-          
+
           # Create temporary branch for testing
           git checkout -b test-rollback-temp "$ROLLBACK_TARGET"
-          
-          # Test if the target can build
-          npm ci || true
-          npm run build:ts || echo "⚠️ Build test failed"
-          
+
+          # Test if the target can build (strict error checking)
+          echo "Installing dependencies..."
+          npm ci --legacy-peer-deps
+
+          echo "Testing build..."
+          npm run build:ts
+
           # Switch back to original branch
           git checkout "${{ github.ref_name }}"
           git branch -D test-rollback-temp
-          
-          echo "✅ Rollback target viability tested"
+
+          echo "✅ Rollback target viability tested successfully"
 
       - name: Upload pre-rollback validation
         uses: actions/upload-artifact@v4
@@ -420,7 +424,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Verify build functionality
         run: |

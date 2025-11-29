@@ -19,6 +19,21 @@ async function ensureInitialized() {
             console.log('[ReasoningBank] Node.js backend initialized successfully');
             return true;
         } catch (error) {
+            const isSqliteError = error.message?.includes('BetterSqlite3 is not a constructor') || error.message?.includes('better-sqlite3') || error.message?.includes('could not run migrations');
+            const isNpx = process.env.npm_config_user_agent?.includes('npx') || process.cwd().includes('_npx');
+            if (isSqliteError && isNpx) {
+                console.error('\n⚠️  NPX LIMITATION DETECTED\n');
+                console.error('ReasoningBank requires better-sqlite3, which is not available in npx temp directories.\n');
+                console.error('📚 Solutions:\n');
+                console.error('  1. LOCAL INSTALL (Recommended):');
+                console.error('     npm install && node_modules/.bin/claude-flow memory store "key" "value"\n');
+                console.error('  2. USE MCP TOOLS instead:');
+                console.error('     mcp__claude-flow__memory_usage({ action: "store", key: "test", value: "data" })\n');
+                console.error('  3. USE JSON FALLBACK (automatic):');
+                console.error('     Command will continue with JSON storage...\n');
+                console.error('See: docs/MEMORY_COMMAND_FIX.md for details\n');
+                return false;
+            }
             console.error('[ReasoningBank] Backend initialization failed:', error);
             throw new Error(`Failed to initialize ReasoningBank: ${error.message}`);
         }
@@ -26,11 +41,14 @@ async function ensureInitialized() {
     return initPromise;
 }
 export async function initializeReasoningBank() {
-    await ensureInitialized();
-    return true;
+    const result = await ensureInitialized();
+    return result;
 }
 export async function storeMemory(key, value, options = {}) {
-    await ensureInitialized();
+    const initialized = await ensureInitialized();
+    if (!initialized) {
+        throw new Error('ReasoningBank not available (better-sqlite3 missing). Use JSON mode instead.');
+    }
     try {
         const memoryId = options.id || uuidv4();
         const memory = {
@@ -73,7 +91,10 @@ export async function queryMemories(searchQuery, options = {}) {
     if (cached) {
         return cached;
     }
-    await ensureInitialized();
+    const initialized = await ensureInitialized();
+    if (!initialized) {
+        return [];
+    }
     const limit = options.limit || 10;
     const namespace = options.namespace || options.domain || 'default';
     try {
@@ -139,7 +160,10 @@ export async function queryMemories(searchQuery, options = {}) {
     }
 }
 export async function listMemories(options = {}) {
-    await ensureInitialized();
+    const initialized = await ensureInitialized();
+    if (!initialized) {
+        return [];
+    }
     const limit = options.limit || 10;
     const namespace = options.namespace;
     try {
@@ -165,7 +189,16 @@ export async function listMemories(options = {}) {
     }
 }
 export async function getStatus() {
-    await ensureInitialized();
+    const initialized = await ensureInitialized();
+    if (!initialized) {
+        return {
+            total_memories: 0,
+            total_categories: 0,
+            storage_backend: 'Unavailable',
+            error: 'ReasoningBank initialization failed (better-sqlite3 not available)',
+            fallback_available: true
+        };
+    }
     try {
         const db = ReasoningBank.db.getDb();
         const patterns = db.prepare("SELECT COUNT(*) as count FROM patterns WHERE type = 'reasoning_memory'").get();

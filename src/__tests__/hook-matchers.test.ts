@@ -4,6 +4,8 @@
  * Comprehensive test suite for hook pattern matching system
  */
 
+/* eslint-disable */
+
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import {
   HookMatcher,
