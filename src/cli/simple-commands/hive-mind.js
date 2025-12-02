@@ -32,15 +32,26 @@ let sqliteAvailable = false;
 async function loadSqlite() {
   if (Database !== null) return sqliteAvailable;
   try {
-    const sqlite = await import('better-sqlite3');
-    Database = sqlite.default;
+    // Try createRequire first for CommonJS modules (better-sqlite3 is CommonJS)
+    const { createRequire } = await import('module');
+    const require = createRequire(import.meta.url);
+    Database = require('better-sqlite3');
     // Test if bindings work by creating a temp in-memory database
     const testDb = new Database(':memory:');
     testDb.close();
     sqliteAvailable = true;
-  } catch (err) {
-    sqliteAvailable = false;
-    Database = null;
+  } catch (requireErr) {
+    try {
+      // Fallback to dynamic import
+      const sqlite = await import('better-sqlite3');
+      Database = sqlite.default || sqlite;
+      const testDb = new Database(':memory:');
+      testDb.close();
+      sqliteAvailable = true;
+    } catch (err) {
+      sqliteAvailable = false;
+      Database = null;
+    }
   }
   return sqliteAvailable;
 }
@@ -516,6 +527,14 @@ async function spawnSwarmWizard() {
  * Spawn a hive mind swarm
  */
 async function spawnSwarm(args, flags) {
+  // Load SQLite before using Database constructor
+  const hasSqlite = await loadSqlite();
+  if (!hasSqlite) {
+    console.error(chalk.red('Error: SQLite is required for hive-mind spawn'));
+    console.log('Please ensure better-sqlite3 is properly installed');
+    return;
+  }
+
   const objective = args.join(' ').trim();
 
   // Check for non-interactive mode FIRST
