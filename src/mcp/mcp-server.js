@@ -12,36 +12,103 @@ import { EnhancedMemory } from '../memory/enhanced-memory.js';
 // Use the same memory system that npx commands use - singleton instance
 import { memoryStore } from '../memory/fallback-store.js';
 import { VERSION } from '../core/version.js';
+// Unified Memory System with semantic search
+import { getUnifiedMemory } from '../memory/unified-memory.js';
 
-// Initialize agent tracker
-await import('./implementations/agent-tracker.js').catch(() => {
-  // If ES module import fails, try require
-  try {
-    require('./implementations/agent-tracker');
-  } catch (e) {
-    console.error('Agent tracker not loaded');
-  }
-});
+// Lazy initialization function for dynamic imports (Windows compatible - no top-level await)
+// Complete tool implementation contributed by: Moyle (Moyle Engineering Pty Ltd)
+// Co-authored-by: Moyle <moyle@moyleengineering.com.au>
+async function initializeModules() {
+  // Initialize agent tracker
+  await import('./implementations/agent-tracker.js').catch(() => {
+    try {
+      require('./implementations/agent-tracker');
+    } catch (e) {
+      console.error('Agent tracker not loaded');
+    }
+  });
 
-// Initialize DAA manager
-await import('./implementations/daa-tools.js').catch(() => {
-  // If ES module import fails, try require
-  try {
-    require('./implementations/daa-tools');
-  } catch (e) {
-    console.error('DAA manager not loaded');
-  }
-});
+  // Initialize DAA manager
+  await import('./implementations/daa-tools.js').catch(() => {
+    try {
+      require('./implementations/daa-tools');
+    } catch (e) {
+      console.error('DAA manager not loaded');
+    }
+  });
 
-// Initialize Workflow and Performance managers
-await import('./implementations/workflow-tools.js').catch(() => {
-  // If ES module import fails, try require
-  try {
-    require('./implementations/workflow-tools');
-  } catch (e) {
-    console.error('Workflow tools not loaded');
-  }
-});
+  // Initialize Workflow and Performance managers
+  await import('./implementations/workflow-tools.js').catch(() => {
+    try {
+      require('./implementations/workflow-tools');
+    } catch (e) {
+      console.error('Workflow tools not loaded');
+    }
+  });
+
+  // Initialize System tools (health_check, diagnostic_run, etc.)
+  await import('./implementations/system-tools.js').catch(() => {
+    try {
+      require('./implementations/system-tools');
+    } catch (e) {
+      console.error('System tools not loaded');
+    }
+  });
+
+  // Initialize Neural tools (neural_status, neural_predict, etc.)
+  await import('./implementations/neural-tools.js').catch(() => {
+    try {
+      require('./implementations/neural-tools');
+    } catch (e) {
+      console.error('Neural tools not loaded');
+    }
+  });
+
+  // Initialize Memory Advanced tools (memory_backup, memory_restore, etc.)
+  await import('./implementations/memory-advanced.js').catch(() => {
+    try {
+      require('./implementations/memory-advanced');
+    } catch (e) {
+      console.error('Memory advanced tools not loaded');
+    }
+  });
+
+  // Initialize Swarm tools (swarm_scale, swarm_destroy, etc.)
+  await import('./implementations/swarm-tools.js').catch(() => {
+    try {
+      require('./implementations/swarm-tools');
+    } catch (e) {
+      console.error('Swarm tools not loaded');
+    }
+  });
+
+  // Initialize GitHub tools
+  await import('./implementations/github-tools.js').catch(() => {
+    try {
+      require('./implementations/github-tools');
+    } catch (e) {
+      console.error('GitHub tools not loaded');
+    }
+  });
+
+  // Initialize Analysis tools (benchmark_run, metrics_collect, etc.)
+  await import('./implementations/analysis-tools.js').catch(() => {
+    try {
+      require('./implementations/analysis-tools');
+    } catch (e) {
+      console.error('Analysis tools not loaded');
+    }
+  });
+
+  // Initialize Scheduler tools (scheduler_manage, trigger_setup, etc.)
+  await import('./implementations/scheduler-tools.js').catch(() => {
+    try {
+      require('./implementations/scheduler-tools');
+    } catch (e) {
+      console.error('Scheduler tools not loaded');
+    }
+  });
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -933,6 +1000,57 @@ class ClaudeFlowMCPServer {
         inputSchema: { type: 'object', properties: { components: { type: 'array' } } },
       },
 
+      // Unified Semantic Memory Tools
+      memory_semantic_search: {
+        name: 'memory_semantic_search',
+        description: 'Search memories using semantic similarity (vector embeddings)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: 'Search query for semantic matching' },
+            limit: { type: 'number', default: 10, description: 'Maximum results to return' },
+            namespace: { type: 'string', description: 'Optional namespace filter' },
+            threshold: { type: 'number', default: 0.3, description: 'Minimum similarity threshold (0-1)' },
+          },
+          required: ['query'],
+        },
+      },
+      memory_store_semantic: {
+        name: 'memory_store_semantic',
+        description: 'Store content with automatic embedding generation for semantic search',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            content: { type: 'string', description: 'Content to store' },
+            type: { type: 'string', default: 'general', description: 'Memory type (project, note, fact, etc.)' },
+            category: { type: 'string', description: 'Category for organization' },
+            tags: { type: 'array', items: { type: 'string' }, description: 'Tags for filtering' },
+            namespace: { type: 'string', default: 'default', description: 'Namespace for grouping' },
+          },
+          required: ['content'],
+        },
+      },
+      memory_find_similar: {
+        name: 'memory_find_similar',
+        description: 'Find memories similar to a given memory ID',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            memoryId: { type: 'number', description: 'ID of the memory to find similar items for' },
+            limit: { type: 'number', default: 5, description: 'Maximum similar items to return' },
+          },
+          required: ['memoryId'],
+        },
+      },
+      memory_unified_stats: {
+        name: 'memory_unified_stats',
+        description: 'Get comprehensive statistics about the unified memory system',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+
       // Phase 4: SDK Integration - Real-Time Query Control & Parallel Spawning (v2.5.0-alpha.131)
       agents_spawn_parallel: {
         name: 'agents_spawn_parallel',
@@ -1195,6 +1313,8 @@ class ClaudeFlowMCPServer {
         };
 
         // Store swarm data in memory store (same as npx commands)
+        let persistedToMemoryStore = false;
+        let persistedToUnifiedMemory = false;
         try {
           await this.memoryStore.store(`swarm:${swarmId}`, JSON.stringify(swarmData), {
             namespace: 'swarms',
@@ -1204,6 +1324,7 @@ class ClaudeFlowMCPServer {
             namespace: 'system',
             metadata: { type: 'active_swarm', sessionId: this.sessionId },
           });
+          persistedToMemoryStore = true;
           console.error(
             `[${new Date().toISOString()}] INFO [claude-flow-mcp] Swarm persisted to memory: ${swarmId}`,
           );
@@ -1214,6 +1335,28 @@ class ClaudeFlowMCPServer {
           );
         }
 
+        // Also persist to unified memory for semantic search
+        try {
+          const unifiedMemory = await getUnifiedMemory();
+          unifiedMemory.storeSession({
+            id: swarmId,
+            name: swarmData.name,
+            topology: swarmData.topology,
+            maxAgents: swarmData.maxAgents,
+            config: swarmData.config,
+            status: 'active',
+          });
+          persistedToUnifiedMemory = true;
+          console.error(
+            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Swarm persisted to unified memory: ${swarmId}`,
+          );
+        } catch (error) {
+          console.error(
+            `[${new Date().toISOString()}] WARN [claude-flow-mcp] Failed to persist swarm to unified memory:`,
+            error.message,
+          );
+        }
+
         return {
           success: true,
           swarmId: swarmId,
@@ -1221,7 +1364,8 @@ class ClaudeFlowMCPServer {
           maxAgents: swarmData.maxAgents,
           strategy: args.strategy || 'auto',
           status: 'initialized',
-          persisted: !!this.databaseManager,
+          persisted: persistedToMemoryStore || persistedToUnifiedMemory,
+          unifiedMemory: persistedToUnifiedMemory,
           timestamp: new Date().toISOString(),
         };
 
@@ -1243,6 +1387,8 @@ class ClaudeFlowMCPServer {
         };
 
         // Store agent data in memory store (same as npx commands)
+        let agentPersistedToMemoryStore = false;
+        let agentPersistedToUnifiedMemory = false;
         try {
           const swarmId = agentData.swarmId || (await this.getActiveSwarmId());
           if (swarmId) {
@@ -1257,6 +1403,7 @@ class ClaudeFlowMCPServer {
               metadata: { type: 'agent_data', sessionId: this.sessionId },
             });
           }
+          agentPersistedToMemoryStore = true;
           console.error(
             `[${new Date().toISOString()}] INFO [claude-flow-mcp] Agent persisted to memory: ${agentId}`,
           );
@@ -1267,6 +1414,29 @@ class ClaudeFlowMCPServer {
           );
         }
 
+        // Also persist to unified memory
+        try {
+          const unifiedMemory = await getUnifiedMemory();
+          unifiedMemory.storeAgent({
+            id: agentId,
+            swarmId: agentData.swarmId,
+            name: agentData.name,
+            type: resolvedType,
+            status: 'active',
+            capabilities: args.capabilities || [],
+            metadata: { sessionId: this.sessionId, createdBy: 'mcp-server' },
+          });
+          agentPersistedToUnifiedMemory = true;
+          console.error(
+            `[${new Date().toISOString()}] INFO [claude-flow-mcp] Agent persisted to unified memory: ${agentId}`,
+          );
+        } catch (error) {
+          console.error(
+            `[${new Date().toISOString()}] WARN [claude-flow-mcp] Failed to persist agent to unified memory:`,
+            error.message,
+          );
+        }
+
         // Track spawned agent
         if (global.agentTracker) {
           global.agentTracker.trackAgent(agentId, {
@@ -1274,7 +1444,7 @@ class ClaudeFlowMCPServer {
             capabilities: args.capabilities || [],
           });
         }
-        
+
         return {
           success: true,
           agentId: agentId,
@@ -1282,7 +1452,8 @@ class ClaudeFlowMCPServer {
           name: agentData.name,
           status: 'active',
           capabilities: args.capabilities || [],
-          persisted: !!this.databaseManager,
+          persisted: agentPersistedToMemoryStore || agentPersistedToUnifiedMemory,
+          unifiedMemory: agentPersistedToUnifiedMemory,
           timestamp: new Date().toISOString(),
         };
 
@@ -1617,21 +1788,51 @@ class ClaudeFlowMCPServer {
       case 'memory_usage':
         return await this.handleMemoryUsage(args);
 
+      // Unified Semantic Memory Tool Handlers
+      case 'memory_semantic_search':
+        return await this.handleSemanticSearch(args);
+
+      case 'memory_store_semantic':
+        return await this.handleStoreSemanticMemory(args);
+
+      case 'memory_find_similar':
+        return await this.handleFindSimilar(args);
+
+      case 'memory_unified_stats':
+        return await this.handleUnifiedStats(args);
+
       case 'performance_report':
-        return {
-          success: true,
-          timeframe: args.timeframe || '24h',
-          format: args.format || 'summary',
-          metrics: {
-            tasks_executed: Math.floor(Math.random() * 200) + 50,
-            success_rate: Math.random() * 0.2 + 0.8,
-            avg_execution_time: Math.random() * 10 + 5,
-            agents_spawned: Math.floor(Math.random() * 50) + 10,
-            memory_efficiency: Math.random() * 0.3 + 0.7,
-            neural_events: Math.floor(Math.random() * 100) + 20,
-          },
-          timestamp: new Date().toISOString(),
-        };
+        // Use real data from unified memory instead of mock data
+        try {
+          const unifiedMemory = await getUnifiedMemory();
+          const stats = unifiedMemory.getStats();
+          return {
+            success: true,
+            timeframe: args.timeframe || '24h',
+            format: args.format || 'summary',
+            metrics: {
+              memories_total: stats.memories.total,
+              memories_by_type: stats.memories.byType,
+              memories_by_namespace: stats.memories.byNamespace,
+              tasks_total: stats.tasks.total,
+              tasks_completed: stats.tasks.completed,
+              tasks_pending: stats.tasks.pending,
+              agents_total: stats.agents.total,
+              agents_active: stats.agents.active,
+              sessions_total: stats.sessions.total,
+              patterns_total: stats.patterns.total,
+              database_size_bytes: stats.database.size,
+              embeddings_ready: stats.embeddings.embedderReady,
+            },
+            timestamp: new Date().toISOString(),
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: `Failed to get performance metrics: ${error.message}`,
+            timestamp: new Date().toISOString(),
+          };
+        }
 
       // Enhanced Neural Tools with Real Metrics
       case 'model_save':
@@ -1892,30 +2093,34 @@ class ClaudeFlowMCPServer {
           }
         }
 
-        // Fallback mock response
-        return {
-          success: true,
-          swarmId: args.swarmId || 'mock-swarm',
-          agents: [
-            {
-              id: 'agent-1',
-              name: 'coordinator-1',
-              type: 'coordinator',
-              status: 'active',
-              capabilities: [],
-            },
-            {
-              id: 'agent-2',
-              name: 'researcher-1',
-              type: 'researcher',
-              status: 'active',
-              capabilities: [],
-            },
-            { id: 'agent-3', name: 'coder-1', type: 'coder', status: 'busy', capabilities: [] },
-          ],
-          count: 3,
-          timestamp: new Date().toISOString(),
-        };
+        // Fallback to unified memory
+        try {
+          const swarmId = args.swarmId || (await this.getActiveSwarmId());
+          const unifiedMemory = await getUnifiedMemory();
+          const agents = unifiedMemory.getAgents(swarmId);
+
+          return {
+            success: true,
+            swarmId: swarmId || 'all',
+            agents: agents.map(a => ({
+              id: a.id,
+              name: a.name,
+              type: a.type,
+              status: a.status,
+              capabilities: a.capabilities,
+            })),
+            count: agents.length,
+            source: 'unified-memory',
+            timestamp: new Date().toISOString(),
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: 'No agents found. Initialize a swarm with swarm_init and spawn agents with agent_spawn.',
+            agents: [],
+            timestamp: new Date().toISOString(),
+          };
+        }
 
       case 'swarm_status':
         try {
@@ -2016,6 +2221,20 @@ class ClaudeFlowMCPServer {
           const pendingTasks = swarmTasks.filter((t) => t.status === 'pending').length;
           const completedTasks = swarmTasks.filter((t) => t.status === 'completed').length;
 
+          // Also get data from unified memory
+          let unifiedMemoryStats = null;
+          try {
+            const unifiedMemory = await getUnifiedMemory();
+            const unifiedAgents = unifiedMemory.getAgents(swarmId);
+            const unifiedSession = unifiedMemory.getSession(swarmId);
+            unifiedMemoryStats = {
+              agents: unifiedAgents.length,
+              session: unifiedSession ? true : false,
+            };
+          } catch (e) {
+            // Unified memory may not have data yet
+          }
+
           const response = {
             success: true,
             swarmId: swarmId,
@@ -2025,6 +2244,7 @@ class ClaudeFlowMCPServer {
             taskCount: swarmTasks.length,
             pendingTasks: pendingTasks,
             completedTasks: completedTasks,
+            unifiedMemory: unifiedMemoryStats,
             timestamp: new Date().toISOString(),
           };
 
@@ -2276,15 +2496,570 @@ class ClaudeFlowMCPServer {
           timestamp: new Date().toISOString(),
         };
         
+      // Agent Metrics - real implementation using unified memory
+      case 'agent_metrics':
+        try {
+          const unifiedMemory = await getUnifiedMemory();
+          const agents = unifiedMemory.getAgents(args.swarmId || null);
+          const stats = unifiedMemory.getStats();
+
+          return {
+            success: true,
+            agentId: args.agentId || 'all',
+            metrics: {
+              total_agents: agents.length,
+              active_agents: agents.filter(a => a.status === 'active').length,
+              agent_types: [...new Set(agents.map(a => a.type))],
+              agents_by_type: agents.reduce((acc, a) => {
+                acc[a.type] = (acc[a.type] || 0) + 1;
+                return acc;
+              }, {}),
+              total_tasks: stats.tasks.total,
+              pending_tasks: stats.tasks.pending,
+              completed_tasks: stats.tasks.completed,
+            },
+            timestamp: new Date().toISOString(),
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+      // Swarm Monitor - real implementation using unified memory
+      case 'swarm_monitor':
+        try {
+          const unifiedMemory = await getUnifiedMemory();
+          const stats = unifiedMemory.getStats();
+
+          return {
+            success: true,
+            swarmId: args.swarmId || 'all',
+            status: {
+              total_memories: stats.memories.total,
+              total_agents: stats.agents.total,
+              active_agents: stats.agents.active,
+              total_sessions: stats.sessions.total,
+              active_sessions: stats.sessions.active,
+              total_tasks: stats.tasks.total,
+              pending_tasks: stats.tasks.pending,
+              completed_tasks: stats.tasks.completed,
+              patterns_trained: stats.patterns.total,
+              embeddings_ready: stats.embeddings.embedderReady,
+              database_size_mb: (stats.database.size / 1024 / 1024).toFixed(2),
+            },
+            health: 'operational',
+            timestamp: new Date().toISOString(),
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+      // Task Status - query tasks from unified memory
+      case 'task_status':
+        try {
+          const unifiedMemory = await getUnifiedMemory();
+          const stats = unifiedMemory.getStats();
+
+          return {
+            success: true,
+            taskId: args.taskId || 'summary',
+            status: {
+              total: stats.tasks.total,
+              pending: stats.tasks.pending,
+              completed: stats.tasks.completed,
+              in_progress: stats.tasks.total - stats.tasks.pending - stats.tasks.completed,
+            },
+            timestamp: new Date().toISOString(),
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+      // Task Results - query completed tasks
+      case 'task_results':
+        try {
+          const unifiedMemory = await getUnifiedMemory();
+          // For now return summary; full task results would require querying the tasks table
+          const stats = unifiedMemory.getStats();
+
+          return {
+            success: true,
+            taskId: args.taskId || 'all',
+            results: {
+              completed_tasks: stats.tasks.completed,
+              pending_tasks: stats.tasks.pending,
+              total_tasks: stats.tasks.total,
+            },
+            message: 'Task results summary. Use task_status for detailed status.',
+            timestamp: new Date().toISOString(),
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+      // Terminal Command Execution (real implementation)
+      case 'terminal_execute':
+        return await this.handleTerminalExecute(args);
+
+      // ==================== SYSTEM TOOLS (Contributed by Moyle Engineering) ====================
+      case 'health_check':
+        if (global.systemTools) {
+          return await global.systemTools.health_check(args);
+        }
+        return { success: false, error: 'System tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'diagnostic_run':
+        if (global.systemTools) {
+          return await global.systemTools.diagnostic_run(args);
+        }
+        return { success: false, error: 'System tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'features_detect':
+        if (global.systemTools) {
+          return global.systemTools.features_detect(args);
+        }
+        return { success: false, error: 'System tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'security_scan':
+        if (global.systemTools) {
+          return global.systemTools.security_scan(args);
+        }
+        return { success: false, error: 'System tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'backup_create':
+        if (global.systemTools) {
+          return await global.systemTools.backup_create(args);
+        }
+        return { success: false, error: 'System tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'restore_system':
+        if (global.systemTools) {
+          return await global.systemTools.restore_system(args);
+        }
+        return { success: false, error: 'System tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'log_analysis':
+        if (global.systemTools) {
+          return global.systemTools.log_analysis(args);
+        }
+        return { success: false, error: 'System tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'config_manage':
+        if (global.systemTools) {
+          return global.systemTools.config_manage(args);
+        }
+        return { success: false, error: 'System tools not initialized', timestamp: new Date().toISOString() };
+
+      // ==================== NEURAL TOOLS (Contributed by Moyle Engineering) ====================
+      case 'neural_status':
+        if (global.neuralTools) {
+          return global.neuralTools.neural_status(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'neural_predict':
+        if (global.neuralTools) {
+          return global.neuralTools.neural_predict(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'model_load':
+        if (global.neuralTools) {
+          return global.neuralTools.model_load(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'model_save':
+        if (global.neuralTools) {
+          return global.neuralTools.model_save(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'inference_run':
+        if (global.neuralTools) {
+          return global.neuralTools.inference_run(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'pattern_recognize':
+        if (global.neuralTools) {
+          return global.neuralTools.pattern_recognize(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'cognitive_analyze':
+        if (global.neuralTools) {
+          return global.neuralTools.cognitive_analyze(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'learning_adapt':
+        if (global.neuralTools) {
+          return global.neuralTools.learning_adapt(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'neural_compress':
+        if (global.neuralTools) {
+          return global.neuralTools.neural_compress(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'ensemble_create':
+        if (global.neuralTools) {
+          return global.neuralTools.ensemble_create(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'transfer_learn':
+        if (global.neuralTools) {
+          return global.neuralTools.transfer_learn(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'neural_explain':
+        if (global.neuralTools) {
+          return global.neuralTools.neural_explain(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'wasm_optimize':
+        if (global.neuralTools) {
+          return global.neuralTools.wasm_optimize(args);
+        }
+        return { success: false, error: 'Neural tools not initialized', timestamp: new Date().toISOString() };
+
+      // ==================== MEMORY ADVANCED TOOLS (Contributed by Moyle Engineering) ====================
+      case 'memory_backup':
+        if (global.memoryAdvancedTools) {
+          return await global.memoryAdvancedTools.memory_backup(args);
+        }
+        return { success: false, error: 'Memory advanced tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'memory_restore':
+        if (global.memoryAdvancedTools) {
+          return await global.memoryAdvancedTools.memory_restore(args);
+        }
+        return { success: false, error: 'Memory advanced tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'memory_persist':
+        if (global.memoryAdvancedTools) {
+          return await global.memoryAdvancedTools.memory_persist(args);
+        }
+        return { success: false, error: 'Memory advanced tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'memory_namespace':
+        if (global.memoryAdvancedTools) {
+          return global.memoryAdvancedTools.memory_namespace(args);
+        }
+        return { success: false, error: 'Memory advanced tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'memory_compress':
+        if (global.memoryAdvancedTools) {
+          return global.memoryAdvancedTools.memory_compress(args);
+        }
+        return { success: false, error: 'Memory advanced tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'memory_sync':
+        if (global.memoryAdvancedTools) {
+          return global.memoryAdvancedTools.memory_sync(args);
+        }
+        return { success: false, error: 'Memory advanced tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'cache_manage':
+        if (global.memoryAdvancedTools) {
+          return global.memoryAdvancedTools.cache_manage(args);
+        }
+        return { success: false, error: 'Memory advanced tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'state_snapshot':
+        if (global.memoryAdvancedTools) {
+          return global.memoryAdvancedTools.state_snapshot(args);
+        }
+        return { success: false, error: 'Memory advanced tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'context_restore':
+        if (global.memoryAdvancedTools) {
+          return global.memoryAdvancedTools.context_restore(args);
+        }
+        return { success: false, error: 'Memory advanced tools not initialized', timestamp: new Date().toISOString() };
+
+      // ==================== SWARM TOOLS (Contributed by Moyle Engineering) ====================
+      case 'swarm_scale':
+        if (global.swarmTools) {
+          return global.swarmTools.swarm_scale(args);
+        }
+        return { success: false, error: 'Swarm tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'swarm_destroy':
+        if (global.swarmTools) {
+          return global.swarmTools.swarm_destroy(args);
+        }
+        return { success: false, error: 'Swarm tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'topology_optimize':
+        if (global.swarmTools) {
+          return global.swarmTools.topology_optimize(args);
+        }
+        return { success: false, error: 'Swarm tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'load_balance':
+        if (global.swarmTools) {
+          return global.swarmTools.load_balance(args);
+        }
+        return { success: false, error: 'Swarm tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'coordination_sync':
+        if (global.swarmTools) {
+          return global.swarmTools.coordination_sync(args);
+        }
+        return { success: false, error: 'Swarm tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'daa_fault_tolerance':
+        if (global.swarmTools) {
+          return global.swarmTools.daa_fault_tolerance(args);
+        }
+        return { success: false, error: 'Swarm tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'daa_optimization':
+        if (global.swarmTools) {
+          return global.swarmTools.daa_optimization(args);
+        }
+        return { success: false, error: 'Swarm tools not initialized', timestamp: new Date().toISOString() };
+
+      // ==================== GITHUB TOOLS (Contributed by Moyle Engineering) ====================
+      case 'github_repo_analyze':
+        if (global.githubTools) {
+          return global.githubTools.github_repo_analyze(args);
+        }
+        return { success: false, error: 'GitHub tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'github_pr_manage':
+        if (global.githubTools) {
+          return global.githubTools.github_pr_manage(args);
+        }
+        return { success: false, error: 'GitHub tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'github_issue_track':
+        if (global.githubTools) {
+          return global.githubTools.github_issue_track(args);
+        }
+        return { success: false, error: 'GitHub tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'github_release_coord':
+        if (global.githubTools) {
+          return global.githubTools.github_release_coord(args);
+        }
+        return { success: false, error: 'GitHub tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'github_workflow_auto':
+        if (global.githubTools) {
+          return global.githubTools.github_workflow_auto(args);
+        }
+        return { success: false, error: 'GitHub tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'github_code_review':
+        if (global.githubTools) {
+          return global.githubTools.github_code_review(args);
+        }
+        return { success: false, error: 'GitHub tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'github_sync_coord':
+        if (global.githubTools) {
+          return global.githubTools.github_sync_coord(args);
+        }
+        return { success: false, error: 'GitHub tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'github_metrics':
+        if (global.githubTools) {
+          return global.githubTools.github_metrics(args);
+        }
+        return { success: false, error: 'GitHub tools not initialized', timestamp: new Date().toISOString() };
+
+      // ==================== ANALYSIS TOOLS (Contributed by Moyle Engineering) ====================
+      case 'benchmark_run':
+        if (global.analysisTools) {
+          return global.analysisTools.benchmark_run(args);
+        }
+        return { success: false, error: 'Analysis tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'metrics_collect':
+        if (global.analysisTools) {
+          return global.analysisTools.metrics_collect(args);
+        }
+        return { success: false, error: 'Analysis tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'trend_analysis':
+        if (global.analysisTools) {
+          return global.analysisTools.trend_analysis(args);
+        }
+        return { success: false, error: 'Analysis tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'cost_analysis':
+        if (global.analysisTools) {
+          return global.analysisTools.cost_analysis(args);
+        }
+        return { success: false, error: 'Analysis tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'quality_assess':
+        if (global.analysisTools) {
+          return global.analysisTools.quality_assess(args);
+        }
+        return { success: false, error: 'Analysis tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'error_analysis':
+        if (global.analysisTools) {
+          return global.analysisTools.error_analysis(args);
+        }
+        return { success: false, error: 'Analysis tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'usage_stats':
+        if (global.analysisTools) {
+          return global.analysisTools.usage_stats(args);
+        }
+        return { success: false, error: 'Analysis tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'token_usage':
+        if (global.analysisTools) {
+          return global.analysisTools.token_usage(args);
+        }
+        return { success: false, error: 'Analysis tools not initialized', timestamp: new Date().toISOString() };
+
+      // ==================== SCHEDULER TOOLS (Contributed by Moyle Engineering) ====================
+      case 'scheduler_manage':
+        if (global.schedulerTools) {
+          return global.schedulerTools.scheduler_manage(args);
+        }
+        return { success: false, error: 'Scheduler tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'trigger_setup':
+        if (global.schedulerTools) {
+          return global.schedulerTools.trigger_setup(args);
+        }
+        return { success: false, error: 'Scheduler tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'automation_setup':
+        if (global.schedulerTools) {
+          return global.schedulerTools.automation_setup(args);
+        }
+        return { success: false, error: 'Scheduler tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'pipeline_create':
+        if (global.schedulerTools) {
+          return global.schedulerTools.pipeline_create(args);
+        }
+        return { success: false, error: 'Scheduler tools not initialized', timestamp: new Date().toISOString() };
+
+      case 'sparc_mode':
+        if (global.schedulerTools) {
+          return global.schedulerTools.sparc_mode(args);
+        }
+        return { success: false, error: 'Scheduler tools not initialized', timestamp: new Date().toISOString() };
+
       default:
+        // Instead of mock response, return explicit "not implemented" error
+        console.error(
+          `[${new Date().toISOString()}] WARN [claude-flow-mcp] Tool not implemented: ${name}`,
+        );
         return {
-          success: true,
+          success: false,
           tool: name,
-          message: `Tool ${name} executed successfully`,
+          error: `Tool '${name}' is not implemented yet.`,
           args: args,
           timestamp: new Date().toISOString(),
         };
     }
+  }
+
+  // Terminal command execution handler
+  async handleTerminalExecute(args) {
+    const { spawn } = await import('child_process');
+    const { command, args: cmdArgs = [], cwd, timeout = 30000 } = args;
+
+    // Security: Only allow safe commands
+    const allowedCommands = [
+      'ls', 'dir', 'pwd', 'echo', 'cat', 'head', 'tail', 'grep', 'find',
+      'node', 'npm', 'npx', 'git', 'type', 'where', 'which',
+    ];
+
+    const baseCommand = command.split(/[\s\/\\]/)[0].toLowerCase();
+    const isAllowed = allowedCommands.some(cmd => baseCommand === cmd || baseCommand.endsWith(cmd + '.exe'));
+
+    if (!isAllowed) {
+      return {
+        success: false,
+        error: `Command '${baseCommand}' is not in the allowed list. Allowed: ${allowedCommands.join(', ')}`,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      let stdout = '';
+      let stderr = '';
+      let killed = false;
+
+      const proc = spawn(command, cmdArgs || [], {
+        shell: true,
+        cwd: cwd || process.cwd(),
+        timeout: timeout,
+      });
+
+      const timer = setTimeout(() => {
+        killed = true;
+        proc.kill('SIGTERM');
+      }, timeout);
+
+      proc.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      proc.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      proc.on('close', (code) => {
+        clearTimeout(timer);
+        const duration = Date.now() - startTime;
+
+        resolve({
+          success: code === 0 && !killed,
+          command: command,
+          args: cmdArgs,
+          exitCode: code,
+          stdout: stdout.slice(0, 10000), // Limit output
+          stderr: stderr.slice(0, 5000),
+          duration: duration,
+          killed: killed,
+          timestamp: new Date().toISOString(),
+        });
+      });
+
+      proc.on('error', (error) => {
+        clearTimeout(timer);
+        resolve({
+          success: false,
+          command: command,
+          error: error.message,
+          timestamp: new Date().toISOString(),
+        });
+      });
+    });
   }
 
   async readResource(uri) {
@@ -2528,6 +3303,150 @@ class ClaudeFlowMCPServer {
     }
   }
 
+  // Unified Semantic Memory Handler Methods
+  async handleSemanticSearch(args) {
+    try {
+      const unifiedMemory = await getUnifiedMemory();
+      const results = await unifiedMemory.semanticSearch(args.query, {
+        limit: args.limit || 10,
+        namespace: args.namespace || null,
+        threshold: args.threshold || 0.3,
+      });
+
+      console.error(
+        `[${new Date().toISOString()}] INFO [claude-flow-mcp] Semantic search: "${args.query}" returned ${results.length} results`,
+      );
+
+      return {
+        success: true,
+        query: args.query,
+        results: results.map(r => ({
+          id: r.id,
+          content: r.content,
+          similarity: r.similarity,
+          tags: r.tags,
+          type: r.memory_type,
+          namespace: r.namespace,
+          created: r.created_at,
+        })),
+        count: results.length,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(
+        `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Semantic search failed:`,
+        error,
+      );
+      return {
+        success: false,
+        error: error.message,
+        query: args.query,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  async handleStoreSemanticMemory(args) {
+    try {
+      const unifiedMemory = await getUnifiedMemory();
+      const result = await unifiedMemory.storeWithEmbedding(args.content, {
+        type: args.type || 'general',
+        category: args.category || '',
+        tags: args.tags || [],
+        namespace: args.namespace || 'default',
+        metadata: args.metadata || {},
+      });
+
+      console.error(
+        `[${new Date().toISOString()}] INFO [claude-flow-mcp] Stored semantic memory: ${result.contentHash} (${result.action})`,
+      );
+
+      return {
+        success: true,
+        id: result.id,
+        contentHash: result.contentHash,
+        action: result.action,
+        type: args.type || 'general',
+        namespace: args.namespace || 'default',
+        hasEmbedding: true,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(
+        `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Store semantic memory failed:`,
+        error,
+      );
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  async handleFindSimilar(args) {
+    try {
+      const unifiedMemory = await getUnifiedMemory();
+      const results = await unifiedMemory.findSimilar(args.memoryId, args.limit || 5);
+
+      console.error(
+        `[${new Date().toISOString()}] INFO [claude-flow-mcp] Find similar to memory ${args.memoryId}: ${results.length} results`,
+      );
+
+      return {
+        success: true,
+        memoryId: args.memoryId,
+        similar: results.map(r => ({
+          id: r.id,
+          content: r.content,
+          similarity: r.similarity,
+          tags: r.tags,
+          type: r.memory_type,
+        })),
+        count: results.length,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(
+        `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Find similar failed:`,
+        error,
+      );
+      return {
+        success: false,
+        error: error.message,
+        memoryId: args.memoryId,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  async handleUnifiedStats(args) {
+    try {
+      const unifiedMemory = await getUnifiedMemory();
+      const stats = unifiedMemory.getStats();
+
+      console.error(
+        `[${new Date().toISOString()}] INFO [claude-flow-mcp] Unified memory stats: ${stats.memories.total} memories, ${stats.agents.total} agents`,
+      );
+
+      return {
+        success: true,
+        stats: stats,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error(
+        `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Get unified stats failed:`,
+        error,
+      );
+      return {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
   createErrorResponse(id, code, message, data = null) {
     const response = {
       jsonrpc: '2.0',
@@ -2541,6 +3460,9 @@ class ClaudeFlowMCPServer {
 
 // Main server execution
 async function startMCPServer() {
+  // Initialize modules first (Windows-compatible - moved from top-level await)
+  await initializeModules();
+
   const server = new ClaudeFlowMCPServer();
 
   console.error(
@@ -2634,7 +3556,18 @@ async function startMCPServer() {
 }
 
 // Start the server if this file is run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Windows-compatible check: normalize paths for comparison
+const isMainModule = (() => {
+  if (!process.argv[1]) return false;
+  const scriptPath = process.argv[1].replace(/\\/g, '/');
+  const moduleUrl = import.meta.url;
+  // Handle both file:// and file:/// formats
+  return moduleUrl === `file://${scriptPath}` ||
+         moduleUrl === `file:///${scriptPath}` ||
+         moduleUrl.endsWith(scriptPath.split('/').pop());
+})();
+
+if (isMainModule) {
   startMCPServer().catch(console.error);
 }
 
