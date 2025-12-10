@@ -1098,7 +1098,7 @@ A: Claude-Flow includes enterprise-grade security features including input valid
 ### Getting Help
 
 - **📖 Documentation**: [Complete Documentation](https://github.com/ruvnet/claude-flow/docs)
-- **💬 Discord Community**: [Join Discord](https://discord.gg/claude-flow)
+- **💬 Discord Community**: [Join Discord](https://discord.com/invite/dfxmpwkG2D)
 - **🐛 Issue Tracker**: [GitHub Issues](https://github.com/ruvnet/claude-flow/issues)
 - **📧 Email Support**: support@claude-flow.ai
 

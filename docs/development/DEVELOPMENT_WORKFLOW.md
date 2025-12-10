@@ -1318,7 +1318,7 @@ npm update
 
 ### Community
 
-- [Discord Server](https://discord.gg/claude-flow)
+- [Discord Server](https://discord.com/invite/dfxmpwkG2D)
 - [GitHub Discussions](https://github.com/ruvnet/claude-flow/discussions)
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/claude-flow)
 

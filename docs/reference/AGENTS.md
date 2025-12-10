@@ -992,7 +992,7 @@ npx claude-flow@alpha dashboard --agents --performance
 
 ### Community
 - [GitHub Repository](https://github.com/ruvnet/claude-flow)
-- [Discord Community](https://discord.gg/claude-flow)
+- [Discord Community](https://discord.com/invite/dfxmpwkG2D)
 - [Issue Tracker](https://github.com/ruvnet/claude-flow/issues)
 
 ### Contact
