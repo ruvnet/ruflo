@@ -55,7 +55,7 @@ async function swarmInitCommand(subArgs, flags) {
   console.log(`🤖 Max agents: ${maxAgents}`);
 
   // Check if ruv-swarm is available
-  const isAvailable = await checkRuvSwarmAvailable();
+  let isAvailable = await checkRuvSwarmAvailable();
   
   if (isAvailable) {
     try {
