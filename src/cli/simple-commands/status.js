@@ -1,6 +1,7 @@
 // status.js - System status and monitoring commands
 import { printSuccess, printError, printWarning } from '../utils.js';
 import { promises as fs } from 'fs';
+import path from 'path';
 // Removed Deno import from '../node-compat.js';
 import { MetricsReader } from '../../utils/metrics-reader.js';
 
@@ -19,29 +20,30 @@ export async function statusCommand(subArgs, flags) {
 
 async function getSystemStatus(verbose = false) {
   const reader = new MetricsReader();
-  
+
   // Get real metrics from files
-  const [systemMetrics, perfMetrics, agents, recentTasks, overallHealth, mcpStatus, taskQueue] = await Promise.all([
+  const [systemMetrics, perfMetrics, agents, recentTasks, overallHealth, mcpStatus, taskQueue, orchestratorRunning] = await Promise.all([
     reader.getSystemMetrics(),
     reader.getPerformanceMetrics(),
     reader.getActiveAgents(),
     reader.getRecentTasks(5),
     reader.getOverallHealth(),
     reader.getMCPServerStatus(),
-    reader.getTaskQueue()
+    reader.getTaskQueue(),
+    checkOrchestratorProcess()
   ]);
-  
+
   // Count active agents
   const activeAgentCount = agents.filter(a => a.status === 'active' || a.status === 'busy').length;
-  
+
   // Build status object with real data
   const status = {
     timestamp: Date.now(),
     version: '2.7.0',
     orchestrator: {
-      running: perfMetrics && perfMetrics.totalTasks > 0,
+      running: orchestratorRunning,
       uptime: systemMetrics ? systemMetrics.uptime : 0,
-      status: perfMetrics && perfMetrics.totalTasks > 0 ? 'Running' : 'Not Running',
+      status: orchestratorRunning ? 'Running' : 'Not Running',
     },
     agents: {
       active: activeAgentCount,
@@ -76,6 +78,25 @@ async function getSystemStatus(verbose = false) {
   };
 
   return status;
+}
+
+/**
+ * Check if the orchestrator process is actually running
+ * by verifying the PID file and testing if the process exists
+ */
+async function checkOrchestratorProcess() {
+  try {
+    const pidPath = path.join(process.cwd(), '.claude-flow', 'orchestrator.pid');
+    const pidData = await fs.readFile(pidPath, 'utf8');
+    const pid = parseInt(pidData.trim(), 10);
+
+    // Use signal 0 to check if process exists without sending an actual signal
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // Process doesn't exist or PID file not found
+    return false;
+  }
 }
 
 async function getMemoryStats() {
