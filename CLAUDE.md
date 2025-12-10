@@ -145,6 +145,7 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 claude mcp add claude-flow npx claude-flow@alpha mcp start
 claude mcp add ruv-swarm npx ruv-swarm mcp start  # Optional: Enhanced coordination
 claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud features
+claude mcp add outlook npx @pnp/cli-microsoft365-mcp-server  # Optional: Microsoft Outlook/365 integration
 ```
 
 ## MCP Tool Categories
@@ -180,6 +181,22 @@ Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
 - Register: `mcp__flow-nexus__user_register` or `npx flow-nexus@latest register`
 - Login: `mcp__flow-nexus__user_login` or `npx flow-nexus@latest login`
 - Access 70+ specialized MCP tools for advanced orchestration
+
+### Outlook MCP Tools (Optional Microsoft 365 Integration)
+Microsoft 365 MCP server provides comprehensive Outlook and Office 365 integration:
+
+**Key MCP Tool Categories:**
+- **Mail**: Send emails, manage inbox, search messages
+- **Calendar**: Create events, manage meetings, find availability
+- **Contacts**: Manage Outlook contacts and address books
+- **Tasks**: Create and manage Outlook tasks
+- **Files**: Access OneDrive and SharePoint files
+
+**Authentication Required:**
+- First authenticate using CLI for Microsoft 365: `m365 login`
+- The MCP server will use the same authentication context
+- Supports Azure AD, Microsoft 365 admin operations
+- Access to all Microsoft Graph API capabilities
 
 ## 🚀 Agent Execution Flow with Claude Code
 
