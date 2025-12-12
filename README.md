@@ -1,5 +1,8 @@
 # 🌊 Claude-Flow v2.7.0: Enterprise AI Orchestration Platform
 
+[![Run in Smithery](https://smithery.ai/badge/skills/ruvnet)](https://smithery.ai/skills?ns=ruvnet&utm_source=github&utm_medium=badge)
+
+
 <div align="center">
 
 [![🌟 Star on GitHub](https://img.shields.io/github/stars/ruvnet/claude-flow?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/claude-flow)
