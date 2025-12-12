@@ -3425,5 +3425,12 @@ For more information about SPARC methodology, see: https://github.com/ruvnet/cla
 }
 
 if (isMainModule(import.meta.url)) {
-  await main();
+	(async () => {
+		try {
+			await main();
+		} catch (error) {
+			console.error('Error running claude-flow:', error);
+			process.exit(1);
+		}
+	})();
 }
