@@ -1,0 +1,443 @@
+{
+  "name": "Production Deployment Workflow",
+  "description": "Advanced workflow demonstrating hooks, conditions, and dynamic scaling",
+  "version": "2.0",
+  "config": {
+    "errorStrategy": "rollback",
+    "monitoring": true,
+    "notifications": {
+      "slack": "${SLACK_WEBHOOK}",
+      "email": "${DEPLOYMENT_EMAIL}"
+    }
+  },
+  "agents": [
+    {
+      "id": "coordinator",
+      "name": "Deployment Coordinator",
+      "type": "orchestrator",
+      "capabilities": ["coordination", "monitoring", "decision-making"],
+      "hooks": {
+        "beforeTask": "validatePrerequisites",
+        "afterTask": "updateDeploymentStatus",
+        "onError": "initiateRollback",
+        "onSuccess": "notifySuccess"
+      }
+    },
+    {
+      "id": "validator",
+      "name": "Code Validator",
+      "type": "analyzer",
+      "capabilities": ["testing", "security-scanning", "performance-testing"],
+      "config": {
+        "parallel": true,
+        "timeout": 300000
+      }
+    },
+    {
+      "id": "builder",
+      "name": "Build Engineer",
+      "type": "developer",
+      "capabilities": ["building", "packaging", "optimization"],
+      "scalable": true,
+      "minInstances": 1,
+      "maxInstances": 5
+    },
+    {
+      "id": "deployer",
+      "name": "Deployment Specialist",
+      "type": "devops",
+      "capabilities": ["deployment", "configuration", "monitoring"],
+      "environments": ["staging", "production"]
+    },
+    {
+      "id": "tester",
+      "name": "E2E Tester",
+      "type": "tester",
+      "capabilities": ["e2e-testing", "smoke-testing", "load-testing"],
+      "scalable": true
+    },
+    {
+      "id": "monitor",
+      "name": "Health Monitor",
+      "type": "monitor",
+      "capabilities": ["health-checking", "metric-collection", "alerting"],
+      "persistent": true
+    }
+  ],
+  "globalHooks": {
+    "validatePrerequisites": {
+      "type": "function",
+      "code": "async (context) => { return context.branch === 'main' && context.testsPass; }"
+    },
+    "updateDeploymentStatus": {
+      "type": "webhook",
+      "url": "${STATUS_WEBHOOK}",
+      "method": "POST"
+    },
+    "initiateRollback": {
+      "type": "workflow",
+      "workflow": "rollback-workflow.json"
+    },
+    "notifySuccess": {
+      "type": "multi",
+      "actions": ["slack", "email", "metrics"]
+    }
+  },
+  "variables": {
+    "environment": "${DEPLOY_ENV:-staging}",
+    "version": "${VERSION:-latest}",
+    "rollbackVersion": "${ROLLBACK_VERSION}",
+    "healthCheckUrl": "${HEALTH_CHECK_URL}",
+    "testSuite": "${TEST_SUITE:-full}"
+  },
+  "tasks": [
+    {
+      "id": "pre-deployment-validation",
+      "name": "Validate Deployment Prerequisites",
+      "agentId": "coordinator",
+      "type": "validation",
+      "priority": "critical",
+      "conditions": {
+        "skip": "variables.skipValidation === true",
+        "require": "variables.environment === 'production'"
+      },
+      "subtasks": [
+        {
+          "name": "Check branch protection",
+          "command": "git status && git log -1"
+        },
+        {
+          "name": "Verify approvals",
+          "command": "gh pr view --json reviews"
+        },
+        {
+          "name": "Check deployment window",
+          "command": "check-deployment-window.sh"
+        }
+      ]
+    },
+    {
+      "id": "run-test-suite",
+      "name": "Execute Comprehensive Test Suite",
+      "agentId": "validator",
+      "type": "testing",
+      "parallel": true,
+      "priority": "high",
+      "conditions": {
+        "skip": "variables.testSuite === 'none'",
+        "continueOnFailure": "variables.environment === 'staging'"
+      },
+      "matrix": {
+        "testType": ["unit", "integration", "security", "performance"],
+        "environment": ["node18", "node20"]
+      },
+      "dynamicScaling": {
+        "enabled": true,
+        "metric": "taskQueue.length",
+        "scaleUp": "metric > 10",
+        "scaleDown": "metric < 3"
+      }
+    },
+    {
+      "id": "build-artifacts",
+      "name": "Build and Package Application",
+      "agentId": "builder",
+      "type": "build",
+      "dependencies": ["run-test-suite"],
+      "priority": "high",
+      "cache": {
+        "enabled": true,
+        "key": "build-${variables.version}-${checksum('package-lock.json')}",
+        "restore": true
+      },
+      "artifacts": {
+        "paths": ["dist/", "build/", "*.tar.gz"],
+        "retention": "30d",
+        "upload": {
+          "s3": {
+            "bucket": "${ARTIFACT_BUCKET}",
+            "prefix": "builds/${variables.version}/"
+          }
+        }
+      },
+      "retry": {
+        "attempts": 3,
+        "backoff": "exponential",
+        "conditions": ["exit_code != 0", "duration > 600000"]
+      }
+    },
+    {
+      "id": "deploy-staging",
+      "name": "Deploy to Staging Environment",
+      "agentId": "deployer",
+      "type": "deployment",
+      "dependencies": ["build-artifacts"],
+      "conditions": {
+        "execute": "variables.environment === 'staging' || variables.environment === 'production'"
+      },
+      "strategy": {
+        "type": "blue-green",
+        "validation": {
+          "healthCheck": {
+            "url": "${variables.healthCheckUrl}/staging",
+            "interval": 10000,
+            "timeout": 30000,
+            "successThreshold": 3
+          },
+          "smokeTests": {
+            "enabled": true,
+            "suite": "staging-smoke"
+          }
+        },
+        "rollback": {
+          "automatic": true,
+          "conditions": ["healthCheck.failed", "smokeTests.failed"],
+          "preserveData": true
+        }
+      }
+    },
+    {
+      "id": "staging-validation",
+      "name": "Validate Staging Deployment",
+      "agentId": "tester",
+      "type": "testing",
+      "dependencies": ["deploy-staging"],
+      "parallel": true,
+      "conditions": {
+        "required": "variables.environment === 'production'"
+      },
+      "tests": [
+        {
+          "name": "API Integration Tests",
+          "type": "integration",
+          "timeout": 600000
+        },
+        {
+          "name": "UI E2E Tests",
+          "type": "e2e",
+          "browsers": ["chrome", "firefox", "safari"],
+          "parallel": true
+        },
+        {
+          "name": "Load Tests",
+          "type": "performance",
+          "config": {
+            "users": 1000,
+            "duration": "5m",
+            "threshold": {
+              "p95": 500,
+              "p99": 1000,
+              "errorRate": 0.01
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "production-gate",
+      "name": "Production Deployment Gate",
+      "agentId": "coordinator",
+      "type": "approval",
+      "dependencies": ["staging-validation"],
+      "conditions": {
+        "skip": "variables.environment === 'staging'",
+        "require": "variables.environment === 'production'"
+      },
+      "approval": {
+        "type": "manual",
+        "approvers": ["devops-team", "product-owner"],
+        "timeout": 3600000,
+        "notifications": {
+          "slack": true,
+          "email": true
+        }
+      },
+      "checks": [
+        {
+          "name": "Error rate below threshold",
+          "query": "metrics.errorRate < 0.01"
+        },
+        {
+          "name": "No critical alerts",
+          "query": "alerts.critical.count === 0"
+        }
+      ]
+    },
+    {
+      "id": "deploy-production",
+      "name": "Deploy to Production",
+      "agentId": "deployer",
+      "type": "deployment",
+      "dependencies": ["production-gate"],
+      "conditions": {
+        "execute": "variables.environment === 'production' && tasks['production-gate'].approved === true"
+      },
+      "strategy": {
+        "type": "canary",
+        "stages": [
+          {
+            "percentage": 10,
+            "duration": "10m",
+            "validation": {
+              "errorRate": "< 0.02",
+              "latency": "p99 < 1000ms"
+            }
+          },
+          {
+            "percentage": 50,
+            "duration": "30m",
+            "validation": {
+              "errorRate": "< 0.01",
+              "latency": "p99 < 800ms"
+            }
+          },
+          {
+            "percentage": 100,
+            "validation": {
+              "errorRate": "< 0.01",
+              "latency": "p99 < 500ms"
+            }
+          }
+        ],
+        "rollback": {
+          "automatic": true,
+          "preserveTraffic": true
+        }
+      },
+      "hooks": {
+        "beforeDeploy": "backupDatabase",
+        "afterDeploy": "warmupCache",
+        "onRollback": "restoreDatabase"
+      }
+    },
+    {
+      "id": "post-deployment-monitoring",
+      "name": "Monitor Deployment Health",
+      "agentId": "monitor",
+      "type": "monitoring",
+      "dependencies": ["deploy-production"],
+      "persistent": true,
+      "duration": 3600000,
+      "metrics": [
+        {
+          "name": "Application Health",
+          "checks": ["health", "readiness", "liveness"],
+          "interval": 30000
+        },
+        {
+          "name": "Performance Metrics",
+          "queries": [
+            "rate(http_requests_total[5m])",
+            "histogram_quantile(0.99, http_request_duration_seconds)",
+            "rate(errors_total[5m])"
+          ],
+          "interval": 60000
+        },
+        {
+          "name": "Business Metrics",
+          "custom": true,
+          "script": "collect-business-metrics.js"
+        }
+      ],
+      "alerts": [
+        {
+          "name": "High Error Rate",
+          "condition": "errorRate > 0.05",
+          "severity": "critical",
+          "actions": ["page", "rollback"]
+        },
+        {
+          "name": "Performance Degradation",
+          "condition": "latency.p99 > baseline * 1.5",
+          "severity": "warning",
+          "actions": ["notify", "scale"]
+        }
+      ]
+    }
+  ],
+  "execution": {
+    "mode": "smart",
+    "parallelism": {
+      "max": 10,
+      "strategy": "adaptive",
+      "resourceLimits": {
+        "cpu": "80%",
+        "memory": "16GB"
+      }
+    },
+    "checkpoints": [
+      "run-test-suite",
+      "deploy-staging",
+      "production-gate",
+      "deploy-production"
+    ],
+    "timeout": 7200000,
+    "notifications": {
+      "onStart": ["slack", "email"],
+      "onCheckpoint": ["slack"],
+      "onComplete": ["slack", "email", "metrics"],
+      "onFailure": ["slack", "email", "pagerduty"]
+    }
+  },
+  "rollback": {
+    "enabled": true,
+    "automatic": true,
+    "conditions": [
+      "errorRate > 0.1",
+      "healthCheck.failures > 3",
+      "manualTrigger === true"
+    ],
+    "strategy": {
+      "type": "instant",
+      "preserveData": true,
+      "notifications": ["all"]
+    },
+    "steps": [
+      {
+        "name": "Switch traffic",
+        "command": "kubectl set image deployment/app app=${variables.rollbackVersion}"
+      },
+      {
+        "name": "Restore database",
+        "command": "restore-db.sh --timestamp ${rollback.timestamp}"
+      },
+      {
+        "name": "Clear caches",
+        "command": "redis-cli FLUSHALL"
+      }
+    ]
+  },
+  "quality": {
+    "gates": [
+      {
+        "name": "Code Coverage",
+        "threshold": "80%",
+        "blocking": true
+      },
+      {
+        "name": "Security Scan",
+        "severity": "high",
+        "maxIssues": 0
+      },
+      {
+        "name": "Performance Baseline",
+        "metric": "p99 < 500ms",
+        "comparison": "previous"
+      }
+    ],
+    "reports": {
+      "coverage": {
+        "format": ["html", "lcov"],
+        "upload": "codecov"
+      },
+      "security": {
+        "format": "sarif",
+        "upload": "github"
+      },
+      "performance": {
+        "format": "json",
+        "storage": "s3"
+      }
+    }
+  }
+}

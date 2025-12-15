@@ -1,0 +1,260 @@
+{
+  "name": "MCP-Enabled Production Configuration",
+  "description": "Production configuration with Model Context Protocol (MCP) for enhanced tool capabilities",
+  "orchestrator": {
+    "model": "claude-3-opus-20240229",
+    "temperature": 0.7,
+    "maxTokens": 8192,
+    "timeout": 120000,
+    "retryAttempts": 3,
+    "retryDelay": 5000
+  },
+  "mcp": {
+    "enabled": true,
+    "servers": {
+      "filesystem": {
+        "command": "mcp-filesystem",
+        "args": ["--root", "/workspace", "--watch"],
+        "env": {
+          "MCP_LOG_LEVEL": "info"
+        }
+      },
+      "git": {
+        "command": "mcp-git",
+        "args": ["--repo", "."],
+        "capabilities": ["read", "write", "commit"]
+      },
+      "database": {
+        "command": "mcp-database",
+        "args": ["--connection", "${DATABASE_URL}"],
+        "capabilities": ["query", "schema"]
+      },
+      "web": {
+        "command": "mcp-web",
+        "args": ["--allowed-domains", "*.example.com"],
+        "rateLimit": {
+          "requests": 100,
+          "window": 60000
+        }
+      }
+    },
+    "security": {
+      "sandboxing": true,
+      "allowedPaths": ["/workspace", "/tmp"],
+      "blockedCommands": ["rm -rf", "format"],
+      "timeout": 30000
+    }
+  },
+  "agents": {
+    "poolSize": 10,
+    "warmupEnabled": true,
+    "specializationEnabled": true,
+    "agentTypes": {
+      "researcher": {
+        "mcpServers": ["web", "git"],
+        "maxConcurrent": 3
+      },
+      "developer": {
+        "mcpServers": ["filesystem", "git", "database"],
+        "maxConcurrent": 5
+      },
+      "reviewer": {
+        "mcpServers": ["filesystem", "git"],
+        "maxConcurrent": 2
+      }
+    }
+  },
+  "memory": {
+    "backend": "hybrid",
+    "primary": {
+      "type": "redis",
+      "connection": {
+        "host": "${REDIS_HOST}",
+        "port": 6379,
+        "password": "${REDIS_PASSWORD}",
+        "db": 0,
+        "keyPrefix": "claude-flow:"
+      },
+      "options": {
+        "maxRetries": 3,
+        "enableOfflineQueue": true,
+        "lazyConnect": true
+      }
+    },
+    "secondary": {
+      "type": "json",
+      "location": "./memory/backup.json",
+      "compression": true,
+      "encryption": {
+        "enabled": true,
+        "algorithm": "aes-256-gcm",
+        "keyDerivation": "pbkdf2"
+      }
+    },
+    "sync": {
+      "enabled": true,
+      "interval": 30000,
+      "strategy": "write-through",
+      "conflictResolution": "latest-write-wins"
+    },
+    "schemas": {
+      "validation": true,
+      "location": "./schemas/memory-schemas.json"
+    }
+  },
+  "terminal": {
+    "pooling": {
+      "enabled": true,
+      "min": 2,
+      "max": 10,
+      "idleTimeout": 300000
+    },
+    "emulateEnvironment": true,
+    "defaultShell": "/bin/bash",
+    "workingDirectory": "/workspace",
+    "maxOutputLength": 50000,
+    "timeout": 60000,
+    "persistence": {
+      "enabled": true,
+      "sessionTimeout": 3600000
+    }
+  },
+  "coordination": {
+    "mode": "adaptive",
+    "strategies": {
+      "default": "hub-spoke",
+      "highLoad": "mesh",
+      "research": "pipeline"
+    },
+    "maxConcurrentAgents": 10,
+    "taskQueueSize": 100,
+    "prioritization": {
+      "enabled": true,
+      "algorithm": "weighted-fair-queue"
+    },
+    "loadBalancing": {
+      "enabled": true,
+      "strategy": "least-connections",
+      "healthCheck": {
+        "interval": 10000,
+        "timeout": 5000,
+        "threshold": 3
+      }
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "providers": {
+      "metrics": {
+        "type": "prometheus",
+        "endpoint": "/metrics",
+        "interval": 60000
+      },
+      "tracing": {
+        "type": "opentelemetry",
+        "endpoint": "${OTEL_EXPORTER_OTLP_ENDPOINT}",
+        "serviceName": "claude-flow-production"
+      },
+      "logging": {
+        "type": "winston",
+        "transports": ["console", "file", "elasticsearch"],
+        "level": "${LOG_LEVEL:-info}"
+      }
+    },
+    "alerts": {
+      "errorRate": {
+        "threshold": 0.05,
+        "window": 300000,
+        "action": "notify"
+      },
+      "responseTime": {
+        "threshold": 5000,
+        "percentile": 95,
+        "action": "scale"
+      },
+      "memoryUsage": {
+        "threshold": 0.9,
+        "action": "gc"
+      }
+    }
+  },
+  "security": {
+    "authentication": {
+      "required": true,
+      "methods": ["jwt", "apikey"],
+      "jwt": {
+        "secret": "${JWT_SECRET}",
+        "algorithm": "RS256",
+        "expiresIn": "24h"
+      }
+    },
+    "authorization": {
+      "enabled": true,
+      "provider": "rbac",
+      "roles": {
+        "admin": ["*"],
+        "developer": ["read", "write", "execute"],
+        "viewer": ["read"]
+      }
+    },
+    "encryption": {
+      "inTransit": true,
+      "atRest": true,
+      "keyRotation": {
+        "enabled": true,
+        "interval": 2592000000
+      }
+    },
+    "audit": {
+      "enabled": true,
+      "events": ["auth", "access", "modification", "error"],
+      "retention": 7776000000
+    }
+  },
+  "resilience": {
+    "circuitBreaker": {
+      "enabled": true,
+      "threshold": 5,
+      "timeout": 60000,
+      "resetTimeout": 300000
+    },
+    "retry": {
+      "maxAttempts": 3,
+      "initialDelay": 1000,
+      "maxDelay": 30000,
+      "multiplier": 2,
+      "randomizationFactor": 0.5
+    },
+    "timeout": {
+      "global": 300000,
+      "perTask": 120000,
+      "perAgent": 60000
+    },
+    "fallback": {
+      "enabled": true,
+      "strategies": {
+        "mcpFailure": "use-cached-tools",
+        "agentFailure": "reassign-task",
+        "memoryFailure": "use-secondary"
+      }
+    }
+  },
+  "optimization": {
+    "caching": {
+      "enabled": true,
+      "ttl": 3600000,
+      "maxSize": "1GB",
+      "strategy": "lru"
+    },
+    "compression": {
+      "enabled": true,
+      "algorithm": "gzip",
+      "level": 6
+    },
+    "batching": {
+      "enabled": true,
+      "maxBatchSize": 100,
+      "maxWaitTime": 5000
+    }
+  }
+}
