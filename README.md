@@ -89,7 +89,7 @@ Claude-Flow includes **25 specialized skills** that activate automatically via n
 - **Automation & Quality** (4) - Hooks, verification, performance analysis
 - **Flow Nexus Platform** (3) - Cloud sandboxes and neural training
 
-📚 **[Complete Skills Tutorial](./docs/skills-tutorial.md)** - Full guide with usage examples
+📚 **[Complete Skills Tutorial](./docs/skills/skills-tutorial.md)** - Full guide with usage examples
 
 ---
 
