@@ -7,7 +7,7 @@ Welcome to the Claude-Flow documentation! This directory contains comprehensive 
 | Document | Description |
 |----------|-------------|
 | [INDEX.md](INDEX.md) | Complete documentation hub with navigation and quick start |
-| [USER_GUIDE.md](USER_GUIDE.md) | Comprehensive user guide with tutorials and examples |
+| [USER_GUIDE.md](/guides/USER_GUIDE.md) | Comprehensive user guide with tutorials and examples |
 | [API_DOCUMENTATION.md](API_DOCUMENTATION.md) | Complete API reference with all 112 MCP tools |
 | [AGENTS.md](AGENTS.md) | All 65+ agent types with capabilities and usage |
 | [SWARM.md](SWARM.md) | Swarm intelligence, topologies, and coordination |
