@@ -269,14 +269,14 @@ export async function listMemories(options = {}) {
   try {
     let memories;
 
-    if (namespace && namespace !== 'default') {
-      // Filter by namespace/domain
+    if (namespace) {
+      // Filter by namespace/domain (supports explicit 'default' namespace filtering)
       const allMemories = ReasoningBank.db.getAllActiveMemories();
       memories = allMemories
-        .filter(m => m.pattern_data?.domain === namespace)
+        .filter(m => (m.pattern_data?.domain || m.pattern_data?.namespace || 'default') === namespace)
         .slice(0, limit);
     } else {
-      // Get all active memories
+      // Get all active memories (no namespace filter)
       memories = ReasoningBank.db.getAllActiveMemories().slice(0, limit);
     }
 

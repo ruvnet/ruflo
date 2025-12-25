@@ -786,8 +786,9 @@ async function handleReasoningBankList(subArgs, flags, listMemories) {
   try {
     const sort = flags?.sort || getArgValue(subArgs, '--sort') || 'created_at';
     const limit = parseInt(flags?.limit || getArgValue(subArgs, '--limit') || '10');
+    const namespace = flags?.namespace || flags?.ns || getArgValue(subArgs, '--namespace') || getArgValue(subArgs, '--ns');
 
-    const results = await listMemories({ sort, limit });
+    const results = await listMemories({ sort, limit, namespace });
 
     if (results.length === 0) {
       printWarning('No memories found');
