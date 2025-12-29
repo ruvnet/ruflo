@@ -118,6 +118,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['topology'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       agent_spawn: {
         name: 'agent_spawn',
@@ -156,6 +162,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['type'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       task_orchestrate: {
         name: 'task_orchestrate',
@@ -170,6 +182,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['task'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       swarm_status: {
         name: 'swarm_status',
@@ -179,6 +197,12 @@ class ClaudeFlowMCPServer {
           properties: {
             swarmId: { type: 'string' },
           },
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
 
@@ -191,6 +215,12 @@ class ClaudeFlowMCPServer {
           properties: {
             modelId: { type: 'string' },
           },
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
       neural_train: {
@@ -205,6 +235,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['pattern_type', 'training_data'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       neural_patterns: {
         name: 'neural_patterns',
@@ -218,6 +254,12 @@ class ClaudeFlowMCPServer {
             metadata: { type: 'object' },
           },
           required: ['action'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
 
@@ -236,6 +278,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['action'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       memory_search: {
         name: 'memory_search',
@@ -248,6 +296,12 @@ class ClaudeFlowMCPServer {
             limit: { type: 'number', default: 10 },
           },
           required: ['pattern'],
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
 
@@ -262,6 +316,12 @@ class ClaudeFlowMCPServer {
             format: { type: 'string', enum: ['summary', 'detailed', 'json'], default: 'summary' },
           },
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       bottleneck_analyze: {
         name: 'bottleneck_analyze',
@@ -273,6 +333,12 @@ class ClaudeFlowMCPServer {
             metrics: { type: 'array' },
           },
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       token_usage: {
         name: 'token_usage',
@@ -283,6 +349,12 @@ class ClaudeFlowMCPServer {
             operation: { type: 'string' },
             timeframe: { type: 'string', default: '24h' },
           },
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
 
@@ -298,6 +370,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['repo'],
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: true,
+        },
       },
       github_pr_manage: {
         name: 'github_pr_manage',
@@ -310,6 +388,12 @@ class ClaudeFlowMCPServer {
             action: { type: 'string', enum: ['review', 'merge', 'close'] },
           },
           required: ['repo', 'action'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
         },
       },
 
@@ -326,6 +410,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['agent_type'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       daa_capability_match: {
         name: 'daa_capability_match',
@@ -337,6 +427,12 @@ class ClaudeFlowMCPServer {
             available_agents: { type: 'array' },
           },
           required: ['task_requirements'],
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
 
@@ -353,6 +449,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['name', 'steps'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       sparc_mode: {
         name: 'sparc_mode',
@@ -366,6 +468,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['mode', 'task_description'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
 
       // Additional Swarm Tools
@@ -373,11 +481,23 @@ class ClaudeFlowMCPServer {
         name: 'agent_list',
         description: 'List active agents & capabilities',
         inputSchema: { type: 'object', properties: { swarmId: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       agent_metrics: {
         name: 'agent_metrics',
         description: 'Agent performance metrics',
         inputSchema: { type: 'object', properties: { agentId: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       swarm_monitor: {
         name: 'swarm_monitor',
@@ -386,11 +506,23 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { swarmId: { type: 'string' }, interval: { type: 'number' } },
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       topology_optimize: {
         name: 'topology_optimize',
         description: 'Auto-optimize swarm topology',
         inputSchema: { type: 'object', properties: { swarmId: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       load_balance: {
         name: 'load_balance',
@@ -399,11 +531,23 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { swarmId: { type: 'string' }, tasks: { type: 'array' } },
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       coordination_sync: {
         name: 'coordination_sync',
         description: 'Sync agent coordination',
         inputSchema: { type: 'object', properties: { swarmId: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       swarm_scale: {
         name: 'swarm_scale',
@@ -411,6 +555,12 @@ class ClaudeFlowMCPServer {
         inputSchema: {
           type: 'object',
           properties: { swarmId: { type: 'string' }, targetSize: { type: 'number' } },
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
       swarm_destroy: {
@@ -420,6 +570,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { swarmId: { type: 'string' } },
           required: ['swarmId'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
 
@@ -432,6 +588,12 @@ class ClaudeFlowMCPServer {
           properties: { modelId: { type: 'string' }, input: { type: 'string' } },
           required: ['modelId', 'input'],
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       model_load: {
         name: 'model_load',
@@ -440,6 +602,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { modelPath: { type: 'string' } },
           required: ['modelPath'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
       model_save: {
@@ -450,11 +618,23 @@ class ClaudeFlowMCPServer {
           properties: { modelId: { type: 'string' }, path: { type: 'string' } },
           required: ['modelId', 'path'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       wasm_optimize: {
         name: 'wasm_optimize',
         description: 'WASM SIMD optimization',
         inputSchema: { type: 'object', properties: { operation: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       inference_run: {
         name: 'inference_run',
@@ -463,6 +643,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { modelId: { type: 'string' }, data: { type: 'array' } },
           required: ['modelId', 'data'],
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
       pattern_recognize: {
@@ -473,6 +659,12 @@ class ClaudeFlowMCPServer {
           properties: { data: { type: 'array' }, patterns: { type: 'array' } },
           required: ['data'],
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       cognitive_analyze: {
         name: 'cognitive_analyze',
@@ -481,6 +673,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { behavior: { type: 'string' } },
           required: ['behavior'],
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
       learning_adapt: {
@@ -491,6 +689,12 @@ class ClaudeFlowMCPServer {
           properties: { experience: { type: 'object' } },
           required: ['experience'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       neural_compress: {
         name: 'neural_compress',
@@ -499,6 +703,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { modelId: { type: 'string' }, ratio: { type: 'number' } },
           required: ['modelId'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
       ensemble_create: {
@@ -509,6 +719,12 @@ class ClaudeFlowMCPServer {
           properties: { models: { type: 'array' }, strategy: { type: 'string' } },
           required: ['models'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       transfer_learn: {
         name: 'transfer_learn',
@@ -517,6 +733,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { sourceModel: { type: 'string' }, targetDomain: { type: 'string' } },
           required: ['sourceModel', 'targetDomain'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
       neural_explain: {
@@ -527,6 +749,12 @@ class ClaudeFlowMCPServer {
           properties: { modelId: { type: 'string' }, prediction: { type: 'object' } },
           required: ['modelId', 'prediction'],
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
 
       // Additional Memory Tools
@@ -534,6 +762,12 @@ class ClaudeFlowMCPServer {
         name: 'memory_persist',
         description: 'Cross-session persistence',
         inputSchema: { type: 'object', properties: { sessionId: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       memory_namespace: {
         name: 'memory_namespace',
@@ -543,11 +777,23 @@ class ClaudeFlowMCPServer {
           properties: { namespace: { type: 'string' }, action: { type: 'string' } },
           required: ['namespace', 'action'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       memory_backup: {
         name: 'memory_backup',
         description: 'Backup memory stores',
         inputSchema: { type: 'object', properties: { path: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       memory_restore: {
         name: 'memory_restore',
@@ -557,11 +803,23 @@ class ClaudeFlowMCPServer {
           properties: { backupPath: { type: 'string' } },
           required: ['backupPath'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       memory_compress: {
         name: 'memory_compress',
         description: 'Compress memory data',
         inputSchema: { type: 'object', properties: { namespace: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       memory_sync: {
         name: 'memory_sync',
@@ -570,6 +828,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { target: { type: 'string' } },
           required: ['target'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
         },
       },
       cache_manage: {
@@ -580,11 +844,23 @@ class ClaudeFlowMCPServer {
           properties: { action: { type: 'string' }, key: { type: 'string' } },
           required: ['action'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       state_snapshot: {
         name: 'state_snapshot',
         description: 'Create state snapshots',
         inputSchema: { type: 'object', properties: { name: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       context_restore: {
         name: 'context_restore',
@@ -594,11 +870,23 @@ class ClaudeFlowMCPServer {
           properties: { snapshotId: { type: 'string' } },
           required: ['snapshotId'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       memory_analytics: {
         name: 'memory_analytics',
         description: 'Analyze memory usage',
         inputSchema: { type: 'object', properties: { timeframe: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
 
       // Additional Analysis Tools
@@ -610,6 +898,12 @@ class ClaudeFlowMCPServer {
           properties: { taskId: { type: 'string' } },
           required: ['taskId'],
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       task_results: {
         name: 'task_results',
@@ -619,16 +913,34 @@ class ClaudeFlowMCPServer {
           properties: { taskId: { type: 'string' } },
           required: ['taskId'],
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       benchmark_run: {
         name: 'benchmark_run',
         description: 'Performance benchmarks',
         inputSchema: { type: 'object', properties: { suite: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       metrics_collect: {
         name: 'metrics_collect',
         description: 'Collect system metrics',
         inputSchema: { type: 'object', properties: { components: { type: 'array' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       trend_analysis: {
         name: 'trend_analysis',
@@ -638,11 +950,23 @@ class ClaudeFlowMCPServer {
           properties: { metric: { type: 'string' }, period: { type: 'string' } },
           required: ['metric'],
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       cost_analysis: {
         name: 'cost_analysis',
         description: 'Cost and resource analysis',
         inputSchema: { type: 'object', properties: { timeframe: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       quality_assess: {
         name: 'quality_assess',
@@ -652,21 +976,45 @@ class ClaudeFlowMCPServer {
           properties: { target: { type: 'string' }, criteria: { type: 'array' } },
           required: ['target'],
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       error_analysis: {
         name: 'error_analysis',
         description: 'Error pattern analysis',
         inputSchema: { type: 'object', properties: { logs: { type: 'array' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       usage_stats: {
         name: 'usage_stats',
         description: 'Usage statistics',
         inputSchema: { type: 'object', properties: { component: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       health_check: {
         name: 'health_check',
         description: 'System health monitoring',
         inputSchema: { type: 'object', properties: { components: { type: 'array' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
 
       // Additional Workflow Tools
@@ -678,6 +1026,12 @@ class ClaudeFlowMCPServer {
           properties: { workflowId: { type: 'string' }, params: { type: 'object' } },
           required: ['workflowId'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       workflow_export: {
         name: 'workflow_export',
@@ -686,6 +1040,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { workflowId: { type: 'string' }, format: { type: 'string' } },
           required: ['workflowId'],
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
       automation_setup: {
@@ -696,6 +1056,12 @@ class ClaudeFlowMCPServer {
           properties: { rules: { type: 'array' } },
           required: ['rules'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       pipeline_create: {
         name: 'pipeline_create',
@@ -704,6 +1070,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { config: { type: 'object' } },
           required: ['config'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
       scheduler_manage: {
@@ -714,6 +1086,12 @@ class ClaudeFlowMCPServer {
           properties: { action: { type: 'string' }, schedule: { type: 'object' } },
           required: ['action'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       trigger_setup: {
         name: 'trigger_setup',
@@ -722,6 +1100,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { events: { type: 'array' }, actions: { type: 'array' } },
           required: ['events', 'actions'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
       workflow_template: {
@@ -732,6 +1116,12 @@ class ClaudeFlowMCPServer {
           properties: { action: { type: 'string' }, template: { type: 'object' } },
           required: ['action'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       batch_process: {
         name: 'batch_process',
@@ -741,6 +1131,12 @@ class ClaudeFlowMCPServer {
           properties: { items: { type: 'array' }, operation: { type: 'string' } },
           required: ['items', 'operation'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       parallel_execute: {
         name: 'parallel_execute',
@@ -749,6 +1145,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { tasks: { type: 'array' } },
           required: ['tasks'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
 
@@ -761,6 +1163,12 @@ class ClaudeFlowMCPServer {
           properties: { repo: { type: 'string' }, action: { type: 'string' } },
           required: ['repo', 'action'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
+        },
       },
       github_release_coord: {
         name: 'github_release_coord',
@@ -769,6 +1177,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { repo: { type: 'string' }, version: { type: 'string' } },
           required: ['repo', 'version'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
         },
       },
       github_workflow_auto: {
@@ -779,6 +1193,12 @@ class ClaudeFlowMCPServer {
           properties: { repo: { type: 'string' }, workflow: { type: 'object' } },
           required: ['repo', 'workflow'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
+        },
       },
       github_code_review: {
         name: 'github_code_review',
@@ -787,6 +1207,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { repo: { type: 'string' }, pr: { type: 'number' } },
           required: ['repo', 'pr'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
         },
       },
       github_sync_coord: {
@@ -797,6 +1223,12 @@ class ClaudeFlowMCPServer {
           properties: { repos: { type: 'array' } },
           required: ['repos'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
+        },
       },
       github_metrics: {
         name: 'github_metrics',
@@ -805,6 +1237,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { repo: { type: 'string' } },
           required: ['repo'],
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: true,
         },
       },
 
@@ -817,6 +1255,12 @@ class ClaudeFlowMCPServer {
           properties: { resources: { type: 'object' }, agents: { type: 'array' } },
           required: ['resources'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       daa_lifecycle_manage: {
         name: 'daa_lifecycle_manage',
@@ -825,6 +1269,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { agentId: { type: 'string' }, action: { type: 'string' } },
           required: ['agentId', 'action'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
       daa_communication: {
@@ -839,6 +1289,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['from', 'to', 'message'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       daa_consensus: {
         name: 'daa_consensus',
@@ -847,6 +1303,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { agents: { type: 'array' }, proposal: { type: 'object' } },
           required: ['agents', 'proposal'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
       daa_fault_tolerance: {
@@ -857,6 +1319,12 @@ class ClaudeFlowMCPServer {
           properties: { agentId: { type: 'string' }, strategy: { type: 'string' } },
           required: ['agentId'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       daa_optimization: {
         name: 'daa_optimization',
@@ -865,6 +1333,12 @@ class ClaudeFlowMCPServer {
           type: 'object',
           properties: { target: { type: 'string' }, metrics: { type: 'array' } },
           required: ['target'],
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
         },
       },
 
@@ -877,6 +1351,12 @@ class ClaudeFlowMCPServer {
           properties: { command: { type: 'string' }, args: { type: 'array' } },
           required: ['command'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: false,
+          openWorldHint: true,
+        },
       },
       config_manage: {
         name: 'config_manage',
@@ -886,11 +1366,23 @@ class ClaudeFlowMCPServer {
           properties: { action: { type: 'string' }, config: { type: 'object' } },
           required: ['action'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       features_detect: {
         name: 'features_detect',
         description: 'Feature detection',
         inputSchema: { type: 'object', properties: { component: { type: 'string' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       security_scan: {
         name: 'security_scan',
@@ -900,6 +1392,12 @@ class ClaudeFlowMCPServer {
           properties: { target: { type: 'string' }, depth: { type: 'string' } },
           required: ['target'],
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       backup_create: {
         name: 'backup_create',
@@ -907,6 +1405,12 @@ class ClaudeFlowMCPServer {
         inputSchema: {
           type: 'object',
           properties: { components: { type: 'array' }, destination: { type: 'string' } },
+        },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
       restore_system: {
@@ -917,6 +1421,12 @@ class ClaudeFlowMCPServer {
           properties: { backupId: { type: 'string' } },
           required: ['backupId'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       log_analysis: {
         name: 'log_analysis',
@@ -926,11 +1436,23 @@ class ClaudeFlowMCPServer {
           properties: { logFile: { type: 'string' }, patterns: { type: 'array' } },
           required: ['logFile'],
         },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
       diagnostic_run: {
         name: 'diagnostic_run',
         description: 'System diagnostics',
         inputSchema: { type: 'object', properties: { components: { type: 'array' } } },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
       },
 
       // Phase 4: SDK Integration - Real-Time Query Control & Parallel Spawning (v2.5.0-alpha.131)
@@ -971,6 +1493,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['agents'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       query_control: {
         name: 'query_control',
@@ -1004,6 +1532,12 @@ class ClaudeFlowMCPServer {
           },
           required: ['action', 'queryId'],
         },
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+        },
       },
       query_list: {
         name: 'query_list',
@@ -1017,6 +1551,12 @@ class ClaudeFlowMCPServer {
               description: 'Include completed queries in the list',
             },
           },
+        },
+        annotations: {
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
         },
       },
     };
