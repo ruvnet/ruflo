@@ -167,7 +167,9 @@ export {
 // Tool Filter Configuration
 export {
   loadToolFilterConfig,
+  validateToolFilterConfig,
   type LoadedToolFilterConfig,
+  type ConfigValidationResult,
 } from './tool-filter-config.js';
 
 // Tool Implementations

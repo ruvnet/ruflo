@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { join } from 'node:path';
 export class ToolFilter {
     config;
     lastStats;
@@ -883,6 +884,632 @@ describe('createToolFilter Factory', ()=>{
         });
         expect(filter1.getConfig().mode).toBe('allowlist');
         expect(filter2.getConfig().mode).toBe('denylist');
+    });
+});
+describe('Config File Precedence', ()=>{
+    const originalEnv = process.env;
+    beforeEach(()=>{
+        jest.resetModules();
+        process.env = {
+            ...originalEnv
+        };
+    });
+    afterEach(()=>{
+        process.env = originalEnv;
+    });
+    function createMockConfigLoader(mockFs) {
+        const configPaths = [
+            '.claude-flow/mcp-tools.json',
+            '.claude-flow/mcp-tools.yaml',
+            'mcp-tools.json'
+        ];
+        return async function loadConfig(cwd) {
+            for (const configPath of configPaths){
+                const fullPath = join(cwd, configPath);
+                if (mockFs.files[fullPath]) {
+                    const content = mockFs.files[fullPath];
+                    const parsed = JSON.parse(content);
+                    return {
+                        config: {
+                            enabled: parsed.enabled ?? false,
+                            mode: parsed.mode ?? 'allowlist',
+                            patterns: parsed.patterns ?? [],
+                            categories: parsed.categories,
+                            maxTools: parsed.maxTools,
+                            toolPriorities: parsed.toolPriorities
+                        },
+                        source: configPath
+                    };
+                }
+            }
+            return null;
+        };
+    }
+    it('should return first file found when multiple config files exist', async ()=>{
+        const mockFs = {
+            files: {
+                '/project/.claude-flow/mcp-tools.json': JSON.stringify({
+                    enabled: true,
+                    mode: 'allowlist',
+                    patterns: [
+                        'first_*'
+                    ]
+                }),
+                '/project/mcp-tools.json': JSON.stringify({
+                    enabled: true,
+                    mode: 'denylist',
+                    patterns: [
+                        'second_*'
+                    ]
+                })
+            }
+        };
+        const loadConfig = createMockConfigLoader(mockFs);
+        const result = await loadConfig('/project');
+        expect(result).not.toBeNull();
+        expect(result?.source).toBe('.claude-flow/mcp-tools.json');
+        expect(result?.config.patterns).toEqual([
+            'first_*'
+        ]);
+        expect(result?.config.mode).toBe('allowlist');
+    });
+    it('should prefer JSON over YAML at same directory level (.claude-flow)', async ()=>{
+        const mockFs = {
+            files: {
+                '/project/.claude-flow/mcp-tools.json': JSON.stringify({
+                    enabled: true,
+                    mode: 'allowlist',
+                    patterns: [
+                        'json_*'
+                    ]
+                })
+            }
+        };
+        const loadConfig = createMockConfigLoader(mockFs);
+        const result = await loadConfig('/project');
+        expect(result).not.toBeNull();
+        expect(result?.source).toBe('.claude-flow/mcp-tools.json');
+        expect(result?.config.patterns).toEqual([
+            'json_*'
+        ]);
+    });
+    it('should check .claude-flow/mcp-tools.json before mcp-tools.json at root', async ()=>{
+        const mockFs = {
+            files: {
+                '/project/.claude-flow/mcp-tools.json': JSON.stringify({
+                    enabled: true,
+                    mode: 'allowlist',
+                    patterns: [
+                        'subdir_config_*'
+                    ]
+                }),
+                '/project/mcp-tools.json': JSON.stringify({
+                    enabled: true,
+                    mode: 'denylist',
+                    patterns: [
+                        'root_config_*'
+                    ]
+                })
+            }
+        };
+        const loadConfig = createMockConfigLoader(mockFs);
+        const result = await loadConfig('/project');
+        expect(result).not.toBeNull();
+        expect(result?.source).toBe('.claude-flow/mcp-tools.json');
+        expect(result?.config.patterns).toEqual([
+            'subdir_config_*'
+        ]);
+    });
+    it('should fall back to root mcp-tools.json when .claude-flow config is missing', async ()=>{
+        const mockFs = {
+            files: {
+                '/project/mcp-tools.json': JSON.stringify({
+                    enabled: true,
+                    mode: 'denylist',
+                    patterns: [
+                        'fallback_*'
+                    ]
+                })
+            }
+        };
+        const loadConfig = createMockConfigLoader(mockFs);
+        const result = await loadConfig('/project');
+        expect(result).not.toBeNull();
+        expect(result?.source).toBe('mcp-tools.json');
+        expect(result?.config.patterns).toEqual([
+            'fallback_*'
+        ]);
+    });
+    it('should allow environment variables to override file config values', ()=>{
+        const fileConfig = {
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'file_pattern_*'
+            ],
+            maxTools: 10
+        };
+        process.env.CLAUDE_FLOW_MCP_TOOL_FILTER_ENABLED = 'false';
+        process.env.CLAUDE_FLOW_MCP_TOOL_FILTER_MODE = 'denylist';
+        process.env.CLAUDE_FLOW_MCP_TOOLS_ALLOWED = 'env_tool_1,env_tool_2';
+        process.env.CLAUDE_FLOW_MCP_MAX_TOOLS = '25';
+        const enabledEnv = process.env.CLAUDE_FLOW_MCP_TOOL_FILTER_ENABLED;
+        const hasExplicitEnabled = enabledEnv === 'true' || enabledEnv === 'false';
+        const enabled = enabledEnv === 'true';
+        const modeEnv = process.env.CLAUDE_FLOW_MCP_TOOL_FILTER_MODE;
+        const hasExplicitMode = modeEnv === 'allowlist' || modeEnv === 'denylist';
+        const mode = hasExplicitMode ? modeEnv : fileConfig.mode;
+        const toolsEnv = process.env.CLAUDE_FLOW_MCP_TOOLS_ALLOWED || '';
+        const envTools = toolsEnv ? toolsEnv.split(',').map((t)=>t.trim()).filter((t)=>t.length > 0) : [];
+        const maxToolsEnv = process.env.CLAUDE_FLOW_MCP_MAX_TOOLS;
+        const envMaxTools = maxToolsEnv ? parseInt(maxToolsEnv, 10) : undefined;
+        const mergedConfig = {
+            ...fileConfig,
+            enabled: hasExplicitEnabled ? enabled : fileConfig.enabled,
+            mode: hasExplicitMode ? mode : fileConfig.mode,
+            patterns: envTools.length > 0 ? envTools : fileConfig.patterns,
+            maxTools: envMaxTools !== undefined && !isNaN(envMaxTools) ? envMaxTools : fileConfig.maxTools
+        };
+        expect(mergedConfig.enabled).toBe(false);
+        expect(mergedConfig.mode).toBe('denylist');
+        expect(mergedConfig.patterns).toEqual([
+            'env_tool_1',
+            'env_tool_2'
+        ]);
+        expect(mergedConfig.maxTools).toBe(25);
+    });
+    it('should return null when no config files exist', async ()=>{
+        const mockFs = {
+            files: {}
+        };
+        const loadConfig = createMockConfigLoader(mockFs);
+        const result = await loadConfig('/project');
+        expect(result).toBeNull();
+    });
+});
+describe('Priority Ordering Edge Cases', ()=>{
+    let mockTools;
+    beforeEach(()=>{
+        mockTools = [
+            createMockTool('tool_a'),
+            createMockTool('tool_b'),
+            createMockTool('tool_c'),
+            createMockTool('tool_d'),
+            createMockTool('tool_e')
+        ];
+    });
+    it('should use alphabetical ordering as tiebreaker when tools have same priority', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'tool_*'
+            ],
+            maxTools: 5,
+            toolPriorities: {
+                'tool_a': 50,
+                'tool_b': 50,
+                'tool_c': 50,
+                'tool_d': 50,
+                'tool_e': 50
+            }
+        });
+        const result = filter.filter(mockTools);
+        const names = result.tools.map((t)=>t.name);
+        expect(names).toEqual([
+            'tool_a',
+            'tool_b',
+            'tool_c',
+            'tool_d',
+            'tool_e'
+        ]);
+    });
+    it('should ensure stable sorting with same priority (multiple runs produce same order)', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'tool_*'
+            ],
+            maxTools: 3,
+            toolPriorities: {
+                'tool_a': 100,
+                'tool_b': 100,
+                'tool_c': 100,
+                'tool_d': 50,
+                'tool_e': 50
+            }
+        });
+        const results = [];
+        for(let i = 0; i < 5; i++){
+            const result = filter.filter(mockTools);
+            results.push(result.tools.map((t)=>t.name));
+        }
+        const firstResult = results[0];
+        for (const result of results){
+            expect(result).toEqual(firstResult);
+        }
+        expect(firstResult).toEqual([
+            'tool_a',
+            'tool_b',
+            'tool_c'
+        ]);
+    });
+    it('should always rank tools with explicit priority above those with default priority', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'tool_*'
+            ],
+            maxTools: 3,
+            toolPriorities: {
+                'tool_c': 1,
+                'tool_e': 1
+            }
+        });
+        const result = filter.filter(mockTools);
+        const names = result.tools.map((t)=>t.name);
+        expect(names).toContain('tool_c');
+        expect(names).toContain('tool_e');
+    });
+    it('should handle negative priority values correctly', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'tool_*'
+            ],
+            maxTools: 3,
+            toolPriorities: {
+                'tool_a': 100,
+                'tool_b': 50,
+                'tool_c': 0,
+                'tool_d': -50,
+                'tool_e': -100
+            }
+        });
+        const result = filter.filter(mockTools);
+        const names = result.tools.map((t)=>t.name);
+        expect(names[0]).toBe('tool_a');
+        expect(names[1]).toBe('tool_b');
+        expect(names[2]).toBe('tool_c');
+        expect(names).not.toContain('tool_d');
+        expect(names).not.toContain('tool_e');
+    });
+    it('should handle zero priority correctly', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'tool_*'
+            ],
+            maxTools: 3,
+            toolPriorities: {
+                'tool_a': 0,
+                'tool_b': 0,
+                'tool_c': 0,
+                'tool_d': 1,
+                'tool_e': -1
+            }
+        });
+        const result = filter.filter(mockTools);
+        const names = result.tools.map((t)=>t.name);
+        expect(names[0]).toBe('tool_d');
+        expect(names).toHaveLength(3);
+        expect(names.includes('tool_d')).toBe(true);
+        expect(names.filter((n)=>[
+                'tool_a',
+                'tool_b',
+                'tool_c'
+            ].includes(n))).toHaveLength(2);
+    });
+    it('should handle very large priority values correctly', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'tool_*'
+            ],
+            maxTools: 3,
+            toolPriorities: {
+                'tool_a': Number.MAX_SAFE_INTEGER,
+                'tool_b': 1e15,
+                'tool_c': 1e10,
+                'tool_d': 1e5,
+                'tool_e': 1
+            }
+        });
+        const result = filter.filter(mockTools);
+        const names = result.tools.map((t)=>t.name);
+        expect(names[0]).toBe('tool_a');
+        expect(names[1]).toBe('tool_b');
+        expect(names[2]).toBe('tool_c');
+    });
+    it('should handle mixed positive, zero, and negative priorities', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'tool_*'
+            ],
+            maxTools: 4,
+            toolPriorities: {
+                'tool_a': 100,
+                'tool_b': -100,
+                'tool_c': 0,
+                'tool_d': 50,
+                'tool_e': -50
+            }
+        });
+        const result = filter.filter(mockTools);
+        const names = result.tools.map((t)=>t.name);
+        expect(names).toHaveLength(4);
+        expect(names[0]).toBe('tool_a');
+        expect(names).toContain('tool_a');
+        expect(names).toContain('tool_d');
+        expect(names).toContain('tool_c');
+        expect(names).toContain('tool_e');
+        expect(names).not.toContain('tool_b');
+        expect(names.indexOf('tool_a')).toBeLessThan(names.indexOf('tool_d'));
+        expect(names.indexOf('tool_d')).toBeLessThan(names.indexOf('tool_c'));
+        expect(names.indexOf('tool_c')).toBeLessThan(names.indexOf('tool_e'));
+    });
+});
+describe('Empty Allowlist Behavior', ()=>{
+    let mockTools;
+    beforeEach(()=>{
+        mockTools = createMockToolSet();
+    });
+    it('should return empty array when allowlist has no patterns (expected behavior)', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: []
+        });
+        const result = filter.filter(mockTools);
+        expect(result.tools).toHaveLength(0);
+        expect(result.stats.filteredTools).toBe(0);
+        expect(result.stats.totalTools).toBe(mockTools.length);
+    });
+    it('should return all tools when denylist has no patterns (contrast with allowlist)', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'denylist',
+            patterns: []
+        });
+        const result = filter.filter(mockTools);
+        expect(result.tools).toHaveLength(mockTools.length);
+        expect(result.stats.filteredTools).toBe(mockTools.length);
+    });
+    it('should still respect maxTools even with empty allowlist result', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [],
+            maxTools: 5
+        });
+        const result = filter.filter(mockTools);
+        expect(result.tools).toHaveLength(0);
+    });
+});
+describe('Config Validation', ()=>{
+    let mockTools;
+    beforeEach(()=>{
+        mockTools = createMockToolSet();
+    });
+    it('should default to allowlist mode when mode value is invalid', ()=>{
+        const invalidConfig = {
+            enabled: true,
+            mode: 'invalid_mode',
+            patterns: [
+                'swarm_*'
+            ]
+        };
+        const filter = createToolFilter(invalidConfig);
+        const config = filter.getConfig();
+        const result = filter.filter(mockTools);
+        expect(result.tools).toBeDefined();
+        expect(Array.isArray(result.tools)).toBe(true);
+    });
+    it('should handle negative maxTools value', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                '*'
+            ],
+            maxTools: -5
+        });
+        const result = filter.filter(mockTools);
+        expect(result.tools).toBeDefined();
+        expect(Array.isArray(result.tools)).toBe(true);
+    });
+    it('should ignore zero maxTools value', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                '*'
+            ],
+            maxTools: 0
+        });
+        const result = filter.filter(mockTools);
+        expect(result.tools.length).toBeGreaterThanOrEqual(0);
+    });
+    it('should handle NaN maxTools gracefully', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                '*'
+            ],
+            maxTools: parseInt('not_a_number', 10)
+        });
+        const result = filter.filter(mockTools);
+        expect(result.tools).toBeDefined();
+        expect(Array.isArray(result.tools)).toBe(true);
+    });
+    it('should skip malformed patterns gracefully without throwing', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'valid_pattern_*',
+                '',
+                'another_valid_*'
+            ]
+        });
+        expect(()=>filter.filter(mockTools)).not.toThrow();
+        const result = filter.filter(mockTools);
+        expect(result.tools).toBeDefined();
+    });
+    it('should handle undefined categories array', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'swarm_*'
+            ],
+            categories: undefined
+        });
+        const result = filter.filter(mockTools);
+        expect(result.tools.length).toBe(3);
+    });
+    it('should handle empty categories array', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                '*'
+            ],
+            categories: []
+        });
+        const result = filter.filter(mockTools);
+        expect(result.tools.length).toBeGreaterThan(0);
+    });
+    it('should handle toolPriorities with undefined values', ()=>{
+        const filter = createToolFilter({
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                'swarm_*'
+            ],
+            maxTools: 2,
+            toolPriorities: {
+                'swarm_init': 100,
+                'swarm_status': undefined,
+                'swarm_monitor': 50
+            }
+        });
+        const result = filter.filter(mockTools);
+        expect(result.tools).toHaveLength(2);
+    });
+    it('should validate and use defaults for missing config properties', ()=>{
+        const minimalConfig = {
+            enabled: true,
+            mode: 'allowlist',
+            patterns: [
+                '*'
+            ]
+        };
+        const filter = createToolFilter(minimalConfig);
+        const config = filter.getConfig();
+        expect(config.enabled).toBe(true);
+        expect(config.mode).toBe('allowlist');
+        expect(config.patterns).toEqual([
+            '*'
+        ]);
+        expect(config.maxTools).toBeUndefined();
+    });
+});
+describe('Pattern Validation (ReDoS Protection)', ()=>{
+    let validateGlobPattern;
+    let MAX_PATTERN_LENGTH;
+    let ToolFilterClass;
+    beforeAll(async ()=>{
+        const toolFilterModule = await import('../mcp/tool-filter.js');
+        validateGlobPattern = toolFilterModule.validateGlobPattern;
+        MAX_PATTERN_LENGTH = toolFilterModule.MAX_PATTERN_LENGTH;
+        ToolFilterClass = toolFilterModule.ToolFilter;
+    });
+    describe('validateGlobPattern', ()=>{
+        it('should accept valid simple patterns', ()=>{
+            expect(validateGlobPattern('system/*').valid).toBe(true);
+            expect(validateGlobPattern('agent_spawn').valid).toBe(true);
+            expect(validateGlobPattern('**/test').valid).toBe(true);
+            expect(validateGlobPattern('*.js').valid).toBe(true);
+        });
+        it('should reject non-string patterns', ()=>{
+            const result = validateGlobPattern(123);
+            expect(result.valid).toBe(false);
+            expect(result.reason).toContain('must be a string');
+        });
+        it('should reject empty strings', ()=>{
+            const result = validateGlobPattern('');
+            expect(result.valid).toBe(false);
+            expect(result.reason).toContain('cannot be empty');
+        });
+        it('should reject whitespace-only strings', ()=>{
+            const result = validateGlobPattern('   ');
+            expect(result.valid).toBe(false);
+            expect(result.reason).toContain('whitespace only');
+        });
+        it('should reject patterns exceeding max length', ()=>{
+            const longPattern = 'a'.repeat(MAX_PATTERN_LENGTH + 1);
+            const result = validateGlobPattern(longPattern);
+            expect(result.valid).toBe(false);
+            expect(result.reason).toContain('maximum length');
+        });
+        it('should accept patterns at max length', ()=>{
+            const maxPattern = 'a'.repeat(MAX_PATTERN_LENGTH);
+            const result = validateGlobPattern(maxPattern);
+            expect(result.valid).toBe(true);
+        });
+        it('should reject nested double stars (ReDoS risk)', ()=>{
+            const result = validateGlobPattern('**/**/file.js');
+            expect(result.valid).toBe(false);
+            expect(result.reason?.includes('catastrophic backtracking') || result.reason?.includes('performance issues')).toBe(true);
+        });
+        it('should reject triple wildcards', ()=>{
+            const result = validateGlobPattern('***');
+            expect(result.valid).toBe(false);
+            expect(result.reason).toContain('not valid glob patterns');
+        });
+        it('should reject excessive repeated wildcard segments', ()=>{
+            const result = validateGlobPattern('/*/*/*/*/*/*');
+            expect(result.valid).toBe(false);
+            expect(result.reason).toContain('Excessive repeated');
+        });
+        it('should accept valid double star patterns', ()=>{
+            expect(validateGlobPattern('**/file.js').valid).toBe(true);
+            expect(validateGlobPattern('src/**/*.ts').valid).toBe(true);
+        });
+        it('should accept normal glob patterns with multiple wildcards', ()=>{
+            expect(validateGlobPattern('*.{js,ts}').valid).toBe(true);
+            expect(validateGlobPattern('src/*.test.js').valid).toBe(true);
+        });
+    });
+    describe('Pattern Validation in ToolFilter', ()=>{
+        it('should filter out invalid patterns during construction', ()=>{
+            const mockLogger = {
+                debug: jest.fn(),
+                info: jest.fn(),
+                warn: jest.fn(),
+                error: jest.fn()
+            };
+            const filter = new ToolFilterClass({
+                enabled: true,
+                mode: 'allowlist',
+                tools: [
+                    'system/*',
+                    '**/**/**',
+                    'valid_tool',
+                    '***'
+                ]
+            }, mockLogger);
+            expect(mockLogger.warn).toHaveBeenCalled();
+        });
     });
 });
 

@@ -9,12 +9,61 @@
  * Priority order (highest to lowest):
  * 1. Environment variables (override file config)
  * 2. Config files (first found wins)
+ *
+ * @module tool-filter-config
+ */
+
+/*
+ * ============================================================================
+ * CONFIGURATION FILE FORMAT SUPPORT
+ * ============================================================================
+ *
+ * JSON files (.json):
+ *   - Full support for all configuration options
+ *   - Recommended for complex configurations
+ *   - Supports all nested structures, arrays, and data types
+ *
+ * YAML files (.yaml, .yml):
+ *   - Full YAML 1.2 support via the 'yaml' library
+ *   - Supports all standard YAML features including:
+ *     - Multi-line strings (block scalars: | and >)
+ *     - Anchors and aliases (&anchor, *alias)
+ *     - Flow style collections ({key: value}, [item1, item2])
+ *     - Tags (!!str, !!int, etc.)
+ *     - Multiple documents (--- separator)
+ *     - Complex keys
+ *
+ * Both formats work equally well. Choose based on your preference:
+ *   - JSON: Stricter syntax, better IDE support, easier to validate
+ *   - YAML: More human-readable, supports comments, less verbose
+ *
+ * Example YAML configuration:
+ *   toolFilter:
+ *     enabled: true
+ *     mode: allowlist
+ *     tools:
+ *       - swarm_init
+ *       - agent_spawn
+ *     maxTools: 50
+ *
+ * Example JSON configuration:
+ *   {
+ *     "toolFilter": {
+ *       "enabled": true,
+ *       "mode": "allowlist",
+ *       "tools": ["swarm_init", "agent_spawn"],
+ *       "maxTools": 50
+ *     }
+ *   }
+ * ============================================================================
  */
 
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
+import { parse as parseYaml } from 'yaml';
 import type { MCPToolFilterConfig } from '../utils/types.js';
 import type { ILogger } from '../core/logger.js';
+import { validateGlobPattern, MAX_PATTERN_LENGTH } from './tool-filter.js';
 
 /**
  * Default paths to search for tool filter configuration files
@@ -34,6 +83,184 @@ export interface LoadedToolFilterConfig {
   config: MCPToolFilterConfig;
   /** Source of the configuration (file path or 'environment') */
   source: string;
+}
+
+/**
+ * Result of configuration validation
+ */
+export interface ConfigValidationResult {
+  /** Whether the configuration is valid (no errors) */
+  valid: boolean;
+  /** List of validation errors (invalid configuration) */
+  errors: string[];
+  /** List of warnings (valid but potentially problematic) */
+  warnings: string[];
+}
+
+/** Known properties in MCPToolFilterConfig */
+const KNOWN_CONFIG_PROPERTIES = new Set([
+  'enabled',
+  'mode',
+  'tools',
+  'categories',
+  'maxTools',
+  'priorities',
+]);
+
+/** Maximum recommended number of patterns before performance warning */
+const MAX_RECOMMENDED_PATTERNS = 100;
+
+/**
+ * Validate tool filter configuration schema
+ *
+ * Performs comprehensive validation of the configuration structure and values.
+ * Returns errors for invalid configurations and warnings for edge cases.
+ *
+ * @param config - The configuration to validate (unknown type for runtime validation)
+ * @returns Validation result with errors and warnings
+ */
+export function validateToolFilterConfig(config: unknown): ConfigValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Must be an object
+  if (config === null || typeof config !== 'object') {
+    return {
+      valid: false,
+      errors: ['Configuration must be an object'],
+      warnings: [],
+    };
+  }
+
+  const configObj = config as Record<string, unknown>;
+
+  // Check for unknown properties
+  for (const key of Object.keys(configObj)) {
+    if (!KNOWN_CONFIG_PROPERTIES.has(key)) {
+      warnings.push(`Unknown property '${key}' will be ignored`);
+    }
+  }
+
+  // Validate 'enabled' - must be boolean if present
+  if ('enabled' in configObj && typeof configObj.enabled !== 'boolean') {
+    errors.push(`'enabled' must be a boolean, got ${typeof configObj.enabled}`);
+  }
+
+  // Validate 'mode' - must be 'allowlist' or 'denylist' if present
+  if ('mode' in configObj) {
+    if (configObj.mode !== 'allowlist' && configObj.mode !== 'denylist') {
+      errors.push(`'mode' must be 'allowlist' or 'denylist', got '${String(configObj.mode)}'`);
+    }
+  }
+
+  // Validate 'tools' - must be array of strings if present
+  if ('tools' in configObj) {
+    if (!Array.isArray(configObj.tools)) {
+      errors.push(`'tools' must be an array, got ${typeof configObj.tools}`);
+    } else {
+      // Check each element is a string
+      const nonStrings = configObj.tools
+        .map((t, i) => ({ value: t, index: i }))
+        .filter(({ value }) => typeof value !== 'string');
+
+      if (nonStrings.length > 0) {
+        const indices = nonStrings.map(({ index }) => index).join(', ');
+        errors.push(`'tools' array must contain only strings, non-string values at indices: ${indices}`);
+      }
+
+      // Validate each pattern for ReDoS protection
+      for (let i = 0; i < configObj.tools.length; i++) {
+        const pattern = configObj.tools[i];
+        if (typeof pattern === 'string') {
+          const validationResult = validateGlobPattern(pattern);
+          if (!validationResult.valid) {
+            warnings.push(`Tool pattern at index ${i} ('${pattern.substring(0, 50)}${pattern.length > 50 ? '...' : ''}'): ${validationResult.reason}`);
+          }
+        }
+      }
+
+      // Warn about empty tools array in allowlist mode
+      const mode = configObj.mode ?? 'allowlist';
+      if (configObj.tools.length === 0 && mode === 'allowlist') {
+        warnings.push("Empty 'tools' array in allowlist mode will match nothing");
+      }
+
+      // Performance warning for large number of patterns
+      if (configObj.tools.length > MAX_RECOMMENDED_PATTERNS) {
+        warnings.push(
+          `Large number of tool patterns (${configObj.tools.length}) may impact performance. Consider using categories or wildcards.`
+        );
+      }
+    }
+  }
+
+  // Validate 'categories' - must be array of strings if present
+  if ('categories' in configObj) {
+    if (!Array.isArray(configObj.categories)) {
+      errors.push(`'categories' must be an array, got ${typeof configObj.categories}`);
+    } else {
+      // Check each element is a string
+      const nonStrings = configObj.categories
+        .map((c, i) => ({ value: c, index: i }))
+        .filter(({ value }) => typeof value !== 'string');
+
+      if (nonStrings.length > 0) {
+        const indices = nonStrings.map(({ index }) => index).join(', ');
+        errors.push(`'categories' array must contain only strings, non-string values at indices: ${indices}`);
+      }
+
+      // Validate each category for ReDoS protection
+      for (let i = 0; i < configObj.categories.length; i++) {
+        const category = configObj.categories[i];
+        if (typeof category === 'string') {
+          const validationResult = validateGlobPattern(category);
+          if (!validationResult.valid) {
+            warnings.push(`Category pattern at index ${i} ('${category.substring(0, 50)}${category.length > 50 ? '...' : ''}'): ${validationResult.reason}`);
+          }
+        }
+      }
+
+      // Performance warning for large number of categories
+      if (configObj.categories.length > MAX_RECOMMENDED_PATTERNS) {
+        warnings.push(
+          `Large number of category patterns (${configObj.categories.length}) may impact performance.`
+        );
+      }
+    }
+  }
+
+  // Validate 'maxTools' - must be positive integer if present
+  if ('maxTools' in configObj) {
+    const maxTools = configObj.maxTools;
+    if (typeof maxTools !== 'number') {
+      errors.push(`'maxTools' must be a number, got ${typeof maxTools}`);
+    } else if (!Number.isInteger(maxTools)) {
+      errors.push(`'maxTools' must be an integer, got ${maxTools}`);
+    } else if (maxTools <= 0) {
+      warnings.push(`'maxTools' is ${maxTools}, which will be ignored (must be positive)`);
+    }
+  }
+
+  // Validate 'priorities' - must be object with string keys and number values if present
+  if ('priorities' in configObj) {
+    const priorities = configObj.priorities;
+    if (priorities === null || typeof priorities !== 'object' || Array.isArray(priorities)) {
+      errors.push(`'priorities' must be an object, got ${Array.isArray(priorities) ? 'array' : typeof priorities}`);
+    } else {
+      const prioritiesObj = priorities as Record<string, unknown>;
+      for (const [key, value] of Object.entries(prioritiesObj)) {
+        if (typeof value !== 'number') {
+          errors.push(`'priorities.${key}' must be a number, got ${typeof value}`);
+        }
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+  };
 }
 
 /**
@@ -122,7 +349,16 @@ async function loadFromConfigFiles(
 
       // Look for toolFilter in the parsed config
       if (parsed.toolFilter) {
-        const config = validateAndNormalize(parsed.toolFilter);
+        // Validate the configuration
+        const validation = validateToolFilterConfig(parsed.toolFilter);
+        logValidationResults(logger, validation, configPath);
+
+        if (!validation.valid) {
+          logger.error(`Invalid tool filter configuration in ${configPath}, using defaults`);
+          continue;
+        }
+
+        const config = validateAndNormalize(parsed.toolFilter, validation);
         logger.info('Loaded tool filter config from file', { source: configPath });
         return {
           config,
@@ -132,7 +368,16 @@ async function loadFromConfigFiles(
 
       // Also support root-level config (entire file is the tool filter config)
       if (parsed.enabled !== undefined && parsed.mode !== undefined) {
-        const config = validateAndNormalize(parsed);
+        // Validate the configuration
+        const validation = validateToolFilterConfig(parsed);
+        logValidationResults(logger, validation, configPath);
+
+        if (!validation.valid) {
+          logger.error(`Invalid tool filter configuration in ${configPath}, using defaults`);
+          continue;
+        }
+
+        const config = validateAndNormalize(parsed, validation);
         logger.info('Loaded tool filter config from file (root level)', { source: configPath });
         return {
           config,
@@ -152,7 +397,31 @@ async function loadFromConfigFiles(
 }
 
 /**
+ * Log validation errors and warnings
+ */
+function logValidationResults(
+  logger: ILogger,
+  validation: ConfigValidationResult,
+  source: string
+): void {
+  for (const error of validation.errors) {
+    logger.error(`Config validation error in ${source}: ${error}`);
+  }
+  for (const warning of validation.warnings) {
+    logger.warn(`Config validation warning in ${source}: ${warning}`);
+  }
+}
+
+/**
  * Parse configuration file based on extension
+ *
+ * Supports JSON and YAML formats. YAML parsing uses the full-featured 'yaml'
+ * library which supports all YAML 1.2 features including:
+ * - Multi-line strings (block scalars)
+ * - Anchors and aliases
+ * - Flow style collections
+ * - Tags and custom types
+ * - Multiple documents
  */
 function parseConfigFile(content: string, path: string): Record<string, unknown> {
   if (path.endsWith('.json')) {
@@ -160,8 +429,12 @@ function parseConfigFile(content: string, path: string): Record<string, unknown>
   }
 
   if (path.endsWith('.yaml') || path.endsWith('.yml')) {
-    // Basic YAML support - for full YAML, consider adding js-yaml dependency
-    return parseBasicYaml(content);
+    const parsed = parseYaml(content);
+    // Ensure we return an object (YAML can parse to primitives)
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+    return parsed as Record<string, unknown>;
   }
 
   // Try JSON by default
@@ -237,140 +510,62 @@ function loadEnvironmentOverrides(): {
 
 /**
  * Validate and normalize configuration to ensure all required fields are present
+ *
+ * Uses validation result to filter out invalid values and use defaults instead.
+ *
+ * @param config - Partial configuration to normalize
+ * @param validation - Optional validation result to use for filtering invalid values
+ * @returns Fully normalized configuration with all required fields
  */
-function validateAndNormalize(config: Partial<MCPToolFilterConfig>): MCPToolFilterConfig {
+function validateAndNormalize(
+  config: Partial<MCPToolFilterConfig>,
+  validation?: ConfigValidationResult
+): MCPToolFilterConfig {
+  const hasError = (field: string): boolean => {
+    if (!validation) return false;
+    return validation.errors.some((e) => e.includes(`'${field}'`));
+  };
+
+  // Filter tools array - remove non-strings if validation passed but array has issues
+  let tools = DEFAULT_CONFIG.tools;
+  if (Array.isArray(config.tools) && !hasError('tools')) {
+    tools = config.tools.filter((t): t is string => typeof t === 'string');
+  }
+
+  // Filter categories array - remove non-strings
+  let categories: string[] | undefined = undefined;
+  if (Array.isArray(config.categories) && !hasError('categories')) {
+    const filtered = config.categories.filter((c): c is string => typeof c === 'string');
+    categories = filtered.length > 0 ? filtered : undefined;
+  }
+
+  // Filter priorities - remove non-number values
+  let priorities: Record<string, number> | undefined = undefined;
+  if (
+    typeof config.priorities === 'object' &&
+    config.priorities !== null &&
+    !Array.isArray(config.priorities) &&
+    !hasError('priorities')
+  ) {
+    const filtered: Record<string, number> = {};
+    for (const [key, value] of Object.entries(config.priorities)) {
+      if (typeof value === 'number') {
+        filtered[key] = value;
+      }
+    }
+    priorities = Object.keys(filtered).length > 0 ? filtered : undefined;
+  }
+
   return {
-    enabled: config.enabled ?? DEFAULT_CONFIG.enabled,
-    mode: config.mode ?? DEFAULT_CONFIG.mode,
-    tools: Array.isArray(config.tools) ? config.tools : DEFAULT_CONFIG.tools,
-    categories: Array.isArray(config.categories) ? config.categories : undefined,
+    enabled: hasError('enabled') ? DEFAULT_CONFIG.enabled : (config.enabled ?? DEFAULT_CONFIG.enabled),
+    mode: hasError('mode') ? DEFAULT_CONFIG.mode : (config.mode ?? DEFAULT_CONFIG.mode),
+    tools,
+    categories,
     maxTools:
-      typeof config.maxTools === 'number' && config.maxTools > 0 ? config.maxTools : undefined,
-    priorities:
-      typeof config.priorities === 'object' && config.priorities !== null
-        ? config.priorities
+      typeof config.maxTools === 'number' && config.maxTools > 0 && !hasError('maxTools')
+        ? config.maxTools
         : undefined,
+    priorities,
   };
 }
 
-/**
- * Basic YAML parser for simple key-value configurations
- *
- * Supports:
- * - Simple key: value pairs
- * - Nested objects
- * - Arrays with dash notation
- * - Comments (#)
- * - Quoted strings
- * - Booleans and numbers
- *
- * Note: For complex YAML, consider using js-yaml library.
- * This is a basic implementation for simple configuration files.
- */
-function parseBasicYaml(content: string): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  const lines = content.split('\n');
-  const stack: Array<{ obj: Record<string, unknown>; indent: number }> = [
-    { obj: result, indent: -1 },
-  ];
-  let currentArray: unknown[] | null = null;
-  let currentArrayKey = '';
-  let currentArrayIndent = -1;
-
-  for (const line of lines) {
-    // Skip empty lines and comments
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) {
-      continue;
-    }
-
-    // Calculate indentation
-    const indent = line.search(/\S/);
-
-    // Check if this is an array item
-    if (trimmed.startsWith('- ')) {
-      const value = trimmed.substring(2).trim();
-
-      if (currentArray && indent >= currentArrayIndent) {
-        currentArray.push(parseYamlValue(value));
-      }
-      continue;
-    }
-
-    // Reset array context if indentation decreased
-    if (indent <= currentArrayIndent) {
-      currentArray = null;
-      currentArrayKey = '';
-      currentArrayIndent = -1;
-    }
-
-    // Parse key: value pair
-    const colonIndex = trimmed.indexOf(':');
-    if (colonIndex === -1) {
-      continue;
-    }
-
-    const key = trimmed.substring(0, colonIndex).trim();
-    const rawValue = trimmed.substring(colonIndex + 1).trim();
-
-    // Pop stack until we find the correct parent
-    while (stack.length > 1 && stack[stack.length - 1].indent >= indent) {
-      stack.pop();
-    }
-
-    const parent = stack[stack.length - 1].obj;
-
-    if (rawValue === '' || rawValue === null) {
-      // This key introduces a new object or array
-      // Check if next line starts with '-' for array
-      const lineIdx = lines.indexOf(line);
-      const nextLineIdx = lines.findIndex(
-        (l, i) => i > lineIdx && l.trim() !== '' && !l.trim().startsWith('#')
-      );
-      const nextLine = nextLineIdx >= 0 ? lines[nextLineIdx] : '';
-
-      if (nextLine.trim().startsWith('- ')) {
-        // This is an array
-        const arr: unknown[] = [];
-        parent[key] = arr;
-        currentArray = arr;
-        currentArrayKey = key;
-        currentArrayIndent = nextLine.search(/\S/);
-      } else {
-        // This is a nested object
-        const newObj: Record<string, unknown> = {};
-        parent[key] = newObj;
-        stack.push({ obj: newObj, indent });
-      }
-    } else {
-      // Simple value
-      parent[key] = parseYamlValue(rawValue);
-    }
-  }
-
-  return result;
-}
-
-/**
- * Parse a YAML value into its appropriate type
- */
-function parseYamlValue(value: string): unknown {
-  // Handle quoted strings
-  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-    return value.slice(1, -1);
-  }
-
-  // Handle booleans
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-
-  // Handle null
-  if (value === 'null' || value === '~') return null;
-
-  // Handle numbers
-  const num = Number(value);
-  if (!isNaN(num) && value !== '') return num;
-
-  // Default to string
-  return value;
-}

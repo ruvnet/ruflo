@@ -24,6 +24,9 @@ export class HelpFormatter {
         if (info.examples && info.examples.length > 0) {
             sections.push(this.formatSection('EXAMPLES', info.examples));
         }
+        if (info.details) {
+            sections.push('\n' + info.details);
+        }
         if (info.commands && info.commands.length > 0) {
             sections.push(`Run '${info.name} <command> --help' for more information on a command.`);
         }

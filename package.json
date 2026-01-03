@@ -186,7 +186,7 @@
     "ts-jest": "^29.4.0",
     "tsx": "^4.6.2",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.37.0"
+    "typescript-eslint": "^8.51.0"
   },
   "pkg": {
     "targets": [

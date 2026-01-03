@@ -1,4 +1,90 @@
 import { minimatch } from 'minimatch';
+export const MAX_PATTERN_LENGTH = 200;
+const DANGEROUS_PATTERN_CHECKS = [
+    {
+        pattern: /\*\*[^/]*\*\*/,
+        reason: 'Nested double stars (**/**) can cause catastrophic backtracking'
+    },
+    {
+        pattern: /\*\*\/\*\*\//,
+        reason: 'Consecutive double star segments (**/**/) can cause performance issues'
+    },
+    {
+        pattern: /\*{3,}/,
+        reason: 'Triple or more consecutive wildcards (***) are not valid glob patterns'
+    },
+    {
+        pattern: /\[[^\]]*\*[^\]]*\*[^\]]*\]/,
+        reason: 'Multiple wildcards in character class can cause performance issues'
+    },
+    {
+        pattern: /(?:\/\*){5,}/,
+        reason: 'Excessive repeated wildcard segments can cause performance issues'
+    },
+    {
+        pattern: /\{[^}]*\*[^}]*,[^}]*\*[^}]*\}/,
+        reason: 'Alternation with multiple wildcard options can cause performance issues'
+    }
+];
+export function validateGlobPattern(pattern) {
+    if (typeof pattern !== 'string') {
+        return {
+            valid: false,
+            reason: `Pattern must be a string, got ${typeof pattern}`
+        };
+    }
+    if (pattern.length === 0) {
+        return {
+            valid: false,
+            reason: 'Pattern cannot be empty'
+        };
+    }
+    if (pattern.trim().length === 0) {
+        return {
+            valid: false,
+            reason: 'Pattern cannot be whitespace only'
+        };
+    }
+    if (pattern.length > MAX_PATTERN_LENGTH) {
+        return {
+            valid: false,
+            reason: `Pattern exceeds maximum length of ${MAX_PATTERN_LENGTH} characters (got ${pattern.length})`
+        };
+    }
+    for (const check of DANGEROUS_PATTERN_CHECKS){
+        if (check.pattern.test(pattern)) {
+            return {
+                valid: false,
+                reason: check.reason
+            };
+        }
+    }
+    return {
+        valid: true
+    };
+}
+export function validateAndFilterPatterns(patterns, logger, context) {
+    const validPatterns = [];
+    for (const pattern of patterns){
+        const result = validateGlobPattern(pattern);
+        if (result.valid) {
+            validPatterns.push(pattern);
+        } else {
+            logger.warn(`Invalid ${context} pattern skipped: "${String(pattern)}"`, {
+                reason: result.reason
+            });
+        }
+    }
+    return validPatterns;
+}
+const CORE_SYSTEM_TOOLS = [
+    'system/info',
+    'system/health',
+    'swarm_init',
+    'swarm_status',
+    'agent_spawn',
+    'agent_list'
+];
 const DEFAULT_PRIORITIES = {
     'system/info': 100,
     'system/health': 100,
@@ -15,28 +101,64 @@ const DEFAULT_PRIORITIES = {
     'swarm/status': 75
 };
 const DEFAULT_TOOL_PRIORITY = 50;
+const DEFAULT_CACHE_TTL = 60000;
 export class ToolFilter {
     config;
     logger;
     stats;
+    cache = null;
+    cacheHits = 0;
+    cacheMisses = 0;
     constructor(config, logger){
+        this.logger = logger;
         this.config = config ?? {
             enabled: false,
             mode: 'allowlist',
             tools: []
         };
-        this.logger = logger;
+        if (this.config.enabled) {
+            this.config = this.validateConfigPatterns(this.config);
+        }
         this.stats = this.createEmptyStats();
         if (this.config.enabled) {
             this.logger.info('Tool filter initialized', {
                 mode: this.config.mode,
                 toolPatterns: this.config.tools.length,
                 categories: this.config.categories?.length ?? 0,
-                maxTools: this.config.maxTools
+                maxTools: this.config.maxTools,
+                cacheEnabled: this.config.enableCache ?? false,
+                cacheTtl: this.config.cacheTtl ?? DEFAULT_CACHE_TTL
             });
         } else {
             this.logger.debug('Tool filtering disabled');
         }
+    }
+    validateConfigPatterns(config) {
+        const validatedConfig = {
+            ...config
+        };
+        if (config.tools && config.tools.length > 0) {
+            validatedConfig.tools = validateAndFilterPatterns(config.tools, this.logger, 'tool');
+        }
+        if (config.categories && config.categories.length > 0) {
+            validatedConfig.categories = validateAndFilterPatterns(config.categories, this.logger, 'category');
+        }
+        return validatedConfig;
+    }
+    generateCacheKey(tools) {
+        const sortedNames = tools.map((t)=>t.name).sort();
+        return sortedNames.join('|');
+    }
+    isCacheValid(key) {
+        if (!this.cache) {
+            return false;
+        }
+        if (this.cache.key !== key) {
+            return false;
+        }
+        const ttl = this.config.cacheTtl ?? DEFAULT_CACHE_TTL;
+        const elapsed = Date.now() - this.cache.timestamp;
+        return elapsed < ttl;
     }
     createEmptyStats() {
         return {
@@ -46,9 +168,12 @@ export class ToolFilter {
             truncatedTools: 0,
             excludedToolNames: [],
             truncatedToolNames: [],
+            excludedCoreTools: [],
             filterMode: this.config.enabled ? this.config.mode : 'disabled',
             enabled: this.config.enabled,
-            lastFilterTimestamp: null
+            lastFilterTimestamp: null,
+            cacheHits: this.cacheHits,
+            cacheMisses: this.cacheMisses
         };
     }
     matchesPatterns(toolName, patterns) {
@@ -101,6 +226,24 @@ export class ToolFilter {
         }
     }
     filterTools(tools) {
+        if (this.config.enableCache) {
+            const cacheKey = this.generateCacheKey(tools);
+            if (this.isCacheValid(cacheKey)) {
+                this.cacheHits++;
+                this.stats = {
+                    ...this.cache.stats,
+                    cacheHits: this.cacheHits,
+                    cacheMisses: this.cacheMisses
+                };
+                this.stats.lastFilterTimestamp = new Date();
+                this.logger.debug('Cache hit for tool filter', {
+                    cacheKey: cacheKey.substring(0, 50) + '...',
+                    resultCount: this.cache.result.length
+                });
+                return this.cache.result;
+            }
+            this.cacheMisses++;
+        }
         this.stats = this.createEmptyStats();
         this.stats.totalTools = tools.length;
         this.stats.lastFilterTimestamp = new Date();
@@ -132,6 +275,16 @@ export class ToolFilter {
             included: filteredByPattern.length,
             excluded: excludedByPattern.length
         });
+        if (excludedByPattern.length > 0) {
+            const maxToolsToShow = 10;
+            const toolsToShow = excludedByPattern.slice(0, maxToolsToShow);
+            const remaining = excludedByPattern.length - maxToolsToShow;
+            let excludedMessage = toolsToShow.join(', ');
+            if (remaining > 0) {
+                excludedMessage += `, ... and ${remaining} more`;
+            }
+            this.logger.info(`Excluded tools by pattern filter: ${excludedMessage}`);
+        }
         let result = filteredByPattern;
         if (this.config.maxTools !== undefined && filteredByPattern.length > this.config.maxTools) {
             const toolsWithPriority = filteredByPattern.map((tool)=>({
@@ -148,6 +301,7 @@ export class ToolFilter {
             const truncatedTools = toolsWithPriority.slice(this.config.maxTools);
             this.stats.truncatedToolNames = truncatedTools.map((t)=>t.tool.name);
             this.stats.truncatedTools = truncatedTools.length;
+            this.stats.excludedCoreTools = this.stats.truncatedToolNames.filter((toolName)=>CORE_SYSTEM_TOOLS.includes(toolName));
             result = keptTools.map((t)=>t.tool);
             this.logger.warn('Applied maxTools limit', {
                 maxTools: this.config.maxTools,
@@ -155,14 +309,37 @@ export class ToolFilter {
                 resultCount: result.length,
                 truncatedCount: this.stats.truncatedTools
             });
+            if (this.stats.excludedCoreTools.length > 0) {
+                this.logger.warn(`Warning: maxTools limit excluded core system tools: [${this.stats.excludedCoreTools.join(', ')}]. Consider increasing maxTools or adding these to priorities.`);
+            }
         }
         this.stats.filteredTools = result.length;
-        this.logger.info('Tool filtering complete', {
+        const modeLabel = this.config.mode === 'allowlist' ? 'allowlist' : 'denylist';
+        const patternsCount = this.config.tools.length + (this.config.categories?.length ?? 0);
+        this.logger.info(`Tool filter applied (${modeLabel} mode): ${result.length} tools included, ${this.stats.excludedTools} excluded by pattern` + (this.stats.truncatedTools > 0 ? `, ${this.stats.truncatedTools} truncated by maxTools limit` : ''));
+        this.logger.debug('Tool filtering complete', {
             total: this.stats.totalTools,
             filtered: this.stats.filteredTools,
             excluded: this.stats.excludedTools,
-            truncated: this.stats.truncatedTools
+            truncated: this.stats.truncatedTools,
+            patternsMatched: patternsCount
         });
+        if (this.config.enableCache) {
+            const cacheKey = this.generateCacheKey(tools);
+            this.cache = {
+                key: cacheKey,
+                result,
+                timestamp: Date.now(),
+                stats: {
+                    ...this.stats
+                }
+            };
+            this.logger.debug('Cached filter result', {
+                cacheKey: cacheKey.substring(0, 50) + '...',
+                resultCount: result.length,
+                ttl: this.config.cacheTtl ?? DEFAULT_CACHE_TTL
+            });
+        }
         return result;
     }
     getFilterStats() {
@@ -173,19 +350,36 @@ export class ToolFilter {
             ],
             truncatedToolNames: [
                 ...this.stats.truncatedToolNames
+            ],
+            excludedCoreTools: [
+                ...this.stats.excludedCoreTools
             ]
         };
     }
     updateConfig(config) {
-        this.config = config;
+        this.config = config.enabled ? this.validateConfigPatterns(config) : config;
         this.stats = this.createEmptyStats();
+        this.clearCache();
         this.logger.info('Tool filter configuration updated', {
-            enabled: config.enabled,
-            mode: config.mode,
-            toolPatterns: config.tools.length,
-            categories: config.categories?.length ?? 0,
-            maxTools: config.maxTools
+            enabled: this.config.enabled,
+            mode: this.config.mode,
+            toolPatterns: this.config.tools.length,
+            categories: this.config.categories?.length ?? 0,
+            maxTools: this.config.maxTools,
+            cacheEnabled: this.config.enableCache ?? false,
+            cacheTtl: this.config.cacheTtl ?? DEFAULT_CACHE_TTL
         });
+    }
+    clearCache() {
+        if (this.cache) {
+            this.logger.debug('Clearing filter cache', {
+                previousHits: this.cacheHits,
+                previousMisses: this.cacheMisses
+            });
+        }
+        this.cache = null;
+        this.cacheHits = 0;
+        this.cacheMisses = 0;
     }
 }
 export function createToolFilter(config, logger) {

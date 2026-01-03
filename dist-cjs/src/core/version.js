@@ -12,7 +12,7 @@ try {
     BUILD_DATE = new Date().toISOString().split('T')[0];
 } catch (error) {
     console.warn('Warning: Could not read version from package.json, using fallback');
-    VERSION = '2.0.0-alpha.91';
+    VERSION = '2.0.0-alpha.101';
     BUILD_DATE = new Date().toISOString().split('T')[0];
 }
 export { VERSION, BUILD_DATE };
@@ -23,4 +23,4 @@ export function displayVersion() {
     console.log(getVersionString());
 }
 
-//# sourceMappingURL=version.js.mapp
+//# sourceMappingURL=version.js.map

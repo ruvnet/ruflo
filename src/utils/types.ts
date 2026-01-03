@@ -360,6 +360,18 @@ export interface MCPToolFilterConfig {
   priorities?: {
     [toolName: string]: number;
   };
+
+  /**
+   * Enable caching of filter results (default: false)
+   * When enabled, filtered results are cached based on input tool names
+   */
+  enableCache?: boolean;
+
+  /**
+   * Cache time-to-live in milliseconds (default: 60000 = 60 seconds)
+   * After this time, cached results are considered stale
+   */
+  cacheTtl?: number;
 }
 
 export interface LoggingConfig {
