@@ -37,6 +37,7 @@ import {
 } from './ruv-swarm-tools.js';
 import { platform, arch } from 'node:os';
 import { performance } from 'node:perf_hooks';
+import { loadToolFilterConfig } from './tool-filter-config.js';
 
 export interface IMCPServer {
   start(): Promise<void>;
@@ -109,7 +110,7 @@ export class MCPServer implements IMCPServer {
     this.transport = this.createTransport();
 
     // Initialize tool registry
-    this.toolRegistry = new ToolRegistry(logger);
+    this.toolRegistry = new ToolRegistry(logger, config.toolFilter);
 
     // Initialize session manager
     this.sessionManager = new SessionManager(config, logger);
@@ -142,6 +143,19 @@ export class MCPServer implements IMCPServer {
 
       // Start transport
       await this.transport.start();
+
+      // Load tool filter config if not provided in config
+      if (!this.config.toolFilter) {
+        try {
+          const filterConfig = await loadToolFilterConfig(this.logger);
+          if (filterConfig) {
+            this.toolRegistry.setToolFilter(filterConfig.config);
+            this.logger.info('Tool filter loaded', { source: filterConfig.source });
+          }
+        } catch (error) {
+          this.logger.warn('Failed to load tool filter config', { error });
+        }
+      }
 
       // Register built-in tools
       await this.registerBuiltInTools();
@@ -186,6 +200,17 @@ export class MCPServer implements IMCPServer {
 
   registerTool(tool: MCPTool): void {
     this.toolRegistry.register(tool);
+
+    // Log filter status
+    const filterStats = this.toolRegistry.getFilterStats();
+    if (filterStats?.enabled) {
+      this.logger.debug('Tool registered', {
+        name: tool.name,
+        filtered: filterStats.filteredTools,
+        total: filterStats.totalTools
+      });
+    }
+
     this.logger.info('Tool registered', { name: tool.name });
   }
 

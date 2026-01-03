@@ -1,47 +1,18 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S deno run --allow-all
+import { promises as fs } from 'node:fs';
 import { executeCommand, hasCommand, showCommandHelp, listCommands } from './command-registry.js';
 import { parseFlags } from './utils.js';
-import { args, cwd, isMainModule, exit, readTextFile, writeTextFile, mkdirAsync, errors } from './node-compat.js';
-import { spawn } from 'child_process';
-import process from 'process';
-import readline from 'readline';
-import { getMainHelp, getCommandHelp, getStandardizedCommandHelp } from './help-text.js';
 import { VERSION } from '../core/version.js';
-const LEGACY_AGENT_MAPPING = {
-    analyst: 'code-analyzer',
-    coordinator: 'task-orchestrator',
-    optimizer: 'perf-analyzer',
-    documenter: 'api-docs',
-    monitor: 'performance-benchmarker',
-    specialist: 'system-architect',
-    architect: 'system-architect'
-};
-function resolveLegacyAgentType(legacyType) {
-    return LEGACY_AGENT_MAPPING[legacyType] || legacyType;
-}
-function printHelp(plain = false) {
-    console.log(getMainHelp(plain));
-}
-function printCommandHelp(command) {
-    const standardCommands = [
-        'agent',
-        'sparc',
-        'memory'
-    ];
-    if (standardCommands.includes(command)) {
-        const help = getStandardizedCommandHelp(command);
-        console.log(help);
-    } else {
-        const help = getCommandHelp(command);
-        console.log(help);
-    }
-}
-function printLegacyHelp() {
+function printHelp() {
     console.log(`
 🌊 Claude-Flow v${VERSION} - Enterprise-Grade AI Agent Orchestration Platform
 
-🎯 ENTERPRISE FEATURES: Complete ruv-swarm integration with 90+ MCP tools, neural networking, and production-ready infrastructure
-⚡ ALPHA 85: Advanced automation capabilities & stream-JSON chaining for multi-agent pipelines
+🎯 NEW IN v2.6.0: Multi-Provider Execution Engine with Agentic-Flow Integration
+   • 66+ specialized agents with multi-provider support (Anthropic, OpenRouter, ONNX, Gemini)
+   • 99% cost savings with OpenRouter, 352x faster local edits with Agent Booster
+   • Complete backwards compatibility with existing features
+
+🎯 ENTERPRISE FEATURES: Complete ruv-swarm integration with 27 MCP tools, neural networking, and production-ready infrastructure
 
 USAGE:
   claude-flow <command> [options]
@@ -77,9 +48,10 @@ USAGE:
   init [--sparc]              # Initialize with enterprise environment + ruv-swarm
   start [--ui] [--swarm]      # Start orchestration with swarm intelligence
   spawn <type> [--name]       # Create AI agent with swarm coordination
-  agent <subcommand>          # Advanced agent management with neural patterns
+  agent <subcommand>          # 🆕 Multi-provider agent execution + management
   sparc <subcommand>          # 17 SPARC modes with neural enhancement
   memory <subcommand>         # Cross-session persistent memory with neural learning
+  config <subcommand>         # 🆕 Provider configuration management
   status                      # Comprehensive system status with performance metrics
 
 🤖 NEURAL AGENT TYPES (ruv-swarm Integration):
@@ -94,20 +66,25 @@ USAGE:
 
 🎮 ENTERPRISE QUICK START:
   # Initialize enterprise environment
-  npx claude-flow@2.0.0 init --sparc
-  
+  npx claude-flow@2.6.0-alpha.1 init --sparc
+
+  # 🆕 Execute agents with multi-provider support
+  ./claude-flow agent run coder "Build REST API with auth" --provider anthropic
+  ./claude-flow agent run researcher "Research React 19" --provider openrouter  # 99% cost savings
+  ./claude-flow agent agents  # List all 66+ available agents
+
   # Start enterprise orchestration with swarm intelligence
   ./claude-flow start --ui --swarm
-  
+
   # Deploy intelligent multi-agent development workflow
   ./claude-flow swarm "build enterprise API" --strategy development --parallel --monitor
-  
+
   # GitHub workflow automation
   ./claude-flow github pr-manager "coordinate release with automated testing"
-  
+
   # Neural memory management
   ./claude-flow memory store "architecture" "microservices with API gateway pattern"
-  
+
   # Real-time system monitoring
   ./claude-flow status --verbose
 
@@ -175,8 +152,8 @@ function printSuccess(message) {
 function printWarning(message) {
     console.warn(`⚠️  Warning: ${message}`);
 }
-function showHelpWithCommands(plain = false) {
-    printHelp(plain);
+function showHelpWithCommands() {
+    printHelp();
     console.log('\nRegistered Commands:');
     const commands = listCommands();
     for (const command of commands){
@@ -185,58 +162,14 @@ function showHelpWithCommands(plain = false) {
     console.log('\nUse "claude-flow help <command>" for detailed usage information');
 }
 async function main() {
+    const args = Deno.args;
     if (args.length === 0) {
-        printHelp(usePlainHelp);
+        printHelp();
         return;
     }
     const command = args[0];
     const { flags, args: parsedArgs } = parseFlags(args.slice(1));
-    const usePlainHelp = args.includes('--plain');
-    let enhancedFlags = flags;
-    try {
-        const { detectExecutionEnvironment, applySmartDefaults } = await import('./utils/environment-detector.js');
-        enhancedFlags = applySmartDefaults(flags);
-        enhancedFlags._environment = detectExecutionEnvironment({
-            skipWarnings: true
-        });
-    } catch (e) {
-        enhancedFlags = flags;
-    }
-    if (command !== 'help' && command !== '--help' && command !== '-h' && (enhancedFlags.help || enhancedFlags.h)) {
-        const detailedHelp = getCommandHelp(command);
-        if (detailedHelp && !detailedHelp.includes('Help not available')) {
-            printCommandHelp(command);
-        } else if (hasCommand(command)) {
-            showCommandHelp(command);
-        } else {
-            printError(`Unknown command: ${command}`);
-            console.log('\nRun "claude-flow --help" to see available commands.');
-        }
-        return;
-    }
     switch(command){
-        case 'env-check':
-        case 'environment':
-            if (enhancedFlags._environment) {
-                const env = enhancedFlags._environment;
-                console.log(`\n🖥️  Environment Detection Results:`);
-                console.log(`   Terminal: ${env.terminalType}`);
-                console.log(`   Interactive: ${env.isInteractive ? 'Yes' : 'No'}`);
-                console.log(`   TTY Support: ${env.supportsRawMode ? 'Yes' : 'No'}`);
-                console.log(`   Detected: ${env.isVSCode ? 'VS Code' : env.isCI ? 'CI/CD' : env.isDocker ? 'Docker' : env.isSSH ? 'SSH' : 'Standard Terminal'}`);
-                if (env.recommendedFlags.length > 0) {
-                    console.log(`\n💡 Recommended flags:`);
-                    console.log(`   ${env.recommendedFlags.join(' ')}`);
-                }
-                if (enhancedFlags.appliedDefaults && enhancedFlags.appliedDefaults.length > 0) {
-                    console.log(`\n✅ Auto-applied:`);
-                    console.log(`   ${enhancedFlags.appliedDefaults.join(' ')}`);
-                }
-                console.log();
-            } else {
-                console.log('Environment detection not available');
-            }
-            return;
         case 'version':
         case '--version':
         case '-v':
@@ -246,14 +179,9 @@ async function main() {
         case '--help':
         case '-h':
             if (parsedArgs.length > 0) {
-                const detailedHelp = getCommandHelp(parsedArgs[0]);
-                if (detailedHelp && !detailedHelp.includes('Help not available')) {
-                    printCommandHelp(parsedArgs[0]);
-                } else {
-                    showCommandHelp(parsedArgs[0]);
-                }
+                showCommandHelp(parsedArgs[0]);
             } else {
-                printHelp(usePlainHelp);
+                showHelpWithCommands();
             }
             return;
     }
@@ -263,7 +191,6 @@ async function main() {
             return;
         } catch (err) {
             printError(err.message);
-            console.log(`\nRun "claude-flow ${command} --help" for usage information.`);
             return;
         }
     }
@@ -283,12 +210,11 @@ async function main() {
             console.log('📊 Real-time monitoring would display here');
             break;
         case 'spawn':
-            const rawSpawnType = subArgs[0] || 'general';
-            const spawnType = resolveLegacyAgentType(rawSpawnType);
+            const spawnType = subArgs[0] || 'general';
             const spawnName = flags.name || `agent-${Date.now()}`;
             printSuccess(`Spawning ${spawnType} agent: ${spawnName}`);
             console.log('🤖 Agent would be created with the following configuration:');
-            console.log(`   Type: ${spawnType}${rawSpawnType !== spawnType ? ` (resolved from: ${rawSpawnType})` : ''}`);
+            console.log(`   Type: ${spawnType}`);
             console.log(`   Name: ${spawnName}`);
             console.log('   Capabilities: Research, Analysis, Code Generation');
             console.log('   Status: Ready');
@@ -313,7 +239,7 @@ async function main() {
                             console.log('     • Max Pool Size: 10');
                             console.log('     • Idle Timeout: 5 minutes');
                             console.log('     • Shell: /bin/bash');
-                            console.log('     • Working Directory: ' + cwd());
+                            console.log('     • Working Directory: ' + process.cwd());
                             console.log('   Performance:');
                             console.log('     • Average Response Time: N/A');
                             console.log('     • Terminal Creation Time: N/A');
@@ -362,7 +288,7 @@ async function main() {
                     const terminalConfig = {
                         name: nameIndex >= 0 ? subArgs[nameIndex + 1] : 'terminal-' + Date.now(),
                         shell: shellIndex >= 0 ? subArgs[shellIndex + 1] : 'bash',
-                        workingDirectory: wdIndex >= 0 ? subArgs[wdIndex + 1] : cwd(),
+                        workingDirectory: wdIndex >= 0 ? subArgs[wdIndex + 1] : process.cwd(),
                         env: envIndex >= 0 ? subArgs[envIndex + 1] : '',
                         persistent: persistentIndex >= 0
                     };
@@ -1319,9 +1245,10 @@ ${flags1.mode === 'full' || !flags1.mode ? `Full-stack development covering all 
                                 console.log('Debug - Executing command:');
                                 console.log(`claude ${claudeArgs.map((arg)=>arg.includes(' ') || arg.includes('\n') ? `"${arg}"` : arg).join(' ')}`);
                             }
-                            const child = spawn('claude', claudeArgs, {
+                            const command = new Deno.Command('claude', {
+                                args: claudeArgs,
                                 env: {
-                                    ...process.env,
+                                    ...Deno.env.toObject(),
                                     CLAUDE_INSTANCE_ID: instanceId,
                                     CLAUDE_FLOW_MODE: flags1.mode || 'full',
                                     CLAUDE_FLOW_COVERAGE: (flags1.coverage || 80).toString(),
@@ -1331,18 +1258,17 @@ ${flags1.mode === 'full' || !flags1.mode ? `Full-stack development covering all 
                                     CLAUDE_FLOW_COORDINATION_ENABLED: flags1.parallel ? 'true' : 'false',
                                     CLAUDE_FLOW_FEATURES: 'memory,coordination,swarm'
                                 },
-                                stdio: 'inherit'
+                                stdin: 'inherit',
+                                stdout: 'inherit',
+                                stderr: 'inherit'
                             });
-                            await new Promise((resolve)=>{
-                                child.on('exit', (code)=>{
-                                    if (code === 0) {
-                                        printSuccess(`Claude instance ${instanceId} completed successfully`);
-                                    } else {
-                                        printError(`Claude instance ${instanceId} exited with code ${code}`);
-                                    }
-                                    resolve();
-                                });
-                            });
+                            const child = command.spawn();
+                            const status = await child.status;
+                            if (status.success) {
+                                printSuccess(`Claude instance ${instanceId} completed successfully`);
+                            } else {
+                                printError(`Claude instance ${instanceId} exited with code ${status.code}`);
+                            }
                         } catch (err) {
                             printError(`Failed to spawn Claude: ${err.message}`);
                             console.log('Make sure you have the Claude CLI installed.');
@@ -1895,7 +1821,7 @@ ${flags1.mode === 'full' || !flags1.mode ? `Full-stack development covering all 
                 console.log('\nDid you mean:');
                 suggestions.forEach((cmd)=>console.log(`  claude-flow ${cmd}`));
             }
-            exit(1);
+            process.exit(1);
     }
 }
 async function startRepl() {
@@ -1973,7 +1899,7 @@ Shortcuts:
         },
         config: async (key)=>{
             try {
-                const config = JSON.parse(await readTextFile('claude-flow.config.json'));
+                const config = JSON.parse(await fs.readFile('claude-flow.config.json', 'utf-8'));
                 if (key) {
                     const keys = key.split('.');
                     let value = config;
@@ -2001,25 +1927,21 @@ Shortcuts:
         if (trimmed.startsWith('!')) {
             const shellCmd = trimmed.substring(1);
             try {
-                await new Promise((resolve)=>{
-                    const proc = spawn('sh', [
+                const command = new Deno.Command('sh', {
+                    args: [
                         '-c',
                         shellCmd
-                    ], {
-                        stdio: [
-                            'inherit',
-                            'pipe',
-                            'pipe'
-                        ]
-                    });
-                    proc.stdout.on('data', (data)=>{
-                        console.log(data.toString());
-                    });
-                    proc.stderr.on('data', (data)=>{
-                        console.error(data.toString());
-                    });
-                    proc.on('exit', resolve);
+                    ],
+                    stdout: 'piped',
+                    stderr: 'piped'
                 });
+                const { stdout, stderr } = await command.output();
+                if (stdout.length > 0) {
+                    console.log(new TextDecoder().decode(stdout));
+                }
+                if (stderr.length > 0) {
+                    console.error(new TextDecoder().decode(stderr));
+                }
             } catch (err) {
                 console.error(`Shell error: ${err.message}`);
             }
@@ -2039,7 +1961,7 @@ Shortcuts:
         const parts = trimmed.split(' ');
         const command = parts[0];
         const args = parts.slice(1);
-        if (replCommands[command]) {
+        if (command in replCommands) {
             await replCommands[command](...args);
             return true;
         }
@@ -2060,8 +1982,7 @@ Shortcuts:
         const subCmd = args[0];
         switch(subCmd){
             case 'spawn':
-                const rawType = args[1] || 'researcher';
-                const type = resolveLegacyAgentType(rawType);
+                const type = args[1] || 'researcher';
                 const name = args[2] || `agent-${Date.now()}`;
                 const agent = {
                     id: `agent-${Date.now()}`,
@@ -2266,33 +2187,18 @@ Shortcuts:
                 console.log('Terminal commands: create, list, exec, attach, detach');
         }
     }
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-    function updatePrompt() {
-        rl.setPrompt(replState.currentSession ? `claude-flow:${replState.currentSession}> ` : 'claude-flow> ');
-    }
-    updatePrompt();
-    rl.prompt();
-    rl.on('line', async (input)=>{
-        input = input.trim();
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    while(true){
+        const prompt = replState.currentSession ? `claude-flow:${replState.currentSession}> ` : 'claude-flow> ';
+        await Deno.stdout.write(encoder.encode(prompt));
+        const buf = new Uint8Array(1024);
+        const n = await Deno.stdin.read(buf);
+        if (n === null) break;
+        const input = decoder.decode(buf.subarray(0, n)).trim();
         const shouldContinue = await processReplCommand(input);
-        if (!shouldContinue) {
-            rl.close();
-        } else {
-            updatePrompt();
-            rl.prompt();
-        }
-    });
-    rl.on('SIGINT', ()=>{
-        console.log('\nExiting Claude-Flow...');
-        rl.close();
-        process.exit(0);
-    });
-    return new Promise((resolve)=>{
-        rl.on('close', resolve);
-    });
+        if (!shouldContinue) break;
+    }
 }
 function createMinimalClaudeMd() {
     return `# Claude Code Integration
@@ -2609,30 +2515,30 @@ async function createSparcStructureManually() {
         ];
         for (const dir of rooDirectories){
             try {
-                await mkdirAsync(dir, {
+                await Deno.mkdir(dir, {
                     recursive: true
                 });
                 console.log(`  ✓ Created ${dir}/`);
             } catch (err) {
-                if (!(err instanceof errors.AlreadyExists)) {
+                if (!(err instanceof Deno.errors.AlreadyExists)) {
                     throw err;
                 }
             }
         }
         let roomodesContent;
         try {
-            roomodesContent = await readTextFile('.roomodes');
+            roomodesContent = await fs.readFile('.roomodes');
             console.log('  ✓ Using existing .roomodes configuration');
         } catch  {
             roomodesContent = createBasicRoomodesConfig();
-            await writeTextFile('.roomodes', roomodesContent);
+            await fs.writeFile('.roomodes', roomodesContent);
             console.log('  ✓ Created .roomodes configuration');
         }
         const basicWorkflow = createBasicSparcWorkflow();
-        await writeTextFile('.roo/workflows/basic-tdd.json', basicWorkflow);
+        await fs.writeFile('.roo/workflows/basic-tdd.json', basicWorkflow);
         console.log('  ✓ Created .roo/workflows/basic-tdd.json');
         const rooReadme = createRooReadme();
-        await writeTextFile('.roo/README.md', rooReadme);
+        await fs.writeFile('.roo/README.md', rooReadme);
         console.log('  ✓ Created .roo/README.md');
         console.log('  ✅ Basic SPARC structure created successfully');
     } catch (err) {
@@ -2964,6 +2870,110 @@ npx claude-flow memory export project_backup.json
 \`\`\`bash
 # 1. Start with specification
 npx claude-flow sparc run spec-pseudocode "User profile management feature"
+
+# 2. Design architecture
+npx claude-flow sparc run architect "Profile service architecture with data validation"
+
+# 3. Implement with TDD
+npx claude-flow sparc tdd "user profile CRUD operations"
+
+# 4. Security review
+npx claude-flow sparc run security-review "profile data access and validation"
+
+# 5. Integration testing
+npx claude-flow sparc run integration "profile service with authentication system"
+
+# 6. Documentation
+npx claude-flow sparc run docs-writer "profile service API documentation"
+\`\`\`
+
+### Bug Fix Workflow
+\`\`\`bash
+# 1. Debug and analyze
+npx claude-flow sparc run debug "authentication token expiration issue"
+
+# 2. Write regression tests
+npx claude-flow sparc run tdd "token refresh mechanism tests"
+
+# 3. Implement fix
+npx claude-flow sparc run code "fix token refresh in authentication service"
+
+# 4. Security review
+npx claude-flow sparc run security-review "token handling security implications"
+\`\`\`
+
+## Configuration Files
+
+### SPARC Configuration
+- **\`.roomodes\`**: SPARC mode definitions and configurations
+- **\`.roo/\`**: Templates, workflows, and mode-specific rules
+
+### Claude-Flow Configuration
+- **\`memory/\`**: Persistent memory and session data
+- **\`coordination/\`**: Multi-agent coordination settings
+
+## Git Workflow Integration
+
+### Commit Strategy with SPARC
+- **Specification commits**: After completing requirements analysis
+- **Architecture commits**: After design phase completion
+- **TDD commits**: After each Red-Green-Refactor cycle
+- **Integration commits**: After successful component integration
+- **Documentation commits**: After completing documentation updates
+
+### Branch Strategy
+- **\`feature/sparc-<feature-name>\`**: Feature development with SPARC methodology
+- **\`hotfix/sparc-<issue>\`**: Bug fixes using SPARC debugging workflow
+- **\`refactor/sparc-<component>\`**: Refactoring using optimization mode
+
+## Troubleshooting
+
+### Common SPARC Issues
+- **Mode not found**: Check \`.roomodes\` file exists and is valid JSON
+- **Memory persistence**: Ensure \`memory/\` directory has write permissions
+- **Tool access**: Verify required tools are available for the selected mode
+- **Namespace conflicts**: Use unique memory namespaces for different features
+
+### Debug Commands
+\`\`\`bash
+# Check SPARC configuration
+npx claude-flow sparc modes
+
+# Verify memory system
+npx claude-flow memory stats
+
+# Check system status
+npx claude-flow status
+
+# View detailed mode information
+npx claude-flow sparc info <mode-name>
+\`\`\`
+
+## Project Architecture
+
+This SPARC-enabled project follows a systematic development approach:
+- **Clear separation of concerns** through modular design
+- **Test-driven development** ensuring reliability and maintainability
+- **Iterative refinement** for continuous improvement
+- **Comprehensive documentation** for team collaboration
+- **AI-assisted development** through specialized SPARC modes
+
+## Important Notes
+
+- Always run tests before committing (\`npm run test\`)
+- Use SPARC memory system to maintain context across sessions
+- Follow the Red-Green-Refactor cycle during TDD phases
+- Document architectural decisions in memory for future reference
+- Regular security reviews for any authentication or data handling code
+
+For more information about SPARC methodology, see: https://github.com/ruvnet/claude-code-flow/docs/sparc.md
+`;
+}
+if (import.meta.url === `file://${process.argv[1]}`) {
+    await main();
+}
+
+//# sourceMappingURL=simple-cli.js.map sparc run spec-pseudocode "User profile management feature"
 
 # 2. Design architecture
 npx claude-flow sparc run architect "Profile service architecture with data validation"

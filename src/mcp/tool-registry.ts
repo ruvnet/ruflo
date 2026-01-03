@@ -8,8 +8,9 @@
 import { createInProcessServer, InProcessMCPServer } from './in-process-server.js';
 import { createClaudeFlowTools } from './claude-flow-tools.js';
 import { logger } from '../core/logger.js';
-import type { MCPTool } from '../utils/types.js';
+import type { MCPTool, MCPToolFilterConfig } from '../utils/types.js';
 import type { McpSdkServerConfigWithInstance } from '@anthropic-ai/claude-code/sdk.d.ts';
+import { createToolFilter, IToolFilter, ToolFilterStats } from './tool-filter.js';
 
 // Import SDK tool creation function
 import { tool, createSdkMcpServer } from '@anthropic-ai/claude-code/sdk';
@@ -20,6 +21,7 @@ export interface ToolRegistryConfig {
   enableMetrics: boolean;
   enableCaching: boolean;
   orchestratorContext?: any;
+  toolFilter?: MCPToolFilterConfig;
 }
 
 /**
@@ -30,15 +32,30 @@ export class ClaudeFlowToolRegistry {
   private sdkServer?: McpSdkServerConfigWithInstance;
   private tools: Map<string, MCPTool>;
   private config: ToolRegistryConfig;
+  private toolFilter?: IToolFilter;
 
   constructor(config: ToolRegistryConfig) {
     this.config = config;
     this.tools = new Map();
 
+    // Initialize tool filter if configured
+    if (config.toolFilter?.enabled) {
+      this.toolFilter = createToolFilter(config.toolFilter, logger);
+    }
+
     logger.info('ClaudeFlowToolRegistry initialized', {
       enableInProcess: config.enableInProcess,
       enableMetrics: config.enableMetrics,
+      toolFilterEnabled: config.toolFilter?.enabled ?? false,
     });
+  }
+
+  /**
+   * Set or update tool filter configuration
+   */
+  setToolFilter(config: MCPToolFilterConfig): void {
+    this.toolFilter = createToolFilter(config, logger);
+    logger.info('Tool filter updated', { mode: config.mode, enabled: config.enabled });
   }
 
   /**
@@ -245,10 +262,30 @@ export class ClaudeFlowToolRegistry {
   }
 
   /**
-   * Get all tool names
+   * Get all tool names (with filtering applied)
    */
   getToolNames(): string[] {
+    let tools = Array.from(this.tools.values());
+
+    if (this.toolFilter) {
+      tools = this.toolFilter.filterTools(tools);
+    }
+
+    return tools.map(t => t.name);
+  }
+
+  /**
+   * Get all tool names (without filtering)
+   */
+  getAllToolNames(): string[] {
     return Array.from(this.tools.keys());
+  }
+
+  /**
+   * Get filter statistics
+   */
+  getFilterStats(): ToolFilterStats | null {
+    return this.toolFilter?.getFilterStats() ?? null;
   }
 
   /**

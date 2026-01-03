@@ -156,6 +156,20 @@ export { SessionManager, type ISessionManager } from './session-manager.js';
 // Load Balancing
 export { LoadBalancer, type ILoadBalancer, RequestQueue } from './load-balancer.js';
 
+// Tool Filtering
+export {
+  ToolFilter,
+  createToolFilter,
+  type IToolFilter,
+  type ToolFilterStats,
+} from './tool-filter.js';
+
+// Tool Filter Configuration
+export {
+  loadToolFilterConfig,
+  type LoadedToolFilterConfig,
+} from './tool-filter-config.js';
+
 // Tool Implementations
 export { createClaudeFlowTools, type ClaudeFlowToolContext } from './claude-flow-tools.js';
 export { createSwarmTools, type SwarmToolContext } from './swarm-tools.js';

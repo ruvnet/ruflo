@@ -136,6 +136,7 @@
     "gradient-string": "^3.0.0",
     "helmet": "^7.1.0",
     "inquirer": "^9.2.12",
+    "minimatch": "^10.1.1",
     "nanoid": "^5.0.4",
     "ora": "^7.0.1",
     "p-queue": "^8.1.0",

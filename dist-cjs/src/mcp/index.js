@@ -21,6 +21,8 @@ export { HttpTransport } from './transports/http.js';
 export { RequestRouter } from './router.js';
 export { SessionManager } from './session-manager.js';
 export { LoadBalancer, RequestQueue } from './load-balancer.js';
+export { ToolFilter, createToolFilter } from './tool-filter.js';
+export { loadToolFilterConfig } from './tool-filter-config.js';
 export { createClaudeFlowTools } from './claude-flow-tools.js';
 export { createSwarmTools } from './swarm-tools.js';
 export class MCPIntegrationFactory {

@@ -2,10 +2,11 @@
  * Enhanced Tool registry for MCP with capability negotiation and discovery
  */
 
-import type { MCPTool, MCPCapabilities, MCPProtocolVersion } from '../utils/types.js';
+import type { MCPTool, MCPCapabilities, MCPProtocolVersion, MCPToolFilterConfig } from '../utils/types.js';
 import type { ILogger } from '../core/logger.js';
 import { MCPError } from '../utils/errors.js';
 import { EventEmitter } from 'node:events';
+import { IToolFilter, ToolFilterStats, createToolFilter } from './tool-filter.js';
 
 export interface ToolCapability {
   name: string;
@@ -48,9 +49,21 @@ export class ToolRegistry extends EventEmitter {
   private metrics = new Map<string, ToolMetrics>();
   private categories = new Set<string>();
   private tags = new Set<string>();
+  private toolFilter?: IToolFilter;
 
-  constructor(private logger: ILogger) {
+  constructor(private logger: ILogger, toolFilterConfig?: MCPToolFilterConfig) {
     super();
+    if (toolFilterConfig?.enabled) {
+      this.toolFilter = createToolFilter(toolFilterConfig, logger);
+    }
+  }
+
+  /**
+   * Sets or updates the tool filter configuration
+   */
+  setToolFilter(config: MCPToolFilterConfig): void {
+    this.toolFilter = createToolFilter(config, this.logger);
+    this.emit('filterUpdated', { config });
   }
 
   /**
@@ -117,20 +130,43 @@ export class ToolRegistry extends EventEmitter {
   }
 
   /**
-   * Lists all registered tools
+   * Lists all registered tools (with filtering applied)
    */
   listTools(): Array<{ name: string; description: string }> {
-    return Array.from(this.tools.values()).map((tool) => ({
+    let tools = Array.from(this.tools.values());
+
+    if (this.toolFilter) {
+      tools = this.toolFilter.filterTools(tools);
+    }
+
+    return tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
     }));
   }
 
   /**
-   * Gets the number of registered tools
+   * Gets the number of registered tools (after filtering)
    */
   getToolCount(): number {
+    if (this.toolFilter) {
+      return this.toolFilter.filterTools(Array.from(this.tools.values())).length;
+    }
     return this.tools.size;
+  }
+
+  /**
+   * Gets the total number of registered tools (before filtering)
+   */
+  getTotalToolCount(): number {
+    return this.tools.size;
+  }
+
+  /**
+   * Gets filter statistics
+   */
+  getFilterStats(): ToolFilterStats | null {
+    return this.toolFilter?.getFilterStats() ?? null;
   }
 
   /**

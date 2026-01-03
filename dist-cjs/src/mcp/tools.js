@@ -1,5 +1,6 @@
 import { MCPError } from '../utils/errors.js';
 import { EventEmitter } from 'node:events';
+import { createToolFilter } from './tool-filter.js';
 export class ToolRegistry extends EventEmitter {
     logger;
     tools = new Map();
@@ -7,8 +8,18 @@ export class ToolRegistry extends EventEmitter {
     metrics = new Map();
     categories = new Set();
     tags = new Set();
-    constructor(logger){
+    toolFilter;
+    constructor(logger, toolFilterConfig){
         super(), this.logger = logger;
+        if (toolFilterConfig?.enabled) {
+            this.toolFilter = createToolFilter(toolFilterConfig, logger);
+        }
+    }
+    setToolFilter(config) {
+        this.toolFilter = createToolFilter(config, this.logger);
+        this.emit('filterUpdated', {
+            config
+        });
     }
     register(tool, capability) {
         if (this.tools.has(tool.name)) {
@@ -64,13 +75,26 @@ export class ToolRegistry extends EventEmitter {
         return this.tools.get(name);
     }
     listTools() {
-        return Array.from(this.tools.values()).map((tool)=>({
+        let tools = Array.from(this.tools.values());
+        if (this.toolFilter) {
+            tools = this.toolFilter.filterTools(tools);
+        }
+        return tools.map((tool)=>({
                 name: tool.name,
                 description: tool.description
             }));
     }
     getToolCount() {
+        if (this.toolFilter) {
+            return this.toolFilter.filterTools(Array.from(this.tools.values())).length;
+        }
         return this.tools.size;
+    }
+    getTotalToolCount() {
+        return this.tools.size;
+    }
+    getFilterStats() {
+        return this.toolFilter?.getFilterStats() ?? null;
     }
     async executeTool(name, input, context) {
         const tool = this.tools.get(name);

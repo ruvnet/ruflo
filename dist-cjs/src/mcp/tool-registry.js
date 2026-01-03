@@ -1,6 +1,7 @@
 import { createInProcessServer } from './in-process-server.js';
 import { createClaudeFlowTools } from './claude-flow-tools.js';
 import { logger } from '../core/logger.js';
+import { createToolFilter } from './tool-filter.js';
 import { tool, createSdkMcpServer } from '@anthropic-ai/claude-code/sdk';
 import { z } from 'zod';
 export class ClaudeFlowToolRegistry {
@@ -8,12 +9,24 @@ export class ClaudeFlowToolRegistry {
     sdkServer;
     tools;
     config;
+    toolFilter;
     constructor(config){
         this.config = config;
         this.tools = new Map();
+        if (config.toolFilter?.enabled) {
+            this.toolFilter = createToolFilter(config.toolFilter, logger);
+        }
         logger.info('ClaudeFlowToolRegistry initialized', {
             enableInProcess: config.enableInProcess,
-            enableMetrics: config.enableMetrics
+            enableMetrics: config.enableMetrics,
+            toolFilterEnabled: config.toolFilter?.enabled ?? false
+        });
+    }
+    setToolFilter(config) {
+        this.toolFilter = createToolFilter(config, logger);
+        logger.info('Tool filter updated', {
+            mode: config.mode,
+            enabled: config.enabled
         });
     }
     async initialize() {
@@ -149,7 +162,17 @@ export class ClaudeFlowToolRegistry {
         return this.tools.get(name);
     }
     getToolNames() {
+        let tools = Array.from(this.tools.values());
+        if (this.toolFilter) {
+            tools = this.toolFilter.filterTools(tools);
+        }
+        return tools.map((t)=>t.name);
+    }
+    getAllToolNames() {
         return Array.from(this.tools.keys());
+    }
+    getFilterStats() {
+        return this.toolFilter?.getFilterStats() ?? null;
     }
     shouldUseInProcess(toolName) {
         return this.tools.has(toolName);

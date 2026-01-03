@@ -120,4 +120,128 @@ export function createConfigCommand() {
     return config;
 }
 
+//# sourceMappingURL=config.js.map printError('Configuration file not found');
+        console.log('Run "claude-flow config init" to create configuration');
+    }
+}
+async function setConfigValue(subArgs, flags) {
+    const key = subArgs[1];
+    const value = subArgs[2];
+    const configFile = 'claude-flow.config.json';
+    if (!key || value === undefined) {
+        printError('Usage: config set <key> <value>');
+        console.log('Examples:');
+        console.log('  claude-flow config set terminal.poolSize 15');
+        console.log('  claude-flow config set orchestrator.taskTimeout 600000');
+        return;
+    }
+    try {
+        let config = await readJsonFile(configFile, {});
+        let parsedValue = value;
+        if (value === 'true') parsedValue = true;
+        else if (value === 'false') parsedValue = false;
+        else if (!isNaN(value) && value.trim() !== '') parsedValue = Number(value);
+        setNestedValue(config, key, parsedValue);
+        await writeJsonFile(configFile, config);
+        printSuccess(`Set ${key} = ${JSON.stringify(parsedValue)}`);
+    } catch (err) {
+        printError(`Failed to set configuration: ${err.message}`);
+    }
+}
+async function validateConfig(subArgs, flags) {
+    const configFile = 'claude-flow.config.json';
+    try {
+        const config = await readJsonFile(configFile);
+        printSuccess('Validating configuration...');
+        const errors = [];
+        const warnings = [];
+        const requiredSections = [
+            'terminal',
+            'orchestrator',
+            'memory'
+        ];
+        for (const section of requiredSections){
+            if (!config[section]) {
+                errors.push(`Missing required section: ${section}`);
+            }
+        }
+        if (config.terminal?.poolSize && (config.terminal.poolSize < 1 || config.terminal.poolSize > 100)) {
+            warnings.push('Terminal pool size should be between 1 and 100');
+        }
+        if (config.orchestrator?.maxConcurrentTasks && config.orchestrator.maxConcurrentTasks < 1) {
+            errors.push('Max concurrent tasks must be at least 1');
+        }
+        if (config.agents?.maxAgents && config.agents.maxAgents < 1) {
+            errors.push('Max agents must be at least 1');
+        }
+        if (errors.length === 0 && warnings.length === 0) {
+            printSuccess('✅ Configuration is valid');
+        } else {
+            if (errors.length > 0) {
+                printError(`Found ${errors.length} error(s):`);
+                errors.forEach((error)=>console.log(`  ❌ ${error}`));
+            }
+            if (warnings.length > 0) {
+                printWarning(`Found ${warnings.length} warning(s):`);
+                warnings.forEach((warning)=>console.log(`  ⚠️  ${warning}`));
+            }
+        }
+    } catch (err) {
+        printError('Configuration file not found or invalid');
+        console.log('Run "claude-flow config init" to create valid configuration');
+    }
+}
+async function resetConfig(subArgs, flags) {
+    const force = subArgs.includes('--force') || subArgs.includes('-f');
+    if (!force) {
+        printWarning('This will reset configuration to defaults');
+        console.log('Use --force to confirm reset');
+        return;
+    }
+    await initConfig([
+        '--force'
+    ], flags);
+    printSuccess('Configuration reset to defaults');
+}
+function getNestedValue(obj, path) {
+    return path.split('.').reduce((current, key)=>current?.[key], obj);
+}
+function setNestedValue(obj, path, value) {
+    const keys = path.split('.');
+    const last = keys.pop();
+    const target = keys.reduce((current, key)=>{
+        if (!current[key]) current[key] = {};
+        return current[key];
+    }, obj);
+    target[last] = value;
+}
+function getFlag(args, flagName) {
+    const index = args.indexOf(flagName);
+    return index !== -1 && index + 1 < args.length ? args[index + 1] : null;
+}
+function showConfigHelp() {
+    console.log('Configuration commands:');
+    console.log('  init [--force]                   Create default configuration');
+    console.log('  show [--format json]             Display current configuration');
+    console.log('  get <key>                        Get configuration value');
+    console.log('  set <key> <value>                Set configuration value');
+    console.log('  validate                         Validate configuration');
+    console.log('  reset --force                    Reset to defaults');
+    console.log();
+    console.log('Configuration Keys:');
+    console.log('  terminal.poolSize                Terminal pool size');
+    console.log('  terminal.recycleAfter            Commands before recycle');
+    console.log('  orchestrator.maxConcurrentTasks  Max parallel tasks');
+    console.log('  orchestrator.taskTimeout         Task timeout in ms');
+    console.log('  memory.backend                   Memory storage backend');
+    console.log('  memory.path                      Memory database path');
+    console.log('  agents.maxAgents                 Maximum number of agents');
+    console.log();
+    console.log('Examples:');
+    console.log('  claude-flow config init');
+    console.log('  claude-flow config set terminal.poolSize 15');
+    console.log('  claude-flow config get orchestrator.maxConcurrentTasks');
+    console.log('  claude-flow config validate');
+}
+
 //# sourceMappingURL=config.js.map

@@ -315,6 +315,51 @@ export interface MCPConfig {
   enableMetrics?: boolean;
   corsEnabled?: boolean;
   corsOrigins?: string[];
+  toolFilter?: MCPToolFilterConfig;
+}
+
+/**
+ * Configuration for MCP tool filtering
+ * Allows selective enabling/disabling of tools to meet platform limits
+ */
+export interface MCPToolFilterConfig {
+  /**
+   * Enable tool filtering (default: false for backward compatibility)
+   */
+  enabled: boolean;
+
+  /**
+   * Filter mode:
+   * - 'allowlist': Only tools in the list are enabled
+   * - 'denylist': All tools except those in the list are enabled
+   */
+  mode: 'allowlist' | 'denylist';
+
+  /**
+   * List of tool names/patterns
+   * Supports exact names ('system/info') or glob patterns ('system/*')
+   */
+  tools: string[];
+
+  /**
+   * Filter by category (namespace prefix)
+   * e.g., ['system', 'agents'] enables all tools in those namespaces
+   */
+  categories?: string[];
+
+  /**
+   * Maximum number of tools to expose (optional safety limit)
+   * Useful for platforms with strict tool limits
+   */
+  maxTools?: number;
+
+  /**
+   * Priority ordering when maxTools limit is reached
+   * Higher priority tools are kept when trimming
+   */
+  priorities?: {
+    [toolName: string]: number;
+  };
 }
 
 export interface LoggingConfig {

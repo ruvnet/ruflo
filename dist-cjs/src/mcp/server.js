@@ -11,6 +11,7 @@ import { createSwarmTools } from './swarm-tools.js';
 import { createRuvSwarmTools, isRuvSwarmAvailable, initializeRuvSwarmIntegration } from './ruv-swarm-tools.js';
 import { platform, arch } from 'node:os';
 import { performance } from 'node:perf_hooks';
+import { loadToolFilterConfig } from './tool-filter-config.js';
 export class MCPServer {
     config;
     eventBus;
@@ -65,7 +66,7 @@ export class MCPServer {
         this.messagebus = messagebus;
         this.monitor = monitor;
         this.transport = this.createTransport();
-        this.toolRegistry = new ToolRegistry(logger);
+        this.toolRegistry = new ToolRegistry(logger, config.toolFilter);
         this.sessionManager = new SessionManager(config, logger);
         this.authManager = new AuthManager(config.auth || {
             enabled: false,
@@ -89,6 +90,21 @@ export class MCPServer {
                 return await this.handleRequest(request);
             });
             await this.transport.start();
+            if (!this.config.toolFilter) {
+                try {
+                    const filterConfig = await loadToolFilterConfig(this.logger);
+                    if (filterConfig) {
+                        this.toolRegistry.setToolFilter(filterConfig.config);
+                        this.logger.info('Tool filter loaded', {
+                            source: filterConfig.source
+                        });
+                    }
+                } catch (error) {
+                    this.logger.warn('Failed to load tool filter config', {
+                        error
+                    });
+                }
+            }
             await this.registerBuiltInTools();
             this.running = true;
             this.logger.info('MCP server started successfully');
@@ -122,6 +138,14 @@ export class MCPServer {
     }
     registerTool(tool) {
         this.toolRegistry.register(tool);
+        const filterStats = this.toolRegistry.getFilterStats();
+        if (filterStats?.enabled) {
+            this.logger.debug('Tool registered', {
+                name: tool.name,
+                filtered: filterStats.filteredTools,
+                total: filterStats.totalTools
+            });
+        }
         this.logger.info('Tool registered', {
             name: tool.name
         });
