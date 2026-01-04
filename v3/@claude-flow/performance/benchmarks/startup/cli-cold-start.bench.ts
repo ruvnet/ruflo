@@ -7,7 +7,7 @@
  * including module loading, initialization, and ready state.
  */
 
-import { benchmark, BenchmarkRunner, formatTime, meetsTarget } from '../framework/benchmark.js';
+import { benchmark, BenchmarkRunner, formatTime, meetsTarget } from '../../src/framework/benchmark.js';
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 
