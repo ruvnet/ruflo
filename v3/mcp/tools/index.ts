@@ -20,6 +20,7 @@ import { agentTools } from './agent-tools.js';
 import { swarmTools } from './swarm-tools.js';
 import { memoryTools } from './memory-tools.js';
 import { configTools } from './config-tools.js';
+import { hooksTools } from './hooks-tools.js';
 
 // ============================================================================
 // Individual Tool Exports
