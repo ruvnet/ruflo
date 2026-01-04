@@ -131,7 +131,7 @@ export class ReleaseManager {
     let newMajor = parseInt(major);
     let newMinor = parseInt(minor);
     let newPatch = parseInt(patch);
-    let newPrerelease = prerelease;
+    let newPrerelease: string | undefined = prerelease;
     let newPrereleaseNum = prereleaseNum ? parseInt(prereleaseNum) : 0;
 
     switch (bumpType) {
