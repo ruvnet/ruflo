@@ -727,23 +727,47 @@ export class SwarmHub implements ISwarmHub {
 }
 
 // =============================================================================
-// Factory Functions
+// Factory Functions - COMPATIBILITY LAYER (ADR-003)
 // =============================================================================
 
+/**
+ * @deprecated Use createUnifiedSwarmCoordinator() instead.
+ * This factory is maintained for backward compatibility only.
+ *
+ * Migration:
+ * ```typescript
+ * // OLD:
+ * const hub = createSwarmHub();
+ *
+ * // NEW:
+ * import { createUnifiedSwarmCoordinator } from '@claude-flow/swarm';
+ * const coordinator = createUnifiedSwarmCoordinator();
+ * ```
+ */
 export function createSwarmHub(eventBus?: IEventBus): ISwarmHub {
+  console.warn('[DEPRECATION] createSwarmHub() is deprecated. Use createUnifiedSwarmCoordinator() instead.');
   return new SwarmHub(eventBus);
 }
 
 let globalSwarmHub: ISwarmHub | null = null;
 
+/**
+ * @deprecated Use UnifiedSwarmCoordinator singleton pattern instead.
+ * This function is maintained for backward compatibility only.
+ */
 export function getSwarmHub(): ISwarmHub {
+  console.warn('[DEPRECATION] getSwarmHub() is deprecated. Use UnifiedSwarmCoordinator directly.');
   if (!globalSwarmHub) {
     globalSwarmHub = createSwarmHub();
   }
   return globalSwarmHub;
 }
 
+/**
+ * @deprecated Use coordinator.shutdown() directly instead.
+ */
 export function resetSwarmHub(): void {
+  console.warn('[DEPRECATION] resetSwarmHub() is deprecated. Call shutdown() on your coordinator instance.');
   if (globalSwarmHub?.isInitialized()) {
     globalSwarmHub.shutdown();
   }
