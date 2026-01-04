@@ -156,8 +156,10 @@ claude-flow.config.json
 .swarm/
 .hive-mind/
 .claude-flow/
-memory/
-coordination/
+/memory/
+/coordination/
+# Exclude @claude-flow module directories from ignore patterns
+!v3/@claude-flow/
 memory/claude-flow-data.json
 memory/sessions/*
 !memory/sessions/README.md
