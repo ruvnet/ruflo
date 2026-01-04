@@ -545,10 +545,33 @@ export class AgenticFlowBridge extends EventEmitter {
     this.sona = null;
     this.attention = null;
     this.sdk = null;
+    this.agenticFlowCore = null;
+    this.agenticFlowAvailable = false;
     this.initialized = false;
     this.componentHealth.clear();
 
     this.emit('shutdown');
+  }
+
+  /**
+   * Check if agentic-flow@alpha is connected and available for delegation
+   *
+   * When true, components can delegate to agentic-flow for optimized
+   * implementations (per ADR-001).
+   */
+  isAgenticFlowConnected(): boolean {
+    return this.agenticFlowAvailable && this.agenticFlowCore !== null;
+  }
+
+  /**
+   * Get the agentic-flow core instance for direct access
+   *
+   * Returns null if agentic-flow is not available.
+   * Prefer using getSONAAdapter() or getAttentionCoordinator() which
+   * handle delegation automatically.
+   */
+  getAgenticFlowCore(): AgenticFlowCore | null {
+    return this.agenticFlowCore;
   }
 
   // ===== Private Methods =====
