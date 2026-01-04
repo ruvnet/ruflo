@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { memoryStore } from '../memory/fallback-store.js';
 import { VERSION } from '../core/version.js';
+import { loadToolFilterConfig } from './tool-filter-config.js';
+import { createToolFilter } from './tool-filter.js';
 await import('./implementations/agent-tracker.js').catch(()=>{
     try {
         require('./implementations/agent-tracker');
@@ -26,6 +28,12 @@ await import('./implementations/workflow-tools.js').catch(()=>{
 });
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const mcpLogger = {
+    debug: (...args)=>console.error(`[${new Date().toISOString()}] DEBUG [claude-flow-mcp]`, ...args),
+    info: (...args)=>console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp]`, ...args),
+    warn: (...args)=>console.error(`[${new Date().toISOString()}] WARN [claude-flow-mcp]`, ...args),
+    error: (...args)=>console.error(`[${new Date().toISOString()}] ERROR [claude-flow-mcp]`, ...args)
+};
 const LEGACY_AGENT_MAPPING = {
     analyst: 'code-analyzer',
     coordinator: 'task-orchestrator',
@@ -54,14 +62,33 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
         this.sessionId = `session-cf-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
         this.tools = this.initializeTools();
         this.resources = this.initializeResources();
-        this.initializeMemory().catch((err)=>{
+        this.toolFilter = null;
+        this.isReady = false;
+        this.initPromise = this.initializeMemory().then(()=>{
+            this.isReady = true;
+        }).catch((err)=>{
             console.error(`[${new Date().toISOString()}] ERROR [claude-flow-mcp] Failed to initialize shared memory:`, err);
+            this.isReady = true;
         });
+    }
+    async waitForReady() {
+        await this.initPromise;
     }
     async initializeMemory() {
         await this.memoryStore.initialize();
         console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Shared memory store initialized (same as npx)`);
         console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Using ${this.memoryStore.isUsingFallback() ? 'in-memory' : 'SQLite'} storage`);
+        try {
+            const filterResult = await loadToolFilterConfig(mcpLogger);
+            if (filterResult && filterResult.config && filterResult.config.enabled) {
+                this.toolFilter = createToolFilter(filterResult.config, mcpLogger);
+                const stats = this.toolFilter.getFilterStats();
+                console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Tool filter loaded from ${filterResult.source}`);
+                console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Tool filter: mode=${filterResult.config.mode}, maxTools=${filterResult.config.maxTools || 'unlimited'}`);
+            }
+        } catch (err) {
+            console.error(`[${new Date().toISOString()}] WARN [claude-flow-mcp] (${this.sessionId}) Failed to load tool filter config: ${err.message}`);
+        }
     }
     initializeTools() {
         return {
@@ -1797,7 +1824,13 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
         };
     }
     handleToolsList(id) {
-        const toolsList = Object.values(this.tools);
+        let toolsList = Object.values(this.tools);
+        if (this.toolFilter) {
+            const originalCount = toolsList.length;
+            toolsList = this.toolFilter.filterTools(toolsList);
+            const stats = this.toolFilter.getFilterStats();
+            console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Tools filtered: ${originalCount} -> ${toolsList.length} (excluded: ${stats.excludedTools}, truncated: ${stats.truncatedTools})`);
+        }
         return {
             jsonrpc: '2.0',
             id,
@@ -3067,6 +3100,8 @@ let ClaudeFlowMCPServer = class ClaudeFlowMCPServer {
 async function startMCPServer() {
     const server = new ClaudeFlowMCPServer();
     console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] (${server.sessionId}) Claude-Flow MCP server starting in stdio mode`);
+    await server.waitForReady();
+    console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] (${server.sessionId}) Server initialization complete`);
     console.error(JSON.stringify({
         arch: process.arch,
         mode: 'mcp-stdio',
@@ -3076,17 +3111,6 @@ async function startMCPServer() {
         protocol: 'stdio',
         sessionId: server.sessionId,
         version: server.version
-    }));
-    console.log(JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'server.initialized',
-        params: {
-            serverInfo: {
-                name: 'claude-flow',
-                version: server.version,
-                capabilities: server.capabilities
-            }
-        }
     }));
     let buffer = '';
     process.stdin.on('data', async (chunk)=>{

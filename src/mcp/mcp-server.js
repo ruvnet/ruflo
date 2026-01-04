@@ -12,6 +12,9 @@ import { EnhancedMemory } from '../memory/enhanced-memory.js';
 // Use the same memory system that npx commands use - singleton instance
 import { memoryStore } from '../memory/fallback-store.js';
 import { VERSION } from '../core/version.js';
+// Tool filtering support
+import { loadToolFilterConfig } from './tool-filter-config.js';
+import { createToolFilter } from './tool-filter.js';
 
 // Initialize agent tracker
 await import('./implementations/agent-tracker.js').catch(() => {
@@ -46,6 +49,14 @@ await import('./implementations/workflow-tools.js').catch(() => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Simple console-based logger for tool filter config loading
+const mcpLogger = {
+  debug: (...args) => console.error(`[${new Date().toISOString()}] DEBUG [claude-flow-mcp]`, ...args),
+  info: (...args) => console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp]`, ...args),
+  warn: (...args) => console.error(`[${new Date().toISOString()}] WARN [claude-flow-mcp]`, ...args),
+  error: (...args) => console.error(`[${new Date().toISOString()}] ERROR [claude-flow-mcp]`, ...args),
+};
+
 // Legacy agent type mapping for backward compatibility
 const LEGACY_AGENT_MAPPING = {
   analyst: 'code-analyzer',
@@ -79,16 +90,33 @@ class ClaudeFlowMCPServer {
     this.sessionId = `session-cf-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
     this.tools = this.initializeTools();
     this.resources = this.initializeResources();
+    this.toolFilter = null; // Will be initialized async if config exists
+    this.isReady = false; // Track initialization state
 
-    // Initialize shared memory store (same as npx commands)
-    this.initializeMemory().catch((err) => {
-      console.error(
-        `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Failed to initialize shared memory:`,
-        err,
-      );
-    });
+    // Initialize shared memory store and tool filter (same as npx commands)
+    // Store promise so callers can await initialization
+    this.initPromise = this.initializeMemory()
+      .then(() => {
+        this.isReady = true;
+      })
+      .catch((err) => {
+        console.error(
+          `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Failed to initialize shared memory:`,
+          err,
+        );
+        // Still mark as ready so server can operate (with fallback memory)
+        this.isReady = true;
+      });
 
     // Database operations now use the same shared memory store as npx commands
+  }
+
+  /**
+   * Wait for the server to be fully initialized.
+   * Call this before processing messages to ensure tool filter is loaded.
+   */
+  async waitForReady() {
+    await this.initPromise;
   }
 
   async initializeMemory() {
@@ -99,6 +127,25 @@ class ClaudeFlowMCPServer {
     console.error(
       `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Using ${this.memoryStore.isUsingFallback() ? 'in-memory' : 'SQLite'} storage`,
     );
+
+    // Load tool filter configuration if available
+    try {
+      const filterResult = await loadToolFilterConfig(mcpLogger);
+      if (filterResult && filterResult.config && filterResult.config.enabled) {
+        this.toolFilter = createToolFilter(filterResult.config, mcpLogger);
+        const stats = this.toolFilter.getFilterStats();
+        console.error(
+          `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Tool filter loaded from ${filterResult.source}`,
+        );
+        console.error(
+          `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Tool filter: mode=${filterResult.config.mode}, maxTools=${filterResult.config.maxTools || 'unlimited'}`,
+        );
+      }
+    } catch (err) {
+      console.error(
+        `[${new Date().toISOString()}] WARN [claude-flow-mcp] (${this.sessionId}) Failed to load tool filter config: ${err.message}`,
+      );
+    }
   }
 
   // Database operations now use the same memory store as working npx commands
@@ -1094,7 +1141,18 @@ class ClaudeFlowMCPServer {
   }
 
   handleToolsList(id) {
-    const toolsList = Object.values(this.tools);
+    let toolsList = Object.values(this.tools);
+
+    // Apply tool filtering if configured
+    if (this.toolFilter) {
+      const originalCount = toolsList.length;
+      toolsList = this.toolFilter.filterTools(toolsList);
+      const stats = this.toolFilter.getFilterStats();
+      console.error(
+        `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${this.sessionId}) Tools filtered: ${originalCount} -> ${toolsList.length} (excluded: ${stats.excludedTools}, truncated: ${stats.truncatedTools})`,
+      );
+    }
+
     return {
       jsonrpc: '2.0',
       id,
@@ -2546,6 +2604,14 @@ async function startMCPServer() {
   console.error(
     `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${server.sessionId}) Claude-Flow MCP server starting in stdio mode`,
   );
+
+  // Wait for server initialization (memory store, tool filter, etc.)
+  // This ensures tool filtering is ready before handling any requests
+  await server.waitForReady();
+  console.error(
+    `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${server.sessionId}) Server initialization complete`,
+  );
+
   // Log server info as a JSON string to stderr to ensure it doesn't corrupt stdout
   console.error(JSON.stringify({
     arch: process.arch,
@@ -2558,20 +2624,16 @@ async function startMCPServer() {
     version: server.version,
   }));
 
-  // Send server capabilities
-  console.log(
-    JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'server.initialized',
-      params: {
-        serverInfo: {
-          name: 'claude-flow',
-          version: server.version,
-          capabilities: server.capabilities,
-        },
-      },
-    }),
-  );
+  // NOTE: Per MCP protocol, the server should NOT proactively send messages.
+  // The proper flow is:
+  // 1. Server starts and waits for client messages
+  // 2. Client sends 'initialize' request
+  // 3. Server responds with capabilities via handleInitialize()
+  // 4. Client sends 'initialized' notification
+  // 5. Normal operation begins
+  //
+  // The previous 'server.initialized' notification sent here violated the
+  // MCP protocol and caused Zod validation errors in clients like Cursor.
 
   // Handle stdin messages
   let buffer = '';
