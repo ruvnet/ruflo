@@ -8,9 +8,19 @@
   "exports": {
     ".": "./src/index.ts",
     "./types": "./src/types/index.ts",
-    "./core": "./src/core/index.ts"
+    "./core": "./src/core/index.ts",
+    "./events": "./src/events/index.ts"
   },
   "scripts": {
+    "test": "vitest run",
     "build": "tsc"
+  },
+  "dependencies": {
+    "sql.js": "^1.10.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/sql.js": "^1.4.9",
+    "vitest": "^1.0.0"
   }
 }
