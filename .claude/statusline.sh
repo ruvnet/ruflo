@@ -193,6 +193,15 @@ if [ "$INTEGRATION_STATUS" = "●" ]; then
   INTEGRATION_COLOR="${BRIGHT_CYAN}"
 fi
 
+# Get model name from Claude Code input
+MODEL_NAME=""
+if [ "$CLAUDE_INPUT" != "{}" ]; then
+  MODEL_NAME=$(echo "$CLAUDE_INPUT" | jq -r '.model.display_name // ""' 2>/dev/null)
+fi
+
+# Get current directory
+CURRENT_DIR=$(basename "$PROJECT_DIR" 2>/dev/null || echo "claude-flow")
+
 # Build colorful output with better formatting
 OUTPUT=""
 
@@ -201,6 +210,9 @@ OUTPUT="${BOLD}${BRIGHT_PURPLE}▊ Claude Flow V3 ${RESET}"
 OUTPUT="${OUTPUT}${INTEGRATION_COLOR}${INTEGRATION_STATUS} ${BRIGHT_CYAN}agentic-flow@alpha${RESET}"
 if [ -n "$GIT_BRANCH" ]; then
   OUTPUT="${OUTPUT}  ${DIM}│${RESET}  ${BRIGHT_BLUE}⎇ ${GIT_BRANCH}${RESET}"
+fi
+if [ -n "$MODEL_NAME" ]; then
+  OUTPUT="${OUTPUT}  ${DIM}│${RESET}  ${PURPLE}${MODEL_NAME}${RESET}"
 fi
 
 # Separator line
