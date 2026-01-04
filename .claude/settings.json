@@ -268,7 +268,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": ".claude/statusline.sh"
+    "command": "/workspaces/claude-flow/.claude/statusline.sh"
   },
   "mcpServers": {
     "claude-flow": {
