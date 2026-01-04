@@ -366,7 +366,7 @@ export class PluginRegistry {
    * Unregister MCP tools from a plugin
    */
   unregisterPluginMCPTools(pluginName: string): void {
-    for (const [name, entry] of this.mcpTools.entries()) {
+    for (const [name, entry] of Array.from(this.mcpTools.entries())) {
       if (entry.plugin === pluginName) {
         this.mcpTools.delete(name);
       }
