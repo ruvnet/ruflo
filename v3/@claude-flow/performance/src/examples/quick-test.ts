@@ -27,7 +27,7 @@ async function quickTest() {
     console.log(`  Result: Float32Array[${result.length}]`);
 
     // Test 2: V3 optimizer
-    console.log('\n✓ Test 3: V3 FlashAttentionOptimizer');
+    console.log('\n✓ Test 2: V3 FlashAttentionOptimizer');
     const optimizer = createFlashAttentionOptimizer(128);
     const output = await optimizer.optimize({
       query: new Float32Array(128).fill(1.0),
