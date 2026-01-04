@@ -153,7 +153,7 @@ export interface HybridQuery {
  */
 export class HybridBackend extends EventEmitter implements IMemoryBackend {
   private sqlite: SQLiteBackend;
-  private agentdb: AgentDBAdapter;
+  private agentdb: AgentDBBackend;
   private config: Required<HybridBackendConfig>;
   private initialized: boolean = false;
 
