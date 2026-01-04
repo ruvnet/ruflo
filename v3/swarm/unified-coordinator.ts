@@ -175,7 +175,21 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
       this.config.consensus
     );
 
+    // Initialize domain configurations
+    this.initializeDomainConfigs();
+
     this.setupEventForwarding();
+  }
+
+  // =============================================================================
+  // Domain Configuration Initialization
+  // =============================================================================
+
+  private initializeDomainConfigs(): void {
+    for (const config of DOMAIN_CONFIGS) {
+      this.domainConfigs.set(config.name, config);
+      this.domainTaskQueues.set(config.name, []);
+    }
   }
 
   async initialize(): Promise<void> {
