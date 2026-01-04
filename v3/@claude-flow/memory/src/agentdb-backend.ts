@@ -554,10 +554,15 @@ export class AgentDBBackend extends EventEmitter implements IMemoryBackend {
    * Create database schema
    */
   private async createSchema(): Promise<void> {
-    if (!this.agentdb?.database) return;
+    if (!this.agentdb) return;
 
     const db = this.agentdb.database;
+    if (!db || typeof db.run !== 'function') {
+      // AgentDB doesn't expose raw database - using native API
+      return;
+    }
 
+    try {
     // Create memory_entries table
     await db.run(`
       CREATE TABLE IF NOT EXISTS memory_entries (
