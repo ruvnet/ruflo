@@ -47,8 +47,9 @@ describe('HybridBackend - ADR-009', () => {
     it('should initialize both backends', async () => {
       const health = await backend.healthCheck();
       expect(health.status).toBe('healthy');
-      expect(health.components.sqlite).toBeDefined();
-      expect(health.components.agentdb).toBeDefined();
+      expect(health.components.storage).toBeDefined();
+      expect(health.components.index).toBeDefined();
+      expect(health.components.cache).toBeDefined();
     });
   });
 
