@@ -43,7 +43,7 @@
  */
 
 // ===== Core Types =====
-export {
+export type {
   // Memory Entry Types
   MemoryType,
   AccessLevel,
@@ -93,12 +93,12 @@ export {
 
   // Utility Types
   EmbeddingGenerator,
+} from './types.js';
 
-  // Utility Functions
+// Utility Functions and Constants (runtime values)
+export {
   generateMemoryId,
   createDefaultEntry,
-
-  // Constants
   PERFORMANCE_TARGETS,
 } from './types.js';
 
