@@ -162,6 +162,8 @@ export function getAllTools(): MCPTool[] {
     ...taskTools,
     ...systemTools,
     ...sessionTools,
+    ...workerTools,
+    ...sonaTools,
   ];
 }
 
