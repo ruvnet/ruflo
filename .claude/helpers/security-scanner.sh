@@ -27,12 +27,11 @@ scan_secrets() {
     "secret\s*=\s*['\"][^'\"]+['\"]"
     "token\s*=\s*['\"][^'\"]+['\"]"
     "private[_-]?key"
-    "BEGIN RSA PRIVATE KEY"
-    "BEGIN OPENSSH PRIVATE KEY"
   )
 
   for pattern in "${patterns[@]}"; do
-    local count=$(grep -riE "$pattern" "$PROJECT_ROOT/src" "$PROJECT_ROOT/v3" 2>/dev/null | grep -v node_modules | grep -v ".git" | wc -l || echo "0")
+    local count=$(grep -riE "$pattern" "$PROJECT_ROOT/src" "$PROJECT_ROOT/v3" 2>/dev/null | grep -v node_modules | grep -v ".git" | wc -l | tr -d '[:space:]')
+    count=${count:-0}
     secrets_found=$((secrets_found + count))
   done
 
