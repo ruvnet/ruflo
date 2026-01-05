@@ -128,7 +128,9 @@ async function handleInitSwarm(
   input: z.infer<typeof initSwarmSchema>,
   context?: ToolContext
 ): Promise<InitSwarmResult> {
-  const swarmId = `swarm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Secure swarm ID generation
+  const { randomBytes } = await import('crypto');
+  const swarmId = `swarm-${Date.now().toString(36)}-${randomBytes(12).toString('hex')}`;
   const initializedAt = new Date().toISOString();
 
   const config: SwarmConfig = {
