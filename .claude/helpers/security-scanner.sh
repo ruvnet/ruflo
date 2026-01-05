@@ -43,13 +43,16 @@ scan_vulnerabilities() {
 
   # Check for known vulnerable patterns
   # SQL injection patterns
-  vulns=$((vulns + $(grep -rE "execute\s*\(" "$PROJECT_ROOT/src" "$PROJECT_ROOT/v3" 2>/dev/null | grep -v node_modules | grep -v ".test." | wc -l || echo "0")))
+  local sql_count=$(grep -rE "execute\s*\(" "$PROJECT_ROOT/src" "$PROJECT_ROOT/v3" 2>/dev/null | grep -v node_modules | grep -v ".test." | wc -l | tr -d '[:space:]')
+  vulns=$((vulns + ${sql_count:-0}))
 
   # Command injection patterns
-  vulns=$((vulns + $(grep -rE "exec\s*\(|spawn\s*\(" "$PROJECT_ROOT/src" "$PROJECT_ROOT/v3" 2>/dev/null | grep -v node_modules | grep -v ".test." | grep -v "child_process" | wc -l || echo "0")))
+  local cmd_count=$(grep -rE "exec\s*\(|spawn\s*\(" "$PROJECT_ROOT/src" "$PROJECT_ROOT/v3" 2>/dev/null | grep -v node_modules | grep -v ".test." | wc -l | tr -d '[:space:]')
+  vulns=$((vulns + ${cmd_count:-0}))
 
   # Unsafe eval
-  vulns=$((vulns + $(grep -rE "\beval\s*\(" "$PROJECT_ROOT/src" "$PROJECT_ROOT/v3" 2>/dev/null | grep -v node_modules | wc -l || echo "0")))
+  local eval_count=$(grep -rE "\beval\s*\(" "$PROJECT_ROOT/src" "$PROJECT_ROOT/v3" 2>/dev/null | grep -v node_modules | wc -l | tr -d '[:space:]')
+  vulns=$((vulns + ${eval_count:-0}))
 
   echo "$vulns"
 }
