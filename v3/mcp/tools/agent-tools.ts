@@ -283,7 +283,7 @@ async function handleTerminateAgent(
       };
     } catch (error) {
       // Fall through to simple implementation if coordinator fails
-      console.error('Failed to terminate agent via coordinator:', error);
+      console.error('Failed to terminate agent via coordinator:', sanitizeErrorForLogging(error));
     }
   }
 
