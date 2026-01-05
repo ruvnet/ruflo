@@ -813,7 +813,19 @@ export class FederationHub extends EventEmitter {
   }
 
   private getSwarmAgentCount(swarmId: SwarmId): number {
-    return this.getActiveAgents(swarmId).length;
+    // Use index for O(1) lookup instead of O(n) filter
+    const swarmAgents = this.agentsBySwarm.get(swarmId);
+    if (!swarmAgents) return 0;
+
+    // Count only active and spawning agents
+    let count = 0;
+    for (const agentId of swarmAgents) {
+      const agent = this.ephemeralAgents.get(agentId);
+      if (agent && (agent.status === 'active' || agent.status === 'spawning')) {
+        count++;
+      }
+    }
+    return count;
   }
 
   private getActiveSwarmCount(): number {
