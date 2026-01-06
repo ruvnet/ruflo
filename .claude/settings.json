@@ -219,7 +219,7 @@
           {
             "type": "command",
             "timeout": 10000,
-            "command": ".claude/helpers/learning-hooks.sh session-end 2>/dev/null || true"
+            "command": "/workspaces/claude-flow/.claude/helpers/learning-hooks.sh session-end 2>/dev/null || true"
           },
           {
             "type": "command",
@@ -262,7 +262,7 @@
           {
             "type": "command",
             "timeout": 8000,
-            "command": ".claude/helpers/learning-hooks.sh session-end 2>/dev/null || true"
+            "command": "/workspaces/claude-flow/.claude/helpers/learning-hooks.sh session-end 2>/dev/null || true"
           },
           {
             "type": "command",

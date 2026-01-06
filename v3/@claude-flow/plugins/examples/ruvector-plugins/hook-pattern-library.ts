@@ -74,55 +74,6 @@ export interface HookRecommendation {
 }
 
 // ============================================================================
-// RuVector WASM Interface
-// ============================================================================
-
-interface IVectorDB {
-  insert(vector: Float32Array, id: string, metadata?: Record<string, unknown>): string;
-  search(query: Float32Array, k: number): Array<{ id: string; score: number; metadata?: Record<string, unknown> }>;
-  delete(id: string): boolean;
-  size(): number;
-}
-
-async function createVectorDB(dimensions: number): Promise<IVectorDB> {
-  try {
-    const db = new RuVectorDB({ dimensions, indexType: 'hnsw', metric: 'cosine' });
-    await db.initialize?.();
-    return db as IVectorDB;
-  } catch {
-    console.warn('[@claude-flow/plugins] @ruvector/wasm not available, using fallback');
-    return new FallbackVectorDB(dimensions);
-  }
-}
-
-class FallbackVectorDB implements IVectorDB {
-  private vectors = new Map<string, { vector: Float32Array; metadata: Record<string, unknown> }>();
-  constructor(private dimensions: number) {}
-
-  insert(vector: Float32Array, id: string, metadata: Record<string, unknown> = {}): string {
-    this.vectors.set(id, { vector, metadata });
-    return id;
-  }
-
-  search(query: Float32Array, k: number): Array<{ id: string; score: number; metadata?: Record<string, unknown> }> {
-    const results: Array<{ id: string; score: number; metadata?: Record<string, unknown> }> = [];
-    for (const [id, entry] of this.vectors) {
-      let dot = 0, normA = 0, normB = 0;
-      for (let i = 0; i < query.length; i++) {
-        dot += query[i] * entry.vector[i];
-        normA += query[i] * query[i];
-        normB += entry.vector[i] * entry.vector[i];
-      }
-      results.push({ id, score: dot / (Math.sqrt(normA) * Math.sqrt(normB) || 1), metadata: entry.metadata });
-    }
-    return results.sort((a, b) => b.score - a.score).slice(0, k);
-  }
-
-  delete(id: string) { return this.vectors.delete(id); }
-  size() { return this.vectors.size; }
-}
-
-// ============================================================================
 // Hook Pattern Library Core
 // ============================================================================
 
