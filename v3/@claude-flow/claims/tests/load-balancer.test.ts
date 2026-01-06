@@ -223,6 +223,7 @@ class LoadBalancer {
     );
 
     if (overloaded.length === 0 || underloaded.length === 0) {
+      this.lastRebalanceAt = new Date(); // Set cooldown even when nothing to rebalance
       return {
         success: true,
         actions: [],
