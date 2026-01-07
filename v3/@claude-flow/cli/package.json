@@ -1,10 +1,11 @@
 {
   "name": "@claude-flow/cli",
-  "version": "3.0.0-alpha.24",
+  "version": "3.0.0-alpha.25",
   "type": "module",
   "description": "CLI module - command parsing, prompts, output formatting",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
+  "sideEffects": false,
   "bin": {
     "claude-flow": "./bin/cli.js"
   },
