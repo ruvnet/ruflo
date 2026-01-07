@@ -69,6 +69,22 @@ const similarity = cosineSimilarity(
 console.log(`Similarity: ${similarity.toFixed(4)}`);
 ```
 
+### Auto Provider (Recommended)
+
+```typescript
+import { createEmbeddingServiceAsync, cosineSimilarity } from '@claude-flow/embeddings';
+
+// Auto-select best provider (installs agentic-flow if needed)
+const service = await createEmbeddingServiceAsync({
+  provider: 'auto',      // Tries: agentic-flow → transformers → mock
+  autoInstall: true,     // Auto-install agentic-flow if missing
+});
+
+// Generate embeddings (75x faster with agentic-flow)
+const result = await service.embed('Hello, world!');
+console.log(`Provider: agentic-flow, Latency: ${result.latencyMs}ms`);
+```
+
 ## API Reference
 
 ### Factory Functions
