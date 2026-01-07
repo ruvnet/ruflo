@@ -627,7 +627,7 @@ export class QLearningRouter {
   }
 
   /**
-   * Reset the router
+   * Reset the router (clears all learned data)
    */
   reset(): void {
     this.qTable.clear();
@@ -635,6 +635,20 @@ export class QLearningRouter {
     this.stepCount = 0;
     this.updateCount = 0;
     this.avgTDError = 0;
+
+    // Reset replay buffer
+    this.replayBuffer = [];
+    this.replayBufferIdx = 0;
+    this.totalExperiences = 0;
+
+    // Reset cache
+    this.routeCache.clear();
+    this.cacheOrder = [];
+    this.cacheHits = 0;
+    this.cacheMisses = 0;
+
+    // Reset feature hash cache
+    this.featureHashCache.clear();
   }
 
   /**
