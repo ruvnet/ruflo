@@ -283,7 +283,7 @@ export function hyperbolicCentroid(
   points: Array<Float32Array | number[]>,
   config: HyperbolicConfig = {},
   maxIter = 100
-): Float32Array {
+): Float32Array<ArrayBuffer> {
   if (points.length === 0) {
     throw new Error('Need at least one point');
   }
