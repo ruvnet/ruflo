@@ -153,14 +153,18 @@ const diffCommand: Command = {
       output.writeln();
 
       // Summary box
+      const files = result.files || [];
+      const risk = result.risk || { overall: 'unknown', score: 0, breakdown: { fileCount: 0, totalChanges: 0, highRiskFiles: [], securityConcerns: [], breakingChanges: [], testCoverage: 'unknown' } };
+      const classification = result.classification || { category: 'unknown', confidence: 0, reasoning: '' };
+
       output.printBox(
         [
-          `Ref: ${result.ref}`,
-          `Files: ${result.files.length}`,
-          `Risk: ${getRiskDisplay(result.risk.overall)} (${result.risk.score}/100)`,
-          `Type: ${result.classification.category}${result.classification.subcategory ? ` (${result.classification.subcategory})` : ''}`,
+          `Ref: ${result.ref || 'HEAD'}`,
+          `Files: ${files.length}`,
+          `Risk: ${getRiskDisplay(risk.overall)} (${risk.score}/100)`,
+          `Type: ${classification.category}${classification.subcategory ? ` (${classification.subcategory})` : ''}`,
           ``,
-          result.summary,
+          result.summary || 'No summary available',
         ].join('\n'),
         'Diff Analysis'
       );
