@@ -444,13 +444,14 @@ class HNSWIndex {
 }
 
 // =============================================================================
-// Embedding Service (ONNX via agentic-flow@alpha)
+// Embedding Service (ONNX via agentic-flow@alpha OptimizedEmbedder)
 // =============================================================================
 
 class EmbeddingService {
   constructor(config) {
     this.config = config;
     this.initialized = false;
+    this.embedder = null;
     this.embeddingCache = new Map();
     this.cacheMaxSize = 1000;
   }
@@ -459,20 +460,31 @@ class EmbeddingService {
     if (this.initialized) return;
 
     try {
-      // Try to use agentic-flow@alpha embeddings
-      const result = execSync(
-        'npx agentic-flow@alpha embeddings check 2>/dev/null || echo "fallback"',
-        { encoding: 'utf-8', timeout: 5000 }
-      ).trim();
+      // Dynamically import agentic-flow OptimizedEmbedder
+      const agenticFlowPath = join(PROJECT_ROOT, 'node_modules/agentic-flow/dist/embeddings/optimized-embedder.js');
 
-      this.useAgenticFlow = result !== 'fallback';
+      if (existsSync(agenticFlowPath)) {
+        const { getOptimizedEmbedder } = await import(agenticFlowPath);
+        this.embedder = getOptimizedEmbedder({
+          modelId: 'all-MiniLM-L6-v2',
+          dimension: this.config.embedding.dimension,
+          cacheSize: 256,
+          autoDownload: false,  // Model should already be downloaded
+        });
+
+        await this.embedder.init();
+        this.useAgenticFlow = true;
+        console.log('[Embedding] Initialized: agentic-flow OptimizedEmbedder (ONNX)');
+      } else {
+        this.useAgenticFlow = false;
+        console.log('[Embedding] agentic-flow not found, using fallback hash embeddings');
+      }
+
       this.initialized = true;
-
-      console.log(`[Embedding] Initialized: ${this.useAgenticFlow ? 'agentic-flow ONNX' : 'fallback hash'}`);
     } catch (e) {
       this.useAgenticFlow = false;
       this.initialized = true;
-      console.log('[Embedding] Using fallback hash-based embeddings');
+      console.log(`[Embedding] Using fallback hash-based embeddings: ${e.message}`);
     }
   }
 
@@ -487,16 +499,12 @@ class EmbeddingService {
 
     let embedding;
 
-    if (this.useAgenticFlow) {
+    if (this.useAgenticFlow && this.embedder) {
       try {
-        // Use agentic-flow@alpha ONNX embeddings
-        const result = execSync(
-          `npx agentic-flow@alpha embeddings generate "${text.replace(/"/g, '\\"').slice(0, 500)}" --format json 2>/dev/null`,
-          { encoding: 'utf-8', timeout: 10000 }
-        );
-        const parsed = JSON.parse(result);
-        embedding = new Float32Array(parsed.embedding || parsed);
+        // Use agentic-flow OptimizedEmbedder
+        embedding = await this.embedder.embed(text.slice(0, 500));
       } catch (e) {
+        console.log(`[Embedding] ONNX failed, using fallback: ${e.message}`);
         embedding = this._fallbackEmbed(text);
       }
     } else {
@@ -514,6 +522,14 @@ class EmbeddingService {
   }
 
   async embedBatch(texts) {
+    if (this.useAgenticFlow && this.embedder) {
+      try {
+        return await this.embedder.embedBatch(texts.map(t => t.slice(0, 500)));
+      } catch (e) {
+        // Fallback to sequential
+        return Promise.all(texts.map(t => this.embed(t)));
+      }
+    }
     return Promise.all(texts.map(t => this.embed(t)));
   }
 

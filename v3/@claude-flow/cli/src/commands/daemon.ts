@@ -6,6 +6,10 @@
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { WorkerDaemon, getDaemon, startDaemon, stopDaemon, type WorkerType } from '../services/worker-daemon.js';
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import * as fs from 'fs';
 
 // Start daemon subcommand
 const startCommand: Command = {
@@ -14,15 +18,34 @@ const startCommand: Command = {
   options: [
     { name: 'workers', short: 'w', type: 'string', description: 'Comma-separated list of workers to enable (default: map,audit,optimize,consolidate,testgaps)' },
     { name: 'quiet', short: 'q', type: 'boolean', description: 'Suppress output' },
+    { name: 'background', short: 'b', type: 'boolean', description: 'Run daemon in background (detached process)', default: true },
+    { name: 'foreground', short: 'f', type: 'boolean', description: 'Run daemon in foreground (blocks terminal)' },
   ],
   examples: [
-    { command: 'claude-flow daemon start', description: 'Start daemon with default workers' },
+    { command: 'claude-flow daemon start', description: 'Start daemon in background (default)' },
+    { command: 'claude-flow daemon start --foreground', description: 'Start in foreground (blocks terminal)' },
     { command: 'claude-flow daemon start -w map,audit,optimize', description: 'Start with specific workers' },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const quiet = ctx.flags.quiet as boolean;
+    const foreground = ctx.flags.foreground as boolean;
     const projectRoot = process.cwd();
 
+    // Check if background daemon already running
+    const bgPid = getBackgroundDaemonPid(projectRoot);
+    if (bgPid && isProcessRunning(bgPid)) {
+      if (!quiet) {
+        output.printWarning(`Daemon already running in background (PID: ${bgPid})`);
+      }
+      return { success: true };
+    }
+
+    // Background mode (default): fork a detached process
+    if (!foreground) {
+      return startBackgroundDaemon(projectRoot, quiet);
+    }
+
+    // Foreground mode: run in current process (blocks terminal)
     try {
       if (!quiet) {
         const spinner = output.createSpinner({ text: 'Starting worker daemon...', spinner: 'dots' });
@@ -31,7 +54,7 @@ const startCommand: Command = {
         const daemon = await startDaemon(projectRoot);
         const status = daemon.getStatus();
 
-        spinner.succeed('Worker daemon started');
+        spinner.succeed('Worker daemon started (foreground mode)');
 
         output.writeln();
         output.printBox(
@@ -65,6 +88,9 @@ const startCommand: Command = {
             })),
         });
 
+        output.writeln();
+        output.writeln(output.dim('Press Ctrl+C to stop daemon'));
+
         // Listen for worker events
         daemon.on('worker:start', ({ type }: { type: string }) => {
           output.writeln(output.dim(`[daemon] Worker starting: ${type}`));
@@ -77,8 +103,12 @@ const startCommand: Command = {
         daemon.on('worker:error', ({ type, error }: { type: string; error: string }) => {
           output.writeln(output.error(`[daemon] Worker failed: ${type} - ${error}`));
         });
+
+        // Keep process alive
+        await new Promise(() => {}); // Never resolves - daemon runs until killed
       } else {
         await startDaemon(projectRoot);
+        await new Promise(() => {}); // Keep alive
       }
 
       return { success: true };
@@ -88,6 +118,65 @@ const startCommand: Command = {
     }
   },
 };
+
+/**
+ * Start daemon as a detached background process
+ */
+async function startBackgroundDaemon(projectRoot: string, quiet: boolean): Promise<CommandResult> {
+  const stateDir = join(projectRoot, '.claude-flow');
+  const pidFile = join(stateDir, 'daemon.pid');
+  const logFile = join(stateDir, 'daemon.log');
+
+  // Ensure state directory exists
+  if (!fs.existsSync(stateDir)) {
+    fs.mkdirSync(stateDir, { recursive: true });
+  }
+
+  // Get path to CLI (from dist/src/commands/daemon.js -> bin/cli.js)
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  // dist/src/commands -> dist/src -> dist -> package root -> bin/cli.js
+  const cliPath = join(__dirname, '..', '..', '..', 'bin', 'cli.js');
+
+  // Open log file for daemon output
+  const logFd = fs.openSync(logFile, 'a');
+
+  // Verify CLI path exists
+  if (!fs.existsSync(cliPath)) {
+    fs.closeSync(logFd);
+    output.printError(`CLI not found at: ${cliPath}`);
+    return { success: false, exitCode: 1 };
+  }
+
+  // Spawn detached child process running daemon in foreground mode
+  const child = spawn(
+    process.execPath,
+    [cliPath, 'daemon', 'start', '--foreground', '--quiet'],
+    {
+      cwd: projectRoot,
+      detached: true,
+      stdio: ['ignore', logFd, logFd],
+      env: { ...process.env, CLAUDE_FLOW_DAEMON: '1' },
+    }
+  );
+
+  // Unref so parent can exit
+  child.unref();
+
+  // Save PID
+  fs.writeFileSync(pidFile, String(child.pid));
+
+  // Close log file descriptor in parent
+  fs.closeSync(logFd);
+
+  if (!quiet) {
+    output.printSuccess(`Daemon started in background (PID: ${child.pid})`);
+    output.printInfo(`Logs: ${logFile}`);
+    output.printInfo(`Stop with: claude-flow daemon stop`);
+  }
+
+  return { success: true };
+}
 
 // Stop daemon subcommand
 const stopCommand: Command = {
@@ -101,17 +190,23 @@ const stopCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const quiet = ctx.flags.quiet as boolean;
+    const projectRoot = process.cwd();
 
     try {
       if (!quiet) {
         const spinner = output.createSpinner({ text: 'Stopping worker daemon...', spinner: 'dots' });
         spinner.start();
 
+        // Try to stop in-process daemon first
         await stopDaemon();
 
-        spinner.succeed('Worker daemon stopped');
+        // Also kill any background daemon by PID
+        const killed = await killBackgroundDaemon(projectRoot);
+
+        spinner.succeed(killed ? 'Worker daemon stopped' : 'Worker daemon was not running');
       } else {
         await stopDaemon();
+        await killBackgroundDaemon(projectRoot);
       }
 
       return { success: true };
@@ -121,6 +216,92 @@ const stopCommand: Command = {
     }
   },
 };
+
+/**
+ * Kill background daemon process using PID file
+ */
+async function killBackgroundDaemon(projectRoot: string): Promise<boolean> {
+  const pidFile = join(projectRoot, '.claude-flow', 'daemon.pid');
+
+  if (!fs.existsSync(pidFile)) {
+    return false;
+  }
+
+  try {
+    const pid = parseInt(fs.readFileSync(pidFile, 'utf-8').trim(), 10);
+
+    if (isNaN(pid)) {
+      fs.unlinkSync(pidFile);
+      return false;
+    }
+
+    // Check if process is running
+    try {
+      process.kill(pid, 0); // Signal 0 = check if alive
+    } catch {
+      // Process not running, clean up stale PID file
+      fs.unlinkSync(pidFile);
+      return false;
+    }
+
+    // Kill the process
+    process.kill(pid, 'SIGTERM');
+
+    // Wait a moment then force kill if needed
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    try {
+      process.kill(pid, 0);
+      // Still alive, force kill
+      process.kill(pid, 'SIGKILL');
+    } catch {
+      // Process terminated
+    }
+
+    // Clean up PID file
+    if (fs.existsSync(pidFile)) {
+      fs.unlinkSync(pidFile);
+    }
+
+    return true;
+  } catch (error) {
+    // Clean up PID file on any error
+    if (fs.existsSync(pidFile)) {
+      fs.unlinkSync(pidFile);
+    }
+    return false;
+  }
+}
+
+/**
+ * Get PID of background daemon from PID file
+ */
+function getBackgroundDaemonPid(projectRoot: string): number | null {
+  const pidFile = join(projectRoot, '.claude-flow', 'daemon.pid');
+
+  if (!fs.existsSync(pidFile)) {
+    return null;
+  }
+
+  try {
+    const pid = parseInt(fs.readFileSync(pidFile, 'utf-8').trim(), 10);
+    return isNaN(pid) ? null : pid;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if a process is running
+ */
+function isProcessRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0); // Signal 0 = check if alive
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Status subcommand
 const statusCommand: Command = {
@@ -135,21 +316,30 @@ const statusCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const verbose = ctx.flags.verbose as boolean;
+    const projectRoot = process.cwd();
 
     try {
-      const daemon = getDaemon(process.cwd());
+      const daemon = getDaemon(projectRoot);
       const status = daemon.getStatus();
+
+      // Also check for background daemon
+      const bgPid = getBackgroundDaemonPid(projectRoot);
+      const bgRunning = bgPid ? isProcessRunning(bgPid) : false;
+
+      const isRunning = status.running || bgRunning;
+      const displayPid = bgPid || status.pid;
 
       output.writeln();
 
       // Daemon status box
-      const statusIcon = status.running ? output.success('●') : output.error('○');
-      const statusText = status.running ? output.success('RUNNING') : output.error('STOPPED');
+      const statusIcon = isRunning ? output.success('●') : output.error('○');
+      const statusText = isRunning ? output.success('RUNNING') : output.error('STOPPED');
+      const mode = bgRunning ? output.dim(' (background)') : status.running ? output.dim(' (foreground)') : '';
 
       output.printBox(
         [
-          `Status: ${statusIcon} ${statusText}`,
-          `PID: ${status.pid}`,
+          `Status: ${statusIcon} ${statusText}${mode}`,
+          `PID: ${displayPid}`,
           status.startedAt ? `Started: ${status.startedAt.toISOString()}` : '',
           `Workers Enabled: ${status.config.workers.filter(w => w.enabled).length}`,
           `Max Concurrent: ${status.config.maxConcurrent}`,
