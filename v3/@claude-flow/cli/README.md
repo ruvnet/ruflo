@@ -26,6 +26,9 @@
 - **15-Agent Swarm** - V3 hierarchical mesh coordination with domain specialization
 - **AgentDB Integration** - 150x-12,500x faster vector search with HNSW indexing
 - **SONA Learning** - Sub-0.05ms adaptation with Mixture of Experts routing
+- **Q-Learning Routing** - Intelligent task-to-agent routing with reinforcement learning
+- **Code Analysis** - AST analysis, diff classification, complexity metrics, boundary detection
+- **Issue Claims (ADR-016)** - Collaborative human-agent issue management with work stealing
 
 ### Developer Experience
 - **Type-Safe** - Full TypeScript support with comprehensive type definitions
