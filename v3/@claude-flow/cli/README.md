@@ -1049,6 +1049,247 @@ All checks passed with some warnings.
 
 ---
 
+### `route` - Q-Learning Agent Router
+
+Intelligent task-to-agent routing using reinforcement learning.
+
+```bash
+claude-flow route <subcommand> [options]
+```
+
+#### Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `task` | Route a task to optimal agent using Q-Learning |
+| `list-agents` | List available agent types with capabilities |
+| `stats` | Show router statistics and learning metrics |
+| `feedback` | Provide routing feedback for continuous learning |
+| `reset` | Reset Q-Learning router state |
+| `export` | Export Q-table for persistence |
+| `import` | Import Q-table from file |
+
+#### Agent Types
+
+| Type | Description |
+|------|-------------|
+| `coder` | Code implementation and debugging |
+| `tester` | Testing and quality assurance |
+| `reviewer` | Code review and quality checks |
+| `architect` | System design and architecture |
+| `researcher` | Research and information gathering |
+| `optimizer` | Performance optimization |
+| `debugger` | Bug fixing and troubleshooting |
+| `documenter` | Documentation and comments |
+
+#### How It Works
+
+1. **State Encoding** - Analyzes task description using hash-based feature extraction
+2. **Q-Learning** - Uses Q-table to map (state, action) pairs to expected rewards
+3. **Epsilon-Greedy** - Balances exploration (try new agents) vs exploitation (use best known)
+4. **Feedback Loop** - Learns from success/failure outcomes to improve routing
+
+#### Examples
+
+```bash
+# Route a task to optimal agent
+claude-flow route task "Implement user authentication with JWT"
+
+# Route with verbose output showing decision process
+claude-flow route task "Fix memory leak in API handler" --verbose
+
+# List available agent types
+claude-flow route list-agents
+
+# View router statistics
+claude-flow route stats
+
+# Provide feedback (reward: -1 to 1)
+claude-flow route feedback --agent coder --reward 0.8 --task "auth implementation"
+
+# Export Q-table for backup
+claude-flow route export -o ./q-table.json
+
+# Import Q-table
+claude-flow route import -i ./q-table.json
+
+# Reset router (start fresh)
+claude-flow route reset --confirm
+```
+
+---
+
+### `analyze` - Code Analysis
+
+Comprehensive code analysis with AST parsing, diff classification, complexity metrics, and dependency analysis.
+
+```bash
+claude-flow analyze <subcommand> [options]
+```
+
+#### Subcommands
+
+| Subcommand | Description | Algorithm |
+|------------|-------------|-----------|
+| `ast` | AST analysis with symbol extraction | tree-sitter (regex fallback) |
+| `complexity` | Cyclomatic and cognitive complexity | McCabe + cognitive metrics |
+| `symbols` | Extract functions, classes, types | AST parsing |
+| `imports` | Import dependency analysis | Static analysis |
+| `diff` | Diff classification and risk assessment | Pattern matching |
+| `boundaries` | Code boundaries detection | MinCut algorithm |
+| `modules` | Module community detection | Louvain algorithm |
+| `dependencies` | Full dependency graph | Graph building |
+| `circular` | Circular dependency detection | Tarjan's SCC |
+| `deps` | Project dependency analysis | npm/yarn |
+| `code` | Static code quality analysis | Multi-metric |
+
+#### Diff Risk Levels
+
+| Risk | Color | Description |
+|------|-------|-------------|
+| `critical` | Red | Breaking changes, security-sensitive |
+| `high` | Orange | Core logic, API changes |
+| `medium` | Yellow | Feature additions, significant refactoring |
+| `low` | Green | Documentation, tests, formatting |
+
+#### Examples
+
+```bash
+# Analyze AST of a file
+claude-flow analyze ast ./src/auth/login.ts
+
+# Analyze with symbol extraction
+claude-flow analyze symbols ./src/services/ --recursive
+
+# Check cyclomatic complexity
+claude-flow analyze complexity ./src --threshold 10
+
+# Classify a git diff
+claude-flow analyze diff HEAD~1
+
+# Classify staged changes
+claude-flow analyze diff --staged
+
+# Find code boundaries (module splits)
+claude-flow analyze boundaries ./src --min-cut
+
+# Detect module communities
+claude-flow analyze modules ./src --algorithm louvain
+
+# Find circular dependencies
+claude-flow analyze circular ./src
+
+# Full dependency graph
+claude-flow analyze dependencies ./src -o ./deps.dot --format dot
+
+# Project dependency analysis
+claude-flow analyze deps --outdated
+```
+
+---
+
+### `issues` - Collaborative Issue Claims (ADR-016)
+
+Human-agent collaborative issue management with work stealing, load balancing, and handoffs.
+
+```bash
+claude-flow issues <subcommand> [options]
+```
+
+#### Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all active claims |
+| `claim` | Claim an issue for yourself or an agent |
+| `release` | Release a claim |
+| `handoff` | Request handoff to another agent/user |
+| `status` | Update claim status and progress |
+| `stealable` | List issues available for work stealing |
+| `steal` | Steal an issue from overloaded/stale claimant |
+| `load` | View agent load distribution |
+| `rebalance` | Rebalance claims across swarm |
+| `board` | Visual Kanban-style claim board |
+
+#### Claim Status
+
+| Status | Description |
+|--------|-------------|
+| `active` | Actively being worked on |
+| `paused` | Temporarily paused |
+| `blocked` | Blocked by dependency |
+| `stealable` | Available for work stealing |
+| `completed` | Work completed |
+| `handoff-pending` | Awaiting handoff acceptance |
+| `review-requested` | Needs review |
+
+#### Work Stealing
+
+Issues can be marked stealable when:
+- **Overloaded** - Claimant has too many active claims
+- **Stale** - No progress for extended period
+- **Blocked** - Blocked beyond timeout threshold
+- **Voluntary** - Claimant voluntarily releases
+
+#### Examples
+
+```bash
+# List all claims
+claude-flow issues list
+
+# List with status filter
+claude-flow issues list --status active
+
+# Claim an issue
+claude-flow issues claim ISSUE-123
+
+# Claim as agent
+claude-flow issues claim ISSUE-123 --as-agent --type coder
+
+# Update progress
+claude-flow issues status ISSUE-123 --progress 50
+
+# Mark as blocked
+claude-flow issues status ISSUE-123 --set blocked --note "Waiting for API"
+
+# Request handoff to another user
+claude-flow issues handoff ISSUE-123 --to user:alice:Alice
+
+# Request handoff to agent
+claude-flow issues handoff ISSUE-123 --to agent:coder:coder-001
+
+# View stealable issues
+claude-flow issues stealable
+
+# Steal an issue
+claude-flow issues steal ISSUE-123 --reason overloaded
+
+# View agent load
+claude-flow issues load
+
+# Rebalance swarm
+claude-flow issues rebalance --strategy even
+
+# Visual board view
+claude-flow issues board
+```
+
+#### Board View
+
+```
+📋 Issue Claims Board
+────────────────────────────────────────────────────────────────
+
+ACTIVE (3)          PAUSED (1)          BLOCKED (1)
+────────────────    ────────────────    ────────────────
+│ ISSUE-123    │    │ ISSUE-456    │    │ ISSUE-789    │
+│ 🤖 coder     │    │ 👤 alice     │    │ 🤖 tester    │
+│ 75% ████░░░  │    │ 30% ██░░░░░  │    │ 50% ███░░░░  │
+└──────────────┘    └──────────────┘    └──────────────┘
+```
+
+---
+
 ### `completions` - Shell Completions
 
 Generate shell completion scripts for tab completion of commands.
