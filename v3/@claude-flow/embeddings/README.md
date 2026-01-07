@@ -288,8 +288,9 @@ service.removeEventListener(listener);
 
 | Provider | Latency | Quality | Cost | Offline |
 |----------|---------|---------|------|---------|
+| **Agentic-Flow** | ~3ms | Good | Free | Yes |
 | **OpenAI** | ~50-100ms | Excellent | $0.02-0.13/1M tokens | No |
-| **Transformers.js** | ~20-50ms | Good | Free | Yes |
+| **Transformers.js** | ~230ms | Good | Free | Yes |
 | **Mock** | <1ms | N/A | Free | Yes |
 
 ### OpenAI Models
