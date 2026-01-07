@@ -59,9 +59,12 @@ export class CoverageRouter {
 
   async initialize(): Promise<void> {
     try {
-      const ruvector = await import('@ruvector/coverage');
-      this.ruvectorEngine = (ruvector as any).createCoverageRouter?.(this.config);
-      this.useNative = !!this.ruvectorEngine;
+      // @ruvector/coverage is optional - gracefully fallback if not installed
+      const ruvector = await import('@ruvector/coverage' as string).catch(() => null);
+      if (ruvector) {
+        this.ruvectorEngine = (ruvector as any).createCoverageRouter?.(this.config);
+        this.useNative = !!this.ruvectorEngine;
+      }
     } catch { this.useNative = false; }
   }
 
