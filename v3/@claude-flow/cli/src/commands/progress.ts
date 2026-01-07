@@ -282,16 +282,16 @@ export const progressCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     // Handle --sync flag
     if (ctx.flags.sync) {
-      return syncCommand.action!(ctx);
+      return (await syncCommand.action!(ctx)) as CommandResult;
     }
 
     // Handle --watch flag
     if (ctx.flags.watch) {
-      return watchCommand.action!(ctx);
+      return (await watchCommand.action!(ctx)) as CommandResult;
     }
 
     // Default to check
-    return checkCommand.action!(ctx);
+    return (await checkCommand.action!(ctx)) as CommandResult;
   },
 };
 
