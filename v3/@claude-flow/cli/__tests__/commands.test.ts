@@ -127,13 +127,22 @@ vi.mock('../src/mcp-client.js', () => ({
 
     if (toolName === 'memory/stats') {
       return {
-        totalEntries: 42,
-        totalSize: '1.2 MB',
-        version: '3.0.0-alpha',
-        backend: 'hybrid',
-        location: './data/memory',
-        oldestEntry: '2024-01-01T00:00:00Z',
-        newestEntry: '2024-01-07T00:00:00Z'
+        entries: {
+          total: 42,
+          oldest: '2024-01-01T00:00:00Z',
+          newest: '2024-01-07T00:00:00Z'
+        },
+        storage: {
+          totalSize: '1.2 MB',
+          backend: 'hybrid',
+          location: './data/memory'
+        },
+        performance: {
+          avgQueryTime: '0.5ms',
+          cacheHitRate: '85%',
+          indexStatus: 'healthy'
+        },
+        version: '3.0.0-alpha'
       };
     }
 
