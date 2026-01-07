@@ -530,7 +530,7 @@ const modelsCommand: Command = {
       if (embeddings) {
         try {
           await embeddings.downloadEmbeddingModel(download, '.models', (p) => {
-            spinner.text = `Downloading ${download}... ${p.percent.toFixed(1)}%`;
+            spinner.setText(`Downloading ${download}... ${p.percent.toFixed(1)}%`);
           });
           spinner.succeed(`Downloaded ${download}`);
         } catch (err) {
