@@ -221,6 +221,7 @@ export class QLearningRouter {
 
   /**
    * Initialize the router, attempting to load ruvector native module
+   * and restore persisted model if available
    */
   async initialize(): Promise<void> {
     try {
@@ -230,6 +231,85 @@ export class QLearningRouter {
     } catch {
       // Fallback to JS implementation
       this.useNative = false;
+    }
+
+    // Try to load persisted model
+    await this.loadModel();
+  }
+
+  /**
+   * Load model from persistence file
+   */
+  async loadModel(path?: string): Promise<boolean> {
+    const modelPath = path || this.config.modelPath;
+    try {
+      if (!existsSync(modelPath)) {
+        return false;
+      }
+      const data = readFileSync(modelPath, 'utf-8');
+      const model: PersistedModel = JSON.parse(data);
+
+      // Validate version compatibility
+      if (!model.version || !model.version.startsWith('1.')) {
+        console.warn(`[Q-Learning] Incompatible model version: ${model.version}`);
+        return false;
+      }
+
+      // Import Q-table
+      this.import(model.qTable);
+
+      // Restore stats
+      this.stepCount = model.stats.stepCount || 0;
+      this.updateCount = model.stats.updateCount || 0;
+      this.avgTDError = model.stats.avgTDError || 0;
+      this.epsilon = model.stats.epsilon || this.config.explorationInitial;
+      this.totalExperiences = model.metadata?.totalExperiences || 0;
+
+      return true;
+    } catch (err) {
+      console.warn(`[Q-Learning] Failed to load model: ${err}`);
+      return false;
+    }
+  }
+
+  /**
+   * Save model to persistence file
+   */
+  async saveModel(path?: string): Promise<boolean> {
+    const modelPath = path || this.config.modelPath;
+    try {
+      // Ensure directory exists
+      const dir = dirname(modelPath);
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+      }
+
+      const model: PersistedModel = {
+        version: '1.0.0',
+        config: {
+          learningRate: this.config.learningRate,
+          gamma: this.config.gamma,
+          explorationDecayType: this.config.explorationDecayType,
+          numActions: this.config.numActions,
+        },
+        qTable: this.export(),
+        stats: {
+          stepCount: this.stepCount,
+          updateCount: this.updateCount,
+          avgTDError: this.avgTDError,
+          epsilon: this.epsilon,
+        },
+        metadata: {
+          savedAt: new Date().toISOString(),
+          totalExperiences: this.totalExperiences,
+        },
+      };
+
+      writeFileSync(modelPath, JSON.stringify(model, null, 2));
+      return true;
+    } catch (err) {
+      console.warn(`[Q-Learning] Failed to save model: ${err}`);
+      return false;
     }
   }
 
