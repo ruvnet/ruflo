@@ -299,16 +299,22 @@ export function hyperbolicCentroid(
   const dim = points[0].length;
 
   // Initialize centroid at Euclidean mean projected to ball
-  let centroid = new Float32Array(dim);
+  const centroidInit = new Float32Array(dim);
   for (const p of points) {
     for (let i = 0; i < dim; i++) {
-      centroid[i] += p[i];
+      centroidInit[i] += p[i];
     }
   }
   for (let i = 0; i < dim; i++) {
-    centroid[i] /= points.length;
+    centroidInit[i] /= points.length;
   }
-  centroid = euclideanToPoincare(centroid, config) as Float32Array;
+
+  // Project to Poincaré ball
+  const projectedInit = euclideanToPoincare(centroidInit, config);
+  let centroid = new Float32Array(dim);
+  for (let i = 0; i < dim; i++) {
+    centroid[i] = projectedInit[i];
+  }
 
   // Iterative refinement using Karcher mean algorithm
   for (let iter = 0; iter < maxIter; iter++) {
@@ -316,7 +322,8 @@ export function hyperbolicCentroid(
 
     for (const p of points) {
       // Log map from centroid to point
-      const logMap = logMapAt(centroid, p as Float32Array, config);
+      const pArr = p instanceof Float32Array ? p : new Float32Array(p);
+      const logMap = logMapAt(centroid, pArr, config);
       for (let i = 0; i < dim; i++) {
         gradient[i] += logMap[i];
       }
@@ -330,7 +337,10 @@ export function hyperbolicCentroid(
     for (let i = 0; i < dim; i++) {
       gradient[i] /= points.length;
     }
-    centroid = expMapAt(centroid as Float32Array, gradient, config) as Float32Array;
+    const updated = expMapAt(centroid, gradient, config);
+    for (let i = 0; i < dim; i++) {
+      centroid[i] = updated[i];
+    }
   }
 
   return centroid;
