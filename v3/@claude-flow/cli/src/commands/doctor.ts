@@ -136,20 +136,24 @@ async function checkApiKeys(): Promise<HealthCheck> {
   }
 }
 
-// Check git
+// Check git (async)
 async function checkGit(): Promise<HealthCheck> {
   try {
-    const version = execSync('git --version', { encoding: 'utf8' }).trim();
-    return { name: 'Git', status: 'pass', message: version.replace('git version ', 'v') };
+    const { promisify } = require('util');
+    const execAsync = promisify(require('child_process').exec);
+    const { stdout } = await execAsync('git --version', { encoding: 'utf8', timeout: 5000 });
+    return { name: 'Git', status: 'pass', message: stdout.trim().replace('git version ', 'v') };
   } catch {
     return { name: 'Git', status: 'warn', message: 'Not installed', fix: 'Install git from https://git-scm.com' };
   }
 }
 
-// Check if in git repo
+// Check if in git repo (async)
 async function checkGitRepo(): Promise<HealthCheck> {
   try {
-    execSync('git rev-parse --git-dir', { encoding: 'utf8', stdio: 'pipe' });
+    const { promisify } = require('util');
+    const execAsync = promisify(require('child_process').exec);
+    await execAsync('git rev-parse --git-dir', { encoding: 'utf8', timeout: 5000 });
     return { name: 'Git Repository', status: 'pass', message: 'In a git repository' };
   } catch {
     return { name: 'Git Repository', status: 'warn', message: 'Not a git repository', fix: 'git init' };
