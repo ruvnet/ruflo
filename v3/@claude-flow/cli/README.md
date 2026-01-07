@@ -5,19 +5,20 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
-[![Commands](https://img.shields.io/badge/Commands-24-orange.svg)](https://github.com/ruvnet/claude-flow)
-[![Subcommands](https://img.shields.io/badge/Subcommands-130+-purple.svg)](https://github.com/ruvnet/claude-flow)
+[![Commands](https://img.shields.io/badge/Commands-26-orange.svg)](https://github.com/ruvnet/claude-flow)
+[![Subcommands](https://img.shields.io/badge/Subcommands-140+-purple.svg)](https://github.com/ruvnet/claude-flow)
 
-> Modern CLI module for Claude Flow V3 - comprehensive command-line interface with 24 commands, 130+ subcommands, interactive prompts, self-learning hooks, background workers, hive-mind coordination, and beautiful output formatting.
+> Modern CLI module for Claude Flow V3 - comprehensive command-line interface with 26 commands, 140+ subcommands, interactive prompts, self-learning hooks, background workers, hive-mind coordination, smart error suggestions, and beautiful output formatting.
 
 ## Features
 
 ### Core Capabilities
-- **24 Main Commands** - Complete CLI coverage for all Claude Flow operations
-- **130+ Subcommands** - Fine-grained control over every aspect of the system
+- **26 Main Commands** - Complete CLI coverage for all Claude Flow operations
+- **140+ Subcommands** - Fine-grained control over every aspect of the system
 - **Advanced Argument Parsing** - Full support for flags, options, subcommands, and positional arguments
 - **Interactive Prompts** - Rich interactive mode with confirmations, selections, and input validation
 - **Beautiful Output** - Colored output, tables, progress bars, spinners, and multiple formats (text, JSON, table)
+- **Smart Error Suggestions** - Levenshtein distance-based typo detection with helpful corrections
 
 ### V3-Specific Features
 - **Self-Learning Hooks** - 17 hook subcommands + 12 background workers with pattern learning and neural integration
@@ -29,7 +30,8 @@
 ### Developer Experience
 - **Type-Safe** - Full TypeScript support with comprehensive type definitions
 - **Global Options** - Built-in `--help`, `--version`, `--verbose`, `--quiet`, `--format`
-- **Auto-Completion** - Shell completion support for commands and options
+- **Shell Completions** - Full tab completion for bash, zsh, fish, and PowerShell
+- **Doctor Command** - System diagnostics with health checks and suggested fixes
 - **Migration Tools** - Built-in V2 to V3 migration with rollback support
 
 ## Installation
@@ -97,6 +99,8 @@ claude-flow status --watch
 | `deployment` | 5 | Deployment management (deploy, rollback, status, environments, release) |
 | `embeddings` | 4 | Vector embeddings (embed, batch, search, init) - 75x faster with agentic-flow |
 | `claims` | 4 | Claims-based authorization (check, grant, revoke, list) |
+| `doctor` | 1 | System diagnostics with health checks and suggested fixes |
+| `completions` | 4 | Shell completions for bash, zsh, fish, and PowerShell |
 
 ---
 
@@ -961,6 +965,155 @@ claude-flow migrate breaking
 # Rollback
 claude-flow migrate rollback --backup-id backup-1704369600
 ```
+
+---
+
+### `doctor` - System Diagnostics
+
+System health checks with automatic fix suggestions.
+
+```bash
+claude-flow doctor [options]
+```
+
+#### Health Checks
+
+| Check | Description | Auto-Fix |
+|-------|-------------|----------|
+| Node.js Version | Verify Node.js 20+ | nvm install 20 |
+| npm Version | Verify npm 9+ | npm install -g npm@latest |
+| Git | Check git installation | Install git |
+| Git Repository | Check if in git repo | git init |
+| Config File | Validate configuration | claude-flow config init |
+| Daemon Status | Check daemon running | claude-flow daemon start |
+| Memory Database | Check memory DB | claude-flow memory configure |
+| API Keys | Check for API keys | export ANTHROPIC_API_KEY=... |
+| MCP Servers | Check MCP configuration | claude mcp add claude-flow ... |
+| Disk Space | Check available space | Free up disk |
+| TypeScript | Check TypeScript install | npm install -D typescript |
+
+#### Options
+
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--fix` | `-f` | Show fix commands for issues | `false` |
+| `--component` | `-c` | Check specific component | all |
+| `--verbose` | `-v` | Verbose output | `false` |
+
+#### Examples
+
+```bash
+# Run full health check
+claude-flow doctor
+
+# Show fixes for issues
+claude-flow doctor --fix
+
+# Check specific component
+claude-flow doctor -c daemon
+claude-flow doctor -c mcp
+claude-flow doctor -c memory
+```
+
+#### Output Example
+
+```
+Claude Flow Doctor
+System diagnostics and health check
+──────────────────────────────────────────────────
+
+✓ Node.js Version: v22.21.1 (>= 20 required)
+✓ npm Version: v10.9.4
+✓ Git: v2.52.0
+✓ Git Repository: In a git repository
+⚠ Config File: No config file (using defaults)
+⚠ Daemon Status: Not running
+⚠ Memory Database: Not initialized
+⚠ API Keys: No API keys found
+⚠ MCP Servers: No MCP config found
+✓ Disk Space: 73G available
+✓ TypeScript: v5.9.3
+
+──────────────────────────────────────────────────
+
+Summary: 6 passed, 5 warnings
+
+All checks passed with some warnings.
+```
+
+---
+
+### `completions` - Shell Completions
+
+Generate shell completion scripts for tab completion of commands.
+
+```bash
+claude-flow completions <shell>
+```
+
+#### Supported Shells
+
+| Shell | Installation | File Location |
+|-------|-------------|---------------|
+| `bash` | `claude-flow completions bash >> ~/.bashrc` | `~/.bash_completion.d/claude-flow` |
+| `zsh` | `claude-flow completions zsh > ~/.zfunc/_claude-flow` | `~/.zfunc/_claude-flow` |
+| `fish` | `claude-flow completions fish > ~/.config/fish/completions/claude-flow.fish` | `~/.config/fish/completions/` |
+| `powershell` | `claude-flow completions powershell >> $PROFILE` | PowerShell profile |
+
+#### Examples
+
+```bash
+# Install bash completions
+claude-flow completions bash > ~/.bash_completion.d/claude-flow
+source ~/.bash_completion.d/claude-flow
+
+# Install zsh completions
+mkdir -p ~/.zfunc
+claude-flow completions zsh > ~/.zfunc/_claude-flow
+# Add to .zshrc: fpath=(~/.zfunc $fpath); autoload -Uz compinit; compinit
+
+# Install fish completions
+claude-flow completions fish > ~/.config/fish/completions/claude-flow.fish
+
+# Install PowerShell completions
+claude-flow completions powershell >> $PROFILE
+```
+
+#### Completion Features
+
+- All 26 top-level commands
+- Full subcommand completion for each command
+- Flag and option completion
+- Dynamic suggestions based on context
+
+---
+
+### Smart Error Suggestions
+
+When you mistype a command, the CLI provides helpful suggestions using Levenshtein distance matching.
+
+```bash
+$ claude-flow swram
+[ERROR] Unknown command: swram
+  Did you mean one of these?
+  - swarm
+  - neural
+  - start
+
+$ claude-flow memroy
+[ERROR] Unknown command: memroy
+  Did you mean "memory"?
+
+$ claude-flow agnet
+[ERROR] Unknown command: agnet
+  Did you mean "agent"?
+```
+
+The suggestion system:
+- Uses Levenshtein distance to find similar commands
+- Recognizes 40+ common typos (e.g., `memroy` → `memory`, `swram` → `swarm`)
+- Suggests up to 3 alternatives sorted by similarity
+- Boosts prefix matches for better suggestions
 
 ---
 
