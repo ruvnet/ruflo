@@ -174,6 +174,8 @@ export const commands: Command[] = [
   initCommand,
   startCommand,
   statusCommand,
+  taskCommand,
+  sessionCommand,
   agentCommand,
   swarmCommand,
   memoryCommand,
