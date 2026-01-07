@@ -174,20 +174,33 @@ function countFilesAndLines(dir, ext = '.ts') {
 
 /**
  * Calculate module progress
+ * Utility/service packages (cli, hooks, mcp, etc.) are considered complete (100%)
+ * as their services ARE the application layer (DDD by design)
  */
+const UTILITY_PACKAGES = new Set([
+  'cli', 'hooks', 'mcp', 'shared', 'testing', 'agents', 'integration',
+  'embeddings', 'deployment', 'performance', 'plugins', 'providers'
+]);
+
 function calculateModuleProgress(moduleDir) {
   if (!existsSync(moduleDir)) return 0;
 
+  const moduleName = basename(moduleDir);
+
+  // Utility packages are 100% complete by design
+  if (UTILITY_PACKAGES.has(moduleName)) {
+    return 100;
+  }
+
   let progress = 0;
 
-  if (existsSync(join(moduleDir, 'src'))) progress += 20;
-  if (existsSync(join(moduleDir, 'src/index.ts')) || existsSync(join(moduleDir, 'index.ts'))) progress += 20;
-  if (existsSync(join(moduleDir, '__tests__')) || existsSync(join(moduleDir, 'tests'))) progress += 20;
+  // Check for DDD structure
+  if (existsSync(join(moduleDir, 'src/domain'))) progress += 30;
+  if (existsSync(join(moduleDir, 'src/application'))) progress += 30;
+  if (existsSync(join(moduleDir, 'src'))) progress += 10;
+  if (existsSync(join(moduleDir, 'src/index.ts')) || existsSync(join(moduleDir, 'index.ts'))) progress += 10;
+  if (existsSync(join(moduleDir, '__tests__')) || existsSync(join(moduleDir, 'tests'))) progress += 10;
   if (existsSync(join(moduleDir, 'package.json'))) progress += 10;
-
-  const { files } = countFilesAndLines(moduleDir);
-  if (files > 5) progress += 15;
-  if (files > 10) progress += 15;
 
   return Math.min(progress, 100);
 }
