@@ -185,7 +185,7 @@ function generateHooksConfig(config: HooksConfig): object {
           {
             type: 'command',
             // Only run route if PROMPT is non-empty; use shell test to skip gracefully
-            command: '[ -n "$PROMPT" ] && npx claude-flow@v3alpha hooks route -t "$PROMPT" --intelligence || true',
+            command: '[ -n "$PROMPT" ] && npx claude-flow@v3alpha hooks route --task "$PROMPT" --intelligence || true',
             timeout: config.timeout,
             continueOnError: config.continueOnError,
           },
