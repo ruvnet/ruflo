@@ -1946,6 +1946,9 @@ Trust:       verified
 | **PII Detection** | ✅ Real | `detectPII()` finds emails, IPs, paths, API keys |
 | **4-Level Anonymization** | ✅ Real | minimal, standard, strict, paranoid all implemented |
 | **MCP Tools** | ✅ Real | 11 transfer tools registered and callable |
+| **Intelligence Stats** | ✅ Real | `hooks/intelligence/stats` reads from memory store |
+| **Session Restore Stats** | ✅ Real | Counts actual memory entries, tasks, agents |
+| **Transfer Hook Stats** | ✅ Real | Reads patterns from source project's memory |
 
 #### ⚠️ DEMO MODE (Works but uses fallback data)
 
