@@ -356,16 +356,16 @@ export class ContainerWorkerPool extends EventEmitter {
   }
 
   /**
-   * Ensure the container image exists
+   * Ensure the container image exists (async)
    */
   private async ensureImage(): Promise<void> {
     try {
-      execSync(`docker image inspect ${this.config.image}`, { stdio: 'pipe' });
+      await execAsync(`docker image inspect ${this.config.image}`, { timeout: 10000 });
     } catch {
       // Image not found, try to pull
       this.emit('imagePull', { image: this.config.image });
       try {
-        execSync(`docker pull ${this.config.image}`, { stdio: 'pipe', timeout: 300000 });
+        await execAsync(`docker pull ${this.config.image}`, { timeout: 300000 });
       } catch (error) {
         this.emit('warning', { message: `Failed to pull image: ${error}` });
         // Continue anyway - might work with local image
