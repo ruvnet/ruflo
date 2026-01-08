@@ -22,7 +22,7 @@
 When the user requests a complex task (multi-file changes, feature implementation, refactoring), **immediately execute this pattern in a SINGLE message:**
 
 ```bash
-# STEP 1: Initialize swarm coordination via CLI (in parallel with agent spawning)
+# STEP 1: Initialize swarm coordination via CLI tool (in parallel with agent spawning)
 Bash("npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 15 --strategy adaptive")
 
 # STEP 2: Spawn agents concurrently using Claude Code's Task tool
