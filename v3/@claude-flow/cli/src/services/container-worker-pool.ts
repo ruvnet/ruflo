@@ -343,12 +343,12 @@ export class ContainerWorkerPool extends EventEmitter {
   // ============================================
 
   /**
-   * Check if Docker is available
+   * Check if Docker is available (async)
    */
   private async checkDockerAvailable(): Promise<boolean> {
     try {
-      execSync('docker --version', { encoding: 'utf-8', stdio: 'pipe' });
-      execSync('docker info', { encoding: 'utf-8', stdio: 'pipe', timeout: 5000 });
+      await execAsync('docker --version', { timeout: 5000 });
+      await execAsync('docker info', { timeout: 10000 });
       return true;
     } catch {
       return false;
