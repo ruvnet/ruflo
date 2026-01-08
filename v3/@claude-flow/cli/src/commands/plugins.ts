@@ -335,55 +335,171 @@ const toggleCommand: Command = {
   },
 };
 
-// Info subcommand
+// Info subcommand - Now fetches from IPFS registry
 const infoCommand: Command = {
   name: 'info',
-  description: 'Show detailed plugin information',
+  description: 'Show detailed plugin information from IPFS registry',
   options: [
     { name: 'name', short: 'n', type: 'string', description: 'Plugin name', required: true },
+    { name: 'registry', short: 'r', type: 'string', description: 'Registry to use' },
   ],
   examples: [
     { command: 'claude-flow plugins info -n @claude-flow/neural', description: 'Show plugin info' },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const name = ctx.flags.name as string;
+    const registryName = ctx.flags.registry as string;
 
     if (!name) {
       output.printError('Plugin name is required');
       return { success: false, exitCode: 1 };
     }
 
-    output.writeln();
-    output.writeln(output.bold(`Plugin: ${name}`));
-    output.writeln(output.dim('─'.repeat(50)));
+    const spinner = output.createSpinner({ text: 'Fetching plugin details...', spinner: 'dots' });
+    spinner.start();
 
-    output.printBox([
-      `Name: ${name}`,
-      `Version: 3.0.0`,
-      `Author: ruv.io`,
-      `License: MIT`,
-      ``,
-      `Description:`,
-      `  Neural pattern training and inference with`,
-      `  WASM SIMD acceleration, MoE routing, and`,
-      `  Flash Attention optimization.`,
-      ``,
-      `Dependencies:`,
-      `  - @claude-flow/core ^3.0.0`,
-      `  - onnxruntime-web ^1.17.0`,
-      ``,
-      `Hooks:`,
-      `  - neural:train (pre, post)`,
-      `  - neural:inference (pre, post)`,
-      `  - pattern:learn`,
-      ``,
-      `Commands:`,
-      `  - neural train`,
-      `  - neural predict`,
-      `  - neural patterns`,
-    ].join('\n'), 'Plugin Details');
+    try {
+      // Discover registry and find plugin
+      const discovery = createPluginDiscoveryService();
+      const result = await discovery.discoverRegistry(registryName);
 
-    return { success: true };
+      if (!result.success || !result.registry) {
+        spinner.fail('Failed to discover registry');
+        return { success: false, exitCode: 1 };
+      }
+
+      const plugin = result.registry.plugins.find(p => p.name === name || p.id === name);
+      if (!plugin) {
+        spinner.fail(`Plugin not found: ${name}`);
+        return { success: false, exitCode: 1 };
+      }
+
+      spinner.succeed(`Found ${plugin.displayName}`);
+
+      output.writeln();
+      output.writeln(output.bold(`Plugin: ${plugin.displayName}`));
+      output.writeln(output.dim('─'.repeat(60)));
+
+      if (ctx.flags.format === 'json') {
+        output.printJson(plugin);
+        return { success: true, data: plugin };
+      }
+
+      // Basic info
+      output.writeln(output.bold('Basic Information'));
+      output.printTable({
+        columns: [
+          { key: 'field', header: 'Field', width: 15 },
+          { key: 'value', header: 'Value', width: 45 },
+        ],
+        data: [
+          { field: 'Name', value: plugin.name },
+          { field: 'Display Name', value: plugin.displayName },
+          { field: 'Version', value: plugin.version },
+          { field: 'Type', value: plugin.type },
+          { field: 'License', value: plugin.license },
+          { field: 'Author', value: plugin.author.displayName || plugin.author.id },
+          { field: 'Trust Level', value: plugin.trustLevel },
+          { field: 'Verified', value: plugin.verified ? '✓ Yes' : '✗ No' },
+        ],
+      });
+
+      output.writeln();
+      output.writeln(output.bold('Description'));
+      output.writeln(plugin.description);
+
+      // Storage info
+      output.writeln();
+      output.writeln(output.bold('Storage'));
+      output.printTable({
+        columns: [
+          { key: 'field', header: 'Field', width: 15 },
+          { key: 'value', header: 'Value', width: 45 },
+        ],
+        data: [
+          { field: 'CID', value: plugin.cid },
+          { field: 'Size', value: `${(plugin.size / 1024).toFixed(1)} KB` },
+          { field: 'Checksum', value: plugin.checksum },
+        ],
+      });
+
+      // Stats
+      output.writeln();
+      output.writeln(output.bold('Statistics'));
+      output.printTable({
+        columns: [
+          { key: 'field', header: 'Field', width: 15 },
+          { key: 'value', header: 'Value', width: 45 },
+        ],
+        data: [
+          { field: 'Downloads', value: plugin.downloads.toLocaleString() },
+          { field: 'Rating', value: `${plugin.rating.toFixed(1)}★ (${plugin.ratingCount} ratings)` },
+          { field: 'Created', value: plugin.createdAt },
+          { field: 'Updated', value: plugin.lastUpdated },
+        ],
+      });
+
+      // Hooks and commands
+      if (plugin.hooks.length > 0) {
+        output.writeln();
+        output.writeln(output.bold('Hooks'));
+        output.printList(plugin.hooks.map(h => output.highlight(h)));
+      }
+
+      if (plugin.commands.length > 0) {
+        output.writeln();
+        output.writeln(output.bold('Commands'));
+        output.printList(plugin.commands.map(c => output.highlight(c)));
+      }
+
+      // Permissions
+      if (plugin.permissions.length > 0) {
+        output.writeln();
+        output.writeln(output.bold('Required Permissions'));
+        output.printList(plugin.permissions.map(p => {
+          const icon = ['privileged', 'credentials', 'execute'].includes(p) ? '⚠️ ' : '';
+          return `${icon}${p}`;
+        }));
+      }
+
+      // Dependencies
+      if (plugin.dependencies.length > 0) {
+        output.writeln();
+        output.writeln(output.bold('Dependencies'));
+        output.printList(plugin.dependencies.map(d =>
+          `${d.name}@${d.version}${d.optional ? ' (optional)' : ''}`
+        ));
+      }
+
+      // Security audit
+      if (plugin.securityAudit) {
+        output.writeln();
+        output.writeln(output.bold('Security Audit'));
+        output.printTable({
+          columns: [
+            { key: 'field', header: 'Field', width: 15 },
+            { key: 'value', header: 'Value', width: 45 },
+          ],
+          data: [
+            { field: 'Auditor', value: plugin.securityAudit.auditor },
+            { field: 'Date', value: plugin.securityAudit.auditDate },
+            { field: 'Passed', value: plugin.securityAudit.passed ? '✓ Yes' : '✗ No' },
+            { field: 'Issues', value: String(plugin.securityAudit.issues.length) },
+          ],
+        });
+      }
+
+      // Tags
+      output.writeln();
+      output.writeln(output.bold('Tags'));
+      output.writeln(plugin.tags.map(t => output.dim(`#${t}`)).join(' '));
+
+      return { success: true, data: plugin };
+    } catch (error) {
+      spinner.fail('Failed to fetch plugin info');
+      output.printError(`Error: ${String(error)}`);
+      return { success: false, exitCode: 1 };
+    }
   },
 };
 
