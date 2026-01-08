@@ -28,81 +28,28 @@ function createResult(data: unknown, isError = false): MCPToolResult {
  */
 export const transferTools: MCPTool[] = [
   // ═══════════════════════════════════════════════════════════════
-  // EXPORT TOOLS
-  // ═══════════════════════════════════════════════════════════════
-  {
-    name: 'transfer/export',
-    description: 'Export learning patterns to file with anonymization',
-    category: 'transfer',
-    version: '1.0.0',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        output: {
-          type: 'string',
-          description: 'Output file path',
-        },
-        format: {
-          type: 'string',
-          enum: ['cbor', 'json'],
-          description: 'Serialization format',
-        },
-        anonymize: {
-          type: 'string',
-          enum: ['minimal', 'standard', 'strict', 'paranoid'],
-          description: 'Anonymization level',
-        },
-        types: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Pattern types to export',
-        },
-      },
-    },
-    handler: async (input): Promise<MCPToolResult> => {
-      try {
-        const { exportPatterns } = await import('../transfer/export.js');
-        const result = await exportPatterns(input as Parameters<typeof exportPatterns>[0]);
-        return createResult(result);
-      } catch (error) {
-        return createResult({ error: (error as Error).message }, true);
-      }
-    },
-  },
-
-  // ═══════════════════════════════════════════════════════════════
   // ANONYMIZATION TOOLS
   // ═══════════════════════════════════════════════════════════════
   {
-    name: 'transfer/anonymize',
-    description: 'Anonymize patterns with configurable PII redaction',
+    name: 'transfer/detect-pii',
+    description: 'Detect PII in content without redacting',
     category: 'transfer',
     version: '1.0.0',
     inputSchema: {
       type: 'object',
       properties: {
-        level: {
+        content: {
           type: 'string',
-          enum: ['minimal', 'standard', 'strict', 'paranoid'],
-          description: 'Anonymization level',
-        },
-        preserveStructure: {
-          type: 'boolean',
-          description: 'Preserve directory structure in paths',
+          description: 'Content to scan for PII',
         },
       },
+      required: ['content'],
     },
     handler: async (input): Promise<MCPToolResult> => {
       try {
-        const { createAnonymizer } = await import('../transfer/anonymization/index.js');
-        const level = (input as { level?: string }).level || 'standard';
-        const anonymizer = createAnonymizer(level as 'minimal' | 'standard' | 'strict' | 'paranoid');
-        return createResult({
-          success: true,
-          level,
-          message: `Anonymizer created with ${level} level`,
-          detectors: anonymizer.getDetectors?.() || ['email', 'phone', 'ip', 'path', 'apiKey'],
-        });
+        const { detectPII } = await import('../transfer/anonymization/index.js');
+        const result = detectPII((input as { content: string }).content);
+        return createResult(result);
       } catch (error) {
         return createResult({ error: (error as Error).message }, true);
       }
@@ -112,43 +59,6 @@ export const transferTools: MCPTool[] = [
   // ═══════════════════════════════════════════════════════════════
   // IPFS TOOLS
   // ═══════════════════════════════════════════════════════════════
-  {
-    name: 'transfer/ipfs-upload',
-    description: 'Upload patterns to IPFS with optional pinning',
-    category: 'transfer',
-    version: '1.0.0',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        input: {
-          type: 'string',
-          description: 'Input file path or content',
-        },
-        pin: {
-          type: 'boolean',
-          description: 'Pin to pinning service',
-        },
-        gateway: {
-          type: 'string',
-          description: 'IPFS gateway URL',
-        },
-        name: {
-          type: 'string',
-          description: 'Human-readable name for the upload',
-        },
-      },
-    },
-    handler: async (input): Promise<MCPToolResult> => {
-      try {
-        const { uploadToIPFS } = await import('../transfer/ipfs/upload.js');
-        const result = await uploadToIPFS(input as Parameters<typeof uploadToIPFS>[0]);
-        return createResult(result);
-      } catch (error) {
-        return createResult({ error: (error as Error).message }, true);
-      }
-    },
-  },
-
   {
     name: 'transfer/ipfs-resolve',
     description: 'Resolve IPNS name to CID',
@@ -210,8 +120,8 @@ export const transferTools: MCPTool[] = [
     },
     handler: async (input): Promise<MCPToolResult> => {
       try {
-        const { createPatternStore } = await import('../transfer/store/index.js');
-        const store = createPatternStore();
+        const { PatternStore } = await import('../transfer/store/index.js');
+        const store = new PatternStore();
         await store.initialize();
         const results = store.search(input as Parameters<typeof store.search>[0]);
         return createResult(results);
@@ -229,19 +139,19 @@ export const transferTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        name: {
+        id: {
           type: 'string',
-          description: 'Pattern name',
+          description: 'Pattern ID',
         },
       },
-      required: ['name'],
+      required: ['id'],
     },
     handler: async (input): Promise<MCPToolResult> => {
       try {
-        const { createPatternStore } = await import('../transfer/store/index.js');
-        const store = createPatternStore();
+        const { PatternStore } = await import('../transfer/store/index.js');
+        const store = new PatternStore();
         await store.initialize();
-        const pattern = store.getPattern((input as { name: string }).name);
+        const pattern = store.getPattern((input as { id: string }).id);
         if (!pattern) {
           return createResult({ error: 'Pattern not found' }, true);
         }
@@ -260,29 +170,25 @@ export const transferTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        name: {
+        id: {
           type: 'string',
-          description: 'Pattern name',
-        },
-        output: {
-          type: 'string',
-          description: 'Output file path',
+          description: 'Pattern ID',
         },
         verify: {
           type: 'boolean',
           description: 'Verify pattern integrity',
         },
       },
-      required: ['name'],
+      required: ['id'],
     },
     handler: async (input): Promise<MCPToolResult> => {
       try {
-        const { createPatternStore } = await import('../transfer/store/index.js');
-        const store = createPatternStore();
+        const { PatternStore } = await import('../transfer/store/index.js');
+        const store = new PatternStore();
         await store.initialize();
         const result = await store.download(
-          (input as { name: string }).name,
-          input as Parameters<typeof store.download>[1]
+          (input as { id: string }).id,
+          { verify: (input as { verify?: boolean }).verify }
         );
         return createResult(result);
       } catch (error) {
@@ -292,84 +198,55 @@ export const transferTools: MCPTool[] = [
   },
 
   {
-    name: 'transfer/store-publish',
-    description: 'Publish patterns to the store',
+    name: 'transfer/store-featured',
+    description: 'Get featured patterns from the store',
     category: 'transfer',
     version: '1.0.0',
     inputSchema: {
       type: 'object',
       properties: {
-        name: {
-          type: 'string',
-          description: 'Pattern name',
-        },
-        description: {
-          type: 'string',
-          description: 'Pattern description',
-        },
-        categories: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Categories',
-        },
-        tags: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Tags for discovery',
-        },
-        license: {
-          type: 'string',
-          description: 'SPDX license identifier',
-        },
-        anonymize: {
-          type: 'string',
-          enum: ['minimal', 'standard', 'strict', 'paranoid'],
-          description: 'Anonymization level before publishing',
+        limit: {
+          type: 'number',
+          description: 'Maximum results',
         },
       },
-      required: ['name', 'description'],
     },
     handler: async (input): Promise<MCPToolResult> => {
       try {
-        const { createPatternStore } = await import('../transfer/store/index.js');
-        const store = createPatternStore();
+        const { PatternStore } = await import('../transfer/store/index.js');
+        const store = new PatternStore();
         await store.initialize();
-        // Create a minimal CFP for demo
-        const cfp = {
-          magic: 'CFP1' as const,
-          version: '1.0.0',
-          createdAt: new Date().toISOString(),
-          generatedBy: 'claude-flow-v3',
-          metadata: {
-            id: `pattern-${Date.now()}`,
-            name: (input as { name: string }).name,
-            description: (input as { description: string }).description,
-            tags: (input as { tags?: string[] }).tags || [],
-          },
-          anonymization: {
-            level: (input as { anonymize?: string }).anonymize || 'standard',
-            appliedTransforms: [],
-            piiRedacted: true,
-            pathsStripped: true,
-            timestampsGeneralized: true,
-            checksum: '',
-          },
-          patterns: {
-            routing: [],
-            complexity: [],
-            coverage: [],
-            trajectory: [],
-            custom: [],
-          },
-          statistics: {
-            totalPatterns: 0,
-            avgConfidence: 0,
-            patternTypes: {},
-            timeRange: { start: '', end: '' },
-          },
-        };
-        const result = await store.publish(cfp, input as Parameters<typeof store.publish>[1]);
-        return createResult(result);
+        const featured = store.getFeatured();
+        const limit = (input as { limit?: number }).limit || 10;
+        return createResult(featured.slice(0, limit));
+      } catch (error) {
+        return createResult({ error: (error as Error).message }, true);
+      }
+    },
+  },
+
+  {
+    name: 'transfer/store-trending',
+    description: 'Get trending patterns from the store',
+    category: 'transfer',
+    version: '1.0.0',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Maximum results',
+        },
+      },
+    },
+    handler: async (input): Promise<MCPToolResult> => {
+      try {
+        const { PatternStore } = await import('../transfer/store/index.js');
+        const store = new PatternStore();
+        await store.initialize();
+        const trending = store.getTrending();
+        const limit = (input as { limit?: number }).limit || 10;
+        return createResult(trending.slice(0, limit));
       } catch (error) {
         return createResult({ error: (error as Error).message }, true);
       }
@@ -423,7 +300,8 @@ export const transferTools: MCPTool[] = [
         if (!result.success || !result.registry) {
           return createResult({ error: result.error || 'Failed to discover registry' }, true);
         }
-        const searchResult = searchPlugins(result.registry, input as Parameters<typeof searchPlugins>[1]);
+        const opts = input as Parameters<typeof searchPlugins>[1];
+        const searchResult = searchPlugins(result.registry, opts);
         return createResult(searchResult);
       } catch (error) {
         return createResult({ error: (error as Error).message }, true);
@@ -454,10 +332,8 @@ export const transferTools: MCPTool[] = [
         if (!result.success || !result.registry) {
           return createResult({ error: result.error || 'Failed to discover registry' }, true);
         }
-        const plugin = result.registry.plugins.find(
-          (p) =>
-            p.id === (input as { name: string }).name || p.name === (input as { name: string }).name
-        );
+        const name = (input as { name: string }).name;
+        const plugin = result.registry.plugins.find((p) => p.id === name || p.name === name);
         if (!plugin) {
           return createResult({ error: 'Plugin not found' }, true);
         }
