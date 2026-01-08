@@ -56,3 +56,73 @@ export {
   createSeraphineGenesis,
   getSeraphineInfo,
 } from './models/seraphine.js';
+
+// Store - Decentralized Pattern Marketplace
+export {
+  // Types
+  type PatternEntry,
+  type PatternAuthor,
+  type PatternCategory,
+  type PatternRegistry,
+  type SearchOptions,
+  type SearchResult,
+  type PublishOptions,
+  type PublishResult,
+  type DownloadOptions,
+  type DownloadResult,
+  type KnownRegistry,
+  type StoreConfig,
+  type DiscoveryResult,
+  type IPNSResolution,
+  type DownloadProgressCallback,
+  type ContributionRequest,
+
+  // Registry
+  REGISTRY_VERSION,
+  BOOTSTRAP_REGISTRIES,
+  DEFAULT_STORE_CONFIG,
+  createRegistry,
+  getDefaultCategories,
+  addPatternToRegistry,
+  removePatternFromRegistry,
+  serializeRegistry,
+  deserializeRegistry,
+  signRegistry,
+  verifyRegistrySignature,
+  mergeRegistries,
+  generatePatternId,
+
+  // Discovery
+  PatternDiscovery,
+  createDiscoveryService,
+
+  // Search
+  searchPatterns,
+  getFeaturedPatterns,
+  getTrendingPatterns,
+  getNewestPatterns,
+  getPatternById,
+  getPatternByName,
+  getPatternsByAuthor,
+  getPatternsByCategory,
+  getSimilarPatterns,
+  getCategoryStats,
+  getTagCloud,
+  getSearchSuggestions,
+
+  // Download
+  PatternDownloader,
+  batchDownload,
+  createDownloader,
+
+  // Publish
+  PatternPublisher,
+  submitContribution,
+  checkContributionStatus,
+  createPublisher,
+  quickPublish,
+
+  // High-level API
+  PatternStore,
+  createPatternStore,
+} from './store/index.js';
