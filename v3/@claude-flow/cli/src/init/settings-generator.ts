@@ -225,7 +225,14 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'prompt',
-            prompt: `Was the user's immediate request completed? Only evaluate what was explicitly asked. Respond {"ok": true} if done, or {"ok": false, "reason": "..."} only if the specific request failed.`,
+            prompt: `Evaluate ONLY for hard failures. Return {"ok": true} UNLESS any of these occurred:
+- Tool returned an error (non-zero exit, exception thrown)
+- Assistant said it cannot/failed to complete the request
+- Request was blocked or denied
+
+DO NOT fail for: suggestions, warnings, discovered issues, code review findings, TODOs, or recommendations. These are informational outputs, not failures.
+
+Default to {"ok": true} when uncertain.`,
           },
         ],
       },
