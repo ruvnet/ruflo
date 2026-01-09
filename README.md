@@ -1,4 +1,4 @@
-# 🌊 Claude-Flow v2.7.0: Enterprise AI Orchestration Platform
+# 🌊 Claude-Flow v2.7: Enterprise AI Orchestration Platform
 
 <div align="center">
 
