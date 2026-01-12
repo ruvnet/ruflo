@@ -86,17 +86,19 @@ mcp__claude-flow__memory_usage({
 })
 ```
 
-### 📋 Agent Routing by Task Type
+### 📋 Agent Routing by Task Type (Anti-Drift Optimized)
 
-| Task Type | Required Agents | Topology |
-|-----------|-----------------|----------|
-| Bug Fix | researcher, coder, tester | mesh |
-| New Feature | coordinator, architect, coder, tester, reviewer | hierarchical |
-| Refactoring | architect, coder, reviewer | mesh |
-| Performance | researcher, performance-engineer, coder | hierarchical |
-| Security Audit | security-architect, security-auditor, reviewer | hierarchical |
-| Memory Optimization | memory-specialist, performance-engineer | mesh |
-| Documentation | researcher, api-docs | mesh |
+| Task Type | Required Agents | Topology | Strategy |
+|-----------|-----------------|----------|----------|
+| Bug Fix | coordinator, researcher, coder, tester | hierarchical | specialized |
+| New Feature | coordinator, architect, coder, tester, reviewer | hierarchical | specialized |
+| Refactoring | coordinator, architect, coder, reviewer | hierarchical | specialized |
+| Performance | coordinator, researcher, performance-engineer, coder | hierarchical | specialized |
+| Security Audit | coordinator, security-architect, security-auditor, reviewer | hierarchical | specialized |
+| Memory Optimization | coordinator, memory-specialist, performance-engineer | hierarchical | specialized |
+| Documentation | researcher, api-docs | mesh | balanced |
+
+**Note:** All coding tasks use hierarchical + specialized to prevent drift. Mesh is only for read-only/research tasks.
 
 ### 🎯 Task Complexity Detection
 
