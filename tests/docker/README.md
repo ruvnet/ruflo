@@ -227,9 +227,9 @@ The validation suite includes security tests:
 
 ## 📚 Related Documentation
 
-- [COMMAND-VERIFICATION-REPORT.md](../../docs/COMMAND-VERIFICATION-REPORT.md)
-- [INTEGRATION_COMPLETE.md](../../docs/INTEGRATION_COMPLETE.md)
-- [REASONINGBANK-INTEGRATION-COMPLETE.md](../../docs/REASONINGBANK-INTEGRATION-COMPLETE.md)
+- [COMMAND-VERIFICATION-REPORT.md](../../docs/reports/validation/COMMAND-VERIFICATION-REPORT.md)
+- [INTEGRATION_COMPLETE.md](../../docs/reports/releases/INTEGRATION_COMPLETE.md)
+- [REASONINGBANK-INTEGRATION-COMPLETE.md](../../docs/integrations/reasoningbank/REASONINGBANK-INTEGRATION-COMPLETE.md)
 
 ## 🤝 Contributing
 

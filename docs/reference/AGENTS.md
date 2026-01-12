@@ -986,9 +986,9 @@ npx claude-flow@alpha dashboard --agents --performance
 ## 📮 Support & Resources
 
 ### Documentation
-- [Agent API Reference](/docs/API_DOCUMENTATION.md)
+- [Agent API Reference](../api/API_DOCUMENTATION.md)
 - [Swarm Coordination Guide](/docs/SWARM_DOCUMENTATION.md)
-- [Architecture Overview](/docs/ARCHITECTURE.md)
+- [Architecture Overview](../architecture/ARCHITECTURE.md)
 
 ### Community
 - [GitHub Repository](https://github.com/ruvnet/claude-flow)

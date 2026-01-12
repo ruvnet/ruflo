@@ -1685,6 +1685,6 @@ This sophisticated architecture positions Claude-Flow as the next-generation pla
 
 **Claude-Flow Architecture v2.0.0**
 
-[Back to README](../README.md) | [API Documentation](API_DOCUMENTATION.md)
+[Back to README](../README.md) | [API Documentation](../api/API_DOCUMENTATION.md)
 
 </div>

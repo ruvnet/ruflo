@@ -474,7 +474,7 @@ npx agentic-flow --agent reasoning-optimized --task "Build authentication"
 npx agentic-flow --agent adaptive-learner --task "Implement feature"
 ```
 
-See [REASONING-AGENTS.md](./docs/REASONING-AGENTS.md) for details.
+See [REASONING-AGENTS.md](./REASONING-AGENTS.md) for details.
 ```
 
 ---

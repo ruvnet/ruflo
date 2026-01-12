@@ -448,7 +448,7 @@ When adding new tests:
 
 ## Related Documentation
 
-- [AgentDB Integration Plan](../docs/AGENTDB_INTEGRATION_PLAN.md)
+- [AgentDB Integration Plan](../docs/agentdb/AGENTDB_INTEGRATION_PLAN.md)
 - [EnhancedMemory API](../src/memory/enhanced-memory.js)
 - [Test Writing Guide](../docs/TESTING.md)
 - [Performance Benchmarks](../docs/PERFORMANCE.md)

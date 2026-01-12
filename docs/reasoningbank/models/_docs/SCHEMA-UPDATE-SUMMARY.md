@@ -335,7 +335,7 @@ CREATE TABLE session_metrics (id, session_id, metric_name, metric_value);
 
 See documentation:
 - [COMPATIBILITY.md](./COMPATIBILITY.md) - Schema reference
-- [HOW-TO-USE.md](./HOW-TO-USE.md) - Usage guide
+- [HOW-TO-USE.md](../HOW-TO-USE.md) - Usage guide
 - [README.md](./README.md) - Model catalog
 
 ### Issues?

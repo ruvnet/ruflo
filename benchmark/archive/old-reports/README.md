@@ -86,10 +86,10 @@ python examples/verify_real_integration.py
 
 ## 📚 Documentation
 
-- [API Reference](docs/api_reference.md)
-- [CLAUDE.md Optimizer Guide](docs/claude_optimizer_guide.md)
+- [API Reference](../../docs/api_reference.md)
+- [CLAUDE.md Optimizer Guide](../../docs/claude_optimizer_guide.md)
 - [Real Benchmarks Guide](REAL_BENCHMARKS_README.md)
-- [Architecture Overview](docs/real-benchmark-architecture.md)
+- [Architecture Overview](../../docs/real-benchmark-architecture.md)
 
 ## 🎯 Example Usage
 

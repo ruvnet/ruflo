@@ -485,7 +485,7 @@ node ../cli.js swarm list
 ## 📚 Additional Resources
 
 ### Performance Analysis
-- [Performance Optimization Guide](./docs/optimization-guide.md)
+- [Performance Optimization Guide](../../docs/optimization-guide.md)
 - [Memory Management Best Practices](./docs/memory-management.md)
 - [Scalability Testing Strategies](./docs/scalability-testing.md)
 

@@ -1127,7 +1127,7 @@ We welcome contributions! Please see our [Contributing Guide](../CONTRIBUTING.md
 
 You now have everything you need to master Claude-Flow!
 
-[🚀 Start Building](../README.md#-quick-start) | [📖 API Reference](API_DOCUMENTATION.md) | [🏗️ Architecture Guide](ARCHITECTURE.md)
+[🚀 Start Building](../README.md#-quick-start) | [📖 API Reference](../api/API_DOCUMENTATION.md) | [🏗️ Architecture Guide](../architecture/ARCHITECTURE.md)
 
 ---
 

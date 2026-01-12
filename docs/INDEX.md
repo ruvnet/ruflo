@@ -76,13 +76,13 @@ Complete automation toolkit covering file operations, system management, GitHub 
 
 ### 🏃‍♂️ Getting Started
 - **[README-NEW.md](../README.md)** - Complete project overview and quick start
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Installation, setup, and production deployment
+- **[DEPLOYMENT.md](./development/DEPLOYMENT.md)** - Installation, setup, and production deployment
 - **System Requirements**: Node.js v20+, 2GB RAM minimum, 8GB recommended
 
 ### 🏗️ Architecture & Development  
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design, patterns, and scalability
-- **[DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md)** - Development process and best practices
-- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** - Complete API reference and examples
+- **[ARCHITECTURE.md](./architecture/ARCHITECTURE.md)** - System design, patterns, and scalability
+- **[DEVELOPMENT_WORKFLOW.md](./development/DEVELOPMENT_WORKFLOW.md)** - Development process and best practices
+- **[API_DOCUMENTATION.md](./api/API_DOCUMENTATION.md)** - Complete API reference and examples
 
 ### 🎯 Core Concepts
 - **Agent Management**: Spawn, coordinate, and monitor AI agents
@@ -312,20 +312,20 @@ docs/
 #### 👨‍💻 **Developers**
 1. [Quick Start Guide](../README.md#-quick-start) - Get up and running in 5 minutes
 2. [SPARC Development](../README.md#-sparc-development-environment) - Structured development methodology
-3. [API Reference](API_DOCUMENTATION.md) - Complete endpoint documentation
-4. [Development Workflow](DEVELOPMENT_WORKFLOW.md) - Best practices and standards
+3. [API Reference](./api/API_DOCUMENTATION.md) - Complete endpoint documentation
+4. [Development Workflow](./development/DEVELOPMENT_WORKFLOW.md) - Best practices and standards
 
 #### 🏢 **DevOps/Operations**  
-1. [Deployment Guide](DEPLOYMENT.md) - Production deployment strategies
-2. [Architecture Overview](ARCHITECTURE.md) - System design and scaling
-3. [Monitoring Setup](DEPLOYMENT.md#monitoring--maintenance) - Health checks and metrics
-4. [Security Implementation](ARCHITECTURE.md#security-architecture) - Security best practices
+1. [Deployment Guide](./development/DEPLOYMENT.md) - Production deployment strategies
+2. [Architecture Overview](./architecture/ARCHITECTURE.md) - System design and scaling
+3. [Monitoring Setup](./development/DEPLOYMENT.md#monitoring--maintenance) - Health checks and metrics
+4. [Security Implementation](./architecture/ARCHITECTURE.md#security-architecture) - Security best practices
 
 #### 👑 **Technical Leaders**
-1. [System Architecture](ARCHITECTURE.md#system-overview) - High-level system design
+1. [System Architecture](./architecture/ARCHITECTURE.md#system-overview) - High-level system design
 2. [Performance Metrics](../README.md#-performance-metrics) - Benchmarks and optimization
 3. [Swarm Intelligence](../README.md#-swarm-intelligence) - Distributed coordination strategies
-4. [Enterprise Features](DEPLOYMENT.md#production-setup) - Production-grade capabilities
+4. [Enterprise Features](./development/DEPLOYMENT.md#production-setup) - Production-grade capabilities
 
 #### 🚀 **Product Managers**
 1. [Feature Overview](../README.md#-key-features) - Complete capability matrix
@@ -446,22 +446,22 @@ npx claude-flow@alpha analytics --export-metrics --format prometheus
 ### 🎓 **Training Path for New Users**
 
 #### **Week 1: Fundamentals**
-1. **[Installation & Setup](DEPLOYMENT.md#installation-methods)** - Get Claude Flow running
+1. **[Installation & Setup](./development/DEPLOYMENT.md#installation-methods)** - Get Claude Flow running
 2. **[First Swarm Creation](../README.md#-quick-start)** - Build your first AI team  
 3. **[SPARC Methodology](../README.md#-sparc-development-environment)** - Learn structured development
 4. **[Basic Commands](../README.md#-essential-commands)** - Master core CLI operations
 
 #### **Week 2: Advanced Features**
-1. **[Agent Coordination](ARCHITECTURE.md#agent-architecture)** - Understanding swarm intelligence
-2. **[Memory Management](ARCHITECTURE.md#memory-architecture)** - Persistent state across sessions
-3. **[GitHub Integration](API_DOCUMENTATION.md#github-operations)** - Complete DevOps workflow
-4. **[Performance Optimization](ARCHITECTURE.md#performance-architecture)** - Speed and efficiency
+1. **[Agent Coordination](./architecture/ARCHITECTURE.md#agent-architecture)** - Understanding swarm intelligence
+2. **[Memory Management](./architecture/ARCHITECTURE.md#memory-architecture)** - Persistent state across sessions
+3. **[GitHub Integration](./api/API_DOCUMENTATION.md#github-operations)** - Complete DevOps workflow
+4. **[Performance Optimization](./architecture/ARCHITECTURE.md#performance-architecture)** - Speed and efficiency
 
 #### **Week 3: Production Deployment**
-1. **[Architecture Design](ARCHITECTURE.md#system-overview)** - Scalable system patterns
-2. **[Security Implementation](ARCHITECTURE.md#security-architecture)** - Enterprise security
-3. **[Monitoring Setup](DEPLOYMENT.md#monitoring--maintenance)** - Production observability
-4. **[Troubleshooting](DEPLOYMENT.md#troubleshooting)** - Issue resolution strategies
+1. **[Architecture Design](./architecture/ARCHITECTURE.md#system-overview)** - Scalable system patterns
+2. **[Security Implementation](./architecture/ARCHITECTURE.md#security-architecture)** - Enterprise security
+3. **[Monitoring Setup](./development/DEPLOYMENT.md#monitoring--maintenance)** - Production observability
+4. **[Troubleshooting](./development/DEPLOYMENT.md#troubleshooting)** - Issue resolution strategies
 
 ### 📊 **Success Metrics**
 Track your progress with these benchmarks:

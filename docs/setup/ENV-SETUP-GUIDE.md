@@ -147,7 +147,7 @@ claude-flow agent run coder "Build API" \
   --memory-k 5
 ```
 
-See [REASONINGBANK-COST-OPTIMIZATION.md](./REASONINGBANK-COST-OPTIMIZATION.md) for detailed cost analysis.
+See [REASONINGBANK-COST-OPTIMIZATION.md](../integrations/reasoningbank/REASONINGBANK-COST-OPTIMIZATION.md) for detailed cost analysis.
 
 ## Using Memory Without .env (Alternative Methods)
 
@@ -240,13 +240,13 @@ Database: 20 entries with embeddings
 **Solution:** Add API keys to `.env` file
 
 ### Problem: High costs with memory
-**Solution:** See [REASONINGBANK-COST-OPTIMIZATION.md](./REASONINGBANK-COST-OPTIMIZATION.md)
+**Solution:** See [REASONINGBANK-COST-OPTIMIZATION.md](../integrations/reasoningbank/REASONINGBANK-COST-OPTIMIZATION.md)
 
 ## Related Documentation
 
-- [REASONINGBANK-AGENT-CREATION-GUIDE.md](./REASONINGBANK-AGENT-CREATION-GUIDE.md) - Creating custom reasoning agents
-- [AGENTIC-FLOW-INTEGRATION-GUIDE.md](./AGENTIC-FLOW-INTEGRATION-GUIDE.md) - Complete command reference
-- [REASONINGBANK-COST-OPTIMIZATION.md](./REASONINGBANK-COST-OPTIMIZATION.md) - Cost savings strategies
+- [REASONINGBANK-AGENT-CREATION-GUIDE.md](../integrations/reasoningbank/REASONINGBANK-AGENT-CREATION-GUIDE.md) - Creating custom reasoning agents
+- [AGENTIC-FLOW-INTEGRATION-GUIDE.md](../integrations/agentic-flow/AGENTIC-FLOW-INTEGRATION-GUIDE.md) - Complete command reference
+- [REASONINGBANK-COST-OPTIMIZATION.md](../integrations/reasoningbank/REASONINGBANK-COST-OPTIMIZATION.md) - Cost savings strategies
 
 ## Template Contents
 
