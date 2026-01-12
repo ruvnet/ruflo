@@ -161,8 +161,8 @@ const aidefenceAnalyzeTool: MCPTool = {
         const similar = await defender.searchSimilarThreats(input, { k });
         analysis.similarPatterns = similar.map(p => ({
           pattern: p.pattern,
-          threatType: p.threatType,
-          similarity: p.similarity,
+          type: p.type,
+          effectiveness: p.effectiveness,
         }));
       }
 
