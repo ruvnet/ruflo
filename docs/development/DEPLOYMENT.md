@@ -2304,10 +2304,10 @@ Level 3: Leadership
 
 ### Documentation Links
 
-- **Architecture Guide**: [ARCHITECTURE.md](./ARCHITECTURE.md)
-- **API Documentation**: [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)  
+- **Architecture Guide**: [ARCHITECTURE.md](../architecture/ARCHITECTURE.md)
+- **API Documentation**: [API_DOCUMENTATION.md](../api/API_DOCUMENTATION.md)  
 - **Development Workflow**: [DEVELOPMENT_WORKFLOW.md](./DEVELOPMENT_WORKFLOW.md)
-- **Main Documentation**: [INDEX.md](./INDEX.md)
+- **Main Documentation**: [INDEX.md](../INDEX.md)
 - **Repository**: https://github.com/ruvnet/claude-flow
 - **Issues**: https://github.com/ruvnet/claude-flow/issues
 
@@ -2341,7 +2341,7 @@ kubectl get events --sort-by='.metadata.creationTimestamp' -n claude-flow  # Rec
 
 **Ready for Enterprise Scale • Production Tested • Fully Documented**
 
-[📚 Documentation Home](./INDEX.md) | [🏗️ Architecture](./ARCHITECTURE.md) | [📖 API Reference](./API_DOCUMENTATION.md) | [⚡ Development](./DEVELOPMENT_WORKFLOW.md)
+[📚 Documentation Home](../INDEX.md) | [🏗️ Architecture](../architecture/ARCHITECTURE.md) | [📖 API Reference](../api/API_DOCUMENTATION.md) | [⚡ Development](./DEVELOPMENT_WORKFLOW.md)
 
 [🐙 GitHub Repository](https://github.com/ruvnet/claude-flow) | [🐛 Report Issues](https://github.com/ruvnet/claude-flow/issues) | [💬 Community Support](https://discord.gg/claude-flow)
 

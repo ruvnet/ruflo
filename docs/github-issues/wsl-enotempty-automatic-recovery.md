@@ -277,9 +277,9 @@ await errorRecovery.retryWithRecovery(myOperation, {
 
 ### Updated Documentation
 
-- ✅ [Automatic Error Recovery](../docs/features/automatic-error-recovery.md)
-- ✅ [WSL Troubleshooting Guide](../docs/troubleshooting/wsl-better-sqlite3-error.md)
-- ✅ [Implementation Summary](../docs/AUTOMATIC_ERROR_RECOVERY_v2.7.35.md)
+- ✅ [Automatic Error Recovery](../features/automatic-error-recovery.md)
+- ✅ [WSL Troubleshooting Guide](../troubleshooting/wsl-better-sqlite3-error.md)
+- ✅ [Implementation Summary](../AUTOMATIC_ERROR_RECOVERY_v2.7.35.md)
 
 ### Examples Added
 

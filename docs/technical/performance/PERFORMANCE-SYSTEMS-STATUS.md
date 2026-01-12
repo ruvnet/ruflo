@@ -324,10 +324,10 @@ Iteration 100: 91% success, 352x faster + 40% smarter, 78 memories
 
 ## 🔗 Related Documentation
 
-- [ReasoningBank Agent Creation](./REASONINGBANK-AGENT-CREATION-GUIDE.md)
-- [ReasoningBank Cost Optimization](./REASONINGBANK-COST-OPTIMIZATION.md)
-- [Agentic-Flow Integration](./AGENTIC-FLOW-INTEGRATION-GUIDE.md)
-- [Environment Setup](./ENV-SETUP-GUIDE.md)
+- [ReasoningBank Agent Creation](../../integrations/reasoningbank/REASONINGBANK-AGENT-CREATION-GUIDE.md)
+- [ReasoningBank Cost Optimization](../../integrations/reasoningbank/REASONINGBANK-COST-OPTIMIZATION.md)
+- [Agentic-Flow Integration](../../integrations/agentic-flow/AGENTIC-FLOW-INTEGRATION-GUIDE.md)
+- [Environment Setup](../../setup/ENV-SETUP-GUIDE.md)
 
 ## 📞 Support
 

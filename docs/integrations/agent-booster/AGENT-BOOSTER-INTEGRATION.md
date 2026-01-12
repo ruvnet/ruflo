@@ -388,9 +388,9 @@ claude-flow agent booster benchmark --iterations 100
 
 ## 📚 Related Documentation
 
-- [PERFORMANCE-SYSTEMS-STATUS.md](./PERFORMANCE-SYSTEMS-STATUS.md) - Complete performance analysis
-- [AGENTIC-FLOW-INTEGRATION-GUIDE.md](./AGENTIC-FLOW-INTEGRATION-GUIDE.md) - Full agentic-flow integration
-- [REASONINGBANK-COST-OPTIMIZATION.md](./REASONINGBANK-COST-OPTIMIZATION.md) - Memory cost optimization
+- [PERFORMANCE-SYSTEMS-STATUS.md](../../technical/performance/PERFORMANCE-SYSTEMS-STATUS.md) - Complete performance analysis
+- [AGENTIC-FLOW-INTEGRATION-GUIDE.md](../agentic-flow/AGENTIC-FLOW-INTEGRATION-GUIDE.md) - Full agentic-flow integration
+- [REASONINGBANK-COST-OPTIMIZATION.md](../reasoningbank/REASONINGBANK-COST-OPTIMIZATION.md) - Memory cost optimization
 
 ---
 

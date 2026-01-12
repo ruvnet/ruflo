@@ -260,7 +260,7 @@ sqlite3 memory.db "SELECT COUNT(*) FROM patterns"
   - Model comparison
   - Installation
 
-- **[HOW-TO-USE.md](./HOW-TO-USE.md)** - Usage guide
+- **[HOW-TO-USE.md](../HOW-TO-USE.md)** - Usage guide
   - Installation methods
   - Query examples
   - Integration patterns
@@ -318,7 +318,7 @@ Each model has a detailed report:
 ### Questions?
 
 1. **Schema reference**: See [COMPATIBILITY.md](./COMPATIBILITY.md)
-2. **Usage help**: See [HOW-TO-USE.md](./HOW-TO-USE.md)
+2. **Usage help**: See [HOW-TO-USE.md](../HOW-TO-USE.md)
 3. **Model info**: See [README.md](./README.md)
 
 ### Issues?

@@ -7,15 +7,15 @@ Welcome to the Claude-Flow documentation! This directory contains comprehensive 
 | Document | Description |
 |----------|-------------|
 | [INDEX.md](INDEX.md) | Complete documentation hub with navigation and quick start |
-| [USER_GUIDE.md](USER_GUIDE.md) | Comprehensive user guide with tutorials and examples |
-| [API_DOCUMENTATION.md](API_DOCUMENTATION.md) | Complete API reference with all 112 MCP tools |
-| [AGENTS.md](AGENTS.md) | All 65+ agent types with capabilities and usage |
-| [SWARM.md](SWARM.md) | Swarm intelligence, topologies, and coordination |
-| [SPARC.md](SPARC.md) | SPARC methodology with all 17 development modes |
-| [MCP_TOOLS.md](MCP_TOOLS.md) | Detailed reference for all MCP tools |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture and design patterns |
-| [DEPLOYMENT.md](DEPLOYMENT.md) | Production deployment guides for Docker, K8s, Cloud |
-| [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md) | Development setup and contribution guide |
+| [USER_GUIDE.md](./guides/USER_GUIDE.md) | Comprehensive user guide with tutorials and examples |
+| [API_DOCUMENTATION.md](./api/API_DOCUMENTATION.md) | Complete API reference with all 112 MCP tools |
+| [AGENTS.md](./reference/AGENTS.md) | All 65+ agent types with capabilities and usage |
+| [SWARM.md](./reference/SWARM.md) | Swarm intelligence, topologies, and coordination |
+| [SPARC.md](./reference/SPARC.md) | SPARC methodology with all 17 development modes |
+| [MCP_TOOLS.md](./reference/MCP_TOOLS.md) | Detailed reference for all MCP tools |
+| [ARCHITECTURE.md](./architecture/ARCHITECTURE.md) | System architecture and design patterns |
+| [DEPLOYMENT.md](./development/DEPLOYMENT.md) | Production deployment guides for Docker, K8s, Cloud |
+| [DEVELOPMENT_WORKFLOW.md](./development/DEVELOPMENT_WORKFLOW.md) | Development setup and contribution guide |
 
 ## 📁 Documentation Categories
 
@@ -79,10 +79,10 @@ Third-party platform integrations
 
 ## 🚀 Quick Links
 
-- **Getting Started**: See [USER_GUIDE.md](USER_GUIDE.md#getting-started)
-- **API Reference**: See [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
-- **Agent Catalog**: See [AGENTS.md](AGENTS.md)
-- **Deployment**: See [DEPLOYMENT.md](DEPLOYMENT.md)
+- **Getting Started**: See [USER_GUIDE.md](./guides/USER_GUIDE.md#getting-started)
+- **API Reference**: See [API_DOCUMENTATION.md](./api/API_DOCUMENTATION.md)
+- **Agent Catalog**: See [AGENTS.md](./reference/AGENTS.md)
+- **Deployment**: See [DEPLOYMENT.md](./development/DEPLOYMENT.md)
 - **Skills Tutorial**: See [Skills Tutorial](./guides/skills-tutorial.md)
 - **AgentDB Integration**: See [AgentDB](./agentdb/)
 
@@ -91,16 +91,16 @@ Third-party platform integrations
 ### 👨‍💻 **Developers**
 1. [Quick Start Guide](../README.md#-quick-start) - Get up and running
 2. [Skills Tutorial](./guides/skills-tutorial.md) - Natural language skill activation
-3. [SPARC Development](SPARC.md) - Structured development methodology
-4. [API Reference](API_DOCUMENTATION.md) - Complete endpoint documentation
+3. [SPARC Development](./reference/SPARC.md) - Structured development methodology
+4. [API Reference](./api/API_DOCUMENTATION.md) - Complete endpoint documentation
 
 ### 🏢 **DevOps/Operations**
-1. [Deployment Guide](DEPLOYMENT.md) - Production deployment
-2. [Architecture Overview](ARCHITECTURE.md) - System design
+1. [Deployment Guide](./development/DEPLOYMENT.md) - Production deployment
+2. [Architecture Overview](./architecture/ARCHITECTURE.md) - System design
 3. [Docker Verification](./validation/DOCKER_VERIFICATION_REPORT.md) - Testing reports
 
 ### 👑 **Technical Leaders**
-1. [System Architecture](ARCHITECTURE.md#system-overview) - High-level design
+1. [System Architecture](./architecture/ARCHITECTURE.md#system-overview) - High-level design
 2. [Performance Metrics](./performance/) - Benchmarks and optimization
 3. [AgentDB Integration](./agentdb/) - 96x-164x performance improvements
 

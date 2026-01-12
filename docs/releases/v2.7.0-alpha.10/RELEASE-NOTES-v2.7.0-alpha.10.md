@@ -288,9 +288,9 @@ Users should:
 
 ## 📚 Related Documentation
 
-- [ReasoningBank v1.5.13 Validation](./validation/REASONINGBANK-v1.5.13-VALIDATION.md)
-- [Migration Guide v1.5.13](../integrations/reasoningbank/MIGRATION-v1.5.13.md)
-- [Process Exit Fix v2.7.0-alpha.9](./RELEASE-NOTES-v2.7.0-alpha.9.md)
+- [ReasoningBank v1.5.13 Validation](../../reports/validation/REASONINGBANK-v1.5.13-VALIDATION.md)
+- [Migration Guide v1.5.13](../../integrations/reasoningbank/MIGRATION-v1.5.13.md)
+- [Process Exit Fix v2.7.0-alpha.9](../v2.7.0-alpha.9/RELEASE-NOTES-v2.7.0-alpha.9.md)
 
 ---
 

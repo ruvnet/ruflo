@@ -305,8 +305,8 @@ npm error path .../node_modules/better-sqlite3
 ## 📚 Additional Documentation
 
 - [Branch Information](/workspaces/claude-code-flow/docs/BRANCH_INFO.md) - Created earlier
-- [Remote Install Fix](/workspaces/claude-code-flow/docs/REMOTE_INSTALL_FIX.md) - Technical details
-- [v2.7.14 Release Notes](/workspaces/claude-code-flow/docs/V2.7.14_RELEASE_NOTES.md) - Current alpha comparison
+- [Remote Install Fix](./REMOTE_INSTALL_FIX.md) - Technical details
+- [v2.7.14 Release Notes](./V2.7.14_RELEASE_NOTES.md) - Current alpha comparison
 
 ---
 

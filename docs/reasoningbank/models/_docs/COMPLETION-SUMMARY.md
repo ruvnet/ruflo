@@ -455,8 +455,8 @@ Every model achieved:
 
 **Documentation**:
 - Quick Start: [models/README.md](./README.md)
-- Usage Guide: [models/HOW-TO-USE.md](./HOW-TO-USE.md)
-- Training Guide: [models/HOW-TO-TRAIN.md](./HOW-TO-TRAIN.md)
+- Usage Guide: [models/HOW-TO-USE.md](../HOW-TO-USE.md)
+- Training Guide: [models/HOW-TO-TRAIN.md](../HOW-TO-TRAIN.md)
 - Navigation Index: [models/INDEX.md](./INDEX.md)
 
 **Issues**: [GitHub Issues](https://github.com/ruvnet/claude-flow/issues)

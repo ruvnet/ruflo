@@ -267,7 +267,7 @@ npx claude-flow memory stats
 ## Related Documentation
 
 - [Performance Metrics Guide](./PERFORMANCE-METRICS-GUIDE.md) - Detailed usage guide
-- [ReasoningBank Integration](./REASONINGBANK-INTEGRATION-STATUS.md) - ReasoningBank status
+- [ReasoningBank Integration](../integrations/reasoningbank/REASONINGBANK-INTEGRATION-STATUS.md) - ReasoningBank status
 - [AUTO MODE Documentation](./AUTO-MODE.md) - AUTO MODE details (if exists)
 
 ## Version

@@ -76,4 +76,4 @@ We welcome contributions! See our [Contributing Guide](contributing.md) for deta
 
 ---
 
-© 2024 Claude Flow Team | [License](../LICENSE) | [Code of Conduct](code-of-conduct.md)
+© 2024 Claude Flow Team | [License](../../LICENSE) | [Code of Conduct](code-of-conduct.md)

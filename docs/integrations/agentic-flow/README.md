@@ -198,7 +198,7 @@ All improvements automatically benefit claude-flow users:
 
 - **Agentic-flow docs**: https://github.com/ruvnet/agentic-flow#readme
 - **Claude-flow docs**: [../../README.md](../../README.md)
-- **API reference**: [../../API_DOCUMENTATION.md](../../API_DOCUMENTATION.md)
+- **API reference**: [../../API_DOCUMENTATION.md](../../api/API_DOCUMENTATION.md)
 
 ---
 

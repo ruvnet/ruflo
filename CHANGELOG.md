@@ -1320,7 +1320,7 @@ All existing commands continue to work as before, but now return correct results
 ### 🔗 Links
 
 - **npm Package**: [claude-flow@2.7.0-alpha.10](https://www.npmjs.com/package/claude-flow/v/2.7.0-alpha.10)
-- **Release Notes**: [docs/RELEASE-NOTES-v2.7.0-alpha.10.md](./docs/RELEASE-NOTES-v2.7.0-alpha.10.md)
+- **Release Notes**: [docs/RELEASE-NOTES-v2.7.0-alpha.10.md](./docs/releases/v2.7.0-alpha.10/RELEASE-NOTES-v2.7.0-alpha.10.md)
 - **GitHub Issues**: [Report bugs](https://github.com/ruvnet/claude-flow/issues)
 
 ---

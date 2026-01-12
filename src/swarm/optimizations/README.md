@@ -203,7 +203,7 @@ After implementing all optimizations:
 
 - [Migration Guide](./migration-guide.md)
 - [Optimization Analysis](/reports/swarm-optimization/recommendations/)
-- [Benchmark Results](/benchmark/demo_reports/)
+- [Benchmark Results](../../../benchmark/archive/demo_reports)
 
 ## 🤝 Contributing
 

@@ -559,5 +559,5 @@ ReasoningBank integration transforms Claude Code from a stateless tool into an i
 **Related Documentation**:
 - [ReasoningBank README](./README.md)
 - [Architecture Guide](./architecture.md)
-- [CLI Reference](./cli-reference.md)
+- [CLI Reference](../../benchmark/docs/cli-reference.md)
 - [Google Research Paper](./google-research.md)
