@@ -180,16 +180,16 @@ Bash("npx @claude-flow/cli@latest hooks worker dispatch --trigger optimize")
 
 ### 📋 Agent Routing (Anti-Drift)
 
-| Task | Agents | Config |
-|------|--------|--------|
-| Bug Fix | coordinator, researcher, coder, tester | hierarchical/specialized |
-| Feature | coordinator, architect, coder, tester, reviewer | hierarchical/specialized |
-| Refactor | coordinator, architect, coder, reviewer | hierarchical/specialized |
-| Performance | coordinator, perf-engineer, coder | hierarchical/specialized |
-| Security | coordinator, security-architect, auditor | hierarchical/specialized |
-| Docs | researcher, api-docs | mesh/balanced |
+| Code | Task | Agents |
+|------|------|--------|
+| 1 | Bug Fix | coordinator, researcher, coder, tester |
+| 3 | Feature | coordinator, architect, coder, tester, reviewer |
+| 5 | Refactor | coordinator, architect, coder, reviewer |
+| 7 | Performance | coordinator, perf-engineer, coder |
+| 9 | Security | coordinator, security-architect, auditor |
+| 11 | Docs | researcher, api-docs |
 
-**All coding tasks: hierarchical + specialized to prevent drift**
+**Codes 1-9: hierarchical/specialized (anti-drift). Code 11: mesh/balanced**
 
 ### 🎯 Task Complexity Detection
 
