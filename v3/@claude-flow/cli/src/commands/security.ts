@@ -318,7 +318,7 @@ const defendCommand: Command = {
         output.writeln(output.dim(`Reading file: ${filePath}`));
       } catch (err) {
         output.error(`Failed to read file: ${filePath}`);
-        return { success: false, error: 'File not found' };
+        return { success: false, message: 'File not found' };
       }
     }
 
