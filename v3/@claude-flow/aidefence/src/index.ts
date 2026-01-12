@@ -117,7 +117,7 @@ export interface AIDefence {
    * Record mitigation effectiveness for meta-learning
    */
   recordMitigation(
-    threatType: import('./domain/entities/threat.js').ThreatType,
+    threatType: ThreatType,
     strategy: 'block' | 'sanitize' | 'warn' | 'log' | 'escalate' | 'transform' | 'redirect',
     success: boolean
   ): Promise<void>;
@@ -126,7 +126,7 @@ export interface AIDefence {
    * Get best mitigation strategy based on learned effectiveness
    */
   getBestMitigation(
-    threatType: import('./domain/entities/threat.js').ThreatType
+    threatType: ThreatType
   ): Promise<import('./domain/services/threat-learning-service.js').MitigationStrategy | null>;
 
   /**
