@@ -507,7 +507,7 @@ const routeCommand: Command = {
     },
     {
       name: 'top-k',
-      short: 'k',
+      short: 'K',
       description: 'Number of top agent suggestions',
       type: 'number',
       default: 3
