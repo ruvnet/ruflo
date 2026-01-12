@@ -175,6 +175,26 @@ export interface RuntimeConfig {
 }
 
 /**
+ * Embeddings configuration
+ */
+export interface EmbeddingsConfig {
+  /** Enable embedding subsystem */
+  enabled: boolean;
+  /** ONNX model ID */
+  model: 'all-MiniLM-L6-v2' | 'all-mpnet-base-v2' | 'bge-small-en-v1.5' | string;
+  /** Enable hyperbolic (Poincaré ball) embeddings */
+  hyperbolic: boolean;
+  /** Poincaré ball curvature (negative value, typically -1) */
+  curvature: number;
+  /** Pre-download model during init */
+  predownload: boolean;
+  /** LRU cache size (number of embeddings) */
+  cacheSize: number;
+  /** Enable neural substrate integration */
+  neuralSubstrate: boolean;
+}
+
+/**
  * Detected platform information
  */
 export interface PlatformInfo {
