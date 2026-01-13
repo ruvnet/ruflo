@@ -342,15 +342,27 @@ export class StatuslineGenerator {
     // Try to detect active processes
     let activeAgents = 0;
     let coordinationActive = false;
+    const isWindows = process.platform === 'win32';
 
     try {
-      const ps = execSync('ps aux 2>/dev/null || echo ""', { encoding: 'utf-8' });
-      const agenticCount = (ps.match(/agentic-flow/g) || []).length;
-      const mcpCount = (ps.match(/mcp.*start/g) || []).length;
+      let ps: string;
+      if (isWindows) {
+        // On Windows, use tasklist to find node processes
+        ps = execSync('tasklist /FI "IMAGENAME eq node.exe" /FO CSV /NH 2>NUL || echo ""', { encoding: 'utf-8', shell: true });
+        const nodeCount = ps.split('\n').filter((line: string) => line.includes('node.exe')).length;
+        if (nodeCount > 1) {
+          coordinationActive = true;
+          activeAgents = Math.max(1, nodeCount - 1);
+        }
+      } else {
+        ps = execSync('ps aux 2>/dev/null || echo ""', { encoding: 'utf-8' });
+        const agenticCount = (ps.match(/agentic-flow/g) || []).length;
+        const mcpCount = (ps.match(/mcp.*start/g) || []).length;
 
-      if (agenticCount > 0 || mcpCount > 0) {
-        coordinationActive = true;
-        activeAgents = Math.max(1, Math.floor(agenticCount / 2));
+        if (agenticCount > 0 || mcpCount > 0) {
+          coordinationActive = true;
+          activeAgents = Math.max(1, Math.floor(agenticCount / 2));
+        }
       }
     } catch {
       // Fall through to defaults
@@ -418,15 +430,24 @@ export class StatuslineGenerator {
 
     let memoryMB = 0;
     let subAgents = 0;
+    const isWindows = process.platform === 'win32';
 
     try {
-      // Get Node.js memory usage
-      const ps = execSync('ps aux 2>/dev/null | grep -E "(node|agentic|claude)" | grep -v grep | awk \'{sum += $6} END {print int(sum/1024)}\'', { encoding: 'utf-8' });
-      memoryMB = parseInt(ps.trim()) || 0;
+      if (isWindows) {
+        // On Windows, use process.memoryUsage() for current process
+        memoryMB = Math.floor(process.memoryUsage().heapUsed / 1024 / 1024);
+        // Count node processes as proxy for sub-agents
+        const ps = execSync('tasklist /FI "IMAGENAME eq node.exe" /FO CSV /NH 2>NUL || echo ""', { encoding: 'utf-8', shell: true });
+        subAgents = Math.max(0, ps.split('\n').filter((line: string) => line.includes('node.exe')).length - 1);
+      } else {
+        // Get Node.js memory usage
+        const ps = execSync('ps aux 2>/dev/null | grep -E "(node|agentic|claude)" | grep -v grep | awk \'{sum += $6} END {print int(sum/1024)}\'', { encoding: 'utf-8' });
+        memoryMB = parseInt(ps.trim()) || 0;
 
-      // Count sub-agents
-      const agents = execSync('ps aux 2>/dev/null | grep -E "Task|subagent|agent_spawn" | grep -v grep | wc -l', { encoding: 'utf-8' });
-      subAgents = parseInt(agents.trim()) || 0;
+        // Count sub-agents
+        const agents = execSync('ps aux 2>/dev/null | grep -E "Task|subagent|agent_spawn" | grep -v grep | wc -l', { encoding: 'utf-8' });
+        subAgents = parseInt(agents.trim()) || 0;
+      }
     } catch {
       // Use fallback: count v3 lines as proxy for progress
       try {
@@ -485,20 +506,22 @@ export class StatuslineGenerator {
     let name = 'user';
     let gitBranch = '';
     let modelName = '';
+    const isWindows = process.platform === 'win32';
+    const nullDevice = isWindows ? 'NUL' : '/dev/null';
 
     try {
       // Try gh CLI first
-      name = execSync('gh api user --jq \'.login\' 2>/dev/null || git config user.name 2>/dev/null || echo "user"', { encoding: 'utf-8' }).trim();
+      name = execSync(`gh api user --jq ".login" 2>${nullDevice}`, { encoding: 'utf-8', shell: true }).trim() || 'user';
     } catch {
       try {
-        name = execSync('git config user.name 2>/dev/null || echo "user"', { encoding: 'utf-8' }).trim();
+        name = execSync(`git config user.name 2>${nullDevice}`, { encoding: 'utf-8', shell: true }).trim() || 'user';
       } catch {
         name = 'user';
       }
     }
 
     try {
-      gitBranch = execSync('git branch --show-current 2>/dev/null || echo ""', { encoding: 'utf-8' }).trim();
+      gitBranch = execSync(`git branch --show-current 2>${nullDevice}`, { encoding: 'utf-8', shell: true }).trim() || '';
     } catch {
       gitBranch = '';
     }

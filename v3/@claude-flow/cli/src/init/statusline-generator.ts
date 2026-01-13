@@ -72,12 +72,19 @@ function getUserInfo() {
   let name = 'user';
   let gitBranch = '';
   let modelName = 'Opus 4.5';
+  const isWindows = process.platform === 'win32';
+  const nullDevice = isWindows ? 'NUL' : '/dev/null';
 
   try {
-    name = execSync('git config user.name 2>/dev/null || echo "user"', { encoding: 'utf-8' }).trim();
-    gitBranch = execSync('git branch --show-current 2>/dev/null || echo ""', { encoding: 'utf-8' }).trim();
+    name = execSync(`git config user.name 2>${nullDevice}`, { encoding: 'utf-8', shell: true }).trim() || 'user';
   } catch (e) {
-    // Ignore errors
+    name = 'user';
+  }
+
+  try {
+    gitBranch = execSync(`git branch --show-current 2>${nullDevice}`, { encoding: 'utf-8', shell: true }).trim() || '';
+  } catch (e) {
+    gitBranch = '';
   }
 
   return { name, gitBranch, modelName };
@@ -194,10 +201,18 @@ function getSecurityStatus() {
 function getSwarmStatus() {
   let activeAgents = 0;
   let coordinationActive = false;
+  const isWindows = process.platform === 'win32';
 
   try {
-    const ps = execSync('ps aux 2>/dev/null | grep -c agentic-flow || echo "0"', { encoding: 'utf-8' });
-    activeAgents = Math.max(0, parseInt(ps.trim()) - 1);
+    if (isWindows) {
+      // On Windows, use tasklist to find node processes
+      const ps = execSync('tasklist /FI "IMAGENAME eq node.exe" /NH 2>NUL || echo 0', { encoding: 'utf-8', shell: true });
+      const nodeProcesses = ps.split('\n').filter((line: string) => line.includes('node.exe')).length;
+      activeAgents = Math.max(0, nodeProcesses - 1);
+    } else {
+      const ps = execSync('ps aux 2>/dev/null | grep -c agentic-flow || echo "0"', { encoding: 'utf-8' });
+      activeAgents = Math.max(0, parseInt(ps.trim()) - 1);
+    }
     coordinationActive = activeAgents > 0;
   } catch (e) {
     // Ignore errors
@@ -214,10 +229,16 @@ function getSwarmStatus() {
 function getSystemMetrics() {
   let memoryMB = 0;
   let subAgents = 0;
+  const isWindows = process.platform === 'win32';
 
   try {
-    const mem = execSync('ps aux | grep -E "(node|agentic|claude)" | grep -v grep | awk \\'{sum += \\$6} END {print int(sum/1024)}\\'', { encoding: 'utf-8' });
-    memoryMB = parseInt(mem.trim()) || 0;
+    if (isWindows) {
+      // On Windows, use process.memoryUsage() for current process memory
+      memoryMB = Math.floor(process.memoryUsage().heapUsed / 1024 / 1024);
+    } else {
+      const mem = execSync('ps aux | grep -E "(node|agentic|claude)" | grep -v grep | awk \'{sum += $6} END {print int(sum/1024)}\'', { encoding: 'utf-8' });
+      memoryMB = parseInt(mem.trim()) || 0;
+    }
   } catch (e) {
     // Fallback
     memoryMB = Math.floor(process.memoryUsage().heapUsed / 1024 / 1024);
@@ -234,8 +255,14 @@ function getSystemMetrics() {
 
   // Count active sub-agents from process list
   try {
-    const agents = execSync('ps aux 2>/dev/null | grep -c "claude-flow.*agent" || echo "0"', { encoding: 'utf-8' });
-    subAgents = Math.max(0, parseInt(agents.trim()) - 1);
+    if (isWindows) {
+      // On Windows, count node processes as proxy for sub-agents
+      const ps = execSync('tasklist /FI "IMAGENAME eq node.exe" /NH 2>NUL || echo 0', { encoding: 'utf-8', shell: true });
+      subAgents = Math.max(0, ps.split('\n').filter((line: string) => line.includes('node.exe')).length - 1);
+    } else {
+      const agents = execSync('ps aux 2>/dev/null | grep -c "claude-flow.*agent" || echo "0"', { encoding: 'utf-8' });
+      subAgents = Math.max(0, parseInt(agents.trim()) - 1);
+    }
   } catch (e) {
     // Ignore
   }

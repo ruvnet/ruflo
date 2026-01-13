@@ -174,13 +174,17 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
       const { execSync } = await import('child_process');
 
       // Initialize memory database
+      const isWindows = process.platform === 'win32';
+      const nullDevice = isWindows ? 'NUL' : '/dev/null';
+
       if (startAll) {
         try {
           output.writeln(output.dim('  Initializing memory database...'));
-          execSync('npx @claude-flow/cli@latest memory init 2>/dev/null', {
+          execSync(`npx @claude-flow/cli@latest memory init 2>${nullDevice}`, {
             stdio: 'pipe',
             cwd: ctx.cwd,
-            timeout: 30000
+            timeout: 30000,
+            shell: true
           });
           output.writeln(output.success('  ✓ Memory initialized'));
         } catch {
@@ -192,10 +196,15 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
       if (startDaemon) {
         try {
           output.writeln(output.dim('  Starting daemon...'));
-          execSync('npx @claude-flow/cli@latest daemon start 2>/dev/null &', {
+          // On Windows, use 'start' command to run in background; on Unix use '&'
+          const bgCommand = isWindows
+            ? `start /B npx @claude-flow/cli@latest daemon start 2>${nullDevice}`
+            : `npx @claude-flow/cli@latest daemon start 2>${nullDevice} &`;
+          execSync(bgCommand, {
             stdio: 'pipe',
             cwd: ctx.cwd,
-            timeout: 10000
+            timeout: 10000,
+            shell: true
           });
           output.writeln(output.success('  ✓ Daemon started'));
         } catch {
@@ -207,10 +216,11 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
       if (startAll) {
         try {
           output.writeln(output.dim('  Initializing swarm...'));
-          execSync('npx @claude-flow/cli@latest swarm init --topology hierarchical 2>/dev/null', {
+          execSync(`npx @claude-flow/cli@latest swarm init --topology hierarchical 2>${nullDevice}`, {
             stdio: 'pipe',
             cwd: ctx.cwd,
-            timeout: 30000
+            timeout: 30000,
+            shell: true
           });
           output.writeln(output.success('  ✓ Swarm initialized'));
         } catch {
