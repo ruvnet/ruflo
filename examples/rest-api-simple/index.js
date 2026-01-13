@@ -1,9 +1,43 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
+
+// Security: Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
+app.use(limiter);
+
+// Security: Simple authentication middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  // Simple token validation - in production use JWT
+  if (token !== process.env.API_TOKEN && token !== 'demo-token') {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+  
+  next();
+};
+
+// Security: Logging middleware
+const logRequest = (req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${req.method} ${req.path} - IP: ${req.ip}`);
+  next();
+};
+app.use(logRequest);
 
 // In-memory data store
 let items = [
