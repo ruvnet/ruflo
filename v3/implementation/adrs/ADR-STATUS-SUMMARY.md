@@ -461,65 +461,98 @@ V3 now implements **171 MCP tools** with full V2 backward compatibility:
 
 ### New V2 Compatibility Tools (alpha.87)
 
-**system-tools.ts** (5 tools):
-- `system/status` - Get overall system status
-- `system/metrics` - Get system metrics and performance data
+⚠️ **IMPORTANT**: These tools provide **LOCAL STATE MANAGEMENT** for V2 API compatibility.
+They do NOT make external API calls or execute real commands. They are useful for:
+- Workflow orchestration and coordination
+- State tracking across agent sessions
+- Local development and testing
+
+| Tool File | Persistence | External API | Notes |
+|-----------|-------------|--------------|-------|
+| system-tools.ts | ✅ File-based | ❌ None | Illustrative metrics |
+| terminal-tools.ts | ✅ File-based | ❌ None | Records commands, doesn't execute |
+| github-tools.ts | ✅ File-based | ❌ None | Local state only, no GitHub API |
+| neural-tools.ts | ✅ File-based | ❌ None | Simulated training |
+| performance-tools.ts | ✅ File-based | Partial | Some real process metrics |
+| daa-tools.ts | ✅ File-based | ❌ None | Local agent coordination |
+| coordination-tools.ts | ✅ File-based | ❌ None | Local topology state |
+
+**system-tools.ts** (5 tools) - ⚠️ Illustrative metrics:
+- `system/status` - Get overall system status (simulated)
+- `system/metrics` - Get system metrics (illustrative values)
 - `system/health` - Perform system health check
-- `system/info` - Get system information
+- `system/info` - Get system information (real Node.js info)
 - `system/reset` - Reset system state
 
-**terminal-tools.ts** (5 tools):
-- `terminal/create` - Create a new terminal session
-- `terminal/execute` - Execute a command in a terminal session
-- `terminal/list` - List all terminal sessions
-- `terminal/close` - Close a terminal session
-- `terminal/history` - Get command history for a terminal session
+**terminal-tools.ts** (5 tools) - ⚠️ State tracking only:
+- `terminal/create` - Create a new terminal session record
+- `terminal/execute` - Record command (does NOT execute - use Bash tool)
+- `terminal/list` - List all terminal session records
+- `terminal/close` - Close a terminal session record
+- `terminal/history` - Get command history
 
-**neural-tools.ts** (6 tools):
-- `neural/train` - Train a neural model
-- `neural/predict` - Make predictions using a neural model
-- `neural/patterns` - Get or manage neural patterns
-- `neural/compress` - Compress neural model or embeddings
+**neural-tools.ts** (6 tools) - ⚠️ Simulated training:
+- `neural/train` - Simulate training a neural model
+- `neural/predict` - Make simulated predictions
+- `neural/patterns` - Get or manage local patterns
+- `neural/compress` - Simulate compression
 - `neural/status` - Get neural system status
-- `neural/optimize` - Optimize neural model performance
+- `neural/optimize` - Simulate optimization
 
-**performance-tools.ts** (6 tools):
+**performance-tools.ts** (6 tools) - ⚠️ Mostly illustrative:
 - `performance/report` - Generate performance report
-- `performance/bottleneck` - Detect performance bottlenecks
-- `performance/benchmark` - Run performance benchmarks
-- `performance/profile` - Profile specific component or operation
-- `performance/optimize` - Apply performance optimizations
-- `performance/metrics` - Get detailed performance metrics
+- `performance/bottleneck` - Detect bottlenecks (simulated)
+- `performance/benchmark` - Run benchmarks (simulated results)
+- `performance/profile` - Profile component (simulated)
+- `performance/optimize` - Apply optimizations (state only)
+- `performance/metrics` - Get metrics (illustrative)
 
-**github-tools.ts** (5 tools):
-- `github/repo_analyze` - Analyze a GitHub repository
-- `github/pr_manage` - Manage pull requests
-- `github/issue_track` - Track and manage issues
-- `github/workflow` - Manage GitHub Actions workflows
-- `github/metrics` - Get repository metrics and statistics
+**github-tools.ts** (5 tools) - ⚠️ Local state only, no GitHub API:
+- `github/repo_analyze` - Store local repo analysis record
+- `github/pr_manage` - Manage local PR records
+- `github/issue_track` - Track local issue records
+- `github/workflow` - Manage local workflow state
+- `github/metrics` - Get metrics (illustrative)
 
-**daa-tools.ts** (8 tools):
-- `daa/agent_create` - Create a decentralized autonomous agent
-- `daa/agent_adapt` - Trigger agent adaptation based on feedback
-- `daa/workflow_create` - Create an autonomous workflow
-- `daa/workflow_execute` - Execute a DAA workflow
-- `daa/knowledge_share` - Share knowledge between agents
-- `daa/learning_status` - Get learning status for DAA agents
-- `daa/cognitive_pattern` - Analyze or change cognitive patterns
-- `daa/performance_metrics` - Get DAA performance metrics
+**daa-tools.ts** (8 tools) - ⚠️ Local coordination only:
+- `daa/agent_create` - Create local agent record
+- `daa/agent_adapt` - Trigger local adaptation
+- `daa/workflow_create` - Create local workflow record
+- `daa/workflow_execute` - Execute local workflow
+- `daa/knowledge_share` - Share knowledge locally
+- `daa/learning_status` - Get local learning status
+- `daa/cognitive_pattern` - Manage cognitive patterns
+- `daa/performance_metrics` - Get local performance metrics
 
-**coordination-tools.ts** (7 tools):
-- `coordination/topology` - Configure swarm topology
-- `coordination/load_balance` - Configure load balancing
-- `coordination/sync` - Synchronize state across nodes
-- `coordination/node` - Manage coordination nodes
-- `coordination/consensus` - Manage consensus protocol
-- `coordination/orchestrate` - Orchestrate multi-agent coordination
-- `coordination/metrics` - Get coordination metrics
+**coordination-tools.ts** (7 tools) - ⚠️ Local topology only:
+- `coordination/topology` - Configure local topology state
+- `coordination/load_balance` - Configure local load balancing
+- `coordination/sync` - Synchronize local state
+- `coordination/node` - Manage local node records
+- `coordination/consensus` - Manage local consensus state
+- `coordination/orchestrate` - Orchestrate local coordination
+- `coordination/metrics` - Get local coordination metrics
+
+### Tool Count Summary
+
+| Category | Count | Implementation |
+|----------|-------|----------------|
+| Original tools | 119 | ✅ Production-ready |
+| V2 compat tools | 52 | ⚠️ State management only |
+| **Total** | **171** | Mixed |
 
 ### Recommendation
 
-✅ V2 compatibility is now complete. All 171 tools are ready for beta release.
+✅ V2 API compatibility is complete. The 52 new tools provide:
+- File-based persistence in `.claude-flow/` directory
+- V2 API shape for backward compatibility
+- Local state management for workflow coordination
+
+For real operations:
+- **Terminal commands**: Use Claude Code's `Bash` tool
+- **GitHub API**: Use `gh` CLI or GitHub MCP server
+- **Real metrics**: Use `process.memoryUsage()`, `os` module
+- **Neural training**: Use `@claude-flow/neural` module
 
 ---
 
