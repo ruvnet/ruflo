@@ -370,7 +370,6 @@ const wizardCommand: Command = {
           options.hooks.sessionStart = hooks.includes('sessionStart');
           options.hooks.stop = hooks.includes('stop');
           options.hooks.notification = hooks.includes('notification');
-          options.hooks.permissionRequest = hooks.includes('permissionRequest');
         }
       }
 
