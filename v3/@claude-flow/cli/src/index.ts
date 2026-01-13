@@ -370,6 +370,38 @@ export class CLI {
   }
 
   /**
+   * Check for updates on startup (non-blocking)
+   * Shows notification if updates are available
+   */
+  private async checkForUpdatesOnStartup(): Promise<void> {
+    try {
+      const result = await runStartupUpdateCheck({ autoUpdate: true });
+
+      // Show notifications for available updates that weren't auto-applied
+      if (result.checked && result.updatesAvailable.length > 0) {
+        const nonAutoUpdates = result.updatesAvailable.filter(u => !u.shouldAutoUpdate);
+
+        if (result.updatesApplied.length > 0) {
+          this.output.writeln(
+            this.output.dim(`Auto-updated: ${result.updatesApplied.join(', ')}`)
+          );
+        }
+
+        if (nonAutoUpdates.length > 0) {
+          this.output.writeln(
+            this.output.dim(`Updates available: ${nonAutoUpdates.map(u => `${u.package}@${u.latestVersion}`).join(', ')}`)
+          );
+          this.output.writeln(
+            this.output.dim(`Run 'claude-flow update check' for details`)
+          );
+        }
+      }
+    } catch {
+      // Silently fail - don't interrupt CLI usage
+    }
+  }
+
+  /**
    * Load configuration file
    */
   private async loadConfig(configPath?: string): Promise<V3Config | undefined> {
