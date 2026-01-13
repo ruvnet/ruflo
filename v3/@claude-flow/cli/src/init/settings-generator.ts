@@ -24,10 +24,11 @@ export function generateSettings(options: InitOptions): object {
   // Add permissions
   settings.permissions = {
     // Auto-allow claude-flow MCP tools
+    // Note: Use ":*" for prefix matching (not just "*")
     allow: [
-      'Bash(npx claude-flow*)',
-      'Bash(npx @claude-flow/*)',
-      'mcp__claude-flow__*',
+      'Bash(npx claude-flow:*)',
+      'Bash(npx @claude-flow/cli:*)',
+      'mcp__claude-flow__:*',
     ],
     // Auto-deny dangerous operations
     deny: [],
