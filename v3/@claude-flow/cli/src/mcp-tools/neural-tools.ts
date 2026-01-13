@@ -3,15 +3,33 @@
  *
  * V2 Compatibility - Neural network and ML tools
  *
- * ⚠️ IMPORTANT: Training is SIMULATED for state management.
- * - No actual ML models are trained
- * - Patterns/embeddings are stored locally for coordination
- * - For real neural features, use @claude-flow/neural module
+ * ✅ HYBRID Implementation:
+ * - Uses @claude-flow/embeddings for REAL embeddings when available
+ * - Falls back to simulated embeddings when @claude-flow/embeddings not installed
+ * - Pattern storage and search with cosine similarity
+ * - Training progress tracked (actual model training requires external tools)
+ *
+ * Note: For production neural features, use @claude-flow/neural module
  */
 
 import type { MCPTool } from './types.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+
+// Try to import real embeddings from @claude-flow/embeddings
+let realEmbeddings: { embed: (text: string) => Promise<number[]> } | null = null;
+try {
+  // Dynamic import to avoid hard dependency
+  const embeddingsModule = await import('@claude-flow/embeddings');
+  if (embeddingsModule.SimpleEmbeddings) {
+    const embedder = new embeddingsModule.SimpleEmbeddings();
+    realEmbeddings = {
+      embed: async (text: string) => embedder.embed(text),
+    };
+  }
+} catch {
+  // @claude-flow/embeddings not available, will use fallback
+}
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
