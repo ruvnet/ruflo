@@ -341,7 +341,7 @@ const metricsCommand: Command = {
     try {
       const { getHNSWStatus } = await import('../memory/memory-initializer.js');
       const status = getHNSWStatus();
-      hnswEntries = status?.totalItems || 0;
+      hnswEntries = status?.entryCount || 0;
     } catch { /* HNSW not initialized */ }
 
     // Try to get real cache stats
