@@ -960,6 +960,7 @@ class Product(db.Model):
         }
 `,
         routes: `from flask import Blueprint, request, jsonify
+from functools import wraps
 from models import db, User, Product
 from services import UserService, ProductService
 
@@ -967,8 +968,28 @@ api_bp = Blueprint('api', __name__)
 user_service = UserService()
 product_service = ProductService()
 
+# Authentication decorator
+def require_auth(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Extract user info from request headers or session
+        # This assumes JWT token or session-based auth is implemented
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({'error': 'Authentication required'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+def get_current_user():
+    # Extract current user from request context
+    # This would typically come from JWT token or session
+    # For now, returning mock - should be implemented based on auth strategy
+    from flask import g
+    return getattr(g, 'current_user', None)
+
 # User routes
 @api_bp.route('/users', methods=['GET'])
+@require_auth
 def get_users():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
@@ -982,6 +1003,7 @@ def get_users():
     })
 
 @api_bp.route('/users/<int:user_id>', methods=['GET'])
+@require_auth
 def get_user(user_id):
     user = User.query.get_or_404(user_id)
     return jsonify(user.to_dict())
@@ -1002,7 +1024,14 @@ def create_user():
     return jsonify(user.to_dict()), 201
 
 @api_bp.route('/users/<int:user_id>', methods=['PUT'])
+@require_auth
 def update_user(user_id):
+    current_user = get_current_user()
+    
+    # Authorization check: users can only update their own profile, admin can update any
+    if current_user and current_user.id != user_id and not getattr(current_user, 'is_admin', False):
+        return jsonify({'error': 'Unauthorized: Cannot update other users'}), 403
+    
     user = User.query.get_or_404(user_id)
     data = request.get_json()
     
@@ -1010,7 +1039,14 @@ def update_user(user_id):
     return jsonify(user.to_dict())
 
 @api_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@require_auth
 def delete_user(user_id):
+    current_user = get_current_user()
+    
+    # Authorization check: only admin users can delete users
+    if not current_user or not getattr(current_user, 'is_admin', False):
+        return jsonify({'error': 'Unauthorized: Only administrators can delete users'}), 403
+    
     user = User.query.get_or_404(user_id)
     user_service.delete_user(user)
     return '', 204
@@ -1022,7 +1058,14 @@ def get_products():
     return jsonify([p.to_dict() for p in products])
 
 @api_bp.route('/products', methods=['POST'])
+@require_auth
 def create_product():
+    current_user = get_current_user()
+    
+    # Authorization check: only admin users can create products
+    if not current_user or not getattr(current_user, 'is_admin', False):
+        return jsonify({'error': 'Unauthorized: Only administrators can create products'}), 403
+    
     data = request.get_json()
     product = product_service.create_product(data)
     return jsonify(product.to_dict()), 201
