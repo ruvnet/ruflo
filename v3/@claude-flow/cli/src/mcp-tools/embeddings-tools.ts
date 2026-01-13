@@ -74,10 +74,36 @@ function saveConfig(config: EmbeddingsConfig): void {
   writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), 'utf-8');
 }
 
-// Simple mock embedding generation (in production, would use ONNX runtime)
-function generateMockEmbedding(text: string, dimension: number): number[] {
-  // Simple hash-based embedding for demonstration
-  // In production, this would use the ONNX model
+// Real ONNX embedding generation via memory-initializer
+let realEmbeddingFn: ((text: string) => Promise<{ embedding: number[]; dimensions: number; model: string }>) | null = null;
+
+async function getRealEmbeddingFunction() {
+  if (!realEmbeddingFn) {
+    try {
+      const { generateEmbedding } = await import('../memory/memory-initializer.js');
+      realEmbeddingFn = generateEmbedding;
+    } catch {
+      realEmbeddingFn = null;
+    }
+  }
+  return realEmbeddingFn;
+}
+
+// Generate real ONNX embedding (falls back to deterministic hash if ONNX unavailable)
+async function generateRealEmbedding(text: string, dimension: number): Promise<number[]> {
+  const realFn = await getRealEmbeddingFunction();
+
+  if (realFn) {
+    try {
+      const result = await realFn(text);
+      return result.embedding;
+    } catch {
+      // Fall through to fallback
+    }
+  }
+
+  // Fallback: deterministic hash-based (only if ONNX truly unavailable)
+  console.warn('[MCP] ONNX unavailable, using fallback embedding');
   const embedding: number[] = [];
   let hash = 0;
   for (let i = 0; i < text.length; i++) {
