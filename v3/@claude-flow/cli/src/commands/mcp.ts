@@ -119,8 +119,6 @@ const startCommand: Command = {
       // For stdio transport, always force restart since we can't health check it
       // For other transports, check health unless --force is specified
       const shouldForceRestart = force || transport === 'stdio';
-      // Debug log
-      output.writeln(output.dim(`  [debug] transport=${transport}, force=${force}, shouldForce=${shouldForceRestart}`));
 
       if (!shouldForceRestart) {
         // Verify the server is actually healthy/responsive
