@@ -65,6 +65,9 @@ export class PatternPublisher {
         console.log(`[Publish] Content signed`);
       }
 
+      // Get author info early (needed for GCS metadata and pattern entry)
+      const author = this.getAuthor();
+
       // Step 5: Upload to IPFS or GCS
       let uploadCid: string;
       let gatewayUrl: string;
