@@ -57,7 +57,7 @@ function formatPriority(priority: string): string {
   }
 }
 
-export function createUpdateCommand(): Command {
+function createUpdateCommand(): Command {
   const updateCmd = new Command('update')
     .description('Manage @claude-flow package updates')
     .addHelpText(
