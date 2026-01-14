@@ -20,7 +20,7 @@
 // ============================================================================
 
 export interface FlashAttentionConfig {
-  /** Block size for tiling (64-128 optimal for L1 cache) */
+  /** Block size for tiling (32-64 optimal for CPU L1 cache) */
   blockSize: number;
   /** Number of dimensions in embedding vectors */
   dimensions: number;
@@ -28,6 +28,8 @@ export interface FlashAttentionConfig {
   temperature: number;
   /** Enable numerical stability optimizations */
   useStableMode: boolean;
+  /** Use optimized CPU path (default: true) */
+  useCPUOptimizations: boolean;
 }
 
 export interface AttentionResult {
