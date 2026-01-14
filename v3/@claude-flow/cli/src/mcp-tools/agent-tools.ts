@@ -122,16 +122,12 @@ async function determineAgentModel(
 
   // 2. Task-based routing
   if (task) {
-    console.error('[model-routing] Task provided:', task.slice(0, 50));
     const router = await getModelRouter();
-    console.error('[model-routing] Router loaded:', !!router);
     if (router) {
       try {
         const result = await router.route(task);
-        console.error('[model-routing] Result:', result.model);
         return { model: result.model, routedBy: 'router' };
-      } catch (e) {
-        console.error('[model-routing] Route error:', (e as Error).message);
+      } catch {
         // Fall through to defaults on router error
       }
     }
