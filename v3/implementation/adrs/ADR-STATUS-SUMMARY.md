@@ -164,12 +164,42 @@
 | Target | Specification | Status | Evidence |
 |--------|---------------|--------|----------|
 | HNSW Search | 150x-12,500x faster | ✅ Achieved | HNSW index in memory module |
-| SONA Adaptation | <0.05ms | ✅ Achieved | SONA Manager, 0.042ms measured |
-| Flash Attention | 2.49x-7.47x speedup | ✅ Achieved | Integration with agentic-flow |
-| MoE Routing | 80%+ accuracy | ✅ Achieved | 92% routing accuracy |
 | CLI Startup | <500ms | ✅ Achieved | Lazy loading, -200ms improvement |
 | MCP Response | <100ms | ✅ Achieved | Connection pooling, 3-5x throughput |
 | Memory Reduction | 50-75% | ✅ Achieved | Quantization, tree-shaking |
+| Pattern Search | Real vector search | ✅ Achieved | alpha.100: 0.87 similarity, 318ms |
+
+## ⚠️ Neural Features - Honest Implementation Status
+
+**Updated 2026-01-14 (alpha.100)**
+
+| Feature | Claimed | Actual Status | Notes |
+|---------|---------|---------------|-------|
+| SONA Adaptation | <0.05ms | ⚠️ Partial | Trajectory recording works; self-optimization NOT implemented |
+| Flash Attention | 2.49x-7.47x | ❌ Disabled | Disabled in feature flags |
+| MoE Routing | 80%+ accuracy | ❌ Placeholder | Returns placeholder weights, no real routing |
+| EWC++ Consolidation | Prevents forgetting | ❌ Not implemented | 0 actual consolidations |
+| LoRA Pattern Distill | Pattern extraction | ❌ Not implemented | No model distillation |
+| Real Neural Training | ML training | ❌ Not implemented | No model training happening |
+| Pattern Search | Vector similarity | ✅ REAL (alpha.100) | Uses HNSW/SQLite with real ONNX embeddings |
+
+### What IS Real (alpha.100)
+
+- ✅ **Pattern Search**: Real HNSW vector search with ONNX embeddings (all-MiniLM-L6-v2)
+- ✅ **Memory Store**: SQLite with sql.js (WASM), persistent to disk
+- ✅ **Embeddings**: 384-dim ONNX embeddings via @claude-flow/embeddings
+- ✅ **Trajectory Recording**: Stores trajectories in memory (learning from them is NOT implemented)
+- ✅ **Claims System**: Full issue claim/handoff system
+- ✅ **Swarm Coordination**: Real agent spawn/coordinate via Task tool
+
+### What is NOT Real (Marketing Claims)
+
+- ❌ **SONA self-optimization**: Infrastructure exists, self-optimization logic not implemented
+- ❌ **EWC++ consolidation**: Returns placeholder data, no actual consolidation
+- ❌ **Flash Attention**: Disabled, returns simulated speedup numbers
+- ❌ **MoE expert routing**: Returns placeholder weights, no real expert selection
+- ❌ **LoRA pattern distillation**: Not implemented
+- ❌ **Real neural training**: No actual model training, just state tracking
 
 ---
 
