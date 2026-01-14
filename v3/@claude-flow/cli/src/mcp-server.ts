@@ -295,7 +295,7 @@ export class MCPServerManager extends EventEmitter {
     const { listMCPTools, callMCPTool, hasTool } = await import('./mcp-client.js');
 
     const VERSION = '3.0.0';
-    const sessionId = `mcp-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const sessionId = `mcp-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
     // Log to stderr to not corrupt stdout
     console.error(
