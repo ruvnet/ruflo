@@ -1604,13 +1604,9 @@ const postTaskCommand: Command = {
     { command: 'claude-flow hooks post-task -i task-456 --success false -q 0.3', description: 'Record failed task' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const taskId = ctx.flags.taskId as string;
+    // Auto-generate task ID if not provided
+    const taskId = (ctx.flags.taskId as string) || `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const success = ctx.flags.success as boolean;
-
-    if (!taskId) {
-      output.printError('Task ID is required. Use --task-id or -i flag.');
-      return { success: false, exitCode: 1 };
-    }
 
     if (success === undefined) {
       output.printError('Success flag is required. Use --success true/false.');
