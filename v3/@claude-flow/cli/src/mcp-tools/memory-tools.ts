@@ -146,6 +146,16 @@ export const memoryTools: MCPTool[] = [
       required: ['query'],
     },
     handler: async (input) => {
+      // Validate required parameter
+      if (!input.query || typeof input.query !== 'string') {
+        return {
+          error: 'query parameter is required and must be a string',
+          query: null,
+          results: [],
+          total: 0,
+        };
+      }
+
       const store = loadMemoryStore();
       const query = (input.query as string).toLowerCase();
       const limit = (input.limit as number) || 10;

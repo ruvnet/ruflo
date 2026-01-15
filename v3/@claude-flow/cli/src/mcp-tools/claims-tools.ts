@@ -120,6 +120,14 @@ export const claimsTools: MCPTool[] = [
       const claimantStr = input.claimant as string;
       const context = input.context as string | undefined;
 
+      // Validate required parameters
+      if (!issueId || typeof issueId !== 'string') {
+        return { success: false, error: 'issueId parameter is required and must be a string' };
+      }
+      if (!claimantStr || typeof claimantStr !== 'string') {
+        return { success: false, error: 'claimant parameter is required and must be a string' };
+      }
+
       const claimant = parseClaimant(claimantStr);
       if (!claimant) {
         return { success: false, error: 'Invalid claimant format. Use "human:userId:name" or "agent:agentId:agentType"' };
@@ -185,6 +193,14 @@ export const claimsTools: MCPTool[] = [
       const issueId = input.issueId as string;
       const claimantStr = input.claimant as string;
       const reason = input.reason as string | undefined;
+
+      // Validate required parameters
+      if (!issueId || typeof issueId !== 'string') {
+        return { success: false, error: 'issueId parameter is required and must be a string' };
+      }
+      if (!claimantStr || typeof claimantStr !== 'string') {
+        return { success: false, error: 'claimant parameter is required and must be a string' };
+      }
 
       const claimant = parseClaimant(claimantStr);
       if (!claimant) {
@@ -253,6 +269,17 @@ export const claimsTools: MCPTool[] = [
       const reason = input.reason as string | undefined;
       const progress = (input.progress as number) || 0;
 
+      // Validate required parameters
+      if (!issueId || typeof issueId !== 'string') {
+        return { success: false, error: 'issueId parameter is required and must be a string' };
+      }
+      if (!fromStr || typeof fromStr !== 'string') {
+        return { success: false, error: 'from parameter is required and must be a string' };
+      }
+      if (!toStr || typeof toStr !== 'string') {
+        return { success: false, error: 'to parameter is required and must be a string' };
+      }
+
       const from = parseClaimant(fromStr);
       const to = parseClaimant(toStr);
 
@@ -310,6 +337,14 @@ export const claimsTools: MCPTool[] = [
     handler: async (input) => {
       const issueId = input.issueId as string;
       const claimantStr = input.claimant as string;
+
+      // Validate required parameters
+      if (!issueId || typeof issueId !== 'string') {
+        return { success: false, error: 'issueId parameter is required and must be a string' };
+      }
+      if (!claimantStr || typeof claimantStr !== 'string') {
+        return { success: false, error: 'claimant parameter is required and must be a string' };
+      }
 
       const claimant = parseClaimant(claimantStr);
       if (!claimant) {
@@ -384,6 +419,14 @@ export const claimsTools: MCPTool[] = [
       const status = input.status as ClaimStatus;
       const note = input.note as string | undefined;
       const progress = input.progress as number | undefined;
+
+      // Validate required parameters
+      if (!issueId || typeof issueId !== 'string') {
+        return { success: false, error: 'issueId parameter is required and must be a string' };
+      }
+      if (!status || typeof status !== 'string') {
+        return { success: false, error: 'status parameter is required and must be a string' };
+      }
 
       const store = loadClaims();
       const claim = store.claims[issueId];
@@ -500,6 +543,14 @@ export const claimsTools: MCPTool[] = [
       const preferredTypes = input.preferredTypes as string[] | undefined;
       const context = input.context as string | undefined;
 
+      // Validate required parameters
+      if (!issueId || typeof issueId !== 'string') {
+        return { success: false, error: 'issueId parameter is required and must be a string' };
+      }
+      if (!reason || typeof reason !== 'string') {
+        return { success: false, error: 'reason parameter is required and must be a string' };
+      }
+
       const store = loadClaims();
       const claim = store.claims[issueId];
 
@@ -552,6 +603,14 @@ export const claimsTools: MCPTool[] = [
     handler: async (input) => {
       const issueId = input.issueId as string;
       const stealerStr = input.stealer as string;
+
+      // Validate required parameters
+      if (!issueId || typeof issueId !== 'string') {
+        return { success: false, error: 'issueId parameter is required and must be a string' };
+      }
+      if (!stealerStr || typeof stealerStr !== 'string') {
+        return { success: false, error: 'stealer parameter is required and must be a string' };
+      }
 
       const stealer = parseClaimant(stealerStr);
       if (!stealer) {

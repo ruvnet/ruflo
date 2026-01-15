@@ -289,6 +289,15 @@ export const embeddingsTools: MCPTool[] = [
       }
 
       const text = input.text as string;
+
+      // Validate required parameter
+      if (!text || typeof text !== 'string') {
+        return {
+          success: false,
+          error: 'text parameter is required and must be a string',
+        };
+      }
+
       const useHyperbolic = input.hyperbolic === true && config.hyperbolic.enabled;
 
       // Generate real ONNX embedding
@@ -355,6 +364,21 @@ export const embeddingsTools: MCPTool[] = [
 
       const text1 = input.text1 as string;
       const text2 = input.text2 as string;
+
+      // Validate required parameters
+      if (!text1 || typeof text1 !== 'string') {
+        return {
+          success: false,
+          error: 'text1 parameter is required and must be a string',
+        };
+      }
+      if (!text2 || typeof text2 !== 'string') {
+        return {
+          success: false,
+          error: 'text2 parameter is required and must be a string',
+        };
+      }
+
       const metric = (input.metric as string) || 'cosine';
 
       // Generate real ONNX embeddings for both texts
@@ -445,6 +469,15 @@ export const embeddingsTools: MCPTool[] = [
       }
 
       const query = input.query as string;
+
+      // Validate required parameter
+      if (!query || typeof query !== 'string') {
+        return {
+          success: false,
+          error: 'query parameter is required and must be a string',
+        };
+      }
+
       const topK = (input.topK as number) || 5;
       const threshold = (input.threshold as number) || 0.5;
       const namespace = input.namespace as string;

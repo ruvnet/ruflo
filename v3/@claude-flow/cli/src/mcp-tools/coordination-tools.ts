@@ -498,6 +498,12 @@ export const coordinationTools: MCPTool[] = [
     handler: async (input) => {
       const store = loadCoordStore();
       const task = input.task as string;
+
+      // Validate required parameter
+      if (!task || typeof task !== 'string') {
+        return { success: false, error: 'task parameter is required and must be a string' };
+      }
+
       const agents = (input.agents as string[]) || Object.keys(store.nodes);
       const strategy = (input.strategy as string) || 'parallel';
 

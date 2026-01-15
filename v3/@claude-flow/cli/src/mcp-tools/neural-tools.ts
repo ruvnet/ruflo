@@ -237,6 +237,14 @@ export const neuralTools: MCPTool[] = [
       const inputText = input.input as string;
       const topK = (input.topK as number) || 3;
 
+      // Validate required parameter
+      if (!inputText || typeof inputText !== 'string') {
+        return {
+          success: false,
+          error: 'input parameter is required and must be a string',
+        };
+      }
+
       // Find model or use default
       const model = modelId ? store.models[modelId] : Object.values(store.models).find(m => m.status === 'ready');
 

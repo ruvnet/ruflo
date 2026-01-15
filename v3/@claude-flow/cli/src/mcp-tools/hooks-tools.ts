@@ -400,6 +400,16 @@ export const hooksPreEdit: MCPTool = {
   },
   handler: async (params: Record<string, unknown>) => {
     const filePath = params.filePath as string;
+
+    // Validate required parameter
+    if (!filePath || typeof filePath !== 'string') {
+      return {
+        error: 'filePath parameter is required and must be a string',
+        filePath: null,
+        context: null,
+      };
+    }
+
     const operation = (params.operation as string) || 'update';
 
     const suggestedAgents = suggestAgentsForFile(filePath);
@@ -464,6 +474,17 @@ export const hooksPreCommand: MCPTool = {
   },
   handler: async (params: Record<string, unknown>) => {
     const command = params.command as string;
+
+    // Validate required parameter
+    if (!command || typeof command !== 'string') {
+      return {
+        error: 'command parameter is required and must be a string',
+        command: null,
+        riskLevel: 'unknown',
+        risks: [],
+      };
+    }
+
     const assessment = assessCommandRisk(command);
 
     const riskLevel = assessment.level >= 0.8 ? 'critical'
@@ -526,6 +547,17 @@ export const hooksRoute: MCPTool = {
   },
   handler: async (params: Record<string, unknown>) => {
     const task = params.task as string;
+
+    // Validate required parameter
+    if (!task || typeof task !== 'string') {
+      return {
+        error: 'task parameter is required and must be a string',
+        task: null,
+        primaryAgent: null,
+        alternativeAgents: [],
+      };
+    }
+
     const suggestion = suggestAgentsForTask(task);
 
     // Determine complexity based on task length and keywords
@@ -669,6 +701,23 @@ export const hooksPreTask: MCPTool = {
     const taskId = params.taskId as string;
     const description = params.description as string;
     const filePath = params.filePath as string | undefined;
+
+    // Validate required parameters
+    if (!taskId || typeof taskId !== 'string') {
+      return {
+        error: 'taskId parameter is required and must be a string',
+        taskId: null,
+        suggestedAgents: [],
+      };
+    }
+    if (!description || typeof description !== 'string') {
+      return {
+        error: 'description parameter is required and must be a string',
+        taskId,
+        suggestedAgents: [],
+      };
+    }
+
     const suggestion = suggestAgentsForTask(description);
 
     // Determine complexity
@@ -2579,6 +2628,17 @@ export const hooksWorkerDetect: MCPTool = {
   },
   handler: async (params: Record<string, unknown>) => {
     const prompt = params.prompt as string;
+
+    // Validate required parameter
+    if (!prompt || typeof prompt !== 'string') {
+      return {
+        error: 'prompt parameter is required and must be a string',
+        triggersFound: 0,
+        detected: false,
+        triggers: [],
+      };
+    }
+
     const autoDispatch = params.autoDispatch as boolean;
     const minConfidence = (params.minConfidence as number) || 0.5;
 
