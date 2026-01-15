@@ -1094,7 +1094,10 @@ npx claude-flow@v3alpha worker status
 | **WASM** | Good | WebAssembly support |
 | **JS** | Fallback | Always available |
 
-### Performance Benchmarking (`@claude-flow/performance`)
+</details>
+
+<details>
+<summary>📊 <strong>Performance Benchmarking</strong> — Statistical analysis with V3 target validation</summary>
 
 | Capability | Description | Output |
 |------------|-------------|--------|
