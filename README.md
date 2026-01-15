@@ -1883,6 +1883,145 @@ npx claude-flow@v3alpha transfer-store download --id "security-essentials" --app
 ---
 
 <details>
+<summary><h2>🛠️ Helper Scripts — 30+ Development Automation Tools</h2></summary>
+
+The `.claude/helpers/` directory contains **30+ automation scripts** for development, monitoring, learning, and swarm coordination. These scripts integrate with hooks and can be called directly or via the V3 master tool.
+
+### Quick Start
+
+```bash
+# Master V3 tool - access all helpers
+.claude/helpers/v3.sh help              # Show all commands
+.claude/helpers/v3.sh status            # Quick development status
+.claude/helpers/v3.sh update domain 3   # Update metrics
+
+# Quick setup
+.claude/helpers/quick-start.sh          # Initialize development environment
+.claude/helpers/setup-mcp.sh            # Configure MCP servers
+```
+
+### Helper Categories
+
+#### 📊 Progress & Metrics
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `v3.sh` | Master CLI for all V3 operations | `.claude/helpers/v3.sh status` |
+| `update-v3-progress.sh` | Update development metrics | `.claude/helpers/update-v3-progress.sh domain 3` |
+| `v3-quick-status.sh` | Compact progress overview | `.claude/helpers/v3-quick-status.sh` |
+| `sync-v3-metrics.sh` | Sync metrics across systems | `.claude/helpers/sync-v3-metrics.sh` |
+| `validate-v3-config.sh` | Validate configuration | `.claude/helpers/validate-v3-config.sh` |
+
+#### 🤖 Daemon & Worker Management
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `daemon-manager.sh` | Start/stop/status background daemons | `.claude/helpers/daemon-manager.sh start 3 5` |
+| `worker-manager.sh` | Manage background workers | `.claude/helpers/worker-manager.sh start 60` |
+| `swarm-monitor.sh` | Monitor swarm activity | `.claude/helpers/swarm-monitor.sh` |
+| `health-monitor.sh` | System health checks | `.claude/helpers/health-monitor.sh` |
+| `perf-worker.sh` | Performance monitoring worker | `.claude/helpers/perf-worker.sh` |
+
+#### 🧠 Learning & Intelligence
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `learning-service.mjs` | Neural learning service (Node.js) | `node .claude/helpers/learning-service.mjs` |
+| `learning-hooks.sh` | Hook-based pattern learning | `.claude/helpers/learning-hooks.sh` |
+| `learning-optimizer.sh` | Optimize learned patterns | `.claude/helpers/learning-optimizer.sh` |
+| `pattern-consolidator.sh` | Consolidate patterns (EWC++) | `.claude/helpers/pattern-consolidator.sh` |
+| `metrics-db.mjs` | Metrics database service | `node .claude/helpers/metrics-db.mjs` |
+
+#### 🐝 Swarm Coordination
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `swarm-hooks.sh` | Swarm lifecycle hooks | `.claude/helpers/swarm-hooks.sh init` |
+| `swarm-comms.sh` | Inter-agent communication | `.claude/helpers/swarm-comms.sh broadcast "msg"` |
+| `swarm-monitor.sh` | Real-time swarm monitoring | `.claude/helpers/swarm-monitor.sh --watch` |
+
+#### 🔒 Security & Compliance
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `security-scanner.sh` | Scan for vulnerabilities | `.claude/helpers/security-scanner.sh` |
+| `adr-compliance.sh` | Check ADR compliance | `.claude/helpers/adr-compliance.sh` |
+| `ddd-tracker.sh` | Track DDD domain progress | `.claude/helpers/ddd-tracker.sh` |
+
+#### 💾 Checkpoints & Git
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `checkpoint-manager.sh` | Save/restore checkpoints | `.claude/helpers/checkpoint-manager.sh save "desc"` |
+| `auto-commit.sh` | Automated git commits | `.claude/helpers/auto-commit.sh` |
+| `standard-checkpoint-hooks.sh` | Checkpoint hook integration | `.claude/helpers/standard-checkpoint-hooks.sh` |
+| `github-safe.js` | Safe GitHub operations | `node .claude/helpers/github-safe.js` |
+| `github-setup.sh` | Configure GitHub integration | `.claude/helpers/github-setup.sh` |
+
+#### 🎯 Guidance & Hooks
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `guidance-hooks.sh` | Development guidance via hooks | `.claude/helpers/guidance-hooks.sh` |
+| `guidance-hook.sh` | Single guidance hook | `.claude/helpers/guidance-hook.sh` |
+
+### Example Workflows
+
+**Start Development Session:**
+```bash
+# Initialize everything
+.claude/helpers/v3.sh init
+.claude/helpers/daemon-manager.sh start 3 5
+.claude/helpers/worker-manager.sh start 60
+
+# Check status
+.claude/helpers/v3.sh full-status
+```
+
+**Swarm Development:**
+```bash
+# Start swarm monitoring
+.claude/helpers/swarm-monitor.sh --watch &
+
+# Initialize swarm hooks
+.claude/helpers/swarm-hooks.sh init
+
+# Monitor agent communication
+.claude/helpers/swarm-comms.sh listen
+```
+
+**Learning & Pattern Management:**
+```bash
+# Start learning service
+node .claude/helpers/learning-service.mjs &
+
+# Consolidate patterns after session
+.claude/helpers/pattern-consolidator.sh
+
+# Optimize learned patterns
+.claude/helpers/learning-optimizer.sh --aggressive
+```
+
+### Configuration
+
+Helpers are configured in `.claude/settings.json`:
+
+```json
+{
+  "helpers": {
+    "directory": ".claude/helpers",
+    "enabled": true,
+    "v3ProgressUpdater": ".claude/helpers/update-v3-progress.sh",
+    "autoStart": ["daemon-manager.sh", "worker-manager.sh"]
+  }
+}
+```
+
+</details>
+
+---
+
+<details>
 <summary><h2>🎓 Skills System — 42 Pre-Built Workflows for Any Task</h2></summary>
 
 Skills are **reusable workflows** that combine agents, hooks, and patterns into ready-to-use solutions. Think of them as "recipes" for common development tasks.
