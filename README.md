@@ -1186,9 +1186,13 @@ export CLAUDE_FLOW_HNSW_M=8
 export CLAUDE_FLOW_HNSW_EF=100
 ```
 
+</details>
+
 ---
 
-## Migration Guide (V2 → V3)
+<details>
+<summary><h2>🔄 Migration Guide (V2 → V3) (Click to expand)</h2></summary>
+
 
 ### Breaking Changes
 
