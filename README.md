@@ -3758,6 +3758,600 @@ Domain-Driven Design with bounded contexts, clean architecture, and measured per
 ---
 
 <details>
+<summary><h2>📦 Release Management — @claude-flow/deployment</h2></summary>
+
+Automated release management, versioning, and CI/CD for Claude Flow packages.
+
+### Features
+
+| Feature | Description | Performance |
+|---------|-------------|-------------|
+| **Version Bumping** | Automatic major/minor/patch/prerelease | Instant |
+| **Changelog Generation** | From conventional commits | <2s |
+| **Git Integration** | Auto-tagging and committing | <1s |
+| **NPM Publishing** | Multi-tag support (alpha, beta, latest) | <5s |
+| **Pre-Release Validation** | Lint, test, build, dependency checks | Configurable |
+| **Dry Run Mode** | Test releases without changes | Safe testing |
+
+### Quick Start
+
+```typescript
+import { prepareRelease, publishToNpm, validate } from '@claude-flow/deployment';
+
+// Bump version and generate changelog
+const result = await prepareRelease({
+  bumpType: 'patch',       // major | minor | patch | prerelease
+  generateChangelog: true,
+  createTag: true,
+  commit: true
+});
+
+console.log(`Released ${result.newVersion}`);
+
+// Publish to NPM
+await publishToNpm({
+  tag: 'latest',
+  access: 'public'
+});
+```
+
+### Version Bumping Examples
+
+```typescript
+import { ReleaseManager } from '@claude-flow/deployment';
+
+const manager = new ReleaseManager();
+
+// Bump patch: 1.0.0 → 1.0.1
+await manager.prepareRelease({ bumpType: 'patch' });
+
+// Bump minor: 1.0.0 → 1.1.0
+await manager.prepareRelease({ bumpType: 'minor' });
+
+// Bump major: 1.0.0 → 2.0.0
+await manager.prepareRelease({ bumpType: 'major' });
+
+// Prerelease: 1.0.0 → 1.0.0-alpha.1
+await manager.prepareRelease({ bumpType: 'prerelease', channel: 'alpha' });
+```
+
+### Changelog from Conventional Commits
+
+```bash
+# Commit format: type(scope): message
+git commit -m "feat(api): add new endpoint"
+git commit -m "fix(auth): resolve login issue"
+git commit -m "feat(ui): update design BREAKING CHANGE: new layout"
+```
+
+Generated:
+```markdown
+## [2.0.0] - 2026-01-15
+
+### BREAKING CHANGES
+- **ui**: update design BREAKING CHANGE: new layout
+
+### Features
+- **api**: add new endpoint
+- **ui**: update design
+
+### Bug Fixes
+- **auth**: resolve login issue
+```
+
+### Complete Release Workflow
+
+```typescript
+import { Validator, ReleaseManager, Publisher } from '@claude-flow/deployment';
+
+async function release(version: string, tag: string) {
+  // 1. Validate
+  const validator = new Validator();
+  const validation = await validator.validate({
+    lint: true, test: true, build: true, checkDependencies: true
+  });
+  if (!validation.valid) throw new Error(validation.errors.join(', '));
+
+  // 2. Prepare release
+  const manager = new ReleaseManager();
+  await manager.prepareRelease({
+    version,
+    generateChangelog: true,
+    createTag: true,
+    commit: true
+  });
+
+  // 3. Publish
+  const publisher = new Publisher();
+  await publisher.publishToNpm({ tag, access: 'public' });
+}
+```
+
+### Channel/Tag Strategy
+
+| Channel | Version Format | Use Case |
+|---------|----------------|----------|
+| `alpha` | `1.0.0-alpha.1` | Early development |
+| `beta` | `1.0.0-beta.1` | Feature complete, testing |
+| `rc` | `1.0.0-rc.1` | Release candidate |
+| `latest` | `1.0.0` | Stable production |
+
+### CLI Commands
+
+```bash
+# Prepare release
+npx @claude-flow/deployment release --version 2.0.0 --changelog --tag
+
+# Publish to npm
+npx @claude-flow/deployment publish --tag latest --access public
+
+# Validate package
+npx @claude-flow/deployment validate
+
+# Dry run (no changes)
+npx @claude-flow/deployment release --version 2.0.0 --dry-run
+```
+
+</details>
+
+---
+
+<details>
+<summary><h2>📊 Performance Benchmarking — @claude-flow/performance</h2></summary>
+
+Statistical benchmarking, memory tracking, regression detection, and V3 performance target validation.
+
+### Features
+
+| Feature | Description | Performance |
+|---------|-------------|-------------|
+| **Statistical Analysis** | Mean, median, P95, P99, stddev, outlier removal | Real-time |
+| **Memory Tracking** | Heap, RSS, external, array buffers | Per-iteration |
+| **Auto-Calibration** | Adjusts iterations for statistical significance | Automatic |
+| **Regression Detection** | Compare against baselines with significance testing | <10ms |
+| **V3 Targets** | Built-in targets for all performance metrics | Preconfigured |
+| **Flash Attention** | Validate 2.49x-7.47x speedup targets | Integrated |
+
+### Quick Start
+
+```typescript
+import { benchmark, BenchmarkRunner, V3_PERFORMANCE_TARGETS } from '@claude-flow/performance';
+
+// Single benchmark
+const result = await benchmark('vector-search', async () => {
+  await index.search(queryVector, 10);
+}, { iterations: 100, warmup: 10 });
+
+console.log(`Mean: ${result.mean}ms, P99: ${result.p99}ms`);
+
+// Check against V3 target
+if (result.mean <= V3_PERFORMANCE_TARGETS['vector-search']) {
+  console.log('✅ Target met!');
+}
+```
+
+### V3 Performance Targets
+
+```typescript
+import { V3_PERFORMANCE_TARGETS, meetsTarget } from '@claude-flow/performance';
+
+// Built-in targets
+V3_PERFORMANCE_TARGETS = {
+  // Startup Performance
+  'cli-cold-start': 500,        // <500ms (5x faster)
+  'cli-warm-start': 100,        // <100ms
+  'mcp-server-init': 400,       // <400ms (4.5x faster)
+  'agent-spawn': 200,           // <200ms (4x faster)
+
+  // Memory Operations
+  'vector-search': 1,           // <1ms (150x faster)
+  'hnsw-indexing': 10,          // <10ms
+  'memory-write': 5,            // <5ms (10x faster)
+  'cache-hit': 0.1,             // <0.1ms
+
+  // Swarm Coordination
+  'agent-coordination': 50,     // <50ms
+  'task-decomposition': 20,     // <20ms
+  'consensus-latency': 100,     // <100ms (5x faster)
+  'message-throughput': 0.1,    // <0.1ms per message
+
+  // SONA Learning
+  'sona-adaptation': 0.05       // <0.05ms
+};
+
+// Check if target is met
+const { met, target, ratio } = meetsTarget('vector-search', 0.8);
+// { met: true, target: 1, ratio: 0.8 }
+```
+
+### Benchmark Suite
+
+```typescript
+import { BenchmarkRunner } from '@claude-flow/performance';
+
+const runner = new BenchmarkRunner('Memory Operations');
+
+// Run individual benchmarks
+await runner.run('vector-search', async () => {
+  await index.search(query, 10);
+});
+
+await runner.run('memory-write', async () => {
+  await store.write(entry);
+});
+
+// Run all at once
+const suite = await runner.runAll([
+  { name: 'search', fn: () => search() },
+  { name: 'write', fn: () => write() },
+  { name: 'index', fn: () => index() }
+]);
+
+// Print formatted results
+runner.printResults();
+
+// Export as JSON
+const json = runner.toJSON();
+```
+
+### Comparison & Regression Detection
+
+```typescript
+import { compareResults, printComparisonReport } from '@claude-flow/performance';
+
+// Compare current vs baseline
+const comparisons = compareResults(baselineResults, currentResults, {
+  'vector-search': 1,      // Target: <1ms
+  'memory-write': 5,       // Target: <5ms
+  'cli-startup': 500       // Target: <500ms
+});
+
+// Print formatted report
+printComparisonReport(comparisons);
+
+// Programmatic access
+for (const comp of comparisons) {
+  if (!comp.targetMet) {
+    console.error(`${comp.benchmark} missed target!`);
+  }
+  if (comp.significant && !comp.improved) {
+    console.warn(`${comp.benchmark} regressed by ${comp.changePercent}%`);
+  }
+}
+```
+
+### Result Structure
+
+```typescript
+interface BenchmarkResult {
+  name: string;
+  iterations: number;
+  mean: number;           // Average time (ms)
+  median: number;         // Median time (ms)
+  p95: number;            // 95th percentile
+  p99: number;            // 99th percentile
+  min: number;
+  max: number;
+  stdDev: number;         // Standard deviation
+  opsPerSecond: number;   // Operations/second
+  memoryUsage: {
+    heapUsed: number;
+    heapTotal: number;
+    external: number;
+    arrayBuffers: number;
+    rss: number;
+  };
+  memoryDelta: number;    // Memory change during benchmark
+  timestamp: number;
+}
+```
+
+### Formatting Utilities
+
+```typescript
+import { formatBytes, formatTime } from '@claude-flow/performance';
+
+formatTime(0.00005);  // '50.00 ns'
+formatTime(0.5);      // '500.00 µs'
+formatTime(5);        // '5.00 ms'
+formatTime(5000);     // '5.00 s'
+
+formatBytes(1024);          // '1.00 KB'
+formatBytes(1048576);       // '1.00 MB'
+formatBytes(1073741824);    // '1.00 GB'
+```
+
+### CLI Commands
+
+```bash
+# Run all benchmarks
+npm run bench
+
+# Run attention benchmarks
+npm run bench:attention
+
+# Run startup benchmarks
+npm run bench:startup
+
+# Performance report
+npx claude-flow@v3alpha performance report
+
+# Benchmark specific suite
+npx claude-flow@v3alpha performance benchmark --suite memory
+```
+
+</details>
+
+---
+
+<details>
+<summary><h2>🧪 Testing Framework — @claude-flow/testing</h2></summary>
+
+Comprehensive TDD framework implementing **London School** patterns with behavior verification, shared fixtures, and mock services.
+
+### Philosophy: London School TDD
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  LONDON SCHOOL TDD                           │
+├─────────────────────────────────────────────────────────────┤
+│  1. ARRANGE - Set up mocks BEFORE acting                     │
+│  2. ACT     - Execute the behavior under test                │
+│  3. ASSERT  - Verify behavior (interactions), not state      │
+│                                                              │
+│  "Test behavior, not implementation"                         │
+│  "Mock external dependencies, test interactions"             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Quick Start
+
+```typescript
+import {
+  setupV3Tests,
+  createMockApplication,
+  agentConfigs,
+  swarmConfigs,
+  waitFor,
+} from '@claude-flow/testing';
+
+// Configure test environment
+setupV3Tests();
+
+describe('MyModule', () => {
+  const app = createMockApplication();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should spawn an agent', async () => {
+    const result = await app.agentLifecycle.spawn(agentConfigs.queenCoordinator);
+
+    expect(result.success).toBe(true);
+    expect(result.agent.type).toBe('queen-coordinator');
+  });
+});
+```
+
+### Fixtures
+
+#### Agent Fixtures
+
+```typescript
+import {
+  agentConfigs,
+  createAgentConfig,
+  createV3SwarmAgentConfigs,
+  createMockAgent,
+} from '@claude-flow/testing';
+
+// Pre-defined configs
+const queen = agentConfigs.queenCoordinator;
+const coder = agentConfigs.coder;
+
+// Create with overrides
+const customAgent = createAgentConfig('coder', {
+  name: 'Custom Coder',
+  priority: 90,
+});
+
+// Full V3 15-agent swarm
+const swarmAgents = createV3SwarmAgentConfigs();
+
+// Mock agents with vitest mocks
+const mockAgent = createMockAgent('security-architect');
+mockAgent.execute.mockResolvedValue({ success: true });
+```
+
+#### Memory Fixtures
+
+```typescript
+import {
+  memoryEntries,
+  createMemoryEntry,
+  generateMockEmbedding,
+  createMemoryBatch,
+} from '@claude-flow/testing';
+
+// Pre-defined entries
+const pattern = memoryEntries.agentPattern;
+const securityRule = memoryEntries.securityRule;
+
+// Generate embeddings
+const embedding = generateMockEmbedding(384, 'my-seed');
+
+// Create batch for performance testing
+const batch = createMemoryBatch(10000, 'semantic');
+```
+
+#### Swarm Fixtures
+
+```typescript
+import {
+  swarmConfigs,
+  createSwarmConfig,
+  createSwarmTask,
+  createMockSwarmCoordinator,
+} from '@claude-flow/testing';
+
+// Pre-defined configs
+const v3Config = swarmConfigs.v3Default;
+const minimalConfig = swarmConfigs.minimal;
+
+// Create with overrides
+const customConfig = createSwarmConfig('v3Default', {
+  maxAgents: 20,
+  coordination: {
+    consensusProtocol: 'pbft',
+    heartbeatInterval: 500,
+  },
+});
+
+// Mock coordinator
+const coordinator = createMockSwarmCoordinator();
+await coordinator.initialize(v3Config);
+```
+
+#### MCP Fixtures
+
+```typescript
+import {
+  mcpTools,
+  createMCPTool,
+  createMockMCPClient,
+} from '@claude-flow/testing';
+
+// Pre-defined tools
+const swarmInit = mcpTools.swarmInit;
+const agentSpawn = mcpTools.agentSpawn;
+
+// Mock client
+const client = createMockMCPClient();
+await client.connect();
+const result = await client.callTool('swarm_init', { topology: 'mesh' });
+```
+
+### Mock Factory
+
+```typescript
+import {
+  createMockApplication,
+  createMockEventBus,
+  createMockTaskManager,
+  createMockSecurityService,
+  createMockSwarmCoordinator,
+} from '@claude-flow/testing';
+
+// Full application with all mocks
+const app = createMockApplication();
+
+// Use in tests
+await app.taskManager.create({ name: 'Test', type: 'coding', payload: {} });
+expect(app.taskManager.create).toHaveBeenCalled();
+
+// Access tracked state
+expect(app.eventBus.publishedEvents).toHaveLength(1);
+expect(app.taskManager.tasks.size).toBe(1);
+```
+
+### Async Utilities
+
+```typescript
+import {
+  waitFor,
+  waitUntilChanged,
+  retry,
+  withTimeout,
+  parallelLimit,
+} from '@claude-flow/testing';
+
+// Wait for condition
+await waitFor(() => element.isVisible(), { timeout: 5000 });
+
+// Wait for value to change
+await waitUntilChanged(() => counter.value, { from: 0 });
+
+// Retry with exponential backoff
+const result = await retry(
+  async () => await fetchData(),
+  { maxAttempts: 3, backoff: 100 }
+);
+
+// Timeout wrapper
+await withTimeout(async () => await longOp(), 5000);
+
+// Parallel with concurrency limit
+const results = await parallelLimit(
+  items.map(item => () => processItem(item)),
+  5 // max 5 concurrent
+);
+```
+
+### Assertions
+
+```typescript
+import {
+  assertEventPublished,
+  assertEventOrder,
+  assertMocksCalledInOrder,
+  assertV3PerformanceTargets,
+  assertNoSensitiveData,
+} from '@claude-flow/testing';
+
+// Event assertions
+assertEventPublished(mockEventBus, 'UserCreated', { userId: '123' });
+assertEventOrder(mockEventBus.publish, ['UserCreated', 'EmailSent']);
+
+// Mock order
+assertMocksCalledInOrder([mockValidate, mockSave, mockNotify]);
+
+// Performance targets
+assertV3PerformanceTargets({
+  searchSpeedup: 160,
+  flashAttentionSpeedup: 3.5,
+  memoryReduction: 0.55,
+});
+
+// Security
+assertNoSensitiveData(mockLogger.logs, ['password', 'token', 'secret']);
+```
+
+### Performance Testing
+
+```typescript
+import { createPerformanceTestHelper, TEST_CONFIG } from '@claude-flow/testing';
+
+const perf = createPerformanceTestHelper();
+
+perf.startMeasurement('search');
+await search(query);
+const duration = perf.endMeasurement('search');
+
+// Get statistics
+const stats = perf.getStats('search');
+console.log(`Avg: ${stats.avg}ms, P95: ${stats.p95}ms`);
+
+// V3 targets
+console.log(TEST_CONFIG.FLASH_ATTENTION_SPEEDUP_MIN); // 2.49
+console.log(TEST_CONFIG.AGENTDB_SEARCH_IMPROVEMENT_MAX); // 12500
+```
+
+### Best Practices
+
+| Practice | Do | Don't |
+|----------|-----|-------|
+| **Mock Dependencies** | `mockRepo.findById.mockResolvedValue(user)` | Call real database |
+| **Use Fixtures** | `agentConfigs.queenCoordinator` | Inline object literals |
+| **Test Behavior** | `expect(mockNotifier.notify).toHaveBeenCalled()` | `expect(service._queue.length).toBe(1)` |
+| **Isolate Tests** | `vi.clearAllMocks()` in `beforeEach` | Share state between tests |
+| **Verify Interactions** | `expect(save).toHaveBeenCalledBefore(notify)` | Assert implementation details |
+
+</details>
+
+---
+
+<details>
 <summary><h2>💻 Cross-Platform Support </h2></summary>
 
 
