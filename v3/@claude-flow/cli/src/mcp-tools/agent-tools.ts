@@ -199,6 +199,15 @@ export const agentTools: MCPTool[] = [
       const store = loadAgentStore();
       const agentId = (input.agentId as string) || `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const agentType = input.agentType as string;
+
+      // Validate required parameter
+      if (!agentType || typeof agentType !== 'string') {
+        return {
+          success: false,
+          error: 'agentType parameter is required and must be a string',
+        };
+      }
+
       const config = (input.config as Record<string, unknown>) || {};
 
       // Add explicit model to config if provided
@@ -272,6 +281,14 @@ export const agentTools: MCPTool[] = [
       const store = loadAgentStore();
       const agentId = input.agentId as string;
 
+      // Validate required parameter
+      if (!agentId || typeof agentId !== 'string') {
+        return {
+          success: false,
+          error: 'agentId parameter is required and must be a string',
+        };
+      }
+
       if (store.agents[agentId]) {
         store.agents[agentId].status = 'terminated';
         saveAgentStore(store);
@@ -304,6 +321,16 @@ export const agentTools: MCPTool[] = [
     handler: async (input) => {
       const store = loadAgentStore();
       const agentId = input.agentId as string;
+
+      // Validate required parameter
+      if (!agentId || typeof agentId !== 'string') {
+        return {
+          agentId: null,
+          status: 'error',
+          error: 'agentId parameter is required and must be a string',
+        };
+      }
+
       const agent = store.agents[agentId];
 
       if (agent) {
@@ -584,6 +611,15 @@ export const agentTools: MCPTool[] = [
     handler: async (input) => {
       const store = loadAgentStore();
       const agentId = input.agentId as string;
+
+      // Validate required parameter
+      if (!agentId || typeof agentId !== 'string') {
+        return {
+          success: false,
+          error: 'agentId parameter is required and must be a string',
+        };
+      }
+
       const agent = store.agents[agentId];
 
       if (agent) {

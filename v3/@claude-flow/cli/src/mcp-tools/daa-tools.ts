@@ -106,6 +106,11 @@ export const daaTools: MCPTool[] = [
       const store = loadDAAStore();
       const id = input.id as string;
 
+      // Validate required parameter
+      if (!id || typeof id !== 'string') {
+        return { success: false, error: 'id parameter is required and must be a string' };
+      }
+
       const agent: DAAAgent = {
         id,
         name: (input.name as string) || `DAA-${id}`,
@@ -158,6 +163,12 @@ export const daaTools: MCPTool[] = [
     handler: async (input) => {
       const store = loadDAAStore();
       const agentId = input.agentId as string;
+
+      // Validate required parameter
+      if (!agentId || typeof agentId !== 'string') {
+        return { success: false, error: 'agentId parameter is required and must be a string' };
+      }
+
       const agent = store.agents[agentId];
 
       if (!agent) {

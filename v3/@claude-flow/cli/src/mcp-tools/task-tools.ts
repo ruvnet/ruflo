@@ -84,6 +84,15 @@ export const taskTools: MCPTool[] = [
     },
     handler: async (input) => {
       const store = loadTaskStore();
+
+      // Validate required parameters
+      if (!input.type || typeof input.type !== 'string') {
+        return { error: 'type parameter is required and must be a string' };
+      }
+      if (!input.description || typeof input.description !== 'string') {
+        return { error: 'description parameter is required and must be a string' };
+      }
+
       const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       const task: TaskRecord = {
