@@ -886,9 +886,13 @@ Shell-based daemons for monitoring (Linux/macOS only):
 .claude/helpers/worker-manager.sh status
 ```
 
+</details>
+
 ---
 
-## Use Cases
+<details>
+<summary><h2>🎯 Use Cases (Click to expand)</h2></summary>
+
 
 | Use Case | Command |
 |----------|---------|
