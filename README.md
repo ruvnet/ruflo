@@ -1028,7 +1028,10 @@ npx claude-flow@v3alpha worker status
 | `update` | 2 | Auto-update system (check, apply) |
 | `route` | 3 | Intelligent routing (task, explain, coverage) |
 
-### Testing Framework (`@claude-flow/testing`)
+</details>
+
+<details>
+<summary>🧪 <strong>Testing Framework</strong> — London School TDD with Vitest integration</summary>
 
 | Component | Description | Features |
 |-----------|-------------|----------|
@@ -1039,8 +1042,6 @@ npx claude-flow@v3alpha worker status
 | **Async Utilities** | waitFor, retry, withTimeout | Reliable async testing |
 | **Performance Assertions** | V3 target validation | Speedup, memory, latency checks |
 
-### Testing Fixtures
-
 | Fixture Type | Contents | Use Case |
 |--------------|----------|----------|
 | `agentConfigs` | 15 V3 agent configurations | Agent testing |
@@ -1048,7 +1049,10 @@ npx claude-flow@v3alpha worker status
 | `swarmConfigs` | V3 default, minimal, mesh, hierarchical | Swarm testing |
 | `mcpTools` | 175+ tool definitions | MCP testing |
 
-### Deployment & CI/CD (`@claude-flow/deployment`)
+</details>
+
+<details>
+<summary>🚀 <strong>Deployment & CI/CD</strong> — Automated versioning and release management</summary>
 
 | Feature | Description | Automation |
 |---------|-------------|------------|
