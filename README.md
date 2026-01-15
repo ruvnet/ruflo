@@ -1741,6 +1741,143 @@ npx claude-flow@v3alpha hooks worker dispatch --trigger audit
 ---
 
 <details>
+<summary><h2>📦 Pattern Store & Export — Share Patterns, Import Configs & IPFS Distribution</h2></summary>
+
+Share learned patterns across projects, teams, and the community via the decentralized pattern marketplace.
+
+### What You Can Share
+
+| Asset Type | Description | Use Case |
+|------------|-------------|----------|
+| **Patterns** | Learned strategies from ReasoningBank | Share what works across projects |
+| **Agent Configs** | Optimized YAML configurations | Pre-tuned agents for specific domains |
+| **Workflows** | Multi-step task templates | Reusable automation sequences |
+| **Embeddings** | Pre-computed vector indexes | Skip bootstrap time on new projects |
+| **Hooks** | Custom hook implementations | Extend system behavior |
+
+### Export Commands
+
+```bash
+# Export learned patterns to file
+npx claude-flow@v3alpha memory export --format json --output ./patterns.json
+
+# Export specific namespace
+npx claude-flow@v3alpha memory export --namespace "security" --output ./security-patterns.json
+
+# Export with embeddings (larger file, faster import)
+npx claude-flow@v3alpha memory export --include-embeddings --output ./full-export.json
+
+# Export agent configurations
+npx claude-flow@v3alpha config export --scope project --output ./agent-configs.json
+
+# Export session state
+npx claude-flow@v3alpha session export --session-id "my-session" --output ./session.json
+```
+
+### Import Commands
+
+```bash
+# Import patterns from file
+npx claude-flow@v3alpha memory import --input ./patterns.json
+
+# Import and merge with existing (don't overwrite)
+npx claude-flow@v3alpha memory import --input ./patterns.json --merge
+
+# Import from another project
+npx claude-flow@v3alpha hooks transfer --source-path ../other-project
+
+# Import agent configurations
+npx claude-flow@v3alpha config import --input ./agent-configs.json --scope project
+
+# Restore session
+npx claude-flow@v3alpha session restore --session-id "my-session"
+```
+
+### Pattern Store (IPFS Marketplace)
+
+Decentralized pattern marketplace for sharing and discovering community patterns.
+
+| Command | Description |
+|---------|-------------|
+| `transfer-store search` | Search patterns by keyword, category, or rating |
+| `transfer-store info` | Get detailed info about a pattern |
+| `transfer-store download` | Download pattern with integrity verification |
+| `transfer-store publish` | Publish your patterns to the store |
+| `transfer-store featured` | Browse featured/curated patterns |
+| `transfer-store trending` | See what's popular |
+
+```bash
+# Search for authentication patterns
+npx claude-flow@v3alpha transfer-store search --query "authentication" --min-rating 4.0
+
+# Download a pattern
+npx claude-flow@v3alpha transfer-store download --id "auth-jwt-patterns-v2" --verify
+
+# Publish your patterns
+npx claude-flow@v3alpha transfer-store publish --input ./my-patterns.json --category "security"
+```
+
+### Plugin Store
+
+Discover and install community plugins.
+
+| Command | Description |
+|---------|-------------|
+| `transfer plugin-search` | Search plugins by type or category |
+| `transfer plugin-info` | Get plugin details and dependencies |
+| `transfer plugin-featured` | Browse featured plugins |
+| `transfer plugin-official` | List official/verified plugins |
+
+```bash
+# Search for MCP tool plugins
+npx claude-flow@v3alpha transfer plugin-search --type "mcp-tool" --verified
+
+# Get plugin info
+npx claude-flow@v3alpha transfer plugin-info --name "semantic-code-search"
+
+# List official plugins
+npx claude-flow@v3alpha transfer plugin-official
+```
+
+### IPFS Integration
+
+Patterns are distributed via IPFS for decentralization and integrity.
+
+| Feature | Benefit |
+|---------|---------|
+| **Content Addressing** | Patterns identified by hash, tamper-proof |
+| **Decentralized** | No single point of failure |
+| **Versioning** | IPNS names for mutable references |
+| **PII Detection** | Automatic scanning before publish |
+
+```bash
+# Resolve IPNS name to CID
+npx claude-flow@v3alpha transfer ipfs-resolve --name "/ipns/patterns.claude-flow.io"
+
+# Detect PII before publishing
+npx claude-flow@v3alpha transfer detect-pii --content "$(cat ./patterns.json)"
+```
+
+### Pre-Built Pattern Packs
+
+| Pack | Patterns | Best For |
+|------|----------|----------|
+| **security-essentials** | 45 | Auth, validation, CVE patterns |
+| **testing-patterns** | 32 | TDD, mocking, fixture strategies |
+| **performance-optimization** | 28 | Caching, query optimization |
+| **api-development** | 38 | REST, GraphQL, error handling |
+| **devops-automation** | 25 | CI/CD, deployment, monitoring |
+
+```bash
+# Install a pattern pack
+npx claude-flow@v3alpha transfer-store download --id "security-essentials" --apply
+```
+
+</details>
+
+---
+
+<details>
 <summary><h2>🏗️ Architecture — DDD Modules, Topology Benchmarks & Metrics</h2></summary>
 
 Domain-Driven Design with bounded contexts, clean architecture, and measured performance across all topologies.
