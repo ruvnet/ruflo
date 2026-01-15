@@ -479,7 +479,7 @@ npx claude-flow@v3alpha worker results --limit 10
 | `agentConfigs` | 15 V3 agent configurations | Agent testing |
 | `memoryEntries` | Patterns, rules, embeddings | Memory testing |
 | `swarmConfigs` | V3 default, minimal, mesh, hierarchical | Swarm testing |
-| `mcpTools` | 27+ tool definitions | MCP testing |
+| `mcpTools` | 175+ tool definitions | MCP testing |
 
 ### Deployment & CI/CD (`@claude-flow/deployment`)
 
