@@ -220,15 +220,18 @@ Claude-Flow v3 introduces **self-learning neural capabilities** that no other ag
 | **Swarm Topologies** | ✅ 4 (mesh, hierarchical, etc.) | 1 | 1 | 1 | 1 |
 
 **Key differentiators:**
-- **SONA (Self-Optimizing Neural Architecture)** - Learns optimal agent routing from trajectory outcomes with <0.05ms adaptation
-- **EWC++ (Elastic Weight Consolidation)** - Prevents catastrophic forgetting when learning new patterns
-- **MoE (Mixture of Experts)** - 8 specialized experts with dynamic gating network for intelligent task routing
-- **Flash Attention** - 2.49x-7.47x speedup for attention computations
-- **Hyperbolic Embeddings** - Poincaré ball model for hierarchical data representation (better for code structure)
-- **LoRA (Low-Rank Adaptation)** - 128x memory compression for efficient fine-tuning
-- **Int8 Quantization** - 3.92x memory reduction with minimal accuracy loss
-- **Claims System** - Human-agent work ownership with handoff protocols
-- **Byzantine Consensus** - Fault-tolerant coordination even with malicious agents
+
+| | Feature | What It Does | Technical Details |
+|---|---------|--------------|-------------------|
+| 🧠 | **SONA** | System gets smarter over time by learning which agents work best for each task | Self-Optimizing Neural Architecture with <0.05ms adaptation from trajectory outcomes |
+| 🔒 | **EWC++** | Remembers successful patterns without forgetting old ones when learning new things | Elastic Weight Consolidation prevents catastrophic forgetting during continuous learning |
+| 🎯 | **MoE** | Automatically picks the right specialist for each job | Mixture of 8 Experts with dynamic gating network for intelligent task routing |
+| ⚡ | **Flash Attention** | Makes thinking 2-7x faster | 2.49x-7.47x speedup for attention computations using optimized CUDA kernels |
+| 🌐 | **Hyperbolic Embeddings** | Better understands code hierarchies (folders, classes, functions) | Poincaré ball model captures hierarchical relationships in lower dimensions |
+| 📦 | **LoRA** | Runs on less powerful machines by compressing the AI brain | Low-Rank Adaptation achieves 128x memory compression for efficient fine-tuning |
+| 🗜️ | **Int8 Quantization** | Uses 4x less memory with almost no quality loss | 3.92x memory reduction via 8-bit integer quantization with calibration |
+| 🤝 | **Claims System** | Tracks who's working on what, enables smooth handoffs | Human-agent work ownership with claim/release/handoff protocols |
+| 🛡️ | **Byzantine Consensus** | Keeps working even if some agents misbehave | Fault-tolerant coordination tolerating up to f < n/3 malicious agents |
 
 ### Intelligent 3-Tier Model Routing (ADR-026)
 
