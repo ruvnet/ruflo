@@ -164,7 +164,7 @@ jobs:
           fi
 
       - name: Upload badge data
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: badge-data-$(date +%Y%m%d)
           path: badge-data/
