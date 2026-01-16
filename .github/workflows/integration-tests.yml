@@ -163,7 +163,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Download integration setup
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: integration-setup-${{ needs.integration-setup.outputs.test-session-id }}
           path: integration-test-data/
@@ -312,7 +312,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Download integration setup
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: integration-setup-${{ needs.integration-setup.outputs.test-session-id }}
           path: integration-test-data/
@@ -701,7 +701,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download all test artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           path: integration-test-results/
 

@@ -301,7 +301,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Download validation artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: pre-rollback-validation-${{ needs.failure-detection.outputs.rollback-session-id || 'manual' }}
           path: rollback-data/

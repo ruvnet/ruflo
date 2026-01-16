@@ -181,19 +181,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download Linux build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: build-artifacts-linux
           path: dist-linux/
 
       - name: Download macOS build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: build-artifacts-darwin
           path: dist-darwin/
 
       - name: Download Windows build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: build-artifacts-win32
           path: dist-windows/
