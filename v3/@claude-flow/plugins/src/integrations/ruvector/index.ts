@@ -187,6 +187,33 @@ export {
 // Export self-learning optimization module
 export * from './self-learning.js';
 
+// Export streaming and transaction module
+export * from './streaming.js';
+
+// Export streaming classes and utilities
+export {
+  // Core streaming classes
+  RuVectorStream,
+  RuVectorTransaction,
+  BatchProcessor,
+  PoolEventEmitter,
+
+  // Factory functions
+  createRuVectorStream,
+  createRuVectorTransaction,
+  createBatchProcessor,
+  createPoolEventEmitter,
+
+  // Types
+  type StreamSearchOptions,
+  type InsertResult,
+  type VectorEntry,
+  type IsolationLevel,
+  type BatchOptions,
+  type PoolEvents,
+  type PoolClient,
+} from './streaming.js';
+
 // Export self-learning classes and utilities
 export {
   // Core classes
@@ -309,3 +336,59 @@ export {
   type ExecutionOptions,
   type ExecutionResult,
 } from './attention-executor.js';
+
+// ============================================================================
+// Quantization Module Exports
+// ============================================================================
+
+// Export quantization module
+export * from './quantization.js';
+
+// Export migrations module
+export * from './migrations/index.js';
+
+// Migration classes and utilities
+export {
+  MigrationManager,
+  createMigrationManager,
+  runMigrationsFromCLI,
+  MIGRATION_FILES,
+  type MigrationFile,
+  type AppliedMigration,
+  type MigrationResult,
+  type MigrationManagerOptions,
+  type DatabaseClient,
+  type MigrationName,
+} from './migrations/index.js';
+
+// Quantization classes and utilities
+export {
+  // Core quantizer classes
+  ScalarQuantizer,
+  BinaryQuantizer,
+  ProductQuantizer,
+  OptimizedProductQuantizer,
+
+  // SQL integration
+  QuantizationSQL,
+
+  // Factory functions
+  createQuantizer,
+  computeQuantizationStats,
+  serializeQuantizer,
+  deserializeQuantizer,
+
+  // Configuration presets
+  QUANTIZATION_PRESETS,
+  MEMORY_REDUCTION,
+
+  // Types
+  type QuantizationType,
+  type IQuantizer,
+  type ScalarQuantizationOptions,
+  type BinaryQuantizationOptions,
+  type ProductQuantizationOptions,
+  type OptimizedProductQuantizationOptions,
+  type QuantizationOptions,
+  type QuantizationStats,
+} from './quantization.js';

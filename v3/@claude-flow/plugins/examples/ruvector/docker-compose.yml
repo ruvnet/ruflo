@@ -1,0 +1,75 @@
+# RuVector PostgreSQL Bridge - Local Development Setup
+#
+# This docker-compose file provides a complete local development environment
+# for running the RuVector PostgreSQL Bridge examples.
+#
+# Usage:
+#   docker compose up -d      # Start services
+#   docker compose down       # Stop services
+#   docker compose logs -f    # View logs
+#
+# Services:
+#   - postgres: PostgreSQL 16 with pgvector extension
+#   - adminer: Web-based database management UI
+#
+# Access:
+#   - PostgreSQL: localhost:5432
+#   - Adminer UI: http://localhost:8080
+
+services:
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ruvector-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vectors
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # Performance tuning for vector workloads
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vectors"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # PostgreSQL configuration for vector workloads
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c maintenance_work_mem=128MB
+      -c work_mem=16MB
+      -c max_parallel_workers_per_gather=2
+      -c max_parallel_workers=4
+      -c max_parallel_maintenance_workers=2
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c max_connections=100
+
+  # Database management UI (optional)
+  adminer:
+    image: adminer:latest
+    container_name: ruvector-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: nette
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  default:
+    name: ruvector-network
