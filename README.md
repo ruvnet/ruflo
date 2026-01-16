@@ -1110,6 +1110,117 @@ Pre-built WASM plugins for semantic search, intent routing, and pattern storage.
 </details>
 
 <details>
+<summary>🐘 <strong>RuVector PostgreSQL Bridge</strong> — Production vector database with AI capabilities</summary>
+
+Full PostgreSQL integration with advanced vector operations, attention mechanisms, GNN layers, and self-learning optimization.
+
+| Feature | Description | Performance |
+|---------|-------------|-------------|
+| **Vector Search** | HNSW/IVF indexing with 12+ distance metrics | 52,000+ inserts/sec, sub-ms queries |
+| **39 Attention Mechanisms** | Multi-head, Flash, Sparse, Linear, Graph, Temporal | GPU-accelerated SQL functions |
+| **15 GNN Layer Types** | GCN, GAT, GraphSAGE, MPNN, Transformer, PNA | Graph-aware vector queries |
+| **Hyperbolic Embeddings** | Poincare, Lorentz, Klein models for hierarchical data | Native manifold operations |
+| **Self-Learning** | Query optimizer, index tuner with EWC++ | Continuous improvement |
+
+**MCP Tools (8 tools):**
+
+| Tool | Description |
+|------|-------------|
+| `ruvector_search` | Vector similarity search (cosine, euclidean, dot, etc.) |
+| `ruvector_insert` | Insert vectors with batch support and upsert |
+| `ruvector_update` | Update existing vectors and metadata |
+| `ruvector_delete` | Delete vectors by ID or batch |
+| `ruvector_create_index` | Create HNSW/IVF indices with tuning |
+| `ruvector_index_stats` | Get index statistics and health |
+| `ruvector_batch_search` | Batch vector searches with parallelism |
+| `ruvector_health` | Connection pool health check |
+
+**Configuration:**
+
+```typescript
+import { createRuVectorBridge } from '@claude-flow/plugins';
+
+const bridge = createRuVectorBridge({
+  host: 'localhost',
+  port: 5432,
+  database: 'vectors',
+  user: 'postgres',
+  password: 'secret',
+  pool: { min: 2, max: 10 },
+  ssl: true
+});
+
+// Enable the plugin
+await registry.register(bridge);
+await registry.loadAll();
+```
+
+**Attention Mechanisms (39 types):**
+
+| Category | Mechanisms |
+|----------|------------|
+| **Core** | `multi_head`, `self_attention`, `cross_attention`, `causal`, `bidirectional` |
+| **Efficient** | `flash_attention`, `flash_attention_v2`, `memory_efficient`, `chunk_attention` |
+| **Sparse** | `sparse_attention`, `block_sparse`, `bigbird`, `longformer`, `local`, `global` |
+| **Linear** | `linear_attention`, `performer`, `linformer`, `nystrom`, `reformer` |
+| **Positional** | `relative_position`, `rotary_position`, `alibi`, `axial` |
+| **Graph** | `graph_attention`, `hyperbolic_attention`, `spherical_attention` |
+| **Temporal** | `temporal_attention`, `recurrent_attention`, `state_space` |
+| **Multimodal** | `cross_modal`, `perceiver`, `flamingo` |
+| **Retrieval** | `retrieval_attention`, `knn_attention`, `memory_augmented` |
+
+**GNN Layers (15 types):**
+
+| Layer | Use Case |
+|-------|----------|
+| `gcn` | General graph convolution |
+| `gat` / `gatv2` | Attention-weighted aggregation |
+| `sage` | Inductive learning on large graphs |
+| `gin` | Maximally expressive GNN |
+| `mpnn` | Message passing with edge features |
+| `edge_conv` | Point cloud processing |
+| `transformer` | Full attention on graphs |
+| `pna` | Principal neighborhood aggregation |
+| `rgcn` / `hgt` / `han` | Heterogeneous graphs |
+
+**Hyperbolic Operations:**
+
+```typescript
+import { createHyperbolicSpace } from '@claude-flow/plugins';
+
+const space = createHyperbolicSpace('poincare', { curvature: -1.0 });
+
+// Embed hierarchical data (trees, taxonomies)
+const embedding = await space.embed(vector);
+const distance = await space.distance(v1, v2);  // Geodesic distance
+const midpoint = await space.geodesicMidpoint(v1, v2);
+```
+
+**Self-Learning System:**
+
+```typescript
+import { createSelfLearningSystem } from '@claude-flow/plugins';
+
+const learning = createSelfLearningSystem(bridge);
+
+// Automatic optimization
+await learning.startLearningLoop();  // Runs in background
+
+// Manual optimization
+const suggestions = await learning.queryOptimizer.analyze(query);
+await learning.indexTuner.tune('my_index');
+```
+
+**Hooks (auto-triggered):**
+
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `ruvector-learn-pattern` | `PostMemoryStore` | Learn from memory operations |
+| `ruvector-collect-stats` | `PostToolUse` | Collect query statistics |
+
+</details>
+
+<details>
 <summary>⚙️ <strong>Background Workers</strong> — 12 auto-triggered workers for automation</summary>
 
 Workers run automatically based on context, or dispatch manually via MCP tools.
