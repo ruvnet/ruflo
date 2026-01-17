@@ -1529,6 +1529,51 @@ claude-flow embeddings search -q "authentication patterns"
 </details>
 
 <details>
+<summary>🐘 <strong>RuVector PostgreSQL Bridge</strong> — Enterprise vector operations with pgvector</summary>
+
+| Feature | Description | Performance |
+|---------|-------------|-------------|
+| **pgvector Integration** | Native PostgreSQL vector operations | 150x faster than in-memory |
+| **Attention Mechanisms** | Self, multi-head, cross-attention in SQL | GPU-accelerated |
+| **Graph Neural Networks** | GNN operations via SQL functions | Message passing, aggregation |
+| **Hyperbolic Embeddings** | Poincaré ball model in PostgreSQL | Better hierarchy representation |
+| **Quantization** | Int8/Float16 compression | 3.92x memory reduction |
+| **Streaming** | Large dataset processing | Batch + async support |
+| **Migrations** | Version-controlled schema | 7 migration scripts |
+
+```bash
+# Initialize RuVector in PostgreSQL
+claude-flow ruvector init --database mydb --user admin
+
+# Check connection and schema status
+claude-flow ruvector status --verbose
+
+# Run pending migrations
+claude-flow ruvector migrate --up
+
+# Performance benchmark
+claude-flow ruvector benchmark --iterations 1000
+
+# Optimize indices and vacuum
+claude-flow ruvector optimize --analyze
+
+# Backup vector data
+claude-flow ruvector backup --output ./backup.sql
+```
+
+| Migration | Purpose | Features |
+|-----------|---------|----------|
+| `001_create_extension` | Enable pgvector | Vector type, operators |
+| `002_create_vector_tables` | Core tables | embeddings, patterns, agents |
+| `003_create_indices` | HNSW indices | 150x faster search |
+| `004_create_functions` | Vector functions | Similarity, clustering |
+| `005_create_attention_functions` | Attention ops | Self/multi-head attention |
+| `006_create_gnn_functions` | GNN operations | Message passing, aggregation |
+| `007_create_hyperbolic_functions` | Hyperbolic geometry | Poincaré operations |
+
+</details>
+
+<details>
 <summary>👑 <strong>Hive-Mind Coordination</strong> — Queen-led topology with Byzantine consensus</summary>
 
 | Feature | Description | Capability |
