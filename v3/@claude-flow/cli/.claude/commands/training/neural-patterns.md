@@ -1,7 +1,15 @@
 # Neural Pattern Training
 
 ## Purpose
-Continuously improve coordination through neural network learning.
+Continuously improve coordination through neural network learning with SONA (Self-Optimizing Neural Architecture).
+
+## Pattern Persistence
+
+Patterns are **automatically persisted** to disk:
+- **Patterns**: `.claude-flow/neural/patterns.json`
+- **Stats**: `.claude-flow/neural/stats.json`
+
+Patterns survive process restarts and are loaded automatically on next session.
 
 ## How Training Works
 
@@ -13,16 +21,23 @@ Every successful operation trains the neural networks:
 - Agent coordination patterns
 
 ### 2. Manual Training
-```
-Tool: mcp__claude-flow__neural_train
-Parameters: {
-  "pattern_type": "coordination",
-  "training_data": "successful task patterns",
-  "epochs": 50
-}
+```bash
+# Train coordination patterns (50 epochs)
+npx claude-flow neural train -p coordination -e 50
+
+# Train optimization patterns with custom learning rate
+npx claude-flow neural train -p optimization -l 0.005
+
+# Quick training (10 epochs)
+npx claude-flow neural train -e 10
 ```
 
 ### 3. Pattern Types
+
+**Training Pattern Types:**
+- `coordination` - Task coordination strategies (default)
+- `optimization` - Performance optimization patterns
+- `prediction` - Predictive preloading patterns
 
 **Cognitive Patterns:**
 - Convergent: Focused problem-solving
@@ -33,42 +48,61 @@ Parameters: {
 - Abstract: High-level design
 
 ### 4. Improvement Tracking
-```
-Tool: mcp__claude-flow__neural_status
-Result: {
-  "patterns": {
-    "convergent": 0.92,
-    "divergent": 0.87,
-    "lateral": 0.85
-  },
-  "improvement": "5.3% since last session",
-  "confidence": 0.89
-}
+```bash
+# Check neural system status
+npx claude-flow neural status
 ```
 
-## Pattern Analysis
+## Pattern Management
+
+```bash
+# List all persisted patterns
+npx claude-flow neural patterns --action list
+
+# Search patterns by query
+npx claude-flow neural patterns --action list -q "error handling"
+
+# Analyze patterns
+npx claude-flow neural patterns --action analyze -q "coordination"
 ```
-Tool: mcp__claude-flow__neural_patterns
-Parameters: {
-  "action": "analyze",
-  "operation": "recent_edits"
-}
-```
+
+## Performance Targets
+
+| Metric | Target |
+|--------|--------|
+| SONA Adaptation | <0.05ms (achieved: ~2μs) |
+| Pattern Search | O(log n) with HNSW |
+| Memory Efficient | Circular buffers |
 
 ## Benefits
 - 🧠 Learns your coding style
 - 📈 Improves with each use
 - 🎯 Better task predictions
 - ⚡ Faster coordination
+- 💾 Patterns persist across sessions
 
-## CLI Usage
+## CLI Reference
+
 ```bash
-# Train neural patterns via CLI
-npx claude-flow neural train --type coordination --epochs 50
+# Train neural patterns
+npx claude-flow neural train -p coordination -e 50
 
 # Check neural status
 npx claude-flow neural status
 
+# List patterns
+npx claude-flow neural patterns --action list
+
+# Search patterns
+npx claude-flow neural patterns --action list -q "query"
+
 # Analyze patterns
-npx claude-flow neural patterns --analyze
+npx claude-flow neural patterns --action analyze -q "coordination"
 ```
+
+## Related Commands
+
+- `neural train` - Train patterns with SONA
+- `neural status` - Check neural system status
+- `neural patterns` - List and search patterns
+- `neural predict` - Make predictions using trained models
