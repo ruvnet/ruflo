@@ -210,11 +210,8 @@ export const commands: Command[] = [
   neuralCommand,
   performanceCommand,
   securityCommand,
-<<<<<<< HEAD
   ruvectorCommand,
-=======
   hiveMindCommand,
->>>>>>> main
 ];
 
 /**
