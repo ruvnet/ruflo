@@ -363,14 +363,20 @@ const patternsCommand: Command = {
         initializeIntelligence,
         getIntelligenceStats,
         findSimilarPatterns,
+        getAllPatterns,
+        getPersistenceStatus,
       } = await import('../memory/intelligence.js');
 
       await initializeIntelligence();
       const stats = getIntelligenceStats();
+      const persistence = getPersistenceStatus();
 
       if (action === 'list') {
-        // Get real patterns from ReasoningBank
-        const patterns = await findSimilarPatterns(query || 'all patterns', { k: limit });
+        // Get ALL patterns from ReasoningBank (loaded from disk)
+        const allPatterns = await getAllPatterns();
+        const patterns = query
+          ? await findSimilarPatterns(query, { k: limit })
+          : allPatterns.slice(0, limit);
 
         if (patterns.length === 0) {
           output.writeln(output.dim('No patterns found. Train some patterns first with: neural train'));
@@ -379,17 +385,19 @@ const patternsCommand: Command = {
             `Total Patterns: ${stats.patternsLearned}`,
             `Trajectories: ${stats.trajectoriesRecorded}`,
             `ReasoningBank Size: ${stats.reasoningBankSize}`,
+            `Persistence: ${persistence.patternsExist ? 'Loaded from disk' : 'Not persisted'}`,
+            `Data Dir: ${persistence.dataDir}`,
           ].join('\n'), 'Pattern Statistics');
         } else {
           output.printTable({
             columns: [
-              { key: 'id', header: 'ID', width: 12 },
+              { key: 'id', header: 'ID', width: 20 },
               { key: 'type', header: 'Type', width: 18 },
               { key: 'confidence', header: 'Confidence', width: 12 },
               { key: 'usage', header: 'Usage', width: 10 },
             ],
             data: patterns.map((p, i) => ({
-              id: p.id || `P${String(i + 1).padStart(3, '0')}`,
+              id: (p.id || `P${String(i + 1).padStart(3, '0')}`).substring(0, 18),
               type: output.highlight(p.type || 'unknown'),
               confidence: `${((p.confidence || 0.5) * 100).toFixed(1)}%`,
               usage: String(p.usageCount || 0),
@@ -398,7 +406,10 @@ const patternsCommand: Command = {
         }
 
         output.writeln();
-        output.writeln(output.dim(`Total: ${stats.patternsLearned} patterns | Trajectories: ${stats.trajectoriesRecorded}`));
+        output.writeln(output.dim(`Total: ${allPatterns.length} patterns (persisted) | Trajectories: ${stats.trajectoriesRecorded}`));
+        if (persistence.patternsExist) {
+          output.writeln(output.success(`✓ Loaded from: ${persistence.patternsFile}`));
+        }
       } else if (action === 'analyze' && query) {
         // Analyze patterns related to query
         const related = await findSimilarPatterns(query, { k: limit });
