@@ -1136,6 +1136,117 @@ Pre-built WASM plugins for semantic search, intent routing, and pattern storage.
 </details>
 
 <details>
+<summary>🐘 <strong>RuVector PostgreSQL Bridge</strong> — Production vector database with AI capabilities</summary>
+
+Full PostgreSQL integration with advanced vector operations, attention mechanisms, GNN layers, and self-learning optimization.
+
+| Feature | Description | Performance |
+|---------|-------------|-------------|
+| **Vector Search** | HNSW/IVF indexing with 12+ distance metrics | 52,000+ inserts/sec, sub-ms queries |
+| **39 Attention Mechanisms** | Multi-head, Flash, Sparse, Linear, Graph, Temporal | GPU-accelerated SQL functions |
+| **15 GNN Layer Types** | GCN, GAT, GraphSAGE, MPNN, Transformer, PNA | Graph-aware vector queries |
+| **Hyperbolic Embeddings** | Poincare, Lorentz, Klein models for hierarchical data | Native manifold operations |
+| **Self-Learning** | Query optimizer, index tuner with EWC++ | Continuous improvement |
+
+**MCP Tools (8 tools):**
+
+| Tool | Description |
+|------|-------------|
+| `ruvector_search` | Vector similarity search (cosine, euclidean, dot, etc.) |
+| `ruvector_insert` | Insert vectors with batch support and upsert |
+| `ruvector_update` | Update existing vectors and metadata |
+| `ruvector_delete` | Delete vectors by ID or batch |
+| `ruvector_create_index` | Create HNSW/IVF indices with tuning |
+| `ruvector_index_stats` | Get index statistics and health |
+| `ruvector_batch_search` | Batch vector searches with parallelism |
+| `ruvector_health` | Connection pool health check |
+
+**Configuration:**
+
+```typescript
+import { createRuVectorBridge } from '@claude-flow/plugins';
+
+const bridge = createRuVectorBridge({
+  host: 'localhost',
+  port: 5432,
+  database: 'vectors',
+  user: 'postgres',
+  password: 'secret',
+  pool: { min: 2, max: 10 },
+  ssl: true
+});
+
+// Enable the plugin
+await registry.register(bridge);
+await registry.loadAll();
+```
+
+**Attention Mechanisms (39 types):**
+
+| Category | Mechanisms |
+|----------|------------|
+| **Core** | `multi_head`, `self_attention`, `cross_attention`, `causal`, `bidirectional` |
+| **Efficient** | `flash_attention`, `flash_attention_v2`, `memory_efficient`, `chunk_attention` |
+| **Sparse** | `sparse_attention`, `block_sparse`, `bigbird`, `longformer`, `local`, `global` |
+| **Linear** | `linear_attention`, `performer`, `linformer`, `nystrom`, `reformer` |
+| **Positional** | `relative_position`, `rotary_position`, `alibi`, `axial` |
+| **Graph** | `graph_attention`, `hyperbolic_attention`, `spherical_attention` |
+| **Temporal** | `temporal_attention`, `recurrent_attention`, `state_space` |
+| **Multimodal** | `cross_modal`, `perceiver`, `flamingo` |
+| **Retrieval** | `retrieval_attention`, `knn_attention`, `memory_augmented` |
+
+**GNN Layers (15 types):**
+
+| Layer | Use Case |
+|-------|----------|
+| `gcn` | General graph convolution |
+| `gat` / `gatv2` | Attention-weighted aggregation |
+| `sage` | Inductive learning on large graphs |
+| `gin` | Maximally expressive GNN |
+| `mpnn` | Message passing with edge features |
+| `edge_conv` | Point cloud processing |
+| `transformer` | Full attention on graphs |
+| `pna` | Principal neighborhood aggregation |
+| `rgcn` / `hgt` / `han` | Heterogeneous graphs |
+
+**Hyperbolic Operations:**
+
+```typescript
+import { createHyperbolicSpace } from '@claude-flow/plugins';
+
+const space = createHyperbolicSpace('poincare', { curvature: -1.0 });
+
+// Embed hierarchical data (trees, taxonomies)
+const embedding = await space.embed(vector);
+const distance = await space.distance(v1, v2);  // Geodesic distance
+const midpoint = await space.geodesicMidpoint(v1, v2);
+```
+
+**Self-Learning System:**
+
+```typescript
+import { createSelfLearningSystem } from '@claude-flow/plugins';
+
+const learning = createSelfLearningSystem(bridge);
+
+// Automatic optimization
+await learning.startLearningLoop();  // Runs in background
+
+// Manual optimization
+const suggestions = await learning.queryOptimizer.analyze(query);
+await learning.indexTuner.tune('my_index');
+```
+
+**Hooks (auto-triggered):**
+
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `ruvector-learn-pattern` | `PostMemoryStore` | Learn from memory operations |
+| `ruvector-collect-stats` | `PostToolUse` | Collect query statistics |
+
+</details>
+
+<details>
 <summary>⚙️ <strong>Background Workers</strong> — 12 auto-triggered workers for automation</summary>
 
 Workers run automatically based on context, or dispatch manually via MCP tools.
@@ -1253,7 +1364,6 @@ npx claude-flow@v3alpha worker status
 | `transfer-store` | 4 | Pattern marketplace via IPFS (list, search, download, publish) |
 | `update` | 2 | Auto-update system (check, apply) |
 | `route` | 3 | Intelligent routing (task, explain, coverage) |
-| `ruvector` | 6 | PostgreSQL Bridge (init, migrate, status, benchmark, optimize, backup) |
 
 </details>
 
@@ -1415,6 +1525,51 @@ claude-flow embeddings search -q "authentication patterns"
 | **Q-Learning** | Tabular | Simple state spaces |
 | **SARSA** | On-policy | Online learning |
 | **Decision Transformer** | Sequence modeling | Long-horizon planning |
+
+</details>
+
+<details>
+<summary>🐘 <strong>RuVector PostgreSQL Bridge</strong> — Enterprise vector operations with pgvector</summary>
+
+| Feature | Description | Performance |
+|---------|-------------|-------------|
+| **pgvector Integration** | Native PostgreSQL vector operations | 150x faster than in-memory |
+| **Attention Mechanisms** | Self, multi-head, cross-attention in SQL | GPU-accelerated |
+| **Graph Neural Networks** | GNN operations via SQL functions | Message passing, aggregation |
+| **Hyperbolic Embeddings** | Poincaré ball model in PostgreSQL | Better hierarchy representation |
+| **Quantization** | Int8/Float16 compression | 3.92x memory reduction |
+| **Streaming** | Large dataset processing | Batch + async support |
+| **Migrations** | Version-controlled schema | 7 migration scripts |
+
+```bash
+# Initialize RuVector in PostgreSQL
+claude-flow ruvector init --database mydb --user admin
+
+# Check connection and schema status
+claude-flow ruvector status --verbose
+
+# Run pending migrations
+claude-flow ruvector migrate --up
+
+# Performance benchmark
+claude-flow ruvector benchmark --iterations 1000
+
+# Optimize indices and vacuum
+claude-flow ruvector optimize --analyze
+
+# Backup vector data
+claude-flow ruvector backup --output ./backup.sql
+```
+
+| Migration | Purpose | Features |
+|-----------|---------|----------|
+| `001_create_extension` | Enable pgvector | Vector type, operators |
+| `002_create_vector_tables` | Core tables | embeddings, patterns, agents |
+| `003_create_indices` | HNSW indices | 150x faster search |
+| `004_create_functions` | Vector functions | Similarity, clustering |
+| `005_create_attention_functions` | Attention ops | Self/multi-head attention |
+| `006_create_gnn_functions` | GNN operations | Message passing, aggregation |
+| `007_create_hyperbolic_functions` | Hyperbolic geometry | Poincaré operations |
 
 </details>
 
