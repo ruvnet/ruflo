@@ -17,7 +17,7 @@ from enum import Enum
 import uuid
 import weakref
 
-from .models import BenchmarkTask
+from .models_clean import BenchmarkTask
 
 
 class ResourceType(Enum):

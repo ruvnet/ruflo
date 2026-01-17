@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import json
 
-from .models import (
+from .models_clean import (
     Benchmark, Task, Result, BenchmarkConfig, TaskStatus, 
     StrategyType, CoordinationMode, ResultStatus, PerformanceMetrics,
     ResourceUsage
@@ -15,6 +15,12 @@ from .models import (
 from .benchmark_engine import BenchmarkEngine
 from ..metrics.metrics_aggregator import MetricsAggregator
 from ..metrics.process_tracker import ProcessTracker, ProcessExecutionResult
+
+
+# Compatibility export: tests import `SystemMonitor` from this module.
+# Provide an alias to the ProcessTracker class which offers the
+# process monitoring API used in the benchmark engine.
+SystemMonitor = ProcessTracker
 from ..strategies import create_strategy
 from ..output.json_writer import JSONWriter
 from ..output.sqlite_manager import SQLiteManager

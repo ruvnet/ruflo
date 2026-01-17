@@ -8,7 +8,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Dict, Set, Optional, Tuple, Callable
 
-from .models import (
+from .models_clean import (
     Task, Agent, TaskStatus, AgentStatus, AgentType,
     StrategyType, CoordinationMode
 )

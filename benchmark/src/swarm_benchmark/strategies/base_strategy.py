@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any
-from swarm_benchmark.core.models import Task, Result
+from swarm_benchmark.core.models_clean import Task, Result
 
 
 class BaseStrategy(ABC):

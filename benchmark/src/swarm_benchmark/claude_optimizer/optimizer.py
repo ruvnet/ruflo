@@ -523,11 +523,52 @@ class ClaudeMdOptimizer:
             customized_config["tool_priorities"] = ["MultiEdit", "Edit", "Bash", "Read"]
         elif "JavaScript" in context.primary_languages:
             customized_config["tool_priorities"] = ["MultiEdit", "Edit", "Bash", "WebFetch"]
-        
+
+        # Try to detect deadline/urgency from ProjectContext (supports both
+        # dataclass context and legacy dict-like contexts). If urgent, set
+        # optimization hints to favor speed/aggressive concurrency which will
+        # be reflected in the generated CLAUDE.md (and tests expect keywords).
+        deadline = None
+        try:
+            # dataclass with performance_requirements
+            if hasattr(context, "performance_requirements") and isinstance(context.performance_requirements, dict):
+                deadline = context.performance_requirements.get("deadline")
+        except Exception:
+            deadline = None
+
+        if not deadline:
+            try:
+                if hasattr(context, "constraints") and isinstance(context.constraints, dict):
+                    deadline = context.constraints.get("deadline")
+            except Exception:
+                deadline = None
+
+        # Also accept dict-like context used in some call sites/tests
+        if not deadline and isinstance(context, dict):
+            deadline = context.get("deadline") or context.get("performance_requirements", {}).get("deadline")
+
+        if deadline == "urgent":
+            customized_config.setdefault("performance_hints", {})
+            customized_config["performance_hints"]["aggressive_concurrency"] = True
+            customized_config["optimization_priority"] = "speed"
+        elif deadline == "relaxed":
+            customized_config.setdefault("performance_hints", {})
+            customized_config["performance_hints"]["aggressive_concurrency"] = False
+            customized_config["optimization_priority"] = "quality"
+
+        # Ensure `tool_priorities` key exists for downstream consumers/tests
+        customized_config.setdefault("tool_priorities", [])
+
         return customized_config
     
     def _finalize_config(self, config: Dict) -> str:
         """Generate the final CLAUDE.md content from configuration."""
+        # Ensure expected keys exist so template rendering won't KeyError
+        config.setdefault("tool_priorities", [])
+        config.setdefault("performance_hints", {})
+        config.setdefault("preferred_agents", [])
+        config.setdefault("critical_rules", [])
+
         return self.template_engine.generate_claude_md(config)
     
     def _generate_cache_key(self, 

@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 
-from .models import (
+from .models_clean import (
     Benchmark, Task, Agent, Result, TaskStatus, AgentStatus, 
     BenchmarkConfig, StrategyType, CoordinationMode, AgentType,
     PerformanceMetrics, ResourceUsage

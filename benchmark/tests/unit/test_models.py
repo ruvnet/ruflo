@@ -1,6 +1,7 @@
 """Unit tests for data models."""
 
 import unittest
+import pytest
 from datetime import datetime, timedelta
 from swarm_benchmark.core.models import (
     Task, Agent, Result, Benchmark, BenchmarkConfig,

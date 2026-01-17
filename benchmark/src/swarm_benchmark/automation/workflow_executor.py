@@ -17,7 +17,7 @@ from enum import Enum
 from abc import ABC, abstractmethod
 import uuid
 
-from .models import BenchmarkTask, BenchmarkResult
+from .models_clean import BenchmarkTask, BenchmarkResult
 
 
 class WorkflowStatus(Enum):

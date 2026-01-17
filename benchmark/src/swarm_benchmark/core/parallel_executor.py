@@ -15,7 +15,7 @@ import logging
 import signal
 import sys
 
-from .models import (
+from .models_clean import (
     Task, Agent, Result, TaskStatus, AgentStatus, ResultStatus,
     ResourceUsage, PerformanceMetrics, BenchmarkConfig
 )

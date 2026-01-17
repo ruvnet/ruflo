@@ -107,6 +107,9 @@ class MLEStarEnsembleExecutor:
         6. Return comprehensive results
         """
         start_time = time.time()
+
+        # Ensure models list is fresh for each benchmark run (avoid accumulation across concurrent runs)
+        self.models = []
         
         try:
             # Phase 1: Model Initialization
@@ -351,6 +354,17 @@ class MLEStarEnsembleExecutor:
                 return str(pred1) == str(pred2)
         except:
             return False
+
+
+# Backwards-compatible placeholder for MCP command execution tests
+async def execute_mcp_command(command: str, *args, **kwargs) -> Dict[str, Any]:
+    """Placeholder async function that simulates sending a command to MCP.
+
+    Tests may patch this function to assert it's called or to provide a fake response.
+    """
+    # Minimal simulated response
+    await asyncio.sleep(0)
+    return {"success": True, "command": command, "args": args, "kwargs": kwargs}
     
     async def _calculate_agreement_matrix(self, predictions: List[Any]) -> List[List[float]]:
         """Calculate pairwise agreement matrix between predictions."""

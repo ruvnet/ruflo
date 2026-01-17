@@ -1,6 +1,6 @@
 """Core benchmarking framework components."""
 
-from .models import (
+from .models_clean import (
     # Core models
     Task, Agent, Result, Benchmark, BenchmarkConfig,
     # Metrics
