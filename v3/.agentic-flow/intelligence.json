@@ -1,0 +1,24 @@
+{
+  "patterns": {
+    "command:": {
+      "success": 0.9999059538913014,
+      "failure": -0.38561603772519504
+    }
+  },
+  "sequences": {},
+  "memories": [],
+  "dirPatterns": {},
+  "errorPatterns": [],
+  "metrics": {
+    "totalRoutes": 103,
+    "successfulRoutes": 89,
+    "routingHistory": [
+      {
+        "timestamp": "2026-01-04T17:04:00.672Z",
+        "task": "edit:",
+        "agent": "unknown",
+        "success": true
+      }
+    ]
+  }
+}

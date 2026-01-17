@@ -1,8 +1,0 @@
-{
-  "stream_1755021020133": {
-    "command": "npx claude-flow stream-chain demo",
-    "pid": 366567,
-    "startTime": "2025-08-12T17:50:20.135Z",
-    "status": "running"
-  }
-}

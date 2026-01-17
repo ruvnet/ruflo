@@ -1,3 +1,0 @@
-[console_scripts]
-swarm-bench = swarm_benchmark.__main__:main
-swarm-benchmark = swarm_benchmark.__main__:main
