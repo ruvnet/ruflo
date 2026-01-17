@@ -3849,17 +3849,65 @@ SELECT cosine_similarity_arr(a, b) AS similarity;
 | **AI Operations** | External only | **In-database (attention, GNN)** |
 
 <details>
-<summary>⚡ <strong>@ruvector/attention</strong> — Flash Attention (2.49x-7.47x Speedup)</summary>
+<summary>⚡ <strong>@ruvector/attention & @claude-flow/attention</strong> — 39 Attention Mechanisms (2.49x-7.47x Speedup)</summary>
 
-Native Rust implementation of Flash Attention for transformer computations:
+### What Is Attention? (Simple Explanation)
 
+**Attention** is how AI models focus on what matters. Just like you focus on important words when reading, attention mechanisms help AI agents:
+- 🎯 **Focus on relevant code** when reviewing large files
+- 🔗 **Connect related patterns** across your codebase
+- 🧠 **Remember important context** while forgetting noise
+- ⚡ **Process faster** by ignoring irrelevant information
+
+**Think of it like a spotlight** — instead of looking at everything equally, attention shines a bright light on the most important parts.
+
+### Why 39 Mechanisms?
+
+Different tasks need different types of focus:
+
+| Category | When to Use | Example |
+|----------|-------------|---------|
+| **Flash Attention** | Long files, memory-constrained | Analyzing 10,000+ line files |
+| **Sparse Attention** | Code with clear structure | Finding function calls |
+| **Linear Attention** | Fast real-time responses | Interactive coding assistance |
+| **Cross Attention** | Comparing two things | Code review, diff analysis |
+| **Graph Attention** | Interconnected code | Dependency analysis |
+| **Hyperbolic** | Hierarchical relationships | Class inheritance trees |
+
+### The 39 Mechanisms by Category
+
+| Category | Mechanisms | Best For |
+|----------|------------|----------|
+| **Multi-Head (5)** | `standard-mha`, `multi-head-attention`, `multi-query`, `grouped-query`, `sliding-window` | General-purpose attention, balanced quality |
+| **Self-Attention (4)** | `self-attention`, `causal`, `bidirectional`, `local-self` | Single-sequence analysis |
+| **Cross-Attention (3)** | `cross-attention`, `encoder-decoder`, `memory-attention` | Comparing sequences (code vs docs) |
+| **Sparse (6)** | `sparse-attention`, `block-sparse`, `strided-sparse`, `random-sparse`, `fixed-sparse`, `adaptive-sparse` | Long sequences with structure |
+| **Linear (6)** | `linear-attention`, `performer`, `linformer`, `random-feature`, `favor-plus`, `cosformer` | O(n) complexity, fast inference |
+| **Flash (5)** | `flash-attention`, `flash-attention-v2`, `memory-efficient`, `chunk-attention`, `ring-attention` | Memory-efficient, long sequences |
+| **MoE (5)** | `mixture-of-experts`, `switch-attention`, `expert-choice`, `soft-moe`, `hash-routing` | Specialized expert routing |
+| **Positional (3)** | `rotary`, `alibi`, `relative-position` | Position-aware processing |
+| **Hyperbolic (2)** | `hyperbolic-attention`, `poincare-attention` | Hierarchical data (code trees) |
+
+### Performance Comparison
+
+| Mechanism | Speed | Memory | Quality | Best Use Case |
+|-----------|-------|--------|---------|---------------|
+| Standard MHA | Baseline | O(N²) | ⭐⭐⭐⭐⭐ | Short sequences (<512) |
+| Flash Attention v2 | 2.49-7.47x faster | O(N) | ⭐⭐⭐⭐⭐ | Long sequences, GPU |
+| Linear Attention | 3-5x faster | O(N) | ⭐⭐⭐⭐ | Real-time, streaming |
+| Sparse Attention | 2-10x faster | O(N√N) | ⭐⭐⭐⭐ | Structured data |
+| Mixture of Experts | Variable | O(N) | ⭐⭐⭐⭐⭐ | Mixed task types |
+
+### Code Examples
+
+**Basic Usage:**
 ```typescript
 import { FlashAttention } from '@ruvector/attention';
 
 const attention = new FlashAttention({
   blockSize: 32,      // L1 cache optimized
-  dimensions: 384,
-  temperature: 1.0,
+  dimensions: 384,    // Embedding dimension
+  temperature: 1.0,   // Softmax temperature
   useCPUOptimizations: true
 });
 
@@ -3873,12 +3921,123 @@ console.log(`Speedup: ${bench.speedup}x`);
 console.log(`Memory reduction: ${bench.memoryReduction}x`);
 ```
 
+**Using Claude-Flow Attention Helpers:**
+```typescript
+// High-level helpers for common use cases
+import {
+  computeAttention,
+  recommendMechanism,
+  hyperbolicDistance
+} from '@claude-flow/cli/helpers';
+
+// Auto-select best mechanism for your use case
+const recommended = await recommendMechanism({
+  sequenceLength: 8000,
+  taskType: 'code-review',
+  hardwareProfile: 'cpu-only'
+});
+// Returns: { mechanism: 'flash-attention-v2', reason: 'Long sequence + memory constrained' }
+
+// Compute attention with auto-configuration
+const result = await computeAttention(queries, keys, values, {
+  mechanism: 'auto',  // or specify: 'flash-attention-v2', 'linear-attention', etc.
+  normalize: true,
+  temperature: 0.8
+});
+
+// For hierarchical code analysis (class inheritance, module deps)
+const distance = hyperbolicDistance(codeEmbeddingA, codeEmbeddingB);
+```
+
+### CLI Commands
+
+```bash
+# List all 39 attention mechanisms with details
+npx claude-flow attention list
+npx claude-flow attention list --category flash  # Filter by category
+
+# Get detailed info about a specific mechanism
+npx claude-flow attention info flash-attention-v2
+
+# Benchmark mechanisms on your hardware
+npx claude-flow attention benchmark --mechanism flash-attention-v2
+npx claude-flow attention benchmark --all --sequence-length 4096
+
+# Compute attention (for debugging/testing)
+npx claude-flow attention compute --query "auth code" --key "security patterns"
+
+# Get mechanism recommendation for your use case
+npx claude-flow attention recommend --task-type code-review --sequence-length 10000
+
+# Check system status and WASM availability
+npx claude-flow attention status
+```
+
+### MCP Tools (for Claude Code integration)
+
+8 attention tools available via MCP:
+
+| Tool | Description |
+|------|-------------|
+| `attention_list` | List all mechanisms with filtering |
+| `attention_info` | Detailed mechanism information |
+| `attention_recommend` | AI-powered mechanism selection |
+| `attention_compute` | Execute attention computation |
+| `attention_benchmark` | Performance benchmarking |
+| `attention_compare` | Compare multiple mechanisms |
+| `attention_status` | System and WASM status |
+| `attention_hyperbolic` | Poincaré ball distance calculations |
+
+### Technical Deep-Dive
+
+**Why Flash Attention is 2.49-7.47x Faster:**
+
+Traditional attention computes all N×N scores at once, requiring O(N²) memory. For a 10,000 token file, that's 100 million values in memory!
+
+Flash Attention uses **tiling** — it processes small blocks that fit in fast L1 cache:
+
+```
+Traditional:                 Flash Attention:
+┌─────────────────┐         ┌───┬───┬───┬───┐
+│                 │         │ ▓ │   │   │   │  ← Process one
+│  Full N×N       │   vs    ├───┼───┼───┼───┤     block at a time
+│  in slow RAM    │         │   │ ▓ │   │   │
+│                 │         ├───┼───┼───┼───┤  ← O(N) memory
+│                 │         │   │   │ ▓ │   │     total
+└─────────────────┘         └───┴───┴───┴───┘
+```
+
 **Key Optimizations:**
-- Block-wise computation (fits L1 cache)
-- 8x loop unrolling for dot products
-- Top-K sparse attention (12% of keys)
-- Two-stage screening for large key sets
-- Online softmax for numerical stability
+- **Block-wise computation**: Fits in L1 cache (32KB blocks)
+- **8x loop unrolling**: SIMD-friendly dot products
+- **Top-K sparse attention**: Only 12% of keys matter
+- **Two-stage screening**: Coarse→fine search for large key sets
+- **Online softmax**: Numerically stable, single-pass algorithm
+- **WASM SIMD**: 250x speedup over pure TypeScript
+
+**When to Use Hyperbolic Attention:**
+
+Regular embeddings treat all relationships as flat. But code is hierarchical:
+- Classes contain methods
+- Modules contain classes
+- Projects contain modules
+
+Hyperbolic embeddings in the **Poincaré ball** naturally represent these tree-like structures:
+
+```
+Regular (Euclidean):         Hyperbolic (Poincaré):
+    A ─── B ─── C             Center = root
+    │     │     │                    ●A
+    D     E     F              ●B        ●C
+                            ●D  ●E    ●F  ●G
+                           (children near edge)
+```
+
+Use `hyperbolic-attention` or `poincare-attention` for:
+- Analyzing class inheritance hierarchies
+- Module dependency graphs
+- Directory structure analysis
+- API endpoint trees
 
 </details>
 
