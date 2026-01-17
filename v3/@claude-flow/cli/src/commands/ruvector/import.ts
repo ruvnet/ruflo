@@ -202,7 +202,7 @@ export const importCommand: Command = {
       output.printInfo('Examples:');
       output.writeln('  claude-flow ruvector import --input memory-export.json');
       output.writeln('  claude-flow ruvector import --from-memory');
-      return { success: false, error: 'Missing input source' };
+      return { success: false, message: 'Missing input source' };
     }
 
     let entries: MemoryEntry[] = [];
