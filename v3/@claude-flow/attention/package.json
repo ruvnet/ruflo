@@ -1,0 +1,68 @@
+{
+  "name": "@claude-flow/attention",
+  "version": "3.0.0-alpha.1",
+  "type": "module",
+  "description": "High-performance attention mechanisms with WASM acceleration - 39 mechanisms, <1ms latency",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./wasm": {
+      "types": "./dist/wasm/index.d.ts",
+      "import": "./dist/wasm/index.js"
+    },
+    "./mechanisms": {
+      "types": "./dist/mechanisms/index.d.ts",
+      "import": "./dist/mechanisms/index.js"
+    },
+    "./benchmarks": {
+      "types": "./dist/benchmarks/index.d.ts",
+      "import": "./dist/benchmarks/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "benchmark": "npx tsx src/benchmarks/run-all.ts"
+  },
+  "dependencies": {
+    "ruvector": "^0.1.30",
+    "@ruvector/attention": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.16"
+  },
+  "peerDependencies": {
+    "@claude-flow/embeddings": "^3.0.0-alpha.1"
+  },
+  "peerDependenciesMeta": {
+    "@claude-flow/embeddings": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "attention",
+    "transformer",
+    "wasm",
+    "flash-attention",
+    "linear-attention",
+    "hyperbolic",
+    "moe",
+    "vector-search",
+    "ai",
+    "ml"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  }
+}
