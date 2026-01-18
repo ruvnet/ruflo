@@ -47,7 +47,6 @@ export class BackgroundHandler extends EventEmitter {
   } = {}) {
     super();
     this.workDir = options.workDir || '/tmp/claude-flow-handoff';
-    this.maxConcurrent = options.maxConcurrent || 3;
     this.pollInterval = options.pollInterval || 100;
   }
 
