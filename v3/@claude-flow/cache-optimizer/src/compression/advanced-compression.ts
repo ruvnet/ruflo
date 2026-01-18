@@ -84,9 +84,9 @@ export class SummaryCompression implements CompressionStrategy {
     };
   }
 
-  estimateRatio(content: string): number {
+  estimateRatio(_content: string): number {
     // Summary typically achieves 15-30% of original
-    const lines = content.split('\n').length;
+    const lines = _content.split('\n').length;
     if (lines > 50) return 0.15;
     if (lines > 20) return 0.25;
     return 0.35;
