@@ -5,6 +5,10 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "cache-optimizer": "./dist/bin/cache-optimizer.js",
+    "@claude-flow/cache-optimizer": "./dist/bin/cache-optimizer.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
