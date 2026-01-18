@@ -212,8 +212,28 @@ async function initDatabase(): Promise<void> {
         db = new SQL.Database();
       }
 
+      // Enable WAL mode for better concurrent access (critical for multi-session)
+      db.run('PRAGMA journal_mode = WAL');
+      db.run('PRAGMA synchronous = NORMAL');
+      db.run('PRAGMA busy_timeout = 5000'); // 5s timeout for locked database
+
       // Create schema
       db.run(`
+        -- Active sessions registry (for multi-process coordination)
+        CREATE TABLE IF NOT EXISTS active_sessions (
+          session_id TEXT PRIMARY KEY,
+          pid INTEGER NOT NULL,
+          hostname TEXT,
+          started_at TEXT DEFAULT (datetime('now')),
+          last_heartbeat TEXT DEFAULT (datetime('now')),
+          file_path TEXT,
+          project_name TEXT,
+          is_active INTEGER DEFAULT 1
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_active_sessions_pid ON active_sessions(pid);
+        CREATE INDEX IF NOT EXISTS idx_active_sessions_heartbeat ON active_sessions(last_heartbeat);
+
         -- Messages table (mirrors JSONL content)
         CREATE TABLE IF NOT EXISTS messages (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -222,6 +242,7 @@ async function initDatabase(): Promise<void> {
           type TEXT,
           content TEXT NOT NULL,
           timestamp TEXT,
+          pid INTEGER,
           created_at TEXT DEFAULT (datetime('now')),
           UNIQUE(session_id, line_number)
         );
@@ -229,6 +250,7 @@ async function initDatabase(): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
         CREATE INDEX IF NOT EXISTS idx_messages_type ON messages(type);
         CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_messages_pid ON messages(pid);
 
         -- Summaries (compacted conversations)
         CREATE TABLE IF NOT EXISTS summaries (
@@ -277,7 +299,18 @@ async function initDatabase(): Promise<void> {
           created_at TEXT DEFAULT (datetime('now')),
           expires_at TEXT
         );
+
+        -- Process lock table (for file locking simulation)
+        CREATE TABLE IF NOT EXISTS process_locks (
+          lock_key TEXT PRIMARY KEY,
+          pid INTEGER NOT NULL,
+          acquired_at TEXT DEFAULT (datetime('now')),
+          expires_at TEXT
+        );
       `);
+
+      // Clean up stale sessions on startup
+      cleanupStaleSessions();
 
       initialized = true;
       logInfo('Database initialized at ' + INTERCEPTOR_DB_PATH);
