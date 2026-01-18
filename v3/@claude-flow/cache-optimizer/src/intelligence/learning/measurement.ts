@@ -648,8 +648,8 @@ export function createMeasurementCollector(
  */
 export function measureDuration(collector: MeasurementCollector, metricName: string) {
   return function <T extends (...args: unknown[]) => unknown>(
-    target: unknown,
-    propertyKey: string,
+    _target: unknown,
+    _propertyKey: string,
     descriptor: TypedPropertyDescriptor<T>
   ): TypedPropertyDescriptor<T> {
     const originalMethod = descriptor.value!;
