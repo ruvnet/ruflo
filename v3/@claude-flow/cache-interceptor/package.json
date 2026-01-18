@@ -1,0 +1,43 @@
+{
+  "name": "@claude-flow/cache-interceptor",
+  "version": "3.0.0-alpha.1",
+  "description": "Cross-platform cache interceptor for Claude Code with multi-session support",
+  "main": "dist/interceptor.js",
+  "types": "dist/interceptor.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "watch": "tsc -w"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cache",
+    "interceptor",
+    "sqlite",
+    "sql.js"
+  ],
+  "author": "rUv",
+  "license": "MIT",
+  "dependencies": {
+    "sql.js": "^1.10.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "@types/node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/claude-flow"
+  }
+}
