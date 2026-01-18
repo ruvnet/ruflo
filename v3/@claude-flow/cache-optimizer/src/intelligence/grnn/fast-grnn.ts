@@ -654,7 +654,7 @@ export class FastGRNN {
    */
   exportModel(): {
     config: GRNNConfig;
-    weights: typeof this.weights;
+    weights: GRNNWeights;
     fisher: {
       diagonal: Array<[string, number[]]>;
       optimalParams: Array<[string, number[]]>;
