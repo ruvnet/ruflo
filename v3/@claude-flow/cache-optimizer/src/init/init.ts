@@ -253,6 +253,183 @@ npx @claude-flow/cache-optimizer doctor --full --fix
 }
 
 /**
+ * Generate cache-optimizer command file
+ */
+function generateCommand(): string {
+  return `# cache-optimizer
+
+Intelligent cache management for Claude Code context optimization.
+
+## Usage
+\`\`\`bash
+npx @claude-flow/cache-optimizer <command> [options]
+\`\`\`
+
+## Commands
+
+### init
+Initialize cache-optimizer in a project
+\`\`\`bash
+npx @claude-flow/cache-optimizer init --profile <profile-id>
+\`\`\`
+
+### status
+Check cache status and utilization
+\`\`\`bash
+npx @claude-flow/cache-optimizer status
+\`\`\`
+
+### validate
+Validate cache configuration
+\`\`\`bash
+npx @claude-flow/cache-optimizer validate
+\`\`\`
+
+### doctor
+Run diagnostics and security checks
+\`\`\`bash
+npx @claude-flow/cache-optimizer doctor [--security] [--fix]
+\`\`\`
+
+### prune
+Trigger cache pruning
+\`\`\`bash
+npx @claude-flow/cache-optimizer prune [--level soft|hard|emergency]
+\`\`\`
+
+## Hook Commands
+
+### handle-prompt
+\`\`\`bash
+npx @claude-flow/cache-optimizer handle-prompt "$PROMPT" --session "$SESSION_ID"
+\`\`\`
+
+### post-tool
+\`\`\`bash
+npx @claude-flow/cache-optimizer post-tool "$TOOL_NAME" "$TOOL_INPUT" --session "$SESSION_ID"
+\`\`\`
+
+### prevent-compact
+\`\`\`bash
+npx @claude-flow/cache-optimizer prevent-compact --session "$SESSION_ID"
+\`\`\`
+
+### sync-session
+\`\`\`bash
+npx @claude-flow/cache-optimizer sync-session "$SESSION_ID"
+\`\`\`
+`;
+}
+
+/**
+ * Generate cache-manager agent YAML
+ */
+function generateAgent(): string {
+  return `# Cache Manager Agent
+name: cache-manager
+description: Manages cache optimization, pruning, and context compaction prevention
+version: 1.0.0
+
+capabilities:
+  - cache-analysis
+  - pruning-strategy
+  - temporal-compression
+  - session-isolation
+  - attention-scoring
+
+model: haiku
+
+system_prompt: |
+  You are a Cache Manager agent specialized in cache optimization for Claude Code.
+
+  Your responsibilities:
+  1. Monitor cache utilization and trigger pruning when needed
+  2. Apply temporal compression (hot/warm/cold tiering)
+  3. Score entries using attention-based relevance
+  4. Maintain session isolation for multi-agent scenarios
+  5. Prevent context compaction by proactive cache management
+
+tools:
+  - Read
+  - Grep
+  - Bash
+  - mcp__claude-flow__memory_store
+  - mcp__claude-flow__memory_retrieve
+
+constraints:
+  max_tokens: 4096
+  timeout_ms: 10000
+
+tags:
+  - cache
+  - optimization
+  - memory
+`;
+}
+
+/**
+ * Generate cache-optimizer skill file
+ */
+function generateSkill(profile: Profile): string {
+  return `---
+name: Cache Optimizer
+description: Zero-compaction context management with temporal compression and attention-based scoring
+---
+
+# Cache Optimizer
+
+Prevents Claude Code context compaction through proactive cache management.
+
+## Current Profile: ${profile.name}
+
+${profile.description}
+
+## Quick Start
+
+\`\`\`bash
+# Check status
+npx @claude-flow/cache-optimizer status
+
+# Validate configuration
+npx @claude-flow/cache-optimizer validate
+
+# Run diagnostics
+npx @claude-flow/cache-optimizer doctor
+\`\`\`
+
+## Features
+
+- **Zero-Compaction**: Proactive pruning before thresholds
+- **Temporal Compression**: Hot/warm/cold tiering
+- **Flash Attention**: 2.49x-7.47x speedup relevance scoring
+- **Session Isolation**: Multi-agent support
+- **Background Handoff**: Delegate to Ollama/OpenAI
+
+## Pruning Thresholds
+
+| Threshold | Utilization | Action |
+|-----------|-------------|--------|
+| Soft | ${((profile.cacheConfig.pruning?.softThreshold || 0.6) * 100).toFixed(0)}% | Gentle pruning |
+| Hard | ${((profile.cacheConfig.pruning?.hardThreshold || 0.75) * 100).toFixed(0)}% | Aggressive pruning |
+| Emergency | ${((profile.cacheConfig.pruning?.emergencyThreshold || 0.9) * 100).toFixed(0)}% | Critical pruning |
+
+## API
+
+\`\`\`typescript
+import { createCacheOptimizer, handoff } from '@claude-flow/cache-optimizer';
+
+const optimizer = createCacheOptimizer({
+  targetUtilization: ${profile.cacheConfig.targetUtilization || 0.75},
+  pruning: { strategy: '${profile.cacheConfig.pruning?.strategy || 'adaptive'}' },
+});
+
+await optimizer.initialize();
+await optimizer.add(content, 'file_read', { filePath: '/path/to/file.ts' });
+\`\`\`
+`;
+}
+
+/**
  * Initialize cache-optimizer in a project
  */
 export async function init(options: InitOptions = {}): Promise<InitResult> {
