@@ -56,6 +56,203 @@ export interface InitResult {
 }
 
 /**
+ * Generate README.md content for the cache-optimizer
+ */
+function generateReadme(profile: Profile): string {
+  return `# Cache Optimizer Configuration
+
+This project uses [@claude-flow/cache-optimizer](https://github.com/ruvnet/claude-flow) for intelligent context caching.
+
+## Current Profile: ${profile.name}
+
+${profile.description}
+
+**Best for:** ${profile.recommended.join(', ')}
+
+## Quick Commands
+
+\`\`\`bash
+# Check status
+npx @claude-flow/cache-optimizer status
+
+# Validate configuration
+npx @claude-flow/cache-optimizer validate
+
+# Run diagnostics
+npx @claude-flow/cache-optimizer doctor
+
+# Change profile
+npx @claude-flow/cache-optimizer init --profile <profile-id>
+
+# Reset configuration
+npx @claude-flow/cache-optimizer reset
+\`\`\`
+
+## Available Profiles
+
+| Profile | Description | Target Utilization |
+|---------|-------------|-------------------|
+| \`single-agent\` | Single Claude instance | 80% |
+| \`multi-agent\` | Swarm orchestration | 70% |
+| \`aggressive\` | Maximum retention | 85% |
+| \`conservative\` | Minimal footprint | 60% |
+| \`memory-constrained\` | CI/CD, Docker | 50% |
+| \`performance\` | Speed-optimized | 75% |
+| \`development\` | Debug logging | 75% |
+| \`production\` | Stability | 72% |
+
+## Configuration
+
+Configuration is stored in \`.cache-optimizer.json\`.
+
+## Hooks
+
+Cache optimizer hooks are configured in \`.claude/settings.json\`:
+
+- **UserPromptSubmit**: Pre-loads relevant context
+- **PostToolUse**: Caches tool results
+- **PreCompact**: Prevents context compaction
+
+## Learn More
+
+- [Documentation](https://github.com/ruvnet/claude-flow)
+- [ADR-030: Cache Optimizer Architecture](https://github.com/ruvnet/claude-flow/blob/main/docs/ADR-030-cache-optimizer.md)
+`;
+}
+
+/**
+ * Generate capabilities.md content for the cache-optimizer
+ */
+function generateCapabilities(profile: Profile): string {
+  return `# Cache Optimizer Capabilities
+
+## Profile: ${profile.name}
+
+### Core Features
+
+#### Zero-Compaction Strategy
+Prevents Claude Code context compaction by proactively managing cache entries.
+Uses intelligent pruning to stay below compaction thresholds.
+
+#### RuVector Temporal Compression
+- **Hot tier**: Recently accessed entries (${(profile.cacheConfig.temporal?.hotDuration || 300000) / 1000}s)
+- **Warm tier**: Moderately recent entries (${(profile.cacheConfig.temporal?.warmDuration || 1800000) / 1000}s)
+- **Cold tier**: Older entries for archival (${(profile.cacheConfig.temporal?.coldDuration || 3600000) / 1000}s)
+
+#### Attention-Based Relevance Scoring
+Flash Attention algorithm (2.49x-7.47x speedup) scores entries by:
+- Recency (time-decay)
+- Frequency (access count)
+- Type (file_read, tool_result, etc.)
+- Tags and metadata
+
+#### Session Isolation
+${profile.cacheConfig.sessionIsolation ? '**Enabled** - Each Claude session has isolated storage' : '**Disabled** - Shared storage across sessions'}
+
+### Pruning Configuration
+
+| Setting | Value |
+|---------|-------|
+| Strategy | ${profile.cacheConfig.pruning?.strategy || 'adaptive'} |
+| Soft Threshold | ${((profile.cacheConfig.pruning?.softThreshold || 0.6) * 100).toFixed(0)}% |
+| Hard Threshold | ${((profile.cacheConfig.pruning?.hardThreshold || 0.75) * 100).toFixed(0)}% |
+| Emergency Threshold | ${((profile.cacheConfig.pruning?.emergencyThreshold || 0.9) * 100).toFixed(0)}% |
+
+### Security Features
+
+- **SSRF Prevention**: Validates all endpoints against allowlists
+- **Command Injection Protection**: Sanitizes all shell arguments
+- **Path Traversal Protection**: Validates all file paths
+- **Header Injection Protection**: Sanitizes HTTP headers
+
+### Multi-Instance Safety
+
+- **Async Mutex**: Queue-based fair scheduling for concurrent access
+- **File Locking**: \`.lock\` files with stale detection for multi-process safety
+- **Session Partitioning**: Isolated storage per agent/session
+
+### Background Handoff
+
+Delegate expensive operations to other LLMs:
+
+\`\`\`typescript
+import { handoff } from '@claude-flow/cache-optimizer';
+
+// Synchronous handoff
+const response = await handoff('Analyze this code', {
+  provider: 'ollama',
+  systemPrompt: 'You are a code analyst',
+});
+
+// Background handoff
+const handoffId = await handoff('Generate tests', {
+  background: true,
+  provider: 'anthropic',
+});
+\`\`\`
+
+### Hooks Integration
+
+This profile configures the following hooks:
+
+${Object.entries(profile.hooks).map(([hookName, entries]) => {
+  if (!entries || entries.length === 0) return '';
+  return `#### ${hookName}
+${entries.map(e => `- \`${e.command}\`\n  ${e.description || ''}`).join('\n')}`;
+}).filter(Boolean).join('\n\n')}
+
+### Programmatic API
+
+\`\`\`typescript
+import { createCacheOptimizer } from '@claude-flow/cache-optimizer';
+
+const optimizer = createCacheOptimizer({
+  targetUtilization: ${profile.cacheConfig.targetUtilization || 0.75},
+  pruning: {
+    strategy: '${profile.cacheConfig.pruning?.strategy || 'adaptive'}',
+  },
+});
+
+await optimizer.initialize();
+
+// Add entries
+await optimizer.add(content, 'file_read', { filePath: '/path/to/file.ts' });
+
+// Get utilization
+const utilization = optimizer.getUtilization();
+
+// Trigger pruning
+const decision = await optimizer.getPruningDecision(context);
+const result = await optimizer.prune(decision);
+\`\`\`
+
+### Performance Metrics
+
+| Metric | Target |
+|--------|--------|
+| Flash Attention Speedup | 2.49x-7.47x |
+| HNSW Search | 150x-12,500x faster |
+| Memory Reduction | 50-75% with quantization |
+| Hook Response | <5000ms |
+
+### Diagnostics
+
+Run diagnostics with:
+
+\`\`\`bash
+# Basic diagnostics
+npx @claude-flow/cache-optimizer doctor
+
+# Security-focused diagnostics
+npx @claude-flow/cache-optimizer doctor --security
+
+# Full diagnostics with auto-fix
+npx @claude-flow/cache-optimizer doctor --full --fix
+\`\`\`
+`;
+}
+
+/**
  * Initialize cache-optimizer in a project
  */
 export async function init(options: InitOptions = {}): Promise<InitResult> {
@@ -99,6 +296,32 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     } catch (error) {
       errors.push(`Failed to create data directory: ${error}`);
     }
+  }
+
+  // Create docs directory for README and capabilities
+  const docsDir = join(projectRoot, 'docs', 'cache-optimizer');
+  try {
+    await mkdir(docsDir, { recursive: true });
+  } catch {
+    // Directory may already exist
+  }
+
+  // Generate README.md
+  const readmePath = join(docsDir, 'README.md');
+  try {
+    await writeFile(readmePath, generateReadme(profile));
+    changes.push(`Created README: ${readmePath}`);
+  } catch (error) {
+    errors.push(`Failed to create README.md: ${error}`);
+  }
+
+  // Generate capabilities.md
+  const capabilitiesPath = join(docsDir, 'capabilities.md');
+  try {
+    await writeFile(capabilitiesPath, generateCapabilities(profile));
+    changes.push(`Created capabilities: ${capabilitiesPath}`);
+  } catch (error) {
+    errors.push(`Failed to create capabilities.md: ${error}`);
   }
 
   // Create config file
