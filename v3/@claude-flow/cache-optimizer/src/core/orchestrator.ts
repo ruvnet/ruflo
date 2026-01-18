@@ -344,11 +344,8 @@ export class CacheOptimizer {
     const entries = Array.from(this.entries.values());
     const result = await this.temporalCompressor.processTransitions(entries);
 
-    // Update token counter for changed entries
-    for (const entry of entries) {
-      // The compressor modifies entries in place, so we need to update counts
-      // This is handled by the entry modifications
-    }
+    // The compressor modifies entries in place
+    // Token counts are updated via entry modifications
 
     return result;
   }
