@@ -966,6 +966,7 @@ export class HandoffManager {
     const provider = await this.selectProvider(request.provider);
     if (!provider) {
       this.metrics.failedRequests++;
+      await this.persistentStore.updateMetrics(this.metrics);
       return {
         requestId: request.id,
         provider: request.provider,
@@ -975,6 +976,43 @@ export class HandoffManager {
         durationMs: Date.now() - startTime,
         status: 'failed',
         error: `No healthy provider available for: ${request.provider}`,
+        completedAt: Date.now(),
+      };
+    }
+
+    // Check circuit breaker
+    const breaker = this.circuitBreakers.get(provider.name);
+    if (!breaker.canExecute()) {
+      this.metrics.failedRequests++;
+      await this.webhooks.trigger('circuit.opened', { provider: provider.name });
+      return {
+        requestId: request.id,
+        provider: provider.name,
+        model: provider.model,
+        content: '',
+        tokens: { prompt: 0, completion: 0, total: 0 },
+        durationMs: Date.now() - startTime,
+        status: 'failed',
+        error: `Circuit breaker is open for provider: ${provider.name}`,
+        completedAt: Date.now(),
+      };
+    }
+
+    // Check rate limiter
+    const rateLimiter = this.rateLimiters.get(provider.name);
+    const rateStatus = rateLimiter.acquire();
+    if (!rateStatus.allowed) {
+      this.metrics.failedRequests++;
+      await this.webhooks.trigger('rate.limited', { provider: provider.name, retryAfter: rateStatus.retryAfter });
+      return {
+        requestId: request.id,
+        provider: provider.name,
+        model: provider.model,
+        content: '',
+        tokens: { prompt: 0, completion: 0, total: 0 },
+        durationMs: Date.now() - startTime,
+        status: 'failed',
+        error: `Rate limited. Retry after ${rateStatus.retryAfter}ms`,
         completedAt: Date.now(),
       };
     }
@@ -1002,10 +1040,19 @@ export class HandoffManager {
       const response = await adapter.send(request, provider);
 
       if (response.status === 'completed') {
+        breaker.recordSuccess();
+        rateLimiter.recordTokens(response.tokens.total);
+
         this.metrics.successfulRequests++;
         this.metrics.totalTokens += response.tokens.total;
         this.metrics.byProvider[provider.name] = (this.metrics.byProvider[provider.name] || 0) + 1;
         this.updateAverageLatency(response.durationMs);
+
+        // Persist metrics
+        await this.persistentStore.updateMetrics(this.metrics);
+
+        // Trigger webhook
+        await this.webhooks.trigger('handoff.completed', { requestId: request.id, response });
 
         // Call completion callback if provided
         if (request.options.onComplete) {
@@ -1016,6 +1063,7 @@ export class HandoffManager {
       }
 
       lastError = response.error || 'Unknown error';
+      breaker.recordFailure();
 
       // Wait before retry with exponential backoff
       const delay = Math.min(
@@ -1026,6 +1074,9 @@ export class HandoffManager {
     }
 
     this.metrics.failedRequests++;
+    await this.persistentStore.updateMetrics(this.metrics);
+    await this.webhooks.trigger('handoff.failed', { requestId: request.id, error: lastError });
+
     return {
       requestId: request.id,
       provider: provider.name,
