@@ -474,7 +474,7 @@ main().catch(e => {
    * Shutdown all processes
    */
   async shutdown(): Promise<void> {
-    for (const [id, proc] of this.processes) {
+    for (const [_id, proc] of this.processes) {
       if (proc.child) {
         proc.child.kill('SIGTERM');
       }
