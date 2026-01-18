@@ -48,7 +48,8 @@ export async function handlePreToolUse(
     'Grep': 'tool_result',
   };
 
-  const _entryType = typeMap[toolName] || 'tool_result';
+  // Entry type determined for context (used in scoring)
+  void (typeMap[toolName] || 'tool_result');
 
   // Extract file path if applicable
   let filePath: string | undefined;
