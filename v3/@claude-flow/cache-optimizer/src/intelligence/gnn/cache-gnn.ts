@@ -215,7 +215,7 @@ function getTierIndex(tier: string): number {
 export class CacheGNN {
   private graph: CacheGraph;
   private config: GNNLayerConfig;
-  private learningRate: number;
+  private _learningRate: number;
   private metrics: LearningMetrics;
   private weights: Map<string, number[][]>;
 
