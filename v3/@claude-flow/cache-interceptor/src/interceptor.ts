@@ -1213,4 +1213,19 @@ if (require.main !== module) {
 }
 
 // Export for direct usage
-export { initDatabase, persistDatabase, INTERCEPTOR_DB_PATH, CLAUDE_DIR };
+export {
+  initDatabase,
+  persistDatabase,
+  INTERCEPTOR_DB_PATH,
+  CLAUDE_DIR,
+  CLAUDE_PROJECTS_DIR,
+  // Multi-session exports
+  PROCESS_ID,
+  discoverSessionsFromFilesystem,
+  discoverAllSessions,
+  registerSession,
+  cleanupStaleSessions,
+  isOwnSession,
+  acquireLock,
+  releaseLock,
+};
