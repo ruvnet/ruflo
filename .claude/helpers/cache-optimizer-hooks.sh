@@ -74,6 +74,7 @@ init() {
   fi
 
   # Initialize configuration
+  local init_date=$(get_iso_date)
   cat > "$CACHE_DIR/config.json" << EOF
 {
   "profile": "$profile",
@@ -97,7 +98,7 @@ init() {
     "reportingEnabled": true,
     "autoTune": true
   },
-  "initialized": "$(date -Iseconds)"
+  "initialized": "$init_date"
 }
 EOF
 
@@ -110,7 +111,7 @@ EOF
   "trainingSessions": 0,
   "patternsLearned": 0,
   "ewcConsolidations": 0,
-  "initialized": "$(date -Iseconds)"
+  "initialized": "$init_date"
 }
 EOF
 
