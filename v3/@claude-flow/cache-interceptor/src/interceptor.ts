@@ -157,6 +157,278 @@ function safeJsonParse(str: string): any | null {
   }
 }
 
+/**
+ * Extract project name from file path
+ */
+function extractProjectName(filePath: string): string {
+  const normalized = normalizePath(filePath);
+  // Pattern: .claude/projects/PROJECT_NAME/session.jsonl
+  const match = normalized.match(/\.claude\/projects\/([^/]+)\//);
+  return match ? match[1] : 'unknown';
+}
+
+// ============================================================================
+// Multi-Session Management
+// ============================================================================
+
+/**
+ * Clean up stale sessions (no heartbeat within SESSION_TIMEOUT_MS)
+ */
+function cleanupStaleSessions(): void {
+  if (!db) return;
+  try {
+    const timeoutSeconds = SESSION_TIMEOUT_MS / 1000;
+    db.run(`
+      UPDATE active_sessions
+      SET is_active = 0
+      WHERE datetime(last_heartbeat, '+' || ? || ' seconds') < datetime('now')
+    `, [timeoutSeconds]);
+
+    // Also clean up process locks
+    db.run(`
+      DELETE FROM process_locks
+      WHERE datetime(expires_at) < datetime('now')
+    `);
+
+    logInfo('Cleaned up stale sessions');
+  } catch (error) {
+    logError(`Cleanup error: ${error}`);
+  }
+}
+
+/**
+ * Register this process as owner of a session
+ */
+function registerSession(sessionId: string, filePath: string): void {
+  if (!db) return;
+  try {
+    const hostname = os.hostname();
+    const projectName = extractProjectName(filePath);
+
+    db.run(`
+      INSERT INTO active_sessions (session_id, pid, hostname, file_path, project_name, last_heartbeat)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+      ON CONFLICT(session_id) DO UPDATE SET
+        pid = excluded.pid,
+        hostname = excluded.hostname,
+        file_path = excluded.file_path,
+        last_heartbeat = datetime('now'),
+        is_active = 1
+    `, [sessionId, PROCESS_ID, hostname, filePath, projectName]);
+
+    currentSessionId = sessionId;
+    startHeartbeat();
+
+    logInfo(`Registered session ${sessionId.slice(0, 8)}... (PID: ${PROCESS_ID})`);
+  } catch (error) {
+    logError(`Register session error: ${error}`);
+  }
+}
+
+/**
+ * Update heartbeat for current session
+ */
+function updateHeartbeat(): void {
+  if (!db || !currentSessionId) return;
+  try {
+    db.run(`
+      UPDATE active_sessions
+      SET last_heartbeat = datetime('now'), is_active = 1
+      WHERE session_id = ? AND pid = ?
+    `, [currentSessionId, PROCESS_ID]);
+
+    // Persist on each heartbeat
+    schedulePersist();
+  } catch (error) {
+    // Silently ignore heartbeat errors
+  }
+}
+
+/**
+ * Start heartbeat timer
+ */
+function startHeartbeat(): void {
+  if (heartbeatTimer) return;
+  heartbeatTimer = setInterval(updateHeartbeat, HEARTBEAT_INTERVAL_MS);
+  // Don't prevent process exit
+  if (heartbeatTimer.unref) heartbeatTimer.unref();
+}
+
+/**
+ * Stop heartbeat timer
+ */
+function stopHeartbeat(): void {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+}
+
+/**
+ * Discover all active sessions across the filesystem
+ */
+function discoverAllSessions(): Array<{
+  sessionId: string;
+  pid: number;
+  projectName: string;
+  filePath: string;
+  isActive: boolean;
+  lastHeartbeat: string;
+}> {
+  if (!db) return [];
+  try {
+    const result = db.exec(`
+      SELECT session_id, pid, project_name, file_path, is_active, last_heartbeat
+      FROM active_sessions
+      ORDER BY last_heartbeat DESC
+    `);
+
+    return (result[0]?.values || []).map(row => ({
+      sessionId: row[0] as string,
+      pid: row[1] as number,
+      projectName: row[2] as string,
+      filePath: row[3] as string,
+      isActive: (row[4] as number) === 1,
+      lastHeartbeat: row[5] as string,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Discover sessions from filesystem (scan Claude projects directory)
+ */
+function discoverSessionsFromFilesystem(): Array<{
+  sessionId: string;
+  filePath: string;
+  projectName: string;
+  size: number;
+  mtime: Date;
+}> {
+  const sessions: Array<{
+    sessionId: string;
+    filePath: string;
+    projectName: string;
+    size: number;
+    mtime: Date;
+  }> = [];
+
+  try {
+    if (!originalFs.existsSync(CLAUDE_PROJECTS_DIR)) {
+      return sessions;
+    }
+
+    // Scan all project directories
+    const projects = originalFs.readdirSync(CLAUDE_PROJECTS_DIR);
+
+    for (const project of projects) {
+      const projectPath = path.join(CLAUDE_PROJECTS_DIR, project);
+
+      try {
+        const stat = originalFs.statSync(projectPath);
+        if (!stat.isDirectory()) continue;
+
+        // Find all JSONL files in project directory
+        const files = originalFs.readdirSync(projectPath);
+
+        for (const file of files) {
+          if (!file.endsWith('.jsonl')) continue;
+
+          const sessionId = parseSessionId(file);
+          if (!sessionId) continue;
+
+          const filePath = path.join(projectPath, file);
+          const fileStat = originalFs.statSync(filePath);
+
+          sessions.push({
+            sessionId,
+            filePath,
+            projectName: project,
+            size: fileStat.size,
+            mtime: fileStat.mtime,
+          });
+        }
+      } catch {
+        // Skip inaccessible directories
+      }
+    }
+  } catch (error) {
+    logError(`Filesystem scan error: ${error}`);
+  }
+
+  return sessions.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+}
+
+/**
+ * Check if a session belongs to this process
+ */
+function isOwnSession(sessionId: string): boolean {
+  if (!db) return true; // If no DB, allow all
+  try {
+    const result = db.exec(
+      'SELECT pid FROM active_sessions WHERE session_id = ? AND is_active = 1',
+      [sessionId]
+    );
+    if (!result[0]?.values?.length) return true; // No owner, allow
+    const ownerPid = result[0].values[0][0] as number;
+    return ownerPid === PROCESS_ID;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Acquire a lock for database operations
+ */
+function acquireLock(lockKey: string, timeoutMs = 5000): boolean {
+  if (!db) return true;
+  try {
+    const expiresAt = new Date(Date.now() + timeoutMs).toISOString();
+
+    // Try to acquire lock
+    db.run(`
+      INSERT INTO process_locks (lock_key, pid, expires_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(lock_key) DO UPDATE SET
+        pid = CASE
+          WHEN datetime(expires_at) < datetime('now') THEN excluded.pid
+          WHEN pid = excluded.pid THEN excluded.pid
+          ELSE pid
+        END,
+        expires_at = CASE
+          WHEN datetime(expires_at) < datetime('now') THEN excluded.expires_at
+          WHEN pid = excluded.pid THEN excluded.expires_at
+          ELSE expires_at
+        END
+    `, [lockKey, PROCESS_ID, expiresAt]);
+
+    // Check if we got the lock
+    const result = db.exec(
+      'SELECT pid FROM process_locks WHERE lock_key = ?',
+      [lockKey]
+    );
+    return (result[0]?.values[0]?.[0] as number) === PROCESS_ID;
+  } catch {
+    return true; // Allow on error
+  }
+}
+
+/**
+ * Release a lock
+ */
+function releaseLock(lockKey: string): void {
+  if (!db) return;
+  try {
+    db.run(
+      'DELETE FROM process_locks WHERE lock_key = ? AND pid = ?',
+      [lockKey, PROCESS_ID]
+    );
+  } catch {
+    // Ignore errors
+  }
+}
+
 // ============================================================================
 // Database Management
 // ============================================================================
