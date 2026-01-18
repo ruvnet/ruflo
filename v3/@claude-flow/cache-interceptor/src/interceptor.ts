@@ -82,6 +82,16 @@ let db: Database | null = null;
 let initialized = false;
 let sqlJsPromise: Promise<void> | null = null;
 
+// Process identification for multi-session isolation
+const PROCESS_ID = process.pid;
+const PROCESS_START_TIME = Date.now();
+const HEARTBEAT_INTERVAL_MS = 5000;
+const SESSION_TIMEOUT_MS = 30000; // Consider session stale after 30s without heartbeat
+
+// Track active session for THIS process
+let currentSessionId: string | null = null;
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
 // Original fs functions (before patching)
 const originalFs = {
   readFileSync: fs.readFileSync.bind(fs),
@@ -91,6 +101,8 @@ const originalFs = {
   statSync: fs.statSync.bind(fs),
   readdirSync: fs.readdirSync.bind(fs),
   mkdirSync: fs.mkdirSync.bind(fs),
+  unlinkSync: fs.unlinkSync.bind(fs),
+  renameSync: fs.renameSync.bind(fs),
 };
 
 // ============================================================================
