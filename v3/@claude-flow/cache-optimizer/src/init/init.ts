@@ -16,8 +16,9 @@ import {
   mergeWithProfile,
   type ProfileId,
   type Profile,
+  type ProfileCacheConfig,
+  type ProfileHandoffConfig,
 } from './profiles.js';
-import type { CacheOptimizerConfig, HandoffConfig } from '../types.js';
 
 /**
  * Init options
