@@ -1006,7 +1006,10 @@ export class HandoffManager {
     const rateStatus = rateLimiter.acquire();
     if (!rateStatus.allowed) {
       this.metrics.failedRequests++;
-      await this.webhooks.trigger('rate.limited', { provider: provider.name, retryAfter: rateStatus.retryAfter });
+      await this.webhooks.trigger('rate.limited', {
+        provider: provider.name,
+        metadata: { retryAfter: rateStatus.retryAfter },
+      });
       return {
         requestId: request.id,
         provider: provider.name,
