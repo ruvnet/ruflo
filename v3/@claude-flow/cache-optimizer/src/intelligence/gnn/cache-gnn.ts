@@ -354,8 +354,6 @@ export class CacheGNN {
    * Discover relationships between new node and existing nodes
    */
   private discoverRelationships(entry: CacheEntry): void {
-    const _now = Date.now();
-
     for (const [otherId, otherNode] of this.graph.nodes) {
       if (otherId === entry.id) continue;
 
