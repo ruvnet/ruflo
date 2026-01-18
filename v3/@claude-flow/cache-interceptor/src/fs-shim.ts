@@ -190,15 +190,13 @@ function shimmedReadFileSync(
   }
 }
 
-// Create wrapped fs module
-const wrappedFs = {
-  ...originalFs,
-  readFileSync: shimmedReadFileSync,
-};
-
 // Replace the fs module in require cache
 const Module = require('module');
 const originalRequire = Module.prototype.require;
+
+// Create wrapped fs with intercepted methods
+const wrappedFs: any = Object.create(originalFs);
+wrappedFs.readFileSync = shimmedReadFileSync;
 
 Module.prototype.require = function(id: string) {
   if (id === 'fs' || id === 'node:fs') {
@@ -209,5 +207,6 @@ Module.prototype.require = function(id: string) {
 
 log('fs-shim installed - intercepting fs.readFileSync for Claude sessions');
 
-// Export for direct use
-export = wrappedFs;
+// Export shimmedReadFileSync for external use
+export { shimmedReadFileSync, optimizeMessages };
+export default wrappedFs;
