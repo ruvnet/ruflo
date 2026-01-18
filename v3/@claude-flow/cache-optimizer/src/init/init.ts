@@ -179,7 +179,7 @@ export async function isInitialized(projectRoot: string = process.cwd()): Promis
  */
 export async function getCurrentConfig(
   projectRoot: string = process.cwd()
-): Promise<{ profile?: ProfileId; config?: CacheOptimizerConfig } | null> {
+): Promise<{ profile?: ProfileId; config?: ProfileCacheConfig } | null> {
   const configPath = join(projectRoot, '.cache-optimizer.json');
   try {
     const { readFile } = await import('fs/promises');
