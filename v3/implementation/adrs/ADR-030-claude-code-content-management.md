@@ -2191,6 +2191,317 @@ CLAUDE_FLOW_CACHE_HOOK_PRE_COMPACT_TIMEOUT=5000
 
 ---
 
+## Part 10: GNN/GRNN Intelligence Layer
+
+### 10.1 Overview
+
+The GNN/GRNN Intelligence Layer provides advanced self-learning capabilities for cache optimization through:
+
+1. **Graph Neural Networks (GNN)**: Learn relationships between cache entries
+2. **Fast GRNN**: Lightweight temporal sequence learning with EWC++ integration
+3. **Measurement**: Comprehensive metrics collection and analysis
+4. **Refinement**: Bayesian optimization for hyperparameter tuning
+5. **Reporting**: Multi-format report generation
+
+### 10.2 GNN Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         CACHE GNN ARCHITECTURE                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         CACHE ENTRIES                                │   │
+│  │                                                                      │   │
+│  │   [file_read]  [tool_result]  [user_msg]  [assistant_msg]  [bash]   │   │
+│  │       │              │            │              │            │      │   │
+│  │       └──────────────┼────────────┼──────────────┼────────────┘      │   │
+│  │                      ▼            ▼              ▼                   │   │
+│  └───────────────┬─────────────────────────────────────────────────────┘   │
+│                  │                                                          │
+│                  ▼                                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      GRAPH BUILDER                                   │   │
+│  │                                                                      │   │
+│  │   Topologies:                                                        │   │
+│  │   ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐          │   │
+│  │   │Sequential │ │Hierarchi- │ │Clustered  │ │Hyperbolic │          │   │
+│  │   │           │ │cal        │ │           │ │(Poincaré) │          │   │
+│  │   └───────────┘ └───────────┘ └───────────┘ └───────────┘          │   │
+│  │   ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐          │   │
+│  │   │Star       │ │Bipartite  │ │Temporal   │ │Hybrid     │          │   │
+│  │   └───────────┘ └───────────┘ └───────────┘ └───────────┘          │   │
+│  └───────────────┬─────────────────────────────────────────────────────┘   │
+│                  │                                                          │
+│                  ▼                                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      GNN LAYERS                                      │   │
+│  │                                                                      │   │
+│  │   ┌──────────────────────┐    ┌──────────────────────┐             │   │
+│  │   │  GCN Layer           │    │  GAT Layer           │             │   │
+│  │   │  (Graph Convolution) │    │  (Graph Attention)   │             │   │
+│  │   │                      │    │                      │             │   │
+│  │   │  Aggregates neighbor │    │  Attention-weighted  │             │   │
+│  │   │  features with       │    │  neighbor aggregation│             │   │
+│  │   │  learned weights     │    │  for importance      │             │   │
+│  │   └──────────────────────┘    └──────────────────────┘             │   │
+│  │                                                                      │   │
+│  │   Multi-hop Message Passing (2-hop default)                         │   │
+│  │   Edge Types: sequential, co_access, same_file, same_session,       │   │
+│  │               same_tool, semantic, dependency                       │   │
+│  └───────────────┬─────────────────────────────────────────────────────┘   │
+│                  │                                                          │
+│                  ▼                                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      LEARNED REPRESENTATIONS                         │   │
+│  │                                                                      │   │
+│  │   • Relationship embeddings for cache entries                       │   │
+│  │   • Cluster predictions for grouping                                │   │
+│  │   • Edge weight predictions for importance                          │   │
+│  │   • Optimal graph structures for access patterns                    │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 10.3 Fast GRNN Temporal Learning
+
+```typescript
+/**
+ * Fast GRNN for temporal sequence learning
+ * Lightweight GRU-based architecture with EWC++ integration
+ */
+export interface GRNNWeights {
+  updateGate: Float32Array;      // W_z, U_z weights
+  resetGate: Float32Array;       // W_r, U_r weights
+  candidate: Float32Array;       // W_h, U_h weights
+  fisherDiagonal: Float32Array;  // Fisher information for EWC++
+  importance: Float32Array;      // Task importance weights
+}
+
+/**
+ * Temporal event for sequence learning
+ */
+export interface TemporalEvent {
+  entryId: string;
+  type: CacheEntryType;
+  timestamp: number;
+  features: Float32Array;
+  outcome: 'hit' | 'miss' | 'evict';
+}
+```
+
+**Key Features:**
+- **Gated Updates**: GRU-style gating for selective memory
+- **EWC++ Integration**: Prevents catastrophic forgetting across tasks
+- **Sequence Prediction**: Predicts next access patterns
+- **Fisher Consolidation**: Computes importance for weight protection
+
+### 10.4 Graph Topologies
+
+| Topology | Use Case | Description |
+|----------|----------|-------------|
+| `sequential` | Time-ordered access | Chain structure for temporal patterns |
+| `hierarchical` | File/directory relationships | Tree structure reflecting code organization |
+| `clustered` | Related entries | Groups entries by type and session |
+| `star` | Central hub pattern | Single hub with all entries connected |
+| `bipartite` | Type-based separation | Separates entries by type (code vs results) |
+| `hyperbolic` | Hierarchical with scale | Poincaré disk for deep hierarchies |
+| `temporal` | Time-windowed | Edges based on temporal proximity |
+| `hybrid` | Combined patterns | Multi-edge types for comprehensive learning |
+
+### 10.5 Measurement System
+
+```typescript
+/**
+ * Comprehensive metrics collection for GNN/GRNN
+ */
+export interface LearningMetrics {
+  // GNN metrics
+  gnn: {
+    graphSize: number;
+    edgeCount: number;
+    nodeFeatureDim: number;
+    messagePassingHops: number;
+
+    // Performance
+    forwardPassLatency: number;
+    backwardPassLatency: number;
+
+    // Quality
+    clusterPurity: number;
+    edgePredictionAccuracy: number;
+  };
+
+  // GRNN metrics
+  grnn: {
+    sequenceLength: number;
+    hiddenDim: number;
+
+    // Performance
+    inferenceLatency: number;
+    trainingLatency: number;
+
+    // Quality
+    predictionAccuracy: number;
+    ewcRegularization: number;
+    fisherNorm: number;
+  };
+
+  // Learning metrics
+  learning: {
+    totalTrajectories: number;
+    successRate: number;
+    avgReward: number;
+    patternsLearned: number;
+    consolidationEvents: number;
+  };
+}
+```
+
+### 10.6 Refinement Engine
+
+The refinement engine uses Bayesian optimization with Gaussian Process for hyperparameter tuning:
+
+```typescript
+/**
+ * Hyperparameter space for optimization
+ */
+export interface HyperparameterSpace {
+  gnn: {
+    hiddenDim: { min: 32, max: 256, type: 'int' };
+    numLayers: { min: 1, max: 4, type: 'int' };
+    learningRate: { min: 0.0001, max: 0.1, type: 'log' };
+    dropout: { min: 0.0, max: 0.5, type: 'float' };
+  };
+  grnn: {
+    hiddenSize: { min: 32, max: 256, type: 'int' };
+    ewcLambda: { min: 0.1, max: 10.0, type: 'log' };
+    fisherSamples: { min: 50, max: 500, type: 'int' };
+  };
+  cache: {
+    hotMaxAge: { min: 60000, max: 600000, type: 'int' };
+    warmMaxAge: { min: 300000, max: 3600000, type: 'int' };
+    minRelevance: { min: 0.1, max: 0.5, type: 'float' };
+  };
+}
+
+/**
+ * Tuning trial result
+ */
+export interface TuningTrial {
+  id: string;
+  parameters: Record<string, number>;
+  score: number;
+  metrics: {
+    hitRate: number;
+    compressionRatio: number;
+    pruningEfficiency: number;
+    predictionAccuracy: number;
+  };
+  duration: number;
+  timestamp: number;
+}
+```
+
+### 10.7 Reporting System
+
+Multi-format report generation for analysis and monitoring:
+
+| Format | Use Case | Features |
+|--------|----------|----------|
+| `json` | Programmatic access | Full structured data |
+| `markdown` | Documentation | Human-readable tables and charts |
+| `html` | Web dashboards | Interactive visualizations |
+| `terminal` | CLI output | ANSI-colored formatted output |
+
+```typescript
+/**
+ * Performance report structure
+ */
+export interface PerformanceReport {
+  metadata: {
+    generatedAt: string;
+    reportId: string;
+    sessionId: string;
+    duration: number;
+  };
+
+  summary: {
+    overallScore: number;
+    hitRate: number;
+    compressionRatio: number;
+    compactionsPrevented: number;
+    tokensReclaimed: number;
+  };
+
+  gnn: GNNReport;
+  grnn: GRNNReport;
+  learning: LearningReport;
+  recommendations: Recommendation[];
+}
+```
+
+### 10.8 Integration with Cache Optimizer
+
+```typescript
+import {
+  CacheGNN,
+  GraphBuilder,
+  FastGRNN,
+  MeasurementCollector,
+  RefinementEngine,
+  ReportGenerator
+} from '@claude-flow/cache-optimizer/intelligence';
+
+// Initialize GNN/GRNN intelligence
+const graphBuilder = createGraphBuilder({ topology: 'hybrid' });
+const cacheGNN = createCacheGNN({ hiddenDim: 128, numLayers: 2 });
+const fastGRNN = createFastGRNN({ hiddenSize: 64, ewcLambda: 0.5 });
+
+// Initialize learning framework
+const measurement = createMeasurementCollector();
+const refinement = createRefinementEngine();
+const reporting = createReportGenerator();
+
+// Use in cache optimization
+async function optimizeWithGNN(entries: CacheEntry[], context: ScoringContext) {
+  // Build optimal graph structure
+  const { nodes, adjacency } = graphBuilder.build(entries, 'hybrid');
+
+  // Learn relationships via GNN
+  const embeddings = cacheGNN.forward(nodes, adjacency);
+  const clusters = cacheGNN.predictClusters(embeddings);
+
+  // Predict temporal patterns
+  const events = entries.map(e => toTemporalEvent(e));
+  const { prediction } = fastGRNN.forward(events);
+
+  // Collect metrics
+  measurement.record('gnn_forward', { entries: entries.length });
+
+  // Generate recommendations
+  return {
+    clusters,
+    prediction,
+    recommendations: await refinement.suggest()
+  };
+}
+```
+
+### 10.9 Performance Targets
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| GNN Forward Pass | <10ms | p95 for 1000 entries |
+| GRNN Inference | <5ms | p95 for 100 sequence |
+| Graph Building | <20ms | p95 for hybrid topology |
+| Pattern Search | <1ms | HNSW-indexed patterns |
+| Bayesian Optimization | <100ms | Per trial evaluation |
+| Report Generation | <50ms | All formats |
+
+---
+
 ## Conclusion
 
 This architecture provides a comprehensive solution for preventing Claude Code compaction through:
