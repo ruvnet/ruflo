@@ -211,8 +211,6 @@ class GaussianProcess {
       return { mean: 0, variance: 1 };
     }
 
-    const n = this.observations.length;
-
     // Compute k* (kernel between x and all observations)
     const kStar = this.observations.map(obs => this.rbfKernel(x, obs.x));
 
