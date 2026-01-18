@@ -593,7 +593,7 @@ export class CacheOptimizer {
 
       // Check in session storages
       if (this.sessionIsolation) {
-        for (const [sessionId, storage] of this.sessions) {
+        for (const [_sessionId, storage] of this.sessions) {
           entry = storage.entries.get(id);
           if (entry) {
             tokensFreed += entry.compressed?.compressedTokens ?? entry.tokens;
