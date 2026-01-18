@@ -84,8 +84,8 @@ require('fs').writeFileSync(tempScript, childScript);
 
 console.log(`${YELLOW}▶ Running child process with interceptor preloaded...${RESET}\n`);
 
-// Run child with interceptor preloaded
-const interceptorPath = path.join(__dirname, '..', 'dist', 'interceptor.js');
+// Run child with fs-shim preloaded (this patches Module.prototype.require)
+const fsShimPath = path.join(__dirname, '..', 'dist', 'fs-shim.js');
 
 const child = spawn('node', [tempScript], {
   env: {
