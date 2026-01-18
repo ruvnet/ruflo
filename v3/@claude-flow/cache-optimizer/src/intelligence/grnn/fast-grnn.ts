@@ -139,6 +139,16 @@ export interface FisherInformation {
   computedAt: number;
 }
 
+/**
+ * GRNN weights structure for persistence
+ */
+export interface GRNNWeights {
+  updateGate: number[][];
+  resetGate: number[][];
+  candidate: number[][];
+  output: number[][];
+}
+
 // ============================================================================
 // Default Configuration
 // ============================================================================
