@@ -407,6 +407,14 @@ DDD_DISPLAY=$(printf "%3d" "$DDD_PROGRESS")
 OUTPUT="${OUTPUT}\n${BRIGHT_PURPLE}🔧 Architecture${RESET}    ${CYAN}DDD${RESET} ${DDD_COLOR}●${DDD_DISPLAY}%${RESET}  ${DIM}│${RESET}  ${CYAN}Security${RESET} ${SECURITY_COLOR}●${SECURITY_STATUS}${RESET}"
 OUTPUT="${OUTPUT}  ${DIM}│${RESET}  ${CYAN}Memory${RESET} ${BRIGHT_GREEN}●AgentDB${RESET}  ${DIM}│${RESET}  ${CYAN}Integration${RESET} ${INTEGRATION_COLOR}●${RESET}"
 
+# Line 4: Cache Optimizer GNN/GRNN Intelligence Status
+GNN_NODES_DISPLAY=$(printf "%3d" "$GNN_NODES")
+GRNN_EWC_DISPLAY=$(printf "%2d" "$GRNN_EWC")
+OUTPUT="${OUTPUT}\n${BRIGHT_CYAN}🧬 Cache GNN${RESET}  ${CACHE_COLOR}${CACHE_STATUS}${RESET}  ${DIM}nodes:${RESET}${CACHE_COLOR}${GNN_NODES_DISPLAY}${RESET}  ${DIM}topo:${RESET}${BRIGHT_PURPLE}${GNN_TOPOLOGY}${RESET}  ${DIM}│${RESET}  ${BRIGHT_YELLOW}GRNN${RESET} ${DIM}EWC++:${RESET}${BRIGHT_GREEN}${GRNN_EWC_DISPLAY}${RESET}"
+if [ "$CACHE_DAEMON_RUNNING" = "true" ]; then
+  OUTPUT="${OUTPUT}  ${BRIGHT_GREEN}[daemon]${RESET}"
+fi
+
 # Footer separator
 OUTPUT="${OUTPUT}\n${DIM}─────────────────────────────────────────────────────${RESET}"
 
