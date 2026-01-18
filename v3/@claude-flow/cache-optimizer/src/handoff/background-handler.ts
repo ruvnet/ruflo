@@ -535,9 +535,9 @@ export function createHandoffChain(workDir?: string) {
       callbackInstructions?: string;
       timeout?: number;
     }): Promise<HandoffResponse | null> {
-      const { id, poll } = await this.start(options);
+      const { id } = await this.start(options);
 
-      // Extend poll to use custom timeout
+      // Use handler.poll with custom timeout
       return handler.poll(id, options.timeout || 60000);
     },
 
