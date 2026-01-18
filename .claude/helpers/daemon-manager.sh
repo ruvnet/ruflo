@@ -215,6 +215,13 @@ show_status() {
         echo -e "  ${YELLOW}○${RESET} MCP Server       ${YELLOW}NOT DETECTED${RESET}"
     fi
 
+    # Cache Optimizer (GNN/GRNN)
+    if is_running "$CACHE_OPTIMIZER_PID"; then
+        echo -e "  ${GREEN}●${RESET} Cache Optimizer  ${GREEN}RUNNING${RESET} (PID: $(cat "$CACHE_OPTIMIZER_PID")) [GNN/GRNN]"
+    else
+        echo -e "  ${RED}○${RESET} Cache Optimizer  ${RED}STOPPED${RESET}"
+    fi
+
     # Agentic Flow
     local af_count=$(ps aux 2>/dev/null | grep -E "agentic-flow" | grep -v grep | grep -v "daemon-manager" | wc -l)
     if [ "$af_count" -gt 0 ]; then
