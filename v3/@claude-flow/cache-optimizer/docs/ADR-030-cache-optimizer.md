@@ -132,6 +132,15 @@ Overall:       73.4% average savings
 │   ├── intelligence/
 │   │   ├── hyperbolic-cache.ts  # Poincaré ball + hypergraph
 │   │   └── drift-detector.ts    # Historical pattern learning
+│   ├── handoff/                     # LLM Provider Handoff System
+│   │   ├── handoff-manager.ts       # Core orchestration + adapters
+│   │   ├── background-handler.ts    # Async task handling
+│   │   ├── streaming.ts             # SSE streaming support
+│   │   ├── circuit-breaker.ts       # Fault tolerance
+│   │   ├── rate-limiter.ts          # Token bucket rate limiting
+│   │   ├── persistent-store.ts      # Queue + metrics persistence
+│   │   ├── webhook.ts               # Webhook callbacks
+│   │   └── index.ts                 # Public exports
 │   ├── hooks/
 │   │   └── handlers.ts          # Claude Code hook integration
 │   └── types.ts                 # Type definitions
@@ -143,6 +152,166 @@ Overall:       73.4% average savings
 │   └── compression-strategies-demo.ts # Compression comparison
 └── docs/
     └── ADR-030-cache-optimizer.md   # This document
+```
+
+## Handoff System
+
+The handoff system enables offloading tasks to external LLM providers (Ollama, Anthropic, OpenAI, OpenRouter, or custom endpoints) with robust fault tolerance and persistence.
+
+### 5.1 Core Components
+
+| Component | Purpose |
+|-----------|---------|
+| `HandoffManager` | Orchestrates provider selection, routing, and failover |
+| `BackgroundHandler` | Async task processing with timeout and retry |
+| `StreamingHandler` | Real-time SSE streaming from LLM providers |
+| `CircuitBreaker` | Fault tolerance with configurable thresholds |
+| `RateLimiter` | Token bucket rate limiting per provider |
+| `PersistentStore` | SQLite-based queue and metrics persistence |
+| `WebhookHandler` | Event notifications with HMAC signatures |
+
+### 5.2 Provider Adapters
+
+```typescript
+// Supported providers
+type ProviderType = 'ollama' | 'anthropic' | 'openai' | 'openrouter' | 'custom';
+
+// Configure providers
+const manager = new HandoffManager({
+  providers: [
+    {
+      name: 'ollama-local',
+      type: 'ollama',
+      endpoint: 'http://localhost:11434',
+      model: 'llama3.2',
+      priority: 1,
+    },
+    {
+      name: 'anthropic-cloud',
+      type: 'anthropic',
+      endpoint: 'https://api.anthropic.com/v1/messages',
+      model: 'claude-3-sonnet-20240229',
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      priority: 2,
+    },
+    {
+      name: 'openrouter',
+      type: 'openrouter',
+      endpoint: 'https://openrouter.ai/api/v1',
+      model: 'anthropic/claude-3-opus',
+      apiKey: process.env.OPENROUTER_API_KEY,
+      priority: 3,
+      options: {
+        referer: 'https://example.com',
+        title: 'My App',
+      },
+    },
+  ],
+});
+```
+
+### 5.3 Circuit Breaker Pattern
+
+Prevents cascading failures with three states:
+
+```
+CLOSED ──[failures ≥ threshold]──> OPEN
+   ↑                                  │
+   │                                  ↓
+   └──[success]── HALF-OPEN <──[timeout]──┘
+```
+
+Configuration:
+```typescript
+const breaker = new CircuitBreaker('ollama', {
+  failureThreshold: 5,      // Failures before opening
+  recoveryTimeout: 30000,   // Time in open state
+  halfOpenRequests: 3,      // Requests to test
+  successThreshold: 2,      // Successes to close
+  failureWindow: 60000,     // Rolling window for failures
+});
+```
+
+### 5.4 Rate Limiting
+
+Token bucket with sliding window:
+```typescript
+const limiter = new RateLimiter('anthropic', {
+  maxRequests: 60,           // Requests per window
+  windowMs: 60000,           // 1 minute window
+  maxTokensPerMinute: 100000, // Token budget
+  minRequestSpacing: 100,    // Minimum ms between requests
+});
+
+// Acquire slot
+const status = limiter.acquire();
+if (!status.allowed) {
+  await limiter.waitForSlot(timeout);
+}
+
+// Record token usage
+limiter.recordTokens(response.tokens.total);
+```
+
+### 5.5 Streaming Support
+
+Real-time response streaming via Server-Sent Events:
+```typescript
+const streaming = new StreamingHandler();
+
+const response = await streaming.streamFromOllama(
+  request,
+  config,
+  {
+    onChunk: (chunk) => console.log(chunk.content),
+    onComplete: (response) => console.log('Done:', response),
+    onError: (error) => console.error(error),
+    signal: abortController.signal,
+  }
+);
+```
+
+### 5.6 Persistence
+
+Queue and metrics survive restarts:
+```typescript
+const store = new PersistentStore({
+  dbPath: './data/handoff.db',
+  autoSaveInterval: 5000,
+  maxQueueItems: 1000,
+  maxMetricsHistory: 1000,
+});
+
+// Queue operations
+await store.addToQueue(item);
+await store.updateQueueItem(id, { status: 'processing' });
+const items = await store.getAllQueueItems('pending');
+
+// Metrics
+await store.updateMetrics({ totalRequests: 100 });
+await store.snapshotMetrics();
+const history = await store.getMetricsHistory(100);
+```
+
+### 5.7 Webhook Callbacks
+
+Event notifications with retry and HMAC signatures:
+```typescript
+const webhooks = new WebhookHandler();
+
+webhooks.register('my-webhook', {
+  url: 'https://api.example.com/webhooks',
+  events: ['handoff.completed', 'handoff.failed'],
+  secret: 'webhook-secret',
+  retry: {
+    maxRetries: 3,
+    baseDelay: 1000,
+    maxDelay: 30000,
+  },
+});
+
+// Events emitted: handoff.queued, handoff.started, handoff.completed,
+//                 handoff.failed, rate.limited, circuit.opened
 ```
 
 ## API
