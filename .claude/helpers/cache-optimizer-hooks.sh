@@ -250,6 +250,7 @@ report() {
 
   case "$format" in
     "json")
+      local report_date=$(get_iso_date)
       cat << EOF
 {
   "gnn": {
@@ -263,11 +264,12 @@ report() {
   "learning": {
     "patternsLearned": $patterns
   },
-  "timestamp": "$(date -Iseconds)"
+  "timestamp": "$report_date"
 }
 EOF
       ;;
     "markdown")
+      local report_date=$(get_iso_date)
       cat << EOF
 # GNN/GRNN Intelligence Report
 
@@ -281,7 +283,7 @@ EOF
 
 ## Learning
 - **Patterns Learned**: $patterns
-- **Generated**: $(date -Iseconds)
+- **Generated**: $report_date
 EOF
       ;;
     *)
