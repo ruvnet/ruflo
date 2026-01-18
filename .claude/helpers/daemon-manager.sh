@@ -174,6 +174,7 @@ stop_all() {
     log "Stopping all Claude Flow daemons..."
     stop_daemon "$SWARM_MONITOR_PID" "Swarm monitor"
     stop_daemon "$METRICS_DAEMON_PID" "Metrics daemon"
+    stop_daemon "$CACHE_OPTIMIZER_PID" "Cache optimizer"
     success "All daemons stopped"
 }
 
