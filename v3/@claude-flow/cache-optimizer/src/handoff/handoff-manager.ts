@@ -118,6 +118,19 @@ export class HandoffManager {
       activeRequests: 0,
     };
 
+    // Initialize enhanced features
+    this.circuitBreakers = new CircuitBreakerRegistry({
+      failureThreshold: 5,
+      recoveryTimeout: 30000,
+      successThreshold: 3,
+    });
+    this.rateLimiters = new RateLimiterRegistry();
+    this.persistentStore = createPersistentStore({
+      dbPath: join(this.config.background.workDir, 'handoff.db'),
+    });
+    this.webhooks = createWebhookHandler();
+    this.streaming = createStreamingHandler();
+
     this.registerDefaultAdapters();
   }
 
