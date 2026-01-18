@@ -1326,48 +1326,32 @@ export async function install(): Promise<void> {
 
     logInfo('Installed via Module._load hook');
 
-    // Also patch the already-cached fs module
-    // This is critical because fs is loaded before our hook
+    // Also patch Module.prototype.require for already-loaded cases
+    // This ensures fs is intercepted even when required after our hook
+    const originalRequire = Module.prototype.require;
+
+    // Create wrapped fs by copying all properties
     const cachedFs = require('fs');
-    const fsProxy = new Proxy(cachedFs, {
-      get(target, prop) {
-        if (prop === 'readFileSync') {
-          return interceptedReadFileSync;
-        }
-        if (prop === 'appendFileSync') {
-          return interceptedAppendFileSync;
-        }
-        return target[prop];
-      }
-    });
+    const wrappedFs: any = {};
 
-    // Replace the cached module with our proxy
-    const Module2 = require('module');
-    const cache = Module2._cache || require.cache;
-
-    // Find and replace fs in cache
-    for (const key of Object.keys(cache)) {
-      if (key.endsWith('fs.js') || key === 'fs' || key === 'node:fs') {
-        cache[key].exports = fsProxy;
-        logInfo(`Patched cached fs at: ${key}`);
-      }
+    // Copy all properties from fs
+    for (const key of Object.keys(cachedFs)) {
+      wrappedFs[key] = cachedFs[key];
     }
+    Object.assign(wrappedFs, cachedFs);
 
-    // Also try patching the internal fs binding
-    try {
-      const originalReadFileSync = cachedFs.readFileSync;
-      const originalAppendFileSync = cachedFs.appendFileSync;
+    // Override with our intercepted versions
+    wrappedFs.readFileSync = interceptedReadFileSync;
+    wrappedFs.appendFileSync = interceptedAppendFileSync;
 
-      // Override using a wrapper approach
-      (cachedFs as any).__originalReadFileSync = originalReadFileSync;
-      (cachedFs as any).__originalAppendFileSync = originalAppendFileSync;
-      (cachedFs as any).__interceptedReadFileSync = interceptedReadFileSync;
-      (cachedFs as any).__interceptedAppendFileSync = interceptedAppendFileSync;
+    Module.prototype.require = function(id: string) {
+      if (id === 'fs' || id === 'node:fs') {
+        return wrappedFs;
+      }
+      return originalRequire.apply(this, arguments as any);
+    };
 
-      logInfo('Installed wrapper methods on fs');
-    } catch (e) {
-      logInfo(`Note: Could not install wrapper methods: ${e}`);
-    }
+    logInfo('Installed Module.prototype.require patch')
 
   } catch (err) {
     // Fallback: try direct assignment (older Node.js)
