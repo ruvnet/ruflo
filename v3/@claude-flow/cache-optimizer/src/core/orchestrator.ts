@@ -43,10 +43,16 @@ export class CacheOptimizer {
   private tokenCounter: TokenCounter;
   private temporalCompressor: TemporalCompressor;
   private flashAttention: FlashAttention;
+  private hyperbolicIntelligence: HyperbolicCacheIntelligence;
   private initialized: boolean = false;
+  private useHyperbolic: boolean = true;
 
   // LRU tracking
   private accessOrder: string[] = [];
+
+  // Metrics for before/after comparison
+  private driftEvents: number = 0;
+  private driftCorrections: number = 0;
 
   constructor(config: Partial<CacheOptimizerConfig> = {}) {
     this.config = this.mergeConfig(config);
