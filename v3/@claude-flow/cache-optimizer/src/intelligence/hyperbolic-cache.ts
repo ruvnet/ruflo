@@ -334,12 +334,12 @@ export class DriftDetector {
 
       // Relevance encoding (dims 20-35)
       embedding[20] += entry.relevance.overall / entries.length;
-      embedding[21] += entry.relevance.temporal / entries.length;
-      embedding[22] += entry.relevance.semantic / entries.length;
-      embedding[23] += entry.relevance.contextual / entries.length;
+      embedding[21] += entry.relevance.components.recency / entries.length;
+      embedding[22] += entry.relevance.components.semantic / entries.length;
+      embedding[23] += entry.relevance.components.attention / entries.length;
 
       // Age encoding (dims 36-40)
-      const age = Date.now() - entry.createdAt;
+      const age = Date.now() - entry.timestamp;
       const ageNorm = Math.min(age / (60 * 60 * 1000), 1); // Normalize to 1 hour
       embedding[36] += ageNorm / entries.length;
 
