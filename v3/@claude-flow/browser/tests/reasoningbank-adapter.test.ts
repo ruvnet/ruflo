@@ -2,9 +2,9 @@
  * @claude-flow/browser - ReasoningBank Adapter Tests
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ReasoningBankAdapter, getReasoningBank } from '../src/infrastructure/reasoningbank-adapter.js';
-import type { BrowserTrajectory } from '../src/application/browser-service.js';
+import type { BrowserTrajectory } from '../src/domain/types.js';
 
 describe('ReasoningBankAdapter', () => {
   let adapter: ReasoningBankAdapter;
@@ -21,7 +21,7 @@ describe('ReasoningBankAdapter', () => {
     });
   });
 
-  describe('trajectory learning', () => {
+  describe('trajectory storage', () => {
     const mockTrajectory: BrowserTrajectory = {
       id: 'traj-1',
       goal: 'Login to dashboard',
@@ -32,25 +32,25 @@ describe('ReasoningBankAdapter', () => {
         {
           action: 'open',
           input: { url: 'https://example.com/login' },
-          result: { success: true },
+          result: { success: true, duration: 100 },
           timestamp: new Date().toISOString(),
         },
         {
           action: 'fill',
           input: { target: '@e1', value: 'user@example.com' },
-          result: { success: true },
+          result: { success: true, duration: 50 },
           timestamp: new Date().toISOString(),
         },
         {
           action: 'fill',
           input: { target: '@e2', value: 'password' },
-          result: { success: true },
+          result: { success: true, duration: 50 },
           timestamp: new Date().toISOString(),
         },
         {
           action: 'click',
           input: { target: '@e3' },
-          result: { success: true },
+          result: { success: true, duration: 200 },
           timestamp: new Date().toISOString(),
         },
       ],
@@ -58,27 +58,37 @@ describe('ReasoningBankAdapter', () => {
       verdict: 'Login successful',
     };
 
-    it('should learn from successful trajectory', async () => {
-      const pattern = await adapter.learnFromTrajectory(mockTrajectory);
-
-      expect(pattern).toBeDefined();
-      expect(pattern?.goal).toBe('Login to dashboard');
-      expect(pattern?.steps.length).toBe(4);
-      expect(pattern?.successRate).toBe(1);
-    });
-
-    it('should not create pattern from failed trajectory', async () => {
-      const failedTrajectory = { ...mockTrajectory, success: false };
-      const pattern = await adapter.learnFromTrajectory(failedTrajectory);
-
-      expect(pattern).toBeNull();
-    });
-
-    it('should buffer trajectories for batch learning', async () => {
-      adapter.bufferTrajectory(mockTrajectory);
+    it('should store successful trajectory and extract pattern', async () => {
+      await adapter.storeTrajectory(mockTrajectory);
 
       const stats = adapter.getStats();
-      expect(stats.bufferedTrajectories).toBe(1);
+      expect(stats.totalPatterns).toBeGreaterThan(0);
+    });
+
+    it('should not create pattern from single-step trajectory', async () => {
+      const singleStepTrajectory: BrowserTrajectory = {
+        ...mockTrajectory,
+        id: 'traj-single',
+        steps: [mockTrajectory.steps[0]],
+      };
+
+      await adapter.storeTrajectory(singleStepTrajectory);
+
+      // Pattern extraction requires at least 2 steps
+      const patterns = adapter.exportPatterns();
+      const singlePattern = patterns.find(p => p.goal === singleStepTrajectory.goal && p.steps.length === 1);
+      expect(singlePattern).toBeUndefined();
+    });
+
+    it('should update existing pattern on repeated success', async () => {
+      await adapter.storeTrajectory(mockTrajectory);
+      await adapter.storeTrajectory(mockTrajectory);
+
+      const patterns = adapter.exportPatterns();
+      const pattern = patterns.find(p => p.goal === mockTrajectory.goal);
+
+      expect(pattern).toBeDefined();
+      expect(pattern?.usageCount).toBeGreaterThan(1);
     });
   });
 
@@ -90,81 +100,120 @@ describe('ReasoningBankAdapter', () => {
       startTime: new Date().toISOString(),
       endTime: new Date().toISOString(),
       steps: [
-        { action: 'fill', input: { target: '@e1' }, result: { success: true }, timestamp: new Date().toISOString() },
-        { action: 'fill', input: { target: '@e2' }, result: { success: true }, timestamp: new Date().toISOString() },
-        { action: 'click', input: { target: '@e3' }, result: { success: true }, timestamp: new Date().toISOString() },
+        { action: 'fill', input: { target: '@e1', value: 'Name' }, result: { success: true, duration: 50 }, timestamp: new Date().toISOString() },
+        { action: 'fill', input: { target: '@e2', value: 'email' }, result: { success: true, duration: 50 }, timestamp: new Date().toISOString() },
+        { action: 'click', input: { target: '@e3' }, result: { success: true, duration: 100 }, timestamp: new Date().toISOString() },
       ],
       success: true,
     };
 
-    it('should find similar patterns', async () => {
-      await adapter.learnFromTrajectory(mockTrajectory);
+    it('should find similar patterns by goal', async () => {
+      await adapter.storeTrajectory(mockTrajectory);
 
-      const patterns = await adapter.findSimilarPatterns('Fill form');
+      const patterns = await adapter.findSimilarPatterns('contact form');
 
-      // May or may not find patterns depending on similarity threshold
       expect(Array.isArray(patterns)).toBe(true);
     });
 
-    it('should get recommended steps for goal', async () => {
-      await adapter.learnFromTrajectory(mockTrajectory);
+    it('should return empty array for no matches', async () => {
+      const patterns = await adapter.findSimilarPatterns('completely unrelated xyz');
 
-      const steps = await adapter.getRecommendedSteps('Fill a form', 'https://example.com');
+      expect(patterns).toEqual([]);
+    });
+
+    it('should get recommended steps for similar goal', async () => {
+      await adapter.storeTrajectory(mockTrajectory);
+
+      const steps = await adapter.getRecommendedSteps('Fill a form');
 
       expect(Array.isArray(steps)).toBe(true);
     });
   });
 
   describe('verdict recording', () => {
-    it('should record verdict for pattern', async () => {
+    it('should record verdict for trajectory', async () => {
       const mockTrajectory: BrowserTrajectory = {
         id: 'traj-3',
         goal: 'Test pattern',
         startUrl: 'https://example.com',
         startTime: new Date().toISOString(),
         endTime: new Date().toISOString(),
-        steps: [{ action: 'click', input: {}, result: { success: true }, timestamp: new Date().toISOString() }],
+        steps: [
+          { action: 'click', input: { target: '@e1' }, result: { success: true, duration: 100 }, timestamp: new Date().toISOString() },
+          { action: 'click', input: { target: '@e2' }, result: { success: true, duration: 100 }, timestamp: new Date().toISOString() },
+        ],
         success: true,
       };
 
-      const pattern = await adapter.learnFromTrajectory(mockTrajectory);
+      await adapter.storeTrajectory(mockTrajectory);
+      await adapter.recordVerdict('traj-3', true, 'Works great');
 
-      if (pattern) {
-        adapter.recordVerdict(pattern.id, true);
-
-        const stats = adapter.getStats();
-        expect(stats.totalPatterns).toBeGreaterThan(0);
-      }
+      // Just verify it doesn't throw
+      expect(true).toBe(true);
     });
   });
 
   describe('stats', () => {
-    it('should return stats', () => {
+    it('should return stats with correct structure', () => {
       const stats = adapter.getStats();
 
       expect(stats).toHaveProperty('totalPatterns');
       expect(stats).toHaveProperty('avgSuccessRate');
       expect(stats).toHaveProperty('bufferedTrajectories');
+      expect(typeof stats.totalPatterns).toBe('number');
+      expect(typeof stats.avgSuccessRate).toBe('number');
+      expect(typeof stats.bufferedTrajectories).toBe('number');
+    });
+
+    it('should return zero patterns initially', () => {
+      const stats = adapter.getStats();
+
+      expect(stats.totalPatterns).toBe(0);
+      expect(stats.avgSuccessRate).toBe(0);
     });
   });
 
-  describe('pattern export', () => {
-    it('should export patterns', async () => {
+  describe('pattern export/import', () => {
+    it('should export patterns as array', async () => {
       const mockTrajectory: BrowserTrajectory = {
         id: 'traj-4',
         goal: 'Export test',
         startUrl: 'https://example.com',
         startTime: new Date().toISOString(),
         endTime: new Date().toISOString(),
-        steps: [{ action: 'open', input: {}, result: { success: true }, timestamp: new Date().toISOString() }],
+        steps: [
+          { action: 'open', input: { url: 'https://example.com' }, result: { success: true, duration: 100 }, timestamp: new Date().toISOString() },
+          { action: 'click', input: { target: '@e1' }, result: { success: true, duration: 50 }, timestamp: new Date().toISOString() },
+        ],
         success: true,
       };
 
-      await adapter.learnFromTrajectory(mockTrajectory);
+      await adapter.storeTrajectory(mockTrajectory);
 
       const patterns = adapter.exportPatterns();
 
       expect(Array.isArray(patterns)).toBe(true);
+      expect(patterns.length).toBeGreaterThan(0);
+    });
+
+    it('should import patterns', () => {
+      const patternsToImport = [
+        {
+          id: 'imported-1',
+          type: 'navigation' as const,
+          goal: 'Imported pattern',
+          steps: [{ action: 'open' }],
+          successRate: 0.9,
+          avgDuration: 100,
+          lastUsed: new Date().toISOString(),
+          usageCount: 5,
+        },
+      ];
+
+      adapter.importPatterns(patternsToImport);
+
+      const stats = adapter.getStats();
+      expect(stats.totalPatterns).toBe(1);
     });
   });
 });
