@@ -3530,22 +3530,91 @@ const statuslineCommand: Command = {
       } catch { /* ignore */ }
     }
 
-    // Get AgentDB stats
+    // Get AgentDB stats (matching statusline-generator.ts paths)
     const agentdbStats = { vectorCount: 0, dbSizeKB: 0, hasHnsw: false };
-    const agentdbPaths = [
-      path.join(process.cwd(), '.claude-flow', 'memory', 'agentdb.db'),
+
+    // Check for direct database files first
+    const dbPaths = [
       path.join(process.cwd(), '.swarm', 'memory.db'),
+      path.join(process.cwd(), '.claude-flow', 'memory.db'),
+      path.join(process.cwd(), '.claude', 'memory.db'),
+      path.join(process.cwd(), 'data', 'memory.db'),
+      path.join(process.cwd(), 'memory.db'),
+      path.join(process.cwd(), '.agentdb', 'memory.db'),
+      path.join(process.cwd(), '.claude-flow', 'memory', 'agentdb.db'),
     ];
-    for (const dbPath of agentdbPaths) {
+    for (const dbPath of dbPaths) {
       if (fs.existsSync(dbPath)) {
         try {
           const stats = fs.statSync(dbPath);
           agentdbStats.dbSizeKB = Math.round(stats.size / 1024);
-          agentdbStats.vectorCount = Math.floor(agentdbStats.dbSizeKB / 4);
+          agentdbStats.vectorCount = Math.floor(agentdbStats.dbSizeKB / 2);
           agentdbStats.hasHnsw = agentdbStats.vectorCount > 100;
           break;
         } catch { /* ignore */ }
       }
+    }
+
+    // Check for AgentDB directories if no direct db found
+    if (agentdbStats.vectorCount === 0) {
+      const agentdbDirs = [
+        path.join(process.cwd(), '.claude-flow', 'agentdb'),
+        path.join(process.cwd(), '.swarm', 'agentdb'),
+        path.join(process.cwd(), 'data', 'agentdb'),
+        path.join(process.cwd(), '.agentdb'),
+      ];
+      for (const dir of agentdbDirs) {
+        if (fs.existsSync(dir)) {
+          try {
+            const files = fs.readdirSync(dir);
+            for (const f of files) {
+              if (f.endsWith('.db') || f.endsWith('.sqlite')) {
+                const filePath = path.join(dir, f);
+                const fileStat = fs.statSync(filePath);
+                agentdbStats.dbSizeKB += Math.round(fileStat.size / 1024);
+              }
+            }
+            agentdbStats.vectorCount = Math.floor(agentdbStats.dbSizeKB / 2);
+            agentdbStats.hasHnsw = agentdbStats.vectorCount > 100;
+            if (agentdbStats.vectorCount > 0) break;
+          } catch { /* ignore */ }
+        }
+      }
+    }
+
+    // Check for HNSW index files
+    const hnswPaths = [
+      path.join(process.cwd(), '.claude-flow', 'hnsw'),
+      path.join(process.cwd(), '.swarm', 'hnsw'),
+      path.join(process.cwd(), 'data', 'hnsw'),
+    ];
+    for (const hnswPath of hnswPaths) {
+      if (fs.existsSync(hnswPath)) {
+        agentdbStats.hasHnsw = true;
+        try {
+          const hnswFiles = fs.readdirSync(hnswPath);
+          const indexFile = hnswFiles.find(f => f.endsWith('.index'));
+          if (indexFile) {
+            const indexStat = fs.statSync(path.join(hnswPath, indexFile));
+            const hnswVectors = Math.floor(indexStat.size / 512);
+            agentdbStats.vectorCount = Math.max(agentdbStats.vectorCount, hnswVectors);
+          }
+        } catch { /* ignore */ }
+        break;
+      }
+    }
+
+    // Check for vectors.json file
+    const vectorsPath = path.join(process.cwd(), '.claude-flow', 'vectors.json');
+    if (fs.existsSync(vectorsPath) && agentdbStats.vectorCount === 0) {
+      try {
+        const data = JSON.parse(fs.readFileSync(vectorsPath, 'utf-8'));
+        if (Array.isArray(data)) {
+          agentdbStats.vectorCount = data.length;
+        } else if (data.vectors) {
+          agentdbStats.vectorCount = Object.keys(data.vectors).length;
+        }
+      } catch { /* ignore */ }
     }
 
     // Get test stats
