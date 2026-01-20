@@ -331,7 +331,7 @@ const postResult = await postBrowseHook({
 ---
 
 <details>
-<summary><h2>🐝 Swarm Coordination</h2></summary>
+<summary><strong>🐝 Swarm Coordination</strong></summary>
 
 Coordinate multiple browser sessions for parallel tasks:
 
