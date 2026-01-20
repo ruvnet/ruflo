@@ -57,12 +57,57 @@ export {
   type PostBrowseResult,
 } from './infrastructure/hooks-integration.js';
 
+// Memory integration (HNSW semantic search)
+export {
+  ClaudeFlowMemoryAdapter,
+  BrowserMemoryManager,
+  createMemoryManager,
+  getMemoryAdapter,
+  type BrowserMemoryEntry,
+  type MemorySearchResult,
+  type MemoryStats,
+  type MemorySearchOptions,
+  type MemoryFilter,
+  type IMemoryAdapter,
+} from './infrastructure/memory-integration.js';
+
+// Security integration (AIDefence)
+export {
+  BrowserSecurityScanner,
+  getSecurityScanner,
+  isUrlSafe,
+  containsPII,
+  type ThreatScanResult,
+  type Threat,
+  type ThreatType,
+  type PIIMatch,
+  type PIIType,
+  type SecurityConfig,
+} from './infrastructure/security-integration.js';
+
+// Workflow templates
+export {
+  WorkflowManager,
+  getWorkflowManager,
+  listWorkflows,
+  getWorkflow,
+  WORKFLOW_TEMPLATES,
+  type WorkflowTemplate,
+  type WorkflowCategory,
+  type WorkflowStep,
+  type WorkflowVariable,
+  type WorkflowExecution,
+  type WorkflowStepResult,
+  type BrowserAction,
+} from './infrastructure/workflow-templates.js';
+
 // Application services
 export {
   BrowserService,
   BrowserSwarmCoordinator,
   createBrowserService,
   createBrowserSwarm,
+  type BrowserServiceConfig,
 } from './application/browser-service.js';
 
 // MCP tools
