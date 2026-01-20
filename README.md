@@ -5767,6 +5767,10 @@ npx claude-flow@v3alpha init --wizard
 
 ---
 
+## 📖 Help & Resources
+
+Troubleshooting, migration guides, and documentation links.
+
 <details>
 <summary>🔧 <strong>Troubleshooting</strong></summary>
 
