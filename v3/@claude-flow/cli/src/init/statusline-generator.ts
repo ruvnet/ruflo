@@ -207,11 +207,17 @@ function getV3Progress() {
   if (fs.existsSync(metricsPath)) {
     try {
       const data = JSON.parse(fs.readFileSync(metricsPath, 'utf-8'));
-      if (data.domains && data.ddd) {
+      if (data.domains) {
+        const domainsCompleted = data.domains.completed || 0;
+        const totalDomains = data.domains.total || 5;
+        // Use ddd.progress if provided and > 0, otherwise calculate from domains
+        const dddProgress = (data.ddd?.progress > 0)
+          ? data.ddd.progress
+          : Math.min(100, Math.floor((domainsCompleted / totalDomains) * 100));
         return {
-          domainsCompleted: data.domains.completed || 0,
-          totalDomains: data.domains.total || 5,
-          dddProgress: data.ddd.progress || 0,
+          domainsCompleted,
+          totalDomains,
+          dddProgress,
           patternsLearned: data.learning?.patternsLearned || learning.patterns,
           sessionsCompleted: data.learning?.sessionsCompleted || learning.sessions
         };
