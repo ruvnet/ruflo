@@ -664,6 +664,88 @@ const hooksCommand: Command = {
   },
 };
 
+// Upgrade subcommand - updates helpers without losing user data
+const upgradeCommand: Command = {
+  name: 'upgrade',
+  description: 'Update statusline and helpers while preserving existing data',
+  options: [
+    {
+      name: 'verbose',
+      short: 'v',
+      description: 'Show detailed output',
+      type: 'boolean',
+      default: false,
+    },
+  ],
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    output.writeln();
+    output.writeln(output.bold('Upgrading Claude Flow'));
+    output.writeln(output.dim('Updates helpers while preserving your existing data'));
+    output.writeln();
+
+    const spinner = output.createSpinner({ text: 'Upgrading...' });
+    spinner.start();
+
+    try {
+      const result = await executeUpgrade(ctx.cwd);
+
+      if (!result.success) {
+        spinner.fail('Upgrade failed');
+        for (const error of result.errors) {
+          output.printError(error);
+        }
+        return { success: false, exitCode: 1 };
+      }
+
+      spinner.succeed('Upgrade complete!');
+      output.writeln();
+
+      // Show what was updated
+      if (result.updated.length > 0) {
+        output.printBox(
+          result.updated.map(f => `✓ ${f}`).join('\n'),
+          'Updated (latest version)'
+        );
+        output.writeln();
+      }
+
+      // Show what was created
+      if (result.created.length > 0) {
+        output.printBox(
+          result.created.map(f => `+ ${f}`).join('\n'),
+          'Created (new files)'
+        );
+        output.writeln();
+      }
+
+      // Show what was preserved
+      if (result.preserved.length > 0 && ctx.flags.verbose) {
+        output.printBox(
+          result.preserved.map(f => `• ${f}`).join('\n'),
+          'Preserved (existing data kept)'
+        );
+        output.writeln();
+      } else if (result.preserved.length > 0) {
+        output.printInfo(`Preserved ${result.preserved.length} existing data files`);
+        output.writeln();
+      }
+
+      output.printSuccess('Your statusline helper has been updated to the latest version');
+      output.printInfo('Existing metrics and learning data were preserved');
+
+      if (ctx.flags.format === 'json') {
+        output.printJson(result);
+      }
+
+      return { success: true, data: result };
+    } catch (error) {
+      spinner.fail('Upgrade failed');
+      output.printError(`Failed to upgrade: ${error instanceof Error ? error.message : String(error)}`);
+      return { success: false, exitCode: 1 };
+    }
+  },
+};
+
 // Main init command
 export const initCommand: Command = {
   name: 'init',
