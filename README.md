@@ -2738,7 +2738,7 @@ npx claude-flow@v3alpha issues rebalance
 ---
 
 <details>
-<summary><h2>🧭 Intelligent Routing — Q-Learning Task Assignment</h2></summary>
+<summary>🧭 <strong>Intelligent Routing</strong> — Q-Learning Task Assignment</summary>
 
 The Route system uses **Q-Learning** to automatically assign tasks to the best agent based on learned performance patterns.
 
