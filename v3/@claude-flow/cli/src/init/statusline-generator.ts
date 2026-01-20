@@ -677,13 +677,25 @@ function generateStatusline() {
     \`\${c.dim}🧠 \${String(system.intelligencePct).padStart(3)}%\${c.reset}\`
   );
 
-  // Line 3: Architecture status
+  // Line 3: Architecture status with ADRs, AgentDB, Tests
   const dddColor = progress.dddProgress >= 50 ? c.brightGreen : progress.dddProgress > 0 ? c.yellow : c.red;
+  const adrColor = adrs.count > 0 ? (adrs.implemented === adrs.count ? c.brightGreen : c.yellow) : c.dim;
+  const vectorColor = agentdb.vectorCount > 0 ? c.brightGreen : c.dim;
+  const testColor = tests.testFiles > 0 ? c.brightGreen : c.dim;
+
   lines.push(
     \`\${c.brightPurple}🔧 Architecture\${c.reset}    \` +
+    \`\${c.cyan}ADRs\${c.reset} \${adrColor}●\${adrs.implemented}/\${adrs.count}\${c.reset}  \${c.dim}│\${c.reset}  \` +
     \`\${c.cyan}DDD\${c.reset} \${dddColor}●\${String(progress.dddProgress).padStart(3)}%\${c.reset}  \${c.dim}│\${c.reset}  \` +
-    \`\${c.cyan}Security\${c.reset} \${securityColor}●\${security.status}\${c.reset}  \${c.dim}│\${c.reset}  \` +
-    \`\${c.cyan}Memory\${c.reset} \${c.brightGreen}●AgentDB\${c.reset}  \${c.dim}│\${c.reset}  \` +
+    \`\${c.cyan}Security\${c.reset} \${securityColor}●\${security.status}\${c.reset}\`
+  );
+
+  // Line 4: Memory, Vectors, Tests
+  lines.push(
+    \`\${c.brightCyan}📊 AgentDB\${c.reset}    \` +
+    \`\${c.cyan}Vectors\${c.reset} \${vectorColor}●\${agentdb.vectorCount}\${c.reset}  \${c.dim}│\${c.reset}  \` +
+    \`\${c.cyan}Size\${c.reset} \${c.brightWhite}\${agentdb.dbSizeKB}KB\${c.reset}  \${c.dim}│\${c.reset}  \` +
+    \`\${c.cyan}Tests\${c.reset} \${testColor}●\${tests.testFiles}\${c.reset} \${c.dim}(\${tests.testCases} cases)\${c.reset}  \${c.dim}│\${c.reset}  \` +
     \`\${c.cyan}Integration\${c.reset} \${swarm.coordinationActive ? c.brightCyan : c.dim}●\${c.reset}\`
   );
 
