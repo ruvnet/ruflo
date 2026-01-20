@@ -135,8 +135,11 @@ function getUserInfo() {
 function getLearningStats() {
   const memoryPaths = [
     path.join(process.cwd(), '.swarm', 'memory.db'),
+    path.join(process.cwd(), '.claude-flow', 'memory.db'),
     path.join(process.cwd(), '.claude', 'memory.db'),
     path.join(process.cwd(), 'data', 'memory.db'),
+    path.join(process.cwd(), 'memory.db'),
+    path.join(process.cwd(), '.agentdb', 'memory.db'),
   ];
 
   let patterns = 0;
