@@ -74,6 +74,7 @@ registerTools([
   ...githubTools,
   ...daaTools,
   ...coordinationTools,
+  ...browserTools,
 ]);
 
 /**
