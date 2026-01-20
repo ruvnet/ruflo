@@ -584,6 +584,7 @@ const skillsCommand: Command = {
         agentdb: ctx.flags.agentdb as boolean,
         github: ctx.flags.github as boolean,
         flowNexus: false,
+        browser: false,
         v3: ctx.flags.v3 as boolean,
       },
     };
