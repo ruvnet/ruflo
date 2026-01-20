@@ -159,7 +159,7 @@ export const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
     steps: [
       { id: 'open-menu', action: 'click', target: '\${menuSelector}', optional: true, waitAfter: 500 },
       { id: 'click-logout', action: 'click', target: '\${logoutSelector}', waitAfter: 1000 },
-      { id: 'confirm', action: 'click', target: '${confirmSelector}', optional: true, waitAfter: 1000 },
+      { id: 'confirm', action: 'click', target: '\${confirmSelector}', optional: true, waitAfter: 1000 },
       { id: 'verify', action: 'wait', target: '/login, /signin, .login-form', onError: 'continue' },
     ],
   },
