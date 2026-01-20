@@ -710,6 +710,10 @@ function generateJSON() {
     security: getSecurityStatus(),
     swarm: getSwarmStatus(),
     system: getSystemMetrics(),
+    adrs: getADRStatus(),
+    hooks: getHooksStatus(),
+    agentdb: getAgentDBStats(),
+    tests: getTestStats(),
     performance: {
       flashAttentionTarget: '2.49x-7.47x',
       searchImprovement: '150x-12,500x',
