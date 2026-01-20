@@ -113,7 +113,7 @@ export const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
     steps: [
       { id: 'navigate', action: 'open', target: '\${url}', waitAfter: 1000 },
       { id: 'snapshot-login', action: 'snapshot', onError: 'continue' },
-      { id: 'enter-username', action: 'fill', target: '${usernameSelector}', value: '${username}', onError: 'abort' },
+      { id: 'enter-username', action: 'fill', target: '\${usernameSelector}', value: '${username}', onError: 'abort' },
       { id: 'enter-password', action: 'fill', target: '${passwordSelector}', value: '${password}', onError: 'abort' },
       { id: 'submit', action: 'click', target: '${submitSelector}', waitAfter: 2000, onError: 'retry', maxRetries: 2 },
       { id: 'verify-success', action: 'wait', target: '${successIndicator}', onError: 'abort' },
