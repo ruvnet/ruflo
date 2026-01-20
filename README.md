@@ -2309,6 +2309,10 @@ npx claude-flow@v3alpha transfer-store download --id "security-essentials" --app
 
 ---
 
+## 🛠️ Development Tools
+
+Scripts, coordination systems, and collaborative development features.
+
 <details>
 <summary>🛠️ <strong>Helper Scripts</strong> — 30+ Development Automation Tools</summary>
 
