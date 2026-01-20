@@ -11,6 +11,7 @@ import * as path from 'path';
 import {
   executeInit,
   executeUpgrade,
+  executeUpgradeWithMissing,
   DEFAULT_INIT_OPTIONS,
   MINIMAL_INIT_OPTIONS,
   FULL_INIT_OPTIONS,
