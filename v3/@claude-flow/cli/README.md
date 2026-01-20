@@ -301,6 +301,18 @@ npx claude-flow@v3alpha --agent coder --task "Implement user authentication"
 npx claude-flow@v3alpha --list
 ```
 
+### Upgrading
+
+```bash
+# Update helpers and statusline (preserves your data)
+npx claude-flow@v3alpha init upgrade
+
+# Update AND add any missing skills/agents/commands
+npx claude-flow@v3alpha init upgrade --add-missing
+```
+
+The `--add-missing` flag automatically detects and installs new skills, agents, and commands that were added in newer versions, without overwriting your existing customizations.
+
 ### Claude Code MCP Integration
 
 Add claude-flow as an MCP server for seamless integration:
