@@ -3256,6 +3256,10 @@ await hooks.endTrajectory(trajectory, { success: true });
 
 ---
 
+## 🔗 Ecosystem & Integrations
+
+Core infrastructure packages powering Claude-Flow's intelligence layer.
+
 <details>
 <summary>⚡ <strong>Agentic-Flow Integration</strong> — Core AI Infrastructure</summary>
 
