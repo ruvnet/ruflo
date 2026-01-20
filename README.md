@@ -3787,7 +3787,7 @@ npx agentic-jujutsu examples        # Show usage examples
 ---
 
 <details>
-<summary><h2>🦀 RuVector — High-Performance Rust/WASM Intelligence</h2></summary>
+<summary>🦀 <strong>RuVector</strong> — High-Performance Rust/WASM Intelligence</summary>
 
 [![npm version](https://img.shields.io/npm/v/ruvector?color=blue&label=npm)](https://www.npmjs.com/package/ruvector)
 [![npm downloads](https://img.shields.io/npm/dm/ruvector?color=green)](https://www.npmjs.com/package/ruvector)
