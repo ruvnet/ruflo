@@ -535,8 +535,29 @@ function getSystemMetrics() {
   };
 }
 
-// Get ADR (Architecture Decision Records) status
+// Get ADR (Architecture Decision Records) status from REAL compliance data
 function getADRStatus() {
+  let compliance = 0;
+  let totalChecks = 0;
+  let compliantChecks = 0;
+  let checks = {};
+
+  // Check adr-compliance.json for REAL compliance data
+  const compliancePath = path.join(process.cwd(), '.claude-flow', 'metrics', 'adr-compliance.json');
+  if (fs.existsSync(compliancePath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(compliancePath, 'utf-8'));
+      compliance = data.compliance || 0;
+      checks = data.checks || {};
+      totalChecks = Object.keys(checks).length;
+      compliantChecks = Object.values(checks).filter(c => c.compliant).length;
+      return { count: totalChecks, implemented: compliantChecks, compliance };
+    } catch (e) {
+      // Fall through to file-based detection
+    }
+  }
+
+  // Fallback: count ADR files directly
   const adrPaths = [
     path.join(process.cwd(), 'docs', 'adrs'),
     path.join(process.cwd(), 'docs', 'adr'),
@@ -558,7 +579,6 @@ function getADRStatus() {
         );
         count = files.length;
 
-        // Check for implemented status in ADR files
         for (const file of files) {
           try {
             const content = fs.readFileSync(path.join(adrPath, file), 'utf-8');
@@ -577,7 +597,8 @@ function getADRStatus() {
     }
   }
 
-  return { count, implemented };
+  compliance = count > 0 ? Math.floor((implemented / count) * 100) : 0;
+  return { count, implemented, compliance };
 }
 
 // Get hooks status (enabled/registered hooks)
