@@ -4102,7 +4102,7 @@ ruvector-postgres/
 ---
 
 <details>
-<summary><h2>☁️ Flow Nexus — Cloud Platform Integration</h2></summary>
+<summary>☁️ <strong>Flow Nexus</strong> — Cloud Platform Integration</summary>
 
 Flow Nexus is a **cloud platform** for deploying and scaling Claude-Flow beyond your local machine.
 
