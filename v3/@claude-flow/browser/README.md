@@ -575,7 +575,7 @@ BROWSER_MEMORY_NAMESPACE=browser
 ---
 
 <details>
-<summary><h2>💡 Examples</h2></summary>
+<summary><strong>💡 Examples</strong></summary>
 
 ### Login and Extract Data
 
