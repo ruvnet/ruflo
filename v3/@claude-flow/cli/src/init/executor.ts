@@ -377,6 +377,96 @@ export async function executeUpgrade(targetDir: string): Promise<UpgradeResult> 
 }
 
 /**
+ * Execute upgrade with --add-missing flag
+ * Adds any new skills, agents, and commands that don't exist yet
+ */
+export async function executeUpgradeWithMissing(targetDir: string): Promise<UpgradeResult> {
+  // First do the normal upgrade
+  const result = await executeUpgrade(targetDir);
+
+  if (!result.success) {
+    return result;
+  }
+
+  // Initialize tracking arrays
+  result.addedSkills = [];
+  result.addedAgents = [];
+  result.addedCommands = [];
+
+  try {
+    // Ensure target directories exist
+    const skillsDir = path.join(targetDir, '.claude', 'skills');
+    const agentsDir = path.join(targetDir, '.claude', 'agents');
+    const commandsDir = path.join(targetDir, '.claude', 'commands');
+
+    for (const dir of [skillsDir, agentsDir, commandsDir]) {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    }
+
+    // Find source directories
+    const sourceSkillsDir = findSourceDir('skills');
+    const sourceAgentsDir = findSourceDir('agents');
+    const sourceCommandsDir = findSourceDir('commands');
+
+    // Add missing skills
+    if (sourceSkillsDir) {
+      const allSkills = Object.values(SKILLS_MAP).flat();
+      for (const skillName of [...new Set(allSkills)]) {
+        const sourcePath = path.join(sourceSkillsDir, skillName);
+        const targetPath = path.join(skillsDir, skillName);
+
+        if (fs.existsSync(sourcePath) && !fs.existsSync(targetPath)) {
+          copyDirRecursive(sourcePath, targetPath);
+          result.addedSkills.push(skillName);
+          result.created.push(`.claude/skills/${skillName}`);
+        }
+      }
+    }
+
+    // Add missing agents
+    if (sourceAgentsDir) {
+      const allAgents = Object.values(AGENTS_MAP).flat();
+      for (const agentCategory of [...new Set(allAgents)]) {
+        const sourcePath = path.join(sourceAgentsDir, agentCategory);
+        const targetPath = path.join(agentsDir, agentCategory);
+
+        if (fs.existsSync(sourcePath) && !fs.existsSync(targetPath)) {
+          copyDirRecursive(sourcePath, targetPath);
+          result.addedAgents.push(agentCategory);
+          result.created.push(`.claude/agents/${agentCategory}`);
+        }
+      }
+    }
+
+    // Add missing commands
+    if (sourceCommandsDir) {
+      const allCommands = Object.values(COMMANDS_MAP).flat();
+      for (const cmdName of [...new Set(allCommands)]) {
+        const sourcePath = path.join(sourceCommandsDir, cmdName);
+        const targetPath = path.join(commandsDir, cmdName);
+
+        if (fs.existsSync(sourcePath) && !fs.existsSync(targetPath)) {
+          if (fs.statSync(sourcePath).isDirectory()) {
+            copyDirRecursive(sourcePath, targetPath);
+          } else {
+            fs.copyFileSync(sourcePath, targetPath);
+          }
+          result.addedCommands.push(cmdName);
+          result.created.push(`.claude/commands/${cmdName}`);
+        }
+      }
+    }
+
+  } catch (error) {
+    result.errors.push(`Add missing failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  return result;
+}
+
+/**
  * Create directory structure
  */
 async function createDirectories(
