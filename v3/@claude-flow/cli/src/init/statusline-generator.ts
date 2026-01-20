@@ -368,10 +368,19 @@ function getSystemMetrics() {
   // Get learning stats for intelligence %
   const learning = getLearningStats();
 
-  // Intelligence % based on learned patterns (0 patterns = 0%, 1000+ = 100%)
-  const intelligencePct = intelligenceFromFile !== null
-    ? intelligenceFromFile
-    : Math.min(100, Math.floor((learning.patterns / 10) * 1));
+  // Also get AgentDB stats for fallback intelligence calculation
+  const agentdbStats = getAgentDBStats();
+
+  // Intelligence % based on learned patterns or vectors (0 = 0%, 1000+ = 100%)
+  let intelligencePct = 0;
+  if (intelligenceFromFile !== null) {
+    intelligencePct = intelligenceFromFile;
+  } else if (learning.patterns > 0) {
+    intelligencePct = Math.min(100, Math.floor(learning.patterns / 10));
+  } else if (agentdbStats.vectorCount > 0) {
+    // Use vector count as fallback (100 vectors = 1%, 10000+ = 100%)
+    intelligencePct = Math.min(100, Math.floor(agentdbStats.vectorCount / 100));
+  }
 
   // Context % based on session history (0 sessions = 0%, grows with usage)
   const contextPct = contextFromFile !== null
