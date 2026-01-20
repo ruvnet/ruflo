@@ -4845,7 +4845,7 @@ npx @claude-flow/deployment release --version 2.0.0 --dry-run
 ---
 
 <details>
-<summary><h2>📊 Performance Benchmarking — @claude-flow/performance</h2></summary>
+<summary>📊 <strong>Performance Benchmarking</strong> — @claude-flow/performance</summary>
 
 Statistical benchmarking, memory tracking, regression detection, and V3 performance target validation.
 
