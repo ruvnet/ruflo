@@ -243,7 +243,7 @@ export class ReasoningBankAdapter {
       : 0;
 
     return {
-      totalPatterns: patterns.size,
+      totalPatterns: patterns.length,
       avgSuccessRate,
       bufferedTrajectories: this.trajectoryBuffer.length,
     };
