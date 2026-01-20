@@ -742,10 +742,14 @@ function generateStatusline() {
   );
 
   // Line 4: Memory, Vectors, Tests
+  const hnswIndicator = agentdb.hasHnsw ? \`\${c.brightGreen}⚡\${c.reset}\` : '';
+  const sizeDisplay = agentdb.dbSizeKB >= 1024
+    ? \`\${(agentdb.dbSizeKB / 1024).toFixed(1)}MB\`
+    : \`\${agentdb.dbSizeKB}KB\`;
   lines.push(
     \`\${c.brightCyan}📊 AgentDB\${c.reset}    \` +
-    \`\${c.cyan}Vectors\${c.reset} \${vectorColor}●\${agentdb.vectorCount}\${c.reset}  \${c.dim}│\${c.reset}  \` +
-    \`\${c.cyan}Size\${c.reset} \${c.brightWhite}\${agentdb.dbSizeKB}KB\${c.reset}  \${c.dim}│\${c.reset}  \` +
+    \`\${c.cyan}Vectors\${c.reset} \${vectorColor}●\${agentdb.vectorCount}\${hnswIndicator}\${c.reset}  \${c.dim}│\${c.reset}  \` +
+    \`\${c.cyan}Size\${c.reset} \${c.brightWhite}\${sizeDisplay}\${c.reset}  \${c.dim}│\${c.reset}  \` +
     \`\${c.cyan}Tests\${c.reset} \${testColor}●\${tests.testFiles}\${c.reset} \${c.dim}(\${tests.testCases} cases)\${c.reset}  \${c.dim}│\${c.reset}  \` +
     \`\${c.cyan}Integration\${c.reset} \${swarm.coordinationActive ? c.brightCyan : c.dim}●\${c.reset}\`
   );
