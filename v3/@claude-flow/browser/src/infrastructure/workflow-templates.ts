@@ -111,7 +111,7 @@ export const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       { name: 'successIndicator', type: 'selector', required: false, default: '.dashboard, .home, #welcome', description: 'Element that indicates successful login' },
     ],
     steps: [
-      { id: 'navigate', action: 'open', target: '${url}', waitAfter: 1000 },
+      { id: 'navigate', action: 'open', target: '\${url}', waitAfter: 1000 },
       { id: 'snapshot-login', action: 'snapshot', onError: 'continue' },
       { id: 'enter-username', action: 'fill', target: '${usernameSelector}', value: '${username}', onError: 'abort' },
       { id: 'enter-password', action: 'fill', target: '${passwordSelector}', value: '${password}', onError: 'abort' },
@@ -135,7 +135,7 @@ export const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       { name: 'successUrl', type: 'string', required: false, description: 'URL pattern after successful login' },
     ],
     steps: [
-      { id: 'navigate', action: 'open', target: '${url}', waitAfter: 1000 },
+      { id: 'navigate', action: 'open', target: '\${url}', waitAfter: 1000 },
       { id: 'click-oauth', action: 'click', target: '${providerButton}', waitAfter: 2000 },
       { id: 'enter-email', action: 'fill', target: '[type="email"], #identifierId', value: '${email}' },
       { id: 'next-email', action: 'click', target: '#identifierNext, [type="submit"]', waitAfter: 1500 },
@@ -245,7 +245,7 @@ export const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       { name: 'submitSelector', type: 'selector', required: false, default: '[type="submit"], button[type="submit"]', description: 'Submit button' },
     ],
     steps: [
-      { id: 'navigate', action: 'open', target: '${url}', waitAfter: 1000 },
+      { id: 'navigate', action: 'open', target: '\${url}', waitAfter: 1000 },
       { id: 'fill-name', action: 'fill', target: '#name, [name="name"], [placeholder*="name" i]', value: '${name}' },
       { id: 'fill-email', action: 'fill', target: '#email, [name="email"], [type="email"]', value: '${email}' },
       { id: 'fill-message', action: 'fill', target: '#message, [name="message"], textarea', value: '${message}' },
@@ -320,7 +320,7 @@ export const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       { name: 'expectedStatus', type: 'number', required: false, default: 200, description: 'Expected HTTP status' },
     ],
     steps: [
-      { id: 'navigate', action: 'open', target: '${url}', onError: 'abort' },
+      { id: 'navigate', action: 'open', target: '\${url}', onError: 'abort' },
       { id: 'measure', action: 'eval', value: `
         (() => {
           const timing = performance.timing;
