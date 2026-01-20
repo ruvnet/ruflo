@@ -685,6 +685,10 @@ flowchart TB
 
 ---
 
+## 🔌 Setup & Configuration
+
+Connect Claude-Flow to your development environment.
+
 <details>
 <summary>🔌 <strong>MCP Setup</strong> — Connect Claude-Flow to Any AI Environment</summary>
 
