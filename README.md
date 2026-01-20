@@ -4301,7 +4301,7 @@ npx claude-flow@v3alpha stream-chain status feature-pipeline
 ---
 
 <details>
-<summary><h2>👥 Pair Programming — Collaborative AI Development</h2></summary>
+<summary>👥 <strong>Pair Programming</strong> — Collaborative AI Development</summary>
 
 The Pair Programming skill provides **human-AI collaborative coding** with role switching, TDD support, and real-time verification.
 
