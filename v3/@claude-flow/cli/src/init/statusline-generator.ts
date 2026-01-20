@@ -222,11 +222,26 @@ function getV3Progress() {
 
 // Get security status based on actual scans
 function getSecurityStatus() {
+  const totalCves = 3;
+  let cvesFixed = 0;
+
+  // Check audit-status.json first (created by init)
+  const auditStatusPath = path.join(process.cwd(), '.claude-flow', 'security', 'audit-status.json');
+  if (fs.existsSync(auditStatusPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(auditStatusPath, 'utf-8'));
+      return {
+        status: data.status || 'PENDING',
+        cvesFixed: data.cvesFixed || 0,
+        totalCves: data.totalCves || 3,
+      };
+    } catch (e) {
+      // Fall through to scan directory check
+    }
+  }
+
   // Check for security scan results in memory
   const scanResultsPath = path.join(process.cwd(), '.claude', 'security-scans');
-  let cvesFixed = 0;
-  const totalCves = 3;
-
   if (fs.existsSync(scanResultsPath)) {
     try {
       const scans = fs.readdirSync(scanResultsPath).filter(f => f.endsWith('.json'));
@@ -238,10 +253,10 @@ function getSecurityStatus() {
   }
 
   // Also check .swarm/security for audit results
-  const auditPath = path.join(process.cwd(), '.swarm', 'security');
-  if (fs.existsSync(auditPath)) {
+  const swarmAuditPath = path.join(process.cwd(), '.swarm', 'security');
+  if (fs.existsSync(swarmAuditPath)) {
     try {
-      const audits = fs.readdirSync(auditPath).filter(f => f.includes('audit'));
+      const audits = fs.readdirSync(swarmAuditPath).filter(f => f.includes('audit'));
       cvesFixed = Math.min(totalCves, Math.max(cvesFixed, audits.length));
     } catch (e) {
       // Ignore
