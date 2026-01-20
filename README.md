@@ -5339,6 +5339,10 @@ console.log(TEST_CONFIG.AGENTDB_SEARCH_IMPROVEMENT_MAX); // 12500
 
 ---
 
+## ⚙️ Configuration & Reference
+
+Environment setup, configuration options, and platform support.
+
 <details>
 <summary>💻 <strong>Cross-Platform Support</strong></summary>
 
