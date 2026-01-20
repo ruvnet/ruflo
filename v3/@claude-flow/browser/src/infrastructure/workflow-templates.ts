@@ -178,11 +178,11 @@ export const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       { name: 'includeHeaders', type: 'boolean', required: false, default: true, description: 'Include table headers' },
     ],
     steps: [
-      { id: 'navigate', action: 'open', target: '${url}', waitAfter: 1000 },
-      { id: 'wait-table', action: 'wait', target: '${tableSelector}' },
+      { id: 'navigate', action: 'open', target: '\${url}', waitAfter: 1000 },
+      { id: 'wait-table', action: 'wait', target: '\${tableSelector}' },
       { id: 'extract-data', action: 'eval', value: `
         (() => {
-          const table = document.querySelector('${tableSelector}');
+          const table = document.querySelector('\${tableSelector}');
           if (!table) return { error: 'Table not found' };
 
           const rows = Array.from(table.querySelectorAll('tr'));
