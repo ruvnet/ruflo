@@ -2433,7 +2433,7 @@ Helpers are configured in `.claude/settings.json`:
 ---
 
 <details>
-<summary><h2>🎓 Skills System — 42 Pre-Built Workflows for Any Task</h2></summary>
+<summary>🎓 <strong>Skills System</strong> — 42 Pre-Built Workflows for Any Task</summary>
 
 Skills are **reusable workflows** that combine agents, hooks, and patterns into ready-to-use solutions. Think of them as "recipes" for common development tasks.
 
