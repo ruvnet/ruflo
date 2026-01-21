@@ -232,6 +232,8 @@ Skip expensive LLM calls for simple tasks using WebAssembly transforms, and comp
 <details>
 <summary>🔧 <strong>Operations</strong> — Background services and integrations</summary>
 
+Background daemons handle security audits, performance optimization, and session persistence automatically while you work.
+
 | Layer | Components | What It Does |
 |-------|------------|--------------|
 | Background | Daemon, 12 Workers | Auto-runs audits, optimization, learning |
