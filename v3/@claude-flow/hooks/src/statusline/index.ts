@@ -250,6 +250,125 @@ export class StatuslineGenerator {
   }
 
   /**
+   * Generate single-line output for Claude Code compatibility
+   * This avoids the multi-line collision bug where Claude Code's internal status
+   * (written at absolute terminal coordinates ~cols 15-25) bleeds into conversation
+   *
+   * @see https://github.com/ruvnet/claude-flow/issues/985
+   */
+  generateSingleLine(): string {
+    if (!this.config.enabled) {
+      return '';
+    }
+
+    const data = this.generateData();
+    const c = colors;
+
+    const swarmIndicator = data.swarm.coordinationActive ? '●' : '○';
+    const securityStatus = data.security.status === 'CLEAN' ? '✓' :
+                           data.security.cvesFixed > 0 ? '~' : '✗';
+
+    // Single line format: CF-V3 | D:3/5 | S:●2/15 | CVE:✓3/3 | 🧠12%
+    return `${c.brightPurple}CF-V3${c.reset} ${c.dim}|${c.reset} ` +
+      `${c.cyan}D:${data.v3Progress.domainsCompleted}/${data.v3Progress.totalDomains}${c.reset} ${c.dim}|${c.reset} ` +
+      `${c.yellow}S:${swarmIndicator}${data.swarm.activeAgents}/${data.swarm.maxAgents}${c.reset} ${c.dim}|${c.reset} ` +
+      `${data.security.status === 'CLEAN' ? c.green : c.red}CVE:${securityStatus}${data.security.cvesFixed}/${data.security.totalCves}${c.reset} ${c.dim}|${c.reset} ` +
+      `${c.dim}🧠${data.system.intelligencePct}%${c.reset}`;
+  }
+
+  /**
+   * Generate safe multi-line output that avoids collision zone
+   * The collision zone is columns 15-25 on the SECOND-TO-LAST line
+   * We restructure output so that line has minimal/no content in that zone
+   *
+   * @see https://github.com/ruvnet/claude-flow/issues/985
+   */
+  generateSafeStatusline(): string {
+    if (!this.config.enabled) {
+      return '';
+    }
+
+    const data = this.generateData();
+    const c = colors;
+    const lines: string[] = [];
+
+    // Line 1: Header (NOT collision zone)
+    let header = `${c.bold}${c.brightPurple}▊ Claude Flow V3 ${c.reset}`;
+    header += `${data.swarm.coordinationActive ? c.brightCyan : c.dim}● ${c.brightCyan}${data.user.name}${c.reset}`;
+    if (data.user.gitBranch) {
+      header += `  ${c.dim}│${c.reset}  ${c.brightBlue}⎇ ${data.user.gitBranch}${c.reset}`;
+    }
+    if (data.user.modelName) {
+      header += `  ${c.dim}│${c.reset}  ${c.purple}${data.user.modelName}${c.reset}`;
+    }
+    lines.push(header);
+
+    // Line 2: Separator (NOT collision zone)
+    lines.push(`${c.dim}─────────────────────────────────────────────────────${c.reset}`);
+
+    // Line 3: DDD Progress (NOT collision zone)
+    const progressBar = this.generateProgressBar(
+      data.v3Progress.domainsCompleted,
+      data.v3Progress.totalDomains
+    );
+    const domainsColor = data.v3Progress.domainsCompleted >= 3 ? c.brightGreen :
+                         data.v3Progress.domainsCompleted > 0 ? c.yellow : c.red;
+    const speedup = `${c.brightYellow}⚡ 1.0x${c.reset} ${c.dim}→${c.reset} ${c.brightYellow}${data.performance.flashAttentionTarget}${c.reset}`;
+    lines.push(
+      `${c.brightCyan}🏗️  DDD Domains${c.reset}    ${progressBar}  ` +
+      `${domainsColor}${data.v3Progress.domainsCompleted}${c.reset}/${c.brightWhite}${data.v3Progress.totalDomains}${c.reset}    ${speedup}`
+    );
+
+    // Line 4: COLLISION ZONE LINE - restructure to avoid cols 15-25
+    // We add padding after the emoji to push content past the collision zone
+    const swarmIndicator = data.swarm.coordinationActive ? `${c.brightGreen}◉${c.reset}` : `${c.dim}○${c.reset}`;
+    const agentsColor = data.swarm.activeAgents > 0 ? c.brightGreen : c.red;
+    const agentDisplay = String(data.swarm.activeAgents).padStart(2);
+
+    let securityIcon = '🔴';
+    let securityColor = c.brightRed;
+    if (data.security.status === 'CLEAN') {
+      securityIcon = '🟢';
+      securityColor = c.brightGreen;
+    } else if (data.security.cvesFixed > 0) {
+      securityIcon = '🟡';
+      securityColor = c.brightYellow;
+    }
+
+    const memoryColor = data.system.memoryMB > 0 ? c.brightCyan : c.dim;
+    const memoryDisplay = data.system.memoryMB > 0 ? `${data.system.memoryMB}MB` : '--';
+    const intelDisplay = String(data.system.intelligencePct).padStart(3);
+    const subAgentColor = data.system.subAgents > 0 ? c.brightPurple : c.dim;
+
+    // SAFE LINE: Push content past collision zone with 24-char padding after emoji
+    // Emoji is 2 cols, need 24 spaces to reach col 26 (past collision zone cols 15-25)
+    lines.push(
+      `${c.brightYellow}🤖${c.reset}                        ` +  // 24 spaces after emoji (2+24=26)
+      `${swarmIndicator} [${agentsColor}${agentDisplay}${c.reset}/${c.brightWhite}${data.swarm.maxAgents}${c.reset}]  ` +
+      `${subAgentColor}👥 ${data.system.subAgents}${c.reset}    ` +
+      `${securityIcon} ${securityColor}CVE ${data.security.cvesFixed}${c.reset}/${c.brightWhite}${data.security.totalCves}${c.reset}    ` +
+      `${memoryColor}💾 ${memoryDisplay}${c.reset}    ` +
+      `${c.dim}🧠 ${intelDisplay}%${c.reset}`
+    );
+
+    // Line 5: Architecture status (LAST LINE - Claude writes BELOW this)
+    const dddColor = data.v3Progress.dddProgress >= 50 ? c.brightGreen :
+                     data.v3Progress.dddProgress > 0 ? c.yellow : c.red;
+    const dddDisplay = String(data.v3Progress.dddProgress).padStart(3);
+    const integrationColor = data.swarm.coordinationActive ? c.brightCyan : c.dim;
+
+    lines.push(
+      `${c.brightPurple}🔧 Architecture${c.reset}    ` +
+      `${c.cyan}DDD${c.reset} ${dddColor}●${dddDisplay}%${c.reset}  ${c.dim}│${c.reset}  ` +
+      `${c.cyan}Security${c.reset} ${securityColor}●${data.security.status}${c.reset}  ${c.dim}│${c.reset}  ` +
+      `${c.cyan}Memory${c.reset} ${c.brightGreen}●AgentDB${c.reset}  ${c.dim}│${c.reset}  ` +
+      `${c.cyan}Integration${c.reset} ${integrationColor}●${c.reset}`
+    );
+
+    return lines.join('\n');
+  }
+
+  /**
    * Invalidate cache
    */
   invalidateCache(): void {

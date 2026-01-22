@@ -3,7 +3,20 @@
  * Claude Flow V3 Statusline Generator
  * Displays real-time V3 implementation progress and system status
  *
- * Usage: node statusline.cjs [--json] [--compact]
+ * Usage: node statusline.cjs [options]
+ *
+ * Options:
+ *   (default)   Safe multi-line output with collision zone avoidance
+ *   --single    Single-line output (completely avoids collision)
+ *   --unsafe    Legacy multi-line without collision avoidance
+ *   --legacy    Alias for --unsafe
+ *   --json      JSON output with pretty printing
+ *   --compact   JSON output without formatting
+ *
+ * Collision Zone Fix (Issue #985):
+ * Claude Code writes its internal status (e.g., "7s • 1p") at absolute
+ * terminal coordinates (columns 15-25 on second-to-last line). The safe
+ * mode pads the collision line with spaces to push content past column 25.
  *
  * IMPORTANT: This file uses .cjs extension to work in ES module projects.
  * The require() syntax is intentional for CommonJS compatibility.
@@ -387,11 +400,110 @@ function generateJSON() {
   };
 }
 
+/**
+ * Generate single-line output for Claude Code compatibility
+ * This avoids the collision zone issue entirely by using one line
+ * @see https://github.com/ruvnet/claude-flow/issues/985
+ */
+function generateSingleLine() {
+  if (!CONFIG.enabled) return '';
+
+  const user = getUserInfo();
+  const progress = getV3Progress();
+  const security = getSecurityStatus();
+  const swarm = getSwarmStatus();
+  const system = getSystemMetrics();
+
+  const swarmIndicator = swarm.coordinationActive ? '●' : '○';
+  const securityStatus = security.status === 'CLEAN' ? '✓' :
+                         security.cvesFixed > 0 ? '~' : '✗';
+
+  return `${c.brightPurple}CF-V3${c.reset} ${c.dim}|${c.reset} ` +
+    `${c.cyan}D:${progress.domainsCompleted}/${progress.totalDomains}${c.reset} ${c.dim}|${c.reset} ` +
+    `${c.yellow}S:${swarmIndicator}${swarm.activeAgents}/${swarm.maxAgents}${c.reset} ${c.dim}|${c.reset} ` +
+    `${security.status === 'CLEAN' ? c.green : c.red}CVE:${securityStatus}${security.cvesFixed}/${security.totalCves}${c.reset} ${c.dim}|${c.reset} ` +
+    `${c.dim}🧠${system.intelligencePct}%${c.reset}`;
+}
+
+/**
+ * Generate safe multi-line statusline that avoids Claude Code collision zone
+ * The collision zone is columns 15-25 on the second-to-last line.
+ * We pad that line with spaces to push content past column 25.
+ * @see https://github.com/ruvnet/claude-flow/issues/985
+ */
+function generateSafeStatusline() {
+  if (!CONFIG.enabled) return '';
+
+  const user = getUserInfo();
+  const progress = getV3Progress();
+  const security = getSecurityStatus();
+  const swarm = getSwarmStatus();
+  const system = getSystemMetrics();
+  const lines = [];
+
+  // Header Line
+  let header = `${c.bold}${c.brightPurple}▊ Claude Flow V3 ${c.reset}`;
+  header += `${swarm.coordinationActive ? c.brightCyan : c.dim}● ${c.brightCyan}${user.name}${c.reset}`;
+  if (user.gitBranch) {
+    header += `  ${c.dim}│${c.reset}  ${c.brightBlue}⎇ ${user.gitBranch}${c.reset}`;
+  }
+  header += `  ${c.dim}│${c.reset}  ${c.purple}${user.modelName}${c.reset}`;
+  lines.push(header);
+
+  // Separator
+  lines.push(`${c.dim}─────────────────────────────────────────────────────${c.reset}`);
+
+  // Line 1: DDD Domain Progress
+  const domainsColor = progress.domainsCompleted >= 3 ? c.brightGreen : progress.domainsCompleted > 0 ? c.yellow : c.red;
+  lines.push(
+    `${c.brightCyan}🏗️  DDD Domains${c.reset}    ${progressBar(progress.domainsCompleted, progress.totalDomains)}  ` +
+    `${domainsColor}${progress.domainsCompleted}${c.reset}/${c.brightWhite}${progress.totalDomains}${c.reset}    ` +
+    `${c.brightYellow}⚡ 1.0x${c.reset} ${c.dim}→${c.reset} ${c.brightYellow}2.49x-7.47x${c.reset}`
+  );
+
+  // Line 2 (COLLISION LINE): Swarm status with 24 spaces padding after emoji
+  // The emoji (🤖) is 2 columns. 24 spaces pushes content to column 26, past the collision zone (15-25)
+  const swarmIndicator = swarm.coordinationActive ? `${c.brightGreen}◉${c.reset}` : `${c.dim}○${c.reset}`;
+  const agentsColor = swarm.activeAgents > 0 ? c.brightGreen : c.red;
+  let securityIcon = security.status === 'CLEAN' ? '🟢' : security.status === 'IN_PROGRESS' ? '🟡' : '🔴';
+  let securityColor = security.status === 'CLEAN' ? c.brightGreen : security.status === 'IN_PROGRESS' ? c.brightYellow : c.brightRed;
+
+  // CRITICAL: 24 spaces after 🤖 (emoji is 2 cols, so 2+24=26, past collision zone cols 15-25)
+  lines.push(
+    `${c.brightYellow}🤖${c.reset}                        ` +  // 24 spaces padding
+    `${swarmIndicator} [${agentsColor}${String(swarm.activeAgents).padStart(2)}${c.reset}/${c.brightWhite}${swarm.maxAgents}${c.reset}]  ` +
+    `${c.brightPurple}👥 ${system.subAgents}${c.reset}  ` +
+    `${securityIcon} ${securityColor}CVE ${security.cvesFixed}${c.reset}/${c.brightWhite}${security.totalCves}${c.reset}  ` +
+    `${c.brightCyan}💾 ${system.memoryMB}MB${c.reset}  ` +
+    `${c.dim}🧠 ${system.intelligencePct}%${c.reset}`
+  );
+
+  // Line 3: Architecture status (this is the last line, not in collision zone)
+  const dddColor = progress.dddProgress >= 50 ? c.brightGreen : progress.dddProgress > 0 ? c.yellow : c.red;
+  lines.push(
+    `${c.brightPurple}🔧 Architecture${c.reset}    ` +
+    `${c.cyan}DDD${c.reset} ${dddColor}●${String(progress.dddProgress).padStart(3)}%${c.reset}  ${c.dim}│${c.reset}  ` +
+    `${c.cyan}Security${c.reset} ${securityColor}●${security.status}${c.reset}  ${c.dim}│${c.reset}  ` +
+    `${c.cyan}Memory${c.reset} ${c.brightGreen}●AgentDB${c.reset}  ${c.dim}│${c.reset}  ` +
+    `${c.cyan}Integration${c.reset} ${swarm.coordinationActive ? c.brightCyan : c.dim}●${c.reset}`
+  );
+
+  return lines.join('\n');
+}
+
 // Main
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify(generateJSON(), null, 2));
 } else if (process.argv.includes('--compact')) {
   console.log(JSON.stringify(generateJSON()));
-} else {
+} else if (process.argv.includes('--single')) {
+  // Single-line mode - completely avoids collision zone
+  console.log(generateSingleLine());
+} else if (process.argv.includes('--unsafe') || process.argv.includes('--legacy')) {
+  // Legacy mode - original multi-line without collision avoidance
   console.log(generateStatusline());
+} else {
+  // Default: Safe multi-line mode with collision zone avoidance
+  // Use --unsafe or --legacy to get the original behavior
+  console.log(generateSafeStatusline());
 }
