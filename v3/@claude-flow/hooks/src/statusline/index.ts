@@ -340,10 +340,10 @@ export class StatuslineGenerator {
     const intelDisplay = String(data.system.intelligencePct).padStart(3);
     const subAgentColor = data.system.subAgents > 0 ? c.brightPurple : c.dim;
 
-    // SAFE LINE: Push content past collision zone with 14-char padding after emoji
-    // This ensures columns 15-25 are spaces, avoiding collision with Claude Code's status
+    // SAFE LINE: Push content past collision zone with 24-char padding after emoji
+    // Emoji is 2 cols, need 24 spaces to reach col 26 (past collision zone cols 15-25)
     lines.push(
-      `${c.brightYellow}🤖${c.reset}              ` +  // 14 spaces after emoji
+      `${c.brightYellow}🤖${c.reset}                        ` +  // 24 spaces after emoji (2+24=26)
       `${swarmIndicator} [${agentsColor}${agentDisplay}${c.reset}/${c.brightWhite}${data.swarm.maxAgents}${c.reset}]  ` +
       `${subAgentColor}👥 ${data.system.subAgents}${c.reset}    ` +
       `${securityIcon} ${securityColor}CVE ${data.security.cvesFixed}${c.reset}/${c.brightWhite}${data.security.totalCves}${c.reset}    ` +
