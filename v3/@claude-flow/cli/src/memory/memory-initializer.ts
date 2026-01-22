@@ -325,10 +325,40 @@ interface HNSWIndex {
 
 let hnswIndex: HNSWIndex | null = null;
 let hnswInitializing = false;
+let cachedDbMtime: number | null = null;
 
 /**
- * Get or create the HNSW index singleton
- * Lazily initializes from SQLite data on first use
+ * Check if the database file has been modified since we cached.
+ * Issue #969: MCP server needs to detect CLI writes to invalidate stale cache.
+ */
+function checkDbMtimeChanged(dbPathToCheck: string): boolean {
+  try {
+    if (!fs.existsSync(dbPathToCheck)) return false;
+    const stats = fs.statSync(dbPathToCheck);
+    const currentMtime = stats.mtimeMs;
+
+    if (cachedDbMtime === null) {
+      cachedDbMtime = currentMtime;
+      return false;
+    }
+
+    if (currentMtime > cachedDbMtime) {
+      cachedDbMtime = currentMtime;
+      return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get or create the HNSW index singleton.
+ * Lazily initializes from SQLite data on first use.
+ *
+ * Issue #969: Now checks database mtime to detect external modifications
+ * (e.g., when CLI writes entries while MCP server is running).
  */
 export async function getHNSWIndex(options?: {
   dbPath?: string;
@@ -337,14 +367,23 @@ export async function getHNSWIndex(options?: {
 }): Promise<HNSWIndex | null> {
   const dimensions = options?.dimensions ?? 384;
 
-  // Return existing index if already initialized
-  if (hnswIndex?.initialized && !options?.forceRebuild) {
+  // Compute paths early for mtime check (Issue #969)
+  const swarmDir = path.join(process.cwd(), '.swarm');
+  const dbPath = options?.dbPath || path.join(swarmDir, 'memory.db');
+
+  // Issue #969: Check if database was modified externally (CLI writes)
+  const dbModified = checkDbMtimeChanged(dbPath);
+  if (dbModified && hnswIndex) {
+    hnswIndex = null;
+  }
+
+  // Return existing index if already initialized and not stale
+  if (hnswIndex?.initialized && !options?.forceRebuild && !dbModified) {
     return hnswIndex;
   }
 
   // Prevent concurrent initialization
   if (hnswInitializing) {
-    // Wait for initialization to complete
     while (hnswInitializing) {
       await new Promise(resolve => setTimeout(resolve, 10));
     }
@@ -355,7 +394,6 @@ export async function getHNSWIndex(options?: {
 
   try {
     // Import @ruvector/core dynamically
-    // Handle both ESM (default export) and CJS patterns
     const ruvectorModule = await import('@ruvector/core').catch(() => null);
     if (!ruvectorModule) {
       hnswInitializing = false;
@@ -371,14 +409,12 @@ export async function getHNSWIndex(options?: {
 
     const { VectorDb } = ruvectorCore;
 
-    // Persistent storage paths
-    const swarmDir = path.join(process.cwd(), '.swarm');
+    // Persistent storage paths (swarmDir and dbPath defined at function start for mtime check)
     if (!fs.existsSync(swarmDir)) {
       fs.mkdirSync(swarmDir, { recursive: true });
     }
     const hnswPath = path.join(swarmDir, 'hnsw.index');
     const metadataPath = path.join(swarmDir, 'hnsw.metadata.json');
-    const dbPath = options?.dbPath || path.join(swarmDir, 'memory.db');
 
     // Create HNSW index with persistent storage
     // @ruvector/core uses string enum for distanceMetric: 'Cosine', 'Euclidean', 'DotProduct', 'Manhattan'
@@ -591,10 +627,12 @@ export function getHNSWStatus(): {
 }
 
 /**
- * Clear the HNSW index (for rebuilding)
+ * Clear the HNSW index (for rebuilding).
+ * Issue #969: Also reset mtime cache to force fresh check on next access.
  */
 export function clearHNSWIndex(): void {
   hnswIndex = null;
+  cachedDbMtime = null;
 }
 
 // ============================================================================
