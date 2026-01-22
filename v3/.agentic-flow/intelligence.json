@@ -1,7 +1,7 @@
 {
   "patterns": {
     "command:": {
-      "success": 0.9999153585021713,
+      "success": 0.9999238226519541,
       "failure": -0.38561603772519504
     }
   },
@@ -10,8 +10,8 @@
   "dirPatterns": {},
   "errorPatterns": [],
   "metrics": {
-    "totalRoutes": 104,
-    "successfulRoutes": 90,
+    "totalRoutes": 105,
+    "successfulRoutes": 91,
     "routingHistory": [
       {
         "timestamp": "2026-01-04T17:04:00.672Z",

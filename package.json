@@ -1,6 +1,6 @@
 {
   "name": "claude-flow",
-  "version": "3.0.0-alpha.153",
+  "version": "3.0.0-alpha.154",
   "description": "Claude Flow V3 - Domain-Driven Design Architecture with 15-Agent Swarm Coordination",
   "main": "dist/index.js",
   "type": "module",
