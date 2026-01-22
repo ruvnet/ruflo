@@ -344,4 +344,24 @@ export const taskTools: MCPTool[] = [
       };
     },
   },
+  {
+    name: 'task_summary',
+    description: 'Get task summary counts by status',
+    category: 'task',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+    handler: async () => {
+      const store = loadTaskStore();
+      const tasks = Object.values(store.tasks);
+      return {
+        total: tasks.length,
+        pending: tasks.filter(t => t.status === 'pending').length,
+        running: tasks.filter(t => t.status === 'in_progress').length,
+        completed: tasks.filter(t => t.status === 'completed').length,
+        failed: tasks.filter(t => t.status === 'failed').length,
+      };
+    },
+  },
 ];
