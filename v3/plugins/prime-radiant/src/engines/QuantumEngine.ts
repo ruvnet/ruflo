@@ -205,8 +205,12 @@ export class QuantumEngine implements IQuantumEngine {
     // Get 1-simplices (edges)
     const edges = complex.simplices.filter(s => s.length === 2);
 
-    for (const [v1, v2] of edges) {
-      union(v1, v2);
+    for (const edge of edges) {
+      const v1 = edge[0];
+      const v2 = edge[1];
+      if (v1 !== undefined && v2 !== undefined) {
+        union(v1, v2);
+      }
     }
 
     // Count unique components
