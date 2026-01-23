@@ -461,7 +461,7 @@ describe('QESecurityBridge', () => {
       const result = await bridge.validatePath('/workspace/../../../etc/passwd');
 
       expect(result.valid).toBe(false);
-      expect(result.violations).toContain(expect.stringContaining('traversal'));
+      expect(result.violations.some(v => v.toLowerCase().includes('traversal'))).toBe(true);
     });
   });
 
