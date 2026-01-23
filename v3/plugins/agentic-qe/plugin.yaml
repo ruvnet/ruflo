@@ -495,3 +495,535 @@ integration:
     components:
       - ToolRegistry
       - ToolHandler
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# IMPLEMENTATION STATUS & PLAN
+# ═══════════════════════════════════════════════════════════════════════════════
+
+implementation:
+  status: planning  # planning | in-progress | complete
+  lastUpdated: "2026-01-23"
+
+  # What exists vs what needs to be built
+  files:
+    existing:
+      - path: plugin.yaml
+        status: complete
+        description: Plugin manifest with full configuration
+      - path: README.md
+        status: complete
+        description: Usage documentation
+
+    required:
+      # Phase 1: Plugin Scaffold
+      - path: package.json
+        status: pending
+        phase: 1
+        priority: critical
+        estimatedLines: 50
+
+      - path: tsconfig.json
+        status: pending
+        phase: 1
+        priority: critical
+        estimatedLines: 30
+
+      - path: src/index.ts
+        status: pending
+        phase: 1
+        priority: critical
+        estimatedLines: 80
+        description: Plugin entry point and exports
+
+      - path: src/plugin.ts
+        status: pending
+        phase: 1
+        priority: critical
+        estimatedLines: 200
+        description: AQEPlugin class with lifecycle methods
+
+      - path: src/types.ts
+        status: pending
+        phase: 1
+        priority: critical
+        estimatedLines: 300
+        description: TypeScript type definitions
+
+      - path: src/interfaces.ts
+        status: pending
+        phase: 1
+        priority: critical
+        estimatedLines: 200
+        description: Public interfaces
+
+      - path: src/schemas.ts
+        status: pending
+        phase: 1
+        priority: critical
+        estimatedLines: 250
+        description: Zod validation schemas
+
+      - path: src/constants.ts
+        status: pending
+        phase: 1
+        priority: high
+        estimatedLines: 100
+        description: Plugin constants and defaults
+
+      # Phase 2: Bridge Implementations
+      - path: src/bridges/index.ts
+        status: pending
+        phase: 2
+        priority: critical
+        estimatedLines: 50
+
+      - path: src/bridges/QEMemoryBridge.ts
+        status: pending
+        phase: 2
+        priority: critical
+        estimatedLines: 300
+        description: Memory domain integration (AgentDB, HNSW)
+
+      - path: src/bridges/QESecurityBridge.ts
+        status: pending
+        phase: 2
+        priority: critical
+        estimatedLines: 250
+        description: Security domain integration (PathValidator, SafeExecutor)
+
+      - path: src/bridges/QECoreBridge.ts
+        status: pending
+        phase: 2
+        priority: critical
+        estimatedLines: 250
+        description: Core domain integration (AgentService, TaskService)
+
+      - path: src/bridges/QEHiveBridge.ts
+        status: pending
+        phase: 2
+        priority: critical
+        estimatedLines: 300
+        description: Hive Mind coordination (Queen, Consensus)
+
+      - path: src/bridges/QEModelRoutingAdapter.ts
+        status: pending
+        phase: 2
+        priority: high
+        estimatedLines: 200
+        description: TinyDancer ↔ ADR-026 adapter
+
+      - path: src/contexts/ContextMapper.ts
+        status: pending
+        phase: 2
+        priority: high
+        estimatedLines: 150
+        description: Maps 12 QE contexts to V3 domains
+
+      # Phase 3: MCP Tools (16 tools)
+      - path: src/tools/index.ts
+        status: pending
+        phase: 3
+        priority: critical
+        estimatedLines: 100
+        description: Tool registry and registration
+
+      - path: src/tools/test-generation/generate-tests.ts
+        status: pending
+        phase: 3
+        priority: critical
+        estimatedLines: 150
+
+      - path: src/tools/test-generation/tdd-cycle.ts
+        status: pending
+        phase: 3
+        priority: critical
+        estimatedLines: 200
+
+      - path: src/tools/coverage-analysis/analyze-coverage.ts
+        status: pending
+        phase: 3
+        priority: critical
+        estimatedLines: 150
+
+      - path: src/tools/coverage-analysis/prioritize-gaps.ts
+        status: pending
+        phase: 3
+        priority: critical
+        estimatedLines: 120
+
+      - path: src/tools/quality-assessment/evaluate-quality-gate.ts
+        status: pending
+        phase: 3
+        priority: high
+        estimatedLines: 150
+
+      - path: src/tools/quality-assessment/assess-readiness.ts
+        status: pending
+        phase: 3
+        priority: high
+        estimatedLines: 120
+
+      - path: src/tools/defect-intelligence/predict-defects.ts
+        status: pending
+        phase: 3
+        priority: high
+        estimatedLines: 150
+
+      - path: src/tools/defect-intelligence/analyze-root-cause.ts
+        status: pending
+        phase: 3
+        priority: high
+        estimatedLines: 180
+
+      - path: src/tools/security-compliance/security-scan.ts
+        status: pending
+        phase: 3
+        priority: high
+        estimatedLines: 200
+
+      - path: src/tools/security-compliance/audit-compliance.ts
+        status: pending
+        phase: 3
+        priority: high
+        estimatedLines: 150
+
+      - path: src/tools/contract-testing/validate-contract.ts
+        status: pending
+        phase: 3
+        priority: medium
+        estimatedLines: 150
+
+      - path: src/tools/contract-testing/compare-contracts.ts
+        status: pending
+        phase: 3
+        priority: medium
+        estimatedLines: 130
+
+      - path: src/tools/visual-accessibility/visual-regression.ts
+        status: pending
+        phase: 3
+        priority: medium
+        estimatedLines: 180
+
+      - path: src/tools/visual-accessibility/check-accessibility.ts
+        status: pending
+        phase: 3
+        priority: medium
+        estimatedLines: 150
+
+      - path: src/tools/chaos-resilience/chaos-inject.ts
+        status: pending
+        phase: 3
+        priority: medium
+        estimatedLines: 200
+
+      - path: src/tools/chaos-resilience/assess-resilience.ts
+        status: pending
+        phase: 3
+        priority: medium
+        estimatedLines: 150
+
+      # Phase 4: Hooks & Workers
+      - path: src/hooks/index.ts
+        status: pending
+        phase: 4
+        priority: high
+        estimatedLines: 50
+
+      - path: src/hooks/pre-test-execution.ts
+        status: pending
+        phase: 4
+        priority: high
+        estimatedLines: 100
+
+      - path: src/hooks/pre-security-scan.ts
+        status: pending
+        phase: 4
+        priority: high
+        estimatedLines: 100
+
+      - path: src/hooks/post-test-execution.ts
+        status: pending
+        phase: 4
+        priority: high
+        estimatedLines: 120
+
+      - path: src/hooks/post-coverage-analysis.ts
+        status: pending
+        phase: 4
+        priority: high
+        estimatedLines: 100
+
+      - path: src/hooks/post-security-scan.ts
+        status: pending
+        phase: 4
+        priority: high
+        estimatedLines: 120
+
+      - path: src/workers/index.ts
+        status: pending
+        phase: 4
+        priority: high
+        estimatedLines: 50
+
+      - path: src/workers/TestExecutorWorker.ts
+        status: pending
+        phase: 4
+        priority: high
+        estimatedLines: 200
+
+      - path: src/workers/CoverageAnalyzerWorker.ts
+        status: pending
+        phase: 4
+        priority: medium
+        estimatedLines: 150
+
+      - path: src/workers/SecurityScannerWorker.ts
+        status: pending
+        phase: 4
+        priority: medium
+        estimatedLines: 180
+
+      - path: src/sandbox/index.ts
+        status: pending
+        phase: 4
+        priority: critical
+        estimatedLines: 50
+
+      - path: src/sandbox/TestSandbox.ts
+        status: pending
+        phase: 4
+        priority: critical
+        estimatedLines: 250
+        description: Isolated test code execution
+
+      - path: src/sandbox/SandboxPolicy.ts
+        status: pending
+        phase: 4
+        priority: critical
+        estimatedLines: 100
+
+      # Phase 5: Agent Definitions (58 total)
+      - path: agents/**/*.yaml
+        status: pending
+        phase: 5
+        priority: high
+        count: 58
+        estimatedLinesEach: 40
+        description: "12 test-gen + 8 test-exec + 6 coverage + 5 quality + 4 defect + 3 requirements + 5 code-intel + 4 security + 3 contract + 3 visual + 4 chaos + 2 learning + 7 TDD"
+
+      # Phase 6: Skills (12 total)
+      - path: skills/qe-test-generation.md
+        status: pending
+        phase: 6
+        priority: high
+        estimatedLines: 100
+
+      - path: skills/qe-tdd-cycle.md
+        status: pending
+        phase: 6
+        priority: high
+        estimatedLines: 120
+
+      - path: skills/qe-coverage-analysis.md
+        status: pending
+        phase: 6
+        priority: high
+        estimatedLines: 100
+
+      - path: skills/qe-quality-gate.md
+        status: pending
+        phase: 6
+        priority: high
+        estimatedLines: 100
+
+      - path: skills/qe-defect-prediction.md
+        status: pending
+        phase: 6
+        priority: medium
+        estimatedLines: 100
+
+      - path: skills/qe-security-scan.md
+        status: pending
+        phase: 6
+        priority: high
+        estimatedLines: 120
+
+      - path: skills/qe-contract-testing.md
+        status: pending
+        phase: 6
+        priority: medium
+        estimatedLines: 100
+
+      - path: skills/qe-visual-testing.md
+        status: pending
+        phase: 6
+        priority: medium
+        estimatedLines: 100
+
+      - path: skills/qe-accessibility.md
+        status: pending
+        phase: 6
+        priority: medium
+        estimatedLines: 100
+
+      - path: skills/qe-chaos-engineering.md
+        status: pending
+        phase: 6
+        priority: medium
+        estimatedLines: 120
+
+      - path: skills/qe-queen-coordinator.md
+        status: pending
+        phase: 6
+        priority: high
+        estimatedLines: 150
+
+      - path: skills/qe-full-pipeline.md
+        status: pending
+        phase: 6
+        priority: high
+        estimatedLines: 200
+
+      # Phase 7: Tests
+      - path: vitest.config.ts
+        status: pending
+        phase: 7
+        priority: high
+        estimatedLines: 40
+
+      - path: __tests__/unit/**/*.test.ts
+        status: pending
+        phase: 7
+        priority: high
+        count: 15
+        estimatedLinesEach: 100
+
+      - path: __tests__/integration/**/*.test.ts
+        status: pending
+        phase: 7
+        priority: high
+        count: 5
+        estimatedLinesEach: 150
+
+      - path: __tests__/e2e/**/*.test.ts
+        status: pending
+        phase: 7
+        priority: medium
+        count: 3
+        estimatedLinesEach: 200
+
+  # Phase summary
+  phases:
+    - phase: 1
+      name: Plugin Scaffold
+      status: pending
+      duration: "1 week"
+      files: 8
+      estimatedLines: 1210
+      deliverables:
+        - Plugin registers with @claude-flow/plugins SDK
+        - Type-safe configuration validation
+        - Basic lifecycle hooks (onLoad, onUnload)
+
+    - phase: 2
+      name: Bridge Implementations
+      status: pending
+      duration: "1 week"
+      files: 7
+      estimatedLines: 1500
+      deliverables:
+        - Anti-corruption layer isolates agentic-qe from V3 internals
+        - Memory namespace coordination working
+        - TinyDancer ↔ ADR-026 routing aligned
+
+    - phase: 3
+      name: MCP Tools
+      status: pending
+      duration: "1 week"
+      files: 17
+      estimatedLines: 2530
+      deliverables:
+        - All 16 MCP tools registered and functional
+        - Tools accessible via mcp__agentic-qe__<tool-name>
+        - Input validation via Zod schemas
+
+    - phase: 4
+      name: Hooks & Workers
+      status: pending
+      duration: "1 week"
+      files: 12
+      estimatedLines: 1470
+      deliverables:
+        - Hooks integrate with V3 hook system
+        - Workers run in background with concurrency limits
+        - Sandbox isolates test code execution
+
+    - phase: 5
+      name: Agent Definitions
+      status: pending
+      duration: "1 week"
+      files: 58
+      estimatedLines: 2320
+      deliverables:
+        - All 58 agents (51 + 7 TDD) defined as YAML
+        - Agents spawn via Claude Code Task tool
+        - Model routing hints in agent definitions
+
+    - phase: 6
+      name: Skills & Examples
+      status: pending
+      duration: "1 week"
+      files: 18
+      estimatedLines: 1610
+      deliverables:
+        - Skills available via /qe-* commands
+        - Working examples for all major use cases
+
+    - phase: 7
+      name: Testing & Documentation
+      status: pending
+      duration: "1 week"
+      files: 24
+      estimatedLines: 2790
+      deliverables:
+        - 80%+ test coverage
+        - All integration points validated
+        - Performance benchmarks documented
+
+  # Totals
+  totals:
+    totalPhases: 7
+    totalDuration: "7 weeks"
+    totalFiles: 144
+    totalEstimatedLines: 13430
+
+  # Critical path
+  criticalPath:
+    - phase: 1
+      blockedBy: null
+      blocks: [2, 3, 4, 5, 6, 7]
+
+    - phase: 2
+      blockedBy: [1]
+      blocks: [3, 4]
+
+    - phase: 3
+      blockedBy: [2]
+      blocks: [5, 6]
+
+    - phase: 4
+      blockedBy: [2]
+      blocks: [6, 7]
+
+    - phase: 5
+      blockedBy: [3]
+      blocks: [6, 7]
+
+    - phase: 6
+      blockedBy: [4, 5]
+      blocks: [7]
+
+    - phase: 7
+      blockedBy: [6]
+      blocks: null
