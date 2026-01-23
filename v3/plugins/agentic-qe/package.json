@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-agentic-qe",
-  "version": "3.0.0-alpha.3",
+  "version": "3.0.0-alpha.4",
   "description": "Quality Engineering plugin for Claude Flow V3 with 51 specialized agents across 12 DDD bounded contexts",
   "type": "module",
   "main": "./dist/index.js",
