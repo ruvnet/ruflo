@@ -1213,7 +1213,7 @@ export class PrimeRadiantPlugin implements IPlugin {
         }
 
         return {
-          ...payload,
+          ...(payload as Record<string, unknown>),
           stabilityMetrics: {
             stable: spectral.stable,
             spectralGap: spectral.spectralGap,
