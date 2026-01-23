@@ -281,7 +281,8 @@ export class SpectralEngine implements ISpectralEngine {
   private normalizeVector(v: Float32Array): Float32Array {
     let norm = 0;
     for (let i = 0; i < v.length; i++) {
-      norm += v[i] * v[i];
+      const vi = v[i] ?? 0;
+      norm += vi * vi;
     }
     norm = Math.sqrt(norm);
 
@@ -289,7 +290,7 @@ export class SpectralEngine implements ISpectralEngine {
 
     const result = new Float32Array(v.length);
     for (let i = 0; i < v.length; i++) {
-      result[i] = v[i] / norm;
+      result[i] = (v[i] ?? 0) / norm;
     }
     return result;
   }
