@@ -123,7 +123,9 @@ export class SpectralEngine implements ISpectralEngine {
     }
 
     const sorted = [...eigenvalues].sort((a, b) => b - a);
-    return Math.abs(sorted[0] - sorted[1]);
+    const first = sorted[0] ?? 0;
+    const second = sorted[1] ?? 0;
+    return Math.abs(first - second);
   }
 
   /**
