@@ -6,14 +6,9 @@
  * @version 3.2.3
  */
 
-import type {
-  IQECoreBridge,
-  IQEHiveBridge,
-  IQEMemoryBridge,
-  IQEModelRoutingAdapter,
-  IQESecurityBridge,
-  QEPluginContext,
-} from './interfaces.js';
+// Bridge interfaces are available but not directly used in this scaffold
+// They will be used by the full implementation
+import type { QEPluginContext } from './interfaces.js';
 
 import type {
   AQEPluginConfig,
