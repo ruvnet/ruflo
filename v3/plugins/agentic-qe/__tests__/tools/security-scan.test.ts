@@ -193,7 +193,7 @@ class MockSecurityScanTool {
       errors.push('timeout must be at least 1000ms');
     }
 
-    if (input.options?.maxFindings && input.options.maxFindings < 1) {
+    if (input.options?.maxFindings !== undefined && input.options.maxFindings < 1) {
       errors.push('maxFindings must be at least 1');
     }
 
