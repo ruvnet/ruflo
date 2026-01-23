@@ -644,17 +644,45 @@ export class AQEPlugin implements IPlugin {
    * Register the plugin with the plugin system
    */
   async register(registry: IPluginRegistry): Promise<void> {
-    // Register MCP tools
-    registry.registerTools(this.getMCPTools());
+    // Register MCP tools - use batch or individual registration
+    const tools = this.getMCPTools();
+    if (registry.registerTools) {
+      registry.registerTools(tools);
+    } else if (registry.registerTool) {
+      for (const tool of tools) {
+        registry.registerTool(tool);
+      }
+    }
 
     // Register hooks
-    registry.registerHooks(this.getHooks());
+    const hooks = this.getHooks();
+    if (registry.registerHooks) {
+      registry.registerHooks(hooks);
+    } else if (registry.registerHook) {
+      for (const hook of hooks) {
+        registry.registerHook(hook);
+      }
+    }
 
     // Register workers
-    registry.registerWorkers(this.getWorkers());
+    const workers = this.getWorkers();
+    if (registry.registerWorkers) {
+      registry.registerWorkers(workers);
+    } else if (registry.registerWorker) {
+      for (const worker of workers) {
+        registry.registerWorker(worker);
+      }
+    }
 
     // Register agents
-    registry.registerAgents(this.getAgents());
+    const agents = this.getAgents();
+    if (registry.registerAgents) {
+      registry.registerAgents(agents);
+    } else if (registry.registerAgent) {
+      for (const agent of agents) {
+        registry.registerAgent(agent);
+      }
+    }
 
     this.updateHealth('registry', 'healthy', 'Plugin registered successfully');
   }
