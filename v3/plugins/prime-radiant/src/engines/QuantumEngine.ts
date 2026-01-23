@@ -228,11 +228,10 @@ export class QuantumEngine implements IQuantumEngine {
   private computeB1(complex: SimplicialComplex): number {
     const vertices = complex.vertices.length;
     const edges = complex.simplices.filter(s => s.length === 2).length;
-    const triangles = complex.simplices.filter(s => s.length === 3).length;
     const components = this.countConnectedComponents(complex);
 
     // Euler characteristic relation: V - E + F = chi
-    // b1 = E - V + components - triangles (simplified for 2D)
+    // b1 = E - V + components (simplified for 2D)
     // This is an approximation - full computation requires boundary matrix ranks
 
     return Math.max(0, edges - vertices + components);
