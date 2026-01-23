@@ -511,5 +511,44 @@ export function createHybridService(
   });
 }
 
+// ===== Beads Integration =====
+export {
+  BeadsMemoryAdapter,
+  createBeadsAdapter,
+  connectToBeads,
+} from './beads-adapter.js';
+
+export type {
+  BeadsTask,
+  BeadsTaskInput,
+  BeadsTaskUpdate,
+  BeadsTaskQuery,
+  BeadsTaskStatus,
+  BeadsTaskPriority,
+  BeadsIssueType,
+  BeadsEpic,
+  BeadsEpicInput,
+  BeadsEpicStatus,
+  BeadsDependency,
+  BeadsDependencyResult,
+  BeadsSyncResult,
+  BeadsSyncConflict,
+  BeadsSyncDirection,
+  BeadsAdapterConfig,
+  BeadsEvent,
+  BeadsEventType,
+  BeadsEventHandler,
+  BeadsStats,
+} from './beads-types.js';
+
+export {
+  DEFAULT_BEADS_CONFIG,
+  generateBeadsId,
+  createDefaultTask,
+  computeEpicStatus,
+  calculateEpicProgress,
+  priorityValue,
+} from './beads-types.js';
+
 // Default export
 export default UnifiedMemoryService;

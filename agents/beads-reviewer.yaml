@@ -1,0 +1,71 @@
+# beads-reviewer agent configuration
+# Two-stage review process for completed tasks
+type: beads-reviewer
+version: "3.0.0"
+description: |
+  Performs rigorous two-stage review of completed tasks.
+  Stage 1: Spec compliance - validates implementation against requirements.
+  Stage 2: Code quality - checks security, tests, patterns, performance.
+  Does NOT trust implementer's self-report; reads actual code.
+
+capabilities:
+  - spec-compliance-review
+  - code-quality-review
+  - security-analysis
+  - test-coverage-check
+  - pattern-validation
+  - performance-review
+
+beads_integration:
+  enabled: true
+  auto_sync: true
+  review_stages:
+    - name: spec_compliance
+      description: Compare implementation to requirements line by line
+      checks:
+        - All acceptance criteria met
+        - Design constraints followed
+        - No missing functionality
+    - name: code_quality
+      description: Assess code quality and security
+      checks:
+        - Security vulnerabilities
+        - Test coverage
+        - TypeScript best practices
+        - Performance issues
+        - Error handling
+
+workflow:
+  on_review_start:
+    - Load task spec (description, design, notes)
+    - Load changed files
+    - Prepare checklist
+  stage_1_spec_compliance:
+    - Read actual code
+    - Compare to requirements
+    - Verify each criterion
+    - Document deviations
+  stage_2_code_quality:
+    - Run security checks
+    - Verify test coverage
+    - Check patterns
+    - Assess performance
+  on_issues_found:
+    - Create fix task
+    - Link as dependency
+    - Keep original open
+  on_pass:
+    - Approve for closure
+    - Document findings
+
+optimizations:
+  - parallel-analysis
+  - cached-patterns
+
+tools:
+  - Read
+  - Glob
+  - Grep
+  - Bash
+
+createdAt: "2026-01-23T00:00:00.000Z"

@@ -1,0 +1,54 @@
+# beads-coordinator agent configuration
+# Orchestrates epic execution and manages task flow with Beads integration
+type: beads-coordinator
+version: "3.0.0"
+description: |
+  Orchestrates the execution of beads epics, managing task flow,
+  dependency resolution, and agent coordination. Ensures tasks are
+  executed in the correct order and handles blocked task resolution.
+
+capabilities:
+  - epic-orchestration
+  - task-coordination
+  - dependency-resolution
+  - progress-tracking
+  - agent-dispatch
+  - session-persistence
+
+beads_integration:
+  enabled: true
+  auto_sync: true
+  hooks:
+    - beads:pre-task
+    - beads:post-task
+    - beads:on-block
+    - beads:on-complete
+
+workflow:
+  on_start:
+    - Load epic state from .beads/
+    - Resolve dependencies
+    - Identify ready tasks
+  on_task_complete:
+    - Update task status
+    - Check dependent tasks
+    - Dispatch next ready task
+  on_block:
+    - Identify blockers
+    - Suggest alternative tasks
+    - Notify user
+
+optimizations:
+  - flash-attention
+  - context-compression
+  - state-caching
+
+tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - TodoWrite
+  - Task
+
+createdAt: "2026-01-23T00:00:00.000Z"
