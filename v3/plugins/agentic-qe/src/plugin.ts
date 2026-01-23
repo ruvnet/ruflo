@@ -14,6 +14,7 @@ import type {
   AQEPluginConfig,
   BoundedContext,
   ContextMapping,
+  ModelTier,
   QEMemoryNamespace,
   SecurityLevel,
   V3Domain,
