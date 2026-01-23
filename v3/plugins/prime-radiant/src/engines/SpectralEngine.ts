@@ -301,7 +301,7 @@ export class SpectralEngine implements ISpectralEngine {
   private dotProduct(a: Float32Array, b: Float32Array): number {
     let sum = 0;
     for (let i = 0; i < a.length; i++) {
-      sum += a[i] * b[i];
+      sum += (a[i] ?? 0) * (b[i] ?? 0);
     }
     return sum;
   }
