@@ -121,11 +121,11 @@ const listCommand: Command = {
 
       output.printTable({
         columns: [
-          { key: 'name', header: 'Plugin', width: 24 },
-          { key: 'version', header: 'Version', width: 10 },
+          { key: 'name', header: 'Plugin', width: 38 },
+          { key: 'version', header: 'Version', width: 14 },
           { key: 'type', header: 'Type', width: 12 },
-          { key: 'downloads', header: 'Downloads', width: 12, align: 'right' },
-          { key: 'rating', header: 'Rating', width: 8, align: 'right' },
+          { key: 'downloads', header: 'Downloads', width: 10, align: 'right' },
+          { key: 'rating', header: 'Rating', width: 7, align: 'right' },
           { key: 'trust', header: 'Trust', width: 10 },
         ],
         data: plugins.map(p => ({
