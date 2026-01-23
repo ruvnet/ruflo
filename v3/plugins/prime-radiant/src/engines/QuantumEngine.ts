@@ -498,7 +498,7 @@ export class QuantumEngine implements IQuantumEngine {
     let sum = 0;
     const len = Math.min(a.length, b.length);
     for (let i = 0; i < len; i++) {
-      const diff = a[i] - b[i];
+      const diff = (a[i] ?? 0) - (b[i] ?? 0);
       sum += diff * diff;
     }
     return Math.sqrt(sum);
