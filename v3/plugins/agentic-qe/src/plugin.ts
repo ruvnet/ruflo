@@ -83,7 +83,10 @@ interface IPluginContext {
   };
   getConfig?(): Record<string, unknown>;
   set?(key: string, value: unknown): void;
-  getMemoryService?(): { clearNamespace(ns: string): Promise<void> } | null;
+  getMemoryService?(): {
+    clearNamespace(ns: string): Promise<void>;
+    createNamespace?(config: unknown): Promise<void>;
+  } | null;
   getSecurityModule?(): { pathValidator: { validate(path: string): Promise<{ valid: boolean; error?: string }> } } | null;
   getUIService?(): { confirm(message: string): Promise<boolean> } | null;
 }
