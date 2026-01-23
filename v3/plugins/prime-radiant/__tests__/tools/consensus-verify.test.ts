@@ -50,7 +50,7 @@ interface ConsensusVerifyOutput {
 // ============================================================================
 
 class MockConsensusVerifyTool {
-  private defaultThreshold = 0.67; // 2/3 majority
+  private defaultThreshold = 2/3; // Exact 2/3 majority
   private defaultMaxEnergy = 0.5;
   private defaultMinAgents = 3;
 
