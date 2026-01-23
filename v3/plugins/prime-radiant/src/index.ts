@@ -216,7 +216,7 @@ export {
   validateMemoryGateInput,
   validateConfig,
   safeValidate,
-} from './schemas';
+} from './schemas.js';
 
 // Re-export schema types
 export type {
@@ -229,7 +229,7 @@ export type {
   MemoryGateResult,
   HottVerificationInput,
   MorphismInput,
-} from './schemas';
+} from './schemas.js';
 
 // ============================================================================
 // Factory Functions
