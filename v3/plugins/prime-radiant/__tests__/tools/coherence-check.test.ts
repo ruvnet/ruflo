@@ -297,10 +297,11 @@ describe('CoherenceCheckTool', () => {
     it('should return warn for medium energy', async () => {
       tool.configure({ warnThreshold: 0.2, rejectThreshold: 0.8 });
 
+      // Use vectors with ~0.29 energy (45 degree angle)
       const result = await tool.execute({
         vectors: [
           [1, 0, 0],
-          [0.7, 0.3, 0],
+          [0.7, 0.7, 0], // Cosine sim ~0.707, energy ~0.29
         ],
       });
 
