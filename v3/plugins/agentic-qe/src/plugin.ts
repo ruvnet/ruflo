@@ -1113,8 +1113,8 @@ export class AQEPlugin implements IPlugin {
   }
 
   private async handleEvaluateQualityGate(
-    input: unknown,
-    context: IPluginContext
+    _input: unknown,
+    _context: IPluginContext
   ): Promise<MCPToolResult> {
     const result = {
       status: 'success',
