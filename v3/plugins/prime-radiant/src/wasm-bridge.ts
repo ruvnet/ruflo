@@ -281,7 +281,7 @@ export class WasmBridge {
   /**
    * Create WASM import object for initialization
    */
-  private createImportObject(): WebAssembly.Imports {
+  private createImportObject(): Record<string, Record<string, WebAssembly.ImportValue>> {
     return {
       env: {
         // Memory
