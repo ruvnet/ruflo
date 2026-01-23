@@ -1,12 +1,83 @@
 {
-  "name": "prime-radiant",
-  "version": "1.0.0",
+  "name": "@claude-flow/plugin-prime-radiant",
+  "version": "0.1.3",
   "description": "Mathematical AI interpretability plugin providing sheaf cohomology, spectral analysis, causal inference, and quantum topology for coherence validation, consensus verification, and hallucination prevention.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./tools": {
+      "import": "./dist/tools/index.js",
+      "types": "./dist/tools/index.d.ts"
+    }
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "files": [
+    "dist",
+    "plugin.yaml",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "claude-flow",
+    "plugin",
+    "ai-interpretability",
+    "sheaf-cohomology",
+    "causal-inference",
+    "quantum-topology",
+    "coherence-engine",
+    "mcp",
+    "rag"
+  ],
+  "author": "rUv",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/claude-flow.git",
+    "directory": "v3/plugins/prime-radiant"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/claude-flow/issues"
+  },
+  "homepage": "https://github.com/ruvnet/claude-flow/tree/main/v3/plugins/prime-radiant#readme",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "peerDependencies": {
+    "@claude-flow/memory": ">=3.0.0",
+    "@claude-flow/security": ">=3.0.0",
+    "@claude-flow/coordination": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@claude-flow/memory": {
+      "optional": true
+    },
+    "@claude-flow/security": {
+      "optional": true
+    },
+    "@claude-flow/coordination": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "prime-radiant-advanced-wasm": "^0.1.3"
+  }
 }
