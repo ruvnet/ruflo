@@ -641,8 +641,8 @@ const searchCommand: Command = {
 
       output.printTable({
         columns: [
-          { key: 'name', header: 'Plugin', width: 26 },
-          { key: 'description', header: 'Description', width: 35 },
+          { key: 'name', header: 'Plugin', width: 38 },
+          { key: 'description', header: 'Description', width: 40 },
           { key: 'downloads', header: 'Downloads', width: 10, align: 'right' },
         ],
         data: searchResult.plugins.map(p => ({
