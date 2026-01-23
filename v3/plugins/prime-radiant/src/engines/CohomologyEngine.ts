@@ -185,7 +185,13 @@ export class CohomologyEngine implements ICohomologyEngine {
     for (let i = 0; i < n; i++) {
       similarities[i] = [];
       for (let j = 0; j < n; j++) {
-        similarities[i][j] = i === j ? 0 : this.cosineSimilarity(vectors[i], vectors[j]);
+        const vecI = vectors[i];
+        const vecJ = vectors[j];
+        if (!vecI || !vecJ) {
+          similarities[i]![j] = 0;
+        } else {
+          similarities[i]![j] = i === j ? 0 : this.cosineSimilarity(vecI, vecJ);
+        }
       }
     }
 
