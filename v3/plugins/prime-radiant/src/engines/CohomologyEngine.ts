@@ -201,8 +201,13 @@ export class CohomologyEngine implements ICohomologyEngine {
 
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
-        const weight = Math.max(0, 1 - similarities[i][j]); // Dissimilarity weight
-        const diff = this.vectorDifference(vectors[i], vectors[j]);
+        const simRow = similarities[i];
+        const simVal = simRow?.[j] ?? 0;
+        const weight = Math.max(0, 1 - simVal); // Dissimilarity weight
+        const vecI = vectors[i];
+        const vecJ = vectors[j];
+        if (!vecI || !vecJ) continue;
+        const diff = this.vectorDifference(vecI, vecJ);
         const diffNorm = this.vectorNorm(diff);
 
         energy += weight * diffNorm * diffNorm;
