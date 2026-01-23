@@ -26,6 +26,6 @@
     "allowSyntheticDefaultImports": true,
     "noEmitOnError": false
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "__tests__"]
+  "include": ["src/index.ts", "src/plugin.ts", "src/types.ts", "src/schemas.ts", "src/interfaces.ts"],
+  "exclude": ["node_modules", "dist", "__tests__", "src/bridges", "src/tools"]
 }
