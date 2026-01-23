@@ -471,11 +471,26 @@ class SecuritySandbox implements ISecuritySandbox {
     return true;
   }
 
-  getResourceUsage(): { memoryUsed: number; cpuTime: number; activeOperations: number } {
+  validatePath(path: string): boolean {
+    // Check against blocked paths
+    const blockedPaths = this.config?.blockedPaths ?? ['/etc', '/proc', '/sys'];
+    for (const blocked of blockedPaths) {
+      if (path.startsWith(blocked)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  getResourceUsage(): ResourceUsage {
     return {
       memoryUsed: process.memoryUsage().heapUsed,
+      memoryBytes: process.memoryUsage().heapUsed,
       cpuTime: process.cpuUsage().user,
+      cpuMs: process.cpuUsage().user / 1000,
       activeOperations: this.activeOperations,
+      networkRequests: 0,
+      fileOperations: 0,
     };
   }
 }
