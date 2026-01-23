@@ -5,7 +5,8 @@
  */
 
 // Re-export base types and class (defined separately to avoid circular deps)
-export { ModeImplementation, BaseModeImplementation } from './base.js';
+export type { ModeImplementation } from './base.js';
+export { BaseModeImplementation } from './base.js';
 
 // Export mode implementations
 export { RealTimeMode } from './real-time.js';

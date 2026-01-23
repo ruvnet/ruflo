@@ -18,7 +18,7 @@ import type {
   LoRAWeights,
   EWCState,
 } from '../types.js';
-import { BaseModeImplementation } from './index.js';
+import { BaseModeImplementation } from './base.js';
 
 /**
  * Balanced mode for general-purpose learning
