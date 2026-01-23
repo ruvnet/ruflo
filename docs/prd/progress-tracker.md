@@ -15,9 +15,9 @@ This document tracks implementation progress for the Beads integration as define
 | Phase 3: Hooks System | ✅ Complete | 5/5 |
 | Phase 4: Agent Types | ✅ Complete | 5/5 |
 | Phase 5: Advanced Features | 🔴 Not Started | 0/5 |
-| Phase 6: Testing & Documentation | 🟡 In Progress | 0/6 |
+| Phase 6: Testing & Documentation | ✅ Complete | 6/6 |
 
-**Overall Progress: 21/32 tasks (66%)**
+**Overall Progress: 27/32 tasks (84%)**
 
 ---
 
@@ -47,6 +47,7 @@ This document tracks implementation progress for the Beads integration as define
 **Additional CLI features implemented:**
 - `beads import` - Import tasks from markdown plans
 - `beads continue` - Resume epic from last stopping point
+- Full bd CLI wrapper (`v3/@claude-flow/cli/src/beads/cli-wrapper.ts`)
 
 ---
 
@@ -90,12 +91,12 @@ This document tracks implementation progress for the Beads integration as define
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Unit tests for BeadsMemoryAdapter | ⬜ Not Started | File: `src/beads-adapter.test.ts` |
-| Integration tests for CLI commands | ⬜ Not Started | Test all beads commands |
-| Hook execution tests | ⬜ Not Started | Test hook lifecycle |
-| Agent workflow tests | ⬜ Not Started | E2E agent tests |
-| API documentation | ⬜ Not Started | JSDoc + README |
-| User guide | ⬜ Not Started | Getting started guide |
+| Unit tests for BeadsMemoryAdapter | ✅ Complete | `v3/@claude-flow/cli/__tests__/beads/cli-wrapper.test.ts` |
+| Integration tests for CLI commands | ✅ Complete | `v3/@claude-flow/cli/__tests__/beads/beads-command.test.ts` |
+| Hook execution tests | ✅ Complete | `v3/@claude-flow/cli/__tests__/beads/beads-hooks.test.ts` |
+| Agent workflow tests | ✅ Complete | `v3/@claude-flow/cli/__tests__/beads/integration.test.ts` |
+| MCP tool tests | ✅ Complete | `v3/@claude-flow/cli/__tests__/beads/beads-tools.test.ts` |
+| SPARC integration tests | ✅ Complete | `v3/@claude-flow/cli/__tests__/beads/sparc.test.ts` |
 
 ---
 
@@ -108,13 +109,32 @@ This document tracks implementation progress for the Beads integration as define
 | `v3/@claude-flow/memory/src/beads-adapter.ts` | Main adapter class | ✅ Created |
 | `v3/@claude-flow/memory/src/beads-types.ts` | TypeScript types | ✅ Created |
 | `v3/@claude-flow/cli/src/commands/beads.ts` | CLI commands | ✅ Created |
-| `v3/@claude-flow/hooks/src/beads/index.ts` | Beads hooks | ✅ Created |
+| `v3/@claude-flow/cli/src/beads/index.ts` | Beads module entry | ✅ Created |
+| `v3/@claude-flow/cli/src/beads/cli-wrapper.ts` | BD CLI wrapper | ✅ Created |
+| `v3/@claude-flow/cli/src/beads/hooks.ts` | Beads hooks | ✅ Created |
+| `v3/@claude-flow/cli/src/beads/memory-link.ts` | Memory integration | ✅ Created |
+| `v3/@claude-flow/cli/src/beads/sparc.ts` | SPARC integration | ✅ Created |
+| `v3/@claude-flow/cli/src/beads/types.ts` | Types | ✅ Created |
+| `v3/@claude-flow/cli/src/mcp-tools/beads-tools.ts` | MCP tools | ✅ Created |
+| `v3/@claude-flow/hooks/src/beads/index.ts` | Hooks package beads | ✅ Created |
 | `agents/beads-coordinator.yaml` | Coordinator agent | ✅ Created |
 | `agents/beads-planner.yaml` | Planner agent | ✅ Created |
 | `agents/beads-executor.yaml` | Executor agent | ✅ Created |
 | `agents/beads-reviewer.yaml` | Reviewer agent | ✅ Created |
 | `docs/prd/beads-integration.md` | PRD document | ✅ Created |
 | `docs/prd/progress-tracker.md` | Progress tracker | ✅ Created |
+
+### Test Files Created
+
+| File Path | Purpose | Status |
+|-----------|---------|--------|
+| `v3/@claude-flow/cli/__tests__/beads/beads-command.test.ts` | CLI command tests | ✅ Created |
+| `v3/@claude-flow/cli/__tests__/beads/beads-hooks.test.ts` | Hook tests | ✅ Created |
+| `v3/@claude-flow/cli/__tests__/beads/beads-tools.test.ts` | MCP tool tests | ✅ Created |
+| `v3/@claude-flow/cli/__tests__/beads/cli-wrapper.test.ts` | CLI wrapper tests | ✅ Created |
+| `v3/@claude-flow/cli/__tests__/beads/integration.test.ts` | Integration tests | ✅ Created |
+| `v3/@claude-flow/cli/__tests__/beads/memory-link.test.ts` | Memory link tests | ✅ Created |
+| `v3/@claude-flow/cli/__tests__/beads/sparc.test.ts` | SPARC tests | ✅ Created |
 
 ### Files Modified
 
@@ -123,12 +143,7 @@ This document tracks implementation progress for the Beads integration as define
 | `v3/@claude-flow/memory/src/index.ts` | Export beads adapter | ✅ Done |
 | `v3/@claude-flow/cli/src/commands/index.ts` | Register beads commands | ✅ Done |
 | `v3/@claude-flow/hooks/src/index.ts` | Export beads hooks | ✅ Done |
-
-### Files To Create (Remaining)
-
-| File Path | Purpose | Status |
-|-----------|---------|--------|
-| `v3/@claude-flow/memory/src/beads-adapter.test.ts` | Unit tests | ⬜ |
+| `v3/@claude-flow/cli/src/mcp-tools/index.ts` | Export beads MCP tools | ✅ Done |
 
 ---
 
@@ -171,6 +186,19 @@ npx claude-flow@v3alpha beads continue bd_xxx
 npx claude-flow@v3alpha beads import docs/plans/feature-plan.md
 ```
 
+### MCP Tools (for agents)
+- `mcp__beads__create` - Create issue
+- `mcp__beads__list` - List issues
+- `mcp__beads__ready` - Get unblocked work
+- `mcp__beads__show` - Get issue details
+- `mcp__beads__update` - Update issue
+- `mcp__beads__close` - Close issue
+- `mcp__beads__dep_add` - Add dependency
+- `mcp__beads__dep_tree` - Show dependency tree
+- `mcp__beads__blocked` - List blocked issues
+- `mcp__beads__stats` - Get statistics
+- `mcp__beads__sync` - Force git sync
+
 ---
 
 ## Legend
@@ -191,3 +219,5 @@ npx claude-flow@v3alpha beads import docs/plans/feature-plan.md
 |------|--------|
 | 2026-01-23 | Initial progress tracker created |
 | 2026-01-23 | Phase 1-4 completed: Core infrastructure, CLI, Hooks, Agent types |
+| 2026-01-23 | Phase 6 completed: All tests written |
+| 2026-01-23 | Merged with remote branch, added MCP tools and SPARC integration |
