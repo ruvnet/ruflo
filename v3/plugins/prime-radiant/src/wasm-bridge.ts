@@ -218,9 +218,8 @@ export class WasmBridge {
       this.bundleSize = wasmBuffer.length;
 
       const wasmModule = await WebAssembly.compile(wasmBuffer);
-      const instance = await WebAssembly.instantiate(wasmModule, {
-        env: this.createImportObject()
-      });
+      const importObject = this.createImportObject();
+      const instance = await WebAssembly.instantiate(wasmModule, importObject as WebAssembly.Imports);
 
       this.wasmModule = instance.exports as unknown as WasmModule;
 
