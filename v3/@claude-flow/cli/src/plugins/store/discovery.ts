@@ -705,6 +705,57 @@ export class PluginDiscoveryService {
   }
 
   /**
+   * Get demo plugins with real npm stats
+   */
+  private async getDemoPluginsWithStats(): Promise<PluginEntry[]> {
+    const basePlugins = this.getDemoPlugins();
+
+    // Only fetch stats for real npm packages
+    const realNpmPackages = [
+      '@claude-flow/plugin-agentic-qe',
+      '@claude-flow/plugin-prime-radiant',
+    ];
+
+    // Fetch stats in parallel
+    const statsPromises = realNpmPackages.map(pkg => fetchNpmStats(pkg));
+    const statsResults = await Promise.all(statsPromises);
+
+    // Create a map of package -> stats
+    const statsMap = new Map<string, { downloads: number; version: string }>();
+    realNpmPackages.forEach((pkg, i) => {
+      if (statsResults[i]) {
+        statsMap.set(pkg, statsResults[i]!);
+      }
+    });
+
+    // Update plugins with real stats, remove fake plugins that don't exist
+    return basePlugins
+      .filter(plugin => {
+        // Keep only real plugins that exist on npm or our two new ones
+        const isRealPlugin = realNpmPackages.includes(plugin.name);
+        return isRealPlugin;
+      })
+      .map(plugin => {
+        const stats = statsMap.get(plugin.name);
+        if (stats) {
+          return {
+            ...plugin,
+            downloads: stats.downloads,
+            version: stats.version,
+            ratingCount: 0, // No rating system yet
+            rating: 0,
+          };
+        }
+        return {
+          ...plugin,
+          downloads: 0,
+          ratingCount: 0,
+          rating: 0,
+        };
+      });
+  }
+
+  /**
    * Verify registry signature
    */
   private verifyRegistrySignature(registry: PluginRegistry, expectedPublicKey: string): boolean {
