@@ -61,6 +61,8 @@ const commandLoaders: Record<string, CommandLoader> = {
   update: () => import('./update.js'),
   // RuVector PostgreSQL Bridge
   ruvector: () => import('./ruvector/index.js'),
+  // Beads Issue Tracking Integration
+  beads: () => import('./beads.js'),
 };
 
 // Cache for loaded commands
@@ -120,6 +122,7 @@ import { performanceCommand } from './performance.js';
 import { securityCommand } from './security.js';
 import { ruvectorCommand } from './ruvector/index.js';
 import { hiveMindCommand } from './hive-mind.js';
+import { beadsCommand } from './beads.js';
 
 // Pre-populate cache with core commands
 loadedCommands.set('init', initCommand);
@@ -140,6 +143,7 @@ loadedCommands.set('performance', performanceCommand);
 loadedCommands.set('security', securityCommand);
 loadedCommands.set('ruvector', ruvectorCommand);
 loadedCommands.set('hive-mind', hiveMindCommand);
+loadedCommands.set('beads', beadsCommand);
 
 // =============================================================================
 // Exports (maintain backwards compatibility)
@@ -164,6 +168,7 @@ export { performanceCommand } from './performance.js';
 export { securityCommand } from './security.js';
 export { ruvectorCommand } from './ruvector/index.js';
 export { hiveMindCommand } from './hive-mind.js';
+export { beadsCommand } from './beads.js';
 
 // Lazy-loaded command re-exports (for backwards compatibility, but async-only)
 export async function getConfigCommand() { return loadCommand('config'); }
@@ -187,6 +192,7 @@ export async function getRouteCommand() { return loadCommand('route'); }
 export async function getProgressCommand() { return loadCommand('progress'); }
 export async function getIssuesCommand() { return loadCommand('issues'); }
 export async function getRuvectorCommand() { return loadCommand('ruvector'); }
+export async function getBeadsCommand() { return loadCommand('beads'); }
 
 /**
  * Core commands loaded synchronously (available immediately)
@@ -212,6 +218,7 @@ export const commands: Command[] = [
   securityCommand,
   ruvectorCommand,
   hiveMindCommand,
+  beadsCommand,
 ];
 
 /**
