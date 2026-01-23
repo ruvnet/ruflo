@@ -523,7 +523,7 @@ Claude-Flow v3 introduces **self-learning neural capabilities** that no other ag
 | **Code Transforms** | ✅ Agent Booster (352x) | ⛔ | ⛔ | ⛔ | ⛔ |
 | **Input Validation** | ✅ Zod + Path security | ⛔ | ⛔ | ⛔ | ⛔ |
 
-<sub>*Comparison updated January 15, 2026*</sub>
+<sub>*Comparison updated January 23, 2026*</sub>
 
 <details>
 <summary>🚀 <strong>Key Differentiators</strong> — Self-learning, memory optimization, fault tolerance</summary>
