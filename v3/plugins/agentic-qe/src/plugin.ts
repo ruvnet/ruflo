@@ -115,7 +115,8 @@ interface MCPToolResult {
  */
 interface PluginHealthStatus {
   healthy: boolean;
-  components: ComponentHealth[];
+  status?: 'healthy' | 'degraded' | 'unhealthy';
+  components: Record<string, ComponentHealth>;
   lastCheck: number;
   uptime: number;
 }
@@ -126,6 +127,7 @@ interface PluginHealthStatus {
 interface ComponentHealth {
   name: string;
   healthy: boolean;
+  status?: 'healthy' | 'degraded' | 'unhealthy';
   message?: string;
   lastCheck: number;
 }
