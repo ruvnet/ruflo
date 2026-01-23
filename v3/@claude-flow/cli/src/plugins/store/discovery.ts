@@ -141,7 +141,7 @@ export class PluginDiscoveryService {
       const cid = await resolveIPNS(registry.ipnsName, registry.gateway);
       if (!cid) {
         // Fallback to demo registry
-        return this.createDemoRegistry(registry);
+        return this.createDemoRegistryAsync(registry);
       }
 
       console.log(`[PluginDiscovery] Resolved to CID: ${cid}`);
