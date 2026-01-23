@@ -181,17 +181,20 @@ export class PluginDiscoveryService {
   }
 
   /**
-   * Create demo plugin registry
+   * Create demo plugin registry with real npm stats
    */
-  private createDemoRegistry(registry: KnownPluginRegistry): PluginDiscoveryResult {
+  private async createDemoRegistryAsync(registry: KnownPluginRegistry): Promise<PluginDiscoveryResult> {
     console.log(`[PluginDiscovery] Using demo registry for ${registry.name}`);
+
+    // Get plugins with real npm stats
+    const plugins = await this.getDemoPluginsWithStats();
 
     const demoRegistry: PluginRegistry = {
       version: '1.0.0',
       type: 'plugins',
       updatedAt: new Date().toISOString(),
       ipnsName: registry.ipnsName,
-      plugins: this.getDemoPlugins(),
+      plugins,
       categories: [
         { id: 'ai-ml', name: 'AI/ML', description: 'AI and machine learning plugins', pluginCount: 5 },
         { id: 'security', name: 'Security', description: 'Security and compliance plugins', pluginCount: 3 },
