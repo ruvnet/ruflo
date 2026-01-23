@@ -1497,6 +1497,372 @@ interface ExecutionPolicy {
 
 ---
 
+## Implementation Plan
+
+### Required File Structure
+
+```
+v3/plugins/agentic-qe/
+├── src/
+│   ├── index.ts                      # Plugin entry point & exports
+│   ├── plugin.ts                     # AQEPlugin class registration
+│   ├── types.ts                      # TypeScript type definitions
+│   ├── interfaces.ts                 # Public interfaces
+│   ├── schemas.ts                    # Zod validation schemas
+│   ├── constants.ts                  # Plugin constants
+│   │
+│   ├── bridges/                      # Anti-corruption layer
+│   │   ├── index.ts                  # Bridge exports
+│   │   ├── QEMemoryBridge.ts         # Memory domain integration
+│   │   ├── QESecurityBridge.ts       # Security domain integration
+│   │   ├── QECoreBridge.ts           # Core domain integration
+│   │   ├── QEHiveBridge.ts           # Hive Mind coordination
+│   │   └── QEModelRoutingAdapter.ts  # TinyDancer ↔ ADR-026 adapter
+│   │
+│   ├── tools/                        # MCP tool handlers (16 tools)
+│   │   ├── index.ts                  # Tool registry
+│   │   ├── test-generation/
+│   │   │   ├── generate-tests.ts
+│   │   │   └── tdd-cycle.ts
+│   │   ├── coverage-analysis/
+│   │   │   ├── analyze-coverage.ts
+│   │   │   └── prioritize-gaps.ts
+│   │   ├── quality-assessment/
+│   │   │   ├── evaluate-quality-gate.ts
+│   │   │   └── assess-readiness.ts
+│   │   ├── defect-intelligence/
+│   │   │   ├── predict-defects.ts
+│   │   │   └── analyze-root-cause.ts
+│   │   ├── security-compliance/
+│   │   │   ├── security-scan.ts
+│   │   │   └── audit-compliance.ts
+│   │   ├── contract-testing/
+│   │   │   ├── validate-contract.ts
+│   │   │   └── compare-contracts.ts
+│   │   ├── visual-accessibility/
+│   │   │   ├── visual-regression.ts
+│   │   │   └── check-accessibility.ts
+│   │   └── chaos-resilience/
+│   │       ├── chaos-inject.ts
+│   │       └── assess-resilience.ts
+│   │
+│   ├── hooks/                        # Lifecycle hooks (5 hooks)
+│   │   ├── index.ts
+│   │   ├── pre-test-execution.ts
+│   │   ├── pre-security-scan.ts
+│   │   ├── post-test-execution.ts
+│   │   ├── post-coverage-analysis.ts
+│   │   └── post-security-scan.ts
+│   │
+│   ├── workers/                      # Background workers (3 workers)
+│   │   ├── index.ts
+│   │   ├── TestExecutorWorker.ts
+│   │   ├── CoverageAnalyzerWorker.ts
+│   │   └── SecurityScannerWorker.ts
+│   │
+│   ├── sandbox/                      # Security sandbox
+│   │   ├── index.ts
+│   │   ├── TestSandbox.ts
+│   │   └── SandboxPolicy.ts
+│   │
+│   └── contexts/                     # Bounded context adapters
+│       ├── index.ts
+│       └── ContextMapper.ts
+│
+├── agents/                           # 51 agent definitions (YAML)
+│   ├── test-generation/              # 12 agents
+│   │   ├── unit-test-generator.yaml
+│   │   ├── integration-test-generator.yaml
+│   │   ├── e2e-test-generator.yaml
+│   │   ├── property-test-generator.yaml
+│   │   ├── mutation-test-generator.yaml
+│   │   ├── fuzz-test-generator.yaml
+│   │   ├── api-test-generator.yaml
+│   │   ├── performance-test-generator.yaml
+│   │   ├── security-test-generator.yaml
+│   │   ├── accessibility-test-generator.yaml
+│   │   ├── contract-test-generator.yaml
+│   │   └── bdd-test-generator.yaml
+│   ├── test-execution/               # 8 agents
+│   │   ├── test-runner.yaml
+│   │   ├── parallel-executor.yaml
+│   │   ├── retry-manager.yaml
+│   │   ├── result-aggregator.yaml
+│   │   ├── flaky-test-detector.yaml
+│   │   ├── timeout-manager.yaml
+│   │   ├── resource-allocator.yaml
+│   │   └── test-reporter.yaml
+│   ├── coverage-analysis/            # 6 agents
+│   │   ├── coverage-collector.yaml
+│   │   ├── gap-detector.yaml
+│   │   ├── priority-ranker.yaml
+│   │   ├── hotspot-analyzer.yaml
+│   │   ├── trend-tracker.yaml
+│   │   └── impact-assessor.yaml
+│   ├── quality-assessment/           # 5 agents
+│   │   ├── quality-gate-evaluator.yaml
+│   │   ├── readiness-assessor.yaml
+│   │   ├── risk-calculator.yaml
+│   │   ├── metric-aggregator.yaml
+│   │   └── decision-maker.yaml
+│   ├── defect-intelligence/          # 4 agents
+│   │   ├── defect-predictor.yaml
+│   │   ├── root-cause-analyzer.yaml
+│   │   ├── pattern-detector.yaml
+│   │   └── regression-tracker.yaml
+│   ├── requirements-validation/      # 3 agents
+│   │   ├── bdd-validator.yaml
+│   │   ├── testability-analyzer.yaml
+│   │   └── requirement-tracer.yaml
+│   ├── code-intelligence/            # 5 agents
+│   │   ├── knowledge-graph-builder.yaml
+│   │   ├── semantic-searcher.yaml
+│   │   ├── dependency-analyzer.yaml
+│   │   ├── complexity-assessor.yaml
+│   │   └── pattern-miner.yaml
+│   ├── security-compliance/          # 4 agents
+│   │   ├── sast-scanner.yaml
+│   │   ├── dast-scanner.yaml
+│   │   ├── audit-trail-manager.yaml
+│   │   └── compliance-checker.yaml
+│   ├── contract-testing/             # 3 agents
+│   │   ├── openapi-validator.yaml
+│   │   ├── graphql-validator.yaml
+│   │   └── grpc-validator.yaml
+│   ├── visual-accessibility/         # 3 agents
+│   │   ├── visual-regression-detector.yaml
+│   │   ├── wcag-checker.yaml
+│   │   └── screenshot-differ.yaml
+│   ├── chaos-resilience/             # 4 agents
+│   │   ├── chaos-injector.yaml
+│   │   ├── load-generator.yaml
+│   │   ├── resilience-assessor.yaml
+│   │   └── recovery-validator.yaml
+│   ├── learning-optimization/        # 2 agents
+│   │   ├── cross-domain-learner.yaml
+│   │   └── pattern-optimizer.yaml
+│   └── tdd/                          # 7 TDD subagents
+│       ├── requirement-analyzer.yaml
+│       ├── test-designer.yaml
+│       ├── red-phase-executor.yaml
+│       ├── green-phase-implementer.yaml
+│       ├── refactor-advisor.yaml
+│       ├── coverage-verifier.yaml
+│       └── cycle-coordinator.yaml
+│
+├── skills/                           # Claude Code skills (12 skills)
+│   ├── qe-test-generation.md
+│   ├── qe-tdd-cycle.md
+│   ├── qe-coverage-analysis.md
+│   ├── qe-quality-gate.md
+│   ├── qe-defect-prediction.md
+│   ├── qe-security-scan.md
+│   ├── qe-contract-testing.md
+│   ├── qe-visual-testing.md
+│   ├── qe-accessibility.md
+│   ├── qe-chaos-engineering.md
+│   ├── qe-queen-coordinator.md
+│   └── qe-full-pipeline.md
+│
+├── __tests__/                        # Test suite
+│   ├── unit/
+│   │   ├── plugin.test.ts
+│   │   ├── bridges/
+│   │   │   ├── QEMemoryBridge.test.ts
+│   │   │   ├── QESecurityBridge.test.ts
+│   │   │   ├── QECoreBridge.test.ts
+│   │   │   └── QEHiveBridge.test.ts
+│   │   ├── tools/
+│   │   │   └── *.test.ts
+│   │   └── hooks/
+│   │       └── *.test.ts
+│   ├── integration/
+│   │   ├── memory-integration.test.ts
+│   │   ├── mcp-tools.test.ts
+│   │   └── swarm-coordination.test.ts
+│   └── e2e/
+│       ├── test-generation-flow.test.ts
+│       ├── quality-gate-flow.test.ts
+│       └── full-pipeline.test.ts
+│
+├── examples/                         # Working examples
+│   ├── basic-test-generation.ts
+│   ├── tdd-workflow.ts
+│   ├── coverage-analysis.ts
+│   ├── quality-gate-setup.ts
+│   ├── security-audit.ts
+│   └── chaos-experiment.ts
+│
+├── plugin.yaml                       # ✅ EXISTS - Plugin manifest
+├── README.md                         # ✅ EXISTS - Usage documentation
+├── package.json                      # Package definition
+├── tsconfig.json                     # TypeScript configuration
+└── vitest.config.ts                  # Test configuration
+```
+
+### Implementation Phases (Detailed)
+
+#### Phase 1: Plugin Scaffold (Week 1)
+
+| Task | Files | Priority | Dependencies |
+|------|-------|----------|--------------|
+| Create package.json with dependencies | `package.json` | 🔴 Critical | None |
+| Create TypeScript config | `tsconfig.json` | 🔴 Critical | package.json |
+| Define type definitions | `src/types.ts`, `src/interfaces.ts` | 🔴 Critical | tsconfig.json |
+| Create Zod schemas | `src/schemas.ts` | 🔴 Critical | types.ts |
+| Implement plugin entry point | `src/index.ts`, `src/plugin.ts` | 🔴 Critical | schemas.ts |
+| Create constants | `src/constants.ts` | 🟡 High | types.ts |
+
+**Deliverables:**
+- Plugin registers with `@claude-flow/plugins` SDK
+- Type-safe configuration validation
+- Basic lifecycle hooks (onLoad, onUnload)
+
+#### Phase 2: Bridge Implementations (Week 2)
+
+| Task | Files | Priority | Dependencies |
+|------|-------|----------|--------------|
+| Memory bridge | `src/bridges/QEMemoryBridge.ts` | 🔴 Critical | Phase 1 |
+| Security bridge | `src/bridges/QESecurityBridge.ts` | 🔴 Critical | Phase 1 |
+| Core bridge | `src/bridges/QECoreBridge.ts` | 🔴 Critical | Phase 1 |
+| Hive Mind bridge | `src/bridges/QEHiveBridge.ts` | 🔴 Critical | Phase 1 |
+| Model routing adapter | `src/bridges/QEModelRoutingAdapter.ts` | 🟡 High | Phase 1 |
+| Context mapper | `src/contexts/ContextMapper.ts` | 🟡 High | Bridges |
+
+**Deliverables:**
+- Anti-corruption layer isolates agentic-qe from V3 internals
+- Memory namespace coordination working
+- TinyDancer ↔ ADR-026 routing aligned
+
+#### Phase 3: MCP Tools (Week 3)
+
+| Task | Files | Priority | Dependencies |
+|------|-------|----------|--------------|
+| Tool registry | `src/tools/index.ts` | 🔴 Critical | Phase 2 |
+| Test generation tools (2) | `src/tools/test-generation/*.ts` | 🔴 Critical | Registry |
+| Coverage tools (2) | `src/tools/coverage-analysis/*.ts` | 🔴 Critical | Registry |
+| Quality tools (2) | `src/tools/quality-assessment/*.ts` | 🟡 High | Registry |
+| Defect tools (2) | `src/tools/defect-intelligence/*.ts` | 🟡 High | Registry |
+| Security tools (2) | `src/tools/security-compliance/*.ts` | 🟡 High | Registry |
+| Contract tools (2) | `src/tools/contract-testing/*.ts` | 🟢 Medium | Registry |
+| Visual tools (2) | `src/tools/visual-accessibility/*.ts` | 🟢 Medium | Registry |
+| Chaos tools (2) | `src/tools/chaos-resilience/*.ts` | 🟢 Medium | Registry |
+
+**Deliverables:**
+- All 16 MCP tools registered and functional
+- Tools accessible via `mcp__agentic-qe__<tool-name>`
+- Input validation via Zod schemas
+
+#### Phase 4: Hooks & Workers (Week 4)
+
+| Task | Files | Priority | Dependencies |
+|------|-------|----------|--------------|
+| Hook registry | `src/hooks/index.ts` | 🟡 High | Phase 2 |
+| Pre-execution hooks (2) | `src/hooks/pre-*.ts` | 🟡 High | Registry |
+| Post-execution hooks (3) | `src/hooks/post-*.ts` | 🟡 High | Registry |
+| Worker registry | `src/workers/index.ts` | 🟡 High | Phase 2 |
+| Test executor worker | `src/workers/TestExecutorWorker.ts` | 🟡 High | Registry |
+| Coverage analyzer worker | `src/workers/CoverageAnalyzerWorker.ts` | 🟢 Medium | Registry |
+| Security scanner worker | `src/workers/SecurityScannerWorker.ts` | 🟢 Medium | Registry |
+| Security sandbox | `src/sandbox/*.ts` | 🔴 Critical | Hooks |
+
+**Deliverables:**
+- Hooks integrate with V3 hook system
+- Workers run in background with concurrency limits
+- Sandbox isolates test code execution
+
+#### Phase 5: Agent Definitions (Week 5)
+
+| Task | Files | Priority | Dependencies |
+|------|-------|----------|--------------|
+| Test generation agents (12) | `agents/test-generation/*.yaml` | 🟡 High | Phase 3 |
+| Test execution agents (8) | `agents/test-execution/*.yaml` | 🟡 High | Phase 3 |
+| Coverage agents (6) | `agents/coverage-analysis/*.yaml` | 🟡 High | Phase 3 |
+| Quality agents (5) | `agents/quality-assessment/*.yaml` | 🟢 Medium | Phase 3 |
+| Defect agents (4) | `agents/defect-intelligence/*.yaml` | 🟢 Medium | Phase 3 |
+| Requirements agents (3) | `agents/requirements-validation/*.yaml` | 🟢 Medium | Phase 3 |
+| Code intelligence agents (5) | `agents/code-intelligence/*.yaml` | 🟢 Medium | Phase 3 |
+| Security agents (4) | `agents/security-compliance/*.yaml` | 🟢 Medium | Phase 3 |
+| Contract agents (3) | `agents/contract-testing/*.yaml` | 🟢 Medium | Phase 3 |
+| Visual agents (3) | `agents/visual-accessibility/*.yaml` | 🟢 Medium | Phase 3 |
+| Chaos agents (4) | `agents/chaos-resilience/*.yaml` | 🟢 Medium | Phase 3 |
+| Learning agents (2) | `agents/learning-optimization/*.yaml` | 🟢 Medium | Phase 3 |
+| TDD subagents (7) | `agents/tdd/*.yaml` | 🟡 High | Phase 3 |
+
+**Deliverables:**
+- All 58 agents (51 + 7 TDD) defined as YAML
+- Agents spawn via Claude Code Task tool
+- Model routing hints in agent definitions
+
+#### Phase 6: Skills & Examples (Week 6)
+
+| Task | Files | Priority | Dependencies |
+|------|-------|----------|--------------|
+| Core skills (6) | `skills/qe-*.md` | 🟡 High | Phase 5 |
+| Advanced skills (6) | `skills/qe-*.md` | 🟢 Medium | Phase 5 |
+| Basic examples (3) | `examples/*.ts` | 🟢 Medium | Phase 4 |
+| Advanced examples (3) | `examples/*.ts` | 🟢 Medium | Phase 4 |
+
+**Deliverables:**
+- Skills available via `/qe-*` commands in Claude Code
+- Working examples for all major use cases
+
+#### Phase 7: Testing & Documentation (Week 7)
+
+| Task | Files | Priority | Dependencies |
+|------|-------|----------|--------------|
+| Unit tests | `__tests__/unit/**/*.test.ts` | 🟡 High | Phase 4 |
+| Integration tests | `__tests__/integration/*.test.ts` | 🟡 High | Phase 5 |
+| E2E tests | `__tests__/e2e/*.test.ts` | 🟢 Medium | Phase 6 |
+| Test config | `vitest.config.ts` | 🟡 High | Phase 1 |
+| Update README | `README.md` | 🟢 Medium | Phase 6 |
+
+**Deliverables:**
+- 80%+ test coverage
+- All integration points validated
+- Performance benchmarks documented
+
+### Implementation Metrics
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Total files | ~103 | Count |
+| TypeScript LOC | ~5,000 | src/**/*.ts |
+| YAML LOC | ~2,500 | agents/**/*.yaml |
+| Skill LOC | ~1,200 | skills/**/*.md |
+| Test LOC | ~2,000 | __tests__/**/*.ts |
+| **Total LOC** | **~10,700** | All files |
+| Test coverage | 80%+ | Vitest coverage |
+| Build time | <30s | `npm run build` |
+| Bundle size | <500KB | minified |
+
+### Dependencies to Add
+
+```json
+{
+  "name": "@claude-flow/plugin-agentic-qe",
+  "version": "3.0.0-alpha.1",
+  "dependencies": {
+    "agentic-qe": "^3.2.3",
+    "@claude-flow/plugins": "^3.0.0",
+    "@claude-flow/memory": "^3.0.0",
+    "@claude-flow/security": "^3.0.0",
+    "@claude-flow/embeddings": "^3.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0",
+    "typescript": "^5.5.0",
+    "@types/node": "^20.0.0"
+  },
+  "peerDependencies": {
+    "@claude-flow/browser": ">=3.0.0"
+  }
+}
+```
+
+---
+
 ## References
 
 - [ADR-015: Unified Plugin System](./ADR-015-unified-plugin-system.md)
