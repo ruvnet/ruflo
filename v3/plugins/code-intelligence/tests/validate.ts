@@ -135,7 +135,7 @@ async function main() {
       scope: {
         gitRange: 'HEAD~10..HEAD',
       },
-      patternTypes: ['bug_patterns', 'refactor_patterns', 'style_patterns'],
+      patternTypes: ['bug_patterns', 'refactor_patterns', 'api_patterns'],  // Valid: 'bug_patterns', 'refactor_patterns', 'api_patterns', 'test_patterns'
       minOccurrences: 2,
     },
     context
