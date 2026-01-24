@@ -37,7 +37,7 @@ export {
 export type { MCPTool, ToolContext, MCPToolResult } from './mcp-tools.js';
 
 // Import for plugin creation
-import { legalContractsTools, createToolContext } from './mcp-tools.js';
+import { legalContractsTools } from './mcp-tools.js';
 import { createAttentionBridge } from './bridges/attention-bridge.js';
 import { createDAGBridge } from './bridges/dag-bridge.js';
 import type {
