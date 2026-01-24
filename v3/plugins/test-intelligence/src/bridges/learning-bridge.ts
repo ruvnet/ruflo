@@ -395,10 +395,10 @@ export class TestLearningBridge implements LearningBridgeInterface {
       batch.push(this.replayBuffer[idx]);
     }
 
-    // Update policy with batch
+    // Update policy weights with batch
     for (const exp of batch) {
       const tdError = this.computeTDError(exp, this.config.gamma);
-      this.updatePolicy(exp.state, exp.action, tdError, this.config.learningRate);
+      this.updatePolicyWeights(exp.state, exp.action, tdError, this.config.learningRate);
     }
   }
 
