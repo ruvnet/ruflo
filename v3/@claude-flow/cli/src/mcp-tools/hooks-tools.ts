@@ -221,6 +221,8 @@ async function getSemanticRouter() {
   semanticRouterInitialized = true;
 
   // STEP 1: Try native VectorDb from @ruvector/router (HNSW-backed)
+  // Note: Native VectorDb uses a persistent database file which can have lock issues
+  // in concurrent environments. We try it first but fall back gracefully to pure JS.
   try {
     // Use createRequire for ESM compatibility with native modules
     const { createRequire } = await import('module');
@@ -228,6 +230,7 @@ async function getSemanticRouter() {
     const router = require('@ruvector/router');
 
     if (router.VectorDb && router.DistanceMetric) {
+      // Try to create VectorDb - may fail with lock error in concurrent envs
       const db = new router.VectorDb({
         dimensions: 384,
         distanceMetric: router.DistanceMetric.Cosine,
@@ -249,8 +252,10 @@ async function getSemanticRouter() {
       routerBackend = 'native';
       return { router: null, backend: routerBackend, native: nativeVectorDb };
     }
-  } catch {
-    // Native not available, try pure JS
+  } catch (err) {
+    // Native not available or database locked - fall back to pure JS
+    // Common errors: "Database already open. Cannot acquire lock." or "MODULE_NOT_FOUND"
+    // This is expected in concurrent environments or when binary isn't installed
   }
 
   // STEP 2: Fall back to pure JS SemanticRouter
