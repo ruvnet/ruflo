@@ -362,19 +362,57 @@ const toggleCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const name = ctx.flags.name as string;
     const enable = ctx.flags.enable as boolean;
+    const disable = ctx.flags.disable as boolean;
 
     if (!name) {
       output.printError('Plugin name is required');
       return { success: false, exitCode: 1 };
     }
 
-    const action = enable ? 'Enabling' : 'Disabling';
-    const spinner = output.createSpinner({ text: `${action} ${name}...`, spinner: 'dots' });
-    spinner.start();
-    await new Promise(r => setTimeout(r, 300));
-    spinner.succeed(`${name} ${enable ? 'enabled' : 'disabled'}`);
+    try {
+      const manager = getPluginManager();
+      await manager.initialize();
 
-    return { success: true };
+      // Check if installed
+      const plugin = await manager.getPlugin(name);
+      if (!plugin) {
+        output.printError(`Plugin ${name} is not installed`);
+        return { success: false, exitCode: 1 };
+      }
+
+      let result;
+      let action: string;
+      let newState: boolean;
+
+      if (enable) {
+        result = await manager.enable(name);
+        action = 'Enabled';
+        newState = true;
+      } else if (disable) {
+        result = await manager.disable(name);
+        action = 'Disabled';
+        newState = false;
+      } else {
+        // Toggle
+        result = await manager.toggle(name);
+        newState = result.enabled ?? !plugin.enabled;
+        action = newState ? 'Enabled' : 'Disabled';
+      }
+
+      if (!result.success) {
+        output.printError(`Failed to toggle: ${result.error}`);
+        return { success: false, exitCode: 1 };
+      }
+
+      output.writeln();
+      output.writeln(output.success(`${action} ${name}`));
+      output.writeln(output.dim(`Plugin is now ${newState ? 'enabled' : 'disabled'}`));
+
+      return { success: true, data: { enabled: newState } };
+    } catch (error) {
+      output.printError(`Error: ${String(error)}`);
+      return { success: false, exitCode: 1 };
+    }
   },
 };
 
