@@ -431,7 +431,7 @@ export class HealthcareHNSWBridge implements HNSWBridge {
   private async resolveWasmPath(): Promise<string | null> {
     try {
       // Check for micro-hnsw-wasm package
-      const module = await import('micro-hnsw-wasm');
+      const module = await import(/* webpackIgnore: true */ 'micro-hnsw-wasm' as string) as { default?: string };
       return module.default ?? null;
     } catch {
       return null;
