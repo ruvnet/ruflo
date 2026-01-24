@@ -25,7 +25,7 @@ npm install @claude-flow/plugin-performance-optimizer
 ### CLI
 
 ```bash
-npx @claude-flow/cli@latest plugins install @claude-flow/plugin-performance-optimizer
+npx claude-flow plugins install --name @claude-flow/plugin-performance-optimizer
 ```
 
 ## Quick Start
