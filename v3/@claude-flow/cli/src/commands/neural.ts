@@ -747,7 +747,7 @@ const predictCommand: Command = {
         });
       }
 
-      return { success: true, data: { matches, embedTime, searchTime } };
+      return { success: true, data: { matches, searchTime } };
     } catch (error) {
       spinner.fail('Prediction failed');
       output.printError(error instanceof Error ? error.message : String(error));
