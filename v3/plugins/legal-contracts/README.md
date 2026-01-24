@@ -333,6 +333,14 @@ Logs are encrypted at rest, accessible only to ethics/compliance, and retained p
 - `pdf-parse`: PDF document parsing
 - `mammoth`: DOCX document parsing
 
+## Related Plugins
+
+| Plugin | Description | Use Case |
+|--------|-------------|----------|
+| [@claude-flow/plugin-financial-risk](../financial-risk) | Financial risk analysis | Financial contract risk assessment |
+| [@claude-flow/plugin-healthcare-clinical](../healthcare-clinical) | Clinical decision support | Healthcare BAA and compliance agreements |
+| [@claude-flow/plugin-code-intelligence](../code-intelligence) | Code analysis | Software licensing and IP contracts |
+
 ## License
 
 MIT License
