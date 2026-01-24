@@ -5,6 +5,8 @@
 **Category:** Cutting-Edge AI
 **Author:** Plugin Architecture Team
 **Version:** 1.0.0
+**Deciders:** Plugin Architecture Team, Cognitive Science Advisors
+**Supersedes:** None
 
 ## Context
 
