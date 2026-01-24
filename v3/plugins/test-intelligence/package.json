@@ -2,8 +2,9 @@
   "name": "@claude-flow/plugin-test-intelligence",
   "version": "3.0.0-alpha.1",
   "description": "AI-powered test intelligence plugin for predictive test selection, flaky detection, and coverage optimization",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
@@ -17,18 +18,26 @@
     "./bridges": {
       "import": "./dist/bridges/index.js",
       "types": "./dist/bridges/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
     }
   },
   "files": [
     "dist",
-    "src"
+    "README.md",
+    "plugin.yaml"
   ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rimraf dist",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run clean && npm run build && npm run typecheck"
   },
   "keywords": [
     "claude-flow",
