@@ -335,6 +335,23 @@ export class GtBridge {
   private logger: GtLogger;
   private initialized = false;
 
+  /** Commands that can be cached (read-only, no side effects) */
+  private static readonly CACHEABLE_COMMANDS = new Set([
+    'version',
+    'status',
+    'price',
+    'decode',
+    'help',
+    'config',
+  ]);
+
+  /** Commands that should use longer cache (static data) */
+  private static readonly STATIC_COMMANDS = new Set([
+    'version',
+    'help',
+    'decode',
+  ]);
+
   constructor(config?: GtBridgeConfig, logger?: GtLogger) {
     this.config = {
       gtPath: config?.gtPath ?? 'gt',
