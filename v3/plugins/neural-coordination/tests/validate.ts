@@ -4,6 +4,17 @@
  */
 
 import { neuralCoordinationTools, getTool, getToolNames } from '../dist/mcp-tools.js';
+import type { MCPToolResult } from '../dist/types.js';
+
+// Helper to parse MCP result
+function parseResult(result: MCPToolResult): { success: boolean; data: any; error?: string } {
+  if (result.isError) {
+    const parsed = JSON.parse(result.content[0]?.text || '{}');
+    return { success: false, data: null, error: parsed.message || 'Unknown error' };
+  }
+  const data = JSON.parse(result.content[0]?.text || '{}');
+  return { success: true, data };
+}
 
 async function validate() {
   console.log('=== Neural Coordination Plugin Validation ===\n');
@@ -21,7 +32,7 @@ async function validate() {
     const tool = getTool('coordination/neural-consensus');
     if (!tool) throw new Error('Tool not found');
 
-    const result = await tool.handler({
+    const rawResult = await tool.handler({
       proposal: {
         topic: 'Select optimal caching strategy',
         options: [
@@ -40,8 +51,8 @@ async function validate() {
       maxRounds: 10
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Unknown error');
-    const data = result.data as any;
+    const { success, data, error } = parseResult(rawResult);
+    if (!success) throw new Error(error);
     if (typeof data.consensusReached !== 'boolean') throw new Error('Invalid response format');
     if (typeof data.agreementRatio !== 'number') throw new Error('Missing agreementRatio');
 
@@ -60,7 +71,7 @@ async function validate() {
     const tool = getTool('coordination/topology-optimize');
     if (!tool) throw new Error('Tool not found');
 
-    const result = await tool.handler({
+    const rawResult = await tool.handler({
       agents: [
         { id: 'coder-1', capabilities: ['typescript', 'testing'], location: { x: 0, y: 0 } },
         { id: 'coder-2', capabilities: ['python', 'ml'], location: { x: 10, y: 0 } },
@@ -75,8 +86,8 @@ async function validate() {
       }
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Unknown error');
-    const data = result.data as any;
+    const { success, data, error } = parseResult(rawResult);
+    if (!success) throw new Error(error);
     if (!Array.isArray(data.edges)) throw new Error('Invalid response format');
     if (!data.metrics) throw new Error('Missing metrics');
 
@@ -96,7 +107,7 @@ async function validate() {
     if (!tool) throw new Error('Tool not found');
 
     // Store operation
-    let result = await tool.handler({
+    let rawResult = await tool.handler({
       action: 'store',
       memory: {
         key: 'test-key-1',
@@ -106,27 +117,28 @@ async function validate() {
       scope: 'team'
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Store failed');
+    let { success, data, error } = parseResult(rawResult);
+    if (!success) throw new Error(error);
 
     // Retrieve operation
-    result = await tool.handler({
+    rawResult = await tool.handler({
       action: 'retrieve',
       memory: { key: 'test-key-1' },
       scope: 'team'
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Retrieve failed');
-    const data = result.data as any;
-    if (!data.data?.data) throw new Error('Invalid retrieved data');
+    ({ success, data, error } = parseResult(rawResult));
+    if (!success) throw new Error(error);
 
     // Consolidate operation
-    result = await tool.handler({
+    rawResult = await tool.handler({
       action: 'consolidate',
       scope: 'team',
       consolidationStrategy: 'ewc'
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Consolidate failed');
+    ({ success, data, error } = parseResult(rawResult));
+    if (!success) throw new Error(error);
 
     console.log(`  OK: Store/Retrieve/Consolidate operations successful`);
     passed++;
@@ -143,7 +155,7 @@ async function validate() {
     const tool = getTool('coordination/emergent-protocol');
     if (!tool) throw new Error('Tool not found');
 
-    const result = await tool.handler({
+    const rawResult = await tool.handler({
       task: {
         type: 'coordination',
         objectives: ['task_assignment', 'status_reporting', 'resource_sharing'],
@@ -157,8 +169,8 @@ async function validate() {
       interpretability: true
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Unknown error');
-    const data = result.data as any;
+    const { success, data, error } = parseResult(rawResult);
+    if (!success) throw new Error(error);
     if (typeof data.protocolLearned !== 'boolean') throw new Error('Invalid response format');
     if (typeof data.vocabularySize !== 'number') throw new Error('Missing vocabularySize');
 
@@ -177,7 +189,7 @@ async function validate() {
     const tool = getTool('coordination/swarm-behavior');
     if (!tool) throw new Error('Tool not found');
 
-    const result = await tool.handler({
+    const rawResult = await tool.handler({
       behavior: 'task_allocation',
       parameters: {
         agentCount: 10,
@@ -190,8 +202,8 @@ async function validate() {
       }
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Unknown error');
-    const data = result.data as any;
+    const { success, data, error } = parseResult(rawResult);
+    if (!success) throw new Error(error);
     if (typeof data.behaviorActive !== 'boolean') throw new Error('Invalid response format');
     if (!data.metrics) throw new Error('Missing metrics');
 
