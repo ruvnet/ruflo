@@ -1,5 +1,9 @@
 # @claude-flow/plugin-neural-coordination
 
+[![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-neural-coordination.svg)](https://www.npmjs.com/package/@claude-flow/plugin-neural-coordination)
+[![license](https://img.shields.io/npm/l/@claude-flow/plugin-neural-coordination.svg)](https://github.com/ruvnet/claude-flow/blob/main/LICENSE)
+[![downloads](https://img.shields.io/npm/dm/@claude-flow/plugin-neural-coordination.svg)](https://www.npmjs.com/package/@claude-flow/plugin-neural-coordination)
+
 A cutting-edge multi-agent coordination plugin combining the SONA self-optimizing neural architecture with graph neural networks for agent communication topology optimization. The plugin enables emergent protocol development, neural consensus mechanisms, collective memory formation, and adaptive swarm behavior while maintaining interpretability of agent interactions.
 
 ## Installation
@@ -13,7 +17,7 @@ npm install @claude-flow/plugin-neural-coordination
 ### CLI
 
 ```bash
-npx @claude-flow/cli@latest plugins install @claude-flow/plugin-neural-coordination
+npx claude-flow plugins install --name @claude-flow/plugin-neural-coordination
 ```
 
 ## Quick Start
