@@ -109,7 +109,8 @@ export class AttentionBridge {
     this._status = 'loading';
 
     try {
-      const wasmModule = await import('@ruvector/attention-wasm').catch(() => null);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const wasmModule = await (import('@ruvector/attention-wasm' as any) as Promise<unknown>).catch(() => null);
 
       if (wasmModule) {
         this._module = wasmModule as unknown as AttentionModule;
