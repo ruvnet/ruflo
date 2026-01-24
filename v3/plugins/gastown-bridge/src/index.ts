@@ -1039,10 +1039,81 @@ export * from './types.js';
 // Re-export bridges
 export * from './bridges/index.js';
 
-// Re-export security modules
-export * from './errors.js';
-export * from './validators.js';
-export * from './sanitizers.js';
+// Re-export security modules (explicit exports to avoid conflicts)
+export {
+  // Error classes
+  GasTownError,
+  BeadsError,
+  ValidationError,
+  CLIExecutionError,
+  FormulaError,
+  ConvoyError,
+  // Error codes (aliased to avoid conflict with types.ts)
+  GasTownErrorCode as ErrorCodes,
+  type GasTownErrorCodeType,
+  type ValidationConstraint,
+  // Error utilities
+  isGasTownError,
+  isValidationError,
+  isCLIExecutionError,
+  isBeadsError,
+  wrapError,
+  getErrorMessage,
+} from './errors.js';
+
+export {
+  // Validation functions
+  validateBeadId,
+  validateFormulaName,
+  validateConvoyId,
+  validateGtArgs,
+  // Compound validators (aliased to avoid conflicts)
+  validateCreateBeadOptions as validateBeadOptions,
+  validateCreateConvoyOptions as validateConvoyOptions,
+  validateSlingOptions as validateSling,
+  // Validation schemas (aliased to avoid conflicts)
+  BeadIdSchema as BeadIdValidationSchema,
+  FormulaNameSchema,
+  ConvoyIdSchema,
+  GtArgsSchema,
+  SafeStringSchema as ValidatorSafeStringSchema,
+  RigNameSchema,
+  PrioritySchema,
+  LabelsSchema,
+  // Security utilities
+  containsShellMetacharacters,
+  containsPathTraversal,
+  isSafeArgument,
+  isValidBeadId,
+  isValidFormulaName,
+  isValidConvoyId,
+  // Constants
+  MAX_LENGTHS,
+  SHELL_METACHARACTERS,
+  PATH_TRAVERSAL_PATTERNS,
+  BEAD_ID_PATTERN,
+  FORMULA_NAME_PATTERN,
+  UUID_PATTERN,
+  CONVOY_HASH_PATTERN,
+} from './validators.js';
+
+export {
+  // Sanitization functions
+  sanitizeBeadOutput,
+  sanitizeFormulaOutput,
+  sanitizeConvoyOutput,
+  sanitizeBeadsListOutput,
+  // Constants
+  MAX_OUTPUT_SIZE,
+  SENSITIVE_FIELD_PATTERNS,
+  REDACTED_FIELDS,
+  // Internal helpers (for testing)
+  redactSensitiveFields,
+  sanitizeString,
+  sanitizePath,
+  parseDate,
+  sanitizeMetadata,
+} from './sanitizers.js';
 
 // Default export
 export default GasTownBridgePlugin;
