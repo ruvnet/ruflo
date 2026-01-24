@@ -378,7 +378,7 @@ export class TestLearningBridge implements LearningBridgeInterface {
     return exp.reward + gamma * nextQ - currentQ;
   }
 
-  private updatePolicy(state: Float32Array, action: number, tdError: number, lr: number): void {
+  private updatePolicyWeights(state: Float32Array, action: number, tdError: number, lr: number): void {
     // Update weights using TD learning
     for (let i = 0; i < Math.min(state.length, 512); i++) {
       this.policyWeights[action * 512 + i] += lr * tdError * state[i];
