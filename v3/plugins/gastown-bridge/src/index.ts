@@ -1272,17 +1272,28 @@ export class GasTownBridgePlugin extends EventEmitter implements IPlugin {
   private createBridgeFacade(): ToolContext['bridges']['gastown'] {
     const gt = this.gtBridge;
     const bd = this.bdBridge;
+    const tracker = this.convoyTracker;
+    const wasmLoader = this.wasmLoader;
 
     return {
-      async createBead(opts) {
-        if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.createBead(opts);
-      },
-      async getReady(limit, rig, _labels) {
+      async createBead(opts: { type: string; content: string; parentId?: string; threadId?: string; agentId?: string; tags?: string[] }) {
         if (!bd) throw new GasTownError('BdBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return bd.getReady({ limit, rig });
+        // Use BdBridge.createBead which is the actual API
+        return bd.createBead({
+          type: opts.type as import('./bridges/bd-bridge.js').BeadType,
+          content: opts.content,
+          parentId: opts.parentId,
+          threadId: opts.threadId,
+          agentId: opts.agentId,
+          tags: opts.tags,
+        });
       },
-      async showBead(beadId) {
+      async getReady(limit?: number, _rig?: string, _labels?: string[]) {
+        if (!bd) throw new GasTownError('BdBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
+        // BdBridge.listBeads with limit filter
+        return bd.listBeads({ limit });
+      },
+      async showBead(beadId: string) {
         if (!bd) throw new GasTownError('BdBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
         const bead = await bd.getBead(beadId);
         return {
@@ -1300,61 +1311,97 @@ export class GasTownBridgePlugin extends EventEmitter implements IPlugin {
           dependents: [],
         };
       },
-      async manageDependency(action, child, parent) {
+      async manageDependency(action: 'add' | 'remove', child: string, parent: string) {
         if (!bd) throw new GasTownError('BdBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
+        // BdBridge doesn't have addDependency/removeDependency - use execBd directly
         if (action === 'add') {
-          await bd.addDependency(child, parent);
+          await bd.execBd(['update', child, '--parent', parent]);
         } else {
-          await bd.removeDependency(child, parent);
+          await bd.execBd(['update', child, '--remove-parent', parent]);
         }
       },
-      async createConvoy(opts) {
-        if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.createConvoy(opts);
+      async createConvoy(opts: { name: string; formulaName: string; trackedIssues: string[] }) {
+        if (!tracker) throw new GasTownError('ConvoyTracker not initialized', GasTownErrorCode.NOT_INITIALIZED);
+        // Use ConvoyTracker to create convoys
+        return tracker.create({
+          name: opts.name,
+          formulaName: opts.formulaName,
+          trackedIssues: opts.trackedIssues,
+        });
       },
-      async getConvoyStatus(convoyId, _detailed) {
-        if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.getConvoyStatus(convoyId);
+      async getConvoyStatus(convoyId: string, _detailed?: boolean) {
+        if (!tracker) throw new GasTownError('ConvoyTracker not initialized', GasTownErrorCode.NOT_INITIALIZED);
+        return tracker.getStatus(convoyId);
       },
-      async trackConvoy(convoyId, action, issues) {
-        if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        await gt.trackConvoy(convoyId, action, issues);
+      async trackConvoy(convoyId: string, action: 'add' | 'remove', issues: string[]) {
+        if (!tracker) throw new GasTownError('ConvoyTracker not initialized', GasTownErrorCode.NOT_INITIALIZED);
+        if (action === 'add') {
+          for (const issue of issues) {
+            await tracker.addIssue(convoyId, issue);
+          }
+        } else {
+          for (const issue of issues) {
+            await tracker.removeIssue(convoyId, issue);
+          }
+        }
       },
-      async listFormulas(_type, _includeBuiltin) {
-        if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.listFormulas();
+      async listFormulas(_type?: string, _includeBuiltin?: boolean) {
+        // No direct CLI command - return empty for now
+        // Would need to scan formula directories
+        return [] as Formula[];
       },
-      async cookFormula(formula, vars) {
-        if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.cookFormula(formula, vars);
+      async cookFormula(formula: Formula | string, vars: Record<string, string>) {
+        // Use WasmLoaderAdapter for cooking
+        if (wasmLoader?.isInitialized()) {
+          const parsed = typeof formula === 'string' ? wasmLoader.parseFormula(formula) : formula;
+          return wasmLoader.cookFormula(parsed, vars);
+        }
+        // Fallback if no WASM
+        throw new GasTownError('WASM not initialized for formula cooking', GasTownErrorCode.NOT_INITIALIZED);
       },
-      async executeFormula(formula, vars, targetAgent, dryRun) {
-        if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.executeFormula(formula, vars, targetAgent, dryRun);
+      async executeFormula(_formula: Formula | string, _vars: Record<string, string>, _targetAgent?: string, _dryRun?: boolean) {
+        // Formula execution requires the FormulaExecutor
+        throw new GasTownError('Use FormulaExecutor.execute() for formula execution', GasTownErrorCode.NOT_INITIALIZED);
       },
-      async createFormula(opts) {
-        if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.createFormula(opts);
+      async createFormula(_opts: { name: string; type: string; content: string }) {
+        // Formula creation would write to filesystem - not implemented in bridges
+        throw new GasTownError('Formula creation not implemented in bridge layer', GasTownErrorCode.NOT_INITIALIZED);
       },
-      async sling(beadId, target, formula, priority) {
+      async sling(beadId: string, target: string, formula?: string, priority?: number) {
         if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        await gt.sling({ beadId, target, formula, priority });
+        // Use execGt to run sling command
+        const args = ['tx', 'sling', '--bead', beadId, '--target', target];
+        if (formula) args.push('--formula', formula);
+        if (priority !== undefined) args.push('--priority', String(priority));
+        await gt.execGt(args);
       },
-      async listAgents(_rig, _role, _includeInactive) {
-        if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.listAgents();
+      async listAgents(_rig?: string, _role?: string, _includeInactive?: boolean) {
+        // Would need agent registry - return empty for now
+        return [] as Array<{ id: string; name: string; role: string; status: string }>;
       },
-      async sendMail(to, subject, body) {
+      async sendMail(to: string, subject: string, body: string) {
         if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.sendMail(to, subject, body);
+        // Use execGt for mail operations
+        const result = await gt.execGt(['tx', 'mail', '--to', to, '--subject', subject, '--body', body, '--json']);
+        return { messageId: result.data ?? 'unknown', status: result.success ? 'sent' : 'failed' };
       },
-      async readMail(mailId) {
+      async readMail(mailId: string) {
         if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.readMail(mailId);
+        const result = await gt.execGt(['tx', 'mail', 'read', mailId, '--json']);
+        if (result.success && result.data) {
+          return gt.parseGtOutput<{ id: string; from: string; subject: string; body: string; timestamp: string }>(result.data);
+        }
+        throw new GasTownError(`Failed to read mail: ${mailId}`, GasTownErrorCode.NOT_INITIALIZED);
       },
-      async listMail(limit) {
+      async listMail(limit?: number) {
         if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        return gt.listMail(limit);
+        const args = ['tx', 'mail', 'list', '--json'];
+        if (limit !== undefined) args.push('--limit', String(limit));
+        const result = await gt.execGt(args);
+        if (result.success && result.data) {
+          return gt.parseGtOutput<Array<{ id: string; from: string; subject: string; timestamp: string }>>(result.data);
+        }
+        return [];
       },
     };
   }
