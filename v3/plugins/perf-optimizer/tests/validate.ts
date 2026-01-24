@@ -4,6 +4,17 @@
  */
 
 import { perfOptimizerTools, getTool, getToolNames } from '../dist/mcp-tools.js';
+import type { MCPToolResult } from '../dist/types.js';
+
+// Helper to parse MCP result
+function parseResult(result: MCPToolResult): { success: boolean; data: any; error?: string } {
+  if (result.isError) {
+    const parsed = JSON.parse(result.content[0]?.text || '{}');
+    return { success: false, data: null, error: parsed.message || 'Unknown error' };
+  }
+  const data = JSON.parse(result.content[0]?.text || '{}');
+  return { success: true, data };
+}
 
 async function validate() {
   console.log('=== Perf Optimizer Plugin Validation ===\n');
@@ -21,7 +32,7 @@ async function validate() {
     const tool = getTool('perf/bottleneck-detect');
     if (!tool) throw new Error('Tool not found');
 
-    const result = await tool.handler({
+    const rawResult = await tool.handler({
       traceData: {
         format: 'otlp',
         spans: [
@@ -35,8 +46,8 @@ async function validate() {
       threshold: { latencyP95: 100, errorRate: 0.01 }
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Unknown error');
-    const data = result.data as any;
+    const { success, data, error } = parseResult(rawResult);
+    if (!success) throw new Error(error);
     if (!Array.isArray(data.bottlenecks)) throw new Error('Invalid response format');
     if (typeof data.overallScore !== 'number') throw new Error('Missing overallScore');
 
@@ -55,7 +66,7 @@ async function validate() {
     const tool = getTool('perf/memory-analyze');
     if (!tool) throw new Error('Tool not found');
 
-    const result = await tool.handler({
+    const rawResult = await tool.handler({
       heapSnapshot: 'mock-snapshot',
       timeline: [
         { timestamp: 0, heapUsed: 100000000 },
@@ -65,8 +76,8 @@ async function validate() {
       analysis: ['leak_detection', 'allocation_hotspots']
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Unknown error');
-    const data = result.data as any;
+    const { success, data, error } = parseResult(rawResult);
+    if (!success) throw new Error(error);
     if (!Array.isArray(data.leaks)) throw new Error('Invalid response format');
     if (typeof data.gcPressure !== 'number') throw new Error('Missing gcPressure');
 
@@ -85,7 +96,7 @@ async function validate() {
     const tool = getTool('perf/query-optimize');
     if (!tool) throw new Error('Tool not found');
 
-    const result = await tool.handler({
+    const rawResult = await tool.handler({
       queries: [
         { sql: 'SELECT * FROM users WHERE id = 1', duration: 5, resultSize: 1 },
         { sql: 'SELECT * FROM users WHERE id = 2', duration: 150, resultSize: 1 },
@@ -96,8 +107,8 @@ async function validate() {
       suggestIndexes: true
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Unknown error');
-    const data = result.data as any;
+    const { success, data, error } = parseResult(rawResult);
+    if (!success) throw new Error(error);
     if (!Array.isArray(data.patterns)) throw new Error('Invalid response format');
     if (typeof data.totalQueries !== 'number') throw new Error('Missing totalQueries');
 
@@ -116,14 +127,14 @@ async function validate() {
     const tool = getTool('perf/bundle-optimize');
     if (!tool) throw new Error('Tool not found');
 
-    const result = await tool.handler({
+    const rawResult = await tool.handler({
       bundleStats: './stats.json',
       analysis: ['tree_shaking', 'duplicate_deps', 'large_modules', 'code_splitting'],
       targets: { maxSize: 1000 }
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Unknown error');
-    const data = result.data as any;
+    const { success, data, error } = parseResult(rawResult);
+    if (!success) throw new Error(error);
     if (!Array.isArray(data.optimizations)) throw new Error('Invalid response format');
     if (typeof data.totalSize !== 'number') throw new Error('Missing totalSize');
 
@@ -142,7 +153,7 @@ async function validate() {
     const tool = getTool('perf/config-optimize');
     if (!tool) throw new Error('Tool not found');
 
-    const result = await tool.handler({
+    const rawResult = await tool.handler({
       workloadProfile: {
         type: 'api',
         metrics: { avgLatency: 50, rps: 1000 },
@@ -156,8 +167,8 @@ async function validate() {
       objective: 'latency'
     });
 
-    if (!result.success) throw new Error(result.error?.message || 'Unknown error');
-    const data = result.data as any;
+    const { success, data, error } = parseResult(rawResult);
+    if (!success) throw new Error(error);
     if (!Array.isArray(data.recommendations)) throw new Error('Invalid response format');
     if (!data.predictedImprovement) throw new Error('Missing predictedImprovement');
 
