@@ -1272,10 +1272,18 @@ export const formulaCreateTool: MCPTool<FormulaCreateInput, FormulaCreateResult>
       const validated = FormulaCreateInputSchema.parse(input);
       const bridge = context.bridges.gastown;
 
+      // Map steps to ensure description is always a string (Step type requires it)
+      const mappedSteps = validated.steps?.map(s => ({
+        id: s.id,
+        title: s.title,
+        description: s.description ?? '', // Provide default empty string
+        needs: s.needs,
+      }));
+
       const { path } = await bridge.createFormula({
         name: validated.name,
         type: validated.type,
-        steps: validated.steps,
+        steps: mappedSteps,
         vars: validated.vars,
         description: validated.description,
       });
