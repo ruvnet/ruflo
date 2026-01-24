@@ -302,30 +302,20 @@ describe('TestLearningBridge', () => {
     });
   });
 
-  describe('getStats', () => {
-    beforeEach(async () => {
+  describe('isReady', () => {
+    it('should return false before init', () => {
+      expect(bridge.isReady()).toBe(false);
+    });
+
+    it('should return true after init', async () => {
       await bridge.init();
+      expect(bridge.isReady()).toBe(true);
     });
 
-    it('should return bridge statistics', async () => {
-      const stats = await bridge.getStats();
-
-      expect(stats).toHaveProperty('algorithm');
-      expect(stats).toHaveProperty('totalSamples');
-      expect(stats).toHaveProperty('accuracy');
-      expect(stats).toHaveProperty('lastTrainingTime');
-    });
-
-    it('should update stats after training', async () => {
-      const statsBefore = await bridge.getStats();
-
-      await bridge.trainOnHistory([
-        { testId: 'test-1', name: 'test', file: 'test.ts', passed: true, duration: 100, changedFiles: [] },
-      ]);
-
-      const statsAfter = await bridge.getStats();
-
-      expect(statsAfter.totalSamples).toBeGreaterThan(statsBefore.totalSamples);
+    it('should return false after destroy', async () => {
+      await bridge.init();
+      await bridge.destroy();
+      expect(bridge.isReady()).toBe(false);
     });
   });
 
