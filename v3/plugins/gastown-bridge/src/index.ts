@@ -1412,11 +1412,12 @@ export class GasTownBridgePlugin extends EventEmitter implements IPlugin {
         // Return type matches GasTownAgent[]
         return [] as import('./types.js').GasTownAgent[];
       },
-      async sendMail(to, subject, body) {
+      async sendMail(to, subject, body): Promise<string> {
         if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
         // Use execGt for mail operations
         const result = await gt.execGt(['tx', 'mail', '--to', to, '--subject', subject, '--body', body, '--json']);
-        return { messageId: result.data ?? 'unknown', status: result.success ? 'sent' : 'failed' };
+        // Return message ID as string
+        return result.data ?? 'unknown';
       },
       async readMail(mailId) {
         if (!gt) throw new GasTownError('GtBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
