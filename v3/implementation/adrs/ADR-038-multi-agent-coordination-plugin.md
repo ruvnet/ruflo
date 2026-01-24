@@ -293,6 +293,161 @@ Agent State --> SONA Encoding --> Attention Routing --> GNN Propagation
 | Memory synchronization | <100ms eventual consistency | ~1s (distributed DB) | 10x |
 | Emergent protocol training | <1 hour for basic tasks | N/A (hand-designed) | Novel |
 
+## Security Considerations
+
+### Input Validation (CRITICAL)
+
+All MCP tool inputs MUST be validated using Zod schemas:
+
+```typescript
+// coordination/neural-consensus input validation
+const NeuralConsensusSchema = z.object({
+  proposal: z.object({
+    topic: z.string().max(1000),
+    options: z.array(z.object({
+      id: z.string().max(100),
+      value: z.unknown()
+    })).min(2).max(100),
+    constraints: z.record(z.string(), z.unknown()).optional()
+  }),
+  agents: z.array(z.object({
+    id: z.string().max(100),
+    preferences: z.record(z.string(), z.number().min(-1).max(1)).optional(),
+    constraints: z.record(z.string(), z.unknown()).optional()
+  })).min(2).max(1000),
+  protocol: z.enum(['neural_voting', 'iterative_refinement', 'auction', 'contract_net']).default('iterative_refinement'),
+  maxRounds: z.number().int().min(1).max(1000).default(10)
+});
+
+// coordination/collective-memory input validation
+const CollectiveMemorySchema = z.object({
+  action: z.enum(['store', 'retrieve', 'consolidate', 'forget', 'synchronize']),
+  memory: z.object({
+    key: z.string().max(500).optional(),
+    value: z.unknown().optional(),
+    importance: z.number().min(0).max(1).default(0.5),
+    expiry: z.string().datetime().optional()
+  }).optional(),
+  scope: z.enum(['global', 'team', 'pair']).default('team'),
+  consolidationStrategy: z.enum(['ewc', 'replay', 'distillation']).default('ewc')
+});
+
+// coordination/swarm-behavior input validation
+const SwarmBehaviorSchema = z.object({
+  behavior: z.enum([
+    'flocking', 'foraging', 'formation', 'task_allocation',
+    'exploration', 'aggregation', 'dispersion'
+  ]),
+  parameters: z.record(z.string(), z.unknown()).optional(),
+  adaptiveRules: z.boolean().default(true),
+  observability: z.object({
+    recordTrajectories: z.boolean().optional(),
+    measureEmergence: z.boolean().optional()
+  }).optional()
+});
+```
+
+### WASM Security Constraints
+
+| Constraint | Value | Rationale |
+|------------|-------|-----------|
+| Memory Limit | 1GB max per agent | Prevent memory exhaustion |
+| CPU Time Limit | 60 seconds per round | Prevent infinite consensus loops |
+| Agent Count Limit | 1000 max | Prevent resource exhaustion |
+| Message Size Limit | 1MB per message | Prevent memory bombs |
+| No External Communication | WASM sandbox enforced | Prevent unauthorized coordination |
+
+### Agent Authentication (CRITICAL)
+
+```typescript
+// Every agent MUST be authenticated before joining coordination
+interface AgentCredentials {
+  agentId: string;
+  publicKey: string;        // For message signing
+  capabilities: string[];   // Authorized capabilities
+  issuer: string;           // Who created this agent
+  expiry: string;           // Credential expiration
+  signature: string;        // Signed by coordination service
+}
+
+// Verify agent before allowing coordination
+async function verifyAgent(credentials: AgentCredentials): Promise<boolean> {
+  // Verify signature
+  if (!verifySignature(credentials, COORDINATION_PUBLIC_KEY)) {
+    throw new SecurityError('INVALID_CREDENTIALS', 'Agent credentials invalid');
+  }
+
+  // Check expiry
+  if (new Date(credentials.expiry) < new Date()) {
+    throw new SecurityError('EXPIRED_CREDENTIALS', 'Agent credentials expired');
+  }
+
+  // Verify capabilities
+  return true;
+}
+```
+
+### Message Security
+
+```typescript
+// All inter-agent messages MUST be signed
+interface SecureMessage {
+  senderId: string;
+  recipientIds: string[];
+  payload: unknown;
+  timestamp: string;
+  nonce: string;           // Prevent replay attacks
+  signature: string;       // Signed by sender
+}
+
+// Message validation
+function validateMessage(message: SecureMessage): boolean {
+  // Verify signature
+  // Check timestamp freshness (within 5 minutes)
+  // Verify nonce not reused
+  // Validate sender is authorized
+}
+```
+
+### Identified Security Risks
+
+| Risk ID | Severity | Description | Mitigation |
+|---------|----------|-------------|------------|
+| COORD-SEC-001 | **CRITICAL** | Rogue agent influencing consensus | Agent authentication, Byzantine fault tolerance |
+| COORD-SEC-002 | **HIGH** | Sybil attack (fake agent multiplication) | Agent credential verification, rate limiting |
+| COORD-SEC-003 | **HIGH** | Denial of service via protocol abuse | Round limits, timeout enforcement |
+| COORD-SEC-004 | **MEDIUM** | Information leakage via collective memory | Memory access controls, encryption |
+| COORD-SEC-005 | **MEDIUM** | Emergent malicious behavior | Behavior bounds, kill switches |
+
+### Byzantine Fault Tolerance
+
+```typescript
+// Coordination MUST tolerate malicious agents
+// Using BFT consensus: tolerates f < n/3 faulty nodes
+
+interface BFTConsensus {
+  requiredVotes: number;     // 2f + 1 for n = 3f + 1
+  timeoutMs: number;         // Max time to wait for consensus
+  viewChangeThreshold: number; // Trigger view change after failures
+
+  // Detect and isolate malicious agents
+  detectMalicious(agentId: string, evidence: Evidence[]): boolean;
+  isolateAgent(agentId: string): void;
+}
+```
+
+### Rate Limiting
+
+```typescript
+const CoordinationRateLimits = {
+  'coordination/neural-consensus': { requestsPerMinute: 10, maxConcurrent: 2 },
+  'coordination/topology-optimize': { requestsPerMinute: 5, maxConcurrent: 1 },
+  'coordination/collective-memory': { requestsPerMinute: 100, maxConcurrent: 10 },
+  'coordination/emergent-protocol': { requestsPerMinute: 1, maxConcurrent: 1 },  // Very expensive
+  'coordination/swarm-behavior': { requestsPerMinute: 10, maxConcurrent: 2 }
+};
+```
+
 ## Risk Assessment
 
 | Risk | Likelihood | Impact | Mitigation |
