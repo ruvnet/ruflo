@@ -114,6 +114,76 @@ let wasmAvailable: boolean | null = null;
 const performanceLog: PerformanceTiming[] = [];
 
 // ============================================================================
+// Performance Caches - LRU with O(1) operations
+// ============================================================================
+
+/** LRU cache for parsed formulas (max 1000 entries) */
+const formulaParseCache = new LRUCache<string, Formula>({
+  maxEntries: 1000,
+  ttlMs: 10 * 60 * 1000, // 10 min TTL
+});
+
+/** LRU cache for cooked formulas */
+const cookCache = new LRUCache<string, Formula>({
+  maxEntries: 500,
+  ttlMs: 5 * 60 * 1000, // 5 min TTL
+});
+
+/** LRU cache for topo sort results */
+const topoSortCache = new LRUCache<string, TopoSortResult>({
+  maxEntries: 200,
+  ttlMs: 2 * 60 * 1000, // 2 min TTL
+});
+
+/** Formula AST cache using WeakMap-like behavior */
+const astCache = new FormulaASTCache(500);
+
+/** Batch deduplicator for concurrent parse requests */
+const parseDedup = new BatchDeduplicator<Formula>();
+
+/** Batch deduplicator for concurrent cook requests */
+const cookDedup = new BatchDeduplicator<Formula>();
+
+/** Batch deduplicator for concurrent graph operations */
+const graphDedup = new BatchDeduplicator<TopoSortResult>();
+
+/** Module preloader for idle-time loading */
+const modulePreloader = new ModulePreloader();
+
+// ============================================================================
+// Hash Functions for Cache Keys
+// ============================================================================
+
+/**
+ * FNV-1a hash for content strings (fast, low collision)
+ */
+function hashContent(content: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < content.length; i++) {
+    hash ^= content.charCodeAt(i);
+    hash = (hash * 16777619) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+/**
+ * Hash for cook operation key (formula + vars)
+ */
+function hashCookKey(formula: Formula, vars: Record<string, string>): string {
+  const varsStr = Object.entries(vars).sort().map(([k, v]) => `${k}=${v}`).join('|');
+  return `${formula.name}:${formula.version}:${hashContent(varsStr)}`;
+}
+
+/**
+ * Hash for graph operation key (nodes + edges)
+ */
+function hashGraphKey(nodes: string[], edges: GraphEdge[]): string {
+  const nodesStr = nodes.sort().join(',');
+  const edgesStr = edges.map(e => `${e.from}->${e.to}`).sort().join(',');
+  return hashContent(`${nodesStr}|${edgesStr}`);
+}
+
+// ============================================================================
 // WASM Availability Check
 // ============================================================================
 
