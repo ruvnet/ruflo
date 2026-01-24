@@ -274,13 +274,22 @@ Quantum-optimized task scheduling.
 
 ## Performance Targets
 
-| Metric | Target |
-|--------|--------|
-| Annealing (100 vars) | <1s for 1000 reads |
-| QAOA (50 qubits) | <10s for p=5 |
-| Grover (1M elements) | <100ms |
-| Dependency resolution | <5s for 1000 packages |
-| Schedule optimization | <30s for 100 tasks |
+| Metric | Target | Baseline (Classical) | Improvement |
+|--------|--------|----------------------|-------------|
+| Annealing (100 vars) | <1s for 1000 reads | ~30s (brute force) | 30x |
+| QAOA (50 qubits) | <10s for p=5 | ~5min (classical approx) | 30x |
+| Grover (1M elements) | <100ms | ~1s (linear search) | 10x (sqrt speedup) |
+| Dependency resolution | <5s for 1000 packages | ~2min (SAT solver) | 24x |
+| Schedule optimization | <30s for 100 tasks | ~10min (ILP solver) | 20x |
+
+## Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Suboptimal solutions | High | Medium | Solution quality bounds, hybrid fallback |
+| Problem encoding errors | Medium | High | Validation framework, encoding templates |
+| Compute requirements | Medium | Medium | Efficient WASM, progressive refinement |
+| Overpromising quantum advantage | Medium | Low | Clear documentation of "inspired" vs "actual" |
 
 ## Problem Encoding
 
