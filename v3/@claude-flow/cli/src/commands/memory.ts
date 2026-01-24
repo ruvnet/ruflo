@@ -512,32 +512,48 @@ const statsCommand: Command = {
   name: 'stats',
   description: 'Show memory statistics',
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    // Call MCP memory/stats tool for real statistics
+    // Use direct SQL access like other commands (fixes #1008)
     try {
-      const statsResult = await callMCPTool('memory/stats', {}) as {
-        totalEntries: number;
-        totalSize: string;
-        version: string;
-        backend: string;
-        location: string;
-        oldestEntry: string | null;
-        newestEntry: string | null;
-      };
+      const { listEntries, getDbPath } = await import('../memory/memory-initializer.js');
+      const { existsSync, statSync } = await import('fs');
+      const { resolve } = await import('path');
+
+      // Find database path
+      const DB_PATHS = ['.swarm/memory.db', '.claude/memory.db', 'data/memory.db'];
+      let dbPath = DB_PATHS[0];
+      if (typeof getDbPath === 'function') {
+        dbPath = getDbPath();
+      } else {
+        for (const p of DB_PATHS) {
+          if (existsSync(resolve(p))) {
+            dbPath = resolve(p);
+            break;
+          }
+        }
+      }
+
+      let dbSize = 'Unknown';
+      let dbExists = false;
+
+      try {
+        if (existsSync(dbPath)) {
+          dbExists = true;
+          const st = statSync(dbPath);
+          const sizeKB = Math.round(st.size / 1024);
+          dbSize = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
+        }
+      } catch { /* ignore */ }
+
+      // Get entry count
+      const listResult = await listEntries({ limit: 1, offset: 0 });
+      const totalEntries = listResult.success ? (listResult.total ?? 0) : 0;
 
       const stats = {
-        backend: statsResult.backend,
-        entries: {
-          total: statsResult.totalEntries,
-          vectors: 0, // Would need vector backend support
-          text: statsResult.totalEntries
-        },
-        storage: {
-          total: statsResult.totalSize,
-          location: statsResult.location
-        },
-        version: statsResult.version,
-        oldestEntry: statsResult.oldestEntry,
-        newestEntry: statsResult.newestEntry
+        backend: 'sqlite',
+        entries: { total: totalEntries, vectors: 0, text: totalEntries },
+        storage: { total: dbSize, location: dbPath },
+        version: '3.0.0',
+        status: dbExists ? 'initialized' : 'not initialized'
       };
 
       if (ctx.flags.format === 'json') {
@@ -558,22 +574,10 @@ const statsCommand: Command = {
         data: [
           { metric: 'Backend', value: stats.backend },
           { metric: 'Version', value: stats.version },
+          { metric: 'Status', value: stats.status },
           { metric: 'Total Entries', value: stats.entries.total.toLocaleString() },
           { metric: 'Total Storage', value: stats.storage.total },
           { metric: 'Location', value: stats.storage.location }
-        ]
-      });
-
-      output.writeln();
-      output.writeln(output.bold('Timeline'));
-      output.printTable({
-        columns: [
-          { key: 'metric', header: 'Metric', width: 20 },
-          { key: 'value', header: 'Value', width: 30, align: 'right' }
-        ],
-        data: [
-          { metric: 'Oldest Entry', value: stats.oldestEntry || 'N/A' },
-          { metric: 'Newest Entry', value: stats.newestEntry || 'N/A' }
         ]
       });
 
