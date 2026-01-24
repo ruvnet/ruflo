@@ -719,7 +719,9 @@ function getMutationMutated(type: string): string {
 
 function findWeakTests(mutations: OptimizedMutation[]): string[] {
   const testKillCounts = new Map<string, number>();
-  const survived = mutations.filter(m => m.status === 'survived');
+  // Count surviving mutants for reference (used in logging/metrics if needed)
+  const _survivedCount = mutations.filter(m => m.status === 'survived').length;
+  void _survivedCount; // Acknowledge unused variable
 
   for (const mutation of mutations) {
     for (const test of mutation.killingTests) {
