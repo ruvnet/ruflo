@@ -807,27 +807,78 @@ const epicCommand: Command = {
   },
 };
 
-// Import command
+// Import command - Enhanced with MarkdownPlanImporter
 const importCommand: Command = {
   name: 'import',
-  description: 'Import tasks from a plan file',
+  description: 'Import tasks from a markdown plan file',
   options: [
     {
       name: 'epic',
       short: 'e',
-      description: 'Create as epic',
+      description: 'Create epics from headings',
       type: 'boolean',
       default: true,
+    },
+    {
+      name: 'dependencies',
+      short: 'd',
+      description: 'Infer dependencies from nesting',
+      type: 'boolean',
+      default: true,
+    },
+    {
+      name: 'close-completed',
+      short: 'c',
+      description: 'Mark completed tasks ([x]) as closed',
+      type: 'boolean',
+      default: false,
+    },
+    {
+      name: 'priority',
+      short: 'p',
+      description: 'Default priority (0-4, 0=critical)',
+      type: 'number',
+      default: 2,
+    },
+    {
+      name: 'labels',
+      short: 'l',
+      description: 'Additional labels (comma-separated)',
+      type: 'string',
+    },
+    {
+      name: 'heading-level',
+      description: 'Minimum heading level for epics (2-6)',
+      type: 'number',
+      default: 2,
+    },
+    {
+      name: 'dry-run',
+      description: 'Preview import without creating tasks',
+      type: 'boolean',
+      default: false,
+    },
+    {
+      name: 'verbose',
+      short: 'v',
+      description: 'Show detailed output',
+      type: 'boolean',
+      default: false,
     },
   ],
   examples: [
     { command: 'claude-flow beads import docs/plan.md', description: 'Import from plan' },
+    { command: 'claude-flow beads import plan.md --dry-run', description: 'Preview import' },
+    { command: 'claude-flow beads import plan.md -c', description: 'Import and close completed' },
+    { command: 'claude-flow beads import plan.md --no-epic', description: 'Import without epics' },
+    { command: 'claude-flow beads import plan.md -l "sprint-1,backend"', description: 'Add labels' },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const filePath = ctx.args[0];
 
     if (!filePath) {
       output.printError('File path is required');
+      output.printInfo('Usage: claude-flow beads import <file.md>');
       return { success: false, exitCode: 1 };
     }
 
@@ -836,81 +887,364 @@ const importCommand: Command = {
       return { success: false, exitCode: 1 };
     }
 
-    const content = readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n');
+    // Import the MarkdownPlanImporter dynamically
+    const { MarkdownPlanImporter } = await import('../beads/import.js');
 
-    // Parse markdown tasks (- [ ] format)
-    const taskTitles: string[] = [];
-    for (const line of lines) {
-      const match = line.match(/^[-*]\s*\[[ x]?\]\s*(.+)$/i);
-      if (match) {
-        taskTitles.push(match[1].trim());
-      }
+    const createEpics = ctx.flags.epic as boolean;
+    const inferDependencies = ctx.flags.dependencies as boolean;
+    const closeCompleted = ctx.flags['close-completed'] as boolean;
+    const defaultPriority = (ctx.flags.priority as number) || 2;
+    const additionalLabels = ctx.flags.labels
+      ? (ctx.flags.labels as string).split(',').map((l) => l.trim())
+      : ['imported'];
+    const epicHeadingLevel = (ctx.flags['heading-level'] as number) || 2;
+    const dryRun = ctx.flags['dry-run'] as boolean;
+    const verbose = ctx.flags.verbose as boolean;
+
+    // Create importer with options
+    const importer = new MarkdownPlanImporter({
+      createEpics,
+      inferDependencies,
+      defaultPriority: defaultPriority as 0 | 1 | 2 | 3 | 4,
+      defaultType: 'task',
+      additionalLabels,
+      closeCompletedTasks: closeCompleted,
+      epicHeadingLevel,
+    });
+
+    // Parse the markdown file
+    let plan;
+    try {
+      plan = importer.parseFile(filePath);
+    } catch (err) {
+      output.printError(`Failed to parse file: ${(err as Error).message}`);
+      return { success: false, exitCode: 1 };
     }
 
-    if (taskTitles.length === 0) {
-      output.printWarning('No tasks found in file (looking for - [ ] format)');
+    // Get statistics
+    const stats = importer.getStatistics(plan);
+
+    if (plan.totalTasks === 0) {
+      output.printWarning('No tasks found in file (looking for - [ ] or - [x] format)');
       return { success: true, exitCode: 0 };
     }
 
-    const createEpic = ctx.flags.epic as boolean;
-    let epicId: string | undefined;
+    // Show preview in dry-run mode
+    if (dryRun) {
+      output.printHeader('Import Preview (Dry Run)');
+      output.printInfo(`File: ${filePath}`);
+      output.printInfo(`Title: ${plan.title || '(untitled)'}`);
+      if (plan.description) {
+        output.printInfo(`Description: ${plan.description.substring(0, 80)}...`);
+      }
+      output.printInfo('');
+      output.printSubHeader('Statistics');
+      output.printInfo(`  Epics: ${stats.totalEpics}`);
+      output.printInfo(`  Tasks: ${stats.totalTasks}`);
+      output.printInfo(`  Completed: ${stats.completedTasks}`);
+      output.printInfo(`  Pending: ${stats.pendingTasks}`);
+      output.printInfo('');
+      output.printSubHeader('By Priority');
+      output.printInfo(`  Critical (P0): ${stats.tasksByPriority[0] || 0}`);
+      output.printInfo(`  High (P1): ${stats.tasksByPriority[1] || 0}`);
+      output.printInfo(`  Medium (P2): ${stats.tasksByPriority[2] || 0}`);
+      output.printInfo(`  Low (P3): ${stats.tasksByPriority[3] || 0}`);
+      output.printInfo(`  Nice-to-have (P4): ${stats.tasksByPriority[4] || 0}`);
+      output.printInfo('');
 
-    if (createEpic) {
-      const epicTitle = filePath.split('/').pop()?.replace(/\.(md|txt)$/, '') || 'Imported Epic';
-      const now = Date.now();
+      if (verbose && plan.epics.length > 0) {
+        output.printSubHeader('Epics');
+        for (const epic of plan.epics) {
+          output.printInfo(`  ## ${epic.title} (${epic.tasks.length} tasks)`);
+          for (const task of epic.tasks.slice(0, 3)) {
+            const status = task.completed ? '[x]' : '[ ]';
+            output.printInfo(`    ${status} ${task.title}`);
+          }
+          if (epic.tasks.length > 3) {
+            output.printInfo(`    ... and ${epic.tasks.length - 3} more`);
+          }
+        }
+      }
+
+      if (verbose && plan.orphanTasks.length > 0) {
+        output.printSubHeader('Standalone Tasks');
+        for (const task of plan.orphanTasks.slice(0, 5)) {
+          const status = task.completed ? '[x]' : '[ ]';
+          output.printInfo(`  ${status} ${task.title}`);
+        }
+        if (plan.orphanTasks.length > 5) {
+          output.printInfo(`  ... and ${plan.orphanTasks.length - 5} more`);
+        }
+      }
+
+      output.printInfo('');
+      output.printInfo('Run without --dry-run to import.');
+      return { success: true, exitCode: 0 };
+    }
+
+    // Perform actual import
+    ensureBeadsDir();
+    const now = Date.now();
+    const createdEpics: string[] = [];
+    const createdTasks: string[] = [];
+    const taskIdMap = new Map<number, string>(); // Map task index to created ID
+
+    // Helper to convert priority
+    const convertPriority = (p: number): BeadsTask['priority'] => {
+      const mapping: Record<number, BeadsTask['priority']> = {
+        0: 'critical',
+        1: 'high',
+        2: 'medium',
+        3: 'low',
+        4: 'low',
+      };
+      return mapping[p] || 'medium';
+    };
+
+    // Create epics and their tasks
+    for (const epicData of plan.epics) {
       const epic: BeadsEpic = {
         id: generateId(),
-        title: epicTitle,
-        description: `Imported from ${filePath}`,
+        title: epicData.title,
+        description: epicData.description || `Imported from ${filePath}`,
         status: 'not_started',
         tasks: [],
         progress: 0,
-        totalTasks: taskTitles.length,
+        totalTasks: epicData.tasks.length,
         completedTasks: 0,
         blockedTasks: 0,
         createdAt: now,
         updatedAt: now,
       };
+
+      // Create tasks for this epic
+      const epicTaskIds: string[] = [];
+      let completedCount = 0;
+
+      for (let i = 0; i < epicData.tasks.length; i++) {
+        const taskData = epicData.tasks[i];
+        const taskId = generateId();
+        taskIdMap.set(i, taskId);
+
+        const task: BeadsTask = {
+          id: taskId,
+          title: taskData.title,
+          status: taskData.completed && closeCompleted ? 'closed' : 'open',
+          type: taskData.type as BeadsTask['type'],
+          description: taskData.description,
+          design: '',
+          notes: taskData.notes || `Imported from ${filePath}`,
+          dependsOn: [],
+          blockedBy: [],
+          epic: epic.id,
+          assignee: taskData.assignee,
+          priority: convertPriority(taskData.priority),
+          tags: [...new Set([...taskData.labels, ...additionalLabels])],
+          files: [],
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        if (taskData.completed && closeCompleted) {
+          task.closedAt = now;
+          task.closeReason = 'Imported as completed';
+          completedCount++;
+        }
+
+        saveTask(task);
+        epicTaskIds.push(taskId);
+        createdTasks.push(taskId);
+
+        if (verbose) {
+          const statusIcon = task.status === 'closed' ? '●' : '○';
+          output.printInfo(`  ${statusIcon} Created task: ${task.id} - ${task.title}`);
+        }
+      }
+
+      // Set up dependencies if enabled
+      if (inferDependencies) {
+        const deps = importer.buildDependencies(epicData.tasks);
+        for (const [taskIdx, depIndices] of deps) {
+          const taskId = taskIdMap.get(taskIdx);
+          if (taskId) {
+            const task = loadTask(taskId);
+            if (task) {
+              for (const depIdx of depIndices) {
+                const depId = taskIdMap.get(depIdx);
+                if (depId) {
+                  task.dependsOn.push(depId);
+                }
+              }
+              saveTask(task);
+            }
+          }
+        }
+      }
+
+      // Update epic with task IDs
+      epic.tasks = epicTaskIds;
+      epic.completedTasks = completedCount;
+      epic.progress = epicTaskIds.length > 0
+        ? Math.round((completedCount / epicTaskIds.length) * 100)
+        : 0;
+
+      if (epic.progress === 100) {
+        epic.status = 'completed';
+        epic.completedAt = now;
+      } else if (completedCount > 0) {
+        epic.status = 'in_progress';
+      }
+
       saveEpic(epic);
-      epicId = epic.id;
-      output.printSuccess(`Created epic: ${epic.id} - ${epic.title}`);
+      createdEpics.push(epic.id);
+
+      output.printSuccess(`Created epic: ${epic.id} - ${epic.title} (${epic.tasks.length} tasks)`);
     }
 
-    // Create tasks
-    const now = Date.now();
-    for (const title of taskTitles) {
-      const task: BeadsTask = {
-        id: generateId(),
-        title,
-        status: 'open',
-        type: 'task',
-        description: '',
-        design: '',
-        notes: `Imported from ${filePath}`,
-        dependsOn: [],
-        blockedBy: [],
-        epic: epicId,
-        priority: 'medium',
-        tags: ['imported'],
-        files: [],
-        createdAt: now,
-        updatedAt: now,
-      };
-      saveTask(task);
+    // Create orphan tasks (not under any epic)
+    if (plan.orphanTasks.length > 0) {
+      let orphanEpicId: string | undefined;
 
-      if (epicId) {
-        const epic = loadEpic(epicId);
-        if (epic) {
-          epic.tasks.push(task.id);
-          saveEpic(epic);
+      // Create a container epic for orphan tasks if creating epics
+      if (createEpics && plan.orphanTasks.length > 0) {
+        const orphanEpic: BeadsEpic = {
+          id: generateId(),
+          title: plan.title || 'Imported Tasks',
+          description: plan.description || `Imported from ${filePath}`,
+          status: 'not_started',
+          tasks: [],
+          progress: 0,
+          totalTasks: plan.orphanTasks.length,
+          completedTasks: 0,
+          blockedTasks: 0,
+          createdAt: now,
+          updatedAt: now,
+        };
+        orphanEpicId = orphanEpic.id;
+
+        const orphanTaskIds: string[] = [];
+        let orphanCompletedCount = 0;
+
+        for (const taskData of plan.orphanTasks) {
+          const taskId = generateId();
+          const task: BeadsTask = {
+            id: taskId,
+            title: taskData.title,
+            status: taskData.completed && closeCompleted ? 'closed' : 'open',
+            type: taskData.type as BeadsTask['type'],
+            description: taskData.description,
+            design: '',
+            notes: taskData.notes || `Imported from ${filePath}`,
+            dependsOn: [],
+            blockedBy: [],
+            epic: orphanEpicId,
+            assignee: taskData.assignee,
+            priority: convertPriority(taskData.priority),
+            tags: [...new Set([...taskData.labels, ...additionalLabels])],
+            files: [],
+            createdAt: now,
+            updatedAt: now,
+          };
+
+          if (taskData.completed && closeCompleted) {
+            task.closedAt = now;
+            task.closeReason = 'Imported as completed';
+            orphanCompletedCount++;
+          }
+
+          saveTask(task);
+          orphanTaskIds.push(taskId);
+          createdTasks.push(taskId);
+
+          if (verbose) {
+            const statusIcon = task.status === 'closed' ? '●' : '○';
+            output.printInfo(`  ${statusIcon} Created task: ${task.id} - ${task.title}`);
+          }
         }
+
+        orphanEpic.tasks = orphanTaskIds;
+        orphanEpic.completedTasks = orphanCompletedCount;
+        orphanEpic.progress = orphanTaskIds.length > 0
+          ? Math.round((orphanCompletedCount / orphanTaskIds.length) * 100)
+          : 0;
+
+        if (orphanEpic.progress === 100) {
+          orphanEpic.status = 'completed';
+          orphanEpic.completedAt = now;
+        } else if (orphanCompletedCount > 0) {
+          orphanEpic.status = 'in_progress';
+        }
+
+        saveEpic(orphanEpic);
+        createdEpics.push(orphanEpic.id);
+
+        output.printSuccess(`Created epic: ${orphanEpic.id} - ${orphanEpic.title} (${orphanEpic.tasks.length} tasks)`);
+      } else {
+        // Create tasks without epic
+        for (const taskData of plan.orphanTasks) {
+          const taskId = generateId();
+          const task: BeadsTask = {
+            id: taskId,
+            title: taskData.title,
+            status: taskData.completed && closeCompleted ? 'closed' : 'open',
+            type: taskData.type as BeadsTask['type'],
+            description: taskData.description,
+            design: '',
+            notes: taskData.notes || `Imported from ${filePath}`,
+            dependsOn: [],
+            blockedBy: [],
+            assignee: taskData.assignee,
+            priority: convertPriority(taskData.priority),
+            tags: [...new Set([...taskData.labels, ...additionalLabels])],
+            files: [],
+            createdAt: now,
+            updatedAt: now,
+          };
+
+          if (taskData.completed && closeCompleted) {
+            task.closedAt = now;
+            task.closeReason = 'Imported as completed';
+          }
+
+          saveTask(task);
+          createdTasks.push(taskId);
+
+          if (verbose) {
+            const statusIcon = task.status === 'closed' ? '●' : '○';
+            output.printInfo(`  ${statusIcon} Created task: ${task.id} - ${task.title}`);
+          }
+        }
+
+        output.printSuccess(`Created ${plan.orphanTasks.length} standalone tasks`);
       }
     }
 
-    output.printSuccess(`Imported ${taskTitles.length} tasks`);
+    // Summary
+    output.printInfo('');
+    output.printHeader('Import Summary');
+    output.printInfo(`  File: ${filePath}`);
+    output.printInfo(`  Epics created: ${createdEpics.length}`);
+    output.printInfo(`  Tasks created: ${createdTasks.length}`);
+    if (closeCompleted) {
+      output.printInfo(`  Closed (completed): ${stats.completedTasks}`);
+    }
+    output.printInfo('');
+    output.printInfo('Next steps:');
+    output.printInfo('  claude-flow beads status');
+    output.printInfo('  claude-flow beads ready');
+    if (createdEpics.length > 0) {
+      output.printInfo(`  claude-flow beads continue ${createdEpics[0]}`);
+    }
 
-    return { success: true, exitCode: 0 };
+    return {
+      success: true,
+      exitCode: 0,
+      data: {
+        epics: createdEpics,
+        tasks: createdTasks,
+        stats,
+      },
+    };
   },
 };
 
@@ -987,6 +1321,459 @@ const continueCommand: Command = {
   },
 };
 
+// Graph command
+const graphCommand: Command = {
+  name: 'graph',
+  description: 'Visualize task dependency graph',
+  options: [
+    {
+      name: 'epic',
+      short: 'e',
+      description: 'Filter by epic ID',
+      type: 'string',
+    },
+    {
+      name: 'format',
+      short: 'f',
+      description: 'Output format (ascii, mermaid, dot)',
+      type: 'string',
+      default: 'ascii',
+    },
+    {
+      name: 'all',
+      short: 'a',
+      description: 'Include closed tasks',
+      type: 'boolean',
+      default: false,
+    },
+    {
+      name: 'critical',
+      short: 'c',
+      description: 'Show critical path only',
+      type: 'boolean',
+      default: false,
+    },
+    {
+      name: 'direction',
+      short: 'd',
+      description: 'Graph direction (TB, BT, LR, RL)',
+      type: 'string',
+      default: 'TB',
+    },
+    {
+      name: 'output',
+      short: 'o',
+      description: 'Output file path (prints to stdout if not specified)',
+      type: 'string',
+    },
+  ],
+  examples: [
+    { command: 'claude-flow beads graph', description: 'Show ASCII dependency graph' },
+    { command: 'claude-flow beads graph --epic bd_xxx', description: 'Graph for specific epic' },
+    { command: 'claude-flow beads graph --format mermaid', description: 'Generate Mermaid diagram' },
+    { command: 'claude-flow beads graph --format dot -o graph.dot', description: 'Export to Graphviz' },
+    { command: 'claude-flow beads graph --critical', description: 'Show critical path only' },
+  ],
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    const epicId = ctx.flags.epic as string;
+    const format = (ctx.flags.format as string || 'ascii').toLowerCase();
+    const includeAll = ctx.flags.all as boolean;
+    const criticalOnly = ctx.flags.critical as boolean;
+    const direction = ctx.flags.direction as string || 'TB';
+    const outputPath = ctx.flags.output as string;
+
+    // Load tasks
+    let tasks = loadAllTasks();
+    updateBlockedBy(tasks);
+
+    // Filter by epic if specified
+    if (epicId) {
+      const epic = loadEpic(epicId);
+      if (!epic) {
+        output.printError(`Epic not found: ${epicId}`);
+        return { success: false, exitCode: 1 };
+      }
+      tasks = tasks.filter((t) => t.epic === epicId);
+      output.printInfo(`Generating graph for epic: ${epic.title}`);
+    }
+
+    if (tasks.length === 0) {
+      output.printInfo('No tasks found');
+      return { success: true, exitCode: 0 };
+    }
+
+    // Convert BeadsTask to BeadsIssue format for the graph
+    const issues = tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      status: task.status === 'blocked' ? 'open' as const : task.status === 'review' ? 'in_progress' as const : task.status as 'open' | 'in_progress' | 'closed',
+      priority: priorityToNumber(task.priority),
+      type: task.type as 'bug' | 'feature' | 'task' | 'epic' | 'chore',
+      assignee: task.assignee,
+      labels: task.tags,
+      created_at: new Date(task.createdAt).toISOString(),
+      updated_at: new Date(task.updatedAt).toISOString(),
+      closed_at: task.closedAt ? new Date(task.closedAt).toISOString() : undefined,
+      close_reason: task.closeReason,
+      dependencies: task.dependsOn.map((depId) => ({
+        from_id: task.id,
+        to_id: depId,
+        type: 'blocks' as const,
+        created_at: new Date(task.createdAt).toISOString(),
+      })),
+      notes: task.notes,
+    }));
+
+    // Import graph functions dynamically
+    const { DependencyGraph } = await import('../beads/graph.js');
+
+    // Create graph with options
+    const graph = new DependencyGraph(issues, {
+      includeClosed: includeAll,
+      showCriticalPath: true,
+      showBlocked: true,
+      showStatus: true,
+      direction: direction as 'TB' | 'BT' | 'LR' | 'RL',
+    });
+
+    // Generate output based on format
+    let graphOutput: string;
+    switch (format) {
+      case 'mermaid':
+      case 'md':
+        graphOutput = graph.toMermaid();
+        break;
+      case 'dot':
+      case 'graphviz':
+        graphOutput = graph.toDOT();
+        break;
+      case 'ascii':
+      default:
+        graphOutput = graph.toASCII();
+        break;
+    }
+
+    // Filter to critical path if requested
+    if (criticalOnly && format === 'ascii') {
+      const criticalPath = graph.getCriticalPath();
+      if (criticalPath.length === 0) {
+        output.printWarning('No critical path detected (may indicate cycles or no dependencies)');
+      } else {
+        output.writeln(output.bold('=== Critical Path ==='));
+        output.printInfo(criticalPath.map((n) => `${n.id}: ${n.title}`).join('\n -> '));
+      }
+      return { success: true, exitCode: 0, data: { criticalPath } };
+    }
+
+    // Output to file or stdout
+    if (outputPath) {
+      writeFileSync(outputPath, graphOutput);
+      output.printSuccess(`Graph written to: ${outputPath}`);
+
+      // Provide hint for rendering
+      if (format === 'dot' || format === 'graphviz') {
+        output.printInfo('Render with: dot -Tpng ' + outputPath + ' -o graph.png');
+      } else if (format === 'mermaid' || format === 'md') {
+        output.printInfo('View in any Mermaid-compatible viewer or paste into GitHub markdown');
+      }
+    } else {
+      console.log(graphOutput);
+    }
+
+    // Print stats
+    const stats = graph.getStats();
+    output.printInfo('');
+    output.printInfo(`Stats: ${stats.totalNodes} tasks, ${stats.totalEdges} dependencies, ${stats.criticalNodes} on critical path`);
+    if (stats.blockedNodes > 0) {
+      output.printWarning(`${stats.blockedNodes} tasks are blocked`);
+    }
+    if (stats.hasCycles) {
+      output.printError(`Dependency cycle detected in: ${stats.cycleNodes.join(', ')}`);
+    }
+
+    return { success: true, exitCode: 0, data: { stats } };
+  },
+};
+
+// Helper to convert priority string to number
+function priorityToNumber(priority: string): 0 | 1 | 2 | 3 | 4 {
+  switch (priority) {
+    case 'critical': return 0;
+    case 'high': return 1;
+    case 'medium': return 2;
+    case 'low': return 3;
+    default: return 2;
+  }
+}
+
+// ===== GitHub Integration Commands =====
+
+// GitHub sync command
+const githubSyncCommand: Command = {
+  name: 'sync',
+  description: 'Sync beads tasks with GitHub issues',
+  options: [
+    {
+      name: 'direction',
+      short: 'd',
+      description: 'Sync direction (to-github, from-github, bidirectional)',
+      type: 'string',
+      default: 'bidirectional',
+    },
+    {
+      name: 'repo',
+      short: 'r',
+      description: 'Repository in owner/repo format',
+      type: 'string',
+    },
+    {
+      name: 'include-closed',
+      description: 'Include closed issues/tasks in sync',
+      type: 'boolean',
+      default: false,
+    },
+  ],
+  examples: [
+    { command: 'claude-flow beads github sync', description: 'Bidirectional sync' },
+    { command: 'claude-flow beads github sync --direction=to-github', description: 'Push to GitHub' },
+    { command: 'claude-flow beads github sync --direction=from-github', description: 'Pull from GitHub' },
+  ],
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    const direction = ctx.flags.direction as string;
+    const repo = ctx.flags.repo as string | undefined;
+    const includeClosed = ctx.flags['include-closed'] as boolean;
+
+    output.printInfo('Checking GitHub CLI availability...');
+
+    // Check gh CLI
+    try {
+      execSync('gh auth status', { stdio: 'pipe' });
+    } catch {
+      output.printError('GitHub CLI (gh) is not installed or not authenticated');
+      output.printInfo('Install: https://cli.github.com/');
+      output.printInfo('Then run: gh auth login');
+      return { success: false, exitCode: 1 };
+    }
+
+    // Dynamically import GitHub sync
+    const { GitHubSync } = await import('../beads/github.js');
+    const { BeadsCliWrapper } = await import('../beads/cli-wrapper.js');
+
+    const beadsWrapper = new BeadsCliWrapper();
+    const githubSync = new GitHubSync(beadsWrapper, {
+      repo,
+      syncClosed: includeClosed,
+    });
+
+    output.printInfo(`Starting ${direction} sync...`);
+
+    const validDirections = ['to-github', 'from-github', 'bidirectional'];
+    if (!validDirections.includes(direction)) {
+      output.printError(`Invalid direction: ${direction}`);
+      output.printInfo(`Valid options: ${validDirections.join(', ')}`);
+      return { success: false, exitCode: 1 };
+    }
+
+    const result = await githubSync.sync(direction as 'to-github' | 'from-github' | 'bidirectional');
+
+    if (result.success) {
+      output.printSuccess('Sync completed successfully');
+      output.printInfo(`  Pushed to GitHub: ${result.pushedToGitHub}`);
+      output.printInfo(`  Pulled from GitHub: ${result.pulledFromGitHub}`);
+      if (result.created.length > 0) {
+        output.printInfo(`  Created: ${result.created.join(', ')}`);
+      }
+      if (result.updated.length > 0) {
+        output.printInfo(`  Updated: ${result.updated.join(', ')}`);
+      }
+      if (result.imported.length > 0) {
+        output.printInfo(`  Imported: ${result.imported.join(', ')}`);
+      }
+    } else {
+      output.printWarning('Sync completed with errors');
+      for (const err of result.errors) {
+        if (err.taskId) {
+          output.printError(`  Task ${err.taskId}: ${err.error}`);
+        } else if (err.issueNumber) {
+          output.printError(`  Issue #${err.issueNumber}: ${err.error}`);
+        } else {
+          output.printError(`  ${err.error}`);
+        }
+      }
+    }
+
+    return { success: result.success, exitCode: result.success ? 0 : 1, data: result };
+  },
+};
+
+// GitHub link command
+const githubLinkCommand: Command = {
+  name: 'link',
+  description: 'Link a beads task to an existing GitHub issue',
+  options: [],
+  examples: [
+    { command: 'claude-flow beads github link bd_xxx https://github.com/owner/repo/issues/42', description: 'Link task to issue' },
+  ],
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    const taskId = ctx.args[0];
+    const issueUrl = ctx.args[1];
+
+    if (!taskId) {
+      output.printError('Task ID is required');
+      output.printInfo('Usage: claude-flow beads github link <task-id> <issue-url>');
+      return { success: false, exitCode: 1 };
+    }
+
+    if (!issueUrl) {
+      output.printError('GitHub issue URL is required');
+      output.printInfo('Usage: claude-flow beads github link <task-id> <issue-url>');
+      return { success: false, exitCode: 1 };
+    }
+
+    // Dynamically import GitHub sync
+    const { GitHubSync } = await import('../beads/github.js');
+    const { BeadsCliWrapper } = await import('../beads/cli-wrapper.js');
+
+    const beadsWrapper = new BeadsCliWrapper();
+    const githubSync = new GitHubSync(beadsWrapper);
+
+    const result = await githubSync.linkIssue(taskId, issueUrl);
+
+    if (result.success && result.data) {
+      output.printSuccess(`Linked task ${taskId} to GitHub issue #${result.data.issueNumber}`);
+      output.printInfo(`  Repository: ${result.data.repo}`);
+      output.printInfo(`  URL: ${result.data.issueUrl}`);
+    } else {
+      output.printError(`Failed to link: ${result.error}`);
+    }
+
+    return { success: result.success, exitCode: result.success ? 0 : 1 };
+  },
+};
+
+// GitHub unlink command
+const githubUnlinkCommand: Command = {
+  name: 'unlink',
+  description: 'Unlink a beads task from its GitHub issue',
+  options: [],
+  examples: [
+    { command: 'claude-flow beads github unlink bd_xxx', description: 'Unlink task from issue' },
+  ],
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    const taskId = ctx.args[0];
+
+    if (!taskId) {
+      output.printError('Task ID is required');
+      output.printInfo('Usage: claude-flow beads github unlink <task-id>');
+      return { success: false, exitCode: 1 };
+    }
+
+    // Dynamically import GitHub sync
+    const { GitHubSync } = await import('../beads/github.js');
+    const { BeadsCliWrapper } = await import('../beads/cli-wrapper.js');
+
+    const beadsWrapper = new BeadsCliWrapper();
+    const githubSync = new GitHubSync(beadsWrapper);
+
+    const result = await githubSync.unlinkIssue(taskId);
+
+    if (result.success) {
+      output.printSuccess(`Unlinked task ${taskId} from GitHub`);
+    } else {
+      output.printError(`Failed to unlink: ${result.error}`);
+    }
+
+    return { success: result.success, exitCode: result.success ? 0 : 1 };
+  },
+};
+
+// GitHub status command
+const githubStatusCommand: Command = {
+  name: 'status',
+  description: 'Show GitHub sync status for tasks',
+  options: [
+    {
+      name: 'task',
+      short: 't',
+      description: 'Show status for specific task',
+      type: 'string',
+    },
+  ],
+  examples: [
+    { command: 'claude-flow beads github status', description: 'Show all linked tasks' },
+    { command: 'claude-flow beads github status --task bd_xxx', description: 'Show specific task' },
+  ],
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    const taskId = ctx.flags.task as string | undefined;
+
+    // Check gh CLI
+    try {
+      execSync('gh auth status', { stdio: 'pipe' });
+    } catch {
+      output.printError('GitHub CLI (gh) is not installed or not authenticated');
+      return { success: false, exitCode: 1 };
+    }
+
+    // Dynamically import GitHub sync
+    const { GitHubSync } = await import('../beads/github.js');
+    const { BeadsCliWrapper } = await import('../beads/cli-wrapper.js');
+
+    const beadsWrapper = new BeadsCliWrapper();
+    const githubSync = new GitHubSync(beadsWrapper);
+
+    if (taskId) {
+      const link = githubSync.getLink(taskId);
+      if (!link) {
+        output.printInfo(`Task ${taskId} is not linked to any GitHub issue`);
+        return { success: true, exitCode: 0 };
+      }
+
+      output.printHeader(`GitHub Link: ${taskId}`);
+      output.printInfo(`  Issue: #${link.issueNumber}`);
+      output.printInfo(`  Repository: ${link.repo}`);
+      output.printInfo(`  URL: ${link.issueUrl}`);
+      output.printInfo(`  Linked: ${link.linkedAt}`);
+      if (link.lastSyncAt) {
+        output.printInfo(`  Last Sync: ${link.lastSyncAt}`);
+      }
+    } else {
+      const links = githubSync.getAllLinks();
+
+      if (links.length === 0) {
+        output.printInfo('No tasks are linked to GitHub issues');
+        output.printInfo('');
+        output.printInfo('Link a task: claude-flow beads github link <task-id> <issue-url>');
+        output.printInfo('Sync tasks:  claude-flow beads github sync');
+        return { success: true, exitCode: 0 };
+      }
+
+      output.printHeader(`GitHub Links (${links.length})`);
+      for (const link of links) {
+        output.printInfo(`  ${link.taskId} -> #${link.issueNumber} (${link.repo})`);
+      }
+    }
+
+    return { success: true, exitCode: 0 };
+  },
+};
+
+// GitHub command group
+const githubCommand: Command = {
+  name: 'github',
+  description: 'GitHub issues integration',
+  subcommands: [githubSyncCommand, githubLinkCommand, githubUnlinkCommand, githubStatusCommand],
+  examples: [
+    { command: 'claude-flow beads github sync', description: 'Sync with GitHub' },
+    { command: 'claude-flow beads github link bd_xxx <url>', description: 'Link task to issue' },
+    { command: 'claude-flow beads github status', description: 'Show sync status' },
+  ],
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    // Default: show status
+    return githubStatusCommand.action(ctx);
+  },
+};
+
 // Main beads command
 export const beadsCommand: Command = {
   name: 'beads',
@@ -1002,6 +1789,8 @@ export const beadsCommand: Command = {
     epicCommand,
     importCommand,
     continueCommand,
+    graphCommand,
+    githubCommand,
   ],
   examples: [
     { command: 'claude-flow beads init', description: 'Initialize beads' },
@@ -1010,6 +1799,10 @@ export const beadsCommand: Command = {
     { command: 'claude-flow beads epic create "My epic"', description: 'Create epic' },
     { command: 'claude-flow beads ready', description: 'List ready tasks' },
     { command: 'claude-flow beads continue bd_xxx', description: 'Continue epic' },
+    { command: 'claude-flow beads graph', description: 'Show dependency graph' },
+    { command: 'claude-flow beads graph --format mermaid', description: 'Export Mermaid diagram' },
+    { command: 'claude-flow beads github sync', description: 'Sync with GitHub issues' },
+    { command: 'claude-flow beads github link bd_xxx <url>', description: 'Link task to GitHub issue' },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     // Default: show status

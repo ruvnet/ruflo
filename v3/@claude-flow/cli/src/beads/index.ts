@@ -54,6 +54,117 @@ export {
   type SparcWorkflow,
 } from './sparc.js';
 
+// Dependency graph visualization
+export {
+  DependencyGraph,
+  createDependencyGraph,
+  generateASCIIGraph,
+  generateMermaidGraph,
+  generateDOTGraph,
+  type GraphNode,
+  type GraphEdge,
+  type GraphOptions,
+  type GraphStats,
+} from './graph.js';
+
+// GitHub integration
+export {
+  GitHubSync,
+  createGitHubSync,
+  mapStatusToGitHub,
+  mapStatusFromGitHub,
+  mapPriorityToLabel,
+  mapPriorityFromLabel,
+  mapTypeToLabel,
+  mapTypeFromLabel,
+  extractBeadsIdFromBody,
+  addBeadsIdToBody,
+  DEFAULT_GITHUB_SYNC_CONFIG,
+  type GitHubIssue,
+  type GitHubIssueState,
+  type GitHubLabel,
+  type GitHubUser,
+  type GitHubMilestone,
+  type GitHubCreateParams,
+  type GitHubUpdateParams,
+  type GitHubLink,
+  type GitHubSyncConfig,
+  type SyncDirection,
+  type SyncResult,
+} from './github.js';
+
+// Markdown plan import integration
+export {
+  MarkdownPlanImporter,
+  createMarkdownImporter,
+  parseMarkdownPlan,
+  parseMarkdownFile,
+  convertToBeadsIssue,
+  type MarkdownFrontmatter,
+  type ParsedTask,
+  type ParsedEpic,
+  type ParsedMarkdownPlan,
+  type ImportOptions,
+  type ImportedItem,
+  type ImportResult,
+} from './import.js';
+
+// Cache layer for performance optimization
+export {
+  BeadsCache,
+  CachedBeadsWrapper,
+  createCachedWrapper,
+  generateCacheKey,
+  listCacheKey,
+  readyCacheKey,
+  issueCacheKey,
+  dependencyCacheKey,
+  epicCacheKey,
+  DEFAULT_CACHE_CONFIG,
+  TTL_PRESETS,
+  type CacheStats,
+  type CacheConfig,
+} from './cache.js';
+
+// Pagination and lazy loading
+export {
+  BeadsPaginator,
+  LazyLoader,
+  BatchProcessor,
+  DependencyResolver,
+  createPaginator,
+  createLazyLoader,
+  createBatchProcessor,
+  createDependencyResolver,
+  encodeCursor,
+  decodeCursor,
+  hashQueryParams,
+  DEFAULT_PAGINATION,
+  type PaginationCursor,
+  type PaginatedResult,
+  type PaginationOptions,
+  type LazyLoadState,
+  type LazyEpic,
+  type BatchResult,
+} from './pagination.js';
+
+// Two-way sync manager for beads-ui integration
+export {
+  BeadsSyncManager,
+  createBeadsSyncManager,
+  DEFAULT_SYNC_CONFIG,
+  isSyncEvent,
+  isChangeRecord,
+  isConflictRecord,
+  type SyncEventType,
+  type SyncEvent,
+  type ChangeRecord,
+  type ConflictRecord,
+  type ConflictResolution,
+  type SyncConfig,
+  type SyncState,
+} from './sync.js';
+
 // Type exports from types.ts
 export type {
   BeadsIssueStatus,
