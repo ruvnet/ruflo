@@ -49,11 +49,12 @@
     "vitest": "^4.0.16"
   },
   "dependencies": {
-    "@claude-flow/shared": "^3.0.0-alpha.1",
     "@claude-flow/aidefence": "^3.0.2",
     "@claude-flow/embeddings": "^3.0.0-alpha.12",
     "@claude-flow/mcp": "^3.0.0-alpha.8",
-    "@claude-flow/plugin-gastown-bridge": "^0.1.0"
+    "@claude-flow/plugin-gastown-bridge": "^0.1.0",
+    "@claude-flow/shared": "^3.0.0-alpha.1",
+    "@noble/ed25519": "^2.1.0"
   },
   "publishConfig": {
     "access": "public",
