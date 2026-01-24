@@ -1270,6 +1270,14 @@ export class GasTownBridgePlugin extends EventEmitter implements IPlugin {
     };
   }
 
+  /**
+   * Create the bridge facade for MCP tools.
+   *
+   * NOTE: This facade bridges between the plugin's internal types (from bd-bridge, etc.)
+   * and the external interface types (from types.ts). Type casts are necessary because
+   * the underlying bridges use different type definitions. A future refactor should
+   * unify these type systems.
+   */
   private createBridgeFacade(): ToolContext['bridges']['gastown'] {
     const gt = this.gtBridge;
     const bd = this.bdBridge;
@@ -1277,22 +1285,47 @@ export class GasTownBridgePlugin extends EventEmitter implements IPlugin {
     const wasmLoader = this.wasmLoader;
 
     return {
-      async createBead(opts: { type: string; content: string; parentId?: string; threadId?: string; agentId?: string; tags?: string[] }) {
+      async createBead(opts) {
         if (!bd) throw new GasTownError('BdBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        // Use BdBridge.createBead which is the actual API
-        return bd.createBead({
-          type: opts.type as import('./bridges/bd-bridge.js').BeadType,
-          content: opts.content,
-          parentId: opts.parentId,
-          threadId: opts.threadId,
-          agentId: opts.agentId,
-          tags: opts.tags,
-        });
+        // CreateBeadOptions uses title, the bridge uses content
+        const bdOpts = {
+          type: 'prompt' as import('./bridges/bd-bridge.js').BeadType,
+          content: opts.description ?? opts.title,
+          parentId: opts.parent,
+          agentId: opts.assignee,
+          tags: opts.labels,
+        };
+        const result = await bd.createBead(bdOpts);
+        // Map bd-bridge Bead to types.ts Bead
+        return {
+          id: result.id,
+          title: result.content.slice(0, 100),
+          description: result.content,
+          status: 'open' as const,
+          priority: 0,
+          labels: result.tags ?? [],
+          createdAt: result.timestamp ? new Date(result.timestamp) : new Date(),
+          updatedAt: result.timestamp ? new Date(result.timestamp) : new Date(),
+          parentId: result.parentId,
+          assignee: result.agentId,
+        };
       },
-      async getReady(limit?: number, _rig?: string, _labels?: string[]) {
+      async getReady(limit, _rig, _labels) {
         if (!bd) throw new GasTownError('BdBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
-        // BdBridge.listBeads with limit filter
-        return bd.listBeads({ limit });
+        const beads = await bd.listBeads({ limit });
+        // Map bd-bridge Beads to types.ts Beads
+        return beads.map(b => ({
+          id: b.id,
+          title: b.content.slice(0, 100),
+          description: b.content,
+          status: 'open' as const,
+          priority: 0,
+          labels: b.tags ?? [],
+          createdAt: b.timestamp ? new Date(b.timestamp) : new Date(),
+          updatedAt: b.timestamp ? new Date(b.timestamp) : new Date(),
+          parentId: b.parentId,
+          assignee: b.agentId,
+        }));
       },
       async showBead(beadId: string) {
         if (!bd) throw new GasTownError('BdBridge not initialized', GasTownErrorCode.NOT_INITIALIZED);
