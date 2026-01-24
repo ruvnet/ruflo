@@ -559,9 +559,28 @@ export class ConvoyObserver extends EventEmitter {
    */
   stopAll(): void {
     for (const [convoyId, watcher] of this.watchers) {
-      clearInterval(watcher.timer);
+      clearTimeout(watcher.timer);
     }
     this.watchers.clear();
+
+    // Clean up all progress emitters
+    for (const emitter of this.progressEmitters.values()) {
+      emitter.flush();
+    }
+    this.progressEmitters.clear();
+
+    // Clear all caches
+    this.beadCache.clear();
+    this.completionCache.clear();
+    this.fetchDedup.clear();
+
+    // Clear pending subscriptions
+    if (this.subscriptionFlushTimer) {
+      clearTimeout(this.subscriptionFlushTimer);
+      this.subscriptionFlushTimer = null;
+    }
+    this.pendingSubscriptions.clear();
+
     this.logger.info('Stopped all convoy watchers');
   }
 
