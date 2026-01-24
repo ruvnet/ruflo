@@ -46,7 +46,7 @@ interface GNNWasmModule {
   predict_path(graphPtr: number, startNode: number, endNode: number, maxHops: number): Uint32Array;
   analyze_subgraph(graphPtr: number, nodeIds: Uint32Array): Float32Array;
   free_graph(graphPtr: number): void;
-  memory: WebAssembly.Memory;
+  memory: { buffer: ArrayBuffer };
 }
 
 /**
