@@ -5,6 +5,8 @@
 **Category:** Advanced Development Tool
 **Author:** Plugin Architecture Team
 **Version:** 1.0.0
+**Deciders:** Plugin Architecture Team, Performance Engineering Team
+**Supersedes:** None
 
 ## Context
 
