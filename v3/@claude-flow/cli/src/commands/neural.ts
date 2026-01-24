@@ -640,17 +640,21 @@ const exportCommand: Command = {
 
       if (signExport) {
         // Generate ephemeral key pair for signing
-        const keyPair = await crypto.subtle.generateKey(
+        // Use Node.js webcrypto for Ed25519 signing
+        const { webcrypto } = crypto;
+        const keyPair = await webcrypto.subtle.generateKey(
           { name: 'Ed25519' },
           true,
           ['sign', 'verify']
-        ) as { privateKey: CryptoKey; publicKey: CryptoKey };
+        );
 
         const exportBytes = new TextEncoder().encode(JSON.stringify(exportData));
-        const signatureBytes = await crypto.subtle.sign('Ed25519', keyPair.privateKey, exportBytes);
+        // Type assertion needed for webcrypto key pair
+        const kp = keyPair as { privateKey: globalThis.CryptoKey; publicKey: globalThis.CryptoKey };
+        const signatureBytes = await webcrypto.subtle.sign('Ed25519', kp.privateKey, exportBytes);
         signature = Buffer.from(signatureBytes).toString('hex');
 
-        const publicKeyBytes = await crypto.subtle.exportKey('raw', keyPair.publicKey);
+        const publicKeyBytes = await webcrypto.subtle.exportKey('raw', kp.publicKey);
         publicKey = Buffer.from(publicKeyBytes).toString('hex');
       }
 
