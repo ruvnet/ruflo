@@ -744,3 +744,135 @@ export function validateSlingOptions(input: unknown): SlingOptions {
 export function validateConfig(input: unknown): GasTownConfig {
   return GasTownConfigSchema.parse(input);
 }
+
+// ============================================================================
+// Additional Types for MCP Tools
+// ============================================================================
+
+/**
+ * Dependency action type
+ */
+export type DepAction = 'add' | 'remove';
+
+/**
+ * Convoy action type
+ */
+export type ConvoyAction = 'create' | 'track' | 'land' | 'pause' | 'resume';
+
+/**
+ * Mail action type
+ */
+export type MailAction = 'send' | 'read' | 'list';
+
+/**
+ * Agent role type (alias for GasTownAgentRole)
+ */
+export type AgentRole = GasTownAgentRole;
+
+/**
+ * Target agent type (alias for SlingTarget)
+ */
+export type TargetAgent = SlingTarget;
+
+/**
+ * Convoy strategy type
+ */
+export type ConvoyStrategy = 'fastest' | 'balanced' | 'throughput' | 'minimal_context_switches';
+
+/**
+ * Dependency action type (for graph operations)
+ */
+export type DependencyAction = 'topo_sort' | 'cycle_detect' | 'critical_path';
+
+/**
+ * Formula AST (Abstract Syntax Tree) - alias for Formula
+ */
+export type FormulaAST = Formula;
+
+/**
+ * Dependency resolution result
+ */
+export interface DependencyResolution {
+  readonly action: DependencyAction;
+  readonly sorted?: string[];
+  readonly hasCycle?: boolean;
+  readonly cycleNodes?: string[];
+  readonly criticalPath?: string[];
+  readonly totalDuration?: number;
+}
+
+/**
+ * Pattern match result
+ */
+export interface PatternMatch {
+  readonly index: number;
+  readonly candidate: string;
+  readonly similarity: number;
+}
+
+/**
+ * Convoy optimization result
+ */
+export interface ConvoyOptimization {
+  readonly convoyId: string;
+  readonly strategy: string;
+  readonly executionOrder: string[];
+  readonly parallelGroups: string[][];
+  readonly estimatedDuration: number;
+}
+
+// ============================================================================
+// Interface Types for MCP Tools
+// ============================================================================
+
+/**
+ * Gas Town Bridge interface
+ */
+export interface IGasTownBridge {
+  createBead(opts: CreateBeadOptions): Promise<Bead>;
+  getReady(limit?: number, rig?: string, labels?: string[]): Promise<Bead[]>;
+  showBead(beadId: string): Promise<{ bead: Bead; dependencies: string[]; dependents: string[] }>;
+  manageDependency(action: DepAction, child: string, parent: string): Promise<void>;
+  createConvoy(opts: CreateConvoyOptions): Promise<Convoy>;
+  getConvoyStatus(convoyId: string, detailed?: boolean): Promise<ConvoyStatus>;
+  trackConvoy(convoyId: string, action: 'add' | 'remove', issues: string[]): Promise<void>;
+  listFormulas(type?: FormulaType, includeBuiltin?: boolean): Promise<Formula[]>;
+  cookFormula(formula: Formula | string, vars: Record<string, string>): Promise<CookedFormula>;
+  executeFormula(formula: Formula | string, vars: Record<string, string>, targetAgent?: string, dryRun?: boolean): Promise<unknown>;
+  createFormula(opts: { name: string; type: FormulaType; content: string }): Promise<Formula>;
+  sling(beadId: string, target: SlingTarget, formula?: string, priority?: number): Promise<void>;
+  listAgents(rig?: string, role?: AgentRole, includeInactive?: boolean): Promise<GasTownAgent[]>;
+  sendMail(to: string, subject: string, body: string): Promise<{ messageId: string; status: string }>;
+  readMail(mailId: string): Promise<GasTownMail>;
+  listMail(limit?: number): Promise<GasTownMail[]>;
+}
+
+/**
+ * Beads sync service interface
+ */
+export interface IBeadsSyncService {
+  pullBeads(rig?: string, namespace?: string): Promise<{ synced: number; conflicts: number }>;
+  pushTasks(namespace?: string): Promise<{ pushed: number; conflicts: number }>;
+}
+
+/**
+ * Formula WASM interface
+ */
+export interface IFormulaWasm {
+  isInitialized(): boolean;
+  initialize(): Promise<void>;
+  parseFormula(content: string, validate?: boolean): Promise<{ type: FormulaType; name: string; steps: Step[] }>;
+  cookFormula(formula: Formula | string, vars: Record<string, string>, isContent?: boolean): Promise<CookedFormula>;
+  cookBatch(formulas: Array<{ name: string; content: string }>, vars: Record<string, string>[], continueOnError?: boolean): Promise<{ cooked: CookedFormula[]; errors: string[] }>;
+}
+
+/**
+ * Dependency WASM interface
+ */
+export interface IDependencyWasm {
+  isInitialized(): boolean;
+  initialize(): Promise<void>;
+  resolveDependencies(beads: Array<{ id: string; dependencies?: string[] }>, action: DependencyAction): Promise<DependencyResolution>;
+  matchPatterns(query: string, candidates: string[], k: number, threshold: number): Promise<PatternMatch[]>;
+  optimizeConvoy(convoy: { id: string; trackedIssues: string[] }, strategy: ConvoyStrategy, constraints?: unknown): Promise<ConvoyOptimization>;
+}
