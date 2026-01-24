@@ -189,12 +189,13 @@ const trainCommand: Command = {
       spinner.setText('Generating embeddings...');
 
       for (const item of trainingData.slice(0, Math.min(100, trainingData.length))) {
-        const embedding = await generateEmbedding(item.content);
-        if (embedding) {
+        const embeddingResult = await generateEmbedding(item.content);
+        if (embeddingResult && embeddingResult.embedding) {
           // Convert to Float32Array and resize to dim
+          const embeddingArray = embeddingResult.embedding;
           const resized = new Float32Array(dim);
-          for (let i = 0; i < Math.min(embedding.length, dim); i++) {
-            resized[i] = embedding[i];
+          for (let i = 0; i < Math.min(embeddingArray.length, dim); i++) {
+            resized[i] = embeddingArray[i];
           }
           embeddings.push(resized);
         }
