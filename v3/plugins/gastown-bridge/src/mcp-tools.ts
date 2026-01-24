@@ -532,7 +532,7 @@ export interface ConvoyStatusResult {
 export interface ConvoyTrackResult {
   success: boolean;
   convoy_id: string;
-  action: ConvoyAction;
+  action: 'add' | 'remove';
   issues_modified: string[];
   durationMs: number;
 }
