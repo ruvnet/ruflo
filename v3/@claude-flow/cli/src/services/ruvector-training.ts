@@ -76,6 +76,9 @@ export interface TrainingConfig {
   useHyperbolic?: boolean;
   totalSteps?: number;    // For curriculum
   warmupSteps?: number;
+  // SONA options (v2 enhancement)
+  useSona?: boolean;      // Enable SONA self-optimizing neural architecture
+  sonaRank?: number;      // SONA LoRA rank (default: 4)
 }
 
 export interface TrainingResult {
