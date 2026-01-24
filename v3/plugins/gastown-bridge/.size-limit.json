@@ -1,0 +1,61 @@
+[
+  {
+    "name": "Core Bundle (ESM)",
+    "path": "dist/index.mjs",
+    "limit": "30 KB",
+    "gzip": true,
+    "brotli": false
+  },
+  {
+    "name": "Core Bundle (CJS)",
+    "path": "dist/index.cjs",
+    "limit": "35 KB",
+    "gzip": true
+  },
+  {
+    "name": "Bridges Module",
+    "path": "dist/bridges.mjs",
+    "limit": "25 KB",
+    "gzip": true
+  },
+  {
+    "name": "WASM Loader",
+    "path": "dist/wasm-loader.mjs",
+    "limit": "5 KB",
+    "gzip": true
+  },
+  {
+    "name": "Total JS Bundle",
+    "path": [
+      "dist/index.mjs",
+      "dist/bridges.mjs",
+      "dist/wasm-loader.mjs"
+    ],
+    "limit": "50 KB",
+    "gzip": true
+  },
+  {
+    "name": "WASM: Formula Parser",
+    "path": "wasm/gastown-formula-wasm/pkg/gastown_formula_wasm_bg.wasm.gz",
+    "limit": "50 KB",
+    "gzip": false,
+    "import": false
+  },
+  {
+    "name": "WASM: GNN Graph",
+    "path": "wasm/ruvector-gnn-wasm/pkg/ruvector_gnn_wasm_bg.wasm.gz",
+    "limit": "50 KB",
+    "gzip": false,
+    "import": false
+  },
+  {
+    "name": "Total Package (JS + WASM)",
+    "path": [
+      "dist/*.mjs",
+      "wasm/*/pkg/*.wasm.gz"
+    ],
+    "limit": "150 KB",
+    "gzip": false,
+    "import": false
+  }
+]
