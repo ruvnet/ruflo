@@ -159,8 +159,6 @@ export class DAGBridge implements IDAGBridge {
 
     // Build nodes
     const nodes: ObligationNode[] = obligations.map(obligation => {
-      const nodeIndex = nodeMap.get(obligation.id) ?? 0;
-
       return {
         obligation,
         dependencies: obligation.dependsOn,
