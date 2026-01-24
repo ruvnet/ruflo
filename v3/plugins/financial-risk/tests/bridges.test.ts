@@ -232,20 +232,34 @@ describe('FinancialSparseBridge', () => {
     });
 
     it('should detect anomalies in transactions', async () => {
+      // detectAnomalies expects Float32Array[] and threshold
       const transactions = [
-        { id: 't1', amount: 100, timestamp: new Date().toISOString(), parties: ['A', 'B'] },
-        { id: 't2', amount: 150, timestamp: new Date().toISOString(), parties: ['A', 'C'] },
-        { id: 't3', amount: 10000000, timestamp: new Date().toISOString(), parties: ['X', 'Y', 'Z'] }, // Anomaly
+        new Float32Array([0.1, 0.2, 0.3]),
+        new Float32Array([0.15, 0.25, 0.35]),
+        new Float32Array([10.0, 20.0, 30.0]), // Anomaly - much larger magnitude
       ];
 
-      const result = await bridge.detectAnomalies(transactions);
+      const result = await bridge.detectAnomalies(transactions, 0.5);
 
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toBeInstanceOf(Uint32Array);
     });
 
     it('should handle empty transactions', async () => {
-      const result = await bridge.detectAnomalies([]);
-      expect(result).toEqual([]);
+      const result = await bridge.detectAnomalies([], 0.5);
+      expect(result).toBeInstanceOf(Uint32Array);
+      expect(result.length).toBe(0);
+    });
+
+    it('should detect transaction anomalies with FinancialTransaction objects', async () => {
+      const transactions = [
+        { id: 't1', amount: 100, timestamp: new Date().toISOString(), parties: ['A', 'B'] },
+        { id: 't2', amount: 150, timestamp: new Date().toISOString(), parties: ['A', 'C'] },
+        { id: 't3', amount: 10000000, timestamp: new Date().toISOString(), parties: ['X', 'Y', 'Z'] },
+      ];
+
+      const result = await bridge.detectTransactionAnomalies(transactions, 0.5);
+
+      expect(Array.isArray(result)).toBe(true);
     });
   });
 
