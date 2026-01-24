@@ -658,7 +658,7 @@ async function performSemanticSearch(
   return results.slice(0, topK);
 }
 
-async function getFilesInPath(rootPath: string): Promise<string[]> {
+async function getFilesInPath(_rootPath: string): Promise<string[]> {
   // Simplified - in production would use glob
   return [];
 }
