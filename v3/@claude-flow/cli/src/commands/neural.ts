@@ -662,43 +662,104 @@ const predictCommand: Command = {
   name: 'predict',
   description: 'Make AI predictions using trained models',
   options: [
-    { name: 'model', short: 'm', type: 'string', description: 'Model ID to use', required: true },
-    { name: 'input', short: 'i', type: 'string', description: 'Input data (JSON or text)', required: true },
-    { name: 'format', short: 'f', type: 'string', description: 'Output format: json, text', default: 'text' },
+    { name: 'input', short: 'i', type: 'string', description: 'Input text to predict routing for', required: true },
+    { name: 'k', short: 'k', type: 'number', description: 'Number of top predictions', default: '5' },
+    { name: 'format', short: 'f', type: 'string', description: 'Output format: json, table', default: 'table' },
   ],
   examples: [
-    { command: 'claude-flow neural predict -m coord-v1 -i "route task to agent"', description: 'Make prediction' },
+    { command: 'claude-flow neural predict -i "implement authentication"', description: 'Predict routing for task' },
+    { command: 'claude-flow neural predict -i "fix bug in login" -k 3', description: 'Get top 3 predictions' },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const modelId = ctx.flags.model as string;
     const input = ctx.flags.input as string;
+    const k = parseInt(ctx.flags.k as string || '5', 10);
+    const format = ctx.flags.format as string || 'table';
 
-    if (!modelId || !input) {
-      output.printError('Both --model and --input are required');
+    if (!input) {
+      output.printError('--input is required');
       return { success: false, exitCode: 1 };
     }
 
     output.writeln();
-    output.writeln(output.bold('Neural Prediction'));
-    output.writeln(output.dim('─'.repeat(40)));
+    output.writeln(output.bold('Neural Prediction (Real)'));
+    output.writeln(output.dim('─'.repeat(50)));
 
     const spinner = output.createSpinner({ text: 'Running inference...', spinner: 'dots' });
     spinner.start();
 
-    await new Promise(r => setTimeout(r, 500));
-    spinner.succeed('Prediction complete');
+    try {
+      const { initializeIntelligence, findSimilarPatterns } = await import('../memory/intelligence.js');
+      const { generateEmbedding } = await import('../memory/memory-initializer.js');
 
-    output.writeln();
-    output.printBox([
-      `Model: ${modelId}`,
-      `Input: ${input.substring(0, 50)}...`,
-      ``,
-      `Prediction: coordination`,
-      `Confidence: 94.7%`,
-      `Latency: 12ms`,
-    ].join('\n'), 'Result');
+      // Initialize intelligence system
+      await initializeIntelligence();
 
-    return { success: true };
+      // Generate embedding for input
+      const startEmbed = performance.now();
+      const embeddingResult = await generateEmbedding(input);
+      const embedTime = performance.now() - startEmbed;
+
+      // Find similar patterns
+      const startSearch = performance.now();
+      const embedding = new Float32Array(embeddingResult.embedding);
+      const matches = findSimilarPatterns(embedding, k);
+      const searchTime = performance.now() - startSearch;
+
+      spinner.succeed(`Prediction complete (embed: ${embedTime.toFixed(1)}ms, search: ${searchTime.toFixed(1)}ms)`);
+
+      output.writeln();
+
+      if (matches.length === 0) {
+        output.writeln(output.warning('No similar patterns found. Try training first: claude-flow neural train'));
+        return { success: true, data: { matches: [] } };
+      }
+
+      if (format === 'json') {
+        output.writeln(JSON.stringify(matches, null, 2));
+      } else {
+        // Determine best prediction based on patterns
+        const patternTypes: Record<string, number> = {};
+        for (const match of matches) {
+          const type = match.type || 'unknown';
+          patternTypes[type] = (patternTypes[type] || 0) + match.similarity;
+        }
+
+        const sorted = Object.entries(patternTypes).sort((a, b) => b[1] - a[1]);
+        const topType = sorted[0]?.[0] || 'unknown';
+        const confidence = matches[0]?.similarity || 0;
+
+        output.printBox([
+          `Input: ${input.substring(0, 60)}${input.length > 60 ? '...' : ''}`,
+          ``,
+          `Predicted Type: ${topType}`,
+          `Confidence: ${(confidence * 100).toFixed(1)}%`,
+          `Latency: ${(embedTime + searchTime).toFixed(1)}ms`,
+          ``,
+          `Top ${matches.length} Similar Patterns:`,
+        ].join('\n'), 'Result');
+
+        output.printTable({
+          columns: [
+            { key: 'rank', header: '#', width: 3 },
+            { key: 'id', header: 'Pattern ID', width: 20 },
+            { key: 'type', header: 'Type', width: 15 },
+            { key: 'similarity', header: 'Similarity', width: 12 },
+          ],
+          data: matches.slice(0, k).map((m, i) => ({
+            rank: String(i + 1),
+            id: m.id?.substring(0, 20) || 'unknown',
+            type: m.type || 'action',
+            similarity: `${(m.similarity * 100).toFixed(1)}%`,
+          })),
+        });
+      }
+
+      return { success: true, data: { matches, embedTime, searchTime } };
+    } catch (error) {
+      spinner.fail('Prediction failed');
+      output.printError(error instanceof Error ? error.message : String(error));
+      return { success: false, exitCode: 1 };
+    }
   },
 };
 
