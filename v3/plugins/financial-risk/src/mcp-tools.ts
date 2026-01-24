@@ -471,8 +471,10 @@ async function marketRegimeHandler(
     return successResult(result, { durationMs: duration, wasmUsed: !!context?.bridge?.sparse });
 
   } catch (error) {
-    const duration = performance.now() - startTime;
-    logger.error('Market regime classification failed', { error: String(error) });
+    logger.error('Market regime classification failed', {
+      error: String(error),
+      durationMs: performance.now() - startTime,
+    });
     return errorResult(error instanceof Error ? error : new Error(String(error)));
   }
 }
