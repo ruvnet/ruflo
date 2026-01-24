@@ -276,6 +276,14 @@ Amplitude amplification for unstructured search achieving O(sqrt(N)) complexity.
 4. **Test Selection**: Find minimal test sets with maximum coverage
 5. **Configuration Optimization**: Find optimal system configurations
 
+## Related Plugins
+
+| Plugin | Description | Synergy |
+|--------|-------------|---------|
+| [@claude-flow/plugin-neural-coordination](https://www.npmjs.com/package/@claude-flow/plugin-neural-coordination) | Multi-agent coordination | Quantum optimizer schedules tasks across coordinated agent swarms |
+| [@claude-flow/plugin-cognitive-kernel](https://www.npmjs.com/package/@claude-flow/plugin-cognitive-kernel) | Cognitive augmentation | Optimizes cognitive load distribution and attention allocation |
+| [@claude-flow/plugin-hyperbolic-reasoning](https://www.npmjs.com/package/@claude-flow/plugin-hyperbolic-reasoning) | Hierarchical reasoning | Quantum algorithms optimize hierarchical constraint satisfaction |
+
 ## License
 
 MIT
