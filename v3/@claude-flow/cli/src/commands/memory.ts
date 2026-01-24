@@ -567,81 +567,230 @@ const statsCommand: Command = {
   name: 'stats',
   description: 'Show memory statistics',
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    // Call MCP memory/stats tool for real statistics
+    // Use direct sql.js access for statistics (Issue #1008)
+    // The MCP memory_stats tool doesn't exist, so we use the same pattern
+    // as other memory commands that were fixed to use direct database access
     try {
-      const statsResult = await callMCPTool('memory_stats', {}) as {
-        totalEntries: number;
-        totalSize: string;
-        version: string;
-        backend: string;
-        location: string;
-        oldestEntry: string | null;
-        newestEntry: string | null;
-      };
+      const fs = await import('fs');
+      const path = await import('path');
+      const { listEntries, checkMemoryInitialization, getHNSWStatus } = await import('../memory/memory-initializer.js');
 
-      const stats = {
-        backend: statsResult.backend,
-        entries: {
-          total: statsResult.totalEntries,
-          vectors: 0, // Would need vector backend support
-          text: statsResult.totalEntries
-        },
-        storage: {
-          total: statsResult.totalSize,
-          location: statsResult.location
-        },
-        version: statsResult.version,
-        oldestEntry: statsResult.oldestEntry,
-        newestEntry: statsResult.newestEntry
-      };
+      // Detect database path - check common locations
+      const dbPaths = [
+        path.join(process.cwd(), '.swarm', 'memory.db'),
+        path.join(process.cwd(), '.claude', 'memory.db'),
+        path.join(process.cwd(), 'data', 'memory.db')
+      ];
 
-      if (ctx.flags.format === 'json') {
-        output.printJson(stats);
-        return { success: true, data: stats };
+      let dbPath: string | null = null;
+      for (const p of dbPaths) {
+        if (fs.existsSync(p)) {
+          dbPath = p;
+          break;
+        }
       }
 
-      output.writeln();
-      output.writeln(output.bold('Memory Statistics'));
-      output.writeln();
+      if (!dbPath) {
+        output.printWarning('Memory database not found');
+        output.printInfo('Initialize with: claude-flow memory init');
+        return {
+          success: true,
+          data: {
+            status: 'not_initialized',
+            backend: 'none',
+            entries: { total: 0, vectors: 0, text: 0 },
+            storage: { total: '0 B', location: 'N/A' }
+          }
+        };
+      }
 
-      output.writeln(output.bold('Overview'));
-      output.printTable({
-        columns: [
-          { key: 'metric', header: 'Metric', width: 20 },
-          { key: 'value', header: 'Value', width: 30, align: 'right' }
-        ],
-        data: [
-          { metric: 'Backend', value: stats.backend },
-          { metric: 'Version', value: stats.version },
-          { metric: 'Total Entries', value: stats.entries.total.toLocaleString() },
-          { metric: 'Total Storage', value: stats.storage.total },
-          { metric: 'Location', value: stats.storage.location }
-        ]
-      });
+      // Get database file size
+      const fileStats = fs.statSync(dbPath);
+      const fileSizeBytes = fileStats.size;
+      const fileSizeFormatted = formatBytes(fileSizeBytes);
 
-      output.writeln();
-      output.writeln(output.bold('Timeline'));
-      output.printTable({
-        columns: [
-          { key: 'metric', header: 'Metric', width: 20 },
-          { key: 'value', header: 'Value', width: 30, align: 'right' }
-        ],
-        data: [
-          { metric: 'Oldest Entry', value: stats.oldestEntry || 'N/A' },
-          { metric: 'Newest Entry', value: stats.newestEntry || 'N/A' }
-        ]
-      });
+      // Get initialization info
+      const initInfo = await checkMemoryInitialization(dbPath);
 
-      output.writeln();
-      output.printInfo('V3 Performance: 150x-12,500x faster search with HNSW indexing');
+      // Get entry count using listEntries
+      const listResult = await listEntries({ limit: 1, offset: 0, dbPath });
+      const totalEntries = listResult.total || 0;
 
-      return { success: true, data: stats };
+      // Get HNSW index status
+      const hnswStatus = getHNSWStatus();
+
+      // Get timeline info by querying oldest/newest entries
+      let oldestEntry: string | null = null;
+      let newestEntry: string | null = null;
+
+      try {
+        const initSqlJs = (await import('sql.js')).default;
+        const SQL = await initSqlJs();
+        const fileBuffer = fs.readFileSync(dbPath);
+        const db = new SQL.Database(fileBuffer);
+
+        // Get oldest entry
+        const oldestResult = db.exec(`
+          SELECT created_at FROM memory_entries
+          WHERE status = 'active'
+          ORDER BY created_at ASC
+          LIMIT 1
+        `);
+        if (oldestResult[0]?.values?.[0]?.[0]) {
+          const timestamp = oldestResult[0].values[0][0] as number;
+          oldestEntry = new Date(timestamp).toISOString();
+        }
+
+        // Get newest entry
+        const newestResult = db.exec(`
+          SELECT created_at FROM memory_entries
+          WHERE status = 'active'
+          ORDER BY created_at DESC
+          LIMIT 1
+        `);
+        if (newestResult[0]?.values?.[0]?.[0]) {
+          const timestamp = newestResult[0].values[0][0] as number;
+          newestEntry = new Date(timestamp).toISOString();
+        }
+
+        // Count entries with embeddings (vectors)
+        const vectorCountResult = db.exec(`
+          SELECT COUNT(*) FROM memory_entries
+          WHERE status = 'active' AND embedding IS NOT NULL
+        `);
+        const vectorCount = vectorCountResult[0]?.values?.[0]?.[0] as number || 0;
+
+        db.close();
+
+        const stats = {
+          backend: initInfo.backend || 'hybrid',
+          entries: {
+            total: totalEntries,
+            vectors: vectorCount,
+            text: totalEntries - vectorCount
+          },
+          storage: {
+            total: fileSizeFormatted,
+            location: dbPath
+          },
+          version: initInfo.version || '3.0.0',
+          oldestEntry,
+          newestEntry,
+          hnsw: {
+            available: hnswStatus.available,
+            initialized: hnswStatus.initialized,
+            indexedVectors: hnswStatus.entryCount,
+            dimensions: hnswStatus.dimensions
+          }
+        };
+
+        if (ctx.flags.format === 'json') {
+          output.printJson(stats);
+          return { success: true, data: stats };
+        }
+
+        output.writeln();
+        output.writeln(output.bold('Memory Statistics'));
+        output.writeln();
+
+        output.writeln(output.bold('Overview'));
+        output.printTable({
+          columns: [
+            { key: 'metric', header: 'Metric', width: 20 },
+            { key: 'value', header: 'Value', width: 30, align: 'right' }
+          ],
+          data: [
+            { metric: 'Backend', value: stats.backend },
+            { metric: 'Version', value: stats.version },
+            { metric: 'Total Entries', value: stats.entries.total.toLocaleString() },
+            { metric: 'Vector Entries', value: stats.entries.vectors.toLocaleString() },
+            { metric: 'Total Storage', value: stats.storage.total },
+            { metric: 'Location', value: stats.storage.location }
+          ]
+        });
+
+        output.writeln();
+        output.writeln(output.bold('Timeline'));
+        output.printTable({
+          columns: [
+            { key: 'metric', header: 'Metric', width: 20 },
+            { key: 'value', header: 'Value', width: 30, align: 'right' }
+          ],
+          data: [
+            { metric: 'Oldest Entry', value: stats.oldestEntry || 'N/A' },
+            { metric: 'Newest Entry', value: stats.newestEntry || 'N/A' }
+          ]
+        });
+
+        if (hnswStatus.available) {
+          output.writeln();
+          output.writeln(output.bold('HNSW Index'));
+          output.printTable({
+            columns: [
+              { key: 'metric', header: 'Metric', width: 20 },
+              { key: 'value', header: 'Value', width: 30, align: 'right' }
+            ],
+            data: [
+              { metric: 'Status', value: hnswStatus.initialized ? 'Active' : 'Not Built' },
+              { metric: 'Indexed Vectors', value: hnswStatus.entryCount.toLocaleString() },
+              { metric: 'Dimensions', value: hnswStatus.dimensions.toString() }
+            ]
+          });
+        }
+
+        output.writeln();
+        output.printInfo('V3 Performance: 150x-12,500x faster search with HNSW indexing');
+
+        return { success: true, data: stats };
+      } catch (dbError) {
+        // Database query failed, return basic stats
+        const stats = {
+          backend: initInfo.backend || 'unknown',
+          entries: { total: totalEntries, vectors: 0, text: totalEntries },
+          storage: { total: fileSizeFormatted, location: dbPath },
+          version: initInfo.version || 'unknown',
+          oldestEntry: null,
+          newestEntry: null
+        };
+
+        if (ctx.flags.format === 'json') {
+          output.printJson(stats);
+          return { success: true, data: stats };
+        }
+
+        output.writeln();
+        output.writeln(output.bold('Memory Statistics (Basic)'));
+        output.writeln();
+        output.printTable({
+          columns: [
+            { key: 'metric', header: 'Metric', width: 20 },
+            { key: 'value', header: 'Value', width: 30, align: 'right' }
+          ],
+          data: [
+            { metric: 'Backend', value: stats.backend },
+            { metric: 'Total Entries', value: stats.entries.total.toLocaleString() },
+            { metric: 'Total Storage', value: stats.storage.total },
+            { metric: 'Location', value: stats.storage.location }
+          ]
+        });
+
+        return { success: true, data: stats };
+      }
     } catch (error) {
       output.printError(`Failed to get stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return { success: false, exitCode: 1 };
     }
   }
 };
+
+// Helper function to format bytes
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
 // Configure command
 const configureCommand: Command = {
