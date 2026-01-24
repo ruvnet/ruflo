@@ -1324,6 +1324,27 @@ export class FormulaExecutor extends EventEmitter {
     return this.wasmLoader.isInitialized();
   }
 
+  /**
+   * Get cache statistics for performance monitoring
+   */
+  getCacheStats(): {
+    stepResultCache: { entries: number; sizeBytes: number };
+    cookCache: { entries: number; sizeBytes: number };
+  } {
+    return {
+      stepResultCache: stepResultCache.stats(),
+      cookCache: cookCache.stats(),
+    };
+  }
+
+  /**
+   * Clear all executor caches
+   */
+  clearCaches(): void {
+    stepResultCache.clear();
+    cookCache.clear();
+  }
+
   // ============================================================================
   // Private Methods
   // ============================================================================
