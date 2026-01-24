@@ -103,7 +103,8 @@ export class ExoticBridge {
     this._status = 'loading';
 
     try {
-      const wasmModule = await import('@ruvector/exotic-wasm').catch(() => null);
+      // Dynamic import - module may not be installed
+      const wasmModule = await import(/* webpackIgnore: true */ '@ruvector/exotic-wasm' as string).catch(() => null);
 
       if (wasmModule) {
         this._module = wasmModule as unknown as ExoticWasmModule;
