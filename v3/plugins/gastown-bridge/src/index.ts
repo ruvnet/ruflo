@@ -1395,7 +1395,7 @@ export class GasTownBridgePlugin extends EventEmitter implements IPlugin {
         // Formula execution requires the FormulaExecutor
         throw new GasTownError('Use FormulaExecutor.execute() for formula execution', GasTownErrorCode.NOT_INITIALIZED);
       },
-      async createFormula(_opts: { name: string; type: string; content: string }) {
+      async createFormula(_opts): Promise<{ path: string }> {
         // Formula creation would write to filesystem - not implemented in bridges
         throw new GasTownError('Formula creation not implemented in bridge layer', GasTownErrorCode.NOT_INITIALIZED);
       },
