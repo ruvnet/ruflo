@@ -189,12 +189,21 @@ Navigate medical ontology hierarchies.
 
 ## Performance Targets
 
-| Metric | Target |
-|--------|--------|
-| Patient similarity search | <50ms for 100K records |
-| Drug interaction check | <10ms for 20 medications |
-| Literature search | <100ms for 1M abstracts |
-| Ontology traversal | <5ms per hop |
+| Metric | Target | Baseline (Traditional) | Improvement |
+|--------|--------|------------------------|-------------|
+| Patient similarity search | <50ms for 100K records | ~5s (SQL JOIN) | 100x |
+| Drug interaction check | <10ms for 20 medications | ~200ms (rule engine) | 20x |
+| Literature search | <100ms for 1M abstracts | ~2s (Elasticsearch) | 20x |
+| Ontology traversal | <5ms per hop | ~50ms (graph DB) | 10x |
+
+## Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| HIPAA violation | Low | Critical | On-device WASM processing, no PHI transmission |
+| Model bias in treatment | Medium | High | Explainability requirements, human oversight |
+| Ontology licensing | Medium | Medium | Support for open ontologies as fallback |
+| Regulatory approval delays | High | Medium | Design for "research mode" with clinical pathway |
 
 ## Implementation Notes
 
