@@ -465,6 +465,126 @@ export async function benchmarkTraining(
   return lastBenchmark;
 }
 
+// ============================================
+// SONA Functions (v2 enhancement, optional)
+// ============================================
+
+/**
+ * Check if SONA is available
+ */
+export function isSonaAvailable(): boolean {
+  return sonaAvailable && sonaEngine !== null;
+}
+
+/**
+ * Force-learn a pattern with SONA (1.6μs, 624k ops/s)
+ * This is a one-shot learning mechanism for immediate pattern storage
+ */
+export function sonaForceLearn(
+  embedding: Float32Array,
+  reward: number
+): void {
+  if (!sonaEngine) {
+    throw new Error('SONA not initialized. Call initializeTraining with useSona: true');
+  }
+
+  sonaEngine.forceLearn(embedding, reward);
+  totalSonaLearns++;
+}
+
+/**
+ * Search for similar patterns with SONA (16.7μs, 60k searches/s)
+ * Returns the k most similar patterns from the pattern bank
+ */
+export function sonaFindPatterns(
+  embedding: Float32Array,
+  k: number = 5
+): unknown[] {
+  if (!sonaEngine) {
+    throw new Error('SONA not initialized. Call initializeTraining with useSona: true');
+  }
+
+  // SONA requires Array, not Float32Array
+  const embeddingArray = Array.from(embedding);
+  totalSonaSearches++;
+  return sonaEngine.findPatterns(embeddingArray, k);
+}
+
+/**
+ * Process SONA background tasks (0.13μs, 7.5M ticks/s)
+ * Call periodically to process background learning and consolidation
+ */
+export function sonaTick(): void {
+  if (!sonaEngine) {
+    return; // Silent no-op if SONA not available
+  }
+
+  sonaEngine.tick();
+}
+
+/**
+ * Get SONA statistics
+ */
+export function getSonaStats(): {
+  available: boolean;
+  enabled: boolean;
+  stats: Record<string, unknown> | null;
+  totalLearns: number;
+  totalSearches: number;
+} {
+  if (!sonaEngine) {
+    return {
+      available: false,
+      enabled: false,
+      stats: null,
+      totalLearns: totalSonaLearns,
+      totalSearches: totalSonaSearches,
+    };
+  }
+
+  try {
+    const statsJson = sonaEngine.getStats();
+    const stats = JSON.parse(statsJson);
+    return {
+      available: true,
+      enabled: sonaEngine.isEnabled(),
+      stats,
+      totalLearns: totalSonaLearns,
+      totalSearches: totalSonaSearches,
+    };
+  } catch {
+    return {
+      available: true,
+      enabled: false,
+      stats: null,
+      totalLearns: totalSonaLearns,
+      totalSearches: totalSonaSearches,
+    };
+  }
+}
+
+/**
+ * Enable/disable SONA learning
+ */
+export function setSonaEnabled(enabled: boolean): void {
+  if (!sonaEngine) {
+    return;
+  }
+
+  sonaEngine.setEnabled(enabled);
+}
+
+/**
+ * Flush SONA buffers (persist any pending patterns)
+ */
+export function sonaFlush(): void {
+  if (!sonaEngine) {
+    return;
+  }
+
+  sonaEngine.flush();
+}
+
 /**
  * Get training statistics
  */
