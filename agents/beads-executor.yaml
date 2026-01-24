@@ -1,0 +1,59 @@
+# beads-executor agent configuration
+# Executes individual tasks with full beads context
+type: beads-executor
+version: "3.0.0"
+description: |
+  Dedicated task execution agent that works on individual beads tasks.
+  Receives full context from the coordinator including description,
+  design rationale, and reference notes. Operates autonomously until
+  task completion or encountering a blocker.
+
+capabilities:
+  - code-generation
+  - code-modification
+  - testing
+  - documentation
+  - context-awareness
+  - progress-reporting
+
+beads_integration:
+  enabled: true
+  auto_sync: true
+  context_fields:
+    - description
+    - design
+    - notes
+    - files
+  hooks:
+    - beads:pre-task
+    - beads:post-task
+
+workflow:
+  on_task_start:
+    - Load task context
+    - Read related files
+    - Understand design rationale
+  on_execution:
+    - Implement per description
+    - Follow design patterns
+    - Update files as needed
+    - Report progress
+  on_completion:
+    - Validate changes
+    - Update task status
+    - Document any issues
+
+optimizations:
+  - flash-attention
+  - token-reduction
+  - incremental-context
+
+tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Glob
+  - Grep
+
+createdAt: "2026-01-23T00:00:00.000Z"

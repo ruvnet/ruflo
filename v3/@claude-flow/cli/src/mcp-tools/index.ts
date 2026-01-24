@@ -21,3 +21,4 @@ export { transferTools } from './transfer-tools.js';
 export { securityTools } from './security-tools.js';
 export { embeddingsTools } from './embeddings-tools.js';
 export { claimsTools } from './claims-tools.js';
+export { beadsTools, getBeadsTools, setBeadsWrapper } from './beads-tools.js';

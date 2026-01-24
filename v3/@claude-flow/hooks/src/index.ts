@@ -106,6 +106,21 @@ export {
   type SwarmConfig,
 } from './swarm/index.js';
 
+// Beads Integration - Git-backed task tracking hooks
+export {
+  BeadsHooksManager,
+  createBeadsHooks,
+  connectBeadsHooks,
+  beadsPreTaskHook,
+  beadsPostTaskHook,
+  beadsOnBlockHook,
+  beadsOnCompleteHook,
+  type BeadsTask,
+  type BeadsHookContext,
+  type BeadsHookResult,
+  type BeadsHookHandler,
+} from './beads/index.js';
+
 // Workers - Cross-platform background workers
 export {
   WorkerManager,

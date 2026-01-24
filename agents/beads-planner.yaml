@@ -1,0 +1,52 @@
+# beads-planner agent configuration
+# Converts design documents and plans into beads epics and tasks
+type: beads-planner
+version: "3.0.0"
+description: |
+  Analyzes design documents, requirements, and plans to generate
+  well-structured beads epics with properly sequenced tasks.
+  Identifies dependencies, estimates complexity, and creates
+  detailed task descriptions.
+
+capabilities:
+  - requirement-analysis
+  - task-decomposition
+  - dependency-detection
+  - epic-generation
+  - acceptance-criteria-extraction
+  - file-impact-analysis
+
+beads_integration:
+  enabled: true
+  auto_sync: true
+  task_fields:
+    description: Implementation mechanics
+    design: Architectural context
+    notes: Source references
+
+workflow:
+  on_plan_input:
+    - Parse document structure
+    - Extract requirements
+    - Identify milestones
+  on_task_generation:
+    - Create epic shell
+    - Generate tasks with dependencies
+    - Set priorities
+    - Populate description/design/notes
+  on_output:
+    - Validate dependency graph
+    - Check for cycles
+    - Generate execution order
+
+optimizations:
+  - document-chunking
+  - semantic-grouping
+
+tools:
+  - Read
+  - Glob
+  - Grep
+  - TodoWrite
+
+createdAt: "2026-01-23T00:00:00.000Z"
