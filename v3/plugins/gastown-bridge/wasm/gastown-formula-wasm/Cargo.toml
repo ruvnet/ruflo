@@ -1,11 +1,12 @@
 # Gas Town Formula WASM Module
 #
-# Provides WASM-accelerated formula operations:
-# - TOML parsing (352x faster than JavaScript)
-# - Variable cooking/substitution
-# - Molecule generation
+# Ultra-optimized WASM-accelerated formula operations:
+# - TOML parsing (target: <0.1ms, 500x faster than JavaScript)
+# - Variable cooking/substitution (target: <0.05ms)
+# - Molecule generation (target: <0.1ms)
+# - Batch processing (target: <1ms for 100 formulas)
 #
-# Build with: wasm-pack build --target web
+# Build with: wasm-pack build --target web --release
 
 [package]
 name = "gastown-formula-wasm"
@@ -13,7 +14,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "WASM-accelerated TOML formula parsing and cooking for Gas Town Bridge"
+description = "Ultra-optimized WASM formula parsing and cooking for Gas Town Bridge"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -26,21 +27,28 @@ serde-wasm-bindgen.workspace = true
 toml.workspace = true
 js-sys.workspace = true
 
+# Shared optimized utilities
+gastown-shared = { path = "../shared" }
+
+# Performance dependencies
+rustc-hash.workspace = true
+smallvec.workspace = true
+arrayvec.workspace = true
+
 [dependencies.web-sys]
 version = "0.3"
-features = ["console"]
+features = ["console", "Performance"]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 
 [features]
-default = []
+default = ["simd"]
 console_error_panic_hook = ["dep:console_error_panic_hook"]
+simd = []  # Enable SIMD optimizations
 
 [dependencies.console_error_panic_hook]
 version = "0.1"
 optional = true
 
-[profile.release]
-opt-level = 3
-lto = true
+# Note: Profile settings inherited from workspace
