@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-gastown-bridge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Gas Town orchestrator integration for Claude Flow V3 with WASM-accelerated formula parsing and graph analysis",
   "type": "module",
   "main": "./dist/index.cjs",
