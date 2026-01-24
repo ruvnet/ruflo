@@ -722,7 +722,8 @@ export class ConvoyObserver extends EventEmitter {
   }
 
   /**
-   * Fetch beads by IDs with caching and batch deduplication
+   * Fetch beads by IDs with caching, batch deduplication, and object pooling.
+   * Uses PooledBead from memory module for reduced allocations.
    */
   private async fetchBeads(issueIds: string[]): Promise<Bead[]> {
     // Create a batch key for deduplication
@@ -749,18 +750,37 @@ export class ConvoyObserver extends EventEmitter {
         const fetchPromises = batch.map(async (id) => {
           try {
             const cliBead = await this.bdBridge.getBead(id);
+
+            // Use pooled bead for reduced allocations
+            const pooledBead = beadPool.acquire() as PooledBead;
+            pooledBead.id = cliBead.id;
+            pooledBead.title = cliBead.content.slice(0, 100);
+            pooledBead.description = cliBead.content;
+            pooledBead.status = this.mapBeadStatus(cliBead.type);
+            pooledBead.priority = 0;
+            pooledBead.labels = cliBead.tags ?? [];
+            pooledBead.createdAt = cliBead.timestamp ? new Date(cliBead.timestamp) : new Date();
+            pooledBead.updatedAt = new Date();
+            pooledBead.blockedBy = cliBead.parentId ? [cliBead.parentId] : [];
+            pooledBead.blocks = [];
+
+            // Convert to plain Bead object for caching (avoid pool reference issues)
             const bead: Bead = {
-              id: cliBead.id,
-              title: cliBead.content.slice(0, 100),
-              description: cliBead.content,
-              status: this.mapBeadStatus(cliBead.type),
-              priority: 0,
-              labels: cliBead.tags ?? [],
-              createdAt: cliBead.timestamp ? new Date(cliBead.timestamp) : new Date(),
-              updatedAt: new Date(),
-              blockedBy: cliBead.parentId ? [cliBead.parentId] : [],
-              blocks: [],
+              id: pooledBead.id,
+              title: pooledBead.title,
+              description: pooledBead.description,
+              status: pooledBead.status,
+              priority: pooledBead.priority,
+              labels: pooledBead.labels,
+              createdAt: pooledBead.createdAt,
+              updatedAt: pooledBead.updatedAt,
+              blockedBy: pooledBead.blockedBy,
+              blocks: pooledBead.blocks,
             };
+
+            // Release pooled bead back to pool
+            beadPool.release(pooledBead);
+
             // Cache the bead
             this.beadCache.set(id, bead);
             return bead;
