@@ -776,27 +776,40 @@ export async function cookFormula(
   vars: Record<string, string>
 ): Promise<Formula> {
   const startTime = performance.now();
+  const cacheKey = hashCookKey(formula, vars);
 
-  const wasmModule = await loadFormulaWasm();
-
-  if (wasmModule) {
-    try {
-      const resultJson = wasmModule.cook_formula(
-        JSON.stringify(formula),
-        JSON.stringify(vars)
-      );
-      const result = JSON.parse(resultJson) as Formula;
-      recordTiming('cookFormula', startTime, true);
-      return result;
-    } catch (error) {
-      console.warn('[WASM Loader] cook_formula failed, using fallback:', error);
-    }
+  // Check LRU cache first (O(1) lookup)
+  const cached = cookCache.get(cacheKey);
+  if (cached) {
+    recordTiming('cookFormula:cache-hit', startTime, false);
+    return cached;
   }
 
-  // JavaScript fallback
-  const result = cookFormulaFallback(formula, vars);
-  recordTiming('cookFormula', startTime, false);
-  return result;
+  // Use batch deduplication for concurrent requests
+  return cookDedup.dedupe(cacheKey, async () => {
+    const wasmModule = await loadFormulaWasm();
+
+    if (wasmModule) {
+      try {
+        const resultJson = wasmModule.cook_formula(
+          JSON.stringify(formula),
+          JSON.stringify(vars)
+        );
+        const result = JSON.parse(resultJson) as Formula;
+        cookCache.set(cacheKey, result);
+        recordTiming('cookFormula', startTime, true);
+        return result;
+      } catch (error) {
+        console.warn('[WASM Loader] cook_formula failed, using fallback:', error);
+      }
+    }
+
+    // JavaScript fallback
+    const result = cookFormulaFallback(formula, vars);
+    cookCache.set(cacheKey, result);
+    recordTiming('cookFormula', startTime, false);
+    return result;
+  });
 }
 
 /**
