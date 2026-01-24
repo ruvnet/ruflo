@@ -228,12 +228,153 @@ Run stress testing scenarios on portfolios.
 | Market data latency | Medium | Medium | Caching, fallback to last known values |
 | Historical data quality | Medium | Medium | Data validation, missing data handling |
 
-## Regulatory Compliance
+## Security Considerations
+
+### CRITICAL: Financial Data Protection Requirements
+
+| Requirement | Implementation | Severity |
+|-------------|----------------|----------|
+| **PCI-DSS Compliance** | No storage of PAN/CVV in plugin memory | CRITICAL |
+| **SOX Compliance** | Immutable audit logs for all risk calculations | CRITICAL |
+| **Data Encryption** | AES-256 for data at rest, TLS 1.3 in transit | CRITICAL |
+| **Key Management** | HSM or secure enclave for cryptographic keys | CRITICAL |
+| **Segregation of Duties** | Separate roles for trading, risk, and compliance | HIGH |
+
+### Input Validation (CRITICAL)
+
+All MCP tool inputs MUST be validated using Zod schemas:
+
+```typescript
+// finance/portfolio-risk input validation
+const PortfolioRiskSchema = z.object({
+  holdings: z.array(z.object({
+    symbol: z.string().regex(/^[A-Z0-9.]{1,10}$/).max(10), // Stock symbol format
+    quantity: z.number().finite().min(-1e9).max(1e9),      // Reasonable position limits
+    assetClass: z.string().max(50).optional()
+  })).min(1).max(10000), // Max 10K positions
+  riskMetrics: z.array(z.enum(['var', 'cvar', 'sharpe', 'sortino', 'max_drawdown'])).optional(),
+  confidenceLevel: z.number().min(0.9).max(0.999).default(0.95),
+  horizon: z.enum(['1d', '1w', '1m', '1y']).optional()
+});
+
+// finance/anomaly-detect input validation
+const AnomalyDetectSchema = z.object({
+  transactions: z.array(z.object({
+    id: z.string().uuid(),
+    amount: z.number().finite().min(-1e12).max(1e12), // Trillion limit
+    timestamp: z.string().datetime(),
+    parties: z.array(z.string().max(200)).max(10),
+    metadata: z.record(z.string(), z.unknown()).optional()
+  })).min(1).max(100000), // Batch limit
+  sensitivity: z.number().min(0).max(1).default(0.8),
+  context: z.enum(['fraud', 'aml', 'market_manipulation', 'all']).default('all')
+});
+
+// finance/compliance-check input validation
+const ComplianceCheckSchema = z.object({
+  entity: z.string().max(200),
+  regulations: z.array(z.enum(['basel3', 'mifid2', 'dodd_frank', 'aml', 'kyc'])).min(1),
+  scope: z.enum(['positions', 'transactions', 'capital', 'all']).default('all'),
+  asOfDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
+});
+```
+
+### WASM Security Constraints
+
+| Constraint | Value | Rationale |
+|------------|-------|-----------|
+| Memory Limit | 1GB max | Handle large portfolio calculations |
+| CPU Time Limit | 60 seconds per operation | Allow complex risk calculations |
+| No Network Access | Enforced by WASM sandbox | Prevent market data leakage |
+| No File System Access | Sandboxed virtual FS only | Prevent unauthorized data access |
+| Deterministic Execution | Required for audit reproducibility | Same input = same output |
+
+### Authentication & Authorization
+
+```typescript
+// Required role-based access control for financial tools
+const FinanceRoles = {
+  TRADER: ['portfolio-risk', 'market-regime'],
+  RISK_MANAGER: ['portfolio-risk', 'anomaly-detect', 'stress-test', 'market-regime'],
+  COMPLIANCE_OFFICER: ['compliance-check', 'anomaly-detect'],
+  AUDITOR: ['compliance-check'], // Read-only, full audit access
+  QUANT: ['portfolio-risk', 'market-regime', 'stress-test']
+};
+
+// Segregation of duties enforcement
+const INCOMPATIBLE_ROLES = [
+  ['TRADER', 'COMPLIANCE_OFFICER'],  // Traders cannot self-approve
+  ['TRADER', 'AUDITOR']              // Traders cannot audit own trades
+];
+```
+
+### Audit Logging Requirements (SOX, MiFID II)
+
+```typescript
+interface FinancialAuditLog {
+  timestamp: string;              // ISO 8601 with microsecond precision
+  userId: string;                 // Authenticated user ID
+  toolName: string;               // MCP tool invoked
+  transactionIds: string[];       // Affected transaction IDs
+  portfolioHash: string;          // Hash of portfolio state
+  riskMetricsComputed: string[];  // Which metrics were calculated
+  modelVersion: string;           // Version of risk model used
+  inputHash: string;              // Hash of inputs for reproducibility
+  outputHash: string;             // Hash of outputs for verification
+  executionTimeMs: number;        // Performance tracking
+  regulatoryFlags: string[];      // Any compliance alerts triggered
+}
+
+// Audit logs MUST be:
+// - Immutable (write-once storage)
+// - Timestamped with trusted time source
+// - Retained for 7 years minimum (MiFID II)
+// - Available for regulatory inspection within 72 hours
+```
+
+### Identified Security Risks
+
+| Risk ID | Severity | Description | Mitigation |
+|---------|----------|-------------|------------|
+| FIN-SEC-001 | **CRITICAL** | Market manipulation via risk model exploitation | Model validation, anomaly detection on outputs |
+| FIN-SEC-002 | **CRITICAL** | Unauthorized access to trading signals | Role-based access, audit logging |
+| FIN-SEC-003 | **HIGH** | Front-running via timing analysis | Randomized processing delays, rate limiting |
+| FIN-SEC-004 | **HIGH** | Model theft via inference attacks | Output perturbation, query rate limiting |
+| FIN-SEC-005 | **MEDIUM** | Denial of service via complex portfolios | Input size limits, timeout enforcement |
+
+### Rate Limiting Requirements
+
+```typescript
+// Prevent abuse and ensure fair resource allocation
+const FinanceRateLimits = {
+  'portfolio-risk': { requestsPerMinute: 60, maxConcurrent: 5 },
+  'anomaly-detect': { requestsPerMinute: 100, maxConcurrent: 10 },
+  'stress-test': { requestsPerMinute: 10, maxConcurrent: 2 },  // Expensive operation
+  'market-regime': { requestsPerMinute: 120, maxConcurrent: 10 },
+  'compliance-check': { requestsPerMinute: 30, maxConcurrent: 3 }
+};
+```
+
+### Data Integrity Controls
+
+```typescript
+// Ensure calculation reproducibility for regulatory audits
+interface RiskCalculationProof {
+  inputHash: string;        // SHA-256 of serialized inputs
+  modelChecksum: string;    // Checksum of WASM module used
+  randomSeed: string;       // Seed for any stochastic components
+  outputHash: string;       // SHA-256 of outputs
+  signature: string;        // Signed by calculation service
+}
+```
+
+### Regulatory Compliance
 
 - **Explainability**: All risk scores include feature attribution
 - **Audit Trail**: Complete logging of all risk calculations
 - **Model Governance**: Version control for all models
 - **Backtesting**: Built-in model validation framework
+- **Regulatory Reporting**: Automated generation of required reports
 
 ## Implementation Notes
 
