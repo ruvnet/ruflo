@@ -784,7 +784,7 @@ function calculateCouplingMetrics(graph: DependencyGraph): import('./types.js').
   return metrics;
 }
 
-function calculateCohesionMetrics(graph: DependencyGraph): import('./types.js').CohesionMetrics[] {
+function calculateCohesionMetrics(_graph: DependencyGraph): import('./types.js').CohesionMetrics[] {
   return [];
 }
 
