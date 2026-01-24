@@ -1199,22 +1199,22 @@ function buildNegotiationPriorities(
  * All Legal Contracts MCP Tools
  */
 export const legalContractsTools: MCPTool[] = [
-  clauseExtractTool,
-  riskAssessTool,
-  contractCompareTool,
-  obligationTrackTool,
-  playbookMatchTool,
+  clauseExtractTool as unknown as MCPTool,
+  riskAssessTool as unknown as MCPTool,
+  contractCompareTool as unknown as MCPTool,
+  obligationTrackTool as unknown as MCPTool,
+  playbookMatchTool as unknown as MCPTool,
 ];
 
 /**
  * Tool name to handler map
  */
 export const toolHandlers = new Map<string, MCPTool['handler']>([
-  ['legal/clause-extract', clauseExtractTool.handler],
-  ['legal/risk-assess', riskAssessTool.handler],
-  ['legal/contract-compare', contractCompareTool.handler],
-  ['legal/obligation-track', obligationTrackTool.handler],
-  ['legal/playbook-match', playbookMatchTool.handler],
+  ['legal/clause-extract', clauseExtractTool.handler as MCPTool['handler']],
+  ['legal/risk-assess', riskAssessTool.handler as MCPTool['handler']],
+  ['legal/contract-compare', contractCompareTool.handler as MCPTool['handler']],
+  ['legal/obligation-track', obligationTrackTool.handler as MCPTool['handler']],
+  ['legal/playbook-match', playbookMatchTool.handler as MCPTool['handler']],
 ]);
 
 /**
