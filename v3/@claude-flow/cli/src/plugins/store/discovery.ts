@@ -144,14 +144,23 @@ export class PluginDiscoveryService {
     }
 
     try {
-      // Resolve IPNS to get current CID
-      const cid = await resolveIPNS(registry.ipnsName, registry.gateway);
-      if (!cid) {
-        // Fallback to demo registry
-        return this.createDemoRegistryAsync(registry);
-      }
+      // Check if ipnsName is actually a direct CID (starts with 'bafy' or 'Qm')
+      const isDirectCid = registry.ipnsName.startsWith('bafy') || registry.ipnsName.startsWith('Qm');
 
-      console.log(`[PluginDiscovery] Resolved to CID: ${cid}`);
+      let cid: string | null;
+      if (isDirectCid) {
+        // Use the CID directly - no IPNS resolution needed
+        cid = registry.ipnsName;
+        console.log(`[PluginDiscovery] Using direct CID: ${cid}`);
+      } else {
+        // Resolve IPNS to get current CID
+        cid = await resolveIPNS(registry.ipnsName, registry.gateway);
+        if (!cid) {
+          // Fallback to demo registry
+          return this.createDemoRegistryAsync(registry);
+        }
+        console.log(`[PluginDiscovery] Resolved IPNS to CID: ${cid}`);
+      }
 
       // Fetch registry from IPFS
       const registryData = await fetchFromIPFS<PluginRegistry>(cid, registry.gateway);
