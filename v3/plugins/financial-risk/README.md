@@ -261,13 +261,25 @@ All calculations are logged with:
 
 Logs are retained for 7 years per MiFID II requirements and available for regulatory inspection within 72 hours.
 
+### WASM Security Constraints
+
+| Constraint | Value | Rationale |
+|------------|-------|-----------|
+| Memory Limit | 1GB max | Handle large transaction datasets |
+| CPU Time Limit | 60 seconds | Allow complex risk calculations |
+| No Network Access | Enforced | Prevent data exfiltration |
+| No File System Write | Enforced | Analysis-only mode |
+| Sandboxed Data Access | Enforced | No direct database queries |
+
 ### Input Validation
 
-All inputs are validated:
+All inputs are validated using Zod schemas:
 - Stock symbols: `/^[A-Z0-9.]{1,10}$/`
 - Position quantities: between -1 billion and 1 billion
 - Transaction amounts: between -1 trillion and 1 trillion
 - Batch limits: maximum 100,000 transactions per request
+- Timestamps: ISO 8601 format, within reasonable date range
+- Entity identifiers: Alphanumeric with limited special characters
 
 ### Rate Limiting
 
