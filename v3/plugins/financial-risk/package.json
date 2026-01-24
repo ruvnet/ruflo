@@ -23,6 +23,10 @@
       "import": "./dist/bridges/sparse-bridge.js",
       "types": "./dist/bridges/sparse-bridge.d.ts"
     },
+    "./bridges": {
+      "import": "./dist/bridges/index.js",
+      "types": "./dist/bridges/index.d.ts"
+    },
     "./types": {
       "import": "./dist/types.js",
       "types": "./dist/types.d.ts"
