@@ -78,8 +78,8 @@ export class DAGBridge implements IDAGBridge {
     try {
       // Dynamic import of WASM module
       // In production, this would load from @claude-flow/ruvector-upstream
-      const wasmModule = await this.loadWasmModule();
-      this.wasmModule = wasmModule;
+      const loadedModule = await this.loadWasmModule();
+      this.wasmModule = loadedModule;
       this.initialized = true;
     } catch (error) {
       // Fallback to pure JS implementation if WASM not available
