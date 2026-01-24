@@ -168,6 +168,43 @@ const SessionInfoSchema = z.object({
 });
 
 /**
+ * Leg schema (for formula legs)
+ */
+const LegSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  focus: z.string(),
+  description: z.string(),
+  agent: z.string().optional(),
+  order: z.number().optional(),
+});
+
+/**
+ * Step schema (for formula steps)
+ */
+const StepSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  needs: z.array(z.string()).optional(),
+  duration: z.number().optional(),
+  requires: z.array(z.string()).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+/**
+ * Var schema (for formula variables)
+ */
+const VarSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  default: z.string().optional(),
+  required: z.boolean().optional(),
+  pattern: z.string().optional(),
+  enum: z.array(z.string()).optional(),
+});
+
+/**
  * Formula state schema
  */
 const FormulaStateSchema = z.object({
@@ -177,9 +214,9 @@ const FormulaStateSchema = z.object({
     description: z.string(),
     type: z.enum(['convoy', 'workflow', 'expansion', 'aspect']),
     version: z.number(),
-    legs: z.array(z.unknown()).optional(),
-    steps: z.array(z.unknown()).optional(),
-    vars: z.record(z.unknown()).optional(),
+    legs: z.array(LegSchema).optional(),
+    steps: z.array(StepSchema).optional(),
+    vars: z.record(VarSchema).optional(),
   }),
   vars: z.record(z.string()),
   startedAt: z.coerce.date(),
