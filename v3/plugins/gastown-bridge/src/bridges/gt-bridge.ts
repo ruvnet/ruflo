@@ -532,15 +532,26 @@ export class GtBridge {
       );
     }
 
+    // Check parsed cache first
+    const cacheKey = hashArgs([output]);
+    const cached = parsedCache.get(cacheKey);
+    if (cached !== undefined) {
+      return cached as T;
+    }
+
     try {
       // Try to parse as JSON
-      return JSON.parse(output) as T;
+      const parsed = JSON.parse(output) as T;
+      parsedCache.set(cacheKey, parsed);
+      return parsed;
     } catch {
       // If not JSON, try to extract JSON from output
       const jsonMatch = output.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
       if (jsonMatch) {
         try {
-          return JSON.parse(jsonMatch[0]) as T;
+          const parsed = JSON.parse(jsonMatch[0]) as T;
+          parsedCache.set(cacheKey, parsed);
+          return parsed;
         } catch {
           throw new GtBridgeError(
             'Failed to parse gt output as JSON',
