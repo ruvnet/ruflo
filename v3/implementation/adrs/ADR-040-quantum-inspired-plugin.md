@@ -5,6 +5,8 @@
 **Category:** Exotic SOTA
 **Author:** Plugin Architecture Team
 **Version:** 1.0.0
+**Deciders:** Plugin Architecture Team, Quantum Computing Advisors
+**Supersedes:** None
 
 ## Context
 
