@@ -401,7 +401,7 @@ export class GtBridge {
    * @param args - Command arguments (validated and sanitized)
    * @returns Command output
    */
-  async execGt(args: string[]): Promise<GtResult<string>> {
+  async execGt(args: string[], skipCache = false): Promise<GtResult<string>> {
     const startTime = Date.now();
 
     // Validate all arguments
@@ -418,72 +418,104 @@ export class GtBridge {
       );
     }
 
-    try {
-      this.logger.debug('Executing gt command', {
-        command: 'gt',
-        args: validatedArgs,
-      });
+    // Check cache for cacheable commands
+    const cacheKey = hashArgs(validatedArgs);
+    const isCacheable = !skipCache && subcommand && GtBridge.CACHEABLE_COMMANDS.has(subcommand);
+    const isStatic = subcommand && GtBridge.STATIC_COMMANDS.has(subcommand);
 
-      const { stdout, stderr } = await execFileAsync(
-        this.config.gtPath,
-        validatedArgs,
-        {
-          cwd: this.config.cwd,
-          env: this.config.env,
-          timeout: this.config.timeout,
-          maxBuffer: this.config.maxBuffer,
-          shell: false, // CRITICAL: Never use shell
-          windowsHide: true,
-        }
-      );
-
-      const durationMs = Date.now() - startTime;
-
-      if (stderr && stderr.trim()) {
-        this.logger.warn('gt stderr output', { stderr });
+    if (isCacheable) {
+      const cached = isStatic
+        ? staticCache.get(cacheKey) as GtResult<string> | undefined
+        : resultCache.get(cacheKey);
+      if (cached) {
+        this.logger.debug('Cache hit for gt command', { command: subcommand });
+        return {
+          ...cached,
+          durationMs: 0, // Cached result
+        };
       }
-
-      return {
-        success: true,
-        data: stdout.trim(),
-        command: 'gt',
-        args: validatedArgs,
-        durationMs,
-      };
-    } catch (error: unknown) {
-      const durationMs = Date.now() - startTime;
-      const err = error as NodeJS.ErrnoException & {
-        killed?: boolean;
-        stdout?: string;
-        stderr?: string;
-      };
-
-      if (err.killed) {
-        throw new GtBridgeError(
-          'Command execution timed out',
-          'TIMEOUT',
-          'gt',
-          validatedArgs
-        );
-      }
-
-      if (err.code === 'ENOENT') {
-        throw new GtBridgeError(
-          `gt executable not found at: ${this.config.gtPath}`,
-          'COMMAND_NOT_FOUND',
-          'gt',
-          validatedArgs
-        );
-      }
-
-      return {
-        success: false,
-        error: err.stderr || err.message,
-        command: 'gt',
-        args: validatedArgs,
-        durationMs,
-      };
     }
+
+    // Use deduplication for concurrent identical calls
+    return execDedup.dedupe(cacheKey, async () => {
+      try {
+        this.logger.debug('Executing gt command', {
+          command: 'gt',
+          args: validatedArgs,
+        });
+
+        const { stdout, stderr } = await execFileAsync(
+          this.config.gtPath,
+          validatedArgs,
+          {
+            cwd: this.config.cwd,
+            env: this.config.env,
+            timeout: this.config.timeout,
+            maxBuffer: this.config.maxBuffer,
+            shell: false, // CRITICAL: Never use shell
+            windowsHide: true,
+          }
+        );
+
+        const durationMs = Date.now() - startTime;
+
+        if (stderr && stderr.trim()) {
+          this.logger.warn('gt stderr output', { stderr });
+        }
+
+        const result: GtResult<string> = {
+          success: true,
+          data: stdout.trim(),
+          command: 'gt',
+          args: validatedArgs,
+          durationMs,
+        };
+
+        // Cache successful results
+        if (isCacheable && result.success) {
+          if (isStatic) {
+            staticCache.set(cacheKey, result);
+          } else {
+            resultCache.set(cacheKey, result);
+          }
+        }
+
+        return result;
+      } catch (error: unknown) {
+        const durationMs = Date.now() - startTime;
+        const err = error as NodeJS.ErrnoException & {
+          killed?: boolean;
+          stdout?: string;
+          stderr?: string;
+        };
+
+        if (err.killed) {
+          throw new GtBridgeError(
+            'Command execution timed out',
+            'TIMEOUT',
+            'gt',
+            validatedArgs
+          );
+        }
+
+        if (err.code === 'ENOENT') {
+          throw new GtBridgeError(
+            `gt executable not found at: ${this.config.gtPath}`,
+            'COMMAND_NOT_FOUND',
+            'gt',
+            validatedArgs
+          );
+        }
+
+        return {
+          success: false,
+          error: err.stderr || err.message,
+          command: 'gt',
+          args: validatedArgs,
+          durationMs,
+        };
+      }
+    });
   }
 
   /**
