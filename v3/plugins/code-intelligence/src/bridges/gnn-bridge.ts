@@ -116,7 +116,7 @@ export class GNNBridge implements IGNNBridge {
    */
   async buildCodeGraph(
     files: string[],
-    includeCallGraph: boolean
+    _includeCallGraph: boolean
   ): Promise<DependencyGraph> {
     if (!this.initialized) {
       await this.initialize();
