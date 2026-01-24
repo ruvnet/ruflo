@@ -457,25 +457,79 @@ v3/plugins/gastown-bridge/
 ├── package.json
 ├── tsconfig.json
 ├── README.md
+├── Cargo.toml                 # Rust workspace for WASM modules
 ├── src/
-│   ├── index.ts              # Main exports + plugin class
-│   ├── types.ts              # Zod schemas
-│   ├── mcp-tools.ts          # 15 MCP tool definitions
+│   ├── index.ts               # Main exports + plugin class
+│   ├── types.ts               # Zod schemas
+│   ├── mcp-tools.ts           # 20 MCP tool definitions
+│   ├── wasm-loader.ts         # WASM module loader + caching
 │   ├── bridges/
-│   │   ├── gt-bridge.ts      # Gas Town CLI bridge
-│   │   ├── bd-bridge.ts      # Beads CLI bridge
-│   │   └── sync-bridge.ts    # Beads-AgentDB sync
+│   │   ├── gt-bridge.ts       # Gas Town CLI bridge
+│   │   ├── bd-bridge.ts       # Beads CLI bridge
+│   │   └── sync-bridge.ts     # Beads-AgentDB sync
 │   ├── formula/
-│   │   ├── parser.ts         # TOML formula parser
-│   │   ├── cooker.ts         # Variable substitution
-│   │   └── executor.ts       # Molecule execution
+│   │   ├── parser.ts          # JS fallback parser
+│   │   ├── cooker.ts          # JS fallback cooker
+│   │   └── executor.ts        # Molecule execution (hybrid)
 │   └── convoy/
-│       ├── tracker.ts        # Convoy lifecycle
-│       └── observer.ts       # Convoy completion detection
-└── tests/
-    ├── bridges.test.ts
-    ├── formula.test.ts
-    └── mcp-tools.test.ts
+│       ├── tracker.ts         # Convoy lifecycle
+│       └── observer.ts        # Convoy completion detection
+├── wasm/
+│   ├── gastown-formula-wasm/  # TOML parsing + cooking
+│   │   ├── Cargo.toml
+│   │   ├── src/
+│   │   │   ├── lib.rs         # WASM entry point
+│   │   │   ├── parser.rs      # TOML → AST
+│   │   │   ├── cooker.rs      # Variable substitution
+│   │   │   └── molecule.rs    # Molecule generation
+│   │   └── pkg/               # wasm-pack output
+│   ├── ruvector-gnn-wasm/     # Graph operations
+│   │   ├── Cargo.toml
+│   │   ├── src/
+│   │   │   ├── lib.rs
+│   │   │   ├── dag.rs         # DAG operations
+│   │   │   ├── topo.rs        # Topological sort
+│   │   │   └── critical.rs    # Critical path analysis
+│   │   └── pkg/
+│   ├── micro-hnsw-wasm/       # Pattern search (shared)
+│   │   └── ...                # From @claude-flow/plugin-micro-hnsw
+│   └── ruvector-learning-wasm/ # SONA patterns (shared)
+│       └── ...                # From @claude-flow/plugin-ruvector-learning
+├── tests/
+│   ├── bridges.test.ts
+│   ├── formula.test.ts
+│   ├── wasm.test.ts           # WASM module tests
+│   └── mcp-tools.test.ts
+└── scripts/
+    ├── build-wasm.sh          # wasm-pack build script
+    └── benchmark.ts           # WASM vs JS benchmarks
+```
+
+### WASM Module Cargo.toml (gastown-formula-wasm)
+
+```toml
+[package]
+name = "gastown-formula-wasm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+js-sys = "0.3"
+
+[dependencies.web-sys]
+version = "0.3"
+features = ["console"]
+
+[profile.release]
+opt-level = 3
+lto = true
 ```
 
 ### Feature Flags
