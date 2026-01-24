@@ -265,13 +265,22 @@ Executive Control
 
 ## Performance Targets
 
-| Metric | Target |
-|--------|--------|
-| Working memory operations | <1ms per slot |
-| Attention steering | <5ms for reallocation |
-| Meta-cognitive check | <10ms per assessment |
-| Memory consolidation | <100ms batch |
-| Scaffold generation | <50ms per step |
+| Metric | Target | Baseline (Traditional) | Improvement |
+|--------|--------|------------------------|-------------|
+| Working memory operations | <1ms per slot | ~10ms (naive cache) | 10x |
+| Attention steering | <5ms for reallocation | ~50ms (context rebuild) | 10x |
+| Meta-cognitive check | <10ms per assessment | N/A (not available) | Novel |
+| Memory consolidation | <100ms batch | ~1s (full reindex) | 10x |
+| Scaffold generation | <50ms per step | N/A (manual prompting) | Novel |
+
+## Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Cognitive overhead latency | Medium | Medium | Bypass for simple tasks, caching |
+| Memory slot contention | Low | Low | Priority-based eviction, dynamic capacity |
+| Scaffold dependency | Medium | Low | Gradual fading, explicit control |
+| Meta-cognition false positives | Medium | Low | Configurable thresholds, manual override |
 
 ## Cognitive Theories Implemented
 
