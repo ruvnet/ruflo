@@ -22,6 +22,10 @@
     "./bridges/gnn": {
       "import": "./dist/bridges/gnn-bridge.js",
       "types": "./dist/bridges/gnn-bridge.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
     }
   },
   "files": [
@@ -33,8 +37,14 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
-    "prepublishOnly": "npm run build"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts",
+    "prepublishOnly": "npm run clean && npm run build && npm run typecheck"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "v3alpha"
   },
   "keywords": [
     "claude-flow",
