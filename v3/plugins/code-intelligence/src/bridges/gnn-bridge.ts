@@ -77,7 +77,7 @@ interface GNNWasmModule {
  * GNN Bridge Implementation
  */
 export class GNNBridge implements IGNNBridge {
-  private wasmModule: GNNWasmModule | null = null;
+  private _wasmModule: GNNWasmModule | null = null;
   private initialized = false;
   private readonly embeddingDim: number;
 
