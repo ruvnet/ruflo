@@ -246,8 +246,8 @@ describe('hyperbolic_semantic_search handler', () => {
 
     expect(result.isError).toBeUndefined();
     const parsed = JSON.parse(result.content[0].text!);
-    expect(parsed).toHaveProperty('results');
-    expect(Array.isArray(parsed.results)).toBe(true);
+    expect(parsed).toHaveProperty('items');
+    expect(Array.isArray(parsed.items)).toBe(true);
   });
 
   it('should return error for non-existent index', async () => {
