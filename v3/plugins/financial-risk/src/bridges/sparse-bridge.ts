@@ -49,14 +49,12 @@ interface SparseWasmModule {
  * Anomaly detection using Isolation Forest-like approach
  */
 export class AnomalyDetector {
-  private readonly numTrees: number;
-  private readonly sampleSize: number;
-  private readonly maxDepth: number;
-
-  constructor(numTrees: number = 100, sampleSize: number = 256, maxDepth: number = 8) {
-    this.numTrees = numTrees;
-    this.sampleSize = sampleSize;
-    this.maxDepth = maxDepth;
+  constructor(
+    _numTrees: number = 100,
+    _sampleSize: number = 256,
+    _maxDepth: number = 8
+  ) {
+    // Parameters reserved for future Isolation Forest implementation
   }
 
   /**
