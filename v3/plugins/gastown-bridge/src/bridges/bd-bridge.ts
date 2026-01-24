@@ -19,7 +19,59 @@ import { execFile, spawn, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import { z } from 'zod';
 
+import {
+  LRUCache,
+  BatchDeduplicator,
+  Lazy,
+} from '../cache.js';
+
 const execFileAsync = promisify(execFile);
+
+// ============================================================================
+// Performance Caches
+// ============================================================================
+
+/** Result cache for memoizing bead queries */
+const beadQueryCache = new LRUCache<string, Bead[]>({
+  maxEntries: 100,
+  ttlMs: 30 * 1000, // 30 sec TTL (beads may change)
+});
+
+/** Single bead cache */
+const singleBeadCache = new LRUCache<string, Bead>({
+  maxEntries: 500,
+  ttlMs: 60 * 1000, // 1 min TTL
+});
+
+/** Static data cache (version, stats) */
+const staticCache = new LRUCache<string, unknown>({
+  maxEntries: 50,
+  ttlMs: 5 * 60 * 1000, // 5 min TTL
+});
+
+/** Deduplicator for concurrent CLI calls */
+const execDedup = new BatchDeduplicator<BdResult<string>>();
+
+/** Parsed JSONL cache */
+const parsedCache = new LRUCache<string, Bead[]>({
+  maxEntries: 100,
+  ttlMs: 30 * 1000,
+});
+
+/**
+ * FNV-1a hash for cache keys
+ */
+function hashArgs(args: string[]): string {
+  let hash = 2166136261;
+  for (const arg of args) {
+    for (let i = 0; i < arg.length; i++) {
+      hash ^= arg.charCodeAt(i);
+      hash = (hash * 16777619) >>> 0;
+    }
+    hash ^= 0xff; // separator
+  }
+  return hash.toString(36);
+}
 
 // ============================================================================
 // Zod Validation Schemas
