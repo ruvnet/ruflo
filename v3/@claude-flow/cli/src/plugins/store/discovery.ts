@@ -691,6 +691,19 @@ export class PluginDiscoveryService {
       '@claude-flow/embeddings',
       '@claude-flow/neural',
       '@claude-flow/performance',
+      // Domain-specific plugins
+      '@claude-flow/plugin-healthcare-clinical',
+      '@claude-flow/plugin-financial-risk',
+      '@claude-flow/plugin-legal-contracts',
+      // Development intelligence plugins
+      '@claude-flow/plugin-code-intelligence',
+      '@claude-flow/plugin-test-intelligence',
+      '@claude-flow/plugin-perf-optimizer',
+      // Advanced AI/reasoning plugins
+      '@claude-flow/plugin-neural-coordination',
+      '@claude-flow/plugin-cognitive-kernel',
+      '@claude-flow/plugin-quantum-optimizer',
+      '@claude-flow/plugin-hyperbolic-reasoning',
     ];
 
     // Fetch stats in parallel
