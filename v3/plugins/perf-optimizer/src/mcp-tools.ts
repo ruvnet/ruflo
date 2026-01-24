@@ -174,7 +174,9 @@ async function memoryAnalyzeHandler(
       return errorResult(`Invalid input: ${validationResult.error.message}`);
     }
 
-    const { heapSnapshot, timeline, analysis, compareBaseline } = validationResult.data;
+    const { heapSnapshot, timeline, analysis, compareBaseline: _compareBaseline } = validationResult.data;
+    // compareBaseline can be used for differential analysis
+    void _compareBaseline;
     logger.debug('Analyzing memory', { hasSnapshot: !!heapSnapshot, timelinePoints: timeline?.length });
 
     // Analyze memory (mock implementation)
