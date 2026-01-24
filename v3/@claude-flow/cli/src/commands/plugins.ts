@@ -828,11 +828,62 @@ const searchCommand: Command = {
   },
 };
 
+// Rate subcommand - Rate plugins via Cloud Function
+const rateCommand: Command = {
+  name: 'rate',
+  description: 'Rate a plugin (1-5 stars)',
+  options: [
+    { name: 'name', short: 'n', type: 'string', description: 'Plugin name to rate', required: true },
+    { name: 'rating', short: 'r', type: 'number', description: 'Rating (1-5)', required: true },
+  ],
+  examples: [
+    { command: 'claude-flow plugins rate -n @claude-flow/embeddings -r 5', description: 'Rate 5 stars' },
+    { command: 'claude-flow plugins rate -n my-plugin -r 4', description: 'Rate 4 stars' },
+  ],
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    const { rateItem } = await import('../services/registry-api.js');
+
+    const name = ctx.flags.name as string;
+    const rating = parseInt(ctx.flags.rating as string, 10);
+
+    if (!name) {
+      output.printError('Plugin name is required');
+      return { success: false, exitCode: 1 };
+    }
+
+    if (!rating || rating < 1 || rating > 5) {
+      output.printError('Rating must be 1-5');
+      return { success: false, exitCode: 1 };
+    }
+
+    const spinner = output.createSpinner({ text: 'Submitting rating...', spinner: 'dots' });
+    spinner.start();
+
+    try {
+      const result = await rateItem(name, rating, 'plugin');
+
+      spinner.succeed('Rating submitted');
+      output.writeln();
+      output.writeln(`Plugin: ${output.highlight(name)}`);
+      output.writeln(`Your rating: ${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}`);
+      output.writeln(`New average: ${result.average.toFixed(1)}★ (${result.count} ratings)`);
+      output.writeln();
+      output.writeln(output.dim('Thank you for your feedback!'));
+
+      return { success: true, data: result };
+    } catch (error) {
+      spinner.fail('Failed to submit rating');
+      output.printError(String(error));
+      return { success: false, exitCode: 1 };
+    }
+  },
+};
+
 // Main plugins command - Now with IPFS-based registry
 export const pluginsCommand: Command = {
   name: 'plugins',
   description: 'Plugin management with IPFS-based decentralized registry',
-  subcommands: [listCommand, searchCommand, installCommand, uninstallCommand, upgradeCommand, toggleCommand, infoCommand, createCommand],
+  subcommands: [listCommand, searchCommand, installCommand, uninstallCommand, upgradeCommand, toggleCommand, infoCommand, createCommand, rateCommand],
   examples: [
     { command: 'claude-flow plugins list', description: 'List plugins from IPFS registry' },
     { command: 'claude-flow plugins search -q neural', description: 'Search for plugins' },
