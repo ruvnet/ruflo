@@ -220,10 +220,21 @@ interface HyperbolicReasoningConfig {
 ## Security Considerations
 
 - **Numerical Stability**: Vectors are clipped to stay within Poincare ball boundary (1 - epsilon)
-- **Input Validation**: Hierarchies validated for cycles, excessive depth (max 100), and excessive branching
+- **Input Validation**: All inputs validated with Zod schemas; hierarchies validated for cycles, excessive depth (max 100), and excessive branching
 - **Output Validation**: All hyperbolic outputs validated for numerical sanity (finite values, within ball)
 - **DoS Prevention**: Limits on node count (1M), edge count (10M), and embedding timeout (300s)
 - **Curvature Bounds**: Curvature restricted to range [-10, -0.01] to prevent numerical issues
+- **Cycle Detection**: DAG validation prevents infinite loops in hierarchy traversal
+
+### WASM Security Constraints
+
+| Constraint | Value | Rationale |
+|------------|-------|-----------|
+| Memory Limit | 2GB max | Handle large hierarchies |
+| CPU Time Limit | 300 seconds | Allow complex embedding operations |
+| No Network Access | Enforced | Prevent data exfiltration |
+| Numerical Epsilon | 1e-10 | Prevent boundary violations |
+| Output Validation | All vectors checked | Ensure numerical stability |
 
 ### Input Limits
 
