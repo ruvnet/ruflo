@@ -582,6 +582,126 @@ console.log(`Approvals: ${plan.approvals.length}/${plan.requiredApprovals}`);
 console.log(`Rejections: ${plan.rejections.length}`);
 ```
 
+## Testing the Plugin
+
+### Run Unit Tests
+
+```bash
+cd v3/plugins/teammate-plugin
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### Verify Plugin Functionality
+
+```typescript
+import { createTeammateBridge, TEAMMATE_MCP_TOOLS } from '@claude-flow/teammate-plugin';
+
+async function verifyPlugin() {
+  console.log('=== Plugin Verification ===\n');
+
+  // 1. Check MCP tools are exported
+  console.log(`✓ MCP Tools available: ${TEAMMATE_MCP_TOOLS.length}`);
+
+  // 2. Initialize bridge
+  const bridge = await createTeammateBridge();
+  console.log('✓ Bridge initialized');
+
+  // 3. Check version compatibility
+  const version = bridge.getVersionInfo();
+  console.log(`✓ Claude Code version: ${version.claudeCode || 'not detected'}`);
+  console.log(`✓ Plugin version: ${version.plugin}`);
+  console.log(`✓ Compatible: ${version.compatible}`);
+
+  // 4. Test team creation (if compatible)
+  if (version.compatible) {
+    const team = await bridge.spawnTeam({ name: 'test-team' });
+    console.log(`✓ Team created: ${team.name}`);
+
+    // Cleanup
+    await bridge.cleanup('test-team');
+    console.log('✓ Cleanup successful');
+  }
+
+  console.log('\n=== All checks passed! ===');
+}
+
+verifyPlugin().catch(console.error);
+```
+
+### Verify via CLI
+
+```bash
+# Check plugin is registered
+npx @claude-flow/cli@latest plugins list | grep teammate
+
+# Check plugin info
+npx @claude-flow/cli@latest plugins info teammate-plugin
+
+# Test MCP tools
+npx @claude-flow/cli@latest mcp tools | grep teammate
+```
+
+## Plugin Registry (IPFS)
+
+This plugin is published to the Claude Flow Plugin Registry on IPFS for decentralized distribution.
+
+### Registry Entry
+
+```json
+{
+  "name": "teammate-plugin",
+  "package": "@claude-flow/teammate-plugin",
+  "version": "1.0.0-alpha.1",
+  "description": "Native TeammateTool integration for Claude Code v2.1.19+",
+  "author": "Claude Flow Team",
+  "license": "MIT",
+  "repository": "https://github.com/ruvnet/claude-flow",
+  "keywords": ["claude-code", "teammate", "multi-agent", "swarm"],
+  "requirements": {
+    "claudeCode": ">=2.1.19",
+    "node": ">=18.0.0"
+  },
+  "mcpTools": 21,
+  "features": [
+    "team-management",
+    "teammate-spawning",
+    "messaging",
+    "plan-approval",
+    "delegation",
+    "remote-sync",
+    "bmssp-optimization"
+  ]
+}
+```
+
+### Install from Registry
+
+```bash
+# Install from IPFS-backed registry
+npx @claude-flow/cli@latest plugins install teammate-plugin --registry ipfs
+
+# Or specify registry CID directly
+npx @claude-flow/cli@latest plugins install teammate-plugin --cid <registry-cid>
+```
+
+### Verify Registry Integrity
+
+```bash
+# Check plugin hash matches registry
+npx @claude-flow/cli@latest plugins verify teammate-plugin
+
+# View registry metadata
+npx @claude-flow/cli@latest plugins registry info
+```
+
 ## License
 
 MIT
