@@ -32,6 +32,20 @@ claude update
 
 ## Installation
 
+### Via Claude Code CLI (Recommended)
+
+Install directly using Claude Code's plugin system:
+
+```bash
+# Install from npm registry
+claude plugins install @claude-flow/teammate-plugin
+
+# Or install from Claude Flow plugin registry (IPFS-backed)
+claude plugins install teammate-plugin --registry claude-flow
+```
+
+### Via npm
+
 ```bash
 npm install @claude-flow/teammate-plugin
 ```
@@ -40,6 +54,26 @@ Or with pnpm:
 
 ```bash
 pnpm add @claude-flow/teammate-plugin
+```
+
+### Via Claude Flow CLI
+
+```bash
+# Install via claude-flow plugin manager
+npx @claude-flow/cli@latest plugins install teammate-plugin
+
+# Or add to your claude-flow.config.json
+npx @claude-flow/cli@latest config set plugins.teammate-plugin.enabled true
+```
+
+### Verify Installation
+
+```bash
+# Check plugin is loaded
+claude plugins list
+
+# Or via claude-flow
+npx @claude-flow/cli@latest plugins list
 ```
 
 ## Quick Start
