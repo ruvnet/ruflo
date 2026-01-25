@@ -67,18 +67,10 @@ import {
 
 import type {
   RateLimitConfig,
-  RateLimitState,
-  BridgeMetrics,
   MetricSnapshot,
   TeammateHealthCheck,
   TeamHealthReport,
-  HealthCheckConfig,
-  HealthStatus,
-  RetryConfig,
-  RetryState,
-  CircuitBreakerConfig,
   CircuitBreakerState,
-  CircuitState,
 } from './types.js';
 
 import {
