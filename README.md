@@ -172,7 +172,9 @@ npx claude-flow@latest init
 
 ---
 
-<details open>
+### A multi-purpose Agent Tool Kit 
+
+<details>
 <summary>🔄 <strong>Core Flow</strong> — How requests move through the system</summary>
 
 Every request flows through four layers: from your CLI or Claude Code interface, through intelligent routing, to specialized agents, and finally to LLM providers for reasoning.
@@ -467,6 +469,9 @@ Once added, Claude Code can use all 175+ claude-flow MCP tools directly:
 - `hooks_route` - Intelligent task routing
 - And 170+ more tools...
 
+---
+## What is it exactly? Agents that learn, build and work perpetually. 
+
 <details>
 <summary>🆚 <strong>Why Claude-Flow v3?</strong></summary>
 
@@ -622,6 +627,8 @@ Complex projects fail when implementation drifts from the original plan. Claude-
 - **ADR-026**: Intelligent 3-tier model routing
 
 </details>
+
+---
 
 ### 🏗️ Architecture Diagrams
 
