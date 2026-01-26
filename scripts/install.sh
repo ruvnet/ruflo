@@ -87,7 +87,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --minimal, -m    Minimal install (skip optional deps)"
             echo "  --setup-mcp      Auto-configure MCP server for Claude Code"
             echo "  --doctor, -d     Run diagnostics after install"
-            echo "  --init, -i       Initialize project (.claude/ and CLAUDE.md)"
+            echo "  --no-init        Skip project initialization (enabled by default)"
             echo "  --full, -f       Full setup (global + mcp + doctor + init)"
             echo "  --version=X.X.X  Install specific version"
             echo "  --help, -h       Show this help"
