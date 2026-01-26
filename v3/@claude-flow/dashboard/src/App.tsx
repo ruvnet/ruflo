@@ -1,431 +1,331 @@
 /**
- * Main App Component
- * Live Operations Dashboard for Claude Flow
+ * Live Operations Dashboard - Main App Component
+ * Real-time visibility into Claude Flow agent activities
  */
 
-import React, { useCallback, useEffect, useRef } from 'react';
-import { DashboardLayout } from './components/layout';
-import { MetricsPanel } from './components/metrics';
-import { useWebSocket } from './hooks';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Stores
 import { useDashboardStore } from './store/dashboardStore';
-import type { DashboardView } from './types';
+import { useAgentStore, useAgentsArray, type AgentState } from './store/agentStore';
+import { useTaskStore, type TaskState } from './store/taskStore';
+import { useMessageStore, type Message } from './store/messageStore';
+import { useMemoryStore } from './store/memoryStore';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
-
-interface AppProps {
-  wsUrl?: string;
-}
-
-/**
- * Overview view with metrics and summaries
- */
-const OverviewView: React.FC = () => {
-  const metrics = useDashboardStore((state) => state.metrics);
-  const agents = useDashboardStore((state) => state.agents);
-  const tasks = useDashboardStore((state) => state.tasks);
-
-  const activeAgentCount = Array.from(agents.values()).filter(
-    (a) => a.status === 'active' || a.status === 'busy'
-  ).length;
-
-  return (
-    <div className="space-y-6">
-      <MetricsPanel
-        activeAgents={metrics.activeAgents || activeAgentCount}
-        tasksPerMinute={metrics.tasksPerMinute}
-        messagesPerSecond={metrics.messagesPerSecond}
-        memoryOpsPerSecond={metrics.memoryOpsPerSecond}
-        history={metrics.history}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Agents summary */}
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Agents ({agents.size})</h2>
-          {agents.size === 0 ? (
-            <p className="text-slate-400 text-sm">No agents connected. Start a swarm to see agents here.</p>
-          ) : (
-            <div className="space-y-2">
-              {Array.from(agents.values())
-                .slice(0, 5)
-                .map((agent) => (
-                  <div
-                    key={agent.id}
-                    className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          agent.status === 'active'
-                            ? 'bg-green-500'
-                            : agent.status === 'busy'
-                              ? 'bg-amber-500'
-                              : agent.status === 'error'
-                                ? 'bg-red-500'
-                                : 'bg-slate-500'
-                        }`}
-                      />
-                      <span className="text-white font-medium">{agent.name}</span>
-                    </div>
-                    <span className="text-sm text-slate-400 capitalize">{agent.status}</span>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-
-        {/* Tasks summary */}
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Recent Tasks ({tasks.size})</h2>
-          {tasks.size === 0 ? (
-            <p className="text-slate-400 text-sm">No tasks yet. Tasks will appear here as they are created.</p>
-          ) : (
-            <div className="space-y-2">
-              {Array.from(tasks.values())
-                .sort((a, b) => b.lastUpdate - a.lastUpdate)
-                .slice(0, 5)
-                .map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between py-2 border-b border-slate-700 last:border-0"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium truncate">{task.description}</p>
-                    </div>
-                    <span
-                      className={`ml-2 px-2 py-0.5 text-xs rounded ${
-                        task.status === 'completed'
-                          ? 'bg-green-500/20 text-green-400'
-                          : task.status === 'in_progress'
-                            ? 'bg-amber-500/20 text-amber-400'
-                            : task.status === 'failed'
-                              ? 'bg-red-500/20 text-red-400'
-                              : 'bg-slate-500/20 text-slate-400'
-                      }`}
-                    >
-                      {task.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
+// Components
+import { DashboardLayout } from './components/layout/DashboardLayout';
+import { AgentGrid } from './components/agents/AgentGrid';
+import { AgentDetail } from './components/agents/AgentDetail';
+import { TaskTimeline } from './components/tasks/TaskTimeline';
+import { TaskKanban } from './components/tasks/TaskKanban';
+import { MessageStream } from './components/messages/MessageStream';
+import { MemoryLog } from './components/memory/MemoryLog';
+import { LiveTopology } from './components/topology/LiveTopology';
 
 /**
- * Agents view placeholder
+ * Get status color class
  */
-const AgentsView: React.FC = () => (
-  <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6">
-    <h2 className="text-lg font-semibold text-white mb-4">Agent Grid</h2>
-    <p className="text-slate-400">Agent grid view coming soon. Will display all agents with detailed status.</p>
-  </div>
-);
-
-/**
- * Tasks view placeholder
- */
-const TasksView: React.FC = () => (
-  <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6">
-    <h2 className="text-lg font-semibold text-white mb-4">Task Timeline</h2>
-    <p className="text-slate-400">Task timeline view coming soon. Will show task execution flow.</p>
-  </div>
-);
-
-/**
- * Messages view with stream
- */
-const MessagesView: React.FC = () => {
-  const messages = useDashboardStore((state) => state.messages);
-  const messagesPaused = useDashboardStore((state) => state.messagesPaused);
-  const togglePaused = useDashboardStore((state) => state.toggleMessagesPaused);
-
-  return (
-    <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">Message Stream ({messages.length})</h2>
-        <button
-          onClick={togglePaused}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            messagesPaused
-              ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-              : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
-          }`}
-        >
-          {messagesPaused ? 'Resume' : 'Pause'}
-        </button>
-      </div>
-      {messages.length === 0 ? (
-        <p className="text-slate-400">No messages yet. Messages between agents will appear here.</p>
-      ) : (
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {messages.slice(0, 50).map((msg) => (
-            <div key={msg.id} className="p-3 bg-slate-900/50 rounded-lg border border-slate-700">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm">
-                  <span className="text-blue-400">{msg.source}</span>
-                  <span className="text-slate-500 mx-2">-&gt;</span>
-                  <span className="text-green-400">{msg.target}</span>
-                </span>
-                <span className="text-xs text-slate-500">
-                  {new Date(msg.timestamp).toLocaleTimeString()}
-                </span>
-              </div>
-              <p className="text-slate-300 text-sm truncate">
-                {typeof msg.payload === 'string'
-                  ? msg.payload
-                  : JSON.stringify(msg.payload).slice(0, 100)}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
- * Memory view with operations log
- */
-const MemoryView: React.FC = () => {
-  const memoryOps = useDashboardStore((state) => state.memoryOps);
-
-  return (
-    <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6">
-      <h2 className="text-lg font-semibold text-white mb-4">Memory Operations ({memoryOps.length})</h2>
-      {memoryOps.length === 0 ? (
-        <p className="text-slate-400">No memory operations yet. Operations will appear here in real-time.</p>
-      ) : (
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {memoryOps.slice(0, 50).map((op) => (
-            <div key={op.id} className="p-3 bg-slate-900/50 rounded-lg border border-slate-700">
-              <div className="flex items-center justify-between mb-1">
-                <span
-                  className={`px-2 py-0.5 text-xs rounded ${
-                    op.operation === 'store'
-                      ? 'bg-green-500/20 text-green-400'
-                      : op.operation === 'retrieve'
-                        ? 'bg-blue-500/20 text-blue-400'
-                        : op.operation === 'search'
-                          ? 'bg-purple-500/20 text-purple-400'
-                          : 'bg-red-500/20 text-red-400'
-                  }`}
-                >
-                  {op.operation}
-                </span>
-                <span className="text-xs text-slate-500">{op.latency.toFixed(1)}ms</span>
-              </div>
-              <p className="text-slate-300 text-sm">
-                {op.namespace}::{op.key || op.query}
-              </p>
-              {op.cacheHit !== undefined && (
-                <span
-                  className={`text-xs ${op.cacheHit ? 'text-green-400' : 'text-amber-400'}`}
-                >
-                  {op.cacheHit ? 'Cache hit' : 'Cache miss'}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
- * Topology view placeholder
- */
-const TopologyView: React.FC = () => {
-  const topology = useDashboardStore((state) => state.topology);
-
-  return (
-    <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 h-full min-h-[400px]">
-      <h2 className="text-lg font-semibold text-white mb-4">
-        Live Topology ({topology.type})
-      </h2>
-      {topology.nodes.length === 0 ? (
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-400">No topology data. Initialize a swarm to see the topology.</p>
-        </div>
-      ) : (
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-400">
-            D3 topology visualization coming soon. {topology.nodes.length} nodes, {topology.edges.length} edges.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
- * View router component
- */
-const ViewRouter: React.FC<{ view: DashboardView }> = ({ view }) => {
-  switch (view) {
-    case 'overview':
-      return <OverviewView />;
-    case 'agents':
-      return <AgentsView />;
-    case 'tasks':
-      return <TasksView />;
-    case 'messages':
-      return <MessagesView />;
-    case 'memory':
-      return <MemoryView />;
-    case 'topology':
-      return <TopologyView />;
-    default:
-      return <OverviewView />;
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case 'active': return 'bg-green-400';
+    case 'busy': return 'bg-amber-400';
+    case 'idle': return 'bg-gray-400';
+    case 'spawning': return 'bg-blue-400';
+    case 'error': return 'bg-red-400';
+    default: return 'bg-gray-500';
   }
 };
 
 /**
- * Main App component
+ * Metric Card Component
  */
-export const App: React.FC<AppProps> = ({ wsUrl }) => {
-  const url = wsUrl || WS_URL;
-
-  // Dashboard store state
-  const currentView = useDashboardStore((state) => state.currentView);
-  const connectionStatus = useDashboardStore((state) => state.connectionStatus);
-  const reconnectAttempts = useDashboardStore((state) => state.reconnectAttempts);
-  const setConnectionStatus = useDashboardStore((state) => state.setConnectionStatus);
-  const setReconnectAttempts = useDashboardStore((state) => state.setReconnectAttempts);
-  const setCurrentView = useDashboardStore((state) => state.setCurrentView);
-  const setSelectedAgent = useDashboardStore((state) => state.setSelectedAgent);
-  const setSelectedTask = useDashboardStore((state) => state.setSelectedTask);
-  const handleAgentStatus = useDashboardStore((state) => state.handleAgentStatus);
-  const handleTaskUpdate = useDashboardStore((state) => state.handleTaskUpdate);
-  const handleMessage = useDashboardStore((state) => state.handleMessage);
-  const handleMemoryOperation = useDashboardStore((state) => state.handleMemoryOperation);
-  const handleTopologyChange = useDashboardStore((state) => state.handleTopologyChange);
-  const handleMetricsUpdate = useDashboardStore((state) => state.handleMetricsUpdate);
-  const toggleMessagesPaused = useDashboardStore((state) => state.toggleMessagesPaused);
-
-  // WebSocket connection
-  const { connect, connectionStatus: wsStatus, on } = useWebSocket(url, {
-    autoConnect: true,
-    maxReconnectAttempts: 10,
-    reconnectDelay: 1000,
-    heartbeatInterval: 30000,
-    onStatusChange: (status) => {
-      setConnectionStatus(status);
-    },
-  });
-
-  // Track reconnect attempts
-  const reconnectCountRef = useRef(0);
-
-  // Subscribe to WebSocket events
-  useEffect(() => {
-    const unsubscribers: (() => void)[] = [];
-
-    // Agent status events
-    unsubscribers.push(
-      on('agent:status', (event: any) => {
-        handleAgentStatus(event);
-      })
-    );
-
-    // Task update events
-    unsubscribers.push(
-      on('task:update', (event: any) => {
-        handleTaskUpdate(event);
-      })
-    );
-
-    // Message events
-    unsubscribers.push(
-      on('message:sent', (event: any) => {
-        handleMessage(event);
-      })
-    );
-
-    // Memory operation events
-    unsubscribers.push(
-      on('memory:operation', (event: any) => {
-        handleMemoryOperation(event);
-      })
-    );
-
-    // Topology change events
-    unsubscribers.push(
-      on('topology:change', (event: any) => {
-        handleTopologyChange(event);
-      })
-    );
-
-    // Metrics update events
-    unsubscribers.push(
-      on('metrics:update', (event: any) => {
-        if (event.metrics) {
-          handleMetricsUpdate({
-            type: 'metrics:update',
-            activeAgents: event.metrics.activeAgents || 0,
-            tasksPerMinute: event.metrics.pendingTasks || 0,
-            messagesPerSecond: event.metrics.messagesPerSecond || 0,
-            memoryOpsPerSecond: event.metrics.memoryOpsPerSecond || 0,
-            timestamp: event.timestamp || Date.now(),
-          });
-        }
-      })
-    );
-
-    return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
-    };
-  }, [
-    on,
-    handleAgentStatus,
-    handleTaskUpdate,
-    handleMessage,
-    handleMemoryOperation,
-    handleTopologyChange,
-    handleMetricsUpdate,
-  ]);
-
-  // Reconnect handler
-  const handleReconnect = useCallback(async () => {
-    reconnectCountRef.current += 1;
-    setReconnectAttempts(reconnectCountRef.current);
-    try {
-      await connect();
-      reconnectCountRef.current = 0;
-      setReconnectAttempts(0);
-    } catch (error) {
-      console.error('Reconnection failed:', error);
-    }
-  }, [connect, setReconnectAttempts]);
-
-  // Close panel handler
-  const handleClosePanel = useCallback(() => {
-    setSelectedAgent(null);
-    setSelectedTask(null);
-  }, [setSelectedAgent, setSelectedTask]);
-
-  // Search focus handler (placeholder)
-  const handleSearch = useCallback(() => {
-    // TODO: Focus search input when implemented
-    console.log('Search focus requested');
-  }, []);
+const MetricCard: React.FC<{
+  title: string;
+  value: number;
+  total?: number;
+  color: 'green' | 'blue' | 'amber' | 'purple' | 'red';
+}> = ({ title, value, total, color }) => {
+  const colors = {
+    green: 'text-green-400 bg-green-400/10',
+    blue: 'text-blue-400 bg-blue-400/10',
+    amber: 'text-amber-400 bg-amber-400/10',
+    purple: 'text-purple-400 bg-purple-400/10',
+    red: 'text-red-400 bg-red-400/10',
+  };
 
   return (
-    <DashboardLayout
-      currentView={currentView}
-      connectionStatus={connectionStatus}
-      reconnectAttempts={reconnectAttempts}
-      onViewChange={setCurrentView}
-      onReconnect={handleReconnect}
-      onTogglePause={toggleMessagesPaused}
-      onClosePanel={handleClosePanel}
-      onSearch={handleSearch}
-    >
-      <ViewRouter view={currentView} />
+    <div className={`rounded-lg p-4 ${colors[color]}`}>
+      <p className="text-gray-400 text-sm">{title}</p>
+      <p className="text-2xl font-bold mt-1">
+        {value}
+        {total !== undefined && <span className="text-gray-500 text-lg"> / {total}</span>}
+      </p>
+    </div>
+  );
+};
+
+/**
+ * Overview View - Dashboard summary with metrics
+ */
+const OverviewView: React.FC = () => {
+  const agents = useAgentsArray();
+  const tasks = useTaskStore((s) => s.tasks);
+  const messages = useMessageStore((s) => s.messages);
+  const memoryOps = useMemoryStore((s) => s.operations);
+
+  const activeAgents = agents.filter((a) => a.status === 'active' || a.status === 'busy').length;
+  const pendingTasks = Array.from(tasks.values()).filter((t) => t.status === 'pending').length;
+  const inProgressTasks = Array.from(tasks.values()).filter((t) => t.status === 'running').length;
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-white">Overview</h2>
+
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MetricCard title="Active Agents" value={activeAgents} total={agents.length} color="green" />
+        <MetricCard title="Pending Tasks" value={pendingTasks} color="amber" />
+        <MetricCard title="In Progress" value={inProgressTasks} color="blue" />
+        <MetricCard title="Messages" value={messages.length} color="purple" />
+      </div>
+
+      {/* Quick Agent Overview */}
+      <div className="bg-gray-800 rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-white mb-4">Agents</h3>
+        {agents.length === 0 ? (
+          <p className="text-gray-400">No agents spawned yet. Start a swarm to see agents here.</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {agents.slice(0, 8).map((agent) => (
+              <div key={agent.id} className="bg-gray-700 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${getStatusColor(agent.status)}`} />
+                  <span className="text-white font-medium truncate">{agent.name}</span>
+                </div>
+                <p className="text-gray-400 text-sm mt-1">{agent.type}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-gray-800 rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
+        {messages.length === 0 && memoryOps.length === 0 ? (
+          <p className="text-gray-400">No activity yet. Events will appear here when agents start communicating.</p>
+        ) : (
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {messages.slice(0, 5).map((msg, i) => (
+              <div key={msg.id || i} className="text-sm text-gray-300">
+                <span className="text-blue-400">{msg.source}</span>
+                <span className="text-gray-500"> → </span>
+                <span className="text-green-400">{msg.target}</span>
+                <span className="text-gray-500">: </span>
+                <span>{msg.type}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Agents View
+ */
+const AgentsView: React.FC = () => {
+  const selectedAgent = useDashboardStore((s) => s.selectedAgent);
+  const setSelectedAgent = useDashboardStore((s) => s.setSelectedAgent);
+
+  return (
+    <div className="h-full">
+      <h2 className="text-2xl font-bold text-white mb-6">Agents</h2>
+      <AgentGrid onAgentSelect={(agent) => setSelectedAgent(agent.id)} />
+
+      <AnimatePresence>
+        {selectedAgent && (
+          <AgentDetail agentId={selectedAgent} onClose={() => setSelectedAgent(null)} />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+/**
+ * Tasks View
+ */
+const TasksView: React.FC = () => {
+  const [viewMode, setViewMode] = useState<'timeline' | 'kanban'>('timeline');
+
+  return (
+    <div className="h-full">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-white">Tasks</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setViewMode('timeline')}
+            className={`px-3 py-1 rounded ${viewMode === 'timeline' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+          >
+            Timeline
+          </button>
+          <button
+            onClick={() => setViewMode('kanban')}
+            className={`px-3 py-1 rounded ${viewMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+          >
+            Kanban
+          </button>
+        </div>
+      </div>
+
+      {viewMode === 'timeline' ? <TaskTimeline /> : <TaskKanban />}
+    </div>
+  );
+};
+
+/**
+ * Messages View
+ */
+const MessagesView: React.FC = () => {
+  return (
+    <div className="h-full">
+      <h2 className="text-2xl font-bold text-white mb-6">Messages</h2>
+      <MessageStream />
+    </div>
+  );
+};
+
+/**
+ * Memory View
+ */
+const MemoryView: React.FC = () => {
+  return (
+    <div className="h-full">
+      <h2 className="text-2xl font-bold text-white mb-6">Memory Operations</h2>
+      <MemoryLog />
+    </div>
+  );
+};
+
+/**
+ * Topology View
+ */
+const TopologyView: React.FC = () => {
+  const agents = useAgentsArray();
+
+  // Convert agents to topology nodes
+  const nodes = agents.map((agent) => ({
+    id: agent.id,
+    name: agent.name,
+    type: agent.type,
+    status: agent.status as 'active' | 'idle' | 'busy' | 'error' | 'spawning',
+    connections: [] as string[],
+  }));
+
+  // Create edges between coordinator and other agents
+  const coordinator = agents.find((a) => a.type === 'coordinator');
+  const edges = coordinator
+    ? agents
+        .filter((a) => a.id !== coordinator.id)
+        .map((a, i) => ({
+          id: `edge-${i}`,
+          source: coordinator.id,
+          target: a.id,
+          health: 'healthy' as const,
+          isActive: a.status === 'active' || a.status === 'busy',
+        }))
+    : [];
+
+  return (
+    <div className="h-full">
+      <h2 className="text-2xl font-bold text-white mb-6">Swarm Topology</h2>
+      <div className="bg-gray-800 rounded-lg h-[calc(100%-4rem)]">
+        {agents.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-400">
+            No agents to display. Start a swarm to see the topology.
+          </div>
+        ) : (
+          <LiveTopology
+            nodes={nodes}
+            edges={edges}
+            width={800}
+            height={600}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * View Router
+ */
+const ViewRouter: React.FC = () => {
+  const selectedView = useDashboardStore((s) => s.selectedView);
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={selectedView}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2 }}
+        className="h-full"
+      >
+        {selectedView === 'overview' && <OverviewView />}
+        {selectedView === 'agents' && <AgentsView />}
+        {selectedView === 'tasks' && <TasksView />}
+        {selectedView === 'messages' && <MessagesView />}
+        {selectedView === 'memory' && <MemoryView />}
+        {selectedView === 'topology' && <TopologyView />}
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+/**
+ * Main App Component
+ */
+const App: React.FC = () => {
+  const addAgent = useAgentStore((s) => s.addAgent);
+  const addTask = useTaskStore((s) => s.addTask);
+  const addMessage = useMessageStore((s) => s.addMessage);
+
+  // Add demo data on mount so the UI isn't empty
+  useEffect(() => {
+    // Demo agents
+    const demoAgents: AgentState[] = [
+      { id: 'coord-1', name: 'Coordinator', type: 'coordinator', status: 'active', capabilities: ['orchestrate'], maxConcurrentTasks: 5, currentTaskCount: 2, createdAt: new Date(), lastActivity: new Date(), priority: 10 },
+      { id: 'coder-1', name: 'Coder-Alpha', type: 'coder', status: 'busy', capabilities: ['write', 'edit'], maxConcurrentTasks: 3, currentTaskCount: 1, createdAt: new Date(), lastActivity: new Date(), priority: 5 },
+      { id: 'test-1', name: 'Tester-Beta', type: 'tester', status: 'idle', capabilities: ['test', 'validate'], maxConcurrentTasks: 2, currentTaskCount: 0, createdAt: new Date(), lastActivity: new Date(), priority: 3 },
+      { id: 'review-1', name: 'Reviewer-Gamma', type: 'reviewer', status: 'active', capabilities: ['review', 'analyze'], maxConcurrentTasks: 2, currentTaskCount: 1, createdAt: new Date(), lastActivity: new Date(), priority: 4 },
+    ];
+    demoAgents.forEach((agent) => addAgent(agent));
+
+    // Demo tasks
+    const demoTasks: TaskState[] = [
+      { id: 'task-1', type: 'implementation', description: 'Implement WebSocket connection', status: 'completed', priority: 10, createdAt: new Date(Date.now() - 300000), completedAt: new Date() },
+      { id: 'task-2', type: 'implementation', description: 'Create agent grid component', status: 'running', priority: 5, createdAt: new Date(Date.now() - 200000), startedAt: new Date(), assignedAgent: 'coder-1' },
+      { id: 'task-3', type: 'testing', description: 'Write unit tests', status: 'pending', priority: 5, createdAt: new Date(Date.now() - 100000) },
+      { id: 'task-4', type: 'review', description: 'Review PR for topology', status: 'running', priority: 8, createdAt: new Date(Date.now() - 50000), startedAt: new Date(), assignedAgent: 'review-1' },
+    ];
+    demoTasks.forEach((task) => addTask(task));
+
+    // Demo messages
+    const demoMessages: Message[] = [
+      { id: 'msg-1', source: 'coord-1', target: 'coder-1', type: 'task', direction: 'outbound', content: 'Implement feature X', timestamp: new Date(Date.now() - 60000) },
+      { id: 'msg-2', source: 'coder-1', target: 'coord-1', type: 'response', direction: 'inbound', content: 'Feature X completed', timestamp: new Date(Date.now() - 30000) },
+      { id: 'msg-3', source: 'coord-1', target: 'test-1', type: 'task', direction: 'outbound', content: 'Run tests for feature X', timestamp: new Date(Date.now() - 15000) },
+    ];
+    demoMessages.forEach((msg) => addMessage(msg));
+  }, [addAgent, addTask, addMessage]);
+
+  return (
+    <DashboardLayout>
+      <ViewRouter />
     </DashboardLayout>
   );
 };

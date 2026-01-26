@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import type { DashboardView } from '../../types/events';
+import type { DashboardView } from '../../store/dashboardStore';
 
 interface NavItem {
   view: DashboardView;

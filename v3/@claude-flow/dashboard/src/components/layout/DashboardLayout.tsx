@@ -6,18 +6,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
-import type { DashboardView, ConnectionStatus } from '../../types/events';
+import { useDashboardStore, type DashboardView } from '../../store/dashboardStore';
+import { useMessageStore } from '../../store/messageStore';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  currentView: DashboardView;
-  connectionStatus: ConnectionStatus;
-  reconnectAttempts: number;
-  onViewChange: (view: DashboardView) => void;
-  onReconnect: () => void;
-  onTogglePause?: () => void;
-  onClosePanel?: () => void;
-  onSearch?: () => void;
 }
 
 const viewShortcuts: Record<string, DashboardView> = {
@@ -29,17 +22,15 @@ const viewShortcuts: Record<string, DashboardView> = {
   '6': 'topology',
 };
 
-export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
-  children,
-  currentView,
-  connectionStatus,
-  reconnectAttempts,
-  onViewChange,
-  onReconnect,
-  onTogglePause,
-  onClosePanel,
-  onSearch,
-}) => {
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+  // Get state from stores
+  const selectedView = useDashboardStore((s) => s.selectedView);
+  const connectionStatus = useDashboardStore((s) => s.connectionStatus);
+  const setSelectedView = useDashboardStore((s) => s.setSelectedView);
+  const setSelectedAgent = useDashboardStore((s) => s.setSelectedAgent);
+  const setSelectedTask = useDashboardStore((s) => s.setSelectedTask);
+  const togglePause = useMessageStore((s) => s.togglePause);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -61,7 +52,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       const view = viewShortcuts[event.key];
       if (view) {
         event.preventDefault();
-        onViewChange(view);
+        setSelectedView(view);
         return;
       }
 
@@ -70,7 +61,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         case ' ':
           // Space to toggle pause
           event.preventDefault();
-          onTogglePause?.();
+          togglePause();
           break;
         case 'Escape':
           // Escape to close panels
@@ -79,13 +70,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           } else if (showSettings) {
             setShowSettings(false);
           } else {
-            onClosePanel?.();
+            setSelectedAgent(null);
+            setSelectedTask(null);
           }
           break;
         case '/':
           // / to focus search
           event.preventDefault();
-          onSearch?.();
+          // TODO: Implement search focus
           break;
         case '?':
           // ? to show help
@@ -94,7 +86,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           break;
       }
     },
-    [onViewChange, onTogglePause, onClosePanel, onSearch, showHelp, showSettings]
+    [setSelectedView, togglePause, setSelectedAgent, setSelectedTask, showHelp, showSettings]
   );
 
   useEffect(() => {
@@ -119,8 +111,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden">
       {/* Sidebar */}
       <Sidebar
-        currentView={currentView}
-        onViewChange={onViewChange}
+        currentView={selectedView}
+        onViewChange={setSelectedView}
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
       />
@@ -130,8 +122,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {/* Header */}
         <Header
           connectionStatus={connectionStatus}
-          reconnectAttempts={reconnectAttempts}
-          onReconnect={onReconnect}
+          reconnectAttempts={0}
+          onReconnect={() => {}}
           onSettingsClick={() => setShowSettings(true)}
           onHelpClick={() => setShowHelp(true)}
         />
