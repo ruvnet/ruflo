@@ -11,7 +11,8 @@ import { useDashboardStore } from './store/dashboardStore';
 import { useAgentStore, useAgentsArray, type AgentState } from './store/agentStore';
 import { useTaskStore, type TaskState } from './store/taskStore';
 import { useMessageStore, type Message } from './store/messageStore';
-import { useMemoryStore, type MemoryOperation } from './store/memoryStore';
+import { useMemoryStore } from './stores/memoryStore';
+import type { MemoryOperation } from './types/memory';
 
 /**
  * WebSocket context for sharing connection controls
@@ -517,24 +518,21 @@ const useWebSocket = () => {
             case 'memory:update':
             case 'memory:delete':
             case 'memory:search': {
-              const op = data as Partial<MemoryOperation>;
-              const timestamp = op.timestamp
-                ? (op.timestamp instanceof Date ? op.timestamp : new Date(op.timestamp as unknown as string | number))
-                : new Date();
+              const op = data as Record<string, unknown>;
+              const timestamp = typeof op.timestamp === 'number'
+                ? op.timestamp
+                : Date.now();
               addOperation({
-                id: op.id,
-                operation: op.operation ?? 'retrieve',
-                status: op.status ?? 'success',
-                namespace: op.namespace ?? 'default',
-                key: op.key ?? '',
-                type: op.type ?? 'session',
-                timestamp,
+                id: (op.id as string) ?? `mem-${Date.now()}`,
+                operation: (op.operation as MemoryOperation['operation']) ?? 'retrieve',
+                namespace: (op.namespace as string) ?? 'default',
+                key: op.key as string,
                 value: op.value,
-                duration: op.duration,
-                size: op.size,
-                agentId: op.agentId,
-                sessionId: op.sessionId,
-                error: op.error,
+                latency: (op.duration as number) ?? (op.latency as number) ?? 0,
+                success: op.status === 'success' || op.success === true,
+                error: op.error as string,
+                agentId: op.agentId as string,
+                timestamp,
               });
               break;
             }
