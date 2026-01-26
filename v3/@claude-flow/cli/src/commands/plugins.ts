@@ -69,7 +69,7 @@ const listCommand: Command = {
 
         output.printTable({
           columns: [
-            { key: 'name', header: 'Plugin', width: 38 },
+            { key: 'name', header: 'Plugin', width: 45 },
             { key: 'version', header: 'Version', width: 14 },
             { key: 'source', header: 'Source', width: 10 },
             { key: 'status', header: 'Status', width: 10 },
@@ -158,7 +158,7 @@ const listCommand: Command = {
 
       output.printTable({
         columns: [
-          { key: 'name', header: 'Plugin', width: 38 },
+          { key: 'name', header: 'Plugin', width: 45 },
           { key: 'version', header: 'Version', width: 14 },
           { key: 'type', header: 'Type', width: 12 },
           { key: 'downloads', header: 'Downloads', width: 10, align: 'right' },
@@ -802,7 +802,7 @@ const searchCommand: Command = {
 
       output.printTable({
         columns: [
-          { key: 'name', header: 'Plugin', width: 38 },
+          { key: 'name', header: 'Plugin', width: 45 },
           { key: 'description', header: 'Description', width: 40 },
           { key: 'downloads', header: 'Downloads', width: 10, align: 'right' },
         ],

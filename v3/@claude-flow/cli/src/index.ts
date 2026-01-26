@@ -11,7 +11,7 @@ import { dirname, join } from 'path';
 import type { Command, CommandContext, CommandResult, V3Config, CLIError } from './types.js';
 import { CommandParser, commandParser } from './parser.js';
 import { OutputFormatter, output } from './output.js';
-import { commands, commandRegistry, getCommand, getCommandAsync, getCommandNames, hasCommand } from './commands/index.js';
+import { commands, commandsByCategory, commandRegistry, getCommand, getCommandAsync, getCommandNames, hasCommand, COMMAND_CATEGORIES } from './commands/index.js';
 import { suggestCommand } from './suggest.js';
 import { runStartupUpdateCheck } from './update/index.js';
 
@@ -268,8 +268,45 @@ export class CLI {
     this.output.writeln(`  ${this.name} <command> [subcommand] [options]`);
     this.output.writeln();
 
-    this.output.writeln(this.output.bold('COMMANDS:'));
-    for (const cmd of commands) {
+    // Primary Commands
+    this.output.writeln(this.output.bold('PRIMARY COMMANDS:'));
+    for (const cmd of commandsByCategory.primary) {
+      if (cmd.hidden) continue;
+      const name = cmd.name.padEnd(12);
+      this.output.writeln(`  ${this.output.highlight(name)} ${cmd.description}`);
+    }
+    this.output.writeln();
+
+    // Advanced Commands
+    this.output.writeln(this.output.bold('ADVANCED COMMANDS:'));
+    for (const cmd of commandsByCategory.advanced) {
+      if (cmd.hidden) continue;
+      const name = cmd.name.padEnd(12);
+      this.output.writeln(`  ${this.output.highlight(name)} ${cmd.description}`);
+    }
+    this.output.writeln();
+
+    // Utility Commands
+    this.output.writeln(this.output.bold('UTILITY COMMANDS:'));
+    for (const cmd of commandsByCategory.utility) {
+      if (cmd.hidden) continue;
+      const name = cmd.name.padEnd(12);
+      this.output.writeln(`  ${this.output.highlight(name)} ${cmd.description}`);
+    }
+    this.output.writeln();
+
+    // Analysis Commands
+    this.output.writeln(this.output.bold('ANALYSIS COMMANDS:'));
+    for (const cmd of commandsByCategory.analysis) {
+      if (cmd.hidden) continue;
+      const name = cmd.name.padEnd(12);
+      this.output.writeln(`  ${this.output.highlight(name)} ${cmd.description}`);
+    }
+    this.output.writeln();
+
+    // Management Commands
+    this.output.writeln(this.output.bold('MANAGEMENT COMMANDS:'));
+    for (const cmd of commandsByCategory.management) {
       if (cmd.hidden) continue;
       const name = cmd.name.padEnd(12);
       this.output.writeln(`  ${this.output.highlight(name)} ${cmd.description}`);
@@ -303,6 +340,7 @@ export class CLI {
 
     this.output.writeln(this.output.dim('Run "claude-flow <command> --help" for command help'));
     this.output.writeln();
+    this.output.writeln(this.output.dim('🔗 github.com/ruvnet/claude-flow'));
     this.output.writeln(this.output.dim('Created with ❤️ by ruv.io'));
     this.output.writeln();
   }
