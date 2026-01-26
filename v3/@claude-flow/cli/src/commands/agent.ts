@@ -7,6 +7,7 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
+import { getEventEmitter, type AgentType } from '../services/event-emitter.js';
 
 // Available agent types with descriptions
 const AGENT_TYPES = [
@@ -146,6 +147,16 @@ const spawnCommand: Command = {
 
       output.writeln();
       output.printSuccess(`Agent ${agentName} spawned successfully`);
+
+      // Emit event for Live Operations Dashboard
+      const emitter = getEventEmitter();
+      emitter.emitAgentStatus({
+        agentId: result.agentId,
+        name: agentName,
+        agentType: agentType as AgentType,
+        status: 'active',
+        previousStatus: 'spawning',
+      });
 
       if (ctx.flags.format === 'json') {
         output.printJson(result);

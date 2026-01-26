@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS Variables */
+:root {
+  /* Status Colors */
+  --status-active: #22c55e;
+  --status-idle: #64748b;
+  --status-busy: #f59e0b;
+  --status-error: #ef4444;
+  --status-spawning: #3b82f6;
+
+  /* Operation Colors */
+  --op-store: #22c55e;
+  --op-retrieve: #3b82f6;
+  --op-search: #a855f7;
+  --op-delete: #ef4444;
+
+  /* Message Types */
+  --msg-task: #3b82f6;
+  --msg-result: #22c55e;
+  --msg-query: #f59e0b;
+  --msg-error: #ef4444;
+
+  /* Background Colors */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+
+  /* Font */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Custom animations */
+@keyframes pulse-status {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes message-particle {
+  0% {
+    offset-distance: 0%;
+    opacity: 1;
+  }
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-pulse-status {
+  animation: pulse-status 2s ease-in-out infinite;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible styles for accessibility */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Button base styles */
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-primary;
+}
+
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500;
+}
+
+.btn-secondary {
+  @apply bg-bg-tertiary hover:bg-gray-600 text-white focus:ring-gray-500;
+}
+
+.btn-ghost {
+  @apply bg-transparent hover:bg-bg-tertiary text-gray-300 focus:ring-gray-500;
+}
+
+/* Card styles */
+.card {
+  @apply bg-bg-secondary rounded-lg border border-gray-700/50;
+}
+
+.card-header {
+  @apply px-4 py-3 border-b border-gray-700/50;
+}
+
+.card-body {
+  @apply p-4;
+}
+
+/* Badge styles */
+.badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-success {
+  @apply bg-green-500/20 text-green-400;
+}
+
+.badge-warning {
+  @apply bg-amber-500/20 text-amber-400;
+}
+
+.badge-error {
+  @apply bg-red-500/20 text-red-400;
+}
+
+.badge-info {
+  @apply bg-blue-500/20 text-blue-400;
+}
+
+/* Input styles */
+.input {
+  @apply w-full px-3 py-2 bg-bg-tertiary border border-gray-600 rounded-lg;
+  @apply text-white placeholder-gray-400;
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+/* Status indicator */
+.status-indicator {
+  @apply w-2.5 h-2.5 rounded-full;
+}
+
+.status-indicator-active {
+  @apply bg-status-active animate-pulse-status;
+}
+
+.status-indicator-idle {
+  @apply bg-status-idle;
+}
+
+.status-indicator-busy {
+  @apply bg-status-busy animate-pulse-status;
+}
+
+.status-indicator-error {
+  @apply bg-status-error;
+}
+
+.status-indicator-spawning {
+  @apply bg-status-spawning animate-pulse-status;
+}
+
+/* Tooltip */
+.tooltip {
+  @apply absolute z-50 px-2 py-1 text-xs text-white bg-gray-800 rounded shadow-lg;
+  @apply invisible opacity-0 transition-all duration-200;
+}
+
+.tooltip-trigger:hover .tooltip {
+  @apply visible opacity-100;
+}
+
+/* Virtual scrolling container */
+.virtual-scroll-container {
+  @apply overflow-auto;
+  contain: strict;
+}

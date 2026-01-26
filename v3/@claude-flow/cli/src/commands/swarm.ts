@@ -7,6 +7,7 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { select, confirm, multiSelect } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
+import { getEventEmitter, type TopologyType } from '../services/event-emitter.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -303,6 +304,21 @@ const initCommand: Command = {
 
       output.writeln();
       output.printSuccess('Swarm initialized successfully');
+
+      // Emit events for Live Operations Dashboard
+      const emitter = getEventEmitter();
+      emitter.emitSwarmInit(result.swarmId, {
+        topology: result.topology as TopologyType,
+        maxAgents: result.config.maxAgents,
+        strategy: (ctx.flags.strategy as string) || 'development',
+      });
+      emitter.emitTopologyChange({
+        topology: result.topology as TopologyType,
+        nodes: [],
+        edges: [],
+        reason: 'Swarm initialized',
+        coordinatorId: result.swarmId,
+      });
 
       // Save swarm state locally for status command to read
       const swarmDir = path.join(process.cwd(), '.swarm');
