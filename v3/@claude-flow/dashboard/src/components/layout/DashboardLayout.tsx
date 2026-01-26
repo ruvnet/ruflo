@@ -8,6 +8,7 @@ import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { useDashboardStore, type DashboardView } from '../../store/dashboardStore';
 import { useMessageStore } from '../../store/messageStore';
+import { useWebSocketContext } from '../../App';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -30,6 +31,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const setSelectedAgent = useDashboardStore((s) => s.setSelectedAgent);
   const setSelectedTask = useDashboardStore((s) => s.setSelectedTask);
   const togglePause = useMessageStore((s) => s.togglePause);
+
+  // Get WebSocket context for reconnection
+  const { reconnect, reconnectAttempts } = useWebSocketContext();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -122,8 +126,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         {/* Header */}
         <Header
           connectionStatus={connectionStatus}
-          reconnectAttempts={0}
-          onReconnect={() => {}}
+          reconnectAttempts={reconnectAttempts}
+          onReconnect={reconnect}
           onSettingsClick={() => setShowSettings(true)}
           onHelpClick={() => setShowHelp(true)}
         />

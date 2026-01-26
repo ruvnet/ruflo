@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { ConnectionStatus } from './ConnectionStatus';
-import type { ConnectionStatus as ConnectionStatusType } from '../../types/events';
+import type { ConnectionStatus as ConnectionStatusType } from '../../store/dashboardStore';
 
 interface HeaderProps {
   connectionStatus: ConnectionStatusType;

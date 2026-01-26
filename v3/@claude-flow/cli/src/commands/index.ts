@@ -37,6 +37,7 @@ const commandLoaders: Record<string, CommandLoader> = {
   'hive-mind': () => import('./hive-mind.js'),
   process: () => import('./process.js'),
   daemon: () => import('./daemon.js'),
+  'event-server': () => import('./event-server.js'),
   // V3 Advanced Commands (less frequently used - lazy load)
   neural: () => import('./neural.js'),
   security: () => import('./security.js'),
@@ -113,6 +114,7 @@ import { memoryCommand } from './memory.js';
 import { mcpCommand } from './mcp.js';
 import { hooksCommand } from './hooks.js';
 import { daemonCommand } from './daemon.js';
+import { eventServerCommand } from './event-server.js';
 import { doctorCommand } from './doctor.js';
 import { embeddingsCommand } from './embeddings.js';
 import { neuralCommand } from './neural.js';
@@ -133,6 +135,7 @@ loadedCommands.set('memory', memoryCommand);
 loadedCommands.set('mcp', mcpCommand);
 loadedCommands.set('hooks', hooksCommand);
 loadedCommands.set('daemon', daemonCommand);
+loadedCommands.set('event-server', eventServerCommand);
 loadedCommands.set('doctor', doctorCommand);
 loadedCommands.set('embeddings', embeddingsCommand);
 loadedCommands.set('neural', neuralCommand);
@@ -157,6 +160,7 @@ export { memoryCommand } from './memory.js';
 export { mcpCommand } from './mcp.js';
 export { hooksCommand } from './hooks.js';
 export { daemonCommand } from './daemon.js';
+export { eventServerCommand } from './event-server.js';
 export { doctorCommand } from './doctor.js';
 export { embeddingsCommand } from './embeddings.js';
 export { neuralCommand } from './neural.js';
@@ -187,6 +191,7 @@ export async function getRouteCommand() { return loadCommand('route'); }
 export async function getProgressCommand() { return loadCommand('progress'); }
 export async function getIssuesCommand() { return loadCommand('issues'); }
 export async function getRuvectorCommand() { return loadCommand('ruvector'); }
+export async function getEventServerCommand() { return loadCommand('event-server'); }
 
 /**
  * Core commands loaded synchronously (available immediately)
@@ -205,6 +210,7 @@ export const commands: Command[] = [
   mcpCommand,
   hooksCommand,
   daemonCommand,
+  eventServerCommand,
   doctorCommand,
   embeddingsCommand,
   neuralCommand,

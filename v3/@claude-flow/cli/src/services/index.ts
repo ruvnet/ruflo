@@ -11,6 +11,47 @@ export {
   type WorkerType,
 } from './worker-daemon.js';
 
+// Event Emitter Bridge for Dashboard
+export {
+  EventEmitterBridge,
+  getEventEmitter,
+  resetEventEmitter,
+  type AgentStatusEvent,
+  type TaskUpdateEvent,
+  type MessageEvent,
+  type MemoryOperationEvent,
+  type TopologyChangeEvent,
+  type MetricsUpdateEvent,
+  type SwarmEvent,
+  type ConsensusEvent,
+  type ErrorEvent,
+  type DashboardEvent,
+  type EventServer as EventServerInterface,
+  type EventListener,
+  type BufferConfig,
+  type AgentStatus,
+  type AgentType,
+  type TaskStatus as DashboardTaskStatus,
+  type TaskPriority,
+  type MessageType,
+  type MessagePriority,
+  type MemoryOperationType,
+  type ExtendedMemoryOperationType,
+  type TopologyType,
+  type ErrorSeverity,
+  type SystemMetrics,
+  type AgentMetricsAggregate,
+  type TaskMetricsAggregate,
+  type MemoryMetricsAggregate,
+  type AgentNode,
+  type Connection,
+  type VectorSearchResult,
+  type TaskError,
+  type TaskResult,
+  type MessagePayload,
+  type SwarmConfig,
+} from './event-emitter.js';
+
 export {
   HeadlessWorkerExecutor,
   HEADLESS_WORKER_TYPES,
@@ -56,6 +97,19 @@ export {
   type WorkerRegistration,
   type TaskStatus,
 } from './worker-queue.js';
+
+// WebSocket Event Server
+export {
+  EventServer,
+  getEventServer,
+  startEventServer,
+  stopEventServer,
+  type EventServerConfig,
+  type EventChannel,
+  type ServerEvent,
+  type ClientMessage,
+  type ServerMessage,
+} from './event-server.js';
 
 // Re-export types
 export type { default as WorkerDaemonType } from './worker-daemon.js';

@@ -9,7 +9,7 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware';
 /**
  * Connection status for WebSocket or MCP connection
  */
-export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting' | 'error';
 
 /**
  * Available dashboard views

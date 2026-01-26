@@ -3,7 +3,7 @@
  * Real-time visibility into Claude Flow agent activities
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback, createContext, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Stores
@@ -11,7 +11,22 @@ import { useDashboardStore } from './store/dashboardStore';
 import { useAgentStore, useAgentsArray, type AgentState } from './store/agentStore';
 import { useTaskStore, type TaskState } from './store/taskStore';
 import { useMessageStore, type Message } from './store/messageStore';
-import { useMemoryStore } from './store/memoryStore';
+import { useMemoryStore, type MemoryOperation } from './store/memoryStore';
+
+/**
+ * WebSocket context for sharing connection controls
+ */
+interface WebSocketContextValue {
+  reconnect: () => void;
+  reconnectAttempts: number;
+}
+
+const WebSocketContext = createContext<WebSocketContextValue>({
+  reconnect: () => {},
+  reconnectAttempts: 0,
+});
+
+export const useWebSocketContext = () => useContext(WebSocketContext);
 
 // Components
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -287,6 +302,362 @@ const ViewRouter: React.FC = () => {
 };
 
 /**
+ * WebSocket configuration
+ */
+const WS_URL = 'ws://localhost:3001';
+const RECONNECT_BASE_DELAY = 1000;
+const RECONNECT_MAX_DELAY = 30000;
+const RECONNECT_MAX_ATTEMPTS = 10;
+
+/**
+ * WebSocket event types from the server
+ */
+interface WSEvent {
+  channel: string;
+  event: string;
+  data: unknown;
+  timestamp?: string;
+}
+
+/**
+ * Demo data for fallback when WebSocket is not connected
+ */
+const getDemoAgents = (): AgentState[] => [
+  { id: 'coord-1', name: 'Coordinator', type: 'coordinator', status: 'active', capabilities: ['orchestrate'], maxConcurrentTasks: 5, currentTaskCount: 2, createdAt: new Date(), lastActivity: new Date(), priority: 10 },
+  { id: 'coder-1', name: 'Coder-Alpha', type: 'coder', status: 'busy', capabilities: ['write', 'edit'], maxConcurrentTasks: 3, currentTaskCount: 1, createdAt: new Date(), lastActivity: new Date(), priority: 5 },
+  { id: 'test-1', name: 'Tester-Beta', type: 'tester', status: 'idle', capabilities: ['test', 'validate'], maxConcurrentTasks: 2, currentTaskCount: 0, createdAt: new Date(), lastActivity: new Date(), priority: 3 },
+  { id: 'review-1', name: 'Reviewer-Gamma', type: 'reviewer', status: 'active', capabilities: ['review', 'analyze'], maxConcurrentTasks: 2, currentTaskCount: 1, createdAt: new Date(), lastActivity: new Date(), priority: 4 },
+];
+
+const getDemoTasks = (): TaskState[] => [
+  { id: 'task-1', type: 'implementation', description: 'Implement WebSocket connection', status: 'completed', priority: 10, createdAt: new Date(Date.now() - 300000), completedAt: new Date() },
+  { id: 'task-2', type: 'implementation', description: 'Create agent grid component', status: 'running', priority: 5, createdAt: new Date(Date.now() - 200000), startedAt: new Date(), assignedAgent: 'coder-1' },
+  { id: 'task-3', type: 'testing', description: 'Write unit tests', status: 'pending', priority: 5, createdAt: new Date(Date.now() - 100000) },
+  { id: 'task-4', type: 'review', description: 'Review PR for topology', status: 'running', priority: 8, createdAt: new Date(Date.now() - 50000), startedAt: new Date(), assignedAgent: 'review-1' },
+];
+
+const getDemoMessages = (): Message[] => [
+  { id: 'msg-1', source: 'coord-1', target: 'coder-1', type: 'task', direction: 'outbound', content: 'Implement feature X', timestamp: new Date(Date.now() - 60000) },
+  { id: 'msg-2', source: 'coder-1', target: 'coord-1', type: 'response', direction: 'inbound', content: 'Feature X completed', timestamp: new Date(Date.now() - 30000) },
+  { id: 'msg-3', source: 'coord-1', target: 'test-1', type: 'task', direction: 'outbound', content: 'Run tests for feature X', timestamp: new Date(Date.now() - 15000) },
+];
+
+/**
+ * Custom hook for WebSocket connection with reconnection logic
+ */
+const useWebSocket = () => {
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const hasReceivedDataRef = useRef(false);
+
+  // Store actions
+  const setConnectionStatus = useDashboardStore((s) => s.setConnectionStatus);
+  const addAgent = useAgentStore((s) => s.addAgent);
+  const updateAgent = useAgentStore((s) => s.updateAgent);
+  const clearAgents = useAgentStore((s) => s.clearAgents);
+  const addTask = useTaskStore((s) => s.addTask);
+  const updateTask = useTaskStore((s) => s.updateTask);
+  const clearTasks = useTaskStore((s) => s.clearTasks);
+  const addMessage = useMessageStore((s) => s.addMessage);
+  const clearMessages = useMessageStore((s) => s.clearMessages);
+  const addOperation = useMemoryStore((s) => s.addOperation);
+  const clearOperations = useMemoryStore((s) => s.clearOperations);
+
+  // Load demo data as fallback
+  const loadDemoData = useCallback(() => {
+    getDemoAgents().forEach((agent) => addAgent(agent));
+    getDemoTasks().forEach((task) => addTask(task));
+    getDemoMessages().forEach((msg) => addMessage(msg));
+  }, [addAgent, addTask, addMessage]);
+
+  // Clear all stores when real data arrives
+  const clearAllStores = useCallback(() => {
+    clearAgents();
+    clearTasks();
+    clearMessages();
+    clearOperations();
+  }, [clearAgents, clearTasks, clearMessages, clearOperations]);
+
+  // Handle incoming WebSocket messages
+  const handleMessage = useCallback((event: MessageEvent) => {
+    try {
+      const wsEvent: WSEvent = JSON.parse(event.data);
+
+      // Clear demo data on first real data received
+      if (!hasReceivedDataRef.current) {
+        hasReceivedDataRef.current = true;
+        clearAllStores();
+      }
+
+      const data = wsEvent.data as Record<string, unknown>;
+
+      // Route events to appropriate stores based on channel and event type
+      switch (wsEvent.channel) {
+        case 'agents':
+          // Handle agent events
+          switch (wsEvent.event) {
+            case 'agent:status':
+            case 'agent:spawned':
+            case 'agent:updated': {
+              const agent = data as Partial<AgentState> & { id: string };
+              const existingAgent = useAgentStore.getState().agents.get(agent.id);
+              if (existingAgent) {
+                updateAgent(agent.id, agent);
+              } else {
+                // Create new agent with required fields
+                const createdAtValue = agent.createdAt
+                  ? (typeof agent.createdAt === 'string' ? new Date(agent.createdAt) : agent.createdAt)
+                  : new Date();
+                const lastActivityValue = agent.lastActivity
+                  ? (typeof agent.lastActivity === 'string' ? new Date(agent.lastActivity) : agent.lastActivity)
+                  : new Date();
+                addAgent({
+                  ...agent,
+                  id: agent.id,
+                  name: agent.name ?? agent.id,
+                  type: agent.type ?? 'custom',
+                  status: agent.status ?? 'spawning',
+                  capabilities: agent.capabilities ?? [],
+                  maxConcurrentTasks: agent.maxConcurrentTasks ?? 1,
+                  currentTaskCount: agent.currentTaskCount ?? 0,
+                  createdAt: createdAtValue,
+                  lastActivity: lastActivityValue,
+                  priority: agent.priority ?? 5,
+                });
+              }
+              break;
+            }
+            case 'agent:terminated': {
+              const agent = data as { id: string };
+              updateAgent(agent.id, { status: 'terminated' });
+              break;
+            }
+          }
+          break;
+
+        case 'tasks':
+          // Handle task events
+          switch (wsEvent.event) {
+            case 'task:update':
+            case 'task:created':
+            case 'task:assigned':
+            case 'task:started':
+            case 'task:completed':
+            case 'task:failed': {
+              const task = data as Partial<TaskState> & { id: string };
+              const existingTask = useTaskStore.getState().tasks.get(task.id);
+
+              // Helper to convert date fields
+              const toDate = (val: unknown): Date | undefined => {
+                if (!val) return undefined;
+                if (val instanceof Date) return val;
+                if (typeof val === 'string' || typeof val === 'number') return new Date(val);
+                return undefined;
+              };
+
+              if (existingTask) {
+                updateTask(task.id, {
+                  ...task,
+                  createdAt: toDate(task.createdAt) ?? existingTask.createdAt,
+                  startedAt: toDate(task.startedAt) ?? existingTask.startedAt,
+                  completedAt: toDate(task.completedAt) ?? existingTask.completedAt,
+                });
+              } else {
+                // Create new task with required fields
+                addTask({
+                  ...task,
+                  id: task.id,
+                  type: task.type ?? 'unknown',
+                  description: task.description ?? '',
+                  priority: task.priority ?? 5,
+                  status: task.status ?? 'pending',
+                  createdAt: toDate(task.createdAt) ?? new Date(),
+                  startedAt: toDate(task.startedAt),
+                  completedAt: toDate(task.completedAt),
+                });
+              }
+              break;
+            }
+          }
+          break;
+
+        case 'messages':
+          // Handle message events
+          switch (wsEvent.event) {
+            case 'message:sent':
+            case 'message:received': {
+              const msg = data as Partial<Message>;
+              const timestamp = msg.timestamp
+                ? (msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp as unknown as string | number))
+                : new Date();
+              addMessage({
+                id: msg.id,
+                source: msg.source ?? 'unknown',
+                target: msg.target,
+                type: msg.type ?? 'info',
+                direction: msg.direction ?? 'internal',
+                content: msg.content ?? '',
+                timestamp,
+                data: msg.data,
+                metadata: msg.metadata,
+              });
+              break;
+            }
+          }
+          break;
+
+        case 'memory':
+          // Handle memory events
+          switch (wsEvent.event) {
+            case 'memory:operation':
+            case 'memory:store':
+            case 'memory:retrieve':
+            case 'memory:update':
+            case 'memory:delete':
+            case 'memory:search': {
+              const op = data as Partial<MemoryOperation>;
+              const timestamp = op.timestamp
+                ? (op.timestamp instanceof Date ? op.timestamp : new Date(op.timestamp as unknown as string | number))
+                : new Date();
+              addOperation({
+                id: op.id,
+                operation: op.operation ?? 'retrieve',
+                status: op.status ?? 'success',
+                namespace: op.namespace ?? 'default',
+                key: op.key ?? '',
+                type: op.type ?? 'session',
+                timestamp,
+                value: op.value,
+                duration: op.duration,
+                size: op.size,
+                agentId: op.agentId,
+                sessionId: op.sessionId,
+                error: op.error,
+              });
+              break;
+            }
+          }
+          break;
+
+        default:
+          console.debug('Unknown channel:', wsEvent.channel);
+      }
+    } catch (error) {
+      console.error('Failed to parse WebSocket message:', error);
+    }
+  }, [clearAllStores, addAgent, updateAgent, addTask, updateTask, addMessage, addOperation]);
+
+  // Subscribe to all channels
+  const subscribeToChannels = useCallback((ws: WebSocket) => {
+    const channels = ['agents', 'tasks', 'messages', 'memory'];
+    channels.forEach((channel) => {
+      ws.send(JSON.stringify({
+        type: 'subscribe',
+        channel,
+      }));
+    });
+  }, []);
+
+  // Connect to WebSocket
+  const connect = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    setConnectionStatus('connecting');
+
+    try {
+      const ws = new WebSocket(WS_URL);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        setConnectionStatus('connected');
+        reconnectAttemptsRef.current = 0;
+        setReconnectAttempts(0);
+        subscribeToChannels(ws);
+      };
+
+      ws.onmessage = handleMessage;
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setConnectionStatus('error', 'Connection error');
+      };
+
+      ws.onclose = (event) => {
+        console.log('WebSocket closed:', event.code, event.reason);
+        wsRef.current = null;
+
+        // Don't reconnect if closed cleanly (code 1000)
+        if (event.code === 1000) {
+          setConnectionStatus('disconnected');
+          return;
+        }
+
+        setConnectionStatus('disconnected');
+
+        // Attempt reconnection with exponential backoff
+        if (reconnectAttemptsRef.current < RECONNECT_MAX_ATTEMPTS) {
+          const currentAttempt = reconnectAttemptsRef.current + 1;
+          const delay = Math.min(
+            RECONNECT_BASE_DELAY * Math.pow(2, reconnectAttemptsRef.current),
+            RECONNECT_MAX_DELAY
+          );
+          reconnectAttemptsRef.current = currentAttempt;
+          setReconnectAttempts(currentAttempt);
+
+          console.log(`Reconnecting in ${delay}ms (attempt ${currentAttempt}/${RECONNECT_MAX_ATTEMPTS})`);
+
+          reconnectTimeoutRef.current = window.setTimeout(() => {
+            connect();
+          }, delay);
+        } else {
+          console.log('Max reconnection attempts reached');
+          // Load demo data as fallback after max retries
+          if (!hasReceivedDataRef.current) {
+            loadDemoData();
+          }
+        }
+      };
+    } catch (error) {
+      console.error('Failed to create WebSocket:', error);
+      setConnectionStatus('error', 'Failed to connect');
+      // Load demo data as fallback
+      if (!hasReceivedDataRef.current) {
+        loadDemoData();
+      }
+    }
+  }, [setConnectionStatus, handleMessage, subscribeToChannels, loadDemoData]);
+
+  // Disconnect from WebSocket
+  const disconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    if (wsRef.current) {
+      wsRef.current.close(1000, 'User disconnect');
+      wsRef.current = null;
+    }
+    setConnectionStatus('disconnected');
+  }, [setConnectionStatus]);
+
+  // Manual reconnect
+  const reconnect = useCallback(() => {
+    disconnect();
+    reconnectAttemptsRef.current = 0;
+    setReconnectAttempts(0);
+    hasReceivedDataRef.current = false;
+    connect();
+  }, [connect, disconnect]);
+
+  return { connect, disconnect, reconnect, reconnectAttempts };
+};
+
+/**
  * Main App Component
  */
 const App: React.FC = () => {
@@ -294,39 +665,42 @@ const App: React.FC = () => {
   const addTask = useTaskStore((s) => s.addTask);
   const addMessage = useMessageStore((s) => s.addMessage);
 
-  // Add demo data on mount so the UI isn't empty
+  const { connect, reconnect, reconnectAttempts } = useWebSocket();
+
+  // Track if demo data has been loaded
+  const demoDataLoadedRef = useRef(false);
+
+  // Connect to WebSocket on mount, load demo data as initial fallback
   useEffect(() => {
-    // Demo agents
-    const demoAgents: AgentState[] = [
-      { id: 'coord-1', name: 'Coordinator', type: 'coordinator', status: 'active', capabilities: ['orchestrate'], maxConcurrentTasks: 5, currentTaskCount: 2, createdAt: new Date(), lastActivity: new Date(), priority: 10 },
-      { id: 'coder-1', name: 'Coder-Alpha', type: 'coder', status: 'busy', capabilities: ['write', 'edit'], maxConcurrentTasks: 3, currentTaskCount: 1, createdAt: new Date(), lastActivity: new Date(), priority: 5 },
-      { id: 'test-1', name: 'Tester-Beta', type: 'tester', status: 'idle', capabilities: ['test', 'validate'], maxConcurrentTasks: 2, currentTaskCount: 0, createdAt: new Date(), lastActivity: new Date(), priority: 3 },
-      { id: 'review-1', name: 'Reviewer-Gamma', type: 'reviewer', status: 'active', capabilities: ['review', 'analyze'], maxConcurrentTasks: 2, currentTaskCount: 1, createdAt: new Date(), lastActivity: new Date(), priority: 4 },
-    ];
-    demoAgents.forEach((agent) => addAgent(agent));
+    // Load demo data initially while attempting connection
+    if (!demoDataLoadedRef.current) {
+      demoDataLoadedRef.current = true;
+      getDemoAgents().forEach((agent) => addAgent(agent));
+      getDemoTasks().forEach((task) => addTask(task));
+      getDemoMessages().forEach((msg) => addMessage(msg));
+    }
 
-    // Demo tasks
-    const demoTasks: TaskState[] = [
-      { id: 'task-1', type: 'implementation', description: 'Implement WebSocket connection', status: 'completed', priority: 10, createdAt: new Date(Date.now() - 300000), completedAt: new Date() },
-      { id: 'task-2', type: 'implementation', description: 'Create agent grid component', status: 'running', priority: 5, createdAt: new Date(Date.now() - 200000), startedAt: new Date(), assignedAgent: 'coder-1' },
-      { id: 'task-3', type: 'testing', description: 'Write unit tests', status: 'pending', priority: 5, createdAt: new Date(Date.now() - 100000) },
-      { id: 'task-4', type: 'review', description: 'Review PR for topology', status: 'running', priority: 8, createdAt: new Date(Date.now() - 50000), startedAt: new Date(), assignedAgent: 'review-1' },
-    ];
-    demoTasks.forEach((task) => addTask(task));
+    // Attempt WebSocket connection
+    connect();
 
-    // Demo messages
-    const demoMessages: Message[] = [
-      { id: 'msg-1', source: 'coord-1', target: 'coder-1', type: 'task', direction: 'outbound', content: 'Implement feature X', timestamp: new Date(Date.now() - 60000) },
-      { id: 'msg-2', source: 'coder-1', target: 'coord-1', type: 'response', direction: 'inbound', content: 'Feature X completed', timestamp: new Date(Date.now() - 30000) },
-      { id: 'msg-3', source: 'coord-1', target: 'test-1', type: 'task', direction: 'outbound', content: 'Run tests for feature X', timestamp: new Date(Date.now() - 15000) },
-    ];
-    demoMessages.forEach((msg) => addMessage(msg));
-  }, [addAgent, addTask, addMessage]);
+    // Cleanup on unmount
+    return () => {
+      // Connection cleanup handled by useWebSocket
+    };
+  }, [connect, addAgent, addTask, addMessage]);
+
+  // Context value for WebSocket controls
+  const wsContextValue = React.useMemo(
+    () => ({ reconnect, reconnectAttempts }),
+    [reconnect, reconnectAttempts]
+  );
 
   return (
-    <DashboardLayout>
-      <ViewRouter />
-    </DashboardLayout>
+    <WebSocketContext.Provider value={wsContextValue}>
+      <DashboardLayout>
+        <ViewRouter />
+      </DashboardLayout>
+    </WebSocketContext.Provider>
   );
 };
 
