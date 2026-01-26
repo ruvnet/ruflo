@@ -186,10 +186,10 @@ install_package() {
             done
         fi
     else
-        print_step "Setting up for npx usage..."
-        # Pre-cache the package for faster npx
-        npm cache add "$PACKAGE" 2>/dev/null || true
-        print_substep "Package cached for npx"
+        print_step "Installing for npx usage..."
+        # Actually run npx to pre-install the package
+        npx -y "$PACKAGE" --version >/dev/null 2>&1 || true
+        print_substep "Package installed for npx"
     fi
 
     local END_TIME=$(date +%s)
