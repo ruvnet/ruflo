@@ -207,22 +207,22 @@ show_status() {
 # Main command handling
 case "${1:-status}" in
     "start")
-        start_all "${2:-3}" "${3:-5}"
+        start_all "${2:-30}" "${3:-60}"
         ;;
     "stop")
         stop_all
         ;;
     "restart")
-        restart_all "${2:-3}" "${3:-5}"
+        restart_all "${2:-30}" "${3:-60}"
         ;;
     "status")
         show_status
         ;;
     "start-swarm")
-        start_swarm_monitor "${2:-3}"
+        start_swarm_monitor "${2:-30}"
         ;;
     "start-metrics")
-        start_metrics_daemon "${2:-5}"
+        start_metrics_daemon "${2:-60}"
         ;;
     "help"|"-h"|"--help")
         echo "Claude Flow V3 Daemon Manager"
