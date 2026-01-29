@@ -1,0 +1,151 @@
+# Claude Code - Gitignore para hooks de checkpoint
+# Este arquivo garante que apenas arquivos de configuracao sejam versionados
+# enquanto arquivos de sessao, logs e temporarios sao ignorados
+
+# ===========================================================================
+# Claude Code - Arquivos de sessao e estado
+# ===========================================================================
+# Sessoes ativas e historicos de conversa
+*.session
+*.session.json
+.conversation/
+.conversations/
+.chats/
+
+# Estado interno do Claude
+.claude/session/
+.claude/state/
+.claude/cache/
+.claude/tmp/
+
+# ===========================================================================
+# ClaudeKit - Arquivos do framework
+# ===========================================================================
+# Logs de execucao do claudekit
+.claudekit/logs/
+*.claudekit.log
+
+# Checkpoints e backups locais (se nao quiser versiona-los)
+# Comente a proxima linha se quiser versionar os checkpoints
+# .claudekit/checkpoints/
+
+# ===========================================================================
+# Python - Cache e artefatos de build
+# ===========================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# ===========================================================================
+# Logs gerais
+# ===========================================================================
+*.log
+logs/
+log/
+
+# ===========================================================================
+# Arquivos temporarios
+# ===========================================================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Cache de IDEs e editores
+.vscode/
+.idea/
+*.sublime-*
+.spyderproject
+.spyproject
+
+# ===========================================================================
+# Seguranca - Arquivos sensíveis
+# ===========================================================================
+# Nunca versione credenciais ou segredos
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.crt
+secrets/
+credentials/
+.secrets/
+
+# Tokens de API e chaves de acesso
+config.secrets.json
+*secrets*.json
+auth_tokens.json
+
+# ===========================================================================
+# Sistema operacional
+# ===========================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.nfs*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ===========================================================================
+# Miscelanea
+# ===========================================================================
+# Backups automaticos
+*.bak
+*.backup
+
+# Arquivos de lock e pid
+*.pid
+*.lock
+
+# Test coverage
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
