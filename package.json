@@ -1,0 +1,16 @@
+{
+  "name": "claude-config",
+  "version": "1.0.0",
+  "description": "Claude Code configuration directory",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "check": "biome check --write --no-errors-on-unmatched ."
+  }
+}

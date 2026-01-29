@@ -149,3 +149,11 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+
+# ===========================================================================
+# Node.js / JavaScript / Biome
+# ===========================================================================
+node_modules/
+package-lock.json
+# Uncomment if you want to use npm ci instead of npm install
+# package-lock.json

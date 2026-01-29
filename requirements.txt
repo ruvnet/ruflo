@@ -1,0 +1,13 @@
+# Dependências Python para Claude Code Hooks
+# Instale com: uv pip install -r requirements.txt
+
+# Núcleo (obrigatório)
+python-dotenv>=1.0.0
+
+# LLM Providers (opcional - para completion messages)
+anthropic>=0.25.0     # Anthropic Claude API
+openai>=1.0.0         # OpenAI API (para modelos e TTS)
+
+# TTS Providers (opcional - para text-to-speech)
+elevenlabs>=1.0.0     # ElevenLabs TTS (requer API key)
+pyttsx3>=2.90         # TTS local (sem necessidade de API)
