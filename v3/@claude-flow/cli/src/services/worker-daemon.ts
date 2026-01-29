@@ -256,7 +256,14 @@ export class WorkerDaemon extends EventEmitter {
       const workerType = this.pendingWorkers.shift()!;
       const workerConfig = this.config.workers.find(w => w.type === workerType);
       if (workerConfig) {
-        await this.executeWorkerWithConcurrencyControl(workerConfig);
+        const result = await this.executeWorkerWithConcurrencyControl(workerConfig);
+        if (result === null) {
+          // Worker was deferred (resource limit or max concurrent reached).
+          // Stop processing the queue to avoid a busy-wait loop - the deferred
+          // worker is already back in pendingWorkers and will be retried when
+          // the next scheduled worker completes.
+          break;
+        }
       }
     }
   }
