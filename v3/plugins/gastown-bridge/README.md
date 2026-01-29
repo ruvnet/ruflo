@@ -633,8 +633,8 @@ See [MCP Tools Documentation](./docs/mcp-tools.md) for complete API reference.
 - [Gas Town GitHub](https://github.com/steveyegge/gastown)
 - [Beads GitHub](https://github.com/steveyegge/beads)
 - [Welcome to Gas Town (Steve Yegge)](https://steve-yegge.medium.com/welcome-to-gas-town-4f25ee16dd04)
-- [ADR-043: Gas Town Bridge Plugin](../implementation/adrs/ADR-043-gastown-bridge-plugin.md)
-- [ADR-042: Gas Town Analysis](../implementation/adrs/ADR-042-gas-town-analysis.md)
+- [ADR-043: Gas Town Bridge Plugin](../../implementation/adrs/ADR-043-gastown-bridge-plugin.md)
+- [ADR-042: Gas Town Analysis](../../implementation/adrs/ADR-042-gas-town-analysis.md)
 
 ## Contributing
 
