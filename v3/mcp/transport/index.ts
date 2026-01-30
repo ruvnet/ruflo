@@ -28,6 +28,12 @@ export { StdioTransport, StdioTransportConfig } from './stdio.js';
 export { HttpTransport, HttpTransportConfig } from './http.js';
 export { WebSocketTransport, WebSocketTransportConfig } from './websocket.js';
 
+// JSON-RPC 2.0 Compliance Enhancements
+export { BatchRequestProcessor, BatchProcessorConfig } from './batch-request-processor.js';
+export { ParseErrorHandler, ParseErrorConfig } from './parse-error-handler.js';
+export { ProtocolDetector, ProtocolValidationResult } from './protocol-detector.js';
+export type { JsonRpcTypes } from './json-rpc-types.js';
+
 /**
  * Transport configuration union
  */
