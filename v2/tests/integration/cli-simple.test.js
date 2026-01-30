@@ -16,7 +16,7 @@ describe('CLI Basic Tests', () => {
   });
 
   test('should verify CLI exists', () => {
-    const cliPath = path.resolve(__dirname, '../../claude-flow');
+    const cliPath = path.resolve(__dirname, '../../bin/claude-flow.js');
     expect(fs.existsSync(cliPath)).toBe(true);
   });
 

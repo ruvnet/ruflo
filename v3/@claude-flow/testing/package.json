@@ -45,7 +45,7 @@
     "@claude-flow/memory": "^3.0.0-alpha.2",
     "@claude-flow/shared": "^3.0.0-alpha.1",
     "@claude-flow/swarm": "^3.0.0-alpha.1",
-    "vitest": ">=1.0.0"
+    "vitest": "^4.0.16"
   },
   "devDependencies": {
     "@claude-flow/memory": "^3.0.0-alpha.2",

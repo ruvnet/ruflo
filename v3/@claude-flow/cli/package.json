@@ -87,7 +87,8 @@
     "@claude-flow/aidefence": "^3.0.2",
     "@claude-flow/mcp": "^3.0.0-alpha.8",
     "@claude-flow/shared": "^3.0.0-alpha.1",
-    "@noble/ed25519": "^2.1.0"
+    "@noble/ed25519": "^2.1.0",
+    "bcrypt": "^6.0.0"
   },
   "optionalDependencies": {
     "@claude-flow/embeddings": "^3.0.0-alpha.12",
