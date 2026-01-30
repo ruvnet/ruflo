@@ -142,7 +142,6 @@ async function runWorker(workerType: HeadlessWorkerType, timeout: number): Promi
   try {
     const result = await executor.execute(workerType, {
       timeoutMs: timeout,
-      model: 'sonnet',
       sandbox: 'permissive'
     });
 
