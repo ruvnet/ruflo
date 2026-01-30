@@ -1,0 +1,171 @@
+{
+  "version": "1.0.0",
+  "description": "Pre-training patterns for self-learning benchmarks",
+  "patterns": [
+    {
+      "id": "pattern-auth-jwt",
+      "type": "security",
+      "category": "authentication",
+      "content": "Implement JWT authentication with refresh tokens, secure httpOnly cookies, and automatic token rotation",
+      "keywords": ["jwt", "authentication", "tokens", "security", "refresh"],
+      "confidence": 0.95,
+      "usageCount": 150
+    },
+    {
+      "id": "pattern-error-boundary",
+      "type": "resilience",
+      "category": "error-handling",
+      "content": "Use React Error Boundaries with fallback UI, error logging to monitoring service, and recovery actions",
+      "keywords": ["error", "boundary", "react", "fallback", "recovery"],
+      "confidence": 0.92,
+      "usageCount": 120
+    },
+    {
+      "id": "pattern-db-pooling",
+      "type": "performance",
+      "category": "database",
+      "content": "Configure connection pooling with min/max connections, idle timeout, and connection health checks",
+      "keywords": ["database", "pool", "connection", "performance", "postgres"],
+      "confidence": 0.94,
+      "usageCount": 85
+    },
+    {
+      "id": "pattern-cache-aside",
+      "type": "performance",
+      "category": "caching",
+      "content": "Implement cache-aside pattern with Redis, TTL-based expiration, and cache invalidation on writes",
+      "keywords": ["cache", "redis", "ttl", "invalidation", "performance"],
+      "confidence": 0.91,
+      "usageCount": 95
+    },
+    {
+      "id": "pattern-rate-limit",
+      "type": "security",
+      "category": "api-protection",
+      "content": "Apply sliding window rate limiting per user/IP with configurable thresholds and 429 responses",
+      "keywords": ["rate-limit", "throttle", "api", "security", "window"],
+      "confidence": 0.93,
+      "usageCount": 110
+    },
+    {
+      "id": "pattern-optimistic-update",
+      "type": "ux",
+      "category": "state-management",
+      "content": "Implement optimistic UI updates with automatic rollback on server error and conflict resolution",
+      "keywords": ["optimistic", "update", "rollback", "state", "ux"],
+      "confidence": 0.88,
+      "usageCount": 75
+    },
+    {
+      "id": "pattern-circuit-breaker",
+      "type": "resilience",
+      "category": "fault-tolerance",
+      "content": "Use circuit breaker pattern for external service calls with exponential backoff and health checks",
+      "keywords": ["circuit-breaker", "resilience", "backoff", "fault-tolerance"],
+      "confidence": 0.90,
+      "usageCount": 65
+    },
+    {
+      "id": "pattern-input-validation",
+      "type": "security",
+      "category": "validation",
+      "content": "Validate all inputs at API boundaries using Zod schemas with detailed error messages",
+      "keywords": ["validation", "zod", "input", "security", "schema"],
+      "confidence": 0.96,
+      "usageCount": 200
+    },
+    {
+      "id": "pattern-event-sourcing",
+      "type": "architecture",
+      "category": "data-patterns",
+      "content": "Store state changes as immutable events with projections for read models and event replay capability",
+      "keywords": ["event-sourcing", "events", "projection", "cqrs", "immutable"],
+      "confidence": 0.87,
+      "usageCount": 45
+    },
+    {
+      "id": "pattern-feature-flags",
+      "type": "deployment",
+      "category": "release-management",
+      "content": "Use feature flags for gradual rollouts with percentage-based targeting and kill switches",
+      "keywords": ["feature-flag", "rollout", "deployment", "toggle", "percentage"],
+      "confidence": 0.89,
+      "usageCount": 80
+    }
+  ],
+  "trajectories": [
+    {
+      "id": "trajectory-bugfix-auth",
+      "task": "Fix authentication bypass vulnerability",
+      "steps": [
+        {"type": "observation", "content": "Security scan detected CVE in auth middleware"},
+        {"type": "thought", "content": "Need to validate JWT signature before extracting claims"},
+        {"type": "action", "content": "Added signature verification step in middleware"},
+        {"type": "result", "content": "Vulnerability patched, all auth tests passing"}
+      ],
+      "outcome": "success",
+      "agents": ["security-architect", "coder", "tester"]
+    },
+    {
+      "id": "trajectory-feature-api",
+      "task": "Implement user preferences API",
+      "steps": [
+        {"type": "observation", "content": "Requirements specify user preference storage with sync"},
+        {"type": "thought", "content": "Use separate preferences table with user_id FK"},
+        {"type": "action", "content": "Created migration, model, controller, and routes"},
+        {"type": "action", "content": "Added input validation with Zod schema"},
+        {"type": "result", "content": "API implemented with full CRUD and validation"}
+      ],
+      "outcome": "success",
+      "agents": ["architect", "coder", "tester", "reviewer"]
+    },
+    {
+      "id": "trajectory-perf-query",
+      "task": "Optimize slow dashboard query",
+      "steps": [
+        {"type": "observation", "content": "Dashboard loading takes 8 seconds"},
+        {"type": "thought", "content": "Need to analyze query execution plan"},
+        {"type": "action", "content": "Added composite index on (user_id, created_at)"},
+        {"type": "action", "content": "Implemented query result caching with 5min TTL"},
+        {"type": "result", "content": "Query time reduced from 8s to 120ms"}
+      ],
+      "outcome": "success",
+      "agents": ["performance-engineer", "coder"]
+    }
+  ],
+  "codePatterns": [
+    {
+      "id": "code-async-handler",
+      "language": "typescript",
+      "pattern": "async (req, res, next) => { try { ... } catch (e) { next(e) } }",
+      "description": "Express async error handling wrapper",
+      "frequency": 0.85
+    },
+    {
+      "id": "code-react-hook",
+      "language": "typescript",
+      "pattern": "const [state, setState] = useState(initial); useEffect(() => { ... }, [deps])",
+      "description": "React state with effect pattern",
+      "frequency": 0.92
+    },
+    {
+      "id": "code-zod-validation",
+      "language": "typescript",
+      "pattern": "const schema = z.object({ ... }); const validated = schema.parse(input)",
+      "description": "Zod schema validation pattern",
+      "frequency": 0.78
+    }
+  ],
+  "agentRoutes": {
+    "security-task": ["security-architect", "security-auditor", "reviewer"],
+    "testing-task": ["tester", "reviewer"],
+    "api-task": ["architect", "coder", "tester"],
+    "performance-task": ["performance-engineer", "coder"],
+    "refactor-task": ["architect", "coder", "reviewer"],
+    "bugfix-task": ["coder", "tester"],
+    "feature-task": ["architect", "coder", "tester", "reviewer"],
+    "database-task": ["architect", "coder"],
+    "frontend-task": ["coder", "reviewer"],
+    "devops-task": ["coder", "reviewer"]
+  }
+}

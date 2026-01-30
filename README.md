@@ -149,8 +149,15 @@ npx claude-flow@v3alpha hooks intelligence --status
 
 ### Get Started Fast
 
-```
-npx claude-flow@latest init
+```bash
+# One-line install (recommended)
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash
+
+# Or full setup with MCP + diagnostics
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash -s -- --full
+
+# Or via npx
+npx claude-flow@alpha init --wizard
 ```
 
 ---
@@ -404,7 +411,7 @@ swarm_init({
 
 ### Prerequisites
 
-- **Node.js 18+** or **Bun 1.0+** (Bun is faster)
+- **Node.js 20+** (required)
 - **npm 9+** / **pnpm** / **bun** package manager
 
 **IMPORTANT**: Claude Code must be installed first:
@@ -419,23 +426,91 @@ claude --dangerously-skip-permissions
 
 ### Installation
 
+#### One-Line Install (Recommended)
+
 ```bash
-# With npm/npx (Node.js)
-npm install claude-flow@v3alpha
-npx claude-flow@v3alpha init
+# curl-style installer with progress display
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash
+
+# Full setup (global + MCP + diagnostics)
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash -s -- --full
+```
+
+<details>
+<summary><b>Install Options</b></summary>
+
+| Option | Description |
+|--------|-------------|
+| `--global`, `-g` | Install globally (`npm install -g`) |
+| `--minimal`, `-m` | Skip optional deps (faster, ~15s) |
+| `--setup-mcp` | Auto-configure MCP server for Claude Code |
+| `--doctor`, `-d` | Run diagnostics after install |
+| `--no-init` | Skip project initialization (init runs by default) |
+| `--full`, `-f` | Full setup: global + MCP + doctor |
+| `--version=X.X.X` | Install specific version |
+
+**Examples:**
+```bash
+# Minimal global install (fastest)
+curl ... | bash -s -- --global --minimal
+
+# With MCP auto-setup
+curl ... | bash -s -- --global --setup-mcp
+
+# Full setup with diagnostics
+curl ... | bash -s -- --full
+```
+
+**Speed:**
+| Mode | Time |
+|------|------|
+| npx (cached) | ~3s |
+| npx (fresh) | ~20s |
+| global | ~35s |
+| --minimal | ~15s |
+
+</details>
+
+#### npm/npx Install
+
+```bash
+# Quick start (no install needed)
+npx claude-flow@alpha init
+
+# Or install globally
+npm install -g claude-flow@alpha
+claude-flow init
 
 # With Bun (faster)
-bun add claude-flow@v3alpha
-bunx claude-flow@v3alpha init
+bunx claude-flow@alpha init
+```
+
+#### Install Profiles
+
+| Profile | Size | Use Case |
+|---------|------|----------|
+| `--omit=optional` | ~340MB | Core features only |
+| Default | ~340MB | Standard install |
+
+```bash
+# Minimal install (skip ML/embeddings)
+npm install -g claude-flow@alpha --omit=optional
+```
+
+### Basic Usage
+
+```bash
+# Initialize project
+npx claude-flow@alpha init
 
 # Start MCP server for Claude Code integration
-npx claude-flow@v3alpha mcp start
+npx claude-flow@alpha mcp start
 
 # Run a task with agents
-npx claude-flow@v3alpha --agent coder --task "Implement user authentication"
+npx claude-flow@alpha --agent coder --task "Implement user authentication"
 
 # List available agents
-npx claude-flow@v3alpha --list
+npx claude-flow@alpha --list
 ```
 
 ### Upgrading

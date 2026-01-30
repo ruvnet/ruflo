@@ -9,30 +9,25 @@
 [![Star on GitHub](https://img.shields.io/github/stars/ruvnet/claude-flow?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/claude-flow)
 [![Monthly Downloads](https://img.shields.io/npm/dm/claude-flow?style=for-the-badge&logo=npm&color=blue&label=Monthly%20Downloads)](https://www.npmjs.com/package/claude-flow)
 [![Total Downloads](https://img.shields.io/npm/dt/claude-flow?style=for-the-badge&logo=npm&color=cyan&label=Total%20Downloads)](https://www.npmjs.com/package/claude-flow)
-[![Latest Release](https://img.shields.io/npm/v/claude-flow/alpha?style=for-the-badge&logo=npm&color=green&label=v3.0.0-alpha)](https://www.npmjs.com/package/claude-flow)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-SDK%20Integrated-green?style=for-the-badge&logo=anthropic)](https://github.com/ruvnet/claude-flow)
+[![ruv.io](https://img.shields.io/badge/ruv.io-AI%20Platform-green?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQyIDAtOC0zLjU4LTgtOHMzLjU4LTggOC04IDggMy41OCA4IDgtMy41OCA4LTggOHoiLz48L3N2Zz4=)](https://ruv.io)
 [![Agentics Foundation](https://img.shields.io/badge/Agentics-Foundation-crimson?style=for-the-badge&logo=openai)](https://discord.com/invite/dfxmpwkG2D)
-[![ruv.io](https://img.shields.io/badge/ruv.io-AI%20Platform-purple?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQyIDAtOC0zLjU4LTgtOHMzLjU4LTggOC04IDggMy41OCA4IDgtMy41OCA4LTggOHoiLz48L3N2Zz4=)](https://ruv.io)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-SDK%20Integrated-green?style=for-the-badge&logo=anthropic)](https://github.com/ruvnet/claude-flow)
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge&logo=opensourceinitiative)](https://opensource.org/licenses/MIT)
-[![RuVector](https://img.shields.io/npm/v/ruvector?style=for-the-badge&logo=rust&color=orange&label=RuVector)](https://www.npmjs.com/package/ruvector)
-[![Agentic-Flow](https://img.shields.io/npm/v/agentic-flow?style=for-the-badge&logo=typescript&color=3178c6&label=Agentic-Flow)](https://www.npmjs.com/package/agentic-flow)
-[![Reddit](https://img.shields.io/reddit/subreddit-subscribers/aipromptprogramming?style=for-the-badge&logo=reddit&color=FF4500&label=r/aipromptprogramming)](https://www.reddit.com/r/aipromptprogramming/)
+---
 [![Follow @ruv](https://img.shields.io/badge/Follow%20%40ruv-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/ruv)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/reuvencohen/)
 [![YouTube](https://img.shields.io/badge/YouTube-Subscribe-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@ReuvenCohen)
-[![Crates.io](https://img.shields.io/badge/crates.io-ruvnet-E6732E?style=for-the-badge&logo=rust&logoColor=white)](https://crates.io/users/ruvnet)
 
-**Production-ready multi-agent AI orchestration for Claude Code**
-
+# **Production-ready multi-agent AI orchestration for Claude Code**
 *Deploy 60+ specialized agents in coordinated swarms with self-learning capabilities, fault-tolerant consensus, and enterprise-grade security.*
 
 </div>
 
-## Overview
+## Getting into the Flow
 
 Claude-Flow is a comprehensive AI agent orchestration framework that transforms Claude Code into a powerful multi-agent development platform. It enables teams to deploy, coordinate, and optimize specialized AI agents working together on complex software engineering tasks.
 
-### Architecture
+### Self-Learning/Self-Optimizing Agent Architecture
 
 ```
 User → Claude-Flow (CLI/MCP) → Router → Swarm → Agents → Memory → LLM Providers
@@ -139,6 +134,7 @@ flowchart TB
 | **Hyperbolic** | Poincaré ball embeddings for hierarchical data | Better code relationships |
 | **LoRA/MicroLoRA** | Low-Rank Adaptation for efficient fine-tuning | **<3μs** adaptation, 383k ops/sec |
 | **Int8 Quantization** | Memory-efficient weight storage | 3.92x memory reduction |
+| **SemanticRouter** | Semantic task routing with cosine similarity | **34,798 routes/s**, 0.029ms |
 | **9 RL Algorithms** | Q-Learning, SARSA, A2C, PPO, DQN, Decision Transformer, etc. | Task-specific learning |
 
 ```bash
@@ -153,8 +149,15 @@ npx claude-flow@v3alpha hooks intelligence --status
 
 ### Get Started Fast
 
-```
-npx claude-flow@latest init
+```bash
+# One-line install (recommended)
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash
+
+# Or full setup with MCP + diagnostics
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash -s -- --full
+
+# Or via npx
+npx claude-flow@alpha init --wizard
 ```
 
 ---
@@ -176,7 +179,9 @@ npx claude-flow@latest init
 
 ---
 
-<details open>
+### A multi-purpose Agent Tool Kit 
+
+<details>
 <summary>🔄 <strong>Core Flow</strong> — How requests move through the system</summary>
 
 Every request flows through four layers: from your CLI or Claude Code interface, through intelligent routing, to specialized agents, and finally to LLM providers for reasoning.
@@ -406,7 +411,7 @@ swarm_init({
 
 ### Prerequisites
 
-- **Node.js 18+** or **Bun 1.0+** (Bun is faster)
+- **Node.js 20+** (required)
 - **npm 9+** / **pnpm** / **bun** package manager
 
 **IMPORTANT**: Claude Code must be installed first:
@@ -421,23 +426,91 @@ claude --dangerously-skip-permissions
 
 ### Installation
 
+#### One-Line Install (Recommended)
+
 ```bash
-# With npm/npx (Node.js)
-npm install claude-flow@v3alpha
-npx claude-flow@v3alpha init
+# curl-style installer with progress display
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash
+
+# Full setup (global + MCP + diagnostics)
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash -s -- --full
+```
+
+<details>
+<summary><b>Install Options</b></summary>
+
+| Option | Description |
+|--------|-------------|
+| `--global`, `-g` | Install globally (`npm install -g`) |
+| `--minimal`, `-m` | Skip optional deps (faster, ~15s) |
+| `--setup-mcp` | Auto-configure MCP server for Claude Code |
+| `--doctor`, `-d` | Run diagnostics after install |
+| `--no-init` | Skip project initialization (init runs by default) |
+| `--full`, `-f` | Full setup: global + MCP + doctor |
+| `--version=X.X.X` | Install specific version |
+
+**Examples:**
+```bash
+# Minimal global install (fastest)
+curl ... | bash -s -- --global --minimal
+
+# With MCP auto-setup
+curl ... | bash -s -- --global --setup-mcp
+
+# Full setup with diagnostics
+curl ... | bash -s -- --full
+```
+
+**Speed:**
+| Mode | Time |
+|------|------|
+| npx (cached) | ~3s |
+| npx (fresh) | ~20s |
+| global | ~35s |
+| --minimal | ~15s |
+
+</details>
+
+#### npm/npx Install
+
+```bash
+# Quick start (no install needed)
+npx claude-flow@alpha init
+
+# Or install globally
+npm install -g claude-flow@alpha
+claude-flow init
 
 # With Bun (faster)
-bun add claude-flow@v3alpha
-bunx claude-flow@v3alpha init
+bunx claude-flow@alpha init
+```
+
+#### Install Profiles
+
+| Profile | Size | Use Case |
+|---------|------|----------|
+| `--omit=optional` | ~340MB | Core features only |
+| Default | ~340MB | Standard install |
+
+```bash
+# Minimal install (skip ML/embeddings)
+npm install -g claude-flow@alpha --omit=optional
+```
+
+### Basic Usage
+
+```bash
+# Initialize project
+npx claude-flow@alpha init
 
 # Start MCP server for Claude Code integration
-npx claude-flow@v3alpha mcp start
+npx claude-flow@alpha mcp start
 
 # Run a task with agents
-npx claude-flow@v3alpha --agent coder --task "Implement user authentication"
+npx claude-flow@alpha --agent coder --task "Implement user authentication"
 
 # List available agents
-npx claude-flow@v3alpha --list
+npx claude-flow@alpha --list
 ```
 
 ### Upgrading
@@ -470,6 +543,9 @@ Once added, Claude Code can use all 175+ claude-flow MCP tools directly:
 - `memory_search` - Search patterns with HNSW (150x faster)
 - `hooks_route` - Intelligent task routing
 - And 170+ more tools...
+
+---
+## What is it exactly? Agents that learn, build and work perpetually. 
 
 <details>
 <summary>🆚 <strong>Why Claude-Flow v3?</strong></summary>
@@ -626,6 +702,8 @@ Complex projects fail when implementation drifts from the original plan. Claude-
 - **ADR-026**: Intelligent 3-tier model routing
 
 </details>
+
+---
 
 ### 🏗️ Architecture Diagrams
 
@@ -1271,6 +1349,7 @@ Install these optional plugins to extend Claude Flow capabilities:
 | **@claude-flow/plugin-agentic-qe** | 3.0.0-alpha.2 | Quality Engineering with 58 AI agents across 12 DDD contexts. TDD, coverage analysis, security scanning, chaos engineering, accessibility testing. | `npm install @claude-flow/plugin-agentic-qe` |
 | **@claude-flow/plugin-prime-radiant** | 0.1.4 | Mathematical AI interpretability with 6 engines: sheaf cohomology, spectral analysis, causal inference, quantum topology, category theory, HoTT proofs. | `npm install @claude-flow/plugin-prime-radiant` |
 | **@claude-flow/plugin-gastown-bridge** | 0.1.0 | Gas Town orchestrator integration with WASM-accelerated formula parsing (352x faster), Beads sync, convoy management, and graph analysis. 20 MCP tools. | `npx claude-flow@latest plugins install -n @claude-flow/plugin-gastown-bridge` |
+| **@claude-flow/teammate-plugin** | 1.0.0-alpha.1 | Native TeammateTool integration for Claude Code v2.1.19+. BMSSP WASM acceleration, rate limiting, circuit breaker, semantic routing. 21 MCP tools. | `npx claude-flow@latest plugins install -n @claude-flow/teammate-plugin` |
 
 #### 🏥 Domain-Specific Plugins
 
@@ -1310,6 +1389,15 @@ Install these optional plugins to extend Claude Flow capabilities:
 - Sheaf Laplacian coherence detection (<5ms)
 - Do-calculus causal inference
 - Hallucination prevention via consensus verification
+
+**Teammate Plugin Features:**
+- Native TeammateTool integration for Claude Code v2.1.19+
+- 21 MCP tools: `teammate/spawn`, `teammate/coordinate`, `teammate/broadcast`, `teammate/discover-teams`, `teammate/route-task`, etc.
+- BMSSP WASM acceleration for topology optimization (352x faster)
+- Rate limiting with sliding window (configurable limits)
+- Circuit breaker for fault tolerance (closed/open/half-open states)
+- Semantic routing with skill-based teammate selection
+- Health monitoring with configurable thresholds
 
 **New RuVector WASM Plugins (50 MCP tools total):**
 - **Healthcare**: 5 tools for clinical decision support, drug interactions, treatment recommendations
@@ -6655,3 +6743,10 @@ cp -r ./data-backup-v2 ./data
 ## License
 
 MIT - [RuvNet](https://github.com/ruvnet)
+
+
+[![RuVector](https://img.shields.io/npm/v/ruvector?style=for-the-badge&logo=rust&color=orange&label=RuVector)](https://www.npmjs.com/package/ruvector)
+[![Agentic-Flow](https://img.shields.io/npm/v/agentic-flow?style=for-the-badge&logo=typescript&color=3178c6&label=Agentic-Flow)](https://www.npmjs.com/package/agentic-flow)
+[![Reddit](https://img.shields.io/reddit/subreddit-subscribers/aipromptprogramming?style=for-the-badge&logo=reddit&color=FF4500&label=r/aipromptprogramming)](https://www.reddit.com/r/aipromptprogramming/)
+
+[![Crates.io](https://img.shields.io/badge/crates.io-ruvnet-E6732E?style=for-the-badge&logo=rust&logoColor=white)](https://crates.io/users/ruvnet)
