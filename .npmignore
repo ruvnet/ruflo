@@ -1,0 +1,55 @@
+# Source maps - not needed for production (saves 464 files, ~33% size reduction)
+**/*.map
+**/*.js.map
+**/*.d.ts.map
+
+# Development files
+**/__tests__/**
+**/*.test.ts
+**/*.spec.ts
+**/vitest.config.*
+**/.eslintrc.*
+**/tsconfig.json
+**/jest.config.*
+
+# Build artifacts
+**/node_modules/**
+**/.turbo/**
+**/.cache/**
+
+# Database files (user-specific)
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/hnsw.index
+**/hnsw.metadata.json
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# V2 legacy (not needed in npm package)
+v2/
+
+# Development docs
+docs/
+*.md
+!README.md
+!LICENSE
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.log

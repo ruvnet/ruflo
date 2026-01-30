@@ -1,0 +1,99 @@
+{
+  "version": "1.0.0",
+  "description": "Pre-training corpus for self-learning system benchmarks",
+  "documents": [
+    {
+      "id": "doc-auth-patterns",
+      "title": "Authentication Best Practices",
+      "category": "security",
+      "content": "Authentication should use industry-standard protocols like OAuth 2.0, OpenID Connect, or JWT. Always hash passwords with bcrypt (cost factor 12+) or Argon2id. Implement proper session management with secure, httpOnly cookies. Use refresh token rotation to limit exposure window. Add rate limiting on login endpoints to prevent brute force attacks. Enable MFA for sensitive operations.",
+      "tags": ["authentication", "security", "jwt", "oauth", "password"]
+    },
+    {
+      "id": "doc-api-design",
+      "title": "RESTful API Design Guidelines",
+      "category": "architecture",
+      "content": "Follow REST conventions: use nouns for resources, HTTP methods for actions. Return appropriate status codes (200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Internal Error). Implement pagination for list endpoints. Version APIs in URL path (/v1/). Use consistent error response format with code, message, and details. Add request/response logging for debugging.",
+      "tags": ["api", "rest", "design", "http", "endpoints"]
+    },
+    {
+      "id": "doc-testing-strategy",
+      "title": "Testing Strategy for Modern Applications",
+      "category": "testing",
+      "content": "Apply the testing pyramid: many unit tests, fewer integration tests, minimal E2E tests. Aim for 80%+ code coverage on critical paths. Use test doubles (mocks, stubs, spies) to isolate units. Write tests before fixing bugs (TDD). Integration tests should use real databases in containers. E2E tests should cover critical user journeys. Run tests in CI before merge.",
+      "tags": ["testing", "tdd", "unit-tests", "integration", "coverage"]
+    },
+    {
+      "id": "doc-error-handling",
+      "title": "Error Handling Patterns",
+      "category": "resilience",
+      "content": "Use typed errors with error codes for programmatic handling. Log errors with context (request ID, user ID, stack trace). Implement global error handlers in frameworks. Return user-friendly messages without exposing internals. Use error boundaries in React applications. Implement retry logic with exponential backoff for transient failures. Track error rates in monitoring.",
+      "tags": ["errors", "handling", "logging", "resilience", "monitoring"]
+    },
+    {
+      "id": "doc-database-perf",
+      "title": "Database Performance Optimization",
+      "category": "performance",
+      "content": "Index columns used in WHERE, JOIN, and ORDER BY clauses. Use EXPLAIN ANALYZE to understand query plans. Implement connection pooling (PgBouncer, HikariCP). Use read replicas for read-heavy workloads. Implement caching layer (Redis) for frequently accessed data. Partition large tables by time or category. Avoid N+1 queries with proper joins or batching.",
+      "tags": ["database", "performance", "indexing", "caching", "optimization"]
+    },
+    {
+      "id": "doc-security-checklist",
+      "title": "Security Hardening Checklist",
+      "category": "security",
+      "content": "Validate and sanitize all user inputs. Use parameterized queries to prevent SQL injection. Implement CSRF tokens for state-changing requests. Set security headers (CSP, X-Frame-Options, HSTS). Encrypt sensitive data at rest and in transit. Implement proper access control (RBAC/ABAC). Regular security audits and dependency scanning. Secure secrets management (Vault, AWS Secrets Manager).",
+      "tags": ["security", "hardening", "injection", "csrf", "encryption"]
+    },
+    {
+      "id": "doc-microservices",
+      "title": "Microservices Communication Patterns",
+      "category": "architecture",
+      "content": "Use synchronous communication (REST/gRPC) for request-response patterns. Use async messaging (Kafka, RabbitMQ) for event-driven communication. Implement circuit breakers for fault tolerance. Use service mesh (Istio) for traffic management. Implement distributed tracing (Jaeger, Zipkin). Use API gateways for routing and cross-cutting concerns. Design for eventual consistency.",
+      "tags": ["microservices", "communication", "events", "circuit-breaker", "tracing"]
+    },
+    {
+      "id": "doc-ci-cd",
+      "title": "CI/CD Pipeline Best Practices",
+      "category": "devops",
+      "content": "Automate builds on every commit. Run tests in parallel for faster feedback. Use infrastructure as code (Terraform, Pulumi). Implement blue-green or canary deployments. Automate database migrations. Use feature flags for safe rollouts. Monitor deployments with health checks. Implement automatic rollback on failure. Store artifacts in versioned registries.",
+      "tags": ["ci-cd", "automation", "deployment", "devops", "pipeline"]
+    },
+    {
+      "id": "doc-monitoring",
+      "title": "Observability and Monitoring",
+      "category": "operations",
+      "content": "Implement the three pillars: metrics, logs, traces. Use structured logging (JSON format). Track SLIs/SLOs for service health. Set up alerting on anomalies and thresholds. Use dashboards for real-time visibility. Implement distributed tracing for microservices. Monitor business metrics alongside technical ones. Regular review of alert fatigue and false positives.",
+      "tags": ["monitoring", "observability", "metrics", "logging", "tracing"]
+    },
+    {
+      "id": "doc-react-patterns",
+      "title": "React Component Patterns",
+      "category": "frontend",
+      "content": "Use functional components with hooks. Implement proper state management (Context, Redux, Zustand). Memoize expensive computations with useMemo. Optimize re-renders with React.memo and useCallback. Use lazy loading for code splitting. Implement error boundaries for graceful degradation. Follow accessibility guidelines (WCAG). Use TypeScript for type safety.",
+      "tags": ["react", "hooks", "state", "performance", "accessibility"]
+    }
+  ],
+  "codeExamples": [
+    {
+      "id": "example-jwt-auth",
+      "language": "typescript",
+      "title": "JWT Authentication Middleware",
+      "code": "export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {\n  const token = req.headers.authorization?.split(' ')[1];\n  if (!token) return res.status(401).json({ error: 'No token provided' });\n  try {\n    const decoded = jwt.verify(token, process.env.JWT_SECRET!);\n    req.user = decoded as User;\n    next();\n  } catch (e) {\n    return res.status(401).json({ error: 'Invalid token' });\n  }\n};",
+      "tags": ["jwt", "auth", "middleware", "express"]
+    },
+    {
+      "id": "example-zod-validation",
+      "language": "typescript",
+      "title": "Zod Input Validation",
+      "code": "const createUserSchema = z.object({\n  email: z.string().email(),\n  password: z.string().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/),\n  name: z.string().min(2).max(100),\n});\n\ntype CreateUserInput = z.infer<typeof createUserSchema>;\n\nconst validated = createUserSchema.parse(req.body);",
+      "tags": ["zod", "validation", "typescript", "input"]
+    },
+    {
+      "id": "example-react-hook",
+      "language": "typescript",
+      "title": "Custom React Data Fetching Hook",
+      "code": "function useData<T>(url: string) {\n  const [data, setData] = useState<T | null>(null);\n  const [loading, setLoading] = useState(true);\n  const [error, setError] = useState<Error | null>(null);\n\n  useEffect(() => {\n    const controller = new AbortController();\n    fetch(url, { signal: controller.signal })\n      .then(res => res.json())\n      .then(setData)\n      .catch(setError)\n      .finally(() => setLoading(false));\n    return () => controller.abort();\n  }, [url]);\n\n  return { data, loading, error };\n}",
+      "tags": ["react", "hooks", "fetch", "custom-hook"]
+    }
+  ]
+}

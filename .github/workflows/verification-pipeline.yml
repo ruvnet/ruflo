@@ -194,7 +194,14 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: |
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            npm ci --legacy-peer-deps
+          else
+            # Skip optional platform-specific dependencies on macOS/Windows
+            npm ci --legacy-peer-deps --omit=optional || npm ci --legacy-peer-deps --force
+          fi
+        shell: bash
 
       - name: Run unit tests
         run: |

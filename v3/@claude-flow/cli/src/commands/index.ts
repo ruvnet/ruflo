@@ -61,6 +61,8 @@ const commandLoaders: Record<string, CommandLoader> = {
   update: () => import('./update.js'),
   // RuVector PostgreSQL Bridge
   ruvector: () => import('./ruvector/index.js'),
+  // Benchmark Suite (Pre-training, Neural, Memory)
+  benchmark: () => import('./benchmark.js'),
 };
 
 // Cache for loaded commands
@@ -120,6 +122,21 @@ import { performanceCommand } from './performance.js';
 import { securityCommand } from './security.js';
 import { ruvectorCommand } from './ruvector/index.js';
 import { hiveMindCommand } from './hive-mind.js';
+// Additional commands for categorized help display
+import { configCommand } from './config.js';
+import { completionsCommand } from './completions.js';
+import { migrateCommand } from './migrate.js';
+import { workflowCommand } from './workflow.js';
+import { analyzeCommand } from './analyze.js';
+import { routeCommand } from './route.js';
+import { progressCommand } from './progress.js';
+import { providersCommand } from './providers.js';
+import { pluginsCommand } from './plugins.js';
+import { deploymentCommand } from './deployment.js';
+import { claimsCommand } from './claims.js';
+import { issuesCommand } from './issues.js';
+import updateCommand from './update.js';
+import { processCommand } from './process.js';
 
 // Pre-populate cache with core commands
 loadedCommands.set('init', initCommand);
@@ -213,6 +230,54 @@ export const commands: Command[] = [
   ruvectorCommand,
   hiveMindCommand,
 ];
+
+/**
+ * Commands organized by category for help display
+ */
+export const commandsByCategory = {
+  primary: [
+    initCommand,
+    startCommand,
+    statusCommand,
+    agentCommand,
+    swarmCommand,
+    memoryCommand,
+    taskCommand,
+    sessionCommand,
+    mcpCommand,
+    hooksCommand,
+  ],
+  advanced: [
+    neuralCommand,
+    securityCommand,
+    performanceCommand,
+    embeddingsCommand,
+    hiveMindCommand,
+    ruvectorCommand,
+  ],
+  utility: [
+    configCommand,
+    doctorCommand,
+    daemonCommand,
+    completionsCommand,
+    migrateCommand,
+    workflowCommand,
+  ],
+  analysis: [
+    analyzeCommand,
+    routeCommand,
+    progressCommand,
+  ],
+  management: [
+    providersCommand,
+    pluginsCommand,
+    deploymentCommand,
+    claimsCommand,
+    issuesCommand,
+    updateCommand,
+    processCommand,
+  ],
+};
 
 /**
  * Command registry map for quick lookup

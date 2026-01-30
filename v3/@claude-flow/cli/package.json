@@ -1,8 +1,8 @@
 {
   "name": "@claude-flow/cli",
-  "version": "3.0.0-alpha.178",
+  "version": "3.0.0-alpha.185",
   "type": "module",
-  "description": "CLI module - command parsing, prompts, output formatting",
+  "description": "Claude Flow CLI - Enterprise AI agent orchestration with 60+ specialized agents, swarm coordination, MCP server, self-learning hooks, and vector memory for Claude Code",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "sideEffects": false,
@@ -11,6 +11,41 @@
     "claude-flow": "./bin/cli.js",
     "claude-flow-mcp": "./bin/mcp-server.js"
   },
+  "homepage": "https://github.com/ruvnet/claude-flow#readme",
+  "bugs": {
+    "url": "https://github.com/ruvnet/claude-flow/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/claude-flow.git",
+    "directory": "v3/@claude-flow/cli"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "ai-agents",
+    "multi-agent",
+    "swarm",
+    "mcp",
+    "model-context-protocol",
+    "llm",
+    "cli",
+    "orchestration",
+    "automation",
+    "developer-tools",
+    "coding-assistant",
+    "vector-database",
+    "embeddings",
+    "self-learning",
+    "enterprise"
+  ],
+  "author": {
+    "name": "RuvNet",
+    "email": "ruv@ruv.io",
+    "url": "https://ruv.io"
+  },
+  "license": "MIT",
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
@@ -50,11 +85,13 @@
   },
   "dependencies": {
     "@claude-flow/aidefence": "^3.0.2",
-    "@claude-flow/embeddings": "^3.0.0-alpha.12",
     "@claude-flow/mcp": "^3.0.0-alpha.8",
-    "@claude-flow/plugin-gastown-bridge": "^0.1.0",
     "@claude-flow/shared": "^3.0.0-alpha.1",
-    "@noble/ed25519": "^2.1.0",
+    "@noble/ed25519": "^2.1.0"
+  },
+  "optionalDependencies": {
+    "@claude-flow/embeddings": "^3.0.0-alpha.12",
+    "@claude-flow/plugin-gastown-bridge": "^0.1.0",
     "@ruvector/attention": "^0.1.4",
     "@ruvector/learning-wasm": "^0.1.29",
     "@ruvector/sona": "^0.1.5"
