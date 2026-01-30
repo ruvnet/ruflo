@@ -3,7 +3,7 @@
  */
 
 import { jest } from '@jest/globals';
-import { perfHelpers } from '../utils/test-helpers.js';
+import { perfHelpers } from '../utils/test-utils.js';
 import fs from 'fs-extra';
 import { parseFlags } from '../../cli/utils.js';
 import { deepMerge } from '../../utils/helpers.js';

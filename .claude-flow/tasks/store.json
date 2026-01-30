@@ -1,0 +1,18 @@
+{
+  "tasks": {
+    "task-1769797125531-5wpq78": {
+      "taskId": "task-1769797125531-5wpq78",
+      "type": "research",
+      "description": "Testar funcionalidade do claude-flow",
+      "priority": "normal",
+      "status": "pending",
+      "progress": 0,
+      "assignedTo": [],
+      "tags": [],
+      "createdAt": "2026-01-30T18:18:45.531Z",
+      "startedAt": null,
+      "completedAt": null
+    }
+  },
+  "version": "3.0.0"
+}

@@ -1,0 +1,270 @@
+{
+  "agents": {
+    "agent-1769797114574-6oqafu": {
+      "agentId": "agent-1769797114574-6oqafu",
+      "agentType": "researcher",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "provider": "anthropic"
+      },
+      "createdAt": "2026-01-30T18:18:34.574Z",
+      "model": "sonnet",
+      "modelRoutedBy": "default"
+    },
+    "agent-1769799743491-t9xdsj": {
+      "agentId": "agent-1769799743491-t9xdsj",
+      "agentType": "security-specialist",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:02:23.491Z",
+      "domain": "audit",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769799743517-1e48yg": {
+      "agentId": "agent-1769799743517-1e48yg",
+      "agentType": "file-analyzer",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:02:23.517Z",
+      "domain": "audit",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769799743568-q1znrg": {
+      "agentId": "agent-1769799743568-q1znrg",
+      "agentType": "config-auditor",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:02:23.569Z",
+      "domain": "audit",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769799743587-29r915": {
+      "agentId": "agent-1769799743587-29r915",
+      "agentType": "code-analyzer",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:02:23.587Z",
+      "domain": "audit",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769799743636-w7nbr0": {
+      "agentId": "agent-1769799743636-w7nbr0",
+      "agentType": "performance-optimizer",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:02:23.636Z",
+      "domain": "audit",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769800108754-1qcm4t": {
+      "agentId": "agent-1769800108754-1qcm4t",
+      "agentType": "code-analyzer",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:08:28.754Z",
+      "domain": "sync",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769800108850-drciyy": {
+      "agentId": "agent-1769800108850-drciyy",
+      "agentType": "github-modes",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:08:28.850Z",
+      "domain": "sync",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769800108934-zhadrg": {
+      "agentId": "agent-1769800108934-zhadrg",
+      "agentType": "file-analyzer",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:08:28.934Z",
+      "domain": "sync",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769800109017-a4jsu8": {
+      "agentId": "agent-1769800109017-a4jsu8",
+      "agentType": "security-auditor",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:08:29.017Z",
+      "domain": "sync",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769801147866-1wgmtg": {
+      "agentId": "agent-1769801147866-1wgmtg",
+      "agentType": "analyst",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:25:47.866Z",
+      "domain": "memory",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769801148158-momhgm": {
+      "agentId": "agent-1769801148158-momhgm",
+      "agentType": "file-analyzer",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:25:48.158Z",
+      "domain": "memory",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769801148418-ze18cy": {
+      "agentId": "agent-1769801148418-ze18cy",
+      "agentType": "code-analyzer",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:25:48.418Z",
+      "domain": "memory",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769801148686-15n5ja": {
+      "agentId": "agent-1769801148686-15n5ja",
+      "agentType": "database-specialist",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:25:48.686Z",
+      "domain": "memory",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769801148961-pcwu32": {
+      "agentId": "agent-1769801148961-pcwu32",
+      "agentType": "memory-specialist",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:25:48.961Z",
+      "domain": "memory",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769801583155-owcw8q": {
+      "agentId": "agent-1769801583155-owcw8q",
+      "agentType": "security-auditor",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:33:03.155Z",
+      "domain": "fix",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769801583466-g1ymbd": {
+      "agentId": "agent-1769801583466-g1ymbd",
+      "agentType": "github-modes",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:33:03.466Z",
+      "domain": "fix",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "agent-1769801583815-mjz8ki": {
+      "agentId": "agent-1769801583815-mjz8ki",
+      "agentType": "database-specialist",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet<arg_key>task</arg_key><arg_value>CONFIGURAR AMBIENTE: Verificar se variável SUPABASE_URL está configurada. Se necessário, adicionar exemplo no .env ou documentar como configurar. Criar arquivo .env.example com as variáveis necessárias."
+      },
+      "createdAt": "2026-01-30T19:33:03.815Z",
+      "domain": "fix",
+      "model": "sonnet",
+      "modelRoutedBy": "default"
+    },
+    "agent-1769801584128-0dnl4f": {
+      "agentId": "agent-1769801584128-0dnl4f",
+      "agentType": "security-architect",
+      "status": "terminated",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-01-30T19:33:04.128Z",
+      "domain": "fix",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    }
+  },
+  "version": "3.0.0"
+}

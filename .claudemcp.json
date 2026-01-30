@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "claude-flow": {
+      "command": "npx",
+      "args": ["claude-flow@alpha", "mcp", "start"],
+      "description": "Claude-Flow MCP Server - 200+ tools for agent orchestration, memory, swarm coordination, and more"
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["@upstash/context7-mcp"],
+      "description": "Context7 - Documentation and code examples retrieval"
+    }
+  }
+}

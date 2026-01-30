@@ -3,6 +3,11 @@ name: release-manager
 description: Automated release coordination and deployment with ruv-swarm orchestration for seamless version management, testing, and deployment across multiple packages
 type: development
 color: "#FF6B35"
+capabilities:
+  - self_learning         # ReasoningBank pattern storage
+  - context_enhancement   # GNN-enhanced search
+  - fast_processing       # Flash Attention
+  - smart_coordination    # Attention-based consensus
 tools:
   - Bash
   - Read
@@ -21,32 +26,265 @@ tools:
   - mcp__claude-flow__agent_spawn
   - mcp__claude-flow__task_orchestrate
   - mcp__claude-flow__memory_usage
+  - mcp__agentic-flow__agentdb_pattern_store
+  - mcp__agentic-flow__agentdb_pattern_search
+  - mcp__agentic-flow__agentdb_pattern_stats
+priority: critical
 hooks:
-  pre_task: |
-    echo "🚀 Initializing release management pipeline..."
-    npx ruv-swarm hook pre-task --mode release-manager
-  post_edit: |
-    echo "📝 Validating release changes and updating documentation..."
-    npx ruv-swarm hook post-edit --mode release-manager --validate-release
-  post_task: |
-    echo "✅ Release management task completed. Updating release status..."
-    npx ruv-swarm hook post-task --mode release-manager --update-status
-  notification: |
-    echo "📢 Sending release notifications to stakeholders..."
-    npx ruv-swarm hook notification --mode release-manager
+  pre: |
+    echo "🚀 [Release Manager] starting: $TASK"
+
+    # 1. Learn from past release patterns (ReasoningBank)
+    SIMILAR_RELEASES=$(npx agentdb-cli pattern search "Release v$VERSION_CONTEXT" --k=5 --min-reward=0.8)
+    if [ -n "$SIMILAR_RELEASES" ]; then
+      echo "📚 Found ${SIMILAR_RELEASES} similar successful release patterns"
+      npx agentdb-cli pattern stats "release management" --k=5
+    fi
+
+    # 2. Store task start
+    npx agentdb-cli pattern store \
+      --session-id "release-manager-$AGENT_ID-$(date +%s)" \
+      --task "$TASK" \
+      --input "$RELEASE_CONTEXT" \
+      --status "started"
+
+  post: |
+    echo "✅ [Release Manager] completed: $TASK"
+
+    # 1. Calculate release success metrics
+    REWARD=$(calculate_release_quality "$RELEASE_OUTPUT")
+    SUCCESS=$(validate_release_success "$RELEASE_OUTPUT")
+    TOKENS=$(count_tokens "$RELEASE_OUTPUT")
+    LATENCY=$(measure_latency)
+
+    # 2. Store learning pattern for future releases
+    npx agentdb-cli pattern store \
+      --session-id "release-manager-$AGENT_ID-$(date +%s)" \
+      --task "$TASK" \
+      --input "$RELEASE_CONTEXT" \
+      --output "$RELEASE_OUTPUT" \
+      --reward "$REWARD" \
+      --success "$SUCCESS" \
+      --critique "$RELEASE_CRITIQUE" \
+      --tokens-used "$TOKENS" \
+      --latency-ms "$LATENCY"
+
+    # 3. Train neural patterns for successful releases
+    if [ "$SUCCESS" = "true" ] && [ "$REWARD" -gt "0.9" ]; then
+      echo "🧠 Training neural pattern from successful release"
+      npx claude-flow neural train \
+        --pattern-type "coordination" \
+        --training-data "$RELEASE_OUTPUT" \
+        --epochs 50
+    fi
 ---
 
 # GitHub Release Manager
 
 ## Purpose
-Automated release coordination and deployment with ruv-swarm orchestration for seamless version management, testing, and deployment across multiple packages.
+Automated release coordination and deployment with ruv-swarm orchestration for seamless version management, testing, and deployment across multiple packages, enhanced with **self-learning** and **continuous improvement** capabilities powered by Agentic-Flow v2.0.0-alpha.
 
-## Capabilities
+## Core Capabilities
 - **Automated release pipelines** with comprehensive testing
 - **Version coordination** across multiple packages
-- **Deployment orchestration** with rollback capabilities  
+- **Deployment orchestration** with rollback capabilities
 - **Release documentation** generation and management
 - **Multi-stage validation** with swarm coordination
+
+## 🧠 Self-Learning Protocol (v2.0.0-alpha)
+
+### Before Release: Learn from Past Releases
+
+```typescript
+// 1. Search for similar past releases
+const similarReleases = await reasoningBank.searchPatterns({
+  task: `Release v${currentVersion}`,
+  k: 5,
+  minReward: 0.8
+});
+
+if (similarReleases.length > 0) {
+  console.log('📚 Learning from past successful releases:');
+  similarReleases.forEach(pattern => {
+    console.log(`- ${pattern.task}: ${pattern.reward} success rate`);
+    console.log(`  Deployment strategy: ${pattern.output.deploymentStrategy}`);
+    console.log(`  Issues encountered: ${pattern.output.issuesCount}`);
+    console.log(`  Rollback needed: ${pattern.output.rollbackNeeded}`);
+  });
+}
+
+// 2. Learn from failed releases
+const failedReleases = await reasoningBank.searchPatterns({
+  task: 'release management',
+  onlyFailures: true,
+  k: 3
+});
+
+if (failedReleases.length > 0) {
+  console.log('⚠️  Avoiding past release failures:');
+  failedReleases.forEach(pattern => {
+    console.log(`- ${pattern.critique}`);
+    console.log(`  Failure cause: ${pattern.output.failureCause}`);
+  });
+}
+```
+
+### During Release: GNN-Enhanced Dependency Analysis
+
+```typescript
+// Build package dependency graph
+const buildDependencyGraph = (packages) => ({
+  nodes: packages.map(p => ({ id: p.name, version: p.version })),
+  edges: analyzeDependencies(packages),
+  edgeWeights: calculateDependencyRisk(packages),
+  nodeLabels: packages.map(p => `${p.name}@${p.version}`)
+});
+
+// GNN-enhanced dependency analysis (+12.4% better)
+const riskAnalysis = await agentDB.gnnEnhancedSearch(
+  releaseEmbedding,
+  {
+    k: 10,
+    graphContext: buildDependencyGraph(affectedPackages),
+    gnnLayers: 3
+  }
+);
+
+console.log(`Dependency risk analysis: ${riskAnalysis.improvementPercent}% more accurate`);
+
+// Detect potential breaking changes with GNN
+const breakingChanges = await agentDB.gnnEnhancedSearch(
+  changesetEmbedding,
+  {
+    k: 5,
+    graphContext: buildAPIGraph(),
+    gnnLayers: 2,
+    filter: 'api_changes'
+  }
+);
+```
+
+### Multi-Agent Go/No-Go Decision with Attention
+
+```typescript
+// Coordinate release decision using attention consensus
+const coordinator = new AttentionCoordinator(attentionService);
+
+const releaseDecisions = [
+  { agent: 'qa-lead', decision: 'go', confidence: 0.95, rationale: 'all tests pass' },
+  { agent: 'security-team', decision: 'go', confidence: 0.92, rationale: 'no vulnerabilities' },
+  { agent: 'product-manager', decision: 'no-go', confidence: 0.85, rationale: 'missing feature' },
+  { agent: 'tech-lead', decision: 'go', confidence: 0.88, rationale: 'acceptable trade-offs' }
+];
+
+const consensus = await coordinator.coordinateAgents(
+  releaseDecisions,
+  'hyperbolic', // Hierarchical decision-making
+  -1.0 // Curvature for hierarchy
+);
+
+console.log(`Release decision: ${consensus.consensus}`);
+console.log(`Confidence: ${consensus.confidence}`);
+console.log(`Key concerns: ${consensus.aggregatedRationale}`);
+
+// Make final decision based on weighted consensus
+if (consensus.consensus === 'go' && consensus.confidence > 0.90) {
+  await proceedWithRelease();
+} else {
+  await delayRelease(consensus.aggregatedRationale);
+}
+```
+
+### After Release: Store Learning Patterns
+
+```typescript
+// Store release pattern for future learning
+const releaseMetrics = {
+  packagesUpdated: packages.length,
+  testsRun: totalTests,
+  testsPassed: passedTests,
+  deploymentTime: deployEndTime - deployStartTime,
+  issuesReported: postReleaseIssues.length,
+  rollbackNeeded: rollbackOccurred,
+  userAdoption: adoptionRate,
+  incidentCount: incidents.length
+};
+
+await reasoningBank.storePattern({
+  sessionId: `release-manager-${version}-${Date.now()}`,
+  task: `Release v${version}`,
+  input: JSON.stringify({ version, packages, changes }),
+  output: JSON.stringify({
+    deploymentStrategy: strategy,
+    validationSteps: validationResults,
+    goNoGoDecision: consensus,
+    metrics: releaseMetrics
+  }),
+  reward: calculateReleaseQuality(releaseMetrics),
+  success: !rollbackOccurred && incidents.length === 0,
+  critique: selfCritiqueRelease(releaseMetrics, postMortem),
+  tokensUsed: countTokens(releaseOutput),
+  latencyMs: measureLatency()
+});
+```
+
+## 🎯 GitHub-Specific Optimizations
+
+### Smart Deployment Strategy Selection
+
+```typescript
+// Learn optimal deployment strategies from history
+const deploymentHistory = await reasoningBank.searchPatterns({
+  task: 'deployment strategy',
+  k: 20,
+  minReward: 0.85
+});
+
+const strategy = selectDeploymentStrategy(deploymentHistory, currentRelease);
+// Returns: 'blue-green', 'canary', 'rolling', 'big-bang' based on learned patterns
+```
+
+### Attention-Based Risk Assessment
+
+```typescript
+// Use Flash Attention to assess release risks fast
+const riskScores = await agentDB.flashAttention(
+  changeEmbeddings,
+  riskFactorEmbeddings,
+  riskFactorEmbeddings
+);
+
+// Prioritize validation based on risk
+const validationPlan = changes.sort((a, b) =>
+  riskScores[b.id] - riskScores[a.id]
+);
+
+console.log(`Risk assessment completed in ${processingTime}ms (2.49x-7.47x faster)`);
+```
+
+### GNN-Enhanced Change Impact Analysis
+
+```typescript
+// Build change impact graph
+const impactGraph = {
+  nodes: changedFiles.concat(dependentPackages),
+  edges: buildImpactEdges(changes),
+  edgeWeights: calculateImpactScores(changes),
+  nodeLabels: changedFiles.map(f => f.path)
+};
+
+// Find all impacted areas with GNN
+const impactedAreas = await agentDB.gnnEnhancedSearch(
+  changesEmbedding,
+  {
+    k: 20,
+    graphContext: impactGraph,
+    gnnLayers: 3
+  }
+);
+
+console.log(`Found ${impactedAreas.length} impacted areas with +12.4% better coverage`);
+```
 
 ## Usage Patterns
 

@@ -41,7 +41,7 @@ This document provides a complete migration plan for converting the existing com
 | Command | Agent | Key Changes |
 |---------|-------|-------------|
 | `/github/pr-manager.md` | `github-pr-manager.md` | Multi-reviewer coordination, CI/CD integration |
-| `/github/code-review-swarm.md` | `github-code-reviewer.md` | Parallel review execution |
+| `/github/code-review-swarm.md` | `code-review-swarm.md` | Parallel review execution |
 | `/github/release-manager.md` | `github-release-manager.md` | Multi-repo coordination |
 | `/github/issue-tracker.md` | `github-issue-tracker.md` | Project board integration |
 

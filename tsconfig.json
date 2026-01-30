@@ -1,38 +1,60 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
+    "target": "ESNext",
+    "module": "NodeNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022"],
-    "outDir": "./dist",
-    "rootDir": "./",
+    "lib": ["ESNext"],
+    "types": ["node"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "baseUrl": "./",
+    "paths": {
+      "@claude-flow/cli": ["./v3/@claude-flow/cli/src"],
+      "@claude-flow/shared": ["./v3/@claude-flow/shared/src"],
+      "@claude-flow/security": ["./v3/@claude-flow/security/src"],
+      "@claude-flow/memory": ["./v3/@claude-flow/memory/src"],
+      "@claude-flow/integration": ["./v3/@claude-flow/integration/src"],
+      "@claude-flow/swarm": ["./v3/@claude-flow/swarm/src"],
+      "@claude-flow/performance": ["./v3/@claude-flow/performance/src"],
+      "@claude-flow/neural": ["./v3/@claude-flow/neural/src"],
+      "@claude-flow/testing": ["./v3/@claude-flow/testing/src"],
+      "@claude-flow/deployment": ["./v3/@claude-flow/deployment/src"],
+      "@claude-flow/hooks": ["./v3/@claude-flow/hooks/src"],
+      "@v3/*": ["./v3/*"]
+    },
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "resolveJsonModule": true,
     "isolatedModules": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": false,
-    "paths": {
-      "@v3/*": ["./v3/*"]
-    },
-    "baseUrl": "."
+    "composite": true,
+    "incremental": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "checkJs": false
   },
-  "include": [
-    "v3/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.bench.ts",
-    "v3/__tests__/**/*.ts"
+  "include": ["v3/**/*.ts", "v3/@claude-flow/**/*.ts"],
+  "exclude": ["node_modules", "dist", "v2", "**/*.test.ts", "**/*.bench.ts", "v3/__tests__/**/*.ts"],
+  "references": [
+    { "path": "./v3/@claude-flow/shared" },
+    { "path": "./v3/@claude-flow/security" },
+    { "path": "./v3/@claude-flow/memory" },
+    { "path": "./v3/@claude-flow/integration" },
+    { "path": "./v3/@claude-flow/swarm" },
+    { "path": "./v3/@claude-flow/performance" },
+    { "path": "./v3/@claude-flow/cli" },
+    { "path": "./v3/@claude-flow/neural" },
+    { "path": "./v3/@claude-flow/testing" },
+    { "path": "./v3/@claude-flow/deployment" },
+    { "path": "./v3/@claude-flow/hooks" }
   ]
 }
