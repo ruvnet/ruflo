@@ -136,6 +136,14 @@ export {
   WebSocketTransportConfig,
 } from './transport/index.js';
 
+// Performance Optimization Module
+export {
+  MemoryPool,
+  BatchOptimizer,
+  ProfilerModule,
+  WasmSIMD,
+} from './performance/index.js';
+
 /**
  * Quick start function to create and configure an MCP server
  *
