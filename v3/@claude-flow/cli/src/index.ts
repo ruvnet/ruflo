@@ -207,6 +207,10 @@ export class CLI {
         }
       }
 
+      // Apply command-specific defaults before validation
+      // This ensures subcommand options properly override global options
+      this.parser.applyDefaults(flags, targetCommand);
+
       // Validate flags
       const validationErrors = this.parser.validateFlags(flags, targetCommand);
       if (validationErrors.length > 0) {

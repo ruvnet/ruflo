@@ -199,9 +199,8 @@ export class CommandParser {
       i++;
     }
 
-    // Apply defaults
-    this.applyDefaults(result.flags);
-
+    // Defaults are applied later in CLI.run() after command resolution
+    // to ensure subcommand options properly override global options
     return result;
   }
 
@@ -364,12 +363,30 @@ export class CommandParser {
     return flags;
   }
 
-  private applyDefaults(flags: ParsedFlags): void {
-    // Apply global option defaults
+  applyDefaults(flags: ParsedFlags, command?: Command): void {
+    // Build a set of command-specific option names to skip global defaults for those
+    const commandOptionNames = new Set<string>();
+    if (command?.options) {
+      for (const opt of command.options) {
+        commandOptionNames.add(this.normalizeKey(opt.name));
+      }
+    }
+
+    // Apply global option defaults (skip if command has its own option with same name)
     for (const opt of this.globalOptions) {
       const key = this.normalizeKey(opt.name);
-      if (flags[key] === undefined && opt.default !== undefined) {
+      if (flags[key] === undefined && opt.default !== undefined && !commandOptionNames.has(key)) {
         flags[key] = opt.default as string | boolean | number | string[];
+      }
+    }
+
+    // Apply command-specific option defaults (these take precedence)
+    if (command?.options) {
+      for (const opt of command.options) {
+        const key = this.normalizeKey(opt.name);
+        if (flags[key] === undefined && opt.default !== undefined) {
+          flags[key] = opt.default as string | boolean | number | string[];
+        }
       }
     }
 
@@ -386,8 +403,19 @@ export class CommandParser {
 
   validateFlags(flags: ParsedFlags, command?: Command): string[] {
     const errors: string[] = [];
-    const allOptions = [...this.globalOptions];
 
+    // Build set of command option names to skip conflicting global options
+    const commandOptionNames = new Set<string>();
+    if (command?.options) {
+      for (const opt of command.options) {
+        commandOptionNames.add(this.normalizeKey(opt.name));
+      }
+    }
+
+    // Merge options: command options override global options with same name
+    const allOptions = this.globalOptions.filter(
+      opt => !commandOptionNames.has(this.normalizeKey(opt.name))
+    );
     if (command?.options) {
       allOptions.push(...command.options);
     }
