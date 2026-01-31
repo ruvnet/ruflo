@@ -627,19 +627,52 @@ export const hooksPostEdit: MCPTool = {
       filePath: { type: 'string', description: 'Path to the edited file' },
       success: { type: 'boolean', description: 'Whether the edit was successful' },
       agent: { type: 'string', description: 'Agent that performed the edit' },
+      trainNeural: { type: 'boolean', description: 'Whether to train neural patterns' },
     },
     required: ['filePath'],
   },
   handler: async (params: Record<string, unknown>) => {
     const filePath = params.filePath as string;
     const success = params.success !== false;
+    const agent = (params.agent as string) || 'unknown';
+    const trainNeural = params.trainNeural !== false;
+    const timestamp = new Date().toISOString();
+    const patternId = `edit-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    // Actually persist the edit pattern using real store function
+    const storeFn = await getRealStoreFunction();
+    let storeResult: { success: boolean; id?: string; error?: string } = { success: false };
+
+    if (storeFn && trainNeural) {
+      try {
+        storeResult = await storeFn({
+          key: patternId,
+          value: JSON.stringify({
+            type: 'edit-pattern',
+            filePath,
+            success,
+            agent,
+            timestamp,
+            outcome: success ? 'pattern_reinforced' : 'pattern_adjusted',
+          }),
+          namespace: 'patterns',
+          generateEmbeddingFlag: true,
+          tags: ['edit', success ? 'success' : 'failure', agent],
+        });
+      } catch (error) {
+        storeResult = { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    }
 
     return {
-      recorded: true,
+      recorded: storeResult.success || !trainNeural,
+      patternId: storeResult.id || patternId,
       filePath,
       success,
-      timestamp: new Date().toISOString(),
+      timestamp,
       learningUpdate: success ? 'pattern_reinforced' : 'pattern_adjusted',
+      persisted: storeResult.success,
+      persistenceNote: storeResult.success ? 'Pattern stored with HNSW indexing' : (storeResult.error || 'Store function unavailable'),
     };
   },
 };
@@ -682,25 +715,64 @@ export const hooksPreCommand: MCPTool = {
 
 export const hooksPostCommand: MCPTool = {
   name: 'hooks_post-command',
-  description: 'Record command execution outcome',
+  description: 'Record command execution outcome for learning',
   inputSchema: {
     type: 'object',
     properties: {
       command: { type: 'string', description: 'Executed command' },
       exitCode: { type: 'number', description: 'Command exit code' },
+      success: { type: 'boolean', description: 'Whether command succeeded' },
+      trackMetrics: { type: 'boolean', description: 'Whether to track metrics' },
     },
     required: ['command'],
   },
   handler: async (params: Record<string, unknown>) => {
     const command = params.command as string;
     const exitCode = (params.exitCode as number) || 0;
+    const success = params.success !== false && exitCode === 0;
+    const trackMetrics = params.trackMetrics !== false;
+    const timestamp = new Date().toISOString();
+    const patternId = `cmd-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    // Actually persist the command pattern using real store function
+    const storeFn = await getRealStoreFunction();
+    let storeResult: { success: boolean; id?: string; error?: string } = { success: false };
+
+    if (storeFn && trackMetrics) {
+      try {
+        // Extract command type for categorization
+        const cmdParts = command.trim().split(/\s+/);
+        const cmdName = cmdParts[0] || 'unknown';
+
+        storeResult = await storeFn({
+          key: patternId,
+          value: JSON.stringify({
+            type: 'command-pattern',
+            command: command.substring(0, 500), // Truncate for storage
+            cmdName,
+            exitCode,
+            success,
+            timestamp,
+            outcome: success ? 'command_succeeded' : 'command_failed',
+          }),
+          namespace: 'commands',
+          generateEmbeddingFlag: true,
+          tags: ['command', cmdName, success ? 'success' : 'failure', `exit-${exitCode}`],
+        });
+      } catch (error) {
+        storeResult = { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    }
 
     return {
-      recorded: true,
-      command,
+      recorded: storeResult.success || !trackMetrics,
+      patternId: storeResult.id || patternId,
+      command: command.substring(0, 100), // Truncate in response
       exitCode,
-      success: exitCode === 0,
-      timestamp: new Date().toISOString(),
+      success,
+      timestamp,
+      persisted: storeResult.success,
+      persistenceNote: storeResult.success ? 'Command pattern stored with HNSW indexing' : (storeResult.error || 'Store function unavailable'),
     };
   },
 };
@@ -1023,25 +1095,60 @@ export const hooksPostTask: MCPTool = {
       success: { type: 'boolean', description: 'Whether task was successful' },
       agent: { type: 'string', description: 'Agent that completed the task' },
       quality: { type: 'number', description: 'Quality score (0-1)' },
+      storeResults: { type: 'boolean', description: 'Whether to store task results' },
+      description: { type: 'string', description: 'Task description' },
     },
     required: ['taskId'],
   },
   handler: async (params: Record<string, unknown>) => {
     const taskId = params.taskId as string;
     const success = params.success !== false;
+    const agent = (params.agent as string) || 'unknown';
     const quality = (params.quality as number) || (success ? 0.85 : 0.3);
+    const storeResults = params.storeResults !== false;
+    const description = (params.description as string) || '';
+    const timestamp = new Date().toISOString();
+    const trajectoryId = `traj-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    // Actually persist the task trajectory using real store function
+    const storeFn = await getRealStoreFunction();
+    let storeResult: { success: boolean; id?: string; error?: string } = { success: false };
+
+    if (storeFn && storeResults) {
+      try {
+        storeResult = await storeFn({
+          key: trajectoryId,
+          value: JSON.stringify({
+            type: 'task-trajectory',
+            taskId,
+            success,
+            agent,
+            quality,
+            description,
+            timestamp,
+            outcome: success ? 'task_completed' : 'task_failed',
+          }),
+          namespace: 'trajectories',
+          generateEmbeddingFlag: true,
+          tags: ['task', success ? 'success' : 'failure', agent, `quality-${Math.round(quality * 100)}`],
+        });
+      } catch (error) {
+        storeResult = { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    }
 
     return {
       taskId,
       success,
-      duration: Math.floor(Math.random() * 300) + 60, // 1-6 minutes in seconds
+      trajectoryId: storeResult.id || trajectoryId,
       learningUpdates: {
-        patternsUpdated: success ? 2 : 1,
-        newPatterns: success ? 1 : 0,
-        trajectoryId: `traj-${Date.now()}`,
+        patternsUpdated: storeResult.success ? (success ? 2 : 1) : 0,
+        newPatterns: storeResult.success && success ? 1 : 0,
+        persisted: storeResult.success,
       },
       quality,
-      timestamp: new Date().toISOString(),
+      timestamp,
+      persistenceNote: storeResult.success ? 'Trajectory stored with HNSW indexing' : (storeResult.error || 'Store function unavailable'),
     };
   },
 };
