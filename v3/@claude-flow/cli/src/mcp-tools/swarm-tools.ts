@@ -4,7 +4,40 @@
  * Tool definitions for swarm coordination.
  */
 
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { MCPTool } from './types.js';
+
+// Storage paths (must match agent-tools.ts)
+const STORAGE_DIR = '.claude-flow';
+const AGENT_DIR = 'agents';
+const AGENT_FILE = 'store.json';
+
+function getAgentPath(): string {
+  return join(process.cwd(), STORAGE_DIR, AGENT_DIR, AGENT_FILE);
+}
+
+function loadSwarmAgents(): { total: number; active: number; idle: number; busy: number; terminated: number } {
+  try {
+    const path = getAgentPath();
+    if (existsSync(path)) {
+      const data = readFileSync(path, 'utf-8');
+      const store = JSON.parse(data);
+      const agents = Object.values(store.agents || {}) as Array<{ status: string }>;
+
+      return {
+        total: agents.length,
+        active: agents.filter(a => a.status !== 'terminated').length,
+        idle: agents.filter(a => a.status === 'idle').length,
+        busy: agents.filter(a => a.status === 'busy').length,
+        terminated: agents.filter(a => a.status === 'terminated').length,
+      };
+    }
+  } catch {
+    // Return empty on error
+  }
+  return { total: 0, active: 0, idle: 0, busy: 0, terminated: 0 };
+}
 
 export const swarmTools: MCPTool[] = [
   {
@@ -42,7 +75,7 @@ export const swarmTools: MCPTool[] = [
   },
   {
     name: 'swarm_status',
-    description: 'Get swarm status',
+    description: 'Get swarm status with actual agent counts',
     category: 'swarm',
     inputSchema: {
       type: 'object',
@@ -51,11 +84,21 @@ export const swarmTools: MCPTool[] = [
       },
     },
     handler: async (input) => {
+      const agents = loadSwarmAgents();
       return {
-        swarmId: input.swarmId,
-        status: 'running',
-        agentCount: 0,
-        taskCount: 0,
+        swarmId: input.swarmId || 'default',
+        status: agents.active > 0 ? 'running' : 'idle',
+        agentCount: agents.active,
+        taskCount: 0, // Task counting would require additional tracking
+        agents: {
+          total: agents.total,
+          active: agents.active,
+          idle: agents.idle,
+          busy: agents.busy,
+          terminated: agents.terminated,
+        },
+        topology: 'hierarchical-mesh',
+        initializedAt: new Date().toISOString(),
       };
     },
   },
