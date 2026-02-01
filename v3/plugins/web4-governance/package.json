@@ -1,0 +1,57 @@
+{
+  "name": "@claude-flow/governance",
+  "version": "0.1.0-alpha.1",
+  "description": "Trust-based governance for claude-flow using Web4 trust primitives",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./wasm": {
+      "types": "./dist/wasm/index.d.ts",
+      "import": "./dist/wasm/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "wasm/governance-wasm/pkg"
+  ],
+  "scripts": {
+    "build": "npm run build:wasm && npm run build:ts",
+    "build:wasm": "cd wasm/governance-wasm && wasm-pack build --target web --out-dir pkg",
+    "build:ts": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "oxlint src tests",
+    "clean": "rm -rf dist wasm/governance-wasm/pkg"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.0.0"
+  },
+  "peerDependencies": {
+    "@claude-flow/cli": "^3.0.0-alpha.0"
+  },
+  "keywords": [
+    "claude-flow",
+    "governance",
+    "policy",
+    "trust",
+    "web4",
+    "wasm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/claude-flow.git",
+    "directory": "v3/plugins/web4-governance"
+  },
+  "license": "MIT"
+}
