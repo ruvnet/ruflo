@@ -709,10 +709,14 @@ export class MemoryQuorum {
       throw new Error(`Proposal ${proposalId} not found`);
     }
 
-    const votes = Array.from(proposal.votes.values());
-    const forCount = votes.filter(v => v).length;
-    const againstCount = votes.filter(v => !v).length;
-    const total = votes.length;
+    // Single pass over votes instead of two filter calls
+    let forCount = 0;
+    let againstCount = 0;
+    for (const v of proposal.votes.values()) {
+      if (v) forCount++;
+      else againstCount++;
+    }
+    const total = forCount + againstCount;
 
     const approvalRatio = total > 0 ? forCount / total : 0;
     const approved = approvalRatio >= this.threshold;
