@@ -985,6 +985,58 @@ try {
   }
 } catch (e) { /* ignore */ }
 
+// Calculate visual width of a string (accounting for emojis and ANSI codes)
+// Emojis take 2 cells, ANSI codes take 0, regular chars take 1
+function visualWidth(str) {
+  // Remove ANSI escape sequences first
+  const noAnsi = str.replace(/\x1b\[[0-9;]*m/g, '');
+  let width = 0;
+  // Use a simple emoji detection: characters with code points > 0x1F300 are typically emojis
+  // Also handle common 2-width characters and variation selectors
+  const chars = [...noAnsi]; // Properly split into code points
+  for (let i = 0; i < chars.length; i++) {
+    const code = chars[i].codePointAt(0);
+    // Skip variation selectors (FE0F, FE0E) - they don't add width
+    if (code === 0xFE0F || code === 0xFE0E) continue;
+    // Emoji ranges (simplified - covers most common emojis)
+    if (
+      (code >= 0x1F300 && code <= 0x1FAFF) || // Misc symbols, emoticons, etc
+      (code >= 0x2600 && code <= 0x27BF) ||   // Misc symbols
+      (code >= 0x1F600 && code <= 0x1F64F) || // Emoticons
+      (code >= 0x1F680 && code <= 0x1F6FF) || // Transport/map
+      (code >= 0x2700 && code <= 0x27BF) ||   // Dingbats
+      (code >= 0x1F900 && code <= 0x1F9FF) || // Supplemental symbols
+      (code >= 0x1FA00 && code <= 0x1FA6F) || // Chess, etc
+      (code >= 0x231A && code <= 0x231B) ||   // Watch, hourglass
+      (code >= 0x23E9 && code <= 0x23F3) ||   // Media control
+      (code >= 0x2934 && code <= 0x2935) ||   // Arrows
+      (code >= 0x25AA && code <= 0x25AB) ||   // Squares
+      (code >= 0x25B6 && code <= 0x25C0) ||   // Triangles
+      (code >= 0x25FB && code <= 0x25FE) ||   // Squares
+      (code >= 0x2614 && code <= 0x2615) ||   // Umbrella, coffee
+      (code >= 0x2648 && code <= 0x2653) ||   // Zodiac
+      (code >= 0x2764 && code <= 0x2764) ||   // Heart
+      (code >= 0x1F004 && code <= 0x1F0CF)    // Playing cards
+    ) {
+      width += 2; // Emojis are 2 cells wide
+    } else if (code > 0x7F) {
+      // Other wide characters (CJK, etc) - be conservative
+      width += 1;
+    } else {
+      width += 1; // ASCII
+    }
+  }
+  return width;
+}
+
+// Pad string to target visual width
+function padToWidth(str, targetWidth, padChar = ' ') {
+  const currentWidth = visualWidth(str);
+  const needed = targetWidth - currentWidth;
+  if (needed <= 0) return str;
+  return str + padChar.repeat(needed);
+}
+
 // Generate progress bar
 function progressBar(current, total) {
   const width = 5;
@@ -1009,6 +1061,13 @@ function generateStatusline() {
   const integration = getIntegrationStatus();
   const lines = [];
 
+  // Emoji helper: adds a space after emoji to prevent terminal bleed
+  // Emojis take 2 cells, so we DON'T add extra padding, just ensure space separation
+  const E = (emoji) => emoji + ' ';
+
+  // Separator - use simple ASCII pipe with spaces for clean rendering
+  const sep = ` ${c.dim}|${c.reset} `;
+
   // Calculate intelligence trend
   const intellTrend = getTrend(system.intelligencePct, prevIntelligence);
 
@@ -1021,18 +1080,18 @@ function generateStatusline() {
   } catch (e) { /* ignore */ }
 
   // Header Line with git changes indicator
-  let header = `${c.bold}${c.brightPurple}▊ Claude Flow V3 ${c.reset}`;
-  header += `${swarm.coordinationActive ? c.brightCyan : c.dim}● ${c.brightCyan}${user.name}${c.reset}`;
+  let header = `${c.bold}${c.brightPurple}▊ Claude Flow V3${c.reset} `;
+  header += `${swarm.coordinationActive ? c.brightCyan : c.dim}●${c.reset} ${c.brightCyan}${user.name}${c.reset}`;
   if (user.gitBranch) {
-    header += `  ${c.dim}│${c.reset}  ${c.brightBlue}⎇ ${user.gitBranch}${c.reset}`;
+    header += `${sep}${c.brightBlue}⎇  ${user.gitBranch}${c.reset}`;
     // Add git changes indicator
     const gitChanges = git.modified + git.staged + git.untracked;
     if (gitChanges > 0) {
-      let gitIndicator = '';
+      let gitIndicator = ' ';
       if (git.staged > 0) gitIndicator += `${c.brightGreen}+${git.staged}${c.reset}`;
       if (git.modified > 0) gitIndicator += `${c.brightYellow}~${git.modified}${c.reset}`;
       if (git.untracked > 0) gitIndicator += `${c.dim}?${git.untracked}${c.reset}`;
-      header += ` ${gitIndicator}`;
+      header += gitIndicator;
     }
     // Add ahead/behind indicator
     if (git.ahead > 0 || git.behind > 0) {
@@ -1040,74 +1099,71 @@ function generateStatusline() {
       if (git.behind > 0) header += ` ${c.brightRed}↓${git.behind}${c.reset}`;
     }
   }
-  header += `  ${c.dim}│${c.reset}  ${c.purple}${user.modelName}${c.reset}`;
+  header += `${sep}${c.purple}${user.modelName}${c.reset}`;
   // Add session duration if available
   if (session.duration) {
-    header += `  ${c.dim}│${c.reset}  ${c.cyan}⏱ ${session.duration}${c.reset}`;
+    header += `${sep}${c.cyan}⏱  ${session.duration}${c.reset}`;
   }
   lines.push(header);
 
-  // Separator
-  lines.push(`${c.dim}─────────────────────────────────────────────────────${c.reset}`);
+  // Separator line
+  lines.push(`${c.dim}${'─'.repeat(64)}${c.reset}`);
 
   // Line 1: DDD Domain Progress with dynamic performance indicator
   const domainsColor = progress.domainsCompleted >= 3 ? c.brightGreen : progress.domainsCompleted > 0 ? c.yellow : c.red;
-  // Show HNSW speedup if enabled, otherwise show patterns learned
   let perfIndicator = '';
   if (agentdb.hasHnsw && agentdb.vectorCount > 0) {
-    // HNSW enabled: show estimated speedup (150x-12500x based on vector count)
     const speedup = agentdb.vectorCount > 10000 ? '12500x' : agentdb.vectorCount > 1000 ? '150x' : '10x';
     perfIndicator = `${c.brightGreen}⚡ HNSW ${speedup}${c.reset}`;
   } else if (progress.patternsLearned > 0) {
-    // Show patterns learned
     const patternsK = progress.patternsLearned >= 1000
       ? `${(progress.patternsLearned / 1000).toFixed(1)}k`
       : String(progress.patternsLearned);
     perfIndicator = `${c.brightYellow}📚 ${patternsK} patterns${c.reset}`;
   } else {
-    // New project: show target
     perfIndicator = `${c.dim}⚡ target: 150x-12500x${c.reset}`;
   }
+
   lines.push(
-    `${c.brightCyan}🏗️  DDD Domains${c.reset}    ${progressBar(progress.domainsCompleted, progress.totalDomains)}  ` +
-    `${domainsColor}${progress.domainsCompleted}${c.reset}/${c.brightWhite}${progress.totalDomains}${c.reset}    ` +
-    perfIndicator
+    `${c.brightCyan}🏗  DDD Domains${c.reset}   ${progressBar(progress.domainsCompleted, progress.totalDomains)} ` +
+    `${domainsColor}${progress.domainsCompleted}${c.reset}/${c.brightWhite}${progress.totalDomains}${c.reset}   ${perfIndicator}`
   );
 
-  // Line 2: Swarm + Hooks + CVE + Memory + Context + Intelligence
+  // Line 2: Swarm + Hooks + CVE + Memory + Intelligence
   const swarmIndicator = swarm.coordinationActive ? `${c.brightGreen}◉${c.reset}` : `${c.dim}○${c.reset}`;
   const agentsColor = swarm.activeAgents > 0 ? c.brightGreen : c.red;
-  let securityIcon = security.status === 'CLEAN' ? '🟢' : security.status === 'IN_PROGRESS' ? '🟡' : '🔴';
-  let securityColor = security.status === 'CLEAN' ? c.brightGreen : security.status === 'IN_PROGRESS' ? c.brightYellow : c.brightRed;
+  const securityIcon = security.status === 'CLEAN' ? `${c.brightGreen}✓${c.reset}` : security.status === 'IN_PROGRESS' ? `${c.brightYellow}~${c.reset}` : `${c.brightRed}!${c.reset}`;
+  const securityColor = security.status === 'CLEAN' ? c.brightGreen : security.status === 'IN_PROGRESS' ? c.brightYellow : c.brightRed;
   const hooksColor = hooks.enabled > 0 ? c.brightGreen : c.dim;
 
   lines.push(
-    `${c.brightYellow}🤖 Swarm${c.reset}  ${swarmIndicator} [${agentsColor}${String(swarm.activeAgents).padStart(2)}${c.reset}/${c.brightWhite}${swarm.maxAgents}${c.reset}]  ` +
-    `${c.brightPurple}👥 ${system.subAgents}${c.reset}    ` +
-    `${c.brightBlue}🪝 ${hooksColor}${hooks.enabled}${c.reset}/${c.brightWhite}${hooks.total}${c.reset}    ` +
-    `${securityIcon} ${securityColor}CVE ${security.cvesFixed}${c.reset}/${c.brightWhite}${security.totalCves}${c.reset}    ` +
-    `${c.brightCyan}💾 ${system.memoryMB}MB${c.reset}    ` +
+    `${c.brightYellow}🤖 Swarm${c.reset} ${swarmIndicator}[${agentsColor}${String(swarm.activeAgents).padStart(2)}${c.reset}/${c.brightWhite}${swarm.maxAgents}${c.reset}] ` +
+    `${c.brightPurple}👥 ${system.subAgents}${c.reset}  ` +
+    `${c.brightBlue}🪝 ${hooksColor}${hooks.enabled}${c.reset}/${hooks.total}  ` +
+    `${securityIcon} ${securityColor}CVE ${security.cvesFixed}${c.reset}/${security.totalCves}  ` +
+    `${c.brightCyan}💾 ${system.memoryMB}MB${c.reset}  ` +
     `${system.intelligencePct >= 80 ? c.brightGreen : system.intelligencePct >= 40 ? c.brightYellow : c.dim}🧠 ${String(system.intelligencePct).padStart(3)}%${intellTrend}${c.reset}`
   );
 
-  // Line 3: Architecture status with ADRs, AgentDB, Tests
+  // Line 3: Architecture status
   const dddColor = progress.dddProgress >= 50 ? c.brightGreen : progress.dddProgress > 0 ? c.yellow : c.red;
   const adrColor = adrs.count > 0 ? (adrs.implemented === adrs.count ? c.brightGreen : c.yellow) : c.dim;
-  const vectorColor = agentdb.vectorCount > 0 ? c.brightGreen : c.dim;
-  const testColor = tests.testFiles > 0 ? c.brightGreen : c.dim;
 
   lines.push(
-    `${c.brightPurple}🔧 Architecture${c.reset}    ` +
-    `${c.cyan}ADRs${c.reset} ${adrColor}●${adrs.implemented}/${adrs.count}${c.reset}  ${c.dim}│${c.reset}  ` +
-    `${c.cyan}DDD${c.reset} ${dddColor}●${String(progress.dddProgress).padStart(3)}%${c.reset}  ${c.dim}│${c.reset}  ` +
+    `${c.brightPurple}🔧 Architecture${c.reset}   ` +
+    `${c.cyan}ADRs${c.reset} ${adrColor}●${adrs.implemented}/${adrs.count}${c.reset}${sep}` +
+    `${c.cyan}DDD${c.reset} ${dddColor}●${String(progress.dddProgress).padStart(3)}%${c.reset}${sep}` +
     `${c.cyan}Security${c.reset} ${securityColor}●${security.status}${c.reset}`
   );
 
-  // Line 4: Memory, Vectors, Tests
+  // Line 4: Memory, Vectors, Tests, Integration
   const hnswIndicator = agentdb.hasHnsw ? `${c.brightGreen}⚡${c.reset}` : '';
   const sizeDisplay = agentdb.dbSizeKB >= 1024
     ? `${(agentdb.dbSizeKB / 1024).toFixed(1)}MB`
     : `${agentdb.dbSizeKB}KB`;
+  const vectorColor = agentdb.vectorCount > 0 ? c.brightGreen : c.dim;
+  const testColor = tests.testFiles > 0 ? c.brightGreen : c.dim;
+
   // Build integration status string
   let integrationStr = '';
   if (integration.mcpServers.total > 0) {
@@ -1126,10 +1182,10 @@ function generateStatusline() {
   }
 
   lines.push(
-    `${c.brightCyan}📊 AgentDB${c.reset}    ` +
-    `${c.cyan}Vectors${c.reset} ${vectorColor}●${agentdb.vectorCount}${hnswIndicator}${c.reset}  ${c.dim}│${c.reset}  ` +
-    `${c.cyan}Size${c.reset} ${c.brightWhite}${sizeDisplay}${c.reset}  ${c.dim}│${c.reset}  ` +
-    `${c.cyan}Tests${c.reset} ${testColor}●${tests.testFiles}${c.reset} ${c.dim}(${tests.testCases} cases)${c.reset}  ${c.dim}│${c.reset}  ` +
+    `${c.brightCyan}📊 AgentDB${c.reset}   ` +
+    `${c.cyan}Vectors${c.reset} ${vectorColor}●${agentdb.vectorCount}${hnswIndicator}${c.reset}${sep}` +
+    `${c.cyan}Size${c.reset} ${c.brightWhite}${sizeDisplay}${c.reset}${sep}` +
+    `${c.cyan}Tests${c.reset} ${testColor}●${tests.testFiles}${c.reset} ${c.dim}(${tests.testCases})${c.reset}${sep}` +
     integrationStr
   );
 
