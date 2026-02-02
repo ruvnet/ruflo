@@ -508,7 +508,10 @@ describe('ProofChain', () => {
 
   describe('createProofChain factory', () => {
     it('should throw when no signingKey is provided', () => {
-      expect(() => createProofChain()).toThrow('requires an explicit signingKey');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(() => createProofChain({} as any)).toThrow('requires an explicit signingKey');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(() => createProofChain(undefined as any)).toThrow();
     });
 
     it('should create a ProofChain with an explicit signing key', () => {
