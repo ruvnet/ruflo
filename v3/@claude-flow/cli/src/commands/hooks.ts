@@ -3296,6 +3296,7 @@ const statuslineCommand: Command = {
     const fs = await import('fs');
     const path = await import('path');
     const { execSync } = await import('child_process');
+    const os = await import('os');
 
     // Get learning stats from memory database
     function getLearningStats() {
@@ -3473,7 +3474,7 @@ const statuslineCommand: Command = {
     function getUserInfo() {
       let name = 'user';
       let gitBranch = '';
-      const modelName = 'Opus 4.5';
+      let modelName = 'Unknown';
       const isWindows = process.platform === 'win32';
 
       try {
@@ -3488,6 +3489,65 @@ const statuslineCommand: Command = {
         if (gitBranch === '.') gitBranch = '';
       } catch {
         // Ignore
+      }
+
+      // Auto-detect model from Claude Code's config
+      try {
+        const homedir = os.homedir();
+        const claudeConfigPath = path.join(homedir, '.claude.json');
+        if (fs.existsSync(claudeConfigPath)) {
+          const claudeConfig = JSON.parse(fs.readFileSync(claudeConfigPath, 'utf-8'));
+          // Try to find lastModelUsage - prefer most specific (longest) matching path
+          let lastModelUsage = null;
+          const cwd = process.cwd();
+          if (claudeConfig.projects) {
+            // Find all matching paths and pick the longest one (most specific)
+            let bestMatch = null;
+            let bestMatchLength = 0;
+            for (const [projectPath, projectConfig] of Object.entries(claudeConfig.projects)) {
+              if (cwd === projectPath || cwd.startsWith(projectPath + '/')) {
+                if (projectPath.length > bestMatchLength) {
+                  bestMatch = projectConfig;
+                  bestMatchLength = projectPath.length;
+                }
+              }
+            }
+            if (bestMatch && bestMatch.lastModelUsage) {
+              lastModelUsage = bestMatch.lastModelUsage;
+            }
+          }
+          if (lastModelUsage) {
+            const modelIds = Object.keys(lastModelUsage);
+            if (modelIds.length > 0) {
+              // Take the last model (most recently added to the object)
+              // Or find the one with most tokens (most actively used this session)
+              let modelId = modelIds[modelIds.length - 1];
+              if (modelIds.length > 1) {
+                // If multiple models, pick the one with most total tokens (including cache tokens)
+                let maxTokens = 0;
+                for (const id of modelIds) {
+                  const usage = lastModelUsage[id];
+                  const total = (usage.inputTokens || 0) +
+                               (usage.outputTokens || 0) +
+                               (usage.cacheReadInputTokens || 0) +
+                               (usage.cacheCreationInputTokens || 0);
+                  if (total > maxTokens) {
+                    maxTokens = total;
+                    modelId = id;
+                  }
+                }
+              }
+              // Parse model ID to human-readable name
+              if (modelId.includes('opus')) modelName = 'Opus 4.5';
+              else if (modelId.includes('sonnet-4-5')) modelName = 'Sonnet 4.5';
+              else if (modelId.includes('sonnet')) modelName = 'Sonnet 4';
+              else if (modelId.includes('haiku')) modelName = 'Haiku 4.5';
+              else modelName = modelId.split('-').slice(1, 3).join(' ');
+            }
+          }
+        }
+      } catch {
+        // Fallback to Unknown if can't read config
       }
 
       return { name, gitBranch, modelName };
