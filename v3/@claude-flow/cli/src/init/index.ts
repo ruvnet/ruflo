@@ -55,6 +55,7 @@ export {
 export {
   generateClaudeMd,
   generateMinimalClaudeMd,
+  CLAUDE_MD_TEMPLATES,
 } from './claudemd-generator.js';
 
 // Main executor
