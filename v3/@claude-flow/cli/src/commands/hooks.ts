@@ -3474,7 +3474,7 @@ const statuslineCommand: Command = {
     function getUserInfo() {
       let name = 'user';
       let gitBranch = '';
-      let modelName = 'Unknown';
+      let modelName = 'Model unknown (no usage yet)';
       const isWindows = process.platform === 'win32';
 
       try {
