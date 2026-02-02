@@ -93,7 +93,7 @@
   },
   "optionalDependencies": {
     "@claude-flow/embeddings": "^3.0.0-alpha.12",
-    "@claude-flow/plugin-gastown-bridge": "^0.1.0",
+    "@claude-flow/plugin-gastown-bridge": "^0.1.2",
     "@ruvector/attention": "^0.1.4",
     "@ruvector/learning-wasm": "^0.1.29",
     "@ruvector/router": "^0.1.27",
