@@ -52,7 +52,7 @@ const compileCommand: Command = {
       if (jsonOutput) {
         output.writeln(JSON.stringify(bundle, null, 2));
       } else {
-        output.writeln(output.green('Compiled successfully'));
+        output.writeln(output.success('Compiled successfully'));
         output.writeln();
         output.writeln(`  Constitution rules: ${output.bold(String(bundle.constitution.rules.length))}`);
         output.writeln(`  Constitution hash:  ${output.dim(bundle.constitution.hash)}`);
@@ -61,7 +61,7 @@ const compileCommand: Command = {
         output.writeln(`  Compiled at:        ${output.dim(new Date(bundle.manifest.compiledAt).toISOString())}`);
 
         if (localContent) {
-          output.writeln(`  Local overlay:      ${output.green('applied')}`);
+          output.writeln(`  Local overlay:      ${output.success('applied')}`);
         }
 
         output.writeln();
@@ -240,10 +240,10 @@ const gatesCommand: Command = {
         for (const { type, result } of results) {
           output.writeln(`  ${output.bold(type)}:`);
           if (result === null) {
-            output.writeln(`    ${output.green('ALLOW')} - No gate triggered`);
+            output.writeln(`    ${output.success('ALLOW')} - No gate triggered`);
           } else if (Array.isArray(result)) {
             if (result.length === 0) {
-              output.writeln(`    ${output.green('ALLOW')} - All gates passed`);
+              output.writeln(`    ${output.success('ALLOW')} - All gates passed`);
             } else {
               for (const r of result) {
                 const color = r.decision === 'block' ? output.red :
@@ -305,9 +305,9 @@ const statusCommand: Command = {
       if (jsonOutput) {
         output.writeln(JSON.stringify(statusData, null, 2));
       } else {
-        output.writeln(`  Root guidance:  ${rootExists ? output.green('CLAUDE.md found') : output.yellow('CLAUDE.md not found')}`);
-        output.writeln(`  Local overlay:  ${localExists ? output.green('CLAUDE.local.md found') : output.dim('not configured')}`);
-        output.writeln(`  Data directory: ${statusData.dataDir === 'exists' ? output.green('exists') : output.dim('not created')}`);
+        output.writeln(`  Root guidance:  ${rootExists ? output.success('CLAUDE.md found') : output.yellow('CLAUDE.md not found')}`);
+        output.writeln(`  Local overlay:  ${localExists ? output.success('CLAUDE.local.md found') : output.dim('not configured')}`);
+        output.writeln(`  Data directory: ${statusData.dataDir === 'exists' ? output.success('exists') : output.dim('not created')}`);
 
         if (rootExists) {
           const { readFile } = await import('node:fs/promises');
@@ -395,7 +395,7 @@ const optimizeCommand: Command = {
       output.writeln();
 
       if (analysis.compositeScore >= targetScore) {
-        output.writeln(output.green(`Score ${analysis.compositeScore}/100 already meets target ${targetScore}. No optimization needed.`));
+        output.writeln(output.success(`Score ${analysis.compositeScore}/100 already meets target ${targetScore}. No optimization needed.`));
         return { success: true, data: analysis };
       }
 
@@ -427,7 +427,7 @@ const optimizeCommand: Command = {
       if (result.appliedSteps.length > 0) {
         output.writeln(`Applied ${output.bold(String(result.appliedSteps.length))} optimization steps:`);
         for (const step of result.appliedSteps) {
-          output.writeln(`  ${output.green('+')} ${step}`);
+          output.writeln(`  ${output.success('+')} ${step}`);
         }
         output.writeln();
       }
@@ -435,7 +435,7 @@ const optimizeCommand: Command = {
       // Step 3: Apply if requested
       if (applyChanges) {
         await writeFile(rootPath, result.optimized, 'utf-8');
-        output.writeln(output.green(`Optimized CLAUDE.md written to ${rootPath}`));
+        output.writeln(output.success(`Optimized CLAUDE.md written to ${rootPath}`));
         output.writeln(`  Before: ${analysis.compositeScore}/100 (${analysis.grade})`);
         output.writeln(`  After:  ${result.benchmark.after.compositeScore}/100 (${result.benchmark.after.grade})`);
         output.writeln(`  Delta:  ${result.benchmark.delta >= 0 ? '+' : ''}${result.benchmark.delta}`);
@@ -555,7 +555,7 @@ const abTestCommand: Command = {
       // Summary verdict
       const delta = report.compositeDelta;
       if (delta > 0.05) {
-        output.writeln(output.green(`Config B is better (+${delta} composite delta)`));
+        output.writeln(output.success(`Config B is better (+${delta} composite delta)`));
       } else if (delta < -0.05) {
         output.writeln(output.error(`Config B is worse (${delta} composite delta)`));
       } else {
@@ -563,7 +563,7 @@ const abTestCommand: Command = {
       }
 
       if (report.categoryShift) {
-        output.writeln(output.green('Category shift detected: 3+ task classes improved by 20%+'));
+        output.writeln(output.success('Category shift detected: 3+ task classes improved by 20%+'));
       }
 
       return { success: true, data: report };
