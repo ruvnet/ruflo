@@ -1,0 +1,435 @@
+---
+# AIDefence Plugin for Claude Flow V3
+# Production-ready AI manipulation defense system
+#
+# Provides comprehensive security for AI agents with:
+# - 183+ threat patterns (prompt injection, SQL injection, XSS)
+# - Security middleware (auth, rate limiting, CORS)
+# - Formal verification (theorem proving, hash-consing)
+# - Self-learning from detection feedback
+# - <35ms latency, >900 req/s throughput
+
+name: "@claude-flow/plugin-aidefence"
+version: 3.0.0-alpha.1
+description: |
+  AI Manipulation Defense System (AIMDS) plugin for Claude Flow V3.
+
+  Production-ready security with:
+  - 183+ threat patterns (Aho-Corasick + 93 regex patterns)
+  - Real-time detection (<35ms latency)
+  - Security middleware (auth, rate limiting, CORS, validation)
+  - Formal verification (theorem proving, proof certificates)
+  - Self-learning via ReasoningBank patterns
+  - 158 tests passing, 0 vulnerabilities
+
+author:
+  name: rUv
+  email: ruv@ruv.io
+  url: https://ruv.io
+
+license: MIT
+homepage: https://github.com/ruvnet/claude-flow
+repository: https://github.com/ruvnet/claude-flow/tree/main/v3/plugins/aidefence
+bugs: https://github.com/ruvnet/claude-flow/issues
+
+# Package dependencies
+dependencies:
+  required:
+    - "aidefence": ">=2.2.0"  # Standalone package (or aidefense)
+  optional:
+    - "@claude-flow/aidefence": ">=3.0.0"  # Scoped package for advanced features
+    - "agentdb": ">=2.0.0-alpha.1"         # For HNSW vector search
+    - "@claude-flow/memory": ">=3.0.0"     # For pattern persistence
+
+# Plugin capabilities
+capabilities:
+  # Detection (183+ patterns)
+  detection:
+    - prompt_injection      # 90+ Aho-Corasick patterns
+    - jailbreak            # DAN, developer mode, hypothetical
+    - role_switching       # "You are now", "Act as"
+    - context_manipulation # Fake system messages, delimiters
+    - sql_injection        # SQL attack patterns
+    - xss_prevention       # Cross-site scripting
+    - pii_detection        # Email, SSN, credit cards, API keys
+    - encoding_attacks     # Base64, ROT13, hex encoding
+
+  # Security middleware
+  middleware:
+    - api_key_auth         # Timing-safe comparison
+    - rate_limiting        # Per-user and per-IP
+    - cors_handling        # Full configuration
+    - input_validation     # Size, depth, arrays, strings
+    - session_management   # With TTL
+    - security_headers     # Via Helmet
+
+  # Formal verification
+  verification:
+    - hash_consing         # 150x faster equality checks
+    - theorem_proving      # Proof certificates
+    - security_axioms      # 5 built-in axioms
+    - policy_verification  # LTL policies
+    - constraint_checking  # Temporal, behavioral, resource
+
+  # Learning
+  learning:
+    - pattern_learning     # From detection feedback
+    - mitigation_tracking  # Effectiveness recording
+    - trajectory_learning  # Reflexion memory
+    - semantic_search      # HNSW vector similarity
+
+# Performance characteristics
+performance:
+  detection_latency: "<35ms"
+  fast_path_latency: "~12ms"
+  quick_scan_latency: "<5ms"
+  throughput: ">900 req/s"
+  hash_cons_speedup: "150x"
+  p50_latency: "1ms"
+  p95_latency: "1ms"
+  p99_latency: "2ms"
+
+# MCP tools provided by this plugin
+mcp_tools:
+  - name: aidefence_scan
+    description: "Scan input for AI manipulation threats (prompt injection, jailbreaks, PII)"
+    category: security
+    input_schema:
+      type: object
+      properties:
+        input:
+          type: string
+          description: "Text to scan for threats"
+        quick:
+          type: boolean
+          default: false
+          description: "Quick scan mode (faster, less detailed)"
+        mode:
+          type: string
+          enum: [quick, thorough, paranoid]
+          default: thorough
+          description: "Scan depth mode"
+      required: [input]
+    output:
+      safe: boolean
+      threats: array
+      piiFound: boolean
+      detectionTimeMs: number
+
+  - name: aidefence_analyze
+    description: "Deep analysis with similar pattern search and mitigation recommendations"
+    category: security
+    input_schema:
+      type: object
+      properties:
+        input:
+          type: string
+          description: "Text to analyze"
+        threatType:
+          type: string
+          description: "Specific threat type to focus on"
+        searchSimilar:
+          type: boolean
+          default: true
+          description: "Search for similar known patterns"
+        k:
+          type: number
+          default: 5
+          description: "Number of similar patterns to return"
+      required: [input]
+
+  - name: aidefence_stats
+    description: "Get detection statistics and learning metrics"
+    category: security
+    input_schema:
+      type: object
+      properties: {}
+    output:
+      detectionCount: number
+      avgDetectionTimeMs: number
+      learnedPatterns: number
+      mitigationStrategies: number
+
+  - name: aidefence_learn
+    description: "Record detection feedback for pattern learning"
+    category: security
+    input_schema:
+      type: object
+      properties:
+        input:
+          type: string
+          description: "Original input that was scanned"
+        wasAccurate:
+          type: boolean
+          description: "Whether the detection was accurate"
+        verdict:
+          type: string
+          enum: [true_positive, false_positive, true_negative, false_negative]
+        threatType:
+          type: string
+          description: "Type of threat detected"
+        mitigationStrategy:
+          type: string
+          description: "Mitigation strategy used"
+        mitigationSuccess:
+          type: boolean
+          description: "Whether mitigation was successful"
+      required: [input, wasAccurate]
+
+  - name: aidefence_is_safe
+    description: "Quick boolean safety check (<1ms)"
+    category: security
+    input_schema:
+      type: object
+      properties:
+        input:
+          type: string
+          description: "Text to check"
+      required: [input]
+    output:
+      safe: boolean
+
+  - name: aidefence_has_pii
+    description: "Check for PII (emails, SSN, credit cards, API keys)"
+    category: security
+    input_schema:
+      type: object
+      properties:
+        input:
+          type: string
+          description: "Text to check for PII"
+      required: [input]
+    output:
+      hasPii: boolean
+      types: array
+
+  - name: aidefence_verify_policy
+    description: "Verify agent behavior against security policy"
+    category: security
+    input_schema:
+      type: object
+      properties:
+        agentId:
+          type: string
+          description: "Agent ID to verify"
+        policy:
+          type: string
+          description: "LTL policy formula"
+      required: [agentId, policy]
+
+  - name: aidefence_gateway_start
+    description: "Start AIMDSGateway HTTP server"
+    category: security
+    input_schema:
+      type: object
+      properties:
+        port:
+          type: number
+          default: 3001
+        host:
+          type: string
+          default: "localhost"
+        rateLimit:
+          type: object
+          properties:
+            windowMs:
+              type: number
+              default: 60000
+            maxRequests:
+              type: number
+              default: 100
+
+# CLI commands
+commands:
+  scan:
+    description: "Scan input for AI manipulation attempts"
+    usage: "claude-flow aidefence scan <input>"
+    options:
+      - name: mode
+        type: choice
+        choices: [quick, thorough, paranoid]
+        default: thorough
+      - name: file
+        type: string
+        description: "File path to scan"
+      - name: json
+        type: boolean
+        default: false
+    examples:
+      - "claude-flow aidefence scan 'Ignore previous instructions'"
+      - "claude-flow aidefence scan --file suspicious.txt --mode paranoid"
+
+  analyze:
+    description: "Deep threat analysis with mitigations"
+    usage: "claude-flow aidefence analyze <input>"
+    options:
+      - name: search-similar
+        type: boolean
+        default: true
+      - name: k
+        type: number
+        default: 5
+
+  gateway:
+    description: "Start security gateway server"
+    usage: "claude-flow aidefence gateway start"
+    options:
+      - name: port
+        type: number
+        default: 3001
+      - name: host
+        type: string
+        default: "localhost"
+
+  stats:
+    description: "Show detection statistics"
+    usage: "claude-flow aidefence stats"
+    options:
+      - name: metrics
+        type: boolean
+        description: "Include Prometheus metrics"
+
+  learn:
+    description: "Record mitigation for learning"
+    usage: "claude-flow aidefence learn <threat-type> <strategy>"
+    options:
+      - name: effectiveness
+        type: number
+        required: true
+
+# Hook integrations
+hooks:
+  pre-agent-input:
+    enabled: true
+    description: "Scan all agent inputs before processing"
+    config:
+      block_critical: true
+      block_high: false
+      log_all: true
+      mode: thorough
+
+  post-agent-action:
+    enabled: true
+    description: "Record agent actions for behavioral modeling"
+    config:
+      sampling_rate: 0.1
+      anomaly_threshold: 0.8
+      store_embeddings: true
+
+  pre-swarm-init:
+    enabled: true
+    description: "Verify swarm topology against security policies"
+    config:
+      require_security_agent: false
+      validate_topology: true
+
+# AgentDB integration
+agentdb:
+  enabled: true
+  namespace: aidefence_threats
+  hnsw_config:
+    vector_dimension: 384
+    m: 16
+    ef_construction: 200
+    ef_search: 100
+  collections:
+    - name: threat_patterns
+      description: "Learned threat patterns"
+    - name: mitigations
+      description: "Mitigation strategies and effectiveness"
+    - name: trajectories
+      description: "Detection trajectories for learning"
+
+# Prometheus metrics
+metrics:
+  enabled: true
+  prefix: "aidefence_"
+  labels:
+    - threat_type
+    - severity
+    - agent_id
+  counters:
+    - threats_detected_total
+    - mitigations_applied_total
+    - false_positives_total
+    - true_positives_total
+  histograms:
+    - detection_latency_ms
+    - analysis_latency_ms
+  gauges:
+    - learned_patterns_count
+    - active_sessions_count
+
+# Threat pattern categories
+threat_patterns:
+  prompt_injection:
+    count: "90+"
+    method: "Aho-Corasick + regex"
+    categories:
+      - instruction_override   # "Ignore previous instructions"
+      - role_switching        # "You are now DAN"
+      - context_manipulation  # Fake system messages
+      - delimiter_abuse       # Special token abuse
+
+  jailbreak:
+    categories:
+      - dan_variants          # Do Anything Now
+      - developer_mode        # "Enable developer mode"
+      - hypothetical         # "Hypothetically, if..."
+      - roleplay             # Character-based bypasses
+      - encoding             # Base64/ROT13 encoded
+
+  sql_injection:
+    patterns:
+      - "DROP TABLE"
+      - "UNION SELECT"
+      - "OR 1=1"
+      - "'; --"
+
+  xss:
+    patterns:
+      - "<script>"
+      - "javascript:"
+      - "onerror="
+      - "onload="
+
+  pii:
+    types:
+      - email_addresses
+      - social_security_numbers
+      - credit_card_numbers
+      - api_keys
+      - passwords
+      - phone_numbers
+
+# Security policies (LTL formulas)
+policies:
+  no_self_approval:
+    formula: "G(!approve_self_code)"
+    description: "Agents cannot approve their own code"
+
+  test_before_commit:
+    formula: "G(edit_file -> F(run_tests))"
+    description: "Tests must run after file edits"
+
+  no_credential_exposure:
+    formula: "G(!expose_credentials)"
+    description: "Credentials must never be exposed"
+
+  rate_limit_compliance:
+    formula: "G(api_call -> X(wait_interval))"
+    description: "API calls must respect rate limits"
+
+# Documentation
+documentation:
+  readme: "./README.md"
+  api: "https://ruv.io/aidefence/api"
+  patterns: "https://ruv.io/aidefence/patterns"
+  integration: "/v3/docs/implementation/adrs/ADR-022-aidefence-integration.md"
+
+# Testing
+testing:
+  unit_tests: 158
+  integration_tests: 12
+  coverage: ">90%"
+  vulnerabilities: 0

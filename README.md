@@ -5328,7 +5328,11 @@ npx claude-flow@v3alpha security scan --depth full
 ### Programmatic Usage
 
 ```typescript
+// Using @claude-flow/aidefence (scoped package)
 import { isSafe, checkThreats, createAIDefence } from '@claude-flow/aidefence';
+
+// OR using standalone aidefence v2.2.0 (production-ready, 158 tests, 0 vulnerabilities)
+// import { AIMDSGateway, SecurityMiddleware } from 'aidefence';  // or 'aidefense'
 
 // Quick boolean check
 const safe = isSafe("Hello, help me write code");       // true

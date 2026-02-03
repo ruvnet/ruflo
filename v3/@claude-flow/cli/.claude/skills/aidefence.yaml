@@ -6,13 +6,16 @@ description: |
   Provides real-time threat detection, behavioral analysis, and adaptive
   mitigation with 25-level meta-learning capabilities.
 
+  v2.2.0: 158 tests passing, 0 vulnerabilities, 183+ threat patterns,
+  security middleware (auth, rate limiting, CORS), <35ms latency.
+
 author: rUv
 license: MIT
 homepage: https://ruv.io/aimds
 repository: https://github.com/ruvnet/midstream/tree/main/AIMDS
 
 # Package reference
-package: aidefence@^2.1.1
+package: aidefence@^2.2.0
 
 # Capabilities provided by this skill
 capabilities:
