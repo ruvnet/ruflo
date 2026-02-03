@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$TOOL_INPUT_file_path\" ] && npx @claude-flow/cli@latest hooks pre-edit --file \"$TOOL_INPUT_file_path\" 2>/dev/null || true",
-            "timeout": 5000,
+            "command": ".claude/hooks/hook-bridge.sh pre-edit",
+            "timeout": 10000,
             "continueOnError": true
           }
         ]
@@ -17,8 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$TOOL_INPUT_command\" ] && npx @claude-flow/cli@latest hooks pre-command --command \"$TOOL_INPUT_command\" 2>/dev/null || true",
-            "timeout": 5000,
+            "command": ".claude/hooks/hook-bridge.sh pre-command",
+            "timeout": 10000,
             "continueOnError": true
           }
         ]
@@ -28,8 +28,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$TOOL_INPUT_prompt\" ] && npx @claude-flow/cli@latest hooks pre-task --task-id \"task-$(date +%s)\" --description \"$TOOL_INPUT_prompt\" 2>/dev/null || true",
-            "timeout": 5000,
+            "command": ".claude/hooks/hook-bridge.sh pre-task",
+            "timeout": 10000,
             "continueOnError": true
           }
         ]
@@ -41,8 +41,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$TOOL_INPUT_file_path\" ] && npx @claude-flow/cli@latest hooks post-edit --file \"$TOOL_INPUT_file_path\" --success \"${TOOL_SUCCESS:-true}\" 2>/dev/null || true",
-            "timeout": 5000,
+            "command": ".claude/hooks/hook-bridge.sh post-edit",
+            "timeout": 10000,
             "continueOnError": true
           }
         ]
@@ -52,8 +52,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$TOOL_INPUT_command\" ] && npx @claude-flow/cli@latest hooks post-command --command \"$TOOL_INPUT_command\" --success \"${TOOL_SUCCESS:-true}\" 2>/dev/null || true",
-            "timeout": 5000,
+            "command": ".claude/hooks/hook-bridge.sh post-command",
+            "timeout": 10000,
             "continueOnError": true
           }
         ]
@@ -63,8 +63,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$TOOL_RESULT_agent_id\" ] && npx @claude-flow/cli@latest hooks post-task --task-id \"$TOOL_RESULT_agent_id\" --success \"${TOOL_SUCCESS:-true}\" 2>/dev/null || true",
-            "timeout": 5000,
+            "command": ".claude/hooks/hook-bridge.sh post-task",
+            "timeout": 10000,
             "continueOnError": true
           }
         ]
@@ -75,8 +75,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$PROMPT\" ] && npx @claude-flow/cli@latest hooks route --task \"$PROMPT\" || true",
-            "timeout": 5000,
+            "command": ".claude/hooks/hook-bridge.sh route",
+            "timeout": 10000,
             "continueOnError": true
           }
         ]
@@ -87,14 +87,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx @claude-flow/cli@latest daemon start --quiet 2>/dev/null || true",
-            "timeout": 5000,
+            "command": ".claude/hooks/hook-bridge.sh daemon-start",
+            "timeout": 10000,
             "continueOnError": true
           },
           {
             "type": "command",
-            "command": "[ -n \"$SESSION_ID\" ] && npx @claude-flow/cli@latest hooks session-restore --session-id \"$SESSION_ID\" 2>/dev/null || true",
-            "timeout": 10000,
+            "command": ".claude/hooks/hook-bridge.sh session-restore",
+            "timeout": 15000,
             "continueOnError": true
           }
         ]
@@ -105,7 +105,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '{\"ok\": true}'",
+            "command": ".claude/hooks/hook-bridge.sh stop-check",
             "timeout": 1000
           }
         ]
@@ -116,8 +116,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$NOTIFICATION_MESSAGE\" ] && npx @claude-flow/cli@latest memory store --namespace notifications --key \"notify-$(date +%s)\" --value \"$NOTIFICATION_MESSAGE\" 2>/dev/null || true",
-            "timeout": 3000,
+            "command": ".claude/hooks/hook-bridge.sh notify",
+            "timeout": 5000,
             "continueOnError": true
           }
         ]

@@ -143,11 +143,17 @@ function generateStatusLineConfig(options: InitOptions): object {
 
 /**
  * Generate hooks configuration
+ *
+ * IMPORTANT: Claude Code passes hook context as JSON via stdin, NOT as shell
+ * environment variables. The hook-bridge.sh script reads stdin JSON with jq
+ * and forwards the extracted fields as proper CLI arguments.
+ *
+ * See .claude/hooks/hook-bridge.sh for the implementation.
  */
 function generateHooksConfig(config: HooksConfig): object {
   const hooks: Record<string, unknown[]> = {};
 
-  // PreToolUse hooks - cross-platform via npx with defensive guards
+  // PreToolUse hooks - use hook-bridge.sh to parse stdin JSON
   if (config.preToolUse) {
     hooks.PreToolUse = [
       // File edit hooks with intelligence routing
@@ -156,7 +162,7 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$TOOL_INPUT_file_path" ] && npx @claude-flow/cli@latest hooks pre-edit --file "$TOOL_INPUT_file_path" 2>/dev/null || true',
+            command: '.claude/hooks/hook-bridge.sh pre-edit',
             timeout: config.timeout,
             continueOnError: true,
           },
@@ -168,19 +174,19 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$TOOL_INPUT_command" ] && npx @claude-flow/cli@latest hooks pre-command --command "$TOOL_INPUT_command" 2>/dev/null || true',
+            command: '.claude/hooks/hook-bridge.sh pre-command',
             timeout: config.timeout,
             continueOnError: true,
           },
         ],
       },
-      // Task/Agent hooks - require task-id for tracking
+      // Task/Agent hooks
       {
         matcher: '^Task$',
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$TOOL_INPUT_prompt" ] && npx @claude-flow/cli@latest hooks pre-task --task-id "task-$(date +%s)" --description "$TOOL_INPUT_prompt" 2>/dev/null || true',
+            command: '.claude/hooks/hook-bridge.sh pre-task',
             timeout: config.timeout,
             continueOnError: true,
           },
@@ -189,7 +195,7 @@ function generateHooksConfig(config: HooksConfig): object {
     ];
   }
 
-  // PostToolUse hooks - cross-platform via npx with defensive guards
+  // PostToolUse hooks - use hook-bridge.sh to parse stdin JSON
   if (config.postToolUse) {
     hooks.PostToolUse = [
       // File edit hooks with neural pattern training
@@ -198,7 +204,7 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$TOOL_INPUT_file_path" ] && npx @claude-flow/cli@latest hooks post-edit --file "$TOOL_INPUT_file_path" --success "${TOOL_SUCCESS:-true}" 2>/dev/null || true',
+            command: '.claude/hooks/hook-bridge.sh post-edit',
             timeout: config.timeout,
             continueOnError: true,
           },
@@ -210,19 +216,19 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$TOOL_INPUT_command" ] && npx @claude-flow/cli@latest hooks post-command --command "$TOOL_INPUT_command" --success "${TOOL_SUCCESS:-true}" 2>/dev/null || true',
+            command: '.claude/hooks/hook-bridge.sh post-command',
             timeout: config.timeout,
             continueOnError: true,
           },
         ],
       },
-      // Task completion hooks - use task-id
+      // Task completion hooks
       {
         matcher: '^Task$',
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$TOOL_RESULT_agent_id" ] && npx @claude-flow/cli@latest hooks post-task --task-id "$TOOL_RESULT_agent_id" --success "${TOOL_SUCCESS:-true}" 2>/dev/null || true',
+            command: '.claude/hooks/hook-bridge.sh post-task',
             timeout: config.timeout,
             continueOnError: true,
           },
@@ -238,7 +244,7 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$PROMPT" ] && npx @claude-flow/cli@latest hooks route --task "$PROMPT" || true',
+            command: '.claude/hooks/hook-bridge.sh route',
             timeout: config.timeout,
             continueOnError: true,
           },
@@ -254,14 +260,14 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: 'npx @claude-flow/cli@latest daemon start --quiet 2>/dev/null || true',
-            timeout: 5000,
+            command: '.claude/hooks/hook-bridge.sh daemon-start',
+            timeout: 10000,
             continueOnError: true,
           },
           {
             type: 'command',
-            command: '[ -n "$SESSION_ID" ] && npx @claude-flow/cli@latest hooks session-restore --session-id "$SESSION_ID" 2>/dev/null || true',
-            timeout: 10000,
+            command: '.claude/hooks/hook-bridge.sh session-restore',
+            timeout: 15000,
             continueOnError: true,
           },
         ],
@@ -270,14 +276,13 @@ function generateHooksConfig(config: HooksConfig): object {
   }
 
   // Stop hooks for task evaluation - always return ok by default
-  // The hook outputs JSON that Claude Code validates
   if (config.stop) {
     hooks.Stop = [
       {
         hooks: [
           {
             type: 'command',
-            command: 'echo \'{"ok": true}\'',
+            command: '.claude/hooks/hook-bridge.sh stop-check',
             timeout: 1000,
           },
         ],
@@ -292,8 +297,8 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$NOTIFICATION_MESSAGE" ] && npx @claude-flow/cli@latest memory store --namespace notifications --key "notify-$(date +%s)" --value "$NOTIFICATION_MESSAGE" 2>/dev/null || true',
-            timeout: 3000,
+            command: '.claude/hooks/hook-bridge.sh notify',
+            timeout: 5000,
             continueOnError: true,
           },
         ],

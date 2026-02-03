@@ -129,6 +129,7 @@ const DIRECTORIES = {
     '.claude/commands',
     '.claude/agents',
     '.claude/helpers',
+    '.claude/hooks',
   ],
   runtime: [
     '.claude-flow',
@@ -758,6 +759,57 @@ function findSourceHelpersDir(sourceBaseDir?: string): string | null {
 }
 
 /**
+ * Write hook-bridge.sh to .claude/hooks/
+ *
+ * This script is required for Claude Code hooks to function correctly.
+ * Claude Code passes hook context as JSON via stdin (not as env vars),
+ * so a bridge script is needed to parse the JSON and forward fields
+ * as proper CLI arguments.
+ */
+async function writeHookBridge(
+  targetDir: string,
+  options: InitOptions,
+  result: InitResult
+): Promise<void> {
+  const hooksDir = path.join(targetDir, '.claude', 'hooks');
+
+  if (!fs.existsSync(hooksDir)) {
+    fs.mkdirSync(hooksDir, { recursive: true });
+  }
+
+  const bridgePath = path.join(hooksDir, 'hook-bridge.sh');
+
+  if (fs.existsSync(bridgePath) && !options.force) {
+    result.skipped.push('.claude/hooks/hook-bridge.sh');
+    return;
+  }
+
+  // Try to copy from package source first
+  const sourceHooksDir = findSourceDir('hooks', options.sourceBaseDir);
+  if (sourceHooksDir) {
+    const sourceBridge = path.join(sourceHooksDir, 'hook-bridge.sh');
+    if (fs.existsSync(sourceBridge)) {
+      fs.copyFileSync(sourceBridge, bridgePath);
+      fs.chmodSync(bridgePath, '755');
+      result.created.files.push('.claude/hooks/hook-bridge.sh');
+      return;
+    }
+  }
+
+  // Fallback: check package's own .claude/hooks directory
+  const packageRoot = path.resolve(__dirname, '..', '..', '..');
+  const packageBridge = path.join(packageRoot, '.claude', 'hooks', 'hook-bridge.sh');
+  if (fs.existsSync(packageBridge)) {
+    fs.copyFileSync(packageBridge, bridgePath);
+    fs.chmodSync(bridgePath, '755');
+    result.created.files.push('.claude/hooks/hook-bridge.sh');
+    return;
+  }
+
+  result.errors.push('Could not find hook-bridge.sh source. Hooks may not function correctly.');
+}
+
+/**
  * Write helper scripts
  */
 async function writeHelpers(
@@ -766,6 +818,11 @@ async function writeHelpers(
   result: InitResult
 ): Promise<void> {
   const helpersDir = path.join(targetDir, '.claude', 'helpers');
+
+  // Write hook-bridge.sh (required for Claude Code hooks to work)
+  // Claude Code passes hook context as JSON via stdin, not as env vars.
+  // hook-bridge.sh reads the JSON and forwards fields as CLI arguments.
+  await writeHookBridge(targetDir, options, result);
 
   // Find source helpers directory (works for npm package and local dev)
   const sourceHelpersDir = findSourceHelpersDir(options.sourceBaseDir);
