@@ -1,0 +1,20 @@
+{
+  "pages": [
+    {
+      "title": "Claude Flow MCP Tools",
+      "path": "src/cli/mcp-tools/", 
+      "purpose": "170+ MCP handlers for agent orchestration"
+    },
+    {
+      "title": "Swarm Coordination Guide", 
+      "path": "CLAUDE.md",
+      "purpose": "Core invariants, 54 agents, concurrent patterns"
+    },
+    {
+      "title": "Memory Schema", 
+      "path": ".swarm/memory.db schema files",
+      "purpose": "SQLite tables for cross-session persistence"
+    }
+  ],
+  "repo_notes": "Focus on MCP tools, swarm benchmarks, RuVector integration."
+}
