@@ -1714,7 +1714,7 @@ npx claude-flow@v3alpha worker status
 
 | Provider | Models (2025-2026) | Features | Cost |
 |----------|--------|----------|------|
-| **Anthropic** | Claude Opus 4.5, Claude Sonnet 4.5, Claude Haiku 4.5 | Native, streaming, tool calling, extended thinking | $1-25/1M tokens |
+| **Anthropic** | Claude Opus 4.6, Claude Sonnet 4.5, Claude Haiku 4.5 | Native, streaming, tool calling, extended thinking | $1-25/1M tokens |
 | **OpenAI** | GPT-5.2, o3, o3-pro, o4-mini | 400K context, reasoning chains, 100% AIME 2025 | $0.15-60/1M tokens |
 | **Google** | Gemini 3 Pro, Gemini 3 Flash, Gemini 3 Deep Think | 1M+ context, multimodal, Deep Think reasoning | $0.075-7/1M tokens |
 | **xAI** | Grok 4.1, Grok 3 | Truth-seeking, real-time data, 200K H100 training | $2-10/1M tokens |
@@ -2146,7 +2146,7 @@ Real-time development status display for Claude Code integration showing DDD pro
 
 **Output Format:**
 ```
-▊ Claude Flow V3 ● ruvnet  │  ⎇ v3  │  Opus 4.5
+▊ Claude Flow V3 ● ruvnet  │  ⎇ v3  │  Opus 4.6
 ─────────────────────────────────────────────────────
 🏗️  DDD Domains    [●●●●●]  5/5    ⚡ 1.0x → 2.49x-7.47x
 🤖 Swarm  ◉ [58/15]  👥 0    🟢 CVE 3/3    💾 22282MB    📂  47%    🧠  10%
@@ -2158,7 +2158,7 @@ Real-time development status display for Claude Code integration showing DDD pro
 | `▊ Claude Flow V3` | Project header | Always shown |
 | `● ruvnet` | GitHub user (via `gh` CLI) | Dynamic |
 | `⎇ v3` | Current git branch | Dynamic |
-| `Opus 4.5` | Claude model name | From Claude Code |
+| `Opus 4.6` | Claude model name | From Claude Code |
 | `[●●●●●]` | DDD domain progress bar | 0-5 domains |
 | `⚡ 1.0x → 2.49x-7.47x` | Performance speedup target | Current → Target |
 | `◉/○` | Swarm coordination status | Active/Inactive |

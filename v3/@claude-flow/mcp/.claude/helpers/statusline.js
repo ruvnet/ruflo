@@ -47,7 +47,7 @@ const c = {
 function getUserInfo() {
   let name = 'user';
   let gitBranch = '';
-  let modelName = 'Opus 4.5';
+  let modelName = 'Opus 4.6';
 
   try {
     name = execSync('git config user.name 2>/dev/null || echo "user"', { encoding: 'utf-8' }).trim();
