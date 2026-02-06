@@ -2,7 +2,7 @@
   "name": "claude-flow",
   "version": "3.1.0-alpha.1",
   "description": "Enterprise AI agent orchestration for Claude Code - Deploy 60+ specialized agents in coordinated swarms with self-learning, fault-tolerant consensus, vector memory, and MCP integration",
-  "main": "dist/index.js",
+  "main": "./index.js",
   "type": "module",
   "bin": {
     "claude-flow": "./v3/@claude-flow/cli/bin/cli.js"
@@ -38,7 +38,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "echo \"Root dev entrypoint is deprecated. Use: npm run dev:cli\"",
+    "dev:cli": "cd v3/@claude-flow/cli && npm run build -- --watch",
     "build": "tsc",
     "build:ts": "cd v3/@claude-flow/cli && npm run build || true",
     "typecheck": "npm run build:ts",
@@ -49,6 +50,7 @@
     "test:performance": "echo \"No root performance suite configured\"",
     "test:benchmark": "npm run test:performance",
     "test:coverage": "npm run test -- --coverage",
+    "test:root-entrypoints": "node ./scripts/verify-root-entrypoints.mjs",
     "test:ui": "vitest --ui",
     "test:security": "vitest run v3/__tests__/security/",
     "lint": "cd v3/@claude-flow/cli && npm run lint || true",

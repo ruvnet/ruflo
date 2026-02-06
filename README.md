@@ -129,6 +129,7 @@ npm run test:integration:plugin
 
 ## Known Limitations
 
+- Root package import entrypoint is deprecated; use CLI (`npx claude-flow`) or package-level imports (for example `@claude-flow/cli`).
 - `v3/@claude-flow/cli/bin/*.js` imports `../dist/src/*`; `dist` is not committed by default.
 - Root workflow compatibility scripts are lightweight wrappers and may no-op when package-level suites are unavailable.
 - Some command outputs are demonstrative rather than telemetry-backed (for example provider usage tables).
