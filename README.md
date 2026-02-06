@@ -130,7 +130,7 @@ npm run test:integration:plugin
 ## Known Limitations
 
 - `v3/@claude-flow/cli/bin/*.js` imports `../dist/src/*`; `dist` is not committed by default.
-- Root scripts include stale entries (`src/index.ts`, `build:domains`, `start:swarm`) not present in this workspace.
+- Root workflow compatibility scripts are lightweight wrappers and may no-op when package-level suites are unavailable.
 - Some command outputs are demonstrative rather than telemetry-backed (for example provider usage tables).
 - Performance numbers found in comments/templates are not validated in-repo benchmarks.
 
