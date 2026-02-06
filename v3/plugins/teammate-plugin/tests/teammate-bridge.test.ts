@@ -241,6 +241,19 @@ describe('Teammate Spawning', () => {
     expect(agentInput.team_name).toBe('spawn-test-team');
     expect(agentInput.allowed_tools).toEqual(['Read', 'Grep']);
     expect(agentInput.mode).toBe('plan');
+    expect(agentInput.run_in_background).toBe(false);
+  });
+
+  it('should preserve explicit runInBackground=true in AgentInput', async () => {
+    const agentInput = bridge.buildAgentInput({
+      name: 'reviewer-bg',
+      role: 'reviewer',
+      prompt: 'Review code in background',
+      teamName: 'spawn-test-team',
+      runInBackground: true,
+    });
+
+    expect(agentInput.run_in_background).toBe(true);
   });
 });
 
