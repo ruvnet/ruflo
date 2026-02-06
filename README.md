@@ -27,6 +27,22 @@
 
 Claude-Flow is a comprehensive AI agent orchestration framework that transforms Claude Code into a powerful multi-agent development platform. It enables teams to deploy, coordinate, and optimize specialized AI agents working together on complex software engineering tasks.
 
+## Fork Stewardship
+
+This repository is maintained as a community fork of [ruvnet/claude-flow](https://github.com/ruvnet/claude-flow).
+
+We forked because we need a different maintenance and release cadence for our roadmap, including faster turnaround when upstream pull-request review queues grow for extended periods. This choice is about delivery pace and scope, not criticism of upstream maintainers.
+
+Our open-source commitments:
+
+- Keep original attribution, license, and git history intact
+- Credit upstream maintainers for foundational work
+- Upstream generally useful fixes whenever possible
+- Sync with upstream regularly and document intentional divergence
+- Keep collaboration respectful and focused on code, not people
+
+If you want to contribute, start with [CONTRIBUTING.md](./CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
+
 ### Self-Learning/Self-Optimizing Agent Architecture
 
 ```
