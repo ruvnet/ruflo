@@ -2073,11 +2073,11 @@ const intelligenceCommand: Command = {
           ],
           data: [
             { metric: 'Status', value: formatIntelligenceStatus(result.components.sona.status) },
-            { metric: 'Learning Time', value: `${result.components.sona.learningTimeMs.toFixed(3)}ms` },
-            { metric: 'Adaptation Time', value: `${result.components.sona.adaptationTimeMs.toFixed(3)}ms` },
-            { metric: 'Trajectories', value: result.components.sona.trajectoriesRecorded },
-            { metric: 'Patterns Learned', value: result.components.sona.patternsLearned },
-            { metric: 'Avg Quality', value: `${(result.components.sona.avgQuality * 100).toFixed(1)}%` }
+            { metric: 'Learning Time', value: `${(result.components.sona.learningTimeMs ?? 0).toFixed(3)}ms` },
+            { metric: 'Adaptation Time', value: `${(result.components.sona.adaptationTimeMs ?? 0).toFixed(3)}ms` },
+            { metric: 'Trajectories', value: result.components.sona.trajectoriesRecorded ?? 0 },
+            { metric: 'Patterns Learned', value: result.components.sona.patternsLearned ?? 0 },
+            { metric: 'Avg Quality', value: `${((result.components.sona.avgQuality ?? 0) * 100).toFixed(1)}%` }
           ]
         });
       } else {
@@ -2095,9 +2095,9 @@ const intelligenceCommand: Command = {
           ],
           data: [
             { metric: 'Status', value: formatIntelligenceStatus(result.components.moe.status) },
-            { metric: 'Active Experts', value: result.components.moe.expertsActive },
-            { metric: 'Routing Accuracy', value: `${(result.components.moe.routingAccuracy * 100).toFixed(1)}%` },
-            { metric: 'Load Balance', value: `${(result.components.moe.loadBalance * 100).toFixed(1)}%` }
+            { metric: 'Active Experts', value: result.components.moe.expertsActive ?? 0 },
+            { metric: 'Routing Accuracy', value: `${((result.components.moe.routingAccuracy ?? 0) * 100).toFixed(1)}%` },
+            { metric: 'Load Balance', value: `${((result.components.moe.loadBalance ?? 0) * 100).toFixed(1)}%` }
           ]
         });
       } else {
@@ -2115,10 +2115,10 @@ const intelligenceCommand: Command = {
           ],
           data: [
             { metric: 'Status', value: formatIntelligenceStatus(result.components.hnsw.status) },
-            { metric: 'Index Size', value: result.components.hnsw.indexSize.toLocaleString() },
-            { metric: 'Search Speedup', value: output.success(result.components.hnsw.searchSpeedup) },
-            { metric: 'Memory Usage', value: result.components.hnsw.memoryUsage },
-            { metric: 'Dimension', value: result.components.hnsw.dimension }
+            { metric: 'Index Size', value: (result.components.hnsw.indexSize ?? 0).toLocaleString() },
+            { metric: 'Search Speedup', value: output.success(result.components.hnsw.searchSpeedup ?? 'N/A') },
+            { metric: 'Memory Usage', value: result.components.hnsw.memoryUsage ?? (result.components.hnsw.memorySizeBytes ? `${Math.round(result.components.hnsw.memorySizeBytes / 1024)}KB` : 'N/A') },
+            { metric: 'Dimension', value: result.components.hnsw.dimension ?? result.components.embeddings?.dimension ?? 'N/A' }
           ]
         });
       } else {
@@ -2137,7 +2137,7 @@ const intelligenceCommand: Command = {
           { metric: 'Provider', value: result.components.embeddings.provider },
           { metric: 'Model', value: result.components.embeddings.model },
           { metric: 'Dimension', value: result.components.embeddings.dimension },
-          { metric: 'Cache Hit Rate', value: `${(result.components.embeddings.cacheHitRate * 100).toFixed(1)}%` }
+          { metric: 'Cache Hit Rate', value: `${((result.components.embeddings.cacheHitRate ?? 0) * 100).toFixed(1)}%` }
         ]
       });
 
@@ -2145,11 +2145,11 @@ const intelligenceCommand: Command = {
       output.writeln();
       output.writeln(output.bold('🚀 V3 Performance Gains'));
       output.printList([
-        `Flash Attention: ${output.success(result.performance.flashAttention)}`,
-        `Memory Reduction: ${output.success(result.performance.memoryReduction)}`,
-        `Search Improvement: ${output.success(result.performance.searchImprovement)}`,
-        `Token Reduction: ${output.success(result.performance.tokenReduction)}`,
-        `SWE-Bench Score: ${output.success(result.performance.sweBenchScore)}`
+        `Flash Attention: ${output.success(result.performance?.flashAttention ?? 'N/A')}`,
+        `Memory Reduction: ${output.success(result.performance?.memoryReduction ?? 'N/A')}`,
+        `Search Improvement: ${output.success(result.performance?.searchImprovement ?? 'N/A')}`,
+        `Token Reduction: ${output.success(result.performance?.tokenReduction ?? 'N/A')}`,
+        `SWE-Bench Score: ${output.success(result.performance?.sweBenchScore ?? 'N/A')}`
       ]);
 
       return { success: true, data: result };
