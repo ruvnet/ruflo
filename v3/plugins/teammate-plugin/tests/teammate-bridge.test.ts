@@ -244,6 +244,18 @@ describe('Teammate Spawning', () => {
     expect(agentInput.run_in_background).toBe(false);
   });
 
+  it('should remap general-purpose subagent type on legacy Claude Code', async () => {
+    const agentInput = bridge.buildAgentInput({
+      name: 'worker-1',
+      role: 'general-purpose',
+      prompt: 'Handle generic tasks',
+      teamName: 'spawn-test-team',
+    });
+
+    expect(agentInput.subagent_type).toBe('researcher');
+    expect(agentInput.description).toBe('general-purpose: worker-1');
+  });
+
   it('should preserve explicit runInBackground=true in AgentInput', async () => {
     const agentInput = bridge.buildAgentInput({
       name: 'reviewer-bg',

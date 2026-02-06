@@ -110,6 +110,12 @@ export class TeammateError extends Error {
 
 const MAX_NAME_LENGTH = SECURITY_LIMITS.MAX_NAME_LENGTH;
 const MAX_PAYLOAD_SIZE = SECURITY_LIMITS.MAX_PAYLOAD_SIZE;
+const HANDOFF_CLASSIFIER_FIX_VERSION = '2.1.34';
+const GENERAL_PURPOSE_SUBAGENT_ALIASES = new Set([
+  'general-purpose',
+  'general_purpose',
+  'generalpurpose',
+]);
 
 /** Allowed characters in team/teammate names (alphanumeric, dash, underscore) */
 const SAFE_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
@@ -1051,10 +1057,11 @@ export class TeammateBridge extends EventEmitter {
    * Build AgentInput for Claude Code Task tool
    */
   buildAgentInput(config: TeammateSpawnConfig): AgentInput {
+    const subagentType = this.resolveSubagentType(config.role);
     return {
       description: `${config.role}: ${config.name}`,
       prompt: config.prompt,
-      subagent_type: config.role,
+      subagent_type: subagentType,
       model: config.model,
       name: config.name,
       team_name: config.teamName ?? process.env.CLAUDE_CODE_TEAM_NAME,
@@ -1063,6 +1070,30 @@ export class TeammateBridge extends EventEmitter {
       run_in_background: config.runInBackground ?? false,
       max_turns: config.maxTurns,
     };
+  }
+
+  /**
+   * Work around Claude Code runtime crash on legacy versions when using
+   * subagent_type=general-purpose (upstream issue #1075).
+   */
+  private resolveSubagentType(role: string): string {
+    const normalizedRole = role.trim().toLowerCase();
+    const isGeneralPurpose = GENERAL_PURPOSE_SUBAGENT_ALIASES.has(normalizedRole);
+
+    if (!isGeneralPurpose) {
+      return role;
+    }
+
+    // Claude Code <= 2.1.33 may crash with `classifyHandoffIfNeeded is not defined`
+    // for general-purpose subagents; map to a stable worker profile instead.
+    if (
+      !this.claudeCodeVersion ||
+      compareVersions(this.claudeCodeVersion, HANDOFF_CLASSIFIER_FIX_VERSION) < 0
+    ) {
+      return 'researcher';
+    }
+
+    return role;
   }
 
   // ==========================================================================
