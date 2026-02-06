@@ -1060,7 +1060,7 @@ export class TeammateBridge extends EventEmitter {
       team_name: config.teamName ?? process.env.CLAUDE_CODE_TEAM_NAME,
       allowed_tools: config.allowedTools,
       mode: config.mode,
-      run_in_background: config.runInBackground ?? true,
+      run_in_background: config.runInBackground ?? false,
       max_turns: config.maxTurns,
     };
   }

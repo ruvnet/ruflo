@@ -134,6 +134,9 @@ export interface HeadlessExecutorConfig {
   /** Default timeout in milliseconds */
   defaultTimeoutMs?: number;
 
+  /** Grace period before force-killing a timed out/cancelled process */
+  killGraceMs?: number;
+
   /** Maximum files to include in context */
   maxContextFiles?: number;
 
@@ -197,6 +200,8 @@ interface PoolEntry {
   workerType: HeadlessWorkerType;
   startTime: Date;
   timeout: NodeJS.Timeout;
+  forceKillTimeout?: NodeJS.Timeout;
+  terminationReason?: 'timeout' | 'cancel';
 }
 
 /**
@@ -605,6 +610,7 @@ export class HeadlessWorkerExecutor extends EventEmitter {
     this.config = {
       maxConcurrent: options?.maxConcurrent ?? 2,
       defaultTimeoutMs: options?.defaultTimeoutMs ?? 5 * 60 * 1000,
+      killGraceMs: options?.killGraceMs ?? 5000,
       maxContextFiles: options?.maxContextFiles ?? 20,
       maxCharsPerFile: options?.maxCharsPerFile ?? 5000,
       logDir: options?.logDir ?? join(projectRoot, '.claude-flow', 'logs', 'headless'),
@@ -734,19 +740,11 @@ export class HeadlessWorkerExecutor extends EventEmitter {
    * Cancel a running execution
    */
   cancel(executionId: string): boolean {
-    const entry = this.processPool.get(executionId);
-    if (!entry) {
+    const cancelled = this.requestTermination(executionId, 'cancel');
+    if (!cancelled) {
       return false;
     }
-
-    clearTimeout(entry.timeout);
-    entry.process.kill('SIGTERM');
-    this.processPool.delete(executionId);
     this.emit('cancelled', { executionId });
-
-    // Process next in queue
-    this.processQueue();
-
     return true;
   }
 
@@ -756,15 +754,14 @@ export class HeadlessWorkerExecutor extends EventEmitter {
   cancelAll(): number {
     let cancelled = 0;
 
-    // Cancel active processes (convert to array to avoid iterator issues)
+    // Cancel active processes (convert to array to avoid iterator mutation issues)
     const entries = Array.from(this.processPool.entries());
-    for (const [executionId, entry] of entries) {
-      clearTimeout(entry.timeout);
-      entry.process.kill('SIGTERM');
-      this.emit('cancelled', { executionId });
-      cancelled++;
+    for (const [executionId] of entries) {
+      if (this.requestTermination(executionId, 'cancel')) {
+        this.emit('cancelled', { executionId });
+        cancelled++;
+      }
     }
-    this.processPool.clear();
 
     // Reject pending queue
     for (const entry of this.pendingQueue) {
@@ -1099,6 +1096,76 @@ Analyze the above codebase context and provide your response following the forma
   }
 
   /**
+   * Check if a child process is still running.
+   */
+  private isProcessRunning(process: ChildProcess): boolean {
+    return process.exitCode === null && process.signalCode === null;
+  }
+
+  /**
+   * Request graceful termination for a tracked process, with SIGKILL escalation.
+   */
+  private requestTermination(
+    executionId: string,
+    reason: PoolEntry['terminationReason']
+  ): boolean {
+    const entry = this.processPool.get(executionId);
+    if (!entry) {
+      return false;
+    }
+
+    if (!entry.terminationReason) {
+      entry.terminationReason = reason;
+    }
+
+    clearTimeout(entry.timeout);
+
+    if (!this.isProcessRunning(entry.process)) {
+      return true;
+    }
+
+    try {
+      entry.process.kill('SIGTERM');
+    } catch {
+      // Ignore kill errors; close/error handlers will complete cleanup.
+    }
+
+    if (!entry.forceKillTimeout) {
+      entry.forceKillTimeout = setTimeout(() => {
+        if (!this.isProcessRunning(entry.process)) {
+          return;
+        }
+
+        try {
+          entry.process.kill('SIGKILL');
+        } catch {
+          // Ignore kill errors; process may have already exited.
+        }
+      }, this.config.killGraceMs);
+    }
+
+    return true;
+  }
+
+  /**
+   * Remove a process entry from the pool and clear all related timers.
+   */
+  private cleanupPoolEntry(executionId: string): void {
+    const entry = this.processPool.get(executionId);
+    if (!entry) {
+      return;
+    }
+
+    clearTimeout(entry.timeout);
+    if (entry.forceKillTimeout) {
+      clearTimeout(entry.forceKillTimeout);
+      entry.forceKillTimeout = undefined;
+    }
+
+    this.processPool.delete(executionId);
+  }
+
+  /**
    * Execute Claude Code in headless mode
    */
   private executeClaudeCode(
@@ -1129,20 +1196,30 @@ Analyze the above codebase context and provide your response following the forma
         windowsHide: true, // Prevent phantom console windows on Windows
       });
 
-      // Setup timeout
+      let stdout = '';
+      let stderr = '';
+      let resolved = false;
+
+      // Setup timeout and pool entry
       const timeoutHandle = setTimeout(() => {
-        if (this.processPool.has(options.executionId)) {
-          child.kill('SIGTERM');
-          // Give it a moment to terminate gracefully
-          setTimeout(() => {
-            if (!child.killed) {
-              child.kill('SIGKILL');
-            }
-          }, 5000);
+        if (resolved) return;
+
+        const entry = this.processPool.get(options.executionId);
+        if (!entry) return;
+
+        if (!entry.terminationReason) {
+          entry.terminationReason = 'timeout';
         }
+
+        this.emit('timeout', {
+          executionId: options.executionId,
+          workerType: options.workerType,
+          timeoutMs: options.timeoutMs,
+        });
+
+        this.requestTermination(options.executionId, 'timeout');
       }, options.timeoutMs);
 
-      // Track in process pool
       const poolEntry: PoolEntry = {
         process: child,
         executionId: options.executionId,
@@ -1152,13 +1229,16 @@ Analyze the above codebase context and provide your response following the forma
       };
       this.processPool.set(options.executionId, poolEntry);
 
-      let stdout = '';
-      let stderr = '';
-      let resolved = false;
-
-      const cleanup = () => {
-        clearTimeout(timeoutHandle);
-        this.processPool.delete(options.executionId);
+      const finalize = (result: {
+        success: boolean;
+        output: string;
+        tokensUsed?: number;
+        error?: string;
+      }) => {
+        if (resolved) return;
+        resolved = true;
+        this.cleanupPoolEntry(options.executionId);
+        resolve(result);
       };
 
       child.stdout?.on('data', (data: Buffer) => {
@@ -1182,44 +1262,41 @@ Analyze the above codebase context and provide your response following the forma
       });
 
       child.on('close', (code: number | null) => {
-        if (resolved) return;
-        resolved = true;
-        cleanup();
+        const output = stdout || stderr;
+        const terminationReason = poolEntry.terminationReason;
 
-        resolve({
+        if (terminationReason === 'timeout') {
+          finalize({
+            success: false,
+            output,
+            error: `Execution timed out after ${options.timeoutMs}ms`,
+          });
+          return;
+        }
+
+        if (terminationReason === 'cancel') {
+          finalize({
+            success: false,
+            output,
+            error: 'Execution cancelled',
+          });
+          return;
+        }
+
+        finalize({
           success: code === 0,
-          output: stdout || stderr,
+          output,
           error: code !== 0 ? stderr || `Process exited with code ${code}` : undefined,
         });
       });
 
       child.on('error', (error: Error) => {
-        if (resolved) return;
-        resolved = true;
-        cleanup();
-
-        resolve({
+        finalize({
           success: false,
-          output: '',
+          output: stdout || stderr,
           error: error.message,
         });
       });
-
-      // Handle timeout
-      setTimeout(() => {
-        if (resolved) return;
-        if (!this.processPool.has(options.executionId)) return;
-
-        resolved = true;
-        child.kill('SIGTERM');
-        cleanup();
-
-        resolve({
-          success: false,
-          output: stdout || stderr,
-          error: `Execution timed out after ${options.timeoutMs}ms`,
-        });
-      }, options.timeoutMs + 100); // Slightly after the kill timeout
     });
   }
 
