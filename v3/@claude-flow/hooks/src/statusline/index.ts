@@ -5,7 +5,7 @@
  * Provides real-time progress, metrics, and status information.
  *
  * Format matches the working .claude/statusline.sh output:
- * ▊ Claude Flow V3 ● ruvnet  │  ⎇ v3  │  Opus 4.5
+ * ▊ Claude Flow V3 ● ruvnet  │  ⎇ v3  │  Opus 4.6
  * ─────────────────────────────────────────────────────
  * 🏗️  DDD Domains    [●●●●●]  5/5    ⚡ 1.0x → 2.49x-7.47x
  * 🤖 Swarm  ◉ [58/15]  👥 0    🟢 CVE 3/3    💾 22282MB    📂  47%    🧠  10%

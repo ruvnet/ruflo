@@ -49,7 +49,7 @@ export function generateSettings(options: InitOptions): object {
     version: '3.0.0',
     enabled: true,
     modelPreferences: {
-      default: 'claude-opus-4-5-20251101',
+      default: 'claude-opus-4-6',
       routing: 'claude-3-5-haiku-20241022',
     },
     swarm: {
