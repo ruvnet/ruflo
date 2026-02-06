@@ -13,6 +13,7 @@ import {
   validateToolInput,
   MCPClientError
 } from '../src/mcp-client.js';
+import { agentTools } from '../src/mcp-tools/agent-tools.js';
 
 // Mock MCP tool modules - correct paths matching mcp-client.ts imports
 vi.mock('../src/mcp-tools/agent-tools.js', () => ({
@@ -26,6 +27,7 @@ vi.mock('../src/mcp-tools/agent-tools.js', () => ({
         required: ['agentType'],
         properties: {
           agentType: { type: 'string' },
+          mode: { type: 'string', enum: ['auto', 'manual'] },
           id: { type: 'string' },
           config: { type: 'object' }
         }
@@ -76,6 +78,10 @@ vi.mock('../src/mcp-tools/agent-tools.js', () => ({
     }
   ]
 }));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 vi.mock('../src/mcp-tools/swarm-tools.js', () => ({
   swarmTools: [
@@ -239,6 +245,33 @@ describe('MCP Client', () => {
       await expect(
         callMCPTool('nonexistent/tool', {})
       ).rejects.toThrow('MCP tool not found: nonexistent/tool');
+    });
+
+    it('should reject invalid input with required-field validation error', async () => {
+      await expect(
+        callMCPTool('agent/spawn', {})
+      ).rejects.toThrow("Input validation failed for 'agent/spawn': Missing required field: agentType");
+    });
+
+    it('should reject invalid input with type validation error', async () => {
+      await expect(
+        callMCPTool('swarm/init', { topology: 123 })
+      ).rejects.toThrow('Invalid type for field: topology. Expected string, got number');
+    });
+
+    it('should not invoke handler when validation fails', async () => {
+      const spawnTool = agentTools.find((tool) => tool.name === 'agent/spawn');
+      expect(spawnTool).toBeDefined();
+      expect(spawnTool && vi.isMockFunction(spawnTool.handler)).toBe(true);
+
+      const spawnHandler = spawnTool!.handler;
+      const callsBefore = spawnHandler.mock.calls.length;
+
+      await expect(
+        callMCPTool('agent/spawn', {})
+      ).rejects.toThrow("Input validation failed for 'agent/spawn'");
+
+      expect(spawnHandler.mock.calls.length).toBe(callsBefore);
     });
 
     it('should wrap handler errors in MCPClientError', async () => {
@@ -417,6 +450,20 @@ describe('MCP Client', () => {
       expect(result.errors).toContain('Missing required field: agentType');
     });
 
+    it('should treat null/undefined required fields as missing', () => {
+      const nullValueResult = validateToolInput('agent/spawn', {
+        agentType: null as unknown as string,
+      });
+      const undefinedValueResult = validateToolInput('agent/spawn', {
+        agentType: undefined as unknown as string,
+      });
+
+      expect(nullValueResult.valid).toBe(false);
+      expect(nullValueResult.errors).toContain('Missing required field: agentType');
+      expect(undefinedValueResult.valid).toBe(false);
+      expect(undefinedValueResult.errors).toContain('Missing required field: agentType');
+    });
+
     it('should return invalid for non-existent tool', () => {
       const result = validateToolInput('nonexistent/tool', {});
 
@@ -432,6 +479,25 @@ describe('MCP Client', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Missing required field: agentId');
+    });
+
+    it('should validate runtime field types', () => {
+      const result = validateToolInput('swarm/init', {
+        topology: 123 as unknown as string,
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('Invalid type for field: topology. Expected string, got number');
+    });
+
+    it('should validate enum values', () => {
+      const result = validateToolInput('agent/spawn', {
+        agentType: 'coder',
+        mode: 'invalid-mode',
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors?.some(error => error.includes('Invalid value for field: mode'))).toBe(true);
     });
 
     it('should pass with all required fields present', () => {
