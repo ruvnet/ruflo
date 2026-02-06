@@ -27,6 +27,113 @@ const AGENT_TYPES = [
   'test-architect', 'coordinator', 'analyst', 'optimizer'
 ];
 
+interface OfficialToolHookPayload {
+  tool_name?: unknown;
+  tool_input?: Record<string, unknown>;
+  tool_success?: unknown;
+}
+
+function toNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function toBoolean(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return undefined;
+}
+
+function parseHookPayload(raw: unknown): OfficialToolHookPayload | null {
+  if (typeof raw !== 'string') {
+    return null;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (parsed && typeof parsed === 'object') {
+      return parsed as OfficialToolHookPayload;
+    }
+  } catch {
+    // Ignore invalid hook payload and fallback to regular CLI args.
+  }
+
+  return null;
+}
+
+function extractHookToolInputString(payload: OfficialToolHookPayload | null, key: string): string | undefined {
+  if (!payload?.tool_input || typeof payload.tool_input !== 'object') {
+    return undefined;
+  }
+  return toNonEmptyString((payload.tool_input as Record<string, unknown>)[key]);
+}
+
+function extractHookToolSuccess(payload: OfficialToolHookPayload | null): boolean | undefined {
+  return toBoolean(payload?.tool_success);
+}
+
+function extractHookToolName(payload: OfficialToolHookPayload | null): string | undefined {
+  return toNonEmptyString(payload?.tool_name);
+}
+
+async function readHookPayloadFromStdin(timeoutMs = 200): Promise<OfficialToolHookPayload | null> {
+  if (process.stdin.isTTY) {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    let data = '';
+    let settled = false;
+
+    const cleanup = (): void => {
+      clearTimeout(timer);
+      process.stdin.off('data', onData);
+      process.stdin.off('end', onEnd);
+      process.stdin.off('error', onError);
+    };
+
+    const parsePayload = (): OfficialToolHookPayload | null => {
+      return parseHookPayload(data);
+    };
+
+    const finalize = (payload: OfficialToolHookPayload | null): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      resolve(payload);
+    };
+
+    const onData = (chunk: string | Buffer): void => {
+      data += String(chunk);
+    };
+    const onEnd = (): void => finalize(parsePayload());
+    const onError = (): void => finalize(null);
+
+    const timer = setTimeout(() => finalize(parsePayload()), timeoutMs);
+
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', onData);
+    process.stdin.once('end', onEnd);
+    process.stdin.once('error', onError);
+    process.stdin.resume();
+  });
+}
+
 // Pre-edit subcommand
 const preEditCommand: Command = {
   name: 'pre-edit',
@@ -37,7 +144,7 @@ const preEditCommand: Command = {
       short: 'f',
       description: 'File path to edit',
       type: 'string',
-      required: true
+      required: false
     },
     {
       name: 'operation',
@@ -58,8 +165,17 @@ const preEditCommand: Command = {
     { command: 'claude-flow hooks pre-edit -f src/api.ts -o refactor', description: 'Pre-edit with operation type' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const filePath = ctx.args[0] || ctx.flags.file as string;
-    const operation = ctx.flags.operation as string || 'update';
+    let filePath = toNonEmptyString(ctx.args[0]) ?? toNonEmptyString(ctx.flags.file);
+    let operation = toNonEmptyString(ctx.flags.operation) ?? 'update';
+
+    if (!filePath) {
+      const hookPayload = parseHookPayload(ctx.flags.hookInputJson) ?? await readHookPayloadFromStdin();
+      filePath = extractHookToolInputString(hookPayload, 'file_path');
+
+      if (!toNonEmptyString(ctx.flags.operation) && extractHookToolName(hookPayload) === 'Write') {
+        operation = 'create';
+      }
+    }
 
     if (!filePath) {
       output.printError('File path is required. Use --file or -f flag.');
@@ -164,14 +280,14 @@ const postEditCommand: Command = {
       short: 'f',
       description: 'File path that was edited',
       type: 'string',
-      required: true
+      required: false
     },
     {
       name: 'success',
       short: 's',
       description: 'Whether the edit was successful',
       type: 'boolean',
-      required: true
+      required: false
     },
     {
       name: 'outcome',
@@ -191,8 +307,18 @@ const postEditCommand: Command = {
     { command: 'claude-flow hooks post-edit -f src/api.ts --success false -o "Type error"', description: 'Record failed edit' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const filePath = ctx.args[0] || ctx.flags.file as string;
-    const success = ctx.flags.success as boolean;
+    let filePath = toNonEmptyString(ctx.args[0]) ?? toNonEmptyString(ctx.flags.file);
+    let success = toBoolean(ctx.flags.success);
+
+    if (!filePath || success === undefined) {
+      const hookPayload = parseHookPayload(ctx.flags.hookInputJson) ?? await readHookPayloadFromStdin();
+      if (!filePath) {
+        filePath = extractHookToolInputString(hookPayload, 'file_path');
+      }
+      if (success === undefined) {
+        success = extractHookToolSuccess(hookPayload);
+      }
+    }
 
     if (!filePath) {
       output.printError('File path is required. Use --file or -f flag.');
