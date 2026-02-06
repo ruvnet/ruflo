@@ -1925,6 +1925,68 @@ export async function storeEntry(options: {
 }
 
 /**
+ * Sanitize low-level SQL errors before returning to callers.
+ */
+function sanitizeMemoryError(error: unknown, fallback: string): string {
+  if (!(error instanceof Error) || !error.message) {
+    return fallback;
+  }
+
+  const lower = error.message.toLowerCase();
+  if (
+    lower.includes('sqlite') ||
+    lower.includes('sql') ||
+    lower.includes('syntax') ||
+    lower.includes('prepare') ||
+    lower.includes('bind')
+  ) {
+    return fallback;
+  }
+
+  return error.message;
+}
+
+/**
+ * Normalize namespace input and cap size to avoid pathological inputs.
+ */
+function normalizeNamespaceInput(value: unknown, defaultNamespace: string = 'default'): string {
+  if (typeof value !== 'string') {
+    return defaultNamespace;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return defaultNamespace;
+  }
+  return trimmed;
+}
+
+/**
+ * Normalize and validate key input.
+ */
+function normalizeKeyInput(value: unknown): string {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  return value.trim();
+}
+
+/**
+ * Clamp potentially unsafe numeric inputs used in SQL LIMIT/OFFSET clauses.
+ */
+function clampIntegerInput(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number
+): number {
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(num)) {
+    return fallback;
+  }
+  return Math.min(max, Math.max(min, Math.floor(num)));
+}
+
+/**
  * Search entries using sql.js with vector similarity
  * Uses HNSW index for 150x faster search when available
  */
@@ -1947,18 +2009,33 @@ export async function searchEntries(options: {
   error?: string;
 }> {
   const {
-    query,
-    namespace = 'default',
-    limit = 10,
-    threshold = 0.3,
+    query: rawQuery,
+    namespace: rawNamespace = 'default',
+    limit: rawLimit = 10,
+    threshold: rawThreshold = 0.3,
     dbPath: customPath
   } = options;
+  const query = typeof rawQuery === 'string' ? rawQuery.trim() : '';
+  const namespace = normalizeNamespaceInput(rawNamespace, 'default');
+  const limit = clampIntegerInput(rawLimit, 10, 1, 1000);
+  const threshold = typeof rawThreshold === 'number' && Number.isFinite(rawThreshold)
+    ? Math.min(1, Math.max(0, rawThreshold))
+    : 0.3;
 
   const swarmDir = path.join(process.cwd(), '.swarm');
   const dbPath = customPath || path.join(swarmDir, 'memory.db');
   const startTime = Date.now();
 
   try {
+    if (!query) {
+      return {
+        success: false,
+        results: [],
+        searchTime: 0,
+        error: 'Query must be a non-empty string'
+      };
+    }
+
     if (!fs.existsSync(dbPath)) {
       return { success: false, results: [], searchTime: 0, error: 'Database not found' };
     }
@@ -1989,53 +2066,69 @@ export async function searchEntries(options: {
     const fileBuffer = fs.readFileSync(dbPath);
     const db = new SQL.Database(fileBuffer);
 
-    // Get entries with embeddings
-    const entries = db.exec(`
+    const results: { id: string; key: string; content: string; score: number; namespace: string }[] = [];
+    const entriesSql = namespace !== 'all'
+      ? `
+      SELECT id, key, namespace, content, embedding
+      FROM memory_entries
+      WHERE status = 'active' AND namespace = ?
+      LIMIT ?
+    `
+      : `
       SELECT id, key, namespace, content, embedding
       FROM memory_entries
       WHERE status = 'active'
-        ${namespace !== 'all' ? `AND namespace = '${namespace.replace(/'/g, "''")}'` : ''}
-      LIMIT 1000
-    `);
+      LIMIT ?
+    `;
+    const entriesStmt = db.prepare(entriesSql);
+    entriesStmt.bind(namespace !== 'all' ? [namespace, 1000] : [1000]);
 
-    const results: { id: string; key: string; content: string; score: number; namespace: string }[] = [];
+    while (entriesStmt.step()) {
+      const row = entriesStmt.getAsObject() as {
+        id?: string;
+        key?: string;
+        namespace?: string;
+        content?: string;
+        embedding?: string | null;
+      };
+      const id = String(row.id ?? '');
+      const key = String(row.key ?? '');
+      const ns = String(row.namespace ?? 'default');
+      const content = String(row.content ?? '');
+      const embeddingJson = row.embedding;
 
-    if (entries[0]?.values) {
-      for (const row of entries[0].values) {
-        const [id, key, ns, content, embeddingJson] = row as [string, string, string, string, string | null];
+      let score = 0;
 
-        let score = 0;
-
-        if (embeddingJson) {
-          try {
-            const embedding = JSON.parse(embeddingJson) as number[];
-            score = cosineSim(queryEmbedding, embedding);
-          } catch {
-            // Invalid embedding, use keyword score
-          }
-        }
-
-        // Fallback to keyword matching
-        if (score < threshold) {
-          const lowerContent = (content || '').toLowerCase();
-          const lowerQuery = query.toLowerCase();
-          const words = lowerQuery.split(/\s+/);
-          const matchCount = words.filter(w => lowerContent.includes(w)).length;
-          const keywordScore = matchCount / words.length * 0.5;
-          score = Math.max(score, keywordScore);
-        }
-
-        if (score >= threshold) {
-          results.push({
-            id: id.substring(0, 12),
-            key: key || id.substring(0, 15),
-            content: (content || '').substring(0, 60) + ((content || '').length > 60 ? '...' : ''),
-            score,
-            namespace: ns || 'default'
-          });
+      if (typeof embeddingJson === 'string' && embeddingJson) {
+        try {
+          const embedding = JSON.parse(embeddingJson) as number[];
+          score = cosineSim(queryEmbedding, embedding);
+        } catch {
+          // Invalid embedding, use keyword score
         }
       }
+
+      // Fallback to keyword matching
+      if (score < threshold) {
+        const lowerContent = content.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+        const words = lowerQuery.split(/\s+/).filter(Boolean);
+        const matchCount = words.filter(w => lowerContent.includes(w)).length;
+        const keywordScore = words.length > 0 ? (matchCount / words.length) * 0.5 : 0;
+        score = Math.max(score, keywordScore);
+      }
+
+      if (score >= threshold) {
+        results.push({
+          id: id.substring(0, 12),
+          key: key || id.substring(0, 15),
+          content: content.substring(0, 60) + (content.length > 60 ? '...' : ''),
+          score,
+          namespace: ns || 'default'
+        });
+      }
     }
+    entriesStmt.free();
 
     db.close();
 
@@ -2052,7 +2145,7 @@ export async function searchEntries(options: {
       success: false,
       results: [],
       searchTime: Date.now() - startTime,
-      error: error instanceof Error ? error.message : String(error)
+      error: sanitizeMemoryError(error, 'Failed to search memory entries')
     };
   }
 }
@@ -2105,11 +2198,16 @@ export async function listEntries(options: {
   error?: string;
 }> {
   const {
-    namespace,
-    limit = 20,
-    offset = 0,
+    namespace: rawNamespace,
+    limit: rawLimit = 20,
+    offset: rawOffset = 0,
     dbPath: customPath
   } = options;
+  const namespace = typeof rawNamespace === 'string' && rawNamespace.trim()
+    ? normalizeNamespaceInput(rawNamespace, 'default')
+    : undefined;
+  const limit = clampIntegerInput(rawLimit, 20, 1, 1000);
+  const offset = clampIntegerInput(rawOffset, 0, 0, 1_000_000);
 
   const swarmDir = path.join(process.cwd(), '.swarm');
   const dbPath = customPath || path.join(swarmDir, 'memory.db');
@@ -2128,25 +2226,38 @@ export async function listEntries(options: {
     const fileBuffer = fs.readFileSync(dbPath);
     const db = new SQL.Database(fileBuffer);
 
-    // Get total count
-    const countQuery = namespace
-      ? `SELECT COUNT(*) as cnt FROM memory_entries WHERE status = 'active' AND namespace = '${namespace.replace(/'/g, "''")}'`
+    const countSql = namespace
+      ? `SELECT COUNT(*) as cnt FROM memory_entries WHERE status = 'active' AND namespace = ?`
       : `SELECT COUNT(*) as cnt FROM memory_entries WHERE status = 'active'`;
+    const countStmt = db.prepare(countSql);
+    if (namespace) {
+      countStmt.bind([namespace]);
+    }
+    let total = 0;
+    if (countStmt.step()) {
+      const row = countStmt.getAsObject() as { cnt?: number | string };
+      total = Number(row.cnt ?? 0) || 0;
+    }
+    countStmt.free();
 
-    const countResult = db.exec(countQuery);
-    const total = countResult[0]?.values?.[0]?.[0] as number || 0;
-
-    // Get entries
-    const listQuery = `
+    const listSql = namespace
+      ? `
+      SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at
+      FROM memory_entries
+      WHERE status = 'active' AND namespace = ?
+      ORDER BY updated_at DESC
+      LIMIT ? OFFSET ?
+    `
+      : `
       SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at
       FROM memory_entries
       WHERE status = 'active'
-        ${namespace ? `AND namespace = '${namespace.replace(/'/g, "''")}'` : ''}
       ORDER BY updated_at DESC
-      LIMIT ${limit} OFFSET ${offset}
+      LIMIT ? OFFSET ?
     `;
+    const listStmt = db.prepare(listSql);
+    listStmt.bind(namespace ? [namespace, limit, offset] : [limit, offset]);
 
-    const result = db.exec(listQuery);
     const entries: {
       id: string;
       key: string;
@@ -2158,23 +2269,36 @@ export async function listEntries(options: {
       hasEmbedding: boolean;
     }[] = [];
 
-    if (result[0]?.values) {
-      for (const row of result[0].values) {
-        const [id, key, ns, content, embedding, accessCount, createdAt, updatedAt] = row as [
-          string, string, string, string, string | null, number, string, string
-        ];
-        entries.push({
-          id: String(id).substring(0, 20),
-          key: key || String(id).substring(0, 15),
-          namespace: ns || 'default',
-          size: (content || '').length,
-          accessCount: accessCount || 0,
-          createdAt: createdAt || new Date().toISOString(),
-          updatedAt: updatedAt || new Date().toISOString(),
-          hasEmbedding: !!embedding && embedding.length > 10
-        });
-      }
+    while (listStmt.step()) {
+      const row = listStmt.getAsObject() as {
+        id?: string;
+        key?: string;
+        namespace?: string;
+        content?: string;
+        embedding?: string | null;
+        access_count?: number | string;
+        created_at?: string | number;
+        updated_at?: string | number;
+      };
+
+      const id = String(row.id ?? '');
+      const key = String(row.key ?? '');
+      const ns = String(row.namespace ?? 'default');
+      const content = String(row.content ?? '');
+      const embedding = typeof row.embedding === 'string' ? row.embedding : '';
+
+      entries.push({
+        id: id.substring(0, 20),
+        key: key || id.substring(0, 15),
+        namespace: ns || 'default',
+        size: content.length,
+        accessCount: Number(row.access_count ?? 0) || 0,
+        createdAt: String(row.created_at ?? new Date().toISOString()),
+        updatedAt: String(row.updated_at ?? new Date().toISOString()),
+        hasEmbedding: embedding.length > 10
+      });
     }
+    listStmt.free();
 
     db.close();
 
@@ -2184,7 +2308,7 @@ export async function listEntries(options: {
       success: false,
       entries: [],
       total: 0,
-      error: error instanceof Error ? error.message : String(error)
+      error: sanitizeMemoryError(error, 'Failed to list memory entries')
     };
   }
 }
@@ -2213,15 +2337,21 @@ export async function getEntry(options: {
   error?: string;
 }> {
   const {
-    key,
-    namespace = 'default',
+    key: rawKey,
+    namespace: rawNamespace = 'default',
     dbPath: customPath
   } = options;
+  const key = normalizeKeyInput(rawKey);
+  const namespace = normalizeNamespaceInput(rawNamespace, 'default');
 
   const swarmDir = path.join(process.cwd(), '.swarm');
   const dbPath = customPath || path.join(swarmDir, 'memory.db');
 
   try {
+    if (!key) {
+      return { success: false, found: false, error: 'Key must be a non-empty string' };
+    }
+
     if (!fs.existsSync(dbPath)) {
       return { success: false, found: false, error: 'Database not found' };
     }
@@ -2235,31 +2365,51 @@ export async function getEntry(options: {
     const fileBuffer = fs.readFileSync(dbPath);
     const db = new SQL.Database(fileBuffer);
 
-    // Find entry by key
-    const result = db.exec(`
+    const selectStmt = db.prepare(`
       SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, tags
       FROM memory_entries
-      WHERE status = 'active'
-        AND key = '${key.replace(/'/g, "''")}'
-        AND namespace = '${namespace.replace(/'/g, "''")}'
+      WHERE status = 'active' AND key = ? AND namespace = ?
       LIMIT 1
     `);
+    selectStmt.bind([key, namespace]);
 
-    if (!result[0]?.values?.[0]) {
+    if (!selectStmt.step()) {
+      selectStmt.free();
       db.close();
       return { success: true, found: false };
     }
 
-    const [id, entryKey, ns, content, embedding, accessCount, createdAt, updatedAt, tagsJson] = result[0].values[0] as [
-      string, string, string, string, string | null, number, string, string, string | null
-    ];
+    const row = selectStmt.getAsObject() as {
+      id?: string;
+      key?: string;
+      namespace?: string;
+      content?: string;
+      embedding?: string | null;
+      access_count?: number | string;
+      created_at?: string | number;
+      updated_at?: string | number;
+      tags?: string | null;
+    };
+    selectStmt.free();
+
+    const id = String(row.id ?? '');
+    const entryKey = String(row.key ?? key);
+    const ns = String(row.namespace ?? namespace);
+    const content = String(row.content ?? '');
+    const embedding = typeof row.embedding === 'string' ? row.embedding : null;
+    const accessCount = Number(row.access_count ?? 0) || 0;
+    const createdAt = String(row.created_at ?? new Date().toISOString());
+    const updatedAt = String(row.updated_at ?? new Date().toISOString());
+    const tagsJson = typeof row.tags === 'string' ? row.tags : null;
 
     // Update access count
-    db.run(`
+    const updateStmt = db.prepare(`
       UPDATE memory_entries
       SET access_count = access_count + 1, last_accessed_at = strftime('%s', 'now') * 1000
-      WHERE id = '${String(id).replace(/'/g, "''")}'
+      WHERE id = ?
     `);
+    updateStmt.run([id]);
+    updateStmt.free();
 
     // Save updated database
     const data = db.export();
@@ -2295,7 +2445,7 @@ export async function getEntry(options: {
     return {
       success: false,
       found: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: sanitizeMemoryError(error, 'Failed to retrieve memory entry')
     };
   }
 }
@@ -2317,15 +2467,28 @@ export async function deleteEntry(options: {
   error?: string;
 }> {
   const {
-    key,
-    namespace = 'default',
+    key: rawKey,
+    namespace: rawNamespace = 'default',
     dbPath: customPath
   } = options;
+  const key = normalizeKeyInput(rawKey);
+  const namespace = normalizeNamespaceInput(rawNamespace, 'default');
 
   const swarmDir = path.join(process.cwd(), '.swarm');
   const dbPath = customPath || path.join(swarmDir, 'memory.db');
 
   try {
+    if (!key) {
+      return {
+        success: false,
+        deleted: false,
+        key: '',
+        namespace,
+        remainingEntries: 0,
+        error: 'Key must be a non-empty string'
+      };
+    }
+
     if (!fs.existsSync(dbPath)) {
       return {
         success: false,
@@ -2346,19 +2509,24 @@ export async function deleteEntry(options: {
     const fileBuffer = fs.readFileSync(dbPath);
     const db = new SQL.Database(fileBuffer);
 
-    // Check if entry exists first
-    const checkResult = db.exec(`
+    const checkStmt = db.prepare(`
       SELECT id FROM memory_entries
-      WHERE status = 'active'
-        AND key = '${key.replace(/'/g, "''")}'
-        AND namespace = '${namespace.replace(/'/g, "''")}'
+      WHERE status = 'active' AND key = ? AND namespace = ?
       LIMIT 1
     `);
+    checkStmt.bind([key, namespace]);
+    const exists = checkStmt.step();
+    checkStmt.free();
 
-    if (!checkResult[0]?.values?.[0]) {
+    if (!exists) {
       // Get remaining count before closing
-      const countResult = db.exec(`SELECT COUNT(*) FROM memory_entries WHERE status = 'active'`);
-      const remainingEntries = countResult[0]?.values?.[0]?.[0] as number || 0;
+      const countStmt = db.prepare(`SELECT COUNT(*) AS cnt FROM memory_entries WHERE status = 'active'`);
+      let remainingEntries = 0;
+      if (countStmt.step()) {
+        const row = countStmt.getAsObject() as { cnt?: number | string };
+        remainingEntries = Number(row.cnt ?? 0) || 0;
+      }
+      countStmt.free();
       db.close();
       return {
         success: true,
@@ -2371,17 +2539,22 @@ export async function deleteEntry(options: {
     }
 
     // Delete the entry (soft delete by setting status to 'deleted')
-    db.run(`
+    const deleteStmt = db.prepare(`
       UPDATE memory_entries
       SET status = 'deleted', updated_at = strftime('%s', 'now') * 1000
-      WHERE key = '${key.replace(/'/g, "''")}'
-        AND namespace = '${namespace.replace(/'/g, "''")}'
-        AND status = 'active'
+      WHERE key = ? AND namespace = ? AND status = 'active'
     `);
+    deleteStmt.run([key, namespace]);
+    deleteStmt.free();
 
     // Get remaining count
-    const countResult = db.exec(`SELECT COUNT(*) FROM memory_entries WHERE status = 'active'`);
-    const remainingEntries = countResult[0]?.values?.[0]?.[0] as number || 0;
+    const countStmt = db.prepare(`SELECT COUNT(*) AS cnt FROM memory_entries WHERE status = 'active'`);
+    let remainingEntries = 0;
+    if (countStmt.step()) {
+      const row = countStmt.getAsObject() as { cnt?: number | string };
+      remainingEntries = Number(row.cnt ?? 0) || 0;
+    }
+    countStmt.free();
 
     // Save updated database
     const data = db.export();
@@ -2403,7 +2576,7 @@ export async function deleteEntry(options: {
       key,
       namespace,
       remainingEntries: 0,
-      error: error instanceof Error ? error.message : String(error)
+      error: sanitizeMemoryError(error, 'Failed to delete memory entry')
     };
   }
 }
