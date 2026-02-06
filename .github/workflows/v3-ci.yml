@@ -152,6 +152,6 @@ jobs:
 
       - name: Publish alpha
         working-directory: v3
-        run: pnpm publish:alpha
+        run: pnpm publish:v3alpha
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
