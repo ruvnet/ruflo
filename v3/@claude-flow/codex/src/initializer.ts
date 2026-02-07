@@ -314,6 +314,55 @@ export class CodexInitializer {
   }
 
   /**
+   * Register claude-flow as MCP server with Codex
+   */
+  private async registerMCPServer(): Promise<{ registered: boolean; warning?: string }> {
+    try {
+      const { execSync } = await import('child_process');
+
+      // Check if codex CLI is available
+      try {
+        execSync('which codex', { stdio: 'pipe' });
+      } catch {
+        return {
+          registered: false,
+          warning: 'Codex CLI not found. Run: codex mcp add claude-flow -- npx claude-flow mcp start',
+        };
+      }
+
+      // Check if already registered
+      try {
+        const list = execSync('codex mcp list 2>&1', { encoding: 'utf-8' });
+        if (list.includes('claude-flow')) {
+          return { registered: true }; // Already registered
+        }
+      } catch {
+        // Ignore list errors
+      }
+
+      // Register the MCP server
+      try {
+        execSync('codex mcp add claude-flow -- npx claude-flow mcp start', {
+          stdio: 'pipe',
+          timeout: 10000,
+        });
+        return { registered: true };
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        return {
+          registered: false,
+          warning: `Failed to register MCP server: ${errorMessage}. Run manually: codex mcp add claude-flow -- npx claude-flow mcp start`,
+        };
+      }
+    } catch {
+      return {
+        registered: false,
+        warning: 'Could not register MCP server. Run manually: codex mcp add claude-flow -- npx claude-flow mcp start',
+      };
+    }
+  }
+
+  /**
    * Generate AGENTS.md content
    */
   private async generateAgentsMd(): Promise<string> {
