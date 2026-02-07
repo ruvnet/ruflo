@@ -2199,11 +2199,11 @@ const intelligenceCommand: Command = {
           ],
           data: [
             { metric: 'Status', value: formatIntelligenceStatus(result.components.sona.status) },
-            { metric: 'Learning Time', value: `${result.components.sona.learningTimeMs.toFixed(3)}ms` },
-            { metric: 'Adaptation Time', value: `${result.components.sona.adaptationTimeMs.toFixed(3)}ms` },
-            { metric: 'Trajectories', value: result.components.sona.trajectoriesRecorded },
-            { metric: 'Patterns Learned', value: result.components.sona.patternsLearned },
-            { metric: 'Avg Quality', value: `${(result.components.sona.avgQuality * 100).toFixed(1)}%` }
+            { metric: 'Learning Time', value: formatMilliseconds(result.components.sona.learningTimeMs, 3) },
+            { metric: 'Adaptation Time', value: formatMilliseconds(result.components.sona.adaptationTimeMs, 3) },
+            { metric: 'Trajectories', value: formatCount(result.components.sona.trajectoriesRecorded) },
+            { metric: 'Patterns Learned', value: formatCount(result.components.sona.patternsLearned) },
+            { metric: 'Avg Quality', value: formatPercentage(result.components.sona.avgQuality, 1) }
           ]
         });
       } else {
@@ -2221,9 +2221,9 @@ const intelligenceCommand: Command = {
           ],
           data: [
             { metric: 'Status', value: formatIntelligenceStatus(result.components.moe.status) },
-            { metric: 'Active Experts', value: result.components.moe.expertsActive },
-            { metric: 'Routing Accuracy', value: `${(result.components.moe.routingAccuracy * 100).toFixed(1)}%` },
-            { metric: 'Load Balance', value: `${(result.components.moe.loadBalance * 100).toFixed(1)}%` }
+            { metric: 'Active Experts', value: formatCount(result.components.moe.expertsActive) },
+            { metric: 'Routing Accuracy', value: formatPercentage(result.components.moe.routingAccuracy, 1) },
+            { metric: 'Load Balance', value: formatPercentage(result.components.moe.loadBalance, 1) }
           ]
         });
       } else {
@@ -2241,10 +2241,10 @@ const intelligenceCommand: Command = {
           ],
           data: [
             { metric: 'Status', value: formatIntelligenceStatus(result.components.hnsw.status) },
-            { metric: 'Index Size', value: result.components.hnsw.indexSize.toLocaleString() },
-            { metric: 'Search Speedup', value: output.success(result.components.hnsw.searchSpeedup) },
-            { metric: 'Memory Usage', value: result.components.hnsw.memoryUsage },
-            { metric: 'Dimension', value: result.components.hnsw.dimension }
+            { metric: 'Index Size', value: formatCount(result.components.hnsw.indexSize) },
+            { metric: 'Search Speedup', value: output.success(result.components.hnsw.searchSpeedup ?? 'N/A') },
+            { metric: 'Memory Usage', value: result.components.hnsw.memoryUsage ?? 'N/A' },
+            { metric: 'Dimension', value: formatCount(result.components.hnsw.dimension) }
           ]
         });
       } else {
@@ -2260,10 +2260,10 @@ const intelligenceCommand: Command = {
           { key: 'value', header: 'Value', width: 20, align: 'right' }
         ],
         data: [
-          { metric: 'Provider', value: result.components.embeddings.provider },
-          { metric: 'Model', value: result.components.embeddings.model },
-          { metric: 'Dimension', value: result.components.embeddings.dimension },
-          { metric: 'Cache Hit Rate', value: `${(result.components.embeddings.cacheHitRate * 100).toFixed(1)}%` }
+          { metric: 'Provider', value: result.components.embeddings.provider ?? 'N/A' },
+          { metric: 'Model', value: result.components.embeddings.model ?? 'N/A' },
+          { metric: 'Dimension', value: formatCount(result.components.embeddings.dimension) },
+          { metric: 'Cache Hit Rate', value: formatPercentage(result.components.embeddings.cacheHitRate, 1) }
         ]
       });
 
@@ -2306,6 +2306,22 @@ function formatIntelligenceStatus(status: string): string {
     default:
       return status;
   }
+}
+
+function toSafeNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function formatMilliseconds(value: unknown, decimals = 2): string {
+  return `${toSafeNumber(value).toFixed(decimals)}ms`;
+}
+
+function formatPercentage(value: unknown, decimals = 1): string {
+  return `${(toSafeNumber(value) * 100).toFixed(decimals)}%`;
+}
+
+function formatCount(value: unknown): string {
+  return toSafeNumber(value).toLocaleString();
 }
 
 // =============================================================================
