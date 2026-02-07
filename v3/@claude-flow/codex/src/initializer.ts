@@ -149,6 +149,15 @@ export class CodexInitializer {
         filesCreated.push('.gitignore (updated)');
       }
 
+      // Register MCP server with Codex
+      const mcpResult = await this.registerMCPServer();
+      if (mcpResult.registered) {
+        filesCreated.push('MCP server (claude-flow) registered');
+      }
+      if (mcpResult.warning) {
+        warnings.push(mcpResult.warning);
+      }
+
       // If dual mode, also generate Claude Code files
       if (this.dual) {
         const dualResult = await this.generateDualPlatformFiles();
