@@ -422,6 +422,7 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
     flowNexus: false,
     browser: false,
     v3: false,
+    dualMode: false,
     all: false,
   },
   agents: {
@@ -435,6 +436,7 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
     v3: false,
     optimization: false,
     testing: false,
+    dualMode: false,
     all: false,
   },
   runtime: {
