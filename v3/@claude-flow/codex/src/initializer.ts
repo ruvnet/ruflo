@@ -139,22 +139,28 @@ export class CodexInitializer {
         filesCreated.push('.agents/README.md');
       }
 
-      return {
+      const result: CodexInitResult = {
         success: true,
         filesCreated,
         skillsGenerated,
-        warnings: warnings.length > 0 ? warnings : undefined,
       };
+      if (warnings.length > 0) {
+        result.warnings = warnings;
+      }
+      return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       errors.push(errorMessage);
-      return {
+      const result: CodexInitResult = {
         success: false,
         filesCreated,
         skillsGenerated,
-        warnings: warnings.length > 0 ? warnings : undefined,
         errors,
       };
+      if (warnings.length > 0) {
+        result.warnings = warnings;
+      }
+      return result;
     }
   }
 
