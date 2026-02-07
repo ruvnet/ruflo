@@ -35,6 +35,7 @@
 | Package | Path | Purpose |
 |---------|------|---------|
 | `@claude-flow/cli` | `v3/@claude-flow/cli/` | CLI entry point (26 commands) |
+| `@claude-flow/codex` | `v3/@claude-flow/codex/` | Dual-mode Claude + Codex collaboration |
 | `@claude-flow/guidance` | `v3/@claude-flow/guidance/` | Governance control plane |
 | `@claude-flow/hooks` | `v3/@claude-flow/hooks/` | 17 hooks + 12 workers |
 | `@claude-flow/memory` | `v3/@claude-flow/memory/` | AgentDB + HNSW search |
