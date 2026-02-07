@@ -1,5 +1,5 @@
 {
-  "model": "claude-opus-4-5-20251101",
+  "model": "claude-opus-4-6",
   "customInstructions": "Follow the project's CLAUDE.md guidelines. Use concurrent execution for all operations. Prioritize v3 implementation with security-first development, 15-agent swarm coordination, phased performance optimization, and cross-platform helper automation. Leverage Opus 4.5's advanced reasoning for complex architectural decisions and system optimization. CRITICAL: When spawning swarms, ALWAYS use MCP tools AND Task tool in the SAME message. V3 CLI hooks enabled at /workspaces/claude-flow/v3/@claude-flow/cli/bin/cli.js with SONA, MoE, and HNSW intelligence features.",
   "env": {
     "AGENTIC_FLOW_INTELLIGENCE": "true",

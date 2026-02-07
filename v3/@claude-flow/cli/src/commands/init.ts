@@ -18,6 +18,149 @@ import {
   type InitOptions,
 } from '../init/index.js';
 
+// Codex initialization action
+async function initCodexAction(
+  ctx: CommandContext,
+  options: { codexMode: boolean; dualMode: boolean; force: boolean; minimal: boolean; full: boolean }
+): Promise<CommandResult> {
+  const { force, minimal, full, dualMode } = options;
+
+  output.writeln();
+  output.writeln(output.bold('Initializing Claude Flow V3 for OpenAI Codex'));
+  output.writeln();
+
+  // Determine template
+  const template = minimal ? 'minimal' : full ? 'full' : 'default';
+
+  const spinner = output.createSpinner({ text: 'Initializing Codex project...' });
+  spinner.start();
+
+  try {
+    // Dynamic import of the Codex initializer with lazy loading fallback
+    let CodexInitializer: any;
+
+    // Try multiple resolution strategies for the @claude-flow/codex package
+    const resolutionStrategies = [
+      // Strategy 1: Direct import (works if installed as CLI dependency)
+      async () => (await import('@claude-flow/codex')).CodexInitializer,
+      // Strategy 2: Project node_modules (works if installed in user's project)
+      async () => {
+        const projectPath = path.join(ctx.cwd, 'node_modules', '@claude-flow', 'codex', 'dist', 'index.js');
+        if (fs.existsSync(projectPath)) {
+          const mod = await import(`file://${projectPath}`);
+          return mod.CodexInitializer;
+        }
+        throw new Error('Not found in project');
+      },
+      // Strategy 3: Global node_modules
+      async () => {
+        const { execSync } = await import('child_process');
+        const globalPath = execSync('npm root -g', { encoding: 'utf-8' }).trim();
+        const codexPath = path.join(globalPath, '@claude-flow', 'codex', 'dist', 'index.js');
+        if (fs.existsSync(codexPath)) {
+          const mod = await import(`file://${codexPath}`);
+          return mod.CodexInitializer;
+        }
+        throw new Error('Not found globally');
+      },
+    ];
+
+    for (const strategy of resolutionStrategies) {
+      try {
+        CodexInitializer = await strategy();
+        if (CodexInitializer) break;
+      } catch {
+        // Try next strategy
+      }
+    }
+
+    if (!CodexInitializer) {
+      throw new Error('Cannot find module @claude-flow/codex');
+    }
+
+    const initializer = new CodexInitializer();
+
+    const result = await initializer.initialize({
+      projectPath: ctx.cwd,
+      template: template as 'minimal' | 'default' | 'full' | 'enterprise',
+      force,
+      dual: dualMode,
+    });
+
+    if (!result.success) {
+      spinner.fail('Codex initialization failed');
+      if (result.errors) {
+        for (const error of result.errors) {
+          output.printError(error);
+        }
+      }
+      return { success: false, exitCode: 1 };
+    }
+
+    spinner.succeed('Codex project initialized successfully!');
+    output.writeln();
+
+    // Display summary
+    const summary: string[] = [];
+    summary.push(`Files: ${result.filesCreated.length} created`);
+    summary.push(`Skills: ${result.skillsGenerated.length} installed`);
+
+    output.printBox(summary.join('\n'), 'Summary');
+    output.writeln();
+
+    // Show what was created
+    output.printBox(
+      [
+        `AGENTS.md:     Main project instructions`,
+        `.agents/config.toml: Project configuration`,
+        `.agents/skills/: ${result.skillsGenerated.length} skills`,
+        `.codex/: Local overrides (gitignored)`,
+        dualMode ? `CLAUDE.md: Claude Code compatibility` : '',
+      ].filter(Boolean).join('\n'),
+      'OpenAI Codex Integration'
+    );
+    output.writeln();
+
+    // Warnings
+    if (result.warnings && result.warnings.length > 0) {
+      output.printWarning('Warnings:');
+      for (const warning of result.warnings.slice(0, 5)) {
+        output.printInfo(`  • ${warning}`);
+      }
+      if (result.warnings.length > 5) {
+        output.printInfo(`  ... and ${result.warnings.length - 5} more`);
+      }
+      output.writeln();
+    }
+
+    // Next steps
+    output.writeln(output.bold('Next steps:'));
+    output.printList([
+      `Review ${output.highlight('AGENTS.md')} for project instructions`,
+      `Add skills with ${output.highlight('$skill-name')} syntax`,
+      `Configure ${output.highlight('.agents/config.toml')} for your project`,
+      dualMode ? `Claude Code users can use ${output.highlight('CLAUDE.md')}` : '',
+    ].filter(Boolean));
+
+    return { success: true, data: result };
+  } catch (error) {
+    spinner.fail('Codex initialization failed');
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Handle module not found error gracefully
+    if (errorMessage.includes('Cannot find module') || errorMessage.includes('@claude-flow/codex')) {
+      output.printError('The @claude-flow/codex package is not installed.');
+      output.printInfo('Install it with: npm install @claude-flow/codex');
+      output.writeln();
+      output.printInfo('Alternatively, copy skills manually from .claude/skills/ to .agents/skills/');
+    } else {
+      output.printError(`Failed to initialize: ${errorMessage}`);
+    }
+
+    return { success: false, exitCode: 1 };
+  }
+}
+
 // Check if project is already initialized
 function isInitialized(cwd: string): { claude: boolean; claudeFlow: boolean } {
   const claudePath = path.join(cwd, '.claude', 'settings.json');
@@ -35,7 +178,14 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const full = ctx.flags.full as boolean;
   const skipClaude = ctx.flags['skip-claude'] as boolean;
   const onlyClaude = ctx.flags['only-claude'] as boolean;
+  const codexMode = ctx.flags.codex as boolean;
+  const dualMode = ctx.flags.dual as boolean;
   const cwd = ctx.cwd;
+
+  // If codex mode, use the Codex initializer
+  if (codexMode || dualMode) {
+    return initCodexAction(ctx, { codexMode, dualMode, force, minimal, full });
+  }
 
   // Check if already initialized
   const initialized = isInitialized(cwd);
@@ -587,6 +737,7 @@ const skillsCommand: Command = {
         flowNexus: false,
         browser: false,
         v3: ctx.flags.v3 as boolean,
+        dualMode: false,
       },
     };
 
@@ -861,6 +1012,18 @@ export const initCommand: Command = {
       default: 'all-MiniLM-L6-v2',
       choices: ['all-MiniLM-L6-v2', 'all-mpnet-base-v2'],
     },
+    {
+      name: 'codex',
+      description: 'Initialize for OpenAI Codex CLI (creates AGENTS.md, .agents/)',
+      type: 'boolean',
+      default: false,
+    },
+    {
+      name: 'dual',
+      description: 'Initialize for both Claude Code and OpenAI Codex',
+      type: 'boolean',
+      default: false,
+    },
   ],
   examples: [
     { command: 'claude-flow init', description: 'Initialize with default configuration' },
@@ -878,6 +1041,9 @@ export const initCommand: Command = {
     { command: 'claude-flow init hooks --minimal', description: 'Create minimal hooks configuration' },
     { command: 'claude-flow init upgrade', description: 'Update helpers while preserving data' },
     { command: 'claude-flow init upgrade --verbose', description: 'Show detailed upgrade info' },
+    { command: 'claude-flow init --codex', description: 'Initialize for OpenAI Codex (AGENTS.md)' },
+    { command: 'claude-flow init --codex --full', description: 'Codex init with all 137+ skills' },
+    { command: 'claude-flow init --dual', description: 'Initialize for both Claude Code and Codex' },
   ],
   action: initAction,
 };

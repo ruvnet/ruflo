@@ -42,15 +42,15 @@ export function generateSettings(options: InitOptions): object {
 
   // Note: Claude Code expects 'model' to be a string, not an object
   // Model preferences are stored in claudeFlow settings instead
-  // settings.model = 'claude-sonnet-4-20250514'; // Uncomment if you want to set a default model
+  // settings.model = 'claude-sonnet-4-5-20250929'; // Uncomment if you want to set a default model
 
   // Add V3-specific settings
   settings.claudeFlow = {
     version: '3.0.0',
     enabled: true,
     modelPreferences: {
-      default: 'claude-opus-4-5-20251101',
-      routing: 'claude-3-5-haiku-20241022',
+      default: 'claude-opus-4-6',
+      routing: 'claude-haiku-4-5-20251001',
     },
     swarm: {
       topology: options.runtime.topology,

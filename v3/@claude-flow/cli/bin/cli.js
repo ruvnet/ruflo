@@ -11,8 +11,12 @@
 import { randomUUID } from 'crypto';
 
 // Check if we should run in MCP server mode
-// Conditions: stdin is being piped AND no CLI arguments provided
-const isMCPMode = !process.stdin.isTTY && process.argv.length === 2;
+// Conditions:
+//   1. stdin is being piped AND no CLI arguments provided (auto-detect)
+//   2. stdin is being piped AND args are "mcp start" (explicit, e.g. npx claude-flow@alpha mcp start)
+const cliArgs = process.argv.slice(2);
+const isExplicitMCP = cliArgs.length >= 1 && cliArgs[0] === 'mcp' && (cliArgs.length === 1 || cliArgs[1] === 'start');
+const isMCPMode = !process.stdin.isTTY && (process.argv.length === 2 || isExplicitMCP);
 
 if (isMCPMode) {
   // Run MCP server mode

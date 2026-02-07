@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/cli",
-  "version": "3.1.0-alpha.1",
+  "version": "3.1.0-alpha.10",
   "type": "module",
   "description": "Claude Flow CLI - Enterprise AI agent orchestration with 60+ specialized agents, swarm coordination, MCP server, self-learning hooks, and vector memory for Claude Code",
   "main": "dist/src/index.js",
@@ -88,13 +88,16 @@
     "@claude-flow/guidance": "^3.0.0-alpha.1",
     "@claude-flow/mcp": "^3.0.0-alpha.8",
     "@claude-flow/shared": "^3.0.0-alpha.1",
-    "@noble/ed25519": "^2.1.0"
+    "@noble/ed25519": "^2.1.0",
+    "semver": "^7.6.0"
   },
   "optionalDependencies": {
+    "@claude-flow/codex": "^3.0.0-alpha.8",
     "@claude-flow/embeddings": "^3.0.0-alpha.12",
-    "@claude-flow/plugin-gastown-bridge": "^0.1.0",
+    "@claude-flow/plugin-gastown-bridge": "^0.1.2",
     "@ruvector/attention": "^0.1.4",
     "@ruvector/learning-wasm": "^0.1.29",
+    "@ruvector/router": "^0.1.27",
     "@ruvector/sona": "^0.1.5"
   },
   "publishConfig": {

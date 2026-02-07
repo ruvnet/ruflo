@@ -23,9 +23,14 @@
     "sql.js": "^1.10.3"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/helmet": "^4.0.0",
     "@types/node": "^20.0.0",
     "@types/sql.js": "^1.4.9",
-    "vitest": "^4.0.16"
+    "@types/ws": "^8.5.10",
+    "vitest": "^4.0.16",
+    "zod": "^3.22.4"
   },
   "publishConfig": {
     "access": "public",

@@ -56,11 +56,19 @@ const storeCommand: Command = {
       description: 'Store as vector embedding',
       type: 'boolean',
       default: false
+    },
+    {
+      name: 'upsert',
+      short: 'u',
+      description: 'Update if key exists (insert or replace)',
+      type: 'boolean',
+      default: false
     }
   ],
   examples: [
     { command: 'claude-flow memory store -k "api/auth" -v "JWT implementation"', description: 'Store text' },
-    { command: 'claude-flow memory store -k "pattern/singleton" --vector', description: 'Store vector' }
+    { command: 'claude-flow memory store -k "pattern/singleton" --vector', description: 'Store vector' },
+    { command: 'claude-flow memory store -k "pattern" -v "updated" --upsert', description: 'Update existing' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const key = ctx.flags.key as string;
@@ -69,6 +77,7 @@ const storeCommand: Command = {
     const ttl = ctx.flags.ttl as number;
     const tags = ctx.flags.tags ? (ctx.flags.tags as string).split(',') : [];
     const asVector = ctx.flags.vector as boolean;
+    const upsert = ctx.flags.upsert as boolean;
 
     if (!key) {
       output.printError('Key is required. Use --key or -k');
@@ -114,7 +123,8 @@ const storeCommand: Command = {
         namespace,
         generateEmbeddingFlag: true, // Always generate embeddings for semantic search
         tags,
-        ttl
+        ttl,
+        upsert
       });
 
       if (!result.success) {

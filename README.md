@@ -497,6 +497,153 @@ bunx claude-flow@alpha init
 npm install -g claude-flow@alpha --omit=optional
 ```
 
+<details>
+<summary>🤖 <strong>OpenAI Codex CLI Support</strong> — Full Codex integration with self-learning</summary>
+
+Claude-Flow supports both **Claude Code** and **OpenAI Codex CLI** via the [@claude-flow/codex](https://www.npmjs.com/package/@claude-flow/codex) package, following the [Agentics Foundation](https://agentics.org) standard.
+
+### Quick Start for Codex
+
+```bash
+# Initialize for Codex CLI (creates AGENTS.md instead of CLAUDE.md)
+npx claude-flow@alpha init --codex
+
+# Full Codex setup with all 137+ skills
+npx claude-flow@alpha init --codex --full
+
+# Initialize for both platforms (dual mode)
+npx claude-flow@alpha init --dual
+```
+
+### Platform Comparison
+
+| Feature | Claude Code | OpenAI Codex |
+|---------|-------------|--------------|
+| Config File | `CLAUDE.md` | `AGENTS.md` |
+| Skills Dir | `.claude/skills/` | `.agents/skills/` |
+| Skill Syntax | `/skill-name` | `$skill-name` |
+| Settings | `settings.json` | `config.toml` |
+| MCP | Native | Via `codex mcp add` |
+| Default Model | claude-sonnet | gpt-5.3 |
+
+### Key Concept: Execution Model
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CLAUDE-FLOW = ORCHESTRATOR (tracks state, stores memory)       │
+│  CODEX = EXECUTOR (writes code, runs commands, implements)      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Codex does the work. Claude-flow coordinates and learns.**
+
+### Dual-Mode Integration (Claude Code + Codex)
+
+Run Claude Code for interactive development and spawn headless Codex workers for parallel background tasks:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CLAUDE CODE (interactive)  ←→  CODEX WORKERS (headless)        │
+│  - Main conversation         - Parallel background execution    │
+│  - Complex reasoning         - Bulk code generation            │
+│  - Architecture decisions    - Test execution                   │
+│  - Final integration         - File processing                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```bash
+# Spawn parallel Codex workers from Claude Code
+claude -p "Analyze src/auth/ for security issues" --session-id "task-1" &
+claude -p "Write unit tests for src/api/" --session-id "task-2" &
+claude -p "Optimize database queries in src/db/" --session-id "task-3" &
+wait  # Wait for all to complete
+```
+
+| Dual-Mode Feature | Benefit |
+|-------------------|---------|
+| Parallel Execution | 4-8x faster for bulk tasks |
+| Cost Optimization | Route simple tasks to cheaper workers |
+| Context Preservation | Shared memory across platforms |
+| Best of Both | Interactive + batch processing |
+
+### Dual-Mode CLI Commands (NEW)
+
+```bash
+# List collaboration templates
+npx claude-flow-codex dual templates
+
+# Run feature development swarm (architect → coder → tester → reviewer)
+npx claude-flow-codex dual run --template feature --task "Add user auth"
+
+# Run security audit swarm (scanner → analyzer → fixer)
+npx claude-flow-codex dual run --template security --task "src/auth/"
+
+# Run refactoring swarm (analyzer → planner → refactorer → validator)
+npx claude-flow-codex dual run --template refactor --task "src/legacy/"
+```
+
+### Pre-Built Collaboration Templates
+
+| Template | Pipeline | Platforms |
+|----------|----------|-----------|
+| **feature** | architect → coder → tester → reviewer | Claude + Codex |
+| **security** | scanner → analyzer → fixer | Codex + Claude |
+| **refactor** | analyzer → planner → refactorer → validator | Claude + Codex |
+
+### MCP Integration for Codex
+
+When you run `init --codex`, the MCP server is automatically registered:
+
+```bash
+# Verify MCP is registered
+codex mcp list
+
+# If not present, add manually:
+codex mcp add claude-flow -- npx claude-flow mcp start
+```
+
+### Self-Learning Workflow
+
+```
+1. LEARN:   memory_search(query="task keywords") → Find similar patterns
+2. COORD:   swarm_init(topology="hierarchical") → Set up coordination
+3. EXECUTE: YOU write code, run commands       → Codex does real work
+4. REMEMBER: memory_store(key, value, namespace="patterns") → Save for future
+```
+
+### MCP Tools for Learning
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `memory_search` | Semantic vector search | BEFORE starting any task |
+| `memory_store` | Save patterns with embeddings | AFTER completing successfully |
+| `swarm_init` | Initialize coordination | Start of complex tasks |
+| `agent_spawn` | Register agent roles | Multi-agent workflows |
+| `neural_train` | Train on patterns | Periodic improvement |
+
+### 137+ Skills Available
+
+| Category | Examples |
+|----------|----------|
+| **V3 Core** | `$v3-security-overhaul`, `$v3-memory-unification`, `$v3-performance-optimization` |
+| **AgentDB** | `$agentdb-vector-search`, `$agentdb-optimization`, `$agentdb-learning` |
+| **Swarm** | `$swarm-orchestration`, `$swarm-advanced`, `$hive-mind-advanced` |
+| **GitHub** | `$github-code-review`, `$github-workflow-automation`, `$github-multi-repo` |
+| **SPARC** | `$sparc-methodology`, `$sparc:architect`, `$sparc:coder`, `$sparc:tester` |
+| **Flow Nexus** | `$flow-nexus-neural`, `$flow-nexus-swarm`, `$flow-nexus:workflow` |
+| **Dual-Mode** | `$dual-spawn`, `$dual-coordinate`, `$dual-collect` |
+
+### Vector Search Details
+
+- **Embedding Dimensions**: 384
+- **Search Algorithm**: HNSW (150x-12,500x faster)
+- **Similarity Scoring**: 0-1 (higher = better)
+  - Score > 0.7: Strong match, use pattern
+  - Score 0.5-0.7: Partial match, adapt
+  - Score < 0.5: Weak match, create new
+
+</details>
+
 ### Basic Usage
 
 ```bash

@@ -1,0 +1,49 @@
+{
+  "name": "coflow",
+  "version": "3.1.0-alpha.4",
+  "description": "CoFlow - Shorthand CLI for Claude Flow. Enterprise AI agent orchestration for Claude Code.",
+  "type": "module",
+  "bin": {
+    "coflow": "./bin/coflow.js"
+  },
+  "files": [
+    "bin/**",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "coflow",
+    "claude-flow",
+    "claude",
+    "claude-code",
+    "ai-agents",
+    "multi-agent",
+    "swarm",
+    "mcp",
+    "orchestration",
+    "cli"
+  ],
+  "author": {
+    "name": "RuvNet",
+    "email": "ruv@ruv.io",
+    "url": "https://ruv.io"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/ruvnet/claude-flow#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/claude-flow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/claude-flow/issues"
+  },
+  "dependencies": {
+    "@claude-flow/cli": "^3.1.0-alpha.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

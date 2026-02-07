@@ -70,6 +70,8 @@ export interface SkillsConfig {
   browser: boolean;
   /** Include V3 implementation skills */
   v3: boolean;
+  /** Include dual-mode skills (Claude Code + Codex hybrid) */
+  dualMode: boolean;
   /** Include all available skills */
   all: boolean;
 }
@@ -122,6 +124,8 @@ export interface AgentsConfig {
   optimization: boolean;
   /** Include testing agents */
   testing: boolean;
+  /** Include dual-mode agents (Claude Code + Codex hybrid) */
+  dualMode: boolean;
   /** Include all agents */
   all: boolean;
 }
@@ -327,6 +331,7 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
     flowNexus: false,
     browser: true,
     v3: true,
+    dualMode: false,  // Optional: enable with --dual flag
     all: false,
   },
   commands: {
@@ -351,6 +356,7 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
     v3: true,
     optimization: true,
     testing: true,
+    dualMode: false,  // Optional: enable with --dual flag
     all: true,
   },
   statusline: {
@@ -416,6 +422,7 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
     flowNexus: false,
     browser: false,
     v3: false,
+    dualMode: false,
     all: false,
   },
   agents: {
@@ -429,6 +436,7 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
     v3: false,
     optimization: false,
     testing: false,
+    dualMode: false,
     all: false,
   },
   runtime: {
@@ -472,6 +480,7 @@ export const FULL_INIT_OPTIONS: InitOptions = {
     flowNexus: true,
     browser: true,
     v3: true,
+    dualMode: true,  // Include in full init
     all: true,
   },
   commands: {
