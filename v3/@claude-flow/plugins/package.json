@@ -46,12 +46,16 @@
     "events": "^3.3.0"
   },
   "peerDependencies": {
+    "@claude-flow/shared": "^3.0.0-alpha.1",
     "@claude-flow/hooks": "^3.0.0-alpha.2",
     "@claude-flow/memory": "^3.0.0-alpha.2",
     "@ruvector/learning-wasm": "^0.1.0",
     "@ruvector/wasm": "^0.1.0"
   },
   "peerDependenciesMeta": {
+    "@claude-flow/shared": {
+      "optional": true
+    },
     "@claude-flow/hooks": {
       "optional": true
     },

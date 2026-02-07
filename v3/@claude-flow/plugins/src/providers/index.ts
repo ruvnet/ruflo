@@ -20,6 +20,33 @@ import type {
   IEventBus,
 } from '../types/index.js';
 
+/**
+ * Default Claude model IDs — kept in sync with @claude-flow/shared/core/models.
+ * When @claude-flow/shared is available, use getAllModelIds() instead.
+ */
+const DEFAULT_CLAUDE_MODELS = [
+  'claude-opus-4-6',
+  'claude-sonnet-4-5-20250929',
+  'claude-haiku-4-5-20251001',
+];
+
+let resolvedClaudeModels: string[] | null = null;
+
+async function getClaudeModels(): Promise<string[]> {
+  if (resolvedClaudeModels) return resolvedClaudeModels;
+  try {
+    const shared = await import('@claude-flow/shared');
+    resolvedClaudeModels = shared.getAllModelIds();
+  } catch {
+    resolvedClaudeModels = DEFAULT_CLAUDE_MODELS;
+  }
+  return resolvedClaudeModels;
+}
+
+function getClaudeModelsSync(): string[] {
+  return resolvedClaudeModels ?? DEFAULT_CLAUDE_MODELS;
+}
+
 // ============================================================================
 // Provider Events
 // ============================================================================
@@ -532,11 +559,7 @@ export class ProviderFactory {
     return {
       name: 'anthropic',
       displayName: options?.displayName ?? 'Anthropic Claude',
-      models: options?.models ?? [
-        'claude-opus-4-5-20251101',
-        'claude-sonnet-4-20250514',
-        'claude-3-5-haiku-20241022',
-      ],
+      models: options?.models ?? getClaudeModelsSync(),
       capabilities: [
         'completion',
         'chat',

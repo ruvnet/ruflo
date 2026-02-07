@@ -90,7 +90,7 @@ Automatic checkpoint created by Claude Code
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>" --quiet 2>/dev/null; then
+Co-Authored-By: Claude <noreply@anthropic.com>" --quiet 2>/dev/null; then
         log "Created commit: $message"
 
         # Push if enabled

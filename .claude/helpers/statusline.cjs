@@ -99,7 +99,7 @@ function getUserInfo() {
           }
 
           // Parse model ID to human-readable name
-          if (modelId.includes('opus')) modelName = 'Opus 4.5';
+          if (modelId.includes('opus')) modelName = 'Opus';
           else if (modelId.includes('sonnet')) modelName = 'Sonnet 4';
           else if (modelId.includes('haiku')) modelName = 'Haiku 4.5';
           else modelName = modelId.split('-').slice(1, 3).join(' ');
@@ -117,7 +117,7 @@ function getUserInfo() {
       if (fs.existsSync(settingsPath)) {
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
         if (settings.model) {
-          if (settings.model.includes('opus')) modelName = 'Opus 4.5';
+          if (settings.model.includes('opus')) modelName = 'Opus';
           else if (settings.model.includes('sonnet')) modelName = 'Sonnet 4';
           else if (settings.model.includes('haiku')) modelName = 'Haiku 4.5';
           else modelName = settings.model.split('-').slice(1, 3).join(' ');

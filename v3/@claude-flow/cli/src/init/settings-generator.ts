@@ -4,6 +4,7 @@
  */
 
 import type { InitOptions, HooksConfig } from './types.js';
+import { getModelId } from '@claude-flow/shared';
 
 /**
  * Generate the complete settings.json content
@@ -49,8 +50,8 @@ export function generateSettings(options: InitOptions): object {
     version: '3.0.0',
     enabled: true,
     modelPreferences: {
-      default: 'claude-opus-4-5-20251101',
-      routing: 'claude-3-5-haiku-20241022',
+      default: getModelId('opus'),
+      routing: getModelId('haiku'),
     },
     swarm: {
       topology: options.runtime.topology,
