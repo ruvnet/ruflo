@@ -305,16 +305,154 @@ $github-workflow
 $performance-optimization
 ```
 
-### Skill Categories
+### Complete Skills Table (137+ Skills)
 
-| Category | Examples |
-|----------|----------|
-| **Swarm** | `$swarm-orchestration`, `$swarm-advanced` |
-| **Memory** | `$memory-management`, `$agentdb-vector-search` |
-| **SPARC** | `$sparc-methodology`, `$specification`, `$architecture` |
-| **GitHub** | `$github-code-review`, `$github-workflow-automation` |
-| **Security** | `$security-audit`, `$security-overhaul` |
-| **Testing** | `$tdd-london-swarm`, `$production-validator` |
+#### V3 Core Skills
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| V3 Security Overhaul | `$v3-security-overhaul` | Complete security architecture with CVE remediation |
+| V3 Memory Unification | `$v3-memory-unification` | Unify 6+ memory systems into AgentDB with HNSW |
+| V3 Integration Deep | `$v3-integration-deep` | Deep agentic-flow@alpha integration (ADR-001) |
+| V3 Performance Optimization | `$v3-performance-optimization` | Achieve 2.49x-7.47x speedup targets |
+| V3 Swarm Coordination | `$v3-swarm-coordination` | 15-agent hierarchical mesh coordination |
+| V3 DDD Architecture | `$v3-ddd-architecture` | Domain-Driven Design architecture |
+| V3 Core Implementation | `$v3-core-implementation` | Core module implementation |
+| V3 MCP Optimization | `$v3-mcp-optimization` | MCP server optimization and transport |
+| V3 CLI Modernization | `$v3-cli-modernization` | CLI modernization and hooks enhancement |
+
+#### AgentDB & Memory Skills
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| AgentDB Advanced | `$agentdb-advanced` | Advanced QUIC sync, distributed coordination |
+| AgentDB Memory Patterns | `$agentdb-memory-patterns` | Persistent memory patterns for AI agents |
+| AgentDB Learning | `$agentdb-learning` | AI learning plugins with AgentDB |
+| AgentDB Optimization | `$agentdb-optimization` | Quantization (4-32bit), performance tuning |
+| AgentDB Vector Search | `$agentdb-vector-search` | Semantic vector search with HNSW |
+| ReasoningBank AgentDB | `$reasoningbank-agentdb` | ReasoningBank with AgentDB integration |
+| ReasoningBank Intelligence | `$reasoningbank-intelligence` | Adaptive learning with ReasoningBank |
+
+#### Swarm & Coordination Skills
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| Swarm Orchestration | `$swarm-orchestration` | Multi-agent swarms with agentic-flow |
+| Swarm Advanced | `$swarm-advanced` | Advanced swarm patterns for research/analysis |
+| Hive Mind Advanced | `$hive-mind-advanced` | Collective intelligence system |
+| Stream Chain | `$stream-chain` | Stream-JSON chaining for multi-agent pipelines |
+| Worker Integration | `$worker-integration` | Background worker integration |
+| Worker Benchmarks | `$worker-benchmarks` | Worker performance benchmarks |
+
+#### GitHub Integration Skills
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| GitHub Code Review | `$github-code-review` | AI-powered code review swarms |
+| GitHub Project Management | `$github-project-management` | Swarm-coordinated project management |
+| GitHub Multi-Repo | `$github-multi-repo` | Multi-repository coordination |
+| GitHub Release Management | `$github-release-management` | Release orchestration with AI swarms |
+| GitHub Workflow Automation | `$github-workflow-automation` | GitHub Actions automation |
+
+#### SPARC Methodology Skills (30+)
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| SPARC Methodology | `$sparc-methodology` | Full SPARC workflow orchestration |
+| SPARC Specification | `$sparc:spec-pseudocode` | Capture full project context |
+| SPARC Architecture | `$sparc:architect` | System architecture design |
+| SPARC Coder | `$sparc:coder` | Clean, efficient code generation |
+| SPARC Tester | `$sparc:tester` | Comprehensive testing |
+| SPARC Reviewer | `$sparc:reviewer` | Code review and quality |
+| SPARC Debugger | `$sparc:debugger` | Runtime bug troubleshooting |
+| SPARC Optimizer | `$sparc:optimizer` | Refactor and modularize |
+| SPARC Documenter | `$sparc:documenter` | Documentation generation |
+| SPARC DevOps | `$sparc:devops` | DevOps automation |
+| SPARC Security Review | `$sparc:security-review` | Static/dynamic security analysis |
+| SPARC Integration | `$sparc:integration` | System integration |
+| SPARC MCP | `$sparc:mcp` | MCP integration management |
+
+#### Flow Nexus Skills
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| Flow Nexus Neural | `$flow-nexus-neural` | Neural network training in E2B sandboxes |
+| Flow Nexus Platform | `$flow-nexus-platform` | Platform management and authentication |
+| Flow Nexus Swarm | `$flow-nexus-swarm` | Cloud-based AI swarm deployment |
+| Flow Nexus Payments | `$flow-nexus:payments` | Credit management and billing |
+| Flow Nexus Challenges | `$flow-nexus:challenges` | Coding challenges and achievements |
+| Flow Nexus Sandbox | `$flow-nexus:sandbox` | E2B sandbox management |
+| Flow Nexus App Store | `$flow-nexus:app-store` | App publishing and deployment |
+| Flow Nexus Workflow | `$flow-nexus:workflow` | Event-driven workflow automation |
+
+#### Development Skills
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| Pair Programming | `$pair-programming` | AI-assisted pair programming |
+| Skill Builder | `$skill-builder` | Create new Claude Code Skills |
+| Verification Quality | `$verification-quality` | Truth scoring and quality verification |
+| Performance Analysis | `$performance-analysis` | Bottleneck detection and optimization |
+| Agentic Jujutsu | `$agentic-jujutsu` | Quantum-resistant version control |
+| Hooks Automation | `$hooks-automation` | Automated coordination and learning |
+
+#### Memory Management Skills
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| Memory Neural | `$memory:neural` | Neural pattern training |
+| Memory Usage | `$memory:memory-usage` | Memory usage analysis |
+| Memory Search | `$memory:memory-search` | Semantic memory search |
+| Memory Persist | `$memory:memory-persist` | Memory persistence |
+
+#### Monitoring & Analysis Skills
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| Real-Time View | `$monitoring:real-time-view` | Real-time monitoring |
+| Agent Metrics | `$monitoring:agent-metrics` | Agent performance metrics |
+| Swarm Monitor | `$monitoring:swarm-monitor` | Swarm activity monitoring |
+| Token Usage | `$analysis:token-usage` | Token usage optimization |
+| Performance Report | `$analysis:performance-report` | Performance reporting |
+| Bottleneck Detect | `$analysis:bottleneck-detect` | Bottleneck detection |
+
+#### Training Skills
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| Specialization | `$training:specialization` | Agent specialization training |
+| Neural Patterns | `$training:neural-patterns` | Neural pattern training |
+| Pattern Learn | `$training:pattern-learn` | Pattern learning |
+| Model Update | `$training:model-update` | Model updates |
+
+#### Automation & Optimization Skills
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| Self-Healing | `$automation:self-healing` | Self-healing workflows |
+| Smart Agents | `$automation:smart-agents` | Smart agent auto-spawning |
+| Session Memory | `$automation:session-memory` | Cross-session memory |
+| Cache Manage | `$optimization:cache-manage` | Cache management |
+| Parallel Execute | `$optimization:parallel-execute` | Parallel task execution |
+| Topology Optimize | `$optimization:topology-optimize` | Automatic topology selection |
+
+#### Hooks Skills (17 Hooks + 12 Workers)
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| Pre-Edit | `$hooks:pre-edit` | Context before editing |
+| Post-Edit | `$hooks:post-edit` | Record editing outcome |
+| Pre-Task | `$hooks:pre-task` | Record task start |
+| Post-Task | `$hooks:post-task` | Record task completion |
+| Session End | `$hooks:session-end` | End session and persist |
+
+#### Dual-Mode Skills (NEW)
+
+| Skill | Syntax | Description |
+|-------|--------|-------------|
+| Dual Spawn | `$dual-spawn` | Spawn parallel Codex workers from Claude Code |
+| Dual Coordinate | `$dual-coordinate` | Coordinate Claude Code + Codex execution |
+| Dual Collect | `$dual-collect` | Collect results from parallel Codex instances |
 
 ### Custom Skills
 
