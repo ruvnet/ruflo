@@ -36,8 +36,48 @@ async function initCodexAction(
   spinner.start();
 
   try {
-    // Dynamic import of the Codex initializer
-    const { CodexInitializer } = await import('@claude-flow/codex');
+    // Dynamic import of the Codex initializer with lazy loading fallback
+    let CodexInitializer: any;
+
+    // Try multiple resolution strategies for the @claude-flow/codex package
+    const resolutionStrategies = [
+      // Strategy 1: Direct import (works if installed as CLI dependency)
+      async () => (await import('@claude-flow/codex')).CodexInitializer,
+      // Strategy 2: Project node_modules (works if installed in user's project)
+      async () => {
+        const projectPath = path.join(ctx.cwd, 'node_modules', '@claude-flow', 'codex', 'dist', 'index.js');
+        if (fs.existsSync(projectPath)) {
+          const mod = await import(`file://${projectPath}`);
+          return mod.CodexInitializer;
+        }
+        throw new Error('Not found in project');
+      },
+      // Strategy 3: Global node_modules
+      async () => {
+        const { execSync } = await import('child_process');
+        const globalPath = execSync('npm root -g', { encoding: 'utf-8' }).trim();
+        const codexPath = path.join(globalPath, '@claude-flow', 'codex', 'dist', 'index.js');
+        if (fs.existsSync(codexPath)) {
+          const mod = await import(`file://${codexPath}`);
+          return mod.CodexInitializer;
+        }
+        throw new Error('Not found globally');
+      },
+    ];
+
+    for (const strategy of resolutionStrategies) {
+      try {
+        CodexInitializer = await strategy();
+        if (CodexInitializer) break;
+      } catch {
+        // Try next strategy
+      }
+    }
+
+    if (!CodexInitializer) {
+      throw new Error('Cannot find module @claude-flow/codex');
+    }
+
     const initializer = new CodexInitializer();
 
     const result = await initializer.initialize({
