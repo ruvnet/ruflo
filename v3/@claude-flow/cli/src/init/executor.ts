@@ -247,6 +247,8 @@ export interface UpgradeResult {
   addedSkills?: string[];
   addedAgents?: string[];
   addedCommands?: string[];
+  /** Added by --settings flag */
+  settingsUpdated?: string[];
 }
 
 /**
