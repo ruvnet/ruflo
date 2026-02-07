@@ -227,7 +227,7 @@ async function spawnClaudeCodeInstance(
     // Check if claude command exists
     let claudeAvailable = false;
     try {
-      execSync('which claude', { stdio: 'ignore' });
+      execSync(process.platform === 'win32' ? 'where claude' : 'which claude', { stdio: 'ignore', shell: true });
       claudeAvailable = true;
     } catch {
       output.writeln();
@@ -270,7 +270,7 @@ async function spawnClaudeCodeInstance(
       // Spawn claude with properly ordered arguments
       const claudeProcess = childSpawn('claude', claudeArgs, {
         stdio: 'inherit',
-        shell: false,
+        shell: process.platform === 'win32',
       });
 
       // Set up SIGINT handler for session management

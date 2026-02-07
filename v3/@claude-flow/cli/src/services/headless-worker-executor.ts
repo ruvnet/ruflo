@@ -633,6 +633,7 @@ export class HeadlessWorkerExecutor extends EventEmitter {
         encoding: 'utf-8',
         stdio: 'pipe',
         timeout: 5000,
+        shell: process.platform === 'win32', // Enable shell on Windows for PATH resolution
         windowsHide: true, // Prevent phantom console windows on Windows
       });
       this.claudeCodeAvailable = true;
@@ -1126,6 +1127,7 @@ Analyze the above codebase context and provide your response following the forma
         cwd: this.projectRoot,
         env,
         stdio: ['pipe', 'pipe', 'pipe'],
+        shell: process.platform === 'win32', // Enable shell on Windows for PATH resolution
         windowsHide: true, // Prevent phantom console windows on Windows
       });
 
