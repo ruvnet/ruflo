@@ -13,6 +13,7 @@
 import { EventEmitter } from 'events';
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { cpus } from 'os';
 import {
   HeadlessWorkerExecutor,
   HEADLESS_WORKER_TYPES,
@@ -86,6 +87,24 @@ interface DaemonConfig {
   workers: WorkerConfig[];
 }
 
+export interface ResourceThresholds {
+  maxCpuLoad: number;
+  minFreeMemoryPercent: number;
+}
+
+export function getDefaultResourceThresholds(
+  platform: NodeJS.Platform = process.platform,
+  cpuCount = cpus().length
+): ResourceThresholds {
+  const normalizedCpuCount = Number.isFinite(cpuCount) && cpuCount > 0 ? cpuCount : 1;
+  return {
+    // loadavg is system-wide across cores; scale threshold with CPU count
+    maxCpuLoad: normalizedCpuCount * 3,
+    // macOS reports low free memory due to cache strategy; avoid permanent deferral
+    minFreeMemoryPercent: platform === 'darwin' ? 1 : 20,
+  };
+}
+
 // Worker configuration with staggered offsets to prevent overlap
 interface WorkerConfigInternal extends WorkerConfig {
   offsetMs: number; // Stagger start time
@@ -134,10 +153,7 @@ export class WorkerDaemon extends EventEmitter {
       stateFile: config?.stateFile ?? join(claudeFlowDir, 'daemon-state.json'),
       maxConcurrent: config?.maxConcurrent ?? 2, // P0 fix: Limit concurrent workers
       workerTimeoutMs: config?.workerTimeoutMs ?? DEFAULT_WORKER_TIMEOUT_MS,
-      resourceThresholds: config?.resourceThresholds ?? {
-        maxCpuLoad: 2.0,
-        minFreeMemoryPercent: 20,
-      },
+      resourceThresholds: config?.resourceThresholds ?? getDefaultResourceThresholds(),
       workers: config?.workers ?? DEFAULT_WORKERS,
     };
 
