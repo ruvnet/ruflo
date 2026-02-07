@@ -1573,7 +1573,7 @@ const preTaskCommand: Command = {
       short: 'i',
       description: 'Unique task identifier',
       type: 'string',
-      required: true
+      required: false
     },
     {
       name: 'description',
@@ -1591,15 +1591,15 @@ const preTaskCommand: Command = {
     }
   ],
   examples: [
-    { command: 'claude-flow hooks pre-task -i task-123 -d "Fix auth bug"', description: 'Record task start' },
+    { command: 'claude-flow hooks pre-task -d "Fix auth bug"', description: 'Record task start (auto ID)' },
     { command: 'claude-flow hooks pre-task -i task-456 -d "Implement feature" --auto-spawn', description: 'With auto-spawn' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const taskId = ctx.flags.taskId as string;
+    const taskId = (ctx.flags.taskId as string) || `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const description = ctx.args[0] || ctx.flags.description as string;
 
-    if (!taskId || !description) {
-      output.printError('Task ID and description are required.');
+    if (!description) {
+      output.printError('Task description is required.');
       return { success: false, exitCode: 1 };
     }
 
