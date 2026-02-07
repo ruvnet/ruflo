@@ -47,6 +47,41 @@ const c = {
   brightWhite: '\x1b[1;37m',
 };
 
+function formatModelName(modelId) {
+  if (typeof modelId !== 'string' || modelId.length === 0) {
+    return '🤖 Claude Code';
+  }
+
+  const normalized = modelId.toLowerCase();
+
+  const parseFamilyVersion = (family, label) => {
+    const forward = normalized.match(new RegExp(family + '-(\\d+)(?:-(\\d+))?'));
+    if (forward) {
+      return label + ' ' + forward[1] + (forward[2] ? '.' + forward[2] : '');
+    }
+
+    const reverse = normalized.match(new RegExp('(\\d+)(?:-(\\d+))?-' + family));
+    if (reverse) {
+      return label + ' ' + reverse[1] + (reverse[2] ? '.' + reverse[2] : '');
+    }
+
+    return null;
+  };
+
+  return (
+    parseFamilyVersion('opus', 'Opus')
+    || parseFamilyVersion('sonnet', 'Sonnet')
+    || parseFamilyVersion('haiku', 'Haiku')
+    || modelId
+      .replace(/^claude-/, '')
+      .replace(/-\\d{8}$/, '')
+      .split('-')
+      .filter(Boolean)
+      .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(' ')
+  );
+}
+
 // Get user info
 function getUserInfo() {
   let name = 'user';
@@ -98,11 +133,7 @@ function getUserInfo() {
             }
           }
 
-          // Parse model ID to human-readable name
-          if (modelId.includes('opus')) modelName = 'Opus 4.5';
-          else if (modelId.includes('sonnet')) modelName = 'Sonnet 4';
-          else if (modelId.includes('haiku')) modelName = 'Haiku 4.5';
-          else modelName = modelId.split('-').slice(1, 3).join(' ');
+          modelName = formatModelName(modelId);
         }
       }
     }
@@ -111,20 +142,17 @@ function getUserInfo() {
   }
 
   // Fallback: check project's .claude/settings.json for model
-  if (modelName === 'Unknown') {
+  if (modelName === '🤖 Claude Code') {
     try {
       const settingsPath = path.join(process.cwd(), '.claude', 'settings.json');
       if (fs.existsSync(settingsPath)) {
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
         if (settings.model) {
-          if (settings.model.includes('opus')) modelName = 'Opus 4.5';
-          else if (settings.model.includes('sonnet')) modelName = 'Sonnet 4';
-          else if (settings.model.includes('haiku')) modelName = 'Haiku 4.5';
-          else modelName = settings.model.split('-').slice(1, 3).join(' ');
+          modelName = formatModelName(settings.model);
         }
       }
     } catch (e) {
-      // Keep Unknown
+      // Keep default label
     }
   }
 
