@@ -511,55 +511,85 @@ Once added, Codex can use these tools via MCP:
 | `task_orchestrate` | Coordinate tasks |
 | `neural_train` | Train on successful patterns |
 
-### Learning via Memory (IMPORTANT - USE THIS!)
+### Self-Learning via MCP Tools (PREFERRED)
 
-**BEFORE starting any task:**
-```bash
-# Search for relevant patterns from past work
-npx claude-flow memory search --query "keywords related to your task"
+Use MCP tools directly - faster than CLI commands:
 
-# Example: before building an API
-npx claude-flow memory search --query "API implementation patterns REST endpoints"
+**BEFORE starting any task - SEARCH for patterns:**
 ```
-If patterns are found, USE THEM to guide your implementation.
-
-**AFTER completing a task successfully:**
-```bash
-# Store the successful pattern for future reference
-npx claude-flow memory store \
-  --key "pattern-[descriptive-name]" \
-  --value "Detailed description: what the task was, what approach worked, key code patterns, gotchas to avoid" \
-  --namespace patterns
-
-# Example: after building a worker pool
-npx claude-flow memory store \
-  --key "pattern-concurrent-workers" \
-  --value "Use bash background jobs: for i in 1..N; do (work) & done; wait. Each worker in subshell for isolation." \
-  --namespace patterns
+Use tool: memory_search
+  query: "keywords related to your task"
+  namespace: "patterns"
 ```
 
-### Self-Learning Workflow (Use This Pattern!)
+**AFTER completing successfully - STORE the pattern:**
+```
+Use tool: memory_store
+  key: "pattern-[descriptive-name]"
+  value: "What worked: approach, code patterns, gotchas"
+  namespace: "patterns"
+```
 
-```bash
-# 1. LEARN: Search before you start
-npx claude-flow memory search --query "task keywords" --namespace patterns
+### MCP Learning Workflow (Use This!)
 
-# 2. EXECUTE: Do the work (YOU implement)
-# ... your implementation here ...
+```
+1. LEARN: memory_search(query="task keywords", namespace="patterns")
+   → If score > 0.7, USE that pattern
 
-# 3. REMEMBER: Store what worked
-npx claude-flow memory store --key "pattern-xxx" --value "what worked" --namespace patterns
+2. COORDINATE: swarm_init(topology="hierarchical")
+   → agent_spawn(type="coder", name="worker-1")
 
-# 4. VERIFY: Confirm pattern is searchable
-npx claude-flow memory search --query "related terms" --namespace patterns
+3. EXECUTE: YOU write the code, run commands, create files
+
+4. REMEMBER: memory_store(key="pattern-x", value="what worked", namespace="patterns")
+```
+
+### MCP Tools for Learning
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `memory_search` | Find similar past patterns | BEFORE starting any task |
+| `memory_store` | Save successful patterns | AFTER completing a task |
+| `memory_retrieve` | Get specific pattern by key | When you know the exact key |
+| `neural_train` | Train on successful patterns | After multiple successes |
+
+### Example: Learning-Enabled Task
+
+```
+STEP 1 - LEARN:
+Use tool: memory_search
+  query: "validation utility function"
+  namespace: "patterns"
+
+→ Found: pattern-email-validator (score: 0.82)
+→ Use this pattern as reference!
+
+STEP 2 - COORDINATE:
+Use tool: swarm_init with topology="hierarchical", maxAgents=3
+
+STEP 3 - EXECUTE:
+YOU create the files:
+  echo 'export function validate(x) { ... }' > /tmp/validator.js
+  node --test /tmp/validator.js
+
+STEP 4 - REMEMBER:
+Use tool: memory_store
+  key: "pattern-phone-validator"
+  value: "Phone validation: regex /^\+?[\d\s-]{10,}$/, normalize first, test edge cases"
+  namespace: "patterns"
 ```
 
 ### Vector Search Tips
-- Searches are SEMANTIC (meaning-based, not keyword-based)
-- Use descriptive queries: "concurrent worker execution" not just "workers"
+- Searches are SEMANTIC (meaning-based, not just keywords)
 - Score > 0.7 = strong match, use that pattern
 - Score 0.5-0.7 = partial match, adapt as needed
-- Store with detailed values for better retrieval
+- Store DETAILED values for better future retrieval
+
+### CLI Fallback (if MCP unavailable)
+```bash
+npx claude-flow memory search --query "keywords" --namespace patterns
+npx claude-flow memory store --key "pattern-x" --value "what worked" --namespace patterns
+```
 
 ### Coordination via MCP
 
