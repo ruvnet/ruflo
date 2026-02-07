@@ -24,6 +24,7 @@ import { EventEmitter } from 'events';
 import { existsSync, readFileSync, readdirSync, mkdirSync, writeFileSync } from 'fs';
 import { join, relative } from 'path';
 import type { WorkerType } from './worker-daemon.js';
+import { getModelId, type ModelTier } from '@claude-flow/shared';
 
 // ============================================
 // Type Definitions
@@ -268,12 +269,13 @@ export const LOCAL_WORKER_TYPES: LocalWorkerType[] = [
 ];
 
 /**
- * Model ID mapping
+ * Model ID mapping — delegates to centralized @claude-flow/shared models.
+ * Supports CLAUDE_FLOW_MODEL_* environment variable overrides.
  */
 const MODEL_IDS: Record<ModelType, string> = {
-  sonnet: 'claude-sonnet-4-20250514',
-  opus: 'claude-opus-4-20250514',
-  haiku: 'claude-haiku-4-20250514',
+  sonnet: getModelId('sonnet'),
+  opus: getModelId('opus'),
+  haiku: getModelId('haiku'),
 };
 
 /**

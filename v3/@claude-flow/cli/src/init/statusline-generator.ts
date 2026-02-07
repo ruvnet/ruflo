@@ -8,7 +8,7 @@ import type { InitOptions, StatuslineConfig } from './types.js';
 /**
  * Generate statusline configuration script
  * Matches the advanced format:
- * ▊ Claude Flow V3 ● user  │  ⎇ v3  │  Opus 4.5
+ * ▊ Claude Flow V3 ● user  │  ⎇ v3  │  Claude Opus
  * ─────────────────────────────────────────────────────
  * 🏗️  DDD Domains    [●●●●●]  5/5    ⚡ HNSW 12500x (or 📚 22.9k patterns)
  * 🤖 Swarm  ◉ [12/15]  👥 0    🟢 CVE 3/3    💾 5177MB    📂  56%    🧠  30%
@@ -119,7 +119,7 @@ function getUserInfo() {
           }
 
           // Parse model ID to human-readable name
-          if (modelId.includes('opus')) modelName = 'Opus 4.5';
+          if (modelId.includes('opus')) modelName = 'Opus';
           else if (modelId.includes('sonnet')) modelName = 'Sonnet 4';
           else if (modelId.includes('haiku')) modelName = 'Haiku 4.5';
           else modelName = modelId.split('-').slice(1, 3).join(' ');
@@ -137,7 +137,7 @@ function getUserInfo() {
       if (fs.existsSync(settingsPath)) {
         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
         if (settings.model) {
-          if (settings.model.includes('opus')) modelName = 'Opus 4.5';
+          if (settings.model.includes('opus')) modelName = 'Opus';
           else if (settings.model.includes('sonnet')) modelName = 'Sonnet 4';
           else if (settings.model.includes('haiku')) modelName = 'Haiku 4.5';
           else modelName = settings.model.split('-').slice(1, 3).join(' ');

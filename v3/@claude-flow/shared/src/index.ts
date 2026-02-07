@@ -123,7 +123,15 @@ export {
   defaultSystemConfig,
   agentTypePresets,
   mergeWithDefaults,
+  // Model constants
+  CLAUDE_MODELS,
+  DEFAULT_MODEL,
+  MODEL_DISPLAY_NAMES,
+  getModelId,
+  getAllModelIds,
 } from './core/index.js';
+
+export type { ModelTier } from './core/index.js';
 
 export type {
   // Config types

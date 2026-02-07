@@ -170,7 +170,7 @@ interface CoAuthor {
 }
 
 const DEFAULT_CO_AUTHOR: CoAuthor = {
-  name: 'Claude Opus 4.5',
+  name: 'Claude',
   email: 'noreply@anthropic.com',
 };
 
