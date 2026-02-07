@@ -254,9 +254,23 @@ export interface UpgradeResult {
 /**
  * Merge new settings into existing settings.json
  * Preserves user customizations while adding new features like Agent Teams
+ * Uses platform-specific commands for Mac, Linux, and Windows
  */
 function mergeSettingsForUpgrade(existing: Record<string, unknown>): Record<string, unknown> {
   const merged = { ...existing };
+  const platform = detectPlatform();
+  const isWindows = platform.os === 'windows';
+
+  // Platform-specific command wrappers
+  // Windows: Use PowerShell-compatible commands
+  // Mac/Linux: Use bash-compatible commands with 2>/dev/null
+  const teammateIdleCmd = isWindows
+    ? 'npx @claude-flow/cli@latest hooks teammate-idle --auto-assign true 2>$null; exit 0'
+    : 'npx @claude-flow/cli@latest hooks teammate-idle --auto-assign true 2>/dev/null || true';
+
+  const taskCompletedCmd = isWindows
+    ? 'if ($env:TASK_ID) { npx @claude-flow/cli@latest hooks task-completed --task-id $env:TASK_ID --train-patterns true 2>$null }; exit 0'
+    : '[ -n "$TASK_ID" ] && npx @claude-flow/cli@latest hooks task-completed --task-id "$TASK_ID" --train-patterns true 2>/dev/null || true';
 
   // 1. Merge env vars (preserve existing, add new)
   const existingEnv = (existing.env as Record<string, string>) || {};
@@ -278,7 +292,7 @@ function mergeSettingsForUpgrade(existing: Record<string, unknown>): Record<stri
         hooks: [
           {
             type: 'command',
-            command: 'npx @claude-flow/cli@latest hooks teammate-idle --auto-assign true 2>/dev/null || true',
+            command: teammateIdleCmd,
             timeout: 5000,
             continueOnError: true,
           },
@@ -294,7 +308,7 @@ function mergeSettingsForUpgrade(existing: Record<string, unknown>): Record<stri
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$TASK_ID" ] && npx @claude-flow/cli@latest hooks task-completed --task-id "$TASK_ID" --train-patterns true 2>/dev/null || true',
+            command: taskCompletedCmd,
             timeout: 5000,
             continueOnError: true,
           },

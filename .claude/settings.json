@@ -32,7 +32,8 @@
     "CLAUDE_FLOW_CHECKPOINTS_ENABLED": "true",
     "CLAUDE_FLOW_V3_CLI_ENABLED": "true",
     "CLAUDE_FLOW_V3_CLI_PATH": "/workspaces/claude-flow/v3/@claude-flow/cli/bin/cli.js",
-    "CLAUDE_FLOW_V3_INTELLIGENCE": "true"
+    "CLAUDE_FLOW_V3_INTELLIGENCE": "true",
+    "CLAUDE_FLOW_V3_ENABLED": "true"
   },
   "permissions": {
     "allowedTools": [
@@ -173,12 +174,12 @@
             "timeout": 4000,
             "command": "/workspaces/claude-flow/.claude/helpers/learning-hooks.sh store \"Edit: $TOOL_INPUT_file_path\" code 0.7 2>/dev/null || true"
           },
-                    {
+          {
             "type": "command",
             "timeout": 4000,
             "command": "node /workspaces/claude-flow/v3/@claude-flow/cli/bin/cli.js hooks post-edit --file \"$TOOL_INPUT_file_path\" --success true --train-patterns true --memory-key \"edit/$TOOL_INPUT_file_path\" 2>/dev/null || true"
           },
-                    {
+          {
             "type": "command",
             "timeout": 10000,
             "command": "/workspaces/claude-flow/.claude/helpers/auto-commit.sh batch 'Checkpoint: File edits' 2>/dev/null || true"
@@ -510,7 +511,13 @@
   "v3Configuration": {
     "domains": {
       "total": 5,
-      "names": ["task-management", "session-management", "health-monitoring", "lifecycle-management", "event-coordination"],
+      "names": [
+        "task-management",
+        "session-management",
+        "health-monitoring",
+        "lifecycle-management",
+        "event-coordination"
+      ],
       "sourceDir": "src/domains"
     },
     "swarm": {
@@ -567,5 +574,36 @@
     "commit": "Co-Authored-By: claude-flow <ruv@ruv.net>",
     "pr": "🤖 Generated with [claude-flow](https://github.com/ruvnet/claude-flow)"
   },
-  "enabledMcpjsonServers": ["claude-flow", "ruv-swarm"]
+  "enabledMcpjsonServers": [
+    "claude-flow",
+    "ruv-swarm"
+  ],
+  "claudeFlow": {
+    "version": "3.0.0",
+    "enabled": true,
+    "agentTeams": {
+      "enabled": true,
+      "teammateMode": "auto",
+      "taskListEnabled": true,
+      "mailboxEnabled": true,
+      "coordination": {
+        "autoAssignOnIdle": true,
+        "trainPatternsOnComplete": true,
+        "notifyLeadOnComplete": true,
+        "sharedMemoryNamespace": "agent-teams"
+      },
+      "hooks": {
+        "teammateIdle": {
+          "enabled": true,
+          "autoAssign": true,
+          "checkTaskList": true
+        },
+        "taskCompleted": {
+          "enabled": true,
+          "trainPatterns": true,
+          "notifyLead": true
+        }
+      }
+    }
+  }
 }
