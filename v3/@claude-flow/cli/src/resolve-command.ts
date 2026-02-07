@@ -13,7 +13,8 @@
  */
 
 import { existsSync } from 'fs';
-import { join, resolve } from 'path';
+import { resolve } from 'path';
+import { execSync } from 'child_process';
 
 /** Extensions to try when resolving commands on Windows. */
 const WIN_EXTENSIONS = ['.cmd', '.bat', '.exe', '.ps1', ''];
@@ -71,7 +72,6 @@ export function isCommandAvailable(cmd: string): boolean {
 
   // On Unix, try to resolve via which
   try {
-    const { execSync } = require('child_process');
     execSync(`which ${cmd}`, { stdio: 'ignore' });
     return true;
   } catch {
