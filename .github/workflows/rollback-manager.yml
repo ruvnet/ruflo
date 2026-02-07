@@ -448,9 +448,9 @@ jobs:
         run: |
           echo "🖥️ Verifying CLI functionality..."
           
-          # Test basic CLI commands
-          node dist/cli/main.js --version || (echo "❌ CLI verification failed" && exit 1)
-          node dist/cli/main.js --help > /dev/null || (echo "❌ CLI help failed" && exit 1)
+          # Test basic CLI commands via the repository's actual CLI entrypoint
+          node ./v3/@claude-flow/cli/bin/cli.js --version || (echo "❌ CLI verification failed" && exit 1)
+          node ./v3/@claude-flow/cli/bin/cli.js --help > /dev/null || (echo "❌ CLI help failed" && exit 1)
           
           echo "✅ CLI verification passed"
 

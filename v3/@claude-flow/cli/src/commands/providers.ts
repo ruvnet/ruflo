@@ -157,6 +157,7 @@ const modelsCommand: Command = {
         { key: 'cost', header: 'Cost/1K', width: 12 },
       ],
       data: [
+        { model: 'claude-opus-4-6', provider: 'Anthropic', capability: 'Chat', context: '200K', cost: '$0.005/$0.025' },
         { model: 'claude-3.5-sonnet-20241022', provider: 'Anthropic', capability: 'Chat', context: '200K', cost: '$0.003/$0.015' },
         { model: 'claude-3-opus-20240229', provider: 'Anthropic', capability: 'Chat', context: '200K', cost: '$0.015/$0.075' },
         { model: 'gpt-4o', provider: 'OpenAI', capability: 'Chat', context: '128K', cost: '$0.005/$0.015' },

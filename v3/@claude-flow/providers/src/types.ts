@@ -24,6 +24,7 @@ export type LLMProvider =
 
 export type LLMModel =
   // Anthropic Models (2024-2025)
+  | 'claude-opus-4-6'
   | 'claude-3-5-sonnet-20241022'
   | 'claude-3-5-sonnet-latest'
   | 'claude-3-opus-20240229'

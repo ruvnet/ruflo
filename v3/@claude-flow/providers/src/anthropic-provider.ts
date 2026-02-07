@@ -1,7 +1,7 @@
 /**
  * V3 Anthropic (Claude) Provider
  *
- * Supports Claude 3.5, 3 Opus, Sonnet, and Haiku models.
+ * Supports Claude 4.6, 3.5, 3 Opus, Sonnet, and Haiku models.
  *
  * @module @claude-flow/providers/anthropic-provider
  */
@@ -58,6 +58,7 @@ export class AnthropicProvider extends BaseProvider {
   readonly name: LLMProvider = 'anthropic';
   readonly capabilities: ProviderCapabilities = {
     supportedModels: [
+      'claude-opus-4-6',
       'claude-3-5-sonnet-20241022',
       'claude-3-5-sonnet-latest',
       'claude-3-opus-20240229',
@@ -65,6 +66,7 @@ export class AnthropicProvider extends BaseProvider {
       'claude-3-haiku-20240307',
     ],
     maxContextLength: {
+      'claude-opus-4-6': 200000,
       'claude-3-5-sonnet-20241022': 200000,
       'claude-3-5-sonnet-latest': 200000,
       'claude-3-opus-20240229': 200000,
@@ -72,6 +74,7 @@ export class AnthropicProvider extends BaseProvider {
       'claude-3-haiku-20240307': 200000,
     },
     maxOutputTokens: {
+      'claude-opus-4-6': 32000,
       'claude-3-5-sonnet-20241022': 8192,
       'claude-3-5-sonnet-latest': 8192,
       'claude-3-opus-20240229': 4096,
@@ -92,6 +95,11 @@ export class AnthropicProvider extends BaseProvider {
       concurrentRequests: 100,
     },
     pricing: {
+      'claude-opus-4-6': {
+        promptCostPer1k: 0.005,
+        completionCostPer1k: 0.025,
+        currency: 'USD',
+      },
       'claude-3-5-sonnet-20241022': {
         promptCostPer1k: 0.003,
         completionCostPer1k: 0.015,
@@ -259,6 +267,7 @@ export class AnthropicProvider extends BaseProvider {
 
   async getModelInfo(model: LLMModel): Promise<ModelInfo> {
     const descriptions: Record<string, string> = {
+      'claude-opus-4-6': 'Claude Opus 4.6 - Most capable Claude model with 32K max output tokens',
       'claude-3-5-sonnet-20241022': 'Latest Claude 3.5 Sonnet - Best balance of intelligence and speed',
       'claude-3-5-sonnet-latest': 'Claude 3.5 Sonnet latest version',
       'claude-3-opus-20240229': 'Most capable Claude model for complex tasks',

@@ -91,6 +91,34 @@ export class MCPClientError extends Error {
   }
 }
 
+interface InputSchemaProperty {
+  type?: string;
+  enum?: unknown[];
+}
+
+function getRuntimeType(value: unknown): string {
+  if (Array.isArray(value)) return 'array';
+  if (value === null) return 'null';
+  return typeof value;
+}
+
+function matchesExpectedType(value: unknown, expectedType: string): boolean {
+  switch (expectedType) {
+    case 'string':
+      return typeof value === 'string';
+    case 'number':
+      return typeof value === 'number' && Number.isFinite(value);
+    case 'boolean':
+      return typeof value === 'boolean';
+    case 'array':
+      return Array.isArray(value);
+    case 'object':
+      return typeof value === 'object' && value !== null && !Array.isArray(value);
+    default:
+      return true;
+  }
+}
+
 /**
  * Call an MCP tool by name with input parameters
  *
@@ -126,6 +154,14 @@ export async function callMCPTool<T = unknown>(
   if (!tool) {
     throw new MCPClientError(
       `MCP tool not found: ${toolName}`,
+      toolName
+    );
+  }
+
+  const validation = validateToolInput(toolName, input);
+  if (!validation.valid) {
+    throw new MCPClientError(
+      `Input validation failed for '${toolName}': ${(validation.errors || ['Unknown validation error']).join('; ')}`,
       toolName
     );
   }
@@ -242,14 +278,45 @@ export function validateToolInput(
     };
   }
 
-  // Basic validation - check required fields
+  // Validation - required fields, type checks, enum checks
   const schema = tool.inputSchema;
   const errors: string[] = [];
 
   if (schema.required && Array.isArray(schema.required)) {
     for (const requiredField of schema.required) {
-      if (!(requiredField in input)) {
+      if (
+        !Object.prototype.hasOwnProperty.call(input, requiredField) ||
+        input[requiredField] === undefined ||
+        input[requiredField] === null
+      ) {
         errors.push(`Missing required field: ${requiredField}`);
+      }
+    }
+  }
+
+  if (schema.properties && typeof schema.properties === 'object') {
+    for (const [field, rawProperty] of Object.entries(schema.properties)) {
+      const property = (rawProperty || {}) as InputSchemaProperty;
+      const value = input[field];
+
+      // Skip optional fields when not provided
+      if (value === undefined || value === null) {
+        continue;
+      }
+
+      if (property.type && !matchesExpectedType(value, property.type)) {
+        errors.push(
+          `Invalid type for field: ${field}. Expected ${property.type}, got ${getRuntimeType(value)}`
+        );
+        continue;
+      }
+
+      if (Array.isArray(property.enum) && property.enum.length > 0) {
+        const enumMatch = property.enum.some(enumValue => Object.is(enumValue, value));
+        if (!enumMatch) {
+          const expectedValues = property.enum.map(value => JSON.stringify(value)).join(', ');
+          errors.push(`Invalid value for field: ${field}. Expected one of: ${expectedValues}`);
+        }
       }
     }
   }

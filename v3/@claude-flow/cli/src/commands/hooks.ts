@@ -27,6 +27,113 @@ const AGENT_TYPES = [
   'test-architect', 'coordinator', 'analyst', 'optimizer'
 ];
 
+interface OfficialToolHookPayload {
+  tool_name?: unknown;
+  tool_input?: Record<string, unknown>;
+  tool_success?: unknown;
+}
+
+function toNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function toBoolean(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return undefined;
+}
+
+function parseHookPayload(raw: unknown): OfficialToolHookPayload | null {
+  if (typeof raw !== 'string') {
+    return null;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (parsed && typeof parsed === 'object') {
+      return parsed as OfficialToolHookPayload;
+    }
+  } catch {
+    // Ignore invalid hook payload and fallback to regular CLI args.
+  }
+
+  return null;
+}
+
+function extractHookToolInputString(payload: OfficialToolHookPayload | null, key: string): string | undefined {
+  if (!payload?.tool_input || typeof payload.tool_input !== 'object') {
+    return undefined;
+  }
+  return toNonEmptyString((payload.tool_input as Record<string, unknown>)[key]);
+}
+
+function extractHookToolSuccess(payload: OfficialToolHookPayload | null): boolean | undefined {
+  return toBoolean(payload?.tool_success);
+}
+
+function extractHookToolName(payload: OfficialToolHookPayload | null): string | undefined {
+  return toNonEmptyString(payload?.tool_name);
+}
+
+async function readHookPayloadFromStdin(timeoutMs = 200): Promise<OfficialToolHookPayload | null> {
+  if (process.stdin.isTTY) {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    let data = '';
+    let settled = false;
+
+    const cleanup = (): void => {
+      clearTimeout(timer);
+      process.stdin.off('data', onData);
+      process.stdin.off('end', onEnd);
+      process.stdin.off('error', onError);
+    };
+
+    const parsePayload = (): OfficialToolHookPayload | null => {
+      return parseHookPayload(data);
+    };
+
+    const finalize = (payload: OfficialToolHookPayload | null): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      resolve(payload);
+    };
+
+    const onData = (chunk: string | Buffer): void => {
+      data += String(chunk);
+    };
+    const onEnd = (): void => finalize(parsePayload());
+    const onError = (): void => finalize(null);
+
+    const timer = setTimeout(() => finalize(parsePayload()), timeoutMs);
+
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', onData);
+    process.stdin.once('end', onEnd);
+    process.stdin.once('error', onError);
+    process.stdin.resume();
+  });
+}
+
 // Pre-edit subcommand
 const preEditCommand: Command = {
   name: 'pre-edit',
@@ -37,7 +144,7 @@ const preEditCommand: Command = {
       short: 'f',
       description: 'File path to edit',
       type: 'string',
-      required: true
+      required: false
     },
     {
       name: 'operation',
@@ -58,8 +165,17 @@ const preEditCommand: Command = {
     { command: 'claude-flow hooks pre-edit -f src/api.ts -o refactor', description: 'Pre-edit with operation type' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const filePath = ctx.args[0] || ctx.flags.file as string;
-    const operation = ctx.flags.operation as string || 'update';
+    let filePath = toNonEmptyString(ctx.args[0]) ?? toNonEmptyString(ctx.flags.file);
+    let operation = toNonEmptyString(ctx.flags.operation) ?? 'update';
+
+    if (!filePath) {
+      const hookPayload = parseHookPayload(ctx.flags.hookInputJson) ?? await readHookPayloadFromStdin();
+      filePath = extractHookToolInputString(hookPayload, 'file_path');
+
+      if (!toNonEmptyString(ctx.flags.operation) && extractHookToolName(hookPayload) === 'Write') {
+        operation = 'create';
+      }
+    }
 
     if (!filePath) {
       output.printError('File path is required. Use --file or -f flag.');
@@ -164,14 +280,14 @@ const postEditCommand: Command = {
       short: 'f',
       description: 'File path that was edited',
       type: 'string',
-      required: true
+      required: false
     },
     {
       name: 'success',
       short: 's',
       description: 'Whether the edit was successful',
       type: 'boolean',
-      required: true
+      required: false
     },
     {
       name: 'outcome',
@@ -191,8 +307,18 @@ const postEditCommand: Command = {
     { command: 'claude-flow hooks post-edit -f src/api.ts --success false -o "Type error"', description: 'Record failed edit' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const filePath = ctx.args[0] || ctx.flags.file as string;
-    const success = ctx.flags.success as boolean;
+    let filePath = toNonEmptyString(ctx.args[0]) ?? toNonEmptyString(ctx.flags.file);
+    let success = toBoolean(ctx.flags.success);
+
+    if (!filePath || success === undefined) {
+      const hookPayload = parseHookPayload(ctx.flags.hookInputJson) ?? await readHookPayloadFromStdin();
+      if (!filePath) {
+        filePath = extractHookToolInputString(hookPayload, 'file_path');
+      }
+      if (success === undefined) {
+        success = extractHookToolSuccess(hookPayload);
+      }
+    }
 
     if (!filePath) {
       output.printError('File path is required. Use --file or -f flag.');
@@ -1447,7 +1573,7 @@ const preTaskCommand: Command = {
       short: 'i',
       description: 'Unique task identifier',
       type: 'string',
-      required: true
+      required: false
     },
     {
       name: 'description',
@@ -1465,15 +1591,15 @@ const preTaskCommand: Command = {
     }
   ],
   examples: [
-    { command: 'claude-flow hooks pre-task -i task-123 -d "Fix auth bug"', description: 'Record task start' },
+    { command: 'claude-flow hooks pre-task -d "Fix auth bug"', description: 'Record task start (auto ID)' },
     { command: 'claude-flow hooks pre-task -i task-456 -d "Implement feature" --auto-spawn', description: 'With auto-spawn' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const taskId = ctx.flags.taskId as string;
+    const taskId = (ctx.flags.taskId as string) || `task_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const description = ctx.args[0] || ctx.flags.description as string;
 
-    if (!taskId || !description) {
-      output.printError('Task ID and description are required.');
+    if (!description) {
+      output.printError('Task description is required.');
       return { success: false, exitCode: 1 };
     }
 
@@ -2073,11 +2199,11 @@ const intelligenceCommand: Command = {
           ],
           data: [
             { metric: 'Status', value: formatIntelligenceStatus(result.components.sona.status) },
-            { metric: 'Learning Time', value: `${result.components.sona.learningTimeMs.toFixed(3)}ms` },
-            { metric: 'Adaptation Time', value: `${result.components.sona.adaptationTimeMs.toFixed(3)}ms` },
-            { metric: 'Trajectories', value: result.components.sona.trajectoriesRecorded },
-            { metric: 'Patterns Learned', value: result.components.sona.patternsLearned },
-            { metric: 'Avg Quality', value: `${(result.components.sona.avgQuality * 100).toFixed(1)}%` }
+            { metric: 'Learning Time', value: formatMilliseconds(result.components.sona.learningTimeMs, 3) },
+            { metric: 'Adaptation Time', value: formatMilliseconds(result.components.sona.adaptationTimeMs, 3) },
+            { metric: 'Trajectories', value: formatCount(result.components.sona.trajectoriesRecorded) },
+            { metric: 'Patterns Learned', value: formatCount(result.components.sona.patternsLearned) },
+            { metric: 'Avg Quality', value: formatPercentage(result.components.sona.avgQuality, 1) }
           ]
         });
       } else {
@@ -2095,9 +2221,9 @@ const intelligenceCommand: Command = {
           ],
           data: [
             { metric: 'Status', value: formatIntelligenceStatus(result.components.moe.status) },
-            { metric: 'Active Experts', value: result.components.moe.expertsActive },
-            { metric: 'Routing Accuracy', value: `${(result.components.moe.routingAccuracy * 100).toFixed(1)}%` },
-            { metric: 'Load Balance', value: `${(result.components.moe.loadBalance * 100).toFixed(1)}%` }
+            { metric: 'Active Experts', value: formatCount(result.components.moe.expertsActive) },
+            { metric: 'Routing Accuracy', value: formatPercentage(result.components.moe.routingAccuracy, 1) },
+            { metric: 'Load Balance', value: formatPercentage(result.components.moe.loadBalance, 1) }
           ]
         });
       } else {
@@ -2115,10 +2241,10 @@ const intelligenceCommand: Command = {
           ],
           data: [
             { metric: 'Status', value: formatIntelligenceStatus(result.components.hnsw.status) },
-            { metric: 'Index Size', value: result.components.hnsw.indexSize.toLocaleString() },
-            { metric: 'Search Speedup', value: output.success(result.components.hnsw.searchSpeedup) },
-            { metric: 'Memory Usage', value: result.components.hnsw.memoryUsage },
-            { metric: 'Dimension', value: result.components.hnsw.dimension }
+            { metric: 'Index Size', value: formatCount(result.components.hnsw.indexSize) },
+            { metric: 'Search Speedup', value: output.success(result.components.hnsw.searchSpeedup ?? 'N/A') },
+            { metric: 'Memory Usage', value: result.components.hnsw.memoryUsage ?? 'N/A' },
+            { metric: 'Dimension', value: formatCount(result.components.hnsw.dimension) }
           ]
         });
       } else {
@@ -2134,10 +2260,10 @@ const intelligenceCommand: Command = {
           { key: 'value', header: 'Value', width: 20, align: 'right' }
         ],
         data: [
-          { metric: 'Provider', value: result.components.embeddings.provider },
-          { metric: 'Model', value: result.components.embeddings.model },
-          { metric: 'Dimension', value: result.components.embeddings.dimension },
-          { metric: 'Cache Hit Rate', value: `${(result.components.embeddings.cacheHitRate * 100).toFixed(1)}%` }
+          { metric: 'Provider', value: result.components.embeddings.provider ?? 'N/A' },
+          { metric: 'Model', value: result.components.embeddings.model ?? 'N/A' },
+          { metric: 'Dimension', value: formatCount(result.components.embeddings.dimension) },
+          { metric: 'Cache Hit Rate', value: formatPercentage(result.components.embeddings.cacheHitRate, 1) }
         ]
       });
 
@@ -2180,6 +2306,22 @@ function formatIntelligenceStatus(status: string): string {
     default:
       return status;
   }
+}
+
+function toSafeNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function formatMilliseconds(value: unknown, decimals = 2): string {
+  return `${toSafeNumber(value).toFixed(decimals)}ms`;
+}
+
+function formatPercentage(value: unknown, decimals = 1): string {
+  return `${(toSafeNumber(value) * 100).toFixed(decimals)}%`;
+}
+
+function formatCount(value: unknown): string {
+  return toSafeNumber(value).toLocaleString();
 }
 
 // =============================================================================
@@ -3297,7 +3439,7 @@ const statuslineCommand: Command = {
     const path = await import('path');
     const { execSync } = await import('child_process');
 
-    // Get learning stats from memory database
+    // Get learning stats from memory database - REAL counts from tables
     function getLearningStats() {
       const memoryPaths = [
         path.join(process.cwd(), '.swarm', 'memory.db'),
@@ -3307,18 +3449,46 @@ const statuslineCommand: Command = {
       let patterns = 0;
       let sessions = 0;
       let trajectories = 0;
+      let memoryEntries = 0;
 
       for (const dbPath of memoryPaths) {
         if (fs.existsSync(dbPath)) {
           try {
-            const stats = fs.statSync(dbPath);
-            const sizeKB = stats.size / 1024;
-            patterns = Math.floor(sizeKB / 2);
-            sessions = Math.max(1, Math.floor(patterns / 10));
-            trajectories = Math.floor(patterns / 5);
+            // Query REAL counts from database tables using sqlite3 CLI
+            // Note: dbPath is constructed from process.cwd(), not user input
+            const sqlQuery = 'SELECT \'patterns\' as t, COUNT(*) as c FROM patterns UNION ALL SELECT \'trajectories\', COUNT(*) FROM trajectories UNION ALL SELECT \'sessions\', COUNT(*) FROM sessions UNION ALL SELECT \'memory_entries\', COUNT(*) FROM memory_entries;';
+            const result = execSync(
+              `sqlite3 "${dbPath}" "${sqlQuery}"`,
+              { encoding: 'utf-8', timeout: 2000, stdio: ['pipe', 'pipe', 'pipe'] }
+            );
+
+            for (const line of result.trim().split('\n')) {
+              const [table, count] = line.split('|');
+              const num = parseInt(count, 10) || 0;
+              if (table === 'patterns') patterns = num;
+              else if (table === 'trajectories') trajectories = num;
+              else if (table === 'sessions') sessions = num;
+              else if (table === 'memory_entries') memoryEntries = num;
+            }
+
+            // If tables are empty but we have memory entries, use those for learning indicator
+            if (patterns === 0 && memoryEntries > 0) {
+              // Show memory entries as "vectors" since they're indexed
+              patterns = memoryEntries;
+            }
+
             break;
           } catch {
-            // Ignore
+            // Fallback to file size estimate if sqlite3 fails
+            try {
+              const stats = fs.statSync(dbPath);
+              const sizeKB = stats.size / 1024;
+              patterns = Math.floor(sizeKB / 2);
+              sessions = Math.max(1, Math.floor(patterns / 10));
+              trajectories = Math.floor(patterns / 5);
+            } catch {
+              // Ignore
+            }
           }
         }
       }

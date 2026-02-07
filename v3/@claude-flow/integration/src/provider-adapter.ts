@@ -1058,6 +1058,13 @@ export function createDefaultProviders(): Provider[] {
       type: 'anthropic',
       models: [
         {
+          id: 'claude-opus-4-6',
+          name: 'Claude Opus 4.6',
+          maxContextLength: 200000,
+          maxOutputTokens: 32000,
+          capabilities: ['chat', 'code-generation', 'vision', 'long-context', 'streaming'],
+        },
+        {
           id: 'claude-3-opus-20240229',
           name: 'Claude 3 Opus',
           maxContextLength: 200000,
@@ -1089,8 +1096,8 @@ export function createDefaultProviders(): Provider[] {
         resetAt: Date.now() + 60000,
       },
       costPerToken: {
-        inputPer1K: 0.015,
-        outputPer1K: 0.075,
+        inputPer1K: 0.005,
+        outputPer1K: 0.025,
         currency: 'USD',
       },
     },

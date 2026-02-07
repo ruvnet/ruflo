@@ -241,6 +241,31 @@ describe('Teammate Spawning', () => {
     expect(agentInput.team_name).toBe('spawn-test-team');
     expect(agentInput.allowed_tools).toEqual(['Read', 'Grep']);
     expect(agentInput.mode).toBe('plan');
+    expect(agentInput.run_in_background).toBe(false);
+  });
+
+  it('should remap general-purpose subagent type on legacy Claude Code', async () => {
+    const agentInput = bridge.buildAgentInput({
+      name: 'worker-1',
+      role: 'general-purpose',
+      prompt: 'Handle generic tasks',
+      teamName: 'spawn-test-team',
+    });
+
+    expect(agentInput.subagent_type).toBe('researcher');
+    expect(agentInput.description).toBe('general-purpose: worker-1');
+  });
+
+  it('should preserve explicit runInBackground=true in AgentInput', async () => {
+    const agentInput = bridge.buildAgentInput({
+      name: 'reviewer-bg',
+      role: 'reviewer',
+      prompt: 'Review code in background',
+      teamName: 'spawn-test-team',
+      runInBackground: true,
+    });
+
+    expect(agentInput.run_in_background).toBe(true);
   });
 });
 

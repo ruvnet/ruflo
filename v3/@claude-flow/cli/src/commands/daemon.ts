@@ -212,10 +212,12 @@ async function startBackgroundDaemon(projectRoot: string, quiet: boolean): Promi
 
   // Use spawn with explicit arguments instead of shell string interpolation
   // This prevents command injection via paths
-  const child = spawn(process.execPath, [
-    cliPath,
-    'daemon', 'start', '--foreground', '--quiet'
-  ], {
+  const daemonArgs = [cliPath, 'daemon', 'start', '--foreground'];
+  if (quiet) {
+    daemonArgs.push('--quiet');
+  }
+
+  const child = spawn(process.execPath, daemonArgs, {
     cwd: resolvedRoot,
     detached: true,
     stdio: ['ignore', fs.openSync(logFile, 'a'), fs.openSync(logFile, 'a')],

@@ -147,7 +147,14 @@ check_requirements() {
 
     # Check Node.js
     if command -v node &> /dev/null; then
-        NODE_VERSION=$(node -v | sed 's/v//')
+        NODE_VERSION=$(node --version 2>/dev/null || node -v 2>/dev/null || true)
+        NODE_VERSION=$(echo "$NODE_VERSION" | sed 's/^v//')
+        if [ -z "$NODE_VERSION" ]; then
+            print_error "Unable to detect Node.js version"
+            echo ""
+            echo "Ensure 'node --version' works in your shell and try again."
+            exit 1
+        fi
         NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d. -f1)
         if [ "$NODE_MAJOR" -ge 20 ]; then
             print_substep "Node.js ${GREEN}v${NODE_VERSION}${NC} ✓"
@@ -170,7 +177,11 @@ check_requirements() {
 
     # Check npm
     if command -v npm &> /dev/null; then
-        NPM_VERSION=$(npm -v)
+        NPM_VERSION=$(npm --version 2>/dev/null || npm -v 2>/dev/null || true)
+        if [ -z "$NPM_VERSION" ]; then
+            print_error "Unable to detect npm version"
+            exit 1
+        fi
         print_substep "npm ${GREEN}v${NPM_VERSION}${NC} ✓"
     else
         print_error "npm not found"

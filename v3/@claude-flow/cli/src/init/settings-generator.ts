@@ -36,7 +36,7 @@ export function generateSettings(options: InitOptions): object {
 
   // Add claude-flow attribution for git commits and PRs
   settings.attribution = {
-    commit: 'Co-Authored-By: claude-flow <ruv@ruv.net>',
+    commit: 'Co-Authored-By: blackms <7188797+blackms@users.noreply.github.com>',
     pr: '🤖 Generated with [claude-flow](https://github.com/ruvnet/claude-flow)',
   };
 
@@ -49,7 +49,7 @@ export function generateSettings(options: InitOptions): object {
     version: '3.0.0',
     enabled: true,
     modelPreferences: {
-      default: 'claude-opus-4-5-20251101',
+      default: 'claude-opus-4-6',
       routing: 'claude-3-5-haiku-20241022',
     },
     swarm: {
@@ -156,7 +156,7 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$TOOL_INPUT_file_path" ] && npx @claude-flow/cli@latest hooks pre-edit --file "$TOOL_INPUT_file_path" 2>/dev/null || true',
+            command: 'npx @claude-flow/cli@latest hooks pre-edit --file "$TOOL_INPUT_file_path" 2>/dev/null || true',
             timeout: config.timeout,
             continueOnError: true,
           },
@@ -198,7 +198,7 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: '[ -n "$TOOL_INPUT_file_path" ] && npx @claude-flow/cli@latest hooks post-edit --file "$TOOL_INPUT_file_path" --success "${TOOL_SUCCESS:-true}" 2>/dev/null || true',
+            command: 'npx @claude-flow/cli@latest hooks post-edit --file "$TOOL_INPUT_file_path" --success "${TOOL_SUCCESS:-true}" 2>/dev/null || true',
             timeout: config.timeout,
             continueOnError: true,
           },
@@ -255,7 +255,7 @@ function generateHooksConfig(config: HooksConfig): object {
           {
             type: 'command',
             command: 'npx @claude-flow/cli@latest daemon start --quiet 2>/dev/null || true',
-            timeout: 5000,
+            timeout: config.timeout,
             continueOnError: true,
           },
           {

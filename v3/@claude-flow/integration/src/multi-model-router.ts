@@ -275,6 +275,23 @@ export interface CostTracker {
 const DEFAULT_MODELS: ModelConfig[] = [
   // Anthropic
   {
+    id: 'claude-opus-4-6',
+    name: 'Claude Opus 4.6',
+    provider: 'anthropic',
+    costPer1kInputTokens: 0.005,
+    costPer1kOutputTokens: 0.025,
+    latencyMs: 900,
+    qualityScore: 0.99,
+    capabilities: {
+      contextWindow: 200000,
+      supportsStreaming: true,
+      supportsTools: true,
+      supportsVision: true,
+      supportsJson: true,
+      maxOutputTokens: 32000,
+    },
+  },
+  {
     id: 'claude-3-5-sonnet-20241022',
     name: 'Claude 3.5 Sonnet',
     provider: 'anthropic',

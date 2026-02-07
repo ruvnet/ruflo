@@ -161,6 +161,10 @@ export const TEAMMATE_MCP_TOOLS: MCPTool[] = [
           type: 'boolean',
           description: 'Can this teammate delegate to others',
         },
+        runInBackground: {
+          type: 'boolean',
+          description: 'Run teammate task in background (default: false)',
+        },
       },
       required: ['teamName', 'name', 'role', 'prompt'],
     },
@@ -585,7 +589,8 @@ export async function handleMCPTool(
           allowedTools,
           mode: params.mode as TeammateSpawnConfig['mode'],
           delegateAuthority: params.delegateAuthority as boolean,
-          runInBackground: true,
+          runInBackground:
+            typeof params.runInBackground === 'boolean' ? params.runInBackground : false,
         };
         const teammate = await bridge.spawnTeammate(spawnConfig);
         const agentInput = bridge.buildAgentInput(spawnConfig);

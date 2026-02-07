@@ -26,7 +26,7 @@ services:
       - CLAUDE_FLOW_EMBEDDING_DIM=384
       - CI=true
       - TEST_REPORT_PATH=/app/reports
-      - MCP_SERVER_HOST=localhost
+      - MCP_SERVER_HOST=mcp-server
       - MCP_SERVER_PORT=3000
     networks:
       - claude-flow-test
@@ -57,7 +57,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    command: ["npx", "claude-flow", "mcp", "start", "--port", "3000"]
+    command: ["npx", "claude-flow", "mcp", "start", "--transport", "http", "--host", "0.0.0.0", "--port", "3000"]
 
   # Unit test runner
   unit-tests:

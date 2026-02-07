@@ -317,7 +317,7 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
     sessionStart: true,
     stop: true,
     notification: true,
-    timeout: 5000,
+    timeout: 10000,
     continueOnError: true,
   },
   skills: {

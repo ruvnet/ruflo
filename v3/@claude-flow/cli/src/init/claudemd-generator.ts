@@ -106,18 +106,18 @@ function autoStartProtocol(): string {
 
 ### Auto-Start Swarm Protocol
 
-When the user requests a complex task, spawn agents in background and WAIT:
+When the user requests a complex task, spawn agents in one message and WAIT:
 
 \`\`\`javascript
 // STEP 1: Initialize swarm coordination
 Bash("npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --strategy specialized")
 
-// STEP 2: Spawn ALL agents IN BACKGROUND in a SINGLE message
-Task({prompt: "Research requirements...", subagent_type: "researcher", run_in_background: true})
-Task({prompt: "Design architecture...", subagent_type: "system-architect", run_in_background: true})
-Task({prompt: "Implement solution...", subagent_type: "coder", run_in_background: true})
-Task({prompt: "Write tests...", subagent_type: "tester", run_in_background: true})
-Task({prompt: "Review code quality...", subagent_type: "reviewer", run_in_background: true})
+// STEP 2: Spawn ALL agents in a SINGLE message (background only if needed)
+Task({prompt: "Research requirements...", subagent_type: "researcher"})
+Task({prompt: "Design architecture...", subagent_type: "system-architect"})
+Task({prompt: "Implement solution...", subagent_type: "coder"})
+Task({prompt: "Write tests...", subagent_type: "tester"})
+Task({prompt: "Review code quality...", subagent_type: "reviewer"})
 \`\`\`
 
 ### Agent Routing
@@ -139,10 +139,11 @@ Task({prompt: "Review code quality...", subagent_type: "reviewer", run_in_backgr
 function executionRules(): string {
   return `## Swarm Execution Rules
 
-- ALWAYS use \`run_in_background: true\` for all agent Task calls
+- Use \`run_in_background: true\` only for independent long-running tasks
 - ALWAYS put ALL agent Task calls in ONE message for parallel execution
 - After spawning, STOP — do NOT add more tool calls or check status
 - Never poll TaskOutput or check swarm status — trust agents to return
+- Never exceed configured \`max-agents\` with background task fan-out
 - When agent results arrive, review ALL results before proceeding`;
 }
 
