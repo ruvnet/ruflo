@@ -389,7 +389,7 @@ async function installClaudeCode(): Promise<boolean> {
     execSync('npm install -g @anthropic-ai/claude-code', {
       encoding: 'utf8',
       stdio: 'inherit',
-      shell: process.platform === 'win32', // Enable shell on Windows for PATH resolution
+      // execSync always uses a shell, no explicit shell option needed
     });
     output.writeln(output.success('Claude Code CLI installed successfully!'));
     return true;
