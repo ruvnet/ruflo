@@ -148,6 +148,38 @@ user:    ~/.claude/agent-memory/<agentName>/
 
 **Total: 219 tests passing in 385ms across 4 test suites**
 
+## Implementation Status
+
+### Phase 1: LearningBridge -- COMPLETED
+- [x] `LearningBridge` class with neuralLoader injection (453 lines)
+- [x] Trajectory tracking (insight → trajectory mapping)
+- [x] Confidence boost on access + time-based decay
+- [x] Consolidation pipeline (JUDGE/DISTILL/CONSOLIDATE)
+- [x] Pattern search via ReasoningBank
+- [x] 56 tests passing (54ms)
+
+### Phase 2: MemoryGraph -- COMPLETED
+- [x] `MemoryGraph` class with PageRank + label propagation (392 lines)
+- [x] Graph construction from MemoryEntry.references
+- [x] Similarity edge auto-creation via HNSW search
+- [x] Graph-aware ranking (alpha-blended vector + PageRank)
+- [x] BFS neighbor traversal with depth control
+- [x] 60 tests passing (24ms)
+
+### Phase 3: AgentMemoryScope -- COMPLETED
+- [x] 3-scope path resolution with traversal protection (300 lines)
+- [x] `createAgentBridge()` factory for scoped bridges
+- [x] `transferKnowledge()` with confidence filtering + content-hash dedup
+- [x] `listAgentScopes()` for scope discovery
+- [x] 30 tests passing (22ms)
+
+### Phase 4: Integration -- COMPLETED
+- [x] AutoMemoryBridge config extended with `learning` and `graph` options
+- [x] Wired learningBridge into recordInsight, syncToAutoMemory, destroy
+- [x] Wired memoryGraph into importFromAutoMemory, curateIndex
+- [x] All exports added to index.ts and types.ts
+- [x] 73 existing AutoMemoryBridge tests still passing (no regressions)
+
 ## Consequences
 
 ### Positive
