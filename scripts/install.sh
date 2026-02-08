@@ -322,20 +322,20 @@ setup_mcp_server() {
     fi
 
     # Check if already configured
-    if claude mcp list 2>/dev/null | grep -q "ruflo"; then
+    if claude mcp list 2>/dev/null | grep -q "claude-flow"; then
         print_substep "MCP server already configured ✓"
         return 0
     fi
 
     # Add MCP server
     if [ "$GLOBAL" = "1" ]; then
-        claude mcp add ruflo -- ruflo mcp start 2>/dev/null && \
+        claude mcp add claude-flow -- claude-flow mcp start 2>/dev/null && \
             print_substep "MCP server configured ✓" || \
-            print_warning "MCP setup failed - run manually: claude mcp add ruflo -- ruflo mcp start"
+            print_warning "MCP setup failed - run manually: claude mcp add claude-flow -- claude-flow mcp start"
     else
-        claude mcp add ruflo -- npx -y ruflo@${VERSION} mcp start 2>/dev/null && \
+        claude mcp add claude-flow -- npx -y claude-flow@${VERSION} mcp start 2>/dev/null && \
             print_substep "MCP server configured ✓" || \
-            print_warning "MCP setup failed - run manually: claude mcp add ruflo -- npx -y ruflo@alpha mcp start"
+            print_warning "MCP setup failed - run manually: claude mcp add claude-flow -- npx -y claude-flow@alpha mcp start"
     fi
     echo ""
 }
