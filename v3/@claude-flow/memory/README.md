@@ -214,19 +214,6 @@ const productIndex = new HNSWIndex({
 });
 ```
 
-## TypeScript Types
-
-```typescript
-import type {
-  HNSWConfig,
-  HNSWStats,
-  SearchResult,
-  MemoryEntry,
-  QuantizationConfig,
-  DistanceMetric
-} from '@claude-flow/memory';
-```
-
 ## Auto Memory Bridge (ADR-048)
 
 Bidirectional sync between Claude Code's [auto memory](https://code.claude.com/docs/en/memory) files and AgentDB. Auto memory is a persistent directory (`~/.claude/projects/<project>/memory/`) where Claude writes learnings as markdown. `MEMORY.md` (first 200 lines) is loaded into the system prompt; topic files are read on demand.
