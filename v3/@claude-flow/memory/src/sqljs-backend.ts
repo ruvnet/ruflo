@@ -439,6 +439,9 @@ export class SqlJsBackend extends EventEmitter implements IMemoryBackend {
     }
 
     const stmt = this.db!.prepare(sql);
+    if (params.length > 0) {
+      stmt.bind(params);
+    }
     const results: MemoryEntry[] = [];
 
     while (stmt.step()) {
