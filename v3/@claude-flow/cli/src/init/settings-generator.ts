@@ -155,25 +155,15 @@ export function generateSettings(options: InitOptions): object {
 
 /**
  * Generate statusLine configuration for Claude Code
- * This configures the Claude Code status bar to show V3 metrics
+ * Uses local helper script for cross-platform compatibility (no npx cold-start)
  */
 function generateStatusLineConfig(options: InitOptions): object {
   const config = options.statusline;
 
-  // Build the command that generates the statusline
-  // Uses npx @claude-flow/cli@latest (or @alpha) to run the hooks statusline command
-  // Falls back to local helper script or simple "V3" if CLI not available
-  // Default: full multi-line statusline with progress bars, metrics, and architecture status
-  const statuslineCommand = 'npx @claude-flow/cli@latest hooks statusline 2>/dev/null || node .claude/helpers/statusline.cjs 2>/dev/null || echo "▊ Claude Flow V3"';
-
   return {
-    // Type must be "command" for Claude Code validation
     type: 'command',
-    // Command to execute for statusline content
-    command: statuslineCommand,
-    // Refresh interval in milliseconds (5 seconds default)
+    command: 'node .claude/helpers/statusline.cjs',
     refreshMs: config.refreshInterval,
-    // Enable the statusline
     enabled: config.enabled,
   };
 }
