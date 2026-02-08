@@ -6,13 +6,16 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![Performance](https://img.shields.io/badge/Performance-150x--12500x%20Faster-brightgreen.svg)](https://github.com/ruvnet/claude-flow)
 
-> High-performance memory module for Claude Flow V3 - AgentDB unification, HNSW indexing, vector search, and hybrid SQLite+AgentDB backend (ADR-009).
+> High-performance memory module for Claude Flow V3 - AgentDB unification, HNSW indexing, vector search, self-learning knowledge graph, and hybrid SQLite+AgentDB backend (ADR-009).
 
 ## Features
 
 - **150x-12,500x Faster Search** - HNSW (Hierarchical Navigable Small World) vector index for ultra-fast similarity search
 - **Hybrid Backend** - SQLite for structured data + AgentDB for vectors (ADR-009)
 - **Auto Memory Bridge** - Bidirectional sync between Claude Code auto memory and AgentDB (ADR-048)
+- **Self-Learning** - LearningBridge connects insights to SONA/ReasoningBank neural pipeline (ADR-049)
+- **Knowledge Graph** - PageRank + label propagation community detection over memory entries (ADR-049)
+- **Agent-Scoped Memory** - 3-scope agent memory (project/local/user) with cross-agent knowledge transfer (ADR-049)
 - **Vector Quantization** - Binary, scalar, and product quantization for 4-32x memory reduction
 - **Multiple Distance Metrics** - Cosine, Euclidean, dot product, and Manhattan distance
 - **Query Builder** - Fluent API for building complex memory queries
