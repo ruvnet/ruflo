@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { MemoryGraph } from './src/memory-graph.js';
-import { LearningBridge } from './src/learning-bridge.js';
-import { AutoMemoryBridge } from './src/auto-memory-bridge.js';
-import { resolveAgentMemoryDir, transferKnowledge } from './src/agent-memory-scope.js';
-import { createDefaultEntry, type IMemoryBackend, type MemoryEntry } from './src/types.js';
+import { MemoryGraph } from './memory-graph.js';
+import { LearningBridge } from './learning-bridge.js';
+import { AutoMemoryBridge } from './auto-memory-bridge.js';
+import { resolveAgentMemoryDir, transferKnowledge } from './agent-memory-scope.js';
+import { createDefaultEntry, type IMemoryBackend, type MemoryEntry } from './types.js';
 
 function createMockBackend(entries: MemoryEntry[] = []): IMemoryBackend {
   const stored = new Map<string, MemoryEntry>();
