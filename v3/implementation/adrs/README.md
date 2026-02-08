@@ -63,7 +63,7 @@ This directory contains all Architecture Decision Records for Claude-Flow v3.
 
 | ADR | Title | Status | File |
 |-----|-------|--------|------|
-| ADR-046 | Dual Umbrella: claude-flow + ruvflow | Accepted | [ADR-046-ruflo-rebrand.md](./ADR-046-ruflo-rebrand.md) |
+| ADR-046 | Dual Umbrella: claude-flow + ruflo | Accepted | [ADR-046-ruflo-rebrand.md](./ADR-046-ruflo-rebrand.md) |
 | ADR-047 | Fast Mode Integration | Proposed | [ADR-047-fast-mode-integration.md](./ADR-047-fast-mode-integration.md) |
 | ADR-048 | Auto Memory Integration | Accepted | [ADR-048-auto-memory-integration.md](./ADR-048-auto-memory-integration.md) |
 
