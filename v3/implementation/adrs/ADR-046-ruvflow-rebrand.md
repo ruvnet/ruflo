@@ -1,12 +1,13 @@
-# ADR-046: Rebrand Umbrella Package to RuvFlow
+# ADR-046: Dual Umbrella Packages — claude-flow + ruvflow
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-02-07
+**Updated:** 2026-02-08
 **Authors:** RuvNet, Claude Flow Team
 
 ## Context
 
-The umbrella package is currently published to npm as `claude-flow`. As the ecosystem grows and the product establishes its own identity, there are compelling reasons to rebrand to `ruvflow`.
+The umbrella package is published to npm as `claude-flow`. As the ecosystem grows and the product establishes its own identity, a second umbrella package `ruvflow` is introduced alongside the original.
 
 ### Current State
 
@@ -25,20 +26,32 @@ The umbrella package is currently published to npm as `claude-flow`. As the ecos
 3. **Product Identity**: Establishes independent product identity beyond Claude integration
 4. **Discoverability**: "ruvflow" is unique, memorable, and searchable
 5. **Future Flexibility**: Enables the platform to support multiple AI backends without name confusion
+6. **Zero Disruption**: Keeping `claude-flow` ensures no existing users are broken
 
 ## Decision
 
-Rebrand the umbrella npm package from `claude-flow` to `ruvflow` while maintaining the internal `@claude-flow/*` package structure.
+Publish **two independent npm umbrella packages** — `claude-flow` (original) and `ruvflow` (new) — both backed by `@claude-flow/cli`.
+
+### Package Architecture
+
+```
+npm registry
+├── claude-flow          ← original umbrella (bundles @claude-flow/cli)
+│   └── bin: claude-flow → v3/@claude-flow/cli/bin/cli.js
+├── ruvflow              ← new umbrella (depends on @claude-flow/cli)
+│   └── bin: ruvflow     → @claude-flow/cli/bin/cli.js
+└── @claude-flow/cli     ← shared CLI implementation
+```
 
 ### What Changes
 
 | Aspect | Before | After |
 |--------|--------|-------|
-| npm package name | `claude-flow` | `ruvflow` |
-| CLI binary name | `claude-flow` | `ruvflow` |
-| Install command | `npx claude-flow@latest` | `npx ruvflow@latest` |
-| README branding | "Claude-Flow" | "RuvFlow" |
-| Product name | Claude-Flow | RuvFlow |
+| npm packages | `claude-flow` only | `claude-flow` + `ruvflow` |
+| CLI binaries | `claude-flow` | `claude-flow` + `ruvflow` |
+| Install commands | `npx claude-flow@latest` | Both `npx claude-flow@latest` and `npx ruvflow@latest` |
+| README branding | "Claude-Flow" | "RuvFlow" (primary), "claude-flow" (supported) |
+| Product name | Claude-Flow | RuvFlow (with claude-flow alias) |
 
 ### What Stays the Same
 
@@ -49,23 +62,23 @@ Rebrand the umbrella npm package from `claude-flow` to `ruvflow` while maintaini
 | Functionality | All features | No functional changes |
 | License | MIT | No change |
 | Author | RuvNet | No change |
+| `claude-flow` npm package | Fully supported | No breaking changes for existing users |
 
 ## Consequences
 
 ### Positive
 
-1. **Unified Brand**: All ruv-prefixed packages under one ecosystem
-2. **Professional Image**: Independent product identity
-3. **Trademark Safety**: Eliminates any potential trademark concerns
-4. **Marketing**: Easier to market as standalone product
+1. **Zero Disruption**: Existing `claude-flow` users unaffected
+2. **Unified Brand**: New `ruvflow` package for the ruv ecosystem
+3. **Trademark Safety**: Users can choose the non-"Claude" branded package
+4. **Dual Discovery**: Package discoverable under both names on npm
 5. **Future Proof**: Can add non-Claude integrations without name confusion
 
 ### Negative
 
-1. **Migration Effort**: Users must update install commands
-2. **Documentation**: ~545 README references to update
-3. **SEO Impact**: Temporary reduction in discoverability
-4. **Learning Curve**: Users familiar with "claude-flow" must learn new name
+1. **Two packages to maintain**: Must publish and tag both packages
+2. **Documentation**: Must reference both package names
+3. **Download split**: npm download stats split across two packages
 
 ### Neutral
 
@@ -74,38 +87,73 @@ Rebrand the umbrella npm package from `claude-flow` to `ruvflow` while maintaini
 
 ## Implementation
 
+### Package Structure
+
+```
+/workspaces/claude-flow/
+├── package.json            # name: "claude-flow" (original umbrella)
+│                           # bin: claude-flow → v3/@claude-flow/cli/bin/cli.js
+│                           # bundles CLI files directly
+└── ruvflow/
+    ├── package.json        # name: "ruvflow" (new umbrella)
+    │                       # bin: ruvflow → ./bin/ruvflow.js
+    │                       # depends on @claude-flow/cli
+    ├── bin/
+    │   └── ruvflow.js      # thin wrapper, imports @claude-flow/cli
+    └── README.md           # RuvFlow-branded docs
+```
+
 ### Phase 1: Preparation (This PR)
 
 1. Create ADR-046 (this document)
-2. Update package.json with new name and bin
-3. Update README.md with RuvFlow branding
-4. Update install scripts
+2. Keep root `package.json` as `claude-flow` (original umbrella)
+3. Create `ruvflow/` directory with new umbrella package
+4. Update main README.md with RuvFlow branding
+5. Update install scripts to reference `ruvflow`
 
 ### Phase 2: Publishing
 
-1. Publish `ruvflow@3.2.0-alpha.1` to npm
-2. Add dist-tags: latest, alpha, v3alpha
-3. Update old `claude-flow` with deprecation notice
+```bash
+# 1. Publish @claude-flow/cli (shared implementation)
+cd v3/@claude-flow/cli
+npm publish --tag alpha
 
-### Phase 3: Migration Support
+# 2. Publish claude-flow umbrella (original)
+cd /workspaces/claude-flow
+npm publish --tag v3alpha
+npm dist-tag add claude-flow@<version> latest
+npm dist-tag add claude-flow@<version> alpha
 
-1. Keep `claude-flow` on npm with deprecation notice
-2. Both packages point to same @claude-flow/cli
-3. Documentation shows both old and new commands during transition
+# 3. Publish ruvflow umbrella (new)
+cd /workspaces/claude-flow/ruvflow
+npm publish --tag alpha
+npm dist-tag add ruvflow@<version> latest
+```
 
-### Phase 4: Cleanup (60 days later)
+### Phase 3: Ongoing
 
-1. Remove deprecation notices
-2. Update all external documentation
-3. Consider archiving claude-flow package
+1. Both packages maintained indefinitely
+2. Version numbers kept in sync
+3. README shows both install options
+4. `ruvflow` promoted as primary in new documentation
+
+## Publishing Checklist
+
+When publishing updates, **all three packages** must be published:
+
+| Order | Package | Command | Tags |
+|-------|---------|---------|------|
+| 1 | `@claude-flow/cli` | `npm publish --tag alpha` | alpha, latest |
+| 2 | `claude-flow` | `npm publish --tag v3alpha` | v3alpha, alpha, latest |
+| 3 | `ruvflow` | `npm publish --tag alpha` | alpha, latest |
 
 ## Alternatives Considered
 
-### 1. Keep claude-flow
+### 1. Replace claude-flow with ruvflow (single package)
 
-**Pros:** No migration effort, existing brand recognition
-**Cons:** Trademark risk, no brand cohesion with ruv ecosystem
-**Decision:** Rejected - brand cohesion and trademark safety more important
+**Pros:** Simpler, one package to maintain
+**Cons:** Breaks existing users, loses download history
+**Decision:** Rejected - zero disruption preferred
 
 ### 2. Rename to ruv-flow (hyphenated)
 
@@ -119,50 +167,55 @@ Rebrand the umbrella npm package from `claude-flow` to `ruvflow` while maintaini
 **Cons:** Major breaking change, complex migration, npm scope registration
 **Decision:** Rejected - disruption not worth the benefit
 
-### 4. Use ruv-agents or ruv-orchestrator
+### 4. Deprecate claude-flow
 
-**Pros:** More descriptive
-**Cons:** Too long, not memorable
-**Decision:** Rejected - "ruvflow" captures the essence of agent flow
+**Pros:** Forces migration to ruvflow
+**Cons:** Breaks existing users, bad developer experience
+**Decision:** Rejected - both packages coexist permanently
 
 ## Migration Guide
 
-### For Users
+### For New Users
 
 ```bash
-# Old way (deprecated but still works)
-npx claude-flow@latest init
+# Recommended
+npx ruvflow@latest init --wizard
 
-# New way
-npx ruvflow@latest init
+# Also works
+npx claude-flow@latest init --wizard
+```
 
-# Update existing projects
-sed -i 's/npx claude-flow/npx ruvflow/g' package.json scripts/*.sh
+### For Existing Users
 
-# MCP configuration update
+No migration required. `claude-flow` continues to work. Optionally switch:
+
+```bash
+# Switch MCP server (optional)
 claude mcp remove claude-flow
 claude mcp add ruvflow npx ruvflow@latest mcp start
 ```
 
 ### For Contributors
 
-1. README examples use `ruvflow` command
-2. Internal imports remain `@claude-flow/*`
-3. GitHub repo remains `ruvnet/claude-flow`
+1. Root `package.json` is the `claude-flow` umbrella
+2. `ruvflow/package.json` is the `ruvflow` umbrella
+3. Internal imports remain `@claude-flow/*`
+4. GitHub repo remains `ruvnet/claude-flow`
 
 ## Metrics for Success
 
 | Metric | Target | Measurement |
 |--------|--------|-------------|
-| npm downloads | Maintain or grow | npm weekly stats |
+| Combined npm downloads | Maintain or grow | npm weekly stats (both packages) |
 | GitHub stars | Maintain or grow | GitHub metrics |
 | Issues from confusion | < 10 in 30 days | GitHub issues |
-| Documentation clarity | No user complaints | GitHub issues |
+| ruvflow adoption | 50%+ new installs in 90 days | npm stats |
 
 ## References
 
 - GitHub Issue: #1101
-- npm: https://npmjs.com/package/ruvflow (after publishing)
+- npm: https://npmjs.com/package/ruvflow
+- npm: https://npmjs.com/package/claude-flow
 - Related: ADR-017 (RuVector Integration)
 
 ## Appendix: Branding Guidelines
@@ -171,27 +224,26 @@ claude mcp add ruvflow npx ruvflow@latest mcp start
 
 | Context | Use |
 |---------|-----|
-| npm package | `ruvflow` (lowercase) |
+| npm packages | `ruvflow` and `claude-flow` (both lowercase) |
 | README title | "RuvFlow" (PascalCase) |
-| CLI binary | `ruvflow` (lowercase) |
+| CLI binaries | `ruvflow` or `claude-flow` (both lowercase) |
 | In prose | "RuvFlow" (PascalCase) |
 
 ### Command Examples
 
 ```bash
-# Always use lowercase in commands
+# New recommended style
 npx ruvflow@latest init
 npx ruvflow@latest agent spawn -t coder
 npx ruvflow@latest swarm init --topology hierarchical
+
+# Legacy style (still fully supported)
+npx claude-flow@latest init
+npx claude-flow@latest agent spawn -t coder
 ```
-
-### Logo and Visual Assets
-
-- Update banner image with "RuvFlow" branding (post-rebrand)
-- Maintain blue/purple color scheme
-- Keep wave/flow visual metaphor
 
 ---
 
 **Decision Date:** 2026-02-07
+**Updated:** 2026-02-08
 **Review Date:** 2026-03-07 (30 days post-implementation)
