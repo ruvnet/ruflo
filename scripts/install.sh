@@ -279,28 +279,28 @@ verify_installation() {
 
 show_quickstart() {
     echo -e "${CYAN}╔═══════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${NC}  ${BOLD}🚀 Quick Start${NC}                                          ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}  ${BOLD}Quick Start${NC}                                              ${CYAN}║${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
     if [ "$GLOBAL" = "1" ]; then
         echo -e "  ${DIM}# Initialize project${NC}"
-        echo -e "  ${BOLD}ruflo init --wizard${NC}"
+        echo -e "  ${BOLD}claude-flow init --wizard${NC}"
         echo ""
         echo -e "  ${DIM}# Run system diagnostics${NC}"
-        echo -e "  ${BOLD}ruflo doctor${NC}"
+        echo -e "  ${BOLD}claude-flow doctor${NC}"
         echo ""
         echo -e "  ${DIM}# Add as MCP server to Claude Code${NC}"
-        echo -e "  ${BOLD}claude mcp add ruflo -- ruflo mcp start${NC}"
+        echo -e "  ${BOLD}claude mcp add claude-flow -- claude-flow mcp start${NC}"
     else
         echo -e "  ${DIM}# Initialize project${NC}"
-        echo -e "  ${BOLD}npx ruflo@alpha init --wizard${NC}"
+        echo -e "  ${BOLD}npx claude-flow@alpha init --wizard${NC}"
         echo ""
         echo -e "  ${DIM}# Run system diagnostics${NC}"
-        echo -e "  ${BOLD}npx ruflo@alpha doctor${NC}"
+        echo -e "  ${BOLD}npx claude-flow@alpha doctor${NC}"
         echo ""
         echo -e "  ${DIM}# Add as MCP server to Claude Code${NC}"
-        echo -e "  ${BOLD}claude mcp add ruflo -- npx -y ruflo@alpha mcp start${NC}"
+        echo -e "  ${BOLD}claude mcp add claude-flow -- npx -y claude-flow@alpha mcp start${NC}"
     fi
 
     echo ""
