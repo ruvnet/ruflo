@@ -134,18 +134,19 @@ user:    ~/.claude/agent-memory/<agentName>/
 
 ## File Summary
 
-| Action | File | Lines |
-|--------|------|-------|
-| CREATE | `memory/src/learning-bridge.ts` | ~430 |
-| CREATE | `memory/src/learning-bridge.test.ts` | ~840 |
-| CREATE | `memory/src/memory-graph.ts` | ~450 |
-| CREATE | `memory/src/memory-graph.test.ts` | ~300 |
-| CREATE | `memory/src/agent-memory-scope.ts` | ~250 |
-| CREATE | `memory/src/agent-memory-scope.test.ts` | ~200 |
-| MODIFY | `memory/src/auto-memory-bridge.ts` | +70 |
-| MODIFY | `memory/src/types.ts` | +35 |
-| MODIFY | `memory/src/index.ts` | +15 |
-| MODIFY | `hooks/src/reasoningbank/index.ts` | +50 |
+| Action | File | Lines | Tests |
+|--------|------|-------|-------|
+| CREATE | `memory/src/learning-bridge.ts` | 453 | — |
+| CREATE | `memory/src/learning-bridge.test.ts` | 723 | 56 |
+| CREATE | `memory/src/memory-graph.ts` | 392 | — |
+| CREATE | `memory/src/memory-graph.test.ts` | 732 | 60 |
+| CREATE | `memory/src/agent-memory-scope.ts` | 300 | — |
+| CREATE | `memory/src/agent-memory-scope.test.ts` | 613 | 30 |
+| MODIFY | `memory/src/auto-memory-bridge.ts` | 953 (+70) | 73 |
+| MODIFY | `memory/src/types.ts` | +35 | — |
+| MODIFY | `memory/src/index.ts` | +15 | — |
+
+**Total: 219 tests passing in 385ms across 4 test suites**
 
 ## Consequences
 
