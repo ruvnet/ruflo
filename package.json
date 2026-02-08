@@ -1,11 +1,10 @@
 {
-  "name": "ruvflow",
+  "name": "claude-flow",
   "version": "3.1.0-alpha.14",
-  "description": "RuvFlow - Enterprise AI agent orchestration platform. Deploy 60+ specialized agents in coordinated swarms with self-learning, fault-tolerant consensus, vector memory, and MCP integration",
+  "description": "Enterprise AI agent orchestration for Claude Code - Deploy 60+ specialized agents in coordinated swarms with self-learning, fault-tolerant consensus, vector memory, and MCP integration",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "ruvflow": "./v3/@claude-flow/cli/bin/cli.js",
     "claude-flow": "./v3/@claude-flow/cli/bin/cli.js"
   },
   "homepage": "https://github.com/ruvnet/claude-flow#readme",
