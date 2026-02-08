@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// RuvFlow CLI - thin wrapper around @claude-flow/cli
+// Ruflo CLI - thin wrapper around @claude-flow/cli
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
