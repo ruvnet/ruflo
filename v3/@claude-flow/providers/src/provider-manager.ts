@@ -35,6 +35,8 @@ import { GoogleProvider } from './google-provider.js';
 import { CohereProvider } from './cohere-provider.js';
 import { OllamaProvider } from './ollama-provider.js';
 import { RuVectorProvider } from './ruvector-provider.js';
+import { OpenRouterProvider } from './openrouter-provider.js';
+import { FireworksProvider } from './fireworks-provider.js';
 
 /**
  * Cache entry for request caching
@@ -127,6 +129,10 @@ export class ProviderManager extends EventEmitter {
         return new OllamaProvider(options);
       case 'ruvector':
         return new RuVectorProvider(options);
+      case 'openrouter':
+        return new OpenRouterProvider(options);
+      case 'fireworks':
+        return new FireworksProvider(options);
       default:
         throw new Error(`Unknown provider: ${config.provider}`);
     }

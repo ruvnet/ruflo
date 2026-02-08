@@ -19,6 +19,7 @@ export type LLMProvider =
   | 'ollama'
   | 'ruvector'
   | 'openrouter'
+  | 'fireworks'
   | 'litellm'
   | 'custom';
 
@@ -56,6 +57,29 @@ export type LLMModel =
   | 'codellama'
   | 'phi-4'
   | 'deepseek-coder'
+  // OpenRouter Models (300+ via org/model format)
+  | 'moonshotai/kimi-k2'
+  | 'deepseek/deepseek-chat-v3-0324'
+  | 'deepseek/deepseek-r1'
+  | 'meta-llama/llama-3.3-70b-instruct'
+  | 'meta-llama/llama-4-scout'
+  | 'qwen/qwen3-235b-a22b'
+  | 'qwen/qwen3-30b-a3b'
+  | 'mistralai/mistral-large-2411'
+  | 'mistralai/codestral-2501'
+  | 'google/gemini-2.5-pro-preview'
+  | 'google/gemini-2.5-flash-preview'
+  | 'anthropic/claude-sonnet-4'
+  | 'nousresearch/hermes-3-llama-3.1-405b'
+  // Fireworks Models (optimized inference)
+  | 'accounts/fireworks/models/deepseek-v3'
+  | 'accounts/fireworks/models/deepseek-r1'
+  | 'accounts/fireworks/models/llama-v3p3-70b-instruct'
+  | 'accounts/fireworks/models/llama4-scout-instruct-basic'
+  | 'accounts/fireworks/models/llama4-maverick-instruct-basic'
+  | 'accounts/fireworks/models/qwen3-235b-a22b'
+  | 'accounts/fireworks/models/qwen3-30b-a3b'
+  | 'accounts/fireworks/models/mixtral-8x22b-instruct'
   // Generic
   | 'custom-model'
   | string;

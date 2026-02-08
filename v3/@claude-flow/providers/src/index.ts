@@ -35,6 +35,12 @@ export { GoogleProvider } from './google-provider.js';
 export { CohereProvider } from './cohere-provider.js';
 export { OllamaProvider } from './ollama-provider.js';
 export { RuVectorProvider } from './ruvector-provider.js';
+export { OpenRouterProvider, getCheapestModel } from './openrouter-provider.js';
+export { FireworksProvider } from './fireworks-provider.js';
 
 // Export provider manager
 export { ProviderManager, createProviderManager } from './provider-manager.js';
+
+// Export universal gateway
+export { UniversalGateway, createGatewayFromEnv } from './universal-gateway.js';
+export type { GatewayConfig, GatewayRoute, RoutingStrategy } from './universal-gateway.js';

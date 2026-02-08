@@ -57,6 +57,31 @@ export {
   type TaskStatus,
 } from './worker-queue.js';
 
+// SMS Gateway
+export {
+  SMSGateway,
+  type SMSGatewayConfig,
+  type SMSSession,
+  type SMSIncomingMessage,
+  type SMSOutgoingMessage,
+} from './sms-gateway.js';
+
+// Email Gateway
+export {
+  EmailGateway,
+  type EmailGatewayConfig,
+  type EmailMessage,
+  type EmailSession,
+} from './email-gateway.js';
+
+// Unified Messaging Bridge
+export {
+  MessagingBridge,
+  createMessagingBridgeFromEnv,
+  type MessagingBridgeConfig,
+  type MessagingStats,
+} from './messaging-bridge.js';
+
 // Re-export types
 export type { default as WorkerDaemonType } from './worker-daemon.js';
 export type { default as HeadlessWorkerExecutorType } from './headless-worker-executor.js';
