@@ -382,7 +382,7 @@ main() {
     run_init
     show_quickstart
 
-    print_success "${BOLD}Claude Flow is ready!${NC} 🎉"
+    print_success "${BOLD}RuvFlow is ready!${NC} 🎉"
     echo ""
 }
 
