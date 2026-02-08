@@ -92,7 +92,9 @@ function createTestEntry(overrides: Partial<MemoryEntry> = {}): MemoryEntry {
       summary: 'Use event sourcing for state changes',
     },
   });
-  return { ...base, ...overrides, metadata: { ...base.metadata, ...overrides.metadata } };
+  // When overrides.metadata is provided, use it directly (don't merge with base metadata)
+  const metadata = overrides.metadata !== undefined ? overrides.metadata : base.metadata;
+  return { ...base, ...overrides, metadata };
 }
 
 // ===== resolveAgentMemoryDir =====
