@@ -192,16 +192,6 @@ await migration.execute({
 });
 ```
 
-## Performance Benchmarks
-
-| Operation | V2 Performance | V3 Performance | Improvement |
-|-----------|---------------|----------------|-------------|
-| Vector Search | 150ms | <1ms | **150x** |
-| Bulk Insert | 500ms | 5ms | **100x** |
-| Memory Write | 50ms | <5ms | **10x** |
-| Cache Hit | 5ms | <0.1ms | **50x** |
-| Index Build | 10s | 800ms | **12.5x** |
-
 ## Quantization Options
 
 ```typescript
