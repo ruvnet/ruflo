@@ -100,7 +100,7 @@ All within existing hook timeouts (10-15s).
 
 | Action | File | Lines |
 |--------|------|-------|
-| CREATE | `cli/.claude/helpers/intelligence.js` | ~300 |
+| CREATE | `cli/.claude/helpers/intelligence.cjs` | ~560 |
 | CREATE | `v3/implementation/adrs/ADR-050-intelligence-loop.md` | ~150 |
 | MODIFY | `cli/.claude/helpers/hook-handler.cjs` | +30 |
 | MODIFY | `cli/.claude/helpers/session.js` | +6 |
