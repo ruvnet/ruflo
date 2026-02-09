@@ -1098,10 +1098,102 @@ npx claude-flow hook notify \
   --broadcast
 ```
 
+### Async Hooks (Claude Code 2.1.0+)
+
+Claude Code 2.1.0 introduced the `async: true` option for hooks, allowing them to run in the background without blocking Claude Code's execution. This is ideal for logging, notifications, metrics, and any side-effect that shouldn't slow things down.
+
+#### When to Use Async Hooks
+
+| Hook Type | Async Recommended | Reason |
+|-----------|-------------------|--------|
+| **PostToolUse** | ✅ Yes | Runs after tool completes - logging/metrics don't need to block |
+| **Notification** | ✅ Yes | Pure side-effects - shouldn't block execution |
+| **SessionStart (daemon)** | ✅ Yes | Daemon can start in background |
+| **PreToolUse** | ⚠️ Sometimes | Only if validation doesn't need to block the operation |
+| **Stop** | ❌ No | Must complete before session ends |
+| **SessionStart (context)** | ❌ No | Context must load before continuing |
+
+#### Async Hook Configuration
+
+Add `async: true` to any hook to run it in the background:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./my-analysis.sh",
+            "async": true,
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### Example: Non-Blocking Logging
+
+```json
+{
+  "PostToolUse": [
+    {
+      "matcher": "^(Write|Edit|MultiEdit)$",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "npx @claude-flow/cli@latest hooks post-edit --file \"$TOOL_INPUT_file_path\" --train-patterns",
+          "async": true,
+          "timeout": 10000
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Example: Background Daemon Start
+
+```json
+{
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "npx @claude-flow/cli@latest daemon start --quiet",
+          "async": true,
+          "timeout": 5000
+        },
+        {
+          "type": "command",
+          "command": "npx @claude-flow/cli@latest hooks session-restore --session-id \"$SESSION_ID\"",
+          "timeout": 10000
+        }
+      ]
+    }
+  ]
+}
+```
+
+In this example, the daemon starts in the background while session restore runs synchronously (because we need context before continuing).
+
+#### Benefits of Async Hooks
+
+- **Faster Response Time**: Claude Code doesn't wait for non-critical operations
+- **Better UX**: No delays from logging, metrics, or notifications
+- **Parallel Processing**: Multiple async hooks can run simultaneously
+- **Resource Efficiency**: Background tasks don't block the main workflow
+
 ### Performance Tips
 
 1. **Keep Hooks Lightweight** - Target < 100ms execution time
-2. **Use Async for Heavy Operations** - Don't block the main flow
+2. **Use Async for Heavy Operations** - Add `async: true` to avoid blocking
 3. **Cache Aggressively** - Store frequently accessed data
 4. **Batch Related Operations** - Combine multiple actions
 5. **Use Memory Wisely** - Set appropriate TTLs

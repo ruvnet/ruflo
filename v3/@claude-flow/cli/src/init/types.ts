@@ -52,6 +52,22 @@ export interface HooksConfig {
   timeout: number;
   /** Continue on hook error */
   continueOnError: boolean;
+  /**
+   * Enable async execution for non-blocking hooks (Claude Code 2.1.0+)
+   * When true, hooks run in background without blocking execution
+   * Great for logging, notifications, or any side-effect that shouldn't slow things down
+   */
+  enableAsync: boolean;
+  /**
+   * Default async mode for PostToolUse hooks
+   * PostToolUse hooks typically don't need to block since they run after the tool completes
+   */
+  postToolUseAsync: boolean;
+  /**
+   * Default async mode for Notification hooks
+   * Notifications are pure side-effects and shouldn't block execution
+   */
+  notificationAsync: boolean;
 }
 
 /**
@@ -323,6 +339,9 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
     notification: true,
     timeout: 5000,
     continueOnError: true,
+    enableAsync: true,           // Enable async hooks (Claude Code 2.1.0+)
+    postToolUseAsync: true,      // PostToolUse runs async (non-blocking)
+    notificationAsync: true,     // Notifications run async (non-blocking)
   },
   skills: {
     core: true,
@@ -414,6 +433,9 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
     userPromptSubmit: false,
     stop: false,
     notification: false,
+    enableAsync: true,           // Enable async hooks (Claude Code 2.1.0+)
+    postToolUseAsync: true,      // PostToolUse runs async (non-blocking)
+    notificationAsync: true,     // Notifications run async (non-blocking)
   },
   skills: {
     core: true,

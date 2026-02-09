@@ -144,6 +144,23 @@ export interface HookDefinition {
   handler: string;
   priority: number;
   enabled: boolean;
+  /**
+   * Run hook asynchronously without blocking Claude Code's execution (Claude Code 2.1.0+)
+   * Great for logging, notifications, or any side-effect that shouldn't slow things down
+   * @default false
+   */
+  async?: boolean;
+  /**
+   * Maximum execution time in milliseconds
+   * @default 5000
+   */
+  timeout?: number;
+  /**
+   * Execute only once per session (Claude Code 2.1.0+)
+   * Useful for initialization hooks
+   * @default false
+   */
+  once?: boolean;
 }
 
 // ============================================
