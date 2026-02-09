@@ -477,17 +477,31 @@ function getSystemMetrics() {
   // Also get AgentDB stats for fallback intelligence calculation
   const agentdbStats = getAgentDBStats();
 
-  // Intelligence % based on learned patterns, vectors, or project maturity
-  // Calculate all sources and take the maximum
+  // Intelligence % — priority chain (ADR-050):
+  // 1. Intelligence loop data (confidenceMean + accessRatio + density)
+  // 2. learning.json file metric
+  // 3. Pattern count / vector count fallback
+  // 4. Project maturity fallback (below)
   let intelligencePct = 0;
 
-  if (intelligenceFromFile !== null) {
+  // Priority 1: Intelligence loop real data
+  if (learning.confidenceMean > 0 || (learning.patterns > 0 && learning.accessedCount > 0)) {
+    const confScore = Math.min(100, Math.floor(learning.confidenceMean * 100));
+    const accessRatio = learning.patterns > 0 ? (learning.accessedCount / learning.patterns) : 0;
+    const accessScore = Math.min(100, Math.floor(accessRatio * 100));
+    const densityScore = Math.min(100, Math.floor(learning.patterns / 5));
+    intelligencePct = Math.floor(confScore * 0.4 + accessScore * 0.3 + densityScore * 0.3);
+  }
+
+  // Priority 2: learning.json file metric
+  if (intelligencePct === 0 && intelligenceFromFile !== null) {
     intelligencePct = intelligenceFromFile;
-  } else {
-    // Calculate from multiple sources and take the best
+  }
+
+  // Priority 3: Pattern/vector count fallback
+  if (intelligencePct === 0) {
     const fromPatterns = learning.patterns > 0 ? Math.min(100, Math.floor(learning.patterns / 10)) : 0;
     const fromVectors = agentdbStats.vectorCount > 0 ? Math.min(100, Math.floor(agentdbStats.vectorCount / 100)) : 0;
-
     intelligencePct = Math.max(fromPatterns, fromVectors);
   }
 
