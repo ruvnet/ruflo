@@ -1026,6 +1026,7 @@ async function writeHelpers(
     'session.js': generateSessionManager(),
     'router.js': generateAgentRouter(),
     'memory.js': generateMemoryHelper(),
+    'hook-handler.cjs': generateHookHandler(),
   };
 
   for (const [name, content] of Object.entries(helpers)) {
