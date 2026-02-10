@@ -1338,6 +1338,10 @@ async function doStatus() {
   console.log(`  Budget:      ${RESTORE_BUDGET} chars`);
   console.log(`  Sessions:    ${sessions.length}`);
   console.log(`  Proactive:   enabled (UserPromptSubmit hook)`);
+  console.log(`  Auto-opt:    ${AUTO_OPTIMIZE ? 'enabled' : 'disabled'} (importance ranking, pruning, sync)`);
+  console.log(`  Retention:   ${RETENTION_DAYS} days (prune never-accessed entries)`);
+  const rvConfig = getRuVectorConfig();
+  console.log(`  RuVector:    ${rvConfig ? `${rvConfig.host}:${rvConfig.port}/${rvConfig.database} (auto-sync enabled)` : 'not configured'}`);
 
   if (sessions.length > 0) {
     console.log('\n  Recent sessions:');
