@@ -660,8 +660,9 @@ All capabilities confirmed working (2026-02-10):
    learnings, and other memory types
 7. **Self-learning**: Confidence decay + access boosting creates a reinforcement loop
    where frequently useful entries survive and irrelevant entries naturally fade
-8. **Semantic search**: 768-dim hash embeddings enable cross-session similarity search
-   — "What did we discuss about X?" finds relevant turns from any archived session
+8. **ONNX semantic search**: 384-dim ONNX embeddings (all-MiniLM-L6-v2) enable true
+   semantic cross-session search — "What did we discuss about auth?" finds relevant
+   turns from any archived session with real natural language understanding
 9. **Auto-sync**: SQLite → RuVector migration happens automatically when configured
 
 ### Negative
