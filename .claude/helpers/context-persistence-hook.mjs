@@ -878,6 +878,86 @@ async function retrieveContext(backend, sessionId, budget) {
 }
 
 // ============================================================================
+// Build custom compact instructions (exit code 0 stdout)
+// Guides Claude on what to preserve during compaction summary
+// ============================================================================
+
+function buildCompactInstructions(chunks, sessionId, archiveResult) {
+  const parts = [];
+
+  parts.push('COMPACTION GUIDANCE (from context-persistence-hook):');
+  parts.push('');
+  parts.push(`All ${chunks.length} conversation turns have been archived to the transcript-archive database.`);
+  parts.push(`Session: ${sessionId} | Stored: ${archiveResult.stored} new, ${archiveResult.deduped} deduped.`);
+  parts.push('After compaction, archived context will be automatically restored via SessionStart hook.');
+  parts.push('');
+
+  // Collect unique tools and files across all chunks for preservation hints
+  const allTools = new Set();
+  const allFiles = new Set();
+  const decisions = [];
+
+  for (const chunk of chunks) {
+    const toolNames = [...new Set(chunk.toolCalls.map(tc => tc.name))];
+    for (const t of toolNames) allTools.add(t);
+    const filePaths = extractFilePaths(chunk.toolCalls);
+    for (const f of filePaths) allFiles.add(f);
+
+    // Look for decision indicators in assistant text
+    const assistantText = extractTextContent(chunk.assistantMessage);
+    if (assistantText) {
+      const lower = assistantText.toLowerCase();
+      if (lower.includes('decided') || lower.includes('choosing') || lower.includes('approach')
+          || lower.includes('instead of') || lower.includes('rather than')) {
+        const firstLine = assistantText.split('\n').find(l => l.trim()) || '';
+        if (firstLine.length > 10) decisions.push(firstLine.slice(0, 120));
+      }
+    }
+  }
+
+  parts.push('PRESERVE in compaction summary:');
+
+  if (allFiles.size > 0) {
+    const fileList = [...allFiles].slice(0, 15).map(f => {
+      const segs = f.split('/');
+      return segs.length > 3 ? '.../' + segs.slice(-3).join('/') : f;
+    });
+    parts.push(`- Files modified/read: ${fileList.join(', ')}`);
+  }
+
+  if (allTools.size > 0) {
+    parts.push(`- Tools used: ${[...allTools].join(', ')}`);
+  }
+
+  if (decisions.length > 0) {
+    parts.push('- Key decisions:');
+    for (const d of decisions.slice(0, 5)) {
+      parts.push(`  * ${d}`);
+    }
+  }
+
+  // Recent turns summary (most important context)
+  const recentChunks = chunks.slice(-5);
+  if (recentChunks.length > 0) {
+    parts.push('');
+    parts.push('MOST RECENT TURNS (prioritize preserving):');
+    for (const chunk of recentChunks) {
+      const userText = extractTextContent(chunk.userMessage);
+      const firstLine = userText.split('\n').find(l => l.trim()) || '';
+      const toolNames = [...new Set(chunk.toolCalls.map(tc => tc.name))];
+      parts.push(`- [Turn ${chunk.turnIndex}] ${firstLine.slice(0, 80)}${toolNames.length ? ` (${toolNames.join(', ')})` : ''}`);
+    }
+  }
+
+  // Cap at budget
+  let result = parts.join('\n');
+  if (result.length > COMPACT_INSTRUCTION_BUDGET) {
+    result = result.slice(0, COMPACT_INSTRUCTION_BUDGET - 3) + '...';
+  }
+  return result;
+}
+
+// ============================================================================
 // Commands
 // ============================================================================
 
