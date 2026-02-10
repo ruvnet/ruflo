@@ -482,6 +482,75 @@ search capabilities.
 5. **Adaptive retention**: Dynamically adjust retention period based on storage usage
    and access patterns
 
+## Implementation Details
+
+### Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `.claude/helpers/context-persistence-hook.mjs` | 1420 | Core hook script (all 4 backends, all commands) |
+| `.claude/settings.json` | +9 | Hook wiring: PreCompact, SessionStart, UserPromptSubmit |
+| `tests/context-persistence-hook.test.mjs` | ~150 | Unit tests for parsing, chunking, dedup, retrieval |
+| `v3/implementation/adrs/ADR-051-infinite-context-compaction-bridge.md` | this file | Architecture decision record |
+
+### Backend Classes
+
+| Class | Lines | Storage | Features |
+|-------|-------|---------|----------|
+| `SQLiteBackend` | 57-272 | `.claude-flow/data/transcript-archive.db` | WAL mode, indexed queries, prepared statements, importance-ranked queries, access tracking, stale pruning |
+| `JsonFileBackend` | 278-355 | `.claude-flow/data/transcript-archive.json` | Zero dependencies, Map-based in-memory with JSON persist |
+| `RuVectorBackend` | 361-596 | PostgreSQL with pgvector | Connection pooling (max 3), JSONB metadata, 768-dim vector column, ON CONFLICT dedup, async hash check |
+
+### Exported Functions (for testing)
+
+All core functions are exported from the hook module:
+
+- **Backends**: `SQLiteBackend`, `RuVectorBackend`, `JsonFileBackend`, `resolveBackend`, `getRuVectorConfig`
+- **Parsing**: `parseTranscript`, `extractTextContent`, `extractToolCalls`, `extractFilePaths`, `chunkTranscript`, `extractSummary`
+- **Storage**: `buildEntry`, `storeChunks`, `hashContent`, `createHashEmbedding`
+- **Retrieval**: `retrieveContext`, `retrieveContextSmart`, `computeImportance`
+- **Optimization**: `autoOptimize`, `buildCompactInstructions`
+- **I/O**: `readStdin`
+- **Constants**: `NAMESPACE`, `ARCHIVE_DB_PATH`, `ARCHIVE_JSON_PATH`, `COMPACT_INSTRUCTION_BUDGET`, `RETENTION_DAYS`, `AUTO_OPTIMIZE`
+
+### Hook Wiring (settings.json)
+
+```json
+// PreCompact (manual + auto matchers)
+{ "type": "command", "timeout": 5000,
+  "command": "node .claude/helpers/context-persistence-hook.mjs pre-compact 2>/dev/null || true" }
+
+// SessionStart
+{ "type": "command", "timeout": 6000,
+  "command": "node .claude/helpers/context-persistence-hook.mjs session-start 2>/dev/null || true" }
+
+// UserPromptSubmit (proactive archiving)
+{ "type": "command", "timeout": 5000,
+  "command": "node .claude/helpers/context-persistence-hook.mjs user-prompt-submit 2>/dev/null || true" }
+```
+
+### Operational Notes
+
+- **Early exit optimization**: `doUserPromptSubmit()` skips archiving when the existing
+  entry count is within 2 turns of the chunk count, avoiding redundant work on every prompt
+- **Decision detection**: `buildCompactInstructions()` scans assistant text for decision
+  keywords (`decided`, `choosing`, `approach`, `instead of`, `rather than`) to extract
+  key decisions for compact preservation
+- **RuVector dedup**: Synchronous `hashExists()` returns false for RuVector (async DB);
+  dedup is handled at the database level via `ON CONFLICT (id) DO NOTHING`
+- **Graceful failure**: Top-level try/catch ensures hook never crashes Claude Code;
+  errors are written to stderr as `[ContextPersistence] Error (non-critical): ...`
+
+### Verification
+
+```bash
+# Status check
+node .claude/helpers/context-persistence-hook.mjs status
+
+# Run tests
+node --test tests/context-persistence-hook.test.mjs
+```
+
 ## References
 
 - ADR-006: Unified Memory Service
