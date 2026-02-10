@@ -577,20 +577,20 @@ export class PluginDiscoveryService {
         verified: true,
         trustLevel: 'official',
       },
-      // Agentic QE - AI-powered quality engineering
+      // Agentic QE - AI-powered quality engineering (wraps agentic-qe npm package)
       {
         id: '@claude-flow/plugin-agentic-qe',
         name: '@claude-flow/plugin-agentic-qe',
         displayName: 'Agentic Quality Engineering',
-        description: 'AI-powered quality engineering with 58 agents that write tests, find bugs, predict defects, scan security, and perform chaos engineering safely.',
-        version: '3.0.0-alpha.3',
+        description: 'AI-powered quality engineering with 63 skills and 59+ specialized agents. DDD architecture with 13 bounded contexts, O(log n) coverage analysis, ReasoningBank learning, TDD London/Chicago school, chaos engineering, and deep Claude Flow integration. Wraps the agentic-qe npm package.',
+        version: '3.6.2',
         cid: 'bafybeiagenticqeplugin2024',
         size: 285000,
         checksum: 'sha256:agenticqe2024xyz',
         author: officialAuthor,
         license: 'MIT',
         categories: ['ai-ml', 'devops', 'security'],
-        tags: ['testing', 'qe', 'tdd', 'security', 'chaos-engineering', 'coverage', 'defect-prediction', 'agents'],
+        tags: ['testing', 'qe', 'tdd', 'security', 'chaos-engineering', 'coverage', 'defect-prediction', 'agents', 'ddd', 'reasoningbank'],
         keywords: ['quality', 'testing', 'agents', 'tdd', 'security'],
         downloads: 1200,
         rating: 4.8,
@@ -600,6 +600,7 @@ export class PluginDiscoveryService {
         minClaudeFlowVersion: '3.0.0',
         dependencies: [
           { name: '@claude-flow/core', version: '^3.0.0' },
+          { name: 'agentic-qe', version: '^3.6.0' },
         ],
         type: 'integration',
         hooks: [
@@ -631,8 +632,8 @@ export class PluginDiscoveryService {
         trustLevel: 'official',
         securityAudit: {
           auditor: 'claude-flow-security-team',
-          auditDate: '2026-01-20T00:00:00Z',
-          auditVersion: '3.0.0-alpha.3',
+          auditDate: '2026-02-10T00:00:00Z',
+          auditVersion: '3.6.2',
           passed: true,
           issues: [],
         },
