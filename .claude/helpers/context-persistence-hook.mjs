@@ -1610,9 +1610,12 @@ async function doPreCompact() {
   const total = await backend.count(NAMESPACE);
   await backend.shutdown();
 
-  const optimizeMsg = optimizeResult.pruned > 0 || optimizeResult.synced > 0
-    ? ` Optimized: ${optimizeResult.pruned} pruned, ${optimizeResult.synced} synced to RuVector.`
-    : '';
+  const optParts = [];
+  if (optimizeResult.pruned > 0) optParts.push(`${optimizeResult.pruned} pruned`);
+  if (optimizeResult.decayed > 0) optParts.push(`${optimizeResult.decayed} decayed`);
+  if (optimizeResult.embedded > 0) optParts.push(`${optimizeResult.embedded} embedded`);
+  if (optimizeResult.synced > 0) optParts.push(`${optimizeResult.synced} synced`);
+  const optimizeMsg = optParts.length > 0 ? ` Optimized: ${optParts.join(', ')}.` : '';
   process.stderr.write(
     `[ContextPersistence] Archived ${archiveResult.stored} turns (${archiveResult.deduped} deduped) via ${type}. Total: ${total}.${optimizeMsg}\n`
   );
