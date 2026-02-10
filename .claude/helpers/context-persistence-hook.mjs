@@ -1213,8 +1213,10 @@ function estimateContextTokens(transcriptPath) {
       const parsed = JSON.parse(lines[i]);
 
       // Check for compact_boundary — this has real token count
+      // SDK uses camelCase: compactMetadata.preTokens (not snake_case)
       if (parsed.type === 'system' && parsed.subtype === 'compact_boundary') {
-        lastPreTokens = parsed.compact_metadata?.pre_tokens || 0;
+        lastPreTokens = parsed.compactMetadata?.preTokens
+          || parsed.compact_metadata?.pre_tokens || 0;
         lastBoundaryLine = i;
         totalChars = 0; // Reset — post-compaction content is what matters
         turns = 0;
