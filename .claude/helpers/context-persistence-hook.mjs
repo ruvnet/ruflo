@@ -1690,38 +1690,24 @@ async function doPreCompact() {
   const instructions = buildCompactInstructions(chunks, sessionId, archiveResult);
   process.stdout.write(instructions);
 
-  // Context Autopilot: block AUTO compaction, allow MANUAL (/compact)
+  // Context Autopilot: track state and log archival status
+  // NOTE: Claude Code 2.0.76 executePreCompactHooks uses executeHooksOutsideREPL
+  // which does NOT support exit code 2 blocking. Compaction always proceeds.
+  // Our "infinite context" comes from archive + restore, not blocking.
   if (AUTOPILOT_ENABLED) {
     const state = loadAutopilotState();
     const pct = state.lastPercentage || 0;
     const bar = buildProgressBar(pct);
 
-    if (trigger === 'manual') {
-      // Manual /compact: allow it — user explicitly requested compression
-      process.stderr.write(
-        `[ContextAutopilot] ${bar} ${(pct * 100).toFixed(1)}% | MANUAL compact allowed — ${chunks.length} turns archived before compression.\n`
-      );
-      // Reset autopilot state for post-compaction fresh start
-      state.lastTokenEstimate = 0;
-      state.lastPercentage = 0;
-      state.warningIssued = false;
-      saveAutopilotState(state);
-      // Exit 0 = proceed with compaction
-    } else {
-      // Auto compaction: BLOCK — autopilot manages context
-      process.stderr.write(
-        `[ContextAutopilot] ${bar} ${(pct * 100).toFixed(1)}% | BLOCKING auto-compaction — all ${chunks.length} turns archived safely. Use /compact to manually compress.\n`
-      );
-      process.exit(2);
-    }
-  }
-
-  // Legacy: exit code 2 blocks compaction (opt-in via env var)
-  if (BLOCK_COMPACTION && trigger === 'auto') {
     process.stderr.write(
-      `[ContextPersistence] BLOCKING auto-compaction (CLAUDE_FLOW_BLOCK_COMPACTION=true). All ${chunks.length} turns archived.\n`
+      `[ContextAutopilot] ${bar} ${(pct * 100).toFixed(1)}% | ${trigger} compact — ${chunks.length} turns archived. Context will be restored after compaction.\n`
     );
-    process.exit(2);
+
+    // Reset autopilot state for post-compaction fresh start
+    state.lastTokenEstimate = 0;
+    state.lastPercentage = 0;
+    state.warningIssued = false;
+    saveAutopilotState(state);
   }
 }
 

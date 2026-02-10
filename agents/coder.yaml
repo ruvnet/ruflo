@@ -8,4 +8,4 @@ capabilities:
 optimizations:
   - flash-attention
   - token-reduction
-createdAt: "2026-02-10T19:02:16.500Z"
+createdAt: "2026-02-10T19:56:57.432Z"
