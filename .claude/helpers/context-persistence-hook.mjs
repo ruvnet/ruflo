@@ -1498,15 +1498,30 @@ async function doPreCompact() {
   const instructions = buildCompactInstructions(chunks, sessionId, archiveResult);
   process.stdout.write(instructions);
 
-  // Context Autopilot: ALWAYS block compaction — we manage context ourselves
+  // Context Autopilot: block AUTO compaction, allow MANUAL (/compact)
   if (AUTOPILOT_ENABLED) {
     const state = loadAutopilotState();
     const pct = state.lastPercentage || 0;
     const bar = buildProgressBar(pct);
-    process.stderr.write(
-      `[ContextAutopilot] ${bar} ${(pct * 100).toFixed(1)}% | BLOCKING compaction — all ${chunks.length} turns archived safely. Context managed by autopilot.\n`
-    );
-    process.exit(2);
+
+    if (trigger === 'manual') {
+      // Manual /compact: allow it — user explicitly requested compression
+      process.stderr.write(
+        `[ContextAutopilot] ${bar} ${(pct * 100).toFixed(1)}% | MANUAL compact allowed — ${chunks.length} turns archived before compression.\n`
+      );
+      // Reset autopilot state for post-compaction fresh start
+      state.lastTokenEstimate = 0;
+      state.lastPercentage = 0;
+      state.warningIssued = false;
+      saveAutopilotState(state);
+      // Exit 0 = proceed with compaction
+    } else {
+      // Auto compaction: BLOCK — autopilot manages context
+      process.stderr.write(
+        `[ContextAutopilot] ${bar} ${(pct * 100).toFixed(1)}% | BLOCKING auto-compaction — all ${chunks.length} turns archived safely. Use /compact to manually compress.\n`
+      );
+      process.exit(2);
+    }
   }
 
   // Legacy: exit code 2 blocks compaction (opt-in via env var)
