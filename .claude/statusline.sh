@@ -181,16 +181,13 @@ if [ -f "$AUTOPILOT_STATE" ]; then
   AP_TOKENS=$(jq -r '.lastTokenEstimate // 0' "$AUTOPILOT_STATE" 2>/dev/null || echo "0")
   AP_PRUNE=$(jq -r '.pruneCount // 0' "$AUTOPILOT_STATE" 2>/dev/null || echo "0")
 
-  # Convert float (0.216) to int percentage (21)
-  CONTEXT_PCT=$(printf "%.0f" "$(echo "$AP_PCT * 100" | bc -l 2>/dev/null)" 2>/dev/null || echo "0")
+  # Convert float (0.227) to int percentage (23) using awk
+  CONTEXT_PCT=$(awk "BEGIN { printf \"%.0f\", $AP_PCT * 100 }" 2>/dev/null || echo "0")
   if [ -z "$CONTEXT_PCT" ] || [ "$CONTEXT_PCT" = "" ]; then CONTEXT_PCT=0; fi
 
-  # Format token count
-  if [ "$AP_TOKENS" -ge 1000 ]; then
-    CONTEXT_TOKENS="$(echo "scale=1; $AP_TOKENS / 1000" | bc 2>/dev/null || echo "?")K"
-  else
-    CONTEXT_TOKENS="${AP_TOKENS}"
-  fi
+  # Format token count using awk
+  CONTEXT_TOKENS=$(awk "BEGIN { t=$AP_TOKENS; if (t>=1000) printf \"%.1fK\", t/1000; else printf \"%d\", t }" 2>/dev/null || echo "?")
+
 
   # Autopilot active indicator
   if [ "$AP_PRUNE" -gt 0 ]; then
