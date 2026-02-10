@@ -715,8 +715,9 @@ All capabilities confirmed working (2026-02-10):
 | Smart pruning | PASS | Prune at confidence ≤15% |
 | ONNX embedding generation | PASS | 38/38 entries embedded (384-dim, all-MiniLM-L6-v2) |
 | Semantic search | PASS | 5 results, top score 0.471 (true semantic matching) |
-| Auto-compaction block | PASS | Exit code 2 on auto trigger |
-| Manual compact | PASS | Exit code 0 on manual trigger |
+| Lossless compaction | PASS | Archive before, restore after — no data loss |
+| Session rotation | PASS | /clear triggers SessionStart with source='clear', restores context |
+| SDK text pruning | PASS | _aggressiveTextPrune() truncates old text every query |
 | Cross-session search | PASS | Finds turns from other sessions |
 
 ## Consequences
