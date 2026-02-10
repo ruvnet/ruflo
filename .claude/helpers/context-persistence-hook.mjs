@@ -143,6 +143,28 @@ class SQLiteBackend {
         );
       }
     });
+
+    // Optimization statements
+    this._stmts.markAccessed = this.db.prepare(
+      'UPDATE transcript_entries SET access_count = access_count + 1, last_accessed_at = ? WHERE id = ?'
+    );
+    this._stmts.pruneStale = this.db.prepare(
+      'DELETE FROM transcript_entries WHERE namespace = ? AND access_count = 0 AND created_at < ?'
+    );
+    this._stmts.queryByImportance = this.db.prepare(`
+      SELECT *, (
+        (CAST(access_count AS REAL) + 1) *
+        (1.0 / (1.0 + (? - created_at) / 86400000.0)) *
+        (CASE WHEN json_array_length(json_extract(metadata, '$.toolNames')) > 0 THEN 1.5 ELSE 1.0 END) *
+        (CASE WHEN json_array_length(json_extract(metadata, '$.filePaths')) > 0 THEN 1.3 ELSE 1.0 END)
+      ) AS importance_score
+      FROM transcript_entries
+      WHERE namespace = ? AND session_id = ?
+      ORDER BY importance_score DESC
+    `);
+    this._stmts.allForSync = this.db.prepare(
+      'SELECT * FROM transcript_entries WHERE namespace = ? ORDER BY created_at ASC'
+    );
   }
 
   async store(entry) {
