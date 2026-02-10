@@ -100,8 +100,10 @@ This enables our **Smart Compaction Gate**:
 - **Default mode**: Exit code 0 with custom instructions listing archived files,
   tools, decisions, and recent turns -- Claude's compaction summary preserves
   the most important details
-- **Block mode** (`CLAUDE_FLOW_BLOCK_COMPACTION=true`): Exit code 2 on auto-trigger
-  to prevent compaction when proactive archiving has captured everything
+- **Block mode** (Context Autopilot, enabled by default): Exit code 2 on auto-trigger
+  to prevent compaction; manual `/compact` is allowed and resets autopilot state
+- **Legacy block mode** (`CLAUDE_FLOW_BLOCK_COMPACTION=true`): Exit code 2 on auto-trigger
+  via environment variable (superseded by Context Autopilot)
 
 ## Architecture
 
