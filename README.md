@@ -157,7 +157,7 @@ curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.s
 curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash -s -- --full
 
 # Or via npx
-npx claude-flow@alpha init --wizard
+npx claude-flow@alpha init wizard
 ```
 
 ---
@@ -2589,7 +2589,7 @@ Complete command-line interface for all Claude-Flow operations.
 
 ```bash
 # Initialize project with wizard
-npx claude-flow@v3alpha init --wizard
+npx claude-flow@v3alpha init wizard
 
 # Start daemon with background workers
 npx claude-flow@v3alpha daemon start
@@ -6789,7 +6789,7 @@ npx claude-flow@v3alpha config import --file my-config.json
 npx claude-flow@v3alpha config reset --key swarm
 
 # Initialize with wizard
-npx claude-flow@v3alpha init --wizard
+npx claude-flow@v3alpha init wizard
 ```
 
 </details>
@@ -6918,7 +6918,7 @@ npx claude-flow@v3alpha doctor --fix
 | V2 Command | V3 Command | Notes |
 |------------|------------|-------|
 | `claude-flow start` | `claude-flow mcp start` | MCP is explicit |
-| `claude-flow init` | `claude-flow init --wizard` | Interactive mode |
+| `claude-flow init` | `claude-flow init wizard` | Interactive mode |
 | `claude-flow spawn <type>` | `claude-flow agent spawn -t <type>` | Nested under `agent` |
 | `claude-flow swarm create` | `claude-flow swarm init --topology mesh` | Explicit topology |
 | `--pattern-store path` | `--memory-backend agentdb` | Backend selection |
