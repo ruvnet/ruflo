@@ -1715,7 +1715,9 @@ async function doPreCompact() {
 async function doSessionStart() {
   const input = await readStdin(200);
 
-  if (!input || input.source !== 'compact') return;
+  // Restore context after compaction OR after /clear (session rotation)
+  // With DISABLE_COMPACT, /clear is the primary way to free context
+  if (!input || (input.source !== 'compact' && input.source !== 'clear')) return;
 
   const sessionId = input.session_id;
   if (!sessionId) return;
