@@ -821,3 +821,120 @@ describe('resolveBackend priority', () => {
     assert.equal(config, null);
   });
 });
+
+// ============================================================================
+// Smart Compaction Gate Tests (buildCompactInstructions)
+// ============================================================================
+
+describe('buildCompactInstructions', () => {
+  it('should produce compact instructions with archived turn count', () => {
+    const chunks = [
+      {
+        userMessage: makeUserMsg('Implement authentication module'),
+        assistantMessage: makeAssistantMsg('I\'ll implement the auth module using JWT.'),
+        toolCalls: [
+          { name: 'Edit', input: { file_path: '/src/auth.ts' } },
+          { name: 'Write', input: { file_path: '/src/jwt.ts' } },
+        ],
+        turnIndex: 0,
+      },
+      {
+        userMessage: makeUserMsg('Add tests for auth'),
+        assistantMessage: makeAssistantMsg('Writing tests for the auth module.'),
+        toolCalls: [
+          { name: 'Write', input: { file_path: '/tests/auth.test.ts' } },
+          { name: 'Bash', input: { command: 'npm test' } },
+        ],
+        turnIndex: 1,
+      },
+    ];
+
+    const result = buildCompactInstructions(chunks, 'sess-123', { stored: 2, deduped: 0 });
+
+    assert.ok(result.includes('COMPACTION GUIDANCE'));
+    assert.ok(result.includes('2 conversation turns'));
+    assert.ok(result.includes('sess-123'));
+    assert.ok(result.includes('Stored: 2 new'));
+    assert.ok(result.includes('PRESERVE in compaction summary'));
+  });
+
+  it('should include file paths and tool names', () => {
+    const chunks = [
+      {
+        userMessage: makeUserMsg('Fix the bug'),
+        assistantMessage: makeAssistantMsg('Fixed the null check.'),
+        toolCalls: [
+          { name: 'Edit', input: { file_path: '/src/utils.ts' } },
+          { name: 'Grep', input: { path: '/src' } },
+          { name: 'Read', input: { file_path: '/src/config.ts' } },
+        ],
+        turnIndex: 0,
+      },
+    ];
+
+    const result = buildCompactInstructions(chunks, 'sess-456', { stored: 1, deduped: 0 });
+
+    assert.ok(result.includes('Files modified/read:'));
+    assert.ok(result.includes('utils.ts'));
+    assert.ok(result.includes('Tools used:'));
+    assert.ok(result.includes('Edit'));
+    assert.ok(result.includes('Grep'));
+  });
+
+  it('should include decision context from assistant text', () => {
+    const chunks = [
+      {
+        userMessage: makeUserMsg('How should we handle caching?'),
+        assistantMessage: makeAssistantMsg('I decided to use Redis instead of in-memory caching for scalability.'),
+        toolCalls: [],
+        turnIndex: 0,
+      },
+    ];
+
+    const result = buildCompactInstructions(chunks, 'sess-789', { stored: 1, deduped: 0 });
+
+    assert.ok(result.includes('Key decisions'));
+    assert.ok(result.includes('Redis') || result.includes('decided'));
+  });
+
+  it('should include most recent turns section', () => {
+    const chunks = Array.from({ length: 8 }, (_, i) => ({
+      userMessage: makeUserMsg(`Question ${i}`),
+      assistantMessage: makeAssistantMsg(`Answer ${i}`),
+      toolCalls: [],
+      turnIndex: i,
+    }));
+
+    const result = buildCompactInstructions(chunks, 'sess-recent', { stored: 8, deduped: 0 });
+
+    assert.ok(result.includes('MOST RECENT TURNS'));
+    // Should include last 5 turns
+    assert.ok(result.includes('[Turn 7]'));
+    assert.ok(result.includes('[Turn 3]'));
+    // Should NOT include early turns in the recent section
+    assert.ok(!result.includes('[Turn 0]') || result.includes('8 conversation turns'));
+  });
+
+  it('should respect COMPACT_INSTRUCTION_BUDGET', () => {
+    // Generate many chunks with long content
+    const chunks = Array.from({ length: 50 }, (_, i) => ({
+      userMessage: makeUserMsg('x'.repeat(200) + ` question ${i}`),
+      assistantMessage: makeAssistantMsg('y'.repeat(200) + ` answer ${i}. I decided to use approach A instead of B.`),
+      toolCalls: Array.from({ length: 5 }, (_, j) => ({
+        name: `Tool${j}`,
+        input: { file_path: `/src/very/long/path/to/file${j}.ts` },
+      })),
+      turnIndex: i,
+    }));
+
+    const result = buildCompactInstructions(chunks, 'sess-budget', { stored: 50, deduped: 0 });
+
+    assert.ok(result.length <= COMPACT_INSTRUCTION_BUDGET + 10); // small margin for trailing chars
+  });
+
+  it('should handle empty chunks gracefully', () => {
+    const result = buildCompactInstructions([], 'sess-empty', { stored: 0, deduped: 0 });
+    assert.ok(result.includes('COMPACTION GUIDANCE'));
+    assert.ok(result.includes('0 conversation turns'));
+  });
+});
