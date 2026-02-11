@@ -41,14 +41,13 @@ export default defineConfig({
       reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './__tests__/coverage',
 
-      // Coverage thresholds disabled for alpha (London School TDD uses mocks)
-      // TODO: Re-enable for stable release with proper coverage instrumentation
-      // thresholds: {
-      //   lines: 60,
-      //   functions: 60,
-      //   branches: 50,
-      //   statements: 60,
-      // },
+      // Coverage thresholds — Phase 5 baseline (enforced)
+      thresholds: {
+        lines: 40,
+        functions: 40,
+        branches: 30,
+        statements: 40,
+      },
 
       // Files to include in coverage
       include: [

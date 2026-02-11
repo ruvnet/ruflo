@@ -46,8 +46,8 @@ describe('Hooks Module Exports', () => {
     expect(true).toBe(true);
   });
 
-  it('should create instances from exported factories', () => {
-    const { createHookRegistry, createHookExecutor } = require('./index.js');
+  it('should create instances from exported factories', async () => {
+    const { createHookRegistry, createHookExecutor } = await import('./index.js');
 
     const registry = createHookRegistry();
     expect(registry).toBeDefined();
@@ -59,8 +59,8 @@ describe('Hooks Module Exports', () => {
     expect(typeof executor.execute).toBe('function');
   });
 
-  it('should have all 26 hook events defined', () => {
-    const { HookEvent } = require('./index.js');
+  it('should have all 26 hook events defined', async () => {
+    const { HookEvent } = await import('./index.js');
 
     const expectedEvents = [
       'PreToolUse',
@@ -98,8 +98,8 @@ describe('Hooks Module Exports', () => {
     }
   });
 
-  it('should have all 5 priority levels defined', () => {
-    const { HookPriority } = require('./index.js');
+  it('should have all 5 priority levels defined', async () => {
+    const { HookPriority } = await import('./index.js');
 
     expect(HookPriority.Critical).toBe(1000);
     expect(HookPriority.High).toBe(500);
