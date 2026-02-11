@@ -1,0 +1,47 @@
+{
+  "name": "@claude-flow/integrations",
+  "version": "3.0.0-alpha.1",
+  "type": "module",
+  "description": "External integrations — Codex, MCP server, browser automation, deployment",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./codex": "./dist/codex/index.js",
+    "./mcp": "./dist/mcp/index.js",
+    "./browser": "./dist/browser/index.js",
+    "./deployment": "./dist/deployment/index.js",
+    "./agentic-flow": "./dist/agentic-flow/index.js"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@claude-flow/core": "^3.0.0-alpha.1"
+  },
+  "optionalDependencies": {
+    "@openai/codex": "^0.98.0",
+    "agent-booster": "^0.2.2"
+  },
+  "peerDependencies": {
+    "agentic-flow": "^2.0.0-alpha"
+  },
+  "peerDependenciesMeta": {
+    "agentic-flow": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.16"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "v3alpha"
+  }
+}

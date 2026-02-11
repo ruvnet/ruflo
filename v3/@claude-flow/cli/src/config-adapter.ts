@@ -3,7 +3,7 @@
  * Converts between SystemConfig and V3Config types
  */
 
-import type { SystemConfig } from '@claude-flow/shared';
+import type { SystemConfig } from '@claude-flow/core';
 import type { V3Config } from './types.js';
 
 /**

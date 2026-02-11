@@ -141,7 +141,7 @@ export {
  *
  * @example
  * ```typescript
- * import { quickStart } from '@claude-flow/mcp';
+ * import { quickStart } from '@claude-flow/integrations/mcp';
  *
  * const server = await quickStart({
  *   transport: 'stdio',
@@ -185,4 +185,4 @@ export const VERSION = '3.0.0';
 /**
  * Module name
  */
-export const MODULE_NAME = '@claude-flow/mcp';
+export const MODULE_NAME = '@claude-flow/integrations/mcp';

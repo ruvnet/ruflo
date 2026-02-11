@@ -444,7 +444,7 @@ export class CLI {
   private async loadConfig(configPath?: string): Promise<V3Config | undefined> {
     try {
       // Import config utilities
-      const { loadConfig: loadSystemConfig } = await import('@claude-flow/shared');
+      const { loadConfig: loadSystemConfig } = await import('@claude-flow/core');
       const { systemConfigToV3Config } = await import('./config-adapter.js');
 
       // Load configuration

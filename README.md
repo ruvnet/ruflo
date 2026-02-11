@@ -328,7 +328,7 @@ The Token Optimizer integrates agentic-flow optimizations to reduce API costs by
 **Usage:**
 
 ```typescript
-import { getTokenOptimizer } from '@claude-flow/integration';
+import { getTokenOptimizer } from '@claude-flow/integrations/agentic-flow';
 const optimizer = await getTokenOptimizer();
 
 // Get compact context (32% fewer tokens)
@@ -500,7 +500,7 @@ npm install -g claude-flow@alpha --omit=optional
 <details>
 <summary>🤖 <strong>OpenAI Codex CLI Support</strong> — Full Codex integration with self-learning</summary>
 
-Claude-Flow supports both **Claude Code** and **OpenAI Codex CLI** via the [@claude-flow/codex](https://www.npmjs.com/package/@claude-flow/codex) package, following the [Agentics Foundation](https://agentics.org) standard.
+Claude-Flow supports both **Claude Code** and **OpenAI Codex CLI** via the [@claude-flow/integrations/codex](https://www.npmjs.com/package/@claude-flow/integrations/codex) package, following the [Agentics Foundation](https://agentics.org) standard.
 
 ### Quick Start for Codex
 
@@ -1334,11 +1334,11 @@ echo "ANTHROPIC_API_KEY=sk-ant-..." >> .env
 ---
 
 <details>
-<summary>🛡️ <strong>@claude-flow/guidance</strong> — Long-horizon governance control plane for Claude Code agents</summary>
+<summary>🛡️ <strong>@claude-flow/plugins/guidance</strong> — Long-horizon governance control plane for Claude Code agents</summary>
 
 ### Overview
 
-`@claude-flow/guidance` turns `CLAUDE.md` into a runtime governance system with enforcement gates, cryptographic proofs, and feedback loops. Agents that normally drift after 30 minutes can now operate for days — rules are enforced mechanically at every step, not remembered by the model.
+`@claude-flow/plugins/guidance` turns `CLAUDE.md` into a runtime governance system with enforcement gates, cryptographic proofs, and feedback loops. Agents that normally drift after 30 minutes can now operate for days — rules are enforced mechanically at every step, not remembered by the model.
 
 **7-phase pipeline:** Compile → Retrieve → Enforce → Trust → Prove → Defend → Evolve
 
@@ -1355,7 +1355,7 @@ echo "ANTHROPIC_API_KEY=sk-ant-..." >> .env
 ### Install
 
 ```bash
-npm install @claude-flow/guidance@alpha
+npm install @claude-flow/plugins/guidance@alpha
 ```
 
 ### Quick Usage
@@ -1367,7 +1367,7 @@ import {
   createGates,
   createLedger,
   createProofChain,
-} from '@claude-flow/guidance';
+} from '@claude-flow/plugins/guidance';
 
 // Compile CLAUDE.md into a policy bundle
 const compiler = createCompiler();
@@ -1395,18 +1395,18 @@ chain.verify(envelope); // true — tamper-evident
 
 | Import Path | Purpose |
 |-------------|---------|
-| `@claude-flow/guidance` | Main entry — GuidanceControlPlane |
-| `@claude-flow/guidance/compiler` | CLAUDE.md → PolicyBundle compiler |
-| `@claude-flow/guidance/retriever` | Intent classification + shard retrieval |
-| `@claude-flow/guidance/gates` | 4 enforcement gates |
-| `@claude-flow/guidance/ledger` | Run event logging + evaluators |
-| `@claude-flow/guidance/proof` | HMAC-SHA256 proof chain |
-| `@claude-flow/guidance/adversarial` | Threat, collusion, memory quorum |
-| `@claude-flow/guidance/trust` | Trust accumulation + privilege tiers |
-| `@claude-flow/guidance/authority` | Human authority + irreversibility classification |
-| `@claude-flow/guidance/wasm-kernel` | WASM-accelerated security-critical paths |
-| `@claude-flow/guidance/analyzer` | CLAUDE.md quality analysis + A/B benchmarking |
-| `@claude-flow/guidance/conformance-kit` | Headless conformance test runner |
+| `@claude-flow/plugins/guidance` | Main entry — GuidanceControlPlane |
+| `@claude-flow/plugins/guidance/compiler` | CLAUDE.md → PolicyBundle compiler |
+| `@claude-flow/plugins/guidance/retriever` | Intent classification + shard retrieval |
+| `@claude-flow/plugins/guidance/gates` | 4 enforcement gates |
+| `@claude-flow/plugins/guidance/ledger` | Run event logging + evaluators |
+| `@claude-flow/plugins/guidance/proof` | HMAC-SHA256 proof chain |
+| `@claude-flow/plugins/guidance/adversarial` | Threat, collusion, memory quorum |
+| `@claude-flow/plugins/guidance/trust` | Trust accumulation + privilege tiers |
+| `@claude-flow/plugins/guidance/authority` | Human authority + irreversibility classification |
+| `@claude-flow/plugins/guidance/wasm-kernel` | WASM-accelerated security-critical paths |
+| `@claude-flow/plugins/guidance/analyzer` | CLAUDE.md quality analysis + A/B benchmarking |
+| `@claude-flow/plugins/guidance/conformance-kit` | Headless conformance test runner |
 
 ### Stats
 
@@ -1417,13 +1417,13 @@ chain.verify(envelope); // true — tamper-evident
 
 ### Documentation
 
-- [Architecture Overview](v3/@claude-flow/guidance/docs/guides/architecture-overview.md)
-- [Getting Started](v3/@claude-flow/guidance/docs/guides/getting-started.md)
-- [Enforcement Gates Tutorial](v3/@claude-flow/guidance/docs/tutorials/enforcement-gates.md)
-- [Proof Audit Trail](v3/@claude-flow/guidance/docs/tutorials/proof-audit-trail.md)
-- [Multi-Agent Security](v3/@claude-flow/guidance/docs/guides/multi-agent-security.md)
-- [API Quick Reference](v3/@claude-flow/guidance/docs/reference/api-quick-reference.md)
-- [Full README](v3/@claude-flow/guidance/README.md)
+- [Architecture Overview](v3/@claude-flow/plugins/guidance/docs/guides/architecture-overview.md)
+- [Getting Started](v3/@claude-flow/plugins/guidance/docs/guides/getting-started.md)
+- [Enforcement Gates Tutorial](v3/@claude-flow/plugins/guidance/docs/tutorials/enforcement-gates.md)
+- [Proof Audit Trail](v3/@claude-flow/plugins/guidance/docs/tutorials/proof-audit-trail.md)
+- [Multi-Agent Security](v3/@claude-flow/plugins/guidance/docs/guides/multi-agent-security.md)
+- [API Quick Reference](v3/@claude-flow/plugins/guidance/docs/reference/api-quick-reference.md)
+- [Full README](v3/@claude-flow/plugins/guidance/README.md)
 
 </details>
 
@@ -4591,7 +4591,7 @@ Claude-Flow automatically leverages agentic-flow for:
 
 ```typescript
 // Claude-Flow automatically uses agentic-flow optimizations
-import { getTokenOptimizer } from '@claude-flow/integration';
+import { getTokenOptimizer } from '@claude-flow/integrations/agentic-flow';
 
 const optimizer = await getTokenOptimizer();
 

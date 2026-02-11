@@ -162,7 +162,7 @@ async function main() {
   // Test 10: Similar Plugins
   console.log('▶ Test 10: Find Similar Plugins');
   try {
-    const similar = findSimilarPlugins(registry, '@claude-flow/patterns', 3);
+    const similar = findSimilarPlugins(registry, '@claude-flow/agents/patterns', 3);
     console.log(`  ✅ Found ${similar.length} similar plugins to @claude-flow/patterns`);
     passed++;
   } catch (e) {

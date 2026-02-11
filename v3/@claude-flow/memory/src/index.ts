@@ -511,5 +511,8 @@ export function createHybridService(
   });
 }
 
+// ===== Embeddings (consolidated from @claude-flow/embeddings) =====
+export * from './embeddings/index.js';
+
 // Default export
 export default UnifiedMemoryService;

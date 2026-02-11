@@ -33,6 +33,14 @@
     "./examples/plugin-creator": {
       "types": "./dist/examples/plugin-creator/index.d.js",
       "import": "./dist/examples/plugin-creator/index.js"
+    },
+    "./guidance": {
+      "types": "./dist/guidance/index.d.js",
+      "import": "./dist/guidance/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.js",
+      "import": "./dist/testing/index.js"
     }
   },
   "scripts": {
@@ -43,16 +51,17 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@claude-flow/agents": "^3.0.0-alpha.1",
+    "@claude-flow/core": "^3.0.0-alpha.1",
+    "@claude-flow/memory": "^3.0.0-alpha.6",
     "events": "^3.3.0"
   },
   "peerDependencies": {
-    "@claude-flow/hooks": "^3.0.0-alpha.2",
-    "@claude-flow/memory": "^3.0.0-alpha.2",
     "@ruvector/learning-wasm": "^0.1.0",
     "@ruvector/wasm": "^0.1.0"
   },
   "peerDependenciesMeta": {
-    "@claude-flow/hooks": {
+    "@claude-flow/agents": {
       "optional": true
     },
     "@claude-flow/memory": {

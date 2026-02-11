@@ -9,8 +9,8 @@
  * import * as claudeFlow from '@claude-flow/v3';
  *
  * // Or import specific modules
- * import { UnifiedSwarmCoordinator } from '@claude-flow/swarm';
- * import { PasswordHasher } from '@claude-flow/security';
+ * import { UnifiedSwarmCoordinator } from '@claude-flow/agents/swarm';
+ * import { PasswordHasher } from '@claude-flow/core/security';
  * import { HNSWIndex } from '@claude-flow/memory';
  *
  * Complete reimagining based on 10 ADRs:
@@ -37,84 +37,56 @@
  */
 
 // =============================================================================
-// @claude-flow Module Exports (New Modular Architecture)
+// @claude-flow Module Exports (Consolidated Architecture — 6 packages)
 // =============================================================================
 
 /**
- * Security module - CVE fixes, input validation, credential management
- * @see {@link @claude-flow/security}
+ * Core module — shared types, security, auth, providers, AI defence
+ * @see {@link @claude-flow/core}
  */
-export * as security from './@claude-flow/security/src/index.js';
+export * as core from './@claude-flow/core/src/index.js';
 
 /**
- * Memory module - AgentDB, HNSW indexing, vector search
+ * Agents module — swarm coordination, pattern learning, lifecycle hooks
+ * @see {@link @claude-flow/agents}
+ */
+export * as agents from './@claude-flow/agents/src/index.js';
+
+/**
+ * Memory module — AgentDB, HNSW indexing, vector search, embeddings
  * @see {@link @claude-flow/memory}
  */
 export * as memory from './@claude-flow/memory/src/index.js';
 
 /**
- * Swarm module - 15-agent coordination, hierarchical mesh, consensus
- * @see {@link @claude-flow/swarm}
- */
-export * as swarm from './@claude-flow/swarm/src/index.js';
-
-/**
- * Integration module - agentic-flow@alpha integration, ADR-001 compliance
- * @see {@link @claude-flow/integration}
- */
-export * as integration from './@claude-flow/integration/src/index.js';
-
-/**
- * Shared module - common types, events, utilities, core interfaces
- * @see {@link @claude-flow/shared}
- */
-export * as shared from './@claude-flow/shared/src/index.js';
-
-/**
- * CLI module - Command parsing, prompts, output formatting
+ * CLI module — command parsing, prompts, output formatting
  * @see {@link @claude-flow/cli}
  */
 export * as cli from './@claude-flow/cli/src/index.js';
 
 /**
- * Neural module - Pattern learning, neural modes
- * @see {@link @claude-flow/patterns}
+ * Integrations module — Codex, MCP server, browser, deployment
+ * @see {@link @claude-flow/integrations}
  */
-export * as neural from './@claude-flow/patterns/src/index.js';
+export * as integrations from './@claude-flow/integrations/src/index.js';
 
 /**
- * Performance module - Benchmarking, Flash Attention validation
- * @see {@link @claude-flow/performance}
+ * Plugins module — plugin SDK, guidance, testing framework
+ * @see {@link @claude-flow/plugins}
  */
-export * as performance from './@claude-flow/performance/src/index.js';
-
-/**
- * Testing module - TDD London School framework, test utilities
- * @see {@link @claude-flow/testing}
- */
-export * as testing from './@claude-flow/testing/src/index.js';
-
-/**
- * Deployment module - Release management, CI/CD
- * @see {@link @claude-flow/deployment}
- */
-export * as deployment from './@claude-flow/deployment/src/index.js';
+export * as plugins from './@claude-flow/plugins/src/index.js';
 
 // =============================================================================
 // Module List for Dynamic Loading
 // =============================================================================
 
 export const MODULES = [
-  '@claude-flow/shared',
-  '@claude-flow/security',
+  '@claude-flow/core',
+  '@claude-flow/agents',
   '@claude-flow/memory',
-  '@claude-flow/swarm',
-  '@claude-flow/integration',
   '@claude-flow/cli',
-  '@claude-flow/patterns',
-  '@claude-flow/performance',
-  '@claude-flow/testing',
-  '@claude-flow/deployment',
+  '@claude-flow/integrations',
+  '@claude-flow/plugins',
 ] as const;
 
 export type ModuleName = (typeof MODULES)[number];

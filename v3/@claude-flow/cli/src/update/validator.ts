@@ -21,11 +21,11 @@ interface PackageCompatibility {
 // Known compatibility matrix between @claude-flow packages
 const COMPATIBILITY_MATRIX: Record<string, Record<string, PackageCompatibility>> = {
   '@claude-flow/cli': {
-    '@claude-flow/embeddings': { minVersion: '3.0.0-alpha.1' },
-    '@claude-flow/security': { minVersion: '3.0.0-alpha.1' },
+    '@claude-flow/memory/embeddings': { minVersion: '3.0.0-alpha.1' },
+    '@claude-flow/core/security': { minVersion: '3.0.0-alpha.1' },
     '@claude-flow/integration': { minVersion: '3.0.0-alpha.1' },
   },
-  '@claude-flow/embeddings': {
+  '@claude-flow/memory/embeddings': {
     '@claude-flow/cli': { minVersion: '3.0.0-alpha.50' },
   },
   '@claude-flow/integration': {
@@ -43,7 +43,7 @@ const BREAKING_CHANGES: Record<string, Record<string, string[]>> = {
       'Agent spawning now requires type parameter',
     ],
   },
-  '@claude-flow/embeddings': {
+  '@claude-flow/memory/embeddings': {
     '3.0.0': [
       'Switched from better-sqlite3 to sql.js',
       'New initialization required with initEmbeddings()',

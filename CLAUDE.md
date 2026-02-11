@@ -27,15 +27,16 @@
 - TDD London School (mock-first) for new code
 - Input validation at system boundaries
 
-### Key Packages
+### Key Packages (6 consolidated)
 
 | Package | Path | Purpose |
 |---------|------|---------|
+| `@claude-flow/core` | `v3/@claude-flow/core/` | Shared types, security, auth, providers, AI defence |
 | `@claude-flow/cli` | `v3/@claude-flow/cli/` | CLI entry point |
-| `@claude-flow/hooks` | `v3/@claude-flow/hooks/` | Lifecycle hooks + workers |
-| `@claude-flow/memory` | `v3/@claude-flow/memory/` | AgentDB + HNSW search |
-| `@claude-flow/security` | `v3/@claude-flow/security/` | Input validation |
-| `@claude-flow/guidance` | `v3/@claude-flow/guidance/` | Governance control plane |
+| `@claude-flow/agents` | `v3/@claude-flow/agents/` | Swarm coordination, patterns, lifecycle hooks |
+| `@claude-flow/memory` | `v3/@claude-flow/memory/` | AgentDB + HNSW search + embeddings |
+| `@claude-flow/integrations` | `v3/@claude-flow/integrations/` | Codex, MCP server, browser, deployment |
+| `@claude-flow/plugins` | `v3/@claude-flow/plugins/` | Plugin SDK, guidance, testing framework |
 
 ## Agent Types
 

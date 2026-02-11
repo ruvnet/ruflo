@@ -21,7 +21,7 @@ let realEmbeddings: { embed: (text: string) => Promise<number[]> } | null = null
 let embeddingServiceName: string = 'none';
 try {
   // Dynamic import to avoid hard dependency
-  const embeddingsModule = await import('@claude-flow/embeddings');
+  const embeddingsModule = await import('@claude-flow/memory/embeddings');
   if (embeddingsModule.createEmbeddingService) {
     // Try to create agentic-flow service (fastest), fall back to mock
     try {

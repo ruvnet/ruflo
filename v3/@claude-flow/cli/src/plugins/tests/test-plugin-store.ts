@@ -204,7 +204,7 @@ async function runTests(): Promise<void> {
       );
 
       // Similar plugins
-      const similar = findSimilarPlugins(registry, '@claude-flow/patterns', 3);
+      const similar = findSimilarPlugins(registry, '@claude-flow/agents/patterns', 3);
       logTest(
         'Similar plugins',
         similar.length >= 0,

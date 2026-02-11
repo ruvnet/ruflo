@@ -42,7 +42,7 @@ async function initCodexAction(
     // Try multiple resolution strategies for the @claude-flow/codex package
     const resolutionStrategies = [
       // Strategy 1: Direct import (works if installed as CLI dependency)
-      async () => (await import('@claude-flow/codex')).CodexInitializer,
+      async () => (await import('@claude-flow/integrations/codex')).CodexInitializer,
       // Strategy 2: Project node_modules (works if installed in user's project)
       async () => {
         const projectPath = path.join(ctx.cwd, 'node_modules', '@claude-flow', 'codex', 'dist', 'index.js');
@@ -148,7 +148,7 @@ async function initCodexAction(
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Handle module not found error gracefully
-    if (errorMessage.includes('Cannot find module') || errorMessage.includes('@claude-flow/codex')) {
+    if (errorMessage.includes('Cannot find module') || errorMessage.includes('@claude-flow/integrations/codex')) {
       output.printError('The @claude-flow/codex package is not installed.');
       output.printInfo('Install it with: npm install @claude-flow/codex');
       output.writeln();
