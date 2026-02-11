@@ -6,7 +6,7 @@
  * - 50+ MCP tools for browser automation
  * - AI-optimized snapshots with element refs (@e1, @e2)
  * - Multi-session support for swarm coordination
- * - Trajectory tracking for ReasoningBank/SONA learning
+ * - Trajectory tracking for ReasoningBank/pattern learning
  * - Integration with agentic-flow optimizations
  *
  * @example

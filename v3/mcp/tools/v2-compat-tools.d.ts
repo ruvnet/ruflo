@@ -67,7 +67,7 @@ export declare const memoryUsageTool: MCPTool;
  */
 export declare const neuralStatusTool: MCPTool;
 /**
- * neural_train - V2 compatible neural training
+ * neural_train - V2 compatible pattern training
  */
 export declare const neuralTrainTool: MCPTool;
 /**

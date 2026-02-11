@@ -200,7 +200,7 @@ function hooksSystem(): string {
 | Hook | Description |
 |------|-------------|
 | \`pre-task\` / \`post-task\` | Task lifecycle with learning |
-| \`pre-edit\` / \`post-edit\` | File editing with neural training |
+| \`pre-edit\` / \`post-edit\` | File editing with pattern training |
 | \`session-start\` / \`session-end\` | Session state persistence |
 | \`route\` | Route task to optimal agent |
 | \`intelligence\` | RuVector intelligence system |
@@ -318,7 +318,7 @@ function performanceSection(): string {
 - Always run benchmarks before and after performance changes
 - Always profile before optimizing — never guess at bottlenecks
 - Prefer algorithmic improvements over micro-optimizations
-- Keep HNSW search within 150x-12,500x faster target
+- Keep HNSW search within optimized target
 - Keep memory reduction within 50-75% target with quantization
 
 ### Performance Tooling
@@ -337,10 +337,10 @@ npx @claude-flow/cli@latest performance metrics --format table
 function intelligenceSystem(): string {
   return `## Intelligence System (RuVector)
 
-- **SONA**: Self-Optimizing Neural Architecture (<0.05ms adaptation)
-- **HNSW**: 150x-12,500x faster pattern search
+- **Pattern**: Self-Optimizing Pattern Architecture (pattern caching)
+- **HNSW**: optimized pattern search
 - **EWC++**: Elastic Weight Consolidation (prevents forgetting)
-- **Flash Attention**: 2.49x-7.47x speedup
+- **Flash Attention**: CPU-optimized
 
 The 4-step intelligence pipeline:
 1. **RETRIEVE** - Fetch relevant patterns via HNSW

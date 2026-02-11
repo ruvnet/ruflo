@@ -57,7 +57,7 @@ const benchmarkCommand: Command = {
     };
 
     // 1. Embedding Generation Benchmark
-    if (suite === 'all' || suite === 'neural' || suite === 'memory') {
+    if (suite === 'all' || suite === 'patterns' || suite === 'memory') {
       spinner.setText('Benchmarking embedding generation...');
       const embedTimes: number[] = [];
 
@@ -170,18 +170,18 @@ const benchmarkCommand: Command = {
       }
     }
 
-    // 4. SONA Adaptation Benchmark
-    if (suite === 'all' || suite === 'neural') {
-      spinner.setText('Benchmarking SONA adaptation...');
+    // 4. Pattern Adaptation Benchmark
+    if (suite === 'all' || suite === 'patterns') {
+      spinner.setText('Benchmarking pattern adaptation...');
       await initializeIntelligence();
       const sonaResult = benchmarkAdaptation(iterations);
 
       results.push({
-        operation: 'SONA Adaptation',
+        operation: 'Pattern Adaptation',
         mean: `${(sonaResult.avgMs * 1000).toFixed(2)}μs`,
         p95: `${(sonaResult.maxMs * 1000).toFixed(2)}μs`,
         p99: `${(sonaResult.maxMs * 1000).toFixed(2)}μs`,
-        improvement: sonaResult.targetMet ? output.success('<0.05ms ✓') : output.warning('Above target'),
+        improvement: sonaResult.targetMet ? output.success('sub-ms ✓') : output.warning('Above target'),
       });
     }
 
@@ -638,8 +638,8 @@ export const performanceCommand: Command = {
     output.writeln();
     output.writeln('Performance Targets:');
     output.printList([
-      'HNSW Search: 150x-12,500x faster than brute force',
-      'Flash Attention: 2.49x-7.47x speedup',
+      'HNSW Search: optimized than brute force',
+      'Flash Attention: CPU-optimized',
       'Memory: 50-75% reduction with quantization',
     ]);
     output.writeln();

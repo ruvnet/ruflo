@@ -1,15 +1,15 @@
 /**
  * RuVector Training Service
- * Real WASM-accelerated neural training using @ruvector packages
+ * Real WASM-accelerated pattern training using @ruvector packages
  *
  * Features:
  * - MicroLoRA: <1µs adaptation with rank-2 LoRA (2.3M ops/s)
- * - SONA: Self-Optimizing Neural Architecture (624k learn/s, 60k search/s)
- * - Flash Attention: 2.49x-7.47x speedup (9k ops/s)
+ * - Pattern: Self-Optimizing Pattern Architecture (624k learn/s, 60k search/s)
+ * - Flash Attention: CPU-optimized (9k ops/s)
  * - Trajectory Buffer: Learning from success/failure
  * - Contrastive Learning: InfoNCE loss
  *
- * Backward Compatible: All v1 APIs preserved, SONA adds new capabilities
+ * Backward Compatible: All v1 APIs preserved, Pattern adds new capabilities
  *
  * Created with ❤️ by ruv.io
  */
@@ -31,7 +31,7 @@ import type {
   BenchmarkResult,
 } from '@ruvector/attention';
 
-// SONA Engine type (from @ruvector/sona)
+// Pattern Engine type (from @ruvector/sona)
 interface SonaEngineInstance {
   forceLearn(embedding: Float32Array, reward: number): void;
   findPatterns(embedding: number[], k: number): unknown[];
@@ -54,7 +54,7 @@ let contrastiveLoss: InfoNceLoss | null = null;
 let curriculum: CurriculumScheduler | null = null;
 let hardMiner: HardNegativeMiner | null = null;
 
-// SONA engine (optional enhancement)
+// Pattern engine (optional enhancement)
 let sonaEngine: SonaEngineInstance | null = null;
 let sonaAvailable = false;
 
@@ -76,9 +76,9 @@ export interface TrainingConfig {
   useHyperbolic?: boolean;
   totalSteps?: number;    // For curriculum
   warmupSteps?: number;
-  // SONA options (v2 enhancement)
-  useSona?: boolean;      // Enable SONA self-optimizing neural architecture
-  sonaRank?: number;      // SONA LoRA rank (default: 4)
+  // Pattern options (v2 enhancement)
+  useSona?: boolean;      // Enable Pattern self-optimizing neural architecture
+  sonaRank?: number;      // Pattern LoRA rank (default: 4)
 }
 
 export interface TrainingResult {
@@ -179,7 +179,7 @@ export async function initializeTraining(config: TrainingConfig = {}): Promise<{
       // Mining not available, continue without it
     }
 
-    // Initialize SONA (optional, backward compatible)
+    // Initialize Pattern (optional, backward compatible)
     if (config.useSona !== false) {
       try {
         const sona = await import('@ruvector/sona');
@@ -188,13 +188,13 @@ export async function initializeTraining(config: TrainingConfig = {}): Promise<{
         // @ts-expect-error - SonaEngine accepts 4 positional args but types say 1
         sonaEngine = new sona.SonaEngine(dim, sonaRank, alpha, lr) as SonaEngineInstance;
         sonaAvailable = true;
-        features.push(`SONA (${dim}-dim, rank-${sonaRank}, 624k learn/s)`);
+        features.push(`Pattern (${dim}-dim, rank-${sonaRank}, 624k learn/s)`);
       } catch (sonaError) {
-        // SONA not available, continue without it (backward compatible)
+        // Pattern not available, continue without it (backward compatible)
         sonaAvailable = false;
         // Only log if explicitly requested
         if (config.useSona === true) {
-          console.warn('SONA requested but not available:', sonaError);
+          console.warn('Pattern requested but not available:', sonaError);
         }
       }
     }
@@ -353,7 +353,7 @@ export function getTrajectoryStats(): {
 }
 
 /**
- * Compute attention with Flash Attention (2.49x-7.47x faster)
+ * Compute attention with Flash Attention (CPU-optimized faster)
  */
 export function computeFlashAttention(
   query: Float32Array,
@@ -467,18 +467,18 @@ export async function benchmarkTraining(
 }
 
 // ============================================
-// SONA Functions (v2 enhancement, optional)
+// Pattern Functions (v2 enhancement, optional)
 // ============================================
 
 /**
- * Check if SONA is available
+ * Check if Pattern is available
  */
 export function isSonaAvailable(): boolean {
   return sonaAvailable && sonaEngine !== null;
 }
 
 /**
- * Force-learn a pattern with SONA (1.6μs, 624k ops/s)
+ * Force-learn a pattern with Pattern (1.6μs, 624k ops/s)
  * This is a one-shot learning mechanism for immediate pattern storage
  */
 export function sonaForceLearn(
@@ -486,7 +486,7 @@ export function sonaForceLearn(
   reward: number
 ): void {
   if (!sonaEngine) {
-    throw new Error('SONA not initialized. Call initializeTraining with useSona: true');
+    throw new Error('Pattern not initialized. Call initializeTraining with useSona: true');
   }
 
   sonaEngine.forceLearn(embedding, reward);
@@ -494,7 +494,7 @@ export function sonaForceLearn(
 }
 
 /**
- * Search for similar patterns with SONA (16.7μs, 60k searches/s)
+ * Search for similar patterns with Pattern (16.7μs, 60k searches/s)
  * Returns the k most similar patterns from the pattern bank
  */
 export function sonaFindPatterns(
@@ -502,29 +502,29 @@ export function sonaFindPatterns(
   k: number = 5
 ): unknown[] {
   if (!sonaEngine) {
-    throw new Error('SONA not initialized. Call initializeTraining with useSona: true');
+    throw new Error('Pattern not initialized. Call initializeTraining with useSona: true');
   }
 
-  // SONA requires Array, not Float32Array
+  // Pattern requires Array, not Float32Array
   const embeddingArray = Array.from(embedding);
   totalSonaSearches++;
   return sonaEngine.findPatterns(embeddingArray, k);
 }
 
 /**
- * Process SONA background tasks (0.13μs, 7.5M ticks/s)
+ * Process Pattern background tasks (0.13μs, 7.5M ticks/s)
  * Call periodically to process background learning and consolidation
  */
 export function sonaTick(): void {
   if (!sonaEngine) {
-    return; // Silent no-op if SONA not available
+    return; // Silent no-op if Pattern not available
   }
 
   sonaEngine.tick();
 }
 
 /**
- * Get SONA statistics
+ * Get Pattern statistics
  */
 export function getSonaStats(): {
   available: boolean;
@@ -565,7 +565,7 @@ export function getSonaStats(): {
 }
 
 /**
- * Enable/disable SONA learning
+ * Enable/disable Pattern learning
  */
 export function setSonaEnabled(enabled: boolean): void {
   if (!sonaEngine) {
@@ -576,7 +576,7 @@ export function setSonaEnabled(enabled: boolean): void {
 }
 
 /**
- * Flush SONA buffers (persist any pending patterns)
+ * Flush Pattern buffers (persist any pending patterns)
  */
 export function sonaFlush(): void {
   if (!sonaEngine) {
@@ -633,7 +633,7 @@ export function getTrainingStats(): {
     stats.trajectoryStats = getTrajectoryStats();
   }
 
-  // Include SONA stats if available
+  // Include Pattern stats if available
   if (sonaAvailable) {
     stats.sonaStats = getSonaStats();
   }
@@ -653,7 +653,7 @@ export function resetTraining(): void {
   if (scopedLoRA) scopedLoRA.reset_all();
   if (trajectoryBuffer) trajectoryBuffer.reset();
 
-  // Reset SONA stats (engine doesn't have reset, just flush)
+  // Reset Pattern stats (engine doesn't have reset, just flush)
   if (sonaEngine) {
     sonaEngine.flush();
   }
@@ -702,7 +702,7 @@ export function cleanup(): void {
     trajectoryBuffer = null;
   }
 
-  // Cleanup SONA
+  // Cleanup Pattern
   if (sonaEngine) {
     sonaEngine.flush();
     sonaEngine = null;

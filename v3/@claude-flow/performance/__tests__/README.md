@@ -56,7 +56,7 @@ Tests for `FlashAttentionOptimizer` class and related functions.
 #### Performance Validation (3 tests)
 - Speedup improvement demonstration
 - Operations per second tracking
-- V3 target validation (2.49x-7.47x)
+- V3 target validation (CPU-optimized)
 
 #### Edge Cases (4 tests)
 - Small dimensions (32D)

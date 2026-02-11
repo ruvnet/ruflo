@@ -612,7 +612,7 @@ export class SpecializedWorker extends WorkerBase {
       testing: ['test', 'spec', 'coverage', 'unit', 'integration', 'e2e'],
       documentation: ['document', 'readme', 'api-doc', 'comment', 'guide'],
       architecture: ['architecture', 'design', 'pattern', 'structure', 'diagram'],
-      'machine-learning': ['ml', 'model', 'training', 'neural', 'ai', 'tensorflow', 'pytorch'],
+      'machine-learning': ['ml', 'model', 'training', 'patterns', 'ai', 'tensorflow', 'pytorch'],
       'data-engineering': ['etl', 'pipeline', 'data', 'warehouse', 'spark', 'kafka'],
       mobile: ['mobile', 'ios', 'android', 'react-native', 'flutter', 'app'],
       infrastructure: ['infrastructure', 'cloud', 'aws', 'gcp', 'azure', 'network'],

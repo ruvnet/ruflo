@@ -324,7 +324,7 @@ npx @claude-flow/cli mcp tools
 | \`memory_store\` | Store in AgentDB | \`memory_store({key: "pattern", value: "..."})\` |
 | \`memory_search\` | Semantic search | \`memory_search({query: "auth patterns"})\` |
 | \`task_orchestrate\` | Task coordination | \`task_orchestrate({task: "implement feature"})\` |
-| \`neural_train\` | Train neural patterns | \`neural_train({iterations: 10})\` |
+| \`neural_train\` | Train patterns | \`neural_train({iterations: 10})\` |
 | \`benchmark_run\` | Performance benchmarks | \`benchmark_run({type: "all"})\` |
 
 ## Hooks System
@@ -357,7 +357,7 @@ Claude Flow uses hooks for lifecycle automation:
 |------|---------|
 | \`route\` | Route task to appropriate agents |
 | \`explain\` | Generate explanations |
-| \`pretrain\` | Pre-train neural patterns |
+| \`pretrain\` | Pre-train patterns |
 | \`build-agents\` | Build specialized agents |
 | \`transfer\` | Transfer learning between domains |
 
@@ -410,10 +410,10 @@ npx @claude-flow/cli hooks worker status
 
 ## Intelligence System
 
-The RuVector Intelligence System provides neural learning:
+The RuVector Intelligence System provides pattern learning:
 
 ### Components
-- **SONA**: Self-Optimizing Neural Architecture (<0.05ms adaptation)
+- **SONA**: Self-Optimizing Pattern Architecture (<0.05ms adaptation)
 - **MoE**: Mixture of Experts for specialized routing
 - **HNSW**: Hierarchical Navigable Small World for fast search
 - **EWC++**: Elastic Weight Consolidation (prevents forgetting)

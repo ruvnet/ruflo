@@ -178,7 +178,7 @@ export interface RuntimeConfig {
   memoryBackend: 'memory' | 'sqlite' | 'agentdb' | 'hybrid';
   /** Enable HNSW indexing */
   enableHNSW: boolean;
-  /** Enable neural learning */
+  /** Enable pattern learning */
   enableNeural: boolean;
   /** CLAUDE.md template variant */
   claudeMdTemplate?: ClaudeMdTemplate;
@@ -203,7 +203,7 @@ export interface EmbeddingsConfig {
   predownload: boolean;
   /** LRU cache size (number of embeddings) */
   cacheSize: number;
-  /** Enable neural substrate integration */
+  /** Enable pattern substrate integration */
   neuralSubstrate: boolean;
 }
 

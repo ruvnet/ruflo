@@ -192,7 +192,7 @@ async function testOllama() {
 }
 
 async function testRuVector() {
-  console.log('\n🔷 Testing RuVector (SONA + Local Qwen)...');
+  console.log('\n🔷 Testing RuVector (Pattern + Local Qwen)...');
 
   const provider = new RuVectorProvider({
     config: {
@@ -217,12 +217,12 @@ async function testRuVector() {
     console.log('✅ RuVector Response:', response.content);
     console.log('   Tokens:', response.usage);
 
-    // Show SONA metrics
+    // Show Pattern metrics
     try {
       const sonaMetrics = await provider.getSonaMetrics();
-      console.log('   SONA Metrics:', sonaMetrics);
+      console.log('   Pattern Metrics:', sonaMetrics);
     } catch {
-      console.log('   SONA: Not available (optional)');
+      console.log('   Pattern: Not available (optional)');
     }
 
     provider.destroy();

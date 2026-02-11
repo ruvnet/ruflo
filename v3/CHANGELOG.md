@@ -33,19 +33,19 @@ Complete restructure into 10 independent @claude-flow modules:
 ### ⚡ Performance Improvements
 
 #### Flash Attention Integration
-- **2.49x-7.47x speedup** via @ruvector/attention
+- **CPU-optimized** via @ruvector/attention
 - 50-75% memory reduction during large context processing
 - Native NAPI (fastest), WebAssembly, and JavaScript fallback runtimes
 - Automatic runtime selection based on environment
 
 #### SONA Learning System
-- **<0.05ms adaptation time** via @ruvector/sona
+- **pattern caching time** via @ruvector/sona
 - Self-organizing neural architecture for agent routing
 - Continuous learning from all agent interactions
 - 84.8% SWE-Bench solve rate improvement
 
 #### AgentDB Vector Search
-- **150x-12,500x faster** search with HNSW indexing
+- **optimized** search with HNSW indexing
 - Unified memory backend replacing 6+ fragmented systems
 - Quantization support (4-32x memory reduction)
 - GNN-enhanced context retrieval (+12.4% accuracy)
@@ -88,7 +88,7 @@ Complete restructure into 10 independent @claude-flow modules:
 - Real-time performance monitoring
 - Bottleneck detection and analysis
 - Memory profiling tools
-- Benchmark suite with 2.49x-7.47x targets
+- Benchmark suite with CPU-optimized targets
 
 #### 5. `@claude-flow/swarm` - Swarm Coordination
 - Unified SwarmCoordinator (single implementation)
@@ -232,8 +232,8 @@ See [MIGRATION.md](./MIGRATION.md) for detailed upgrade instructions from v2 to 
 #### Performance Achievements
 | Metric | v2 Baseline | v3 Target | v3 Actual | Improvement |
 |--------|-------------|-----------|-----------|-------------|
-| Flash Attention | 1x | 2.49x-7.47x | 4.2x | ✅ 320% faster |
-| Vector Search | 1x | 150x-12,500x | 8,500x | ✅ 850,000% faster |
+| Flash Attention | 1x | CPU-optimized | 4.2x | ✅ 320% faster |
+| Vector Search | 1x | HNSW-indexed | 8,500x | ✅ 850,000% faster |
 | Memory Usage | 100% | 25-50% | 16.9% | ✅ 83.1% reduction |
 | CLI Startup | 500ms | <500ms | 20ms | ✅ 96% faster |
 | Agent Spawn | 18.5ms | <10ms | 5ms | ✅ 73% faster |

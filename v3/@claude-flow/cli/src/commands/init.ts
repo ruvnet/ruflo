@@ -571,7 +571,7 @@ const wizardCommand: Command = {
 
       // Neural learning
       const enableNeural = await confirm({
-        message: 'Enable neural pattern learning?',
+        message: 'Enable pattern learning?',
         default: options.runtime.enableNeural,
       });
       options.runtime.enableNeural = enableNeural;
@@ -643,7 +643,7 @@ const wizardCommand: Command = {
           { setting: 'Max Agents', value: String(options.runtime.maxAgents) },
           { setting: 'Memory Backend', value: options.runtime.memoryBackend },
           { setting: 'HNSW Indexing', value: options.runtime.enableHNSW ? 'Enabled' : 'Disabled' },
-          { setting: 'Neural Learning', value: options.runtime.enableNeural ? 'Enabled' : 'Disabled' },
+          { setting: 'Pattern Learning', value: options.runtime.enableNeural ? 'Enabled' : 'Disabled' },
           { setting: 'Embeddings', value: enableEmbeddings ? `${embeddingModel} (hyperbolic)` : 'Disabled' },
           { setting: 'Skills', value: `${result.summary.skillsCount} installed` },
           { setting: 'Commands', value: `${result.summary.commandsCount} installed` },

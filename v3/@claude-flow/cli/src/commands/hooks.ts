@@ -1878,10 +1878,10 @@ const sessionRestoreCommand: Command = {
   }
 };
 
-// Intelligence subcommand (SONA, MoE, HNSW)
+// Intelligence subcommand (Pattern, MoE, HNSW)
 const intelligenceCommand: Command = {
   name: 'intelligence',
-  description: 'RuVector intelligence system (SONA, MoE, HNSW 150x faster)',
+  description: 'RuVector intelligence system (Pattern, MoE, HNSW 150x faster)',
   options: [
     {
       name: 'mode',
@@ -1893,7 +1893,7 @@ const intelligenceCommand: Command = {
     },
     {
       name: 'enable-sona',
-      description: 'Enable SONA sub-0.05ms learning',
+      description: 'Enable Pattern sub-0.05ms learning',
       type: 'boolean',
       default: true
     },
@@ -2062,9 +2062,9 @@ const intelligenceCommand: Command = {
         'Intelligence Status'
       );
 
-      // SONA Component
+      // Pattern Component
       output.writeln();
-      output.writeln(output.bold('🧠 SONA (Sub-0.05ms Learning)'));
+      output.writeln(output.bold('🧠 Pattern (Sub-0.05ms Learning)'));
       if (result.components.sona.enabled) {
         output.printTable({
           columns: [
@@ -4302,7 +4302,7 @@ const taskCompletedCommand: Command = {
     {
       name: 'train-patterns',
       short: 'p',
-      description: 'Train neural patterns from successful task',
+      description: 'Train patterns from successful task',
       type: 'boolean',
       default: true
     },
@@ -4519,7 +4519,7 @@ export const hooksCommand: Command = {
     output.writeln(output.bold('V3 Features:'));
     output.printList([
       '🧠 ReasoningBank adaptive learning',
-      '⚡ Flash Attention (2.49x-7.47x speedup)',
+      '⚡ Flash Attention (CPU-optimized)',
       '🔍 AgentDB integration (150x faster search)',
       '📊 84.8% SWE-Bench solve rate',
       '🎯 32.3% token reduction',

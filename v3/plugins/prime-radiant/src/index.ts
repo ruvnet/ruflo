@@ -72,7 +72,7 @@ export type {
   CausalQuery,
   TopologyResult,
   BettiInterpretation,
-  ConsensusResult,
+  VotingResult,
   ConsensusParams,
   MorphismResult,
   FunctorContext,
@@ -178,8 +178,8 @@ export {
 
   // Consensus schemas
   AgentStateSchema,
-  ConsensusVerifyInputSchema,
-  ConsensusResultSchema,
+  VotingVerifyInputSchema,
+  VotingResultSchema,
 
   // Topology schemas
   PointCloudSchema,
@@ -223,7 +223,7 @@ export type {
   CoherenceCheckInput,
   SpectralAnalyzeInput,
   CausalInferInput,
-  ConsensusVerifyInput,
+  VotingVerifyInput,
   QuantumTopologyInput,
   MemoryGateInput,
   MemoryGateResult,
@@ -314,7 +314,7 @@ export const pluginMetadata = {
     'pr_coherence_check',
     'pr_spectral_analyze',
     'pr_causal_infer',
-    'pr_consensus_verify',
+    'pr_voting_verify',
     'pr_quantum_topology',
     'pr_memory_gate',
   ],
@@ -341,7 +341,7 @@ export {
   coherenceCheckTool,
   spectralAnalyzeTool,
   causalInferTool,
-  consensusVerifyTool,
+  votingVerifyTool,
   quantumTopologyTool,
   memoryGateTool,
   getTool,

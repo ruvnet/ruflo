@@ -1,6 +1,6 @@
 /**
  * V3 CLI Hive Mind Command
- * Queen-led consensus-based multi-agent coordination
+ * Queen-led voting-based multi-agent coordination
  *
  * Updated to support --claude flag for launching interactive Claude Code sessions
  * PR: Fix #955 - Implement --claude flag for hive-mind spawn command
@@ -35,9 +35,9 @@ const TOPOLOGIES = [
 ];
 
 // Consensus strategies
-const CONSENSUS_STRATEGIES = [
+const VOTING_STRATEGIES = [
   { value: 'byzantine', label: 'Byzantine Fault Tolerant', hint: '2/3 majority, handles malicious actors' },
-  { value: 'raft', label: 'Raft', hint: 'Leader-based consensus' },
+  { value: 'raft', label: 'Raft', hint: 'Leader-based voting' },
   { value: 'gossip', label: 'Gossip', hint: 'Eventually consistent, scalable' },
   { value: 'crdt', label: 'CRDT', hint: 'Conflict-free replicated data' },
   { value: 'quorum', label: 'Quorum', hint: 'Simple majority voting' }
@@ -73,7 +73,7 @@ function generateHiveMindPrompt(
   const currentTime = new Date().toISOString();
   const workerTypes = Object.keys(workerGroups);
   const queenType = (flags.queenType as string) || 'strategic';
-  const consensusAlgorithm = (flags.consensus as string) || 'byzantine';
+  const votingAlgorithm = (flags.voting as string) || 'byzantine';
   const topology = (flags.topology as string) || 'hierarchical-mesh';
 
   return `🧠 HIVE MIND COLLECTIVE INTELLIGENCE SYSTEM
@@ -88,7 +88,7 @@ HIVE MIND CONFIGURATION:
 👑 Queen Type: ${queenType}
 🐝 Worker Count: ${workers.length}
 🔗 Topology: ${topology}
-🤝 Consensus Algorithm: ${consensusAlgorithm}
+🤝 Voting Algorithm: ${votingAlgorithm}
 ⏰ Initialized: ${currentTime}
 
 WORKER DISTRIBUTION:
@@ -97,10 +97,10 @@ ${workerTypes.map(type => `• ${type}: ${workerGroups[type].length} agents`).jo
 🔧 AVAILABLE MCP TOOLS FOR HIVE MIND COORDINATION:
 
 1️⃣ **COLLECTIVE INTELLIGENCE**
-   mcp__claude-flow__hive-mind_consensus    - Democratic decision making
+   mcp__claude-flow__hive-mind_voting    - Democratic decision making
    mcp__claude-flow__hive-mind_memory       - Share knowledge across the hive
    mcp__claude-flow__hive-mind_broadcast    - Broadcast to all workers
-   mcp__claude-flow__neural_patterns        - Neural pattern recognition
+   mcp__claude-flow__neural_patterns        - Pattern recognition
 
 2️⃣ **QUEEN COORDINATION**
    mcp__claude-flow__hive-mind_status       - Monitor swarm health
@@ -143,9 +143,9 @@ ${workerTypes.map(type => `• ${type}: ${workerGroups[type].length} agents`).jo
    - Monitor parallel execution
 
 3. **COORDINATION PHASE**
-   - Use consensus for critical decisions
+   - Use voting for critical decisions
    - Aggregate results from workers
-   - Resolve conflicts using ${consensusAlgorithm} consensus
+   - Resolve conflicts using ${votingAlgorithm} consensus
    - Share learnings across the hive
 
 4. **COMPLETION PHASE**
@@ -161,7 +161,7 @@ ${objective}
 • Use mcp__claude-flow__hive-mind_broadcast for swarm-wide announcements
 • Check worker status regularly with mcp__claude-flow__hive-mind_status
 • Store important decisions in shared memory for persistence
-• Use consensus for any decisions affecting multiple workers
+• Use voting for any decisions affecting multiple workers
 • Monitor task progress and reassign if workers are blocked
 
 🚀 BEGIN HIVE MIND COORDINATION NOW!
@@ -211,7 +211,7 @@ async function spawnClaudeCodeInstance(
       `Queen Type: ${output.highlight((flags.queenType as string) || 'strategic')}`,
       `Worker Count: ${output.highlight(String(workers.length))}`,
       `Worker Types: ${output.highlight(Object.keys(workerGroups).join(', '))}`,
-      `Consensus: ${output.highlight((flags.consensus as string) || 'byzantine')}`,
+      `Consensus: ${output.highlight((flags.voting as string) || 'byzantine')}`,
       `MCP Tools: ${output.success('Full Claude-Flow integration enabled')}`
     ]);
 
@@ -379,11 +379,11 @@ const initCommand: Command = {
       default: 'hierarchical-mesh'
     },
     {
-      name: 'consensus',
+      name: 'voting',
       short: 'c',
       description: 'Consensus strategy',
       type: 'string',
-      choices: CONSENSUS_STRATEGIES.map(s => s.value),
+      choices: VOTING_STRATEGIES.map(s => s.value),
       default: 'byzantine'
     },
     {
@@ -409,11 +409,11 @@ const initCommand: Command = {
   ],
   examples: [
     { command: 'claude-flow hive-mind init -t hierarchical-mesh', description: 'Init hierarchical mesh' },
-    { command: 'claude-flow hive-mind init -c byzantine -m 20', description: 'Init with Byzantine consensus' }
+    { command: 'claude-flow hive-mind init -c byzantine -m 20', description: 'Init with Byzantine voting' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     let topology = ctx.flags.topology as string;
-    let consensus = ctx.flags.consensus as string;
+    let consensus = ctx.flags.voting as string;
 
     if (ctx.interactive && !ctx.flags.topology) {
       topology = await select({
@@ -423,10 +423,10 @@ const initCommand: Command = {
       });
     }
 
-    if (ctx.interactive && !ctx.flags.consensus) {
+    if (ctx.interactive && !ctx.flags.voting) {
       consensus = await select({
-        message: 'Select consensus strategy:',
-        options: CONSENSUS_STRATEGIES,
+        message: 'Select voting strategy:',
+        options: VOTING_STRATEGIES,
         default: 'byzantine'
       });
     }
@@ -468,7 +468,7 @@ const initCommand: Command = {
           `Hive ID: ${result.hiveId ?? 'default'}`,
           `Queen ID: ${result.queenId ?? 'N/A'}`,
           `Topology: ${result.topology ?? config.topology}`,
-          `Consensus: ${result.consensus ?? config.consensus}`,
+          `Consensus: ${result.voting ?? config.voting}`,
           `Max Agents: ${config.maxAgents}`,
           `Memory: ${config.memoryBackend}`,
           `Status: ${output.success(result.status ?? 'initialized')}`
@@ -796,7 +796,7 @@ const statusCommand: Command = {
           `Hive ID: ${hiveId}`,
           `Status: ${formatHiveStatus(String(status))}`,
           `Topology: ${result.topology ?? 'mesh'}`,
-          `Consensus: ${result.consensus ?? 'byzantine'}`,
+          `Consensus: ${result.voting ?? 'byzantine'}`,
           '',
           `Queen: ${queenId}`,
           `  Status: ${formatAgentStatus(queenStatus)}`,
@@ -865,7 +865,7 @@ const statusCommand: Command = {
           `Overall: ${formatHealth(health.overall ?? 'healthy')}`,
           `Queen: ${formatHealth(health.queen ?? 'healthy')}`,
           `Workers: ${formatHealth(health.workers ?? 'healthy')}`,
-          `Consensus: ${formatHealth(health.consensus ?? 'healthy')}`,
+          `Consensus: ${formatHealth(health.voting ?? 'healthy')}`,
           `Memory: ${formatHealth(health.memory ?? 'healthy')}`
         ]);
       }
@@ -1113,7 +1113,7 @@ const leaveCommand: Command = {
 
 // Consensus subcommand
 const consensusCommand: Command = {
-  name: 'consensus',
+  name: 'voting',
   description: 'Manage consensus proposals and voting',
   options: [
     { name: 'action', short: 'a', description: 'Consensus action', type: 'string', choices: ['propose', 'vote', 'status', 'list'], default: 'list' },
@@ -1126,7 +1126,7 @@ const consensusCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const action = ctx.flags.action as string || 'list';
     try {
-      const result = await callMCPTool<Record<string, unknown>>('hive-mind_consensus', { action, proposalId: ctx.flags.proposalId, type: ctx.flags.type, value: ctx.flags.value, vote: ctx.flags.vote === 'yes', voterId: ctx.flags.voterId });
+      const result = await callMCPTool<Record<string, unknown>>('hive-mind_voting', { action, proposalId: ctx.flags.proposalId, type: ctx.flags.type, value: ctx.flags.value, vote: ctx.flags.vote === 'yes', voterId: ctx.flags.voterId });
       if (ctx.flags.format === 'json') { output.printJson(result); return { success: true, data: result }; }
       if (action === 'list') {
         output.writeln(output.bold('\nPending Proposals'));
@@ -1272,7 +1272,7 @@ const shutdownCommand: Command = {
 export const hiveMindCommand: Command = {
   name: 'hive-mind',
   aliases: ['hive'],
-  description: 'Queen-led consensus-based multi-agent coordination',
+  description: 'Queen-led voting-based multi-agent coordination',
   subcommands: [initCommand, spawnCommand, statusCommand, taskCommand, joinCommand, leaveCommand, consensusCommand, broadcastCommand, memorySubCommand, optimizeMemoryCommand, shutdownCommand],
   options: [],
   examples: [
@@ -1295,7 +1295,7 @@ export const hiveMindCommand: Command = {
       `${output.highlight('task')}            - Submit task to hive`,
       `${output.highlight('join')}            - Join an agent to the hive`,
       `${output.highlight('leave')}           - Remove an agent from the hive`,
-      `${output.highlight('consensus')}       - Manage consensus proposals`,
+      `${output.highlight('voting')}       - Manage consensus proposals`,
       `${output.highlight('broadcast')}       - Broadcast message to workers`,
       `${output.highlight('memory')}          - Access shared memory`,
       `${output.highlight('optimize-memory')} - Optimize patterns and memory`,

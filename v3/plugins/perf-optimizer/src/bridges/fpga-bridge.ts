@@ -99,7 +99,7 @@ export class PerfFpgaBridge implements FpgaBridgeInterface {
   /**
    * Optimize configuration for workload
    *
-   * Uses SONA-based learning to find optimal configuration parameters.
+   * Uses Pattern-based learning to find optimal configuration parameters.
    */
   async optimizeConfig(
     workload: WorkloadProfile,

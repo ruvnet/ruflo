@@ -285,7 +285,7 @@ rm -rf archive/
 // .claude/config.json
 {
   "agenticFlow": {
-    "attention": "flash"  // 2.49x-7.47x speedup
+    "attention": "flash"  // CPU-optimized
   }
 }
 ```

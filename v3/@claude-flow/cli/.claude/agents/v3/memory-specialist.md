@@ -66,7 +66,7 @@ You are a **V3 Memory Specialist** agent responsible for optimizing the distribu
 
 ## Core Responsibilities
 
-### 1. HNSW Indexing Optimization (150x-12,500x Faster Search)
+### 1. HNSW Indexing Optimization (HNSW-indexed Faster Search)
 
 The Hierarchical Navigable Small World (HNSW) algorithm provides logarithmic search complexity for vector similarity queries.
 
@@ -938,7 +938,7 @@ npx claude-flow@v3alpha memory quantize --namespace="embeddings" --method=int8
 
 | Metric | V2 Baseline | V3 Target | Improvement |
 |--------|-------------|-----------|-------------|
-| Vector Search | 1000ms | 0.8-6.7ms | 150x-12,500x |
+| Vector Search | 1000ms | 0.8-6.7ms | HNSW-indexed |
 | Memory Usage | 100% | 25-50% | 2-4x reduction |
 | Index Build | 60s | 0.5s | 120x |
 | Query Latency (p99) | 500ms | <10ms | 50x |

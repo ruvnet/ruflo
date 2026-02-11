@@ -1,10 +1,10 @@
 /**
  * V3 Intelligence Module
- * Optimized SONA (Self-Optimizing Neural Architecture) and ReasoningBank
+ * Optimized Pattern (Self-Optimizing Pattern Architecture) and ReasoningBank
  * for adaptive learning and pattern recognition
  *
  * Performance targets:
- * - Signal recording: <0.05ms (achieved: ~0.01ms)
+ * - Signal recording: sub-ms (achieved: ~0.01ms)
  * - Pattern search: O(log n) with HNSW
  * - Memory efficient circular buffers
  *
@@ -20,14 +20,14 @@ import { dirname, join } from 'node:path';
 // ============================================================================
 
 /**
- * Get the data directory for neural pattern persistence
+ * Get the data directory for pattern persistence
  * Uses .claude-flow/neural in the current working directory,
  * falling back to home directory
  */
 function getDataDir(): string {
   const cwd = process.cwd();
-  const localDir = join(cwd, '.claude-flow', 'neural');
-  const homeDir = join(homedir(), '.claude-flow', 'neural');
+  const localDir = join(cwd, '.claude-flow', 'patterns');
+  const homeDir = join(homedir(), '.claude-flow', 'patterns');
 
   // Prefer local directory if .claude-flow exists
   if (existsSync(join(cwd, '.claude-flow'))) {
@@ -130,7 +130,7 @@ interface StoredPattern {
 // Default Configuration
 // ============================================================================
 
-const DEFAULT_SONA_CONFIG: SonaConfig = {
+const DEFAULT_Pattern_CONFIG: SonaConfig = {
   instantLoopEnabled: true,
   backgroundLoopEnabled: false,
   loraLearningRate: 0.001,
@@ -143,13 +143,13 @@ const DEFAULT_SONA_CONFIG: SonaConfig = {
 };
 
 // ============================================================================
-// Optimized Local SONA Implementation
+// Optimized Local Pattern Implementation
 // ============================================================================
 
 /**
- * Lightweight SONA Coordinator
+ * Lightweight Pattern Coordinator
  * Uses circular buffer for O(1) signal recording
- * Achieves <0.05ms per operation
+ * Achieves sub-ms per operation
  */
 class LocalSonaCoordinator {
   private config: SonaConfig;
@@ -167,7 +167,7 @@ class LocalSonaCoordinator {
 
   /**
    * Record a signal - O(1) operation
-   * Target: <0.05ms
+   * Target: sub-ms
    */
   recordSignal(signal: Signal): void {
     const start = performance.now();
@@ -514,7 +514,7 @@ function savePersistedStats(): void {
 // ============================================================================
 
 /**
- * Initialize the intelligence system (SONA + ReasoningBank)
+ * Initialize the intelligence system (Pattern + ReasoningBank)
  * Uses optimized local implementations
  */
 export async function initializeIntelligence(config?: Partial<SonaConfig>): Promise<{
@@ -534,11 +534,11 @@ export async function initializeIntelligence(config?: Partial<SonaConfig>): Prom
   try {
     // Merge config with defaults
     const finalConfig: SonaConfig = {
-      ...DEFAULT_SONA_CONFIG,
+      ...DEFAULT_Pattern_CONFIG,
       ...config
     };
 
-    // Initialize local SONA (optimized for <0.05ms)
+    // Initialize local Pattern (optimized for sub-ms)
     sonaCoordinator = new LocalSonaCoordinator(finalConfig);
 
     // Initialize local ReasoningBank with persistence enabled
@@ -569,7 +569,7 @@ export async function initializeIntelligence(config?: Partial<SonaConfig>): Prom
 
 /**
  * Record a trajectory step for learning
- * Performance: <0.05ms without embedding generation
+ * Performance: sub-ms without embedding generation
  */
 export async function recordStep(step: TrajectoryStep): Promise<boolean> {
   if (!sonaCoordinator) {
@@ -586,7 +586,7 @@ export async function recordStep(step: TrajectoryStep): Promise<boolean> {
       embedding = result.embedding;
     }
 
-    // Record in SONA - <0.05ms
+    // Record in Pattern - sub-ms
     sonaCoordinator!.recordSignal({
       type: step.type,
       content: step.content,
@@ -704,7 +704,7 @@ export function getIntelligenceStats(): IntelligenceStats {
 }
 
 /**
- * Get SONA coordinator for advanced operations
+ * Get Pattern coordinator for advanced operations
  */
 export function getSonaCoordinator(): LocalSonaCoordinator | null {
   return sonaCoordinator;
@@ -731,7 +731,7 @@ export function clearIntelligence(): void {
 }
 
 /**
- * Benchmark SONA adaptation time
+ * Benchmark pattern adaptation time
  */
 export function benchmarkAdaptation(iterations: number = 1000): {
   totalMs: number;

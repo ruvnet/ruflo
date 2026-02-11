@@ -264,7 +264,7 @@ const prioritizedBacklog = issues.sort((a, b) =>
   priorityScores[b.id] - priorityScores[a.id]
 );
 
-console.log(`Prioritized ${issues.length} issues in ${processingTime}ms (2.49x-7.47x faster)`);
+console.log(`Prioritized ${issues.length} issues in ${processingTime}ms (CPU-optimized)`);
 ```
 
 ### GNN-Enhanced Duplicate Detection

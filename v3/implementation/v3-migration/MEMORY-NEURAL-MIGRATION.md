@@ -55,7 +55,7 @@ v3/@claude-flow/memory/
 |------------|---------------|-------------|
 | SQLite Backend | `sqlite-backend.ts` | SQL injection protection |
 | Memory Manager | `UnifiedMemoryService` | DDD architecture |
-| Indexer | `hnsw-index.ts` | 150x-12,500x faster |
+| Indexer | `hnsw-index.ts` | optimized |
 | Cache | `cache-manager.ts` | TTL, importance-based eviction |
 | Swarm Memory | `shareWith()/getSharedWith()` | Simplified API |
 
@@ -446,10 +446,10 @@ await sona.train(newTask);
 
 | Operation | V2 | V3 | Improvement |
 |-----------|----|----|-------------|
-| Vector Search | Brute-force O(n) | HNSW O(log n) | 150x-12,500x |
+| Vector Search | Brute-force O(n) | HNSW O(log n) | HNSW-indexed |
 | Memory Store | SQLite only | Hybrid | Optimized routing |
 | Pattern Retrieval | Via adapter | Native | ~10x faster |
-| Learning Adaptation | Manual | SONA | <0.05ms |
+| Learning Adaptation | Manual | SONA | sub-ms |
 | Memory Usage | Full vectors | Quantized | 4-32x reduction |
 
 ## Migration Checklist

@@ -1,7 +1,7 @@
 /**
- * V3 MCP SONA Tools
+ * V3 MCP Pattern Tools
  *
- * MCP tools for Self-Optimizing Neural Architecture (SONA) integration:
+ * MCP tools for Self-Optimizing Pattern Architecture (Pattern) integration:
  * - sona/trajectory/begin - Start trajectory tracking
  * - sona/trajectory/step - Record step
  * - sona/trajectory/context - Add context
@@ -11,15 +11,15 @@
  * - sona/lora/apply-micro - Apply micro-LoRA adaptation (~0.05ms)
  * - sona/lora/apply-base - Apply base-layer LoRA
  * - sona/force-learn - Force immediate learning cycle
- * - sona/stats - Get SONA statistics
+ * - sona/stats - Get Pattern statistics
  * - sona/profile/get - Get profile configuration
  * - sona/profile/list - List all profiles
- * - sona/enabled - Enable/disable SONA
+ * - sona/enabled - Enable/disable Pattern
  * - sona/benchmark - Performance benchmark
  *
  * Performance Targets:
- * - Micro-LoRA: <0.05ms latency
- * - Pattern Search: 150x-12,500x faster via HNSW
+ * - Micro-LoRA: sub-ms latency
+ * - Pattern Search: optimized via HNSW
  *
  * Implements ADR-005: MCP-First API Design
  * Implements ADR-001: agentic-flow@alpha compatibility
@@ -88,7 +88,7 @@ interface Pattern {
   lastUsed: Date;
 }
 
-interface SONAProfile {
+interface PatternProfile {
   id: string;
   name: string;
   mode: 'default' | 'fast' | 'accurate' | 'memory-efficient';
@@ -101,7 +101,7 @@ interface SONAProfile {
   };
 }
 
-interface SONAStats {
+interface PatternStats {
   enabled: boolean;
   activeProfile: string;
   trajectories: {
@@ -202,19 +202,19 @@ const profileGetSchema = z.object({
 
 const setEnabledSchema = z.object({
   enabled: z.boolean()
-    .describe('Enable or disable SONA'),
+    .describe('Enable or disable Pattern'),
 });
 
 // ============================================================================
 // State Management
 // ============================================================================
 
-class SONAState {
-  private static instance: SONAState;
+class PatternState {
+  private static instance: PatternState;
 
   trajectories: Map<string, Trajectory> = new Map();
   patterns: Map<string, Pattern> = new Map();
-  profiles: Map<string, SONAProfile> = new Map();
+  profiles: Map<string, PatternProfile> = new Map();
   enabled: boolean = true;
   activeProfileId: string = 'default';
   stats = {
@@ -233,15 +233,15 @@ class SONAState {
     this.initializeProfiles();
   }
 
-  static getInstance(): SONAState {
-    if (!SONAState.instance) {
-      SONAState.instance = new SONAState();
+  static getInstance(): PatternState {
+    if (!PatternState.instance) {
+      PatternState.instance = new PatternState();
     }
-    return SONAState.instance;
+    return PatternState.instance;
   }
 
   private initializeProfiles(): void {
-    const profiles: SONAProfile[] = [
+    const profiles: PatternProfile[] = [
       {
         id: 'default',
         name: 'Default',
@@ -302,8 +302,8 @@ class SONAState {
   }
 }
 
-function getState(): SONAState {
-  return SONAState.getInstance();
+function getState(): PatternState {
+  return PatternState.getInstance();
 }
 
 // ============================================================================
@@ -317,7 +317,7 @@ async function handleTrajectoryBegin(
   const state = getState();
 
   if (!state.enabled) {
-    throw new Error('SONA is disabled');
+    throw new Error('Pattern is disabled');
   }
 
   const trajectoryId = state.generateId('traj');
@@ -431,7 +431,7 @@ async function handleTrajectoryEnd(
   if (input.triggerLearning) {
     state.stats.learningCycles++;
     state.stats.lastLearningCycle = new Date();
-    // Learning cycle initiated via SONA neural trainer
+    // Learning cycle initiated via Pattern neural trainer
   }
 
   return {
@@ -499,7 +499,7 @@ async function handlePatternFind(
   const state = getState();
   const startTime = performance.now();
 
-  // Try agentic-flow HNSW search for 150x-12,500x speedup
+  // Try agentic-flow HNSW search for HNSW-indexed search
   const loaded = await loadAgenticFlow();
   let patterns: Array<Pattern & { similarity: number }>;
 
@@ -530,7 +530,7 @@ async function handlePatternFind(
   state.stats.patternSearches++;
   state.stats.totalSearchLatency += searchLatency;
 
-  // HNSW provides 150x-12,500x speedup over brute force
+  // HNSW provides HNSW-indexed search over brute force
   const estimatedBruteForce = searchLatency * 1000; // Estimated brute force baseline
   const speedup = estimatedBruteForce / Math.max(searchLatency, 0.01);
 
@@ -550,7 +550,7 @@ async function handlePatternFind(
  * Local pattern search fallback when agentic-flow is not available
  */
 function performLocalPatternSearch(
-  state: SONAState,
+  state: PatternState,
   input: z.infer<typeof patternFindSchema>
 ): Array<Pattern & { similarity: number }> {
   return Array.from(state.patterns.values())
@@ -586,7 +586,7 @@ async function handleMicroLoraApply(
 }> {
   const startTime = performance.now();
 
-  // Micro-LoRA application (<0.05ms target latency)
+  // Micro-LoRA application (sub-ms target latency)
   const adapterId = input.adapterId || 'micro-lora-default';
 
   // Apply LoRA weight adaptation to input
@@ -643,7 +643,7 @@ async function handleForceLearn(
   state.stats.learningCycles++;
   state.stats.lastLearningCycle = new Date();
 
-  // Learning cycle triggered via SONA neural trainer
+  // Learning cycle triggered via Pattern neural trainer
 
   return {
     triggered: true,
@@ -655,7 +655,7 @@ async function handleForceLearn(
 async function handleGetStats(
   input: Record<string, never>,
   context?: ToolContext
-): Promise<SONAStats> {
+): Promise<PatternStats> {
   const state = getState();
 
   const avgSearchLatency = state.stats.patternSearches > 0
@@ -686,7 +686,7 @@ async function handleGetStats(
       avgCycleDuration,
     },
     performance: {
-      microLoraLatency: 0.05, // Target: <0.05ms
+      microLoraLatency: 0.05, // Target: sub-ms
       hnswSpeedup: 150, // Minimum: 150x
     },
   };
@@ -695,7 +695,7 @@ async function handleGetStats(
 async function handleProfileGet(
   input: z.infer<typeof profileGetSchema>,
   context?: ToolContext
-): Promise<{ profile: SONAProfile; isActive: boolean }> {
+): Promise<{ profile: PatternProfile; isActive: boolean }> {
   const state = getState();
 
   const profileId = input.profileId || state.activeProfileId;
@@ -775,7 +775,7 @@ async function handleBenchmark(
     },
     hnswSearch: {
       avg: '0.5ms',
-      speedup: '150x-12,500x',
+      speedup: 'HNSW-indexed',
     },
     trajectoryOverhead: {
       avg: '0.1ms',
@@ -793,7 +793,7 @@ async function handleBenchmark(
 export const sonaTools: MCPTool[] = [
   {
     name: 'sona/trajectory/begin',
-    description: 'Start a new SONA trajectory for learning',
+    description: 'Start a new Pattern trajectory for learning',
     inputSchema: {
       type: 'object',
       properties: {
@@ -878,7 +878,7 @@ export const sonaTools: MCPTool[] = [
   },
   {
     name: 'sona/pattern/find',
-    description: 'Find similar patterns using HNSW (150x-12,500x faster)',
+    description: 'Find similar patterns using HNSW (optimized)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -896,7 +896,7 @@ export const sonaTools: MCPTool[] = [
   },
   {
     name: 'sona/lora/apply-micro',
-    description: 'Apply micro-LoRA adaptation (<0.05ms latency)',
+    description: 'Apply micro-LoRA adaptation (sub-ms latency)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -939,7 +939,7 @@ export const sonaTools: MCPTool[] = [
   },
   {
     name: 'sona/stats',
-    description: 'Get SONA statistics and performance metrics',
+    description: 'Get Pattern statistics and performance metrics',
     inputSchema: { type: 'object', properties: {} },
     handler: async (input, ctx) => handleGetStats({}, ctx),
     category: 'sona',
@@ -950,7 +950,7 @@ export const sonaTools: MCPTool[] = [
   },
   {
     name: 'sona/profile/get',
-    description: 'Get a SONA profile configuration',
+    description: 'Get a Pattern profile configuration',
     inputSchema: {
       type: 'object',
       properties: {
@@ -964,7 +964,7 @@ export const sonaTools: MCPTool[] = [
   },
   {
     name: 'sona/profile/list',
-    description: 'List all available SONA profiles',
+    description: 'List all available Pattern profiles',
     inputSchema: { type: 'object', properties: {} },
     handler: async (input, ctx) => handleProfileList({}, ctx),
     category: 'sona',
@@ -975,11 +975,11 @@ export const sonaTools: MCPTool[] = [
   },
   {
     name: 'sona/enabled',
-    description: 'Enable or disable SONA',
+    description: 'Enable or disable Pattern',
     inputSchema: {
       type: 'object',
       properties: {
-        enabled: { type: 'boolean', description: 'Enable or disable SONA' },
+        enabled: { type: 'boolean', description: 'Enable or disable Pattern' },
       },
       required: ['enabled'],
     },
@@ -990,7 +990,7 @@ export const sonaTools: MCPTool[] = [
   },
   {
     name: 'sona/benchmark',
-    description: 'Run SONA performance benchmarks',
+    description: 'Run Pattern performance benchmarks',
     inputSchema: { type: 'object', properties: {} },
     handler: async (input, ctx) => handleBenchmark({}, ctx),
     category: 'sona',

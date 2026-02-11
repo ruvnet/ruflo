@@ -133,7 +133,7 @@ export const CognitiveConfigSchema = z.object({
 export type CognitiveConfig = z.infer<typeof CognitiveConfigSchema>;
 
 /**
- * SONA (Self-Optimizing Neural Architecture) configuration
+ * Pattern (Self-Optimizing Pattern Architecture) configuration
  */
 export const SonaConfigSchema = z.object({
   mode: z.enum(['real-time', 'balanced', 'research', 'edge', 'batch']).default('balanced'),

@@ -5,7 +5,7 @@
  *
  * Features:
  * - 50+ prompt injection patterns
- * - HNSW-indexed threat pattern search (150x-12,500x faster with AgentDB)
+ * - HNSW-indexed threat pattern search (optimized with AgentDB)
  * - ReasoningBank-style pattern learning
  * - Adaptive mitigation with effectiveness tracking
  * - Strange-loop meta-learning integration
@@ -97,7 +97,7 @@ export interface AIDefence {
 
   /**
    * Search for similar threat patterns using HNSW
-   * Achieves 150x-12,500x speedup when connected to AgentDB
+   * Achieves HNSW-indexed search when connected to AgentDB
    */
   searchSimilarThreats(
     query: string,
@@ -162,7 +162,7 @@ export interface AIDefence {
  * // With learning enabled
  * const learning = createAIDefence({ enableLearning: true });
  *
- * // With AgentDB for HNSW search (150x-12,500x faster)
+ * // With AgentDB for HNSW search (optimized)
  * import { AgentDB } from 'agentdb';
  * const agentdb = new AgentDB({ path: './data/aidefence' });
  * const fast = createAIDefence({

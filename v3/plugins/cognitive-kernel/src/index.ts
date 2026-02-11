@@ -10,7 +10,7 @@
  * - Meta-cognitive monitoring and reflection
  * - Cognitive scaffolding (decomposition, analogy, Socratic, etc.)
  * - Cognitive load theory optimization
- * - SONA integration for continuous learning
+ * - Pattern integration for continuous learning
  *
  * @packageDocumentation
  */

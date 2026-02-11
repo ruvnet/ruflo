@@ -744,7 +744,7 @@ const agentCapabilities: Record<V3AgentType, string[]> = {
   'security-architect': ['security', 'design', 'threat-modeling'],
   'security-auditor': ['security', 'audit', 'vulnerability'],
   'memory-specialist': ['memory', 'optimization', 'caching'],
-  'swarm-specialist': ['coordination', 'consensus', 'communication'],
+  'swarm-specialist': ['coordination', 'voting', 'communication'],
   'integration-architect': ['integration', 'api', 'compatibility'],
   'performance-engineer': ['performance', 'optimization', 'benchmarking'],
   'core-architect': ['architecture', 'design', 'domain'],

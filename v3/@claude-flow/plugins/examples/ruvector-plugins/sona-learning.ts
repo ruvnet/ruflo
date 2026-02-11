@@ -1,5 +1,5 @@
 /**
- * SONA Learning Plugin
+ * Pattern Learning Plugin
  *
  * Self-Optimizing Neural Adaptation using @ruvector/learning-wasm.
  * Enables <100μs real-time adaptation through LoRA fine-tuning.
@@ -62,7 +62,7 @@ export interface AdaptationResult {
   newQuality: number;
 }
 
-export interface SONAConfig {
+export interface PatternConfig {
   learningRate: number;
   ewcLambda: number;
   maxPatterns: number;
@@ -72,20 +72,20 @@ export interface SONAConfig {
 }
 
 // ============================================================================
-// SONA Learning Core
+// Pattern Learning Core
 // ============================================================================
 
-export class SONALearning {
+export class PatternLearning {
   private loraEngine: ILoRAEngine | null = null;
   private vectorDb: IVectorDB | null = null;
   private patterns = new Map<string, LearningPattern>();
   private adapters = new Map<string, LoRAAdapter>();
-  private config: SONAConfig;
+  private config: PatternConfig;
   private dimensions = 768;
   private nextId = 1;
   private initPromise: Promise<void> | null = null;
 
-  constructor(config?: Partial<SONAConfig>) {
+  constructor(config?: Partial<PatternConfig>) {
     this.config = {
       learningRate: 0.001,
       ewcLambda: 0.1,
@@ -173,7 +173,7 @@ export class SONALearning {
     }
 
     const adaptationTime = (performance.now() - startTime) * 1000; // microseconds
-    console.debug(`[SONA] Learned pattern in ${adaptationTime.toFixed(1)}μs`);
+    console.debug(`[Pattern] Learned pattern in ${adaptationTime.toFixed(1)}μs`);
 
     return pattern;
   }
@@ -288,7 +288,7 @@ export class SONALearning {
   /**
    * Export learned patterns.
    */
-  export(): { patterns: LearningPattern[]; config: SONAConfig } {
+  export(): { patterns: LearningPattern[]; config: PatternConfig } {
     return {
       patterns: Array.from(this.patterns.values()).map(p => ({ ...p, embedding: undefined })),
       config: this.config,
@@ -298,7 +298,7 @@ export class SONALearning {
   /**
    * Import patterns.
    */
-  async import(data: { patterns: LearningPattern[]; config?: Partial<SONAConfig> }): Promise<number> {
+  async import(data: { patterns: LearningPattern[]; config?: Partial<PatternConfig> }): Promise<number> {
     if (data.config) this.config = { ...this.config, ...data.config };
 
     let imported = 0;
@@ -342,11 +342,11 @@ export class SONALearning {
 // Plugin Definition
 // ============================================================================
 
-let sonaInstance: SONALearning | null = null;
+let sonaInstance: PatternLearning | null = null;
 
-async function getSONALearning(): Promise<SONALearning> {
+async function getPatternLearning(): Promise<PatternLearning> {
   if (!sonaInstance) {
-    sonaInstance = new SONALearning();
+    sonaInstance = new PatternLearning();
     await sonaInstance.initialize();
   }
   return sonaInstance;
@@ -355,7 +355,7 @@ async function getSONALearning(): Promise<SONALearning> {
 export const sonaLearningPlugin = new PluginBuilder('sona-learning', '1.0.0')
   .withDescription('Self-Optimizing Neural Adaptation with @ruvector/learning-wasm (<100μs LoRA)')
   .withAuthor('Claude Flow Team')
-  .withTags(['learning', 'neural', 'adaptation', 'lora', 'ruvector', 'sona', 'ewc'])
+  .withTags(['learning', 'patterns', 'adaptation', 'lora', 'ruvector', 'sona', 'ewc'])
   .withMCPTools([
     new MCPToolBuilder('sona-learn')
       .withDescription('Learn a new pattern (<100μs with LoRA)')
@@ -366,7 +366,7 @@ export const sonaLearningPlugin = new PluginBuilder('sona-learning', '1.0.0')
       .addNumberParam('quality', 'Quality score 0-1', { default: 0.7, minimum: 0, maximum: 1 })
       .withHandler(async (params) => {
         try {
-          const sona = await getSONALearning();
+          const sona = await getPatternLearning();
           const context = params.context ? JSON.parse(params.context as string) : {};
           const pattern = await sona.learn(params.category as string, params.trigger as string, params.action as string, context, params.quality as number);
           return { content: [{ type: 'text', text: `🧠 **Learned:** ${pattern.id}\nCategory: ${pattern.category}\nQuality: ${(pattern.quality * 100).toFixed(1)}%` }] };
@@ -383,7 +383,7 @@ export const sonaLearningPlugin = new PluginBuilder('sona-learning', '1.0.0')
       .addNumberParam('k', 'Number of patterns', { default: 5 })
       .withHandler(async (params) => {
         try {
-          const sona = await getSONALearning();
+          const sona = await getPatternLearning();
           const patterns = await sona.retrieve(params.trigger as string, params.category as string | undefined, params.k as number);
           if (patterns.length === 0) return { content: [{ type: 'text', text: '🔍 No matching patterns.' }] };
           const output = patterns.map((p, i) => `${i + 1}. **${p.id}** [${p.category}] (q: ${(p.quality * 100).toFixed(0)}%)\n   ${p.action.substring(0, 50)}...`).join('\n\n');
@@ -400,7 +400,7 @@ export const sonaLearningPlugin = new PluginBuilder('sona-learning', '1.0.0')
       .addBooleanParam('success', 'Was successful?', { required: true })
       .withHandler(async (params) => {
         try {
-          const sona = await getSONALearning();
+          const sona = await getPatternLearning();
           await sona.feedback(params.patternId as string, params.success as boolean);
           return { content: [{ type: 'text', text: `✅ Feedback recorded: ${params.success ? 'Success' : 'Failure'}` }] };
         } catch (error) {
@@ -410,11 +410,11 @@ export const sonaLearningPlugin = new PluginBuilder('sona-learning', '1.0.0')
       .build(),
 
     new MCPToolBuilder('sona-stats')
-      .withDescription('Get SONA learning statistics')
+      .withDescription('Get Pattern learning statistics')
       .withHandler(async () => {
-        const sona = await getSONALearning();
+        const sona = await getPatternLearning();
         const stats = sona.getStats();
-        return { content: [{ type: 'text', text: `🧠 **SONA Stats:**\n\n**Patterns:** ${stats.totalPatterns}\n**LoRA Adapters:** ${stats.totalAdapters}\n**Avg Quality:** ${(stats.avgQuality * 100).toFixed(1)}%\n**Backend:** @ruvector/learning-wasm` }] };
+        return { content: [{ type: 'text', text: `🧠 **Pattern Stats:**\n\n**Patterns:** ${stats.totalPatterns}\n**LoRA Adapters:** ${stats.totalAdapters}\n**Avg Quality:** ${(stats.avgQuality * 100).toFixed(1)}%\n**Backend:** @ruvector/learning-wasm` }] };
       })
       .build(),
   ])
@@ -428,7 +428,7 @@ export const sonaLearningPlugin = new PluginBuilder('sona-learning', '1.0.0')
         const data = ctx.data as { category?: string; trigger?: string; action?: string; context?: Record<string, unknown> };
         if (!data.trigger || !data.action) return { success: true };
         try {
-          const sona = await getSONALearning();
+          const sona = await getPatternLearning();
           await sona.learn(data.category || 'general', data.trigger, data.action, data.context || {}, 0.75);
         } catch { /* silent */ }
         return { success: true };
@@ -436,9 +436,9 @@ export const sonaLearningPlugin = new PluginBuilder('sona-learning', '1.0.0')
       .build(),
   ])
   .onInitialize(async (ctx) => {
-    ctx.logger.info('SONA Learning initializing with @ruvector/learning-wasm...');
-    await getSONALearning();
-    ctx.logger.info('SONA ready - LoRA adaptation <100μs, EWC++ enabled');
+    ctx.logger.info('Pattern Learning initializing with @ruvector/learning-wasm...');
+    await getPatternLearning();
+    ctx.logger.info('Pattern ready - LoRA adaptation <100μs, EWC++ enabled');
   })
   .build();
 

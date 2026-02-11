@@ -140,7 +140,7 @@ import { AttentionService } from 'agentdb';
 // Initialize attention service for adaptive coordination
 const attentionService = new AttentionService({
   embeddingDim: 384,
-  runtime: 'napi' // 2.49x-7.47x faster
+  runtime: 'napi' // CPU-optimized faster
 });
 
 // Adaptive coordinator with dynamic attention selection
@@ -172,7 +172,7 @@ class AdaptiveCoordinator {
     let result: any;
     switch (mechanism) {
       case 'flash':
-        // 2.49x-7.47x faster for large contexts
+        // CPU-optimized faster for large contexts
         result = await this.attentionService.flashAttention(
           embeddings,
           embeddings,

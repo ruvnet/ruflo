@@ -86,7 +86,7 @@ export {
 
 // Neural substrate integration
 export {
-  NeuralEmbeddingService,
+  PatternEmbeddingService,
   createNeuralService,
   isNeuralAvailable,
   listEmbeddingModels,
@@ -97,7 +97,7 @@ export {
   type CoherenceResult,
   type SubstrateHealth,
   type NeuralSubstrateConfig,
-} from './neural-integration.js';
+} from './patterns-integration.js';
 
 export type {
   EmbeddingProvider,

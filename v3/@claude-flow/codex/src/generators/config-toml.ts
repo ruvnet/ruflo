@@ -349,7 +349,7 @@ export async function generateConfigToml(options: ExtendedConfigTomlOptions = {}
   lines.push('# =============================================================================');
   lines.push('');
   lines.push('[neural]');
-  lines.push('# Enable SONA (Self-Optimizing Neural Architecture)');
+  lines.push('# Enable Pattern (Self-Optimizing Pattern Architecture)');
   lines.push('sona_enabled = true');
   lines.push('');
   lines.push('# Enable HNSW vector search');
@@ -404,7 +404,7 @@ export async function generateConfigToml(options: ExtendedConfigTomlOptions = {}
   lines.push('# Post-task hook (for learning)');
   lines.push('post_task = true');
   lines.push('');
-  lines.push('# Enable neural training on post-edit');
+  lines.push('# Enable pattern training on post-edit');
   lines.push('train_on_edit = true');
   lines.push('');
 

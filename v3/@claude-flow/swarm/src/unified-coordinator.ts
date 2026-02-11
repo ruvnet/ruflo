@@ -12,7 +12,7 @@
  * - Queen (Agent 1): Top-level coordinator
  * - Security Domain (Agents 2-4): security-architect, security-auditor, test-architect
  * - Core Domain (Agents 5-9): core-architect, type-modernization, memory-specialist, swarm-specialist, mcp-optimizer
- * - Integration Domain (Agents 10-12): integration-architect, cli-modernizer, neural-integrator
+ * - Integration Domain (Agents 10-12): integration-architect, cli-modernizer, pattern-integrator
  * - Support Domain (Agents 13-15): test-architect, performance-engineer, deployment-engineer
  */
 
@@ -38,8 +38,8 @@ import {
   SwarmEventType,
   TopologyConfig,
   TopologyType,
-  ConsensusConfig,
-  ConsensusResult,
+  VotingConfig,
+  VotingResult,
   Message,
   MessageType,
   PerformanceReport,
@@ -49,7 +49,7 @@ import {
 import { TopologyManager, createTopologyManager } from './topology-manager.js';
 import { MessageBus, createMessageBus } from './message-bus.js';
 import { AgentPool, createAgentPool } from './agent-pool.js';
-import { ConsensusEngine, createConsensusEngine } from './consensus/index.js';
+import { VotingEngine, createVotingEngine } from './voting/index.js';
 
 // =============================================================================
 // Domain Types for 15-Agent Hierarchy
@@ -100,7 +100,7 @@ const DOMAIN_CONFIGS: DomainConfig[] = [
     name: 'queen',
     agentNumbers: [1],
     priority: 0,
-    capabilities: ['coordination', 'planning', 'oversight', 'consensus'],
+    capabilities: ['coordination', 'planning', 'oversight', 'voting'],
     description: 'Top-level swarm coordination and orchestration',
   },
   {
@@ -138,7 +138,7 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
   private state: CoordinatorState;
   private topologyManager: TopologyManager;
   private messageBus: MessageBus;
-  private consensusEngine: ConsensusEngine;
+  private consensusEngine: VotingEngine;
   private agentPools: Map<AgentType, AgentPool> = new Map();
 
   // Domain-based tracking for 15-agent hierarchy
@@ -169,10 +169,10 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
     // Initialize components
     this.topologyManager = createTopologyManager(this.config.topology);
     this.messageBus = createMessageBus(this.config.messageBus);
-    this.consensusEngine = createConsensusEngine(
+    this.consensusEngine = createVotingEngine(
       this.state.id.id,
-      this.config.consensus.algorithm,
-      this.config.consensus
+      this.config.voting.algorithm,
+      this.config.voting
     );
 
     // Initialize domain configurations
@@ -204,7 +204,7 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
       await Promise.all([
         this.topologyManager.initialize(this.config.topology),
         this.messageBus.initialize(this.config.messageBus),
-        this.consensusEngine.initialize(this.config.consensus),
+        this.consensusEngine.initialize(this.config.voting),
       ]);
 
       // Initialize default agent pools
@@ -228,7 +228,7 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
       this.emitEvent('swarm.started', {
         swarmId: this.state.id.id,
         topology: this.config.topology.type,
-        consensus: this.config.consensus.algorithm,
+        consensus: this.config.voting.algorithm,
       });
     } catch (error) {
       this.state.status = 'failed';
@@ -479,23 +479,23 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
 
   // ===== COORDINATION =====
 
-  async proposeConsensus(value: unknown): Promise<ConsensusResult> {
+  async proposeVote(value: unknown): Promise<VotingResult> {
     const startTime = performance.now();
 
     const proposal = await this.consensusEngine.propose(value, this.state.id.id);
-    const result = await this.consensusEngine.awaitConsensus(proposal.id);
+    const result = await this.consensusEngine.awaitVoting(proposal.id);
 
     const duration = performance.now() - startTime;
     this.recordCoordinationLatency(duration);
 
     if (result.approved) {
-      this.emitEvent('consensus.achieved', {
+      this.emitEvent('voting.achieved', {
         proposalId: proposal.id,
         approvalRate: result.approvalRate,
         durationMs: duration,
       });
     } else {
-      this.emitEvent('consensus.failed', {
+      this.emitEvent('voting.failed', {
         proposalId: proposal.id,
         approvalRate: result.approvalRate,
         reason: 'threshold_not_met',
@@ -546,7 +546,7 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
       messagesPerSecond: this.messageBus.getStats().messagesPerSecond,
       taskThroughput: this.calculateTaskThroughput(),
       agentUtilization: this.calculateAgentUtilization(),
-      consensusSuccessRate: this.state.metrics.consensusSuccessRate,
+      votingSuccessRate: this.state.metrics.votingSuccessRate,
     };
   }
 
@@ -562,12 +562,12 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
         failoverEnabled: config.topology?.failoverEnabled ?? true,
         autoRebalance: config.topology?.autoRebalance ?? true,
       },
-      consensus: {
-        algorithm: config.consensus?.algorithm ?? 'raft',
-        threshold: config.consensus?.threshold ?? SWARM_CONSTANTS.DEFAULT_CONSENSUS_THRESHOLD,
-        timeoutMs: config.consensus?.timeoutMs ?? SWARM_CONSTANTS.DEFAULT_CONSENSUS_TIMEOUT_MS,
-        maxRounds: config.consensus?.maxRounds ?? 10,
-        requireQuorum: config.consensus?.requireQuorum ?? true,
+      voting: {
+        algorithm: config.voting?.algorithm ?? 'raft',
+        threshold: config.voting?.threshold ?? SWARM_CONSTANTS.DEFAULT_VOTING_THRESHOLD,
+        timeoutMs: config.voting?.timeoutMs ?? SWARM_CONSTANTS.DEFAULT_VOTING_TIMEOUT_MS,
+        maxRounds: config.voting?.maxRounds ?? 10,
+        requireQuorum: config.voting?.requireQuorum ?? true,
       },
       messageBus: {
         maxQueueSize: config.messageBus?.maxQueueSize ?? SWARM_CONSTANTS.MAX_QUEUE_SIZE,
@@ -614,7 +614,7 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
         failedTasks: 0,
         avgTaskDurationMs: 0,
         messagesPerSecond: 0,
-        consensusSuccessRate: 1.0,
+        votingSuccessRate: 1.0,
         coordinationLatencyMs: 0,
         memoryUsageBytes: 0,
       },
@@ -696,9 +696,9 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
     });
 
     // Forward consensus events
-    this.consensusEngine.on('consensus.achieved', (data) => {
-      this.state.metrics.consensusSuccessRate =
-        (this.state.metrics.consensusSuccessRate * 0.9) + (data.approved ? 0.1 : 0);
+    this.consensusEngine.on('voting.achieved', (data) => {
+      this.state.metrics.votingSuccessRate =
+        (this.state.metrics.votingSuccessRate * 0.9) + (data.approved ? 0.1 : 0);
     });
 
     // Forward message bus events
@@ -1074,8 +1074,8 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
     this.config.topology.type = type;
   }
 
-  getConsensusAlgorithm(): string {
-    return this.config.consensus.algorithm;
+  getVotingAlgorithm(): string {
+    return this.config.voting.algorithm;
   }
 
   isHealthy(): boolean {

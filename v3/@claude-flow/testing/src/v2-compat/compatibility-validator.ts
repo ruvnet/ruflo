@@ -193,7 +193,7 @@ export const V2_MCP_TOOLS: V2MCPTool[] = [
   { name: 'github/issue-create', parameters: { title: { type: 'string', required: true } }, returnType: 'IssueInfo', v3Equivalent: 'github/issue-create' },
 
   // Coordination tools
-  { name: 'coordinate/consensus', parameters: { proposal: { type: 'object', required: true } }, returnType: 'ConsensusResult', v3Equivalent: 'swarm/consensus' },
+  { name: 'coordinate/consensus', parameters: { proposal: { type: 'object', required: true } }, returnType: 'VotingResult', v3Equivalent: 'swarm/consensus' },
   { name: 'coordinate/broadcast', parameters: { message: { type: 'object', required: true } }, returnType: 'BroadcastResult', v3Equivalent: 'swarm/broadcast' },
 ];
 
@@ -290,7 +290,7 @@ export const V2_API_INTERFACES: V2APIInterface[] = [
       { name: 'addAgent', signature: '(agent: Agent): Promise<void>' },
       { name: 'removeAgent', signature: '(agentId: string): Promise<void>' },
       { name: 'broadcast', signature: '(message: Message): Promise<void>' },
-      { name: 'consensus', signature: '(proposal: Proposal): Promise<ConsensusResult>' },
+      { name: 'voting', signature: '(proposal: Proposal): Promise<VotingResult>' },
     ],
     v3Equivalent: 'UnifiedSwarmCoordinator',
   },
@@ -452,7 +452,7 @@ export class V2CompatibilityValidator {
       api: {
         getClass: vi.fn().mockImplementation((name: string) => {
           const mapping: Record<string, { methods: string[] }> = {
-            'UnifiedSwarmCoordinator': { methods: ['initialize', 'spawn', 'addAgent', 'removeAgent', 'broadcast', 'consensus', 'getStatus', 'shutdown'] },
+            'UnifiedSwarmCoordinator': { methods: ['initialize', 'spawn', 'addAgent', 'removeAgent', 'broadcast', 'voting', 'getStatus', 'shutdown'] },
             'UnifiedMemoryService': { methods: ['store', 'search', 'delete', 'clear', 'getStats'] },
             'AgentLifecycleService': { methods: ['spawn', 'terminate', 'list', 'getInfo', 'getStatus'] },
             'TaskExecutionService': { methods: ['create', 'assign', 'complete', 'getStatus'] },

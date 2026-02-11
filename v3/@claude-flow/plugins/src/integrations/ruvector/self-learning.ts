@@ -1,7 +1,7 @@
 /**
  * RuVector Self-Learning Optimization Module
  *
- * SONA-inspired self-learning features for the RuVector PostgreSQL Bridge.
+ * Pattern-inspired self-learning features for the RuVector PostgreSQL Bridge.
  * Implements adaptive query optimization, intelligent index tuning,
  * pattern recognition, and continuous learning with EWC++ protection.
  *
@@ -583,7 +583,7 @@ export interface EWCState {
 
 /**
  * Query Optimizer for analyzing and optimizing SQL queries.
- * Implements SONA-inspired micro-learning for real-time adaptation.
+ * Implements Pattern-inspired micro-learning for real-time adaptation.
  */
 export class QueryOptimizer {
   private readonly queryStats: Map<string, QueryExecutionStats> = new Map();
@@ -1055,7 +1055,7 @@ export class QueryOptimizer {
 
   private microLearn(fingerprint: string, duration: number): void {
     // Micro-learning: fast, lightweight adaptation
-    // In production, this would update neural network weights
+    // In production, this would update pattern network weights
     const stats = this.queryStats.get(fingerprint);
     if (stats && stats.avgDurationMs > duration * 2) {
       // Query is performing better than average - learn from this
@@ -2011,7 +2011,7 @@ export class PatternRecognizer {
 
 /**
  * Self-Learning Loop for continuous optimization.
- * Implements SONA-inspired micro-learning and EWC++ for catastrophic forgetting prevention.
+ * Implements Pattern-inspired micro-learning and EWC++ for catastrophic forgetting prevention.
  */
 export class LearningLoop {
   private readonly queryOptimizer: QueryOptimizer;

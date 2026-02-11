@@ -5,7 +5,7 @@
 This implementation provides a **HybridBackend** that combines SQLite (structured queries) and AgentDB (vector search) as per ADR-009. The hybrid approach leverages the strengths of both backends:
 
 - **SQLite**: ACID transactions, exact matches, structured queries, complex joins
-- **AgentDB**: Vector similarity search, HNSW indexing (150x-12,500x faster), semantic queries
+- **AgentDB**: Vector similarity search, HNSW indexing (optimized), semantic queries
 
 ## Architecture
 
@@ -22,7 +22,7 @@ This implementation provides a **HybridBackend** that combines SQLite (structure
         │ • Prefix queries     │  │ • HNSW indexing        │
         │ • Complex SQL        │  │ • Semantic similarity  │
         │ • ACID transactions  │  │ • LRU caching          │
-        │ • Full-text search   │  │ • 150x-12,500x faster  │
+        │ • Full-text search   │  │ • optimized  │
         └──────────────────────┘  └────────────────────────┘
 ```
 
@@ -221,7 +221,7 @@ The HybridBackend intelligently routes queries:
 | `exact` | SQLite | Optimized for exact key lookups with indexes |
 | `prefix` | SQLite | Optimized for LIKE queries with indexes |
 | `tag` | SQLite | Efficient JSON filtering |
-| `semantic` | AgentDB | HNSW vector search (150x-12,500x faster) |
+| `semantic` | AgentDB | HNSW vector search (optimized) |
 | `hybrid` | Both | Combines results from both backends |
 | Auto (has embedding) | AgentDB | Semantic search capability |
 | Auto (has key/prefix) | SQLite | Structured query capability |
@@ -238,7 +238,7 @@ The HybridBackend intelligently routes queries:
 
 ### AgentDB Backend
 - **Vector search**: O(log n) with HNSW (vs O(n) brute force)
-- **Speedup**: 150x-12,500x faster than linear scan
+- **Speedup**: optimized than linear scan
 - **Memory**: Configurable with quantization support
 - **Cache**: LRU cache with TTL for hot queries
 - **Concurrency**: Lock-free reads with CAS writes
@@ -349,7 +349,7 @@ Test coverage includes:
 
 2. **Performance Optimization**
    - Automatic routing to optimal backend
-   - 150x-12,500x faster semantic search with HNSW
+   - optimized semantic search with HNSW
    - Efficient exact matches with B-tree indexes
 
 3. **Data Consistency**
@@ -391,7 +391,7 @@ Test coverage includes:
 
 2. **Performance Results**
    - Bulk operations: 2-3x faster
-   - HNSW search: 150x-12,500x faster (confirmed)
+   - HNSW search: optimized (confirmed)
    - Query routing: <0.1ms overhead
 
 ### Package Versions
@@ -405,7 +405,7 @@ Test coverage includes:
 
 The HybridBackend implementation successfully achieves ADR-009 goals:
 - ✅ SQLite for structured queries with ACID guarantees
-- ✅ AgentDB for semantic search with 150x-12,500x speedup
+- ✅ AgentDB for semantic search with HNSW-indexed search
 - ✅ Intelligent automatic query routing
 - ✅ Dual-write consistency option
 - ✅ Comprehensive test coverage

@@ -304,7 +304,7 @@ export const agentRoleMapping = {
     domain: 'integration' as AgentDomain,
     responsibilities: [
       'Neural system integration',
-      'SONA learning (<0.05ms)',
+      'Pattern learning (sub-ms)',
       'Pattern recognition'
     ]
   },
@@ -324,7 +324,7 @@ export const agentRoleMapping = {
     domain: 'performance' as AgentDomain,
     responsibilities: [
       'Benchmark suite',
-      '2.49x-7.47x Flash Attention',
+      'CPU-optimized Flash Attention',
       'Memory optimization (50-75%)'
     ]
   },

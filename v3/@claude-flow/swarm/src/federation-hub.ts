@@ -115,7 +115,7 @@ export interface SpawnResult {
 
 export interface FederationMessage {
   id: string;
-  type: 'broadcast' | 'direct' | 'consensus' | 'heartbeat';
+  type: 'broadcast' | 'direct' | 'voting' | 'heartbeat';
   sourceSwarmId: SwarmId;
   targetSwarmId?: SwarmId;
   payload: unknown;
@@ -123,7 +123,7 @@ export interface FederationMessage {
   ttl?: number;
 }
 
-export interface ConsensusProposal {
+export interface VotingProposal {
   id: string;
   proposerId: SwarmId;
   type: string;
@@ -196,7 +196,7 @@ export class FederationHub extends EventEmitter {
   private swarms: Map<SwarmId, SwarmRegistration> = new Map();
   private ephemeralAgents: Map<EphemeralAgentId, EphemeralAgent> = new Map();
   private messages: FederationMessage[] = [];
-  private proposals: Map<string, ConsensusProposal> = new Map();
+  private proposals: Map<string, VotingProposal> = new Map();
   private syncInterval?: ReturnType<typeof setInterval>;
   private cleanupInterval?: ReturnType<typeof setInterval>;
   private startTime: Date;
@@ -663,12 +663,12 @@ export class FederationHub extends EventEmitter {
     type: string,
     value: unknown,
     timeoutMs: number = 30000
-  ): Promise<ConsensusProposal> {
+  ): Promise<VotingProposal> {
     if (!this.config.enableConsensus) {
       throw new Error('Consensus is disabled');
     }
 
-    const proposal: ConsensusProposal = {
+    const proposal: VotingProposal = {
       id: `proposal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       proposerId,
       type,
@@ -730,14 +730,14 @@ export class FederationHub extends EventEmitter {
   /**
    * Get proposal by ID
    */
-  getProposal(proposalId: string): ConsensusProposal | undefined {
+  getProposal(proposalId: string): VotingProposal | undefined {
     return this.proposals.get(proposalId);
   }
 
   /**
    * Get all pending proposals
    */
-  getPendingProposals(): ConsensusProposal[] {
+  getPendingProposals(): VotingProposal[] {
     return Array.from(this.proposals.values()).filter(p => p.status === 'pending');
   }
 

@@ -132,7 +132,7 @@ function createMockMCPClient(): MockMCPClient {
           topology: params.topology || 'hierarchical-mesh',
           maxAgents: params.maxAgents || 15,
           config: {
-            consensusMechanism: params.consensus || 'majority',
+            consensusMechanism: params.voting || 'majority',
           },
         };
       }
@@ -535,7 +535,7 @@ describe('MCP Tool Coverage', () => {
       memory: V2_MCP_TOOLS.filter(t => t.name.includes('memory')),
       config: V2_MCP_TOOLS.filter(t => t.name.includes('config')),
       task: V2_MCP_TOOLS.filter(t => t.name.startsWith('task/')),
-      neural: V2_MCP_TOOLS.filter(t => t.name.includes('neural')),
+      neural: V2_MCP_TOOLS.filter(t => t.name.includes('patterns')),
       github: V2_MCP_TOOLS.filter(t => t.name.startsWith('github/')),
       coordinate: V2_MCP_TOOLS.filter(t => t.name.startsWith('coordinate/')),
     };

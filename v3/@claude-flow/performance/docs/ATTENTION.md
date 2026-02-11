@@ -4,7 +4,7 @@ Integration of `@ruvector/attention` Flash Attention capabilities into the V3 pe
 
 ## Overview
 
-This module provides high-performance attention mechanisms optimized for V3's 2.49x-7.47x speedup targets. Flash Attention reduces memory usage by ~50% while achieving significant performance improvements through block-wise computation.
+This module provides high-performance attention mechanisms optimized for V3's CPU-optimized targets. Flash Attention reduces memory usage by ~50% while achieving significant performance improvements through block-wise computation.
 
 ## Features
 
@@ -60,7 +60,7 @@ console.log(`Meets target: ${result.meetsTarget ? 'YES' : 'NO'}`);
 ```typescript
 import { quickValidation } from '@claude-flow/performance';
 
-// Validate V3 performance targets (2.49x-7.47x)
+// Validate V3 performance targets (CPU-optimized)
 const isValid = await quickValidation();
 // Prints detailed validation report
 ```
@@ -165,7 +165,7 @@ const profiles = await runner.runMemoryProfile([256, 512, 1024]);
 
 ##### validateV3Targets(): Promise<ValidationResult>
 
-Validate against V3 performance targets (2.49x-7.47x).
+Validate against V3 performance targets (CPU-optimized).
 
 ```typescript
 const validation = await runner.validateV3Targets();

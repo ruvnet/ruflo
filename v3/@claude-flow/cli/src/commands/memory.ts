@@ -10,7 +10,7 @@ import { callMCPTool, MCPClientError } from '../mcp-client.js';
 
 // Memory backends
 const BACKENDS = [
-  { value: 'agentdb', label: 'AgentDB', hint: 'Vector database with HNSW indexing (150x-12,500x faster)' },
+  { value: 'agentdb', label: 'AgentDB', hint: 'Vector database with HNSW indexing (optimized)' },
   { value: 'sqlite', label: 'SQLite', hint: 'Lightweight local storage' },
   { value: 'hybrid', label: 'Hybrid', hint: 'SQLite + AgentDB (recommended)' },
   { value: 'memory', label: 'In-Memory', hint: 'Fast but non-persistent' }
@@ -276,7 +276,7 @@ const searchCommand: Command = {
     },
     {
       name: 'build-hnsw',
-      description: 'Build/rebuild HNSW index before searching (enables 150x-12,500x speedup)',
+      description: 'Build/rebuild HNSW index before searching (enables HNSW-indexed search)',
       type: 'boolean',
       default: false
     }
@@ -643,7 +643,7 @@ const statsCommand: Command = {
       });
 
       output.writeln();
-      output.printInfo('V3 Performance: 150x-12,500x faster search with HNSW indexing');
+      output.printInfo('V3 Performance: optimized search with HNSW indexing');
 
       return { success: true, data: stats };
     } catch (error) {
@@ -1343,7 +1343,7 @@ const initMemoryCommand: Command = {
             { table: 'memory_entries', purpose: 'Core memory storage with embeddings' },
             { table: 'patterns', purpose: 'Learned patterns with confidence scores' },
             { table: 'pattern_history', purpose: 'Pattern versioning and evolution' },
-            { table: 'trajectories', purpose: 'SONA learning trajectories' },
+            { table: 'trajectories', purpose: 'Pattern learning trajectories' },
             { table: 'trajectory_steps', purpose: 'Individual trajectory steps' },
             { table: 'migration_state', purpose: 'Migration progress tracking' },
             { table: 'sessions', purpose: 'Context persistence' },

@@ -9,7 +9,7 @@
 // Core plugins
 export { reasoningBankPlugin, ReasoningBank } from './reasoning-bank.js';
 export { semanticCodeSearchPlugin, SemanticCodeSearch } from './semantic-code-search.js';
-export { sonaLearningPlugin, SONALearning } from './sona-learning.js';
+export { sonaLearningPlugin, PatternLearning } from './sona-learning.js';
 export { intentRouterPlugin, IntentRouter } from './intent-router.js';
 export { mcpToolOptimizerPlugin, MCPToolOptimizer } from './mcp-tool-optimizer.js';
 export { hookPatternLibraryPlugin, HookPatternLibrary } from './hook-pattern-library.js';
@@ -31,7 +31,7 @@ export type {
 export type {
   LearningPattern,
   AdaptationResult,
-  SONAConfig,
+  PatternConfig,
 } from './sona-learning.js';
 
 export type {
@@ -56,7 +56,7 @@ export type {
 // Re-export classes for direct usage
 export { ReasoningBank } from './reasoning-bank.js';
 export { SemanticCodeSearch } from './semantic-code-search.js';
-export { SONALearning } from './sona-learning.js';
+export { PatternLearning } from './sona-learning.js';
 export { IntentRouter } from './intent-router.js';
 export { MCPToolOptimizer } from './mcp-tool-optimizer.js';
 export { HookPatternLibrary } from './hook-pattern-library.js';

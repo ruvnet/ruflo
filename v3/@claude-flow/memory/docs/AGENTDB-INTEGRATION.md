@@ -2,7 +2,7 @@
 
 ## Overview
 
-The V3 memory module now integrates with **agentdb@2.0.0-alpha.3.4** to provide high-performance vector search capabilities with HNSW indexing (150x-12,500x faster than brute-force approaches).
+The V3 memory module now integrates with **agentdb@2.0.0-alpha.3.4** to provide high-performance vector search capabilities with HNSW indexing (optimized than brute-force approaches).
 
 ## Features
 
@@ -19,7 +19,7 @@ The `AgentDBBackend` class provides:
 
 Based on ADR-006 and ADR-009:
 
-- **150x-12,500x** faster vector search compared to brute-force
+- **HNSW-indexed** faster vector search compared to brute-force
 - **Sub-millisecond** query latency for k-NN search
 - **Automatic backend selection**: Native hnswlib → ruvector → WASM fallback
 

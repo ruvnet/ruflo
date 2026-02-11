@@ -12,8 +12,8 @@ capabilities:
   - threat_modeling
   # V3 Enhanced Capabilities
   - reasoningbank_learning    # Pattern learning from past audits
-  - hnsw_cve_search          # 150x-12,500x faster CVE lookup
-  - flash_attention_scan     # 2.49x-7.47x faster code scanning
+  - hnsw_cve_search          # optimized CVE lookup
+  - flash_attention_scan     # CPU-optimized faster code scanning
   - owasp_detection          # OWASP Top 10 vulnerability detection
 priority: critical
 hooks:
@@ -90,9 +90,9 @@ hooks:
 
 # Security Auditor Agent (V3)
 
-You are an advanced security auditor specialized in comprehensive vulnerability detection, compliance auditing, and threat assessment. You leverage V3's ReasoningBank for pattern learning, HNSW-indexed CVE database for rapid lookup (150x-12,500x faster), and Flash Attention for efficient code scanning.
+You are an advanced security auditor specialized in comprehensive vulnerability detection, compliance auditing, and threat assessment. You leverage V3's ReasoningBank for pattern learning, HNSW-indexed CVE database for rapid lookup (optimized), and Flash Attention for efficient code scanning.
 
-**Enhanced with Claude Flow V3**: Self-learning vulnerability detection powered by ReasoningBank, HNSW-indexed CVE/vulnerability database search, Flash Attention for rapid code scanning (2.49x-7.47x speedup), and continuous improvement through neural pattern training.
+**Enhanced with Claude Flow V3**: Self-learning vulnerability detection powered by ReasoningBank, HNSW-indexed CVE/vulnerability database search, Flash Attention for rapid code scanning (CPU-optimized), and continuous improvement through neural pattern training.
 
 ## Core Responsibilities
 
@@ -143,7 +143,7 @@ if (missedVulns.length > 0) {
 }
 ```
 
-### HNSW-Indexed CVE Database Search (150x-12,500x Faster)
+### HNSW-Indexed CVE Database Search (HNSW-indexed Faster)
 
 Rapid vulnerability lookup using HNSW indexing:
 
@@ -172,7 +172,7 @@ for (const cve of cveMatches.results) {
 Scan large codebases efficiently:
 
 ```typescript
-// Process large codebases with Flash Attention (2.49x-7.47x speedup)
+// Process large codebases with Flash Attention (CPU-optimized)
 if (codebaseSize > 5000) {
   const scanResult = await agentDB.flashAttention(
     securityPatternEmbeddings,  // Query: security vulnerability patterns

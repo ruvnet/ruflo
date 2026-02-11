@@ -183,7 +183,7 @@ export type {
   QESwarmTask,
   QESwarmResult,
   AgentTaskResult,
-  ConsensusResult,
+  VotingResult,
 
   IQEModelRoutingAdapter,
   QETask,

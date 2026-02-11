@@ -32,7 +32,7 @@ export type CoordinationStatus =
   | 'initializing'
   | 'active'
   | 'coordinating'
-  | 'consensus'
+  | 'voting'
   | 'error'
   | 'shutdown';
 
@@ -57,7 +57,7 @@ export interface CoordinationConfig {
   consensusProtocol: ConsensusProtocol;
   heartbeatInterval: number;
   electionTimeout: number;
-  consensusRequired?: boolean;
+  votingRequired?: boolean;
   timeoutMs?: number;
   retryPolicy?: {
     maxRetries: number;
@@ -229,7 +229,7 @@ export const swarmConfigs: Record<string, SwarmConfig> = {
       consensusProtocol: 'raft',
       heartbeatInterval: 1000,
       electionTimeout: 5000,
-      consensusRequired: true,
+      votingRequired: true,
       timeoutMs: 8000,
       retryPolicy: { maxRetries: 3, backoffMs: 1000 },
     },
@@ -266,7 +266,7 @@ export const swarmConfigs: Record<string, SwarmConfig> = {
       consensusProtocol: 'gossip',
       heartbeatInterval: 2000,
       electionTimeout: 10000,
-      consensusRequired: false,
+      votingRequired: false,
       timeoutMs: 5000,
       retryPolicy: { maxRetries: 5, backoffMs: 500 },
     },
@@ -286,7 +286,7 @@ export const swarmConfigs: Record<string, SwarmConfig> = {
       consensusProtocol: 'pbft',
       heartbeatInterval: 500,
       electionTimeout: 3000,
-      consensusRequired: true,
+      votingRequired: true,
       timeoutMs: 5000,
       retryPolicy: { maxRetries: 2, backoffMs: 250 },
     },
@@ -316,7 +316,7 @@ export const swarmConfigs: Record<string, SwarmConfig> = {
       consensusProtocol: 'byzantine',
       heartbeatInterval: 1000,
       electionTimeout: 10000,
-      consensusRequired: true,
+      votingRequired: true,
       timeoutMs: 15000,
       retryPolicy: { maxRetries: 5, backoffMs: 2000 },
     },
@@ -337,7 +337,7 @@ export const swarmConfigs: Record<string, SwarmConfig> = {
       consensusProtocol: 'raft',
       heartbeatInterval: 1000,
       electionTimeout: 5000,
-      consensusRequired: false,
+      votingRequired: false,
       timeoutMs: 5000,
       retryPolicy: { maxRetries: 3, backoffMs: 1000 },
     },
@@ -357,7 +357,7 @@ export const swarmConfigs: Record<string, SwarmConfig> = {
       consensusProtocol: 'gossip',
       heartbeatInterval: 1500,
       electionTimeout: 8000,
-      consensusRequired: true,
+      votingRequired: true,
       timeoutMs: 8000,
       retryPolicy: { maxRetries: 4, backoffMs: 750 },
     },
@@ -404,10 +404,10 @@ export const swarmStates: Record<string, SwarmState> = {
     lastHeartbeat: new Date(),
   },
 
-  consensus: {
+  voting: {
     id: 'swarm-004',
     topology: 'hierarchical-mesh',
-    status: 'consensus',
+    status: 'voting',
     agentCount: 15,
     activeAgentCount: 14,
     leaderId: 'agent-queen-001',

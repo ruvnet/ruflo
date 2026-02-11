@@ -8,22 +8,22 @@
  * @version 3.0.0-alpha.1
  */
 
-// ===== SONA Learning Mode Types =====
+// ===== Pattern Learning Mode Types =====
 
 /**
- * SONA (Self-Optimizing Neural Architecture) learning modes.
+ * Pattern (Self-Optimizing Pattern Architecture) learning modes.
  * Each mode optimizes for different performance characteristics.
  */
-export type SONALearningMode =
+export type PatternLearningMode =
   | 'real-time'   // ~0.05ms adaptation, sub-millisecond response
   | 'balanced'    // General purpose learning, moderate latency
   | 'research'    // Deep exploration mode, higher accuracy
   | 'edge'        // Resource-constrained environments
   | 'batch';      // High-throughput processing
 
-export interface SONAConfiguration {
+export interface PatternConfiguration {
   /** Active learning mode */
-  mode: SONALearningMode;
+  mode: PatternLearningMode;
   /** Learning rate for adaptation (0.0001 - 0.1) */
   learningRate: number;
   /** Pattern similarity threshold (0.0 - 1.0) */
@@ -38,13 +38,13 @@ export interface SONAConfiguration {
   autoModeSelection: boolean;
 }
 
-export interface SONATrajectory {
+export interface PatternTrajectory {
   /** Unique trajectory identifier */
   id: string;
   /** Associated task identifier */
   taskId: string;
   /** Trajectory steps */
-  steps: SONATrajectoryStep[];
+  steps: PatternTrajectoryStep[];
   /** Start timestamp */
   startTime: number;
   /** End timestamp (if completed) */
@@ -57,7 +57,7 @@ export interface SONATrajectory {
   metadata: Record<string, unknown>;
 }
 
-export interface SONATrajectoryStep {
+export interface PatternTrajectoryStep {
   /** Step identifier */
   stepId: string;
   /** Action taken */
@@ -72,7 +72,7 @@ export interface SONATrajectoryStep {
   embedding?: number[];
 }
 
-export interface SONAPattern {
+export interface PatternPattern {
   /** Pattern identifier */
   id: string;
   /** Pattern content/description */
@@ -95,7 +95,7 @@ export interface SONAPattern {
   metadata: Record<string, unknown>;
 }
 
-export interface SONALearningStats {
+export interface PatternLearningStats {
   /** Total patterns stored */
   totalPatterns: number;
   /** Active trajectories */
@@ -111,14 +111,14 @@ export interface SONALearningStats {
   /** Memory usage in bytes */
   memoryUsage: number;
   /** Current learning mode */
-  currentMode: SONALearningMode;
+  currentMode: PatternLearningMode;
 }
 
 // ===== Flash Attention Types =====
 
 /**
  * Attention mechanism types supported by agentic-flow.
- * Flash Attention provides 2.49x-7.47x speedup with 50-75% memory reduction.
+ * Flash Attention provides CPU-optimized with 50-75% memory reduction.
  */
 export type AttentionMechanism =
   | 'flash'       // Flash Attention - fastest, 75% memory reduction
@@ -182,7 +182,7 @@ export interface AttentionMetrics {
 // ===== AgentDB Types =====
 
 /**
- * AgentDB provides 150x-12,500x faster search via HNSW indexing.
+ * AgentDB provides optimized search via HNSW indexing.
  */
 export interface AgentDBConfiguration {
   /** Vector dimension */
@@ -255,8 +255,8 @@ export interface AgentDBStats {
 // ===== Integration Bridge Types =====
 
 export interface IntegrationConfig {
-  /** SONA configuration */
-  sona: Partial<SONAConfiguration>;
+  /** Pattern configuration */
+  sona: Partial<PatternConfiguration>;
   /** Attention configuration */
   attention: Partial<AttentionConfiguration>;
   /** AgentDB configuration */
@@ -272,8 +272,8 @@ export interface IntegrationConfig {
 }
 
 export interface FeatureFlags {
-  /** Enable SONA learning */
-  enableSONA: boolean;
+  /** Enable Pattern learning */
+  enablePattern: boolean;
   /** Enable Flash Attention */
   enableFlashAttention: boolean;
   /** Enable AgentDB vector search */
@@ -438,7 +438,7 @@ export type IntegrationErrorCode =
 
 // ===== Default Configurations =====
 
-export const DEFAULT_SONA_CONFIG: SONAConfiguration = {
+export const DEFAULT_Pattern_CONFIG: PatternConfiguration = {
   mode: 'balanced',
   learningRate: 0.001,
   similarityThreshold: 0.7,
@@ -472,7 +472,7 @@ export const DEFAULT_AGENTDB_CONFIG: AgentDBConfiguration = {
 };
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
-  enableSONA: true,
+  enablePattern: true,
   enableFlashAttention: true,
   enableAgentDB: true,
   enableTrajectoryTracking: true,
@@ -484,7 +484,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
 };
 
 export const DEFAULT_INTEGRATION_CONFIG: IntegrationConfig = {
-  sona: DEFAULT_SONA_CONFIG,
+  sona: DEFAULT_Pattern_CONFIG,
   attention: DEFAULT_ATTENTION_CONFIG,
   agentdb: DEFAULT_AGENTDB_CONFIG,
   features: DEFAULT_FEATURE_FLAGS,

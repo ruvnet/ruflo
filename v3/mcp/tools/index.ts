@@ -129,7 +129,7 @@ export {
   workerTools,
 } from './worker-tools.js';
 
-// SONA tools (Self-Optimizing Neural Architecture)
+// Pattern tools (Self-Optimizing Pattern Architecture)
 export {
   sonaTools,
 } from './sona-tools.js';

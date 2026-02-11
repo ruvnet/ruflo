@@ -2,7 +2,7 @@
  * V3 AgentDB Adapter
  *
  * Unified memory backend implementation using AgentDB with HNSW indexing
- * for 150x-12,500x faster vector search. Implements IMemoryBackend interface.
+ * for optimized vector search. Implements IMemoryBackend interface.
  *
  * @module v3/memory/agentdb-adapter
  */
@@ -86,7 +86,7 @@ const DEFAULT_CONFIG: AgentDBAdapterConfig = {
  * AgentDB Memory Backend Adapter
  *
  * Provides unified memory storage with:
- * - HNSW-based vector search (150x-12,500x faster than brute force)
+ * - HNSW-based vector search (optimized than brute force)
  * - LRU caching with TTL support
  * - Namespace-based organization
  * - Full-text and metadata filtering

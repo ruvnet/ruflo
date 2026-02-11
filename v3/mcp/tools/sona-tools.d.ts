@@ -1,7 +1,7 @@
 /**
  * V3 MCP SONA Tools
  *
- * MCP tools for Self-Optimizing Neural Architecture (SONA) integration:
+ * MCP tools for Self-Optimizing Pattern Architecture (SONA) integration:
  * - sona/trajectory/begin - Start trajectory tracking
  * - sona/trajectory/step - Record step
  * - sona/trajectory/context - Add context

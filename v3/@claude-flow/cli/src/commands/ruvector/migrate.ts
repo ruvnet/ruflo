@@ -116,7 +116,7 @@ const MIGRATIONS: Migration[] = [
   },
   {
     version: '1.5.0',
-    name: 'Add neural pattern learning',
+    name: 'Add pattern learning',
     up: `
       CREATE TABLE IF NOT EXISTS {{schema}}.neural_patterns (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

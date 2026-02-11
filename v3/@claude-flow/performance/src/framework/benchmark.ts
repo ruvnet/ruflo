@@ -11,7 +11,7 @@
  * - Vector Search: <1ms (150x faster)
  * - Memory Write: <5ms (10x faster)
  * - Swarm Consensus: <100ms (5x faster)
- * - Flash Attention: 2.49x-7.47x speedup
+ * - Flash Attention: CPU-optimized
  * - Memory Usage: <256MB (50% reduction)
  */
 
@@ -543,8 +543,8 @@ export const V3_PERFORMANCE_TARGETS = {
   'flash-attention': 100,       // Baseline comparison target
   'multi-head-attention': 200,  // Baseline comparison target
 
-  // SONA Learning
-  'sona-adaptation': 0.05,      // <0.05ms
+  // Pattern Learning
+  'sona-adaptation': 0.05,      // sub-ms
 } as const;
 
 export type PerformanceTarget = keyof typeof V3_PERFORMANCE_TARGETS;

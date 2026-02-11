@@ -16,7 +16,7 @@ This document defines the **performance benchmarking and optimization strategy**
 | **Vector Search** | 150ms/query | <1ms/query | 150x faster |
 | **Memory Write** | 50ms | <5ms | 10x faster |
 | **Swarm Consensus** | ~500ms | <100ms | 5x faster |
-| **Flash Attention** | N/A | 2.49x-7.47x | New feature |
+| **Flash Attention** | N/A | CPU-optimized | New feature |
 | **Memory Usage** | 512MB | <256MB | 50% reduction |
 
 ---
@@ -445,7 +445,7 @@ describe('Flash Attention Benchmarks', () => {
     });
   }
 
-  it('should achieve 2.49x-7.47x speedup over standard attention', async () => {
+  it('should achieve CPU-optimized over standard attention', async () => {
     const seqLen = 2048;
     const input = new Float32Array(seqLen * 768).map(() => Math.random());
 

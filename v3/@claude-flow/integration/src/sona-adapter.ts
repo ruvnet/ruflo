@@ -1,7 +1,7 @@
 /**
- * SONA (Self-Optimizing Neural Architecture) Adapter
+ * Pattern (Self-Optimizing Pattern Architecture) Adapter
  *
- * Provides integration with agentic-flow's SONA learning system,
+ * Provides integration with agentic-flow's Pattern learning system,
  * enabling real-time adaptation, pattern recognition, and
  * continuous learning capabilities.
  *
@@ -16,20 +16,20 @@
 
 import { EventEmitter } from 'events';
 import type {
-  SONAConfiguration,
-  SONALearningMode,
-  SONATrajectory,
-  SONATrajectoryStep,
-  SONAPattern,
-  SONALearningStats,
-  DEFAULT_SONA_CONFIG,
+  PatternConfiguration,
+  PatternLearningMode,
+  PatternTrajectory,
+  PatternTrajectoryStep,
+  PatternPattern,
+  PatternLearningStats,
+  DEFAULT_Pattern_CONFIG,
 } from './types.js';
 
 /**
- * Interface for agentic-flow SONA reference (for delegation)
+ * Interface for agentic-flow Pattern reference (for delegation)
  * This allows the adapter to delegate to agentic-flow when available
  */
-interface AgenticFlowSONAReference {
+interface AgenticFlowPatternReference {
   setMode(mode: string): Promise<void>;
   storePattern(params: {
     pattern: string;
@@ -60,9 +60,9 @@ interface AgenticFlowSONAReference {
 }
 
 /**
- * Mode-specific configurations for SONA learning
+ * Mode-specific configurations for Pattern learning
  */
-const MODE_CONFIGS: Record<SONALearningMode, Partial<SONAConfiguration>> = {
+const MODE_CONFIGS: Record<PatternLearningMode, Partial<PatternConfiguration>> = {
   'real-time': {
     learningRate: 0.01,
     similarityThreshold: 0.8,
@@ -96,51 +96,51 @@ const MODE_CONFIGS: Record<SONALearningMode, Partial<SONAConfiguration>> = {
 };
 
 /**
- * SONAAdapter - SONA Learning System Integration
+ * PatternAdapter - Pattern Learning System Integration
  *
- * This adapter provides a clean interface to agentic-flow's SONA
+ * This adapter provides a clean interface to agentic-flow's Pattern
  * learning capabilities, including:
  * - Learning mode selection and auto-switching
  * - Trajectory tracking for experience replay
  * - Pattern storage and retrieval
  * - Memory distillation and consolidation
  */
-export class SONAAdapter extends EventEmitter {
-  private config: SONAConfiguration;
+export class PatternAdapter extends EventEmitter {
+  private config: PatternConfiguration;
   private initialized: boolean = false;
-  private activeTrajectories: Map<string, SONATrajectory> = new Map();
-  private patterns: Map<string, SONAPattern> = new Map();
-  private stats: SONALearningStats;
+  private activeTrajectories: Map<string, PatternTrajectory> = new Map();
+  private patterns: Map<string, PatternPattern> = new Map();
+  private stats: PatternLearningStats;
   private consolidationTimer: NodeJS.Timeout | null = null;
   private learningCycleCount: number = 0;
 
   /**
-   * Reference to agentic-flow SONA for delegation (ADR-001)
+   * Reference to agentic-flow Pattern for delegation (ADR-001)
    * When set, methods delegate to agentic-flow instead of local implementation
    */
-  private agenticFlowSona: AgenticFlowSONAReference | null = null;
+  private agenticFlowSona: AgenticFlowPatternReference | null = null;
 
   /**
    * Indicates if delegation to agentic-flow is active
    */
   private delegationEnabled: boolean = false;
 
-  constructor(config: Partial<SONAConfiguration> = {}) {
+  constructor(config: Partial<PatternConfiguration> = {}) {
     super();
     this.config = this.mergeConfig(config);
     this.stats = this.initializeStats();
   }
 
   /**
-   * Set reference to agentic-flow SONA for delegation
+   * Set reference to agentic-flow Pattern for delegation
    *
    * This implements ADR-001: Adopt agentic-flow as Core Foundation
    * When a reference is provided, pattern storage and retrieval
    * delegate to agentic-flow's optimized implementations.
    *
-   * @param sonaRef - The agentic-flow SONA interface reference
+   * @param sonaRef - The agentic-flow Pattern interface reference
    */
-  setAgenticFlowReference(sonaRef: AgenticFlowSONAReference): void {
+  setAgenticFlowReference(sonaRef: AgenticFlowPatternReference): void {
     this.agenticFlowSona = sonaRef;
     this.delegationEnabled = true;
     this.emit('delegation-enabled', { target: 'agentic-flow' });
@@ -154,7 +154,7 @@ export class SONAAdapter extends EventEmitter {
   }
 
   /**
-   * Initialize the SONA adapter
+   * Initialize the Pattern adapter
    */
   async initialize(): Promise<void> {
     if (this.initialized) {
@@ -183,7 +183,7 @@ export class SONAAdapter extends EventEmitter {
   /**
    * Reconfigure the adapter
    */
-  async reconfigure(config: Partial<SONAConfiguration>): Promise<void> {
+  async reconfigure(config: Partial<PatternConfiguration>): Promise<void> {
     this.config = this.mergeConfig(config);
 
     if (config.mode) {
@@ -204,14 +204,14 @@ export class SONAAdapter extends EventEmitter {
   /**
    * Get current learning mode
    */
-  getMode(): SONALearningMode {
+  getMode(): PatternLearningMode {
     return this.config.mode;
   }
 
   /**
    * Set learning mode
    */
-  async setMode(mode: SONALearningMode): Promise<void> {
+  async setMode(mode: PatternLearningMode): Promise<void> {
     const previousMode = this.config.mode;
     this.config.mode = mode;
     this.applyModeConfig(mode);
@@ -235,7 +235,7 @@ export class SONAAdapter extends EventEmitter {
     this.ensureInitialized();
 
     const trajectoryId = this.generateId('traj');
-    const trajectory: SONATrajectory = {
+    const trajectory: PatternTrajectory = {
       id: trajectoryId,
       taskId: params.taskId,
       steps: [],
@@ -273,7 +273,7 @@ export class SONAAdapter extends EventEmitter {
       throw new Error(`Trajectory ${params.trajectoryId} not found`);
     }
 
-    const step: SONATrajectoryStep = {
+    const step: PatternTrajectoryStep = {
       stepId: params.stepId || this.generateId('step'),
       action: params.action,
       observation: params.observation,
@@ -299,7 +299,7 @@ export class SONAAdapter extends EventEmitter {
     success: boolean;
     verdict?: 'positive' | 'negative' | 'neutral';
     reward?: number;
-  }): Promise<SONATrajectory> {
+  }): Promise<PatternTrajectory> {
     this.ensureInitialized();
 
     const trajectory = this.activeTrajectories.get(params.trajectoryId);
@@ -338,7 +338,7 @@ export class SONAAdapter extends EventEmitter {
    *
    * ADR-001: When agentic-flow is available, delegates to its optimized
    * pattern storage which uses AgentDB with HNSW indexing for
-   * 150x-12,500x faster similarity search.
+   * optimized similarity search.
    */
   async storePattern(params: {
     pattern: string;
@@ -381,7 +381,7 @@ export class SONAAdapter extends EventEmitter {
 
     // Local implementation (fallback or when agentic-flow not available)
     const patternId = this.generateId('pat');
-    const storedPattern: SONAPattern = {
+    const storedPattern: PatternPattern = {
       id: patternId,
       pattern: params.pattern,
       solution: params.solution,
@@ -410,14 +410,14 @@ export class SONAAdapter extends EventEmitter {
    * Find similar patterns to a query
    *
    * ADR-001: When agentic-flow is available, delegates to its optimized
-   * HNSW-indexed search for 150x-12,500x faster retrieval.
+   * HNSW-indexed search for optimized retrieval.
    */
   async findSimilarPatterns(params: {
     query: string;
     category?: string;
     topK?: number;
     threshold?: number;
-  }): Promise<SONAPattern[]> {
+  }): Promise<PatternPattern[]> {
     this.ensureInitialized();
 
     const topK = params.topK || 5;
@@ -432,8 +432,8 @@ export class SONAAdapter extends EventEmitter {
           threshold,
         });
 
-        // Map results to SONAPattern format
-        const patterns: SONAPattern[] = results.map(r => ({
+        // Map results to PatternPattern format
+        const patterns: PatternPattern[] = results.map(r => ({
           id: r.id,
           pattern: r.pattern,
           solution: r.solution,
@@ -465,7 +465,7 @@ export class SONAAdapter extends EventEmitter {
     }
 
     // Local implementation (fallback or when agentic-flow not available)
-    const results: Array<{ pattern: SONAPattern; score: number }> = [];
+    const results: Array<{ pattern: PatternPattern; score: number }> = [];
 
     for (const pattern of this.patterns.values()) {
       // Filter by category if specified
@@ -501,7 +501,7 @@ export class SONAAdapter extends EventEmitter {
   /**
    * Get a pattern by ID
    */
-  async getPattern(patternId: string): Promise<SONAPattern | null> {
+  async getPattern(patternId: string): Promise<PatternPattern | null> {
     this.ensureInitialized();
     return this.patterns.get(patternId) || null;
   }
@@ -553,7 +553,7 @@ export class SONAAdapter extends EventEmitter {
   /**
    * Get learning statistics
    */
-  async getStats(): Promise<SONALearningStats> {
+  async getStats(): Promise<PatternLearningStats> {
     this.ensureInitialized();
 
     return {
@@ -568,7 +568,7 @@ export class SONAAdapter extends EventEmitter {
   /**
    * Export patterns for persistence
    */
-  async exportPatterns(): Promise<SONAPattern[]> {
+  async exportPatterns(): Promise<PatternPattern[]> {
     this.ensureInitialized();
     return Array.from(this.patterns.values());
   }
@@ -576,7 +576,7 @@ export class SONAAdapter extends EventEmitter {
   /**
    * Import patterns from storage
    */
-  async importPatterns(patterns: SONAPattern[]): Promise<number> {
+  async importPatterns(patterns: PatternPattern[]): Promise<number> {
     this.ensureInitialized();
 
     let imported = 0;
@@ -613,7 +613,7 @@ export class SONAAdapter extends EventEmitter {
 
   // ===== Private Methods =====
 
-  private mergeConfig(config: Partial<SONAConfiguration>): SONAConfiguration {
+  private mergeConfig(config: Partial<PatternConfiguration>): PatternConfiguration {
     return {
       mode: config.mode || 'balanced',
       learningRate: config.learningRate ?? 0.001,
@@ -625,7 +625,7 @@ export class SONAAdapter extends EventEmitter {
     };
   }
 
-  private initializeStats(): SONALearningStats {
+  private initializeStats(): PatternLearningStats {
     return {
       totalPatterns: 0,
       activeTrajectories: 0,
@@ -638,7 +638,7 @@ export class SONAAdapter extends EventEmitter {
     };
   }
 
-  private applyModeConfig(mode: SONALearningMode): void {
+  private applyModeConfig(mode: PatternLearningMode): void {
     const modeConfig = MODE_CONFIGS[mode];
     if (modeConfig) {
       Object.assign(this.config, modeConfig);
@@ -730,7 +730,7 @@ export class SONAAdapter extends EventEmitter {
     });
   }
 
-  private async learnFromTrajectory(trajectory: SONATrajectory): Promise<void> {
+  private async learnFromTrajectory(trajectory: PatternTrajectory): Promise<void> {
     // Extract patterns from successful trajectory
     if (trajectory.steps.length === 0) return;
 
@@ -761,7 +761,7 @@ export class SONAAdapter extends EventEmitter {
     return intersection.size / union.size;
   }
 
-  private calculatePatternScore(pattern: SONAPattern): number {
+  private calculatePatternScore(pattern: PatternPattern): number {
     const now = Date.now();
     const ageMs = now - pattern.createdAt;
     const recencyMs = now - pattern.lastUsedAt;
@@ -807,18 +807,18 @@ export class SONAAdapter extends EventEmitter {
 
   private ensureInitialized(): void {
     if (!this.initialized) {
-      throw new Error('SONAAdapter not initialized. Call initialize() first.');
+      throw new Error('PatternAdapter not initialized. Call initialize() first.');
     }
   }
 }
 
 /**
- * Create and initialize a SONA adapter
+ * Create and initialize a Pattern adapter
  */
-export async function createSONAAdapter(
-  config?: Partial<SONAConfiguration>
-): Promise<SONAAdapter> {
-  const adapter = new SONAAdapter(config);
+export async function createPatternAdapter(
+  config?: Partial<PatternConfiguration>
+): Promise<PatternAdapter> {
+  const adapter = new PatternAdapter(config);
   await adapter.initialize();
   return adapter;
 }

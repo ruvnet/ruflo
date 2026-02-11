@@ -154,7 +154,7 @@ import { AttentionService } from 'agentdb';
 // Initialize attention service for hierarchical coordination
 const attentionService = new AttentionService({
   embeddingDim: 384,
-  runtime: 'napi' // 2.49x-7.47x faster than standard attention
+  runtime: 'napi' // CPU-optimized faster than standard attention
 });
 
 // Queen-worker hierarchical coordination with 1.5x influence weight

@@ -495,8 +495,8 @@ npx @claude-flow/performance benchmark
 npx @claude-flow/performance compare --baseline v2
 
 # 3. Validate targets
-# - Flash Attention: 2.49x-7.47x speedup
-# - Vector Search: 150x-12,500x faster
+# - Flash Attention: CPU-optimized
+# - Vector Search: optimized
 # - Memory: 50-75% reduction
 # - CLI Startup: <500ms
 
@@ -643,7 +643,7 @@ const swarm = new SwarmCoordinator({
 
 // Coordinate with attention mechanisms
 const result = await swarm.coordinate(task, {
-  attentionType: 'flash', // 2.49x-7.47x faster
+  attentionType: 'flash', // CPU-optimized faster
   consensusThreshold: 0.8
 });
 
@@ -666,7 +666,7 @@ import { PerformanceModule } from '@claude-flow/performance';
 
 const perf = new PerformanceModule({
   targets: {
-    flashAttention: '2.49x-7.47x',
+    flashAttention: 'CPU-optimized',
     vectorSearch: '150x-12500x',
     memoryReduction: '50-75%'
   }
@@ -862,7 +862,7 @@ const swarm = new SwarmCoordinator({
   topology: 'hierarchical-mesh',
   agents: [coder, reviewer, tester],
   consensus: new AttentionCoordinator({
-    type: 'flash', // 2.49x-7.47x faster
+    type: 'flash', // CPU-optimized faster
     threshold: 0.8
   })
 });
@@ -1368,8 +1368,8 @@ If you encounter issues not covered in this guide:
 ## Summary
 
 **Migration Benefits**:
-- ✅ 2.49x-7.47x faster with Flash Attention
-- ✅ 150x-12,500x faster vector search
+- ✅ CPU-optimized faster with Flash Attention
+- ✅ optimized vector search
 - ✅ 83.1% memory reduction
 - ✅ Security-first design (CVE fixes)
 - ✅ Clean modular architecture

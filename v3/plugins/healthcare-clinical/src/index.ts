@@ -3,7 +3,7 @@
  *
  * A HIPAA-compliant clinical decision support plugin that combines
  * ultra-fast vector search for medical literature retrieval with
- * graph neural networks for patient pathway analysis.
+ * graph pattern networks for patient pathway analysis.
  *
  * Features:
  * - Patient similarity search using HNSW (150x faster)

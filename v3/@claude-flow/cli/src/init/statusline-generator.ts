@@ -1194,8 +1194,8 @@ function generateJSON() {
     agentdb: getAgentDBStats(),
     tests: getTestStats(),
     performance: {
-      flashAttentionTarget: '2.49x-7.47x',
-      searchImprovement: '150x-12,500x',
+      flashAttentionTarget: 'CPU-optimized',
+      searchImprovement: 'HNSW-indexed',
       memoryReduction: '50-75%',
     },
     lastUpdated: new Date().toISOString(),

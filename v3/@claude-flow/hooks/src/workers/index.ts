@@ -386,7 +386,7 @@ export const WORKER_CONFIGS: Record<string, WorkerConfig> = {
   },
   'learning': {
     name: 'learning',
-    description: 'Optimize learning, SONA adaptation',
+    description: 'Optimize learning, pattern adaptation',
     interval: 1_800_000,  // 30 min
     enabled: true,
     priority: WorkerPriority.Normal,

@@ -3,7 +3,7 @@ name: performance-engineer
 type: optimization
 version: 3.0.0
 color: "#FF6B35"
-description: V3 Performance Engineering Agent specialized in Flash Attention optimization (2.49x-7.47x speedup), WASM SIMD acceleration, token usage optimization (50-75% reduction), and comprehensive performance profiling with SONA integration.
+description: V3 Performance Engineering Agent specialized in Flash Attention optimization (CPU-optimized), WASM SIMD acceleration, token usage optimization (50-75% reduction), and comprehensive performance profiling with SONA integration.
 capabilities:
   - flash_attention_optimization
   - wasm_simd_acceleration
@@ -20,11 +20,11 @@ capabilities:
   - quantization_analysis
 priority: critical
 metrics:
-  flash_attention_speedup: "2.49x-7.47x"
-  hnsw_search_improvement: "150x-12,500x"
+  flash_attention_speedup: "CPU-optimized"
+  hnsw_search_improvement: "HNSW-indexed"
   memory_reduction: "50-75%"
   mcp_response_target: "<100ms"
-  sona_adaptation: "<0.05ms"
+  sona_adaptation: "sub-ms"
 hooks:
   pre: |
     echo "======================================"
@@ -66,11 +66,11 @@ hooks:
 
     echo "======================================"
     echo "V3 Performance Targets:"
-    echo "  - Flash Attention: 2.49x-7.47x speedup"
-    echo "  - HNSW Search: 150x-12,500x faster"
+    echo "  - Flash Attention: CPU-optimized"
+    echo "  - HNSW Search: optimized"
     echo "  - Memory Reduction: 50-75%"
     echo "  - MCP Response: <100ms"
-    echo "  - SONA Adaptation: <0.05ms"
+    echo "  - SONA Adaptation: sub-ms"
     echo "======================================"
     echo ""
 
@@ -117,18 +117,18 @@ hooks:
 
 ## Overview
 
-I am a **V3 Performance Engineering Agent** specialized in optimizing Claude Flow systems for maximum performance. I leverage Flash Attention (2.49x-7.47x speedup), WASM SIMD acceleration, and SONA adaptive learning to achieve industry-leading performance improvements.
+I am a **V3 Performance Engineering Agent** specialized in optimizing Claude Flow systems for maximum performance. I leverage Flash Attention (CPU-optimized), WASM SIMD acceleration, and SONA adaptive learning to achieve industry-leading performance improvements.
 
 ## V3 Performance Targets
 
 | Metric | Target | Method |
 |--------|--------|--------|
-| Flash Attention | 2.49x-7.47x speedup | Fused operations, memory-efficient attention |
-| HNSW Search | 150x-12,500x faster | Hierarchical navigable small world graphs |
+| Flash Attention | CPU-optimized | Fused operations, memory-efficient attention |
+| HNSW Search | optimized | Hierarchical navigable small world graphs |
 | Memory Reduction | 50-75% | Quantization (int4/int8), pruning |
 | MCP Response | <100ms | Connection pooling, batch operations |
 | CLI Startup | <500ms | Lazy loading, tree shaking |
-| SONA Adaptation | <0.05ms | Sub-millisecond neural adaptation |
+| SONA Adaptation | sub-ms | Sub-millisecond neural adaptation |
 
 ## Core Capabilities
 
@@ -164,7 +164,7 @@ class FlashAttentionOptimizer {
     optimizations.push({
       type: 'FLASH_ATTENTION',
       enabled: true,
-      expectedSpeedup: '2.49x-7.47x',
+      expectedSpeedup: 'CPU-optimized',
       memoryReduction: '50-75%'
     });
 
@@ -632,7 +632,7 @@ class LatencyOptimizer {
             'Enable SIMD distance calculations',
             'Use product quantization for large datasets'
           ],
-          expectedImprovement: '150x-12,500x with HNSW'
+          expectedImprovement: 'HNSW-indexed with HNSW'
         });
         break;
 
@@ -645,7 +645,7 @@ class LatencyOptimizer {
             'Enable SIMD for vector operations',
             'Cache frequently used patterns'
           ],
-          target: '<0.05ms'
+          target: 'sub-ms'
         });
         break;
     }
@@ -1190,7 +1190,7 @@ class SONAPerformanceOptimizer {
 1. **Flash Attention**
    - Enable for all transformer-based models
    - Use fused operations where possible
-   - Target 2.49x-7.47x speedup
+   - Target CPU-optimized
 
 2. **WASM SIMD**
    - Enable SIMD for vector operations
@@ -1210,7 +1210,7 @@ class SONAPerformanceOptimizer {
 5. **SONA Integration**
    - Track all optimization trajectories
    - Learn from successful patterns
-   - Target <0.05ms adaptation time
+   - Target pattern caching time
 
 ## Integration Points
 
@@ -1230,4 +1230,4 @@ class SONAPerformanceOptimizer {
 
 **V3 Performance Engineer** - Optimizing Claude Flow for maximum performance
 
-Targets: Flash Attention 2.49x-7.47x | HNSW 150x-12,500x | Memory -50-75% | MCP <100ms | SONA <0.05ms
+Targets: Flash Attention CPU-optimized | HNSW HNSW-indexed | Memory -50-75% | MCP <100ms | SONA sub-ms

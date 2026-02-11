@@ -278,7 +278,7 @@ class MockPrimeRadiantPlugin {
         }),
       },
       {
-        name: 'pr_consensus_verify',
+        name: 'pr_voting_verify',
         description: 'Verify multi-agent consensus mathematically',
         inputSchema: {
           type: 'object',
@@ -622,11 +622,11 @@ describe('PrimeRadiantPlugin', () => {
       expect(tool?.description).toContain('causal');
     });
 
-    it('should include consensus_verify tool', async () => {
+    it('should include voting_verify tool', async () => {
       await plugin.initialize(context);
 
       const tools = plugin.registerMCPTools();
-      const tool = tools.find((t) => t.name === 'pr_consensus_verify');
+      const tool = tools.find((t) => t.name === 'pr_voting_verify');
 
       expect(tool).toBeDefined();
     });

@@ -323,8 +323,8 @@ export class CLI {
     this.output.writeln(this.output.bold('V3 FEATURES:'));
     this.output.printList([
       '15-agent hierarchical mesh coordination',
-      'AgentDB with HNSW indexing (150x-12,500x faster)',
-      'Flash Attention (2.49x-7.47x speedup)',
+      'AgentDB with HNSW indexing (optimized)',
+      'Flash Attention (CPU-optimized)',
       'Unified SwarmCoordinator engine',
       'Event-sourced state management',
       'Domain-Driven Design architecture'
@@ -596,18 +596,18 @@ export {
   type EWCStats,
 } from './memory/ewc-consolidation.js';
 
-// SONA Optimizer (Adaptive Routing via Trajectory Learning)
+// Pattern Optimizer (Adaptive Routing via Trajectory Learning)
 export {
-  SONAOptimizer,
-  getSONAOptimizer,
-  resetSONAOptimizer,
+  PatternOptimizer,
+  getPatternOptimizer,
+  resetPatternOptimizer,
   processTrajectory,
   getSuggestion,
-  getSONAStats,
+  getPatternStats,
   type TrajectoryOutcome,
   type LearnedPattern,
   type RoutingSuggestion,
-  type SONAStats,
+  type PatternStats,
 } from './memory/sona-optimizer.js';
 
 // Production Hardening

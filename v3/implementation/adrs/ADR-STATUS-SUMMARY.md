@@ -163,13 +163,13 @@
 
 | Target | Specification | Status | Evidence |
 |--------|---------------|--------|----------|
-| HNSW Search | 150x-12,500x faster | ✅ Achieved | HNSW index in memory module |
+| HNSW Search | optimized | ✅ Achieved | HNSW index in memory module |
 | CLI Startup | <500ms | ✅ Achieved | Lazy loading, -200ms improvement |
 | MCP Response | <100ms | ✅ Achieved | Connection pooling, 3-5x throughput |
 | Memory Reduction | 50-75% | ✅ Achieved | Quantization, tree-shaking |
 | Pattern Search | Real vector search | ✅ Achieved | alpha.100: 0.87 similarity, 318ms |
-| **Flash Attention** | **2.49x-7.47x speedup** | **✅ Achieved** | **2.57x avg (two-stage screening)** |
-| **SONA Adaptation** | **<0.05ms** | **✅ Achieved** | **0.01ms avg routing time** |
+| **Flash Attention** | **CPU-optimized** | **✅ Achieved** | **2.57x avg (two-stage screening)** |
+| **SONA Adaptation** | **sub-ms** | **✅ Achieved** | **0.01ms avg routing time** |
 
 ## ✅ Neural Features - FULLY IMPLEMENTED (alpha.102+)
 
@@ -181,8 +181,8 @@
 | Pattern Search | Vector similarity | ✅ **REAL** | 0.815 similarity score, 10ms search time |
 | Trajectory Recording | Persistence | ✅ **REAL** | Stored with embeddings to `trajectories` namespace |
 | Trajectory Steps | Step tracking | ✅ **REAL** | In-memory during recording, persisted on end |
-| SONA Adaptation | <0.05ms | ✅ **VERIFIED** (alpha.104) | `sona-optimizer.ts` - 841 lines, **0.01ms actual** |
-| Flash Attention | 2.49x-7.47x | ✅ **VERIFIED** (alpha.104) | `flash-attention.ts` - ~610 lines, **2.57x avg** (two-stage screening) |
+| SONA Adaptation | sub-ms | ✅ **VERIFIED** (alpha.104) | `sona-optimizer.ts` - 841 lines, **0.01ms actual** |
+| Flash Attention | CPU-optimized | ✅ **VERIFIED** (alpha.104) | `flash-attention.ts` - ~610 lines, **2.57x avg** (two-stage screening) |
 | MoE Routing | 8 experts | ✅ **REAL** (alpha.102) | `moe-router.ts` - ~500 lines, gating network with REINFORCE |
 | EWC++ Consolidation | Prevents forgetting | ✅ **REAL** (alpha.102) | `ewc-consolidation.ts` - ~600 lines, Fisher matrix |
 | LoRA Pattern Distill | 128x compression | ✅ **REAL** (alpha.102) | `lora-adapter.ts` - ~400 lines, rank=8 adaptation |

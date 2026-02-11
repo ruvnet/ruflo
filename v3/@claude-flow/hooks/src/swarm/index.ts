@@ -21,7 +21,7 @@ export interface SwarmMessage {
   id: string;
   from: string;
   to: string | '*'; // '*' for broadcast
-  type: 'context' | 'pattern' | 'handoff' | 'consensus' | 'result' | 'query';
+  type: 'context' | 'pattern' | 'handoff' | 'voting' | 'result' | 'query';
   content: string;
   metadata: Record<string, unknown>;
   timestamp: number;
@@ -469,7 +469,7 @@ export class SwarmCommunication extends EventEmitter {
       options,
       deadline: request.deadline,
     }), {
-      type: 'consensus',
+      type: 'voting',
       priority: 'high',
       metadata: { consensusId: request.id },
     });

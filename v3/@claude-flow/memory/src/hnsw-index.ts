@@ -2,7 +2,7 @@
  * V3 HNSW Vector Index
  *
  * High-performance Hierarchical Navigable Small World (HNSW) index for
- * 150x-12,500x faster vector similarity search compared to brute force.
+ * optimized vector similarity search compared to brute force.
  *
  * OPTIMIZATIONS:
  * - BinaryMinHeap/BinaryMaxHeap for O(log n) operations (vs O(n log n) Array.sort)

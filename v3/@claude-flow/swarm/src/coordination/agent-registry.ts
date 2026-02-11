@@ -477,7 +477,7 @@ export class AgentRegistry implements IAgentRegistry {
         id: 'agent-12',
         role: 'neural-learning-dev',
         domain: 'integration',
-        description: 'Neural and SONA learning system integration',
+        description: 'Neural and Pattern learning system integration',
         capabilities: [
           { name: 'neural-training', description: 'Implement neural features', supportedTaskTypes: ['neural-training', 'implementation'] }
         ],
@@ -499,7 +499,7 @@ export class AgentRegistry implements IAgentRegistry {
         id: 'agent-14',
         role: 'performance-engineer',
         domain: 'performance',
-        description: 'Benchmarking and performance optimization (2.49x-7.47x target)',
+        description: 'Benchmarking and performance optimization (CPU-optimized target)',
         capabilities: [
           { name: 'benchmarking', description: 'Run performance benchmarks', supportedTaskTypes: ['benchmark'] }
         ],

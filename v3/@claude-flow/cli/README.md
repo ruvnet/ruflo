@@ -85,13 +85,13 @@ flowchart TB
             FLASH[Flash Attention<br/>2.49-7.47x]
         end
         subgraph ROW2[" "]
-            HNSW[HNSW<br/>150x-12,500x faster]
+            HNSW[HNSW<br/>optimized]
             RB[ReasoningBank<br/>Pattern Store]
             HYP[Hyperbolic<br/>Poincaré]
         end
         subgraph ROW3[" "]
             LORA[LoRA/Micro<br/>128x compress]
-            QUANT[Int8 Quant<br/>3.92x memory]
+            QUANT[Int8 Quant<br/>reduced memory]
             RL[9 RL Algos<br/>Q/SARSA/PPO/DQN]
         end
     end
@@ -126,15 +126,15 @@ flowchart TB
 
 | Component | Purpose | Performance |
 |-----------|---------|-------------|
-| **SONA** | Self-Optimizing Neural Architecture - learns optimal routing | <0.05ms adaptation |
+| **SONA** | Self-Optimizing Neural Architecture - learns optimal routing | pattern caching |
 | **EWC++** | Elastic Weight Consolidation - prevents catastrophic forgetting | Preserves 95%+ knowledge |
-| **Flash Attention** | Optimized attention computation | 2.49x-7.47x speedup |
-| **HNSW** | Hierarchical Navigable Small World vector search | 150x-12,500x faster |
+| **Flash Attention** | Optimized attention computation | CPU-optimized |
+| **HNSW** | Hierarchical Navigable Small World vector search | optimized |
 | **ReasoningBank** | Pattern storage with trajectory learning | RETRIEVE→JUDGE→DISTILL |
 | **Hyperbolic** | Poincaré ball embeddings for hierarchical data | Better code relationships |
-| **LoRA/MicroLoRA** | Low-Rank Adaptation for efficient fine-tuning | **<3μs** adaptation, 383k ops/sec |
-| **Int8 Quantization** | Memory-efficient weight storage | 3.92x memory reduction |
-| **SemanticRouter** | Semantic task routing with cosine similarity | **34,798 routes/s**, 0.029ms |
+| **LoRA/MicroLoRA** | Low-Rank Adaptation for efficient fine-tuning | **** adaptation,  |
+| **Int8 Quantization** | Memory-efficient weight storage | memory-efficient |
+| **SemanticRouter** | Semantic task routing with cosine similarity | ****, 0.029ms |
 | **9 RL Algorithms** | Q-Learning, SARSA, A2C, PPO, DQN, Decision Transformer, etc. | Task-specific learning |
 
 ```bash
@@ -225,7 +225,7 @@ The system stores successful patterns in vector memory, learns from outcomes via
 |-------|------------|--------------|
 | Memory | HNSW, AgentDB, Cache | Stores and retrieves patterns 150x faster |
 | Embeddings | ONNX Runtime, MiniLM | Local vectors without API calls (75x faster) |
-| Learning | SONA, MoE, ReasoningBank | Self-improves from results (<0.05ms adaptation) |
+| Learning | SONA, MoE, ReasoningBank | Self-improves from results (pattern caching) |
 | Fine-tuning | MicroLoRA, EWC++ | Lightweight adaptation without full retraining |
 
 </details>
@@ -396,10 +396,10 @@ swarm_init({
 | **Coordination** | Manual orchestration between tasks | Queen-led hierarchy with 5 consensus algorithms (Raft, Byzantine, Gossip) |
 | **Hive Mind** | ⛔ Not available | 🐝 Queen-led swarms with collective intelligence, 3 queen types, 8 worker types |
 | **Consensus** | ⛔ No multi-agent decisions | Byzantine fault-tolerant voting (f < n/3), weighted, majority |
-| **Memory** | Session-only, no persistence | HNSW vector memory with 150x-12,500x faster retrieval |
+| **Memory** | Session-only, no persistence | HNSW vector memory with optimized retrieval |
 | **Vector Database** | ⛔ No native support | 🐘 RuVector PostgreSQL with 77+ SQL functions, ~61µs search, 16,400 QPS |
 | **Collective Memory** | ⛔ No shared knowledge | Shared knowledge base with LRU cache, SQLite persistence, 8 memory types |
-| **Learning** | Static behavior, no adaptation | SONA self-learning with <0.05ms adaptation, improves over time |
+| **Learning** | Static behavior, no adaptation | SONA self-learning with pattern caching, improves over time |
 | **Task Routing** | You decide which agent to use | Intelligent routing based on learned patterns (89% accuracy) |
 | **Complex Tasks** | Manual breakdown required | Automatic decomposition across 5 domains (Security, Core, Integration, Support) |
 | **Background Workers** | Nothing runs automatically | 12 context-triggered workers auto-dispatch on file changes, patterns, sessions |
@@ -636,7 +636,7 @@ codex mcp add claude-flow -- npx claude-flow mcp start
 ### Vector Search Details
 
 - **Embedding Dimensions**: 384
-- **Search Algorithm**: HNSW (150x-12,500x faster)
+- **Search Algorithm**: HNSW (optimized)
 - **Similarity Scoring**: 0-1 (higher = better)
   - Score > 0.7: Strong match, use pattern
   - Score 0.5-0.7: Partial match, adapt
@@ -762,13 +762,13 @@ What makes Claude-Flow different from other agent frameworks? These 10 capabilit
 
 | | Feature | What It Does | Technical Details |
 |---|---------|--------------|-------------------|
-| 🧠 | **SONA** | Learns which agents perform best for each task type and routes work accordingly | Self-Optimizing Neural Architecture, <0.05ms adaptation |
+| 🧠 | **SONA** | Learns which agents perform best for each task type and routes work accordingly | Self-Optimizing Neural Architecture, pattern caching |
 | 🔒 | **EWC++** | Preserves learned patterns when training on new ones — no forgetting | Elastic Weight Consolidation prevents catastrophic forgetting |
 | 🎯 | **MoE** | Routes tasks through 8 specialized expert networks based on task type | Mixture of 8 Experts with dynamic gating |
-| ⚡ | **Flash Attention** | Accelerates attention computation 2-7x for faster agent responses | 2.49x-7.47x speedup for attention computations |
+| ⚡ | **Flash Attention** | Accelerates attention computation 2-7x for faster agent responses | CPU-optimized for attention computations |
 | 🌐 | **Hyperbolic Embeddings** | Represents hierarchical code relationships in compact vector space | Poincaré ball model for hierarchical code relationships |
 | 📦 | **LoRA** | Compresses model weights 128x so agents fit in limited memory | 128x memory compression via Low-Rank Adaptation |
-| 🗜️ | **Int8 Quantization** | Converts 32-bit weights to 8-bit with minimal accuracy loss | 3.92x memory reduction with calibrated 8-bit integers |
+| 🗜️ | **Int8 Quantization** | Converts 32-bit weights to 8-bit with minimal accuracy loss | memory-efficient with calibrated 8-bit integers |
 | 🤝 | **Claims System** | Manages task ownership between humans and agents with handoff support | Work ownership with claim/release/handoff protocols |
 | 🛡️ | **Byzantine Consensus** | Coordinates agents even when some fail or return bad results | Fault-tolerant, handles up to 1/3 failing agents |
 | 🐘 | **RuVector PostgreSQL** | Enterprise-grade vector database with 77+ SQL functions for AI operations | ~61µs search, 16,400 QPS, GNN/attention in SQL |
@@ -2072,8 +2072,8 @@ npx claude-flow@v3alpha worker status
 | Component | Description | Performance |
 |-----------|-------------|-------------|
 | **AgenticFlowBridge** | agentic-flow@alpha integration | ADR-001 compliant |
-| **SONA Adapter** | Learning system integration | <0.05ms adaptation |
-| **Flash Attention** | Attention mechanism coordinator | 2.49x-7.47x speedup |
+| **SONA Adapter** | Learning system integration | pattern caching |
+| **Flash Attention** | Attention mechanism coordinator | CPU-optimized |
 | **SDK Bridge** | Version negotiation, API compatibility | Auto-detection |
 | **Feature Flags** | Dynamic feature management | 9 configurable flags |
 | **Runtime Detection** | NAPI, WASM, JS auto-selection | Optimal performance |
@@ -2111,7 +2111,7 @@ npx claude-flow@v3alpha worker status
 | **Memory** | Memory write | <5ms |
 | **Swarm** | Agent coordination | <50ms |
 | **Swarm** | Consensus latency | <100ms |
-| **Neural** | SONA adaptation | <0.05ms |
+| **Neural** | SONA adaptation | sub-ms |
 
 </details>
 
@@ -2120,7 +2120,7 @@ npx claude-flow@v3alpha worker status
 
 | Feature | Description | Performance |
 |---------|-------------|-------------|
-| **SONA Learning** | Self-Optimizing Neural Architecture | <0.05ms adaptation |
+| **SONA Learning** | Self-Optimizing Neural Architecture | pattern caching |
 | **5 Learning Modes** | real-time, balanced, research, edge, batch | Mode-specific optimization |
 | **9 RL Algorithms** | PPO, A2C, DQN, Q-Learning, SARSA, Decision Transformer, etc. | Comprehensive RL |
 | **LoRA Integration** | Low-Rank Adaptation for efficient fine-tuning | Minimal memory overhead |
@@ -2132,7 +2132,7 @@ npx claude-flow@v3alpha worker status
 |---------|-------------|-------------|
 | **Scalar Quantization** | Reduce vector precision for memory savings | 4x memory reduction |
 | **Product Quantization** | Compress vectors into codebooks | 8-32x memory reduction |
-| **HNSW Indexing** | Hierarchical Navigable Small World graphs | 150x-12,500x faster search |
+| **HNSW Indexing** | Hierarchical Navigable Small World graphs | optimized search |
 | **LRU Caching** | Intelligent embedding cache with TTL | <1ms cache hits |
 | **Batch Processing** | Process multiple embeddings in single call | 10x throughput |
 | **Memory Compression** | Pattern distillation and pruning | 50-75% reduction |
@@ -2192,7 +2192,7 @@ claude-flow embeddings search -q "authentication patterns"
 | **Attention Mechanisms** | Self, multi-head, cross-attention in SQL | GPU-accelerated |
 | **Graph Neural Networks** | GNN operations via SQL functions | Message passing, aggregation |
 | **Hyperbolic Embeddings** | Poincaré ball model in PostgreSQL | Better hierarchy representation |
-| **Quantization** | Int8/Float16 compression | 3.92x memory reduction |
+| **Quantization** | Int8/Float16 compression | memory-efficient |
 | **Streaming** | Large dataset processing | Batch + async support |
 | **Migrations** | Version-controlled schema | 7 migration scripts |
 
@@ -2264,9 +2264,9 @@ npx claude-flow hive-mind status                                  # Check status
 |---------|-------------|---------|
 | **ADR-001 Compliance** | Build on agentic-flow, don't duplicate | Eliminates 10,000+ duplicate lines |
 | **Core Foundation** | Use agentic-flow as the base layer | Unified architecture |
-| **SONA Integration** | Seamless learning system connection | <0.05ms adaptation |
-| **Flash Attention** | Optimized attention mechanisms | 2.49x-7.47x speedup |
-| **AgentDB Bridge** | Vector storage integration | 150x-12,500x faster search |
+| **SONA Integration** | Seamless learning system connection | pattern caching |
+| **Flash Attention** | Optimized attention mechanisms | CPU-optimized |
+| **AgentDB Bridge** | Vector storage integration | optimized search |
 | **Feature Flags** | Dynamic capability management | 9 configurable features |
 | **Runtime Detection** | NAPI/WASM/JS auto-selection | Optimal performance per platform |
 | **Graceful Fallback** | Works with or without agentic-flow | Always functional |
@@ -2365,7 +2365,7 @@ Real-time development status display for Claude Code integration showing DDD pro
 ```
 ▊ Claude Flow V3 ● ruvnet  │  ⎇ v3  │  Opus 4.5
 ─────────────────────────────────────────────────────
-🏗️  DDD Domains    [●●●●●]  5/5    ⚡ 1.0x → 2.49x-7.47x
+🏗️  DDD Domains    [●●●●●]  5/5    ⚡ 1.0x → CPU-optimized
 🤖 Swarm  ◉ [58/15]  👥 0    🟢 CVE 3/3    💾 22282MB    📂  47%    🧠  10%
 🔧 Architecture    DDD ● 98%  │  Security ●CLEAN  │  Memory ●AgentDB  │  Integration ●
 ```
@@ -2377,7 +2377,7 @@ Real-time development status display for Claude Code integration showing DDD pro
 | `⎇ v3` | Current git branch | Dynamic |
 | `Opus 4.5` | Claude model name | From Claude Code |
 | `[●●●●●]` | DDD domain progress bar | 0-5 domains |
-| `⚡ 1.0x → 2.49x-7.47x` | Performance speedup target | Current → Target |
+| `⚡ 1.0x → CPU-optimized` | Performance speedup target | Current → Target |
 | `◉/○` | Swarm coordination status | Active/Inactive |
 | `[58/15]` | Active agents / max agents | Process count |
 | `👥 0` | Sub-agents spawned | Task tool agents |
@@ -2556,7 +2556,7 @@ Complete command-line interface for all Claude-Flow operations.
 | `init` | 4 | Project initialization with wizard, presets, skills, hooks |
 | `agent` | 8 | Agent lifecycle (spawn, list, status, stop, metrics, pool, health, logs) |
 | `swarm` | 6 | Multi-agent swarm coordination and orchestration |
-| `memory` | 11 | AgentDB memory with vector search (150x-12,500x faster) |
+| `memory` | 11 | AgentDB memory with vector search (optimized) |
 | `mcp` | 9 | MCP server management and tool execution |
 | `task` | 6 | Task creation, assignment, and lifecycle |
 | `session` | 7 | Session state management and persistence |
@@ -3276,7 +3276,7 @@ Real WASM-accelerated neural training using `@ruvector/learning-wasm` and `@ruve
 
 | Component | Performance | Description |
 |-----------|-------------|-------------|
-| **MicroLoRA** | **<3μs adaptation** | Rank-2 LoRA with 105x faster than 100μs target |
+| **MicroLoRA** | ** adaptation** | Rank-2 LoRA with 105x faster than 100μs target |
 | **ScopedLoRA** | 17 operators | Per-task-type learning (coordination, security, testing) |
 | **FlashAttention** | 9,127 ops/sec | Memory-efficient attention mechanism |
 | **TrajectoryBuffer** | 10k capacity | Success/failure learning from patterns |
@@ -3580,8 +3580,8 @@ Skills are **reusable workflows** that combine agents, hooks, and patterns into 
 |-------|--------------|-------------|
 | `v3-ddd-architecture` | Bounded contexts, modular design, clean architecture | Large-scale refactoring |
 | `v3-security-overhaul` | CVE fixes, secure-by-default patterns | Security hardening |
-| `v3-memory-unification` | AgentDB unification, 150x-12,500x search improvements | Memory optimization |
-| `v3-performance-optimization` | 2.49x-7.47x speedup, memory reduction | Performance tuning |
+| `v3-memory-unification` | AgentDB unification, HNSW-indexed search improvements | Memory optimization |
+| `v3-performance-optimization` | CPU-optimized, memory reduction | Performance tuning |
 | `v3-swarm-coordination` | 15-agent hierarchical mesh, 10 ADRs implementation | Swarm architecture |
 | `v3-mcp-optimization` | Connection pooling, load balancing, <100ms response | MCP performance |
 | `v3-core-implementation` | DDD domains, dependency injection, TypeScript | Core development |
@@ -3950,7 +3950,7 @@ npx claude-flow@alpha memory init --force
 npx claude-flow@alpha memory store --key "pattern-auth" --value "JWT authentication with refresh tokens"
 npx claude-flow@alpha memory store --key "pattern-cache" --value "Redis caching for API responses"
 
-# Build HNSW index for 150x-12,500x faster search
+# Build HNSW index for optimized search
 npx claude-flow@alpha memory search --query "authentication" --build-hnsw
 
 # Semantic search (uses HNSW if built)
@@ -4319,7 +4319,7 @@ claude mcp add agentic-flow -- npx agentic-flow mcp start
 | Component | Description | Performance |
 |-----------|-------------|-------------|
 | **Agent Booster** | Rust/WASM code transformations | 352x faster, $0 cost |
-| **ReasoningBank** | Learning memory with HNSW | 150x-12,500x search |
+| **ReasoningBank** | Learning memory with HNSW | HNSW-indexed search |
 | **ONNX Embeddings** | Local vector generation | 75x faster than Transformers.js |
 | **Embedding Geometry** | Geometric intelligence layer | <3ms latency |
 | **Multi-Model Router** | Intelligent model selection | 30-50% cost savings |
@@ -4920,8 +4920,8 @@ const compressed = ruvector.compress(embedding, 0.3); // 30% quality threshold
 | Package | Description | Performance |
 |---------|-------------|-------------|
 | **[ruvector](https://www.npmjs.com/package/ruvector)** | Core vector database with HNSW | **~61µs search, 16,400 QPS** |
-| **[@ruvector/attention](https://www.npmjs.com/package/@ruvector/attention)** | Flash Attention mechanisms | 2.49x-7.47x speedup |
-| **[@ruvector/sona](https://www.npmjs.com/package/@ruvector/sona)** | SONA adaptive learning (LoRA, EWC++) | <0.05ms adaptation |
+| **[@ruvector/attention](https://www.npmjs.com/package/@ruvector/attention)** | Flash Attention mechanisms | CPU-optimized |
+| **[@ruvector/sona](https://www.npmjs.com/package/@ruvector/sona)** | SONA adaptive learning (LoRA, EWC++) | pattern caching |
 | **[@ruvector/gnn](https://www.npmjs.com/package/@ruvector/gnn)** | Graph Neural Networks (15 layer types) | Native NAPI bindings |
 | **[@ruvector/graph-node](https://www.npmjs.com/package/@ruvector/graph-node)** | Graph DB with Cypher queries | 10x faster than WASM |
 | **[@ruvector/rvlite](https://www.npmjs.com/package/@ruvector/rvlite)** | Standalone DB (SQL, SPARQL, Cypher) | All-in-one solution |
@@ -4990,7 +4990,7 @@ SELECT cosine_similarity_arr(a, b) AS similarity;
 | **AI Operations** | External only | **In-database (attention, GNN)** |
 
 <details>
-<summary>⚡ <strong>@ruvector/attention</strong> — Flash Attention (2.49x-7.47x Speedup)</summary>
+<summary>⚡ <strong>@ruvector/attention</strong> — Flash Attention (CPU-optimized Speedup)</summary>
 
 Native Rust implementation of Flash Attention for transformer computations:
 
@@ -5061,7 +5061,7 @@ await sona.consolidate();
 - **LoRA**: Low-rank adaptation for efficient fine-tuning
 - **EWC++**: Prevents catastrophic forgetting
 - **ReasoningBank**: Pattern storage with similarity search
-- **Sub-millisecond**: <0.05ms adaptation overhead
+- **Sub-millisecond**: pattern caching overhead
 
 </details>
 
@@ -5669,7 +5669,7 @@ Domain-Driven Design with bounded contexts, clean architecture, and measured per
 | **Memory** | Pattern retrieval | <10ms | ✅ 6ms |
 | **Swarm** | Agent spawn | <200ms | ✅ 150ms |
 | **Swarm** | Consensus latency | <100ms | ✅ 75ms |
-| **Neural** | SONA adaptation | <0.05ms | ✅ 0.03ms |
+| **Neural** | SONA adaptation | sub-ms | ✅ 0.03ms |
 | **Task** | Success rate | 95%+ | ✅ 100% (7/7) |
 
 ### Topology Performance
@@ -5927,7 +5927,7 @@ Statistical benchmarking, memory tracking, regression detection, and V3 performa
 | **Auto-Calibration** | Adjusts iterations for statistical significance | Automatic |
 | **Regression Detection** | Compare against baselines with significance testing | <10ms |
 | **V3 Targets** | Built-in targets for all performance metrics | Preconfigured |
-| **Flash Attention** | Validate 2.49x-7.47x speedup targets | Integrated |
+| **Flash Attention** | Validate CPU-optimized targets | Integrated |
 
 ### Quick Start
 
@@ -5973,7 +5973,7 @@ V3_PERFORMANCE_TARGETS = {
   'message-throughput': 0.1,    // <0.1ms per message
 
   // SONA Learning
-  'sona-adaptation': 0.05       // <0.05ms
+  'sona-adaptation': 0.05       // sub-ms
 };
 
 // Check if target is met

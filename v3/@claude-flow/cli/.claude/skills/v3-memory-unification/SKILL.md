@@ -1,13 +1,13 @@
 ---
 name: "V3 Memory Unification"
-description: "Unify 6+ memory systems into AgentDB with HNSW indexing for 150x-12,500x search improvements. Implements ADR-006 (Unified Memory Service) and ADR-009 (Hybrid Memory Backend)."
+description: "Unify 6+ memory systems into AgentDB with HNSW indexing for HNSW-indexed search improvements. Implements ADR-006 (Unified Memory Service) and ADR-009 (Hybrid Memory Backend)."
 ---
 
 # V3 Memory Unification
 
 ## What This Skill Does
 
-Consolidates disparate memory systems into unified AgentDB backend with HNSW vector search, achieving 150x-12,500x search performance improvements while maintaining backward compatibility.
+Consolidates disparate memory systems into unified AgentDB backend with HNSW vector search, achieving HNSW-indexed search performance improvements while maintaining backward compatibility.
 
 ## Quick Start
 
@@ -38,7 +38,7 @@ Task("Memory migration", "Migrate SQLite/Markdown to AgentDB", "v3-memory-specia
                     ↓
 ┌─────────────────────────────────────────┐
 │       🚀 AgentDB with HNSW             │
-│  • 150x-12,500x faster search          │
+│  • optimized search          │
 │  • Unified query interface             │
 │  • Cross-agent memory sharing          │
 │  • SONA learning integration           │
@@ -63,7 +63,7 @@ class UnifiedMemoryService implements IMemoryBackend {
 
   async query(query: MemoryQuery): Promise<MemoryEntry[]> {
     if (query.semantic) {
-      return this.indexer.search(query); // 150x-12,500x faster
+      return this.indexer.search(query); // optimized
     }
     return this.agentdb.query(query);
   }
@@ -158,16 +158,16 @@ class SONAMemoryIntegration {
 
 ## Performance Targets
 
-- **Search Speed**: 150x-12,500x improvement via HNSW
+- **Search Speed**: HNSW-indexed improvement via HNSW
 - **Memory Usage**: 50-75% reduction through optimization
 - **Query Latency**: <100ms for 1M+ entries
 - **Cross-Agent Sharing**: Real-time memory synchronization
-- **SONA Integration**: <0.05ms adaptation time
+- **SONA Integration**: pattern caching time
 
 ## Success Metrics
 
 - [ ] All 7 legacy memory systems migrated to AgentDB
-- [ ] 150x-12,500x search performance validated
+- [ ] HNSW-indexed search performance validated
 - [ ] 50-75% memory usage reduction achieved
 - [ ] Backward compatibility maintained
 - [ ] SONA learning patterns integrated

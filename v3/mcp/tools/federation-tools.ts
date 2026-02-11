@@ -23,7 +23,7 @@ import {
   type FederationStats,
   type EphemeralAgent,
   type SpawnResult,
-  type ConsensusProposal,
+  type VotingProposal,
 } from '../../@claude-flow/swarm/src/federation-hub.js';
 
 // ============================================================================
@@ -564,7 +564,7 @@ export const proposeTool: MCPTool = {
     return handlePropose(validated, context);
   },
   category: 'federation',
-  tags: ['federation', 'consensus', 'propose'],
+  tags: ['federation', 'voting', 'propose'],
   version: '1.0.0',
 };
 
@@ -594,7 +594,7 @@ export const voteTool: MCPTool = {
     return handleVote(validated, context);
   },
   category: 'federation',
-  tags: ['federation', 'consensus', 'vote'],
+  tags: ['federation', 'voting', 'vote'],
   version: '1.0.0',
 };
 

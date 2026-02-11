@@ -7,7 +7,7 @@
  * - pr_coherence_check: Check coherence using Sheaf Laplacian
  * - pr_spectral_analyze: Spectral stability analysis
  * - pr_causal_infer: Do-calculus causal inference
- * - pr_consensus_verify: Multi-agent consensus verification
+ * - pr_voting_verify: Multi-agent voting verification
  * - pr_quantum_topology: Quantum topology (Betti numbers, persistence)
  * - pr_memory_gate: Pre-storage coherence gate
  */
@@ -16,7 +16,7 @@
 export { coherenceCheckTool, default as CoherenceCheck } from './coherence-check.js';
 export { spectralAnalyzeTool, default as SpectralAnalyze } from './spectral-analyze.js';
 export { causalInferTool, default as CausalInfer } from './causal-infer.js';
-export { consensusVerifyTool, default as ConsensusVerify } from './consensus-verify.js';
+export { votingVerifyTool, default as VotingVerify } from './voting-verify.js';
 export { quantumTopologyTool, default as QuantumTopology } from './quantum-topology.js';
 export { memoryGateTool, default as MemoryGate } from './memory-gate.js';
 
@@ -27,7 +27,7 @@ export * from './types.js';
 import { coherenceCheckTool } from './coherence-check.js';
 import { spectralAnalyzeTool } from './spectral-analyze.js';
 import { causalInferTool } from './causal-infer.js';
-import { consensusVerifyTool } from './consensus-verify.js';
+import { votingVerifyTool } from './voting-verify.js';
 import { quantumTopologyTool } from './quantum-topology.js';
 import { memoryGateTool } from './memory-gate.js';
 
@@ -40,7 +40,7 @@ export const primeRadiantTools: MCPTool[] = [
   coherenceCheckTool,
   spectralAnalyzeTool,
   causalInferTool,
-  consensusVerifyTool,
+  votingVerifyTool,
   quantumTopologyTool,
   memoryGateTool,
 ];
@@ -52,7 +52,7 @@ export const toolHandlers = new Map<string, MCPTool['handler']>([
   ['pr_coherence_check', coherenceCheckTool.handler],
   ['pr_spectral_analyze', spectralAnalyzeTool.handler],
   ['pr_causal_infer', causalInferTool.handler],
-  ['pr_consensus_verify', consensusVerifyTool.handler],
+  ['pr_voting_verify', votingVerifyTool.handler],
   ['pr_quantum_topology', quantumTopologyTool.handler],
   ['pr_memory_gate', memoryGateTool.handler],
 ]);
@@ -85,7 +85,7 @@ export const toolCategories = {
   coherence: [coherenceCheckTool, memoryGateTool],
   spectral: [spectralAnalyzeTool],
   causal: [causalInferTool],
-  consensus: [consensusVerifyTool],
+  consensus: [votingVerifyTool],
   topology: [quantumTopologyTool],
   memory: [memoryGateTool],
 } as const;

@@ -50,7 +50,7 @@ export const defaultSwarmConfigCore: SwarmConfig = {
     scaleDownThreshold: 0.3,
   },
   coordination: {
-    consensusRequired: false,
+    votingRequired: false,
     timeoutMs: 10000,
     retryPolicy: {
       maxRetries: 3,

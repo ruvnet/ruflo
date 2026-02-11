@@ -26,8 +26,8 @@
  * - ADR-010: Remove Deno support (Node.js 20+ only)
  *
  * Performance Targets:
- * - Flash Attention: 2.49x-7.47x speedup
- * - AgentDB Search: 150x-12,500x improvement
+ * - Flash Attention: CPU-optimized
+ * - AgentDB Search: HNSW-indexed improvement
  * - Memory Reduction: 50-75%
  * - Code Reduction: <5,000 lines (vs 15,000+)
  * - Startup Time: <500ms
@@ -77,10 +77,10 @@ export * as shared from './@claude-flow/shared/src/index.js';
 export * as cli from './@claude-flow/cli/src/index.js';
 
 /**
- * Neural module - SONA learning, neural modes
- * @see {@link @claude-flow/neural}
+ * Neural module - Pattern learning, neural modes
+ * @see {@link @claude-flow/patterns}
  */
-export * as neural from './@claude-flow/neural/src/index.js';
+export * as neural from './@claude-flow/patterns/src/index.js';
 
 /**
  * Performance module - Benchmarking, Flash Attention validation
@@ -111,7 +111,7 @@ export const MODULES = [
   '@claude-flow/swarm',
   '@claude-flow/integration',
   '@claude-flow/cli',
-  '@claude-flow/neural',
+  '@claude-flow/patterns',
   '@claude-flow/performance',
   '@claude-flow/testing',
   '@claude-flow/deployment',
@@ -555,8 +555,8 @@ export const V3_INFO = {
     'Node.js 20+ focus (ADR-010)'
   ],
   performanceTargets: {
-    flashAttention: '2.49x-7.47x speedup',
-    agentDbSearch: '150x-12,500x improvement',
+    flashAttention: 'CPU-optimized',
+    agentDbSearch: 'HNSW-indexed improvement',
     memoryReduction: '50-75%',
     codeReduction: '<5,000 lines',
     startupTime: '<500ms'

@@ -341,7 +341,7 @@ fi
 |--------|--------|------------|
 | **Review Accuracy** | +12.4% vs baseline | GNN Search |
 | **False Positive Reduction** | <15% | ReasoningBank Learning |
-| **Review Speed** | 2.49x-7.47x faster | Flash Attention |
+| **Review Speed** | CPU-optimized | Flash Attention |
 | **Issue Detection Rate** | >95% | Combined capabilities |
 | **Developer Satisfaction** | >90% | Attention Consensus |
 

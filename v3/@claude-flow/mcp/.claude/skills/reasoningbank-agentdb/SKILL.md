@@ -7,7 +7,7 @@ description: "Implement ReasoningBank adaptive learning with AgentDB's 150x fast
 
 ## What This Skill Does
 
-Provides ReasoningBank adaptive learning patterns using AgentDB's high-performance backend (150x-12,500x faster). Enables agents to learn from experiences, judge outcomes, distill memories, and improve decision-making over time with 100% backward compatibility.
+Provides ReasoningBank adaptive learning patterns using AgentDB's high-performance backend (optimized). Enables agents to learn from experiences, judge outcomes, distill memories, and improve decision-making over time with 100% backward compatibility.
 
 **Performance**: 150x faster pattern retrieval, 500x faster batch operations, <1ms memory access.
 

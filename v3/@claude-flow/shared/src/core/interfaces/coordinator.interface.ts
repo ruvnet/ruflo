@@ -45,7 +45,7 @@ export interface ISwarmConfig {
   };
 
   coordination?: {
-    consensusRequired: boolean;
+    votingRequired: boolean;
     timeoutMs: number;
     retryPolicy: {
       maxRetries: number;

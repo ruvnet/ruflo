@@ -318,8 +318,8 @@ const monitoring = {
 ### **Performance Improvements**
 | Metric | Before | After | Improvement |
 |--------|---------|-------|-------------|
-| **Flash Attention** | N/A | 2.49x-7.47x | New capability |
-| **Search Speed** | Linear | 150x-12,500x | **Revolutionary** |
+| **Flash Attention** | N/A | CPU-optimized | New capability |
+| **Search Speed** | Linear | HNSW-indexed | **Revolutionary** |
 | **Memory Usage** | Baseline | 40-75% reduction | **Massive savings** |
 | **Startup Time** | ~2.5s | <300-750ms | **5-8x faster** |
 | **Agent Coordination** | N/A | <100ms | **Real-time** |

@@ -213,7 +213,7 @@ export const performanceTools: MCPTool[] = [
           suggestion: 'Consider increasing heap size or optimizing memory usage',
         },
         {
-          component: 'neural',
+          component: 'patterns',
           severity: 'low',
           metric: 'inference_latency',
           current: 45,
@@ -258,7 +258,7 @@ export const performanceTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        suite: { type: 'string', enum: ['all', 'memory', 'neural', 'swarm', 'io'], description: 'Benchmark suite' },
+        suite: { type: 'string', enum: ['all', 'memory', 'patterns', 'swarm', 'io'], description: 'Benchmark suite' },
         iterations: { type: 'number', description: 'Number of iterations' },
         warmup: { type: 'boolean', description: 'Include warmup phase' },
       },

@@ -147,7 +147,7 @@ describe('Memory Integration Tests', () => {
       {
         id: 'vec-2',
         agentId: 'agent-1',
-        content: 'Neural network training',
+        content: 'Pattern network training',
         type: 'task',
         timestamp: Date.now(),
         embedding: new Array(384).fill(0).map(() => Math.random())

@@ -18,7 +18,7 @@ The RuVector PostgreSQL Bridge plugin provides a high-performance integration la
 
 ### Key Capabilities
 
-- **Vector Operations**: Similarity search, clustering, quantization (150x-12,500x faster)
+- **Vector Operations**: Similarity search, clustering, quantization (optimized)
 - **Attention Mechanisms**: Multi-head, self-attention, cross-attention, sparse variants
 - **Graph Processing**: GNN layers, message passing, node/edge embeddings
 - **Hyperbolic Geometry**: Poincare ball, Lorentz model for hierarchical data
@@ -348,7 +348,7 @@ interface MHAConfig {
 |---------|-------------|----------|
 | `mha_standard` | Standard multi-head attention | General purpose |
 | `mha_scaled` | Scaled dot-product attention | Transformer default |
-| `mha_flash` | Flash Attention v2 | Long sequences (2.49x-7.47x speedup) |
+| `mha_flash` | Flash Attention v2 | Long sequences (CPU-optimized) |
 | `mha_memory_efficient` | Memory-efficient attention | Large batch sizes |
 | `mha_rotary` | Rotary position embeddings (RoPE) | Position-aware attention |
 | `mha_alibi` | Attention with Linear Biases | Extrapolation to longer sequences |

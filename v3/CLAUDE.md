@@ -33,8 +33,8 @@ npm install && npm run build && npm test
 
 | Metric | Target | Status |
 |--------|--------|--------|
-| HNSW Search | 150x-12,500x faster | Implemented |
+| HNSW Search | optimized | Implemented |
 | Memory Reduction | 50-75% (Int8 quantization) | Implemented |
 | MCP Response | <100ms | Achieved |
 | CLI Startup | <500ms | Achieved |
-| Flash Attention | 2.49x-7.47x speedup | In progress |
+| Flash Attention | CPU-optimized | In progress |

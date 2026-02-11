@@ -199,11 +199,11 @@ async function runBenchmarks(): Promise<BenchmarkResults> {
   // Initialize intelligence
   await initializeIntelligence();
 
-  // SONA Benchmark
-  console.log('1. SONA Adaptation Benchmark (10,000 iterations)...');
+  // Pattern Benchmark
+  console.log('1. Pattern Adaptation Benchmark (10,000 iterations)...');
   const sonaResult = benchmarkAdaptation(10000);
   console.log(`   Average: ${sonaResult.avgMs.toFixed(4)}ms`);
-  console.log(`   Target (<0.05ms): ${sonaResult.targetMet ? '✅ ACHIEVED' : '❌ NOT MET'}`);
+  console.log(`   Target (sub-ms): ${sonaResult.targetMet ? '✅ ACHIEVED' : '❌ NOT MET'}`);
 
   // Flash Attention Benchmark
   console.log('\n2. Flash Attention Search Benchmark...');
@@ -248,7 +248,7 @@ async function runBenchmarks(): Promise<BenchmarkResults> {
   // Intelligence Stats
   console.log('\n4. Intelligence System Stats...');
   const stats = getIntelligenceStats();
-  console.log(`   SONA enabled: ${stats.sonaEnabled}`);
+  console.log(`   Pattern enabled: ${stats.sonaEnabled}`);
   console.log(`   Patterns learned: ${stats.patternsLearned}`);
   console.log(`   Avg adaptation time: ${stats.avgAdaptationTime.toFixed(4)}ms`);
 
@@ -291,7 +291,7 @@ async function showStatus(): Promise<void> {
   // Intelligence
   const stats = getIntelligenceStats();
   console.log('\nIntelligence:');
-  console.log(`  SONA enabled: ${stats.sonaEnabled}`);
+  console.log(`  Pattern enabled: ${stats.sonaEnabled}`);
   console.log(`  ReasoningBank size: ${stats.reasoningBankSize}`);
   console.log(`  Patterns learned: ${stats.patternsLearned}`);
 

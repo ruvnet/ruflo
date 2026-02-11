@@ -10,7 +10,7 @@ import { callMCPTool, MCPClientError } from '../mcp-client.js';
 
 // Available agent types with descriptions
 const AGENT_TYPES = [
-  { value: 'coder', label: 'Coder', hint: 'Code development with neural patterns' },
+  { value: 'coder', label: 'Coder', hint: 'Code development with patterns' },
   { value: 'researcher', label: 'Researcher', hint: 'Research with web access and data analysis' },
   { value: 'tester', label: 'Tester', hint: 'Comprehensive testing with automation' },
   { value: 'reviewer', label: 'Reviewer', hint: 'Code review with security and quality checks' },
@@ -20,9 +20,9 @@ const AGENT_TYPES = [
   { value: 'optimizer', label: 'Optimizer', hint: 'Performance optimization and bottleneck analysis' },
   { value: 'security-architect', label: 'Security Architect', hint: 'Security architecture and threat modeling' },
   { value: 'security-auditor', label: 'Security Auditor', hint: 'CVE remediation and security testing' },
-  { value: 'memory-specialist', label: 'Memory Specialist', hint: 'AgentDB unification (150x-12,500x faster)' },
+  { value: 'memory-specialist', label: 'Memory Specialist', hint: 'AgentDB unification (optimized)' },
   { value: 'swarm-specialist', label: 'Swarm Specialist', hint: 'Unified coordination engine' },
-  { value: 'performance-engineer', label: 'Performance Engineer', hint: '2.49x-7.47x optimization targets' },
+  { value: 'performance-engineer', label: 'Performance Engineer', hint: 'CPU optimization' },
   { value: 'core-architect', label: 'Core Architect', hint: 'Domain-driven design restructure' },
   { value: 'test-architect', label: 'Test Architect', hint: 'TDD London School methodology' }
 ];

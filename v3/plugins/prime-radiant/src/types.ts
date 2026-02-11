@@ -507,7 +507,7 @@ export interface AgentState {
 /**
  * Consensus result from mathematical verification
  */
-export interface ConsensusResult {
+export interface VotingResult {
   consensusAchieved: boolean;
   agreementRatio: number;
   coherenceEnergy: number;

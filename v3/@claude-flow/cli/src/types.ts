@@ -104,7 +104,7 @@ export interface SwarmConfig {
   topology: 'hierarchical' | 'mesh' | 'ring' | 'star' | 'hybrid' | 'hierarchical-mesh';
   maxAgents: number;
   autoScale: boolean;
-  coordinationStrategy: 'consensus' | 'leader' | 'distributed';
+  coordinationStrategy: 'voting' | 'leader' | 'distributed';
   healthCheckInterval: number;
 }
 

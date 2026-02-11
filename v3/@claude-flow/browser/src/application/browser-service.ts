@@ -78,7 +78,7 @@ export class BrowserService {
   }
 
   // ===========================================================================
-  // Trajectory Management (for ReasoningBank/SONA learning)
+  // Trajectory Management (for ReasoningBank/pattern learning)
   // ===========================================================================
 
   /**

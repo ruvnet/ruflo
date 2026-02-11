@@ -38,7 +38,7 @@ const commandLoaders: Record<string, CommandLoader> = {
   process: () => import('./process.js'),
   daemon: () => import('./daemon.js'),
   // V3 Advanced Commands (less frequently used - lazy load)
-  neural: () => import('./neural.js'),
+  neural: () => import('./patterns.js'),
   security: () => import('./security.js'),
   performance: () => import('./performance.js'),
   providers: () => import('./providers.js'),
@@ -119,7 +119,7 @@ import { hooksCommand } from './hooks.js';
 import { daemonCommand } from './daemon.js';
 import { doctorCommand } from './doctor.js';
 import { embeddingsCommand } from './embeddings.js';
-import { neuralCommand } from './neural.js';
+import { neuralCommand } from './patterns.js';
 import { performanceCommand } from './performance.js';
 import { securityCommand } from './security.js';
 import { ruvectorCommand } from './ruvector/index.js';
@@ -155,7 +155,7 @@ loadedCommands.set('hooks', hooksCommand);
 loadedCommands.set('daemon', daemonCommand);
 loadedCommands.set('doctor', doctorCommand);
 loadedCommands.set('embeddings', embeddingsCommand);
-loadedCommands.set('neural', neuralCommand);
+loadedCommands.set('patterns', neuralCommand);
 loadedCommands.set('performance', performanceCommand);
 loadedCommands.set('security', securityCommand);
 loadedCommands.set('ruvector', ruvectorCommand);
@@ -180,7 +180,7 @@ export { hooksCommand } from './hooks.js';
 export { daemonCommand } from './daemon.js';
 export { doctorCommand } from './doctor.js';
 export { embeddingsCommand } from './embeddings.js';
-export { neuralCommand } from './neural.js';
+export { neuralCommand } from './patterns.js';
 export { performanceCommand } from './performance.js';
 export { securityCommand } from './security.js';
 export { ruvectorCommand } from './ruvector/index.js';
@@ -195,7 +195,7 @@ export async function getHiveMindCommand() { return loadCommand('hive-mind'); }
 export async function getProcessCommand() { return loadCommand('process'); }
 export async function getTaskCommand() { return loadCommand('task'); }
 export async function getSessionCommand() { return loadCommand('session'); }
-export async function getNeuralCommand() { return loadCommand('neural'); }
+export async function getNeuralCommand() { return loadCommand('patterns'); }
 export async function getSecurityCommand() { return loadCommand('security'); }
 export async function getPerformanceCommand() { return loadCommand('performance'); }
 export async function getProvidersCommand() { return loadCommand('providers'); }

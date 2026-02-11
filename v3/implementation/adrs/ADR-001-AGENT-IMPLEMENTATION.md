@@ -21,9 +21,9 @@ Created two new core classes that bridge Claude Flow's DDD agent architecture wi
 - Message passing and communication
 
 **Performance Benefits**:
-- Flash Attention: 2.49x-7.47x speedup for context processing
-- SONA Learning: <0.05ms adaptation for real-time learning
-- AgentDB: 150x-12,500x faster memory/pattern search
+- Flash Attention: CPU-optimized for context processing
+- SONA Learning: pattern caching for real-time learning
+- AgentDB: optimized memory/pattern search
 
 **Code Stats**:
 - **799 lines** of production code
@@ -212,9 +212,9 @@ v3/@claude-flow/integration/src/
 - Event-driven communication
 
 ✅ **Performance targets**
-- Flash Attention delegation: 2.49x-7.47x speedup
-- SONA learning: <0.05ms adaptation
-- AgentDB search: 150x-12,500x improvement
+- Flash Attention delegation: CPU-optimized
+- SONA learning: pattern caching
+- AgentDB search: HNSW-indexed improvement
 
 ## Usage Examples
 

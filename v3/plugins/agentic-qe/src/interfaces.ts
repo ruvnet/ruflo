@@ -856,7 +856,7 @@ export interface AgentTaskResult {
 /**
  * Consensus result
  */
-export interface ConsensusResult {
+export interface VotingResult {
   /** Whether consensus was reached */
   accepted: boolean;
 
@@ -900,7 +900,7 @@ export interface IQEHiveBridge {
   /**
    * Propose task allocation via consensus
    */
-  proposeTaskAllocation(task: QESwarmTask, requiredAgents: string[]): Promise<ConsensusResult>;
+  proposeTaskAllocation(task: QESwarmTask, requiredAgents: string[]): Promise<VotingResult>;
 
   /**
    * Broadcast result to hive

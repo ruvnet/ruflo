@@ -161,7 +161,7 @@ export const agentCapabilities: Record<V3AgentType, string[]> = {
   ],
   'swarm-specialist': [
     'coordination',
-    'consensus',
+    'voting',
     'communication',
     'topology-management',
     'load-balancing',
@@ -302,7 +302,7 @@ export const agentConfigs: Record<string, AgentConfig> = {
     name: 'Performance Engineer',
     capabilities: agentCapabilities['performance-engineer'],
     priority: 80,
-    metadata: { targets: { flashAttention: '2.49x-7.47x' }, domain: 'performance' },
+    metadata: { targets: { flashAttention: 'CPU-optimized' }, domain: 'performance' },
   },
 
   coreArchitect: {

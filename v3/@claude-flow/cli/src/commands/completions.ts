@@ -11,7 +11,7 @@ import { output } from '../output.js';
 // Get all top-level commands for completions
 const TOP_LEVEL_COMMANDS = [
   'swarm', 'agent', 'task', 'session', 'config', 'memory', 'workflow',
-  'hive-mind', 'hooks', 'daemon', 'neural', 'security', 'performance',
+  'hive-mind', 'hooks', 'daemon', 'patterns', 'security', 'performance',
   'providers', 'plugins', 'deployment', 'claims', 'embeddings',
   'doctor', 'completions', 'help', 'version'
 ];
@@ -29,7 +29,7 @@ const TASK_SUBCOMMANDS = ['create', 'status', 'list', 'complete', 'cancel'];
 const MEMORY_SUBCOMMANDS = ['store', 'retrieve', 'search', 'list', 'delete', 'stats', 'configure', 'cleanup', 'compress', 'export', 'import'];
 
 // Hive-mind subcommands
-const HIVE_MIND_SUBCOMMANDS = ['init', 'spawn', 'status', 'task', 'join', 'leave', 'consensus', 'broadcast', 'memory', 'optimize-memory', 'shutdown'];
+const HIVE_MIND_SUBCOMMANDS = ['init', 'spawn', 'status', 'task', 'join', 'leave', 'voting', 'broadcast', 'memory', 'optimize-memory', 'shutdown'];
 
 // Hooks subcommands
 const HOOKS_SUBCOMMANDS = ['pre-edit', 'post-edit', 'pre-command', 'post-command', 'pre-task', 'post-task', 'route', 'explain', 'pretrain', 'build-agents', 'metrics', 'transfer', 'list', 'intelligence'];
@@ -151,10 +151,10 @@ _claude_flow() {
         'config:Configuration management'
         'memory:Memory operations with AgentDB'
         'workflow:Workflow automation'
-        'hive-mind:Queen-led consensus coordination'
+        'hive-mind:Queen-led voting coordination'
         'hooks:Self-learning automation hooks'
         'daemon:Background service management'
-        'neural:Neural pattern training'
+        'neural:Pattern training'
         'security:Security scanning and CVE detection'
         'performance:Performance profiling'
         'providers:AI provider management'
@@ -232,7 +232,7 @@ _claude_flow() {
                         'task:Submit task'
                         'join:Join agent to hive'
                         'leave:Remove agent'
-                        'consensus:Consensus management'
+                        'consensus:Voting management'
                         'broadcast:Broadcast message'
                         'memory:Shared memory'
                         'optimize-memory:Optimize patterns'
@@ -259,7 +259,7 @@ _claude_flow() {
                     ;;
                 neural)
                     subcommands=(
-                        'train:Train neural patterns'
+                        'train:Train patterns'
                         'status:Check neural status'
                         'patterns:Manage patterns'
                         'predict:Make predictions'
@@ -429,7 +429,7 @@ $script:SubCommands = @{
     'hive-mind' = @('${HIVE_MIND_SUBCOMMANDS.join("', '")}')
     'hive' = @('${HIVE_MIND_SUBCOMMANDS.join("', '")}')
     'hooks' = @('${HOOKS_SUBCOMMANDS.join("', '")}')
-    'neural' = @('train', 'status', 'patterns', 'predict', 'optimize')
+    'patterns' = @('train', 'status', 'patterns', 'predict', 'optimize')
     'security' = @('scan', 'cve', 'threats', 'audit', 'secrets')
     'performance' = @('benchmark', 'profile', 'metrics', 'optimize', 'bottleneck')
     'plugins' = @('list', 'install', 'uninstall', 'toggle', 'info', 'create')

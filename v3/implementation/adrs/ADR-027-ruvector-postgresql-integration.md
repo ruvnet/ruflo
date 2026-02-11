@@ -767,7 +767,7 @@ export class EmbeddingAdapter {
 |--------|--------|----------------------|
 | **Bulk Insert Rate** | 52,000+ inserts/second | 10x faster (batched) |
 | **Vector Search Latency** | <1ms (p99) | Comparable (HNSW) |
-| **Search Speedup** | 150x-12,500x vs linear | Same (HNSW algorithm) |
+| **Search Speedup** | HNSW-indexed vs linear | Same (HNSW algorithm) |
 | **Graph Query Latency** | <10ms (2-hop) | N/A (new capability) |
 | **Attention Query** | <50ms (4K context) | N/A (new capability) |
 | **Memory Efficiency** | Disk-based + caching | Better for large datasets |

@@ -567,14 +567,14 @@ export const splitSuggestTool: MCPTool<
 /**
  * MCP Tool: code/learn-patterns
  *
- * Learn recurring patterns from code changes using SONA
+ * Learn recurring patterns from code changes using Pattern
  */
 export const learnPatternsTool: MCPTool<
   z.infer<typeof LearnPatternsInputSchema>,
   PatternLearningResult
 > = {
   name: 'code/learn-patterns',
-  description: 'Learn recurring patterns from code changes using SONA',
+  description: 'Learn recurring patterns from code changes using Pattern',
   category: 'code-intelligence',
   version: '3.0.0-alpha.1',
   inputSchema: LearnPatternsInputSchema,

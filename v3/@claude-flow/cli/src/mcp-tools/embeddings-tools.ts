@@ -1,7 +1,7 @@
 /**
  * Embeddings MCP Tools for CLI
  *
- * Tool definitions for ONNX embeddings with hyperbolic support and neural substrate.
+ * Tool definitions for ONNX embeddings with hyperbolic support and pattern substrate.
  * Implements ADR-024: Embeddings MCP Tools
  */
 
@@ -625,7 +625,7 @@ export const embeddingsTools: MCPTool[] = [
           }
 
         case 'adapt':
-          // Get real SONA adaptation metrics
+          // Get real pattern adaptation metrics
           try {
             const { benchmarkAdaptation, initializeIntelligence } = await import('../memory/intelligence.js');
             await initializeIntelligence();
@@ -643,8 +643,8 @@ export const embeddingsTools: MCPTool[] = [
                 },
               },
               message: benchmark.targetMet
-                ? `SONA adaptation: ${(benchmark.avgMs * 1000).toFixed(2)}μs (target <50μs met)`
-                : `SONA adaptation: ${(benchmark.avgMs * 1000).toFixed(2)}μs (target not met)`,
+                ? `pattern adaptation: ${(benchmark.avgMs * 1000).toFixed(2)}μs (target <50μs met)`
+                : `pattern adaptation: ${(benchmark.avgMs * 1000).toFixed(2)}μs (target not met)`,
             };
           } catch {
             return {
@@ -681,8 +681,8 @@ export const embeddingsTools: MCPTool[] = [
                 },
               },
               capabilities: [
-                stats.sonaEnabled ? '✅ SONA Active' : '❌ SONA Inactive',
-                benchmark.targetMet ? '✅ <0.05ms Target Met' : '⚠️ Target Not Met',
+                stats.sonaEnabled ? '✅ Pattern Active' : '❌ Pattern Inactive',
+                benchmark.targetMet ? '✅ sub-ms Target Met' : '⚠️ Target Not Met',
                 `${stats.patternsLearned} patterns learned`,
                 `${stats.trajectoriesRecorded} trajectories recorded`,
               ],
@@ -861,7 +861,7 @@ export const embeddingsTools: MCPTool[] = [
           onnxModels: ['all-MiniLM-L6-v2', 'all-mpnet-base-v2'],
           geometries: ['euclidean', 'poincare'],
           normalizations: ['L2', 'L1', 'minmax', 'zscore'],
-          features: ['semantic search', 'hyperbolic projection', 'neural substrate'],
+          features: ['semantic search', 'hyperbolic projection', 'pattern substrate'],
         },
       };
     },

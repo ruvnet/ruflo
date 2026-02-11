@@ -1,7 +1,7 @@
 /**
- * SONA Bridge
+ * Pattern Bridge
  *
- * Bridge to SONA (Self-Optimizing Neural Architecture) for continuous
+ * Bridge to Pattern (Self-Optimizing Pattern Architecture) for continuous
  * learning with LoRA fine-tuning and EWC++ memory preservation.
  */
 
@@ -13,7 +13,7 @@ import type { SonaPattern } from '../types.js';
 export type WasmModuleStatus = 'unloaded' | 'loading' | 'ready' | 'error';
 
 /**
- * SONA configuration
+ * Pattern configuration
  */
 export interface SonaConfig {
   /** Operating mode */
@@ -40,7 +40,7 @@ const DEFAULT_CONFIG: SonaConfig = {
 };
 
 /**
- * SONA trajectory for learning
+ * Pattern trajectory for learning
  */
 export interface SonaTrajectory {
   id: string;
@@ -51,7 +51,7 @@ export interface SonaTrajectory {
 }
 
 /**
- * SONA learning step
+ * Pattern learning step
  */
 export interface SonaStep {
   stateBefore: Float32Array;
@@ -81,7 +81,7 @@ export interface EWCState {
 }
 
 /**
- * SONA prediction result
+ * Pattern prediction result
  */
 export interface SonaPrediction {
   action: string;
@@ -90,7 +90,7 @@ export interface SonaPrediction {
 }
 
 /**
- * SONA WASM module interface
+ * Pattern WASM module interface
  */
 interface SonaModule {
   // Core learning
@@ -116,7 +116,7 @@ interface SonaModule {
 }
 
 /**
- * SONA Bridge implementation
+ * Pattern Bridge implementation
  */
 export class SonaBridge {
   readonly name = 'sona';
@@ -180,7 +180,7 @@ export class SonaBridge {
    * Returns improvement score (0-1)
    */
   learn(trajectories: SonaTrajectory[], config?: Partial<SonaConfig>): number {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     const mergedConfig = { ...this.config, ...config };
     return this._module.learn(trajectories, mergedConfig);
   }
@@ -189,7 +189,7 @@ export class SonaBridge {
    * Predict next action
    */
   predict(state: Float32Array): SonaPrediction {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     return this._module.predict(state);
   }
 
@@ -197,7 +197,7 @@ export class SonaBridge {
    * Store a pattern
    */
   storePattern(pattern: SonaPattern): void {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     this._module.storePattern(pattern);
   }
 
@@ -205,7 +205,7 @@ export class SonaBridge {
    * Find similar patterns
    */
   findPatterns(query: Float32Array, k: number): SonaPattern[] {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     return this._module.findPatterns(query, k);
   }
 
@@ -213,7 +213,7 @@ export class SonaBridge {
    * Update pattern success rate
    */
   updatePatternSuccess(patternId: string, success: boolean): void {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     this._module.updatePatternSuccess(patternId, success);
   }
 
@@ -221,7 +221,7 @@ export class SonaBridge {
    * Apply LoRA transformation
    */
   applyLoRA(input: Float32Array, weights: LoRAWeights): Float32Array {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     return this._module.applyLoRA(input, weights);
   }
 
@@ -229,7 +229,7 @@ export class SonaBridge {
    * Update LoRA weights from gradients
    */
   updateLoRA(gradients: Float32Array, config?: Partial<SonaConfig>): LoRAWeights {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     const mergedConfig = { ...this.config, ...config };
     return this._module.updateLoRA(gradients, mergedConfig);
   }
@@ -238,7 +238,7 @@ export class SonaBridge {
    * Compute Fisher information matrix
    */
   computeFisher(trajectories: SonaTrajectory[]): Map<string, Float32Array> {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     return this._module.computeFisher(trajectories);
   }
 
@@ -246,7 +246,7 @@ export class SonaBridge {
    * Consolidate memory with EWC++
    */
   consolidate(ewcState: EWCState): void {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     this._module.consolidate(ewcState);
   }
 
@@ -254,7 +254,7 @@ export class SonaBridge {
    * Set operating mode
    */
   setMode(mode: SonaConfig['mode']): void {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     this._module.setMode(mode);
     this.config.mode = mode;
   }
@@ -495,7 +495,7 @@ function cosineSimilarity(a: Float32Array, b: Float32Array): number {
 }
 
 /**
- * Create a new SONA bridge
+ * Create a new Pattern bridge
  */
 export function createSonaBridge(config?: Partial<SonaConfig>): SonaBridge {
   return new SonaBridge(config);

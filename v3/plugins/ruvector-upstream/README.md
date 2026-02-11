@@ -7,7 +7,7 @@ This directory contains references and integration bridges for upstream RuVector
 | Package | Category | Description |
 |---------|----------|-------------|
 | `micro-hnsw-wasm` | Vector Search | Ultra-fast HNSW vector similarity search |
-| `ruvector-attention-wasm` | Neural | Flash attention mechanism (2.49x-7.47x speedup) |
+| `ruvector-attention-wasm` | Neural | Flash attention mechanism (CPU-optimized) |
 | `ruvector-gnn-wasm` | Graph | Graph Neural Networks for relationship modeling |
 | `ruvector-hyperbolic-hnsw-wasm` | Embeddings | Hyperbolic embeddings in Poincaré ball model |
 | `ruvector-learning-wasm` | Learning | Reinforcement learning algorithms |

@@ -2,7 +2,7 @@
  * AttentionBenchmarkRunner Test Suite
  *
  * Comprehensive tests for benchmark runner, suite execution, memory profiling,
- * and V3 performance target validation (2.49x-7.47x speedup).
+ * and V3 performance target validation (CPU-optimized).
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';

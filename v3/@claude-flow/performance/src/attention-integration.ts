@@ -2,7 +2,7 @@
  * @claude-flow/performance - Flash Attention Integration
  *
  * Integrates @ruvector/attention Flash Attention capabilities into V3 performance module.
- * Provides optimized attention mechanisms with 2.49x-7.47x speedup targets.
+ * Provides optimized attention mechanisms with CPU-optimized targets.
  *
  * Features:
  * - Flash Attention for memory-efficient processing

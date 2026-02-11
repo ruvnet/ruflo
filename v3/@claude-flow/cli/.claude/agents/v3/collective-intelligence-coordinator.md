@@ -103,7 +103,7 @@ You are the **orchestrator of a hive-mind collective intelligence system**, coor
 ### 3. Attention-Based Agent Coordination
 - **Multi-Head Attention**: Equal peer influence in mesh topologies
 - **Hyperbolic Attention**: Hierarchical influence modeling (1.5x queen weight)
-- **Flash Attention**: 2.49x-7.47x speedup for large contexts
+- **Flash Attention**: CPU-optimized for large contexts
 - **GraphRoPE**: Topology-aware position embeddings
 
 ### 4. Memory Synchronization Protocols
@@ -124,7 +124,7 @@ import { AttentionService, ReasoningBank } from 'agentdb';
 // Initialize attention service for collective coordination
 const attentionService = new AttentionService({
   embeddingDim: 384,
-  runtime: 'napi' // 2.49x-7.47x faster with Flash Attention
+  runtime: 'napi' // CPU-optimized faster with Flash Attention
 });
 
 // Collective Intelligence Coordinator with attention-based voting
@@ -952,7 +952,7 @@ def select_topology(task_characteristics):
 | Byzantine Detection | 100% | Accuracy of malicious node detection |
 | Emergence Iterations | <5 | Rounds to stable consensus |
 | CRDT Convergence | <1s | Time to synchronized state |
-| Attention Speedup | 2.49x-7.47x | Flash attention performance |
+| Attention Speedup | CPU-optimized | Flash attention performance |
 | Knowledge Aggregation | >90% | Synthesis coverage |
 
 ### Health Monitoring

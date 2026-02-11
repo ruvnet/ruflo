@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS claude_flow.agents (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Trajectories table for SONA reinforcement learning
+-- Trajectories table for Pattern reinforcement learning
 CREATE TABLE IF NOT EXISTS claude_flow.trajectories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     trajectory_id VARCHAR(255) NOT NULL UNIQUE,
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS claude_flow.graph_edges (
 );
 
 -- ============================================
--- PART 3: HNSW INDICES (150x-12,500x faster)
+-- PART 3: HNSW INDICES (optimized)
 -- ============================================
 
 -- HNSW index for embeddings (cosine distance)

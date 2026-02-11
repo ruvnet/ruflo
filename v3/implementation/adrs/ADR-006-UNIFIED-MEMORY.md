@@ -85,7 +85,7 @@ class AgentDBBackend implements IMemoryBackend {
   }
 
   async searchSemantic(embedding: Float32Array, k: number): Promise<MemoryEntry[]> {
-    // Uses HNSW for 150x-12,500x faster search
+    // Uses HNSW for optimized search
     return this.db.search(embedding, k);
   }
 }
@@ -93,7 +93,7 @@ class AgentDBBackend implements IMemoryBackend {
 
 ## Performance Targets
 
-- **HNSW Search**: 150x-12,500x faster than linear scan
+- **HNSW Search**: optimized than linear scan
 - **Query latency**: <100ms for 1M+ entries
 - **Memory overhead**: <500MB for 100K entries
 - **Cache hit rate**: >80%

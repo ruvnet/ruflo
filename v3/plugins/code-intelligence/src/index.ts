@@ -1,7 +1,7 @@
 /**
  * Code Intelligence Plugin for Claude Flow V3
  *
- * A comprehensive code intelligence plugin combining graph neural networks
+ * A comprehensive code intelligence plugin combining graph pattern networks
  * for code structure analysis with ultra-fast vector search for semantic
  * code similarity.
  *

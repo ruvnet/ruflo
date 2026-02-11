@@ -7,7 +7,7 @@
  *
  * WASM Modules:
  * - gastown-formula-wasm: TOML parsing and formula cooking (352x faster)
- * - ruvector-gnn-wasm: Graph operations and neural network (150x faster)
+ * - ruvector-gnn-wasm: Graph operations and pattern network (150x faster)
  *
  * @module gastown-bridge/wasm-loader
  * @version 0.1.0

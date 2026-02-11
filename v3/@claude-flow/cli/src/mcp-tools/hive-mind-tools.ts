@@ -22,16 +22,16 @@ interface HiveState {
     term: number;
   };
   workers: string[];
-  consensus: {
-    pending: ConsensusProposal[];
-    history: ConsensusResult[];
+  voting: {
+    pending: VotingProposal[];
+    history: VotingResult[];
   };
   sharedMemory: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
 
-interface ConsensusProposal {
+interface VotingProposal {
   proposalId: string;
   type: string;
   value: unknown;
@@ -41,7 +41,7 @@ interface ConsensusProposal {
   status: 'pending' | 'approved' | 'rejected';
 }
 
-interface ConsensusResult {
+interface VotingResult {
   proposalId: string;
   type: string;
   result: 'approved' | 'rejected';
@@ -78,7 +78,7 @@ function loadHiveState(): HiveState {
     initialized: false,
     topology: 'mesh',
     workers: [],
-    consensus: { pending: [], history: [] },
+    voting: { pending: [], history: [] },
     sharedMemory: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -212,12 +212,12 @@ export const hiveMindTools: MCPTool[] = [
         success: true,
         hiveId,
         topology: state.topology,
-        consensus: (input.consensus as string) || 'byzantine',
+        consensus: (input.voting as string) || 'byzantine',
         queenId,
         status: 'initialized',
         config: {
           topology: state.topology,
-          consensus: input.consensus || 'byzantine',
+          consensus: input.voting || 'byzantine',
           maxAgents: input.maxAgents || 15,
           persist: input.persist !== false,
           memoryBackend: input.memoryBackend || 'hybrid',
@@ -251,7 +251,7 @@ export const hiveMindTools: MCPTool[] = [
           agentId: state.queen.agentId,
           status: 'active',
           load: 0.3 + Math.random() * 0.4, // Simulated load
-          tasksQueued: state.consensus.pending.length,
+          tasksQueued: state.voting.pending.length,
           electedAt: state.queen.electedAt,
           term: state.queen.term,
         } : { id: 'N/A', status: 'offline', load: 0, tasksQueued: 0 },
@@ -263,11 +263,11 @@ export const hiveMindTools: MCPTool[] = [
           tasksCompleted: 0,
         })),
         metrics: {
-          totalTasks: state.consensus.history.length + state.consensus.pending.length,
-          completedTasks: state.consensus.history.length,
+          totalTasks: state.voting.history.length + state.voting.pending.length,
+          completedTasks: state.voting.history.length,
           failedTasks: 0,
           avgTaskTime: 150,
-          consensusRounds: state.consensus.history.length,
+          consensusRounds: state.voting.history.length,
           memoryUsage: `${Object.keys(state.sharedMemory).length * 2} KB`,
         },
         health: {
@@ -281,7 +281,7 @@ export const hiveMindTools: MCPTool[] = [
         id: `hive-${state.createdAt ? new Date(state.createdAt).getTime() : Date.now()}`,
         initialized: state.initialized,
         workerCount: state.workers.length,
-        pendingConsensus: state.consensus.pending.length,
+        pendingConsensus: state.voting.pending.length,
         sharedMemoryKeys: Object.keys(state.sharedMemory).length,
         uptime,
         createdAt: state.createdAt,
@@ -292,7 +292,7 @@ export const hiveMindTools: MCPTool[] = [
         return {
           ...status,
           workerDetails: state.workers,
-          consensusHistory: state.consensus.history.slice(-10),
+          consensusHistory: state.voting.history.slice(-10),
           sharedMemory: state.sharedMemory,
         };
       }
@@ -365,7 +365,7 @@ export const hiveMindTools: MCPTool[] = [
     },
   },
   {
-    name: 'hive-mind_consensus',
+    name: 'hive-mind_voting',
     description: 'Propose or vote on consensus',
     category: 'hive-mind',
     inputSchema: {
@@ -386,7 +386,7 @@ export const hiveMindTools: MCPTool[] = [
 
       if (action === 'propose') {
         const proposalId = `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const proposal: ConsensusProposal = {
+        const proposal: VotingProposal = {
           proposalId,
           type: (input.type as string) || 'general',
           value: input.value,
@@ -396,7 +396,7 @@ export const hiveMindTools: MCPTool[] = [
           status: 'pending',
         };
 
-        state.consensus.pending.push(proposal);
+        state.voting.pending.push(proposal);
         saveHiveState(state);
 
         return {
@@ -409,7 +409,7 @@ export const hiveMindTools: MCPTool[] = [
       }
 
       if (action === 'vote') {
-        const proposal = state.consensus.pending.find(p => p.proposalId === input.proposalId);
+        const proposal = state.voting.pending.find(p => p.proposalId === input.proposalId);
         if (!proposal) {
           return { action, error: 'Proposal not found' };
         }
@@ -424,24 +424,24 @@ export const hiveMindTools: MCPTool[] = [
 
         if (votesFor >= majority) {
           proposal.status = 'approved';
-          state.consensus.history.push({
+          state.voting.history.push({
             proposalId: proposal.proposalId,
             type: proposal.type,
             result: 'approved',
             votes: { for: votesFor, against: votesAgainst },
             decidedAt: new Date().toISOString(),
           });
-          state.consensus.pending = state.consensus.pending.filter(p => p.proposalId !== proposal.proposalId);
+          state.voting.pending = state.voting.pending.filter(p => p.proposalId !== proposal.proposalId);
         } else if (votesAgainst >= majority) {
           proposal.status = 'rejected';
-          state.consensus.history.push({
+          state.voting.history.push({
             proposalId: proposal.proposalId,
             type: proposal.type,
             result: 'rejected',
             votes: { for: votesFor, against: votesAgainst },
             decidedAt: new Date().toISOString(),
           });
-          state.consensus.pending = state.consensus.pending.filter(p => p.proposalId !== proposal.proposalId);
+          state.voting.pending = state.voting.pending.filter(p => p.proposalId !== proposal.proposalId);
         }
 
         saveHiveState(state);
@@ -458,10 +458,10 @@ export const hiveMindTools: MCPTool[] = [
       }
 
       if (action === 'status') {
-        const proposal = state.consensus.pending.find(p => p.proposalId === input.proposalId);
+        const proposal = state.voting.pending.find(p => p.proposalId === input.proposalId);
         if (!proposal) {
           // Check history
-          const historical = state.consensus.history.find(h => h.proposalId === input.proposalId);
+          const historical = state.voting.history.find(h => h.proposalId === input.proposalId);
           if (historical) {
             return { action, ...historical, historical: true };
           }
@@ -486,13 +486,13 @@ export const hiveMindTools: MCPTool[] = [
       if (action === 'list') {
         return {
           action,
-          pending: state.consensus.pending.map(p => ({
+          pending: state.voting.pending.map(p => ({
             proposalId: p.proposalId,
             type: p.type,
             proposedAt: p.proposedAt,
             totalVotes: Object.keys(p.votes).length,
           })),
-          recentHistory: state.consensus.history.slice(-5),
+          recentHistory: state.voting.history.slice(-5),
         };
       }
 
@@ -565,7 +565,7 @@ export const hiveMindTools: MCPTool[] = [
       const graceful = input.graceful !== false;
       const force = input.force === true;
       const workerCount = state.workers.length;
-      const pendingConsensus = state.consensus.pending.length;
+      const pendingConsensus = state.voting.pending.length;
 
       // If graceful and there are pending consensus items, warn (unless forced)
       if (graceful && pendingConsensus > 0 && !force) {
@@ -593,7 +593,7 @@ export const hiveMindTools: MCPTool[] = [
       state.initialized = false;
       state.queen = undefined;
       state.workers = [];
-      state.consensus.pending = [];
+      state.voting.pending = [];
       // Keep history for reference
       state.sharedMemory = {};
       saveHiveState(state);

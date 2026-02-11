@@ -24,7 +24,7 @@ import type {
   QESwarmTask,
   QESwarmResult,
   AgentTaskResult,
-  ConsensusResult,
+  VotingResult,
   QELogger,
 } from '../interfaces.js';
 
@@ -32,7 +32,7 @@ import type {
 interface IHiveMindService {
   join(config: HiveJoinConfig): Promise<void>;
   leave(agentId: string): Promise<void>;
-  consensus(proposal: ConsensusProposal): Promise<HiveConsensusResult>;
+  consensus(proposal: VotingProposal): Promise<HiveVotingResult>;
   broadcast(message: HiveBroadcastMessage): Promise<void>;
   memory(operation: HiveMemoryOperation): Promise<HiveMemoryResult>;
   getStatus(): Promise<HiveStatus>;
@@ -46,7 +46,7 @@ interface HiveJoinConfig {
   metadata?: Record<string, unknown>;
 }
 
-interface ConsensusProposal {
+interface VotingProposal {
   action: 'propose' | 'vote' | 'status';
   type?: string;
   value?: Record<string, unknown>;
@@ -54,7 +54,7 @@ interface ConsensusProposal {
   vote?: boolean;
 }
 
-interface HiveConsensusResult {
+interface HiveVotingResult {
   accepted: boolean;
   reason?: string;
   votesFor: number;
@@ -87,7 +87,7 @@ interface HiveStatus {
   topology: string;
   queenId: string | null;
   workerCount: number;
-  consensusAlgorithm: string;
+  votingAlgorithm: string;
 }
 
 interface HiveWorker {
@@ -347,13 +347,13 @@ export class QEHiveBridge implements IQEHiveBridge {
   async proposeTaskAllocation(
     task: QESwarmTask,
     requiredAgents: string[]
-  ): Promise<ConsensusResult> {
+  ): Promise<VotingResult> {
     this.ensureInitialized();
 
     try {
       this.logger.debug(`Proposing task allocation: ${task.id}`);
 
-      const result = await this.hiveMind.consensus({
+      const result = await this.hiveMind.voting({
         action: 'propose',
         type: 'qe-task-allocation',
         value: {

@@ -200,7 +200,7 @@ export const TopologyPresets: Record<SwarmTopology, Partial<ISwarmConfig>> = {
   hierarchical: {
     topology: 'hierarchical',
     coordination: {
-      consensusRequired: false,
+      votingRequired: false,
       timeoutMs: 5000,
       retryPolicy: { maxRetries: 3, backoffMs: 1000 }
     }
@@ -208,7 +208,7 @@ export const TopologyPresets: Record<SwarmTopology, Partial<ISwarmConfig>> = {
   mesh: {
     topology: 'mesh',
     coordination: {
-      consensusRequired: true,
+      votingRequired: true,
       timeoutMs: 10000,
       retryPolicy: { maxRetries: 5, backoffMs: 500 }
     }
@@ -216,7 +216,7 @@ export const TopologyPresets: Record<SwarmTopology, Partial<ISwarmConfig>> = {
   ring: {
     topology: 'ring',
     coordination: {
-      consensusRequired: true,
+      votingRequired: true,
       timeoutMs: 8000,
       retryPolicy: { maxRetries: 4, backoffMs: 750 }
     }
@@ -224,7 +224,7 @@ export const TopologyPresets: Record<SwarmTopology, Partial<ISwarmConfig>> = {
   star: {
     topology: 'star',
     coordination: {
-      consensusRequired: false,
+      votingRequired: false,
       timeoutMs: 3000,
       retryPolicy: { maxRetries: 2, backoffMs: 500 }
     }
@@ -239,7 +239,7 @@ export const TopologyPresets: Record<SwarmTopology, Partial<ISwarmConfig>> = {
       scaleDownThreshold: 0.3
     },
     coordination: {
-      consensusRequired: true,
+      votingRequired: true,
       timeoutMs: 10000,
       retryPolicy: { maxRetries: 5, backoffMs: 500 }
     }
@@ -247,7 +247,7 @@ export const TopologyPresets: Record<SwarmTopology, Partial<ISwarmConfig>> = {
   'hierarchical-mesh': {
     topology: 'hierarchical-mesh',
     coordination: {
-      consensusRequired: true,
+      votingRequired: true,
       timeoutMs: 8000,
       retryPolicy: { maxRetries: 4, backoffMs: 750 }
     }

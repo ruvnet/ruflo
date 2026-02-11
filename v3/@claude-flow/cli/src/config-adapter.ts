@@ -28,7 +28,7 @@ export function systemConfigToV3Config(systemConfig: SystemConfig): V3Config {
       topology: normalizeTopology(systemConfig.swarm?.topology),
       maxAgents: systemConfig.swarm?.maxAgents ?? 15,
       autoScale: systemConfig.swarm?.autoScale?.enabled ?? false,
-      coordinationStrategy: systemConfig.swarm?.coordination?.consensusRequired ? 'consensus' : 'leader',
+      coordinationStrategy: systemConfig.swarm?.coordination?.votingRequired ? 'voting' : 'leader',
       healthCheckInterval: systemConfig.swarm?.coordination?.timeoutMs ?? 10000,
     },
 
@@ -104,7 +104,7 @@ export function v3ConfigToSystemConfig(v3Config: V3Config): Partial<SystemConfig
         scaleDownThreshold: 0.3,
       },
       coordination: {
-        consensusRequired: v3Config.swarm.coordinationStrategy === 'consensus',
+        votingRequired: v3Config.swarm.coordinationStrategy === 'voting',
         timeoutMs: v3Config.swarm.healthCheckInterval,
         retryPolicy: {
           maxRetries: 3,

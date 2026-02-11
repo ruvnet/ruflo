@@ -22,7 +22,7 @@ hooks:
     # V3: Initialize task with hooks system
     npx claude-flow@v3alpha hooks pre-task --description "$TASK"
 
-    # 1. Learn from past similar implementations (ReasoningBank + HNSW 150x-12,500x faster)
+    # 1. Learn from past similar implementations (ReasoningBank + HNSW optimized)
     SIMILAR_PATTERNS=$(npx claude-flow@v3alpha memory search --query "$TASK" --limit 5 --min-score 0.8 --use-hnsw)
     if [ -n "$SIMILAR_PATTERNS" ]; then
       echo "📚 Found similar successful code patterns (HNSW-indexed)"
@@ -70,7 +70,7 @@ hooks:
     # 3. Complete task hook
     npx claude-flow@v3alpha hooks post-task --task-id "coder-$(date +%s)" --success "$SUCCESS"
 
-    # 4. Train neural patterns on successful high-quality code (SONA <0.05ms adaptation)
+    # 4. Train neural patterns on successful high-quality code (SONA pattern caching)
     if [ "$SUCCESS" = "true" ] && [ "$TESTS_PASSED" -gt 90 ]; then
       echo "🧠 Training neural pattern from successful implementation"
       npx claude-flow@v3alpha neural train \
@@ -90,11 +90,11 @@ You are a senior software engineer specialized in writing clean, maintainable, a
 
 **Enhanced with Claude Flow V3**: You now have self-learning capabilities powered by:
 - **ReasoningBank**: Pattern storage with trajectory tracking
-- **HNSW Indexing**: 150x-12,500x faster pattern search
-- **Flash Attention**: 2.49x-7.47x speedup for large contexts
+- **HNSW Indexing**: optimized pattern search
+- **Flash Attention**: CPU-optimized for large contexts
 - **GNN-Enhanced Context**: +12.4% accuracy improvement
 - **EWC++**: Elastic Weight Consolidation prevents catastrophic forgetting
-- **SONA**: Self-Optimizing Neural Architecture (<0.05ms adaptation)
+- **SONA**: Self-Optimizing Neural Architecture (pattern caching)
 
 ## Core Responsibilities
 
@@ -272,7 +272,7 @@ src/
 ### Before Each Implementation: Learn from History (HNSW-Indexed)
 
 ```typescript
-// 1. Search for similar past code implementations (150x-12,500x faster with HNSW)
+// 1. Search for similar past code implementations (optimized with HNSW)
 const similarCode = await reasoningBank.searchPatterns({
   task: 'Implement user authentication',
   k: 5,
@@ -320,7 +320,7 @@ const relevantCode = await agentDB.gnnEnhancedSearch(
 
 console.log(`Context accuracy improved by ${relevantCode.improvementPercent}%`);
 console.log(`Found ${relevantCode.results.length} related code files`);
-console.log(`Search time: ${relevantCode.searchTimeMs}ms (HNSW: 150x-12,500x faster)`);
+console.log(`Search time: ${relevantCode.searchTimeMs}ms (HNSW: optimized)`);
 
 // Build code dependency graph for better context
 function buildCodeDependencyGraph() {
@@ -345,11 +345,11 @@ if (codebaseSize > 10000) {
   );
   console.log(`Processed ${codebaseSize} files in ${result.executionTimeMs}ms`);
   console.log(`Memory efficiency: ~50% reduction`);
-  console.log(`Speed improvement: 2.49x-7.47x faster`);
+  console.log(`Speed improvement: CPU-optimized faster`);
 }
 ```
 
-### SONA Adaptation (<0.05ms)
+### SONA Adaptation (sub-ms)
 
 ```typescript
 // V3: SONA adapts to your coding patterns in real-time
@@ -357,7 +357,7 @@ const sonaAdapter = await agentDB.getSonaAdapter();
 await sonaAdapter.adapt({
   context: currentTask,
   learningRate: 0.001,
-  maxLatency: 0.05  // <0.05ms adaptation guarantee
+  maxLatency: 0.05  // pattern caching guarantee
 });
 
 console.log(`SONA adapted in ${sonaAdapter.lastAdaptationMs}ms`);
@@ -402,7 +402,7 @@ const coordinator = new AttentionCoordinator(attentionService);
 
 const consensus = await coordinator.coordinateAgents(
   [myImplementation, reviewerFeedback, testerResults],
-  'flash' // 2.49x-7.47x faster
+  'flash' // CPU-optimized faster
 );
 
 console.log(`Team consensus on code quality: ${consensus.consensus}`);
@@ -419,7 +419,7 @@ console.log(`Top suggestions: ${consensus.topAgents.map(a => a.name)}`);
 if (contextSize > 1024) {
   const result = await agentDB.flashAttention(Q, K, V);
   console.log(`Benefits:`);
-  console.log(`- Speed: ${result.executionTimeMs}ms (2.49x-7.47x faster)`);
+  console.log(`- Speed: ${result.executionTimeMs}ms (CPU-optimized faster)`);
   console.log(`- Memory: ~50% reduction`);
   console.log(`- Runtime: ${result.runtime}`); // napi/wasm/js
 }

@@ -483,7 +483,7 @@ npx claude-flow hooks intelligence [options]
 | `--status` | boolean | `false` | Show detailed status |
 
 **Modes:**
-- `real-time` - Prioritize speed (<0.05ms learning)
+- `real-time` - Prioritize speed (sub-ms learning)
 - `batch` - Optimized for bulk processing
 - `edge` - Minimal memory footprint
 - `research` - Maximum accuracy
@@ -492,7 +492,7 @@ npx claude-flow hooks intelligence [options]
 **Intelligence Components:**
 
 ### SONA (Sub-0.05ms Learning)
-- Learning Time: <0.05ms per pattern
+- Learning Time: sub-ms per pattern
 - Adaptation Time: <0.1ms
 - Memory Efficiency: 50-75% reduction via quantization
 - Pattern Persistence: Cross-session learning
@@ -504,7 +504,7 @@ npx claude-flow hooks intelligence [options]
 - Gating Network: Context-aware expert selection
 
 ### HNSW (150x Faster Search)
-- Search Speedup: 150x-12,500x improvement
+- Search Speedup: HNSW-indexed improvement
 - Index Efficiency: Logarithmic complexity
 - Memory Optimized: Quantized vectors (4/8/16-bit)
 - Batch Support: Efficient bulk operations
@@ -1102,10 +1102,10 @@ npx claude-flow swarm task --description "<task>" [options]
 
 | Component | Target | Description |
 |-----------|--------|-------------|
-| SONA Learning | <0.05ms | Sub-millisecond adaptation |
-| HNSW Search | 150x-12,500x | Faster than brute-force |
+| SONA Learning | sub-ms | Sub-millisecond adaptation |
+| HNSW Search | HNSW-indexed | Faster than brute-force |
 | Memory Reduction | 50-75% | Via quantization |
-| Flash Attention | 2.49x-7.47x | Speedup |
+| Flash Attention | CPU-optimized | Speedup |
 | MoE Routing | 92%+ | Accuracy |
 
 ---

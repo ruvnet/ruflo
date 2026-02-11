@@ -94,7 +94,7 @@ const COMMANDS_MAP: Record<string, string[]> = {
  */
 const AGENTS_MAP: Record<string, string[]> = {
   core: ['core'],
-  consensus: ['consensus'],
+  consensus: ['voting'],
   github: ['github'],
   hiveMind: ['hive-mind'],
   sparc: ['sparc'],
@@ -799,7 +799,7 @@ async function copyAgents(
     Object.values(AGENTS_MAP).forEach(agents => agentsToCopy.push(...agents));
   } else {
     if (agentsConfig.core) agentsToCopy.push(...AGENTS_MAP.core);
-    if (agentsConfig.consensus) agentsToCopy.push(...AGENTS_MAP.consensus);
+    if (agentsConfig.voting) agentsToCopy.push(...AGENTS_MAP.voting);
     if (agentsConfig.github) agentsToCopy.push(...AGENTS_MAP.github);
     if (agentsConfig.hiveMind) agentsToCopy.push(...AGENTS_MAP.hiveMind);
     if (agentsConfig.sparc) agentsToCopy.push(...AGENTS_MAP.sparc);
@@ -1289,9 +1289,9 @@ async function writeCapabilitiesDoc(
 Claude Flow V3 is a domain-driven design architecture for multi-agent AI coordination with:
 
 - **15-Agent Swarm Coordination** with hierarchical and mesh topologies
-- **HNSW Vector Search** - 150x-12,500x faster pattern retrieval
-- **SONA Neural Learning** - Self-optimizing with <0.05ms adaptation
-- **Byzantine Fault Tolerance** - Queen-led consensus mechanisms
+- **HNSW Vector Search** - optimized pattern retrieval
+- **Pattern Pattern Learning** - Self-optimizing with pattern caching
+- **Byzantine Fault Tolerance** - Queen-led voting mechanisms
 - **MCP Server Integration** - Model Context Protocol support
 
 ### Current Configuration
@@ -1301,7 +1301,7 @@ Claude Flow V3 is a domain-driven design architecture for multi-agent AI coordin
 | Max Agents | ${options.runtime.maxAgents} |
 | Memory Backend | ${options.runtime.memoryBackend} |
 | HNSW Indexing | ${options.runtime.enableHNSW ? 'Enabled' : 'Disabled'} |
-| Neural Learning | ${options.runtime.enableNeural ? 'Enabled' : 'Disabled'} |
+| Pattern Learning | ${options.runtime.enableNeural ? 'Enabled' : 'Disabled'} |
 
 ---
 
@@ -1489,12 +1489,12 @@ npx @claude-flow/cli@latest doctor --fix
 ## Memory & Intelligence
 
 ### RuVector Intelligence System
-- **SONA**: Self-Optimizing Neural Architecture (<0.05ms)
+- **Pattern**: Self-Optimizing Pattern Architecture (sub-ms)
 - **MoE**: Mixture of Experts routing
-- **HNSW**: 150x-12,500x faster search
+- **HNSW**: optimized search
 - **EWC++**: Prevents catastrophic forgetting
-- **Flash Attention**: 2.49x-7.47x speedup
-- **Int8 Quantization**: 3.92x memory reduction
+- **Flash Attention**: CPU-optimized
+- **Int8 Quantization**: memory-efficient
 
 ### 4-Step Intelligence Pipeline
 1. **RETRIEVE** - HNSW pattern search
@@ -1561,13 +1561,13 @@ npx @claude-flow/cli@latest hive-mind consensus --propose "task"
 
 | Metric | Target | Status |
 |--------|--------|--------|
-| HNSW Search | 150x-12,500x faster | ✅ Implemented |
+| HNSW Search | optimized | ✅ Implemented |
 | Memory Reduction | 50-75% | ✅ Implemented (3.92x) |
-| SONA Integration | Pattern learning | ✅ Implemented |
-| Flash Attention | 2.49x-7.47x | 🔄 In Progress |
+| Pattern Integration | Pattern learning | ✅ Implemented |
+| Flash Attention | CPU-optimized | 🔄 In Progress |
 | MCP Response | <100ms | ✅ Achieved |
 | CLI Startup | <500ms | ✅ Achieved |
-| SONA Adaptation | <0.05ms | 🔄 In Progress |
+| Pattern Adaptation | sub-ms | 🔄 In Progress |
 
 ---
 

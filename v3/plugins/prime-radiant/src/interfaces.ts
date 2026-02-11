@@ -22,7 +22,7 @@ import type {
   TopologyResult,
   MorphismResult,
   HottProofResult,
-  ConsensusResult,
+  VotingResult,
   AgentState,
   MemoryEntry,
   MemoryCoherenceValidation,
@@ -401,7 +401,7 @@ export interface IConsensusVerifier {
    * @param threshold Agreement threshold (default: 0.8)
    * @returns Consensus verification result
    */
-  verifyConsensus(agentStates: AgentState[], threshold?: number): Promise<ConsensusResult>;
+  verifyConsensus(agentStates: AgentState[], threshold?: number): Promise<VotingResult>;
 
   /**
    * Analyze swarm health using spectral methods

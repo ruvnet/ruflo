@@ -41,8 +41,8 @@ npx claude-flow agent spawn -t researcher # Research
 ```bash
 npx claude-flow agent spawn -t security-architect     # Security design
 npx claude-flow agent spawn -t security-auditor       # CVE remediation
-npx claude-flow agent spawn -t memory-specialist      # AgentDB (150x-12,500x faster)
-npx claude-flow agent spawn -t performance-engineer   # 2.49x-7.47x optimization
+npx claude-flow agent spawn -t memory-specialist      # AgentDB (optimized)
+npx claude-flow agent spawn -t performance-engineer   # CPU-optimized optimization
 npx claude-flow agent spawn -t core-architect         # DDD design
 ```
 

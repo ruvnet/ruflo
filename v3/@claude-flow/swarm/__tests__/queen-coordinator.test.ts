@@ -20,7 +20,7 @@ import {
   createQueenCoordinator,
   type QueenCoordinatorConfig,
   type ISwarmCoordinator,
-  type INeuralLearningSystem,
+  type IPatternLearningSystem,
   type IMemoryService,
   type TaskAnalysis,
   type DelegationPlan,
@@ -38,7 +38,7 @@ import type {
   TaskType,
   TaskPriority,
   CoordinatorMetrics,
-  ConsensusResult,
+  VotingResult,
   AgentCapabilities,
   AgentMetrics,
 } from '../src/types.js';
@@ -60,12 +60,12 @@ function createMockSwarmCoordinator(): ISwarmCoordinator {
       metrics: createMockMetrics(),
     }),
     assignTaskToDomain: vi.fn().mockResolvedValue('agent_1'),
-    proposeConsensus: vi.fn().mockResolvedValue(createMockConsensusResult(true)),
+    proposeVote: vi.fn().mockResolvedValue(createMockVotingResult(true)),
     broadcastMessage: vi.fn().mockResolvedValue(undefined),
   };
 }
 
-function createMockNeuralSystem(): INeuralLearningSystem {
+function createMockNeuralSystem(): IPatternLearningSystem {
   return {
     initialize: vi.fn().mockResolvedValue(undefined),
     beginTask: vi.fn().mockReturnValue('trajectory_1'),
@@ -182,7 +182,7 @@ function createMockMetrics(): CoordinatorMetrics {
     failedTasks: 5,
     avgTaskDurationMs: 5000,
     messagesPerSecond: 50,
-    consensusSuccessRate: 0.95,
+    votingSuccessRate: 0.95,
     coordinationLatencyMs: 50,
     memoryUsageBytes: 100000000,
   };
@@ -233,7 +233,7 @@ function createMockDomainStatuses(): DomainStatus[] {
   ];
 }
 
-function createMockConsensusResult(approved: boolean): ConsensusResult {
+function createMockVotingResult(approved: boolean): VotingResult {
   return {
     proposalId: 'proposal_1',
     approved,
@@ -275,7 +275,7 @@ function createMockTaskResult(success: boolean): TaskResult {
 describe('QueenCoordinator', () => {
   let queen: QueenCoordinator;
   let mockSwarm: ISwarmCoordinator;
-  let mockNeural: INeuralLearningSystem;
+  let mockNeural: IPatternLearningSystem;
   let mockMemory: IMemoryService;
 
   beforeEach(() => {
@@ -842,7 +842,7 @@ describe('QueenCoordinator', () => {
     });
 
     it('should coordinate majority consensus', async () => {
-      vi.mocked(mockSwarm.proposeConsensus).mockResolvedValue(createMockConsensusResult(true));
+      vi.mocked(mockSwarm.proposeVote).mockResolvedValue(createMockVotingResult(true));
 
       const decision: Decision = {
         decisionId: '',
@@ -857,7 +857,7 @@ describe('QueenCoordinator', () => {
       const result = await queen.coordinateConsensus(decision);
 
       expect(result.approved).toBe(true);
-      expect(mockSwarm.proposeConsensus).toHaveBeenCalledWith(
+      expect(mockSwarm.proposeVote).toHaveBeenCalledWith(
         expect.objectContaining({
           threshold: 0.51,
         })
@@ -865,7 +865,7 @@ describe('QueenCoordinator', () => {
     });
 
     it('should coordinate supermajority consensus', async () => {
-      vi.mocked(mockSwarm.proposeConsensus).mockResolvedValue(createMockConsensusResult(true));
+      vi.mocked(mockSwarm.proposeVote).mockResolvedValue(createMockVotingResult(true));
 
       const decision: Decision = {
         decisionId: '',
@@ -879,7 +879,7 @@ describe('QueenCoordinator', () => {
 
       const result = await queen.coordinateConsensus(decision);
 
-      expect(mockSwarm.proposeConsensus).toHaveBeenCalledWith(
+      expect(mockSwarm.proposeVote).toHaveBeenCalledWith(
         expect.objectContaining({
           threshold: 0.67,
         })
@@ -887,7 +887,7 @@ describe('QueenCoordinator', () => {
     });
 
     it('should coordinate unanimous consensus', async () => {
-      vi.mocked(mockSwarm.proposeConsensus).mockResolvedValue(createMockConsensusResult(true));
+      vi.mocked(mockSwarm.proposeVote).mockResolvedValue(createMockVotingResult(true));
 
       const decision: Decision = {
         decisionId: '',
@@ -901,7 +901,7 @@ describe('QueenCoordinator', () => {
 
       await queen.coordinateConsensus(decision);
 
-      expect(mockSwarm.proposeConsensus).toHaveBeenCalledWith(
+      expect(mockSwarm.proposeVote).toHaveBeenCalledWith(
         expect.objectContaining({
           threshold: 1.0,
         })
@@ -923,7 +923,7 @@ describe('QueenCoordinator', () => {
 
       expect(result.approved).toBe(true);
       expect(result.approvalRate).toBe(1.0);
-      expect(mockSwarm.proposeConsensus).not.toHaveBeenCalled();
+      expect(mockSwarm.proposeVote).not.toHaveBeenCalled();
     });
 
     it('should reject queen override for non-allowed decision types', async () => {
@@ -947,7 +947,7 @@ describe('QueenCoordinator', () => {
         createMockAgent('agent_1', 'coder', 'idle'),
         createMockAgent('agent_2', 'tester', 'idle'),
       ]);
-      vi.mocked(mockSwarm.proposeConsensus).mockResolvedValue(createMockConsensusResult(true));
+      vi.mocked(mockSwarm.proposeVote).mockResolvedValue(createMockVotingResult(true));
 
       const decision: Decision = {
         decisionId: '',
@@ -961,7 +961,7 @@ describe('QueenCoordinator', () => {
 
       await queen.coordinateConsensus(decision);
 
-      expect(mockSwarm.proposeConsensus).toHaveBeenCalledWith(
+      expect(mockSwarm.proposeVote).toHaveBeenCalledWith(
         expect.objectContaining({
           weights: expect.any(Object),
         })
@@ -970,8 +970,8 @@ describe('QueenCoordinator', () => {
 
     it('should emit consensus completed event', async () => {
       const eventHandler = vi.fn();
-      queen.on('queen.consensus.completed', eventHandler);
-      vi.mocked(mockSwarm.proposeConsensus).mockResolvedValue(createMockConsensusResult(true));
+      queen.on('queen.voting.completed', eventHandler);
+      vi.mocked(mockSwarm.proposeVote).mockResolvedValue(createMockVotingResult(true));
 
       const decision: Decision = {
         decisionId: '',
@@ -987,7 +987,7 @@ describe('QueenCoordinator', () => {
 
       expect(eventHandler).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'queen.consensus.completed',
+          type: 'queen.voting.completed',
           data: expect.objectContaining({
             approved: true,
           }),
@@ -1151,7 +1151,7 @@ describe('QueenCoordinator', () => {
     });
 
     it('should track consensus latencies', async () => {
-      vi.mocked(mockSwarm.proposeConsensus).mockResolvedValue(createMockConsensusResult(true));
+      vi.mocked(mockSwarm.proposeVote).mockResolvedValue(createMockVotingResult(true));
 
       const decision: Decision = {
         decisionId: '',
@@ -1200,7 +1200,7 @@ describe('QueenCoordinator', () => {
       expect(analysis.analysisId).toBeDefined();
     });
 
-    it('should work with NeuralLearningSystem interface', async () => {
+    it('should work with PatternLearningSystem interface', async () => {
       const neural = createMockNeuralSystem();
       queen = createQueenCoordinator(mockSwarm, { enableLearning: true }, neural);
       await queen.initialize();
@@ -1289,7 +1289,7 @@ describe('QueenCoordinator', () => {
     });
 
     it('should handle consensus rejection', async () => {
-      vi.mocked(mockSwarm.proposeConsensus).mockResolvedValue(createMockConsensusResult(false));
+      vi.mocked(mockSwarm.proposeVote).mockResolvedValue(createMockVotingResult(false));
 
       const decision: Decision = {
         decisionId: '',
@@ -1309,7 +1309,7 @@ describe('QueenCoordinator', () => {
     it('should handle all task types', async () => {
       const taskTypes: TaskType[] = [
         'research', 'analysis', 'coding', 'testing',
-        'review', 'documentation', 'coordination', 'consensus', 'custom'
+        'review', 'documentation', 'coordination', 'voting', 'custom'
       ];
 
       for (const type of taskTypes) {

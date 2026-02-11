@@ -69,7 +69,7 @@ const V3_CLASSES: Record<string, MockClass> = {
       { name: 'addAgent', signature: '(agent: Agent): Promise<void>', compatible: true },
       { name: 'removeAgent', signature: '(agentId: string): Promise<void>', compatible: true },
       { name: 'broadcast', signature: '(message: Message): Promise<void>', compatible: true },
-      { name: 'consensus', signature: '(proposal: Proposal): Promise<ConsensusResult>', compatible: true },
+      { name: 'voting', signature: '(proposal: Proposal): Promise<VotingResult>', compatible: true },
       { name: 'getStatus', signature: '(): Promise<SwarmStatus>', compatible: true },
       { name: 'shutdown', signature: '(): Promise<void>', compatible: true },
       { name: 'init', signature: '(topology: string): Promise<void>', compatible: true },
@@ -323,10 +323,10 @@ describe('V2 API Compatibility', () => {
     });
 
     it('should have compatible consensus signature', () => {
-      const signature = mockRegistry.getMethodSignature('SwarmCoordinator', 'consensus');
+      const signature = mockRegistry.getMethodSignature('SwarmCoordinator', 'voting');
 
       expect(signature).toContain('Proposal');
-      expect(signature).toContain('ConsensusResult');
+      expect(signature).toContain('VotingResult');
     });
   });
 

@@ -204,11 +204,11 @@ async function runTests(): Promise<void> {
       );
 
       // Similar plugins
-      const similar = findSimilarPlugins(registry, '@claude-flow/neural', 3);
+      const similar = findSimilarPlugins(registry, '@claude-flow/patterns', 3);
       logTest(
         'Similar plugins',
         similar.length >= 0,
-        `Similar to @claude-flow/neural: ${similar.map(p => p.name).join(', ') || 'none'}`
+        `Similar to @claude-flow/patterns: ${similar.map(p => p.name).join(', ') || 'none'}`
       );
     }
 

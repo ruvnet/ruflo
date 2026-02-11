@@ -397,7 +397,7 @@ describe('V2 CLI Compatibility', () => {
     it('should identify deprecated commands', async () => {
       const result = await validator.validateCLI();
       const deprecatedChecks = result.checks.filter(c =>
-        c.name.includes('hive-mind') || c.name.includes('neural') || c.name.includes('goal')
+        c.name.includes('hive-mind') || c.name.includes('patterns') || c.name.includes('goal')
       );
 
       expect(deprecatedChecks.length).toBeGreaterThan(0);

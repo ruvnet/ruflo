@@ -63,7 +63,7 @@ export const SwarmConfigSchema = z.object({
     scaleDownThreshold: z.number().min(0).max(1).default(0.3),
   }).optional(),
   coordination: z.object({
-    consensusRequired: z.boolean().default(false),
+    votingRequired: z.boolean().default(false),
     timeoutMs: z.number().int().positive().default(10000),
     retryPolicy: z.object({
       maxRetries: z.number().int().min(0).default(3),

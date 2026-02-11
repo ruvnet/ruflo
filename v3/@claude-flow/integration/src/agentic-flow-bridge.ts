@@ -23,7 +23,7 @@ import type {
   FeatureFlags,
   DEFAULT_INTEGRATION_CONFIG,
 } from './types.js';
-import { SONAAdapter } from './sona-adapter.js';
+import { PatternAdapter } from './sona-adapter.js';
 import { AttentionCoordinator } from './attention-coordinator.js';
 import { SDKBridge } from './sdk-bridge.js';
 
@@ -31,7 +31,7 @@ import { SDKBridge } from './sdk-bridge.js';
  * Interface for agentic-flow core module (dynamically loaded)
  * This represents the external agentic-flow@alpha package API
  */
-interface AgenticFlowSONAInterface {
+interface AgenticFlowPatternInterface {
   setMode(mode: string): Promise<void>;
   storePattern(params: unknown): Promise<string>;
   findPatterns(query: string, options?: unknown): Promise<unknown[]>;
@@ -55,7 +55,7 @@ interface AgenticFlowAgentDBInterface {
  * Used for deep integration and code deduplication per ADR-001
  */
 export interface AgenticFlowCore {
-  sona: AgenticFlowSONAInterface;
+  sona: AgenticFlowPatternInterface;
   attention: AgenticFlowAttentionInterface;
   agentdb: AgenticFlowAgentDBInterface;
   version: string;
@@ -71,18 +71,18 @@ type AgenticFlowFactory = (config: unknown) => Promise<AgenticFlowCore>;
  * AgenticFlowBridge - Core integration class for agentic-flow@alpha
  *
  * This class serves as the main entry point for all agentic-flow integration,
- * providing unified access to SONA learning, Flash Attention, and AgentDB.
+ * providing unified access to pattern learning, Flash Attention, and AgentDB.
  *
  * Performance Targets:
- * - Flash Attention: 2.49x-7.47x speedup
- * - AgentDB Search: 150x-12,500x improvement
- * - SONA Adaptation: <0.05ms response time
+ * - Flash Attention: CPU-optimized
+ * - AgentDB Search: HNSW-indexed improvement
+ * - Pattern Adaptation: sub-ms response time
  * - Memory Reduction: 50-75%
  */
 export class AgenticFlowBridge extends EventEmitter {
   private config: IntegrationConfig;
   private initialized: boolean = false;
-  private sona: SONAAdapter | null = null;
+  private sona: PatternAdapter | null = null;
   private attention: AttentionCoordinator | null = null;
   private sdk: SDKBridge | null = null;
   private componentHealth: Map<string, ComponentHealth> = new Map();
@@ -164,10 +164,10 @@ export class AgenticFlowBridge extends EventEmitter {
       await this.sdk.initialize();
       this.updateComponentHealth('sdk', 'healthy');
 
-      // Initialize SONA adapter if enabled
+      // Initialize Pattern adapter if enabled
       // Pass agentic-flow reference for delegation when available
-      if (this.config.features.enableSONA) {
-        this.sona = new SONAAdapter(this.config.sona);
+      if (this.config.features.enablePattern) {
+        this.sona = new PatternAdapter(this.config.sona);
         if (this.agenticFlowCore) {
           // Type cast: agentic-flow runtime API is compatible but typed as `unknown`
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -211,9 +211,9 @@ export class AgenticFlowBridge extends EventEmitter {
    *
    * This implements ADR-001: Adopt agentic-flow as Core Foundation
    * When agentic-flow is available, components delegate to it for:
-   * - SONA learning (eliminating duplicate pattern storage)
+   * - pattern learning (eliminating duplicate pattern storage)
    * - Flash Attention (using native optimized implementations)
-   * - AgentDB (leveraging 150x-12,500x faster HNSW search)
+   * - AgentDB (leveraging optimized HNSW search)
    *
    * If agentic-flow is not installed, falls back to local implementations
    * to maintain backward compatibility.
@@ -286,21 +286,21 @@ export class AgenticFlowBridge extends EventEmitter {
   }
 
   /**
-   * Get the SONA adapter for learning integration
+   * Get the Pattern adapter for learning integration
    */
-  async getSONAAdapter(): Promise<SONAAdapter> {
+  async getPatternAdapter(): Promise<PatternAdapter> {
     this.ensureInitialized();
 
-    if (!this.config.features.enableSONA) {
+    if (!this.config.features.enablePattern) {
       throw this.createError(
-        'SONA is disabled in configuration',
+        'Pattern is disabled in configuration',
         'FEATURE_DISABLED',
         'sona'
       );
     }
 
     if (!this.sona) {
-      this.sona = new SONAAdapter(this.config.sona);
+      this.sona = new PatternAdapter(this.config.sona);
       await this.sona.initialize();
       this.updateComponentHealth('sona', 'healthy');
     }
@@ -393,9 +393,9 @@ export class AgenticFlowBridge extends EventEmitter {
 
     // Initialize the corresponding component if needed
     switch (feature) {
-      case 'enableSONA':
+      case 'enablePattern':
         if (!this.sona) {
-          this.sona = new SONAAdapter(this.config.sona);
+          this.sona = new PatternAdapter(this.config.sona);
           await this.sona.initialize();
           this.updateComponentHealth('sona', 'healthy');
         }
@@ -424,7 +424,7 @@ export class AgenticFlowBridge extends EventEmitter {
 
     // Cleanup the corresponding component
     switch (feature) {
-      case 'enableSONA':
+      case 'enablePattern':
         if (this.sona) {
           await this.sona.shutdown();
           this.sona = null;
@@ -471,7 +471,7 @@ export class AgenticFlowBridge extends EventEmitter {
       }
     }
 
-    // Check SONA
+    // Check Pattern
     if (this.sona) {
       try {
         const start = Date.now();
@@ -571,7 +571,7 @@ export class AgenticFlowBridge extends EventEmitter {
    * Get the agentic-flow core instance for direct access
    *
    * Returns null if agentic-flow is not available.
-   * Prefer using getSONAAdapter() or getAttentionCoordinator() which
+   * Prefer using getPatternAdapter() or getAttentionCoordinator() which
    * handle delegation automatically.
    */
   getAgenticFlowCore(): AgenticFlowCore | null {
@@ -613,7 +613,7 @@ export class AgenticFlowBridge extends EventEmitter {
         enableWAL: true,
       },
       features: {
-        enableSONA: true,
+        enablePattern: true,
         enableFlashAttention: true,
         enableAgentDB: true,
         enableTrajectoryTracking: true,

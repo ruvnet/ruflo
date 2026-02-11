@@ -57,7 +57,7 @@ class CodeEmbedder {
 
   /**
    * Initialize semantic vocabulary for code concepts.
-   * This is a simplified simulation - real models use neural networks.
+   * This is a simplified simulation - real models use pattern networks.
    */
   private initializeVocabulary(): void {
     const concepts = [

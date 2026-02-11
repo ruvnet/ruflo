@@ -103,14 +103,14 @@ export interface SpawnResult {
 }
 export interface FederationMessage {
     id: string;
-    type: 'broadcast' | 'direct' | 'consensus' | 'heartbeat';
+    type: 'broadcast' | 'direct' | 'voting' | 'heartbeat';
     sourceSwarmId: SwarmId;
     targetSwarmId?: SwarmId;
     payload: unknown;
     timestamp: Date;
     ttl?: number;
 }
-export interface ConsensusProposal {
+export interface VotingProposal {
     id: string;
     proposerId: SwarmId;
     type: string;
@@ -244,7 +244,7 @@ export declare class FederationHub extends EventEmitter {
     /**
      * Propose a value for federation-wide consensus
      */
-    propose(proposerId: SwarmId, type: string, value: unknown, timeoutMs?: number): Promise<ConsensusProposal>;
+    propose(proposerId: SwarmId, type: string, value: unknown, timeoutMs?: number): Promise<VotingProposal>;
     /**
      * Vote on a proposal
      */
@@ -252,11 +252,11 @@ export declare class FederationHub extends EventEmitter {
     /**
      * Get proposal by ID
      */
-    getProposal(proposalId: string): ConsensusProposal | undefined;
+    getProposal(proposalId: string): VotingProposal | undefined;
     /**
      * Get all pending proposals
      */
-    getPendingProposals(): ConsensusProposal[];
+    getPendingProposals(): VotingProposal[];
     /**
      * Get federation statistics
      */

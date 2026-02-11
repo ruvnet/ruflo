@@ -3,7 +3,7 @@
  *
  * Comprehensive TypeScript types for the RuVector PostgreSQL vector database
  * integration, supporting advanced neural search, attention mechanisms,
- * graph neural networks, and hyperbolic embeddings.
+ * graph pattern networks, and hyperbolic embeddings.
  *
  * @module @claude-flow/plugins/integrations/ruvector
  * @version 1.0.0
@@ -868,7 +868,7 @@ export type RuVectorFunctionCategory =
   | 'vector'           // Vector operations
   | 'index'            // Index management
   | 'attention'        // Attention mechanisms
-  | 'gnn'              // Graph neural networks
+  | 'gnn'              // Graph pattern networks
   | 'hyperbolic'       // Hyperbolic geometry
   | 'embedding'        // Embedding operations
   | 'distance'         // Distance/similarity functions

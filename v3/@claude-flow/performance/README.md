@@ -15,7 +15,7 @@
 - **Auto-Calibration** - Automatically adjusts iterations for statistical significance
 - **Regression Detection** - Compare against baselines with significance testing
 - **V3 Performance Targets** - Built-in targets for CLI, memory, swarm, and attention
-- **Flash Attention Validation** - Validate 2.49x-7.47x speedup targets
+- **Flash Attention Validation** - Validate CPU-optimized targets
 - **Multiple Output Formats** - Console, JSON, and programmatic access
 
 ## Installation
@@ -169,7 +169,7 @@ V3_PERFORMANCE_TARGETS = {
   'message-throughput': 0.1,    // <0.1ms per message
 
   // SONA Learning
-  'sona-adaptation': 0.05       // <0.05ms
+  'sona-adaptation': 0.05       // sub-ms
 };
 
 // Check if target is met

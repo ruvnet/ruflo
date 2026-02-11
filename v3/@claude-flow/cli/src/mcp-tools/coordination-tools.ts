@@ -22,7 +22,7 @@ interface TopologyConfig {
   type: 'mesh' | 'hierarchical' | 'ring' | 'star' | 'hybrid' | 'hierarchical-mesh';
   maxNodes: number;
   redundancy: number;
-  consensusAlgorithm: string;
+  votingAlgorithm: string;
 }
 
 interface LoadBalanceConfig {
@@ -75,7 +75,7 @@ function loadCoordStore(): CoordinationStore {
       type: 'hierarchical',
       maxNodes: 15,
       redundancy: 2,
-      consensusAlgorithm: 'raft',
+      votingAlgorithm: 'raft',
     },
     loadBalance: {
       algorithm: 'adaptive',
@@ -110,7 +110,7 @@ export const coordinationTools: MCPTool[] = [
         type: { type: 'string', enum: ['mesh', 'hierarchical', 'ring', 'star', 'hybrid', 'hierarchical-mesh'], description: 'Topology type' },
         maxNodes: { type: 'number', description: 'Maximum nodes' },
         redundancy: { type: 'number', description: 'Redundancy level' },
-        consensusAlgorithm: { type: 'string', enum: ['raft', 'byzantine', 'gossip', 'crdt'], description: 'Consensus algorithm' },
+        votingAlgorithm: { type: 'string', enum: ['raft', 'byzantine', 'gossip', 'crdt'], description: 'Consensus algorithm' },
       },
     },
     handler: async (input) => {
@@ -130,7 +130,7 @@ export const coordinationTools: MCPTool[] = [
         if (input.type) store.topology.type = input.type as TopologyConfig['type'];
         if (input.maxNodes) store.topology.maxNodes = input.maxNodes as number;
         if (input.redundancy) store.topology.redundancy = input.redundancy as number;
-        if (input.consensusAlgorithm) store.topology.consensusAlgorithm = input.consensusAlgorithm as string;
+        if (input.votingAlgorithm) store.topology.votingAlgorithm = input.votingAlgorithm as string;
 
         saveCoordStore(store);
 
@@ -441,7 +441,7 @@ export const coordinationTools: MCPTool[] = [
 
         return {
           success: true,
-          algorithm: store.topology.consensusAlgorithm,
+          algorithm: store.topology.votingAlgorithm,
           nodes: nodeCount,
           quorum,
           status: nodeCount >= quorum ? 'operational' : 'degraded',

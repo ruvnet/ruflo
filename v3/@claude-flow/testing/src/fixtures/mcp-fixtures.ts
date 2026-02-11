@@ -430,7 +430,7 @@ export const mcpTools: Record<string, MCPTool> = {
   // Neural/Learning tools
   neuralStatus: {
     name: 'neural_status',
-    description: 'Get neural learning system status',
+    description: 'Get pattern learning system status',
     inputSchema: {
       type: 'object',
       properties: {
@@ -445,7 +445,7 @@ export const mcpTools: Record<string, MCPTool> = {
 
   neuralTrain: {
     name: 'neural_train',
-    description: 'Trigger neural training with current data',
+    description: 'Trigger pattern training with current data',
     inputSchema: {
       type: 'object',
       properties: {
@@ -537,7 +537,7 @@ export const mcpResources: Record<string, MCPResource> = {
   },
 
   learningPatterns: {
-    uri: 'claude-flow://neural/patterns',
+    uri: 'claude-flow://patterns/patterns',
     name: 'Learning Patterns',
     description: 'Learned patterns from ReasoningBank',
     mimeType: 'application/json',

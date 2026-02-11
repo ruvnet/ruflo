@@ -1,7 +1,7 @@
 /**
- * SONA Bridge
+ * Pattern Bridge
  *
- * Bridge to SONA (Self-Optimizing Neural Architecture) for continuous
+ * Bridge to Pattern (Self-Optimizing Pattern Architecture) for continuous
  * learning with LoRA fine-tuning and EWC++ memory preservation.
  */
 
@@ -9,7 +9,7 @@ import type { WasmBridge, WasmModuleStatus, SonaConfig } from '../types.js';
 import { SonaConfigSchema } from '../types.js';
 
 /**
- * SONA trajectory for learning
+ * Pattern trajectory for learning
  */
 export interface SonaTrajectory {
   id: string;
@@ -20,7 +20,7 @@ export interface SonaTrajectory {
 }
 
 /**
- * SONA learning step
+ * Pattern learning step
  */
 export interface SonaStep {
   stateBefore: Float32Array;
@@ -31,7 +31,7 @@ export interface SonaStep {
 }
 
 /**
- * SONA pattern
+ * Pattern pattern
  */
 export interface SonaPattern {
   id: string;
@@ -61,7 +61,7 @@ export interface EWCState {
 }
 
 /**
- * SONA WASM module interface
+ * Pattern WASM module interface
  */
 interface SonaModule {
   // Core learning
@@ -87,7 +87,7 @@ interface SonaModule {
 }
 
 /**
- * SONA Bridge implementation
+ * Pattern Bridge implementation
  */
 export class SonaBridge implements WasmBridge<SonaModule> {
   readonly name = 'sona';
@@ -145,7 +145,7 @@ export class SonaBridge implements WasmBridge<SonaModule> {
    * Learn from trajectories
    */
   learn(trajectories: SonaTrajectory[], config?: Partial<SonaConfig>): number {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     const mergedConfig = { ...this.config, ...config };
     return this._module.learn(trajectories, mergedConfig);
   }
@@ -154,7 +154,7 @@ export class SonaBridge implements WasmBridge<SonaModule> {
    * Predict next action
    */
   predict(state: Float32Array): { action: string; confidence: number } {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     return this._module.predict(state);
   }
 
@@ -162,7 +162,7 @@ export class SonaBridge implements WasmBridge<SonaModule> {
    * Store a pattern
    */
   storePattern(pattern: SonaPattern): void {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     this._module.storePattern(pattern);
   }
 
@@ -170,7 +170,7 @@ export class SonaBridge implements WasmBridge<SonaModule> {
    * Find similar patterns
    */
   findPatterns(query: Float32Array, k: number): SonaPattern[] {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     return this._module.findPatterns(query, k);
   }
 
@@ -178,7 +178,7 @@ export class SonaBridge implements WasmBridge<SonaModule> {
    * Apply LoRA transformation
    */
   applyLoRA(input: Float32Array, weights: LoRAWeights): Float32Array {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     return this._module.applyLoRA(input, weights);
   }
 
@@ -186,7 +186,7 @@ export class SonaBridge implements WasmBridge<SonaModule> {
    * Consolidate memory with EWC
    */
   consolidate(ewcState: EWCState): void {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     this._module.consolidate(ewcState);
   }
 
@@ -194,7 +194,7 @@ export class SonaBridge implements WasmBridge<SonaModule> {
    * Set operating mode
    */
   setMode(mode: SonaConfig['mode']): void {
-    if (!this._module) throw new Error('SONA module not initialized');
+    if (!this._module) throw new Error('Pattern module not initialized');
     this._module.setMode(mode);
     this.config.mode = mode;
   }
@@ -411,7 +411,7 @@ function cosineSimilarity(a: Float32Array, b: Float32Array): number {
 }
 
 /**
- * Create a new SONA bridge
+ * Create a new Pattern bridge
  */
 export function createSonaBridge(config?: Partial<SonaConfig>): SonaBridge {
   return new SonaBridge(config);

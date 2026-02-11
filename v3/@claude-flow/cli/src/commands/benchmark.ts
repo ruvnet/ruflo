@@ -16,7 +16,7 @@ import { join } from 'node:path';
 
 const pretrainCommand: Command = {
   name: 'pretrain',
-  description: 'Benchmark self-learning pre-training system (SONA, EWC++, MoE)',
+  description: 'Benchmark self-learning pre-training system (Pattern, EWC++, MoE)',
   options: [
     { name: 'iterations', short: 'i', type: 'number', description: 'Benchmark iterations', default: '100' },
     { name: 'warmup', short: 'w', type: 'number', description: 'Warmup iterations', default: '10' },
@@ -85,7 +85,7 @@ const pretrainCommand: Command = {
 // ============================================================================
 
 const neuralCommand: Command = {
-  name: 'neural',
+  name: 'patterns',
   description: 'Benchmark neural operations (embeddings, WASM, Flash Attention)',
   options: [
     { name: 'iterations', short: 'i', type: 'number', description: 'Benchmark iterations', default: '100' },
@@ -495,8 +495,8 @@ export const benchmarkCommand: Command = {
     output.writeln(output.dim('─'.repeat(50)));
     output.writeln();
     output.writeln('Available subcommands:');
-    output.writeln(`  ${output.highlight('pretrain')}  - Benchmark self-learning pre-training (SONA, EWC++, MoE)`);
-    output.writeln(`  ${output.highlight('neural')}    - Benchmark neural operations (embeddings, WASM)`);
+    output.writeln(`  ${output.highlight('pretrain')}  - Benchmark self-learning pre-training (Pattern, EWC++, MoE)`);
+    output.writeln(`  ${output.highlight('patterns')}    - Benchmark neural operations (embeddings, WASM)`);
     output.writeln(`  ${output.highlight('memory')}    - Benchmark memory operations (HNSW, store, search)`);
     output.writeln(`  ${output.highlight('all')}       - Run all benchmark suites`);
     output.writeln();

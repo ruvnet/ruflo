@@ -226,10 +226,10 @@ export class ReasoningBankAdapter {
   }
 
   /**
-   * Record verdict for SONA learning
+   * Record verdict for pattern learning
    */
   async recordVerdict(trajectoryId: string, success: boolean, feedback?: string): Promise<void> {
-    // In production, this would update SONA weights
+    // In production, this would update pattern weights
     console.log(`[ReasoningBank] Verdict for ${trajectoryId}: ${success ? 'SUCCESS' : 'FAILURE'}${feedback ? ` - ${feedback}` : ''}`);
   }
 

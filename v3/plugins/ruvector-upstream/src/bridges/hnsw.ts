@@ -2,7 +2,7 @@
  * HNSW Bridge
  *
  * Bridge to micro-hnsw-wasm for ultra-fast vector similarity search.
- * Achieves 150x-12,500x faster search compared to brute-force.
+ * Achieves optimized search compared to brute-force.
  */
 
 import type { WasmBridge, WasmModuleStatus, HnswConfig, SearchResult } from '../types.js';

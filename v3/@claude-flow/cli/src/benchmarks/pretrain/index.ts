@@ -1,9 +1,9 @@
 /**
  * Self-Learning Pre-Training Benchmark Suite
- * Comprehensive benchmarks for SONA, EWC++, MoE, pattern learning
+ * Comprehensive benchmarks for Pattern, EWC++, MoE, pattern learning
  *
  * Metrics measured:
- * - SONA adaptation latency (<0.05ms target)
+ * - pattern adaptation latency (sub-ms target)
  * - Pattern learning throughput
  * - EWC++ consolidation effectiveness
  * - Memory retrieval accuracy
@@ -132,13 +132,13 @@ export async function runBenchmark(
 }
 
 // ============================================================================
-// SONA Adaptation Benchmarks
+// Pattern Adaptation Benchmarks
 // ============================================================================
 
-export async function benchmarkSONAAdaptation(config: BenchmarkConfig): Promise<BenchmarkResult> {
-  // Fallback implementation for SONA adaptation
+export async function benchmarkPatternAdaptation(config: BenchmarkConfig): Promise<BenchmarkResult> {
+  // Fallback implementation for pattern adaptation
   const sonaAdapt = async (_signal: { type: string; content: string; metadata?: Record<string, unknown> }) => {
-    // Simulate SONA adaptation with minimal computation
+    // Simulate pattern adaptation with minimal computation
     const start = performance.now();
     // Simple computation to simulate adaptation
     let sum = 0;
@@ -159,7 +159,7 @@ export async function benchmarkSONAAdaptation(config: BenchmarkConfig): Promise<
   let signalIdx = 0;
 
   return runBenchmark(
-    'SONA Adaptation',
+    'Pattern Adaptation',
     async () => {
       await sonaAdapt(testSignals[signalIdx % testSignals.length]);
       signalIdx++;
@@ -492,7 +492,7 @@ export async function runPretrainBenchmarkSuite(config: Partial<BenchmarkConfig>
 
   // Run all benchmarks
   const benchmarks = [
-    { name: 'SONA', fn: () => benchmarkSONAAdaptation(fullConfig) },
+    { name: 'Pattern', fn: () => benchmarkPatternAdaptation(fullConfig) },
     { name: 'Pattern Learning', fn: () => benchmarkPatternLearning(fullConfig) },
     { name: 'EWC++', fn: () => benchmarkEWCConsolidation({ ...fullConfig, iterations: 20 }) },
     { name: 'Memory Retrieval', fn: () => benchmarkMemoryRetrieval(fullConfig) },

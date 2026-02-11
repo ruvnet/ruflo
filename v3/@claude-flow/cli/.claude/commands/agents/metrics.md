@@ -86,10 +86,10 @@ V3 Performance Gains
 ### V3 Performance Gains
 | Metric | Target | Description |
 |--------|--------|-------------|
-| Flash Attention | 2.49x-7.47x | Neural attention speedup |
+| Flash Attention | CPU-optimized | Neural attention speedup |
 | Memory Reduction | 50-75% | Quantization savings |
-| HNSW Search | 150x-12,500x | Vector search improvement |
-| SONA Adaptation | <0.05ms | Real-time learning |
+| HNSW Search | HNSW-indexed | Vector search improvement |
+| SONA Adaptation | sub-ms | Real-time learning |
 
 ## JSON Output
 

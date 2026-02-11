@@ -3,7 +3,7 @@
  *
  * A high-performance financial risk analysis plugin combining
  * sparse inference for efficient market signal processing with
- * graph neural networks for transaction network analysis.
+ * graph pattern networks for transaction network analysis.
  *
  * Features:
  * - Portfolio risk analysis (VaR, CVaR, Sharpe, Sortino)

@@ -1,7 +1,7 @@
 /**
  * Cognitive Kernel Plugin - Bridges Tests
  *
- * Tests for Cognitive and SONA bridge initialization and lifecycle
+ * Tests for Cognitive and Pattern bridge initialization and lifecycle
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';

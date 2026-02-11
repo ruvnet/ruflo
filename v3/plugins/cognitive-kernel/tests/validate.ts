@@ -153,7 +153,7 @@ async function validate() {
 
     const rawResult = await tool.handler({
       task: {
-        description: 'Implement a distributed consensus algorithm',
+        description: 'Implement a distributed voting algorithm',
         complexity: 'complex',
         domain: 'distributed_systems'
       },

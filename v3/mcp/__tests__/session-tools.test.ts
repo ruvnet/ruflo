@@ -59,7 +59,7 @@ describe('Session Tools', () => {
           type: 'hierarchical-mesh',
           edges: [{ from: 'agent-1', to: 'agent-2' }],
         },
-        consensus: { algorithm: 'majority' },
+        voting: { algorithm: 'majority' },
       }),
       spawnAgent: vi.fn().mockResolvedValue({}),
       terminateAll: vi.fn().mockResolvedValue(true),

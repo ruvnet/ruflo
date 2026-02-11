@@ -1,8 +1,8 @@
 /**
- * SONA Bridge for Test Intelligence
+ * Pattern Bridge for Test Intelligence
  *
  * Provides pattern learning and continuous adaptation for test intelligence
- * using SONA (Self-Optimizing Neural Architecture) with LoRA fine-tuning
+ * using Pattern (Self-Optimizing Pattern Architecture) with LoRA fine-tuning
  * and EWC++ memory preservation.
  */
 
@@ -17,7 +17,7 @@ import type {
 type WasmModuleStatus = 'unloaded' | 'loading' | 'ready' | 'error';
 
 /**
- * SONA configuration for test intelligence
+ * Pattern configuration for test intelligence
  */
 interface SonaConfig {
   mode: 'real-time' | 'balanced' | 'research' | 'edge' | 'batch';
@@ -47,9 +47,9 @@ interface EWCState {
 }
 
 /**
- * Default SONA configuration
+ * Default Pattern configuration
  */
-const DEFAULT_SONA_CONFIG: SonaConfig = {
+const DEFAULT_Pattern_CONFIG: SonaConfig = {
   mode: 'balanced',
   loraRank: 4,
   learningRate: 0.001,
@@ -58,7 +58,7 @@ const DEFAULT_SONA_CONFIG: SonaConfig = {
 };
 
 /**
- * SONA Bridge Implementation for Test Intelligence
+ * Pattern Bridge Implementation for Test Intelligence
  *
  * Provides continuous learning capabilities for test pattern recognition:
  * - Pattern storage and retrieval using HNSW-indexed embeddings
@@ -78,7 +78,7 @@ export class TestSonaBridge implements SonaBridgeInterface {
   private patternIndex: Map<number, string> = new Map();
 
   constructor(config?: Partial<SonaConfig>) {
-    this.config = { ...DEFAULT_SONA_CONFIG, ...config };
+    this.config = { ...DEFAULT_Pattern_CONFIG, ...config };
     this.loraWeights = {
       A: new Map(),
       B: new Map(),
@@ -99,7 +99,7 @@ export class TestSonaBridge implements SonaBridgeInterface {
     this.status = 'loading';
 
     try {
-      // Try to load SONA WASM module
+      // Try to load Pattern WASM module
       // Dynamic import of optional WASM module - use string literal to avoid type error
       const modulePath = '@claude-flow/ruvector-upstream';
       const wasmModule = await import(/* @vite-ignore */ modulePath).catch(() => null);
@@ -136,12 +136,12 @@ export class TestSonaBridge implements SonaBridgeInterface {
   /**
    * Learn from test execution patterns
    *
-   * Uses SONA's continuous learning to extract and store patterns
+   * Uses Pattern's continuous learning to extract and store patterns
    * from successful test selections.
    */
   async learnPatterns(patterns: TestExecutionPattern[]): Promise<number> {
     if (!this.isReady()) {
-      throw new Error('SONA bridge not initialized');
+      throw new Error('Pattern bridge not initialized');
     }
 
     if (patterns.length === 0) return 0;
@@ -186,7 +186,7 @@ export class TestSonaBridge implements SonaBridgeInterface {
     k: number
   ): Promise<TestExecutionPattern[]> {
     if (!this.isReady()) {
-      throw new Error('SONA bridge not initialized');
+      throw new Error('Pattern bridge not initialized');
     }
 
     if (this.patternEmbeddings.length === 0) {
@@ -228,7 +228,7 @@ export class TestSonaBridge implements SonaBridgeInterface {
    */
   async storePattern(pattern: TestExecutionPattern): Promise<void> {
     if (!this.isReady()) {
-      throw new Error('SONA bridge not initialized');
+      throw new Error('Pattern bridge not initialized');
     }
 
     const patternId = this.generatePatternId(pattern);
@@ -549,7 +549,7 @@ export class TestSonaBridge implements SonaBridgeInterface {
 }
 
 /**
- * Create a new SONA bridge instance
+ * Create a new Pattern bridge instance
  */
 export function createTestSonaBridge(config?: Partial<SonaConfig>): TestSonaBridge {
   return new TestSonaBridge(config);

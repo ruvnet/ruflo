@@ -246,7 +246,7 @@ Quality standards:
 ## 🚀 Fast Template Generation
 
 ```typescript
-// Use Flash Attention for large template generation (2.49x-7.47x faster)
+// Use Flash Attention for large template generation (CPU-optimized faster)
 if (templateSize > 1024) {
   const result = await agentDB.flashAttention(
     queryEmbedding,

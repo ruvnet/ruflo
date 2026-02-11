@@ -80,19 +80,19 @@ flowchart TB
     subgraph RUVECTOR["🧠 RuVector Intelligence Layer"]
         direction TB
         subgraph ROW1[" "]
-            SONA[SONA<br/>Self-Optimize<br/>&lt;0.05ms]
+            PAT[Patterns<br/>Similarity Search]
             EWC[EWC++<br/>No Forgetting]
-            FLASH[Flash Attention<br/>2.49-7.47x]
+            FLASH[Flash Attention<br/>CPU-optimized]
         end
         subgraph ROW2[" "]
-            HNSW[HNSW<br/>150x-12,500x faster]
+            HNSW[HNSW<br/>Vector Search]
             RB[ReasoningBank<br/>Pattern Store]
             HYP[Hyperbolic<br/>Poincaré]
         end
         subgraph ROW3[" "]
-            LORA[LoRA/Micro<br/>128x compress]
-            QUANT[Int8 Quant<br/>3.92x memory]
-            RL[9 RL Algos<br/>Q/SARSA/PPO/DQN]
+            LORA[LoRA<br/>Weight Updates]
+            QUANT[Int8 Quant<br/>Memory Savings]
+            RL[RL Algos<br/>Q/SARSA/PPO/DQN]
         end
     end
 
@@ -106,8 +106,8 @@ flowchart TB
     QL & MOE & SK & HK --> TOPO & CONS & CLM
     TOPO & CONS & CLM --> AG1 & AG2 & AG3 & AG4 & AG5 & AG6
     AG1 & AG2 & AG3 & AG4 & AG5 & AG6 --> MEM & PROV & WORK
-    MEM --> SONA & EWC & FLASH
-    SONA & EWC & FLASH --> HNSW & RB & HYP
+    MEM --> PAT & EWC & FLASH
+    PAT & EWC & FLASH --> HNSW & RB & HYP
     HNSW & RB & HYP --> LORA & QUANT & RL
     LORA & QUANT & RL --> L1
     L5 -.->|loops back| QL
@@ -124,18 +124,18 @@ flowchart TB
 
 **RuVector Components** (`npx ruvector`):
 
-| Component | Purpose | Performance |
-|-----------|---------|-------------|
-| **SONA** | Self-Optimizing Neural Architecture - learns optimal routing | <0.05ms adaptation |
-| **EWC++** | Elastic Weight Consolidation - prevents catastrophic forgetting | Preserves 95%+ knowledge |
-| **Flash Attention** | Optimized attention computation | 2.49x-7.47x speedup |
-| **HNSW** | Hierarchical Navigable Small World vector search | 150x-12,500x faster |
-| **ReasoningBank** | Pattern storage with trajectory learning | RETRIEVE→JUDGE→DISTILL |
-| **Hyperbolic** | Poincaré ball embeddings for hierarchical data | Better code relationships |
-| **LoRA/MicroLoRA** | Low-Rank Adaptation for efficient fine-tuning | **<3μs** adaptation, 383k ops/sec |
-| **Int8 Quantization** | Memory-efficient weight storage | 3.92x memory reduction |
-| **SemanticRouter** | Semantic task routing with cosine similarity | **34,798 routes/s**, 0.029ms |
-| **9 RL Algorithms** | Q-Learning, SARSA, A2C, PPO, DQN, Decision Transformer, etc. | Task-specific learning |
+| Component | Purpose |
+|-----------|---------|
+| **Pattern Manager** | Pattern cache with cosine similarity search |
+| **EWC++** | Weight consolidation to prevent catastrophic forgetting |
+| **Flash Attention** | Optimized attention computation (CPU-based) |
+| **HNSW** | Hierarchical Navigable Small World vector search |
+| **ReasoningBank** | Pattern storage with trajectory learning |
+| **Hyperbolic** | Poincaré ball embeddings for hierarchical data |
+| **LoRA** | Low-Rank Adaptation for weight updates |
+| **Int8 Quantization** | Memory-efficient weight storage |
+| **SemanticRouter** | Task routing with cosine similarity |
+| **RL Algorithms** | Q-Learning, SARSA, A2C, PPO, DQN, Decision Transformer |
 
 ```bash
 # Install RuVector standalone

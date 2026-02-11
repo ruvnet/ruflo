@@ -247,7 +247,7 @@ const DEFAULT_CONFIG: SwarmAdapterConfig = {
  * - Agent output format conversion
  * - Specialized agent wrapping
  * - MoE expert routing integration
- * - Attention-based consensus coordination
+ * - Attention-based voting coordination
  * - GraphRoPE topology-aware positioning
  *
  * Usage:
@@ -622,7 +622,7 @@ export class SwarmAdapter extends EventEmitter {
         }
 
         return {
-          consensus: result.consensus,
+          consensus: result.voting,
           attentionWeights,
           topAgents: this.extractTopAgents(agentOutputs, attentionWeights),
           mechanism: useMechanism,

@@ -182,7 +182,7 @@ export class SwarmTestInstance {
       'security-architect': ['security-design', 'threat-modeling', 'security-review'],
       'security-auditor': ['cve-detection', 'vulnerability-scanning', 'security-testing'],
       'memory-specialist': ['memory-optimization', 'agentdb-integration', 'caching'],
-      'swarm-specialist': ['coordination', 'consensus', 'communication'],
+      'swarm-specialist': ['coordination', 'voting', 'communication'],
       'integration-architect': ['api-design', 'system-integration', 'compatibility'],
       'performance-engineer': ['optimization', 'benchmarking', 'profiling'],
       'core-architect': ['ddd-design', 'architecture', 'domain-modeling'],

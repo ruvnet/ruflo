@@ -293,7 +293,7 @@ export const ConfigFixtures = {
     },
     performance: {
       flashAttention: true,
-      targetSpeedup: '2.49x-7.47x',
+      targetSpeedup: 'CPU-optimized',
       concurrency: 4
     }
   },

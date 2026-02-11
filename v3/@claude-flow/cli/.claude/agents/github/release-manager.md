@@ -259,7 +259,7 @@ const validationPlan = changes.sort((a, b) =>
   riskScores[b.id] - riskScores[a.id]
 );
 
-console.log(`Risk assessment completed in ${processingTime}ms (2.49x-7.47x faster)`);
+console.log(`Risk assessment completed in ${processingTime}ms (CPU-optimized)`);
 ```
 
 ### GNN-Enhanced Change Impact Analysis

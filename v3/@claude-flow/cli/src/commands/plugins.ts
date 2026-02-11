@@ -447,7 +447,7 @@ const infoCommand: Command = {
     { name: 'registry', short: 'r', type: 'string', description: 'Registry to use' },
   ],
   examples: [
-    { command: 'claude-flow plugins info -n @claude-flow/neural', description: 'Show plugin info' },
+    { command: 'claude-flow plugins info -n @claude-flow/patterns', description: 'Show plugin info' },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const name = ctx.flags.name as string;
@@ -675,8 +675,8 @@ const upgradeCommand: Command = {
     { name: 'version', short: 'v', type: 'string', description: 'Target version (default: latest)' },
   ],
   examples: [
-    { command: 'claude-flow plugins upgrade -n @claude-flow/neural', description: 'Upgrade to latest' },
-    { command: 'claude-flow plugins upgrade -n @claude-flow/neural -v 3.1.0', description: 'Upgrade to specific version' },
+    { command: 'claude-flow plugins upgrade -n @claude-flow/patterns', description: 'Upgrade to latest' },
+    { command: 'claude-flow plugins upgrade -n @claude-flow/patterns -v 3.1.0', description: 'Upgrade to specific version' },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const name = ctx.flags.name as string;
@@ -918,7 +918,7 @@ export const pluginsCommand: Command = {
     output.writeln();
     output.writeln(output.bold('Official Plugins:'));
     output.printList([
-      '@claude-flow/neural              - Neural patterns and inference (WASM SIMD)',
+      '@claude-flow/patterns              - Patterns and inference (WASM SIMD)',
       '@claude-flow/security            - Security scanning and CVE detection',
       '@claude-flow/embeddings          - Vector embeddings with hyperbolic support',
       '@claude-flow/claims              - Claims-based authorization',

@@ -2,7 +2,7 @@
  * Flash Attention Bridge
  *
  * Bridge to ruvector-attention-wasm for efficient attention computation.
- * Achieves 2.49x-7.47x speedup over standard attention.
+ * Achieves CPU-optimized over standard attention.
  */
 
 import type { WasmBridge, WasmModuleStatus, AttentionConfig } from '../types.js';

@@ -280,9 +280,9 @@ const initCommand: Command = {
       output.writeln(output.dim('  Setting up communication channels...'));
 
       if (v3Mode) {
-        output.writeln(output.dim('  Enabling Flash Attention (2.49x-7.47x speedup)...'));
+        output.writeln(output.dim('  Enabling Flash Attention (CPU-optimized)...'));
         output.writeln(output.dim('  Configuring AgentDB integration (150x faster)...'));
-        output.writeln(output.dim('  Initializing SONA learning system...'));
+        output.writeln(output.dim('  Initializing pattern learning system...'));
       }
 
       output.writeln();
@@ -720,8 +720,8 @@ const coordinateCommand: Command = {
     output.writeln();
     output.printInfo('Performance Targets:');
     output.printList([
-      `Flash Attention: ${output.success('2.49x-7.47x speedup')}`,
-      `AgentDB Search: ${output.success('150x-12,500x improvement')}`,
+      `Flash Attention: ${output.success('CPU-optimized')}`,
+      `AgentDB Search: ${output.success('HNSW-indexed improvement')}`,
       `Memory Reduction: ${output.success('50-75%')}`,
       `Code Reduction: ${output.success('<5,000 lines')}`
     ]);

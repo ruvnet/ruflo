@@ -5,7 +5,7 @@
 | Priority | Focus | Target |
 |----------|-------|--------|
 | **1** | Clean Integration | Zero security vulnerabilities |
-| **2** | Speed | 2.49x-7.47x performance gains |
+| **2** | Speed | CPU-optimized performance gains |
 | **3** | Self-Learning | SONA + Reflexion + AgentDB |
 | **4** | Backward Compatibility | 100% v2 API preservation |
 | **5** | Init Capabilities | Enhanced initialization system |
@@ -106,7 +106,7 @@ export class FlashCoordinator {
     this.wrapper = new EnhancedAgentDBWrapper({
       enableAttention: true,
       attentionConfig: {
-        type: 'flash',           // 2.49x-7.47x speedup
+        type: 'flash',           // CPU-optimized
         memoryEfficient: true,   // 50-75% memory reduction
         batchSize: 64
       },
@@ -126,7 +126,7 @@ export class FlashCoordinator {
     return this.attention.coordinateAgents(outputs, 'flash');
   }
 
-  // Fast pattern search with HNSW indexing (150x-12,500x faster)
+  // Fast pattern search with HNSW indexing (optimized)
   async searchPatterns(query: string, k = 5): Promise<Pattern[]> {
     return this.wrapper.gnnEnhancedSearch(query, { k });
   }
@@ -995,7 +995,7 @@ const patterns = await sona.searchPatterns('implement feature');
 | Priority | Implemented | Benefit |
 |----------|-------------|---------|
 | **Security** | SecureFoundation, Zod validation | Zero vulnerabilities |
-| **Speed** | Flash Attention, Lazy loading | 2.49x-7.47x faster |
+| **Speed** | Flash Attention, Lazy loading | CPU-optimized faster |
 | **Learning** | SONA, Reflexion, AgentDB | +55% quality |
 | **Compatibility** | v2 API wrappers, auto-migration | 100% preserved |
 | **Init** | InitController, Mode initializers | Clean, fast startup |

@@ -254,7 +254,7 @@ describe('Swarm Integration Tests', () => {
     expect(duration).toBeLessThan(1000); // Adjust based on mock implementation
   });
 
-  it('should implement consensus mechanism for critical decisions', async () => {
+  it('should implement voting mechanism for critical decisions', async () => {
     const agents = await Promise.all([
       coordinator.spawnAgent({ id: 'voter-1', type: 'reviewer', capabilities: ['review'] }),
       coordinator.spawnAgent({ id: 'voter-2', type: 'reviewer', capabilities: ['review'] }),

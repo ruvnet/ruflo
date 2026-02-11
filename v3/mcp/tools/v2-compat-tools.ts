@@ -436,13 +436,13 @@ export const neuralStatusTool: MCPTool = {
     return { modelLoaded: true, accuracy: 0.85 + Math.random() * 0.1, trainingProgress: 100, system: systemStatus };
   },
   category: 'v2-compat',
-  tags: ['v2', 'neural', 'status'],
+  tags: ['v2', 'patterns', 'status'],
   version: '2.0.0',
   deprecated: true,
 };
 
 /**
- * neural_train - V2 compatible neural training
+ * neural_train - V2 compatible pattern training
  */
 export const neuralTrainTool: MCPTool = {
   name: 'neural_train',
@@ -459,7 +459,7 @@ export const neuralTrainTool: MCPTool = {
     return { ...result as object, iterations: input.iterations || 10, agentId: input.agentId, trainingComplete: true };
   },
   category: 'v2-compat',
-  tags: ['v2', 'neural', 'training'],
+  tags: ['v2', 'patterns', 'training'],
   version: '2.0.0',
   deprecated: true,
 };
@@ -481,7 +481,7 @@ export const neuralPatternsTool: MCPTool = {
     return { patterns: metrics.patterns || {}, filterType: input.pattern || 'all' };
   },
   category: 'v2-compat',
-  tags: ['v2', 'neural', 'patterns'],
+  tags: ['v2', 'patterns', 'patterns'],
   version: '2.0.0',
   deprecated: true,
 };

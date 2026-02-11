@@ -226,9 +226,9 @@ describe('Provider Integration Tests', () => {
         console.log('Usage:', response.usage);
         console.log('Cost:', response.cost);
 
-        // Check SONA metrics
+        // Check Pattern metrics
         const sonaMetrics = await provider.getSonaMetrics();
-        console.log('SONA Metrics:', sonaMetrics);
+        console.log('Pattern Metrics:', sonaMetrics);
 
         expect(response.content).toBeTruthy();
 

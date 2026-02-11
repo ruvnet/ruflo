@@ -44,7 +44,7 @@ npx claude-flow neural train -e 10
 Training produces:
 - **Patterns Recorded**: Number of patterns stored in ReasoningBank
 - **Trajectories**: Complete learning sequences recorded
-- **SONA Adaptation**: Target is <0.05ms per operation
+- **SONA Adaptation**: Target is sub-ms per operation
 - **Persistence Path**: Where patterns are saved
 
 ## List Trained Patterns
@@ -64,7 +64,7 @@ npx claude-flow neural patterns --action analyze -q "coordination"
 
 | Metric | Target |
 |--------|--------|
-| SONA Adaptation | <0.05ms (achieved: ~2μs) |
+| SONA Adaptation | sub-ms (achieved: ~2μs) |
 | Pattern Search | O(log n) with HNSW |
 | Memory Efficient | Circular buffers |
 

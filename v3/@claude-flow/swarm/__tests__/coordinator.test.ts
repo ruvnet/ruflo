@@ -28,7 +28,7 @@ describe('UnifiedSwarmCoordinator', () => {
         type: 'hierarchical',
         maxAgents: 20,
       },
-      consensus: {
+      voting: {
         algorithm: 'raft',
         threshold: 0.66,
         timeoutMs: 5000,

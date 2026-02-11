@@ -8,7 +8,7 @@ Claude-Flow v3 represents a complete architectural overhaul that builds on **age
 
 | Objective | Target | Impact |
 |-----------|--------|--------|
-| **Performance** | 2.49x-7.47x speedup | Flash Attention integration |
+| **Performance** | CPU-optimized | Flash Attention integration |
 | **Quality** | +55% improvement | SONA adaptive learning |
 | **Cost** | 60-70% savings | Intelligent LLM routing |
 | **Codebase** | 40% smaller | 130k → 78k lines |
@@ -162,8 +162,8 @@ const adminPassword = crypto.randomBytes(32).toString('hex');
 | Feature | Capability | Improvement |
 |---------|-----------|-------------|
 | **SONA Learning** | Sub-millisecond adaptive | +55% quality |
-| **Flash Attention** | 8 attention mechanisms | 2.49x-7.47x speedup |
-| **AgentDB** | 150x-12,500x search | HNSW indexing |
+| **Flash Attention** | 8 attention mechanisms | CPU-optimized |
+| **AgentDB** | HNSW-indexed search | HNSW indexing |
 | **66 Agents** | Pre-built specialists | Full coverage |
 | **213 MCP Tools** | Complete toolset | Enterprise ready |
 | **9 RL Algorithms** | PPO, MCTS, Q-Learning | Continuous learning |
@@ -623,7 +623,7 @@ version: 3.0.0
 category: core
 agentic-flow:
   sona-profile: research      # +55% quality
-  attention: flash            # 2.49x-7.47x speedup
+  attention: flash            # CPU-optimized
   learning: enabled
   reflexion: enabled
 capabilities:

@@ -36,9 +36,9 @@ interface FeatureFlagInfo {
  * Feature flag definitions with metadata
  */
 const FEATURE_FLAG_DEFINITIONS: Record<keyof FeatureFlags, FeatureFlagInfo> = {
-  enableSONA: {
-    name: 'enableSONA',
-    description: 'Enable SONA (Self-Optimizing Neural Architecture) learning system',
+  enablePattern: {
+    name: 'enablePattern',
+    description: 'Enable Pattern (Self-Optimizing Pattern Architecture) learning system',
     defaultValue: true,
     experimental: false,
     performanceImpact: 'low',
@@ -46,7 +46,7 @@ const FEATURE_FLAG_DEFINITIONS: Record<keyof FeatureFlags, FeatureFlagInfo> = {
   },
   enableFlashAttention: {
     name: 'enableFlashAttention',
-    description: 'Enable Flash Attention for 2.49x-7.47x speedup',
+    description: 'Enable Flash Attention for CPU-optimized',
     defaultValue: true,
     experimental: false,
     performanceImpact: 'none',
@@ -66,7 +66,7 @@ const FEATURE_FLAG_DEFINITIONS: Record<keyof FeatureFlags, FeatureFlagInfo> = {
     defaultValue: true,
     experimental: false,
     performanceImpact: 'low',
-    dependencies: ['enableSONA'],
+    dependencies: ['enablePattern'],
   },
   enableGNN: {
     name: 'enableGNN',
@@ -83,7 +83,7 @@ const FEATURE_FLAG_DEFINITIONS: Record<keyof FeatureFlags, FeatureFlagInfo> = {
     defaultValue: true,
     experimental: false,
     performanceImpact: 'low',
-    dependencies: ['enableSONA'],
+    dependencies: ['enablePattern'],
   },
   enableQUICTransport: {
     name: 'enableQUICTransport',
@@ -100,7 +100,7 @@ const FEATURE_FLAG_DEFINITIONS: Record<keyof FeatureFlags, FeatureFlagInfo> = {
     defaultValue: false,
     experimental: true,
     performanceImpact: 'high',
-    dependencies: ['enableSONA', 'enableTrajectoryTracking'],
+    dependencies: ['enablePattern', 'enableTrajectoryTracking'],
     minSDKVersion: '2.0.1',
   },
   enableAutoConsolidation: {
@@ -109,7 +109,7 @@ const FEATURE_FLAG_DEFINITIONS: Record<keyof FeatureFlags, FeatureFlagInfo> = {
     defaultValue: true,
     experimental: false,
     performanceImpact: 'low',
-    dependencies: ['enableSONA'],
+    dependencies: ['enablePattern'],
   },
 };
 
@@ -355,7 +355,7 @@ export class FeatureFlagManager extends EventEmitter {
   static fromProfile(profile: 'minimal' | 'standard' | 'full' | 'experimental'): FeatureFlags {
     const profiles: Record<string, Partial<FeatureFlags>> = {
       minimal: {
-        enableSONA: false,
+        enablePattern: false,
         enableFlashAttention: true,
         enableAgentDB: true,
         enableTrajectoryTracking: false,
@@ -366,7 +366,7 @@ export class FeatureFlagManager extends EventEmitter {
         enableAutoConsolidation: false,
       },
       standard: {
-        enableSONA: true,
+        enablePattern: true,
         enableFlashAttention: true,
         enableAgentDB: true,
         enableTrajectoryTracking: true,
@@ -377,7 +377,7 @@ export class FeatureFlagManager extends EventEmitter {
         enableAutoConsolidation: true,
       },
       full: {
-        enableSONA: true,
+        enablePattern: true,
         enableFlashAttention: true,
         enableAgentDB: true,
         enableTrajectoryTracking: true,
@@ -388,7 +388,7 @@ export class FeatureFlagManager extends EventEmitter {
         enableAutoConsolidation: true,
       },
       experimental: {
-        enableSONA: true,
+        enablePattern: true,
         enableFlashAttention: true,
         enableAgentDB: true,
         enableTrajectoryTracking: true,

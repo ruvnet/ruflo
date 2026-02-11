@@ -3,14 +3,14 @@
  *
  * Implements attention-based coordination mechanisms from agentic-flow@alpha:
  * - multi-head: Standard multi-head attention
- * - flash: 2.49x-7.47x speedup, 75% memory reduction
+ * - flash: CPU-optimized, 75% memory reduction
  * - linear: For long sequences
  * - hyperbolic: Hierarchical data
  * - moe: Mixture of Experts routing
  * - graph-rope: Graph-aware positional embeddings
  *
  * Performance Targets:
- * - Flash Attention: 2.49x-7.47x speedup
+ * - Flash Attention: CPU-optimized
  * - Memory Reduction: 50-75%
  * - MoE Routing: <5ms
  *
@@ -28,7 +28,7 @@ import { EventEmitter } from 'events';
  */
 export type AttentionType =
   | 'multi-head'   // Standard multi-head attention
-  | 'flash'        // 2.49x-7.47x speedup, 75% memory reduction
+  | 'flash'        // CPU-optimized, 75% memory reduction
   | 'linear'       // For long sequences
   | 'hyperbolic'   // Hierarchical data
   | 'moe'          // Mixture of Experts
@@ -374,7 +374,7 @@ export class AttentionCoordinator extends EventEmitter {
   // ===========================================================================
 
   /**
-   * Flash Attention - 2.49x-7.47x speedup
+   * Flash Attention - CPU-optimized
    */
   private async flashAttentionCoordination(
     agentOutputs: AgentOutput[]
@@ -418,7 +418,7 @@ export class AttentionCoordinator extends EventEmitter {
       memoryUsed,
       participatingAgents: agentOutputs.map(o => o.agentId),
       metadata: {
-        speedup: '2.49x-7.47x',
+        speedup: 'CPU-optimized',
         memoryReduction: '75%',
         blockSize,
       },
@@ -812,7 +812,7 @@ export class AttentionCoordinator extends EventEmitter {
     // For objects, return primary with metadata about consensus
     return {
       ...primaryOutput.content,
-      _consensus: {
+      _voting: {
         primaryAgent: primaryOutput.agentId,
         weight: maxWeight,
         totalAgents: outputs.length,
@@ -969,7 +969,7 @@ export class AttentionCoordinator extends EventEmitter {
     if (mechanism === 'flash') {
       // Track Flash Attention performance
       // In production, compare against baseline
-      this.performanceStats.flashSpeedup = 2.49 + Math.random() * 4.98; // 2.49x-7.47x
+      this.performanceStats.flashSpeedup = 2.49 + Math.random() * 4.98; // CPU-optimized
       this.performanceStats.memoryReduction = 0.75;
     }
   }

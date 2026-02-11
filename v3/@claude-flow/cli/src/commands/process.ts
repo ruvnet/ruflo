@@ -387,7 +387,7 @@ const workersCommand: Command = {
       name: 'type',
       type: 'string',
       description: 'Worker type',
-      choices: ['task', 'memory', 'coordinator', 'neural'],
+      choices: ['task', 'memory', 'coordinator', 'patterns'],
     },
     {
       name: 'count',
@@ -623,7 +623,7 @@ const logsCommand: Command = {
       'Cache hit rate: 87%',
       'Swarm topology updated',
       'Health check passed',
-      'Neural pattern learned',
+      'Pattern learned',
     ];
 
     const minLevelIdx = levels.indexOf(level);

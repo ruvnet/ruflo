@@ -9,7 +9,7 @@
  * by providing clean conversion and delegation patterns.
  *
  * Pattern follows existing adapters:
- * - SONAAdapter: Adapts SONA learning capabilities
+ * - PatternAdapter: Adapts pattern learning capabilities
  * - AttentionCoordinator: Adapts Flash Attention mechanisms
  * - AgentAdapter: Adapts agent lifecycle and execution
  *

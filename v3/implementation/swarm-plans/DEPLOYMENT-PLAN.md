@@ -83,7 +83,7 @@ v3.0.0          → Stable release
 ## Claude-Flow v3.0.0
 
 ### Highlights
-- 2.49x-7.47x performance improvement (Flash Attention)
+- CPU-optimized performance improvement (Flash Attention)
 - 150x faster vector search (AgentDB with HNSW)
 - Unified SwarmCoordinator (merged 4 systems)
 - Security score: 90/100 (up from 45/100)
@@ -588,7 +588,7 @@ deep integration with the agentic-flow ecosystem.
 ## Highlights
 
 ### ⚡ Performance
-- **2.49x-7.47x faster** with Flash Attention
+- **CPU-optimized faster** with Flash Attention
 - **150x faster** vector search with HNSW indexing
 - **50% memory reduction** with optimized allocations
 

@@ -215,7 +215,7 @@ export interface ConsensusDecision {
   payload: Record<string, unknown>;
 }
 
-export interface ConsensusResult {
+export interface VotingResult {
   decision: unknown;
   votes: Array<{ agentId: string; vote: unknown }>;
   consensusReached: boolean;

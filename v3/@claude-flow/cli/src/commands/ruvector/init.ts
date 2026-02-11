@@ -442,7 +442,7 @@ export const initCommand: Command = {
         'Created tables:',
         `  - ${config.schema}.embeddings (vector storage)`,
         `  - ${config.schema}.attention_patterns (attention mechanism)`,
-        `  - ${config.schema}.gnn_edges (graph neural network)`,
+        `  - ${config.schema}.gnn_edges (graph pattern network)`,
         `  - ${config.schema}.hyperbolic_embeddings (Poincare ball)`,
         `  - ${config.schema}.migrations (version tracking)`,
         `  - ${config.schema}.metadata (configuration)`,

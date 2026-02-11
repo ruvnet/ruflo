@@ -7,7 +7,7 @@ description: "Implement semantic vector search with AgentDB for intelligent docu
 
 ## What This Skill Does
 
-Implements vector-based semantic search using AgentDB's high-performance vector database with **150x-12,500x faster** operations than traditional solutions. Features HNSW indexing, quantization, and sub-millisecond search (<100µs).
+Implements vector-based semantic search using AgentDB's high-performance vector database with **optimized** operations than traditional solutions. Features HNSW indexing, quantization, and sub-millisecond search (<100µs).
 
 ## Prerequisites
 

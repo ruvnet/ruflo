@@ -153,7 +153,7 @@ CREATE INDEX IF NOT EXISTS idx_pattern_history_pattern ON pattern_history(patter
 -- LEARNING & TRAJECTORY TABLES
 -- ============================================
 
--- Learning trajectories (SONA integration)
+-- Learning trajectories (Pattern integration)
 CREATE TABLE IF NOT EXISTS trajectories (
   id TEXT PRIMARY KEY,
   session_id TEXT,

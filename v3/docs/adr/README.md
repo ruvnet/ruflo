@@ -37,8 +37,8 @@ All ADRs are located in [`/v3/implementation/adrs/`](../../implementation/adrs/)
 
 | Metric | Target | Status |
 |--------|--------|--------|
-| HNSW Search | 150x-12,500x faster | ✅ Achieved |
-| Flash Attention | 2.49x-7.47x speedup | ✅ Achieved (alpha.102) |
+| HNSW Search | optimized | ✅ Achieved |
+| Flash Attention | CPU-optimized | ✅ Achieved (alpha.102) |
 | Memory Reduction | 50-75% | ✅ Achieved |
 | MCP Response | <100ms | ✅ Achieved |
 | CLI Startup | <500ms | ✅ Achieved |
@@ -53,7 +53,7 @@ All ADRs are located in [`/v3/implementation/adrs/`](../../implementation/adrs/)
 | Flash Attention | ✅ Real | ~500 | O(N) block attention |
 | LoRA Adapter | ✅ Real | ~400 | 128x compression (rank=8) |
 | Hyperbolic Embeddings | ✅ Real | - | Poincaré ball model |
-| Int8 Quantization | ✅ Real | - | 3.92x memory savings |
+| Int8 Quantization | ✅ Real | - | reduced memory savings |
 
 ## Security Status
 

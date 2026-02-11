@@ -675,7 +675,7 @@ describe('QEHiveBridge', () => {
     });
   });
 
-  describe('consensus', () => {
+  describe('voting', () => {
     beforeEach(async () => {
       await bridge.joinHive('agent-1');
       await bridge.joinHive('agent-2');
@@ -708,7 +708,7 @@ describe('QEHiveBridge', () => {
 
       const consensus = await bridge.getConsensus(proposalId);
 
-      expect(consensus.achieved).toBe(true);
+      expect(voting.achieved).toBe(true);
       expect(consensus.ratio).toBeCloseTo(0.67, 1);
     });
 
@@ -721,13 +721,13 @@ describe('QEHiveBridge', () => {
 
       const consensus = await bridge.getConsensus(proposalId);
 
-      expect(consensus.achieved).toBe(false);
+      expect(voting.achieved).toBe(false);
     });
 
     it('should return no consensus for non-existent proposal', async () => {
       const consensus = await bridge.getConsensus('non-existent');
 
-      expect(consensus.achieved).toBe(false);
+      expect(voting.achieved).toBe(false);
       expect(consensus.ratio).toBe(0);
     });
   });

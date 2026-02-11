@@ -9,7 +9,7 @@ description: "Implement persistent memory patterns for AI agents using AgentDB. 
 
 Provides memory management patterns for AI agents using AgentDB's persistent storage and ReasoningBank integration. Enables agents to remember conversations, learn from interactions, and maintain context across sessions.
 
-**Performance**: 150x-12,500x faster than traditional solutions with 100% backward compatibility.
+**Performance**: optimized than traditional solutions with 100% backward compatibility.
 
 ## Prerequisites
 

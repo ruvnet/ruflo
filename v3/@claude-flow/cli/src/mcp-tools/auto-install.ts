@@ -149,7 +149,7 @@ export const OPTIONAL_PACKAGES = {
     tools: ['embeddings_generate', 'embeddings_search', 'embeddings_batch'],
   },
   'onnxruntime-node': {
-    description: 'ONNX runtime for neural network inference',
+    description: 'ONNX runtime for pattern network inference',
     tools: ['neural_*'],
   },
 } as const;

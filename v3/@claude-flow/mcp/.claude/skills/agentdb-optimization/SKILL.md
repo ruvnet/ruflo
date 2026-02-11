@@ -7,7 +7,7 @@ description: "Optimize AgentDB performance with quantization (4-32x memory reduc
 
 ## What This Skill Does
 
-Provides comprehensive performance optimization techniques for AgentDB vector databases. Achieve 150x-12,500x performance improvements through quantization, HNSW indexing, caching strategies, and batch operations. Reduce memory usage by 4-32x while maintaining accuracy.
+Provides comprehensive performance optimization techniques for AgentDB vector databases. Achieve HNSW-indexed performance improvements through quantization, HNSW indexing, caching strategies, and batch operations. Reduce memory usage by 4-32x while maintaining accuracy.
 
 **Performance**: <100µs vector search, <1ms pattern retrieval, 2ms batch insert for 100 vectors.
 

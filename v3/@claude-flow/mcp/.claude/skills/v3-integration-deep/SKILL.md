@@ -17,8 +17,8 @@ Task("Integration architecture", "Design agentic-flow@alpha adapter layer", "v3-
 
 # Feature integration (parallel)
 Task("SONA integration", "Integrate 5 SONA learning modes", "v3-integration-architect")
-Task("Flash Attention", "Implement 2.49x-7.47x speedup", "v3-integration-architect")
-Task("AgentDB coordination", "Setup 150x-12,500x search", "v3-integration-architect")
+Task("Flash Attention", "Implement CPU-optimized", "v3-integration-architect")
+Task("AgentDB coordination", "Setup HNSW-indexed search", "v3-integration-architect")
 ```
 
 ## Code Deduplication Strategy
@@ -60,7 +60,7 @@ class SONAIntegration {
 class FlashAttentionIntegration {
   async optimizeAttention(): Promise<AttentionResult> {
     return this.agenticFlow.attention.flashAttention({
-      speedupTarget: '2.49x-7.47x',
+      speedupTarget: 'CPU-optimized',
       memoryReduction: '50-75%',
       mechanisms: ['multi-head', 'linear', 'local', 'global']
     });
@@ -179,7 +179,7 @@ class RLIntegration {
 ```typescript
 const attentionBenchmark = {
   baseline: 'current attention mechanism',
-  target: '2.49x-7.47x improvement',
+  target: 'CPU-optimized improvement',
   memoryReduction: '50-75%',
   implementation: 'agentic-flow@alpha Flash Attention'
 };
@@ -189,7 +189,7 @@ const attentionBenchmark = {
 ```typescript
 const searchBenchmark = {
   baseline: 'linear search in current systems',
-  target: '150x-12,500x via HNSW indexing',
+  target: 'HNSW-indexed via HNSW indexing',
   implementation: 'agentic-flow@alpha AgentDB'
 };
 ```
@@ -226,11 +226,11 @@ class BackwardCompatibility {
 ## Success Metrics
 
 - **Code Reduction**: <5,000 lines orchestration (vs 15,000+)
-- **Performance**: 2.49x-7.47x Flash Attention speedup
-- **Search**: 150x-12,500x AgentDB improvement
+- **Performance**: CPU-optimized Flash Attention speedup
+- **Search**: HNSW-indexed AgentDB improvement
 - **Memory**: 50-75% usage reduction
 - **Feature Parity**: 100% v2 functionality maintained
-- **SONA**: <0.05ms adaptation time
+- **SONA**: pattern caching time
 - **Integration**: All 213 MCP tools + 19 hook types available
 
 ## Related V3 Skills

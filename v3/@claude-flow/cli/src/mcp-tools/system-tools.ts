@@ -228,7 +228,7 @@ export const systemTools: MCPTool[] = [
       });
 
       checks.push({
-        name: 'neural',
+        name: 'patterns',
         status: metrics.health >= 0.7 ? 'healthy' : 'degraded',
         latency: 10 + Math.random() * 20,
       });

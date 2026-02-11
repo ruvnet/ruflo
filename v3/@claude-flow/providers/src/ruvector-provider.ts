@@ -2,7 +2,7 @@
  * V3 RuVector Provider (via @ruvector/ruvllm)
  *
  * Self-learning LLM orchestration with:
- * - SONA adaptive learning
+ * - Pattern adaptive learning
  * - HNSW vector memory
  * - FastGRNN intelligent routing
  * - SIMD inference optimization
@@ -29,9 +29,9 @@ import {
  * RuVector LLM configuration
  */
 interface RuVectorConfig {
-  /** Enable SONA self-learning (default: true) */
+  /** Enable Pattern self-learning (default: true) */
   enableSona?: boolean;
-  /** SONA learning rate (default: 0.01) */
+  /** pattern learning rate (default: 0.01) */
   sonaLearningRate?: number;
   /** Enable HNSW vector memory (default: true) */
   enableHnsw?: boolean;
@@ -141,7 +141,7 @@ export class RuVectorProvider extends BaseProvider {
     supportsSystemMessages: true,
     supportsVision: false,
     supportsAudio: false,
-    supportsFineTuning: true, // SONA self-learning
+    supportsFineTuning: true, // Pattern self-learning
     supportsEmbeddings: true, // HNSW
     supportsBatching: true,
     rateLimit: {
@@ -149,7 +149,7 @@ export class RuVectorProvider extends BaseProvider {
       tokensPerMinute: 10000000,
       concurrentRequests: 100,
     },
-    // Free - local execution with SONA optimization
+    // Free - local execution with Pattern optimization
     pricing: {
       'ruvector-auto': { promptCostPer1k: 0, completionCostPer1k: 0, currency: 'USD' },
       'ruvector-fast': { promptCostPer1k: 0, completionCostPer1k: 0, currency: 'USD' },
@@ -463,9 +463,9 @@ export class RuVectorProvider extends BaseProvider {
 
   async getModelInfo(model: LLMModel): Promise<ModelInfo> {
     const descriptions: Record<string, string> = {
-      'ruvector-auto': 'Auto-selects optimal model with SONA learning',
+      'ruvector-auto': 'Auto-selects optimal model with pattern learning',
       'ruvector-fast': 'Optimized for speed with FastGRNN routing',
-      'ruvector-quality': 'Highest quality with full SONA adaptation',
+      'ruvector-quality': 'Highest quality with full pattern adaptation',
       'ruvector-balanced': 'Balanced speed and quality',
       'llama3.2': 'Meta Llama 3.2 via RuVector',
       'mistral': 'Mistral 7B via RuVector',
@@ -571,7 +571,7 @@ export class RuVectorProvider extends BaseProvider {
       ruvectorRequest.top_p = request.topP ?? this.config.topP;
     }
 
-    // SONA options
+    // Pattern options
     if (this.ruvectorConfig.enableSona !== false) {
       ruvectorRequest.sona_options = {
         enabled: true,
@@ -648,7 +648,7 @@ export class RuVectorProvider extends BaseProvider {
   }
 
   /**
-   * Get SONA learning metrics
+   * Get pattern learning metrics
    */
   async getSonaMetrics(): Promise<{
     enabled: boolean;
@@ -679,7 +679,7 @@ export class RuVectorProvider extends BaseProvider {
   }
 
   /**
-   * Trigger SONA learning from a conversation
+   * Trigger pattern learning from a conversation
    */
   async triggerSonaLearning(conversationId: string): Promise<boolean> {
     try {

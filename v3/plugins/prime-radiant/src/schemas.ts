@@ -194,7 +194,7 @@ export type ConsensusVerifyInput = z.infer<typeof ConsensusVerifyInputSchema>;
 /**
  * Schema for consensus result
  */
-export const ConsensusResultSchema = z.object({
+export const VotingResultSchema = z.object({
   consensusAchieved: z.boolean().describe('Whether consensus was mathematically achieved'),
   agreementRatio: z.number().min(0).max(1).describe('Ratio of agents in agreement'),
   coherenceEnergy: CoherenceEnergySchema.describe('Coherence energy among agent states'),
@@ -204,7 +204,7 @@ export const ConsensusResultSchema = z.object({
   recommendation: z.string().describe('Human-readable recommendation'),
 });
 
-export type ConsensusResult = z.infer<typeof ConsensusResultSchema>;
+export type VotingResult = z.infer<typeof VotingResultSchema>;
 
 // ============================================================================
 // Quantum Topology Schemas

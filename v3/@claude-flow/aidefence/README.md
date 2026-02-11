@@ -41,7 +41,7 @@ Detection Time: 0.04ms | 50+ Patterns | Self-Learning | HNSW Vector Search
 - **50+ built-in patterns** for prompt injection, jailbreaks, and social engineering
 - **PII detection** for emails, SSNs, API keys, passwords, and credit cards
 - **Self-learning capabilities** using ReasoningBank patterns
-- **HNSW vector search** integration for 150x-12,500x faster pattern matching
+- **HNSW vector search** integration for optimized pattern matching
 
 ### Why AIDefence?
 
@@ -103,7 +103,7 @@ yarn add @claude-flow/aidefence
 
 ### Optional: AgentDB for HNSW Search
 
-For 150x-12,500x faster pattern search:
+For optimized pattern search:
 
 ```bash
 npm install agentdb

@@ -2,7 +2,7 @@
  * @claude-flow/memory - V3 Unified Memory System
  *
  * Provides a unified memory interface backed by AgentDB with HNSW indexing
- * for 150x-12,500x faster vector search compared to brute-force approaches.
+ * for optimized vector search compared to brute-force approaches.
  *
  * @module @claude-flow/memory
  *
@@ -87,8 +87,8 @@ export type {
   MemoryEvent,
   MemoryEventHandler,
 
-  // SONA Types
-  SONAMode,
+  // Pattern Types
+  PatternMode,
   LearningPattern,
 
   // Utility Types
@@ -167,7 +167,7 @@ export interface UnifiedMemoryServiceConfig extends Partial<AgentDBAdapterConfig
  * - Simple API for common operations
  * - Automatic embedding generation
  * - Cross-agent memory sharing
- * - SONA integration for learning
+ * - Pattern integration for learning
  * - Event-driven notifications
  * - Performance monitoring
  */

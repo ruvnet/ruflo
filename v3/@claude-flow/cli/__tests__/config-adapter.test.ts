@@ -167,7 +167,7 @@ describe('ConfigAdapter', () => {
           topology: 'hierarchical',
           maxAgents: 20,
           autoScale: true,
-          coordinationStrategy: 'consensus',
+          coordinationStrategy: 'voting',
           healthCheckInterval: 15000,
         },
         memory: {
@@ -214,7 +214,7 @@ describe('ConfigAdapter', () => {
       expect(systemConfig.swarm?.topology).toBe('hierarchical');
       expect(systemConfig.swarm?.maxAgents).toBe(20);
       expect(systemConfig.swarm?.autoScale?.enabled).toBe(true);
-      expect(systemConfig.swarm?.coordination?.consensusRequired).toBe(true);
+      expect(systemConfig.swarm?.coordination?.votingRequired).toBe(true);
       expect(systemConfig.memory?.type).toBe('agentdb');
       expect(systemConfig.memory?.path).toBe('/test/memory');
       expect(systemConfig.memory?.agentdb?.dimensions).toBe(768);
@@ -274,7 +274,7 @@ describe('ConfigAdapter', () => {
 
       const systemConfig = v3ConfigToSystemConfig(leaderConfig);
 
-      expect(systemConfig.swarm?.coordination?.consensusRequired).toBe(false);
+      expect(systemConfig.swarm?.coordination?.votingRequired).toBe(false);
       expect(systemConfig.memory?.agentdb?.indexType).toBe('flat');
     });
   });

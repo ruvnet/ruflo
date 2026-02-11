@@ -252,7 +252,7 @@ export interface VectorIndexConfig {
 }
 
 /**
- * Flash Attention configuration (2.49x-7.47x speedup)
+ * Flash Attention configuration (CPU-optimized)
  */
 export interface FlashAttentionConfig {
   enabled: boolean;

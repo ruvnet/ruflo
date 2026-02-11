@@ -1,7 +1,7 @@
 /**
  * FlashAttentionOptimizer Test Suite
  *
- * Comprehensive tests for Flash Attention integration with 2.49x-7.47x speedup validation.
+ * Comprehensive tests for Flash Attention integration with CPU-optimized validation.
  * Tests cover initialization, optimization, benchmarking, metrics tracking, and memory management.
  */
 
@@ -179,7 +179,7 @@ describe('FlashAttentionOptimizer', () => {
     it('should validate against V3 minimum target (2.49x)', () => {
       const result = optimizer.benchmark();
 
-      // Target: 2.49x-7.47x speedup
+      // Target: CPU-optimized
       expect(result.speedup).toBeGreaterThan(0); // At least some speedup
       expect(result.meetsTarget).toBe(result.speedup >= 2.49);
 
@@ -451,7 +451,7 @@ describe('Performance Validation', () => {
     const optimizer = createFlashAttentionOptimizer(512);
     const result = optimizer.benchmark();
 
-    // V3 target: 2.49x-7.47x speedup
+    // V3 target: CPU-optimized
     if (result.meetsTarget) {
       expect(result.speedup).toBeGreaterThanOrEqual(2.49);
     }

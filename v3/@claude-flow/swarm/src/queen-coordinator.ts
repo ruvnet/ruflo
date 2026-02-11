@@ -31,7 +31,7 @@ import type {
   TaskPriority,
   TaskStatus,
   CoordinatorMetrics,
-  ConsensusResult,
+  VotingResult,
   SwarmEvent,
   SwarmEventType,
 } from './types.js';
@@ -263,7 +263,7 @@ export interface HealthMetrics {
   failedTasks: number;
   avgTaskDurationMs: number;
   taskThroughputPerMin: number;
-  consensusSuccessRate: number;
+  votingSuccessRate: number;
 }
 
 /**
@@ -273,7 +273,7 @@ export interface Decision {
   decisionId: string;
   type: DecisionType;
   proposal: unknown;
-  requiredConsensus: ConsensusType;
+  requiredConsensus: DecisionMethod;
   timeout: number;
   initiator: string;
   metadata: Record<string, unknown>;
@@ -293,7 +293,7 @@ export type DecisionType =
 /**
  * Consensus types
  */
-export type ConsensusType =
+export type DecisionMethod =
   | 'majority'
   | 'supermajority'
   | 'unanimous'
@@ -410,14 +410,14 @@ export interface ISwarmCoordinator {
     metrics: CoordinatorMetrics;
   };
   assignTaskToDomain(taskId: string, domain: AgentDomain): Promise<string | undefined>;
-  proposeConsensus(value: unknown): Promise<ConsensusResult>;
+  proposeVote(value: unknown): Promise<VotingResult>;
   broadcastMessage(payload: unknown, priority?: 'urgent' | 'high' | 'normal' | 'low'): Promise<void>;
 }
 
 /**
- * Interface for neural learning system interactions
+ * Interface for pattern learning system interactions
  */
-export interface INeuralLearningSystem {
+export interface IPatternLearningSystem {
   initialize(): Promise<void>;
   beginTask(context: string, domain?: string): string;
   recordStep(trajectoryId: string, action: string, reward: number, stateEmbedding: Float32Array): void;
@@ -500,7 +500,7 @@ export interface MemoryStoreEntry {
 export class QueenCoordinator extends EventEmitter {
   private config: QueenCoordinatorConfig;
   private swarm: ISwarmCoordinator;
-  private neural?: INeuralLearningSystem;
+  private neural?: IPatternLearningSystem;
   private memory?: IMemoryService;
 
   // Internal state
@@ -528,7 +528,7 @@ export class QueenCoordinator extends EventEmitter {
   constructor(
     swarm: ISwarmCoordinator,
     config: Partial<QueenCoordinatorConfig> = {},
-    neural?: INeuralLearningSystem,
+    neural?: IPatternLearningSystem,
     memory?: IMemoryService
   ) {
     super();
@@ -848,7 +848,7 @@ export class QueenCoordinator extends EventEmitter {
       review: ['review', 'analysis', 'feedback'],
       documentation: ['documentation', 'writing', 'clarity'],
       coordination: ['coordination', 'planning', 'oversight'],
-      consensus: ['consensus', 'voting', 'agreement'],
+      consensus: ['voting', 'voting', 'agreement'],
       custom: ['general', 'execution'],
     };
 
@@ -1444,7 +1444,7 @@ export class QueenCoordinator extends EventEmitter {
       failedTasks: metrics.failedTasks,
       avgTaskDurationMs: metrics.avgTaskDurationMs,
       taskThroughputPerMin: metrics.completedTasks / Math.max(metrics.uptime / 60, 1),
-      consensusSuccessRate: metrics.consensusSuccessRate,
+      votingSuccessRate: metrics.votingSuccessRate,
     };
 
     const report: HealthReport = {
@@ -1695,7 +1695,7 @@ export class QueenCoordinator extends EventEmitter {
    * @param decision - Decision requiring consensus
    * @returns Consensus result
    */
-  async coordinateConsensus(decision: Decision): Promise<ConsensusResult> {
+  async coordinateConsensus(decision: Decision): Promise<VotingResult> {
     const startTime = performance.now();
 
     this.decisionCounter++;
@@ -1705,7 +1705,7 @@ export class QueenCoordinator extends EventEmitter {
     this.activeDecisions.set(decision.decisionId, decision);
 
     try {
-      let result: ConsensusResult;
+      let result: VotingResult;
 
       switch (decision.requiredConsensus) {
         case 'queen-override':
@@ -1737,7 +1737,7 @@ export class QueenCoordinator extends EventEmitter {
         this.consensusLatencies.shift();
       }
 
-      this.emitEvent('queen.consensus.completed', {
+      this.emitEvent('queen.voting.completed', {
         decisionId: decision.decisionId,
         type: decision.requiredConsensus,
         approved: result.approved,
@@ -1751,7 +1751,7 @@ export class QueenCoordinator extends EventEmitter {
     }
   }
 
-  private queenOverride(decision: Decision): ConsensusResult {
+  private queenOverride(decision: Decision): VotingResult {
     // Queen can make immediate decisions for:
     // - Emergency actions
     // - Agent termination
@@ -1773,9 +1773,9 @@ export class QueenCoordinator extends EventEmitter {
     };
   }
 
-  private async majorityConsensus(decision: Decision): Promise<ConsensusResult> {
+  private async majorityConsensus(decision: Decision): Promise<VotingResult> {
     // Use swarm's consensus engine with majority threshold
-    const result = await this.swarm.proposeConsensus({
+    const result = await this.swarm.proposeVote({
       decision,
       threshold: 0.51,
       timeout: this.config.consensusTimeouts.majority,
@@ -1784,9 +1784,9 @@ export class QueenCoordinator extends EventEmitter {
     return result;
   }
 
-  private async supermajorityConsensus(decision: Decision): Promise<ConsensusResult> {
+  private async supermajorityConsensus(decision: Decision): Promise<VotingResult> {
     // Use swarm's consensus engine with 2/3 threshold
-    const result = await this.swarm.proposeConsensus({
+    const result = await this.swarm.proposeVote({
       decision,
       threshold: 0.67,
       timeout: this.config.consensusTimeouts.supermajority,
@@ -1795,9 +1795,9 @@ export class QueenCoordinator extends EventEmitter {
     return result;
   }
 
-  private async unanimousConsensus(decision: Decision): Promise<ConsensusResult> {
+  private async unanimousConsensus(decision: Decision): Promise<VotingResult> {
     // Use swarm's consensus engine with unanimous requirement
-    const result = await this.swarm.proposeConsensus({
+    const result = await this.swarm.proposeVote({
       decision,
       threshold: 1.0,
       timeout: this.config.consensusTimeouts.unanimous,
@@ -1806,7 +1806,7 @@ export class QueenCoordinator extends EventEmitter {
     return result;
   }
 
-  private async weightedConsensus(decision: Decision): Promise<ConsensusResult> {
+  private async weightedConsensus(decision: Decision): Promise<VotingResult> {
     // Weighted consensus based on agent performance
     // For now, delegate to the standard consensus with metadata
     const agents = this.swarm.getAllAgents();
@@ -1817,7 +1817,7 @@ export class QueenCoordinator extends EventEmitter {
       weights.set(agent.id.id, weight);
     }
 
-    const result = await this.swarm.proposeConsensus({
+    const result = await this.swarm.proposeVote({
       decision,
       weights: Object.fromEntries(weights),
       threshold: 0.51,
@@ -2016,7 +2016,7 @@ export class QueenCoordinator extends EventEmitter {
 export function createQueenCoordinator(
   swarm: ISwarmCoordinator,
   config?: Partial<QueenCoordinatorConfig>,
-  neural?: INeuralLearningSystem,
+  neural?: IPatternLearningSystem,
   memory?: IMemoryService
 ): QueenCoordinator {
   return new QueenCoordinator(swarm, config, neural, memory);

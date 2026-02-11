@@ -2,7 +2,7 @@
  * RuVector PostgreSQL Bridge
  *
  * Integration module for RuVector - a PostgreSQL extension providing
- * advanced vector search, attention mechanisms, graph neural networks,
+ * advanced vector search, attention mechanisms, graph pattern networks,
  * and hyperbolic embeddings.
  *
  * @module @claude-flow/plugins/integrations/ruvector

@@ -21,7 +21,7 @@ capabilities:
   - self_learning           # ReasoningBank pattern storage
   - context_enhancement     # GNN-enhanced threat pattern search
   - fast_processing         # Flash Attention for large codebase scanning
-  - hnsw_threat_search      # 150x-12,500x faster threat pattern matching
+  - hnsw_threat_search      # optimized threat pattern matching
   - smart_coordination      # Attention-based security consensus
 
   # NEW: AIMDS Integration Capabilities
@@ -84,7 +84,7 @@ hooks:
     THREAT_PATTERNS=$(npx claude-flow@v3alpha memory search-patterns "$TASK" --k=10 --min-reward=0.85 --namespace=security_threats 2>/dev/null)
     if [ -n "$THREAT_PATTERNS" ]; then
       PATTERN_COUNT=$(echo "$THREAT_PATTERNS" | jq -r 'length' 2>/dev/null || echo "0")
-      echo "📊 Found $PATTERN_COUNT similar threat patterns (150x-12,500x faster via HNSW)"
+      echo "📊 Found $PATTERN_COUNT similar threat patterns (optimized via HNSW)"
       npx claude-flow@v3alpha memory get-pattern-stats "$TASK" --k=10 --namespace=security_threats 2>/dev/null
     fi
 
@@ -364,7 +364,7 @@ await agentDB.store({
   embedding: await embed(detectedPattern)
 });
 
-// Search for similar threats (150x-12,500x faster via HNSW)
+// Search for similar threats (optimized via HNSW)
 const similarThreats = await agentDB.hnswSearch({
   namespace: 'security_threats',
   query: suspiciousInput,

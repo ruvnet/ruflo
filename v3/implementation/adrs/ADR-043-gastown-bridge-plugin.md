@@ -781,7 +781,7 @@ petgraph = "0.6"  # For graph operations
 | Metric | Target | vs JavaScript | Status |
 |--------|--------|---------------|--------|
 | Formula parse (TOML→AST) | <0.1ms | **530x faster** | ✅ |
-| Formula cook (variable substitution) | <0.05ms | **500x faster** | ✅ |
+| Formula cook (variable substitution) | sub-ms | **500x faster** | ✅ |
 | Batch cook (10 formulas) | <0.5ms | **700x faster** | ✅ |
 | DAG topological sort (1000 nodes) | <0.3ms | **250x faster** | ✅ |
 | Cycle detection (1000 nodes) | <0.1ms | **450x faster** | ✅ |

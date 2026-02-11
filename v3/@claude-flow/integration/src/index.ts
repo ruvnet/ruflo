@@ -2,15 +2,15 @@
  * @claude-flow/integration - V3 Integration Module
  *
  * Main entry point for the agentic-flow@alpha integration module.
- * Provides deep integration with SONA learning, Flash Attention,
+ * Provides deep integration with pattern learning, Flash Attention,
  * and AgentDB for maximum performance and capability.
  *
  * This module implements ADR-001: Adopt agentic-flow as Core Foundation
  *
  * Key Features:
- * - SONA Learning: Real-time adaptation with <0.05ms response
- * - Flash Attention: 2.49x-7.47x speedup with 50-75% memory reduction
- * - AgentDB: 150x-12,500x faster search via HNSW indexing
+ * - Pattern Learning: Real-time adaptation with sub-ms response
+ * - Flash Attention: CPU-optimized with 50-75% memory reduction
+ * - AgentDB: optimized search via HNSW indexing
  * - Intelligence Bridge: 19 hook tools + 9 learning tools
  * - Trajectory Tracking: Experience replay for continuous learning
  *
@@ -20,14 +20,14 @@
  *
  * const bridge = await createAgenticFlowBridge({
  *   features: {
- *     enableSONA: true,
+ *     enablePattern: true,
  *     enableFlashAttention: true,
  *     enableAgentDB: true,
  *   }
  * });
  *
- * // Get SONA adapter for learning
- * const sona = await bridge.getSONAAdapter();
+ * // Get Pattern adapter for learning
+ * const sona = await bridge.getPatternAdapter();
  * await sona.setMode('real-time');
  *
  * // Get Attention coordinator
@@ -47,10 +47,10 @@ export {
   resetDefaultBridge,
 } from './agentic-flow-bridge.js';
 
-// ===== SONA Adapter =====
+// ===== Pattern Adapter =====
 export {
-  SONAAdapter,
-  createSONAAdapter,
+  PatternAdapter,
+  createPatternAdapter,
 } from './sona-adapter.js';
 
 // ===== Attention Coordinator =====
@@ -87,13 +87,13 @@ export {
 
 // ===== Types =====
 export type {
-  // SONA Types
-  SONAConfiguration,
-  SONALearningMode,
-  SONATrajectory,
-  SONATrajectoryStep,
-  SONAPattern,
-  SONALearningStats,
+  // Pattern Types
+  PatternConfiguration,
+  PatternLearningMode,
+  PatternTrajectory,
+  PatternTrajectoryStep,
+  PatternPattern,
+  PatternLearningStats,
 
   // Attention Types
   AttentionConfiguration,
@@ -262,7 +262,7 @@ export type {
 
 // ===== Default Configurations =====
 export {
-  DEFAULT_SONA_CONFIG,
+  DEFAULT_Pattern_CONFIG,
   DEFAULT_ATTENTION_CONFIG,
   DEFAULT_AGENTDB_CONFIG,
   DEFAULT_FEATURE_FLAGS,
@@ -308,12 +308,12 @@ export async function quickStart(options?: {
   debug?: boolean;
 }): Promise<{
   bridge: import('./agentic-flow-bridge.js').AgenticFlowBridge;
-  sona: import('./sona-adapter.js').SONAAdapter | null;
+  sona: import('./sona-adapter.js').PatternAdapter | null;
   attention: import('./attention-coordinator.js').AttentionCoordinator | null;
 }> {
   const { AgenticFlowBridge } = await import('./agentic-flow-bridge.js');
   const { FeatureFlagManager } = await import('./feature-flags.js');
-  type SONAAdapterType = import('./sona-adapter.js').SONAAdapter;
+  type PatternAdapterType = import('./sona-adapter.js').PatternAdapter;
   type AttentionCoordinatorType = import('./attention-coordinator.js').AttentionCoordinator;
 
   const mode = options?.mode || 'standard';
@@ -326,11 +326,11 @@ export async function quickStart(options?: {
 
   await bridge.initialize();
 
-  let sona: SONAAdapterType | null = null;
+  let sona: PatternAdapterType | null = null;
   let attention: AttentionCoordinatorType | null = null;
 
-  if (flags.enableSONA) {
-    sona = await bridge.getSONAAdapter();
+  if (flags.enablePattern) {
+    sona = await bridge.getPatternAdapter();
   }
 
   if (flags.enableFlashAttention) {
@@ -360,7 +360,7 @@ export async function benchmark(): Promise<{
     overall: { grade: 'C' },
   };
 
-  // Benchmark SONA
+  // Benchmark Pattern
   if (sona) {
     const start = performance.now();
     const iterations = 100;
@@ -436,7 +436,7 @@ export const METADATA = {
   description: 'Deep agentic-flow@alpha integration for claude-flow v3',
   implements: ['ADR-001'],
   features: [
-    'SONA Learning (5 modes)',
+    'Pattern Learning (5 modes)',
     'Flash Attention (8 mechanisms)',
     'AgentDB (HNSW indexing)',
     'Intelligence Bridge (19 tools)',
@@ -451,9 +451,9 @@ export const METADATA = {
     'Multi-Model Router (cost optimization)',
   ],
   performance: {
-    flashAttentionSpeedup: '2.49x-7.47x',
-    agentDBSearchSpeedup: '150x-12,500x',
-    sonaAdaptationLatency: '<0.05ms',
+    flashAttentionSpeedup: 'CPU-optimized',
+    agentDBSearchSpeedup: 'HNSW-indexed',
+    sonaAdaptationLatency: 'sub-ms',
     memoryReduction: '50-75%',
   },
   workerPatterns: {

@@ -13,7 +13,7 @@ import type {
   AgentMessage,
   AgentMetrics,
   ConsensusDecision,
-  ConsensusResult,
+  VotingResult,
   MeshConnection,
   MemoryBackend,
   PluginManagerInterface,
@@ -348,7 +348,7 @@ export class SwarmCoordinator {
   async reachConsensus(
     decision: ConsensusDecision,
     agentIds: string[]
-  ): Promise<ConsensusResult> {
+  ): Promise<VotingResult> {
     const votes: Array<{ agentId: string; vote: unknown }> = [];
 
     for (const agentId of agentIds) {

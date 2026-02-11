@@ -6,12 +6,12 @@
  * This module provides ONE CANONICAL coordination engine: UnifiedSwarmCoordinator
  * SwarmHub is maintained ONLY as a compatibility layer for existing code.
  *
- * Provides 15-agent hierarchical mesh coordination with consensus algorithms.
+ * Provides 15-agent hierarchical mesh coordination with agent voting algorithms.
  *
  * Features:
  * - Unified SwarmCoordinator consolidating 4 legacy systems
  * - Multiple topology support: mesh, hierarchical, centralized, hybrid
- * - Consensus algorithms: raft, byzantine, gossip
+ * - Voting algorithms: raft, byzantine, gossip
  * - Agent pool management with workload balancing
  * - Message bus for inter-agent communication
  *
@@ -26,7 +26,7 @@
  *
  * const coordinator = createUnifiedSwarmCoordinator({
  *   topology: { type: 'hierarchical', maxAgents: 15 },
- *   consensus: { algorithm: 'raft', threshold: 0.66 },
+ *   voting: { algorithm: 'raft', threshold: 0.66 },
  * });
  *
  * await coordinator.initialize();
@@ -60,11 +60,11 @@ export type {
   TopologyConfig,
   TopologyState,
   TopologyNode,
-  ConsensusAlgorithm,
-  ConsensusConfig,
-  ConsensusProposal,
-  ConsensusVote,
-  ConsensusResult,
+  VotingAlgorithm,
+  VotingConfig,
+  VotingProposal,
+  VotingBallot,
+  VotingResult,
   Message,
   MessageType,
   MessageBusConfig,
@@ -136,7 +136,7 @@ export type {
   // Consensus
   Decision,
   DecisionType,
-  ConsensusType,
+  DecisionMethod,
 
   // Learning
   TaskResult,
@@ -144,7 +144,7 @@ export type {
 
   // Interfaces
   ISwarmCoordinator,
-  INeuralLearningSystem,
+  IPatternLearningSystem,
   IMemoryService,
   PatternMatchResult,
   MemoryRetrievalResult,
@@ -180,23 +180,23 @@ export {
 } from './agent-pool.js';
 
 // =============================================================================
-// Consensus Engines
+// Voting Engines
 // =============================================================================
 
 export {
-  ConsensusEngine,
-  createConsensusEngine,
-  selectOptimalAlgorithm,
-  RaftConsensus,
-  ByzantineConsensus,
-  GossipConsensus,
-} from './consensus/index.js';
+  VotingEngine,
+  createVotingEngine,
+  selectOptimalVotingAlgorithm,
+  RaftVoting,
+  ByzantineVoting,
+  GossipVoting,
+} from './voting/index.js';
 
 export type {
   RaftConfig,
   ByzantineConfig,
   GossipConfig,
-} from './consensus/index.js';
+} from './voting/index.js';
 
 // =============================================================================
 // Coordination Components
@@ -289,7 +289,7 @@ export {
   type SpawnEphemeralOptions,
   type SpawnResult,
   type FederationMessage,
-  type ConsensusProposal as FederationConsensusProposal,
+  type VotingProposal as FederationVotingProposal,
   type FederationStats,
   type FederationEvent,
   type FederationEventType,
@@ -313,8 +313,8 @@ export const VERSION = '3.0.0-alpha.1';
 export const PERFORMANCE_TARGETS = {
   /** Maximum latency for coordinating 15 agents */
   COORDINATION_LATENCY_MS: 100,
-  /** Maximum latency for consensus operations */
-  CONSENSUS_LATENCY_MS: 100,
+  /** Maximum latency for voting operations */
+  VOTING_LATENCY_MS: 100,
   /** Minimum message throughput */
   MESSAGE_THROUGHPUT: 1000,
 } as const;
@@ -322,8 +322,8 @@ export const PERFORMANCE_TARGETS = {
 /** Supported topology types */
 export const TOPOLOGY_TYPES = ['mesh', 'hierarchical', 'centralized', 'hybrid'] as const;
 
-/** Supported consensus algorithms */
-export const CONSENSUS_ALGORITHMS = ['raft', 'byzantine', 'gossip', 'paxos'] as const;
+/** Supported voting algorithms */
+export const VOTING_ALGORITHMS = ['raft', 'byzantine', 'gossip', 'paxos'] as const;
 
 /** Default swarm configuration */
 export const DEFAULT_CONFIG = {
@@ -331,7 +331,7 @@ export const DEFAULT_CONFIG = {
     type: 'hierarchical' as const,
     maxAgents: 15,
   },
-  consensus: {
+  voting: {
     algorithm: 'raft' as const,
     threshold: 0.66,
     timeoutMs: 5000,

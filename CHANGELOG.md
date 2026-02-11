@@ -22,10 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - V3 CLI with 26 commands and 140+ subcommands
 - Domain-Driven Design architecture with 15 @claude-flow modules
-- HNSW-indexed vector search (150x-12,500x faster)
-- RuVector Intelligence System (SONA, MoE, Flash Attention)
+- HNSW-indexed vector search
+- RuVector Intelligence System (Pattern Learning, MoE, Flash Attention)
 - 60+ agent types for swarm coordination
-- Queen-led Byzantine fault-tolerant consensus
+- Queen-led Byzantine fault-tolerant voting
 - 17 hooks + 12 background workers
 
 ### Changed

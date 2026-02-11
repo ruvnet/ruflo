@@ -2,7 +2,7 @@
  * V3 Unified Memory Types
  *
  * Type definitions for the unified memory system based on AgentDB with HNSW indexing.
- * Supports 150x-12,500x faster vector search compared to brute-force approaches.
+ * Supports optimized vector search compared to brute-force approaches.
  *
  * @module v3/memory/types
  */
@@ -624,20 +624,20 @@ export interface MemoryEvent {
  */
 export type MemoryEventHandler = (event: MemoryEvent) => void | Promise<void>;
 
-// ===== SONA Integration Types =====
+// ===== Pattern Integration Types =====
 
 /**
- * SONA learning mode for adaptive memory
+ * pattern learning mode for adaptive memory
  */
-export type SONAMode =
-  | 'real-time'   // <0.05ms adaptation
+export type PatternMode =
+  | 'real-time'   // pattern caching
   | 'balanced'    // Balance between speed and accuracy
   | 'research'    // Maximum accuracy, slower
   | 'edge'        // Optimized for edge devices
   | 'batch';      // Batch processing mode
 
 /**
- * Learning pattern from SONA integration
+ * Learning pattern from Pattern integration
  */
 export interface LearningPattern {
   /** Pattern ID */
@@ -646,8 +646,8 @@ export interface LearningPattern {
   /** Pattern data */
   data: Record<string, unknown>;
 
-  /** SONA mode used */
-  mode: SONAMode;
+  /** Pattern mode used */
+  mode: PatternMode;
 
   /** Reward signal */
   reward: number;

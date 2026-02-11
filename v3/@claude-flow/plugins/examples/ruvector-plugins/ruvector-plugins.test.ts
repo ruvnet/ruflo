@@ -127,8 +127,8 @@ describe('SemanticCodeSearch Types', () => {
   });
 });
 
-// Type tests for SONA Learning
-describe('SONALearning Types', () => {
+// Type tests for Pattern Learning
+describe('PatternLearning Types', () => {
   it('should have correct LearningPattern structure', () => {
     const pattern: LearningPattern = {
       id: 'pattern-001',
@@ -340,7 +340,7 @@ describe('Plugin Integration Types', () => {
 
     expect(exports.ReasoningBank).toBeDefined();
     expect(exports.SemanticCodeSearch).toBeDefined();
-    expect(exports.SONALearning).toBeDefined();
+    expect(exports.PatternLearning).toBeDefined();
     expect(exports.IntentRouter).toBeDefined();
     expect(exports.MCPToolOptimizer).toBeDefined();
     expect(exports.HookPatternLibrary).toBeDefined();
@@ -374,7 +374,7 @@ describe('Plugin Metadata', () => {
     const metadata = sonaLearningPlugin.metadata;
 
     expect(metadata.id).toBe('ruvector-sona-learning');
-    expect(metadata.name).toBe('RuVector SONA Learning');
+    expect(metadata.name).toBe('RuVector Pattern Learning');
     expect(metadata.capabilities).toContain('learning');
     expect(metadata.capabilities).toContain('adaptation');
   });

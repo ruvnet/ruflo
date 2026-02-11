@@ -24,8 +24,8 @@ Complete guide to all 87 available agent types in Claude Flow V3.
 |-------|-------------|----------|
 | `security-architect` | Security architecture | Threat modeling, design |
 | `security-auditor` | CVE remediation | Vulnerability scanning |
-| `memory-specialist` | AgentDB unification | 150x-12,500x search |
-| `performance-engineer` | Optimization targets | 2.49x-7.47x speedup |
+| `memory-specialist` | AgentDB unification | HNSW-indexed search |
+| `performance-engineer` | Optimization targets | CPU-optimized |
 | `core-architect` | DDD restructure | Domain modeling |
 | `adr-architect` | Architecture decisions | ADR documentation |
 | `claims-authorizer` | Access control | Claims-based auth |

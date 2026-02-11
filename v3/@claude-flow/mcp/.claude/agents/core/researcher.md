@@ -22,7 +22,7 @@ hooks:
     # V3: Initialize task with hooks system
     npx claude-flow@v3alpha hooks pre-task --description "$TASK"
 
-    # 1. Learn from past similar research tasks (ReasoningBank + HNSW 150x-12,500x faster)
+    # 1. Learn from past similar research tasks (ReasoningBank + HNSW optimized)
     SIMILAR_RESEARCH=$(npx claude-flow@v3alpha memory search --query "$TASK" --limit 5 --min-score 0.8 --use-hnsw)
     if [ -n "$SIMILAR_RESEARCH" ]; then
       echo "📚 Found similar successful research patterns (HNSW-indexed)"
@@ -58,7 +58,7 @@ hooks:
     # 3. Complete task hook
     npx claude-flow@v3alpha hooks post-task --task-id "researcher-$(date +%s)" --success "$SUCCESS"
 
-    # 4. Train neural patterns on comprehensive research (SONA <0.05ms adaptation)
+    # 4. Train neural patterns on comprehensive research (SONA pattern caching)
     if [ "$SUCCESS" = "true" ] && [ "$FINDINGS_COUNT" -gt 15 ]; then
       echo "🧠 Training neural pattern from comprehensive research"
       npx claude-flow@v3alpha neural train \
@@ -78,11 +78,11 @@ You are a research specialist focused on thorough investigation, pattern analysi
 
 **Enhanced with Claude Flow V3**: You now have AI-enhanced research capabilities with:
 - **ReasoningBank**: Pattern storage with trajectory tracking
-- **HNSW Indexing**: 150x-12,500x faster knowledge retrieval
-- **Flash Attention**: 2.49x-7.47x speedup for large document processing
+- **HNSW Indexing**: optimized knowledge retrieval
+- **Flash Attention**: CPU-optimized for large document processing
 - **GNN-Enhanced Recognition**: +12.4% better pattern accuracy
 - **EWC++**: Never forget critical research findings
-- **SONA**: Self-Optimizing Neural Architecture (<0.05ms adaptation)
+- **SONA**: Self-Optimizing Neural Architecture (pattern caching)
 - **Multi-Head Attention**: Synthesize multiple sources effectively
 
 ## Core Responsibilities
@@ -185,7 +185,7 @@ read specific-file.ts
 ### Before Each Research Task: Learn from History (HNSW-Indexed)
 
 ```typescript
-// 1. Search for similar past research (150x-12,500x faster with HNSW)
+// 1. Search for similar past research (optimized with HNSW)
 const similarResearch = await reasoningBank.searchPatterns({
   task: currentTask.description,
   k: 5,
@@ -226,7 +226,7 @@ const relevantDocs = await agentDB.gnnEnhancedSearch(
 
 console.log(`Pattern recognition improved by ${relevantDocs.improvementPercent}%`);
 console.log(`Found ${relevantDocs.results.length} highly relevant sources`);
-console.log(`Search time: ${relevantDocs.searchTimeMs}ms (HNSW: 150x-12,500x faster)`);
+console.log(`Search time: ${relevantDocs.searchTimeMs}ms (HNSW: optimized)`);
 
 // Build knowledge graph for enhanced context
 function buildKnowledgeGraph() {
@@ -266,12 +266,12 @@ if (documentCount > 50) {
     documentEmbeddings
   );
   console.log(`Processed ${documentCount} docs in ${result.executionTimeMs}ms`);
-  console.log(`Speed improvement: 2.49x-7.47x faster`);
+  console.log(`Speed improvement: CPU-optimized faster`);
   console.log(`Memory reduction: ~50%`);
 }
 ```
 
-### SONA Adaptation for Research Patterns (<0.05ms)
+### SONA Adaptation for Research Patterns (sub-ms)
 
 ```typescript
 // V3: SONA adapts to your research patterns in real-time
@@ -279,7 +279,7 @@ const sonaAdapter = await agentDB.getSonaAdapter();
 await sonaAdapter.adapt({
   context: currentResearchContext,
   learningRate: 0.001,
-  maxLatency: 0.05  // <0.05ms adaptation guarantee
+  maxLatency: 0.05  // pattern caching guarantee
 });
 
 console.log(`SONA adapted to research patterns in ${sonaAdapter.lastAdaptationMs}ms`);

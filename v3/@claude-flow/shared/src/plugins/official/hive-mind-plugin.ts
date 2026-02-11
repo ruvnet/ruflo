@@ -52,7 +52,7 @@ export class HiveMindPlugin implements ClaudeFlowPlugin {
   readonly id = 'hive-mind';
   readonly name = 'HiveMind Collective Intelligence';
   readonly version = '1.0.0';
-  readonly description = 'Collective intelligence with consensus mechanisms and emergent behavior';
+  readonly description = 'Collective intelligence with voting mechanisms and emergent behavior';
 
   private context?: PluginContext;
   private config: HiveMindConfig;
@@ -175,7 +175,7 @@ export class HiveMindPlugin implements ClaudeFlowPlugin {
     const consensusConfidence = maxVotes / totalConfidence;
 
     if (consensusConfidence >= this.config.consensusThreshold) {
-      decision.consensus = consensusOption;
+      decision.voting = consensusOption;
       decision.consensusConfidence = consensusConfidence;
     }
 
@@ -313,10 +313,10 @@ export class HiveMindPlugin implements ClaudeFlowPlugin {
     const consensusConfidence = totalConfidence > 0 ? maxVotes / totalConfidence : 0;
 
     if (consensusConfidence >= this.config.consensusThreshold) {
-      decision.consensus = consensusOption;
+      decision.voting = consensusOption;
       decision.consensusConfidence = consensusConfidence;
     } else {
-      decision.consensus = undefined;
+      decision.voting = undefined;
       decision.consensusConfidence = consensusConfidence;
     }
   }

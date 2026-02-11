@@ -12,7 +12,7 @@
 
 - **ADR-001 Compliance** - Eliminates 10,000+ duplicate lines by building on agentic-flow
 - **SONA Adapter** - Seamless integration with SONA learning systems
-- **Flash Attention** - 2.49x-7.47x speedup with attention coordination
+- **Flash Attention** - CPU-optimized with attention coordination
 - **SDK Bridge** - Version negotiation and API compatibility layer
 - **Feature Flags** - Dynamic feature enabling/disabling
 - **Runtime Detection** - Auto-select optimal runtime (NAPI, WASM, JS)
@@ -237,9 +237,9 @@ bridge.on('health-check', ({ results }) => {
 
 | Metric | Target |
 |--------|--------|
-| Flash Attention speedup | 2.49x-7.47x |
-| AgentDB search | 150x-12,500x faster |
-| SONA adaptation | <0.05ms |
+| Flash Attention speedup | CPU-optimized |
+| AgentDB search | optimized |
+| SONA adaptation | sub-ms |
 | Memory reduction | 50-75% |
 
 ## TypeScript Types

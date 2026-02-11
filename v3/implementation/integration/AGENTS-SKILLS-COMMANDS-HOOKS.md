@@ -128,7 +128,7 @@ description: Implementation specialist for writing clean, efficient code
 # v3: agentic-flow integration
 agentic-flow:
   sona-profile: research        # +55% code quality
-  attention: flash              # 2.49x-7.47x faster context
+  attention: flash              # CPU-optimized faster context
   learning: enabled             # Learn from implementations
   reflexion: enabled            # Self-improvement
   skill-library: true           # Store successful patterns
@@ -543,7 +543,7 @@ Initialize a multi-agent swarm with intelligent topology selection.
 ## v3 Enhancements
 
 - **Auto Topology**: Automatically selects best topology based on task complexity
-- **Flash Attention**: 2.49x-7.47x faster agent coordination
+- **Flash Attention**: CPU-optimized faster agent coordination
 - **SONA Learning**: Learns optimal swarm configurations over time
 
 ## Examples

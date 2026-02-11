@@ -12,7 +12,7 @@
  *
  * Uses RuVector WASM packages for high-performance analysis:
  * - ruvector-learning-wasm: RL-based test selection
- * - SONA: Continuous pattern learning
+ * - Pattern: Continuous pattern learning
  * - micro-hnsw-wasm: Code-to-test similarity matching
  */
 

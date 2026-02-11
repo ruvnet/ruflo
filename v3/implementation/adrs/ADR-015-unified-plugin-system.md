@@ -97,7 +97,7 @@ Dedicated security module with:
 
 Separate bridge modules for external systems:
 - `AgenticFlowBridge`: Swarm coordination, agent spawning, task orchestration
-- `AgentDBBridge`: Vector storage, similarity search (150x-12,500x faster)
+- `AgentDBBridge`: Vector storage, similarity search (optimized)
 
 **Rationale**: Clean separation allows mocking for testing and future provider swapping.
 

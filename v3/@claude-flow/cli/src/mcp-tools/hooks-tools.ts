@@ -60,15 +60,15 @@ async function getRealStoreFunction() {
 }
 
 // =============================================================================
-// Neural Module Lazy Loaders (SONA, EWC++, MoE, LoRA, Flash Attention)
+// Neural Module Lazy Loaders (Pattern, EWC++, MoE, LoRA, Flash Attention)
 // =============================================================================
 
-// SONA Optimizer - lazy loaded
-let sonaOptimizer: Awaited<ReturnType<typeof import('../memory/sona-optimizer.js').getSONAOptimizer>> | null = null;
-async function getSONAOptimizer() {
+// Pattern Optimizer - lazy loaded
+let sonaOptimizer: Awaited<ReturnType<typeof import('../memory/sona-optimizer.js').getPatternOptimizer>> | null = null;
+async function getPatternOptimizer() {
   if (!sonaOptimizer) {
     try {
-      const { getSONAOptimizer: getSona } = await import('../memory/sona-optimizer.js');
+      const { getPatternOptimizer: getSona } = await import('../memory/sona-optimizer.js');
       sonaOptimizer = await getSona();
     } catch {
       sonaOptimizer = null;
@@ -324,7 +324,7 @@ async function getLoRAAdapter() {
   return loraAdapter;
 }
 
-// Trajectory storage for SONA learning
+// Trajectory storage for Pattern learning
 interface TrajectoryStep {
   action: string;
   result: string;
@@ -868,9 +868,9 @@ export const hooksMetrics: MCPTool = {
         avgRiskScore: 0.15,
       },
       performance: {
-        flashAttention: '2.49x-7.47x speedup',
+        flashAttention: 'CPU-optimized',
         memoryReduction: '50-75% reduction',
-        searchImprovement: '150x-12,500x faster',
+        searchImprovement: 'optimized',
         tokenReduction: '32.3% fewer tokens',
       },
       status: 'healthy',
@@ -1521,7 +1521,7 @@ export const hooksIntelligence: MCPTool = {
     type: 'object',
     properties: {
       mode: { type: 'string', description: 'Intelligence mode' },
-      enableSona: { type: 'boolean', description: 'Enable SONA learning' },
+      enableSona: { type: 'boolean', description: 'Enable Pattern learning' },
       enableMoe: { type: 'boolean', description: 'Enable MoE routing' },
       enableHnsw: { type: 'boolean', description: 'Enable HNSW search' },
       forceTraining: { type: 'boolean', description: 'Force training cycle' },
@@ -1538,7 +1538,7 @@ export const hooksIntelligence: MCPTool = {
     const realStats = getIntelligenceStatsFromMemory();
 
     // Check actual implementation availability
-    const sonaAvailable = (await getSONAOptimizer()) !== null;
+    const sonaAvailable = (await getPatternOptimizer()) !== null;
     const moeAvailable = (await getMoERouter()) !== null;
     const flashAvailable = (await getFlashAttention()) !== null;
     const ewcAvailable = (await getEWCConsolidator()) !== null;
@@ -1555,7 +1555,7 @@ export const hooksIntelligence: MCPTool = {
           trajectoriesRecorded: realStats.trajectories.total,
           trajectoriesSuccessful: realStats.trajectories.successful,
           patternsLearned: realStats.patterns.learned,
-          note: sonaAvailable ? 'SONA optimizer active - learning from trajectories' : 'SONA loading...',
+          note: sonaAvailable ? 'Pattern optimizer active - learning from trajectories' : 'Pattern loading...',
         },
         moe: {
           enabled: enableMoe,
@@ -1570,13 +1570,13 @@ export const hooksIntelligence: MCPTool = {
           implemented: true,
           indexSize: realStats.memory.indexSize,
           memorySizeBytes: realStats.memory.memorySizeBytes,
-          note: 'HNSW vector indexing with 150x-12,500x speedup',
+          note: 'HNSW vector indexing with HNSW-indexed search',
         },
         flashAttention: {
           enabled: true,
           status: flashAvailable ? 'active' : 'loading',
           implemented: true, // NOW IMPLEMENTED in alpha.102
-          note: flashAvailable ? 'Flash Attention with O(N) memory (2.49x-7.47x speedup)' : 'Flash Attention loading...',
+          note: flashAvailable ? 'Flash Attention with O(N) memory (CPU-optimized)' : 'Flash Attention loading...',
         },
         ewc: {
           enabled: true,
@@ -1642,7 +1642,7 @@ export const hooksIntelligenceReset: MCPTool = {
 // Intelligence trajectory hooks - REAL implementation using activeTrajectories
 export const hooksTrajectoryStart: MCPTool = {
   name: 'hooks_intelligence_trajectory-start',
-  description: 'Begin SONA trajectory for reinforcement learning',
+  description: 'Begin Pattern trajectory for reinforcement learning',
   inputSchema: {
     type: 'object',
     properties: {
@@ -1728,7 +1728,7 @@ export const hooksTrajectoryStep: MCPTool = {
 
 export const hooksTrajectoryEnd: MCPTool = {
   name: 'hooks_intelligence_trajectory-end',
-  description: 'End trajectory and trigger SONA learning with EWC++',
+  description: 'End trajectory and trigger Pattern learning with EWC++',
   inputSchema: {
     type: 'object',
     properties: {
@@ -1779,7 +1779,7 @@ export const hooksTrajectoryEnd: MCPTool = {
       activeTrajectories.delete(trajectoryId);
     }
 
-    // SONA Learning - process trajectory outcome for routing optimization
+    // Pattern Learning - process trajectory outcome for routing optimization
     let sonaResult: { learned: boolean; patternKey: string; confidence: number } = {
       learned: false, patternKey: '', confidence: 0
     };
@@ -1788,8 +1788,8 @@ export const hooksTrajectoryEnd: MCPTool = {
     };
 
     if (trajectory && persistResult.success) {
-      // Try SONA learning
-      const sona = await getSONAOptimizer();
+      // Try Pattern learning
+      const sona = await getPatternOptimizer();
       if (sona) {
         try {
           const outcome = {
@@ -1810,7 +1810,7 @@ export const hooksTrajectoryEnd: MCPTool = {
             confidence: result.confidence,
           };
         } catch {
-          // SONA learning failed, continue without it
+          // Pattern learning failed, continue without it
         }
       }
 
@@ -1862,7 +1862,7 @@ export const hooksTrajectoryEnd: MCPTool = {
       } : null,
       implementation: sonaResult.learned ? 'real-sona-learning' : (persistResult.success ? 'real-persistence' : 'memory-only'),
       note: sonaResult.learned
-        ? `SONA learned pattern "${sonaResult.patternKey}" with ${(sonaResult.confidence * 100).toFixed(1)}% confidence`
+        ? `Pattern learned pattern "${sonaResult.patternKey}" with ${(sonaResult.confidence * 100).toFixed(1)}% confidence`
         : (persistResult.success ? 'Trajectory persisted for future learning' : (persistResult.error || 'Trajectory not found')),
     };
   },
@@ -2023,7 +2023,7 @@ export const hooksIntelligenceStats: MCPTool = {
     const detailed = params.detailed as boolean;
 
     // Get REAL statistics from actual implementations
-    const sona = await getSONAOptimizer();
+    const sona = await getPatternOptimizer();
     const ewc = await getEWCConsolidator();
     const moe = await getMoERouter();
     const flash = await getFlashAttention();
@@ -2032,7 +2032,7 @@ export const hooksIntelligenceStats: MCPTool = {
     // Fallback to memory store for legacy data
     const memoryStats = getIntelligenceStatsFromMemory();
 
-    // SONA stats from real implementation
+    // Pattern stats from real implementation
     let sonaStats = {
       trajectoriesTotal: memoryStats.trajectories.total,
       trajectoriesSuccessful: memoryStats.trajectories.successful,
@@ -2189,7 +2189,7 @@ export const hooksIntelligenceStats: MCPTool = {
 // Intelligence learn hook
 export const hooksIntelligenceLearn: MCPTool = {
   name: 'hooks_intelligence_learn',
-  description: 'Force immediate SONA learning cycle with EWC++ consolidation',
+  description: 'Force immediate Pattern learning cycle with EWC++ consolidation',
   inputSchema: {
     type: 'object',
     properties: {
@@ -2201,7 +2201,7 @@ export const hooksIntelligenceLearn: MCPTool = {
     const consolidate = params.consolidate !== false;
     const startTime = Date.now();
 
-    // Get SONA statistics
+    // Get Pattern statistics
     let sonaStats = {
       totalPatterns: 0,
       successfulRoutings: 0,
@@ -2209,7 +2209,7 @@ export const hooksIntelligenceLearn: MCPTool = {
       trajectoriesProcessed: 0,
       avgConfidence: 0,
     };
-    const sona = await getSONAOptimizer();
+    const sona = await getPatternOptimizer();
     if (sona) {
       const stats = sona.getStats();
       sonaStats = {
@@ -2374,7 +2374,7 @@ export const hooksIntelligenceAttention: MCPTool = {
       results,
       stats: {
         computeTimeMs,
-        speedup: mode === 'flash' ? '2.49x-7.47x' : mode === 'moe' ? '1.5x-3x' : '1.5x-2x',
+        speedup: mode === 'flash' ? 'CPU-optimized' : mode === 'moe' ? '1.5x-3x' : '1.5x-2x',
         memoryReduction: mode === 'flash' ? '50-75%' : '25-40%',
       },
       implementation,

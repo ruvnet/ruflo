@@ -29,7 +29,7 @@ import type {
   SpectralAnalysisResult,
   CausalInferenceResult,
   TopologyResult,
-  ConsensusResult,
+  VotingResult,
   MemoryEntry,
   MemoryCoherenceValidation,
   CoherenceThresholds,
@@ -712,7 +712,7 @@ export class PrimeRadiantPlugin implements IPlugin {
       this.createCoherenceCheckTool(),
       this.createSpectralAnalyzeTool(),
       this.createCausalInferTool(),
-      this.createConsensusVerifyTool(),
+      this.createVotingVerifyTool(),
       this.createQuantumTopologyTool(),
       this.createMemoryGateTool(),
     ];
@@ -880,11 +880,11 @@ export class PrimeRadiantPlugin implements IPlugin {
     };
   }
 
-  private createConsensusVerifyTool(): PluginMCPTool {
+  private createVotingVerifyTool(): PluginMCPTool {
     return {
-      name: 'pr_consensus_verify',
+      name: 'pr_voting_verify',
       description: 'Verify multi-agent consensus mathematically',
-      category: 'consensus',
+      category: 'voting',
       version: this.version,
       inputSchema: {
         type: 'object',
@@ -928,7 +928,7 @@ export class PrimeRadiantPlugin implements IPlugin {
         const agreementRatio = 1 - coherence.energy;
         const consensusAchieved = agreementRatio >= validated.consensusThreshold;
 
-        const result: ConsensusResult = {
+        const result: VotingResult = {
           consensusAchieved,
           agreementRatio,
           coherenceEnergy: coherence.energy,

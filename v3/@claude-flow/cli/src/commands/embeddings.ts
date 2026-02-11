@@ -1063,11 +1063,11 @@ const hyperbolicCommand: Command = {
 
 // Neural subcommand
 const neuralCommand: Command = {
-  name: 'neural',
+  name: 'patterns',
   description: 'Neural substrate features (RuVector integration)',
   options: [
     { name: 'feature', short: 'f', type: 'string', description: 'Feature: drift, memory, swarm, coherence, all', default: 'all' },
-    { name: 'init', type: 'boolean', description: 'Initialize neural substrate with RuVector' },
+    { name: 'init', type: 'boolean', description: 'Initialize pattern substrate with RuVector' },
     { name: 'drift-threshold', type: 'string', description: 'Semantic drift detection threshold', default: '0.3' },
     { name: 'decay-rate', type: 'string', description: 'Memory decay rate (hippocampal dynamics)', default: '0.01' },
     { name: 'consolidation-interval', type: 'string', description: 'Memory consolidation interval (ms)', default: '60000' },
@@ -1111,7 +1111,7 @@ const neuralCommand: Command = {
     }
 
     if (init) {
-      // Initialize neural substrate configuration
+      // Initialize pattern substrate configuration
       config.neural = {
         enabled: true,
         driftThreshold,
@@ -1119,7 +1119,7 @@ const neuralCommand: Command = {
         consolidationInterval,
         ruvector: {
           enabled: true,
-          sona: true, // Self-Optimizing Neural Architecture
+          sona: true, // Self-Optimizing Pattern Architecture
           flashAttention: true,
           ewcPlusPlus: true, // Elastic Weight Consolidation
         },
@@ -1187,13 +1187,13 @@ const neuralCommand: Command = {
       ],
       data: [
         {
-          component: 'SONA',
-          description: 'Self-Optimizing Neural Architecture (<0.05ms)',
+          component: 'Pattern',
+          description: 'Self-Optimizing Pattern Architecture (sub-ms)',
           status: ruvector.sona ? output.success('Enabled') : output.dim('Disabled')
         },
         {
           component: 'Flash Attention',
-          description: '2.49x-7.47x attention speedup',
+          description: 'CPU-optimized attention speedup',
           status: ruvector.flashAttention ? output.success('Enabled') : output.dim('Disabled')
         },
         {
@@ -1212,7 +1212,7 @@ const neuralCommand: Command = {
     output.writeln();
 
     if (!neuralConfig.enabled) {
-      output.printInfo('Run with --init to enable neural substrate');
+      output.printInfo('Run with --init to enable pattern substrate');
     } else {
       output.writeln(output.dim('Configuration: .claude-flow/embeddings.json'));
       output.writeln(output.dim('Next: Use "hooks pretrain" to train patterns'));
@@ -1730,7 +1730,7 @@ export const embeddingsCommand: Command = {
     output.writeln();
     output.writeln('Performance:');
     output.printList([
-      'HNSW indexing: 150x-12,500x faster search',
+      'HNSW indexing: optimized search',
       'Agentic Flow: 75x faster than Transformers.js (~3ms)',
       'Persistent cache: SQLite-backed, survives restarts',
       'Hyperbolic: Better hierarchical representation',

@@ -64,7 +64,7 @@ You are a **ReasoningBank Learner** responsible for implementing the 4-step inte
 
 ### 1. RETRIEVE (HNSW Search)
 
-Search for similar patterns 150x-12,500x faster:
+Search for similar patterns optimized:
 
 ```bash
 # Search patterns via HNSW

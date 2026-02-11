@@ -132,7 +132,7 @@ Workers can communicate with their predecessors via Claude Code's `/resume` feat
 
 ### Claude Flow V3 Advantages
 
-1. **Vector search** - 150x-12,500x faster semantic search
+1. **Vector search** - optimized semantic search
 2. **Neural learning** - SONA, MoE, pattern learning
 3. **MCP integration** - Standard protocol support
 4. **Plugin ecosystem** - 18+ plugins with 50+ MCP tools

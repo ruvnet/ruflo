@@ -135,8 +135,8 @@ This directory contains all Architecture Decision Records for Claude-Flow v3.
 | Metric | Target | ADR Reference |
 |--------|--------|---------------|
 | Code reduction | <5,000 lines vs 15,000+ | ADR-001 |
-| HNSW search | 150x-12,500x faster | ADR-009 |
-| Flash Attention | 2.49x-7.47x speedup | ADR-001 |
+| HNSW search | optimized | ADR-009 |
+| Flash Attention | CPU-optimized | ADR-001 |
 | Test execution | <5s (10x improvement) | ADR-008 |
 | Startup time | <500ms | ADR-004 |
 | Query latency | <100ms | ADR-006 |

@@ -368,7 +368,7 @@ if (trainingData.length > 100000) {
   );
 
   console.log(`Processed ${trainingData.length} samples`);
-  console.log(`Time: ${result.executionTimeMs}ms (2.49x-7.47x faster)`);
+  console.log(`Time: ${result.executionTimeMs}ms (CPU-optimized faster)`);
   console.log(`Memory: ~50% reduction`);
 }
 ```

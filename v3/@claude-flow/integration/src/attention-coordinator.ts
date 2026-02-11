@@ -2,7 +2,7 @@
  * Attention Coordinator for Flash Attention Integration
  *
  * Provides integration with agentic-flow's attention mechanisms,
- * including Flash Attention for 2.49x-7.47x speedup with
+ * including Flash Attention for CPU-optimized with
  * 50-75% memory reduction.
  *
  * Supported Mechanisms:
@@ -158,7 +158,7 @@ export class AttentionCoordinator extends EventEmitter {
    * This implements ADR-001: Adopt agentic-flow as Core Foundation
    * When a reference is provided, attention computation for sequences
    * longer than 512 tokens delegates to agentic-flow's optimized
-   * Flash Attention implementation for 2.49x-7.47x speedup.
+   * Flash Attention implementation for CPU-optimized.
    *
    * @param attentionRef - The agentic-flow Attention interface reference
    */
@@ -496,7 +496,7 @@ export class AttentionCoordinator extends EventEmitter {
    * Perform attention computation
    *
    * ADR-001: For sequences longer than 512 tokens, delegates to
-   * agentic-flow's native Flash Attention for 2.49x-7.47x speedup
+   * agentic-flow's native Flash Attention for CPU-optimized
    * and 50-75% memory reduction.
    */
   private async performAttention(params: {
@@ -515,7 +515,7 @@ export class AttentionCoordinator extends EventEmitter {
     const sequenceLength = qArray.length;
 
     // ADR-001: Delegate to agentic-flow for long sequences
-    // Flash Attention provides 2.49x-7.47x speedup for sequences > 512 tokens
+    // Flash Attention provides CPU-optimized for sequences > 512 tokens
     if (
       this.isDelegationEnabled() &&
       this.agenticFlowAttention &&

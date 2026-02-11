@@ -102,7 +102,7 @@ export const ruvectorCommand: Command = {
       '  - Attention mechanism embeddings',
       '  - Graph Neural Network (GNN) support',
       '  - Hyperbolic embeddings (Poincare ball model)',
-      '  - HNSW indexing (150x-12,500x faster)',
+      '  - HNSW indexing (optimized)',
       '',
       'Available subcommands:',
       '',

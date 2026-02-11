@@ -2,7 +2,7 @@
  * Memory MCP Tools for CLI - V3 with sql.js/HNSW Backend
  *
  * UPGRADED: Now uses the advanced sql.js + HNSW backend for:
- * - 150x-12,500x faster semantic search
+ * - optimized semantic search
  * - Vector embeddings with cosine similarity
  * - Persistent SQLite storage (WASM)
  * - Backward compatible with legacy JSON storage (auto-migrates)
@@ -287,7 +287,7 @@ export const memoryTools: MCPTool[] = [
   },
   {
     name: 'memory_search',
-    description: 'Semantic vector search using HNSW index (150x-12,500x faster than keyword search)',
+    description: 'Semantic vector search using HNSW index (optimized than keyword search)',
     category: 'memory',
     inputSchema: {
       type: 'object',

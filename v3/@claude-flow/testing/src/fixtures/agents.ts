@@ -69,7 +69,7 @@ export const agentConfigs: Record<string, AgentConfig> = {
   swarmSpecialist: {
     type: 'swarm-specialist',
     name: 'Swarm Specialist',
-    capabilities: ['coordination', 'consensus', 'communication'],
+    capabilities: ['coordination', 'voting', 'communication'],
     priority: 85,
     metadata: { topology: 'hierarchical-mesh' },
   },

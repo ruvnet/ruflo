@@ -1,0 +1,84 @@
+{
+  "name": "@claude-flow/plugin-pattern-coordination",
+  "version": "3.0.0-alpha.1",
+  "description": "Pattern coordination plugin for multi-agent swarm intelligence using pattern learning, GNN, and attention mechanisms",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./tools": {
+      "import": "./dist/mcp-tools.js",
+      "types": "./dist/mcp-tools.d.ts"
+    },
+    "./bridges": {
+      "import": "./dist/bridges/index.js",
+      "types": "./dist/bridges/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "plugin.yaml"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run clean && npm run build && npm run typecheck"
+  },
+  "keywords": [
+    "claude-flow",
+    "pattern-coordination",
+    "multi-agent",
+    "swarm",
+    "voting",
+    "topology",
+    "patterns",
+    "gnn",
+    "attention"
+  ],
+  "author": "Claude Flow Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/claude-flow.git",
+    "directory": "v3/plugins/pattern-coordination"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.16"
+  },
+  "peerDependencies": {
+    "@claude-flow/ruvector-upstream": ">=3.0.0-alpha.1"
+  },
+  "peerDependenciesMeta": {
+    "@claude-flow/ruvector-upstream": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "v3alpha"
+  }
+}

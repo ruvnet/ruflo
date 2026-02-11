@@ -1,5 +1,5 @@
 /**
- * SONA (Self-Optimizing Neural Architecture) Optimizer
+ * Pattern (Self-Optimizing Pattern Architecture) Optimizer
  *
  * Processes trajectory outcomes to learn optimal routing patterns.
  * Integrates with Q-learning router and persistence layer.
@@ -78,9 +78,9 @@ export interface RoutingSuggestion {
 }
 
 /**
- * SONA optimizer statistics
+ * Pattern optimizer statistics
  */
-export interface SONAStats {
+export interface PatternStats {
   /** Total patterns learned */
   totalPatterns: number;
   /** Successful routing decisions */
@@ -191,16 +191,16 @@ const KEYWORD_CATEGORIES: Record<string, string[]> = {
 };
 
 // ============================================================================
-// SONAOptimizer Class
+// PatternOptimizer Class
 // ============================================================================
 
 /**
- * SONA Optimizer for adaptive routing based on trajectory outcomes
+ * Pattern Optimizer for adaptive routing based on trajectory outcomes
  *
  * Learns from past task outcomes to improve future routing decisions.
  * Integrates with Q-learning router for hybrid routing strategy.
  */
-export class SONAOptimizer {
+export class PatternOptimizer {
   private patterns: Map<string, LearnedPattern> = new Map();
   private trajectoriesProcessed = 0;
   private successfulRoutings = 0;
@@ -328,7 +328,7 @@ export class SONAOptimizer {
   getRoutingSuggestion(task: string): RoutingSuggestion {
     const keywords = this.extractKeywords(task);
 
-    // Try SONA pattern matching first
+    // Try Pattern pattern matching first
     const sonaResult = this.findBestPatternMatch(keywords);
     if (sonaResult && sonaResult.confidence >= 0.6) {
       return {
@@ -388,7 +388,7 @@ export class SONAOptimizer {
   /**
    * Get optimizer statistics
    */
-  getStats(): SONAStats {
+  getStats(): PatternStats {
     let totalConfidence = 0;
     for (const pattern of this.patterns.values()) {
       totalConfidence += pattern.confidence;
@@ -696,7 +696,7 @@ export class SONAOptimizer {
 
       // Validate version
       if (!state.version || !state.version.startsWith('1.')) {
-        console.error('[SONA] Incompatible state version, starting fresh');
+        console.error('[Pattern] Incompatible state version, starting fresh');
         return false;
       }
 
@@ -718,7 +718,7 @@ export class SONAOptimizer {
 
       return true;
     } catch (err) {
-      console.error(`[SONA] Failed to load state: ${err}`);
+      console.error(`[Pattern] Failed to load state: ${err}`);
       return false;
     }
   }
@@ -754,7 +754,7 @@ export class SONAOptimizer {
       writeFileSync(fullPath, JSON.stringify(state, null, 2));
       return true;
     } catch (err) {
-      console.error(`[SONA] Failed to save state: ${err}`);
+      console.error(`[Pattern] Failed to save state: ${err}`);
       return false;
     }
   }
@@ -764,14 +764,14 @@ export class SONAOptimizer {
 // Singleton Instance
 // ============================================================================
 
-let sonaOptimizerInstance: SONAOptimizer | null = null;
-let initializationPromise: Promise<SONAOptimizer> | null = null;
+let sonaOptimizerInstance: PatternOptimizer | null = null;
+let initializationPromise: Promise<PatternOptimizer> | null = null;
 
 /**
- * Get the singleton SONAOptimizer instance
+ * Get the singleton PatternOptimizer instance
  * Uses lazy initialization to avoid circular imports
  */
-export async function getSONAOptimizer(): Promise<SONAOptimizer> {
+export async function getPatternOptimizer(): Promise<PatternOptimizer> {
   if (sonaOptimizerInstance) {
     return sonaOptimizerInstance;
   }
@@ -782,7 +782,7 @@ export async function getSONAOptimizer(): Promise<SONAOptimizer> {
   }
 
   initializationPromise = (async () => {
-    const optimizer = new SONAOptimizer();
+    const optimizer = new PatternOptimizer();
     await optimizer.initialize();
     sonaOptimizerInstance = optimizer;
     return optimizer;
@@ -794,7 +794,7 @@ export async function getSONAOptimizer(): Promise<SONAOptimizer> {
 /**
  * Reset the singleton instance (for testing)
  */
-export function resetSONAOptimizer(): void {
+export function resetPatternOptimizer(): void {
   if (sonaOptimizerInstance) {
     sonaOptimizerInstance.reset();
   }
@@ -811,7 +811,7 @@ export async function processTrajectory(outcome: TrajectoryOutcome): Promise<{
   confidence: number;
   keywordsExtracted: string[];
 }> {
-  const optimizer = await getSONAOptimizer();
+  const optimizer = await getPatternOptimizer();
   return optimizer.processTrajectoryOutcome(outcome);
 }
 
@@ -819,23 +819,23 @@ export async function processTrajectory(outcome: TrajectoryOutcome): Promise<{
  * Get routing suggestion (convenience function)
  */
 export async function getSuggestion(task: string): Promise<RoutingSuggestion> {
-  const optimizer = await getSONAOptimizer();
+  const optimizer = await getPatternOptimizer();
   return optimizer.getRoutingSuggestion(task);
 }
 
 /**
- * Get SONA statistics (convenience function)
+ * Get Pattern statistics (convenience function)
  */
-export async function getSONAStats(): Promise<SONAStats> {
-  const optimizer = await getSONAOptimizer();
+export async function getPatternStats(): Promise<PatternStats> {
+  const optimizer = await getPatternOptimizer();
   return optimizer.getStats();
 }
 
 export default {
-  SONAOptimizer,
-  getSONAOptimizer,
-  resetSONAOptimizer,
+  PatternOptimizer,
+  getPatternOptimizer,
+  resetPatternOptimizer,
   processTrajectory,
   getSuggestion,
-  getSONAStats,
+  getPatternStats,
 };

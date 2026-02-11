@@ -56,7 +56,7 @@ const initCommand: Command = {
         topology: 'hybrid',
         maxAgents: 15,
         autoScale: true,
-        coordinationStrategy: 'consensus'
+        coordinationStrategy: 'voting'
       },
       memory: {
         backend: 'hybrid',

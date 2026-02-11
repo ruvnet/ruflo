@@ -156,7 +156,7 @@ async function handleInitSwarm(
           type: input.topology as any,
           maxAgents: input.maxAgents,
         },
-        consensus: {
+        voting: {
           algorithm: input.config?.consensusMechanism === 'unanimous' ? 'byzantine' as any :
                      input.config?.consensusMechanism === 'weighted' ? 'raft' as any : 'gossip' as any,
           threshold: input.config?.consensusMechanism === 'unanimous' ? 1.0 :
@@ -214,8 +214,8 @@ async function handleSwarmStatus(
         maxAgents: status.topology.maxAgents,
         currentAgents: status.agents.length,
         communicationProtocol: 'message-bus',
-        consensusMechanism: status.consensus?.algorithm === 'raft' ? 'weighted' :
-                           status.consensus?.algorithm === 'byzantine' ? 'unanimous' : 'majority',
+        consensusMechanism: status.voting?.algorithm === 'raft' ? 'weighted' :
+                           status.voting?.algorithm === 'byzantine' ? 'unanimous' : 'majority',
         failureHandling: 'retry',
         loadBalancing: true,
         autoScaling: status.state === 'scaling',

@@ -476,7 +476,7 @@ async function configOptimizeHandler(
 
 export const configOptimizeTool: MCPTool = {
   name: 'perf/config-optimize',
-  description: 'Suggest optimal configurations using SONA learning. Analyzes workload profiles and recommends configuration parameters for improved performance.',
+  description: 'Suggest optimal configurations using pattern learning. Analyzes workload profiles and recommends configuration parameters for improved performance.',
   category: 'performance',
   version: '0.1.0',
   tags: ['performance', 'configuration', 'optimization', 'tuning'],

@@ -69,7 +69,7 @@ export function generateSettings(options: InitOptions): object {
       mailboxEnabled: true,
       coordination: {
         autoAssignOnIdle: true,       // Auto-assign pending tasks when teammate is idle
-        trainPatternsOnComplete: true, // Train neural patterns when tasks complete
+        trainPatternsOnComplete: true, // Train patterns when tasks complete
         notifyLeadOnComplete: true,   // Notify team lead when tasks complete
         sharedMemoryNamespace: 'agent-teams', // Memory namespace for team coordination
       },
@@ -260,7 +260,7 @@ function generateHooksConfig(config: HooksConfig): object {
   // PostToolUse hooks - cross-platform via npx with defensive guards
   if (config.postToolUse) {
     hooks.PostToolUse = [
-      // File edit hooks with neural pattern training
+      // File edit hooks with pattern training
       {
         matcher: '^(Write|Edit|MultiEdit)$',
         hooks: [

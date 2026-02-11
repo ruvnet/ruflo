@@ -344,7 +344,7 @@ async function handleSaveSession(
         topology: status.topology?.type || 'hierarchical-mesh',
         agents: status.agents?.length || 0,
         connections: status.topology?.edges || [],
-        consensus: status.consensus,
+        consensus: status.voting,
       };
     } catch (error) {
       console.error('Failed to collect swarm state:', error);

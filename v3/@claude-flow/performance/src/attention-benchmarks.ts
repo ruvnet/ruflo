@@ -2,7 +2,7 @@
  * @claude-flow/performance - Flash Attention Benchmarks
  *
  * Comprehensive benchmark suite for Flash Attention performance validation.
- * Validates 2.49x-7.47x speedup targets and memory efficiency improvements.
+ * Validates CPU-optimized targets and memory efficiency improvements.
  */
 
 import {
@@ -217,7 +217,7 @@ export class AttentionBenchmarkRunner {
   }
 
   /**
-   * Validate V3 performance targets (2.49x-7.47x speedup)
+   * Validate V3 performance targets (CPU-optimized)
    */
   validateV3Targets(): {
     meetsMinimum: boolean;

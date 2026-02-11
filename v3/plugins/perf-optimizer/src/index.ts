@@ -8,7 +8,7 @@
  * - Memory leak detection and analysis
  * - Database query optimization (N+1, missing indexes)
  * - JavaScript bundle optimization
- * - Configuration tuning with SONA learning
+ * - Configuration tuning with pattern learning
  *
  * Uses RuVector WASM packages for high-performance analysis:
  * - ruvector-sparse-inference-wasm: Efficient trace processing

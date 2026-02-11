@@ -226,12 +226,12 @@ export const linterPlugin = new PluginBuilder('linter', '3.0.0')
 // ============================================================================
 
 /**
- * SONA integration plugin - self-optimizing neural architecture.
+ * Pattern integration plugin - self-optimizing neural architecture.
  */
-export const sonaPlugin = new PluginBuilder('sona-integration', '3.0.0')
-  .withDescription('SONA self-optimizing neural architecture integration')
+export const sonaPlugin = new PluginBuilder('pattern-integration', '3.0.0')
+  .withDescription('Pattern self-optimizing neural architecture integration')
   .withAuthor('Claude Flow')
-  .withTags(['intelligence', 'neural', 'learning'])
+  .withTags(['intelligence', 'patterns', 'learning'])
   .withDependencies(['memory-coordinator@^3.0.0'])
   .withHooks([
     {
@@ -326,9 +326,9 @@ export const patternLearningPlugin = new PluginBuilder('pattern-learning', '3.0.
  * HiveMind plugin - collective intelligence coordination.
  */
 export const hiveMindPlugin = new PluginBuilder('hive-mind', '3.0.0')
-  .withDescription('Collective intelligence and consensus mechanisms')
+  .withDescription('Collective intelligence and voting mechanisms')
   .withAuthor('Claude Flow')
-  .withTags(['swarm', 'integration', 'consensus'])
+  .withTags(['swarm', 'integration', 'voting'])
   .withMCPTools([
     {
       name: 'collective-decide',
@@ -399,10 +399,10 @@ export const maestroPlugin = new PluginBuilder('maestro', '3.0.0')
 /**
  * Consensus plugin - Byzantine fault-tolerant consensus.
  */
-export const consensusPlugin = new PluginBuilder('consensus', '3.0.0')
-  .withDescription('Byzantine fault-tolerant consensus mechanisms')
+export const consensusPlugin = new PluginBuilder('voting', '3.0.0')
+  .withDescription('Byzantine fault-tolerant voting mechanisms')
   .withAuthor('Claude Flow')
-  .withTags(['swarm', 'integration', 'consensus', 'byzantine'])
+  .withTags(['swarm', 'integration', 'voting', 'byzantine'])
   .withDependencies(['hive-mind@^3.0.0'])
   .build();
 
@@ -844,9 +844,9 @@ export const intelligenceCollection: PluginCollection = {
       plugin: sonaPlugin,
       defaultEnabled: false,
       category: 'integration',
-      tags: ['intelligence', 'neural'],
+      tags: ['intelligence', 'patterns'],
       requiredCapabilities: ['memory', 'llm'],
-      description: 'SONA self-optimizing neural architecture',
+      description: 'Pattern self-optimizing neural architecture',
     },
     {
       plugin: reasoningBankPlugin,
@@ -913,7 +913,7 @@ export const swarmCollection: PluginCollection = {
       plugin: hiveMindPlugin,
       defaultEnabled: true,
       category: 'integration',
-      tags: ['swarm', 'consensus'],
+      tags: ['swarm', 'voting'],
       description: 'Collective intelligence coordination',
     },
     {

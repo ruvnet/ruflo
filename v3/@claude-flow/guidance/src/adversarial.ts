@@ -4,7 +4,7 @@
  * Provides Byzantine fault tolerance and security monitoring for multi-agent systems:
  * - ThreatDetector: Analyzes inputs and memory writes for security threats
  * - CollusionDetector: Identifies suspicious coordination patterns between agents
- * - MemoryQuorum: Implements voting-based consensus for critical memory operations
+ * - MemoryQuorum: Implements voting-based voting for critical memory operations
  *
  * @module @claude-flow/guidance/adversarial
  * @category Security

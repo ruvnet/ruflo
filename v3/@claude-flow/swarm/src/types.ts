@@ -158,7 +158,7 @@ export type TaskType =
   | 'review'
   | 'documentation'
   | 'coordination'
-  | 'consensus'
+  | 'voting'
   | 'custom';
 
 export type TaskStatus =
@@ -194,29 +194,29 @@ export interface TaskDefinition {
   metadata: Record<string, unknown>;
 }
 
-// ===== CONSENSUS TYPES =====
+// ===== VOTING TYPES =====
 
-export type ConsensusAlgorithm = 'raft' | 'byzantine' | 'gossip' | 'paxos';
+export type VotingAlgorithm = 'raft' | 'byzantine' | 'gossip' | 'paxos';
 
-export interface ConsensusConfig {
-  algorithm: ConsensusAlgorithm;
+export interface VotingConfig {
+  algorithm: VotingAlgorithm;
   threshold: number;
   timeoutMs: number;
   maxRounds: number;
   requireQuorum: boolean;
 }
 
-export interface ConsensusProposal {
+export interface VotingProposal {
   id: string;
   proposerId: string;
   value: unknown;
   term: number;
   timestamp: Date;
-  votes: Map<string, ConsensusVote>;
+  votes: Map<string, VotingBallot>;
   status: 'pending' | 'accepted' | 'rejected' | 'expired';
 }
 
-export interface ConsensusVote {
+export interface VotingBallot {
   voterId: string;
   approve: boolean;
   confidence: number;
@@ -224,7 +224,7 @@ export interface ConsensusVote {
   reason?: string;
 }
 
-export interface ConsensusResult {
+export interface VotingResult {
   proposalId: string;
   approved: boolean;
   approvalRate: number;
@@ -242,9 +242,9 @@ export type MessageType =
   | 'task_fail'
   | 'heartbeat'
   | 'status_update'
-  | 'consensus_propose'
-  | 'consensus_vote'
-  | 'consensus_commit'
+  | 'voting_propose'
+  | 'voting_ballot'
+  | 'voting_commit'
   | 'topology_update'
   | 'agent_join'
   | 'agent_leave'
@@ -294,7 +294,7 @@ export interface MessageBusStats {
 
 export interface CoordinatorConfig {
   topology: TopologyConfig;
-  consensus: ConsensusConfig;
+  voting: VotingConfig;
   messageBus: MessageBusConfig;
   maxAgents: number;
   maxTasks: number;
@@ -332,7 +332,7 @@ export interface CoordinatorMetrics {
   failedTasks: number;
   avgTaskDurationMs: number;
   messagesPerSecond: number;
-  consensusSuccessRate: number;
+  votingSuccessRate: number;
   coordinationLatencyMs: number;
   memoryUsageBytes: number;
 }
@@ -359,9 +359,9 @@ export type SwarmEventType =
   | 'task.queued'
   | 'topology.updated'
   | 'topology.rebalanced'
-  | 'consensus.proposed'
-  | 'consensus.achieved'
-  | 'consensus.failed'
+  | 'voting.proposed'
+  | 'voting.achieved'
+  | 'voting.failed'
   | 'message.sent'
   | 'message.received'
   | 'parallel.execution.completed'
@@ -417,7 +417,7 @@ export interface PerformanceReport {
   messagesPerSecond: number;
   taskThroughput: number;
   agentUtilization: number;
-  consensusSuccessRate: number;
+  votingSuccessRate: number;
 }
 
 // ===== CONSTANTS =====
@@ -426,11 +426,11 @@ export const SWARM_CONSTANTS = {
   DEFAULT_HEARTBEAT_INTERVAL_MS: 5000,
   DEFAULT_HEALTH_CHECK_INTERVAL_MS: 10000,
   DEFAULT_TASK_TIMEOUT_MS: 300000,
-  DEFAULT_CONSENSUS_TIMEOUT_MS: 30000,
+  DEFAULT_VOTING_TIMEOUT_MS: 30000,
   DEFAULT_MESSAGE_TTL_MS: 60000,
   DEFAULT_MAX_AGENTS: 100,
   DEFAULT_MAX_TASKS: 1000,
-  DEFAULT_CONSENSUS_THRESHOLD: 0.66,
+  DEFAULT_VOTING_THRESHOLD: 0.66,
   MAX_QUEUE_SIZE: 10000,
   MAX_RETRIES: 3,
   COORDINATION_LATENCY_TARGET_MS: 100,
@@ -485,13 +485,13 @@ export interface ITopologyManager {
   findOptimalPath(from: string, to: string): string[];
 }
 
-export interface IConsensusEngine {
-  initialize(config: ConsensusConfig): Promise<void>;
-  propose(value: unknown, proposerId: string): Promise<ConsensusProposal>;
-  vote(proposalId: string, vote: ConsensusVote): Promise<void>;
-  getProposal(proposalId: string): ConsensusProposal | undefined;
-  awaitConsensus(proposalId: string): Promise<ConsensusResult>;
-  getActiveProposals(): ConsensusProposal[];
+export interface IVotingEngine {
+  initialize(config: VotingConfig): Promise<void>;
+  propose(value: unknown, proposerId: string): Promise<VotingProposal>;
+  vote(proposalId: string, vote: VotingBallot): Promise<void>;
+  getProposal(proposalId: string): VotingProposal | undefined;
+  awaitVoting(proposalId: string): Promise<VotingResult>;
+  getActiveProposals(): VotingProposal[];
 }
 
 export interface IMessageBus {
@@ -535,7 +535,7 @@ export interface IUnifiedSwarmCoordinator {
   getAllTasks(): TaskDefinition[];
 
   // Coordination
-  proposeConsensus(value: unknown): Promise<ConsensusResult>;
+  proposeVote(value: unknown): Promise<VotingResult>;
   broadcastMessage(payload: unknown, priority?: Message['priority']): Promise<void>;
 
   // Monitoring
