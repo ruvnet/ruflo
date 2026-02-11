@@ -1,6 +1,0 @@
-node_modules/
-dist/
-results.json
-detailed-report.md
-*.log
-.DS_Store

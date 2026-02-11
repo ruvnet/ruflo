@@ -1,8 +1,0 @@
-dist/
-node_modules/
-coverage/
-*.tgz
-package-lock.json
-.github/
-docs/
-*.md

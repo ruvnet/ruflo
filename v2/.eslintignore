@@ -1,8 +1,0 @@
-dist/
-bin/
-node_modules/
-coverage/
-src/cli/commands/swarm-new.ts
-**/*.test.ts
-**/*.spec.ts
-src/__tests__/**
