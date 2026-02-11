@@ -18,7 +18,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
 // AIDefence instance type
-type AIDefenceInstance = ReturnType<typeof import('@claude-flow/aidefence').createAIDefence>;
+type AIDefenceInstance = ReturnType<typeof import('@claude-flow/core/defence').createAIDefence>;
 
 // Lazy-loaded AIDefence instance
 let aidefenceInstance: AIDefenceInstance | null = null;
@@ -34,7 +34,7 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
     return aidefenceInstance;
   }
 
-  const packageName = '@claude-flow/aidefence';
+  const packageName = '@claude-flow/core/defence';
 
   // First attempt - try to load via dynamic import (ESM)
   try {
@@ -393,7 +393,7 @@ const aidefenceIsSafeTool: MCPTool = {
     const input = args.input as string;
 
     try {
-      const { isSafe } = await import('@claude-flow/aidefence');
+      const { isSafe } = await import('@claude-flow/core/defence');
       const safe = isSafe(input);
 
       return {

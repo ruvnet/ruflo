@@ -1,0 +1,40 @@
+{
+  "name": "@claude-flow/agents",
+  "version": "3.0.0-alpha.1",
+  "type": "module",
+  "description": "Agent coordination — swarm orchestration, pattern learning, lifecycle hooks",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./swarm": "./dist/swarm/index.js",
+    "./patterns": "./dist/patterns/index.js",
+    "./hooks": "./dist/hooks/index.js"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@claude-flow/core": "^3.0.0-alpha.1",
+    "@claude-flow/memory": "^3.0.0-alpha.6",
+    "zod": "^3.23.0"
+  },
+  "optionalDependencies": {
+    "@ruvector/sona": "latest",
+    "better-sqlite3": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.16"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "v3alpha"
+  }
+}

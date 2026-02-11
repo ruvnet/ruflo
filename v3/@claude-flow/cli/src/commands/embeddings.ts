@@ -19,7 +19,7 @@ import { output } from '../output.js';
 // Dynamic imports for embeddings package
 async function getEmbeddings() {
   try {
-    return await import('@claude-flow/embeddings');
+    return await import('@claude-flow/memory/embeddings');
   } catch {
     return null;
   }
@@ -972,7 +972,7 @@ const hyperbolicCommand: Command = {
 
     // Try to import hyperbolic functions from embeddings package
     try {
-      const hyperbolic = await import('@claude-flow/embeddings').then(m => m).catch(() => null);
+      const hyperbolic = await import('@claude-flow/memory/embeddings').then(m => m).catch(() => null);
 
       if (!hyperbolic || !hyperbolic.euclideanToPoincare) {
         output.printWarning('@claude-flow/embeddings hyperbolic module not available');

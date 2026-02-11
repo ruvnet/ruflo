@@ -376,3 +376,15 @@ export async function shutdownPlugins(): Promise<void> {
   const registry = getDefaultRegistry();
   await registry.shutdown();
 }
+
+// ============================================================================
+// Guidance (consolidated from @claude-flow/guidance)
+// ============================================================================
+
+export * from './guidance/index.js';
+
+// ============================================================================
+// Testing Framework (consolidated from @claude-flow/testing)
+// ============================================================================
+
+export * from './testing/index.js';

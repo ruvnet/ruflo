@@ -1,0 +1,61 @@
+{
+  "name": "@claude-flow/core",
+  "version": "3.0.0-alpha.1",
+  "type": "module",
+  "description": "Core module — shared types, security, auth, providers, AI defence",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./shared": "./dist/shared/index.js",
+    "./claims": "./dist/claims/index.js",
+    "./security": "./dist/security/index.js",
+    "./providers": "./dist/providers/index.js",
+    "./defence": "./dist/defence/index.js",
+    "./performance": "./dist/performance/index.js",
+    "./types": "./dist/shared/types/index.js",
+    "./events": "./dist/shared/events/index.js",
+    "./hooks": "./dist/shared/hooks/index.js",
+    "./mcp": "./dist/shared/mcp/index.js",
+    "./resilience": "./dist/shared/resilience/index.js"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "events": "^3.3.0",
+    "sql.js": "^1.10.3",
+    "zod": "^3.22.4"
+  },
+  "optionalDependencies": {
+    "agentdb": ">=2.0.0-alpha.1"
+  },
+  "peerDependencies": {
+    "@ruvector/ruvllm": "^0.2.3"
+  },
+  "peerDependenciesMeta": {
+    "@ruvector/ruvllm": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/helmet": "^4.0.0",
+    "@types/node": "^20.0.0",
+    "@types/sql.js": "^1.4.9",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.16"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "v3alpha"
+  }
+}

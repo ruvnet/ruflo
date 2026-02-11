@@ -37,11 +37,11 @@ const DEFAULT_CONFIG: UpdateConfig = {
     major: false,
   },
   priority: {
-    '@claude-flow/security': 'critical',
+    '@claude-flow/core/security': 'critical',
     '@claude-flow/cli': 'high',
-    '@claude-flow/embeddings': 'normal',
+    '@claude-flow/memory/embeddings': 'normal',
     '@claude-flow/integration': 'normal',
-    '@claude-flow/testing': 'low',
+    '@claude-flow/plugins/testing': 'low',
   },
   exclude: [],
 };
@@ -49,10 +49,10 @@ const DEFAULT_CONFIG: UpdateConfig = {
 // Packages to check for updates
 const CLAUDE_FLOW_PACKAGES = [
   '@claude-flow/cli',
-  '@claude-flow/embeddings',
-  '@claude-flow/security',
+  '@claude-flow/memory/embeddings',
+  '@claude-flow/core/security',
   '@claude-flow/integration',
-  '@claude-flow/testing',
+  '@claude-flow/plugins/testing',
 ];
 
 interface NpmPackageInfo {

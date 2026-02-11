@@ -147,7 +147,7 @@ async function handleInitSwarm(
   // Try to use swarmCoordinator if available
   if (context?.swarmCoordinator) {
     try {
-      const { UnifiedSwarmCoordinator } = await import('@claude-flow/swarm');
+      const { UnifiedSwarmCoordinator } = await import('@claude-flow/agents/swarm');
       const coordinator = context.swarmCoordinator as InstanceType<typeof UnifiedSwarmCoordinator>;
 
       // Initialize the coordinator with the config
@@ -202,7 +202,7 @@ async function handleSwarmStatus(
   // Try to use swarmCoordinator if available
   if (context?.swarmCoordinator) {
     try {
-      const { UnifiedSwarmCoordinator } = await import('@claude-flow/swarm');
+      const { UnifiedSwarmCoordinator } = await import('@claude-flow/agents/swarm');
       const coordinator = context.swarmCoordinator as InstanceType<typeof UnifiedSwarmCoordinator>;
 
       // Get swarm status
@@ -307,7 +307,7 @@ async function handleScaleSwarm(
   // Try to use swarmCoordinator if available
   if (context?.swarmCoordinator) {
     try {
-      const { UnifiedSwarmCoordinator } = await import('@claude-flow/swarm');
+      const { UnifiedSwarmCoordinator } = await import('@claude-flow/agents/swarm');
       const coordinator = context.swarmCoordinator as InstanceType<typeof UnifiedSwarmCoordinator>;
 
       // Get current status

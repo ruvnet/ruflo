@@ -449,9 +449,9 @@ const defendCommand: Command = {
     output.writeln(output.dim('─'.repeat(55)));
 
     // Dynamic import of aidefence (allows package to be optional)
-    let createAIDefence: typeof import('@claude-flow/aidefence').createAIDefence;
+    let createAIDefence: typeof import('@claude-flow/core/defence').createAIDefence;
     try {
-      const aidefence = await import('@claude-flow/aidefence');
+      const aidefence = await import('@claude-flow/core/defence');
       createAIDefence = aidefence.createAIDefence;
     } catch {
       output.error('AIDefence package not installed. Run: npm install @claude-flow/aidefence');

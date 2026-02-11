@@ -238,13 +238,13 @@ export class PluginDiscoveryService {
       totalPlugins: plugins.length,
       totalDownloads: plugins.reduce((sum, p) => sum + p.downloads, 0),
       totalAuthors: 1,
-      featured: ['@claude-flow/plugin-agentic-qe', '@claude-flow/plugin-prime-radiant', '@claude-flow/security', '@claude-flow/claims', '@claude-flow/teammate-plugin'],
+      featured: ['@claude-flow/plugin-agentic-qe', '@claude-flow/plugin-prime-radiant', '@claude-flow/core/security', '@claude-flow/core/claims', '@claude-flow/teammate-plugin'],
       trending: ['@claude-flow/plugin-agentic-qe', '@claude-flow/plugin-prime-radiant'],
       newest: ['@claude-flow/plugin-agentic-qe', '@claude-flow/plugin-prime-radiant'],
-      official: ['@claude-flow/plugin-agentic-qe', '@claude-flow/plugin-prime-radiant', '@claude-flow/security', '@claude-flow/claims'],
+      official: ['@claude-flow/plugin-agentic-qe', '@claude-flow/plugin-prime-radiant', '@claude-flow/core/security', '@claude-flow/core/claims'],
       compatibilityMatrix: [
-        { pluginId: '@claude-flow/patterns', pluginVersion: '3.0.0', claudeFlowVersions: ['3.x'], tested: true },
-        { pluginId: '@claude-flow/security', pluginVersion: '3.0.0', claudeFlowVersions: ['3.x'], tested: true },
+        { pluginId: '@claude-flow/agents/patterns', pluginVersion: '3.0.0', claudeFlowVersions: ['3.x'], tested: true },
+        { pluginId: '@claude-flow/core/security', pluginVersion: '3.0.0', claudeFlowVersions: ['3.x'], tested: true },
       ],
     };
 
@@ -288,8 +288,8 @@ export class PluginDiscoveryService {
 
     return [
       {
-        id: '@claude-flow/patterns',
-        name: '@claude-flow/patterns',
+        id: '@claude-flow/agents/patterns',
+        name: '@claude-flow/agents/patterns',
         displayName: 'Neural Patterns',
         description: 'Pattern training and inference with WASM SIMD acceleration, MoE routing, and Flash Attention optimization',
         version: '3.0.0',
@@ -317,8 +317,8 @@ export class PluginDiscoveryService {
         trustLevel: 'official',
       },
       {
-        id: '@claude-flow/security',
-        name: '@claude-flow/security',
+        id: '@claude-flow/core/security',
+        name: '@claude-flow/core/security',
         displayName: 'Security Scanner',
         description: 'Security scanning, CVE detection, and compliance auditing with threat modeling',
         version: '3.0.0',
@@ -353,8 +353,8 @@ export class PluginDiscoveryService {
         },
       },
       {
-        id: '@claude-flow/embeddings',
-        name: '@claude-flow/embeddings',
+        id: '@claude-flow/memory/embeddings',
+        name: '@claude-flow/memory/embeddings',
         displayName: 'Vector Embeddings',
         description: 'Vector embeddings service with sql.js, document chunking, and hyperbolic embeddings',
         version: '3.0.0',
@@ -385,8 +385,8 @@ export class PluginDiscoveryService {
         trustLevel: 'official',
       },
       {
-        id: '@claude-flow/claims',
-        name: '@claude-flow/claims',
+        id: '@claude-flow/core/claims',
+        name: '@claude-flow/core/claims',
         displayName: 'Claims Authorization',
         description: 'Claims-based authorization system for fine-grained access control',
         version: '3.0.0',
@@ -1078,11 +1078,11 @@ export class PluginDiscoveryService {
     const realNpmPackages = [
       '@claude-flow/plugin-agentic-qe',
       '@claude-flow/plugin-prime-radiant',
-      '@claude-flow/claims',
-      '@claude-flow/security',
+      '@claude-flow/core/claims',
+      '@claude-flow/core/security',
       '@claude-flow/plugins',
-      '@claude-flow/embeddings',
-      '@claude-flow/patterns',
+      '@claude-flow/memory/embeddings',
+      '@claude-flow/agents/patterns',
       '@claude-flow/performance',
       '@claude-flow/teammate-plugin',
       // Domain-specific plugins

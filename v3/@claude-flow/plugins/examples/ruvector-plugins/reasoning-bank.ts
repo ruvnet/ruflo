@@ -310,7 +310,7 @@ export class ReasoningBank {
    *
    * @example
    * ```typescript
-   * import { createEmbeddingService } from '@claude-flow/embeddings';
+   * import { createEmbeddingService } from '@claude-flow/memory/embeddings';
    * const embeddings = createEmbeddingService({ provider: 'transformers' });
    * await embeddings.initialize();
    * bank.setEmbeddingProvider(async (text) => {
