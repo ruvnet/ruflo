@@ -11,7 +11,7 @@
  * Features:
  * - Unified SwarmCoordinator consolidating 4 legacy systems
  * - Multiple topology support: mesh, hierarchical, centralized, hybrid
- * - Voting algorithms: raft, byzantine, gossip
+ * - Voting algorithm: raft (leader-based coordination)
  * - Agent pool management with workload balancing
  * - Message bus for inter-agent communication
  *
@@ -186,16 +186,11 @@ export {
 export {
   VotingEngine,
   createVotingEngine,
-  selectOptimalVotingAlgorithm,
   RaftVoting,
-  ByzantineVoting,
-  GossipVoting,
 } from './voting/index.js';
 
 export type {
   RaftConfig,
-  ByzantineConfig,
-  GossipConfig,
 } from './voting/index.js';
 
 // =============================================================================
@@ -323,7 +318,7 @@ export const PERFORMANCE_TARGETS = {
 export const TOPOLOGY_TYPES = ['mesh', 'hierarchical', 'centralized', 'hybrid'] as const;
 
 /** Supported voting algorithms */
-export const VOTING_ALGORITHMS = ['raft', 'byzantine', 'gossip', 'paxos'] as const;
+export const VOTING_ALGORITHMS = ['raft', 'paxos'] as const;
 
 /** Default swarm configuration */
 export const DEFAULT_CONFIG = {

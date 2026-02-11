@@ -5,6 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { randomUUID } from 'crypto';
 import { platform, arch } from 'os';
 import type {
   MCPServerConfig,
@@ -33,6 +34,7 @@ import { TaskManager, createTaskManager } from './task-manager.js';
 import { createTransport, TransportManager, createTransportManager } from './transport/index.js';
 import { RateLimiter, createRateLimiter, type RateLimitConfig } from './rate-limiter.js';
 import { SamplingManager, createSamplingManager, type SamplingConfig, type LLMProvider } from './sampling.js';
+import { withCorrelationId } from './structured-logger.js';
 
 const DEFAULT_CONFIG: Partial<MCPServerConfig> = {
   name: 'Claude-Flow MCP Server V3',
@@ -380,11 +382,14 @@ export class MCPServer extends EventEmitter implements IMCPServer {
 
   private async handleRequest(request: MCPRequest): Promise<MCPResponse> {
     const startTime = performance.now();
+    const correlationId = randomUUID();
+    const reqLogger = withCorrelationId(this.logger, correlationId);
     this.requestStats.total++;
 
-    this.logger.debug('Handling request', {
+    reqLogger.debug('Handling request', {
       id: request.id,
       method: request.method,
+      correlationId,
     });
 
     // Rate limiting check (skip for initialize)
@@ -429,10 +434,11 @@ export class MCPServer extends EventEmitter implements IMCPServer {
       this.requestStats.successful++;
       this.requestStats.totalResponseTime += duration;
 
-      this.logger.debug('Request completed', {
+      reqLogger.debug('Request completed', {
         id: request.id,
         method: request.method,
         duration: `${duration.toFixed(2)}ms`,
+        correlationId,
       });
 
       return response;
@@ -442,9 +448,10 @@ export class MCPServer extends EventEmitter implements IMCPServer {
       this.requestStats.failed++;
       this.requestStats.totalResponseTime += duration;
 
-      this.logger.error('Request failed', {
+      reqLogger.error('Request failed', {
         id: request.id,
         method: request.method,
+        correlationId,
         error,
       });
 

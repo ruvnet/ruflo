@@ -196,7 +196,7 @@ export interface TaskDefinition {
 
 // ===== VOTING TYPES =====
 
-export type VotingAlgorithm = 'raft' | 'byzantine' | 'gossip' | 'paxos';
+export type VotingAlgorithm = 'raft' | 'paxos';
 
 export interface VotingConfig {
   algorithm: VotingAlgorithm;

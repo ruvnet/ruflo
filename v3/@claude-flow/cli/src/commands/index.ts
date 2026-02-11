@@ -35,16 +35,13 @@ const commandLoaders: Record<string, CommandLoader> = {
   hooks: () => import('./hooks.js'),
   workflow: () => import('./workflow.js'),
   'hive-mind': () => import('./hive-mind.js'),
-  process: () => import('./process.js'),
   daemon: () => import('./daemon.js'),
   // V3 Advanced Commands (less frequently used - lazy load)
-  neural: () => import('./patterns.js'),
   security: () => import('./security.js'),
   performance: () => import('./performance.js'),
   providers: () => import('./providers.js'),
   plugins: () => import('./plugins.js'),
   deployment: () => import('./deployment.js'),
-  claims: () => import('./claims.js'),
   embeddings: () => import('./embeddings.js'),
   // P0 Commands
   completions: () => import('./completions.js'),
@@ -119,7 +116,6 @@ import { hooksCommand } from './hooks.js';
 import { daemonCommand } from './daemon.js';
 import { doctorCommand } from './doctor.js';
 import { embeddingsCommand } from './embeddings.js';
-import { neuralCommand } from './patterns.js';
 import { performanceCommand } from './performance.js';
 import { securityCommand } from './security.js';
 import { ruvectorCommand } from './ruvector/index.js';
@@ -135,10 +131,8 @@ import { progressCommand } from './progress.js';
 import { providersCommand } from './providers.js';
 import { pluginsCommand } from './plugins.js';
 import { deploymentCommand } from './deployment.js';
-import { claimsCommand } from './claims.js';
 import { issuesCommand } from './issues.js';
 import updateCommand from './update.js';
-import { processCommand } from './process.js';
 import { guidanceCommand } from './guidance.js';
 
 // Pre-populate cache with core commands
@@ -155,7 +149,6 @@ loadedCommands.set('hooks', hooksCommand);
 loadedCommands.set('daemon', daemonCommand);
 loadedCommands.set('doctor', doctorCommand);
 loadedCommands.set('embeddings', embeddingsCommand);
-loadedCommands.set('patterns', neuralCommand);
 loadedCommands.set('performance', performanceCommand);
 loadedCommands.set('security', securityCommand);
 loadedCommands.set('ruvector', ruvectorCommand);
@@ -180,7 +173,6 @@ export { hooksCommand } from './hooks.js';
 export { daemonCommand } from './daemon.js';
 export { doctorCommand } from './doctor.js';
 export { embeddingsCommand } from './embeddings.js';
-export { neuralCommand } from './patterns.js';
 export { performanceCommand } from './performance.js';
 export { securityCommand } from './security.js';
 export { ruvectorCommand } from './ruvector/index.js';
@@ -192,16 +184,13 @@ export async function getConfigCommand() { return loadCommand('config'); }
 export async function getMigrateCommand() { return loadCommand('migrate'); }
 export async function getWorkflowCommand() { return loadCommand('workflow'); }
 export async function getHiveMindCommand() { return loadCommand('hive-mind'); }
-export async function getProcessCommand() { return loadCommand('process'); }
 export async function getTaskCommand() { return loadCommand('task'); }
 export async function getSessionCommand() { return loadCommand('session'); }
-export async function getNeuralCommand() { return loadCommand('patterns'); }
 export async function getSecurityCommand() { return loadCommand('security'); }
 export async function getPerformanceCommand() { return loadCommand('performance'); }
 export async function getProvidersCommand() { return loadCommand('providers'); }
 export async function getPluginsCommand() { return loadCommand('plugins'); }
 export async function getDeploymentCommand() { return loadCommand('deployment'); }
-export async function getClaimsCommand() { return loadCommand('claims'); }
 export async function getEmbeddingsCommand() { return loadCommand('embeddings'); }
 export async function getCompletionsCommand() { return loadCommand('completions'); }
 export async function getAnalyzeCommand() { return loadCommand('analyze'); }
@@ -230,7 +219,6 @@ export const commands: Command[] = [
   daemonCommand,
   doctorCommand,
   embeddingsCommand,
-  neuralCommand,
   performanceCommand,
   securityCommand,
   ruvectorCommand,
@@ -255,7 +243,6 @@ export const commandsByCategory = {
     hooksCommand,
   ],
   advanced: [
-    neuralCommand,
     securityCommand,
     performanceCommand,
     embeddingsCommand,
@@ -280,10 +267,8 @@ export const commandsByCategory = {
     providersCommand,
     pluginsCommand,
     deploymentCommand,
-    claimsCommand,
     issuesCommand,
     updateCommand,
-    processCommand,
   ],
 };
 
@@ -390,3 +375,24 @@ export async function setupAllCommands(cli: { command: (cmd: Command) => void })
     cli.command(cmd);
   }
 }
+
+// =============================================================================
+// Deprecated Command Aliases (Phase 4 consolidation)
+// 'process' -> 'daemon', 'claims' -> 'config', 'neural' -> 'memory'
+// =============================================================================
+
+const deprecatedAliases: Record<string, string> = {
+  'process': 'daemon',
+  'claims': 'config',
+  'neural': 'memory',
+};
+
+// Register deprecated aliases for backwards compatibility
+for (const [oldName, newName] of Object.entries(deprecatedAliases)) {
+  const target = loadedCommands.get(newName);
+  if (target) {
+    loadedCommands.set(oldName, target);
+  }
+}
+
+export { deprecatedAliases };

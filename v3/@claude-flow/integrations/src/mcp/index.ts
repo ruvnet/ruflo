@@ -141,6 +141,14 @@ export type { PromptHandler, PromptDefinition, PromptRegistryOptions } from './p
 export { TaskManager, createTaskManager } from './task-manager.js';
 export type { TaskExecutor, TaskManagerOptions } from './task-manager.js';
 
+// Structured Logger
+export {
+  StructuredLogger,
+  createStructuredLogger,
+  withCorrelationId,
+} from './structured-logger.js';
+export type { StructuredLoggerConfig, StructuredLogEntry } from './structured-logger.js';
+
 // Schema Validator
 export {
   validateSchema,
@@ -203,6 +211,7 @@ export type {
 
 // Import types for quickStart
 import type { MCPServerConfig, ILogger } from './types.js';
+import { createStructuredLogger } from './structured-logger.js';
 
 /**
  * Quick start function to create and configure an MCP server
@@ -230,12 +239,10 @@ export async function quickStart(
   config: Partial<MCPServerConfig>,
   logger?: ILogger
 ): Promise<MCPServer> {
-  const defaultLogger: ILogger = logger || {
-    debug: (msg, data) => console.debug(`[DEBUG] ${msg}`, data || ''),
-    info: (msg, data) => console.info(`[INFO] ${msg}`, data || ''),
-    warn: (msg, data) => console.warn(`[WARN] ${msg}`, data || ''),
-    error: (msg, data) => console.error(`[ERROR] ${msg}`, data || ''),
-  };
+  const defaultLogger: ILogger = logger || createStructuredLogger({
+    level: config.logLevel ?? 'info',
+    serviceName: config.name ?? 'claude-flow-mcp',
+  });
 
   const server = createMCPServer(config, defaultLogger);
 

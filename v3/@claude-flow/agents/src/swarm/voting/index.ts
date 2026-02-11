@@ -1,7 +1,8 @@
 /**
  * V3 Voting Engine Factory
- * Unified interface for agent voting algorithms (Raft, Byzantine, Gossip)
- * These are in-process agent agreement mechanisms, not distributed consensus.
+ * Unified interface for agent voting using Raft (leader-based coordination).
+ * Byzantine and Gossip implementations have been removed per roadmap:
+ * "One coordination protocol (leader-based)."
  */
 
 import { EventEmitter } from 'events';
@@ -15,13 +16,11 @@ import {
   SWARM_CONSTANTS,
 } from '../types.js';
 import { RaftVoting, createRaftVoting, RaftConfig } from './raft.js';
-import { ByzantineVoting, createByzantineVoting, ByzantineConfig } from './byzantine.js';
-import { GossipVoting, createGossipVoting, GossipConfig } from './gossip.js';
 
-export { RaftVoting, ByzantineVoting, GossipVoting };
-export type { RaftConfig, ByzantineConfig, GossipConfig };
+export { RaftVoting };
+export type { RaftConfig };
 
-type VotingImplementation = RaftVoting | ByzantineVoting | GossipVoting;
+type VotingImplementation = RaftVoting;
 
 export class VotingEngine extends EventEmitter implements IVotingEngine {
   private config: VotingConfig;
@@ -57,24 +56,6 @@ export class VotingEngine extends EventEmitter implements IVotingEngine {
         });
         break;
 
-      case 'byzantine':
-        this.implementation = createByzantineVoting(this.nodeId, {
-          threshold: this.config.threshold,
-          timeoutMs: this.config.timeoutMs,
-          maxRounds: this.config.maxRounds,
-          requireQuorum: this.config.requireQuorum,
-        });
-        break;
-
-      case 'gossip':
-        this.implementation = createGossipVoting(this.nodeId, {
-          threshold: this.config.threshold,
-          timeoutMs: this.config.timeoutMs,
-          maxRounds: this.config.maxRounds,
-          requireQuorum: this.config.requireQuorum,
-        });
-        break;
-
       case 'paxos':
         // Fall back to Raft for Paxos (similar guarantees)
         this.implementation = createRaftVoting(this.nodeId, {
@@ -86,7 +67,17 @@ export class VotingEngine extends EventEmitter implements IVotingEngine {
         break;
 
       default:
-        throw new Error(`Unknown voting algorithm: ${this.config.algorithm}`);
+        // Deprecated algorithms fall back to Raft with a warning
+        console.warn(
+          `[VotingEngine] Algorithm "${this.config.algorithm}" is deprecated. Falling back to Raft.`
+        );
+        this.implementation = createRaftVoting(this.nodeId, {
+          threshold: this.config.threshold,
+          timeoutMs: this.config.timeoutMs,
+          maxRounds: this.config.maxRounds,
+          requireQuorum: this.config.requireQuorum,
+        });
+        break;
     }
 
     await this.implementation.initialize();
@@ -113,18 +104,12 @@ export class VotingEngine extends EventEmitter implements IVotingEngine {
     this.emit('shutdown');
   }
 
-  addNode(nodeId: string, options?: { isPrimary?: boolean }): void {
+  addNode(nodeId: string, _options?: { isPrimary?: boolean }): void {
     if (!this.implementation) {
       throw new Error('Voting engine not initialized');
     }
 
-    if (this.implementation instanceof RaftVoting) {
-      this.implementation.addPeer(nodeId);
-    } else if (this.implementation instanceof ByzantineVoting) {
-      this.implementation.addNode(nodeId, options?.isPrimary);
-    } else if (this.implementation instanceof GossipVoting) {
-      this.implementation.addNode(nodeId);
-    }
+    this.implementation.addPeer(nodeId);
   }
 
   removeNode(nodeId: string): void {
@@ -132,13 +117,7 @@ export class VotingEngine extends EventEmitter implements IVotingEngine {
       return;
     }
 
-    if (this.implementation instanceof RaftVoting) {
-      this.implementation.removePeer(nodeId);
-    } else if (this.implementation instanceof ByzantineVoting) {
-      this.implementation.removeNode(nodeId);
-    } else if (this.implementation instanceof GossipVoting) {
-      this.implementation.removeNode(nodeId);
-    }
+    this.implementation.removePeer(nodeId);
   }
 
   async propose(value: unknown, proposerId?: string): Promise<VotingProposal> {
@@ -177,19 +156,16 @@ export class VotingEngine extends EventEmitter implements IVotingEngine {
     );
   }
 
-  // Algorithm-specific queries
+  // Leader queries — Raft only
   isLeader(): boolean {
-    if (this.implementation instanceof RaftVoting) {
+    if (this.implementation) {
       return this.implementation.isLeader();
     }
-    if (this.implementation instanceof ByzantineVoting) {
-      return this.implementation.isPrimary();
-    }
-    return false; // Gossip has no leader
+    return false;
   }
 
   getLeaderId(): string | undefined {
-    if (this.implementation instanceof RaftVoting) {
+    if (this.implementation) {
       return this.implementation.getLeaderId();
     }
     return undefined;
@@ -232,37 +208,4 @@ export function createVotingEngine(
   config?: Partial<VotingConfig>
 ): VotingEngine {
   return new VotingEngine(nodeId, { ...config, algorithm });
-}
-
-// Helper to select optimal algorithm based on requirements
-export function selectOptimalVotingAlgorithm(requirements: {
-  faultTolerance: 'crash' | 'byzantine';
-  consistency: 'strong' | 'eventual';
-  networkScale: 'small' | 'medium' | 'large';
-  latencyPriority: 'low' | 'medium' | 'high';
-}): VotingAlgorithm {
-  const { faultTolerance, consistency, networkScale, latencyPriority } = requirements;
-
-  // Byzantine fault tolerance required
-  if (faultTolerance === 'byzantine') {
-    return 'byzantine';
-  }
-
-  // Eventual consistency acceptable and large scale
-  if (consistency === 'eventual' && networkScale === 'large') {
-    return 'gossip';
-  }
-
-  // Low latency priority with medium scale
-  if (latencyPriority === 'high' && networkScale !== 'large') {
-    return 'raft';
-  }
-
-  // Strong consistency with small/medium scale
-  if (consistency === 'strong') {
-    return 'raft';
-  }
-
-  // Default to Raft
-  return 'raft';
 }
