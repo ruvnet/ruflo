@@ -17,6 +17,9 @@ const AGENT_FILE = 'store.json';
 // Model types matching Claude Agent SDK
 type ClaudeModel = 'haiku' | 'sonnet' | 'opus' | 'inherit';
 
+// Model tier for ClawRouter-inspired routing
+type ModelTier = 'fast' | 'balanced' | 'capable';
+
 interface AgentRecord {
   agentId: string;
   agentType: string;
@@ -28,11 +31,30 @@ interface AgentRecord {
   domain?: string;
   model?: ClaudeModel;  // Model assigned to this agent
   modelRoutedBy?: 'explicit' | 'router' | 'agent-booster' | 'default';  // How model was determined (ADR-026)
+  modelTier?: ModelTier;  // Tier classification for cost tracking
+  costEstimate?: AgentCostEstimate;  // Estimated cost for this agent's work
+}
+
+interface AgentCostEstimate {
+  tier: ModelTier;
+  costPerRequestUsd: number;
+  totalRequests: number;
+  totalCostUsd: number;
+  savedVsOpusUsd: number;
 }
 
 interface AgentStore {
   agents: Record<string, AgentRecord>;
   version: string;
+  costTracking?: SwarmCostTracking;
+}
+
+interface SwarmCostTracking {
+  sessionStart: string;
+  totalCostUsd: number;
+  totalSavedVsAllOpusUsd: number;
+  byModel: Record<string, { requests: number; costUsd: number }>;
+  byAgentType: Record<string, { requests: number; costUsd: number; model: string }>;
 }
 
 function getAgentDir(): string {
@@ -68,23 +90,62 @@ function saveAgentStore(store: AgentStore): void {
   writeFileSync(getAgentPath(), JSON.stringify(store, null, 2), 'utf-8');
 }
 
-// Default model mappings for agent types (can be overridden)
+// Estimated cost per request by model (USD, approximate for typical agent tasks)
+const MODEL_COST_PER_REQUEST: Record<ClaudeModel, number> = {
+  haiku: 0.0003,    // ~$0.25/MTok input, ~$1.25/MTok output
+  sonnet: 0.003,    // ~$3/MTok input, ~$15/MTok output
+  opus: 0.015,      // ~$15/MTok input, ~$75/MTok output
+  inherit: 0.003,   // Default to sonnet estimate
+};
+
+// Default model mappings for agent types (ClawRouter-inspired tier routing)
+// Tier mapping: haiku=fast/cheap, sonnet=balanced, opus=capable/expensive
 const AGENT_TYPE_MODEL_DEFAULTS: Record<string, ClaudeModel> = {
-  // Complex agents → opus
+  // --- Capable tier (opus) — deep reasoning, architecture, security ---
   'architect': 'opus',
   'security-architect': 'opus',
   'system-architect': 'opus',
   'core-architect': 'opus',
-  // Medium complexity → sonnet
+  'integration-architect': 'opus',
+  'security': 'opus',
+  'planner': 'opus',
+  'reviewer': 'opus',           // Upgraded: reviews need deep reasoning
+
+  // --- Balanced tier (sonnet) — code gen, testing, analysis ---
   'coder': 'sonnet',
-  'reviewer': 'sonnet',
-  'researcher': 'sonnet',
   'tester': 'sonnet',
   'analyst': 'sonnet',
-  // Simple/fast agents → haiku
+  'researcher': 'sonnet',
+  'optimizer': 'sonnet',
+  'performance': 'sonnet',
+  'devops': 'sonnet',
+  'specialist': 'sonnet',
+  'worker': 'sonnet',
+
+  // --- Fast tier (haiku) — coordination, monitoring, simple tasks ---
+  'coordinator': 'haiku',
+  'queen': 'haiku',             // Dispatching, not reasoning
+  'monitor': 'haiku',
   'formatter': 'haiku',
   'linter': 'haiku',
   'documenter': 'haiku',
+};
+
+// Model tier classification
+const MODEL_TO_TIER: Record<ClaudeModel, ModelTier> = {
+  haiku: 'fast',
+  sonnet: 'balanced',
+  opus: 'capable',
+  inherit: 'balanced',
+};
+
+// Fallback chains: if a model fails or hits context limits, escalate
+// Inspired by ClawRouter's fallback chain pattern
+const MODEL_FALLBACK_CHAINS: Record<ClaudeModel, ClaudeModel[]> = {
+  haiku: ['haiku', 'sonnet', 'opus'],   // Fast → balanced → capable
+  sonnet: ['sonnet', 'opus'],            // Balanced → capable
+  opus: ['opus'],                         // Already at max capability
+  inherit: ['sonnet', 'opus'],           // Default chain
 };
 
 // Lazy-loaded model router
@@ -104,11 +165,13 @@ async function getModelRouter() {
 }
 
 /**
- * Determine model for agent based on (ADR-026 3-tier routing):
+ * Determine model for agent based on (ADR-026 3-tier routing + ClawRouter-inspired enhancements):
  * 1. Explicit model in config
  * 2. Enhanced task-based routing with Agent Booster AST (if task provided)
- * 3. Agent type defaults
- * 4. Fallback to sonnet
+ * 3. Agent type defaults (expanded with full type coverage)
+ * 4. Fallback to sonnet (balanced)
+ *
+ * Returns model selection with tier classification, cost estimate, and fallback chain.
  */
 async function determineAgentModel(
   agentType: string,
@@ -120,58 +183,91 @@ async function determineAgentModel(
   canSkipLLM?: boolean;
   agentBoosterIntent?: string;
   tier?: 1 | 2 | 3;
+  modelTier: ModelTier;
+  fallbackChain: ClaudeModel[];
+  costEstimate: AgentCostEstimate;
 }> {
+  let model: ClaudeModel;
+  let routedBy: 'explicit' | 'router' | 'agent-booster' | 'default';
+  let canSkipLLM: boolean | undefined;
+  let agentBoosterIntent: string | undefined;
+  let routingTier: 1 | 2 | 3 | undefined;
+
   // 1. Explicit model in config
   if (config.model && ['haiku', 'sonnet', 'opus', 'inherit'].includes(config.model as string)) {
-    return { model: config.model as ClaudeModel, routedBy: 'explicit' };
+    model = config.model as ClaudeModel;
+    routedBy = 'explicit';
   }
-
   // 2. Enhanced task-based routing with Agent Booster AST
-  if (task) {
+  else if (task) {
+    let routed = false;
     try {
-      // Try enhanced router first (includes Agent Booster detection)
       const { getEnhancedModelRouter } = await import('../ruvector/enhanced-model-router.js');
       const enhancedRouter = getEnhancedModelRouter();
       const routeResult = await enhancedRouter.route(task, { filePath: config.filePath as string });
 
       if (routeResult.tier === 1 && routeResult.canSkipLLM) {
-        // Agent Booster can handle this task
-        return {
-          model: 'haiku', // Use haiku as fallback if AB fails
-          routedBy: 'agent-booster',
-          canSkipLLM: true,
-          agentBoosterIntent: routeResult.agentBoosterIntent?.type,
-          tier: 1,
-        };
+        model = 'haiku';
+        routedBy = 'agent-booster';
+        canSkipLLM = true;
+        agentBoosterIntent = routeResult.agentBoosterIntent?.type;
+        routingTier = 1;
+        routed = true;
+      } else {
+        model = routeResult.model!;
+        routedBy = 'router';
+        routingTier = routeResult.tier;
+        routed = true;
       }
-
-      return {
-        model: routeResult.model!,
-        routedBy: 'router',
-        tier: routeResult.tier,
-      };
     } catch {
       // Enhanced router not available, try basic router
       const router = await getModelRouter();
       if (router) {
         try {
           const result = await router.route(task);
-          return { model: result.model, routedBy: 'router' };
+          model = result.model;
+          routedBy = 'router';
+          routed = true;
         } catch {
-          // Fall through to defaults on router error
+          // Fall through to defaults
         }
       }
     }
+    if (!routed) {
+      model = AGENT_TYPE_MODEL_DEFAULTS[agentType] || 'sonnet';
+      routedBy = 'default';
+    }
   }
-
   // 3. Agent type defaults
-  const defaultModel = AGENT_TYPE_MODEL_DEFAULTS[agentType];
-  if (defaultModel) {
-    return { model: defaultModel, routedBy: 'default' };
+  else {
+    model = AGENT_TYPE_MODEL_DEFAULTS[agentType] || 'sonnet';
+    routedBy = 'default';
   }
 
-  // 4. Fallback to sonnet (balanced)
-  return { model: 'sonnet', routedBy: 'default' };
+  // Compute tier, fallback chain, and cost estimate
+  const modelTier = MODEL_TO_TIER[model!] || 'balanced';
+  const fallbackChain = MODEL_FALLBACK_CHAINS[model!] || ['sonnet', 'opus'];
+  const costPerRequest = MODEL_COST_PER_REQUEST[model!] || MODEL_COST_PER_REQUEST.sonnet;
+  const opusCostPerRequest = MODEL_COST_PER_REQUEST.opus;
+
+  const costEstimate: AgentCostEstimate = {
+    tier: modelTier,
+    costPerRequestUsd: costPerRequest,
+    totalRequests: 0,
+    totalCostUsd: 0,
+    savedVsOpusUsd: opusCostPerRequest - costPerRequest,
+  };
+
+  return {
+    model: model!,
+    routedBy,
+    canSkipLLM,
+    agentBoosterIntent,
+    tier: routingTier,
+    modelTier,
+    fallbackChain,
+    costEstimate,
+  };
 }
 
 export const agentTools: MCPTool[] = [
@@ -227,9 +323,32 @@ export const agentTools: MCPTool[] = [
         domain: input.domain as string,
         model: routingResult.model,
         modelRoutedBy: routingResult.routedBy,
+        modelTier: routingResult.modelTier,
+        costEstimate: routingResult.costEstimate,
       };
 
       store.agents[agentId] = agent;
+
+      // Initialize cost tracking if not present
+      if (!store.costTracking) {
+        store.costTracking = {
+          sessionStart: new Date().toISOString(),
+          totalCostUsd: 0,
+          totalSavedVsAllOpusUsd: 0,
+          byModel: {},
+          byAgentType: {},
+        };
+      }
+
+      // Track model usage in cost tracking
+      const modelKey = routingResult.model;
+      if (!store.costTracking.byModel[modelKey]) {
+        store.costTracking.byModel[modelKey] = { requests: 0, costUsd: 0 };
+      }
+      if (!store.costTracking.byAgentType[agentType]) {
+        store.costTracking.byAgentType[agentType] = { requests: 0, costUsd: 0, model: modelKey };
+      }
+
       saveAgentStore(store);
 
       // Include Agent Booster routing info if applicable
@@ -238,7 +357,11 @@ export const agentTools: MCPTool[] = [
         agentId,
         agentType: agent.agentType,
         model: agent.model,
+        modelTier: routingResult.modelTier,
         modelRoutedBy: routingResult.routedBy,
+        fallbackChain: routingResult.fallbackChain,
+        costPerRequest: `$${routingResult.costEstimate.costPerRequestUsd.toFixed(4)}`,
+        savingsVsOpus: `$${routingResult.costEstimate.savedVsOpusUsd.toFixed(4)}/req`,
         status: 'spawned',
         createdAt: agent.createdAt,
       };
@@ -612,6 +735,160 @@ export const agentTools: MCPTool[] = [
         success: false,
         agentId,
         error: 'Agent not found',
+      };
+    },
+  },
+  {
+    name: 'swarm_cost_stats',
+    description: 'Get swarm cost tracking stats — shows model distribution, per-agent costs, and savings vs all-opus baseline (ClawRouter-inspired)',
+    category: 'agent',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        reset: { type: 'boolean', description: 'Reset cost tracking stats' },
+      },
+    },
+    handler: async (input) => {
+      const store = loadAgentStore();
+
+      if (input.reset) {
+        store.costTracking = {
+          sessionStart: new Date().toISOString(),
+          totalCostUsd: 0,
+          totalSavedVsAllOpusUsd: 0,
+          byModel: {},
+          byAgentType: {},
+        };
+        saveAgentStore(store);
+        return { success: true, message: 'Cost tracking reset' };
+      }
+
+      const agents = Object.values(store.agents);
+      const activeAgents = agents.filter(a => a.status !== 'terminated');
+
+      // Compute live cost stats from agent records
+      const modelDistribution: Record<string, { count: number; costPerReq: number; tier: string }> = {};
+      const agentTypeCosts: Record<string, { count: number; model: string; tier: string; costPerReq: number }> = {};
+      let totalEstimatedCost = 0;
+      let totalIfAllOpus = 0;
+
+      for (const agent of activeAgents) {
+        const model = agent.model || 'sonnet';
+        const tier = agent.modelTier || 'balanced';
+        const costPerReq = MODEL_COST_PER_REQUEST[model] || MODEL_COST_PER_REQUEST.sonnet;
+        const taskCount = agent.taskCount || 0;
+
+        // Model distribution
+        if (!modelDistribution[model]) {
+          modelDistribution[model] = { count: 0, costPerReq, tier };
+        }
+        modelDistribution[model].count++;
+
+        // Agent type costs
+        if (!agentTypeCosts[agent.agentType]) {
+          agentTypeCosts[agent.agentType] = { count: 0, model, tier, costPerReq };
+        }
+        agentTypeCosts[agent.agentType].count++;
+
+        // Cost estimation based on task count
+        totalEstimatedCost += costPerReq * taskCount;
+        totalIfAllOpus += MODEL_COST_PER_REQUEST.opus * taskCount;
+      }
+
+      const totalSaved = totalIfAllOpus - totalEstimatedCost;
+      const savingsPercent = totalIfAllOpus > 0
+        ? ((totalSaved / totalIfAllOpus) * 100).toFixed(1)
+        : '0.0';
+
+      // Compute blended cost per request
+      const totalAgents = activeAgents.length;
+      const blendedCost = totalAgents > 0
+        ? activeAgents.reduce((sum, a) => sum + (MODEL_COST_PER_REQUEST[a.model || 'sonnet'] || 0.003), 0) / totalAgents
+        : 0;
+
+      return {
+        sessionStart: store.costTracking?.sessionStart || 'unknown',
+        activeAgents: totalAgents,
+        modelDistribution,
+        agentTypeCosts,
+        costSummary: {
+          blendedCostPerRequest: `$${blendedCost.toFixed(4)}`,
+          opusCostPerRequest: `$${MODEL_COST_PER_REQUEST.opus.toFixed(4)}`,
+          estimatedTotalCost: `$${totalEstimatedCost.toFixed(4)}`,
+          ifAllOpusCost: `$${totalIfAllOpus.toFixed(4)}`,
+          totalSaved: `$${totalSaved.toFixed(4)}`,
+          savingsPercent: `${savingsPercent}%`,
+        },
+        tierBreakdown: {
+          fast: activeAgents.filter(a => a.modelTier === 'fast').length,
+          balanced: activeAgents.filter(a => a.modelTier === 'balanced').length,
+          capable: activeAgents.filter(a => a.modelTier === 'capable').length,
+        },
+        fallbackChains: Object.fromEntries(
+          Object.entries(MODEL_FALLBACK_CHAINS).filter(([k]) => k !== 'inherit')
+        ),
+      };
+    },
+  },
+  {
+    name: 'agent_escalate',
+    description: 'Escalate an agent to the next model in its fallback chain (e.g., haiku→sonnet→opus)',
+    category: 'agent',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        agentId: { type: 'string', description: 'ID of agent to escalate' },
+        reason: { type: 'string', description: 'Reason for escalation (e.g., "context_limit", "task_failed", "quality")' },
+      },
+      required: ['agentId'],
+    },
+    handler: async (input) => {
+      const store = loadAgentStore();
+      const agentId = input.agentId as string;
+      const agent = store.agents[agentId];
+
+      if (!agent) {
+        return { success: false, agentId, error: 'Agent not found' };
+      }
+
+      const currentModel = agent.model || 'sonnet';
+      const chain = MODEL_FALLBACK_CHAINS[currentModel] || ['sonnet', 'opus'];
+      const currentIndex = chain.indexOf(currentModel);
+      const nextIndex = currentIndex + 1;
+
+      if (nextIndex >= chain.length) {
+        return {
+          success: false,
+          agentId,
+          currentModel,
+          error: 'Already at maximum capability (opus) — no further escalation possible',
+        };
+      }
+
+      const newModel = chain[nextIndex];
+      const previousModel = currentModel;
+      agent.model = newModel;
+      agent.modelTier = MODEL_TO_TIER[newModel];
+
+      // Update cost estimate
+      if (agent.costEstimate) {
+        agent.costEstimate.tier = MODEL_TO_TIER[newModel];
+        agent.costEstimate.costPerRequestUsd = MODEL_COST_PER_REQUEST[newModel];
+        agent.costEstimate.savedVsOpusUsd = MODEL_COST_PER_REQUEST.opus - MODEL_COST_PER_REQUEST[newModel];
+      }
+
+      agent.modelRoutedBy = 'router';
+      saveAgentStore(store);
+
+      return {
+        success: true,
+        agentId,
+        previousModel,
+        newModel,
+        newTier: MODEL_TO_TIER[newModel],
+        reason: input.reason || 'manual escalation',
+        remainingChain: chain.slice(nextIndex + 1),
+        newCostPerRequest: `$${MODEL_COST_PER_REQUEST[newModel].toFixed(4)}`,
       };
     },
   },

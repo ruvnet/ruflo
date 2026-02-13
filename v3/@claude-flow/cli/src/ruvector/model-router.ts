@@ -521,6 +521,68 @@ export class ModelRouter {
   }
 
   /**
+   * Get fallback chain for a model (ClawRouter-inspired escalation pattern).
+   * When a model fails or hits context limits, try the next model in the chain.
+   */
+  getFallbackChain(model: ClaudeModel): ClaudeModel[] {
+    const chains: Record<ClaudeModel, ClaudeModel[]> = {
+      haiku: ['haiku', 'sonnet', 'opus'],
+      sonnet: ['sonnet', 'opus'],
+      opus: ['opus'],
+      inherit: ['sonnet', 'opus'],
+    };
+    return chains[model] || chains.sonnet;
+  }
+
+  /**
+   * Escalate to the next model in the fallback chain.
+   * Returns the next model or null if already at max capability.
+   */
+  escalate(currentModel: ClaudeModel): ClaudeModel | null {
+    const chain = this.getFallbackChain(currentModel);
+    const currentIndex = chain.indexOf(currentModel);
+    if (currentIndex < 0 || currentIndex >= chain.length - 1) {
+      return null;
+    }
+    const nextModel = chain[currentIndex + 1];
+
+    // Record the escalation for learning
+    this.recordOutcome('escalation', currentModel, 'escalated');
+
+    return nextModel;
+  }
+
+  /**
+   * Route with automatic fallback: try the initial model, and if it fails,
+   * escalate through the chain until one succeeds or we run out of options.
+   */
+  async routeWithFallback(
+    task: string,
+    tryModel: (model: ClaudeModel) => Promise<{ success: boolean; error?: string }>
+  ): Promise<{ model: ClaudeModel; attempts: number; escalated: boolean }> {
+    const initialResult = await this.route(task);
+    const chain = this.getFallbackChain(initialResult.model);
+    let attempts = 0;
+
+    for (const model of chain) {
+      attempts++;
+      const result = await tryModel(model);
+      if (result.success) {
+        if (model !== initialResult.model) {
+          this.recordOutcome(task, initialResult.model, 'escalated');
+        } else {
+          this.recordOutcome(task, model, 'success');
+        }
+        return { model, attempts, escalated: model !== initialResult.model };
+      }
+      this.recordOutcome(task, model, 'failure');
+    }
+
+    // All models in chain failed — return the last one tried
+    return { model: chain[chain.length - 1], attempts, escalated: true };
+  }
+
+  /**
    * Get router statistics
    */
   getStats(): {
@@ -684,4 +746,31 @@ export function recordModelOutcome(
 ): void {
   const router = getModelRouter();
   router.recordOutcome(task, model, outcome);
+}
+
+/**
+ * Get fallback chain for a model
+ */
+export function getModelFallbackChain(model: ClaudeModel): ClaudeModel[] {
+  const router = getModelRouter();
+  return router.getFallbackChain(model);
+}
+
+/**
+ * Escalate to the next model in the fallback chain
+ */
+export function escalateModel(currentModel: ClaudeModel): ClaudeModel | null {
+  const router = getModelRouter();
+  return router.escalate(currentModel);
+}
+
+/**
+ * Route with automatic fallback escalation
+ */
+export async function routeWithFallback(
+  task: string,
+  tryModel: (model: ClaudeModel) => Promise<{ success: boolean; error?: string }>
+): Promise<{ model: ClaudeModel; attempts: number; escalated: boolean }> {
+  const router = getModelRouter();
+  return router.routeWithFallback(task, tryModel);
 }
