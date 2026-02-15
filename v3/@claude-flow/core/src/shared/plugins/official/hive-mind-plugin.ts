@@ -29,6 +29,7 @@ export interface CollectiveDecision {
   question: string;
   votes: Map<string, { agentId: string; vote: string; confidence: number }>;
   consensus?: string;
+  voting?: string;
   consensusConfidence: number;
   timestamp: Date;
 }

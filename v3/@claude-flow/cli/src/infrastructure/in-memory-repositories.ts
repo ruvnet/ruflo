@@ -6,18 +6,18 @@
  * @module v3/cli/infrastructure
  */
 
-import { Agent, AgentStatus, AgentRole } from '../../../swarm/src/domain/entities/agent.js';
-import { Task, TaskStatus, TaskPriority } from '../../../swarm/src/domain/entities/task.js';
+import { Agent, AgentStatus, AgentRole } from '../../../agents/src/swarm/domain/entities/agent.js';
+import { Task, TaskStatus, TaskPriority } from '../../../agents/src/swarm/domain/entities/task.js';
 import {
   IAgentRepository,
   AgentQueryOptions,
   AgentStatistics,
-} from '../../../swarm/src/domain/repositories/agent-repository.interface.js';
+} from '../../../agents/src/swarm/domain/repositories/agent-repository.interface.js';
 import {
   ITaskRepository,
   TaskQueryOptions,
   TaskStatistics,
-} from '../../../swarm/src/domain/repositories/task-repository.interface.js';
+} from '../../../agents/src/swarm/domain/repositories/task-repository.interface.js';
 
 /**
  * In-Memory Agent Repository

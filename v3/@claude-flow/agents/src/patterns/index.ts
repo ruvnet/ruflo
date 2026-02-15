@@ -90,7 +90,7 @@ export {
 export type {
   Context,
   AdaptedBehavior,
-  PatternStats,
+  PatternStats as IntegrationPatternStats,
   JsLearnedPattern,
   JsSonaConfig,
 } from './pattern-integration.js';

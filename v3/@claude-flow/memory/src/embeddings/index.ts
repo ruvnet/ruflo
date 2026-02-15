@@ -97,7 +97,7 @@ export {
   type CoherenceResult,
   type SubstrateHealth,
   type NeuralSubstrateConfig,
-} from './patterns-integration.js';
+} from './pattern-integration.js';
 
 export type {
   EmbeddingProvider,

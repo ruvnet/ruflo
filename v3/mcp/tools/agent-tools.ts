@@ -13,7 +13,7 @@
 import { z } from 'zod';
 import { randomBytes } from 'crypto';
 import { MCPTool, ToolContext } from '../types.js';
-import { sanitizeErrorForLogging } from '../../@claude-flow/shared/src/utils/secure-logger.js';
+import { sanitizeErrorForLogging } from '../../@claude-flow/core/src/shared/utils/secure-logger.js';
 
 // Secure ID generation helper
 function generateSecureAgentId(): string {

@@ -24,76 +24,45 @@
     "incremental": true,
     "baseUrl": "./",
     "paths": {
-      "@claude-flow/security": [
-        "./@claude-flow/security/src"
-      ],
-      "@claude-flow/memory": [
-        "./@claude-flow/memory/src"
-      ],
-      "@claude-flow/integration": [
-        "./@claude-flow/integration/src"
-      ],
-      "@claude-flow/swarm": [
-        "./@claude-flow/swarm/src"
-      ],
-      "@claude-flow/performance": [
-        "./@claude-flow/performance/src"
+      "@claude-flow/core": [
+        "./@claude-flow/core/src"
       ],
       "@claude-flow/cli": [
         "./@claude-flow/cli/src"
       ],
-      "@claude-flow/neural": [
-        "./@claude-flow/neural/src"
+      "@claude-flow/agents": [
+        "./@claude-flow/agents/src"
       ],
-      "@claude-flow/testing": [
-        "./@claude-flow/testing/src"
+      "@claude-flow/memory": [
+        "./@claude-flow/memory/src"
       ],
-      "@claude-flow/deployment": [
-        "./@claude-flow/deployment/src"
+      "@claude-flow/integrations": [
+        "./@claude-flow/integrations/src"
       ],
-      "@claude-flow/shared": [
-        "./@claude-flow/shared/src"
-      ],
-      "@claude-flow/hooks": [
-        "./@claude-flow/hooks/src"
+      "@claude-flow/plugins": [
+        "./@claude-flow/plugins/src"
       ]
     },
-    "emitDeclarationOnly": false,
-    "tsBuildInfoFile": "/workspaces/claude-flow/v3/node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.27/node_modules/vitest/dist/vendor/tsconfig.tmp.tsbuildinfo"
+    "emitDeclarationOnly": false
   },
   "references": [
     {
-      "path": "./@claude-flow/shared"
-    },
-    {
-      "path": "./@claude-flow/security"
-    },
-    {
-      "path": "./@claude-flow/memory"
-    },
-    {
-      "path": "./@claude-flow/integration"
-    },
-    {
-      "path": "./@claude-flow/swarm"
-    },
-    {
-      "path": "./@claude-flow/performance"
+      "path": "./@claude-flow/core"
     },
     {
       "path": "./@claude-flow/cli"
     },
     {
-      "path": "./@claude-flow/neural"
+      "path": "./@claude-flow/agents"
     },
     {
-      "path": "./@claude-flow/testing"
+      "path": "./@claude-flow/memory"
     },
     {
-      "path": "./@claude-flow/deployment"
+      "path": "./@claude-flow/integrations"
     },
     {
-      "path": "./@claude-flow/hooks"
+      "path": "./@claude-flow/plugins"
     }
   ],
   "include": [],

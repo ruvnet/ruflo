@@ -799,7 +799,7 @@ async function copyAgents(
     Object.values(AGENTS_MAP).forEach(agents => agentsToCopy.push(...agents));
   } else {
     if (agentsConfig.core) agentsToCopy.push(...AGENTS_MAP.core);
-    if (agentsConfig.voting) agentsToCopy.push(...AGENTS_MAP.voting);
+    if (agentsConfig.consensus) agentsToCopy.push(...AGENTS_MAP.consensus);
     if (agentsConfig.github) agentsToCopy.push(...AGENTS_MAP.github);
     if (agentsConfig.hiveMind) agentsToCopy.push(...AGENTS_MAP.hiveMind);
     if (agentsConfig.sparc) agentsToCopy.push(...AGENTS_MAP.sparc);

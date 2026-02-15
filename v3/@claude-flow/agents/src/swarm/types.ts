@@ -158,6 +158,7 @@ export type TaskType =
   | 'review'
   | 'documentation'
   | 'coordination'
+  | 'consensus'
   | 'voting'
   | 'custom';
 

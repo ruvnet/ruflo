@@ -10,7 +10,7 @@
  */
 
 import type {
-  SONAModeConfig,
+  PatternModeConfig,
   ModeOptimizations,
   Trajectory,
   Pattern,
@@ -114,7 +114,7 @@ export class BalancedMode extends BaseModeImplementation {
    */
   async learn(
     trajectories: Trajectory[],
-    config: SONAModeConfig,
+    config: PatternModeConfig,
     ewcState: EWCState
   ): Promise<number> {
     const startTime = performance.now();
