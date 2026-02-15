@@ -181,10 +181,9 @@ v3/
 │
 ├── __tests__/                       # Integration tests
 │   └── integration/
-│       ├── memory-integration.test.ts
-│       ├── swarm-integration.test.ts
-│       ├── mcp-integration.test.ts
-│       └── workflow-integration.test.ts
+│       ├── mcp-server.integration.test.ts
+│       ├── structured-logger.integration.test.ts
+│       └── voting-engine.integration.test.ts
 │
 ├── docs/                            # Documentation
 │   ├── README.md                    # Docs overview
