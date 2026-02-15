@@ -1,7 +1,19 @@
 /**
- * V3 MCP Types
+ * V3 MCP Types - Plugin-facing simplified API
  * Model Context Protocol type definitions
  * Aligned with ADR-005 (MCP-first API design)
+ *
+ * NOTE: These are simplified MCP types for the plugin interface layer.
+ * The full MCP protocol types (server, transport, sessions, etc.) live in:
+ *   @claude-flow/integrations/src/mcp/types.ts (canonical source)
+ *
+ * These types intentionally differ from the full protocol types:
+ * - MCPTool uses a simpler handler signature (no generics, no context)
+ * - MCPServerConfig uses a nested transport config object
+ * - MCPRequest/MCPResponse are discriminated union types
+ *
+ * Do NOT duplicate the full protocol types here. Import from
+ * @claude-flow/integrations when you need the full MCP protocol.
  */
 
 /**
