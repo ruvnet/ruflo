@@ -12,12 +12,10 @@
 
 ## File Organization
 
-- `/src` — source code
+- `/v3` — V3 monorepo packages (the active codebase)
 - `/tests` — test files
 - `/docs` — documentation (reference docs for swarm protocols, publishing, hooks, etc.)
-- `/config` — configuration files
 - `/scripts` — utility scripts
-- `/examples` — example code
 
 ## Project Architecture
 

@@ -7,39 +7,39 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.js",
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./sdk": {
-      "types": "./dist/sdk/index.d.js",
+      "types": "./dist/sdk/index.d.ts",
       "import": "./dist/sdk/index.js"
     },
     "./workers": {
-      "types": "./dist/workers/index.d.js",
+      "types": "./dist/workers/index.d.ts",
       "import": "./dist/workers/index.js"
     },
     "./hooks": {
-      "types": "./dist/hooks/index.d.js",
+      "types": "./dist/hooks/index.d.ts",
       "import": "./dist/hooks/index.js"
     },
     "./providers": {
-      "types": "./dist/providers/index.d.js",
+      "types": "./dist/providers/index.d.ts",
       "import": "./dist/providers/index.js"
     },
     "./examples/ruvector": {
-      "types": "./dist/examples/ruvector-plugins/index.d.js",
+      "types": "./dist/examples/ruvector-plugins/index.d.ts",
       "import": "./dist/examples/ruvector-plugins/index.js"
     },
     "./examples/plugin-creator": {
-      "types": "./dist/examples/plugin-creator/index.d.js",
+      "types": "./dist/examples/plugin-creator/index.d.ts",
       "import": "./dist/examples/plugin-creator/index.js"
     },
     "./guidance": {
-      "types": "./dist/guidance/index.d.js",
+      "types": "./dist/guidance/index.d.ts",
       "import": "./dist/guidance/index.js"
     },
     "./testing": {
-      "types": "./dist/testing/index.d.js",
+      "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js"
     }
   },

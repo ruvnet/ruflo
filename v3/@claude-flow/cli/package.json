@@ -101,6 +101,6 @@
   },
   "publishConfig": {
     "access": "public",
-    "tag": "alpha"
+    "tag": "v3alpha"
   }
 }

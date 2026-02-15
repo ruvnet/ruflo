@@ -13,12 +13,12 @@ npm install && npm run build && npm test
 
 | Package | Path | Purpose |
 |---------|------|---------|
-| `@claude-flow/cli` | `@claude-flow/cli/` | CLI entry point (26 commands, 140+ subcommands) |
-| `@claude-flow/guidance` | `@claude-flow/guidance/` | Governance control plane (compile, enforce, prove, evolve) |
-| `@claude-flow/hooks` | `@claude-flow/hooks/` | 17 hooks + 12 background workers |
-| `@claude-flow/memory` | `@claude-flow/memory/` | AgentDB + HNSW vector search |
-| `@claude-flow/shared` | `@claude-flow/shared/` | Shared types and utilities |
-| `@claude-flow/security` | `@claude-flow/security/` | Input validation, path security, CVE remediation |
+| `@claude-flow/core` | `@claude-flow/core/` | Shared types, security, auth, providers, AI defence |
+| `@claude-flow/cli` | `@claude-flow/cli/` | CLI entry point |
+| `@claude-flow/agents` | `@claude-flow/agents/` | Swarm coordination, patterns, lifecycle hooks |
+| `@claude-flow/memory` | `@claude-flow/memory/` | AgentDB + HNSW vector search + embeddings |
+| `@claude-flow/integrations` | `@claude-flow/integrations/` | Codex, MCP server, browser, deployment |
+| `@claude-flow/plugins` | `@claude-flow/plugins/` | Plugin SDK, guidance, testing framework |
 
 ## Code Quality
 
