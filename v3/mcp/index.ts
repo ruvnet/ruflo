@@ -1,96 +1,143 @@
 /**
  * V3 MCP Module
  *
- * Optimized MCP (Model Context Protocol) implementation for Claude-Flow V3
+ * MCP (Model Context Protocol) implementation for Claude-Flow V3.
  *
- * Features:
- * - High-performance server with <400ms startup
- * - Connection pooling with max 10 connections
- * - Multiple transport support (stdio, http, websocket, in-process)
- * - Fast tool registry with <10ms registration
- * - Session management with timeout handling
- * - Comprehensive metrics and monitoring
+ * CANONICAL SOURCE: @claude-flow/integrations/src/mcp/
  *
- * Performance Targets:
- * - Server startup: <400ms
- * - Tool registration: <10ms
- * - Tool execution: <50ms overhead
- * - Connection acquire: <5ms
+ * Types are re-exported from the integrations package (single source of truth).
+ * Server, tool-registry, session-manager, connection-pool, and transport
+ * implementations in this directory are kept for the server-entry.ts workflow
+ * which loads tools from ./tools/index.js.
  *
  * @module @claude-flow/mcp
  * @version 3.0.0
  */
 
-// Core types
+// Core types (canonical source: @claude-flow/integrations)
 export {
   // Protocol types
-  JsonRpcVersion,
-  RequestId,
-  MCPMessage,
-  MCPRequest,
-  MCPResponse,
-  MCPNotification,
-  MCPError,
+  type JsonRpcVersion,
+  type RequestId,
+  type MCPMessage,
+  type MCPRequest,
+  type MCPResponse,
+  type MCPNotification,
+  type MCPError,
 
   // Server configuration
-  TransportType,
-  AuthMethod,
-  AuthConfig,
-  LoadBalancerConfig,
-  ConnectionPoolConfig,
-  MCPServerConfig,
+  type TransportType,
+  type AuthMethod,
+  type AuthConfig,
+  type LoadBalancerConfig,
+  type ConnectionPoolConfig,
+  type MCPServerConfig,
 
   // Session types
-  SessionState,
-  MCPSession,
-  MCPClientInfo,
+  type SessionState,
+  type MCPSession,
+  type MCPClientInfo,
 
   // Capability types
-  MCPCapabilities,
-  MCPProtocolVersion,
-  MCPInitializeParams,
-  MCPInitializeResult,
+  type MCPCapabilities,
+  type MCPProtocolVersion,
+  type MCPInitializeParams,
+  type MCPInitializeResult,
 
   // Tool types
-  JSONSchema,
-  ToolContext,
-  ToolHandler,
-  MCPTool,
-  ToolCallResult,
-  ToolRegistrationOptions,
+  type JSONSchema,
+  type ToolContext,
+  type ToolHandler,
+  type MCPTool,
+  type ToolCallResult,
+  type ToolRegistrationOptions,
+
+  // Resource types (MCP 2025-11-25)
+  type MCPResource,
+  type ResourceContent,
+  type ResourceTemplate,
+  type ResourceListResult,
+  type ResourceReadResult,
+
+  // Prompt types (MCP 2025-11-25)
+  type PromptArgument,
+  type MCPPrompt,
+  type PromptRole,
+  type ContentAnnotations,
+  type TextContent,
+  type ImageContent,
+  type AudioContent,
+  type EmbeddedResource,
+  type PromptContent,
+  type PromptMessage,
+  type PromptListResult,
+  type PromptGetResult,
+
+  // Task types (MCP 2025-11-25)
+  type TaskState,
+  type MCPTask,
+  type TaskProgress,
+  type TaskResult,
+
+  // Pagination types
+  type PaginatedRequest,
+  type PaginatedResult,
+
+  // Progress & Cancellation types
+  type ProgressNotification,
+  type CancellationParams,
+
+  // Sampling types
+  type SamplingMessage,
+  type ModelPreferences,
+  type CreateMessageRequest,
+  type CreateMessageResult,
+
+  // Roots types
+  type Root,
+  type RootsListResult,
+
+  // Logging types
+  type MCPLogLevel,
+  type LoggingMessage,
+
+  // Completion types
+  type CompletionReference,
+  type CompletionArgument,
+  type CompletionResult,
 
   // Transport types
-  RequestHandler,
-  NotificationHandler,
-  TransportHealthStatus,
-  ITransport,
+  type RequestHandler,
+  type NotificationHandler,
+  type TransportHealthStatus,
+  type ITransport,
 
   // Connection pool types
-  ConnectionState,
-  PooledConnection,
-  ConnectionPoolStats,
-  IConnectionPool,
+  type ConnectionState,
+  type PooledConnection,
+  type ConnectionPoolStats,
+  type IConnectionPool,
 
   // Metrics types
-  ToolCallMetrics,
-  MCPServerMetrics,
-  SessionMetrics,
+  type ToolCallMetrics,
+  type MCPServerMetrics,
+  type SessionMetrics,
 
   // Event types
-  MCPEventType,
-  MCPEvent,
-  EventHandler,
+  type MCPEventType,
+  type MCPEvent,
+  type EventHandler,
 
   // Logger
-  LogLevel,
-  ILogger,
+  type LogLevel,
+  type ILogger,
 
   // Error handling
   ErrorCodes,
   MCPServerError,
 } from './types.js';
 
-// Server
+// Server (local implementation that loads ./tools/ on startup)
 export {
   MCPServer,
   IMCPServer,
@@ -136,40 +183,29 @@ export {
   WebSocketTransportConfig,
 } from './transport/index.js';
 
+// Tools (unique to this module - not in integrations)
+export {
+  getAllTools,
+  getV3Tools,
+  getToolsByCategory,
+  getToolByName,
+  getToolsByTag,
+  getToolStats,
+  validateToolRegistration,
+} from './tools/index.js';
+
 /**
  * Quick start function to create and configure an MCP server
- *
- * @example
- * ```typescript
- * import { quickStart } from '@claude-flow/integrations/mcp';
- *
- * const server = await quickStart({
- *   transport: 'stdio',
- *   name: 'My MCP Server',
- * });
- *
- * // Register custom tools
- * server.registerTool({
- *   name: 'my-tool',
- *   description: 'My custom tool',
- *   inputSchema: { type: 'object', properties: {} },
- *   handler: async () => ({ result: 'success' }),
- * });
- *
- * // Start server
- * await server.start();
- * ```
  */
 export async function quickStart(
-  config: Partial<MCPServerConfig>,
-  logger?: ILogger
-): Promise<MCPServer> {
-  // Create default logger if not provided
-  const defaultLogger: ILogger = logger || {
-    debug: (msg, data) => console.debug(`[DEBUG] ${msg}`, data || ''),
-    info: (msg, data) => console.info(`[INFO] ${msg}`, data || ''),
-    warn: (msg, data) => console.warn(`[WARN] ${msg}`, data || ''),
-    error: (msg, data) => console.error(`[ERROR] ${msg}`, data || ''),
+  config: Partial<import('./types.js').MCPServerConfig>,
+  logger?: import('./types.js').ILogger
+): Promise<import('./server.js').MCPServer> {
+  const defaultLogger: import('./types.js').ILogger = logger || {
+    debug: (msg: string, data?: unknown) => console.debug(`[DEBUG] ${msg}`, data || ''),
+    info: (msg: string, data?: unknown) => console.info(`[INFO] ${msg}`, data || ''),
+    warn: (msg: string, data?: unknown) => console.warn(`[WARN] ${msg}`, data || ''),
+    error: (msg: string, data?: unknown) => console.error(`[ERROR] ${msg}`, data || ''),
   };
 
   const server = createMCPServer(config, defaultLogger);
@@ -185,4 +221,4 @@ export const VERSION = '3.0.0';
 /**
  * Module name
  */
-export const MODULE_NAME = '@claude-flow/integrations/mcp';
+export const MODULE_NAME = '@claude-flow/mcp';
