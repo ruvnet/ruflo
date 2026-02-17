@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Ruflo CLI - thin wrapper around @claude-flow/cli with ruflo branding
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { existsSync } from 'node:fs';
 
@@ -19,6 +19,11 @@ function findCliPath() {
   return null;
 }
 
+// Convert path to file:// URL for cross-platform ESM import (Windows requires this)
+function toImportURL(filePath) {
+  return pathToFileURL(filePath).href;
+}
+
 const pkgDir = findCliPath();
 const cliBase = pkgDir
   ? join(pkgDir, 'node_modules', '@claude-flow', 'cli')
@@ -30,10 +35,10 @@ const isExplicitMCP = cliArgs.length >= 1 && cliArgs[0] === 'mcp' && (cliArgs.le
 const isMCPMode = !process.stdin.isTTY && (process.argv.length === 2 || isExplicitMCP);
 
 if (isMCPMode) {
-  await import(join(cliBase, 'bin', 'cli.js'));
+  await import(toImportURL(join(cliBase, 'bin', 'cli.js')));
 } else {
   // CLI mode: use ruflo branding
-  const { CLI } = await import(join(cliBase, 'dist', 'src', 'index.js'));
+  const { CLI } = await import(toImportURL(join(cliBase, 'dist', 'src', 'index.js')));
   const cli = new CLI({
     name: 'ruflo',
     description: 'Ruflo - AI Agent Orchestration Platform',
