@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$TOOL_INPUT_prompt\" ] && npx @claude-flow/cli@latest hooks pre-task --task-id \"task-$(date +%s)\" --description \"$TOOL_INPUT_prompt\" 2>/dev/null || true",
+            "command": "[ -n \"$TOOL_INPUT_description\" ] && npx @claude-flow/cli@latest hooks pre-task --task-id \"task-$(date +%s)\" --description \"$(echo \"$TOOL_INPUT_description\" | head -c 200)\" 2>/dev/null || true",
             "timeout": 5000,
             "continueOnError": true
           }

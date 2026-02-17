@@ -33,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx claude-flow@alpha hooks pre-task --description \"$TOOL_INPUT_prompt\"",
+            "command": "npx claude-flow@alpha hooks pre-task --description \"$(echo \"$TOOL_INPUT_description\" | head -c 200)\"",
             "timeout": 5000,
             "continueOnError": true
           }
