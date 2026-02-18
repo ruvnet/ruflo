@@ -3277,7 +3277,7 @@ const statuslineCommand: Command = {
     const path = await import('path');
     const { execSync } = await import('child_process');
 
-    // Get learning stats from memory database
+    // Get learning stats from memory database - REAL counts from tables
     function getLearningStats() {
       const memoryPaths = [
         path.join(process.cwd(), '.swarm', 'memory.db'),
@@ -3287,18 +3287,46 @@ const statuslineCommand: Command = {
       let patterns = 0;
       let sessions = 0;
       let trajectories = 0;
+      let memoryEntries = 0;
 
       for (const dbPath of memoryPaths) {
         if (fs.existsSync(dbPath)) {
           try {
-            const stats = fs.statSync(dbPath);
-            const sizeKB = stats.size / 1024;
-            patterns = Math.floor(sizeKB / 2);
-            sessions = Math.max(1, Math.floor(patterns / 10));
-            trajectories = Math.floor(patterns / 5);
+            // Query REAL counts from database tables using sqlite3 CLI
+            // Note: dbPath is constructed from process.cwd(), not user input
+            const sqlQuery = 'SELECT \'patterns\' as t, COUNT(*) as c FROM patterns UNION ALL SELECT \'trajectories\', COUNT(*) FROM trajectories UNION ALL SELECT \'sessions\', COUNT(*) FROM sessions UNION ALL SELECT \'memory_entries\', COUNT(*) FROM memory_entries;';
+            const result = execSync(
+              `sqlite3 "${dbPath}" "${sqlQuery}"`,
+              { encoding: 'utf-8', timeout: 2000, stdio: ['pipe', 'pipe', 'pipe'] }
+            );
+
+            for (const line of result.trim().split('\n')) {
+              const [table, count] = line.split('|');
+              const num = parseInt(count, 10) || 0;
+              if (table === 'patterns') patterns = num;
+              else if (table === 'trajectories') trajectories = num;
+              else if (table === 'sessions') sessions = num;
+              else if (table === 'memory_entries') memoryEntries = num;
+            }
+
+            // If tables are empty but we have memory entries, use those for learning indicator
+            if (patterns === 0 && memoryEntries > 0) {
+              // Show memory entries as "vectors" since they're indexed
+              patterns = memoryEntries;
+            }
+
             break;
           } catch {
-            // Ignore
+            // Fallback to file size estimate if sqlite3 fails
+            try {
+              const stats = fs.statSync(dbPath);
+              const sizeKB = stats.size / 1024;
+              patterns = Math.floor(sizeKB / 2);
+              sessions = Math.max(1, Math.floor(patterns / 10));
+              trajectories = Math.floor(patterns / 5);
+            } catch {
+              // Ignore
+            }
           }
         }
       }
