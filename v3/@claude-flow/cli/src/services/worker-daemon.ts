@@ -351,6 +351,9 @@ export class WorkerDaemon extends EventEmitter {
     this.startedAt = new Date();
     this.emit('started', { pid: process.pid, startedAt: this.startedAt });
 
+    const { maxCpuLoad, minFreeMemoryPercent } = this.config.resourceThresholds;
+    this.log('info', `Resource thresholds: maxCpuLoad=${maxCpuLoad} (${os.cpus().length} cores), minFreeMemoryPercent=${minFreeMemoryPercent}% (${process.platform})`);
+
     // Schedule all enabled workers
     for (const workerConfig of this.config.workers) {
       if (workerConfig.enabled) {
