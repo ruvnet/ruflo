@@ -107,6 +107,34 @@ const DEFAULT_WORKERS: WorkerConfigInternal[] = [
 const DEFAULT_WORKER_TIMEOUT_MS = 5 * 60 * 1000;
 
 /**
+ * Compute platform-aware resource thresholds.
+ *
+ * The original hardcoded values (maxCpuLoad: 2.0, minFreeMemoryPercent: 20)
+ * permanently block all daemon workers on macOS because:
+ *
+ * - CPU: os.loadavg()[0] reports aggregate load across ALL cores. A 16-core
+ *   Mac at 15% utilization per core reports loadavg ~2.4, exceeding the 2.0
+ *   threshold. Scaling by core count (cores × 3) allows workers to run under
+ *   normal system load while still blocking under genuine resource pressure.
+ *
+ * - Memory: macOS aggressively caches files in RAM. os.freemem() reports only
+ *   truly unused memory (typically 5-8%), not reclaimable cache. The 20%
+ *   threshold is unreachable under normal macOS operation. A 1% threshold on
+ *   Darwin reflects actual memory pressure, not cache utilization.
+ *
+ * See: https://github.com/ruvnet/claude-flow/issues/1077
+ */
+function getDefaultResourceThresholds(): DaemonConfig['resourceThresholds'] {
+  const cpuCount = os.cpus().length;
+  const isDarwin = process.platform === 'darwin';
+
+  return {
+    maxCpuLoad: cpuCount * 3,
+    minFreeMemoryPercent: isDarwin ? 1 : 5,
+  };
+}
+
+/**
  * Worker Daemon - Manages background workers with Node.js
  */
 export class WorkerDaemon extends EventEmitter {
@@ -135,10 +163,7 @@ export class WorkerDaemon extends EventEmitter {
       stateFile: config?.stateFile ?? join(claudeFlowDir, 'daemon-state.json'),
       maxConcurrent: config?.maxConcurrent ?? 2, // P0 fix: Limit concurrent workers
       workerTimeoutMs: config?.workerTimeoutMs ?? DEFAULT_WORKER_TIMEOUT_MS,
-      resourceThresholds: config?.resourceThresholds ?? {
-        maxCpuLoad: 2.0,
-        minFreeMemoryPercent: 20,
-      },
+      resourceThresholds: config?.resourceThresholds ?? getDefaultResourceThresholds(),
       workers: config?.workers ?? DEFAULT_WORKERS,
     };
 
