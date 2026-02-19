@@ -13,6 +13,7 @@
 import { EventEmitter } from 'events';
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
+import os from 'os';
 import {
   HeadlessWorkerExecutor,
   HEADLESS_WORKER_TYPES,
@@ -233,7 +234,6 @@ export class WorkerDaemon extends EventEmitter {
    * Check if system resources allow worker execution
    */
   private async canRunWorker(): Promise<{ allowed: boolean; reason?: string }> {
-    const os = await import('os');
     const cpuLoad = os.loadavg()[0];
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
