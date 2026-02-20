@@ -10,9 +10,6 @@ updates:
     open-pull-requests-limit: 10
     reviewers:
       - "ruvnet"
-    labels:
-      - "dependencies"
-      - "npm"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -27,9 +24,6 @@ updates:
     open-pull-requests-limit: 5
     reviewers:
       - "ruvnet"
-    labels:
-      - "dependencies"
-      - "github-actions"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -44,9 +38,6 @@ updates:
     open-pull-requests-limit: 5
     reviewers:
       - "ruvnet"
-    labels:
-      - "dependencies"
-      - "deno"
     commit-message:
       prefix: "chore"
       include: "scope"
