@@ -122,7 +122,12 @@ export function resolveAgentMemoryDir(
   const safeName = agentName.replace(/[^a-zA-Z0-9_-]/g, '_');
 
   if (scope === 'user') {
-    const home = process.env.HOME || process.env.USERPROFILE || '~';
+    const home = process.env.HOME
+      || process.env.USERPROFILE
+      || (process.env.HOMEDRIVE && process.env.HOMEPATH ? process.env.HOMEDRIVE + process.env.HOMEPATH : '');
+    if (!home) {
+      throw new Error('Cannot determine home directory: HOME, USERPROFILE, and HOMEDRIVE+HOMEPATH are all undefined');
+    }
     return path.join(home, '.claude', 'agent-memory', safeName);
   }
 
@@ -286,7 +291,10 @@ export function listAgentScopes(
   const effectiveDir = workingDir || process.cwd();
   const gitRoot = findGitRootSync(effectiveDir);
   const baseDir = gitRoot || effectiveDir;
-  const home = process.env.HOME || process.env.USERPROFILE || '~';
+  const home = process.env.HOME
+    || process.env.USERPROFILE
+    || (process.env.HOMEDRIVE && process.env.HOMEPATH ? process.env.HOMEDRIVE + process.env.HOMEPATH : '')
+    || '';
 
   const projectDir = path.join(baseDir, '.claude', 'agent-memory');
   const localDir = path.join(baseDir, '.claude', 'agent-memory-local');

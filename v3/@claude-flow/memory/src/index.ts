@@ -149,6 +149,18 @@ export type {
   TransferResult,
 } from './agent-memory-scope.js';
 
+// ===== Controller Registry (ADR-053) =====
+export { ControllerRegistry, INIT_LEVELS } from './controller-registry.js';
+export type {
+  AgentDBControllerName,
+  CLIControllerName,
+  ControllerName,
+  InitLevel,
+  ControllerHealth,
+  RegistryHealthReport,
+  RuntimeConfig,
+} from './controller-registry.js';
+
 // ===== Core Components =====
 export { AgentDBAdapter } from './agentdb-adapter.js';
 export type { AgentDBAdapterConfig } from './agentdb-adapter.js';

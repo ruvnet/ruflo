@@ -368,7 +368,18 @@ function mergeSettingsForUpgrade(existing: Record<string, unknown>): Record<stri
     ];
   }
 
-  // 3. Merge claudeFlow settings (preserve existing, add agentTeams + memory)
+  // 3. Fix statusLine config (remove invalid fields, ensure correct format)
+  // Claude Code only supports: type, command, padding
+  const existingStatusLine = existing.statusLine as Record<string, unknown> | undefined;
+  if (existingStatusLine) {
+    merged.statusLine = {
+      type: 'command',
+      command: existingStatusLine.command || 'node .claude/helpers/statusline.cjs',
+      // Remove invalid fields: refreshMs, enabled (not supported by Claude Code)
+    };
+  }
+
+  // 4. Merge claudeFlow settings (preserve existing, add agentTeams + memory)
   const existingClaudeFlow = (existing.claudeFlow as Record<string, unknown>) || {};
   const existingMemory = (existingClaudeFlow.memory as Record<string, unknown>) || {};
   merged.claudeFlow = {

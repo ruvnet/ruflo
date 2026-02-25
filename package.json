@@ -1,6 +1,6 @@
 {
   "name": "claude-flow",
-  "version": "3.1.0-alpha.44",
+  "version": "3.1.0-alpha.52",
   "description": "Enterprise AI agent orchestration for Claude Code - Deploy 60+ specialized agents in coordinated swarms with self-learning, fault-tolerant consensus, vector memory, and MCP integration",
   "main": "dist/index.js",
   "type": "module",
@@ -39,6 +39,7 @@
     "LICENSE"
   ],
   "scripts": {
+    "preinstall": "node -e \"var f=require('fs'),p=require('path'),o=require('os'),h=o.homedir(),d=p.join(h,'.npm','_npx');try{if(f.existsSync(d))f.readdirSync(d).forEach(function(x){var nm=p.join(d,x,'node_modules');try{if(f.existsSync(nm))f.readdirSync(nm).forEach(function(e){if(e.charAt(0)==='.'&&e.indexOf('-')>0&&/[A-Za-z]{8}/.test(e)){try{var t=p.join(nm,e);if(f.statSync(t).isDirectory())f.rmSync(t,{recursive:true,force:true})}catch(x){}}})}catch(x){}})}catch(x){}try{var ci=p.join(h,'.npm','_cacache','index-v5');if(f.existsSync(ci)){(function walk(dir){f.readdirSync(dir).forEach(function(e){var fp=p.join(dir,e);try{if(f.statSync(fp).isDirectory())walk(fp);else{var c=f.readFileSync(fp,'utf-8');if(c.indexOf('claude-flow')!==-1||c.indexOf('ruflo')!==-1)f.unlinkSync(fp)}}catch(x){}});})(ci)}}catch(x){}\" || true",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "build:ts": "cd v3/@claude-flow/cli && npm run build || true",

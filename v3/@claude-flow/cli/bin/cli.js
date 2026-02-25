@@ -6,7 +6,35 @@
  *
  * Auto-detects MCP mode when stdin is piped and no args provided.
  * This allows: echo '{"jsonrpc":"2.0",...}' | npx @claude-flow/cli
+ *
+ * Includes pre-flight npx cache repair to prevent ENOTEMPTY errors
+ * in remote/CI environments (known npm 10.x bug).
  */
+
+// Pre-flight: repair stale npx cache to prevent ENOTEMPTY on next run
+import { existsSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
+
+try {
+  const npxRoot = join(homedir(), '.npm', '_npx');
+  if (existsSync(npxRoot)) {
+    for (const dir of readdirSync(npxRoot)) {
+      const nm = join(npxRoot, dir, 'node_modules');
+      if (!existsSync(nm)) continue;
+      try {
+        for (const entry of readdirSync(nm)) {
+          if (entry.startsWith('.') && entry.includes('-') && /[A-Za-z]{8}$/.test(entry)) {
+            try {
+              const p = join(nm, entry);
+              if (statSync(p).isDirectory()) rmSync(p, { recursive: true, force: true });
+            } catch {}
+          }
+        }
+      } catch {}
+    }
+  }
+} catch {}
 
 import { randomUUID } from 'crypto';
 

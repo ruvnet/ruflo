@@ -3,11 +3,28 @@
  * Properly initializes the memory database with sql.js (WASM SQLite)
  * Includes pattern tables, vector embeddings, migration state tracking
  *
+ * ADR-053: Routes through ControllerRegistry → AgentDB v3 when available,
+ * falls back to raw sql.js for backwards compatibility.
+ *
  * @module v3/cli/memory-initializer
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
+
+// ADR-053: Lazy import of AgentDB v3 bridge
+let _bridge: typeof import('./memory-bridge.js') | null | undefined;
+async function getBridge(): Promise<typeof import('./memory-bridge.js') | null> {
+  if (_bridge === null) return null;
+  if (_bridge) return _bridge;
+  try {
+    _bridge = await import('./memory-bridge.js');
+    return _bridge;
+  } catch {
+    _bridge = null;
+    return null;
+  }
+}
 
 /**
  * Enhanced schema with pattern confidence, temporal decay, versioning
@@ -498,6 +515,13 @@ export async function addToHNSWIndex(
   embedding: number[],
   entry: HNSWEntry
 ): Promise<boolean> {
+  // ADR-053: Try AgentDB v3 bridge first
+  const bridge = await getBridge();
+  if (bridge) {
+    const bridgeResult = await bridge.bridgeAddToHNSW(id, embedding, entry);
+    if (bridgeResult === true) return true;
+  }
+
   const index = await getHNSWIndex({ dimensions: embedding.length });
   if (!index) return false;
 
@@ -528,6 +552,13 @@ export async function searchHNSWIndex(
     namespace?: string;
   }
 ): Promise<Array<{ id: string; key: string; content: string; score: number; namespace: string }> | null> {
+  // ADR-053: Try AgentDB v3 bridge first
+  const bridge = await getBridge();
+  if (bridge) {
+    const bridgeResult = await bridge.bridgeSearchHNSW(queryEmbedding, options);
+    if (bridgeResult) return bridgeResult;
+  }
+
   const index = await getHNSWIndex({ dimensions: queryEmbedding.length });
   if (!index) return null;
 
@@ -582,6 +613,17 @@ export function getHNSWStatus(): {
   entryCount: number;
   dimensions: number;
 } {
+  // ADR-053: If bridge was previously loaded, report availability
+  if (_bridge && _bridge !== null) {
+    // Bridge is loaded — HNSW-equivalent is available via AgentDB v3
+    return {
+      available: true,
+      initialized: true,
+      entryCount: hnswIndex?.entries.size ?? 0,
+      dimensions: hnswIndex?.dimensions ?? 384
+    };
+  }
+
   return {
     available: hnswIndex !== null,
     initialized: hnswIndex?.initialized ?? false,
@@ -1399,6 +1441,22 @@ export async function loadEmbeddingModel(options?: {
     };
   }
 
+  // ADR-053: Try AgentDB v3 bridge first
+  const bridge = await getBridge();
+  if (bridge) {
+    const bridgeResult = await bridge.bridgeLoadEmbeddingModel();
+    if (bridgeResult && bridgeResult.success) {
+      // Mark local state as loaded too so subsequent calls use cache
+      embeddingModelState = {
+        loaded: true,
+        model: null, // Bridge handles embedding
+        tokenizer: null,
+        dimensions: bridgeResult.dimensions
+      };
+      return bridgeResult;
+    }
+  }
+
   try {
     // Try to import @xenova/transformers for ONNX embeddings
     const transformers = await import('@xenova/transformers').catch(() => null);
@@ -1483,6 +1541,13 @@ export async function generateEmbedding(text: string): Promise<{
   dimensions: number;
   model: string;
 }> {
+  // ADR-053: Try AgentDB v3 bridge first
+  const bridge = await getBridge();
+  if (bridge) {
+    const bridgeResult = await bridge.bridgeGenerateEmbedding(text);
+    if (bridgeResult) return bridgeResult;
+  }
+
   // Ensure model is loaded
   if (!embeddingModelState?.loaded) {
     await loadEmbeddingModel();
@@ -1831,6 +1896,14 @@ export async function storeEntry(options: {
   embedding?: { dimensions: number; model: string };
   error?: string;
 }> {
+  // ADR-053: Try AgentDB v3 bridge first
+  const bridge = await getBridge();
+  if (bridge) {
+    const bridgeResult = await bridge.bridgeStoreEntry(options);
+    if (bridgeResult) return bridgeResult;
+  }
+
+  // Fallback: raw sql.js
   const {
     key,
     value,
@@ -1954,6 +2027,14 @@ export async function searchEntries(options: {
   searchTime: number;
   error?: string;
 }> {
+  // ADR-053: Try AgentDB v3 bridge first
+  const bridge = await getBridge();
+  if (bridge) {
+    const bridgeResult = await bridge.bridgeSearchEntries(options);
+    if (bridgeResult) return bridgeResult;
+  }
+
+  // Fallback: raw sql.js
   const {
     query,
     namespace = 'default',
@@ -2112,6 +2193,14 @@ export async function listEntries(options: {
   total: number;
   error?: string;
 }> {
+  // ADR-053: Try AgentDB v3 bridge first
+  const bridge = await getBridge();
+  if (bridge) {
+    const bridgeResult = await bridge.bridgeListEntries(options);
+    if (bridgeResult) return bridgeResult;
+  }
+
+  // Fallback: raw sql.js
   const {
     namespace,
     limit = 20,
@@ -2220,6 +2309,14 @@ export async function getEntry(options: {
   };
   error?: string;
 }> {
+  // ADR-053: Try AgentDB v3 bridge first
+  const bridge = await getBridge();
+  if (bridge) {
+    const bridgeResult = await bridge.bridgeGetEntry(options);
+    if (bridgeResult) return bridgeResult;
+  }
+
+  // Fallback: raw sql.js
   const {
     key,
     namespace = 'default',
@@ -2324,6 +2421,14 @@ export async function deleteEntry(options: {
   remainingEntries: number;
   error?: string;
 }> {
+  // ADR-053: Try AgentDB v3 bridge first
+  const bridge = await getBridge();
+  if (bridge) {
+    const bridgeResult = await bridge.bridgeDeleteEntry(options);
+    if (bridgeResult) return bridgeResult;
+  }
+
+  // Fallback: raw sql.js
   const {
     key,
     namespace = 'default',

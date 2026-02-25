@@ -157,14 +157,13 @@ export function generateSettings(options: InitOptions): object {
  * Generate statusLine configuration for Claude Code
  * Uses local helper script for cross-platform compatibility (no npx cold-start)
  */
-function generateStatusLineConfig(options: InitOptions): object {
-  const config = options.statusline;
-
+function generateStatusLineConfig(_options: InitOptions): object {
+  // Claude Code pipes JSON session data to the script via stdin.
+  // Valid fields: type, command, padding (optional).
+  // The script runs after each assistant message (debounced 300ms).
   return {
     type: 'command',
     command: 'node .claude/helpers/statusline.cjs',
-    refreshMs: config.refreshInterval,
-    enabled: config.enabled,
   };
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/cli",
-  "version": "3.1.0-alpha.44",
+  "version": "3.1.0-alpha.52",
   "type": "module",
   "description": "Claude Flow CLI - Enterprise AI agent orchestration with 60+ specialized agents, swarm coordination, MCP server, self-learning hooks, and vector memory for Claude Code",
   "main": "dist/src/index.js",
@@ -75,6 +75,7 @@
     "test": "vitest run",
     "test:plugin-store": "npx tsx src/plugins/tests/standalone-test.ts",
     "test:pattern-store": "npx tsx src/transfer/store/tests/standalone-test.ts",
+    "preinstall": "node bin/preinstall.cjs || true",
     "prepublishOnly": "cp ../../../README.md ./README.md",
     "release": "npm version prerelease --preid=alpha && npm run publish:all",
     "publish:all": "./scripts/publish.sh"

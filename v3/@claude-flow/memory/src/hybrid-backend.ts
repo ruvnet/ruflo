@@ -708,6 +708,72 @@ export class HybridBackend extends EventEmitter implements IMemoryBackend {
     return [...structuredResults, ...additional];
   }
 
+  // ===== Proxy Methods for AgentDB v3 Controllers (ADR-053 #1212) =====
+
+  /**
+   * Record feedback for a memory entry.
+   * Delegates to AgentDB's recordFeedback when available.
+   * Gracefully degrades to a no-op when AgentDB is unavailable.
+   */
+  async recordFeedback(
+    entryId: string,
+    feedback: { score: number; label?: string; context?: Record<string, unknown> },
+  ): Promise<boolean> {
+    const agentdbInstance = this.agentdb.getAgentDB?.();
+    if (agentdbInstance && typeof agentdbInstance.recordFeedback === 'function') {
+      try {
+        await agentdbInstance.recordFeedback(entryId, feedback);
+        this.emit('feedback:recorded', { entryId, score: feedback.score });
+        return true;
+      } catch {
+        // AgentDB feedback recording failed — degrade silently
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Verify a witness chain for a memory entry.
+   * Delegates to AgentDB's verifyWitnessChain when available.
+   */
+  async verifyWitnessChain(entryId: string): Promise<{
+    valid: boolean;
+    chainLength: number;
+    errors: string[];
+  }> {
+    const agentdbInstance = this.agentdb.getAgentDB?.();
+    if (agentdbInstance && typeof agentdbInstance.verifyWitnessChain === 'function') {
+      try {
+        return await agentdbInstance.verifyWitnessChain(entryId);
+      } catch {
+        // Verification failed — return degraded result
+      }
+    }
+    return { valid: false, chainLength: 0, errors: ['AgentDB not available'] };
+  }
+
+  /**
+   * Get the witness chain for a memory entry.
+   * Delegates to AgentDB's getWitnessChain when available.
+   */
+  async getWitnessChain(entryId: string): Promise<Array<{
+    hash: string;
+    timestamp: number;
+    operation: string;
+  }>> {
+    const agentdbInstance = this.agentdb.getAgentDB?.();
+    if (agentdbInstance && typeof agentdbInstance.getWitnessChain === 'function') {
+      try {
+        return await agentdbInstance.getWitnessChain(entryId);
+      } catch {
+        // Chain retrieval failed
+      }
+    }
+    return [];
+  }
+
+  // ===== Backend Access =====
+
   /**
    * Get underlying backends for advanced operations
    */

@@ -1157,13 +1157,14 @@ const metricsCommand: Command = {
       });
 
       if (v3Dashboard && result.performance) {
+        const p = result.performance;
         output.writeln();
         output.writeln(output.bold('🚀 V3 Performance Gains'));
         output.printList([
-          `Flash Attention: ${output.success(result.performance.flashAttention)}`,
-          `Memory Reduction: ${output.success(result.performance.memoryReduction)}`,
-          `Search Improvement: ${output.success(result.performance.searchImprovement)}`,
-          `Token Reduction: ${output.success(result.performance.tokenReduction)}`
+          `Flash Attention: ${output.success(p.flashAttention ?? 'N/A')}`,
+          `Memory Reduction: ${output.success(p.memoryReduction ?? 'N/A')}`,
+          `Search Improvement: ${output.success(p.searchImprovement ?? 'N/A')}`,
+          `Token Reduction: ${output.success(p.tokenReduction ?? 'N/A')}`
         ]);
       }
 
@@ -2045,19 +2046,20 @@ const intelligenceCommand: Command = {
       // SONA Component
       output.writeln();
       output.writeln(output.bold('🧠 SONA (Sub-0.05ms Learning)'));
-      if (result.components.sona.enabled) {
+      const sona = result.components?.sona;
+      if (sona?.enabled) {
         output.printTable({
           columns: [
             { key: 'metric', header: 'Metric', width: 25 },
             { key: 'value', header: 'Value', width: 20, align: 'right' }
           ],
           data: [
-            { metric: 'Status', value: formatIntelligenceStatus(result.components.sona.status) },
-            { metric: 'Learning Time', value: `${result.components.sona.learningTimeMs.toFixed(3)}ms` },
-            { metric: 'Adaptation Time', value: `${result.components.sona.adaptationTimeMs.toFixed(3)}ms` },
-            { metric: 'Trajectories', value: result.components.sona.trajectoriesRecorded },
-            { metric: 'Patterns Learned', value: result.components.sona.patternsLearned },
-            { metric: 'Avg Quality', value: `${(result.components.sona.avgQuality * 100).toFixed(1)}%` }
+            { metric: 'Status', value: formatIntelligenceStatus(sona.status) },
+            { metric: 'Learning Time', value: `${(sona.learningTimeMs ?? 0).toFixed(3)}ms` },
+            { metric: 'Adaptation Time', value: `${(sona.adaptationTimeMs ?? 0).toFixed(3)}ms` },
+            { metric: 'Trajectories', value: sona.trajectoriesRecorded ?? 0 },
+            { metric: 'Patterns Learned', value: sona.patternsLearned ?? 0 },
+            { metric: 'Avg Quality', value: `${((sona.avgQuality ?? 0) * 100).toFixed(1)}%` }
           ]
         });
       } else {
@@ -2067,17 +2069,18 @@ const intelligenceCommand: Command = {
       // MoE Component
       output.writeln();
       output.writeln(output.bold('🔀 Mixture of Experts (MoE)'));
-      if (result.components.moe.enabled) {
+      const moe = result.components?.moe;
+      if (moe?.enabled) {
         output.printTable({
           columns: [
             { key: 'metric', header: 'Metric', width: 25 },
             { key: 'value', header: 'Value', width: 20, align: 'right' }
           ],
           data: [
-            { metric: 'Status', value: formatIntelligenceStatus(result.components.moe.status) },
-            { metric: 'Active Experts', value: result.components.moe.expertsActive },
-            { metric: 'Routing Accuracy', value: `${(result.components.moe.routingAccuracy * 100).toFixed(1)}%` },
-            { metric: 'Load Balance', value: `${(result.components.moe.loadBalance * 100).toFixed(1)}%` }
+            { metric: 'Status', value: formatIntelligenceStatus(moe.status) },
+            { metric: 'Active Experts', value: moe.expertsActive ?? 0 },
+            { metric: 'Routing Accuracy', value: `${((moe.routingAccuracy ?? 0) * 100).toFixed(1)}%` },
+            { metric: 'Load Balance', value: `${((moe.loadBalance ?? 0) * 100).toFixed(1)}%` }
           ]
         });
       } else {
@@ -2087,18 +2090,19 @@ const intelligenceCommand: Command = {
       // HNSW Component
       output.writeln();
       output.writeln(output.bold('🔍 HNSW (150x Faster Search)'));
-      if (result.components.hnsw.enabled) {
+      const hnsw = result.components?.hnsw;
+      if (hnsw?.enabled) {
         output.printTable({
           columns: [
             { key: 'metric', header: 'Metric', width: 25 },
             { key: 'value', header: 'Value', width: 20, align: 'right' }
           ],
           data: [
-            { metric: 'Status', value: formatIntelligenceStatus(result.components.hnsw.status) },
-            { metric: 'Index Size', value: result.components.hnsw.indexSize.toLocaleString() },
-            { metric: 'Search Speedup', value: output.success(result.components.hnsw.searchSpeedup) },
-            { metric: 'Memory Usage', value: result.components.hnsw.memoryUsage },
-            { metric: 'Dimension', value: result.components.hnsw.dimension }
+            { metric: 'Status', value: formatIntelligenceStatus(hnsw.status) },
+            { metric: 'Index Size', value: (hnsw.indexSize ?? 0).toLocaleString() },
+            { metric: 'Search Speedup', value: output.success(hnsw.searchSpeedup ?? 'N/A') },
+            { metric: 'Memory Usage', value: hnsw.memoryUsage ?? 'N/A' },
+            { metric: 'Dimension', value: hnsw.dimension ?? 384 }
           ]
         });
       } else {
@@ -2108,29 +2112,37 @@ const intelligenceCommand: Command = {
       // Embeddings
       output.writeln();
       output.writeln(output.bold('📦 Embeddings (ONNX)'));
-      output.printTable({
-        columns: [
-          { key: 'metric', header: 'Metric', width: 25 },
-          { key: 'value', header: 'Value', width: 20, align: 'right' }
-        ],
-        data: [
-          { metric: 'Provider', value: result.components.embeddings.provider },
-          { metric: 'Model', value: result.components.embeddings.model },
-          { metric: 'Dimension', value: result.components.embeddings.dimension },
-          { metric: 'Cache Hit Rate', value: `${(result.components.embeddings.cacheHitRate * 100).toFixed(1)}%` }
-        ]
-      });
+      const emb = result.components?.embeddings;
+      if (emb) {
+        output.printTable({
+          columns: [
+            { key: 'metric', header: 'Metric', width: 25 },
+            { key: 'value', header: 'Value', width: 20, align: 'right' }
+          ],
+          data: [
+            { metric: 'Provider', value: emb.provider ?? 'N/A' },
+            { metric: 'Model', value: emb.model ?? 'N/A' },
+            { metric: 'Dimension', value: emb.dimension ?? 384 },
+            { metric: 'Cache Hit Rate', value: `${((emb.cacheHitRate ?? 0) * 100).toFixed(1)}%` }
+          ]
+        });
+      } else {
+        output.writeln(output.dim('  Not initialized'));
+      }
 
       // V3 Performance
-      output.writeln();
-      output.writeln(output.bold('🚀 V3 Performance Gains'));
-      output.printList([
-        `Flash Attention: ${output.success(result.performance.flashAttention)}`,
-        `Memory Reduction: ${output.success(result.performance.memoryReduction)}`,
-        `Search Improvement: ${output.success(result.performance.searchImprovement)}`,
-        `Token Reduction: ${output.success(result.performance.tokenReduction)}`,
-        `SWE-Bench Score: ${output.success(result.performance.sweBenchScore)}`
-      ]);
+      const perf = result.performance;
+      if (perf) {
+        output.writeln();
+        output.writeln(output.bold('🚀 V3 Performance Gains'));
+        output.printList([
+          `Flash Attention: ${output.success(perf.flashAttention ?? 'N/A')}`,
+          `Memory Reduction: ${output.success(perf.memoryReduction ?? 'N/A')}`,
+          `Search Improvement: ${output.success(perf.searchImprovement ?? 'N/A')}`,
+          `Token Reduction: ${output.success(perf.tokenReduction ?? 'N/A')}`,
+          `SWE-Bench Score: ${output.success(perf.sweBenchScore ?? 'N/A')}`
+        ]);
+      }
 
       return { success: true, data: result };
     } catch (error) {

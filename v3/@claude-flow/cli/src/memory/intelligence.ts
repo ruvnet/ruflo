@@ -579,11 +579,23 @@ export async function recordStep(step: TrajectoryStep): Promise<boolean> {
 
   try {
     // Generate embedding if not provided
+    // ADR-053: Try AgentDB v3 bridge embedder first
     let embedding = step.embedding;
     if (!embedding) {
-      const { generateEmbedding } = await import('./memory-initializer.js');
-      const result = await generateEmbedding(step.content);
-      embedding = result.embedding;
+      try {
+        const bridge = await import('./memory-bridge.js');
+        const bridgeResult = await bridge.bridgeGenerateEmbedding(step.content);
+        if (bridgeResult) {
+          embedding = bridgeResult.embedding;
+        }
+      } catch {
+        // Bridge not available
+      }
+      if (!embedding) {
+        const { generateEmbedding } = await import('./memory-initializer.js');
+        const result = await generateEmbedding(step.content);
+        embedding = result.embedding;
+      }
     }
 
     // Record in SONA - <0.05ms
@@ -661,10 +673,24 @@ export async function findSimilarPatterns(
   }
 
   try {
-    const { generateEmbedding } = await import('./memory-initializer.js');
-    const queryResult = await generateEmbedding(query);
+    // ADR-053: Try AgentDB v3 bridge embedder first
+    let queryEmbedding: number[] | null = null;
+    try {
+      const bridge = await import('./memory-bridge.js');
+      const bridgeResult = await bridge.bridgeGenerateEmbedding(query);
+      if (bridgeResult) {
+        queryEmbedding = bridgeResult.embedding;
+      }
+    } catch {
+      // Bridge not available
+    }
+    if (!queryEmbedding) {
+      const { generateEmbedding } = await import('./memory-initializer.js');
+      const queryResult = await generateEmbedding(query);
+      queryEmbedding = queryResult.embedding;
+    }
 
-    const results = reasoningBank!.findSimilar(queryResult.embedding, {
+    const results = reasoningBank!.findSimilar(queryEmbedding, {
       k: options?.k ?? 5,
       threshold: options?.threshold ?? 0.5,
       type: options?.type

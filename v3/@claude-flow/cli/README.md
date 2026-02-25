@@ -2395,85 +2395,83 @@ npx ruflo hive-mind status                                  # Check status
 <details>
 <summary>📊 <strong>V3 Statusline</strong> — Real-time development status for Claude Code</summary>
 
-Real-time development status display for Claude Code integration showing DDD progress, swarm activity, security status, and system metrics.
+Real-time development status display integrated directly into Claude Code's status bar. Shows DDD progress, swarm activity, security status, AgentDB metrics, and live session data (model, context usage, cost).
+
+**How It Works:**
+
+Claude Code pipes JSON session data via **stdin** to the statusline script after each assistant message (debounced ~300ms). The script reads this data and combines it with local project metrics to produce a single-line status output.
 
 **Output Format:**
 ```
-▊ Ruflo V3 ● ruvnet  │  ⎇ v3  │  Opus 4.5
-─────────────────────────────────────────────────────
-🏗️  DDD Domains    [●●●●●]  5/5    ⚡ 1.0x → 2.49x-7.47x
-🤖 Swarm  ◉ [58/15]  👥 0    🟢 CVE 3/3    💾 22282MB    📂  47%    🧠  10%
-🔧 Architecture    DDD ● 98%  │  Security ●CLEAN  │  Memory ●AgentDB  │  Integration ●
+▊ Claude Flow V3 ● ruvnet  │  ⎇ main  │  Opus 4.6  | ●42% ctx  | $0.15
+🏗️ DDD [●●●●○] 4/5  ⚡ HNSW 150x  🤖 ◉ [12/8]  👥 3  🟢 CVE 3/3  💾 512MB  🧠 15%  📦 AgentDB ●1.2K vectors
 ```
 
-| Indicator | Description | Values |
+| Indicator | Description | Source |
 |-----------|-------------|--------|
-| `▊ Ruflo V3` | Project header | Always shown |
-| `● ruvnet` | GitHub user (via `gh` CLI) | Dynamic |
-| `⎇ v3` | Current git branch | Dynamic |
-| `Opus 4.5` | Claude model name | From Claude Code |
-| `[●●●●●]` | DDD domain progress bar | 0-5 domains |
-| `⚡ 1.0x → 2.49x-7.47x` | Performance speedup target | Current → Target |
-| `◉/○` | Swarm coordination status | Active/Inactive |
-| `[58/15]` | Active agents / max agents | Process count |
-| `👥 0` | Sub-agents spawned | Task tool agents |
-| `🟢 CVE 3/3` | Security CVE remediation | Fixed/Total |
-| `💾 22282MB` | Memory usage (Node.js processes) | Real-time |
-| `📂 47%` | Context window usage | From Claude Code |
-| `🧠 10%` | Intelligence score (patterns learned) | 0-100% |
-| `DDD ● 98%` | Domain-Driven Design progress | Percentage |
-| `Security ●CLEAN` | Security audit status | CLEAN/PENDING/FAILED |
-| `Memory ●AgentDB` | Memory backend in use | AgentDB/SQLite/Hybrid |
-| `Integration ●` | agentic-flow integration status | Active/Inactive |
+| `▊ Claude Flow V3` | Project header | Always shown |
+| `● ruvnet` | GitHub user | `gh api user` CLI |
+| `⎇ main` | Current git branch | `git branch --show-current` |
+| `Opus 4.6` | Claude model name | Stdin JSON `model.display_name` |
+| `●42% ctx` | Context window usage | Stdin JSON `context_window.used_percentage` |
+| `$0.15` | Session cost | Stdin JSON `cost.total_cost_usd` |
+| `[●●●●○]` | DDD domain progress bar | `.claude-flow/metrics/v3-progress.json` |
+| `⚡ HNSW 150x` | HNSW search speedup | AgentDB file stats |
+| `◉/○` | Swarm coordination status | Process detection |
+| `[12/8]` | Active agents / max agents | `ps aux` process count |
+| `👥 3` | Sub-agents spawned | Task tool agent count |
+| `🟢 CVE 3/3` | Security CVE remediation | `.claude-flow/security/audit-status.json` |
+| `💾 512MB` | Memory usage | Node.js process RSS |
+| `🧠 15%` | Intelligence score | Pattern count from AgentDB |
+| `📦 AgentDB ●1.2K` | AgentDB vector count | File size estimate (`size / 2KB`) |
 
-**Usage:**
-```bash
-# Default: Safe multi-line (avoids Claude Code collision zone)
-npx ruflo@v3alpha hooks statusline
+**Setup (Automatic):**
 
-# Single-line mode (completely avoids collision)
-npx ruflo@v3alpha hooks statusline --single
+Run `npx claude-flow@v3alpha init` — this generates `.claude/settings.json` with the correct statusline config and creates the helper script at `.claude/helpers/statusline.cjs`.
 
-# Legacy multi-line (original behavior, may have bleeding)
-npx ruflo@v3alpha hooks statusline --legacy
-
-# JSON output for scripting
-npx ruflo@v3alpha hooks statusline --json
-
-# Compact JSON (single line)
-npx ruflo@v3alpha hooks statusline --compact
-```
-
-**Collision Zone Fix (Issue #985):**
-
-Claude Code writes internal status (e.g., `7s • 1p`) at absolute terminal coordinates (columns 15-25 on the second-to-last line). The safe mode pads the collision line with spaces to push content past column 25, preventing character bleeding.
-
-| Option | Description |
-|--------|-------------|
-| (default) | Safe multi-line with collision zone avoidance |
-| `--single` | Single-line output (complete collision avoidance) |
-| `--legacy` | Original multi-line (may cause bleeding) |
-| `--json` | JSON output with pretty printing |
-| `--compact` | JSON output without formatting |
-
-**Claude Code Integration:**
-
-Add to `.claude/settings.json`:
+The generated config uses a **fast local script** (no `npx` cold-start):
 ```json
 {
   "statusLine": {
     "type": "command",
-    "command": "npx ruflo@v3alpha hooks statusline --single"
+    "command": "node .claude/helpers/statusline.cjs"
   }
 }
 ```
 
+> **Note:** Only `type`, `command`, and `padding` are valid statusLine fields. Do not add `refreshMs`, `enabled`, or other fields — Claude Code will ignore them.
+
+**For Existing Users:**
+
+If your statusline is not updating, run the upgrade command to regenerate helpers and fix the config:
+```bash
+npx claude-flow@v3alpha init --update --settings
+```
+
+This removes invalid config fields and regenerates the statusline helper with stdin support.
+
+**Stdin JSON Protocol:**
+
+Claude Code provides session data via stdin in this format:
+```json
+{
+  "model": { "display_name": "Opus 4.6" },
+  "context_window": { "used_percentage": 42, "remaining_percentage": 58 },
+  "cost": { "total_cost_usd": 0.15, "total_duration_ms": 45000 },
+  "workspace": { "current_dir": "/path/to/project" },
+  "session_id": "abc-123"
+}
+```
+
+The statusline script reads stdin synchronously, falls back to local detection when run manually (TTY mode).
+
 **Data Sources:**
-- `.ruflo/metrics/v3-progress.json` - DDD domain progress
-- `.ruflo/metrics/swarm-activity.json` - Active agent counts
-- `.ruflo/security/audit-status.json` - CVE remediation status
-- `.ruflo/learning/patterns.db` - Intelligence score (pattern count)
-- Process detection via `ps aux` - Real-time memory and agent counts
+- **Stdin JSON** — Model name, context %, cost, duration (from Claude Code)
+- `.claude-flow/metrics/v3-progress.json` — DDD domain progress
+- `.claude-flow/metrics/swarm-activity.json` — Active agent counts
+- `.claude-flow/security/audit-status.json` — CVE remediation status
+- **AgentDB files** — Vector count (estimated from file size), HNSW index status
+- Process detection via `ps aux` — Real-time memory and agent counts
 - Git branch via `git branch --show-current`
 - GitHub user via `gh api user`
 
