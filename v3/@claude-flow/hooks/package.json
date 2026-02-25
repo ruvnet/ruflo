@@ -7,35 +7,36 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.js",
-      "import": "./dist/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./registry": {
-      "types": "./dist/registry/index.d.js",
+      "types": "./dist/registry/index.d.ts",
       "import": "./dist/registry/index.js"
     },
     "./executor": {
-      "types": "./dist/executor/index.d.js",
+      "types": "./dist/executor/index.d.ts",
       "import": "./dist/executor/index.js"
     },
     "./daemons": {
-      "types": "./dist/daemons/index.d.js",
+      "types": "./dist/daemons/index.d.ts",
       "import": "./dist/daemons/index.js"
     },
     "./statusline": {
-      "types": "./dist/statusline/index.d.js",
+      "types": "./dist/statusline/index.d.ts",
       "import": "./dist/statusline/index.js"
     },
     "./mcp": {
-      "types": "./dist/mcp/index.d.js",
+      "types": "./dist/mcp/index.d.ts",
       "import": "./dist/mcp/index.js"
     },
     "./reasoningbank": {
-      "types": "./dist/reasoningbank/index.d.js",
+      "types": "./dist/reasoningbank/index.d.ts",
       "import": "./dist/reasoningbank/index.js"
     },
     "./guidance": {
-      "types": "./dist/reasoningbank/guidance-provider.d.js",
+      "types": "./dist/reasoningbank/guidance-provider.d.ts",
       "import": "./dist/reasoningbank/guidance-provider.js"
     }
   },

@@ -10,7 +10,7 @@ import type { MCPTool } from './types.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
-const CONFIG_FILE = 'config.json';
+const CONFIG_FILE = 'config-store.json';
 
 interface ConfigStore {
   values: Record<string, unknown>;
@@ -20,17 +20,30 @@ interface ConfigStore {
 }
 
 const DEFAULT_CONFIG: Record<string, unknown> = {
-  'swarm.topology': 'mesh',
-  'swarm.maxAgents': 10,
+  'version': '3.0.0',
+  'swarm.topology': 'hierarchical-mesh',
+  'swarm.maxAgents': 15,
   'swarm.autoScale': true,
+  'swarm.coordinationStrategy': 'consensus',
+  'memory.backend': 'hybrid',
+  'memory.enableHNSW': true,
+  'memory.persistPath': '.claude-flow/data',
+  'memory.cacheSize': 100,
   'memory.persistInterval': 60000,
   'memory.maxEntries': 10000,
+  'neural.enabled': true,
+  'hooks.enabled': true,
+  'hooks.autoExecute': true,
+  'mcp.autoStart': true,
+  'mcp.port': 3000,
   'session.autoSave': true,
   'session.saveInterval': 300000,
   'logging.level': 'info',
   'logging.format': 'json',
   'security.sandboxEnabled': true,
   'security.pathValidation': true,
+  'agents.defaultType': 'coder',
+  'agents.maxConcurrent': 15,
 };
 
 function getConfigDir(): string {
@@ -48,16 +61,47 @@ function ensureConfigDir(): void {
   }
 }
 
+function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      Object.assign(result, flattenObject(value as Record<string, unknown>, fullKey));
+    } else {
+      result[fullKey] = value;
+    }
+  }
+  return result;
+}
+
 function loadConfigStore(): ConfigStore {
   try {
-    const path = getConfigPath();
-    if (existsSync(path)) {
-      const data = readFileSync(path, 'utf-8');
+    const storePath = getConfigPath();
+    if (existsSync(storePath)) {
+      const data = readFileSync(storePath, 'utf-8');
       return JSON.parse(data);
     }
   } catch {
-    // Return default store on error
+    // Fall through to defaults
   }
+
+  // Try reading init-generated config.json and bootstrap from it
+  try {
+    const initConfigPath = join(process.cwd(), STORAGE_DIR, 'config.json');
+    if (existsSync(initConfigPath)) {
+      const initConfig = JSON.parse(readFileSync(initConfigPath, 'utf-8'));
+      const flattened = flattenObject(initConfig);
+      return {
+        values: { ...DEFAULT_CONFIG, ...flattened },
+        scopes: {},
+        version: initConfig.version || '3.0.0',
+        updatedAt: new Date().toISOString(),
+      };
+    }
+  } catch {
+    // Fall through to defaults
+  }
+
   return {
     values: { ...DEFAULT_CONFIG },
     scopes: {},

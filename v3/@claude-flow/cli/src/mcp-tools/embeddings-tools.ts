@@ -74,19 +74,50 @@ function saveConfig(config: EmbeddingsConfig): void {
   writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), 'utf-8');
 }
 
-// Real ONNX embedding generation via memory-initializer
+// Embedding provider with graceful fallback chain
 let realEmbeddingFn: ((text: string) => Promise<{ embedding: number[]; dimensions: number; model: string }>) | null = null;
+let embeddingSource: string = 'none';
 
 async function getRealEmbeddingFunction() {
-  if (!realEmbeddingFn) {
-    try {
-      const { generateEmbedding } = await import('../memory/memory-initializer.js');
-      realEmbeddingFn = generateEmbedding;
-    } catch {
-      realEmbeddingFn = null;
-    }
+  if (realEmbeddingFn) {
+    return realEmbeddingFn;
   }
-  return realEmbeddingFn;
+
+  // Try 1: @claude-flow/embeddings package
+  try {
+    const pkg = await import('@claude-flow/embeddings');
+    if (pkg && pkg.createEmbeddingService) {
+      const service = pkg.createEmbeddingService({ provider: 'agentic-flow' });
+      realEmbeddingFn = async (text: string) => {
+        const result = await service.embed(text);
+        const embedding = Array.from(result.embedding) as number[];
+        return { embedding, dimensions: embedding.length, model: '@claude-flow/embeddings' };
+      };
+      embeddingSource = '@claude-flow/embeddings';
+      console.error(`[embeddings-tools] Provider active: ${embeddingSource}`);
+      return realEmbeddingFn;
+    }
+  } catch {
+    // @claude-flow/embeddings not installed
+  }
+
+  // Try 2: Local memory-initializer ONNX embeddings
+  try {
+    const { generateEmbedding } = await import('../memory/memory-initializer.js');
+    if (generateEmbedding) {
+      realEmbeddingFn = generateEmbedding;
+      embeddingSource = 'local-onnx';
+      console.error(`[embeddings-tools] Provider active: ${embeddingSource}`);
+      return realEmbeddingFn;
+    }
+  } catch {
+    // memory-initializer not available
+  }
+
+  // Try 3: No real provider available
+  embeddingSource = 'hash-fallback';
+  console.error('[embeddings-tools] No embedding provider found, using hash-based fallback');
+  return null;
 }
 
 // Generate real ONNX embedding (falls back to deterministic hash if ONNX unavailable)
@@ -486,22 +517,56 @@ export const embeddingsTools: MCPTool[] = [
           },
         };
       } catch {
-        // Database not available - return empty but truthful
-        const searchTime = (performance.now() - startTime).toFixed(2);
-        return {
-          success: true,
-          query,
-          results: [],
-          metadata: {
-            model: config.model,
-            topK,
+        // Database not available - try to initialize before giving up
+        try {
+          const { initializeMemoryDatabase, searchEntries: retrySearch } = await import('../memory/memory-initializer.js');
+          await initializeMemoryDatabase({ verbose: false });
+          const retryResult = await retrySearch({
+            query,
+            limit: topK,
             threshold,
-            namespace: namespace || 'default',
-            searchTime: `${searchTime}ms`,
-            indexType: config.hyperbolic.enabled ? 'HNSW (hyperbolic)' : 'HNSW (euclidean)',
-          },
-          message: 'No embeddings indexed yet. Use memory store to add documents.',
-        };
+            namespace: namespace || 'default'
+          });
+          const searchTime = (performance.now() - startTime).toFixed(2);
+          return {
+            success: true,
+            query,
+            results: retryResult.results.map((r) => ({
+              key: r.key,
+              content: r.content?.substring(0, 100),
+              similarity: r.score,
+              namespace: r.namespace
+            })),
+            metadata: {
+              model: config.model,
+              topK,
+              threshold,
+              namespace: namespace || 'default',
+              searchTime: `${searchTime}ms`,
+              indexType: config.hyperbolic.enabled ? 'HNSW (hyperbolic)' : 'HNSW (euclidean)',
+              resultCount: retryResult.results.length,
+              note: 'Database was auto-initialized on first search',
+            },
+          };
+        } catch {
+          // Truly unavailable - return empty but truthful
+          const searchTime = (performance.now() - startTime).toFixed(2);
+          return {
+            success: true,
+            query,
+            results: [],
+            metadata: {
+              model: config.model,
+              topK,
+              threshold,
+              namespace: namespace || 'default',
+              searchTime: `${searchTime}ms`,
+              indexType: config.hyperbolic.enabled ? 'HNSW (hyperbolic)' : 'HNSW (euclidean)',
+              embeddingSource,
+            },
+            message: 'No embeddings indexed yet. Use memory store to add documents.',
+          };
+        }
       }
     },
   },
@@ -696,7 +761,8 @@ export const embeddingsTools: MCPTool[] = [
                 ruvector: config.neural.ruvector || { enabled: false },
                 features: config.neural.features || {},
               },
-              message: 'Intelligence module not available - showing config only',
+              embeddingSource,
+              message: `Intelligence module not available (embeddings via ${embeddingSource}) - showing config only`,
             };
           }
       }

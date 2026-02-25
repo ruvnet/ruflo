@@ -164,7 +164,7 @@ async function initCodexAction(
 // Check if project is already initialized
 function isInitialized(cwd: string): { claude: boolean; claudeFlow: boolean } {
   const claudePath = path.join(cwd, '.claude', 'settings.json');
-  const claudeFlowPath = path.join(cwd, '.claude-flow', 'config.yaml');
+  const claudeFlowPath = path.join(cwd, '.claude-flow', 'config.json');
   return {
     claude: fs.existsSync(claudePath),
     claudeFlow: fs.existsSync(claudeFlowPath),
@@ -194,7 +194,7 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   if (hasExisting && !force) {
     output.printWarning('Claude Flow appears to be already initialized');
     if (initialized.claude) output.printInfo('  Found: .claude/settings.json');
-    if (initialized.claudeFlow) output.printInfo('  Found: .claude-flow/config.yaml');
+    if (initialized.claudeFlow) output.printInfo('  Found: .claude-flow/config.json');
     output.printInfo('Use --force to reinitialize');
 
     if (ctx.interactive) {
@@ -219,11 +219,50 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   let options: InitOptions;
 
   if (minimal) {
-    options = { ...MINIMAL_INIT_OPTIONS, targetDir: cwd, force };
+    options = {
+      ...MINIMAL_INIT_OPTIONS,
+      targetDir: cwd,
+      force,
+      components: { ...MINIMAL_INIT_OPTIONS.components },
+      hooks: { ...MINIMAL_INIT_OPTIONS.hooks },
+      skills: { ...MINIMAL_INIT_OPTIONS.skills },
+      commands: { ...MINIMAL_INIT_OPTIONS.commands },
+      agents: { ...MINIMAL_INIT_OPTIONS.agents },
+      statusline: { ...MINIMAL_INIT_OPTIONS.statusline },
+      mcp: { ...MINIMAL_INIT_OPTIONS.mcp },
+      runtime: { ...MINIMAL_INIT_OPTIONS.runtime },
+      embeddings: { ...MINIMAL_INIT_OPTIONS.embeddings },
+    };
   } else if (full) {
-    options = { ...FULL_INIT_OPTIONS, targetDir: cwd, force };
+    options = {
+      ...FULL_INIT_OPTIONS,
+      targetDir: cwd,
+      force,
+      components: { ...FULL_INIT_OPTIONS.components },
+      hooks: { ...FULL_INIT_OPTIONS.hooks },
+      skills: { ...FULL_INIT_OPTIONS.skills },
+      commands: { ...FULL_INIT_OPTIONS.commands },
+      agents: { ...FULL_INIT_OPTIONS.agents },
+      statusline: { ...FULL_INIT_OPTIONS.statusline },
+      mcp: { ...FULL_INIT_OPTIONS.mcp },
+      runtime: { ...FULL_INIT_OPTIONS.runtime },
+      embeddings: { ...FULL_INIT_OPTIONS.embeddings },
+    };
   } else {
-    options = { ...DEFAULT_INIT_OPTIONS, targetDir: cwd, force };
+    options = {
+      ...DEFAULT_INIT_OPTIONS,
+      targetDir: cwd,
+      force,
+      components: { ...DEFAULT_INIT_OPTIONS.components },
+      hooks: { ...DEFAULT_INIT_OPTIONS.hooks },
+      skills: { ...DEFAULT_INIT_OPTIONS.skills },
+      commands: { ...DEFAULT_INIT_OPTIONS.commands },
+      agents: { ...DEFAULT_INIT_OPTIONS.agents },
+      statusline: { ...DEFAULT_INIT_OPTIONS.statusline },
+      mcp: { ...DEFAULT_INIT_OPTIONS.mcp },
+      runtime: { ...DEFAULT_INIT_OPTIONS.runtime },
+      embeddings: { ...DEFAULT_INIT_OPTIONS.embeddings },
+    };
   }
 
   // Handle --skip-claude and --only-claude flags
@@ -299,7 +338,7 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
     if (options.components.runtime) {
       output.printBox(
         [
-          `Config:      .claude-flow/config.yaml`,
+          `Config:      .claude-flow/config.json`,
           `Data:        .claude-flow/data/`,
           `Logs:        .claude-flow/logs/`,
           `Sessions:    .claude-flow/sessions/`,
@@ -359,7 +398,8 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
       if (startAll) {
         try {
           output.writeln(output.dim('  Initializing swarm...'));
-          execSync('npx @claude-flow/cli@latest swarm init --topology hierarchical 2>/dev/null', {
+          const swarmTopology = options.runtime?.topology || 'hierarchical-mesh';
+          execSync(`npx @claude-flow/cli@latest swarm init --topology ${swarmTopology} 2>/dev/null`, {
             stdio: 'pipe',
             cwd: ctx.cwd,
             timeout: 30000
@@ -434,8 +474,20 @@ const wizardCommand: Command = {
     output.writeln();
 
     try {
-      // Start with base options
-      const options: InitOptions = { ...DEFAULT_INIT_OPTIONS, targetDir: ctx.cwd };
+      // Start with base options (deep-clone nested objects to avoid mutating constants)
+      const options: InitOptions = {
+        ...DEFAULT_INIT_OPTIONS,
+        targetDir: ctx.cwd,
+        components: { ...DEFAULT_INIT_OPTIONS.components },
+        hooks: { ...DEFAULT_INIT_OPTIONS.hooks },
+        skills: { ...DEFAULT_INIT_OPTIONS.skills },
+        commands: { ...DEFAULT_INIT_OPTIONS.commands },
+        agents: { ...DEFAULT_INIT_OPTIONS.agents },
+        statusline: { ...DEFAULT_INIT_OPTIONS.statusline },
+        mcp: { ...DEFAULT_INIT_OPTIONS.mcp },
+        runtime: { ...DEFAULT_INIT_OPTIONS.runtime },
+        embeddings: { ...DEFAULT_INIT_OPTIONS.embeddings },
+      };
 
       // Configuration preset
       const preset = await select({
@@ -449,11 +501,31 @@ const wizardCommand: Command = {
       });
 
       if (preset === 'minimal') {
-        Object.assign(options, MINIMAL_INIT_OPTIONS);
-        options.targetDir = ctx.cwd;
+        Object.assign(options, MINIMAL_INIT_OPTIONS, {
+          targetDir: ctx.cwd,
+          components: { ...MINIMAL_INIT_OPTIONS.components },
+          hooks: { ...MINIMAL_INIT_OPTIONS.hooks },
+          skills: { ...MINIMAL_INIT_OPTIONS.skills },
+          commands: { ...MINIMAL_INIT_OPTIONS.commands },
+          agents: { ...MINIMAL_INIT_OPTIONS.agents },
+          statusline: { ...MINIMAL_INIT_OPTIONS.statusline },
+          mcp: { ...MINIMAL_INIT_OPTIONS.mcp },
+          runtime: { ...MINIMAL_INIT_OPTIONS.runtime },
+          embeddings: { ...MINIMAL_INIT_OPTIONS.embeddings },
+        });
       } else if (preset === 'full') {
-        Object.assign(options, FULL_INIT_OPTIONS);
-        options.targetDir = ctx.cwd;
+        Object.assign(options, FULL_INIT_OPTIONS, {
+          targetDir: ctx.cwd,
+          components: { ...FULL_INIT_OPTIONS.components },
+          hooks: { ...FULL_INIT_OPTIONS.hooks },
+          skills: { ...FULL_INIT_OPTIONS.skills },
+          commands: { ...FULL_INIT_OPTIONS.commands },
+          agents: { ...FULL_INIT_OPTIONS.agents },
+          statusline: { ...FULL_INIT_OPTIONS.statusline },
+          mcp: { ...FULL_INIT_OPTIONS.mcp },
+          runtime: { ...FULL_INIT_OPTIONS.runtime },
+          embeddings: { ...FULL_INIT_OPTIONS.embeddings },
+        });
       } else if (preset === 'custom') {
         // Component selection
         const components = await multiSelect({
@@ -692,7 +764,7 @@ const checkCommand: Command = {
       claudeFlow: initialized.claudeFlow,
       paths: {
         claudeSettings: initialized.claude ? path.join(ctx.cwd, '.claude', 'settings.json') : null,
-        claudeFlowConfig: initialized.claudeFlow ? path.join(ctx.cwd, '.claude-flow', 'config.yaml') : null,
+        claudeFlowConfig: initialized.claudeFlow ? path.join(ctx.cwd, '.claude-flow', 'config.json') : null,
       },
     };
 
@@ -707,7 +779,7 @@ const checkCommand: Command = {
         output.printInfo(`  Claude Code: .claude/settings.json`);
       }
       if (initialized.claudeFlow) {
-        output.printInfo(`  V3 Runtime: .claude-flow/config.yaml`);
+        output.printInfo(`  V3 Runtime: .claude-flow/config.json`);
       }
     } else {
       output.printWarning('Claude Flow is not initialized in this directory');
@@ -745,6 +817,7 @@ const skillsCommand: Command = {
         runtime: false,
         claudeMd: false,
       },
+      hooks: { ...MINIMAL_INIT_OPTIONS.hooks },
       skills: {
         all: ctx.flags.all as boolean,
         core: ctx.flags.core as boolean,
@@ -755,6 +828,12 @@ const skillsCommand: Command = {
         v3: ctx.flags.v3 as boolean,
         dualMode: false,
       },
+      commands: { ...MINIMAL_INIT_OPTIONS.commands },
+      agents: { ...MINIMAL_INIT_OPTIONS.agents },
+      statusline: { ...MINIMAL_INIT_OPTIONS.statusline },
+      mcp: { ...MINIMAL_INIT_OPTIONS.mcp },
+      runtime: { ...MINIMAL_INIT_OPTIONS.runtime },
+      embeddings: { ...MINIMAL_INIT_OPTIONS.embeddings },
     };
 
     const spinner = output.createSpinner({ text: 'Installing skills...' });
@@ -813,7 +892,14 @@ const hooksCommand: Command = {
             timeout: 5000,
             continueOnError: true,
           }
-        : DEFAULT_INIT_OPTIONS.hooks,
+        : { ...DEFAULT_INIT_OPTIONS.hooks },
+      skills: { ...DEFAULT_INIT_OPTIONS.skills },
+      commands: { ...DEFAULT_INIT_OPTIONS.commands },
+      agents: { ...DEFAULT_INIT_OPTIONS.agents },
+      statusline: { ...DEFAULT_INIT_OPTIONS.statusline },
+      mcp: { ...DEFAULT_INIT_OPTIONS.mcp },
+      runtime: { ...DEFAULT_INIT_OPTIONS.runtime },
+      embeddings: { ...DEFAULT_INIT_OPTIONS.embeddings },
     };
 
     const spinner = output.createSpinner({ text: 'Creating hooks configuration...' });

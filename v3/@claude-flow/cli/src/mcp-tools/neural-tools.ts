@@ -16,26 +16,24 @@ import type { MCPTool } from './types.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-// Try to import real embeddings from @claude-flow/embeddings
+// Embedding provider with graceful fallback chain
 let realEmbeddings: { embed: (text: string) => Promise<number[]> } | null = null;
 let embeddingServiceName: string = 'none';
+
+// Try 1: @claude-flow/embeddings package (shared package)
 try {
-  // Dynamic import to avoid hard dependency
   const embeddingsModule = await import('@claude-flow/embeddings');
   if (embeddingsModule.createEmbeddingService) {
-    // Try to create agentic-flow service (fastest), fall back to mock
     try {
       const service = embeddingsModule.createEmbeddingService({ provider: 'agentic-flow' });
       realEmbeddings = {
         embed: async (text: string) => {
           const result = await service.embed(text);
-          // Convert Float32Array to number[] if needed
           return Array.from(result.embedding);
         },
       };
       embeddingServiceName = 'agentic-flow';
     } catch {
-      // Fall back to mock service
       const service = embeddingsModule.createEmbeddingService({ provider: 'mock' });
       realEmbeddings = {
         embed: async (text: string) => {
@@ -47,7 +45,60 @@ try {
     }
   }
 } catch {
-  // @claude-flow/embeddings not available, will use fallback
+  // @claude-flow/embeddings not installed, try next source
+}
+
+// Try 2: Local memory-initializer ONNX embeddings
+if (!realEmbeddings) {
+  try {
+    const { generateEmbedding: localGenerate } = await import('../memory/memory-initializer.js');
+    if (localGenerate) {
+      realEmbeddings = {
+        embed: async (text: string) => {
+          const result = await localGenerate(text);
+          return result.embedding;
+        },
+      };
+      embeddingServiceName = 'local-onnx';
+    }
+  } catch {
+    // memory-initializer not available, will use hash fallback
+  }
+}
+
+// Log which provider is active
+if (embeddingServiceName !== 'none') {
+  console.error(`[neural-tools] Embedding provider active: ${embeddingServiceName}`);
+} else {
+  console.error('[neural-tools] No embedding provider found, using hash-based fallback');
+}
+
+// ---------------------------------------------------------------------------
+// Runtime config helpers — read .claude-flow/config.json so that the
+// neural.enabled toggle (and related keys) are honoured at runtime.
+// ---------------------------------------------------------------------------
+
+function loadRuntimeConfig(): Record<string, unknown> {
+  try {
+    const configPath = join(process.cwd(), '.claude-flow', 'config.json');
+    if (existsSync(configPath)) {
+      return JSON.parse(readFileSync(configPath, 'utf-8'));
+    }
+  } catch { /* fall through */ }
+  return {};
+}
+
+function getConfigValue(config: Record<string, unknown>, path: string): unknown {
+  const parts = path.split('.');
+  let current: unknown = config;
+  for (const part of parts) {
+    if (current && typeof current === 'object' && part in (current as Record<string, unknown>)) {
+      current = (current as Record<string, unknown>)[part];
+    } else {
+      return undefined;
+    }
+  }
+  return current;
 }
 
 // Storage paths
@@ -178,6 +229,16 @@ export const neuralTools: MCPTool[] = [
       required: ['modelType'],
     },
     handler: async (input) => {
+      // Gate on runtime config — respect neural.enabled toggle
+      const rc = loadRuntimeConfig();
+      if (getConfigValue(rc, 'neural.enabled') === false) {
+        return {
+          success: false,
+          status: 'disabled',
+          message: 'Neural features disabled in config. Set neural.enabled=true in .claude-flow/config.json',
+        };
+      }
+
       const store = loadNeuralStore();
       const modelId = (input.modelId as string) || `model-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const modelType = input.modelType as NeuralModel['type'];
@@ -232,6 +293,16 @@ export const neuralTools: MCPTool[] = [
       required: ['input'],
     },
     handler: async (input) => {
+      // Gate on runtime config — respect neural.enabled toggle
+      const rc = loadRuntimeConfig();
+      if (getConfigValue(rc, 'neural.enabled') === false) {
+        return {
+          success: false,
+          status: 'disabled',
+          message: 'Neural features disabled in config. Set neural.enabled=true in .claude-flow/config.json',
+        };
+      }
+
       const store = loadNeuralStore();
       const modelId = input.modelId as string;
       const inputText = input.input as string;
@@ -401,6 +472,16 @@ export const neuralTools: MCPTool[] = [
       },
     },
     handler: async (input) => {
+      // Gate on runtime config — respect neural.enabled toggle
+      const rc = loadRuntimeConfig();
+      if (getConfigValue(rc, 'neural.enabled') === false) {
+        return {
+          success: false,
+          status: 'disabled',
+          message: 'Neural features disabled in config. Set neural.enabled=true in .claude-flow/config.json',
+        };
+      }
+
       const method = (input.method as string) || 'quantize';
       const targetSize = (input.targetSize as number) || 0.25;
 
@@ -437,21 +518,25 @@ export const neuralTools: MCPTool[] = [
     },
     handler: async (input) => {
       const store = loadNeuralStore();
+      const rc = loadRuntimeConfig();
+      const neuralEnabled = getConfigValue(rc, 'neural.enabled') !== false;
 
       if (input.modelId) {
         const model = store.models[input.modelId as string];
         if (!model) {
           return { success: false, error: 'Model not found' };
         }
-        return { success: true, model };
+        return { success: true, model, neuralEnabled };
       }
 
       const models = Object.values(store.models);
       const patterns = Object.values(store.patterns);
 
       return {
+        neuralEnabled,
+        configSource: Object.keys(rc).length > 0 ? '.claude-flow/config.json' : 'defaults',
         _realEmbeddings: !!realEmbeddings,
-        embeddingProvider: realEmbeddings ? `@claude-flow/embeddings (${embeddingServiceName})` : 'hash-based (deterministic)',
+        embeddingProvider: realEmbeddings ? `${embeddingServiceName}` : 'hash-based (deterministic)',
         models: {
           total: models.length,
           ready: models.filter(m => m.status === 'ready').length,
@@ -469,10 +554,15 @@ export const neuralTools: MCPTool[] = [
           totalEmbeddingDims: patterns.length > 0 ? patterns[0].embedding.length : 384,
         },
         features: {
-          hnsw: true,
-          quantization: true,
-          flashAttention: false,
+          hnsw: getConfigValue(rc, 'memory.hnsw.enabled') !== false,
+          quantization: getConfigValue(rc, 'memory.quantization.enabled') !== false,
+          flashAttention: getConfigValue(rc, 'neural.flashAttention.enabled') === true,
           reasoningBank: true,
+          sona: getConfigValue(rc, 'neural.sona.enabled') !== false,
+          ewc: getConfigValue(rc, 'neural.ewc.enabled') !== false,
+          moe: getConfigValue(rc, 'neural.moe.enabled') !== false,
+          learningBridge: getConfigValue(rc, 'memory.learningBridge.enabled') !== false,
+          memoryGraph: getConfigValue(rc, 'memory.memoryGraph.enabled') !== false,
         },
       };
     },
@@ -489,6 +579,16 @@ export const neuralTools: MCPTool[] = [
       },
     },
     handler: async (input) => {
+      // Gate on runtime config — respect neural.enabled toggle
+      const rc = loadRuntimeConfig();
+      if (getConfigValue(rc, 'neural.enabled') === false) {
+        return {
+          success: false,
+          status: 'disabled',
+          message: 'Neural features disabled in config. Set neural.enabled=true in .claude-flow/config.json',
+        };
+      }
+
       const target = (input.target as string) || 'balanced';
 
       const optimizations: Record<string, { applied: string[]; improvement: string }> = {

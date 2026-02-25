@@ -193,7 +193,7 @@ const initCommand: Command = {
       description: 'Swarm topology',
       type: 'string',
       choices: TOPOLOGIES.map(t => t.value),
-      default: 'hierarchical'
+      default: 'hierarchical-mesh'
     },
     {
       name: 'max-agents',

@@ -71,8 +71,6 @@ async function checkNpmVersion(): Promise<HealthCheck> {
 async function checkConfigFile(): Promise<HealthCheck> {
   const configPaths = [
     '.claude-flow/config.json',
-    'claude-flow.config.json',
-    '.claude-flow.json'
   ];
 
   for (const configPath of configPaths) {
@@ -130,6 +128,42 @@ async function checkMemoryDatabase(): Promise<HealthCheck> {
   }
 
   return { name: 'Memory Database', status: 'warn', message: 'Not initialized', fix: 'claude-flow memory configure --backend hybrid' };
+}
+
+// Check native memory backend dependency (better-sqlite3)
+async function checkNativeMemoryBackend(): Promise<HealthCheck> {
+  try {
+    await runCommand('node -e "require(\'better-sqlite3\')"', 10000);
+    return { name: 'Native Memory Backend', status: 'pass', message: 'better-sqlite3 is available' };
+  } catch {
+    return {
+      name: 'Native Memory Backend',
+      status: 'warn',
+      message: 'better-sqlite3 not installed (native memory backend unavailable)',
+      fix: 'npm install better-sqlite3 --save-optional'
+    };
+  }
+}
+
+// Attempt to install better-sqlite3 for the native memory backend
+async function installNativeMemoryBackend(): Promise<boolean> {
+  try {
+    output.writeln();
+    output.writeln(output.bold('Installing native memory backend (better-sqlite3)...'));
+    execSync('npm install better-sqlite3 --save-optional', {
+      encoding: 'utf8',
+      stdio: 'inherit',
+      timeout: 60000
+    });
+    output.writeln(output.success('better-sqlite3 installed successfully!'));
+    return true;
+  } catch (error) {
+    output.writeln(output.error('Failed to install better-sqlite3'));
+    if (error instanceof Error) {
+      output.writeln(output.dim(error.message));
+    }
+    return false;
+  }
 }
 
 // Check API keys
@@ -431,7 +465,7 @@ export const doctorCommand: Command = {
     {
       name: 'component',
       short: 'c',
-      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, claude, disk, typescript)',
+      description: 'Check specific component (version, node, npm, config, daemon, memory, native-memory, api, git, mcp, claude, disk, typescript)',
       type: 'string'
     },
     {
@@ -471,6 +505,7 @@ export const doctorCommand: Command = {
       checkConfigFile,
       checkDaemonStatus,
       checkMemoryDatabase,
+      checkNativeMemoryBackend,
       checkApiKeys,
       checkMcpServers,
       checkDiskSpace,
@@ -486,6 +521,7 @@ export const doctorCommand: Command = {
       'config': checkConfigFile,
       'daemon': checkDaemonStatus,
       'memory': checkMemoryDatabase,
+      'native-memory': checkNativeMemoryBackend,
       'api': checkApiKeys,
       'git': checkGit,
       'mcp': checkMcpServers,
@@ -548,6 +584,28 @@ export const doctorCommand: Command = {
             results[idx] = newCheck;
             // Update fixes list
             const fixIdx = fixes.findIndex(f => f.startsWith('Claude Code CLI:'));
+            if (fixIdx !== -1 && newCheck.status === 'pass') {
+              fixes.splice(fixIdx, 1);
+            }
+          }
+          output.writeln(formatCheck(newCheck));
+        }
+      }
+    }
+
+    // Auto-fix native memory backend dependency when --fix is passed
+    if (showFix) {
+      const nativeMemoryResult = results.find(r => r.name === 'Native Memory Backend');
+      if (nativeMemoryResult && nativeMemoryResult.status !== 'pass') {
+        const installed = await installNativeMemoryBackend();
+        if (installed) {
+          // Re-check native memory backend after installation
+          const newCheck = await checkNativeMemoryBackend();
+          const idx = results.findIndex(r => r.name === 'Native Memory Backend');
+          if (idx !== -1) {
+            results[idx] = newCheck;
+            // Update fixes list
+            const fixIdx = fixes.findIndex(f => f.startsWith('Native Memory Backend:'));
             if (fixIdx !== -1 && newCheck.status === 'pass') {
               fixes.splice(fixIdx, 1);
             }

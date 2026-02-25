@@ -490,9 +490,9 @@ describe('Start Command', () => {
     vi.clearAllMocks();
     vi.mocked(fs.existsSync).mockImplementation((p: fs.PathLike) => {
       const pathStr = String(p);
-      return pathStr.includes('config.yaml');
+      return pathStr.includes('config.json');
     });
-    vi.mocked(fs.readFileSync).mockReturnValue('version: 3.0.0\nswarm:\n  topology: mesh');
+    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ version: '3.0.0', swarm: { topology: 'mesh' } }));
   });
 
   describe('start (default)', () => {

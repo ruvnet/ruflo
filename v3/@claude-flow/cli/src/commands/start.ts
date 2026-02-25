@@ -17,70 +17,18 @@ const DEFAULT_MAX_AGENTS = 15;
 
 // Check if project is initialized
 function isInitialized(cwd: string): boolean {
-  const configPath = path.join(cwd, '.claude-flow', 'config.yaml');
+  const configPath = path.join(cwd, '.claude-flow', 'config.json');
   return fs.existsSync(configPath);
-}
-
-// Simple YAML parser for config (basic implementation)
-function parseSimpleYaml(content: string): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  const lines = content.split('\n');
-  const stack: Array<{ indent: number; obj: Record<string, unknown>; key?: string }> = [
-    { indent: -1, obj: result }
-  ];
-
-  for (const line of lines) {
-    // Skip comments and empty lines
-    if (line.trim().startsWith('#') || line.trim() === '') continue;
-
-    const match = line.match(/^(\s*)(\w+):\s*(.*)$/);
-    if (!match) continue;
-
-    const indent = match[1].length;
-    const key = match[2];
-    let value: unknown = match[3].trim();
-
-    // Parse value
-    if (value === '' || value === undefined) {
-      value = {};
-    } else if (value === 'true') {
-      value = true;
-    } else if (value === 'false') {
-      value = false;
-    } else if (value === 'null') {
-      value = null;
-    } else if (!isNaN(Number(value as string)) && value !== '') {
-      value = Number(value);
-    } else if (typeof value === 'string' && value.startsWith('"') && value.endsWith('"')) {
-      value = value.slice(1, -1);
-    }
-
-    // Find parent based on indentation
-    while (stack.length > 1 && stack[stack.length - 1].indent >= indent) {
-      stack.pop();
-    }
-
-    const parent = stack[stack.length - 1].obj;
-
-    if (typeof value === 'object' && value !== null) {
-      parent[key] = value;
-      stack.push({ indent, obj: value as Record<string, unknown>, key });
-    } else {
-      parent[key] = value;
-    }
-  }
-
-  return result;
 }
 
 // Load configuration
 function loadConfig(cwd: string): Record<string, unknown> | null {
-  const configPath = path.join(cwd, '.claude-flow', 'config.yaml');
+  const configPath = path.join(cwd, '.claude-flow', 'config.json');
   if (!fs.existsSync(configPath)) return null;
 
   try {
     const content = fs.readFileSync(configPath, 'utf-8');
-    return parseSimpleYaml(content);
+    return JSON.parse(content);
   } catch {
     return null;
   }

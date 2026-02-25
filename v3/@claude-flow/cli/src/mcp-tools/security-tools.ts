@@ -27,9 +27,9 @@ let aidefenceInstance: AIDefenceInstance | null = null;
 let installAttempted = false;
 
 /**
- * Get or create AIDefence instance (throws if unavailable)
+ * Get or create AIDefence instance (returns null if unavailable)
  */
-async function getAIDefence(): Promise<AIDefenceInstance> {
+async function getAIDefence(): Promise<AIDefenceInstance | null> {
   if (aidefenceInstance) {
     return aidefenceInstance;
   }
@@ -41,7 +41,8 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
     const aidefence = await import(packageName);
     const instance = aidefence.createAIDefence({ enableLearning: true });
     if (!instance) {
-      throw new Error('createAIDefence returned null');
+      console.error('[claude-flow] createAIDefence returned null');
+      return null;
     }
     aidefenceInstance = instance;
     return instance;
@@ -50,13 +51,14 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
     const error = e as Error;
     if (!error.message?.includes('Cannot find package') && !error.message?.includes('ERR_MODULE_NOT_FOUND')) {
       // Different error - might be a real issue
-      throw new Error(`AIDefence failed to load: ${error.message}`);
+      console.error(`[claude-flow] AIDefence failed to load: ${error.message}`);
+      return null;
     }
   }
 
   // Don't attempt install more than once per session
   if (installAttempted) {
-    throw new Error('AIDefence package not available. Install with: npm install @claude-flow/aidefence');
+    return null;
   }
   installAttempted = true;
 
@@ -65,7 +67,7 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
   const installed = await autoInstallPackage(packageName);
 
   if (!installed) {
-    throw new Error('AIDefence package not available. Install with: npm install @claude-flow/aidefence');
+    return null;
   }
 
   // Retry with ESM cache busting via file:// URL + timestamp
@@ -75,14 +77,30 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
     const aidefence = await import(`file://${modulePath}${cacheBust}`);
     const instance = aidefence.createAIDefence({ enableLearning: true });
     if (!instance) {
-      throw new Error('createAIDefence returned null after install');
+      console.error('[claude-flow] createAIDefence returned null after install');
+      return null;
     }
     aidefenceInstance = instance;
     console.error(`[claude-flow] ${packageName} loaded successfully after install`);
     return instance;
   } catch (retryError) {
-    throw new Error(`AIDefence installed but failed to load: ${retryError}. Try restarting the MCP server.`);
+    console.error(`[claude-flow] AIDefence installed but failed to load: ${retryError}. Try restarting the MCP server.`);
+    return null;
   }
+}
+
+/** Standard degraded-mode response when AIDefence is unavailable */
+function aidefenceUnavailableResult(): MCPToolResult {
+  return {
+    content: [{
+      type: 'text',
+      text: JSON.stringify({
+        status: 'degraded',
+        message: 'AIDefence package not available. Install with: npm install @claude-flow/aidefence',
+        fallback: 'basic-regex-scan',
+      }, null, 2),
+    }],
+  };
 }
 
 /**
@@ -112,6 +130,9 @@ const aidefenceScanTool: MCPTool = {
 
     try {
       const defender = await getAIDefence();
+      if (!defender) {
+        return aidefenceUnavailableResult();
+      }
 
       if (quick) {
         const result = defender.quickScan(input);
@@ -190,6 +211,9 @@ const aidefenceAnalyzeTool: MCPTool = {
 
     try {
       const defender = await getAIDefence();
+      if (!defender) {
+        return aidefenceUnavailableResult();
+      }
       const result = await defender.detect(input);
 
       const analysis: Record<string, unknown> = {
@@ -255,6 +279,9 @@ const aidefenceStatsTool: MCPTool = {
   handler: async (): Promise<MCPToolResult> => {
     try {
       const defender = await getAIDefence();
+      if (!defender) {
+        return aidefenceUnavailableResult();
+      }
       const stats = await defender.getStats();
 
       return {
@@ -328,6 +355,9 @@ const aidefenceLearnTool: MCPTool = {
 
     try {
       const defender = await getAIDefence();
+      if (!defender) {
+        return aidefenceUnavailableResult();
+      }
 
       // Re-detect to get result for learning
       const result = await defender.detect(input);
@@ -393,7 +423,12 @@ const aidefenceIsSafeTool: MCPTool = {
     const input = args.input as string;
 
     try {
-      const { isSafe } = await import('@claude-flow/aidefence');
+      let isSafe: any;
+      try {
+        ({ isSafe } = await import('@claude-flow/aidefence'));
+      } catch {
+        return aidefenceUnavailableResult();
+      }
       const safe = isSafe(input);
 
       return {
@@ -435,6 +470,9 @@ const aidefenceHasPIITool: MCPTool = {
 
     try {
       const defender = await getAIDefence();
+      if (!defender) {
+        return aidefenceUnavailableResult();
+      }
       const hasPII = defender.hasPII(input);
 
       return {

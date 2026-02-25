@@ -11,7 +11,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import {
   HeadlessWorkerExecutor,
@@ -221,12 +221,28 @@ export class WorkerDaemon extends EventEmitter {
     const shutdown = async () => {
       this.log('info', 'Received shutdown signal, stopping daemon...');
       await this.stop();
+      this.cleanupPidFile();
       process.exit(0);
     };
 
     process.on('SIGTERM', shutdown);
     process.on('SIGINT', shutdown);
     process.on('SIGHUP', shutdown);
+  }
+
+  /**
+   * Remove the PID file if it exists
+   */
+  private cleanupPidFile(): void {
+    try {
+      const pidFile = join(this.projectRoot, '.claude-flow', 'daemon.pid');
+      if (existsSync(pidFile)) {
+        unlinkSync(pidFile);
+        this.log('info', 'PID file cleaned up');
+      }
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 
   /**
@@ -345,6 +361,9 @@ export class WorkerDaemon extends EventEmitter {
   async stop(): Promise<void> {
     if (!this.running) {
       this.emit('warning', 'Daemon not running');
+      // Even if the in-process daemon isn't running, try to kill the
+      // background process to avoid orphans (issue #1171).
+      this.killBackgroundDaemonProcess();
       return;
     }
 
@@ -358,8 +377,53 @@ export class WorkerDaemon extends EventEmitter {
 
     this.running = false;
     this.saveState();
+
+    // Kill the detached background process if one exists (issue #1171)
+    this.killBackgroundDaemonProcess();
+
     this.emit('stopped', { stoppedAt: new Date() });
     this.log('info', 'Daemon stopped');
+  }
+
+  /**
+   * Kill the detached background daemon process via PID file.
+   * This ensures orphan processes are cleaned up even when
+   * stop() is called from a different process than the one
+   * that spawned the daemon (issue #1171).
+   */
+  private killBackgroundDaemonProcess(): void {
+    const pidFile = join(this.projectRoot, '.claude-flow', 'daemon.pid');
+    if (!existsSync(pidFile)) {
+      return;
+    }
+
+    try {
+      const pid = parseInt(readFileSync(pidFile, 'utf-8').trim(), 10);
+      if (isNaN(pid)) {
+        this.cleanupPidFile();
+        return;
+      }
+
+      // Check if process is running (signal 0 = alive check)
+      try {
+        process.kill(pid, 0);
+      } catch {
+        // Process not running, clean up stale PID file
+        this.cleanupPidFile();
+        return;
+      }
+
+      // Send SIGTERM to the background process
+      this.log('info', `Sending SIGTERM to background daemon PID ${pid}`);
+      process.kill(pid, 'SIGTERM');
+
+      // Clean up PID file (the killed process should also clean up
+      // via its own shutdown handler, but we do it here as a safeguard)
+      this.cleanupPidFile();
+    } catch (error) {
+      this.log('warn', `Failed to kill background daemon: ${error}`);
+      this.cleanupPidFile();
+    }
   }
 
   /**
@@ -930,11 +994,18 @@ export async function startDaemon(projectRoot: string): Promise<WorkerDaemon> {
 }
 
 /**
- * Stop daemon
+ * Stop daemon (in-process singleton and background PID if present).
+ * When projectRoot is provided, also kills any detached background
+ * daemon process even if no in-process singleton exists (issue #1171).
  */
-export async function stopDaemon(): Promise<void> {
+export async function stopDaemon(projectRoot?: string): Promise<void> {
   if (daemonInstance) {
     await daemonInstance.stop();
+  } else if (projectRoot) {
+    // No in-process daemon, but there may be a detached background
+    // process. Create a temporary instance to leverage the kill logic.
+    const tempDaemon = new WorkerDaemon(projectRoot);
+    await tempDaemon.stop();
   }
 }
 

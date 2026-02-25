@@ -721,7 +721,7 @@ describe('Config Commands', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toHaveProperty('key', 'swarm.maxAgents');
-      expect(result.data).toHaveProperty('value', '20');
+      expect(result.data).toHaveProperty('value', 20);
     });
 
     it('should fail without key and value', async () => {

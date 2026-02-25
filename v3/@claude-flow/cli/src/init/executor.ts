@@ -477,10 +477,18 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
       ...DEFAULT_INIT_OPTIONS,
       targetDir,
       force: true,
+      components: { ...DEFAULT_INIT_OPTIONS.components },
+      hooks: { ...DEFAULT_INIT_OPTIONS.hooks },
+      skills: { ...DEFAULT_INIT_OPTIONS.skills },
+      commands: { ...DEFAULT_INIT_OPTIONS.commands },
+      agents: { ...DEFAULT_INIT_OPTIONS.agents },
       statusline: {
         ...DEFAULT_INIT_OPTIONS.statusline,
         refreshInterval: 5000,
       },
+      mcp: { ...DEFAULT_INIT_OPTIONS.mcp },
+      runtime: { ...DEFAULT_INIT_OPTIONS.runtime },
+      embeddings: { ...DEFAULT_INIT_OPTIONS.embeddings },
     };
     const statuslineContent = generateStatuslineScript(upgradeOptions);
 
@@ -1169,60 +1177,61 @@ async function writeRuntimeConfig(
   options: InitOptions,
   result: InitResult
 ): Promise<void> {
-  const configPath = path.join(targetDir, '.claude-flow', 'config.yaml');
+  const configPath = path.join(targetDir, '.claude-flow', 'config.json');
 
   if (fs.existsSync(configPath) && !options.force) {
-    result.skipped.push('.claude-flow/config.yaml');
+    result.skipped.push('.claude-flow/config.json');
     return;
   }
 
-  const config = `# Claude Flow V3 Runtime Configuration
-# Generated: ${new Date().toISOString()}
+  const configObj = {
+    version: '3.0.0',
+    generatedAt: new Date().toISOString(),
+    swarm: {
+      topology: options.runtime.topology,
+      maxAgents: options.runtime.maxAgents,
+      autoScale: true,
+      coordinationStrategy: 'consensus',
+    },
+    memory: {
+      backend: options.runtime.memoryBackend,
+      enableHNSW: options.runtime.enableHNSW,
+      persistPath: '.claude-flow/data',
+      cacheSize: 100,
+      learningBridge: {
+        enabled: options.runtime.enableLearningBridge ?? options.runtime.enableNeural,
+        sonaMode: 'balanced',
+        confidenceDecayRate: 0.005,
+        accessBoostAmount: 0.03,
+        consolidationThreshold: 10,
+      },
+      memoryGraph: {
+        enabled: options.runtime.enableMemoryGraph ?? true,
+        pageRankDamping: 0.85,
+        maxNodes: 5000,
+        similarityThreshold: 0.8,
+      },
+      agentScopes: {
+        enabled: options.runtime.enableAgentScopes ?? true,
+        defaultScope: 'project',
+      },
+    },
+    neural: {
+      enabled: options.runtime.enableNeural,
+      modelPath: '.claude-flow/neural',
+    },
+    hooks: {
+      enabled: true,
+      autoExecute: true,
+    },
+    mcp: {
+      autoStart: options.mcp.autoStart,
+      port: options.mcp.port,
+    },
+  };
 
-version: "3.0.0"
-
-swarm:
-  topology: ${options.runtime.topology}
-  maxAgents: ${options.runtime.maxAgents}
-  autoScale: true
-  coordinationStrategy: consensus
-
-memory:
-  backend: ${options.runtime.memoryBackend}
-  enableHNSW: ${options.runtime.enableHNSW}
-  persistPath: .claude-flow/data
-  cacheSize: 100
-  # ADR-049: Self-Learning Memory
-  learningBridge:
-    enabled: ${options.runtime.enableLearningBridge ?? options.runtime.enableNeural}
-    sonaMode: balanced
-    confidenceDecayRate: 0.005
-    accessBoostAmount: 0.03
-    consolidationThreshold: 10
-  memoryGraph:
-    enabled: ${options.runtime.enableMemoryGraph ?? true}
-    pageRankDamping: 0.85
-    maxNodes: 5000
-    similarityThreshold: 0.8
-  agentScopes:
-    enabled: ${options.runtime.enableAgentScopes ?? true}
-    defaultScope: project
-
-neural:
-  enabled: ${options.runtime.enableNeural}
-  modelPath: .claude-flow/neural
-
-hooks:
-  enabled: true
-  autoExecute: true
-
-mcp:
-  autoStart: ${options.mcp.autoStart}
-  port: ${options.mcp.port}
-`;
-
-  fs.writeFileSync(configPath, config, 'utf-8');
-  result.created.files.push('.claude-flow/config.yaml');
+  fs.writeFileSync(configPath, JSON.stringify(configObj, null, 2), 'utf-8');
+  result.created.files.push('.claude-flow/config.json');
 
   // Write .gitignore
   const gitignorePath = path.join(targetDir, '.claude-flow', '.gitignore');
@@ -1766,7 +1775,7 @@ npx @claude-flow/cli@latest hooks worker dispatch --trigger optimize
 ### File Structure
 \`\`\`
 .claude-flow/
-├── config.yaml      # Runtime configuration
+├── config.json      # Runtime configuration
 ├── CAPABILITIES.md  # This file
 ├── data/            # Memory storage
 ├── logs/            # Operation logs

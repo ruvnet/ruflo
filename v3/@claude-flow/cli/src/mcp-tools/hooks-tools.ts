@@ -7,6 +7,34 @@ import { mkdirSync, writeFileSync, existsSync, readFileSync, statSync } from 'fs
 import { join, resolve } from 'path';
 import type { MCPTool } from './types.js';
 
+// ---------------------------------------------------------------------------
+// Runtime config helpers — read .claude-flow/config.json so that dead config
+// keys (neural.enabled, memory.learningBridge.enabled, etc.) are honoured.
+// ---------------------------------------------------------------------------
+
+function loadRuntimeConfig(): Record<string, unknown> {
+  try {
+    const configPath = join(process.cwd(), '.claude-flow', 'config.json');
+    if (existsSync(configPath)) {
+      return JSON.parse(readFileSync(configPath, 'utf-8'));
+    }
+  } catch { /* fall through */ }
+  return {};
+}
+
+function getConfigValue(config: Record<string, unknown>, path: string): unknown {
+  const parts = path.split('.');
+  let current: unknown = config;
+  for (const part of parts) {
+    if (current && typeof current === 'object' && part in (current as Record<string, unknown>)) {
+      current = (current as Record<string, unknown>)[part];
+    } else {
+      return undefined;
+    }
+  }
+  return current;
+}
+
 // Real vector search functions - lazy loaded to avoid circular imports
 let searchEntriesFn: ((options: {
   query: string;
@@ -722,6 +750,12 @@ export const hooksRoute: MCPTool = {
     const context = params.context as string | undefined;
     const useSemanticRouter = params.useSemanticRouter !== false;
 
+    // Read runtime config so we honour neural / learning / memory graph toggles
+    const runtimeConfig = loadRuntimeConfig();
+    const neuralEnabled = getConfigValue(runtimeConfig, 'neural.enabled') !== false;
+    const learningBridgeEnabled = getConfigValue(runtimeConfig, 'memory.learningBridge.enabled') !== false;
+    const memoryGraphEnabled = getConfigValue(runtimeConfig, 'memory.memoryGraph.enabled') !== false;
+
     // Get router (tries native VectorDb first, falls back to pure JS)
     const { router, backend, native } = useSemanticRouter
       ? await getSemanticRouter()
@@ -832,6 +866,12 @@ export const hooksRoute: MCPTool = {
         agents,
         coordination: 'queen-led',
       } : null,
+      featureFlags: {
+        neuralEnabled,
+        learningBridgeEnabled,
+        memoryGraphEnabled,
+        source: Object.keys(runtimeConfig).length > 0 ? '.claude-flow/config.json' : 'defaults',
+      },
     };
   },
 };
@@ -887,42 +927,64 @@ export const hooksList: MCPTool = {
     properties: {},
   },
   handler: async () => {
+    // Read runtime config to show config-aware feature status
+    const runtimeConfig = loadRuntimeConfig();
+    const neuralEnabled = getConfigValue(runtimeConfig, 'neural.enabled') !== false;
+    const learningBridgeEnabled = getConfigValue(runtimeConfig, 'memory.learningBridge.enabled') !== false;
+    const memoryGraphEnabled = getConfigValue(runtimeConfig, 'memory.memoryGraph.enabled') !== false;
+    const hnswEnabled = getConfigValue(runtimeConfig, 'memory.hnsw.enabled') !== false;
+    const sonaEnabled = getConfigValue(runtimeConfig, 'neural.sona.enabled') !== false;
+    const ewcEnabled = getConfigValue(runtimeConfig, 'neural.ewc.enabled') !== false;
+    const moeEnabled = getConfigValue(runtimeConfig, 'neural.moe.enabled') !== false;
+    const flashAttentionEnabled = getConfigValue(runtimeConfig, 'neural.flashAttention.enabled') !== false;
+    const quantizationEnabled = getConfigValue(runtimeConfig, 'memory.quantization.enabled') !== false;
+    const agentBoosterEnabled = getConfigValue(runtimeConfig, 'routing.agentBooster.enabled') !== false;
+    const semanticRouterEnabled = getConfigValue(runtimeConfig, 'routing.semanticRouter.enabled') !== false;
+    const daemonAutoStart = getConfigValue(runtimeConfig, 'daemon.autoStart') !== false;
+
     return {
       hooks: [
         // Core hooks
-        { name: 'pre-edit', type: 'PreToolUse', status: 'active' },
-        { name: 'post-edit', type: 'PostToolUse', status: 'active' },
-        { name: 'pre-command', type: 'PreToolUse', status: 'active' },
-        { name: 'post-command', type: 'PostToolUse', status: 'active' },
-        { name: 'pre-task', type: 'PreToolUse', status: 'active' },
-        { name: 'post-task', type: 'PostToolUse', status: 'active' },
+        { name: 'pre-edit', type: 'PreToolUse', status: 'active', enabled: true },
+        { name: 'post-edit', type: 'PostToolUse', status: 'active', enabled: true },
+        { name: 'pre-command', type: 'PreToolUse', status: 'active', enabled: true },
+        { name: 'post-command', type: 'PostToolUse', status: 'active', enabled: true },
+        { name: 'pre-task', type: 'PreToolUse', status: 'active', enabled: true },
+        { name: 'post-task', type: 'PostToolUse', status: 'active', enabled: true },
         // Routing hooks
-        { name: 'route', type: 'intelligence', status: 'active' },
-        { name: 'explain', type: 'intelligence', status: 'active' },
+        { name: 'route', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'explain', type: 'intelligence', status: 'active', enabled: true },
         // Session hooks
-        { name: 'session-start', type: 'SessionStart', status: 'active' },
-        { name: 'session-end', type: 'SessionEnd', status: 'active' },
-        { name: 'session-restore', type: 'SessionStart', status: 'active' },
+        { name: 'session-start', type: 'SessionStart', status: 'active', enabled: true },
+        { name: 'session-end', type: 'SessionEnd', status: 'active', enabled: true },
+        { name: 'session-restore', type: 'SessionStart', status: 'active', enabled: true },
         // Learning hooks
-        { name: 'pretrain', type: 'intelligence', status: 'active' },
-        { name: 'build-agents', type: 'intelligence', status: 'active' },
-        { name: 'transfer', type: 'intelligence', status: 'active' },
-        { name: 'metrics', type: 'analytics', status: 'active' },
+        { name: 'pretrain', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'build-agents', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'transfer', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'metrics', type: 'analytics', status: 'active', enabled: true },
         // System hooks
-        { name: 'init', type: 'system', status: 'active' },
-        { name: 'notify', type: 'coordination', status: 'active' },
+        { name: 'init', type: 'system', status: 'active', enabled: true },
+        { name: 'notify', type: 'coordination', status: 'active', enabled: true },
         // Intelligence subcommands
-        { name: 'intelligence', type: 'intelligence', status: 'active' },
-        { name: 'intelligence_trajectory-start', type: 'intelligence', status: 'active' },
-        { name: 'intelligence_trajectory-step', type: 'intelligence', status: 'active' },
-        { name: 'intelligence_trajectory-end', type: 'intelligence', status: 'active' },
-        { name: 'intelligence_pattern-store', type: 'intelligence', status: 'active' },
-        { name: 'intelligence_pattern-search', type: 'intelligence', status: 'active' },
-        { name: 'intelligence_stats', type: 'analytics', status: 'active' },
-        { name: 'intelligence_learn', type: 'intelligence', status: 'active' },
-        { name: 'intelligence_attention', type: 'intelligence', status: 'active' },
+        { name: 'intelligence', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'intelligence_trajectory-start', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'intelligence_trajectory-step', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'intelligence_trajectory-end', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'intelligence_pattern-store', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'intelligence_pattern-search', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'intelligence_stats', type: 'analytics', status: 'active', enabled: true },
+        { name: 'intelligence_learn', type: 'intelligence', status: 'active', enabled: true },
+        { name: 'intelligence_attention', type: 'intelligence', status: 'active', enabled: true },
       ],
       total: 26,
+      runtimeFeatures: {
+        neural: { enabled: neuralEnabled, sona: sonaEnabled, ewc: ewcEnabled, moe: moeEnabled, flashAttention: flashAttentionEnabled },
+        memory: { learningBridge: learningBridgeEnabled, memoryGraph: memoryGraphEnabled, hnsw: hnswEnabled, quantization: quantizationEnabled },
+        routing: { agentBooster: agentBoosterEnabled, semanticRouter: semanticRouterEnabled },
+        daemon: { autoStart: daemonAutoStart },
+        configSource: Object.keys(runtimeConfig).length > 0 ? '.claude-flow/config.json' : 'defaults (no config file found)',
+      },
     };
   },
 };
@@ -1306,7 +1368,22 @@ export const hooksSessionStart: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const sessionId = (params.sessionId as string) || `session-${Date.now()}`;
     const restoreLatest = params.restoreLatest as boolean;
-    const shouldStartDaemon = params.startDaemon !== false;
+    let shouldStartDaemon = params.startDaemon !== false;
+
+    // Check .claude/settings.json for daemon.autoStart override
+    if (shouldStartDaemon && params.startDaemon === undefined) {
+      try {
+        const settingsPath = join(process.cwd(), '.claude', 'settings.json');
+        if (existsSync(settingsPath)) {
+          const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+          if (settings?.claudeFlow?.daemon?.autoStart === false) {
+            shouldStartDaemon = false;
+          }
+        }
+      } catch {
+        // Ignore parse errors — fall back to default behavior
+      }
+    }
 
     // Auto-start daemon if enabled
     let daemonStatus: { started: boolean; pid?: number; error?: string } = { started: false };
@@ -1328,15 +1405,29 @@ export const hooksSessionStart: MCPTool = {
       }
     }
 
+    // Read runtime config so session reports actual feature toggles
+    const runtimeConfig = loadRuntimeConfig();
+    const neuralEnabled = getConfigValue(runtimeConfig, 'neural.enabled') !== false;
+    const learningBridgeEnabled = getConfigValue(runtimeConfig, 'memory.learningBridge.enabled') !== false;
+    const memoryGraphEnabled = getConfigValue(runtimeConfig, 'memory.memoryGraph.enabled') !== false;
+    const hnswEnabled = getConfigValue(runtimeConfig, 'memory.hnsw.enabled') !== false;
+    const daemonAutoStart = getConfigValue(runtimeConfig, 'daemon.autoStart') !== false;
+
     return {
       sessionId,
       started: new Date().toISOString(),
       restored: restoreLatest,
       config: {
-        intelligenceEnabled: true,
+        intelligenceEnabled: neuralEnabled,
         hooksEnabled: true,
         memoryPersistence: true,
         daemonEnabled: shouldStartDaemon,
+        neuralEnabled,
+        learningBridgeEnabled,
+        memoryGraphEnabled,
+        hnswEnabled,
+        daemonAutoStart,
+        configSource: Object.keys(runtimeConfig).length > 0 ? '.claude-flow/config.json' : 'defaults',
       },
       daemon: daemonStatus,
       previousSession: restoreLatest ? {
@@ -1365,12 +1456,13 @@ export const hooksSessionEnd: MCPTool = {
     const shouldStopDaemon = params.stopDaemon !== false;
     const sessionId = `session-${Date.now() - 3600000}`; // Default session (1 hour ago)
 
-    // Stop daemon if enabled
+    // Stop daemon if enabled — kills both in-process singleton and
+    // detached background process to prevent orphans (issue #1171).
     let daemonStopped = false;
     if (shouldStopDaemon) {
       try {
         const { stopDaemon } = await import('../services/worker-daemon.js');
-        await stopDaemon();
+        await stopDaemon(process.cwd());
         daemonStopped = true;
       } catch {
         // Daemon may not be running

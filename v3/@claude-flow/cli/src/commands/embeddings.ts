@@ -16,13 +16,39 @@
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 
-// Dynamic imports for embeddings package
+// Dynamic imports for embeddings package with fallback chain
+let _embeddingsSource: string = 'none';
+
 async function getEmbeddings() {
+  // Try 1: @claude-flow/embeddings package
   try {
-    return await import('@claude-flow/embeddings');
+    const pkg = await import('@claude-flow/embeddings');
+    if (pkg) {
+      _embeddingsSource = '@claude-flow/embeddings';
+      return pkg;
+    }
   } catch {
-    return null;
+    // not installed
   }
+
+  // Try 2: Local memory-initializer as a partial substitute
+  try {
+    const memInit = await import('../memory/memory-initializer.js');
+    if (memInit && memInit.generateEmbedding) {
+      _embeddingsSource = 'local-onnx';
+      // Return a shim that exposes generateEmbedding for callers that need it
+      return {
+        generateEmbedding: memInit.generateEmbedding,
+        loadEmbeddingModel: memInit.loadEmbeddingModel,
+        _isLocalFallback: true,
+      } as any;
+    }
+  } catch {
+    // not available
+  }
+
+  _embeddingsSource = 'none';
+  return null;
 }
 
 // Generate subcommand - REAL implementation
@@ -721,14 +747,18 @@ const initCommand: Command = {
         spinner.setText(`Downloading ONNX model: ${model}...`);
         const embeddings = await getEmbeddings();
 
-        if (embeddings) {
-          await embeddings.downloadEmbeddingModel(model, modelDir, (p) => {
+        if (embeddings && embeddings.downloadEmbeddingModel) {
+          await embeddings.downloadEmbeddingModel(model, modelDir, (p: { percent: number }) => {
             spinner.setText(`Downloading ${model}... ${p.percent.toFixed(0)}%`);
           });
+        } else if (embeddings && embeddings._isLocalFallback) {
+          // Local ONNX fallback - model loading handled by memory-initializer
+          await new Promise(r => setTimeout(r, 300));
+          output.writeln(output.dim(`  (Using ${_embeddingsSource} - model managed by memory-initializer)`));
         } else {
-          // Simulate download for when embeddings package not available
+          // No embedding provider at all
           await new Promise(r => setTimeout(r, 500));
-          output.writeln(output.dim('  (Simulated - @claude-flow/embeddings not installed)'));
+          output.writeln(output.dim('  (Simulated - no embedding provider available, using hash-based fallback)'));
         }
       }
 

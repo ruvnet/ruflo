@@ -45,7 +45,7 @@ function getProcessMemoryUsage(): number {
 
 // Check if project is initialized
 function isInitialized(cwd: string): boolean {
-  const configPath = path.join(cwd, '.claude-flow', 'config.yaml');
+  const configPath = path.join(cwd, '.claude-flow', 'config.json');
   return fs.existsSync(configPath);
 }
 

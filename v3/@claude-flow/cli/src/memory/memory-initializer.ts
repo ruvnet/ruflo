@@ -1997,14 +1997,21 @@ export async function searchEntries(options: {
     const fileBuffer = fs.readFileSync(dbPath);
     const db = new SQL.Database(fileBuffer);
 
-    // Get entries with embeddings
-    const entries = db.exec(`
-      SELECT id, key, namespace, content, embedding
-      FROM memory_entries
-      WHERE status = 'active'
-        ${namespace !== 'all' ? `AND namespace = '${namespace.replace(/'/g, "''")}'` : ''}
-      LIMIT 1000
-    `);
+    // Get entries with embeddings (parameterized to prevent SQL injection - Issue #1030)
+    const searchQuery = namespace !== 'all'
+      ? `SELECT id, key, namespace, content, embedding FROM memory_entries WHERE status = 'active' AND namespace = ? LIMIT 1000`
+      : `SELECT id, key, namespace, content, embedding FROM memory_entries WHERE status = 'active' LIMIT 1000`;
+    const searchParams = namespace !== 'all' ? [namespace] : [];
+    const searchStmt = db.prepare(searchQuery);
+    if (searchParams.length > 0) {
+      searchStmt.bind(searchParams);
+    }
+    const entriesRows: unknown[][] = [];
+    while (searchStmt.step()) {
+      entriesRows.push(searchStmt.get());
+    }
+    searchStmt.free();
+    const entries = entriesRows.length > 0 ? [{ values: entriesRows }] : [];
 
     const results: { id: string; key: string; content: string; score: number; namespace: string }[] = [];
 
@@ -2136,25 +2143,34 @@ export async function listEntries(options: {
     const fileBuffer = fs.readFileSync(dbPath);
     const db = new SQL.Database(fileBuffer);
 
-    // Get total count
-    const countQuery = namespace
-      ? `SELECT COUNT(*) as cnt FROM memory_entries WHERE status = 'active' AND namespace = '${namespace.replace(/'/g, "''")}'`
-      : `SELECT COUNT(*) as cnt FROM memory_entries WHERE status = 'active'`;
+    // Get total count (parameterized to prevent SQL injection - Issue #1030)
+    const countStmt = namespace
+      ? db.prepare(`SELECT COUNT(*) as cnt FROM memory_entries WHERE status = 'active' AND namespace = ?`)
+      : db.prepare(`SELECT COUNT(*) as cnt FROM memory_entries WHERE status = 'active'`);
+    if (namespace) {
+      countStmt.bind([namespace]);
+    }
+    let total = 0;
+    if (countStmt.step()) {
+      total = countStmt.get()[0] as number || 0;
+    }
+    countStmt.free();
 
-    const countResult = db.exec(countQuery);
-    const total = countResult[0]?.values?.[0]?.[0] as number || 0;
-
-    // Get entries
-    const listQuery = `
-      SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at
-      FROM memory_entries
-      WHERE status = 'active'
-        ${namespace ? `AND namespace = '${namespace.replace(/'/g, "''")}'` : ''}
-      ORDER BY updated_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `;
-
-    const result = db.exec(listQuery);
+    // Get entries (parameterized to prevent SQL injection - Issue #1030)
+    const listStmt = namespace
+      ? db.prepare(`SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at FROM memory_entries WHERE status = 'active' AND namespace = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?`)
+      : db.prepare(`SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at FROM memory_entries WHERE status = 'active' ORDER BY updated_at DESC LIMIT ? OFFSET ?`);
+    if (namespace) {
+      listStmt.bind([namespace, limit, offset]);
+    } else {
+      listStmt.bind([limit, offset]);
+    }
+    const listRows: unknown[][] = [];
+    while (listStmt.step()) {
+      listRows.push(listStmt.get());
+    }
+    listStmt.free();
+    const result = listRows.length > 0 ? [{ values: listRows }] : [];
     const entries: {
       id: string;
       key: string;
@@ -2243,31 +2259,37 @@ export async function getEntry(options: {
     const fileBuffer = fs.readFileSync(dbPath);
     const db = new SQL.Database(fileBuffer);
 
-    // Find entry by key
-    const result = db.exec(`
+    // Find entry by key (parameterized to prevent SQL injection - Issue #1030)
+    const getStmt = db.prepare(`
       SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, tags
       FROM memory_entries
       WHERE status = 'active'
-        AND key = '${key.replace(/'/g, "''")}'
-        AND namespace = '${namespace.replace(/'/g, "''")}'
+        AND key = ?
+        AND namespace = ?
       LIMIT 1
     `);
+    getStmt.bind([key, namespace]);
+    let getRow: unknown[] | null = null;
+    if (getStmt.step()) {
+      getRow = getStmt.get();
+    }
+    getStmt.free();
 
-    if (!result[0]?.values?.[0]) {
+    if (!getRow) {
       db.close();
       return { success: true, found: false };
     }
 
-    const [id, entryKey, ns, content, embedding, accessCount, createdAt, updatedAt, tagsJson] = result[0].values[0] as [
+    const [id, entryKey, ns, content, embedding, accessCount, createdAt, updatedAt, tagsJson] = getRow as [
       string, string, string, string, string | null, number, string, string, string | null
     ];
 
-    // Update access count
+    // Update access count (parameterized to prevent SQL injection - Issue #1030)
     db.run(`
       UPDATE memory_entries
       SET access_count = access_count + 1, last_accessed_at = strftime('%s', 'now') * 1000
-      WHERE id = '${String(id).replace(/'/g, "''")}'
-    `);
+      WHERE id = ?
+    `, [String(id)]);
 
     // Save updated database
     const data = db.export();
@@ -2354,14 +2376,21 @@ export async function deleteEntry(options: {
     const fileBuffer = fs.readFileSync(dbPath);
     const db = new SQL.Database(fileBuffer);
 
-    // Check if entry exists first
-    const checkResult = db.exec(`
+    // Check if entry exists first (parameterized to prevent SQL injection - Issue #1030)
+    const checkStmt = db.prepare(`
       SELECT id FROM memory_entries
       WHERE status = 'active'
-        AND key = '${key.replace(/'/g, "''")}'
-        AND namespace = '${namespace.replace(/'/g, "''")}'
+        AND key = ?
+        AND namespace = ?
       LIMIT 1
     `);
+    checkStmt.bind([key, namespace]);
+    let checkRow: unknown[] | null = null;
+    if (checkStmt.step()) {
+      checkRow = checkStmt.get();
+    }
+    checkStmt.free();
+    const checkResult = checkRow ? [{ values: [checkRow] }] : [];
 
     if (!checkResult[0]?.values?.[0]) {
       // Get remaining count before closing
@@ -2378,14 +2407,14 @@ export async function deleteEntry(options: {
       };
     }
 
-    // Delete the entry (soft delete by setting status to 'deleted')
+    // Delete the entry (soft delete by setting status to 'deleted') - parameterized (Issue #1030)
     db.run(`
       UPDATE memory_entries
       SET status = 'deleted', updated_at = strftime('%s', 'now') * 1000
-      WHERE key = '${key.replace(/'/g, "''")}'
-        AND namespace = '${namespace.replace(/'/g, "''")}'
+      WHERE key = ?
+        AND namespace = ?
         AND status = 'active'
-    `);
+    `, [key, namespace]);
 
     // Get remaining count
     const countResult = db.exec(`SELECT COUNT(*) FROM memory_entries WHERE status = 'active'`);

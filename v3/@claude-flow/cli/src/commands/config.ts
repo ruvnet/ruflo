@@ -7,6 +7,58 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+
+function getDefaultConfig(): Record<string, unknown> {
+  return {
+    version: '3.0.0',
+    agents: { defaultType: 'coder', maxConcurrent: 15, autoSpawn: true, timeout: 300 },
+    swarm: { topology: 'hierarchical-mesh', maxAgents: 15, autoScale: true, coordinationStrategy: 'consensus' },
+    memory: { backend: 'hybrid', path: '.claude-flow/data', cacheSize: 100, enableHNSW: true },
+    mcp: { transport: 'stdio', autoStart: true, tools: 'all' },
+    providers: [
+      { name: 'anthropic', priority: 1, enabled: true },
+      { name: 'openrouter', priority: 2, enabled: false },
+      { name: 'ollama', priority: 3, enabled: false },
+    ],
+  };
+}
+
+function loadProjectConfig(cwd: string): Record<string, unknown> {
+  const configPath = join(cwd, '.claude-flow', 'config.json');
+  if (existsSync(configPath)) {
+    try {
+      return JSON.parse(readFileSync(configPath, 'utf-8'));
+    } catch { /* fall through */ }
+  }
+  return {};
+}
+
+function saveProjectConfig(cwd: string, config: Record<string, unknown>): void {
+  try {
+    const dir = join(cwd, '.claude-flow');
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    writeFileSync(join(dir, 'config.json'), JSON.stringify(config, null, 2), 'utf-8');
+  } catch {
+    // Gracefully handle non-writable paths (e.g., in tests or read-only filesystems)
+  }
+}
+
+function flattenConfig(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      Object.assign(result, flattenConfig(value as Record<string, unknown>, fullKey));
+    } else {
+      result[fullKey] = value;
+    }
+  }
+  return result;
+}
 
 // Init configuration
 const initCommand: Command = {
@@ -43,40 +95,15 @@ const initCommand: Command = {
 
     // Create default configuration
     const config = {
-      version: '3.0.0',
+      ...getDefaultConfig(),
       v3Mode: v3,
       sparc: sparc,
-      agents: {
-        defaultType: 'coder',
-        maxConcurrent: 15,
-        autoSpawn: true,
-        timeout: 300
-      },
-      swarm: {
-        topology: 'hybrid',
-        maxAgents: 15,
-        autoScale: true,
-        coordinationStrategy: 'consensus'
-      },
-      memory: {
-        backend: 'hybrid',
-        path: './data/memory',
-        cacheSize: 256,
-        enableHNSW: true
-      },
-      mcp: {
-        transport: 'stdio',
-        autoStart: true,
-        tools: 'all'
-      },
-      providers: [
-        { name: 'anthropic', priority: 1, enabled: true },
-        { name: 'openrouter', priority: 2, enabled: false },
-        { name: 'ollama', priority: 3, enabled: false }
-      ]
+      generatedAt: new Date().toISOString(),
     };
 
-    output.writeln(output.dim('  Creating claude-flow.config.json...'));
+    saveProjectConfig(ctx.cwd, config);
+
+    output.writeln(output.dim('  Creating .claude-flow/config.json...'));
     output.writeln(output.dim('  Creating .claude-flow/ directory...'));
 
     if (sparc) {
@@ -97,19 +124,19 @@ const initCommand: Command = {
         { key: 'value', header: 'Value', width: 30 }
       ],
       data: [
-        { setting: 'Version', value: config.version },
+        { setting: 'Version', value: (config as Record<string, unknown>).version },
         { setting: 'V3 Mode', value: config.v3Mode ? 'Enabled' : 'Disabled' },
         { setting: 'SPARC Mode', value: config.sparc ? 'Enabled' : 'Disabled' },
-        { setting: 'Swarm Topology', value: config.swarm.topology },
-        { setting: 'Max Agents', value: config.swarm.maxAgents },
-        { setting: 'Memory Backend', value: config.memory.backend },
-        { setting: 'MCP Transport', value: config.mcp.transport }
+        { setting: 'Swarm Topology', value: ((config as Record<string, unknown>).swarm as Record<string, unknown>)?.topology },
+        { setting: 'Max Agents', value: ((config as Record<string, unknown>).swarm as Record<string, unknown>)?.maxAgents },
+        { setting: 'Memory Backend', value: ((config as Record<string, unknown>).memory as Record<string, unknown>)?.backend },
+        { setting: 'MCP Transport', value: ((config as Record<string, unknown>).mcp as Record<string, unknown>)?.transport }
       ]
     });
 
     output.writeln();
     output.printSuccess('Configuration initialized');
-    output.writeln(output.dim('  Config file: ./claude-flow.config.json'));
+    output.writeln(output.dim('  Config file: .claude-flow/config.json'));
 
     return { success: true, data: config };
   }
@@ -134,19 +161,10 @@ const getCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const key = ctx.flags.key as string || ctx.args[0];
 
-    // Default config values (loaded from actual config when available)
-    const configValues: Record<string, unknown> = {
-      'version': '3.0.0',
-      'v3Mode': true,
-      'swarm.topology': 'hybrid',
-      'swarm.maxAgents': 15,
-      'swarm.autoScale': true,
-      'memory.backend': 'hybrid',
-      'memory.cacheSize': 256,
-      'mcp.transport': 'stdio',
-      'agents.defaultType': 'coder',
-      'agents.maxConcurrent': 15
-    };
+    // Load config from disk, fall back to defaults
+    const rawConfig = loadProjectConfig(ctx.cwd);
+    const defaults = flattenConfig(getDefaultConfig());
+    const configValues: Record<string, unknown> = { ...defaults, ...flattenConfig(rawConfig) };
 
     if (!key) {
       // Show all config
@@ -220,10 +238,30 @@ const setCommand: Command = {
       return { success: false, exitCode: 1 };
     }
 
-    output.printInfo(`Setting ${key} = ${value}`);
+    const config = loadProjectConfig(ctx.cwd);
+
+    // Parse value types
+    let parsedValue: unknown = value;
+    if (value === 'true') parsedValue = true;
+    else if (value === 'false') parsedValue = false;
+    else if (!isNaN(Number(value)) && value !== '') parsedValue = Number(value);
+
+    // Set nested value via dot notation
+    const parts = key.split('.');
+    let current: Record<string, unknown> = config;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!(parts[i] in current) || typeof current[parts[i]] !== 'object') {
+        current[parts[i]] = {};
+      }
+      current = current[parts[i]] as Record<string, unknown>;
+    }
+    current[parts[parts.length - 1]] = parsedValue;
+
+    saveProjectConfig(ctx.cwd, config);
+    output.printInfo(`Setting ${key} = ${parsedValue}`);
     output.printSuccess('Configuration updated');
 
-    return { success: true, data: { key, value } };
+    return { success: true, data: { key, value: parsedValue } };
   }
 };
 
@@ -327,6 +365,19 @@ const resetCommand: Command = {
       }
     }
 
+    const defaults = getDefaultConfig();
+
+    if (section === 'all') {
+      saveProjectConfig(ctx.cwd, defaults);
+    } else {
+      const config = loadProjectConfig(ctx.cwd);
+      const sectionDefaults = (defaults as Record<string, unknown>)[section];
+      if (sectionDefaults !== undefined) {
+        config[section] = sectionDefaults;
+        saveProjectConfig(ctx.cwd, config);
+      }
+    }
+
     output.printInfo(`Resetting ${section} configuration...`);
     output.printSuccess('Configuration reset to defaults');
 
@@ -357,13 +408,11 @@ const exportCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const outputPath = ctx.flags.output as string || './claude-flow.config.export.json';
 
+    const projectConfig = loadProjectConfig(ctx.cwd);
     const config = {
-      version: '3.0.0',
+      ...getDefaultConfig(),
+      ...projectConfig,
       exportedAt: new Date().toISOString(),
-      agents: { defaultType: 'coder', maxConcurrent: 15 },
-      swarm: { topology: 'hybrid', maxAgents: 15 },
-      memory: { backend: 'hybrid', cacheSize: 256 },
-      mcp: { transport: 'stdio', tools: 'all' }
     };
 
     output.printInfo(`Exporting configuration to ${outputPath}...`);
