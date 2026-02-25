@@ -38,7 +38,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: v3
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --no-optional
 
       - name: Run tests
         working-directory: v3
@@ -73,7 +73,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: v3
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --no-optional
 
       - name: Type check
         working-directory: v3
@@ -107,7 +107,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: v3
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --no-optional
 
       - name: Build
         working-directory: v3
@@ -144,7 +144,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: v3
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --no-optional
 
       - name: Build
         working-directory: v3
