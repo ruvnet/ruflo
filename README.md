@@ -1018,6 +1018,85 @@ flowchart LR
 </details>
 
 <details>
+<summary>🧠 <strong>AgentDB v3 Controllers</strong> — 20+ intelligent memory controllers</summary>
+
+Claude Flow V3 integrates AgentDB v3 (3.0.0-alpha.9) providing 20+ memory controllers accessible via MCP tools and the CLI.
+
+**Core Memory:**
+
+| Controller | MCP Tool | Description |
+|-----------|----------|-------------|
+| HierarchicalMemory | `agentdb_hierarchical-store/recall` | Working → short-term → long-term memory tiers with automatic promotion and retention decay |
+| MemoryConsolidation | `agentdb_consolidate` | Automatic clustering and merging of related memories into semantic summaries |
+| BatchOperations | `agentdb_batch` | Bulk insert/update/delete operations for high-throughput memory management |
+| ReasoningBank | `agentdb_pattern-store/search` | Pattern storage with BM25+semantic hybrid search |
+
+**Intelligence:**
+
+| Controller | MCP Tool | Description |
+|-----------|----------|-------------|
+| SemanticRouter | `agentdb_semantic-route` | Route tasks to agents using vector similarity instead of manual rules |
+| ContextSynthesizer | `agentdb_context-synthesize` | Auto-generate context summaries from memory entries |
+| GNNService | — | Graph neural network for intent classification and skill recommendation |
+| SonaTrajectoryService | — | Record and predict learning trajectories for agents |
+| GraphTransformerService | — | Sublinear attention, causal attention, Granger causality extraction |
+
+**Causal & Explainable:**
+
+| Controller | MCP Tool | Description |
+|-----------|----------|-------------|
+| CausalRecall | `agentdb_causal-edge` | Recall with causal re-ranking and utility scoring |
+| ExplainableRecall | — | Certificates proving *why* a memory was recalled |
+| CausalMemoryGraph | — | Directed causal relationships between memory entries |
+| MMRDiversityRanker | — | Maximal Marginal Relevance for diverse search results |
+
+**Security & Integrity:**
+
+| Controller | MCP Tool | Description |
+|-----------|----------|-------------|
+| GuardedVectorBackend | — | Cryptographic proof-of-work before vector insert/search |
+| MutationGuard | — | Token-validated mutations with cryptographic proofs |
+| AttestationLog | — | Immutable audit trail of all memory operations |
+| RVFOptimizer | — | 4-bit adaptive quantization and progressive compression |
+
+**MCP Tool Examples:**
+```bash
+# Store to hierarchical memory
+agentdb_hierarchical-store --key "auth-pattern" --value "JWT refresh" --tier "longTerm"
+
+# Recall from memory tiers
+agentdb_hierarchical-recall --query "authentication" --topK 5
+
+# Run memory consolidation
+agentdb_consolidate
+
+# Batch insert
+agentdb_batch --operation insert --entries '[{"key":"k1","value":"v1"}]'
+
+# Synthesize context
+agentdb_context-synthesize --query "error handling patterns"
+
+# Semantic routing
+agentdb_semantic-route --input "fix auth bug in login"
+```
+
+**Hierarchical Memory Tiers:**
+```
+┌─────────────────────────────────────────────┐
+│  Working Memory (capacity: 7±2 items)       │  ← Active context, fast access
+│  TTL: ~30 seconds, auto-evict oldest        │
+├─────────────────────────────────────────────┤
+│  Short-Term Memory                          │  ← Recent patterns, moderate retention
+│  Rehearsal strengthens, decay weakens       │
+├─────────────────────────────────────────────┤
+│  Long-Term Memory                           │  ← Consolidated knowledge, persistent
+│  Promoted from short-term via consolidation │
+└─────────────────────────────────────────────┘
+```
+
+</details>
+
+<details>
 <summary>🐝 <strong>Swarm Topology</strong> — Multi-agent coordination patterns</summary>
 
 ```mermaid
