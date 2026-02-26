@@ -451,7 +451,7 @@ export class ControllerRegistry extends EventEmitter {
    */
   private async initAgentDB(config: RuntimeConfig): Promise<void> {
     try {
-      const agentdbModule = await import('agentdb');
+      const agentdbModule: any = await import('agentdb');
       const AgentDBClass = agentdbModule.AgentDB || agentdbModule.default;
 
       if (!AgentDBClass) {
