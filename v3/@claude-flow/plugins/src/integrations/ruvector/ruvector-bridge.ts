@@ -253,7 +253,7 @@ class ConnectionManager extends EventEmitter {
   private async loadPg(): Promise<PoolFactory> {
     try {
       // Try to import pg
-      const pg = await import('pg');
+      const pg: any = await import('pg');
       return pg.default ?? pg;
     } catch {
       throw new Error(
