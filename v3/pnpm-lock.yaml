@@ -330,8 +330,8 @@ importers:
   '@claude-flow/memory':
     dependencies:
       agentdb:
-        specifier: ^3.0.0-alpha.8
-        version: 3.0.0-alpha.8(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
+        specifier: ^3.0.0-alpha.9
+        version: 3.0.0-alpha.9(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
       sql.js:
         specifier: ^1.10.3
         version: 1.13.0
@@ -361,7 +361,7 @@ importers:
     optionalDependencies:
       agentdb:
         specifier: ^2.0.0 || ^3.0.0-alpha.1
-        version: 3.0.0-alpha.8(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
+        version: 3.0.0-alpha.9(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
 
   '@claude-flow/performance':
     dependencies:
@@ -5055,8 +5055,8 @@ packages:
     dev: false
     optional: true
 
-  /agentdb@3.0.0-alpha.8(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0):
-    resolution: {integrity: sha512-JqeGhNLly86l/6Fp9aLXjZfJakHXHzPCHhf5T8zPRTT+aJkgdeSzBx1wKW9DpW/u9jrjo+b5d/3gqmk3mx66Vg==}
+  /agentdb@3.0.0-alpha.9(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0):
+    resolution: {integrity: sha512-FSFqu2yKCNLfatsTRGUsah7drVgU0zTEKn6rwJwBjM2e6autDNAUCI9I/2OpLfSecHKDikEve5ADQs1hNasKPg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     requiresBuild: true

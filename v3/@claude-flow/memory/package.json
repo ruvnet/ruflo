@@ -15,7 +15,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "agentdb": "^3.0.0-alpha.8",
+    "agentdb": "^3.0.0-alpha.9",
     "sql.js": "^1.10.3"
   },
   "optionalDependencies": {

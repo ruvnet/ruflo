@@ -57,7 +57,15 @@ export type CLIControllerName =
   | 'hybridSearch'
   | 'federatedSession'
   | 'semanticRouter'
-  | 'sonaTrajectory';
+  | 'sonaTrajectory'
+  | 'hierarchicalMemory'
+  | 'memoryConsolidation'
+  | 'batchOperations'
+  | 'contextSynthesizer'
+  | 'gnnService'
+  | 'rvfOptimizer'
+  | 'mmrDiversityRanker'
+  | 'guardedVectorBackend';
 
 /**
  * All controller names
@@ -153,15 +161,15 @@ export const INIT_LEVELS: InitLevel[] = [
   // Level 0: Foundation - already exists
   { level: 0, controllers: [] },
   // Level 1: Core intelligence
-  { level: 1, controllers: ['reasoningBank', 'learningBridge', 'hybridSearch', 'tieredCache'] },
+  { level: 1, controllers: ['reasoningBank', 'hierarchicalMemory', 'learningBridge', 'hybridSearch', 'tieredCache'] },
   // Level 2: Graph & security
-  { level: 2, controllers: ['memoryGraph', 'agentMemoryScope', 'vectorBackend', 'mutationGuard'] },
+  { level: 2, controllers: ['memoryGraph', 'agentMemoryScope', 'vectorBackend', 'mutationGuard', 'gnnService'] },
   // Level 3: Specialization
-  { level: 3, controllers: ['skills', 'explainableRecall', 'reflexion', 'attestationLog'] },
+  { level: 3, controllers: ['skills', 'explainableRecall', 'reflexion', 'attestationLog', 'batchOperations', 'memoryConsolidation'] },
   // Level 4: Causal & routing
   { level: 4, controllers: ['causalGraph', 'nightlyLearner', 'learningSystem', 'semanticRouter'] },
   // Level 5: Advanced services
-  { level: 5, controllers: ['graphTransformer', 'sonaTrajectory'] },
+  { level: 5, controllers: ['graphTransformer', 'sonaTrajectory', 'contextSynthesizer', 'rvfOptimizer', 'mmrDiversityRanker', 'guardedVectorBackend'] },
   // Level 6: Session management
   { level: 6, controllers: ['federatedSession', 'graphAdapter'] },
 ];
@@ -502,6 +510,7 @@ export class ControllerRegistry extends EventEmitter {
       case 'reasoningBank':
       case 'learningBridge':
       case 'tieredCache':
+      case 'hierarchicalMemory':
         return true;
 
       // Graph — enabled if backend available
@@ -512,6 +521,7 @@ export class ControllerRegistry extends EventEmitter {
       case 'mutationGuard':
       case 'attestationLog':
       case 'vectorBackend':
+      case 'guardedVectorBackend':
         return this.agentdb !== null;
 
       // AgentDB-internal controllers — only if AgentDB available
@@ -524,6 +534,12 @@ export class ControllerRegistry extends EventEmitter {
       case 'nightlyLearner':
       case 'graphTransformer':
       case 'graphAdapter':
+      case 'gnnService':
+      case 'memoryConsolidation':
+      case 'batchOperations':
+      case 'contextSynthesizer':
+      case 'rvfOptimizer':
+      case 'mmrDiversityRanker':
         return this.agentdb !== null;
 
       // Optional controllers
@@ -661,6 +677,28 @@ export class ControllerRegistry extends EventEmitter {
         }
         return null;
 
+      case 'hierarchicalMemory': {
+        try {
+          const agentdbModule: any = await import('agentdb');
+          const HierarchicalMemoryClass = agentdbModule.HierarchicalMemory;
+          if (!HierarchicalMemoryClass) return null;
+          const hm = new HierarchicalMemoryClass(this.agentdb?.database);
+          await hm.initializeDatabase();
+          return hm;
+        } catch { return null; }
+      }
+
+      case 'memoryConsolidation': {
+        try {
+          const agentdbModule: any = await import('agentdb');
+          const MemConsolidation = agentdbModule.MemoryConsolidation;
+          if (!MemConsolidation) return null;
+          const mc = new MemConsolidation(this.agentdb?.database);
+          await mc.initializeDatabase();
+          return mc;
+        } catch { return null; }
+      }
+
       case 'federatedSession':
         // Federated session — placeholder for Phase 4
         return null;
@@ -681,7 +719,13 @@ export class ControllerRegistry extends EventEmitter {
       case 'mutationGuard':
       case 'attestationLog':
       case 'vectorBackend':
-      case 'graphAdapter': {
+      case 'graphAdapter':
+      case 'batchOperations':
+      case 'contextSynthesizer':
+      case 'gnnService':
+      case 'rvfOptimizer':
+      case 'mmrDiversityRanker':
+      case 'guardedVectorBackend': {
         if (!this.agentdb || typeof this.agentdb.getController !== 'function') {
           return null;
         }

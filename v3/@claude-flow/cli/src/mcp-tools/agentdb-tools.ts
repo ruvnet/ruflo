@@ -264,6 +264,189 @@ export const agentdbSessionEnd: MCPTool = {
   },
 };
 
+// ===== agentdb_hierarchical_store — Store to hierarchical memory =====
+
+export const agentdbHierarchicalStore: MCPTool = {
+  name: 'agentdb_hierarchical-store',
+  description: 'Store to hierarchical memory with tier (working, shortTerm, longTerm)',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      key: { type: 'string', description: 'Memory entry key' },
+      value: { type: 'string', description: 'Memory entry value' },
+      tier: {
+        type: 'string',
+        description: 'Memory tier (working, shortTerm, longTerm)',
+        enum: ['working', 'shortTerm', 'longTerm'],
+        default: 'working',
+      },
+    },
+    required: ['key', 'value'],
+  },
+  handler: async (params: Record<string, unknown>) => {
+    try {
+      const bridge = await import('../memory/memory-bridge.js');
+      const result = await bridge.bridgeHierarchicalStore({
+        key: params.key as string,
+        value: params.value as string,
+        tier: (params.tier as string) || 'working',
+      });
+      return result || { success: false, error: 'Bridge not available' };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  },
+};
+
+// ===== agentdb_hierarchical_recall — Recall from hierarchical memory =====
+
+export const agentdbHierarchicalRecall: MCPTool = {
+  name: 'agentdb_hierarchical-recall',
+  description: 'Recall from hierarchical memory with optional tier filter',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'Recall query' },
+      tier: { type: 'string', description: 'Filter by tier (working, shortTerm, longTerm)' },
+      topK: { type: 'number', description: 'Number of results (default: 5)' },
+    },
+    required: ['query'],
+  },
+  handler: async (params: Record<string, unknown>) => {
+    try {
+      const bridge = await import('../memory/memory-bridge.js');
+      const result = await bridge.bridgeHierarchicalRecall({
+        query: params.query as string,
+        tier: params.tier as string | undefined,
+        topK: (params.topK as number) || 5,
+      });
+      return result || { results: [], error: 'Bridge not available' };
+    } catch (error) {
+      return { results: [], error: error instanceof Error ? error.message : String(error) };
+    }
+  },
+};
+
+// ===== agentdb_consolidate — Run memory consolidation =====
+
+export const agentdbConsolidate: MCPTool = {
+  name: 'agentdb_consolidate',
+  description: 'Run memory consolidation to promote entries across tiers and compress old data',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      minAge: { type: 'number', description: 'Minimum age in hours since store (optional)' },
+      maxEntries: { type: 'number', description: 'Maximum entries to consolidate (optional)' },
+    },
+  },
+  handler: async (params: Record<string, unknown>) => {
+    try {
+      const bridge = await import('../memory/memory-bridge.js');
+      const result = await bridge.bridgeConsolidate({
+        minAge: params.minAge as number | undefined,
+        maxEntries: params.maxEntries as number | undefined,
+      });
+      return result || { success: false, error: 'Bridge not available' };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  },
+};
+
+// ===== agentdb_batch — Batch operations (insert, update, delete) =====
+
+export const agentdbBatch: MCPTool = {
+  name: 'agentdb_batch',
+  description: 'Batch operations on memory entries (insert, update, delete)',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      operation: {
+        type: 'string',
+        description: 'Batch operation type',
+        enum: ['insert', 'update', 'delete'],
+      },
+      entries: {
+        type: 'array',
+        description: 'Array of {key, value} entries to operate on',
+        items: {
+          type: 'object',
+          properties: {
+            key: { type: 'string' },
+            value: { type: 'string' },
+          },
+          required: ['key'],
+        },
+      },
+    },
+    required: ['operation', 'entries'],
+  },
+  handler: async (params: Record<string, unknown>) => {
+    try {
+      const bridge = await import('../memory/memory-bridge.js');
+      const result = await bridge.bridgeBatchOperation({
+        operation: params.operation as string,
+        entries: params.entries as any[],
+      });
+      return result || { success: false, error: 'Bridge not available' };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  },
+};
+
+// ===== agentdb_context_synthesize — Synthesize context from memories =====
+
+export const agentdbContextSynthesize: MCPTool = {
+  name: 'agentdb_context-synthesize',
+  description: 'Synthesize context from stored memories for a given query',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'Query to synthesize context for' },
+      maxEntries: { type: 'number', description: 'Maximum entries to include (default: 10)' },
+    },
+    required: ['query'],
+  },
+  handler: async (params: Record<string, unknown>) => {
+    try {
+      const bridge = await import('../memory/memory-bridge.js');
+      const result = await bridge.bridgeContextSynthesize({
+        query: params.query as string,
+        maxEntries: (params.maxEntries as number) || 10,
+      });
+      return result || { success: false, error: 'Bridge not available' };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  },
+};
+
+// ===== agentdb_semantic_route — Route via SemanticRouter =====
+
+export const agentdbSemanticRoute: MCPTool = {
+  name: 'agentdb_semantic-route',
+  description: 'Route an input via AgentDB SemanticRouter for intent classification',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      input: { type: 'string', description: 'Input text to route' },
+    },
+    required: ['input'],
+  },
+  handler: async (params: Record<string, unknown>) => {
+    try {
+      const bridge = await import('../memory/memory-bridge.js');
+      const result = await bridge.bridgeSemanticRoute({
+        input: params.input as string,
+      });
+      return result || { route: null, error: 'Bridge not available' };
+    } catch (error) {
+      return { route: null, error: error instanceof Error ? error.message : String(error) };
+    }
+  },
+};
+
 // ===== Export all tools =====
 
 export const agentdbTools: MCPTool[] = [
@@ -276,4 +459,10 @@ export const agentdbTools: MCPTool[] = [
   agentdbRoute,
   agentdbSessionStart,
   agentdbSessionEnd,
+  agentdbHierarchicalStore,
+  agentdbHierarchicalRecall,
+  agentdbConsolidate,
+  agentdbBatch,
+  agentdbContextSynthesize,
+  agentdbSemanticRoute,
 ];

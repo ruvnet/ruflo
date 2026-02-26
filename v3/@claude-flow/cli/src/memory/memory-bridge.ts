@@ -65,6 +65,8 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
               reasoningBank: true,
               learningBridge: false,
               tieredCache: true,
+              hierarchicalMemory: true,
+              memoryConsolidation: true,
             },
           });
         } finally {
@@ -1531,6 +1533,99 @@ export async function bridgeHealthCheck(
   } catch {
     return null;
   }
+}
+
+// ===== Phase 7: Hierarchical memory, consolidation, batch, context, semantic route =====
+
+/**
+ * Store to hierarchical memory with tier.
+ */
+export async function bridgeHierarchicalStore(params: { key: string; value: string; tier?: string }): Promise<any> {
+  const registry = await getRegistry();
+  if (!registry) return null;
+  try {
+    const hm = registry.getController('hierarchicalMemory');
+    if (!hm) return { success: false, error: 'HierarchicalMemory not available' };
+    await hm.store(params.key, params.value, params.tier || 'working');
+    return { success: true, key: params.key, tier: params.tier || 'working' };
+  } catch (e: any) { return { success: false, error: e.message }; }
+}
+
+/**
+ * Recall from hierarchical memory.
+ */
+export async function bridgeHierarchicalRecall(params: { query: string; tier?: string; topK?: number }): Promise<any> {
+  const registry = await getRegistry();
+  if (!registry) return null;
+  try {
+    const hm = registry.getController('hierarchicalMemory');
+    if (!hm) return { results: [], error: 'HierarchicalMemory not available' };
+    const results = await hm.recall(params.query, params.topK || 5);
+    return { results, controller: 'hierarchicalMemory' };
+  } catch (e: any) { return { results: [], error: e.message }; }
+}
+
+/**
+ * Run memory consolidation.
+ */
+export async function bridgeConsolidate(params: { minAge?: number; maxEntries?: number }): Promise<any> {
+  const registry = await getRegistry();
+  if (!registry) return null;
+  try {
+    const mc = registry.getController('memoryConsolidation');
+    if (!mc) return { success: false, error: 'MemoryConsolidation not available' };
+    const result = await mc.consolidate();
+    return { success: true, consolidated: result };
+  } catch (e: any) { return { success: false, error: e.message }; }
+}
+
+/**
+ * Batch operations (insert, update, delete).
+ */
+export async function bridgeBatchOperation(params: { operation: string; entries: any[] }): Promise<any> {
+  const registry = await getRegistry();
+  if (!registry) return null;
+  try {
+    const batch = registry.getController('batchOperations');
+    if (!batch) return { success: false, error: 'BatchOperations not available' };
+    let result;
+    switch (params.operation) {
+      case 'insert': result = await batch.insertEpisodes(params.entries); break;
+      case 'delete': result = await batch.bulkDelete(params.entries.map((e: any) => e.key)); break;
+      case 'update': result = await batch.bulkUpdate(params.entries); break;
+      default: return { success: false, error: `Unknown operation: ${params.operation}` };
+    }
+    return { success: true, operation: params.operation, count: params.entries.length, result };
+  } catch (e: any) { return { success: false, error: e.message }; }
+}
+
+/**
+ * Synthesize context from memories.
+ */
+export async function bridgeContextSynthesize(params: { query: string; maxEntries?: number }): Promise<any> {
+  const registry = await getRegistry();
+  if (!registry) return null;
+  try {
+    const agentdbModule: any = await import('agentdb');
+    const ContextSynthesizer = agentdbModule.ContextSynthesizer;
+    if (!ContextSynthesizer) return { success: false, error: 'ContextSynthesizer not available' };
+    const result = ContextSynthesizer.synthesize(params.query, []);
+    return { success: true, synthesis: result };
+  } catch (e: any) { return { success: false, error: e.message }; }
+}
+
+/**
+ * Route via SemanticRouter.
+ */
+export async function bridgeSemanticRoute(params: { input: string }): Promise<any> {
+  const registry = await getRegistry();
+  if (!registry) return null;
+  try {
+    const router = registry.getController('semanticRouter');
+    if (!router) return { route: null, error: 'SemanticRouter not available' };
+    const result = await router.route(params.input);
+    return { route: result, controller: 'semanticRouter' };
+  } catch (e: any) { return { route: null, error: e.message }; }
 }
 
 // ===== Utility =====

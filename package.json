@@ -66,7 +66,7 @@
     "@ruvector/router": "^0.1.27",
     "@ruvector/router-linux-x64-gnu": "^0.1.27",
     "@ruvector/sona": "^0.1.5",
-    "agentdb": "^3.0.0-alpha.8",
+    "agentdb": "^3.0.0-alpha.9",
     "agentic-flow": "^2.0.7"
   },
   "overrides": {
