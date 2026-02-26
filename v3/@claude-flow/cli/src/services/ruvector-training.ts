@@ -20,16 +20,15 @@ import type {
   WasmTrajectoryBuffer,
 } from '@ruvector/learning-wasm';
 
-import type {
-  FlashAttention,
-  MoEAttention,
-  HyperbolicAttention,
-  AdamWOptimizer,
-  InfoNceLoss,
-  CurriculumScheduler,
-  HardNegativeMiner,
-  BenchmarkResult,
-} from '@ruvector/attention';
+// @ruvector/attention types — use any since the NAPI exports vary across versions
+type FlashAttention = any;
+type MoEAttention = any;
+type HyperbolicAttention = any;
+type AdamWOptimizer = any;
+type InfoNceLoss = any;
+type CurriculumScheduler = any;
+type HardNegativeMiner = any;
+type BenchmarkResult = any;
 
 // SONA Engine type (from @ruvector/sona)
 interface SonaEngineInstance {
@@ -137,7 +136,7 @@ export async function initializeTraining(config: TrainingConfig = {}): Promise<{
     features.push('TrajectoryBuffer');
 
     // Initialize attention mechanisms
-    const attention = await import('@ruvector/attention');
+    const attention: any = await import('@ruvector/attention');
 
     if (config.useFlashAttention !== false) {
       flashAttention = new attention.FlashAttention(dim, 64);
@@ -172,7 +171,6 @@ export async function initializeTraining(config: TrainingConfig = {}): Promise<{
 
     // Hard negative mining - use string for MiningStrategy enum due to NAPI binding quirk
     try {
-      // @ts-expect-error - MiningStrategy enum binding expects string not enum value
       hardMiner = new attention.HardNegativeMiner(5, 'semi_hard');
       features.push('Hard Negative Mining');
     } catch {
@@ -461,9 +459,9 @@ export async function benchmarkTraining(
   dim?: number,
   iterations?: number
 ): Promise<BenchmarkResult[]> {
-  const attention = await import('@ruvector/attention');
+  const attention: any = await import('@ruvector/attention');
   lastBenchmark = attention.benchmarkAttention(dim || 256, 100, iterations || 1000);
-  return lastBenchmark;
+  return lastBenchmark ?? [];
 }
 
 // ============================================

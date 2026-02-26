@@ -1542,7 +1542,7 @@ const benchmarkCommand: Command = {
     spinner.start();
 
     try {
-      const attention = await import('@ruvector/attention');
+      const attention: any = await import('@ruvector/attention');
 
       // Manual benchmark since benchmarkAttention has a binding bug
       const benchmarkMechanism = async (name: string, mechanism: { computeRaw: (q: Float32Array, k: Float32Array[], v: Float32Array[]) => Float32Array }) => {
