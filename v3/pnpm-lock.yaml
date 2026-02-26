@@ -330,8 +330,8 @@ importers:
   '@claude-flow/memory':
     dependencies:
       agentdb:
-        specifier: ^3.0.0-alpha.7
-        version: 3.0.0-alpha.7(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
+        specifier: ^3.0.0-alpha.8
+        version: 3.0.0-alpha.8(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
       sql.js:
         specifier: ^1.10.3
         version: 1.13.0
@@ -361,7 +361,7 @@ importers:
     optionalDependencies:
       agentdb:
         specifier: ^2.0.0 || ^3.0.0-alpha.1
-        version: 3.0.0-alpha.7(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
+        version: 3.0.0-alpha.8(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
 
   '@claude-flow/performance':
     dependencies:
@@ -3237,9 +3237,27 @@ packages:
     dev: false
     optional: true
 
+  /@ruvector/gnn-darwin-arm64@0.1.24:
+    resolution: {integrity: sha512-NFPYrZ3bQdDCBHinxYVtThxQpt6vOuVvDiuzeyCjqrodlqvTN8pnKITMP+GxONItAtD4gnAAXtQG1WPKbyh8/A==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@ruvector/gnn-darwin-x64@0.1.22:
     resolution: {integrity: sha512-qmS4epED7uS58VjYbbIOyBa1lyJQoZi0tYV5tbFMhGO8ljGDEfF3OWguKaUsTYLgOOhXNoYM16Ex7mPvC/KoMQ==}
     os: ['!invalid']
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/gnn-darwin-x64@0.1.24:
+    resolution: {integrity: sha512-pFj10fqExLpx8+fEuOYxjhD8jIWTUSoH88LYFXXX7woetdPEzgyoRe1CwZySbVufFUmuA90JXa9bVvH4wtwqgA==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
     requiresBuild: true
     dev: false
     optional: true
@@ -3251,6 +3269,15 @@ packages:
     dev: false
     optional: true
 
+  /@ruvector/gnn-linux-arm64-gnu@0.1.24:
+    resolution: {integrity: sha512-BL17BeJ9bK9Uim0gGUd3pBrBZGjYJWincZfnnZKjsGpnAMMCO0j62uSdLWH+aHglQ1Ys9lS0gE2E36WD24xEOg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@ruvector/gnn-linux-arm64-musl@0.1.22:
     resolution: {integrity: sha512-u9CeAWosrX+M1bjECIV3NKENUitspPTakAgoILoR3Rb/FeKGAFDkpjMhTEEkr3rRBw6ihmiSEvI1m6YeUYmQPw==}
     os: ['!invalid']
@@ -3258,8 +3285,26 @@ packages:
     dev: false
     optional: true
 
+  /@ruvector/gnn-linux-arm64-musl@0.1.24:
+    resolution: {integrity: sha512-PaLO2puGfxLXdaxuSXkrrQtcYRNwD3ybKTqwW4D/fzPqsCd6C3HxHLnOwQpr9y1LhLDNEu/un3fkjginmJXPpg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@ruvector/gnn-linux-x64-gnu@0.1.22:
     resolution: {integrity: sha512-fv+WKHTVv5TU2Oiod+ue8SwcllE83V+Kc9/14OU1aF5lR6ZAIPIha/MvTYTlgz5+O2B2s0+ArhLJJ2vohaXZkA==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/gnn-linux-x64-gnu@0.1.24:
+    resolution: {integrity: sha512-X5QeVuk9fLMNPOQBuHA9MgE2pN7wM9GUdGJZwVJPkApdkKV9RwGIhWtpfs7KCtduEM/4tmDgJSj1AcxKYcZ72g==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
@@ -3274,9 +3319,27 @@ packages:
     dev: false
     optional: true
 
+  /@ruvector/gnn-linux-x64-musl@0.1.24:
+    resolution: {integrity: sha512-W8Tg/1EaoNj/OdYcCnPxJ3apG7OZN/lX1jAP9k86IQkQd/1SodhXf0Zv0xwPPxPtFk3lekBP253gdFdyuV+wTA==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@ruvector/gnn-win32-x64-msvc@0.1.22:
     resolution: {integrity: sha512-Pcde+8gafJTlHCR71JihNuMH82lL8zjJ2WbCFgcFXB5Bm9Chgjdch2L+aoj9FFRWw/x2IaY/7jd58GfIkOGE+A==}
     os: ['!invalid']
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/gnn-win32-x64-msvc@0.1.24:
+    resolution: {integrity: sha512-CTOOYQB3q1qFIPCgteyBxbBJwfyqlvhxXsEF3GJZqYyJeazL00ObT0u3kQKeQADTBai3cO6vnoIvZr/lP/DciQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
     requiresBuild: true
     dev: false
     optional: true
@@ -3294,8 +3357,30 @@ packages:
       '@ruvector/gnn-win32-x64-msvc': 0.1.22
     dev: false
 
+  /@ruvector/gnn@0.1.24:
+    resolution: {integrity: sha512-6rRBGblh+gl6a4fLQSZoEWX/QGIx9tlL76FkgQmA9BeCKUcx5wXpjgLfml2uanTZiIn3lVF1nTrpdPmlyTohOw==}
+    engines: {node: '>= 10'}
+    optionalDependencies:
+      '@ruvector/gnn-darwin-arm64': 0.1.24
+      '@ruvector/gnn-darwin-x64': 0.1.24
+      '@ruvector/gnn-linux-arm64-gnu': 0.1.24
+      '@ruvector/gnn-linux-arm64-musl': 0.1.24
+      '@ruvector/gnn-linux-x64-gnu': 0.1.24
+      '@ruvector/gnn-linux-x64-musl': 0.1.24
+      '@ruvector/gnn-win32-x64-msvc': 0.1.24
+    dev: false
+
   /@ruvector/graph-node-darwin-arm64@0.1.26:
     resolution: {integrity: sha512-8SWNN/EcYPD4fYoC6LiMU34SzJ2FlwMnr1KmF/daPxP8p4BopnbivrS+4Skcij5UgmnSb7tRzXr3m8PKyL89Iw==}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/graph-node-darwin-arm64@2.0.2:
+    resolution: {integrity: sha512-r1g7wCZIFtR98dBl33fwDr/f+aYsKA7gElhKStKkwpLpJMiY1jPaabvUOhvulRDALMGH3qgvpVc9/ChxLKT+WA==}
+    engines: {node: '>=18.0.0'}
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
@@ -3310,8 +3395,26 @@ packages:
     dev: false
     optional: true
 
+  /@ruvector/graph-node-darwin-x64@2.0.2:
+    resolution: {integrity: sha512-tJB6dVDItrCaYLF55jP6DjmCzo8BpmucA0JcV2X23x2Tb6hJ5lS5pm3ujhvPy3A/bzgretYEtfHeAQXf1tOy5A==}
+    engines: {node: '>=18.0.0'}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@ruvector/graph-node-linux-arm64-gnu@0.1.26:
     resolution: {integrity: sha512-WyhMaZZGKhTDf98ln6hzkN9yfnuK3asr/Y+VUyG5f0SQSXroq9RMpjy5sUYZI4Zo+wXyczDfOQmQo/NK8ZiZAQ==}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/graph-node-linux-arm64-gnu@2.0.2:
+    resolution: {integrity: sha512-GvzFtb+JjXjelNhZQl45HQK5zQqW0GrmpvUCIIWEbDtVLgfCbw37UkLvgc1Kf9qxJHFwl5DTWfKLgbyyKdSX9g==}
+    engines: {node: '>=18.0.0'}
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
@@ -3327,8 +3430,26 @@ packages:
     dev: false
     optional: true
 
+  /@ruvector/graph-node-linux-x64-gnu@2.0.2:
+    resolution: {integrity: sha512-yaY/jj3PZ5lSfHhTcc2g5hTDg+pzG4Vo5LfiL1ecU+r+jl2zbLsMecb8ldDFibVO3DFuxTjH/I1+bDFo2fC/Qg==}
+    engines: {node: '>=18.0.0'}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@ruvector/graph-node-win32-x64-msvc@0.1.26:
     resolution: {integrity: sha512-JuB6ff4opUhehaRiWJnKY39snLDAs1EPJRV32+NCS40cqBc7OJ5ywVqVBMIL1XGMAMEsByypvAv1JU7C1pQeRw==}
+    cpu: [x64]
+    os: [win32]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/graph-node-win32-x64-msvc@2.0.2:
+    resolution: {integrity: sha512-f38C7oi4mkVl5a5q61rzITvWXIQGykqCWIKgEhGcEt/bDOX2wYCr1F5/AM+Ixz9pYKFvNNrzjozsafeevHWn0Q==}
+    engines: {node: '>=18.0.0'}
     cpu: [x64]
     os: [win32]
     requiresBuild: true
@@ -3345,6 +3466,19 @@ packages:
       '@ruvector/graph-node-linux-x64-gnu': 0.1.26
       '@ruvector/graph-node-win32-x64-msvc': 0.1.26
     dev: false
+
+  /@ruvector/graph-node@2.0.2:
+    resolution: {integrity: sha512-uFPPTqx1hHsF9p6kAcEnEAEkb8zLf9lw+euPxr1voiRCBHt8L3sUXkeNvz50eHtJjxUW9dm4loIbsYuxao+M0g==}
+    engines: {node: '>=18.0.0'}
+    requiresBuild: true
+    optionalDependencies:
+      '@ruvector/graph-node-darwin-arm64': 2.0.2
+      '@ruvector/graph-node-darwin-x64': 2.0.2
+      '@ruvector/graph-node-linux-arm64-gnu': 2.0.2
+      '@ruvector/graph-node-linux-x64-gnu': 2.0.2
+      '@ruvector/graph-node-win32-x64-msvc': 2.0.2
+    dev: false
+    optional: true
 
   /@ruvector/graph-transformer-darwin-arm64@2.0.4:
     resolution: {integrity: sha512-VbPWnJHN//1MD5SIn5tEbgV+AUOUtEXpN6q648J+OKjEqJykGVyCg7TKrMOgNtAsAY3vU1S3BlaKIcj2O3ijEw==}
@@ -3422,7 +3556,6 @@ packages:
       '@ruvector/graph-transformer-linux-x64-musl': 2.0.4
       '@ruvector/graph-transformer-win32-x64-msvc': 2.0.4
     dev: false
-    optional: true
 
   /@ruvector/learning-wasm@0.1.29:
     resolution: {integrity: sha512-W6Fd/jhIQVQ4Cr7vKtU1rwdM3SfgTSNUmZr3uIpt/xfsET6u2lxIBrcRyuKbkNRuweOJdb4C/scEAfiDt1OCTw==}
@@ -4825,7 +4958,7 @@ packages:
       jsonwebtoken: 9.0.3
       marked-terminal: 6.2.0(marked@11.2.0)
       ora: 7.0.1
-      ruvector: 0.1.95(hono@4.11.3)(zod@3.25.76)
+      ruvector: 0.1.100(hono@4.11.3)(zod@3.25.76)
       ruvector-attention-wasm: 0.1.0
       sql.js: 1.13.0
       zod: 3.25.76
@@ -4922,8 +5055,8 @@ packages:
     dev: false
     optional: true
 
-  /agentdb@3.0.0-alpha.7(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0):
-    resolution: {integrity: sha512-UvQJI/+8elfUqoSrOn8aK3S/Nivgw4VqaN6eeG1LTF0zsq7UEdulgCD2xiMbzBjA4ewvQp/xA+Xwab5OEVyZ/Q==}
+  /agentdb@3.0.0-alpha.8(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0):
+    resolution: {integrity: sha512-JqeGhNLly86l/6Fp9aLXjZfJakHXHzPCHhf5T8zPRTT+aJkgdeSzBx1wKW9DpW/u9jrjo+b5d/3gqmk3mx66Vg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     requiresBuild: true
@@ -4940,16 +5073,18 @@ packages:
         optional: true
     dependencies:
       '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@3.25.76)
+      '@ruvector/graph-transformer': 2.0.4
       ajv: 8.17.1
       better-sqlite3: 11.10.0
+      ruvector: 0.1.100(hono@4.11.3)(zod@3.25.76)
       sql.js: 1.13.0
       zod: 3.25.76
     optionalDependencies:
       '@ruvector/attention': 0.1.31
-      '@ruvector/gnn': 0.1.22
-      '@ruvector/graph-node': 0.1.26
-      '@ruvector/graph-transformer': 2.0.4
+      '@ruvector/gnn': 0.1.24
+      '@ruvector/graph-node': 2.0.2
       '@ruvector/router': 0.1.28
+      '@ruvector/sona': 0.1.5
       chalk: 5.6.2
       cli-table3: 0.6.5
       commander: 12.1.0
@@ -4958,7 +5093,6 @@ packages:
       inquirer: 9.3.8(@types/node@20.19.27)
       marked-terminal: 6.2.0(marked@11.2.0)
       ora: 7.0.1
-      ruvector: 0.1.100(hono@4.11.3)(zod@3.25.76)
       ruvector-attention-wasm: 0.1.0
       ruvector-graph-transformer-wasm: 2.0.4
       sqlite: 5.1.1
@@ -9791,7 +9925,7 @@ packages:
       '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@3.25.76)
       '@ruvector/attention': 0.1.31
       '@ruvector/core': 0.1.30
-      '@ruvector/gnn': 0.1.22
+      '@ruvector/gnn': 0.1.24
       '@ruvector/sona': 0.1.5
       chalk: 4.1.2
       commander: 11.1.0
@@ -9804,7 +9938,6 @@ packages:
       - supports-color
       - zod
     dev: false
-    optional: true
 
   /ruvector@0.1.95(hono@4.11.3)(zod@3.25.76):
     resolution: {integrity: sha512-uDKYhgPE7H3cyPPGdPuP8DhKd3CASouSpfk4+ghjH1HtCGWTlU6jMvGQJaYMMs2N3HpsnB47a7NcozXHR4csXA==}
