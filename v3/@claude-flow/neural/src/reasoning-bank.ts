@@ -37,7 +37,7 @@ async function ensureAgentDBImport(): Promise<void> {
   if (!agentdbImportPromise) {
     agentdbImportPromise = (async () => {
       try {
-        const agentdbModule = await import('agentdb');
+        const agentdbModule: any = await import('agentdb');
         AgentDB = agentdbModule.AgentDB || agentdbModule.default;
       } catch {
         // AgentDB not available - will use fallback

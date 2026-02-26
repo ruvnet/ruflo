@@ -358,6 +358,10 @@ importers:
       '@ruvector/sona':
         specifier: latest
         version: 0.1.5
+    optionalDependencies:
+      agentdb:
+        specifier: ^2.0.0 || ^3.0.0-alpha.1
+        version: 3.0.0-alpha.7(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
 
   '@claude-flow/performance':
     dependencies:

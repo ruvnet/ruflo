@@ -16,6 +16,9 @@
     "@claude-flow/memory": "^3.0.0-alpha.2",
     "@ruvector/sona": "latest"
   },
+  "optionalDependencies": {
+    "agentdb": "^2.0.0 || ^3.0.0-alpha.1"
+  },
   "publishConfig": {
     "access": "public",
     "tag": "v3alpha"
