@@ -53,5 +53,8 @@
   "packageManager": "pnpm@8.15.0",
   "dependencies": {
     "semantic-release": "25.0.2"
+  },
+  "pnpm": {
+    "neverBuiltDependencies": ["sharp"]
   }
 }
