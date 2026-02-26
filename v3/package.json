@@ -55,6 +55,10 @@
     "semantic-release": "25.0.2"
   },
   "pnpm": {
-    "neverBuiltDependencies": ["sharp"]
+    "neverBuiltDependencies": ["sharp"],
+    "overrides": {
+      "@ruvector/gnn": "0.1.25",
+      "@ruvector/gnn-linux-x64-gnu": "0.1.25"
+    }
   }
 }

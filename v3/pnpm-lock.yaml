@@ -7,6 +7,10 @@ settings:
 neverBuiltDependencies:
   - sharp
 
+overrides:
+  '@ruvector/gnn': 0.1.25
+  '@ruvector/gnn-linux-x64-gnu': 0.1.25
+
 importers:
 
   .:
@@ -32,7 +36,7 @@ importers:
     dependencies:
       agentdb:
         specifier: '>=2.0.0-alpha.1'
-        version: 2.0.0-alpha.3.4(@types/node@20.19.27)(express@4.22.1)(hono@4.11.3)(marked@11.2.0)
+        version: 2.0.0-alpha.3.4(@types/node@20.19.27)(express@4.22.1)(hono@4.12.3)(marked@11.2.0)
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -54,7 +58,7 @@ importers:
         version: 0.6.0
       agentic-flow:
         specifier: ^2.0.3
-        version: 2.0.3(@types/node@20.19.27)(hono@4.11.3)(marked@11.2.0)
+        version: 2.0.3(@types/node@20.19.27)(hono@4.12.3)(marked@11.2.0)
       zod:
         specifier: ^3.22.4
         version: 3.25.76
@@ -213,7 +217,7 @@ importers:
         version: 2.17.2
       agentic-flow:
         specifier: ^2.0.0
-        version: 2.0.3(@types/node@20.19.27)(hono@4.11.3)(marked@11.2.0)
+        version: 2.0.3(@types/node@20.19.27)(hono@4.12.3)(marked@11.2.0)
       sql.js:
         specifier: ^1.13.0
         version: 1.13.0
@@ -286,7 +290,7 @@ importers:
     dependencies:
       agentic-flow:
         specifier: ^2.0.0-alpha
-        version: 2.0.0-alpha(@types/node@20.19.27)(hono@4.11.3)(marked@11.2.0)(typescript@5.9.3)
+        version: 2.0.0-alpha(@types/node@20.19.27)(hono@4.12.3)(marked@11.2.0)(typescript@5.9.3)
     optionalDependencies:
       agent-booster:
         specifier: ^0.2.2
@@ -331,7 +335,7 @@ importers:
     dependencies:
       agentdb:
         specifier: ^3.0.0-alpha.9
-        version: 3.0.0-alpha.9(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
+        version: 3.0.0-alpha.9(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.12.3)(marked@11.2.0)
       sql.js:
         specifier: ^1.10.3
         version: 1.13.0
@@ -361,7 +365,7 @@ importers:
     optionalDependencies:
       agentdb:
         specifier: ^2.0.0 || ^3.0.0-alpha.1
-        version: 3.0.0-alpha.9(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0)
+        version: 3.0.0-alpha.9(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.12.3)(marked@11.2.0)
 
   '@claude-flow/performance':
     dependencies:
@@ -673,7 +677,7 @@ packages:
     dependencies:
       '@claude-flow/shared': 3.0.0-alpha.1
       '@xenova/transformers': 2.17.2
-      agentic-flow: 2.0.3(@types/node@20.19.27)(hono@4.11.3)(marked@11.2.0)
+      agentic-flow: 2.0.3(@types/node@20.19.27)(hono@4.12.3)(marked@11.2.0)
       sql.js: 1.13.0
     transitivePeerDependencies:
       - bare-abort-controller
@@ -1202,7 +1206,7 @@ packages:
       '@modelcontextprotocol/sdk':
         optional: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@4.3.5)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.12.3)(zod@4.3.5)
       google-auth-library: 10.5.0
       ws: 8.19.0
     transitivePeerDependencies:
@@ -1234,13 +1238,13 @@ packages:
     dev: false
     optional: true
 
-  /@hono/node-server@1.19.7(hono@4.11.3):
+  /@hono/node-server@1.19.7(hono@4.12.3):
     resolution: {integrity: sha512-vUcD0uauS7EU2caukW8z5lJKtoGMokxNbJtBiwHgpqxEXokaHCBkQUmCHhjFB1VUTWdqj25QoMkMKzgjq+uhrw==}
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
     dependencies:
-      hono: 4.11.3
+      hono: 4.12.3
     dev: false
 
   /@huggingface/jinja@0.2.2:
@@ -1513,7 +1517,7 @@ packages:
       - supports-color
     dev: false
 
-  /@modelcontextprotocol/sdk@1.25.1(hono@4.11.3)(zod@3.25.76):
+  /@modelcontextprotocol/sdk@1.25.1(hono@4.12.3)(zod@3.25.76):
     resolution: {integrity: sha512-yO28oVFFC7EBoiKdAn+VqRm+plcfv4v0xp6osG/VsCB0NlPZWi87ajbCZZ8f/RvOFLEu7//rSRmuZZ7lMoe3gQ==}
     engines: {node: '>=18'}
     peerDependencies:
@@ -1523,7 +1527,7 @@ packages:
       '@cfworker/json-schema':
         optional: true
     dependencies:
-      '@hono/node-server': 1.19.7(hono@4.11.3)
+      '@hono/node-server': 1.19.7(hono@4.12.3)
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
@@ -1544,7 +1548,7 @@ packages:
       - supports-color
     dev: false
 
-  /@modelcontextprotocol/sdk@1.25.1(hono@4.11.3)(zod@4.3.5):
+  /@modelcontextprotocol/sdk@1.25.1(hono@4.12.3)(zod@4.3.5):
     resolution: {integrity: sha512-yO28oVFFC7EBoiKdAn+VqRm+plcfv4v0xp6osG/VsCB0NlPZWi87ajbCZZ8f/RvOFLEu7//rSRmuZZ7lMoe3gQ==}
     engines: {node: '>=18'}
     peerDependencies:
@@ -1554,7 +1558,7 @@ packages:
       '@cfworker/json-schema':
         optional: true
     dependencies:
-      '@hono/node-server': 1.19.7(hono@4.11.3)
+      '@hono/node-server': 1.19.7(hono@4.12.3)
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
@@ -1722,6 +1726,7 @@ packages:
   /@opentelemetry/api@1.9.0:
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
     engines: {node: '>=8.0.0'}
+    requiresBuild: true
 
   /@opentelemetry/auto-instrumentations-node@0.47.1(@opentelemetry/api@1.9.0):
     resolution: {integrity: sha512-W7Iz4SZhj6z5iqYTu4zZXr2woP/zD4dA6zFAz9PQEx21/SGn6+y6plcJTA08KnPVMbRff60D1IBdl547TyGy9A==}
@@ -1922,7 +1927,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -1939,7 +1944,7 @@ packages:
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/propagator-aws-xray': 1.26.2(@opentelemetry/api@1.9.0)
       '@opentelemetry/resources': 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@types/aws-lambda': 8.10.122
     transitivePeerDependencies:
       - supports-color
@@ -1957,7 +1962,7 @@ packages:
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/propagation-utils': 0.30.16(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -1988,7 +1993,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2004,7 +2009,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@types/connect': 3.4.36
     transitivePeerDependencies:
       - supports-color
@@ -2020,7 +2025,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2065,7 +2070,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2081,7 +2086,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2155,7 +2160,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2188,7 +2193,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/redis-common': 0.36.2
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2203,7 +2208,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2219,7 +2224,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@types/koa': 2.14.0
       '@types/koa__router': 12.0.3
     transitivePeerDependencies:
@@ -2250,7 +2255,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@types/memcached': 2.2.10
     transitivePeerDependencies:
       - supports-color
@@ -2267,7 +2272,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-metrics': 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2283,7 +2288,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2298,7 +2303,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@opentelemetry/sql-common': 0.40.1(@opentelemetry/api@1.9.0)
     transitivePeerDependencies:
       - supports-color
@@ -2314,7 +2319,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@types/mysql': 2.15.22
     transitivePeerDependencies:
       - supports-color
@@ -2330,7 +2335,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2345,7 +2350,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2360,7 +2365,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@opentelemetry/sql-common': 0.40.1(@opentelemetry/api@1.9.0)
       '@types/pg': 8.6.1
       '@types/pg-pool': 2.0.4
@@ -2393,7 +2398,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/redis-common': 0.36.2
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2409,7 +2414,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/redis-common': 0.36.2
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2425,7 +2430,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2440,7 +2445,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2455,7 +2460,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -2470,7 +2475,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@types/tedious': 4.0.14
     transitivePeerDependencies:
       - supports-color
@@ -2634,7 +2639,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/resources': 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     dev: false
     optional: true
 
@@ -2648,7 +2653,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/resources': 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     dev: false
     optional: true
 
@@ -2662,7 +2667,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/resources': 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     dev: false
     optional: true
 
@@ -2675,7 +2680,7 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/resources': 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
     dev: false
     optional: true
 
@@ -2689,7 +2694,7 @@ packages:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/core': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/resources': 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       gcp-metadata: 6.1.1
     transitivePeerDependencies:
       - encoding
@@ -2849,8 +2854,8 @@ packages:
     dev: false
     optional: true
 
-  /@opentelemetry/semantic-conventions@1.38.0:
-    resolution: {integrity: sha512-kocjix+/sSggfJhwXqClZ3i9Y/MI0fp7b+g7kCRm6psy2dsf8uApTRclwG18h8Avm7C9+fnt+O36PspJ/OzoWg==}
+  /@opentelemetry/semantic-conventions@1.40.0:
+    resolution: {integrity: sha512-cifvXDhcqMwwTlTK04GBNeIe7yyo28Mfby85QXFe1Yk8nmi36Ab/5UQwptOx84SsoGNRg+EVSjwzfSZMy6pmlw==}
     engines: {node: '>=14'}
     requiresBuild: true
     dev: false
@@ -3230,15 +3235,8 @@ packages:
     resolution: {integrity: sha512-GSvq2bB+aTNXpISTqccdZwOroRLSdQhi33L7569QUVi9P7a03hEtdZSX/Gk5aWtDufp230T57uLXQUA1Q0uBeQ==}
     dev: false
 
-  /@ruvector/gnn-darwin-arm64@0.1.22:
-    resolution: {integrity: sha512-5K4ZVMGyjyeB8O99Ol7hmD8CAd5J9WbtT2OD3AESEJ1FiLiSkYbqslODXVEBvFe8G/UwjOJnoJaFFUhyjBqbTA==}
-    os: ['!invalid']
-    requiresBuild: true
-    dev: false
-    optional: true
-
-  /@ruvector/gnn-darwin-arm64@0.1.24:
-    resolution: {integrity: sha512-NFPYrZ3bQdDCBHinxYVtThxQpt6vOuVvDiuzeyCjqrodlqvTN8pnKITMP+GxONItAtD4gnAAXtQG1WPKbyh8/A==}
+  /@ruvector/gnn-darwin-arm64@0.1.25:
+    resolution: {integrity: sha512-/MfLrqsIGxcMVHRW5ZyaU+0w+tnoEw+sLrQCYj/o3E7Gu0Cc+5QFE84p9CJUtaJLO/T+x5kEYLLC4iBwbYjkNg==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
@@ -3246,15 +3244,8 @@ packages:
     dev: false
     optional: true
 
-  /@ruvector/gnn-darwin-x64@0.1.22:
-    resolution: {integrity: sha512-qmS4epED7uS58VjYbbIOyBa1lyJQoZi0tYV5tbFMhGO8ljGDEfF3OWguKaUsTYLgOOhXNoYM16Ex7mPvC/KoMQ==}
-    os: ['!invalid']
-    requiresBuild: true
-    dev: false
-    optional: true
-
-  /@ruvector/gnn-darwin-x64@0.1.24:
-    resolution: {integrity: sha512-pFj10fqExLpx8+fEuOYxjhD8jIWTUSoH88LYFXXX7woetdPEzgyoRe1CwZySbVufFUmuA90JXa9bVvH4wtwqgA==}
+  /@ruvector/gnn-darwin-x64@0.1.25:
+    resolution: {integrity: sha512-Zw8HGUEFzWFVkTpMP4D9zoLMh5Tn6ztZsa74o6sMLKkXjWLIOhRIBBUXNtiJ6fv8QMXqqJyhNmBFNRXlglmLzA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
@@ -3262,15 +3253,17 @@ packages:
     dev: false
     optional: true
 
-  /@ruvector/gnn-linux-arm64-gnu@0.1.22:
-    resolution: {integrity: sha512-YUUfNpt76o6wafVL1m087hm0xoXZDf8yA1qMmEH7dOt4PM/9/Xk4PqHa2gD7NKhVrqRuSxBxXuJ9RTgahs8A3g==}
-    os: ['!invalid']
+  /@ruvector/gnn-linux-arm64-gnu@0.1.25:
+    resolution: {integrity: sha512-Nran7u3oAth3eXS0hq0cQiYr85wAJDM9tdVGApa5LhI1RqSgXlvC2g+AjCBA+074TUfQboKcH38hpnfuF2hpRA==}
+    engines: {node: '>= 18'}
+    cpu: [arm64]
+    os: [linux]
     requiresBuild: true
     dev: false
     optional: true
 
-  /@ruvector/gnn-linux-arm64-gnu@0.1.24:
-    resolution: {integrity: sha512-BL17BeJ9bK9Uim0gGUd3pBrBZGjYJWincZfnnZKjsGpnAMMCO0j62uSdLWH+aHglQ1Ys9lS0gE2E36WD24xEOg==}
+  /@ruvector/gnn-linux-arm64-musl@0.1.25:
+    resolution: {integrity: sha512-Xih6WQ9frA4VpFtQSHWj0frk+fCuEzFDzeMme0QWzUcQZvMUzqiRiSRSRB8jatas7Skbzl+4ZRi6C6THMlccJg==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
@@ -3278,24 +3271,8 @@ packages:
     dev: false
     optional: true
 
-  /@ruvector/gnn-linux-arm64-musl@0.1.22:
-    resolution: {integrity: sha512-u9CeAWosrX+M1bjECIV3NKENUitspPTakAgoILoR3Rb/FeKGAFDkpjMhTEEkr3rRBw6ihmiSEvI1m6YeUYmQPw==}
-    os: ['!invalid']
-    requiresBuild: true
-    dev: false
-    optional: true
-
-  /@ruvector/gnn-linux-arm64-musl@0.1.24:
-    resolution: {integrity: sha512-PaLO2puGfxLXdaxuSXkrrQtcYRNwD3ybKTqwW4D/fzPqsCd6C3HxHLnOwQpr9y1LhLDNEu/un3fkjginmJXPpg==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-    requiresBuild: true
-    dev: false
-    optional: true
-
-  /@ruvector/gnn-linux-x64-gnu@0.1.22:
-    resolution: {integrity: sha512-fv+WKHTVv5TU2Oiod+ue8SwcllE83V+Kc9/14OU1aF5lR6ZAIPIha/MvTYTlgz5+O2B2s0+ArhLJJ2vohaXZkA==}
+  /@ruvector/gnn-linux-x64-gnu@0.1.25:
+    resolution: {integrity: sha512-CwEk4cQ/whmHtAPu6b9hnUAgQiK1DrUDPumXGLh9O4b/WmwjddFfswfoRvacbSMMqwyXGLnAnidjhDZFBx06EQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
@@ -3303,8 +3280,8 @@ packages:
     dev: false
     optional: true
 
-  /@ruvector/gnn-linux-x64-gnu@0.1.24:
-    resolution: {integrity: sha512-X5QeVuk9fLMNPOQBuHA9MgE2pN7wM9GUdGJZwVJPkApdkKV9RwGIhWtpfs7KCtduEM/4tmDgJSj1AcxKYcZ72g==}
+  /@ruvector/gnn-linux-x64-musl@0.1.25:
+    resolution: {integrity: sha512-4nVcUFeN7dES6/mJ3e00FpZvZVZpGOQFFwWotHENFgNwIQc8XLqbbyeI3/rwhC1HJxxwf0oR+ianYoWKQptI/Q==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
@@ -3312,31 +3289,8 @@ packages:
     dev: false
     optional: true
 
-  /@ruvector/gnn-linux-x64-musl@0.1.22:
-    resolution: {integrity: sha512-YkKw032ezjtlVKRiBWsYDHoAWgL5ZMALXcZRDl3EJmBBsIZXty1EpeYw0PogVsfAIDJ9+EFOARLX4+AwkqMqKg==}
-    os: ['!invalid']
-    requiresBuild: true
-    dev: false
-    optional: true
-
-  /@ruvector/gnn-linux-x64-musl@0.1.24:
-    resolution: {integrity: sha512-W8Tg/1EaoNj/OdYcCnPxJ3apG7OZN/lX1jAP9k86IQkQd/1SodhXf0Zv0xwPPxPtFk3lekBP253gdFdyuV+wTA==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-    requiresBuild: true
-    dev: false
-    optional: true
-
-  /@ruvector/gnn-win32-x64-msvc@0.1.22:
-    resolution: {integrity: sha512-Pcde+8gafJTlHCR71JihNuMH82lL8zjJ2WbCFgcFXB5Bm9Chgjdch2L+aoj9FFRWw/x2IaY/7jd58GfIkOGE+A==}
-    os: ['!invalid']
-    requiresBuild: true
-    dev: false
-    optional: true
-
-  /@ruvector/gnn-win32-x64-msvc@0.1.24:
-    resolution: {integrity: sha512-CTOOYQB3q1qFIPCgteyBxbBJwfyqlvhxXsEF3GJZqYyJeazL00ObT0u3kQKeQADTBai3cO6vnoIvZr/lP/DciQ==}
+  /@ruvector/gnn-win32-x64-msvc@0.1.25:
+    resolution: {integrity: sha512-tJNwffB5jzb6g+5r2H9r8X2oa1q0dSHWN7pXDV9JLh6kYmsk55v6vjaYe7H7M3fP51BCrUGu+vVTiBlBoVvrYA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
@@ -3344,30 +3298,17 @@ packages:
     dev: false
     optional: true
 
-  /@ruvector/gnn@0.1.22:
-    resolution: {integrity: sha512-BOXLu6x/1GVj1zAqXJfF3zJWOzVl94i4bo6ATOlaDAlmGCvTwvvmomz8p9lPAMc99vmaox650MO9D4+CEqXK/A==}
+  /@ruvector/gnn@0.1.25:
+    resolution: {integrity: sha512-4q9HRHzA6IzCi2gXkppCuj8+y5jBN9xw9ea3nLq0WwtOc7zSK2x0n+zsNPiQVAeuGFO8CBTPjRyIDbXAOPvtsQ==}
     engines: {node: '>= 10'}
     optionalDependencies:
-      '@ruvector/gnn-darwin-arm64': 0.1.22
-      '@ruvector/gnn-darwin-x64': 0.1.22
-      '@ruvector/gnn-linux-arm64-gnu': 0.1.22
-      '@ruvector/gnn-linux-arm64-musl': 0.1.22
-      '@ruvector/gnn-linux-x64-gnu': 0.1.22
-      '@ruvector/gnn-linux-x64-musl': 0.1.22
-      '@ruvector/gnn-win32-x64-msvc': 0.1.22
-    dev: false
-
-  /@ruvector/gnn@0.1.24:
-    resolution: {integrity: sha512-6rRBGblh+gl6a4fLQSZoEWX/QGIx9tlL76FkgQmA9BeCKUcx5wXpjgLfml2uanTZiIn3lVF1nTrpdPmlyTohOw==}
-    engines: {node: '>= 10'}
-    optionalDependencies:
-      '@ruvector/gnn-darwin-arm64': 0.1.24
-      '@ruvector/gnn-darwin-x64': 0.1.24
-      '@ruvector/gnn-linux-arm64-gnu': 0.1.24
-      '@ruvector/gnn-linux-arm64-musl': 0.1.24
-      '@ruvector/gnn-linux-x64-gnu': 0.1.24
-      '@ruvector/gnn-linux-x64-musl': 0.1.24
-      '@ruvector/gnn-win32-x64-msvc': 0.1.24
+      '@ruvector/gnn-darwin-arm64': 0.1.25
+      '@ruvector/gnn-darwin-x64': 0.1.25
+      '@ruvector/gnn-linux-arm64-gnu': 0.1.25
+      '@ruvector/gnn-linux-arm64-musl': 0.1.25
+      '@ruvector/gnn-linux-x64-gnu': 0.1.25
+      '@ruvector/gnn-linux-x64-musl': 0.1.25
+      '@ruvector/gnn-win32-x64-msvc': 0.1.25
     dev: false
 
   /@ruvector/graph-node-darwin-arm64@0.1.26:
@@ -3459,6 +3400,7 @@ packages:
   /@ruvector/graph-node@0.1.26:
     resolution: {integrity: sha512-AIWeLOjLnMmx/ki+HviZlghBEM9mWCi9ANgRs+eqL6l9hoAsXy2MNJblidO4uUxc0p+1rvmz8cIJCwYZVTz5OQ==}
     engines: {node: '>=18.0.0'}
+    requiresBuild: true
     optionalDependencies:
       '@ruvector/graph-node-darwin-arm64': 0.1.26
       '@ruvector/graph-node-darwin-x64': 0.1.26
@@ -3559,6 +3501,7 @@ packages:
 
   /@ruvector/learning-wasm@0.1.29:
     resolution: {integrity: sha512-W6Fd/jhIQVQ4Cr7vKtU1rwdM3SfgTSNUmZr3uIpt/xfsET6u2lxIBrcRyuKbkNRuweOJdb4C/scEAfiDt1OCTw==}
+    requiresBuild: true
     dev: false
 
   /@ruvector/router-darwin-arm64@0.1.25:
@@ -3655,6 +3598,7 @@ packages:
   /@ruvector/router@0.1.28:
     resolution: {integrity: sha512-bXqZF3wMypjnCm989fkty2H7LnmDw4sAJ0ClXzDjBwjV2wg7oZPdk8NiioLZh72CEZBsTll3NkLzZRyi6CiyBQ==}
     engines: {node: '>=18.0.0'}
+    requiresBuild: true
     optionalDependencies:
       '@ruvector/router-darwin-arm64': 0.1.27
       '@ruvector/router-darwin-x64': 0.1.27
@@ -4849,18 +4793,18 @@ packages:
       - utf-8-validate
     dev: false
 
-  /agentdb@1.6.1(hono@4.11.3):
+  /agentdb@1.6.1(hono@4.12.3):
     resolution: {integrity: sha512-OO/hwO+MYtqsgz+6CyrY2BCjcgRWGv5Ob7nFupNEt7m1ZchIArCwvBAcJgFMFNFqWxH6AN2ThiQKBmfXboBkPg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     requiresBuild: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.12.3)(zod@3.25.76)
       '@xenova/transformers': 2.17.2
       chalk: 5.6.2
       commander: 12.1.0
       hnswlib-node: 3.0.0
-      sql.js: 1.13.0
+      sql.js: 1.14.0
       zod: 3.25.76
     optionalDependencies:
       better-sqlite3: 11.10.0
@@ -4874,16 +4818,16 @@ packages:
     dev: false
     optional: true
 
-  /agentdb@2.0.0-alpha.3.4(@types/node@20.19.27)(express@4.22.1)(hono@4.11.3)(marked@11.2.0):
+  /agentdb@2.0.0-alpha.3.4(@types/node@20.19.27)(express@4.22.1)(hono@4.12.3)(marked@11.2.0):
     resolution: {integrity: sha512-bUqO5o2VpWomh2xGOHdQoX00CGrPcIAH6zDCt5oa0SeJWAO+bbB7SiElb1TxwcrJQKe96HkiSh2T8z4vFypsxg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     requiresBuild: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.12.3)(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       '@ruvector/attention': 0.1.4
-      '@ruvector/gnn': 0.1.22
+      '@ruvector/gnn': 0.1.25
       '@ruvector/graph-node': 0.1.26
       '@ruvector/router': 0.1.26
       '@ruvector/ruvllm': 0.2.4
@@ -4897,7 +4841,7 @@ packages:
       jsonwebtoken: 9.0.3
       marked-terminal: 6.2.0(marked@11.2.0)
       ora: 7.0.1
-      ruvector: 0.1.95(hono@4.11.3)(zod@3.25.76)
+      ruvector: 0.1.95(hono@4.12.3)(zod@3.25.76)
       ruvector-attention-wasm: 0.1.0
       sql.js: 1.13.0
       zod: 3.25.76
@@ -4910,7 +4854,7 @@ packages:
       '@opentelemetry/sdk-metrics': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-node': 0.52.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-trace-base': 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@xenova/transformers': 2.17.2
       argon2: 0.44.0
       bcrypt: 6.0.0
@@ -4935,16 +4879,16 @@ packages:
       - supports-color
     dev: false
 
-  /agentdb@2.0.0-alpha.3.4(@types/node@20.19.27)(express@5.2.1)(hono@4.11.3)(marked@11.2.0):
+  /agentdb@2.0.0-alpha.3.4(@types/node@20.19.27)(express@5.2.1)(hono@4.12.3)(marked@11.2.0):
     resolution: {integrity: sha512-bUqO5o2VpWomh2xGOHdQoX00CGrPcIAH6zDCt5oa0SeJWAO+bbB7SiElb1TxwcrJQKe96HkiSh2T8z4vFypsxg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     requiresBuild: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.12.3)(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       '@ruvector/attention': 0.1.31
-      '@ruvector/gnn': 0.1.22
+      '@ruvector/gnn': 0.1.25
       '@ruvector/graph-node': 0.1.26
       '@ruvector/router': 0.1.28
       '@ruvector/ruvllm': 0.2.4
@@ -4958,7 +4902,7 @@ packages:
       jsonwebtoken: 9.0.3
       marked-terminal: 6.2.0(marked@11.2.0)
       ora: 7.0.1
-      ruvector: 0.1.95(hono@4.11.3)(zod@3.25.76)
+      ruvector: 0.1.95(hono@4.12.3)(zod@3.25.76)
       ruvector-attention-wasm: 0.1.0
       sql.js: 1.13.0
       zod: 3.25.76
@@ -4971,7 +4915,7 @@ packages:
       '@opentelemetry/sdk-metrics': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-node': 0.52.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-trace-base': 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@xenova/transformers': 2.17.2
       argon2: 0.44.0
       bcrypt: 6.0.0
@@ -4996,16 +4940,16 @@ packages:
       - supports-color
     dev: false
 
-  /agentdb@2.0.0-alpha.3.6(@types/node@20.19.27)(express@5.2.1)(hono@4.11.3)(marked@11.2.0):
-    resolution: {integrity: sha512-Qn+9e7PULNtVl+1b3GA6+oqc3EZNTvN4KHG/5PsUmmxNQW1c54Z1fGDaRWS9M+djpK0nlO06AnK8gkV5CYOpng==}
+  /agentdb@2.0.0-alpha.3.7(@types/node@20.19.27)(express@5.2.1)(hono@4.12.3)(marked@11.2.0):
+    resolution: {integrity: sha512-03CUdFgrqw8Mplkvlz66YCKQBSD+l+r8ox4hTZmx56nvkJU8ltKMQJ9h9nz7kvxEbDz2PeZO+SqT45qHNEWRcg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     requiresBuild: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.12.3)(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
       '@ruvector/attention': 0.1.31
-      '@ruvector/gnn': 0.1.22
+      '@ruvector/gnn': 0.1.25
       '@ruvector/graph-node': 0.1.26
       '@ruvector/router': 0.1.28
       '@ruvector/ruvllm': 0.2.4
@@ -5019,9 +4963,9 @@ packages:
       jsonwebtoken: 9.0.3
       marked-terminal: 6.2.0(marked@11.2.0)
       ora: 7.0.1
-      ruvector: 0.1.95(hono@4.11.3)(zod@3.25.76)
+      ruvector: 0.1.95(hono@4.12.3)(zod@3.25.76)
       ruvector-attention-wasm: 0.1.0
-      sql.js: 1.13.0
+      sql.js: 1.14.0
       zod: 3.25.76
     optionalDependencies:
       '@opentelemetry/auto-instrumentations-node': 0.47.1(@opentelemetry/api@1.9.0)
@@ -5032,7 +4976,7 @@ packages:
       '@opentelemetry/sdk-metrics': 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-node': 0.52.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-trace-base': 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions': 1.38.0
+      '@opentelemetry/semantic-conventions': 1.40.0
       '@xenova/transformers': 2.17.2
       argon2: 0.44.0
       bcrypt: 6.0.0
@@ -5055,7 +4999,7 @@ packages:
     dev: false
     optional: true
 
-  /agentdb@3.0.0-alpha.9(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.11.3)(marked@11.2.0):
+  /agentdb@3.0.0-alpha.9(@types/node@20.19.27)(better-sqlite3@11.10.0)(hono@4.12.3)(marked@11.2.0):
     resolution: {integrity: sha512-FSFqu2yKCNLfatsTRGUsah7drVgU0zTEKn6rwJwBjM2e6autDNAUCI9I/2OpLfSecHKDikEve5ADQs1hNasKPg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
@@ -5072,16 +5016,16 @@ packages:
       sqlite3:
         optional: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.12.3)(zod@3.25.76)
       '@ruvector/graph-transformer': 2.0.4
       ajv: 8.17.1
       better-sqlite3: 11.10.0
-      ruvector: 0.1.100(hono@4.11.3)(zod@3.25.76)
+      ruvector: 0.1.100(hono@4.12.3)(zod@3.25.76)
       sql.js: 1.13.0
       zod: 3.25.76
     optionalDependencies:
       '@ruvector/attention': 0.1.31
-      '@ruvector/gnn': 0.1.24
+      '@ruvector/gnn': 0.1.25
       '@ruvector/graph-node': 2.0.2
       '@ruvector/router': 0.1.28
       '@ruvector/sona': 0.1.5
@@ -5093,7 +5037,7 @@ packages:
       inquirer: 9.3.8(@types/node@20.19.27)
       marked-terminal: 6.2.0(marked@11.2.0)
       ora: 7.0.1
-      ruvector-attention-wasm: 0.1.0
+      ruvector-attention-wasm: 0.1.32
       ruvector-graph-transformer-wasm: 2.0.4
       sqlite: 5.1.1
     transitivePeerDependencies:
@@ -5104,7 +5048,7 @@ packages:
       - supports-color
     dev: false
 
-  /agentic-flow@1.10.2(@modelcontextprotocol/sdk@1.25.1)(hono@4.11.3):
+  /agentic-flow@1.10.2(@modelcontextprotocol/sdk@1.25.1)(hono@4.12.3):
     resolution: {integrity: sha512-h3d1KNUFkmdFdtjwn792/MPqYrEf7OId2LIIXlJDGM4epx0Vcm5FQ+ROrjxWDE04xgG3AHQ5dNynxPTDdkC7RA==}
     engines: {node: '>=18.0.0'}
     hasBin: true
@@ -5115,12 +5059,12 @@ packages:
       '@google/genai': 1.34.0(@modelcontextprotocol/sdk@1.25.1)
       '@supabase/supabase-js': 2.89.0
       '@xenova/transformers': 2.17.2
-      agentdb: 1.6.1(hono@4.11.3)
+      agentdb: 1.6.1(hono@4.12.3)
       axios: 1.13.2
       better-sqlite3: 11.10.0
       dotenv: 16.6.1
       express: 5.2.1
-      fastmcp: 3.26.7(hono@4.11.3)
+      fastmcp: 3.26.7(hono@4.12.3)
       http-proxy-middleware: 3.0.5
       tiktoken: 1.0.22
       ulid: 3.0.2
@@ -5146,7 +5090,7 @@ packages:
     dev: false
     optional: true
 
-  /agentic-flow@2.0.0-alpha(@types/node@20.19.27)(hono@4.11.3)(marked@11.2.0)(typescript@5.9.3):
+  /agentic-flow@2.0.0-alpha(@types/node@20.19.27)(hono@4.12.3)(marked@11.2.0)(typescript@5.9.3):
     resolution: {integrity: sha512-lbBEr7LiOq0lcBFnxrTZEGfXp9KzPsiNtIkWDIve0y+LMW+ZUKl8FNraT0Lwcc7zcKMQoqCfvZksvyEFG+E0Fg==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
@@ -5165,20 +5109,20 @@ packages:
       '@anthropic-ai/sdk': 0.65.0(zod@3.25.76)
       '@google/genai': 1.34.0(@modelcontextprotocol/sdk@1.25.1)
       '@ruvector/attention': 0.1.31
-      '@ruvector/gnn': 0.1.22
+      '@ruvector/gnn': 0.1.25
       '@supabase/supabase-js': 2.89.0
       '@types/react': 19.2.7
       '@types/react-dom': 19.2.3(@types/react@19.2.7)
       '@vitejs/plugin-react-swc': 4.2.2(vite@7.3.0)
       '@xenova/transformers': 2.17.2
-      agentdb: 2.0.0-alpha.3.4(@types/node@20.19.27)(express@5.2.1)(hono@4.11.3)(marked@11.2.0)
-      agentic-payments: 0.1.13(hono@4.11.3)(typescript@5.9.3)
+      agentdb: 2.0.0-alpha.3.4(@types/node@20.19.27)(express@5.2.1)(hono@4.12.3)(marked@11.2.0)
+      agentic-payments: 0.1.13(hono@4.12.3)(typescript@5.9.3)
       autoprefixer: 10.4.23(postcss@8.5.6)
       axios: 1.13.2
       better-sqlite3: 11.10.0
       dotenv: 16.6.1
       express: 5.2.1
-      fastmcp: 3.26.7(hono@4.11.3)
+      fastmcp: 3.26.7(hono@4.12.3)
       http-proxy-middleware: 3.0.5
       lucide-react: 0.548.0(react@19.2.3)
       postcss: 8.5.6
@@ -5226,7 +5170,7 @@ packages:
       - utf-8-validate
     dev: false
 
-  /agentic-flow@2.0.3(@types/node@20.19.27)(hono@4.11.3)(marked@11.2.0):
+  /agentic-flow@2.0.3(@types/node@20.19.27)(hono@4.12.3)(marked@11.2.0):
     resolution: {integrity: sha512-yqrcwWG+RztVKx4w9bvIiAymXEZn93GiTsF6qhYv2gOTQyhIl+VKwY9MLuQKz+Nr5wibTJ4EPm1Cib43usvNNA==}
     engines: {node: '>=18.0.0'}
     hasBin: true
@@ -5245,11 +5189,11 @@ packages:
       axios: 1.13.2
       dotenv: 16.6.1
       express: 5.2.1
-      fastmcp: 3.26.7(hono@4.11.3)
+      fastmcp: 3.26.7(hono@4.12.3)
       glob: 13.0.0
       gun: 0.2020.1241
       http-proxy-middleware: 3.0.5
-      ruvector: 0.1.95(hono@4.11.3)(zod@3.25.76)
+      ruvector: 0.1.95(hono@4.12.3)(zod@3.25.76)
       ruvector-onnx-embeddings-wasm: 0.1.2
       tiktoken: 1.0.22
       ulid: 3.0.2
@@ -5259,11 +5203,11 @@ packages:
     optionalDependencies:
       '@ruvector/attention': 0.1.31
       '@ruvector/sona': 0.1.5
-      agentdb: 2.0.0-alpha.3.6(@types/node@20.19.27)(express@5.2.1)(hono@4.11.3)(marked@11.2.0)
+      agentdb: 2.0.0-alpha.3.7(@types/node@20.19.27)(express@5.2.1)(hono@4.12.3)(marked@11.2.0)
       better-sqlite3: 11.10.0
-      onnxruntime-node: 1.23.2
+      onnxruntime-node: 1.24.2
       sharp: 0.32.6
-      sql.js: 1.13.0
+      sql.js: 1.14.0
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - '@modelcontextprotocol/sdk'
@@ -5285,7 +5229,7 @@ packages:
       - utf-8-validate
     dev: false
 
-  /agentic-payments@0.1.13(hono@4.11.3)(typescript@5.9.3):
+  /agentic-payments@0.1.13(hono@4.12.3)(typescript@5.9.3):
     resolution: {integrity: sha512-XMwOIjodoqg+Q5usjcuZUYiu54O1Jn1PeLm7VYEpWG6GIANb6LM8ZbihlshhjhDetqfSBLT4hmrKZfKxuySzxg==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
@@ -5295,7 +5239,7 @@ packages:
       typescript:
         optional: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@4.3.5)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.12.3)(zod@4.3.5)
       '@noble/ed25519': 2.3.0
       '@noble/hashes': 1.8.0
       base64-js: 1.5.1
@@ -5309,7 +5253,7 @@ packages:
       uuid: 9.0.1
       zod: 4.3.5
     optionalDependencies:
-      agentic-flow: 1.10.2(@modelcontextprotocol/sdk@1.25.1)(hono@4.11.3)
+      agentic-flow: 1.10.2(@modelcontextprotocol/sdk@1.25.1)(hono@4.12.3)
       better-sqlite3: 11.10.0
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -5393,6 +5337,7 @@ packages:
   /ansi-escapes@6.2.1:
     resolution: {integrity: sha512-4nJ3yixlEthEJ9Rk4vPcdBRkZvQZlYyu8j4/Mqz5sgIkddmEnH2Yj2ZrnP9S3tQOvSNRUIgVNF/1yPpRAGNRig==}
     engines: {node: '>=14.16'}
+    requiresBuild: true
     dev: false
 
   /ansi-escapes@7.2.0:
@@ -5432,6 +5377,7 @@ packages:
 
   /ansicolors@0.3.2:
     resolution: {integrity: sha512-QXu7BPrP29VllRxH8GwB7x5iX5qWKAAMLqKQGWTeLWVlNHNOpVMJ91dsxQAIWXpjuW5wqvxu3Jd/nRjrJ+0pqg==}
+    requiresBuild: true
     dev: false
 
   /any-promise@1.3.0:
@@ -5564,8 +5510,8 @@ packages:
         optional: true
     dev: false
 
-  /bare-fs@4.5.2:
-    resolution: {integrity: sha512-veTnRzkb6aPHOvSKIOy60KzURfBdUflr5VReI+NSaPL6xf+XLdONQgZgpYvUuZLVQ8dCqxpBAudaOM1+KpAUxw==}
+  /bare-fs@4.5.5:
+    resolution: {integrity: sha512-XvwYM6VZqKoqDll8BmSww5luA5eflDzY0uEFfBJtFKe4PAAtxBjU3YIxzIBzhyaEQBy1VXEQBto4cpN5RZJw+w==}
     engines: {bare: '>=1.16.0'}
     requiresBuild: true
     peerDependencies:
@@ -5676,6 +5622,7 @@ packages:
 
   /bindings@1.5.0:
     resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
+    requiresBuild: true
     dependencies:
       file-uri-to-path: 1.0.0
     dev: false
@@ -5690,6 +5637,7 @@ packages:
 
   /bl@5.1.0:
     resolution: {integrity: sha512-tv1ZJHLfTDnXE6tMHv73YgSJaWR2AFuPwMntBe7XL/GBFHnT0CLnsHMogfk5+GzCDC5ZWarSCYaIGATZt9dNsQ==}
+    requiresBuild: true
     dependencies:
       buffer: 6.0.3
       inherits: 2.0.4
@@ -5785,6 +5733,7 @@ packages:
 
   /buffer@6.0.3:
     resolution: {integrity: sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==}
+    requiresBuild: true
     dependencies:
       base64-js: 1.5.1
       ieee754: 1.2.1
@@ -5862,6 +5811,7 @@ packages:
   /cardinal@2.1.1:
     resolution: {integrity: sha512-JSr5eOgoEymtYHBjNWyjrMqet9Am2miJhlfKNdqLp6zoeAh0KN5dRAcxlecj5mAJrmQomgiOBj35xHLrFjqBpw==}
     hasBin: true
+    requiresBuild: true
     dependencies:
       ansicolors: 0.3.2
       redeyed: 2.1.1
@@ -5980,6 +5930,7 @@ packages:
   /cli-cursor@4.0.0:
     resolution: {integrity: sha512-VGtlMu3x/4DOtIUwEkRezxUZ2lBacNJCHash0N0WeZDBS+7Ux1dm3XWAgWYxLJFMMdOeXMHXorshEFhbMSGelg==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    requiresBuild: true
     dependencies:
       restore-cursor: 4.0.0
     dev: false
@@ -6683,6 +6634,7 @@ packages:
     resolution: {integrity: sha512-eGuFFw7Upda+g4p+QHvnW0RyTX/SVeJBDM/gCtMARO0cLuT2HcEKnTPvhjV6aGeqrCB/sbNop0Kszm0jsaWU4A==}
     engines: {node: '>=4'}
     hasBin: true
+    requiresBuild: true
     dev: false
 
   /esquery@1.7.0:
@@ -6923,7 +6875,7 @@ packages:
     resolution: {integrity: sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA==}
     dev: false
 
-  /fastmcp@3.26.7(hono@4.11.3):
+  /fastmcp@3.26.7(hono@4.12.3):
     resolution: {integrity: sha512-6bXv8+8TBBvNlPBvASkzx8VYBWJk3TlojZoa20/2Gv43+LBA32c35gz0DM6Kov1XuDOheo5IAHtfEfgI5MqTww==}
     hasBin: true
     peerDependencies:
@@ -6932,7 +6884,7 @@ packages:
       jose:
         optional: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@4.3.5)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.12.3)(zod@4.3.5)
       '@standard-schema/spec': 1.1.0
       execa: 9.6.1
       file-type: 21.3.0
@@ -7568,8 +7520,8 @@ packages:
     dev: false
     optional: true
 
-  /hono@4.11.3:
-    resolution: {integrity: sha512-PmQi306+M/ct/m5s66Hrg+adPnkD5jiO6IjA7WhWw0gSBSo1EcRegwuI1deZ+wd5pzCGynCcn2DprnE4/yEV4w==}
+  /hono@4.12.3:
+    resolution: {integrity: sha512-SFsVSjp8sj5UumXOOFlkZOG6XS9SJDKw0TbwFeV+AJ8xlST8kxK5Z/5EYa111UY8732lK2S/xB653ceuaoGwpg==}
     engines: {node: '>=16.9.0'}
     dev: false
 
@@ -7879,6 +7831,7 @@ packages:
   /is-interactive@2.0.0:
     resolution: {integrity: sha512-qP1vozQRI+BMOPcjFzrjXuQvdak2pHNUMZoeG2eRbiSqyvbEf/wQtEOTOX1guk6E3t36RkaqiSt8A/6YElNxLQ==}
     engines: {node: '>=12'}
+    requiresBuild: true
     dev: false
 
   /is-lambda@1.0.1:
@@ -7936,6 +7889,7 @@ packages:
   /is-unicode-supported@1.3.0:
     resolution: {integrity: sha512-43r2mRvz+8JRIKnWJ+3j8JtjRKZ6GmjzfaE/qiBJnikNnYv/6bagRJ1kUhNk8R5EX/GkobD+r+sfxCPJsiKBLQ==}
     engines: {node: '>=12'}
+    requiresBuild: true
     dev: false
 
   /is-unicode-supported@2.1.0:
@@ -8080,6 +8034,7 @@ packages:
   /jsonwebtoken@9.0.3:
     resolution: {integrity: sha512-MT/xP0CrubFRNLNKvxJ2BYfy53Zkm++5bX9dtuPbqAeQpTVe0MQTFhao8+Cp//EmJp244xt6Drw/GVEGCUj40g==}
     engines: {node: '>=12', npm: '>=6'}
+    requiresBuild: true
     dependencies:
       jws: 4.0.1
       lodash.includes: 4.3.0
@@ -8183,18 +8138,22 @@ packages:
 
   /lodash.includes@4.3.0:
     resolution: {integrity: sha512-W3Bx6mdkRTGtlJISOvVD/lbqjTlPPUDTMnlXZFnVwi9NKJ6tiAk6LVdlhZMm17VZisqhKcgzpO5Wz91PCt5b0w==}
+    requiresBuild: true
     dev: false
 
   /lodash.isboolean@3.0.3:
     resolution: {integrity: sha512-Bz5mupy2SVbPHURB98VAcw+aHh4vRV5IPNhILUCsOzRmsTmSQ17jIuqopAentWoehktxGd9e/hbIXq980/1QJg==}
+    requiresBuild: true
     dev: false
 
   /lodash.isinteger@4.0.4:
     resolution: {integrity: sha512-DBwtEWN2caHQ9/imiNeEA5ys1JoRtRfY3d7V9wkqtbycnAmTvRRmbHKDV4a0EYc678/dia0jrte4tjYwVBaZUA==}
+    requiresBuild: true
     dev: false
 
   /lodash.isnumber@3.0.3:
     resolution: {integrity: sha512-QYqzpfwO3/CWf3XP+Z+tkQsfaLL/EnUlXWVkIk5FUPc4sBdTehEqZONuyRt2P67PXAk+NXmTBcc97zw9t1FQrw==}
+    requiresBuild: true
     dev: false
 
   /lodash.isplainobject@4.0.6:
@@ -8209,6 +8168,7 @@ packages:
 
   /lodash.once@4.1.1:
     resolution: {integrity: sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==}
+    requiresBuild: true
     dev: false
 
   /lodash.uniqby@4.7.0:
@@ -8225,6 +8185,7 @@ packages:
   /log-symbols@5.1.0:
     resolution: {integrity: sha512-l0x2DvrW294C9uDCoQe1VSU4gf529FkSZ6leBl4TiqZH/e+0R7hSfHQBNut2mNygDgHwvYHfFLn6Oxb3VWj2rA==}
     engines: {node: '>=12'}
+    requiresBuild: true
     dependencies:
       chalk: 5.6.2
       is-unicode-supported: 1.3.0
@@ -8348,6 +8309,7 @@ packages:
   /marked-terminal@6.2.0(marked@11.2.0):
     resolution: {integrity: sha512-ubWhwcBFHnXsjYNsu+Wndpg0zhY4CahSpPlA70PlO0rR9r2sZpkyU+rkCsOWH+KMEkx847UpALON+HWgxowFtw==}
     engines: {node: '>=16.0.0'}
+    requiresBuild: true
     peerDependencies:
       marked: '>=1 <12'
     dependencies:
@@ -8956,8 +8918,8 @@ packages:
     resolution: {integrity: sha512-3LJpegM2iMNRX2wUmtYfeX/ytfOzNwAWKSq1HbRrKc9+uqG/FsEA0bbKZl1btQeZaXhC26l44NWpNUeXPII7Ew==}
     dev: false
 
-  /onnxruntime-common@1.23.2:
-    resolution: {integrity: sha512-5LFsC9Dukzp2WV6kNHYLNzp8sT6V02IubLCbzw2Xd6X5GOlr65gAX6xiJwyi2URJol/s71gaQLC5F2C25AAR2w==}
+  /onnxruntime-common@1.24.2:
+    resolution: {integrity: sha512-S0FFhJaI05jr1c3HVJ/DuPFB/aYdXmnUBuuQfuvLtcNn7WAfpm2ewSXn1vHs9Wa1l8T8OznhfCEdFv8qCn0/xw==}
     requiresBuild: true
     dev: false
     optional: true
@@ -8971,14 +8933,14 @@ packages:
     dev: false
     optional: true
 
-  /onnxruntime-node@1.23.2:
-    resolution: {integrity: sha512-OBTsG0W8ddBVOeVVVychpVBS87A9YV5sa2hJ6lc025T97Le+J4v++PwSC4XFs1C62SWyNdof0Mh4KvnZgtt4aw==}
+  /onnxruntime-node@1.24.2:
+    resolution: {integrity: sha512-ZtTkUHNNk+Xpi2Sq2BcFjzc9Vx4n3o5RxYLgRvdrFzCBsGUU1dQRFf4LM9tCc7vFhPSoZqbvzZtkzRMXoDqKNg==}
     os: [win32, darwin, linux]
     requiresBuild: true
     dependencies:
       adm-zip: 0.5.16
       global-agent: 3.0.0
-      onnxruntime-common: 1.23.2
+      onnxruntime-common: 1.24.2
     dev: false
     optional: true
 
@@ -9023,6 +8985,7 @@ packages:
   /ora@7.0.1:
     resolution: {integrity: sha512-0TUxTiFJWv+JnjWm4o9yvuskpEJLXTcng8MJuKd+SzAzp2o+OP3HWqNhB4OdJRt1Vsd9/mR0oyaEYlOnL7XIRw==}
     engines: {node: '>=16'}
+    requiresBuild: true
     dependencies:
       chalk: 5.6.2
       cli-cursor: 4.0.0
@@ -9684,6 +9647,7 @@ packages:
 
   /redeyed@2.1.1:
     resolution: {integrity: sha512-FNpGGo1DycYAdnrKFxCMmKYgo/mILAqtRYbkdQD8Ep/Hk2PQ5+aEAEx+IU713RTDmuBaH0c8P5ZozurNu5ObRQ==}
+    requiresBuild: true
     dependencies:
       esprima: 4.0.1
     dev: false
@@ -9754,6 +9718,7 @@ packages:
   /restore-cursor@4.0.0:
     resolution: {integrity: sha512-I9fPXU9geO9bHOt9pHHOhOkYerIMsmVaWB0rA2AI9ERh/+x/i7MV5HKBNrg+ljO5eoPVgCcnFuRjJ9uH6I/3eg==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    requiresBuild: true
     dependencies:
       onetime: 5.1.2
       signal-exit: 3.0.7
@@ -9863,7 +9828,15 @@ packages:
 
   /ruvector-attention-wasm@0.1.0:
     resolution: {integrity: sha512-kYdKs5fH2LkUz2TmBbSjN3m/0ZtmaOihiyPeDYDq8bwHTc3bCVxAw3bPZoY/OQvsDy34uhE/EDnqMxnpU4TWoA==}
+    requiresBuild: true
     dev: false
+
+  /ruvector-attention-wasm@0.1.32:
+    resolution: {integrity: sha512-2pt5dhcpHXXhNEVXeeDPzshXlGo3X8vWVuMfLA+fjUuXYFsW2YYrmUSgHOvEuqVxxow2Rgn9sZpxWQSBuT470g==}
+    engines: {node: '>=16.0.0'}
+    requiresBuild: true
+    dev: false
+    optional: true
 
   /ruvector-core-darwin-arm64@0.1.29:
     resolution: {integrity: sha512-gjZ1/J/0Nh9Mn74VdifIIkPLP/M4FqD/g+QVxWcfWcNFWhHVz+zHyxGjc6gJgrfYBquiMyP5jLfvyR3TffLanQ==}
@@ -9916,16 +9889,16 @@ packages:
     engines: {node: '>=16.0.0'}
     dev: false
 
-  /ruvector@0.1.100(hono@4.11.3)(zod@3.25.76):
+  /ruvector@0.1.100(hono@4.12.3)(zod@3.25.76):
     resolution: {integrity: sha512-goVV/mB28sQmai+eU1DMAtZEg2qQSKes3NtIHjyjN53hHWqwCdIyjZwBEd1WKDysL9mJ4CnSCVC9uaJyStzBIA==}
     engines: {node: '>=14.0.0'}
     hasBin: true
     requiresBuild: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.12.3)(zod@3.25.76)
       '@ruvector/attention': 0.1.31
       '@ruvector/core': 0.1.30
-      '@ruvector/gnn': 0.1.24
+      '@ruvector/gnn': 0.1.25
       '@ruvector/sona': 0.1.5
       chalk: 4.1.2
       commander: 11.1.0
@@ -9939,15 +9912,15 @@ packages:
       - zod
     dev: false
 
-  /ruvector@0.1.95(hono@4.11.3)(zod@3.25.76):
+  /ruvector@0.1.95(hono@4.12.3)(zod@3.25.76):
     resolution: {integrity: sha512-uDKYhgPE7H3cyPPGdPuP8DhKd3CASouSpfk4+ghjH1HtCGWTlU6jMvGQJaYMMs2N3HpsnB47a7NcozXHR4csXA==}
     engines: {node: '>=14.0.0'}
     hasBin: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.25.1(hono@4.11.3)(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.25.1(hono@4.12.3)(zod@3.25.76)
       '@ruvector/attention': 0.1.31
       '@ruvector/core': 0.1.30
-      '@ruvector/gnn': 0.1.22
+      '@ruvector/gnn': 0.1.25
       '@ruvector/sona': 0.1.5
       '@xenova/transformers': 2.17.2
       chalk: 4.1.2
@@ -10323,6 +10296,12 @@ packages:
     resolution: {integrity: sha512-RJbVP1HRDlUUXahJ7VMTcu9Rm1Nzw+EBpoPr94vnbD4LwR715F3CcxE2G2k45PewcaZ57pjetYa+LoSJLAASgA==}
     dev: false
 
+  /sql.js@1.14.0:
+    resolution: {integrity: sha512-NXYh+kFqLiYRCNAaHD0PcbjFgXyjuolEKLMk5vRt2DgPENtF1kkNzzMlg42dUk5wIsH8MhUzsRhaUxIisoSlZQ==}
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /sqlite3@5.1.7:
     resolution: {integrity: sha512-GGIyOiFaG+TUra3JIfkI/zGP8yZYLPQ0pl1bH+ODjiX57sPhrLU5sQJn1y9bDKZUFYkX1crlrPfSYt0BKKdkog==}
     requiresBuild: true
@@ -10369,6 +10348,7 @@ packages:
   /stdin-discarder@0.1.0:
     resolution: {integrity: sha512-xhV7w8S+bUwlPTb4bAOUQhv8/cSS5offJuX8GQGq32ONF0ZtDWKfkdomM3HMRA+LhX6um/FZ0COqlwsjD53LeQ==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    requiresBuild: true
     dependencies:
       bl: 5.1.0
     dev: false
@@ -10418,6 +10398,7 @@ packages:
   /string-width@6.1.0:
     resolution: {integrity: sha512-k01swCJAgQmuADB0YIc+7TuatfNvTBVOoaUWJjTB9R4VJzR5vNWzf5t42ESVZFPS8xTySF7CAdV4t/aaIm3UnQ==}
     engines: {node: '>=16'}
+    requiresBuild: true
     dependencies:
       eastasianwidth: 0.2.0
       emoji-regex: 10.6.0
@@ -10577,7 +10558,7 @@ packages:
       pump: 3.0.3
       tar-stream: 3.1.7
     optionalDependencies:
-      bare-fs: 4.5.2
+      bare-fs: 4.5.5
       bare-path: 3.0.0
     transitivePeerDependencies:
       - bare-abort-controller
@@ -11021,6 +11002,7 @@ packages:
   /uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
     hasBin: true
+    requiresBuild: true
     dev: false
 
   /validate-npm-package-license@3.0.4:
