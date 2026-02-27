@@ -83,31 +83,22 @@ export class NovitaProvider extends BaseProvider {
   readonly name: LLMProvider = 'novita';
   readonly capabilities: ProviderCapabilities = {
     supportedModels: [
-      'deepseek/deepseek-v3',
-      'deepseek/deepseek-r1',
-      'meta-llama/llama-3.3-70b-instruct',
-      'meta-llama/llama-3.2-3b-instruct',
-      'google/gemma-2-9b-it',
-      'mistralai/mistral-nemo',
-      'qwen/qwen-2.5-72b-instruct',
+      'deepseek/deepseek-r1-0528',
+      'deepseek/deepseek-v3-0324',
+      'qwen/qwen3-coder-480b-a35b-instruct',
+      'qwen/qwen3-235b-a22b-instruct-2507',
     ],
     maxContextLength: {
-      'deepseek/deepseek-v3': 128000,
-      'deepseek/deepseek-r1': 128000,
-      'meta-llama/llama-3.3-70b-instruct': 128000,
-      'meta-llama/llama-3.2-3b-instruct': 128000,
-      'google/gemma-2-9b-it': 8192,
-      'mistralai/mistral-nemo': 128000,
-      'qwen/qwen-2.5-72b-instruct': 128000,
+      'deepseek/deepseek-r1-0528': 163840,
+      'deepseek/deepseek-v3-0324': 163840,
+      'qwen/qwen3-coder-480b-a35b-instruct': 262144,
+      'qwen/qwen3-235b-a22b-instruct-2507': 131072,
     },
     maxOutputTokens: {
-      'deepseek/deepseek-v3': 8192,
-      'deepseek/deepseek-r1': 8192,
-      'meta-llama/llama-3.3-70b-instruct': 4096,
-      'meta-llama/llama-3.2-3b-instruct': 4096,
-      'google/gemma-2-9b-it': 4096,
-      'mistralai/mistral-nemo': 4096,
-      'qwen/qwen-2.5-72b-instruct': 4096,
+      'deepseek/deepseek-r1-0528': 32768,
+      'deepseek/deepseek-v3-0324': 163840,
+      'qwen/qwen3-coder-480b-a35b-instruct': 65536,
+      'qwen/qwen3-235b-a22b-instruct-2507': 16384,
     },
     supportsStreaming: true,
     supportsToolCalling: true,
@@ -123,39 +114,24 @@ export class NovitaProvider extends BaseProvider {
       concurrentRequests: 50,
     },
     pricing: {
-      'deepseek/deepseek-v3': {
+      'deepseek/deepseek-r1-0528': {
+        promptCostPer1k: 0.0007,
+        completionCostPer1k: 0.0025,
+        currency: 'USD',
+      },
+      'deepseek/deepseek-v3-0324': {
         promptCostPer1k: 0.00027,
-        completionCostPer1k: 0.0011,
+        completionCostPer1k: 0.00112,
         currency: 'USD',
       },
-      'deepseek/deepseek-r1': {
-        promptCostPer1k: 0.00055,
-        completionCostPer1k: 0.0022,
-        currency: 'USD',
-      },
-      'meta-llama/llama-3.3-70b-instruct': {
-        promptCostPer1k: 0.00075,
-        completionCostPer1k: 0.0015,
-        currency: 'USD',
-      },
-      'meta-llama/llama-3.2-3b-instruct': {
-        promptCostPer1k: 0.00015,
-        completionCostPer1k: 0.0003,
-        currency: 'USD',
-      },
-      'google/gemma-2-9b-it': {
-        promptCostPer1k: 0.0001,
-        completionCostPer1k: 0.0002,
-        currency: 'USD',
-      },
-      'mistralai/mistral-nemo': {
+      'qwen/qwen3-coder-480b-a35b-instruct': {
         promptCostPer1k: 0.0003,
-        completionCostPer1k: 0.0006,
+        completionCostPer1k: 0.0013,
         currency: 'USD',
       },
-      'qwen/qwen-2.5-72b-instruct': {
-        promptCostPer1k: 0.00035,
-        completionCostPer1k: 0.0007,
+      'qwen/qwen3-235b-a22b-instruct-2507': {
+        promptCostPer1k: 0.00009,
+        completionCostPer1k: 0.00058,
         currency: 'USD',
       },
     },
@@ -312,13 +288,10 @@ export class NovitaProvider extends BaseProvider {
 
   async getModelInfo(model: LLMModel): Promise<ModelInfo> {
     const descriptions: Record<string, string> = {
-      'deepseek/deepseek-v3': 'DeepSeek V3 - High performance model',
-      'deepseek/deepseek-r1': 'DeepSeek R1 - Reasoning model',
-      'meta-llama/llama-3.3-70b-instruct': 'Llama 3.3 70B - Meta\'s latest large model',
-      'meta-llama/llama-3.2-3b-instruct': 'Llama 3.2 3B - Lightweight model',
-      'google/gemma-2-9b-it': 'Google Gemma 2 9B',
-      'mistralai/mistral-nemo': 'Mistral Nemo - Efficient model',
-      'qwen/qwen-2.5-72b-instruct': 'Qwen 2.5 72B - Alibaba\'s large model',
+      'deepseek/deepseek-r1-0528': 'DeepSeek R1 0528 - Reasoning model',
+      'deepseek/deepseek-v3-0324': 'DeepSeek V3 0324 - General reasoning and coding model',
+      'qwen/qwen3-coder-480b-a35b-instruct': 'Qwen3 Coder 480B A35B - Coding and tool use model',
+      'qwen/qwen3-235b-a22b-instruct-2507': 'Qwen3 235B A22B Instruct 2507 - General-purpose instruction model',
     };
 
     return {
