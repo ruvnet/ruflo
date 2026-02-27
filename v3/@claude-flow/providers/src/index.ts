@@ -9,6 +9,7 @@
  * - Google (Gemini 2.0, 1.5 Pro, Flash)
  * - Cohere (Command R+, R, Light)
  * - Ollama (Local: Llama, Mistral, CodeLlama, Phi)
+ * - Novita AI (DeepSeek, Llama, Qwen via OpenAI-compatible API)
  *
  * Features:
  * - Load balancing (round-robin, latency, cost-based)
@@ -35,6 +36,7 @@ export { GoogleProvider } from './google-provider.js';
 export { CohereProvider } from './cohere-provider.js';
 export { OllamaProvider } from './ollama-provider.js';
 export { RuVectorProvider } from './ruvector-provider.js';
+export { NovitaProvider } from './novita-provider.js';
 
 // Export provider manager
 export { ProviderManager, createProviderManager } from './provider-manager.js';

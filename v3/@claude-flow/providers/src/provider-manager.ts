@@ -35,6 +35,7 @@ import { GoogleProvider } from './google-provider.js';
 import { CohereProvider } from './cohere-provider.js';
 import { OllamaProvider } from './ollama-provider.js';
 import { RuVectorProvider } from './ruvector-provider.js';
+import { NovitaProvider } from './novita-provider.js';
 
 /**
  * Cache entry for request caching
@@ -127,6 +128,8 @@ export class ProviderManager extends EventEmitter {
         return new OllamaProvider(options);
       case 'ruvector':
         return new RuVectorProvider(options);
+      case 'novita':
+        return new NovitaProvider(options);
       default:
         throw new Error(`Unknown provider: ${config.provider}`);
     }
