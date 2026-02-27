@@ -83,22 +83,19 @@ export class NovitaProvider extends BaseProvider {
   readonly name: LLMProvider = 'novita';
   readonly capabilities: ProviderCapabilities = {
     supportedModels: [
-      'deepseek/deepseek-r1-0528',
-      'deepseek/deepseek-v3-0324',
-      'qwen/qwen3-coder-480b-a35b-instruct',
-      'qwen/qwen3-235b-a22b-instruct-2507',
+      'deepseek/deepseek-v3.2',
+      'zai-org/glm-5',
+      'minimax/minimax-m2.5',
     ],
     maxContextLength: {
-      'deepseek/deepseek-r1-0528': 163840,
-      'deepseek/deepseek-v3-0324': 163840,
-      'qwen/qwen3-coder-480b-a35b-instruct': 262144,
-      'qwen/qwen3-235b-a22b-instruct-2507': 131072,
+      'deepseek/deepseek-v3.2': 163840,
+      'zai-org/glm-5': 202800,
+      'minimax/minimax-m2.5': 204800,
     },
     maxOutputTokens: {
-      'deepseek/deepseek-r1-0528': 32768,
-      'deepseek/deepseek-v3-0324': 163840,
-      'qwen/qwen3-coder-480b-a35b-instruct': 65536,
-      'qwen/qwen3-235b-a22b-instruct-2507': 16384,
+      'deepseek/deepseek-v3.2': 65536,
+      'zai-org/glm-5': 131072,
+      'minimax/minimax-m2.5': 131100,
     },
     supportsStreaming: true,
     supportsToolCalling: true,
@@ -114,24 +111,19 @@ export class NovitaProvider extends BaseProvider {
       concurrentRequests: 50,
     },
     pricing: {
-      'deepseek/deepseek-r1-0528': {
-        promptCostPer1k: 0.0007,
-        completionCostPer1k: 0.0025,
+      'deepseek/deepseek-v3.2': {
+        promptCostPer1k: 0.000269,
+        completionCostPer1k: 0.0004,
         currency: 'USD',
       },
-      'deepseek/deepseek-v3-0324': {
-        promptCostPer1k: 0.00027,
-        completionCostPer1k: 0.00112,
+      'zai-org/glm-5': {
+        promptCostPer1k: 0.001,
+        completionCostPer1k: 0.0032,
         currency: 'USD',
       },
-      'qwen/qwen3-coder-480b-a35b-instruct': {
+      'minimax/minimax-m2.5': {
         promptCostPer1k: 0.0003,
-        completionCostPer1k: 0.0013,
-        currency: 'USD',
-      },
-      'qwen/qwen3-235b-a22b-instruct-2507': {
-        promptCostPer1k: 0.00009,
-        completionCostPer1k: 0.00058,
+        completionCostPer1k: 0.0012,
         currency: 'USD',
       },
     },
@@ -288,10 +280,9 @@ export class NovitaProvider extends BaseProvider {
 
   async getModelInfo(model: LLMModel): Promise<ModelInfo> {
     const descriptions: Record<string, string> = {
-      'deepseek/deepseek-r1-0528': 'DeepSeek R1 0528 - Reasoning model',
-      'deepseek/deepseek-v3-0324': 'DeepSeek V3 0324 - General reasoning and coding model',
-      'qwen/qwen3-coder-480b-a35b-instruct': 'Qwen3 Coder 480B A35B - Coding and tool use model',
-      'qwen/qwen3-235b-a22b-instruct-2507': 'Qwen3 235B A22B Instruct 2507 - General-purpose instruction model',
+      'deepseek/deepseek-v3.2': 'DeepSeek V3.2 - General reasoning and coding model',
+      'zai-org/glm-5': 'GLM-5 - Long-horizon reasoning and system engineering model',
+      'minimax/minimax-m2.5': 'MiniMax M2.5 - Agentic productivity and coding model',
     };
 
     return {
