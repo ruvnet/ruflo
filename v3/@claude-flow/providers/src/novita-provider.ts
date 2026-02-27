@@ -83,8 +83,8 @@ export class NovitaProvider extends BaseProvider {
   readonly name: LLMProvider = 'novita';
   readonly capabilities: ProviderCapabilities = {
     supportedModels: [
-      'deepseek-ai/DeepSeek-V3',
-      'deepseek-ai/DeepSeek-R1',
+      'deepseek/deepseek-v3',
+      'deepseek/deepseek-r1',
       'meta-llama/llama-3.3-70b-instruct',
       'meta-llama/llama-3.2-3b-instruct',
       'google/gemma-2-9b-it',
@@ -92,8 +92,8 @@ export class NovitaProvider extends BaseProvider {
       'qwen/qwen-2.5-72b-instruct',
     ],
     maxContextLength: {
-      'deepseek-ai/DeepSeek-V3': 128000,
-      'deepseek-ai/DeepSeek-R1': 128000,
+      'deepseek/deepseek-v3': 128000,
+      'deepseek/deepseek-r1': 128000,
       'meta-llama/llama-3.3-70b-instruct': 128000,
       'meta-llama/llama-3.2-3b-instruct': 128000,
       'google/gemma-2-9b-it': 8192,
@@ -101,8 +101,8 @@ export class NovitaProvider extends BaseProvider {
       'qwen/qwen-2.5-72b-instruct': 128000,
     },
     maxOutputTokens: {
-      'deepseek-ai/DeepSeek-V3': 8192,
-      'deepseek-ai/DeepSeek-R1': 8192,
+      'deepseek/deepseek-v3': 8192,
+      'deepseek/deepseek-r1': 8192,
       'meta-llama/llama-3.3-70b-instruct': 4096,
       'meta-llama/llama-3.2-3b-instruct': 4096,
       'google/gemma-2-9b-it': 4096,
@@ -123,12 +123,12 @@ export class NovitaProvider extends BaseProvider {
       concurrentRequests: 50,
     },
     pricing: {
-      'deepseek-ai/DeepSeek-V3': {
+      'deepseek/deepseek-v3': {
         promptCostPer1k: 0.00027,
         completionCostPer1k: 0.0011,
         currency: 'USD',
       },
-      'deepseek-ai/DeepSeek-R1': {
+      'deepseek/deepseek-r1': {
         promptCostPer1k: 0.00055,
         completionCostPer1k: 0.0022,
         currency: 'USD',
@@ -161,7 +161,7 @@ export class NovitaProvider extends BaseProvider {
     },
   };
 
-  private baseUrl: string = 'https://api.novita.ai/openai';
+  private baseUrl: string = 'https://api.novita.ai/openai/v1';
   private headers: Record<string, string> = {};
 
   constructor(options: BaseProviderOptions) {
@@ -173,7 +173,7 @@ export class NovitaProvider extends BaseProvider {
       throw new AuthenticationError('Novita API key is required. Set NOVITA_API_KEY environment variable.', 'novita');
     }
 
-    this.baseUrl = this.config.apiUrl || 'https://api.novita.ai/openai';
+    this.baseUrl = this.normalizeBaseUrl(this.config.apiUrl || 'https://api.novita.ai/openai');
     this.headers = {
       Authorization: `Bearer ${this.config.apiKey}`,
       'Content-Type': 'application/json',
@@ -312,8 +312,8 @@ export class NovitaProvider extends BaseProvider {
 
   async getModelInfo(model: LLMModel): Promise<ModelInfo> {
     const descriptions: Record<string, string> = {
-      'deepseek-ai/DeepSeek-V3': 'DeepSeek V3 - High performance model',
-      'deepseek-ai/DeepSeek-R1': 'DeepSeek R1 - Reasoning model',
+      'deepseek/deepseek-v3': 'DeepSeek V3 - High performance model',
+      'deepseek/deepseek-r1': 'DeepSeek R1 - Reasoning model',
       'meta-llama/llama-3.3-70b-instruct': 'Llama 3.3 70B - Meta\'s latest large model',
       'meta-llama/llama-3.2-3b-instruct': 'Llama 3.2 3B - Lightweight model',
       'google/gemma-2-9b-it': 'Google Gemma 2 9B',
@@ -399,6 +399,11 @@ export class NovitaProvider extends BaseProvider {
     }
 
     return novitaRequest;
+  }
+
+  private normalizeBaseUrl(apiUrl: string): string {
+    const normalized = apiUrl.replace(/\/+$/, '');
+    return normalized.endsWith('/v1') ? normalized : `${normalized}/v1`;
   }
 
   private transformResponse(data: NovitaResponse, request: LLMRequest): LLMResponse {
