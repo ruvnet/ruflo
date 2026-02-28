@@ -13,7 +13,7 @@ Key Components:
 - DecisionEngine: Make autonomous decisions based on context and performance
 """
 
-from .models import BenchmarkTask, BenchmarkResult
+from .models_clean import BenchmarkTask, BenchmarkResult
 from .batch_processor import BatchProcessor, BatchConfig, BatchResult
 from .pipeline_manager import PipelineManager, Pipeline, PipelineStage, PipelineResult
 from .workflow_executor import WorkflowExecutor, WorkflowConfig, WorkflowResult

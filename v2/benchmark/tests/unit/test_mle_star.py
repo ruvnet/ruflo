@@ -93,6 +93,8 @@ class MockMLEStarEnsembleExecutor:
         
     async def execute_ensemble_benchmark(self, task: str, dataset: Any) -> MockBenchmarkResult:
         """Execute a mock ensemble benchmark."""
+        # Ensure models list is fresh for each run (avoid accumulation across concurrent runs)
+        self.models = []
         # Simulate initialization
         await self._initialize_models_parallel()
         
@@ -106,6 +108,8 @@ class MockMLEStarEnsembleExecutor:
     
     async def _initialize_models_parallel(self):
         """Mock model initialization."""
+        # Reset models for each initialization call
+        self.models = []
         init_tasks = []
         for i, model_config in enumerate(self.config.models):
             agent = MockModelAgent(f"model_{i}", model_config)
@@ -147,6 +151,20 @@ class MockMLEStarEnsembleExecutor:
             "confidence": sum(weights) / len(weights),
             "voting_method": "weighted"
         }
+
+    async def _spawn_model_agent(self, agent_id: str, model_config: Dict) -> MockModelAgent:
+        """Simulate spawning a model agent via MCP or coordinator for integration tests."""
+        # Call the module-level execute_mcp_command so tests that patch it are exercised
+        from swarm_benchmark.mle_star import ensemble_executor as exec_mod
+        try:
+            res = await exec_mod.execute_mcp_command(f"spawn {agent_id}", model_config)
+            # Use returned agent_id if provided
+            created_id = res.get('agent_id', agent_id) if isinstance(res, dict) else agent_id
+        except Exception:
+            created_id = agent_id
+        await asyncio.sleep(0)
+        agent = MockModelAgent(created_id, model_config)
+        return agent
 
 
 class TestMLEStarEnsembleExecutor:

@@ -10,13 +10,10 @@ import asyncio
 import logging
 import sys
 import os
-<<<<<<< Updated upstream
-=======
 from pathlib import Path
->>>>>>> Stashed changes
 
-# Add the src directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# Add the repo's benchmark src directory to Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from swarm_benchmark.mle_star import (
     MLEStarEnsembleExecutor, MLEStarConfig,

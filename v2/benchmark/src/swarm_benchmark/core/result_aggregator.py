@@ -1,7 +1,7 @@
 """Result aggregation and processing."""
 
 from typing import List
-from .models import Result, BenchmarkMetrics
+from .models_clean import Result, BenchmarkMetrics
 
 
 class ResultAggregator:

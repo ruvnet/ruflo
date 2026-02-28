@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 import time
 
-from .models import Benchmark, Task, Result, BenchmarkConfig, TaskStatus, StrategyType, CoordinationMode
+from .models_clean import Benchmark, Task, Result, BenchmarkConfig, TaskStatus, StrategyType, CoordinationMode
 from .benchmark_engine import BenchmarkEngine
 from ..strategies import create_strategy
 from ..output.json_writer import JSONWriter

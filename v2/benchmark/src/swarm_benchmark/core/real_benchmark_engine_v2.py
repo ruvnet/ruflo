@@ -19,7 +19,7 @@ from .claude_flow_real_executor import (
     SparcCommand,
     RealExecutionResult
 )
-from .models import Benchmark, Task, Result, BenchmarkConfig, TaskStatus, StrategyType, CoordinationMode
+from .models_clean import Benchmark, Task, Result, BenchmarkConfig, TaskStatus, StrategyType, CoordinationMode
 from ..output.json_writer import JSONWriter
 from ..output.sqlite_manager import SQLiteManager
 

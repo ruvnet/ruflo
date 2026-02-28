@@ -1,0 +1,99 @@
+Metadata-Version: 2.4
+Name: swarm-benchmark
+Version: 1.0.0
+Summary: Agent swarm benchmarking tool for Claude Flow
+Home-page: https://github.com/claude-flow/swarm-benchmark
+Author: Claude Flow Team
+Author-email: support@claude-flow.dev
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Software Development :: Testing
+Classifier: Topic :: System :: Benchmark
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: click>=8.0.0
+Requires-Dist: aiohttp>=3.8.0
+Requires-Dist: psutil>=5.9.0
+Requires-Dist: pydantic>=1.10.0
+Requires-Dist: matplotlib>=3.5.0
+Requires-Dist: plotly>=5.0.0
+Requires-Dist: pandas>=1.4.0
+Requires-Dist: numpy>=1.21.0
+Requires-Dist: asyncio-throttle>=1.0.0
+Requires-Dist: aiosqlite>=0.17.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21; extra == "dev"
+Requires-Dist: pytest-benchmark>=4.0; extra == "dev"
+Requires-Dist: black>=22.0; extra == "dev"
+Requires-Dist: flake8>=5.0; extra == "dev"
+Requires-Dist: mypy>=1.0; extra == "dev"
+Requires-Dist: pre-commit>=2.20; extra == "dev"
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# Claude Flow Benchmark System v2.0
+
+Production-ready benchmarking for Claude Flow with **real command execution** and **authentic metrics**.
+
+## Quick Start
+
+```bash
+cd benchmark
+pip install -e .
+
+# Run real benchmark
+python examples/real_swarm_benchmark.py "Build REST API"
+```
+
+## Features
+
+- ✅ **Real Execution**: Actual `./claude-flow` commands via subprocess
+- ✅ **Stream JSON**: Parses `--non-interactive --output-format stream-json`
+- ✅ **Authentic Metrics**: Real tokens, timing, and resource usage
+- ✅ **No Mocks**: 100% genuine execution
+
+## Supported Commands
+
+```bash
+./claude-flow swarm "task" --non-interactive --output-format stream-json
+./claude-flow hive-mind spawn "task" --non-interactive
+./claude-flow sparc run code "task" --non-interactive
+```
+
+## Usage
+
+```python
+from swarm_benchmark import BenchmarkEngine
+
+engine = BenchmarkEngine(use_real_executor=True)
+result = await engine.run_real_benchmark("Build microservices")
+print(f"Tokens: {result.metrics['total_tokens']}")
+```
+
+## Testing
+
+```bash
+pytest tests/
+python examples/verify_real_integration.py
+```
+
+---
+
+**Version**: 2.0.0 | **Status**: Production Ready | **Real**: Yes | **Mocks**: None

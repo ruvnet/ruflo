@@ -12,7 +12,14 @@ __author__ = "Claude Flow Team"
 __email__ = "support@claude-flow.dev"
 
 # Core components (backward compatibility)
-from .core.models import Task, Agent, Result, Benchmark
+from .core import (
+    # Core models
+    Task, Agent, Result, Benchmark, BenchmarkConfig,
+    # Metrics
+    BenchmarkMetrics, PerformanceMetrics, QualityMetrics, ResourceUsage,
+    # Enums
+    TaskStatus, AgentStatus, ResultStatus, StrategyType, CoordinationMode, AgentType
+)
 from .core.benchmark_engine import BenchmarkEngine
 from .core.base_interfaces import (
     BenchmarkInterface, 

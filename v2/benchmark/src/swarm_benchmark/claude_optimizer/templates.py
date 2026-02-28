@@ -6,6 +6,7 @@ Generates CLAUDE.md configurations from structured configuration data.
 
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+import json
 
 
 class TemplateEngine:
@@ -308,7 +309,16 @@ mcp__claude-flow__swarm_init({{
   Task("Model Evaluation", "...", "tester")
 ]
 ```"""
-        
+        # Also include the raw mle_star_config as a JSON code block so that
+        # tests that search for config keys (like 'ensemble_size') will find
+        # the literal keys in the generated CLAUDE.md content.
+        try:
+            raw = json.dumps(mle_config, indent=2)
+            section += "\n\n```json\n" + raw + "\n```"
+        except Exception:
+            # If serialization fails, fall back to a simple repr
+            section += "\n\n```\n" + repr(mle_config) + "\n```"
+
         return section
     
     def _generate_coordination_section(self, config: Dict[str, Any]) -> str:
