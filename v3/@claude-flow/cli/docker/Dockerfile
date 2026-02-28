@@ -1,14 +1,17 @@
-# Ruflo v3.5 — Headless Worker Image
-# ADR-020: Headless Worker Integration Architecture - Phase 3
-#
-# Headless workers run CLI daemon in foreground without interactive terminal.
-# Used by docker-compose.workers.yml for scalable worker pools.
+# Ruflo v3.5 — Optimized Production Image
+# Multi-stage Alpine build with --omit=optional for <100MB image
 #
 # Build:
-#   docker build -t ruflo:headless -f v3/@claude-flow/cli/docker/Dockerfile.headless .
+#   docker build -t ruflo:lite -f v3/@claude-flow/cli/docker/Dockerfile .
 #
 # Run:
-#   docker run -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY ruflo:headless
+#   docker run --rm ruflo:lite ruflo --version
+#   docker run --rm ruflo:lite ruflo doctor
+#   echo '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | docker run --rm -i ruflo:lite
+#
+# Size comparison:
+#   npx ruflo@latest (cold): ~1.3GB, 914 packages, 35s startup
+#   ruflo:lite image:        <100MB, ~60 packages, <5s startup
 
 # ── Stage 1: Install ─────────────────────────────────────────────
 FROM node:22-alpine AS build
@@ -17,7 +20,8 @@ RUN apk add --no-cache git
 
 WORKDIR /install
 
-# Install ruflo with --omit=optional to skip heavy transitive deps
+# Install ruflo globally with --omit=optional to skip heavy deps.
+# --ignore-scripts skips preinstall cache scanning (no-op in CI)
 RUN npm install -g ruflo@latest \
       --omit=optional \
       --ignore-scripts \
@@ -25,7 +29,21 @@ RUN npm install -g ruflo@latest \
       --no-fund \
     && npm cache clean --force
 
-# Prune heavy optional transitive deps (CLI works without them)
+# Prune heavy optional transitive deps that npm still resolves.
+# These are all optionalDependencies of @claude-flow/cli — the CLI
+# works fine without them (graceful fallbacks built in).
+#   agentic-flow: 238MB (ONNX runtimes, OpenTelemetry, Anthropic SDK)
+#   @opentelemetry: 135MB (transitive via agentic-flow)
+#   onnxruntime-node/web: 158MB (ML inference, not needed for CLI)
+#   @anthropic-ai: 72MB (SDK, only needed when calling API directly)
+#   @xenova: 45MB (transformers.js, not needed for CLI)
+#   agentdb: 37MB (optional memory backend)
+#   @ruvector: 28MB (optional neural patterns)
+#   ruvector: 9MB (optional intelligence)
+#   onnx-proto: 22MB (protobuf for ONNX)
+#   tiktoken: 23MB (token counting, optional)
+#   @img: 16MB (image processing, not needed)
+#   better-sqlite3: 10MB (native, optional — sql.js used instead)
 RUN GLOBAL_PREFIX=$(npm config get prefix) \
     && CLI_NM="${GLOBAL_PREFIX}/lib/node_modules/ruflo/node_modules" \
     && rm -rf \
@@ -63,7 +81,7 @@ RUN GLOBAL_PREFIX=$(npm config get prefix) \
       "${CLI_NM}/@grpc" \
       "${CLI_NM}/gun"
 
-# Stage the pruned install for copying
+# Stage the pruned install for the production image
 RUN GLOBAL_PREFIX=$(npm config get prefix) \
     && mkdir -p /staged/lib /staged/bin \
     && cp -a "${GLOBAL_PREFIX}/lib/node_modules" /staged/lib/ \
@@ -74,39 +92,37 @@ RUN GLOBAL_PREFIX=$(npm config get prefix) \
 # ── Stage 2: Production ──────────────────────────────────────────
 FROM node:22-alpine AS production
 
+# dumb-init for proper PID 1 signal handling
 RUN apk add --no-cache dumb-init git bash ca-certificates curl
 
 # Non-root user
 RUN addgroup -g 1001 -S ruflo \
     && adduser -S -D -H -u 1001 -h /home/ruflo -s /bin/bash -G ruflo ruflo \
-    && mkdir -p /home/ruflo/.claude-flow /workspace /var/log/ruflo \
-    && chown -R ruflo:ruflo /home/ruflo /workspace /var/log/ruflo
+    && mkdir -p /home/ruflo/.claude-flow /workspace \
+    && chown -R ruflo:ruflo /home/ruflo /workspace
 
-# Copy global node_modules and bin links from build stage
+# Copy only the global node_modules and bin links from build stage
 COPY --from=build /staged/lib/node_modules /usr/local/lib/node_modules
 COPY --from=build /staged/bin/ /usr/local/bin/
 
-# Ensure bin symlinks
+# Ensure bin symlinks point to the right place
 RUN ln -sf /usr/local/lib/node_modules/ruflo/bin/ruflo.js /usr/local/bin/ruflo 2>/dev/null || true \
     && ln -sf /usr/local/lib/node_modules/@claude-flow/cli/bin/cli.js /usr/local/bin/claude-flow 2>/dev/null || true \
     && chmod +x /usr/local/bin/ruflo 2>/dev/null || true \
     && chmod +x /usr/local/bin/claude-flow 2>/dev/null || true
 
 ENV NODE_ENV=production \
-    CLAUDE_CODE_HEADLESS=true \
-    CLAUDE_CODE_SANDBOX_MODE=strict \
     CLAUDE_FLOW_LOG_LEVEL=info \
     HOME=/home/ruflo
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+# Healthcheck via CLI doctor (timeout after 10s)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD ruflo doctor --quiet || exit 1
 
 USER ruflo
 WORKDIR /workspace
 
-EXPOSE 3000
-
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
-# Default: start daemon in headless foreground mode
-CMD ["ruflo", "daemon", "start", "--foreground", "--headless"]
+# Default: start MCP server on stdio (most common Docker use case)
+CMD ["ruflo", "mcp", "start"]

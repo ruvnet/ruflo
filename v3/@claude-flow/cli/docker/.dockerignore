@@ -1,0 +1,66 @@
+# Ruflo Docker — Exclude dev files from build context
+# This keeps the build context small and fast
+
+# Dependencies (installed fresh in Docker)
+node_modules
+**/node_modules
+
+# Source maps and TypeScript source
+**/*.map
+**/*.ts
+!**/*.d.ts
+
+# Tests
+tests
+**/__tests__
+**/*.test.*
+**/*.spec.*
+.vitest
+coverage
+
+# Dev configs
+.eslintrc*
+.prettierrc*
+tsconfig*.json
+vitest.config.*
+jest.config.*
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github
+.circleci
+.travis.yml
+
+# Docker (prevent recursive copy)
+docker/Dockerfile*
+docker/docker-compose*
+docker/.dockerignore
+
+# Temp and build artifacts
+*.log
+*.tmp
+.tmp*
+dist
+data
+.claude
+.claude-flow
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+credentials*

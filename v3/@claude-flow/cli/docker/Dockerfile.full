@@ -1,0 +1,68 @@
+# Ruflo v3.5 — Full Image (includes optional dependencies)
+# Use this when you need agentic-flow, RuVector, ONNX, or embeddings.
+#
+# Build:
+#   docker build -t ruflo:full -f v3/@claude-flow/cli/docker/Dockerfile.full .
+#
+# Run:
+#   docker run -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY ruflo:full
+
+# ── Stage 1: Install ─────────────────────────────────────────────
+FROM node:22-alpine AS build
+
+# onnxruntime-node needs build tools on Alpine
+RUN apk add --no-cache git python3 make g++
+
+WORKDIR /install
+
+# Full install — includes optional deps (agentic-flow, ruvector, etc.)
+RUN npm install -g ruflo@latest \
+      --no-audit \
+      --no-fund \
+    && npm cache clean --force
+
+# Stage the global install for copying
+RUN GLOBAL_PREFIX=$(npm config get prefix) \
+    && mkdir -p /staged/lib /staged/bin \
+    && cp -a "${GLOBAL_PREFIX}/lib/node_modules" /staged/lib/ \
+    && cp -a "${GLOBAL_PREFIX}/bin/ruflo" /staged/bin/ 2>/dev/null || true \
+    && cp -a "${GLOBAL_PREFIX}/bin/claude-flow" /staged/bin/ 2>/dev/null || true \
+    && cp -a "${GLOBAL_PREFIX}/bin/cli" /staged/bin/ 2>/dev/null || true
+
+# ── Stage 2: Production ──────────────────────────────────────────
+FROM node:22-alpine AS production
+
+RUN apk add --no-cache dumb-init git bash ca-certificates curl
+
+# Non-root user
+RUN addgroup -g 1001 -S ruflo \
+    && adduser -S -D -H -u 1001 -h /home/ruflo -s /bin/bash -G ruflo ruflo \
+    && mkdir -p /home/ruflo/.claude-flow /workspace /var/log/ruflo \
+    && chown -R ruflo:ruflo /home/ruflo /workspace /var/log/ruflo
+
+# Copy global node_modules and bin links from build stage
+COPY --from=build /staged/lib/node_modules /usr/local/lib/node_modules
+COPY --from=build /staged/bin/ /usr/local/bin/
+
+# Ensure bin symlinks
+RUN ln -sf /usr/local/lib/node_modules/ruflo/bin/ruflo.js /usr/local/bin/ruflo 2>/dev/null || true \
+    && ln -sf /usr/local/lib/node_modules/@claude-flow/cli/bin/cli.js /usr/local/bin/claude-flow 2>/dev/null || true \
+    && chmod +x /usr/local/bin/ruflo 2>/dev/null || true \
+    && chmod +x /usr/local/bin/claude-flow 2>/dev/null || true
+
+ENV NODE_ENV=production \
+    CLAUDE_FLOW_LOG_LEVEL=info \
+    CLAUDE_FLOW_MEMORY_BACKEND=hybrid \
+    HOME=/home/ruflo
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD ruflo doctor --quiet || exit 1
+
+USER ruflo
+WORKDIR /workspace
+
+EXPOSE 3000
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+CMD ["ruflo", "daemon", "start", "--foreground"]
