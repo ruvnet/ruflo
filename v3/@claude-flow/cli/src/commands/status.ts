@@ -112,8 +112,28 @@ async function getSystemStatus(): Promise<{
     searchSpeed: string;
   };
 }> {
+  // Track if any service responds successfully
+  let anyServiceRunning = false;
+
+  // Default values for each service
+  let swarmData = {
+    id: null as string | null,
+    topology: 'none',
+    agents: { total: 0, active: 0, idle: 0 },
+    health: 'stopped',
+    uptime: 0
+  };
+  let mcpData = { running: false, port: null as number | null, transport: 'stdio' };
+  let memoryData = {
+    entries: 0,
+    size: '0 B',
+    backend: 'none',
+    performance: { searchTime: 0, cacheHitRate: 0 }
+  };
+  let taskData = { total: 0, pending: 0, running: 0, completed: 0, failed: 0 };
+
+  // Get swarm status (isolated error handling)
   try {
-    // Get swarm status
     const swarmStatus = await callMCPTool<{
       swarmId: string;
       topology: string;
@@ -122,20 +142,39 @@ async function getSystemStatus(): Promise<{
       uptime: number;
     }>('swarm_status', { includeMetrics: true });
 
-    // Get MCP status
-    let mcpStatus = { running: false, port: null as number | null, transport: 'stdio' };
-    try {
-      const mcp = await callMCPTool<{
-        running: boolean;
-        port: number;
-        transport: string;
-      }>('mcp_status', {});
-      mcpStatus = mcp;
-    } catch {
-      // MCP not running
-    }
+    swarmData = {
+      id: swarmStatus.swarmId,
+      topology: swarmStatus.topology,
+      agents: {
+        total: swarmStatus.agents.total,
+        active: swarmStatus.agents.active,
+        idle: swarmStatus.agents.idle
+      },
+      health: swarmStatus.health,
+      uptime: swarmStatus.uptime
+    };
+    anyServiceRunning = true;
+  } catch {
+    // Swarm not running - use defaults
+  }
 
-    // Get memory status
+  // Get MCP status (isolated error handling)
+  try {
+    const mcp = await callMCPTool<{
+      running: boolean;
+      port: number;
+      transport: string;
+    }>('mcp_status', {});
+    mcpData = mcp;
+    if (mcp.running) {
+      anyServiceRunning = true;
+    }
+  } catch {
+    // MCP not running - use defaults
+  }
+
+  // Get memory status (isolated error handling)
+  try {
     const memoryStatus = await callMCPTool<{
       entries: number;
       size: number;
@@ -143,7 +182,22 @@ async function getSystemStatus(): Promise<{
       performance: { avgSearchTime: number; cacheHitRate: number };
     }>('memory_stats', {});
 
-    // Get task status
+    memoryData = {
+      entries: memoryStatus.entries,
+      size: formatBytes(memoryStatus.size),
+      backend: memoryStatus.backend,
+      performance: {
+        searchTime: memoryStatus.performance.avgSearchTime,
+        cacheHitRate: memoryStatus.performance.cacheHitRate
+      }
+    };
+    anyServiceRunning = true;
+  } catch {
+    // Memory service not available - use defaults
+  }
+
+  // Get task status (isolated error handling)
+  try {
     const taskStatus = await callMCPTool<{
       total: number;
       pending: number;
@@ -152,66 +206,44 @@ async function getSystemStatus(): Promise<{
       failed: number;
     }>('task_summary', {});
 
-    return {
-      initialized: true,
-      running: true,
-      swarm: {
-        id: swarmStatus.swarmId,
-        topology: swarmStatus.topology,
-        agents: {
-          total: swarmStatus.agents.total,
-          active: swarmStatus.agents.active,
-          idle: swarmStatus.agents.idle
-        },
-        health: swarmStatus.health,
-        uptime: swarmStatus.uptime
-      },
-      mcp: mcpStatus,
-      memory: {
-        entries: memoryStatus.entries,
-        size: formatBytes(memoryStatus.size),
-        backend: memoryStatus.backend,
-        performance: {
-          searchTime: memoryStatus.performance.avgSearchTime,
-          cacheHitRate: memoryStatus.performance.cacheHitRate
-        }
-      },
-      tasks: taskStatus,
-      performance: {
-        cpuUsage: getProcessCpuUsage(),
-        memoryUsage: getProcessMemoryUsage(),
-        flashAttention: '2.8x speedup',
-        searchSpeed: '150x faster'
-      }
-    };
-  } catch (error) {
-    // System not running
-    return {
-      initialized: true,
-      running: false,
-      swarm: {
-        id: null,
-        topology: 'none',
-        agents: { total: 0, active: 0, idle: 0 },
-        health: 'stopped',
-        uptime: 0
-      },
-      mcp: { running: false, port: null, transport: 'stdio' },
-      memory: {
-        entries: 0,
-        size: '0 B',
-        backend: 'none',
-        performance: { searchTime: 0, cacheHitRate: 0 }
-      },
-      tasks: { total: 0, pending: 0, running: 0, completed: 0, failed: 0 },
-      performance: {
-        cpuUsage: 0,
-        memoryUsage: 0,
-        flashAttention: 'N/A',
-        searchSpeed: 'N/A'
-      }
-    };
+    taskData = taskStatus;
+    anyServiceRunning = true;
+  } catch {
+    // task_summary failed, try task_list as fallback
+    try {
+      const taskList = await callMCPTool<{
+        tasks: Array<{ status: string }>;
+        total: number;
+      }>('task_list', { limit: 1000 });
+
+      const tasks = taskList.tasks || [];
+      taskData = {
+        total: tasks.length,
+        pending: tasks.filter(t => t.status === 'pending').length,
+        running: tasks.filter(t => t.status === 'in_progress').length,
+        completed: tasks.filter(t => t.status === 'completed').length,
+        failed: tasks.filter(t => t.status === 'failed').length
+      };
+      anyServiceRunning = true;
+    } catch {
+      // Task service not available - use defaults
+    }
   }
+
+  return {
+    initialized: true,
+    running: anyServiceRunning,
+    swarm: swarmData,
+    mcp: mcpData,
+    memory: memoryData,
+    tasks: taskData,
+    performance: {
+      cpuUsage: anyServiceRunning ? getProcessCpuUsage() : 0,
+      memoryUsage: anyServiceRunning ? getProcessMemoryUsage() : 0,
+      flashAttention: anyServiceRunning ? '2.8x speedup' : 'N/A',
+      searchSpeed: anyServiceRunning ? '150x faster' : 'N/A'
+    }
+  };
 }
 
 // Display status in text format
