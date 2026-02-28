@@ -21,7 +21,7 @@
 [![YouTube](https://img.shields.io/badge/YouTube-Subscribe-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@ReuvenCohen)
 
 # **Production-ready multi-agent AI orchestration for Claude Code**
-*Deploy 60+ specialized agents in coordinated swarms with self-learning capabilities, fault-tolerant consensus, and enterprise-grade security.*
+*Deploy 60+ specialized agents with Moonshot (Kimi) as the default LLM. Multi-agent orchestration with self-learning capabilities, fault-tolerant consensus, and enterprise-grade security. Also supports Claude, GPT, and Gemini.*
 
 </div>
 
