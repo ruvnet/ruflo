@@ -112,7 +112,7 @@ export class MoonshotProvider extends BaseProvider {
   }
 
   protected async doInitialize(): Promise<void> {
-    this.baseUrl = this.config.apiUrl || 'https://api.moonshot.cn/v1';
+    this.baseUrl = this.config.apiUrl || 'https://api.moonshot.ai/v1';
     this.apiKey = this.config.apiKey || process.env.MOONSHOT_API_KEY || '';
     
     if (!this.apiKey) {
