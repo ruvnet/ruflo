@@ -221,7 +221,7 @@ const DEFAULT_CONFIG: Configuration = {
     optimization: 'balanced',
   },
   security: {
-    enableAuth: false,
+    enableAuth: true,
     strictMode: true,
     validateInputs: true,
     rateLimiting: true,

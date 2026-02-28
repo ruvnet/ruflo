@@ -25,6 +25,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { randomUUID } from 'crypto';
 
 // ============================================================================
 // Types
@@ -460,7 +461,7 @@ export class FederationHub extends EventEmitter {
 
     // Create ephemeral agent
     const ttl = options.ttl || this.config.defaultTTL;
-    const agentId = `ephemeral_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const agentId = `ephemeral_${randomUUID()}`;
     const now = new Date();
 
     const agent: EphemeralAgent = {
@@ -609,7 +610,7 @@ export class FederationHub extends EventEmitter {
     }
 
     const message: FederationMessage = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `msg_${randomUUID()}`,
       type: 'direct',
       sourceSwarmId,
       targetSwarmId,
@@ -669,7 +670,7 @@ export class FederationHub extends EventEmitter {
     }
 
     const proposal: ConsensusProposal = {
-      id: `proposal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `proposal_${randomUUID()}`,
       proposerId,
       type,
       value,

@@ -6,6 +6,7 @@
  * without dependency on @claude-flow/shared
  */
 
+import { randomUUID } from 'crypto';
 import type { SwarmEvent, EventType, EventHandler, AgentId } from './types.js';
 
 // =============================================================================
@@ -185,7 +186,7 @@ export function createEvent<T>(
 
 // Helper function to generate event IDs
 function generateEventId(): string {
-  return `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `evt-${randomUUID()}`;
 }
 
 // Helper function to create a base SwarmEvent

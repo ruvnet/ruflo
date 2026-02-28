@@ -22,6 +22,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { randomUUID } from 'crypto';
 import type {
   AgentState,
   AgentType,
@@ -498,6 +499,10 @@ export interface MemoryStoreEntry {
  * 5. Learning from outcomes
  */
 export class QueenCoordinator extends EventEmitter {
+  // LRU cache size limits to prevent unbounded memory growth
+  private static readonly MAX_ANALYSIS_CACHE_SIZE = 1000;
+  private static readonly MAX_DELEGATION_PLANS_SIZE = 500;
+
   private config: QueenCoordinatorConfig;
   private swarm: ISwarmCoordinator;
   private neural?: INeuralLearningSystem;
@@ -636,7 +641,8 @@ export class QueenCoordinator extends EventEmitter {
       timestamp: new Date(),
     };
 
-    // Cache the analysis
+    // Cache the analysis (with LRU eviction)
+    this.evictIfNeeded(this.analysisCache, QueenCoordinator.MAX_ANALYSIS_CACHE_SIZE);
     this.analysisCache.set(analysisId, analysis);
 
     // Record latency
@@ -1137,7 +1143,8 @@ export class QueenCoordinator extends EventEmitter {
       timestamp: new Date(),
     };
 
-    // Store the plan
+    // Store the plan (with LRU eviction)
+    this.evictIfNeeded(this.delegationPlans, QueenCoordinator.MAX_DELEGATION_PLANS_SIZE);
     this.delegationPlans.set(planId, plan);
 
     // Execute the delegation
@@ -1994,7 +2001,7 @@ export class QueenCoordinator extends EventEmitter {
 
   private emitEvent(type: string, data: Record<string, unknown>): void {
     const event = {
-      id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      id: `event_${randomUUID()}`,
       type,
       source: 'queen-coordinator',
       timestamp: new Date(),
@@ -2003,6 +2010,21 @@ export class QueenCoordinator extends EventEmitter {
 
     this.emit(type, event);
     this.emit('event', event);
+  }
+
+  /**
+   * Evict oldest entries from cache if it exceeds max size (LRU approximation).
+   * Uses Map insertion order for LRU behavior.
+   */
+  private evictIfNeeded<K, V>(cache: Map<K, V>, maxSize: number): void {
+    if (cache.size >= maxSize) {
+      // Evict 10% of entries to avoid frequent evictions
+      const evictCount = Math.ceil(maxSize * 0.1);
+      const keysToDelete = Array.from(cache.keys()).slice(0, evictCount);
+      for (const key of keysToDelete) {
+        cache.delete(key);
+      }
+    }
   }
 }
 

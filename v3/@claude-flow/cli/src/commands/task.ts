@@ -204,7 +204,7 @@ const createCommand: Command = {
           { property: 'Priority', value: formatPriority(result.priority) },
           { property: 'Status', value: formatStatus(result.status) },
           { property: 'Assigned To', value: result.assignedTo?.join(', ') || 'Unassigned' },
-          { property: 'Tags', value: result.tags.join(', ') || 'None' },
+          { property: 'Tags', value: (result.tags ?? []).join(', ') || 'None' },
           { property: 'Created', value: new Date(result.createdAt).toLocaleString() }
         ]
       });
@@ -320,14 +320,14 @@ const listCommand: Command = {
           { key: 'progress', header: 'Progress', width: 10 }
         ],
         data: result.tasks.map(t => ({
-          id: t.id,
+          id: (t as Record<string, unknown>).id || (t as Record<string, unknown>).taskId || 'unknown',
           type: t.type,
           description: t.description.length > 27
             ? t.description.slice(0, 27) + '...'
             : t.description,
           priority: formatPriority(t.priority),
           status: formatStatus(t.status),
-          progress: `${t.progress}%`
+          progress: `${t.progress ?? 0}%`
         }))
       });
 
@@ -438,9 +438,9 @@ const statusCommand: Command = {
         data: [
           { property: 'Assigned To', value: result.assignedTo?.join(', ') || 'Unassigned' },
           { property: 'Parent Task', value: result.parentId || 'None' },
-          { property: 'Dependencies', value: result.dependencies.join(', ') || 'None' },
-          { property: 'Dependents', value: result.dependents.join(', ') || 'None' },
-          { property: 'Tags', value: result.tags.join(', ') || 'None' }
+          { property: 'Dependencies', value: (result.dependencies ?? []).join(', ') || 'None' },
+          { property: 'Dependents', value: (result.dependents ?? []).join(', ') || 'None' },
+          { property: 'Tags', value: (result.tags ?? []).join(', ') || 'None' }
         ]
       });
 
@@ -647,7 +647,7 @@ const assignCommand: Command = {
           });
 
           output.writeln();
-          output.printSuccess(`Task ${taskId} assigned to ${result.assignedTo.join(', ')}`);
+          output.printSuccess(`Task ${taskId} assigned to ${(result.assignedTo ?? []).join(', ')}`);
 
           return { success: true, data: result };
         } catch (error) {
@@ -678,7 +678,7 @@ const assignCommand: Command = {
       if (unassign) {
         output.printSuccess(`Task ${taskId} unassigned`);
       } else {
-        output.printSuccess(`Task ${taskId} assigned to ${result.assignedTo.join(', ')}`);
+        output.printSuccess(`Task ${taskId} assigned to ${(result.assignedTo ?? []).join(', ')}`);
       }
 
       if (ctx.flags.format === 'json') {

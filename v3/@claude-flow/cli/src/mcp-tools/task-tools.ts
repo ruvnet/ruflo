@@ -110,8 +110,11 @@ export const taskTools: MCPTool[] = [
         priority: task.priority,
         status: task.status,
         createdAt: task.createdAt,
-        assignedTo: task.assignedTo,
-        tags: task.tags,
+        assignedTo: task.assignedTo ?? [],
+        tags: task.tags ?? [],
+          dependencies: [],
+          dependents: [],
+          parentId: null,
       };
     },
   },
@@ -133,14 +136,18 @@ export const taskTools: MCPTool[] = [
 
       if (task) {
         return {
+          id: task.taskId,
           taskId: task.taskId,
           type: task.type,
           description: task.description,
           status: task.status,
-          progress: task.progress,
+          progress: task.progress ?? 0,
           priority: task.priority,
-          assignedTo: task.assignedTo,
-          tags: task.tags,
+          assignedTo: task.assignedTo ?? [],
+          tags: task.tags ?? [],
+          dependencies: [],
+          dependents: [],
+          parentId: null,
           createdAt: task.createdAt,
           startedAt: task.startedAt,
           completedAt: task.completedAt,
@@ -197,13 +204,14 @@ export const taskTools: MCPTool[] = [
 
       return {
         tasks: tasks.map(t => ({
+          id: t.taskId,
           taskId: t.taskId,
           type: t.type,
           description: t.description,
           status: t.status,
-          progress: t.progress,
+          progress: t.progress ?? 0,
           priority: t.priority,
-          assignedTo: t.assignedTo,
+          assignedTo: t.assignedTo ?? [],
           createdAt: t.createdAt,
         })),
         total: tasks.length,
@@ -241,6 +249,7 @@ export const taskTools: MCPTool[] = [
         saveTaskStore(store);
 
         return {
+          id: task.taskId,
           taskId: task.taskId,
           status: task.status,
           completedAt: task.completedAt,
@@ -292,10 +301,11 @@ export const taskTools: MCPTool[] = [
 
         return {
           success: true,
+          id: task.taskId,
           taskId: task.taskId,
           status: task.status,
-          progress: task.progress,
-          assignedTo: task.assignedTo,
+          progress: task.progress ?? 0,
+          assignedTo: task.assignedTo ?? [],
         };
       }
 
@@ -331,6 +341,7 @@ export const taskTools: MCPTool[] = [
 
         return {
           success: true,
+          id: task.taskId,
           taskId: task.taskId,
           status: task.status,
           cancelledAt: task.completedAt,

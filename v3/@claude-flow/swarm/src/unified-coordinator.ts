@@ -17,6 +17,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { randomUUID } from 'crypto';
 import {
   SwarmId,
   AgentId,
@@ -589,7 +590,7 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
 
   private createInitialState(): CoordinatorState {
     const swarmId: SwarmId = {
-      id: `swarm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `swarm_${randomUUID()}`,
       namespace: 'default',
       version: '3.0.0',
       createdAt: new Date(),
@@ -1053,7 +1054,7 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
 
   private emitEvent(type: SwarmEventType, data: Record<string, unknown>): void {
     const event: SwarmEvent = {
-      id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      id: `event_${randomUUID()}`,
       type,
       source: this.state.id.id,
       timestamp: new Date(),

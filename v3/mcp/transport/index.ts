@@ -270,7 +270,7 @@ export const DEFAULT_TRANSPORT_CONFIGS = {
     host: 'localhost',
     port: 3000,
     corsEnabled: true,
-    corsOrigins: ['*'],
+    corsOrigins: [],
     maxRequestSize: '10mb',
     requestTimeout: 30000,
   } as HttpTransportConfig,
