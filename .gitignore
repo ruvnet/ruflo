@@ -171,3 +171,8 @@ temp/
 tmp/
 dist/
 build/
+
+# Test files (may contain temp data)
+test-moonshot-live.ts
+test-moonshot-isolated.ts
+*.test.ts.local
