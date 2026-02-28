@@ -57,18 +57,18 @@ export class MoonshotProvider extends BaseProvider {
   readonly name: LLMProvider = 'moonshot';
   readonly capabilities: ProviderCapabilities = {
     supportedModels: [
-      'kimi-k2-5',
-      'kimi-k2',
+      'kimi-k2.5',
+      'kimi-k2-turbo-preview',
       'kimi-k2-thinking',
     ],
     maxContextLength: {
-      'kimi-k2-5': 256000,
-      'kimi-k2': 256000,
+      'kimi-k2.5': 256000,
+      'kimi-k2-turbo-preview': 256000,
       'kimi-k2-thinking': 256000,
     },
     maxOutputTokens: {
-      'kimi-k2-5': 8192,
-      'kimi-k2': 8192,
+      'kimi-k2.5': 8192,
+      'kimi-k2-turbo-preview': 8192,
       'kimi-k2-thinking': 8192,
     },
     supportsStreaming: true,
@@ -85,12 +85,12 @@ export class MoonshotProvider extends BaseProvider {
       concurrentRequests: 10,
     },
     pricing: {
-      'kimi-k2-5': {
+      'kimi-k2.5': {
         promptCostPer1k: 0.002,
         completionCostPer1k: 0.008,
         currency: 'USD',
       },
-      'kimi-k2': {
+      'kimi-k2-turbo-preview': {
         promptCostPer1k: 0.002,
         completionCostPer1k: 0.008,
         currency: 'USD',
@@ -166,18 +166,18 @@ export class MoonshotProvider extends BaseProvider {
   async getModels(): Promise<ModelInfo[]> {
     return [
       {
-        id: 'kimi-k2-5',
+        id: 'kimi-k2.5',
         name: 'Kimi K2.5',
         description: 'Latest Kimi model with strong reasoning and coding capabilities',
         contextLength: 256000,
         maxOutputTokens: 8192,
-        supportsVision: false,
+        supportsVision: true,
         supportsToolCalling: true,
         supportsStreaming: true,
       },
       {
-        id: 'kimi-k2',
-        name: 'Kimi K2',
+        id: 'kimi-k2-turbo-preview',
+        name: 'Kimi K2 Turbo',
         description: 'Fast and capable model for general tasks',
         contextLength: 256000,
         maxOutputTokens: 8192,
@@ -201,7 +201,7 @@ export class MoonshotProvider extends BaseProvider {
   async complete(request: LLMRequest): Promise<LLMResponse> {
     if (!this.apiKey) { throw new AuthenticationError("Moonshot API key not initialized", "moonshot"); }
 
-    const model = request.model || 'kimi-k2-5';
+    const model = request.model || 'kimi-k2.5';
     const messages = this.buildMessages(request);
 
     const body: MoonshotRequest = {
