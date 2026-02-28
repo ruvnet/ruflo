@@ -27,6 +27,13 @@ const TASK_PATTERNS = {
 };
 
 function routeTask(task) {
+  if (!task || typeof task !== 'string') {
+    return {
+      agent: 'coder',
+      confidence: 0.5,
+      reason: 'Default routing - no task provided',
+    };
+  }
   const taskLower = task.toLowerCase();
 
   for (const [pattern, agent] of Object.entries(TASK_PATTERNS)) {

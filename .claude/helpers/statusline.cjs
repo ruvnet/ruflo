@@ -107,7 +107,7 @@ function getGitInfo() {
     'git rev-list --left-right --count HEAD...@{upstream} 2>/dev/null || echo "0 0"',
   ].join('; ');
 
-  const raw = safeExec(`sh -c '${script}'`, 3000);
+  const raw = safeExec("sh -c '" + script + "'", 3000);
   if (!raw) return result;
 
   const parts = raw.split('---SEP---').map(s => s.trim());
@@ -139,7 +139,7 @@ function getGitInfo() {
 function getModelName() {
   try {
     const claudeConfig = readJSON(path.join(os.homedir(), '.claude.json'));
-    if (claudeConfig?.projects) {
+    if (claudeConfig && claudeConfig.projects) {
       for (const [projectPath, projectConfig] of Object.entries(claudeConfig.projects)) {
         if (CWD === projectPath || CWD.startsWith(projectPath + '/')) {
           const usage = projectConfig.lastModelUsage;
@@ -149,7 +149,7 @@ function getModelName() {
               let modelId = ids[ids.length - 1];
               let latest = 0;
               for (const id of ids) {
-                const ts = usage[id]?.lastUsedAt ? new Date(usage[id].lastUsedAt).getTime() : 0;
+                const ts = usage[id] && usage[id].lastUsedAt ? new Date(usage[id].lastUsedAt).getTime() : 0;
                 if (ts > latest) { latest = ts; modelId = id; }
               }
               if (modelId.includes('opus')) return 'Opus 4.6';
@@ -166,7 +166,7 @@ function getModelName() {
 
   // Fallback: settings.json model field
   const settings = getSettings();
-  if (settings?.model) {
+  if (settings && settings.model) {
     const m = settings.model;
     if (m.includes('opus')) return 'Opus 4.6';
     if (m.includes('sonnet')) return 'Sonnet 4.6';
@@ -215,7 +215,7 @@ function getV3Progress() {
   const totalDomains = 5;
 
   const dddData = readJSON(path.join(CWD, '.claude-flow', 'metrics', 'ddd-progress.json'));
-  let dddProgress = dddData?.progress || 0;
+  let dddProgress = dddData ? (dddData.progress || 0) : 0;
   let domainsCompleted = Math.min(5, Math.floor(dddProgress / 20));
 
   if (dddProgress === 0 && learning.patterns > 0) {
@@ -264,7 +264,7 @@ function getSecurityStatus() {
 // Swarm status (pure file reads, NO ps aux)
 function getSwarmStatus() {
   const activityData = readJSON(path.join(CWD, '.claude-flow', 'metrics', 'swarm-activity.json'));
-  if (activityData?.swarm) {
+  if (activityData && activityData.swarm) {
     return {
       activeAgents: activityData.swarm.agent_count || 0,
       maxAgents: CONFIG.maxAgents,
@@ -273,7 +273,7 @@ function getSwarmStatus() {
   }
 
   const progressData = readJSON(path.join(CWD, '.claude-flow', 'metrics', 'v3-progress.json'));
-  if (progressData?.swarm) {
+  if (progressData && progressData.swarm) {
     return {
       activeAgents: progressData.swarm.activeAgents || progressData.swarm.agent_count || 0,
       maxAgents: progressData.swarm.totalAgents || CONFIG.maxAgents,
@@ -295,7 +295,7 @@ function getSystemMetrics() {
   let intelligencePct = 0;
   let contextPct = 0;
 
-  if (learningData?.intelligence?.score !== undefined) {
+  if (learningData && learningData.intelligence && learningData.intelligence.score !== undefined) {
     intelligencePct = Math.min(100, Math.floor(learningData.intelligence.score));
   } else {
     const fromPatterns = learning.patterns > 0 ? Math.min(100, Math.floor(learning.patterns / 10)) : 0;
@@ -316,7 +316,7 @@ function getSystemMetrics() {
     intelligencePct = Math.min(100, score);
   }
 
-  if (learningData?.sessions?.total !== undefined) {
+  if (learningData && learningData.sessions && learningData.sessions.total !== undefined) {
     contextPct = Math.min(100, learningData.sessions.total * 5);
   } else {
     contextPct = Math.min(100, Math.floor(learning.sessions * 5));
@@ -325,7 +325,7 @@ function getSystemMetrics() {
   // Sub-agents from file metrics (no ps aux)
   let subAgents = 0;
   const activityData = readJSON(path.join(CWD, '.claude-flow', 'metrics', 'swarm-activity.json'));
-  if (activityData?.processes?.estimated_agents) {
+  if (activityData && activityData.processes && activityData.processes.estimated_agents) {
     subAgents = activityData.processes.estimated_agents;
   }
 
@@ -355,7 +355,6 @@ function getADRStatus() {
         const files = fs.readdirSync(adrPath).filter(f =>
           f.endsWith('.md') && (f.startsWith('ADR-') || f.startsWith('adr-') || /^\d{4}-/.test(f))
         );
-        // Estimate: ~70% implemented in mature projects
         const implemented = Math.floor(files.length * 0.7);
         const compliance = files.length > 0 ? Math.floor((implemented / files.length) * 100) : 0;
         return { count: files.length, implemented, compliance };
@@ -372,7 +371,7 @@ function getHooksStatus() {
   const total = 17;
   const settings = getSettings();
 
-  if (settings?.hooks) {
+  if (settings && settings.hooks) {
     for (const category of Object.keys(settings.hooks)) {
       const h = settings.hooks[category];
       if (Array.isArray(h) && h.length > 0) enabled++;
@@ -427,7 +426,7 @@ function getAgentDBStats() {
           namespaces = files.filter(f => f.endsWith('.db') || f.endsWith('.sqlite')).length;
           for (const file of files) {
             const stat = safeStat(path.join(dir, file));
-            if (stat?.isFile()) dbSizeKB += stat.size / 1024;
+            if (stat && stat.isFile()) dbSizeKB += stat.size / 1024;
           }
           vectorCount = Math.floor(dbSizeKB / 2);
           break;
@@ -456,8 +455,9 @@ function getAgentDBStats() {
 function getTestStats() {
   let testFiles = 0;
 
-  function countTestFiles(dir, depth = 0) {
-    if (depth > 2) return; // Shallower recursion limit
+  function countTestFiles(dir, depth) {
+    if (depth === undefined) depth = 0;
+    if (depth > 2) return;
     try {
       if (!fs.existsSync(dir)) return;
       const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -474,12 +474,12 @@ function getTestStats() {
     } catch { /* ignore */ }
   }
 
-  for (const d of ['tests', 'test', '__tests__', 'v3/__tests__']) {
-    countTestFiles(path.join(CWD, d));
+  var testDirNames = ['tests', 'test', '__tests__', 'v3/__tests__'];
+  for (var i = 0; i < testDirNames.length; i++) {
+    countTestFiles(path.join(CWD, testDirNames[i]));
   }
   countTestFiles(path.join(CWD, 'src'));
 
-  // Estimate ~4 test cases per file (avoids reading every file)
   return { testFiles, testCases: testFiles * 4 };
 }
 
@@ -488,7 +488,7 @@ function getIntegrationStatus() {
   const mcpServers = { total: 0, enabled: 0 };
   const settings = getSettings();
 
-  if (settings?.mcpServers && typeof settings.mcpServers === 'object') {
+  if (settings && settings.mcpServers && typeof settings.mcpServers === 'object') {
     const servers = Object.keys(settings.mcpServers);
     mcpServers.total = servers.length;
     mcpServers.enabled = settings.enabledMcpjsonServers
@@ -496,11 +496,10 @@ function getIntegrationStatus() {
       : servers.length;
   }
 
-  // Fallback: .mcp.json
   if (mcpServers.total === 0) {
     const mcpConfig = readJSON(path.join(CWD, '.mcp.json'))
                    || readJSON(path.join(os.homedir(), '.claude', 'mcp.json'));
-    if (mcpConfig?.mcpServers) {
+    if (mcpConfig && mcpConfig.mcpServers) {
       const s = Object.keys(mcpConfig.mcpServers);
       mcpServers.total = s.length;
       mcpServers.enabled = s.length;
@@ -516,13 +515,14 @@ function getIntegrationStatus() {
 
 // Session stats (pure file reads)
 function getSessionStats() {
-  for (const p of ['.claude-flow/session.json', '.claude/session.json']) {
-    const data = readJSON(path.join(CWD, p));
-    if (data?.startTime) {
+  var sessionPaths = ['.claude-flow/session.json', '.claude/session.json'];
+  for (var i = 0; i < sessionPaths.length; i++) {
+    const data = readJSON(path.join(CWD, sessionPaths[i]));
+    if (data && data.startTime) {
       const diffMs = Date.now() - new Date(data.startTime).getTime();
       const mins = Math.floor(diffMs / 60000);
-      const duration = mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h${mins % 60}m`;
-      return { duration };
+      const duration = mins < 60 ? mins + 'm' : Math.floor(mins / 60) + 'h' + (mins % 60) + 'm';
+      return { duration: duration };
     }
   }
   return { duration: '' };
@@ -536,73 +536,12 @@ function progressBar(current, total) {
   return '[' + '\u25CF'.repeat(filled) + '\u25CB'.repeat(width - filled) + ']';
 }
 
-// Single-line statusline for Claude Code's status bar
 function generateStatusline() {
   const git = getGitInfo();
-  const modelName = getModelName();
-  const swarm = getSwarmStatus();
-  const system = getSystemMetrics();
-  const session = getSessionStats();
-  const hooks = getHooksStatus();
-  const integration = getIntegrationStatus();
-
-  const parts = [];
-
-  // Branding
-  parts.push(`${c.bold}${c.brightPurple}\u258A Claude Flow V3${c.reset}`);
-
-  // User + swarm indicator
-  const dot = swarm.coordinationActive ? `${c.brightGreen}\u25CF${c.reset}` : `${c.brightCyan}\u25CF${c.reset}`;
-  parts.push(`${dot} ${c.brightCyan}${git.name}${c.reset}`);
-
-  // Git branch + changes
-  if (git.gitBranch) {
-    let branchPart = `${c.brightBlue}\u23C7 ${git.gitBranch}${c.reset}`;
-    const changes = [];
-    if (git.staged > 0) changes.push(`${c.brightGreen}+${git.staged}${c.reset}`);
-    if (git.modified > 0) changes.push(`${c.brightYellow}~${git.modified}${c.reset}`);
-    if (git.untracked > 0) changes.push(`${c.dim}?${git.untracked}${c.reset}`);
-    if (changes.length > 0) branchPart += ` ${changes.join('')}`;
-    if (git.ahead > 0) branchPart += ` ${c.brightGreen}\u2191${git.ahead}${c.reset}`;
-    if (git.behind > 0) branchPart += ` ${c.brightRed}\u2193${git.behind}${c.reset}`;
-    parts.push(branchPart);
-  }
-
-  // Model
-  parts.push(`${c.purple}${modelName}${c.reset}`);
-
-  // Session duration
-  if (session.duration) {
-    parts.push(`${c.cyan}\u23F1 ${session.duration}${c.reset}`);
-  }
-
-  // Intelligence %
-  const intellColor = system.intelligencePct >= 80 ? c.brightGreen : system.intelligencePct >= 40 ? c.brightYellow : c.dim;
-  parts.push(`${intellColor}\u25CF ${system.intelligencePct}%${c.reset}`);
-
-  // Swarm agents (only if active)
-  if (swarm.activeAgents > 0 || swarm.coordinationActive) {
-    parts.push(`${c.brightYellow}\u25C9 ${swarm.activeAgents}/${swarm.maxAgents}${c.reset}`);
-  }
-
-  // Hooks (compact)
-  if (hooks.enabled > 0) {
-    parts.push(`${c.brightGreen}\u2713${hooks.enabled}h${c.reset}`);
-  }
-
-  // MCP (compact)
-  if (integration.mcpServers.total > 0) {
-    const mcpCol = integration.mcpServers.enabled === integration.mcpServers.total ? c.brightGreen : c.brightYellow;
-    parts.push(`${mcpCol}MCP${integration.mcpServers.enabled}${c.reset}`);
-  }
-
-  return parts.join(` ${c.dim}\u2502${c.reset} `);
-}
-
-// Multi-line dashboard (for --dashboard flag)
-function generateDashboard() {
-  const git = getGitInfo();
-  const modelName = getModelName();
+  // Prefer model name from Claude Code stdin data, fallback to file-based detection
+  const modelName = getModelFromStdin() || getModelName();
+  const ctxInfo = getContextFromStdin();
+  const costInfo = getCostFromStdin();
   const progress = getV3Progress();
   const security = getSecurityStatus();
   const swarm = getSwarmStatus();
@@ -616,47 +555,58 @@ function generateDashboard() {
   const lines = [];
 
   // Header
-  let header = `${c.bold}${c.brightPurple}\u258A Claude Flow V3 ${c.reset}`;
-  header += `${swarm.coordinationActive ? c.brightCyan : c.dim}\u25CF ${c.brightCyan}${git.name}${c.reset}`;
+  let header = c.bold + c.brightPurple + '\u258A Claude Flow V3 ' + c.reset;
+  header += (swarm.coordinationActive ? c.brightCyan : c.dim) + '\u25CF ' + c.brightCyan + git.name + c.reset;
   if (git.gitBranch) {
-    header += `  ${c.dim}\u2502${c.reset}  ${c.brightBlue}\u23C7 ${git.gitBranch}${c.reset}`;
+    header += '  ' + c.dim + '\u2502' + c.reset + '  ' + c.brightBlue + '\u23C7 ' + git.gitBranch + c.reset;
     const changes = git.modified + git.staged + git.untracked;
     if (changes > 0) {
       let ind = '';
-      if (git.staged > 0) ind += `${c.brightGreen}+${git.staged}${c.reset}`;
-      if (git.modified > 0) ind += `${c.brightYellow}~${git.modified}${c.reset}`;
-      if (git.untracked > 0) ind += `${c.dim}?${git.untracked}${c.reset}`;
-      header += ` ${ind}`;
+      if (git.staged > 0) ind += c.brightGreen + '+' + git.staged + c.reset;
+      if (git.modified > 0) ind += c.brightYellow + '~' + git.modified + c.reset;
+      if (git.untracked > 0) ind += c.dim + '?' + git.untracked + c.reset;
+      header += ' ' + ind;
     }
-    if (git.ahead > 0) header += ` ${c.brightGreen}\u2191${git.ahead}${c.reset}`;
-    if (git.behind > 0) header += ` ${c.brightRed}\u2193${git.behind}${c.reset}`;
+    if (git.ahead > 0) header += ' ' + c.brightGreen + '\u2191' + git.ahead + c.reset;
+    if (git.behind > 0) header += ' ' + c.brightRed + '\u2193' + git.behind + c.reset;
   }
-  header += `  ${c.dim}\u2502${c.reset}  ${c.purple}${modelName}${c.reset}`;
-  if (session.duration) header += `  ${c.dim}\u2502${c.reset}  ${c.cyan}\u23F1 ${session.duration}${c.reset}`;
+  header += '  ' + c.dim + '\u2502' + c.reset + '  ' + c.purple + modelName + c.reset;
+  // Show session duration from Claude Code stdin if available, else from local files
+  const duration = costInfo ? costInfo.duration : session.duration;
+  if (duration) header += '  ' + c.dim + '\u2502' + c.reset + '  ' + c.cyan + '\u23F1 ' + duration + c.reset;
+  // Show context usage from Claude Code stdin if available
+  if (ctxInfo && ctxInfo.usedPct > 0) {
+    const ctxColor = ctxInfo.usedPct >= 90 ? c.brightRed : ctxInfo.usedPct >= 70 ? c.brightYellow : c.brightGreen;
+    header += '  ' + c.dim + '\u2502' + c.reset + '  ' + ctxColor + '\u25CF ' + ctxInfo.usedPct + '% ctx' + c.reset;
+  }
+  // Show cost from Claude Code stdin if available
+  if (costInfo && costInfo.costUsd > 0) {
+    header += '  ' + c.dim + '\u2502' + c.reset + '  ' + c.brightYellow + '$' + costInfo.costUsd.toFixed(2) + c.reset;
+  }
   lines.push(header);
 
   // Separator
-  lines.push(`${c.dim}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500${c.reset}`);
+  lines.push(c.dim + '\u2500'.repeat(53) + c.reset);
 
-  // Line 1: DDD Domains + perf
+  // Line 1: DDD Domains
   const domainsColor = progress.domainsCompleted >= 3 ? c.brightGreen : progress.domainsCompleted > 0 ? c.yellow : c.red;
   let perfIndicator;
   if (agentdb.hasHnsw && agentdb.vectorCount > 0) {
     const speedup = agentdb.vectorCount > 10000 ? '12500x' : agentdb.vectorCount > 1000 ? '150x' : '10x';
-    perfIndicator = `${c.brightGreen}\u26A1 HNSW ${speedup}${c.reset}`;
+    perfIndicator = c.brightGreen + '\u26A1 HNSW ' + speedup + c.reset;
   } else if (progress.patternsLearned > 0) {
-    const pk = progress.patternsLearned >= 1000 ? `${(progress.patternsLearned / 1000).toFixed(1)}k` : String(progress.patternsLearned);
-    perfIndicator = `${c.brightYellow}\uD83D\uDCDA ${pk} patterns${c.reset}`;
+    const pk = progress.patternsLearned >= 1000 ? (progress.patternsLearned / 1000).toFixed(1) + 'k' : String(progress.patternsLearned);
+    perfIndicator = c.brightYellow + '\uD83D\uDCDA ' + pk + ' patterns' + c.reset;
   } else {
-    perfIndicator = `${c.dim}\u26A1 target: 150x-12500x${c.reset}`;
+    perfIndicator = c.dim + '\u26A1 target: 150x-12500x' + c.reset;
   }
   lines.push(
-    `${c.brightCyan}\uD83C\uDFD7\uFE0F  DDD Domains${c.reset}    ${progressBar(progress.domainsCompleted, progress.totalDomains)}  ` +
-    `${domainsColor}${progress.domainsCompleted}${c.reset}/${c.brightWhite}${progress.totalDomains}${c.reset}    ${perfIndicator}`
+    c.brightCyan + '\uD83C\uDFD7\uFE0F  DDD Domains' + c.reset + '    ' + progressBar(progress.domainsCompleted, progress.totalDomains) + '  ' +
+    domainsColor + progress.domainsCompleted + c.reset + '/' + c.brightWhite + progress.totalDomains + c.reset + '    ' + perfIndicator
   );
 
   // Line 2: Swarm + Hooks + CVE + Memory + Intelligence
-  const swarmInd = swarm.coordinationActive ? `${c.brightGreen}\u25C9${c.reset}` : `${c.dim}\u25CB${c.reset}`;
+  const swarmInd = swarm.coordinationActive ? c.brightGreen + '\u25C9' + c.reset : c.dim + '\u25CB' + c.reset;
   const agentsColor = swarm.activeAgents > 0 ? c.brightGreen : c.red;
   const secIcon = security.status === 'CLEAN' ? '\uD83D\uDFE2' : security.status === 'IN_PROGRESS' ? '\uD83D\uDFE1' : '\uD83D\uDD34';
   const secColor = security.status === 'CLEAN' ? c.brightGreen : security.status === 'IN_PROGRESS' ? c.brightYellow : c.brightRed;
@@ -664,29 +614,29 @@ function generateDashboard() {
   const intellColor = system.intelligencePct >= 80 ? c.brightGreen : system.intelligencePct >= 40 ? c.brightYellow : c.dim;
 
   lines.push(
-    `${c.brightYellow}\uD83E\uDD16 Swarm${c.reset}  ${swarmInd} [${agentsColor}${String(swarm.activeAgents).padStart(2)}${c.reset}/${c.brightWhite}${swarm.maxAgents}${c.reset}]  ` +
-    `${c.brightPurple}\uD83D\uDC65 ${system.subAgents}${c.reset}    ` +
-    `${c.brightBlue}\uD83E\uDE9D ${hooksColor}${hooks.enabled}${c.reset}/${c.brightWhite}${hooks.total}${c.reset}    ` +
-    `${secIcon} ${secColor}CVE ${security.cvesFixed}${c.reset}/${c.brightWhite}${security.totalCves}${c.reset}    ` +
-    `${c.brightCyan}\uD83D\uDCBE ${system.memoryMB}MB${c.reset}    ` +
-    `${intellColor}\uD83E\uDDE0 ${String(system.intelligencePct).padStart(3)}%${c.reset}`
+    c.brightYellow + '\uD83E\uDD16 Swarm' + c.reset + '  ' + swarmInd + ' [' + agentsColor + String(swarm.activeAgents).padStart(2) + c.reset + '/' + c.brightWhite + swarm.maxAgents + c.reset + ']  ' +
+    c.brightPurple + '\uD83D\uDC65 ' + system.subAgents + c.reset + '    ' +
+    c.brightBlue + '\uD83E\uDE9D ' + hooksColor + hooks.enabled + c.reset + '/' + c.brightWhite + hooks.total + c.reset + '    ' +
+    secIcon + ' ' + secColor + 'CVE ' + security.cvesFixed + c.reset + '/' + c.brightWhite + security.totalCves + c.reset + '    ' +
+    c.brightCyan + '\uD83D\uDCBE ' + system.memoryMB + 'MB' + c.reset + '    ' +
+    intellColor + '\uD83E\uDDE0 ' + String(system.intelligencePct).padStart(3) + '%' + c.reset
   );
 
   // Line 3: Architecture
   const dddColor = progress.dddProgress >= 50 ? c.brightGreen : progress.dddProgress > 0 ? c.yellow : c.red;
   const adrColor = adrs.count > 0 ? (adrs.implemented === adrs.count ? c.brightGreen : c.yellow) : c.dim;
-  const adrDisplay = adrs.compliance > 0 ? `${adrColor}\u25CF${adrs.compliance}%${c.reset}` : `${adrColor}\u25CF${adrs.implemented}/${adrs.count}${c.reset}`;
+  const adrDisplay = adrs.compliance > 0 ? adrColor + '\u25CF' + adrs.compliance + '%' + c.reset : adrColor + '\u25CF' + adrs.implemented + '/' + adrs.count + c.reset;
 
   lines.push(
-    `${c.brightPurple}\uD83D\uDD27 Architecture${c.reset}    ` +
-    `${c.cyan}ADRs${c.reset} ${adrDisplay}  ${c.dim}\u2502${c.reset}  ` +
-    `${c.cyan}DDD${c.reset} ${dddColor}\u25CF${String(progress.dddProgress).padStart(3)}%${c.reset}  ${c.dim}\u2502${c.reset}  ` +
-    `${c.cyan}Security${c.reset} ${secColor}\u25CF${security.status}${c.reset}`
+    c.brightPurple + '\uD83D\uDD27 Architecture' + c.reset + '    ' +
+    c.cyan + 'ADRs' + c.reset + ' ' + adrDisplay + '  ' + c.dim + '\u2502' + c.reset + '  ' +
+    c.cyan + 'DDD' + c.reset + ' ' + dddColor + '\u25CF' + String(progress.dddProgress).padStart(3) + '%' + c.reset + '  ' + c.dim + '\u2502' + c.reset + '  ' +
+    c.cyan + 'Security' + c.reset + ' ' + secColor + '\u25CF' + security.status + c.reset
   );
 
   // Line 4: AgentDB, Tests, Integration
-  const hnswInd = agentdb.hasHnsw ? `${c.brightGreen}\u26A1${c.reset}` : '';
-  const sizeDisp = agentdb.dbSizeKB >= 1024 ? `${(agentdb.dbSizeKB / 1024).toFixed(1)}MB` : `${agentdb.dbSizeKB}KB`;
+  const hnswInd = agentdb.hasHnsw ? c.brightGreen + '\u26A1' + c.reset : '';
+  const sizeDisp = agentdb.dbSizeKB >= 1024 ? (agentdb.dbSizeKB / 1024).toFixed(1) + 'MB' : agentdb.dbSizeKB + 'KB';
   const vectorColor = agentdb.vectorCount > 0 ? c.brightGreen : c.dim;
   const testColor = tests.testFiles > 0 ? c.brightGreen : c.dim;
 
@@ -694,17 +644,17 @@ function generateDashboard() {
   if (integration.mcpServers.total > 0) {
     const mcpCol = integration.mcpServers.enabled === integration.mcpServers.total ? c.brightGreen :
                    integration.mcpServers.enabled > 0 ? c.brightYellow : c.red;
-    integStr += `${c.cyan}MCP${c.reset} ${mcpCol}\u25CF${integration.mcpServers.enabled}/${integration.mcpServers.total}${c.reset}`;
+    integStr += c.cyan + 'MCP' + c.reset + ' ' + mcpCol + '\u25CF' + integration.mcpServers.enabled + '/' + integration.mcpServers.total + c.reset;
   }
-  if (integration.hasDatabase) integStr += (integStr ? '  ' : '') + `${c.brightGreen}\u25C6${c.reset}DB`;
-  if (integration.hasApi) integStr += (integStr ? '  ' : '') + `${c.brightGreen}\u25C6${c.reset}API`;
-  if (!integStr) integStr = `${c.dim}\u25CF none${c.reset}`;
+  if (integration.hasDatabase) integStr += (integStr ? '  ' : '') + c.brightGreen + '\u25C6' + c.reset + 'DB';
+  if (integration.hasApi) integStr += (integStr ? '  ' : '') + c.brightGreen + '\u25C6' + c.reset + 'API';
+  if (!integStr) integStr = c.dim + '\u25CF none' + c.reset;
 
   lines.push(
-    `${c.brightCyan}\uD83D\uDCCA AgentDB${c.reset}    ` +
-    `${c.cyan}Vectors${c.reset} ${vectorColor}\u25CF${agentdb.vectorCount}${hnswInd}${c.reset}  ${c.dim}\u2502${c.reset}  ` +
-    `${c.cyan}Size${c.reset} ${c.brightWhite}${sizeDisp}${c.reset}  ${c.dim}\u2502${c.reset}  ` +
-    `${c.cyan}Tests${c.reset} ${testColor}\u25CF${tests.testFiles}${c.reset} ${c.dim}(~${tests.testCases} cases)${c.reset}  ${c.dim}\u2502${c.reset}  ` +
+    c.brightCyan + '\uD83D\uDCCA AgentDB' + c.reset + '    ' +
+    c.cyan + 'Vectors' + c.reset + ' ' + vectorColor + '\u25CF' + agentdb.vectorCount + hnswInd + c.reset + '  ' + c.dim + '\u2502' + c.reset + '  ' +
+    c.cyan + 'Size' + c.reset + ' ' + c.brightWhite + sizeDisp + c.reset + '  ' + c.dim + '\u2502' + c.reset + '  ' +
+    c.cyan + 'Tests' + c.reset + ' ' + testColor + '\u25CF' + tests.testFiles + c.reset + ' ' + c.dim + '(~' + tests.testCases + ' cases)' + c.reset + '  ' + c.dim + '\u2502' + c.reset + '  ' +
     integStr
   );
 
@@ -729,14 +679,80 @@ function generateJSON() {
   };
 }
 
+// ─── Stdin reader (Claude Code pipes session JSON) ──────────────
+
+// Claude Code sends session JSON via stdin (model, context, cost, etc.)
+// Read it synchronously so the script works both:
+//   1. When invoked by Claude Code (stdin has JSON)
+//   2. When invoked manually from terminal (stdin is empty/tty)
+let _stdinData = null;
+function getStdinData() {
+  if (_stdinData !== undefined && _stdinData !== null) return _stdinData;
+  try {
+    // Check if stdin is a TTY (manual run) — skip reading
+    if (process.stdin.isTTY) { _stdinData = null; return null; }
+    // Read stdin synchronously via fd 0
+    const chunks = [];
+    const buf = Buffer.alloc(4096);
+    let bytesRead;
+    try {
+      while ((bytesRead = fs.readSync(0, buf, 0, buf.length, null)) > 0) {
+        chunks.push(buf.slice(0, bytesRead));
+      }
+    } catch { /* EOF or read error */ }
+    const raw = Buffer.concat(chunks).toString('utf-8').trim();
+    if (raw && raw.startsWith('{')) {
+      _stdinData = JSON.parse(raw);
+    } else {
+      _stdinData = null;
+    }
+  } catch {
+    _stdinData = null;
+  }
+  return _stdinData;
+}
+
+// Override model detection to prefer stdin data from Claude Code
+function getModelFromStdin() {
+  const data = getStdinData();
+  if (data && data.model && data.model.display_name) return data.model.display_name;
+  return null;
+}
+
+// Get context window info from Claude Code session
+function getContextFromStdin() {
+  const data = getStdinData();
+  if (data && data.context_window) {
+    return {
+      usedPct: Math.floor(data.context_window.used_percentage || 0),
+      remainingPct: Math.floor(data.context_window.remaining_percentage || 100),
+    };
+  }
+  return null;
+}
+
+// Get cost info from Claude Code session
+function getCostFromStdin() {
+  const data = getStdinData();
+  if (data && data.cost) {
+    const durationMs = data.cost.total_duration_ms || 0;
+    const mins = Math.floor(durationMs / 60000);
+    const secs = Math.floor((durationMs % 60000) / 1000);
+    return {
+      costUsd: data.cost.total_cost_usd || 0,
+      duration: mins > 0 ? mins + 'm' + secs + 's' : secs + 's',
+      linesAdded: data.cost.total_lines_added || 0,
+      linesRemoved: data.cost.total_lines_removed || 0,
+    };
+  }
+  return null;
+}
+
 // ─── Main ───────────────────────────────────────────────────────
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify(generateJSON(), null, 2));
 } else if (process.argv.includes('--compact')) {
   console.log(JSON.stringify(generateJSON()));
-} else if (process.argv.includes('--single-line')) {
-  console.log(generateStatusline());
 } else {
-  // Default: multi-line dashboard
-  console.log(generateDashboard());
+  console.log(generateStatusline());
 }

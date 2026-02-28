@@ -246,7 +246,7 @@ export class WorkflowEngine {
     const results: TaskResult[] = [];
     const errors: Error[] = [];
 
-    const taskChunks = [];
+    const taskChunks: ITask[][] = [];
     for (let i = 0; i < workflow.tasks.length; i += tasksPerCoordinator) {
       taskChunks.push(workflow.tasks.slice(i, i + tasksPerCoordinator));
     }

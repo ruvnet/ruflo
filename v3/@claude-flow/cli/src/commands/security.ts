@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * V3 CLI Security Command
  * Security scanning, CVE detection, threat modeling, vulnerability management

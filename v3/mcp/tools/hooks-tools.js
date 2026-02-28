@@ -115,6 +115,10 @@ const listHooksSchema = z.object({
  * In production, use a real embedding model
  */
 function generateSimpleEmbedding(text, dim = 768) {
+    if (!text || typeof text !== 'string') {
+        // Return a zero embedding for missing/invalid text
+        return new Float32Array(dim);
+    }
     const embedding = new Float32Array(dim);
     const textLower = text.toLowerCase();
     // Simple hash-based embedding for demo
@@ -166,6 +170,9 @@ function createTrajectory(context, domain, action, reward) {
  * Infer agent type from task description
  */
 function inferAgentFromTask(task) {
+    if (!task || typeof task !== 'string') {
+        return { agent: 'coder', confidence: 0.5 };
+    }
     const taskLower = task.toLowerCase();
     const agentPatterns = [
         {
@@ -876,6 +883,12 @@ export const routeTool = {
         required: ['task'],
     },
     handler: async (input, context) => {
+        if (!input || !input.task) {
+            return {
+                error: 'Missing required parameter: task',
+                usage: 'Provide a task description to route, e.g. { "task": "implement authentication" }',
+            };
+        }
         const validated = routeSchema.parse(input);
         return handleRoute(validated, context);
     },
@@ -911,6 +924,12 @@ export const explainTool = {
         required: ['task'],
     },
     handler: async (input, context) => {
+        if (!input || !input.task) {
+            return {
+                error: 'Missing required parameter: task',
+                usage: 'Provide a task description to explain routing for, e.g. { "task": "implement authentication" }',
+            };
+        }
         const validated = explainSchema.parse(input);
         return handleExplain(validated, context);
     },

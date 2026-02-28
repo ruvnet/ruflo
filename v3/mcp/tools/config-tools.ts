@@ -273,7 +273,7 @@ async function handleLoadConfig(
 
   const result: LoadConfigResult = {
     config,
-    source: path,
+    source: safePath,
     scope: input.scope,
     loadedAt,
   };

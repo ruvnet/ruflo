@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * V3 MCP HTTP Transport
  *

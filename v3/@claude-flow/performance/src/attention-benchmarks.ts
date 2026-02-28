@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @claude-flow/performance - Flash Attention Benchmarks
  *

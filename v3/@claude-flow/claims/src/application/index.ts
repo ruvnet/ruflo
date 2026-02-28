@@ -10,7 +10,8 @@
  */
 
 // Core claim service
-export { ClaimService, IClaimService } from './claim-service.js';
+export { ClaimService } from './claim-service.js';
+export type { IClaimService } from './claim-service.js';
 
 // Load Balancing Service
 export {
