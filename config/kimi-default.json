@@ -1,0 +1,30 @@
+{
+  "name": "ruflo-kimi",
+  "version": "3.5.2",
+  "description": "Ruflo with Moonshot (Kimi) as default LLM provider",
+  "providers": [
+    {
+      "provider": "moonshot",
+      "apiKey": "${MOONSHOT_API_KEY}",
+      "models": ["kimi-k2-5", "kimi-k2", "kimi-k2-thinking"],
+      "priority": 1,
+      "default": true
+    },
+    {
+      "provider": "anthropic",
+      "apiKey": "${ANTHROPIC_API_KEY}",
+      "models": ["claude-3-5-sonnet-20241022"],
+      "priority": 2
+    }
+  ],
+  "routing": {
+    "strategy": "cost-optimized",
+    "fallback": true,
+    "healthCheck": true
+  },
+  "modelPreferences": {
+    "default": "kimi-k2-5",
+    "complex": "kimi-k2-thinking",
+    "fast": "kimi-k2"
+  }
+}
