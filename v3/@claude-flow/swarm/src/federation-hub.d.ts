@@ -20,7 +20,7 @@
  * Implements ADR-001: agentic-flow@alpha compatibility
  * Implements ADR-003: Unified coordination engine
  *
- * @module @claude-flow/swarm/federation-hub
+ * @module @anthill/swarm/federation-hub
  * @version 3.0.0-alpha.1
  */
 import { EventEmitter } from 'events';

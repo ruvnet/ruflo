@@ -1,19 +1,41 @@
-# 🌊 Ruflo v3: Enterprise AI Orchestration Platform
+# Anthill 🐜
+
+> **AI-Powered Multi-Agent Development Platform**
+> 
+> *Formerly Ruflo - Now Anthill: A Kimi-First Agent Swarm*
+
+[![Version](https://img.shields.io/badge/version-3.5.0-blue)](https://github.com/nKOxxx/anthill)
+[![Moonshot](https://img.shields.io/badge/Moonshot-Kimi-purple)](https://platform.moonshot.ai)
+
+## 🚀 What is Anthill?
+
+Anthill is a comprehensive AI agent orchestration framework that enables teams to deploy, coordinate, and optimize specialized AI agents working together on complex software engineering tasks.
+
+**Key Difference:** Anthill uses **Moonshot (Kimi)** as the default LLM provider, with support for Claude, GPT, and Gemini as alternatives.
+
+## 🐜 Why "Anthill"?
+
+Just like an anthill operates as a collective intelligence - thousands of ants working in parallel, communicating through pheromones, building complex structures - Anthill enables AI agents to swarm together, share knowledge, and build software collaboratively.
+
+**Kimi = The Queen** (central intelligence, 256k context)
+**Agents = Worker Ants** (specialized tasks, parallel execution)
+**Memory = Pheromone Trails** (shared knowledge, persistent learning)
+# 🌊 Anthill v3: Enterprise AI Orchestration Platform
 
 <div align="center">
 
-![Ruflo Banner](ruflo/assets/ruFlo.png)
+![Anthill Banner](anthill/assets/ruFlo.png)
 
 
 
-[![GitHub Project of the Day](https://img.shields.io/badge/GitHub-Project%20of%20the%20Day-ff6600?style=for-the-badge&logo=github&logoColor=white)](https://github.com/ruvnet/claude-flow)
+[![GitHub Project of the Day](https://img.shields.io/badge/GitHub-Project%20of%20the%20Day-ff6600?style=for-the-badge&logo=github&logoColor=white)](https://github.com/ruvnet/anthill)
 
-[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/claude-flow?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/claude-flow)
+[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/anthill?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/anthill)
 [![Monthly Downloads](https://img.shields.io/npm/dm/claude-flow?style=for-the-badge&logo=npm&color=blue&label=Monthly%20Downloads)](https://www.npmjs.com/package/claude-flow)
 [![Total Downloads](https://img.shields.io/npm/dt/claude-flow?style=for-the-badge&logo=npm&color=cyan&label=Total%20Downloads)](https://www.npmjs.com/package/claude-flow)
 [![ruv.io](https://img.shields.io/badge/ruv.io-AI%20Platform-green?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQyIDAtOC0zLjU4LTgtOHMzLjU4LTggOC04IDggMy41OCA4IDgtMy41OCA4LTggOHoiLz48L3N2Zz4=)](https://ruv.io)
 [![Agentics Foundation](https://img.shields.io/badge/Agentics-Foundation-crimson?style=for-the-badge&logo=openai)](https://discord.com/invite/dfxmpwkG2D)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-SDK%20Integrated-green?style=for-the-badge&logo=anthropic)](https://github.com/ruvnet/claude-flow)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-SDK%20Integrated-green?style=for-the-badge&logo=anthropic)](https://github.com/ruvnet/anthill)
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge&logo=opensourceinitiative)](https://opensource.org/licenses/MIT)
 ---
 [![Follow @ruv](https://img.shields.io/badge/Follow%20%40ruv-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/ruv)
@@ -21,20 +43,20 @@
 [![YouTube](https://img.shields.io/badge/YouTube-Subscribe-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@ReuvenCohen)
 
 # **Production-ready multi-agent AI orchestration for Claude Code**
-*Deploy 60+ specialized agents in coordinated swarms with self-learning capabilities, fault-tolerant consensus, and enterprise-grade security.*
+*Deploy 60+ specialized agents with Moonshot (Kimi) as the default LLM. Multi-agent orchestration with self-learning capabilities, fault-tolerant consensus, and enterprise-grade security. Also supports Claude, GPT, and Gemini.*
 
 </div>
 
-> **Why Ruflo?** Claude Flow is now Ruflo — named by Ruv, who loves Rust, flow states, and building things that feel inevitable. The "Ru" is the Ruv. The "flo" is the flow. Underneath, WASM kernels written in Rust power the policy engine, embeddings, and proof system. 5,800 commits later, the alpha is over. This is v3.5.
+> **Why Anthill?** Anthill is now Anthill — named by Ruv, who loves Rust, flow states, and building things that feel inevitable. The "Ru" is the Ruv. The "flo" is the flow. Underneath, WASM kernels written in Rust power the policy engine, embeddings, and proof system. 5,800 commits later, the alpha is over. This is v3.5.
 
 ## Getting into the Flow
 
-Ruflo is a comprehensive AI agent orchestration framework that transforms Claude Code into a powerful multi-agent development platform. It enables teams to deploy, coordinate, and optimize specialized AI agents working together on complex software engineering tasks.
+Anthill is a comprehensive AI agent orchestration framework that transforms Claude Code into a powerful multi-agent development platform. It enables teams to deploy, coordinate, and optimize specialized AI agents working together on complex software engineering tasks.
 
 ### Self-Learning/Self-Optimizing Agent Architecture
 
 ```
-User → Ruflo (CLI/MCP) → Router → Swarm → Agents → Memory → LLM Providers
+User → Anthill (CLI/MCP) → Router → Swarm → Agents → Memory → LLM Providers
                        ↑                          ↓
                        └──── Learning Loop ←──────┘
 ```
@@ -126,7 +148,7 @@ flowchart TB
     style RESOURCES fill:#1a1a2e,stroke:#0f3460
 ```
 
-**RuVector Components** (included with Ruflo):
+**RuVector Components** (included with Anthill):
 
 | Component | Purpose | Performance |
 |-----------|---------|-------------|
@@ -142,8 +164,8 @@ flowchart TB
 | **9 RL Algorithms** | Q-Learning, SARSA, A2C, PPO, DQN, Decision Transformer, etc. | Task-specific learning |
 
 ```bash
-# Use RuVector via Ruflo
-npx ruflo@latest hooks intelligence --status
+# Use RuVector via Anthill
+npx anthill@latest hooks intelligence --status
 ```
 
 </details>
@@ -152,13 +174,13 @@ npx ruflo@latest hooks intelligence --status
 
 ```bash
 # One-line install (recommended)
-curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/anthill@main/scripts/install.sh | bash
 
 # Or full setup with MCP + diagnostics
-curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash -s -- --full
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/anthill@main/scripts/install.sh | bash -s -- --full
 
 # Or via npx
-npx ruflo@latest init --wizard
+npx anthill@latest init --wizard
 ```
 
 ---
@@ -172,7 +194,7 @@ npx ruflo@latest init --wizard
 
 🔌 **Works With Any LLM** - Switch between Claude, GPT, Gemini, Cohere, or local models like Llama. Automatic failover if one provider is unavailable. Smart routing picks the cheapest option that meets quality requirements.
 
-⚡ **Plugs Into Claude Code** - Native integration via MCP (Model Context Protocol). Use ruflo commands directly in your Claude Code sessions with full tool access.
+⚡ **Plugs Into Claude Code** - Native integration via MCP (Model Context Protocol). Use anthill commands directly in your Claude Code sessions with full tool access.
 
 🔒 **Production-Ready Security** - Built-in protection against prompt injection, input validation, path traversal prevention, command injection blocking, and safe credential handling.
 
@@ -350,7 +372,7 @@ const config = optimizer.getOptimalConfig(agentCount);
 <details>
 <summary>🛡️ <strong>Anti-Drift Swarm Configuration</strong> — Prevent goal drift in multi-agent work</summary>
 
-Complex swarms can drift from their original goals. Ruflo V3 includes anti-drift defaults that prevent agents from going off-task.
+Complex swarms can drift from their original goals. Anthill V3 includes anti-drift defaults that prevent agents from going off-task.
 
 **Recommended Configuration:**
 
@@ -392,9 +414,9 @@ swarm_init({
 
 </details>
 
-### Claude Code: With vs Without Ruflo
+### Claude Code: With vs Without Anthill
 
-| Capability | Claude Code Alone | Claude Code + Ruflo |
+| Capability | Claude Code Alone | Claude Code + Anthill |
 |------------|-------------------|---------------------------|
 | **Agent Collaboration** | Agents work in isolation, no shared context | Agents collaborate via swarms with shared memory and consensus |
 | **Coordination** | Manual orchestration between tasks | Queen-led hierarchy with 5 consensus algorithms (Raft, Byzantine, Gossip) |
@@ -436,10 +458,10 @@ claude --dangerously-skip-permissions
 
 ```bash
 # curl-style installer with progress display
-curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/anthill@main/scripts/install.sh | bash
 
 # Full setup (global + MCP + diagnostics)
-curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/claude-flow@main/scripts/install.sh | bash -s -- --full
+curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/anthill@main/scripts/install.sh | bash -s -- --full
 ```
 
 <details>
@@ -481,14 +503,14 @@ curl ... | bash -s -- --full
 
 ```bash
 # Quick start (no install needed)
-npx ruflo@latest init
+npx anthill@latest init
 
 # Or install globally
-npm install -g ruflo@latest
-ruflo init
+npm install -g anthill@latest
+anthill init
 
 # With Bun (faster)
-bunx ruflo@latest init
+bunx anthill@latest init
 ```
 
 #### Install Profiles
@@ -500,25 +522,25 @@ bunx ruflo@latest init
 
 ```bash
 # Minimal install (skip ML/embeddings)
-npm install -g ruflo@latest --omit=optional
+npm install -g anthill@latest --omit=optional
 ```
 
 <details>
 <summary>🤖 <strong>OpenAI Codex CLI Support</strong> — Full Codex integration with self-learning</summary>
 
-Ruflo supports both **Claude Code** and **OpenAI Codex CLI** via the [@claude-flow/codex](https://www.npmjs.com/package/@claude-flow/codex) package, following the [Agentics Foundation](https://agentics.org) standard.
+Anthill supports both **Claude Code** and **OpenAI Codex CLI** via the [@claude-flow/codex](https://www.npmjs.com/package/@claude-flow/codex) package, following the [Agentics Foundation](https://agentics.org) standard.
 
 ### Quick Start for Codex
 
 ```bash
 # Initialize for Codex CLI (creates AGENTS.md instead of CLAUDE.md)
-npx ruflo@latest init --codex
+npx anthill@latest init --codex
 
 # Full Codex setup with all 137+ skills
-npx ruflo@latest init --codex --full
+npx anthill@latest init --codex --full
 
 # Initialize for both platforms (dual mode)
-npx ruflo@latest init --dual
+npx anthill@latest init --dual
 ```
 
 ### Platform Comparison
@@ -605,7 +627,7 @@ When you run `init --codex`, the MCP server is automatically registered:
 codex mcp list
 
 # If not present, add manually:
-codex mcp add ruflo -- npx ruflo mcp start
+codex mcp add anthill -- npx anthill mcp start
 ```
 
 ### Self-Learning Workflow
@@ -661,43 +683,43 @@ The **Intelligence Loop** (ADR-050) automates this cycle through hooks. Each ses
 
 ```bash
 # Initialize project
-npx ruflo@latest init
+npx anthill@latest init
 
 # Start MCP server for Claude Code integration
-npx ruflo@latest mcp start
+npx anthill@latest mcp start
 
 # Run a task with agents
-npx ruflo@latest --agent coder --task "Implement user authentication"
+npx anthill@latest --agent coder --task "Implement user authentication"
 
 # List available agents
-npx ruflo@latest --list
+npx anthill@latest --list
 ```
 
 ### Upgrading
 
 ```bash
 # Update helpers and statusline (preserves your data)
-npx ruflo@v3alpha init upgrade
+npx anthill@v3alpha init upgrade
 
 # Update AND add any missing skills/agents/commands
-npx ruflo@v3alpha init upgrade --add-missing
+npx anthill@v3alpha init upgrade --add-missing
 ```
 
 The `--add-missing` flag automatically detects and installs new skills, agents, and commands that were added in newer versions, without overwriting your existing customizations.
 
 ### Claude Code MCP Integration
 
-Add ruflo as an MCP server for seamless integration:
+Add anthill as an MCP server for seamless integration:
 
 ```bash
-# Add ruflo MCP server to Claude Code
-claude mcp add ruflo -- npx -y ruflo@latest mcp start
+# Add anthill MCP server to Claude Code
+claude mcp add anthill -- npx -y anthill@latest mcp start
 
 # Verify installation
 claude mcp list
 ```
 
-Once added, Claude Code can use all 175+ ruflo MCP tools directly:
+Once added, Claude Code can use all 175+ anthill MCP tools directly:
 - `swarm_init` - Initialize agent swarms
 - `agent_spawn` - Spawn specialized agents
 - `memory_search` - Search patterns with HNSW vector search
@@ -708,13 +730,13 @@ Once added, Claude Code can use all 175+ ruflo MCP tools directly:
 ## What is it exactly? Agents that learn, build and work perpetually. 
 
 <details>
-<summary>🆚 <strong>Why Ruflo v3?</strong></summary>
+<summary>🆚 <strong>Why Anthill v3?</strong></summary>
 
-Ruflo v3 introduces **self-learning neural capabilities** that no other agent orchestration framework offers. While competitors require manual agent configuration and static routing, Ruflo learns from every task execution, prevents catastrophic forgetting of successful patterns, and intelligently routes work to specialized experts.
+Anthill v3 introduces **self-learning neural capabilities** that no other agent orchestration framework offers. While competitors require manual agent configuration and static routing, Anthill learns from every task execution, prevents catastrophic forgetting of successful patterns, and intelligently routes work to specialized experts.
 
 #### 🧠 Neural & Learning
 
-| Feature | Ruflo v3 | CrewAI | LangGraph | AutoGen | Manus |
+| Feature | Anthill v3 | CrewAI | LangGraph | AutoGen | Manus |
 |---------|----------------|--------|-----------|---------|-------|
 | **Self-Learning** | ✅ SONA + EWC++ | ⛔ | ⛔ | ⛔ | ⛔ |
 | **Prevents Forgetting** | ✅ EWC++ consolidation | ⛔ | ⛔ | ⛔ | ⛔ |
@@ -725,7 +747,7 @@ Ruflo v3 introduces **self-learning neural capabilities** that no other agent or
 
 #### 💾 Memory & Embeddings
 
-| Feature | Ruflo v3 | CrewAI | LangGraph | AutoGen | Manus |
+| Feature | Anthill v3 | CrewAI | LangGraph | AutoGen | Manus |
 |---------|----------------|--------|-----------|---------|-------|
 | **Vector Memory** | ✅ HNSW (sub-ms search) | ⛔ | Via plugins | ⛔ | ⛔ |
 | **Knowledge Graph** | ✅ PageRank + communities | ⛔ | ⛔ | ⛔ | ⛔ |
@@ -740,7 +762,7 @@ Ruflo v3 introduces **self-learning neural capabilities** that no other agent or
 
 #### 🐝 Swarm & Coordination
 
-| Feature | Ruflo v3 | CrewAI | LangGraph | AutoGen | Manus |
+| Feature | Anthill v3 | CrewAI | LangGraph | AutoGen | Manus |
 |---------|----------------|--------|-----------|---------|-------|
 | **Swarm Topologies** | ✅ 4 types | 1 | 1 | 1 | 1 |
 | **Consensus Protocols** | ✅ 5 (Raft, BFT, etc.) | ⛔ | ⛔ | ⛔ | ⛔ |
@@ -750,7 +772,7 @@ Ruflo v3 introduces **self-learning neural capabilities** that no other agent or
 
 #### 🔧 Developer Experience
 
-| Feature | Ruflo v3 | CrewAI | LangGraph | AutoGen | Manus |
+| Feature | Anthill v3 | CrewAI | LangGraph | AutoGen | Manus |
 |---------|----------------|--------|-----------|---------|-------|
 | **MCP Integration** | ✅ Native (170+ tools) | ⛔ | ⛔ | ⛔ | ⛔ |
 | **Skills System** | ✅ 42+ pre-built | ⛔ | ⛔ | ⛔ | Limited |
@@ -760,7 +782,7 @@ Ruflo v3 introduces **self-learning neural capabilities** that no other agent or
 
 #### 🛡️ Security & Platform
 
-| Feature | Ruflo v3 | CrewAI | LangGraph | AutoGen | Manus |
+| Feature | Anthill v3 | CrewAI | LangGraph | AutoGen | Manus |
 |---------|----------------|--------|-----------|---------|-------|
 | **Threat Detection** | ✅ AIDefence (<10ms) | ⛔ | ⛔ | ⛔ | ⛔ |
 | **Cloud Platform** | ✅ Flow Nexus | ⛔ | ⛔ | ⛔ | ⛔ |
@@ -774,7 +796,7 @@ Ruflo v3 introduces **self-learning neural capabilities** that no other agent or
 <details>
 <summary>🚀 <strong>Key Differentiators</strong> — Self-learning, memory optimization, fault tolerance</summary>
 
-What makes Ruflo different from other agent frameworks? These 10 capabilities work together to create a system that learns from experience, runs efficiently on any hardware, and keeps working even when things go wrong.
+What makes Anthill different from other agent frameworks? These 10 capabilities work together to create a system that learns from experience, runs efficiently on any hardware, and keeps working even when things go wrong.
 
 | | Feature | What It Does | Technical Details |
 |---|---------|--------------|-------------------|
@@ -794,7 +816,7 @@ What makes Ruflo different from other agent frameworks? These 10 capabilities wo
 <details>
 <summary>💰 <strong>Intelligent 3-Tier Model Routing</strong> — Save 75% on API costs, extend Claude Max 2.5x</summary>
 
-Not every task needs the most powerful (and expensive) model. Ruflo analyzes each request and automatically routes it to the cheapest handler that can do the job well. Simple code transforms skip the LLM entirely using WebAssembly. Medium tasks use faster, cheaper models. Only complex architecture decisions use Opus.
+Not every task needs the most powerful (and expensive) model. Anthill analyzes each request and automatically routes it to the cheapest handler that can do the job well. Simple code transforms skip the LLM entirely using WebAssembly. Medium tasks use faster, cheaper models. Only complex architecture decisions use Opus.
 
 **Cost & Usage Benefits:**
 
@@ -820,7 +842,7 @@ Not every task needs the most powerful (and expensive) model. Ruflo analyzes eac
 <details>
 <summary>📋 <strong>Spec-Driven Development</strong> — Build complete specs, implement without drift</summary>
 
-Complex projects fail when implementation drifts from the original plan. Ruflo solves this with a spec-first approach: define your architecture through ADRs (Architecture Decision Records), organize code into DDD bounded contexts, and let the system enforce compliance as agents work. The result is implementations that match specifications — even across multi-agent swarms working in parallel.
+Complex projects fail when implementation drifts from the original plan. Anthill solves this with a spec-first approach: define your architecture through ADRs (Architecture Decision Records), organize code into DDD bounded contexts, and let the system enforce compliance as agents work. The result is implementations that match specifications — even across multi-agent swarms working in parallel.
 
 **How It Prevents Drift:**
 
@@ -1019,7 +1041,7 @@ flowchart LR
 <details>
 <summary>🧠 <strong>AgentDB v3 Controllers</strong> — 20+ intelligent memory controllers</summary>
 
-Ruflo V3 integrates AgentDB v3 (3.0.0-alpha.10) providing 20+ memory controllers accessible via MCP tools and the CLI.
+Anthill V3 integrates AgentDB v3 (3.0.0-alpha.10) providing 20+ memory controllers accessible via MCP tools and the CLI.
 
 **Core Memory:**
 
@@ -1170,18 +1192,18 @@ flowchart TB
 
 ## 🔌 Setup & Configuration
 
-Connect Ruflo to your development environment.
+Connect Anthill to your development environment.
 
 <details>
-<summary>🔌 <strong>MCP Setup</strong> — Connect Ruflo to Any AI Environment</summary>
+<summary>🔌 <strong>MCP Setup</strong> — Connect Anthill to Any AI Environment</summary>
 
-Ruflo runs as an MCP (Model Context Protocol) server, allowing you to connect it to any MCP-compatible AI client. This means you can use Ruflo's 60+ agents, swarm coordination, and self-learning capabilities from Claude Desktop, VS Code, Cursor, Windsurf, ChatGPT, and more.
+Anthill runs as an MCP (Model Context Protocol) server, allowing you to connect it to any MCP-compatible AI client. This means you can use Anthill's 60+ agents, swarm coordination, and self-learning capabilities from Claude Desktop, VS Code, Cursor, Windsurf, ChatGPT, and more.
 
 ### Quick Add Command
 
 ```bash
-# Start Ruflo MCP server in any environment
-npx ruflo@v3alpha mcp start
+# Start Anthill MCP server in any environment
+npx anthill@v3alpha mcp start
 ```
 
 <details open>
@@ -1196,9 +1218,9 @@ npx ruflo@v3alpha mcp start
 ```json
 {
   "mcpServers": {
-    "ruflo": {
+    "anthill": {
       "command": "npx",
-      "args": ["ruflo@v3alpha", "mcp", "start"],
+      "args": ["anthill@v3alpha", "mcp", "start"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-..."
       }
@@ -1218,12 +1240,12 @@ Restart Claude Desktop after saving. Look for the MCP indicator (hammer icon) in
 
 ```bash
 # Add via CLI (recommended)
-claude mcp add ruflo -- npx ruflo@v3alpha mcp start
+claude mcp add anthill -- npx anthill@v3alpha mcp start
 
 # Or add with environment variables
-claude mcp add ruflo \
+claude mcp add anthill \
   --env ANTHROPIC_API_KEY=sk-ant-... \
-  -- npx ruflo@v3alpha mcp start
+  -- npx anthill@v3alpha mcp start
 
 # Verify installation
 claude mcp list
@@ -1250,9 +1272,9 @@ Create `.vscode/mcp.json` in your project:
 ```json
 {
   "mcpServers": {
-    "ruflo": {
+    "anthill": {
       "command": "npx",
-      "args": ["ruflo@v3alpha", "mcp", "start"],
+      "args": ["anthill@v3alpha", "mcp", "start"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-..."
       }
@@ -1277,9 +1299,9 @@ Create `.cursor/mcp.json` in your project (or global config):
 ```json
 {
   "mcpServers": {
-    "ruflo": {
+    "anthill": {
       "command": "npx",
-      "args": ["ruflo@v3alpha", "mcp", "start"],
+      "args": ["anthill@v3alpha", "mcp", "start"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-..."
       }
@@ -1304,9 +1326,9 @@ Create `.cursor/mcp.json` in your project (or global config):
 ```json
 {
   "mcpServers": {
-    "ruflo": {
+    "anthill": {
       "command": "npx",
-      "args": ["ruflo@v3alpha", "mcp", "start"],
+      "args": ["anthill@v3alpha", "mcp", "start"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-..."
       }
@@ -1333,11 +1355,11 @@ Click **Refresh** in the MCP settings to connect. Windsurf supports up to 100 MC
 
 **Remote Server Setup:**
 
-For ChatGPT, you need a remote MCP server (not local stdio). Deploy ruflo to a server with HTTP transport:
+For ChatGPT, you need a remote MCP server (not local stdio). Deploy anthill to a server with HTTP transport:
 
 ```bash
 # Start with HTTP transport
-npx ruflo@v3alpha mcp start --transport http --port 3000
+npx anthill@v3alpha mcp start --transport http --port 3000
 ```
 
 Then add the server URL in ChatGPT Connectors settings.
@@ -1353,7 +1375,7 @@ Google AI Studio supports MCP natively since May 2025, with managed MCP servers 
 
 **Using MCP SuperAssistant Extension:**
 1. Install [MCP SuperAssistant](https://chrome.google.com/webstore) Chrome extension
-2. Configure your ruflo MCP server
+2. Configure your anthill MCP server
 3. Use with Google AI Studio, Gemini, and other AI platforms
 
 **Native SDK Integration:**
@@ -1366,9 +1388,9 @@ const ai = new GoogleGenAI({ apiKey: 'YOUR_API_KEY' });
 // MCP definitions are natively supported in the Gen AI SDK
 const mcpConfig = {
   servers: [{
-    name: 'ruflo',
+    name: 'anthill',
     command: 'npx',
-    args: ['ruflo@v3alpha', 'mcp', 'start']
+    args: ['anthill@v3alpha', 'mcp', 'start']
   }]
 };
 ```
@@ -1389,9 +1411,9 @@ JetBrains AI Assistant supports MCP for IntelliJ IDEA, PyCharm, WebStorm, and ot
 
 ```json
 {
-  "name": "ruflo",
+  "name": "anthill",
   "command": "npx",
-  "args": ["ruflo@v3alpha", "mcp", "start"]
+  "args": ["anthill@v3alpha", "mcp", "start"]
 }
 ```
 
@@ -1621,13 +1643,13 @@ The Hive Mind system implements queen-led hierarchical coordination where strate
 
 **CLI Commands:**
 ```bash
-npx ruflo hive-mind init                    # Initialize hive mind
-npx ruflo hive-mind spawn "Build API"       # Spawn with objective
-npx ruflo hive-mind spawn "..." --queen-type strategic --consensus byzantine
-npx ruflo hive-mind status                  # Check status
-npx ruflo hive-mind metrics                 # Performance metrics
-npx ruflo hive-mind memory                  # Collective memory stats
-npx ruflo hive-mind sessions                # List active sessions
+npx anthill hive-mind init                    # Initialize hive mind
+npx anthill hive-mind spawn "Build API"       # Spawn with objective
+npx anthill hive-mind spawn "..." --queen-type strategic --consensus byzantine
+npx anthill hive-mind status                  # Check status
+npx anthill hive-mind metrics                 # Performance metrics
+npx anthill hive-mind memory                  # Collective memory stats
+npx anthill hive-mind sessions                # List active sessions
 ```
 
 **Performance:** Fast batch spawning with parallel agent coordination
@@ -1641,8 +1663,8 @@ Native integration with Claude Code's experimental Agent Teams feature for spawn
 
 **Enable Agent Teams:**
 ```bash
-# Automatically enabled with ruflo init
-npx ruflo@latest init
+# Automatically enabled with anthill init
+npx anthill@latest init
 
 # Or manually add to .claude/settings.json
 {
@@ -1694,10 +1716,10 @@ TeamDelete()
 
 ```bash
 # Handle idle teammate
-npx ruflo@latest hooks teammate-idle --auto-assign true
+npx anthill@latest hooks teammate-idle --auto-assign true
 
 # Handle task completion
-npx ruflo@latest hooks task-completed --task-id <id> --train-patterns
+npx anthill@latest hooks task-completed --task-id <id> --train-patterns
 ```
 
 **Display Modes:** `auto` (default), `in-process`, `tmux` (split-pane)
@@ -1774,14 +1796,14 @@ Build custom plugins with the fluent builder API. Create MCP tools, hooks, worke
 
 ### 📦 Available Optional Plugins
 
-Install these optional plugins to extend Ruflo capabilities:
+Install these optional plugins to extend Anthill capabilities:
 
 | Plugin | Version | Description | Install Command |
 |--------|---------|-------------|-----------------|
 | **@claude-flow/plugin-agentic-qe** | 3.0.0-alpha.2 | Quality Engineering with 58 AI agents across 12 DDD contexts. TDD, coverage analysis, security scanning, chaos engineering, accessibility testing. | `npm install @claude-flow/plugin-agentic-qe` |
 | **@claude-flow/plugin-prime-radiant** | 0.1.4 | Mathematical AI interpretability with 6 engines: sheaf cohomology, spectral analysis, causal inference, quantum topology, category theory, HoTT proofs. | `npm install @claude-flow/plugin-prime-radiant` |
-| **@claude-flow/plugin-gastown-bridge** | 0.1.0 | Gas Town orchestrator integration with WASM-accelerated formula parsing (352x faster), Beads sync, convoy management, and graph analysis. 20 MCP tools. | `npx ruflo@latest plugins install -n @claude-flow/plugin-gastown-bridge` |
-| **@claude-flow/teammate-plugin** | 1.0.0-alpha.1 | Native TeammateTool integration for Claude Code v2.1.19+. BMSSP WASM acceleration, rate limiting, circuit breaker, semantic routing. 21 MCP tools. | `npx ruflo@latest plugins install -n @claude-flow/teammate-plugin` |
+| **@claude-flow/plugin-gastown-bridge** | 0.1.0 | Gas Town orchestrator integration with WASM-accelerated formula parsing (352x faster), Beads sync, convoy management, and graph analysis. 20 MCP tools. | `npx anthill@latest plugins install -n @claude-flow/plugin-gastown-bridge` |
+| **@claude-flow/teammate-plugin** | 1.0.0-alpha.1 | Native TeammateTool integration for Claude Code v2.1.19+. BMSSP WASM acceleration, rate limiting, circuit breaker, semantic routing. 21 MCP tools. | `npx anthill@latest plugins install -n @claude-flow/teammate-plugin` |
 
 #### 🏥 Domain-Specific Plugins
 
@@ -1851,7 +1873,7 @@ npm install @claude-flow/plugin-agentic-qe
 npm install @claude-flow/plugin-prime-radiant
 
 # Install Gas Town Bridge plugin (WASM-accelerated orchestration)
-npx ruflo@latest plugins install -n @claude-flow/plugin-gastown-bridge
+npx anthill@latest plugins install -n @claude-flow/plugin-gastown-bridge
 
 # Install domain-specific plugins
 npm install @claude-flow/plugin-healthcare-clinical
@@ -1870,7 +1892,7 @@ npm install @claude-flow/plugin-quantum-optimizer
 npm install @claude-flow/plugin-hyperbolic-reasoning
 
 # List all installed plugins
-npx ruflo plugins list --installed
+npx anthill plugins list --installed
 ```
 
 </details>
@@ -2039,8 +2061,8 @@ Workers run automatically based on context, or dispatch manually via MCP tools.
 | **TestGaps** | `testgaps` | Test coverage analysis | Code changes without tests |
 
 ```bash
-npx ruflo@v3alpha worker dispatch --trigger audit --context "./src"
-npx ruflo@v3alpha worker status
+npx anthill@v3alpha worker dispatch --trigger audit --context "./src"
+npx anthill@v3alpha worker status
 ```
 
 </details>
@@ -2264,7 +2286,7 @@ npx ruflo@v3alpha worker status
 | Feature | Description | Performance |
 |---------|-------------|-------------|
 | **Multi-Provider** | Agentic-Flow (ONNX), OpenAI, Transformers.js, Mock | 4 providers |
-| **Auto-Install** | `ruflo embeddings init` or `createEmbeddingServiceAsync()` | Zero config |
+| **Auto-Install** | `anthill embeddings init` or `createEmbeddingServiceAsync()` | Zero config |
 | **75x Faster** | Agentic-flow ONNX SIMD vs Transformers.js | 3ms vs 230ms |
 | **Hyperbolic Space** | Poincaré ball model for hierarchical data | Exponential capacity |
 | **Dimensions** | 384 to 3072 configurable | Quality vs speed tradeoff |
@@ -2274,13 +2296,13 @@ npx ruflo@v3alpha worker status
 
 ```bash
 # Initialize ONNX embeddings with hyperbolic config
-ruflo embeddings init
+anthill embeddings init
 
 # Use larger model for higher quality
-ruflo embeddings init --model all-mpnet-base-v2
+anthill embeddings init --model all-mpnet-base-v2
 
 # Semantic search
-ruflo embeddings search -q "authentication patterns"
+anthill embeddings search -q "authentication patterns"
 ```
 
 | Mode | Adaptation | Quality | Memory | Use Case |
@@ -2317,22 +2339,22 @@ ruflo embeddings search -q "authentication patterns"
 
 ```bash
 # Initialize RuVector in PostgreSQL
-ruflo ruvector init --database mydb --user admin
+anthill ruvector init --database mydb --user admin
 
 # Check connection and schema status
-ruflo ruvector status --verbose
+anthill ruvector status --verbose
 
 # Run pending migrations
-ruflo ruvector migrate --up
+anthill ruvector migrate --up
 
 # Performance benchmark
-ruflo ruvector benchmark --iterations 1000
+anthill ruvector benchmark --iterations 1000
 
 # Optimize indices and vacuum
-ruflo ruvector optimize --analyze
+anthill ruvector optimize --analyze
 
 # Backup vector data
-ruflo ruvector backup --output ./backup.sql
+anthill ruvector backup --output ./backup.sql
 ```
 
 | Migration | Purpose | Features |
@@ -2364,13 +2386,13 @@ ruflo ruvector backup --output ./backup.sql
 
 **Quick Commands:**
 ```bash
-npx ruflo hive-mind init                                    # Initialize
-npx ruflo hive-mind spawn "Build API" --queen-type tactical # Spawn swarm
-npx ruflo hive-mind spawn "Research AI" --consensus byzantine --claude
-npx ruflo hive-mind status                                  # Check status
+npx anthill hive-mind init                                    # Initialize
+npx anthill hive-mind spawn "Build API" --queen-type tactical # Spawn swarm
+npx anthill hive-mind spawn "Research AI" --consensus byzantine --claude
+npx anthill hive-mind status                                  # Check status
 ```
 
-**Ruflo Skill:** `/hive-mind-advanced` — Full hive mind orchestration
+**Anthill Skill:** `/hive-mind-advanced` — Full hive mind orchestration
 
 **Performance:** Fast batch spawning with token reduction via intelligent routing
 
@@ -2486,13 +2508,13 @@ Claude Code pipes JSON session data via **stdin** to the statusline script after
 
 **Output Format:**
 ```
-▊ Ruflo V3 ● ruvnet  │  ⎇ main  │  Opus 4.6  | ●42% ctx  | $0.15
+▊ Anthill V3 ● ruvnet  │  ⎇ main  │  Opus 4.6  | ●42% ctx  | $0.15
 🏗️ DDD [●●●●○] 4/5  ⚡ HNSW 150x  🤖 ◉ [12/8]  👥 3  🟢 CVE 3/3  💾 512MB  🧠 15%  📦 AgentDB ●1.2K vectors
 ```
 
 | Indicator | Description | Source |
 |-----------|-------------|--------|
-| `▊ Ruflo V3` | Project header | Always shown |
+| `▊ Anthill V3` | Project header | Always shown |
 | `● ruvnet` | GitHub user | `gh api user` CLI |
 | `⎇ main` | Current git branch | `git branch --show-current` |
 | `Opus 4.6` | Claude model name | Stdin JSON `model.display_name` |
@@ -2510,7 +2532,7 @@ Claude Code pipes JSON session data via **stdin** to the statusline script after
 
 **Setup (Automatic):**
 
-Run `npx ruflo@latest init` — this generates `.claude/settings.json` with the correct statusline config and creates the helper script at `.claude/helpers/statusline.cjs`.
+Run `npx anthill@latest init` — this generates `.claude/settings.json` with the correct statusline config and creates the helper script at `.claude/helpers/statusline.cjs`.
 
 The generated config uses a **fast local script** (no `npx` cold-start):
 ```json
@@ -2528,7 +2550,7 @@ The generated config uses a **fast local script** (no `npx` cold-start):
 
 If your statusline is not updating, run the upgrade command to regenerate helpers and fix the config:
 ```bash
-npx ruflo@latest init --update --settings
+npx anthill@latest init --update --settings
 ```
 
 This removes invalid config fields and regenerates the statusline helper with stdin support.
@@ -2578,19 +2600,19 @@ Cross-platform TypeScript-based daemon service with auto-scheduling:
 **Commands:**
 ```bash
 # Start daemon (auto-runs on SessionStart hooks)
-npx ruflo@v3alpha daemon start
+npx anthill@v3alpha daemon start
 
 # Check status with worker history
-npx ruflo@v3alpha daemon status
+npx anthill@v3alpha daemon status
 
 # Manually trigger a worker
-npx ruflo@v3alpha daemon trigger map
+npx anthill@v3alpha daemon trigger map
 
 # Enable/disable workers
-npx ruflo@v3alpha daemon enable map audit optimize
+npx anthill@v3alpha daemon enable map audit optimize
 
 # Stop daemon
-npx ruflo@v3alpha daemon stop
+npx anthill@v3alpha daemon stop
 ```
 
 **Daemon Status Output:**
@@ -2664,7 +2686,7 @@ Shell-based daemons for monitoring (Linux/macOS only):
 <details>
 <summary>⌨️ <strong>V3 CLI Commands</strong> — 26 commands with 140+ subcommands</summary>
 
-Complete command-line interface for all Ruflo operations.
+Complete command-line interface for all Anthill operations.
 
 **Core Commands:**
 
@@ -2706,25 +2728,25 @@ Complete command-line interface for all Ruflo operations.
 
 ```bash
 # Initialize project with wizard
-npx ruflo@v3alpha init --wizard
+npx anthill@v3alpha init --wizard
 
 # Start daemon with background workers
-npx ruflo@v3alpha daemon start
+npx anthill@v3alpha daemon start
 
 # Spawn an agent with specific type
-npx ruflo@v3alpha agent spawn -t coder --name my-coder
+npx anthill@v3alpha agent spawn -t coder --name my-coder
 
 # Initialize swarm with V3 mode
-npx ruflo@v3alpha swarm init --v3-mode
+npx anthill@v3alpha swarm init --v3-mode
 
 # Search memory (HNSW-indexed, 150x faster)
-npx ruflo@v3alpha memory search -q "authentication patterns"
+npx anthill@v3alpha memory search -q "authentication patterns"
 
 # Run security scan
-npx ruflo@v3alpha security scan --depth full
+npx anthill@v3alpha security scan --depth full
 
 # Performance benchmark
-npx ruflo@v3alpha performance benchmark --suite all
+npx anthill@v3alpha performance benchmark --suite all
 ```
 
 </details>
@@ -2732,7 +2754,7 @@ npx ruflo@v3alpha performance benchmark --suite all
 <details>
 <summary>🩺 <strong>Doctor Health Checks</strong> — System diagnostics with auto-fix</summary>
 
-Run `npx ruflo@v3alpha doctor` to diagnose and fix common issues.
+Run `npx anthill@v3alpha doctor` to diagnose and fix common issues.
 
 **Health Checks Performed:**
 
@@ -2753,22 +2775,22 @@ Run `npx ruflo@v3alpha doctor` to diagnose and fix common issues.
 
 ```bash
 # Run full diagnostics
-npx ruflo@v3alpha doctor
+npx anthill@v3alpha doctor
 
 # Run diagnostics with auto-fix
-npx ruflo@v3alpha doctor --fix
+npx anthill@v3alpha doctor --fix
 
 # Check specific component
-npx ruflo@v3alpha doctor --component memory
+npx anthill@v3alpha doctor --component memory
 
 # Verbose output
-npx ruflo@v3alpha doctor --verbose
+npx anthill@v3alpha doctor --verbose
 ```
 
 **Output Example:**
 
 ```
-🩺 Ruflo Doctor v3.0.0-alpha
+🩺 Anthill Doctor v3.0.0-alpha
 
 ✅ Node.js      20.11.0 (required: 20+)
 ✅ npm          10.2.4 (required: 9+)
@@ -2812,16 +2834,16 @@ The embeddings package (v3.0.0-alpha.12) provides high-performance vector embedd
 
 ```bash
 # Initialize embeddings system
-npx ruflo@v3alpha embeddings init
+npx anthill@v3alpha embeddings init
 
 # Generate embedding for text
-npx ruflo@v3alpha embeddings embed "authentication patterns"
+npx anthill@v3alpha embeddings embed "authentication patterns"
 
 # Batch embed multiple texts
-npx ruflo@v3alpha embeddings batch --file texts.txt
+npx anthill@v3alpha embeddings batch --file texts.txt
 
 # Search with semantic similarity
-npx ruflo@v3alpha embeddings search "login flow" --top-k 5
+npx anthill@v3alpha embeddings search "login flow" --top-k 5
 ```
 
 **Programmatic:**
@@ -2858,59 +2880,59 @@ Real-world scenarios and pre-built workflows for common tasks.
 
 | Scenario | What It Solves | How To Do It |
 |----------|----------------|--------------|
-| **Code Review** | Get thorough reviews with security, performance, and style checks | `npx ruflo@v3alpha --agent reviewer --task "Review PR #123"` |
-| **Test Generation** | Auto-generate unit, integration, and e2e tests for existing code | `npx ruflo@v3alpha --agent tester --task "Write tests for auth module"` |
-| **Refactoring** | Safely restructure code while maintaining behavior | `npx ruflo@v3alpha --agent coder --task "Refactor user service to use repository pattern"` |
-| **Bug Fixing** | Diagnose and fix bugs with full context analysis | `npx ruflo@v3alpha --agent coder --task "Fix race condition in checkout flow"` |
+| **Code Review** | Get thorough reviews with security, performance, and style checks | `npx anthill@v3alpha --agent reviewer --task "Review PR #123"` |
+| **Test Generation** | Auto-generate unit, integration, and e2e tests for existing code | `npx anthill@v3alpha --agent tester --task "Write tests for auth module"` |
+| **Refactoring** | Safely restructure code while maintaining behavior | `npx anthill@v3alpha --agent coder --task "Refactor user service to use repository pattern"` |
+| **Bug Fixing** | Diagnose and fix bugs with full context analysis | `npx anthill@v3alpha --agent coder --task "Fix race condition in checkout flow"` |
 
 ### 🔒 Security & Compliance
 
 | Scenario | What It Solves | How To Do It |
 |----------|----------------|--------------|
-| **Security Audit** | Find vulnerabilities before attackers do | `npx ruflo@v3alpha --agent security-architect --task "Audit for OWASP Top 10"` |
-| **Dependency Scan** | Identify vulnerable packages and suggest upgrades | `npx ruflo@v3alpha security scan --depth full` |
-| **Compliance Check** | Ensure code meets security standards | `npx ruflo@v3alpha --agent security-architect --task "Check PCI-DSS compliance"` |
+| **Security Audit** | Find vulnerabilities before attackers do | `npx anthill@v3alpha --agent security-architect --task "Audit for OWASP Top 10"` |
+| **Dependency Scan** | Identify vulnerable packages and suggest upgrades | `npx anthill@v3alpha security scan --depth full` |
+| **Compliance Check** | Ensure code meets security standards | `npx anthill@v3alpha --agent security-architect --task "Check PCI-DSS compliance"` |
 
 ### 🐝 Multi-Agent Swarms
 
 | Scenario | What It Solves | How To Do It |
 |----------|----------------|--------------|
-| **Feature Development** | Coordinate multiple agents on complex features | `npx ruflo@v3alpha swarm init --topology hierarchical && npx ruflo@v3alpha task orchestrate "Build user dashboard"` |
-| **Large Refactors** | Parallel refactoring across many files without conflicts | `npx ruflo@v3alpha swarm init --topology mesh --max-agents 8` |
-| **Codebase Migration** | Migrate frameworks, languages, or patterns systematically | `npx ruflo@v3alpha task orchestrate "Migrate from Express to Fastify" --strategy adaptive` |
+| **Feature Development** | Coordinate multiple agents on complex features | `npx anthill@v3alpha swarm init --topology hierarchical && npx anthill@v3alpha task orchestrate "Build user dashboard"` |
+| **Large Refactors** | Parallel refactoring across many files without conflicts | `npx anthill@v3alpha swarm init --topology mesh --max-agents 8` |
+| **Codebase Migration** | Migrate frameworks, languages, or patterns systematically | `npx anthill@v3alpha task orchestrate "Migrate from Express to Fastify" --strategy adaptive` |
 
 ### 📊 Performance & Optimization
 
 | Scenario | What It Solves | How To Do It |
 |----------|----------------|--------------|
-| **Performance Profiling** | Find and fix bottlenecks in your application | `npx ruflo@v3alpha --agent perf-analyzer --task "Profile API endpoints"` |
-| **Query Optimization** | Speed up slow database queries | `npx ruflo@v3alpha hooks route "Optimize database queries"` |
-| **Memory Analysis** | Reduce memory usage and fix leaks | `npx ruflo@v3alpha --agent perf-analyzer --task "Analyze memory usage patterns"` |
+| **Performance Profiling** | Find and fix bottlenecks in your application | `npx anthill@v3alpha --agent perf-analyzer --task "Profile API endpoints"` |
+| **Query Optimization** | Speed up slow database queries | `npx anthill@v3alpha hooks route "Optimize database queries"` |
+| **Memory Analysis** | Reduce memory usage and fix leaks | `npx anthill@v3alpha --agent perf-analyzer --task "Analyze memory usage patterns"` |
 
 ### 🔄 GitHub & DevOps
 
 | Scenario | What It Solves | How To Do It |
 |----------|----------------|--------------|
-| **PR Management** | Review, approve, and merge PRs efficiently | `npx ruflo@v3alpha --agent pr-manager --task "Review open PRs"` |
-| **Issue Triage** | Categorize, prioritize, and assign issues automatically | `npx ruflo@v3alpha --agent issue-tracker --task "Triage new issues"` |
-| **Release Management** | Coordinate releases with changelogs and versioning | `npx ruflo@v3alpha --agent release-manager --task "Prepare v2.0 release"` |
-| **CI/CD Optimization** | Speed up pipelines and reduce flaky tests | `npx ruflo@v3alpha --agent cicd-engineer --task "Optimize GitHub Actions workflow"` |
+| **PR Management** | Review, approve, and merge PRs efficiently | `npx anthill@v3alpha --agent pr-manager --task "Review open PRs"` |
+| **Issue Triage** | Categorize, prioritize, and assign issues automatically | `npx anthill@v3alpha --agent issue-tracker --task "Triage new issues"` |
+| **Release Management** | Coordinate releases with changelogs and versioning | `npx anthill@v3alpha --agent release-manager --task "Prepare v2.0 release"` |
+| **CI/CD Optimization** | Speed up pipelines and reduce flaky tests | `npx anthill@v3alpha --agent cicd-engineer --task "Optimize GitHub Actions workflow"` |
 
 ### 📋 Spec-Driven Development
 
 | Scenario | What It Solves | How To Do It |
 |----------|----------------|--------------|
-| **Generate Specs** | Create complete specifications before coding | `npx ruflo@v3alpha --agent architect --task "Create ADR for authentication system"` |
-| **Validate Implementation** | Ensure code matches specifications | `npx ruflo@v3alpha hooks progress --detailed` |
-| **Track Compliance** | Monitor spec adherence across the team | `npx ruflo@v3alpha progress sync` |
+| **Generate Specs** | Create complete specifications before coding | `npx anthill@v3alpha --agent architect --task "Create ADR for authentication system"` |
+| **Validate Implementation** | Ensure code matches specifications | `npx anthill@v3alpha hooks progress --detailed` |
+| **Track Compliance** | Monitor spec adherence across the team | `npx anthill@v3alpha progress sync` |
 
 ### 🧠 Learning & Intelligence
 
 | Scenario | What It Solves | How To Do It |
 |----------|----------------|--------------|
-| **Bootstrap Intelligence** | Train the system on your codebase patterns | `npx ruflo@v3alpha hooks pretrain --depth deep` |
-| **Optimize Routing** | Improve task-to-agent matching over time | `npx ruflo@v3alpha hooks route "<task>" --include-explanation` |
-| **Transfer Learning** | Apply patterns learned from other projects | `npx ruflo@v3alpha hooks transfer <sourceProject>` |
+| **Bootstrap Intelligence** | Train the system on your codebase patterns | `npx anthill@v3alpha hooks pretrain --depth deep` |
+| **Optimize Routing** | Improve task-to-agent matching over time | `npx anthill@v3alpha hooks route "<task>" --include-explanation` |
+| **Transfer Learning** | Apply patterns learned from other projects | `npx anthill@v3alpha hooks transfer <sourceProject>` |
 
 </details>
 
@@ -2918,7 +2940,7 @@ Real-world scenarios and pre-built workflows for common tasks.
 
 ## 🧠 Infinite Context & Memory Optimization
 
-Ruflo eliminates Claude Code's context window ceiling with a real-time memory management system that archives, optimizes, and restores conversation context automatically.
+Anthill eliminates Claude Code's context window ceiling with a real-time memory management system that archives, optimizes, and restores conversation context automatically.
 
 <details>
 <summary>♾️ <strong>Context Autopilot</strong> — Never lose context to compaction again</summary>
@@ -2929,7 +2951,7 @@ Claude Code has a finite context window (~200K tokens). When full, it **compacts
 
 ### The Solution: Context Autopilot (ADR-051)
 
-Ruflo intercepts the compaction lifecycle with three hooks that make context loss invisible:
+Anthill intercepts the compaction lifecycle with three hooks that make context loss invisible:
 
 ```
 Every Prompt                    Context Full                    After Compact
@@ -3032,7 +3054,7 @@ sqlite3 .claude-flow/data/transcript-archive.db \
 
 ## 💾 Storage: RVF (RuVector Format)
 
-Ruflo uses RVF — a compact binary storage format that replaces the 18MB sql.js WASM dependency with pure TypeScript. No native compilation, no WASM downloads, works everywhere Node.js runs.
+Anthill uses RVF — a compact binary storage format that replaces the 18MB sql.js WASM dependency with pure TypeScript. No native compilation, no WASM downloads, works everywhere Node.js runs.
 
 <details>
 <summary>💾 <strong>RVF Storage</strong> — Binary format, vector search, migration, and auto-selection</summary>
@@ -3152,8 +3174,8 @@ CLAUDE_FLOW_MEMORY_BACKEND=hybrid   # auto-selects RVF
 CLAUDE_FLOW_MEMORY_PATH=./data/memory
 
 # Or via CLI
-ruflo memory init --force
-ruflo config set memory.backend hybrid
+anthill memory init --force
+anthill config set memory.backend hybrid
 ```
 
 </details>
@@ -3212,7 +3234,7 @@ When hooks run, they emit signals that guide routing decisions. Watch for these 
 
 **Example Hook Output:**
 ```bash
-$ npx ruflo@v3alpha hooks pre-task --description "convert var to const in utils.ts"
+$ npx anthill@v3alpha hooks pre-task --description "convert var to const in utils.ts"
 
 [AGENT_BOOSTER_AVAILABLE] Intent: var-to-const
 Recommendation: Use Edit tool directly
@@ -3330,8 +3352,8 @@ The stats command shows:
 
 ```bash
 # Example: Edit with pattern learning
-npx ruflo@v3alpha hooks pre-edit ./src/auth.ts
-npx ruflo@v3alpha hooks post-edit ./src/auth.ts --success true --train-patterns
+npx anthill@v3alpha hooks pre-edit ./src/auth.ts
+npx anthill@v3alpha hooks post-edit ./src/auth.ts --success true --train-patterns
 ```
 
 #### 🧠 Intelligence & Routing Hooks (8 hooks)
@@ -3349,10 +3371,10 @@ npx ruflo@v3alpha hooks post-edit ./src/auth.ts --success true --train-patterns
 
 ```bash
 # Route a task with explanation
-npx ruflo@v3alpha hooks route "refactor authentication to use JWT" --include-explanation
+npx anthill@v3alpha hooks route "refactor authentication to use JWT" --include-explanation
 
 # Bootstrap intelligence from your codebase
-npx ruflo@v3alpha hooks pretrain --depth deep --model-type moe
+npx anthill@v3alpha hooks pretrain --depth deep --model-type moe
 ```
 
 #### 📅 Session Management Hooks (4 hooks)
@@ -3366,10 +3388,10 @@ npx ruflo@v3alpha hooks pretrain --depth deep --model-type moe
 
 ```bash
 # Start session with auto-daemon
-npx ruflo@v3alpha hooks session-start --session-id "feature-auth" --start-daemon
+npx anthill@v3alpha hooks session-start --session-id "feature-auth" --start-daemon
 
 # End session and export learnings
-npx ruflo@v3alpha hooks session-end --export-metrics --persist-patterns
+npx anthill@v3alpha hooks session-end --export-metrics --persist-patterns
 ```
 
 #### 🤖 Intelligence System Hooks (9 hooks)
@@ -3388,13 +3410,13 @@ npx ruflo@v3alpha hooks session-end --export-metrics --persist-patterns
 
 ```bash
 # Start trajectory for complex task
-npx ruflo@v3alpha hooks intelligence trajectory-start --task "implement OAuth2"
+npx anthill@v3alpha hooks intelligence trajectory-start --task "implement OAuth2"
 
 # Record successful action
-npx ruflo@v3alpha hooks intelligence trajectory-step --action "created token service" --quality 0.9
+npx anthill@v3alpha hooks intelligence trajectory-step --action "created token service" --quality 0.9
 
 # End trajectory and trigger learning
-npx ruflo@v3alpha hooks intelligence trajectory-end --success true
+npx anthill@v3alpha hooks intelligence trajectory-end --success true
 
 # View intelligence diagnostics and improvement trends (ADR-050)
 node .claude/helpers/hook-handler.cjs stats
@@ -3422,13 +3444,13 @@ Workers run automatically based on context, or dispatch manually.
 
 ```bash
 # List all workers
-npx ruflo@v3alpha hooks worker list
+npx anthill@v3alpha hooks worker list
 
 # Manually dispatch security audit
-npx ruflo@v3alpha hooks worker dispatch --trigger audit --context "./src/auth"
+npx anthill@v3alpha hooks worker dispatch --trigger audit --context "./src/auth"
 
 # Check worker status
-npx ruflo@v3alpha hooks worker status
+npx anthill@v3alpha hooks worker status
 ```
 
 ### Model Routing Hooks (3 hooks)
@@ -3443,10 +3465,10 @@ Automatically selects haiku/sonnet/opus based on task complexity.
 
 ```bash
 # Get model recommendation
-npx ruflo@v3alpha hooks model-route --task "fix typo in README"
+npx anthill@v3alpha hooks model-route --task "fix typo in README"
 # → Recommends: haiku (simple task, low complexity)
 
-npx ruflo@v3alpha hooks model-route --task "design distributed consensus system"
+npx anthill@v3alpha hooks model-route --task "design distributed consensus system"
 # → Recommends: opus (complex architecture, high reasoning)
 ```
 
@@ -3467,15 +3489,15 @@ npx ruflo@v3alpha hooks model-route --task "design distributed consensus system"
 # ══════════════════════════════════════════════════════════════════
 
 # Route task to best agent (with intelligence context injection)
-npx ruflo@v3alpha hooks route "<task>" --include-explanation
+npx anthill@v3alpha hooks route "<task>" --include-explanation
 
 # Start/end session with learning
-npx ruflo@v3alpha hooks session-start --start-daemon
-npx ruflo@v3alpha hooks session-end --persist-patterns
+npx anthill@v3alpha hooks session-start --start-daemon
+npx anthill@v3alpha hooks session-end --persist-patterns
 
 # View what the system has learned
-npx ruflo@v3alpha hooks metrics
-npx ruflo@v3alpha hooks intelligence stats
+npx anthill@v3alpha hooks metrics
+npx anthill@v3alpha hooks intelligence stats
 
 # Intelligence diagnostics — see if intelligence is improving
 node .claude/helpers/hook-handler.cjs stats          # Human-readable
@@ -3483,10 +3505,10 @@ node .claude/helpers/hook-handler.cjs stats --json   # JSON for scripting
 node .claude/helpers/intelligence.cjs stats           # Direct access
 
 # Bootstrap on new project
-npx ruflo@v3alpha hooks pretrain --depth deep
+npx anthill@v3alpha hooks pretrain --depth deep
 
 # Dispatch background worker
-npx ruflo@v3alpha hooks worker dispatch --trigger audit
+npx anthill@v3alpha hooks worker dispatch --trigger audit
 ```
 
 </details>
@@ -3512,38 +3534,38 @@ Share learned patterns across projects, teams, and the community via the decentr
 
 ```bash
 # Export learned patterns to file
-npx ruflo@v3alpha memory export --format json --output ./patterns.json
+npx anthill@v3alpha memory export --format json --output ./patterns.json
 
 # Export specific namespace
-npx ruflo@v3alpha memory export --namespace "security" --output ./security-patterns.json
+npx anthill@v3alpha memory export --namespace "security" --output ./security-patterns.json
 
 # Export with embeddings (larger file, faster import)
-npx ruflo@v3alpha memory export --include-embeddings --output ./full-export.json
+npx anthill@v3alpha memory export --include-embeddings --output ./full-export.json
 
 # Export agent configurations
-npx ruflo@v3alpha config export --scope project --output ./agent-configs.json
+npx anthill@v3alpha config export --scope project --output ./agent-configs.json
 
 # Export session state
-npx ruflo@v3alpha session export --session-id "my-session" --output ./session.json
+npx anthill@v3alpha session export --session-id "my-session" --output ./session.json
 ```
 
 ### Import Commands
 
 ```bash
 # Import patterns from file
-npx ruflo@v3alpha memory import --input ./patterns.json
+npx anthill@v3alpha memory import --input ./patterns.json
 
 # Import and merge with existing (don't overwrite)
-npx ruflo@v3alpha memory import --input ./patterns.json --merge
+npx anthill@v3alpha memory import --input ./patterns.json --merge
 
 # Import from another project
-npx ruflo@v3alpha hooks transfer --source-path ../other-project
+npx anthill@v3alpha hooks transfer --source-path ../other-project
 
 # Import agent configurations
-npx ruflo@v3alpha config import --input ./agent-configs.json --scope project
+npx anthill@v3alpha config import --input ./agent-configs.json --scope project
 
 # Restore session
-npx ruflo@v3alpha session restore --session-id "my-session"
+npx anthill@v3alpha session restore --session-id "my-session"
 ```
 
 ### Pattern Store (IPFS Marketplace)
@@ -3561,13 +3583,13 @@ Decentralized pattern marketplace for sharing and discovering community patterns
 
 ```bash
 # Search for authentication patterns
-npx ruflo@v3alpha transfer-store search --query "authentication" --min-rating 4.0
+npx anthill@v3alpha transfer-store search --query "authentication" --min-rating 4.0
 
 # Download a pattern
-npx ruflo@v3alpha transfer-store download --id "auth-jwt-patterns-v2" --verify
+npx anthill@v3alpha transfer-store download --id "auth-jwt-patterns-v2" --verify
 
 # Publish your patterns
-npx ruflo@v3alpha transfer-store publish --input ./my-patterns.json --category "security"
+npx anthill@v3alpha transfer-store publish --input ./my-patterns.json --category "security"
 ```
 
 ### Plugin Store
@@ -3585,22 +3607,22 @@ Discover and install community plugins from the **live IPFS registry** with 19 o
 
 ```bash
 # List plugins with live ratings from Cloud Function
-npx ruflo@v3alpha plugins list
+npx anthill@v3alpha plugins list
 
 # Filter by type
-npx ruflo@v3alpha plugins list --type integration
+npx anthill@v3alpha plugins list --type integration
 
 # Rate a plugin
-npx ruflo@v3alpha plugins rate --name @claude-flow/embeddings --rating 5
+npx anthill@v3alpha plugins rate --name @claude-flow/embeddings --rating 5
 
 # Search for MCP tool plugins
-npx ruflo@v3alpha transfer plugin-search --type "mcp-tool" --verified
+npx anthill@v3alpha transfer plugin-search --type "mcp-tool" --verified
 
 # Get plugin info
-npx ruflo@v3alpha transfer plugin-info --name "semantic-code-search"
+npx anthill@v3alpha transfer plugin-info --name "semantic-code-search"
 
 # List official plugins
-npx ruflo@v3alpha transfer plugin-official
+npx anthill@v3alpha transfer plugin-official
 ```
 
 #### Live IPFS Plugin Registry
@@ -3633,10 +3655,10 @@ Patterns and models are distributed via IPFS for decentralization and integrity.
 
 ```bash
 # Resolve IPNS name to CID
-npx ruflo@v3alpha transfer ipfs-resolve --name "/ipns/patterns.ruflo.io"
+npx anthill@v3alpha transfer ipfs-resolve --name "/ipns/patterns.anthill.io"
 
 # Detect PII before publishing
-npx ruflo@v3alpha transfer detect-pii --content "$(cat ./patterns.json)"
+npx anthill@v3alpha transfer detect-pii --content "$(cat ./patterns.json)"
 ```
 
 ### Model & Learning Pattern Import/Export
@@ -3659,7 +3681,7 @@ curl -X POST "https://api.pinata.cloud/pinning/pinJSONToIPFS" \
       "name": "my-patterns",
       "patterns": [...]
     },
-    "pinataMetadata": {"name": "ruflo-learning-pattern"}
+    "pinataMetadata": {"name": "anthill-learning-pattern"}
   }'
 
 # Import a pattern from IPFS CID
@@ -3701,13 +3723,13 @@ Import pre-trained learning patterns for common tasks. **90.5% average accuracy*
 curl -s "https://gateway.pinata.cloud/ipfs/QmNr1yYMKi7YBaL8JSztQyuB5ZUaTdRMLxJC1pBpGbjsTc" | jq '.models[].name'
 
 # Import all models
-npx ruflo@v3alpha transfer import --cid QmNr1yYMKi7YBaL8JSztQyuB5ZUaTdRMLxJC1pBpGbjsTc
+npx anthill@v3alpha transfer import --cid QmNr1yYMKi7YBaL8JSztQyuB5ZUaTdRMLxJC1pBpGbjsTc
 
 # Import specific category
-npx ruflo@v3alpha neural import --model security-review-patterns --source ipfs
+npx anthill@v3alpha neural import --model security-review-patterns --source ipfs
 
 # Use patterns in routing
-npx ruflo@v3alpha hooks route --task "review authentication code" --use-patterns
+npx anthill@v3alpha hooks route --task "review authentication code" --use-patterns
 ```
 
 #### Benefits vs Fresh Install
@@ -3732,7 +3754,7 @@ npx ruflo@v3alpha hooks route --task "review authentication code" --use-patterns
 
 ```bash
 # Install a pattern pack
-npx ruflo@v3alpha transfer-store download --id "security-essentials" --apply
+npx anthill@v3alpha transfer-store download --id "security-essentials" --apply
 ```
 
 ### RuVector WASM Neural Training
@@ -3750,25 +3772,25 @@ Real WASM-accelerated neural training using `@ruvector/learning-wasm` and `@ruve
 
 ```bash
 # List available pre-trained models from IPFS registry
-npx ruflo@v3alpha neural list
+npx anthill@v3alpha neural list
 
 # List models by category
-npx ruflo@v3alpha neural list --category security
+npx anthill@v3alpha neural list --category security
 
 # Train with WASM acceleration
-npx ruflo@v3alpha neural train -p coordination -e 100 --wasm --flash --contrastive
+npx anthill@v3alpha neural train -p coordination -e 100 --wasm --flash --contrastive
 
 # Train security patterns
-npx ruflo@v3alpha neural train -p security --wasm --contrastive
+npx anthill@v3alpha neural train -p security --wasm --contrastive
 
 # Benchmark WASM performance
-npx ruflo@v3alpha neural benchmark -d 256 -i 1000
+npx anthill@v3alpha neural benchmark -d 256 -i 1000
 
 # Import pre-trained models
-npx ruflo@v3alpha neural import --cid QmNr1yYMKi7YBaL8JSztQyuB5ZUaTdRMLxJC1pBpGbjsTc
+npx anthill@v3alpha neural import --cid QmNr1yYMKi7YBaL8JSztQyuB5ZUaTdRMLxJC1pBpGbjsTc
 
 # Export trained patterns to IPFS
-npx ruflo@v3alpha neural export --ipfs --sign
+npx anthill@v3alpha neural export --ipfs --sign
 ```
 
 #### Benchmark Results
@@ -4107,9 +4129,9 @@ Skills are **reusable workflows** that combine agents, hooks, and patterns into 
 /v3-security-overhaul
 
 # Via CLI
-npx ruflo@v3alpha skill run github-code-review
-npx ruflo@v3alpha skill list
-npx ruflo@v3alpha skill info sparc-methodology
+npx anthill@v3alpha skill run github-code-review
+npx anthill@v3alpha skill list
+npx anthill@v3alpha skill info sparc-methodology
 ```
 
 ### Creating Custom Skills
@@ -4166,21 +4188,21 @@ The Claims system manages **who is working on what** — whether human or agent.
 
 | Command | What It Does | Example |
 |---------|--------------|---------|
-| `issues list` | See all issues and their status | `npx ruflo@v3alpha issues list` |
-| `issues claim` | Claim an issue for yourself/agent | `npx ruflo@v3alpha issues claim #123 --as coder-1` |
-| `issues release` | Release your claim | `npx ruflo@v3alpha issues release #123` |
-| `issues handoff` | Hand off to another worker | `npx ruflo@v3alpha issues handoff #123 --to reviewer` |
-| `issues status` | Update progress on claimed work | `npx ruflo@v3alpha issues status #123 --progress 75` |
-| `issues stealable` | List abandoned/stuck issues | `npx ruflo@v3alpha issues stealable` |
-| `issues steal` | Take over stealable issue | `npx ruflo@v3alpha issues steal #123` |
-| `issues load` | View agent workloads | `npx ruflo@v3alpha issues load` |
-| `issues rebalance` | Redistribute work evenly | `npx ruflo@v3alpha issues rebalance --dry-run` |
-| `issues board` | Visual board view | `npx ruflo@v3alpha issues board` |
+| `issues list` | See all issues and their status | `npx anthill@v3alpha issues list` |
+| `issues claim` | Claim an issue for yourself/agent | `npx anthill@v3alpha issues claim #123 --as coder-1` |
+| `issues release` | Release your claim | `npx anthill@v3alpha issues release #123` |
+| `issues handoff` | Hand off to another worker | `npx anthill@v3alpha issues handoff #123 --to reviewer` |
+| `issues status` | Update progress on claimed work | `npx anthill@v3alpha issues status #123 --progress 75` |
+| `issues stealable` | List abandoned/stuck issues | `npx anthill@v3alpha issues stealable` |
+| `issues steal` | Take over stealable issue | `npx anthill@v3alpha issues steal #123` |
+| `issues load` | View agent workloads | `npx anthill@v3alpha issues load` |
+| `issues rebalance` | Redistribute work evenly | `npx anthill@v3alpha issues rebalance --dry-run` |
+| `issues board` | Visual board view | `npx anthill@v3alpha issues board` |
 
 ### Visual Board View
 
 ```bash
-npx ruflo@v3alpha issues board
+npx anthill@v3alpha issues board
 ```
 
 ```
@@ -4202,13 +4224,13 @@ When you need to pass work to someone else:
 
 ```bash
 # 1. Request handoff with context
-npx ruflo@v3alpha issues handoff #123 \
+npx anthill@v3alpha issues handoff #123 \
   --to security-architect \
   --reason "Needs security review" \
   --progress 80
 
 # 2. Target accepts handoff
-npx ruflo@v3alpha issues accept #123 --as security-architect
+npx anthill@v3alpha issues accept #123 --as security-architect
 
 # 3. Work continues with full context
 ```
@@ -4217,7 +4239,7 @@ npx ruflo@v3alpha issues accept #123 --as security-architect
 
 ```bash
 # View current load
-npx ruflo@v3alpha issues load
+npx anthill@v3alpha issues load
 
 # Output:
 # Agent          | Claims | Load  | Status
@@ -4228,7 +4250,7 @@ npx ruflo@v3alpha issues load
 # security-arch  | 0      | 0%    | 🟢 Available
 
 # Auto-rebalance
-npx ruflo@v3alpha issues rebalance
+npx anthill@v3alpha issues rebalance
 ```
 
 ### MCP Tools
@@ -4289,14 +4311,14 @@ The Route system uses **Q-Learning** to automatically assign tasks to the best a
 
 | Command | What It Does | Example |
 |---------|--------------|---------|
-| `route task` | Get agent recommendation | `npx ruflo@v3alpha route task "implement OAuth2"` |
-| `route explain` | Understand routing decision | `npx ruflo@v3alpha route explain "task"` |
-| `route coverage` | Route based on test coverage | `npx ruflo@v3alpha route coverage` |
+| `route task` | Get agent recommendation | `npx anthill@v3alpha route task "implement OAuth2"` |
+| `route explain` | Understand routing decision | `npx anthill@v3alpha route explain "task"` |
+| `route coverage` | Route based on test coverage | `npx anthill@v3alpha route coverage` |
 
 ### Example: Route a Task
 
 ```bash
-npx ruflo@v3alpha route task "refactor authentication to use JWT"
+npx anthill@v3alpha route task "refactor authentication to use JWT"
 
 # Output:
 # ╔══════════════════════════════════════════════════════════════╗
@@ -4323,7 +4345,7 @@ npx ruflo@v3alpha route task "refactor authentication to use JWT"
 Routes tasks to agents based on **test coverage gaps**:
 
 ```bash
-npx ruflo@v3alpha route coverage
+npx anthill@v3alpha route coverage
 
 # Finds untested code and routes to tester agent:
 # • src/auth/jwt.ts - 23% coverage → tester
@@ -4335,10 +4357,10 @@ npx ruflo@v3alpha route coverage
 
 ```bash
 # Route via hooks (preferred)
-npx ruflo@v3alpha hooks route "implement caching layer" --include-explanation
+npx anthill@v3alpha hooks route "implement caching layer" --include-explanation
 
 # Record outcome for learning
-npx ruflo@v3alpha hooks post-task --task-id "task-123" --success true --agent coder
+npx anthill@v3alpha hooks post-task --task-id "task-123" --success true --agent coder
 ```
 
 ### How Q-Learning Improves Over Time
@@ -4358,12 +4380,12 @@ The system **remembers** what works and applies it to future similar tasks.
 
 ## 💻 Programmatic Usage
 
-Use Ruflo packages directly in your applications.
+Use Anthill packages directly in your applications.
 
 <details>
-<summary>💻 <strong>Programmatic SDK</strong> — Use Ruflo in Your Code</summary>
+<summary>💻 <strong>Programmatic SDK</strong> — Use Anthill in Your Code</summary>
 
-Use Ruflo packages directly in your TypeScript/JavaScript applications.
+Use Anthill packages directly in your TypeScript/JavaScript applications.
 
 ### Installation
 
@@ -4372,7 +4394,7 @@ Use Ruflo packages directly in your TypeScript/JavaScript applications.
 npm install @claude-flow/cli @claude-flow/memory @claude-flow/swarm
 
 # Or install everything
-npm install ruflo@v3alpha
+npm install anthill@v3alpha
 ```
 
 ### Quick Examples
@@ -4409,21 +4431,21 @@ console.log(results);
 **CLI Commands:**
 ```bash
 # Initialize memory database
-npx ruflo@latest memory init --force
+npx anthill@latest memory init --force
 
 # Store patterns
-npx ruflo@latest memory store --key "pattern-auth" --value "JWT authentication with refresh tokens"
-npx ruflo@latest memory store --key "pattern-cache" --value "Redis caching for API responses"
+npx anthill@latest memory store --key "pattern-auth" --value "JWT authentication with refresh tokens"
+npx anthill@latest memory store --key "pattern-cache" --value "Redis caching for API responses"
 
 # Build HNSW index for 150x-12,500x faster search
-npx ruflo@latest memory search --query "authentication" --build-hnsw
+npx anthill@latest memory search --query "authentication" --build-hnsw
 
 # Semantic search (uses HNSW if built)
-npx ruflo@latest memory search --query "how to cache data" --limit 5
+npx anthill@latest memory search --query "how to cache data" --limit 5
 
 # List and manage entries
-npx ruflo@latest memory list --namespace patterns
-npx ruflo@latest memory stats
+npx anthill@latest memory list --namespace patterns
+npx anthill@latest memory stats
 ```
 
 </details>
@@ -4657,35 +4679,35 @@ console.log(`Hit rate: ${(stats.hitRate * 100).toFixed(1)}%`);
 
 ```bash
 # Generate embedding
-ruflo embeddings embed "Your text here"
+anthill embeddings embed "Your text here"
 
 # Batch embed from file
-ruflo embeddings batch documents.txt -o embeddings.json
+anthill embeddings batch documents.txt -o embeddings.json
 
 # Similarity search
-ruflo embeddings search "query" --index ./vectors
+anthill embeddings search "query" --index ./vectors
 
 # Document chunking
-ruflo embeddings chunk document.txt --strategy sentence --max-size 512
+anthill embeddings chunk document.txt --strategy sentence --max-size 512
 
 # Normalize embeddings
-ruflo embeddings normalize embeddings.json --type l2 -o normalized.json
+anthill embeddings normalize embeddings.json --type l2 -o normalized.json
 
 # Convert to hyperbolic
-ruflo embeddings hyperbolic embeddings.json -o poincare.json
+anthill embeddings hyperbolic embeddings.json -o poincare.json
 
 # Neural operations
-ruflo embeddings neural drift --baseline "context" --input "check"
-ruflo embeddings neural store --id mem-1 --content "data"
-ruflo embeddings neural recall "query" --top-k 5
+anthill embeddings neural drift --baseline "context" --input "check"
+anthill embeddings neural store --id mem-1 --content "data"
+anthill embeddings neural recall "query" --top-k 5
 
 # Model management
-ruflo embeddings models list
-ruflo embeddings models download all-MiniLM-L6-v2
+anthill embeddings models list
+anthill embeddings models download all-MiniLM-L6-v2
 
 # Cache management
-ruflo embeddings cache stats
-ruflo embeddings cache clear --older-than 7d
+anthill embeddings cache stats
+anthill embeddings cache clear --older-than 7d
 ```
 
 ### Available Models
@@ -4752,7 +4774,7 @@ await hooks.endTrajectory(trajectory, { success: true });
 
 ## 🔗 Ecosystem & Integrations
 
-Core infrastructure packages powering Ruflo's intelligence layer.
+Core infrastructure packages powering Anthill's intelligence layer.
 
 <details>
 <summary>⚡ <strong>Agentic-Flow Integration</strong> — Core AI Infrastructure</summary>
@@ -4761,7 +4783,7 @@ Core infrastructure packages powering Ruflo's intelligence layer.
 [![npm downloads](https://img.shields.io/npm/dm/agentic-flow?color=green)](https://www.npmjs.com/package/agentic-flow)
 [![GitHub](https://img.shields.io/badge/GitHub-ruvnet%2Fagentic--flow-blue?logo=github)](https://github.com/ruvnet/agentic-flow)
 
-Ruflo v3 is built on top of **[agentic-flow](https://github.com/ruvnet/agentic-flow)**, a production-ready AI agent orchestration platform. This deep integration provides 352x faster code transformations, learning memory, and geometric intelligence.
+Anthill v3 is built on top of **[agentic-flow](https://github.com/ruvnet/agentic-flow)**, a production-ready AI agent orchestration platform. This deep integration provides 352x faster code transformations, learning memory, and geometric intelligence.
 
 ### Quick Start
 
@@ -5042,9 +5064,9 @@ claude mcp add agentic-flow -- npx agentic-flow mcp start
 
 </details>
 
-### Integration with Ruflo
+### Integration with Anthill
 
-Ruflo automatically leverages agentic-flow for:
+Anthill automatically leverages agentic-flow for:
 
 | Feature | How It's Used |
 |---------|---------------|
@@ -5055,7 +5077,7 @@ Ruflo automatically leverages agentic-flow for:
 | **Embedding Search** | HNSW-indexed vector search (150x faster) |
 
 ```typescript
-// Ruflo automatically uses agentic-flow optimizations
+// Anthill automatically uses agentic-flow optimizations
 import { getTokenOptimizer } from '@claude-flow/integration';
 
 const optimizer = await getTokenOptimizer();
@@ -5231,9 +5253,9 @@ jj.enableEncryption(key);
 
 </details>
 
-### Ruflo Skill
+### Anthill Skill
 
-Ruflo includes a dedicated `/agentic-jujutsu` skill for AI-powered version control:
+Anthill includes a dedicated `/agentic-jujutsu` skill for AI-powered version control:
 
 ```bash
 # Invoke the skill
@@ -5316,7 +5338,7 @@ npx agentic-jujutsu examples        # Show usage examples
 [![GitHub](https://img.shields.io/badge/GitHub-ruvnet%2Fruvector-blue?logo=github)](https://github.com/ruvnet/ruvector)
 [![Docker](https://img.shields.io/badge/Docker-ruvector--postgres-blue?logo=docker)](https://hub.docker.com/r/ruvnet/ruvector-postgres)
 
-**RuVector** is a high-performance distributed vector database combining vector search, graph queries, and self-learning neural networks. Written in Rust with Node.js/WASM bindings, it powers Ruflo's intelligence layer with native speed.
+**RuVector** is a high-performance distributed vector database combining vector search, graph queries, and self-learning neural networks. Written in Rust with Node.js/WASM bindings, it powers Anthill's intelligence layer with native speed.
 
 ### Key Capabilities
 
@@ -5398,7 +5420,7 @@ const compressed = ruvector.compress(embedding, 0.3); // 30% quality threshold
 
 ```bash
 # Quick setup with CLI (recommended)
-npx ruflo ruvector setup --output ./my-ruvector
+npx anthill ruvector setup --output ./my-ruvector
 cd my-ruvector && docker-compose up -d
 
 # Or pull directly from Docker Hub
@@ -5406,12 +5428,12 @@ docker run -d \
   --name ruvector-postgres \
   -p 5432:5432 \
   -e POSTGRES_USER=claude \
-  -e POSTGRES_PASSWORD=ruflo-test \
+  -e POSTGRES_PASSWORD=anthill-test \
   -e POSTGRES_DB=claude_flow \
   ruvnet/ruvector-postgres
 
 # Migrate existing memory to PostgreSQL
-npx ruflo ruvector import --input memory-export.json
+npx anthill ruvector import --input memory-export.json
 ```
 
 **RuVector PostgreSQL vs pgvector:**
@@ -5568,12 +5590,12 @@ await db.createHyperedge(['agent-1', 'agent-2', 'agent-3'], {
 
 </details>
 
-### Integration with Ruflo
+### Integration with Anthill
 
-Ruflo automatically uses RuVector when available:
+Anthill automatically uses RuVector when available:
 
 ```typescript
-// Ruflo detects and uses native ruvector
+// Anthill detects and uses native ruvector
 import { getVectorStore } from '@claude-flow/memory';
 
 const store = await getVectorStore();
@@ -5591,19 +5613,19 @@ const similarity = attention.attention(queries, keys, values);
 
 ```bash
 # RuVector PostgreSQL Setup (generates Docker files + SQL)
-npx ruflo ruvector setup                    # Output to ./ruvector-postgres
-npx ruflo ruvector setup --output ./mydir   # Custom directory
-npx ruflo ruvector setup --print            # Preview files
+npx anthill ruvector setup                    # Output to ./ruvector-postgres
+npx anthill ruvector setup --output ./mydir   # Custom directory
+npx anthill ruvector setup --print            # Preview files
 
 # Import from sql.js/JSON to PostgreSQL
-npx ruflo ruvector import --input data.json              # Direct import
-npx ruflo ruvector import --input data.json --output sql # Dry-run (generate SQL)
+npx anthill ruvector import --input data.json              # Direct import
+npx anthill ruvector import --input data.json --output sql # Dry-run (generate SQL)
 
 # Other RuVector commands
-npx ruflo ruvector status --verbose         # Check connection
-npx ruflo ruvector benchmark --vectors 10000 # Performance test
-npx ruflo ruvector optimize --analyze       # Optimization suggestions
-npx ruflo ruvector backup --output backup.sql # Backup data
+npx anthill ruvector status --verbose         # Check connection
+npx anthill ruvector benchmark --vectors 10000 # Performance test
+npx anthill ruvector optimize --analyze       # Optimization suggestions
+npx anthill ruvector backup --output backup.sql # Backup data
 
 # Native ruvector CLI
 npx ruvector status                               # Check installation
@@ -5630,11 +5652,11 @@ Cloud platform integration and deployment tools.
 <details>
 <summary>☁️ <strong>Flow Nexus</strong> — Cloud Platform Integration</summary>
 
-Flow Nexus is a **cloud platform** for deploying and scaling Ruflo beyond your local machine.
+Flow Nexus is a **cloud platform** for deploying and scaling Anthill beyond your local machine.
 
 ### What Flow Nexus Provides
 
-| Feature | Local Ruflo | + Flow Nexus |
+| Feature | Local Anthill | + Flow Nexus |
 |---------|-------------------|--------------|
 | **Swarm Scale** | 15 agents (local resources) | 100+ agents (cloud resources) |
 | **Neural Training** | Limited by local GPU/CPU | Distributed GPU clusters |
@@ -5683,7 +5705,7 @@ Flow Nexus is a **cloud platform** for deploying and scaling Ruflo beyond your l
 /flow-nexus-swarm
 
 # Or via CLI
-npx ruflo@v3alpha nexus swarm deploy \
+npx anthill@v3alpha nexus swarm deploy \
   --topology hierarchical \
   --max-agents 50 \
   --region us-east-1
@@ -5695,13 +5717,13 @@ Isolated execution environments for running untrusted code:
 
 ```bash
 # Create sandbox
-npx ruflo@v3alpha nexus sandbox create --language python
+npx anthill@v3alpha nexus sandbox create --language python
 
 # Execute code safely
-npx ruflo@v3alpha nexus sandbox exec --code "print('Hello')"
+npx anthill@v3alpha nexus sandbox exec --code "print('Hello')"
 
 # Cleanup
-npx ruflo@v3alpha nexus sandbox destroy
+npx anthill@v3alpha nexus sandbox destroy
 ```
 
 ### Event-Driven Workflows
@@ -5727,10 +5749,10 @@ steps:
 # 1. Sign up at flow-nexus.io
 # 2. Get API key
 # 3. Configure
-npx ruflo@v3alpha nexus configure --api-key <key>
+npx anthill@v3alpha nexus configure --api-key <key>
 
 # 4. Deploy
-npx ruflo@v3alpha nexus swarm deploy
+npx anthill@v3alpha nexus swarm deploy
 ```
 
 </details>
@@ -5764,7 +5786,7 @@ Stream-Chain enables **sequential processing** where the output of one agent bec
 /stream-chain
 
 # Define pipeline
-npx ruflo@v3alpha stream-chain create \
+npx anthill@v3alpha stream-chain create \
   --name "feature-pipeline" \
   --stages "researcher,architect,coder,tester,reviewer"
 ```
@@ -5806,11 +5828,11 @@ stages:
 
 ```bash
 # Run the pipeline
-npx ruflo@v3alpha stream-chain run feature-pipeline \
+npx anthill@v3alpha stream-chain run feature-pipeline \
   --input '{"requirements": "Add user dashboard with analytics"}'
 
 # Monitor progress
-npx ruflo@v3alpha stream-chain status feature-pipeline
+npx anthill@v3alpha stream-chain status feature-pipeline
 ```
 
 ### Use Cases
@@ -5850,7 +5872,7 @@ The Pair Programming skill provides **human-AI collaborative coding** with role 
 /pair-programming --mode tdd
 
 # Via CLI
-npx ruflo@v3alpha pair start --mode navigator
+npx anthill@v3alpha pair start --mode navigator
 ```
 
 ### TDD Mode Workflow
@@ -5890,16 +5912,16 @@ npx ruflo@v3alpha pair start --mode navigator
 
 ```bash
 # Switch roles mid-session
-npx ruflo@v3alpha pair switch
+npx anthill@v3alpha pair switch
 
 # Get AI explanation
-npx ruflo@v3alpha pair explain
+npx anthill@v3alpha pair explain
 
 # Run tests
-npx ruflo@v3alpha pair test
+npx anthill@v3alpha pair test
 
 # End session with summary
-npx ruflo@v3alpha pair end
+npx anthill@v3alpha pair end
 ```
 
 </details>
@@ -5956,22 +5978,22 @@ Detection Time: 0.04ms | 50+ Patterns | Self-Learning | HNSW Vector Search
 
 ```bash
 # Basic threat scan
-npx ruflo@v3alpha security defend -i "ignore previous instructions"
+npx anthill@v3alpha security defend -i "ignore previous instructions"
 
 # Scan a file
-npx ruflo@v3alpha security defend -f ./user-prompts.txt
+npx anthill@v3alpha security defend -f ./user-prompts.txt
 
 # Quick scan (faster)
-npx ruflo@v3alpha security defend -i "some text" --quick
+npx anthill@v3alpha security defend -i "some text" --quick
 
 # JSON output
-npx ruflo@v3alpha security defend -i "test" -o json
+npx anthill@v3alpha security defend -i "test" -o json
 
 # View statistics
-npx ruflo@v3alpha security defend --stats
+npx anthill@v3alpha security defend --stats
 
 # Full security audit
-npx ruflo@v3alpha security scan --depth full
+npx anthill@v3alpha security scan --depth full
 ```
 
 ### MCP Tools
@@ -6163,7 +6185,7 @@ Domain-Driven Design with bounded contexts, clean architecture, and measured per
 
 [![npm version](https://img.shields.io/npm/v/@claude-flow/browser?color=blue&label=npm)](https://www.npmjs.com/package/@claude-flow/browser)
 
-AI-optimized browser automation integrating [agent-browser](https://github.com/AugmentCode/agent-browser) with ruflo for intelligent web automation, trajectory learning, and multi-agent browser coordination.
+AI-optimized browser automation integrating [agent-browser](https://github.com/AugmentCode/agent-browser) with anthill for intelligent web automation, trajectory learning, and multi-agent browser coordination.
 
 ### Installation
 
@@ -6248,7 +6270,7 @@ const template = getWorkflow('login-basic');
 <details>
 <summary>📦 <strong>Release Management</strong> — @claude-flow/deployment</summary>
 
-Automated release management, versioning, and CI/CD for Ruflo packages.
+Automated release management, versioning, and CI/CD for Anthill packages.
 
 ### Features
 
@@ -6562,10 +6584,10 @@ npm run bench:attention
 npm run bench:startup
 
 # Performance report
-npx ruflo@v3alpha performance report
+npx anthill@v3alpha performance report
 
 # Benchmark specific suite
-npx ruflo@v3alpha performance benchmark --suite memory
+npx anthill@v3alpha performance benchmark --suite memory
 ```
 
 </details>
@@ -6946,7 +6968,7 @@ export CLAUDE_FLOW_MEMORY_PATH="./data"
 | `GCS_PROJECT_ID` | GCS project ID | Optional |
 | `GOOGLE_CLOUD_PROJECT` | Alternative project ID variable | Optional |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCS service account JSON | Optional |
-| `GCS_PREFIX` | Prefix for stored files | `ruflo-patterns` |
+| `GCS_PREFIX` | Prefix for stored files | `anthill-patterns` |
 
 ### Auto-Update System
 
@@ -7017,9 +7039,9 @@ CLAUDE_FLOW_HNSW_EF=200
 
 ### Configuration File Location
 
-Ruflo looks for configuration in this order:
+Anthill looks for configuration in this order:
 1. `./claude-flow.config.json` (project root)
-2. `~/.config/ruflo/config.json` (user config)
+2. `~/.config/anthill/config.json` (user config)
 3. Environment variables (override any file config)
 
 ### Complete Configuration Schema
@@ -7119,7 +7141,7 @@ Ruflo looks for configuration in this order:
     "level": "info",
     "format": "json",
     "destination": "console",
-    "filePath": "./logs/ruflo.log",
+    "filePath": "./logs/anthill.log",
     "maxFileSize": "100MB",
     "maxFiles": 10
   },
@@ -7186,7 +7208,7 @@ Ruflo looks for configuration in this order:
   "version": "3.0.0",
   "memory": {
     "type": "hybrid",
-    "path": "/var/lib/ruflo/data",
+    "path": "/var/lib/anthill/data",
     "encryption": { "enabled": true, "algorithm": "aes-256-gcm" }
   },
   "swarm": { "topology": "hierarchical", "maxAgents": 15 },
@@ -7198,7 +7220,7 @@ Ruflo looks for configuration in this order:
     "level": "warn",
     "format": "json",
     "destination": "file",
-    "filePath": "/var/log/ruflo/production.log"
+    "filePath": "/var/log/anthill/production.log"
   },
   "monitoring": { "enabled": true, "metricsInterval": 30000 }
 }
@@ -7242,25 +7264,25 @@ Ruflo looks for configuration in this order:
 
 ```bash
 # View current configuration
-npx ruflo@v3alpha config list
+npx anthill@v3alpha config list
 
 # Get specific value
-npx ruflo@v3alpha config get --key memory.type
+npx anthill@v3alpha config get --key memory.type
 
 # Set configuration value
-npx ruflo@v3alpha config set --key swarm.maxAgents --value 10
+npx anthill@v3alpha config set --key swarm.maxAgents --value 10
 
 # Export configuration
-npx ruflo@v3alpha config export > my-config.json
+npx anthill@v3alpha config export > my-config.json
 
 # Import configuration
-npx ruflo@v3alpha config import --file my-config.json
+npx anthill@v3alpha config import --file my-config.json
 
 # Reset to defaults
-npx ruflo@v3alpha config reset --key swarm
+npx anthill@v3alpha config reset --key swarm
 
 # Initialize with wizard
-npx ruflo@v3alpha init --wizard
+npx anthill@v3alpha init --wizard
 ```
 
 </details>
@@ -7284,7 +7306,7 @@ lsof -i :3000
 # Kill existing process
 kill -9 <PID>
 # Restart MCP server
-npx ruflo@v3alpha mcp start
+npx anthill@v3alpha mcp start
 ```
 
 **Agent spawn failures**
@@ -7298,9 +7320,9 @@ export CLAUDE_FLOW_MAX_AGENTS=5
 **Pattern search returning no results**
 ```bash
 # Verify patterns are stored
-npx ruflo@v3alpha hooks metrics
+npx anthill@v3alpha hooks metrics
 # Re-run pretraining if empty
-npx ruflo@v3alpha hooks pretrain
+npx anthill@v3alpha hooks pretrain
 ```
 
 **Windows path issues**
@@ -7308,7 +7330,7 @@ npx ruflo@v3alpha hooks pretrain
 # Use forward slashes or escape backslashes
 $env:CLAUDE_FLOW_MEMORY_PATH = "./data"
 # Or use absolute path
-$env:CLAUDE_FLOW_MEMORY_PATH = "C:/Users/name/ruflo/data"
+$env:CLAUDE_FLOW_MEMORY_PATH = "C:/Users/name/anthill/data"
 ```
 
 **Permission denied errors**
@@ -7321,7 +7343,7 @@ sudo chown -R $(whoami) ~/.npm
 **High memory usage**
 ```bash
 # Enable garbage collection
-node --expose-gc node_modules/.bin/ruflo
+node --expose-gc node_modules/.bin/anthill
 # Reduce HNSW parameters for lower memory
 export CLAUDE_FLOW_HNSW_M=8
 export CLAUDE_FLOW_HNSW_EF=100
@@ -7353,45 +7375,45 @@ export CLAUDE_FLOW_HNSW_EF=100
 
 | Change | V2 | V3 | Impact |
 |--------|----|----|--------|
-| **Package Structure** | `ruflo` | `@claude-flow/*` (scoped) | Update imports |
+| **Package Structure** | `anthill` | `@claude-flow/*` (scoped) | Update imports |
 | **Memory Backend** | JSON files | AgentDB + HNSW | Faster search |
 | **Hooks System** | Basic patterns | ReasoningBank + SONA | Self-learning |
 | **Security** | Manual validation | Automatic strict mode | More secure |
 | **CLI Commands** | Flat structure | Nested subcommands | New syntax |
-| **Config Format** | `.ruflo/config.json` | `claude-flow.config.json` | Update path |
+| **Config Format** | `.anthill/config.json` | `claude-flow.config.json` | Update path |
 
 ### Step-by-Step Migration
 
 ```bash
 # STEP 1: Backup existing data (CRITICAL)
 cp -r ./data ./data-backup-v2
-cp -r ./.ruflo ./.ruflo-backup-v2
+cp -r ./.anthill ./.anthill-backup-v2
 
 # STEP 2: Check migration status
-npx ruflo@v3alpha migrate status
+npx anthill@v3alpha migrate status
 
 # STEP 3: Run migration with dry-run first
-npx ruflo@v3alpha migrate run --dry-run
+npx anthill@v3alpha migrate run --dry-run
 
 # STEP 4: Execute migration
-npx ruflo@v3alpha migrate run --from v2
+npx anthill@v3alpha migrate run --from v2
 
 # STEP 5: Verify migration
-npx ruflo@v3alpha migrate verify
+npx anthill@v3alpha migrate verify
 
 # STEP 6: Initialize V3 learning
-npx ruflo@v3alpha hooks pretrain
-npx ruflo@v3alpha doctor --fix
+npx anthill@v3alpha hooks pretrain
+npx anthill@v3alpha doctor --fix
 ```
 
 ### Command Changes Reference
 
 | V2 Command | V3 Command | Notes |
 |------------|------------|-------|
-| `ruflo start` | `ruflo mcp start` | MCP is explicit |
-| `ruflo init` | `ruflo init --wizard` | Interactive mode |
-| `ruflo spawn <type>` | `ruflo agent spawn -t <type>` | Nested under `agent` |
-| `ruflo swarm create` | `ruflo swarm init --topology mesh` | Explicit topology |
+| `anthill start` | `anthill mcp start` | MCP is explicit |
+| `anthill init` | `anthill init --wizard` | Interactive mode |
+| `anthill spawn <type>` | `anthill agent spawn -t <type>` | Nested under `agent` |
+| `anthill swarm create` | `anthill swarm init --topology mesh` | Explicit topology |
 | `--pattern-store path` | `--memory-backend agentdb` | Backend selection |
 | `hooks record` | `hooks post-edit --success true` | Explicit success flag |
 | `memory get <key>` | `memory retrieve --key <key>` | Explicit flag |
@@ -7401,7 +7423,7 @@ npx ruflo@v3alpha doctor --fix
 
 ### Configuration Migration
 
-**V2 Config (`.ruflo/config.json`)**:
+**V2 Config (`.anthill/config.json`)**:
 ```json
 {
   "mode": "basic",
@@ -7433,7 +7455,7 @@ npx ruflo@v3alpha doctor --fix
 
 ```typescript
 // V2 (deprecated)
-import { ClaudeFlow, Agent, Memory } from 'ruflo';
+import { ClaudeFlow, Agent, Memory } from 'anthill';
 
 // V3 (new)
 import { ClaudeFlowClient } from '@claude-flow/cli';
@@ -7448,10 +7470,10 @@ If migration fails, you can rollback:
 
 ```bash
 # Check rollback options
-npx ruflo@v3alpha migrate rollback --list
+npx anthill@v3alpha migrate rollback --list
 
 # Rollback to V2
-npx ruflo@v3alpha migrate rollback --to v2
+npx anthill@v3alpha migrate rollback --to v2
 
 # Restore backup manually if needed
 rm -rf ./data
@@ -7460,12 +7482,12 @@ cp -r ./data-backup-v2 ./data
 
 ### Post-Migration Checklist
 
-- [ ] Verify all agents spawn correctly: `npx ruflo@v3alpha agent list`
-- [ ] Check memory search works: `npx ruflo@v3alpha memory search -q "test"`
-- [ ] Confirm MCP server starts: `npx ruflo@v3alpha mcp start`
-- [ ] Run doctor diagnostics: `npx ruflo@v3alpha doctor`
-- [ ] Test a simple swarm: `npx ruflo@v3alpha swarm init --topology mesh`
-- [ ] Bootstrap learning: `npx ruflo@v3alpha hooks pretrain`
+- [ ] Verify all agents spawn correctly: `npx anthill@v3alpha agent list`
+- [ ] Check memory search works: `npx anthill@v3alpha memory search -q "test"`
+- [ ] Confirm MCP server starts: `npx anthill@v3alpha mcp start`
+- [ ] Run doctor diagnostics: `npx anthill@v3alpha doctor`
+- [ ] Test a simple swarm: `npx anthill@v3alpha swarm init --topology mesh`
+- [ ] Bootstrap learning: `npx anthill@v3alpha hooks pretrain`
 
 ### Common Migration Issues
 
@@ -7519,8 +7541,8 @@ cp -r ./data-backup-v2 ./data
 
 | Resource | Link |
 |----------|------|
-| 📚 Documentation | [github.com/ruvnet/claude-flow](https://github.com/ruvnet/claude-flow) |
-| 🐛 Issues & Bugs | [github.com/ruvnet/claude-flow/issues](https://github.com/ruvnet/claude-flow/issues) |
+| 📚 Documentation | [github.com/ruvnet/anthill](https://github.com/ruvnet/anthill) |
+| 🐛 Issues & Bugs | [github.com/ruvnet/anthill/issues](https://github.com/ruvnet/anthill/issues) |
 | 💼 Professional Implementation | [ruv.io](https://ruv.io) — Enterprise consulting, custom integrations, and production deployment |
 | 💬 Discord Community | [Agentics Foundation](https://discord.com/invite/dfxmpwkG2D) |
 

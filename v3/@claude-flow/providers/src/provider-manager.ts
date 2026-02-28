@@ -30,6 +30,7 @@ import {
 } from './types.js';
 import { BaseProviderOptions, ILogger, consoleLogger } from './base-provider.js';
 import { AnthropicProvider } from './anthropic-provider.js';
+import { MoonshotProvider } from './moonshot-provider.js';
 import { OpenAIProvider } from './openai-provider.js';
 import { GoogleProvider } from './google-provider.js';
 import { CohereProvider } from './cohere-provider.js';
@@ -117,6 +118,8 @@ export class ProviderManager extends EventEmitter {
     switch (config.provider) {
       case 'anthropic':
         return new AnthropicProvider(options);
+      case 'moonshot':
+        return new MoonshotProvider(options);
       case 'openai':
         return new OpenAIProvider(options);
       case 'google':

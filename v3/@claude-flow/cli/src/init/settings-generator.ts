@@ -43,7 +43,7 @@ export function generateSettings(options: InitOptions): object {
 
   // Note: Claude Code expects 'model' to be a string, not an object
   // Model preferences are stored in claudeFlow settings instead
-  // settings.model = 'claude-sonnet-4-5-20250929'; // Uncomment if you want to set a default model
+  // settings.model = 'kimi-k2-5'; // Default: Kimi K2.5 (256k context, strong reasoning)
 
   // Add Agent Teams configuration (experimental feature)
   settings.env = {
@@ -52,6 +52,8 @@ export function generateSettings(options: InitOptions): object {
     // Claude Flow specific environment
     CLAUDE_FLOW_V3_ENABLED: 'true',
     CLAUDE_FLOW_HOOKS_ENABLED: 'true',
+      // Moonshot (Kimi) - Default Provider
+      MOONSHOT_API_KEY: process.env.MOONSHOT_API_KEY || '',
   };
 
   // Add V3-specific settings
@@ -59,8 +61,8 @@ export function generateSettings(options: InitOptions): object {
     version: '3.0.0',
     enabled: true,
     modelPreferences: {
-      default: 'claude-opus-4-6',
-      routing: 'claude-haiku-4-5-20251001',
+      default: 'kimi-k2.5',
+      routing: 'kimi-k2-turbo-preview',
     },
     agentTeams: {
       enabled: true,
