@@ -250,9 +250,8 @@ async function checkVersionFreshness(): Promise<HealthCheck> {
 
       // Walk up from the current file's directory until we find the
       // package.json that belongs to @claude-flow/cli (or claude-flow/cli).
-      // Stop at the filesystem root to avoid an infinite loop.
-      const root = (process.platform === 'win32') ? dir.split('\\')[0] + '\\' : '/';
-      while (dir !== root) {
+      // Walk until dirname(dir) === dir (filesystem root on any platform).
+      for (;;) {
         const candidate = join(dir, 'package.json');
         try {
           if (existsSync(candidate)) {
@@ -286,7 +285,7 @@ async function checkVersionFreshness(): Promise<HealthCheck> {
     // Query npm for latest version (using alpha tag since that's what we publish to)
     let latestVersion = currentVersion;
     try {
-      const npmInfo = await runCommand('npm view @claude-flow/cli@alpha version 2>/dev/null', 5000);
+      const npmInfo = await runCommand('npm view @claude-flow/cli@alpha version', 5000);
       latestVersion = npmInfo.trim();
     } catch {
       // Can't reach npm registry - skip check
