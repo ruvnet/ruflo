@@ -16,12 +16,17 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, renameSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { DomainEvent } from './domain-events.js';
 
 // Re-export shared interfaces so consumers do not need to import event-store.ts
 import type { EventFilter, EventSnapshot, EventStoreStats } from './event-store.js';
+
+/** Validate a file path is safe */
+function validatePath(p: string): void {
+  if (p.includes('\0')) throw new Error('Event log path contains null bytes');
+}
 
 // =============================================================================
 // Configuration
@@ -84,6 +89,7 @@ export class RvfEventLog extends EventEmitter {
     if (this.snapshotPath === this.config.logPath) {
       this.snapshotPath = this.config.logPath + '.snap.rvf';
     }
+    validatePath(this.config.logPath);
   }
 
   // ===========================================================================
@@ -102,7 +108,9 @@ export class RvfEventLog extends EventEmitter {
         this.indexEvent(event);
       });
     } else {
-      writeFileSync(this.config.logPath, MAGIC);
+      const tmpLog = this.config.logPath + '.tmp';
+      writeFileSync(tmpLog, MAGIC);
+      renameSync(tmpLog, this.config.logPath);
     }
 
     // --- snapshots file ---
@@ -112,7 +120,9 @@ export class RvfEventLog extends EventEmitter {
         this.snapshots.set(snap.aggregateId, snap);
       });
     } else {
-      writeFileSync(this.snapshotPath, MAGIC);
+      const tmpSnap = this.snapshotPath + '.tmp';
+      writeFileSync(tmpSnap, MAGIC);
+      renameSync(tmpSnap, this.snapshotPath);
     }
 
     this.initialized = true;
@@ -148,6 +158,13 @@ export class RvfEventLog extends EventEmitter {
   /** Append a domain event to the log. */
   async append(event: DomainEvent): Promise<void> {
     this.ensureInitialized();
+
+    if (!event.aggregateId || typeof event.aggregateId !== 'string') {
+      throw new Error('Event must have a valid aggregateId string');
+    }
+    if (!event.type || typeof event.type !== 'string') {
+      throw new Error('Event must have a valid type string');
+    }
 
     // Assign next version for aggregate
     const currentVersion = this.aggregateVersions.get(event.aggregateId) ?? 0;

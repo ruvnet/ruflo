@@ -184,6 +184,8 @@ export class PersistentSonaCoordinator {
     };
 
     this.patterns.set(id, record);
+    // Mark for persistence on next persist() call
+    void this.store.savePatterns([record]).catch(() => {});
     return id;
   }
 
@@ -260,7 +262,11 @@ export class PersistentSonaCoordinator {
   recordTrajectory(trajectory: TrajectoryRecord): void {
     this.ensureInitialized();
 
-    this.trajectoryBuffer.push({ ...trajectory });
+    const copy = { ...trajectory };
+    this.trajectoryBuffer.push(copy);
+
+    // Persist to store immediately so evicted entries are not lost
+    void this.store.appendTrajectory(copy).catch(() => {});
 
     while (this.trajectoryBuffer.length > this.maxTrajectoryBuffer) {
       this.trajectoryBuffer.shift();

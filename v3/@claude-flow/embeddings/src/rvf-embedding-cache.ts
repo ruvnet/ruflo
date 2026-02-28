@@ -17,8 +17,13 @@
  * @module @claude-flow/embeddings
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'fs';
 import { dirname } from 'path';
+
+/** Validate a file path is safe */
+function validatePath(p: string): void {
+  if (p.includes('\0')) throw new Error('Cache path contains null bytes');
+}
 
 // ============================================================================
 // Configuration
@@ -98,6 +103,7 @@ export class RvfEmbeddingCache {
     this.maxSize = config.maxSize ?? DEFAULT_MAX_SIZE;
     this.ttlMs = config.ttlMs ?? DEFAULT_TTL_MS;
     this.dimensions = config.dimensions;
+    validatePath(this.cachePath);
   }
 
   // --------------------------------------------------------------------------
@@ -318,17 +324,17 @@ export class RvfEmbeddingCache {
       (a, b) => a[1].accessedAt - b[1].accessedAt
     );
 
+    // Build reverse map for O(1) lookup (hash → text)
+    const hashToText = new Map<number, string>();
+    for (const [text, hash] of this.textToHash) {
+      hashToText.set(hash, text);
+    }
+
     for (let i = 0; i < toEvict && i < sorted.length; i++) {
       const [hash] = sorted[i];
       this.entries.delete(hash);
-
-      // Also clean the reverse lookup
-      for (const [text, h] of this.textToHash) {
-        if (h === hash) {
-          this.textToHash.delete(text);
-          break;
-        }
-      }
+      const text = hashToText.get(hash);
+      if (text !== undefined) this.textToHash.delete(text);
     }
 
     this.dirty = true;
@@ -351,14 +357,16 @@ export class RvfEmbeddingCache {
       }
     }
 
+    // Build reverse map for O(1) lookup
+    const hashToText = new Map<number, string>();
+    for (const [text, h] of this.textToHash) {
+      hashToText.set(h, text);
+    }
+
     for (const hash of toDelete) {
       this.entries.delete(hash);
-      for (const [text, h] of this.textToHash) {
-        if (h === hash) {
-          this.textToHash.delete(text);
-          break;
-        }
-      }
+      const text = hashToText.get(hash);
+      if (text !== undefined) this.textToHash.delete(text);
     }
 
     if (toDelete.length > 0) {
@@ -378,6 +386,7 @@ export class RvfEmbeddingCache {
         this.flushToFile();
       }
     }, AUTO_FLUSH_INTERVAL_MS);
+    if (this.flushTimer.unref) this.flushTimer.unref();
   }
 
   private stopAutoFlush(): void {
@@ -405,11 +414,11 @@ export class RvfEmbeddingCache {
    */
   private flushToFile(): void {
     try {
-      // Calculate total buffer size
-      let totalSize = MAGIC.length; // 4 bytes for magic
+      // Version 2 format: magic(4) + version(4) + entries...
+      // Entry: hash(4) + dims(4) + embedding(dims*4) + createdAt(8) + accessedAt(8) + accessCount(8)
+      let totalSize = MAGIC.length + 4; // magic + version uint32
       for (const [, entry] of this.entries) {
-        // 4 (hash) + 4 (dims) + dims*4 (embedding) + 8 (timestamp) + 8 (accessCount)
-        totalSize += 4 + 4 + entry.embedding.length * 4 + 8 + 8;
+        totalSize += 4 + 4 + entry.embedding.length * 4 + 8 + 8 + 8;
       }
 
       const buffer = new ArrayBuffer(totalSize);
@@ -420,6 +429,10 @@ export class RvfEmbeddingCache {
       // Write magic
       bytes.set(MAGIC, 0);
       offset += MAGIC.length;
+
+      // Write format version
+      view.setUint32(offset, 2, true);
+      offset += 4;
 
       // Write entries
       for (const [hash, entry] of this.entries) {
@@ -437,7 +450,11 @@ export class RvfEmbeddingCache {
           offset += 4;
         }
 
-        // Timestamp as float64 (little-endian) - use accessedAt for LRU
+        // createdAt as float64 (little-endian) - v2: separate from accessedAt
+        view.setFloat64(offset, entry.createdAt, true);
+        offset += 8;
+
+        // accessedAt as float64 (little-endian)
         view.setFloat64(offset, entry.accessedAt, true);
         offset += 8;
 
@@ -452,7 +469,9 @@ export class RvfEmbeddingCache {
         mkdirSync(dir, { recursive: true });
       }
 
-      writeFileSync(this.cachePath, Buffer.from(buffer));
+      const tmpPath = this.cachePath + '.tmp';
+      writeFileSync(tmpPath, Buffer.from(buffer));
+      renameSync(tmpPath, this.cachePath);
       this.dirty = false;
     } catch (error) {
       console.error(
@@ -487,6 +506,16 @@ export class RvfEmbeddingCache {
       }
       offset += MAGIC.length;
 
+      // Check for version header (v2+)
+      let formatVersion = 1;
+      if (offset + 4 <= buffer.byteLength) {
+        const possibleVersion = view.getUint32(offset, true);
+        if (possibleVersion === 2) {
+          formatVersion = possibleVersion;
+          offset += 4;
+        }
+      }
+
       // Read entries
       while (offset + 8 <= buffer.byteLength) {
         // Need at least 4 (hash) + 4 (dims) = 8 bytes for the header
@@ -496,8 +525,9 @@ export class RvfEmbeddingCache {
         const dims = view.getUint32(offset, true);
         offset += 4;
 
-        // Check we have enough bytes for embedding + timestamp + accessCount
-        const entryDataSize = dims * 4 + 8 + 8;
+        const entryDataSize = formatVersion === 2
+          ? dims * 4 + 8 + 8 + 8   // v2: embedding + createdAt + accessedAt + accessCount
+          : dims * 4 + 8 + 8;       // v1: embedding + accessedAt + accessCount
         if (offset + entryDataSize > buffer.byteLength) {
           console.warn('[rvf-embedding-cache] Truncated entry, stopping load');
           break;
@@ -510,17 +540,29 @@ export class RvfEmbeddingCache {
           offset += 4;
         }
 
-        // Read timestamp (accessedAt)
-        const accessedAt = view.getFloat64(offset, true);
-        offset += 8;
+        let createdAt: number;
+        let accessedAt: number;
+        let accessCount: number;
 
-        // Read access count
-        const accessCount = view.getFloat64(offset, true);
-        offset += 8;
+        if (formatVersion >= 2) {
+          createdAt = view.getFloat64(offset, true);
+          offset += 8;
+          accessedAt = view.getFloat64(offset, true);
+          offset += 8;
+          accessCount = view.getFloat64(offset, true);
+          offset += 8;
+        } else {
+          // v1: only accessedAt was stored, use it as createdAt too
+          accessedAt = view.getFloat64(offset, true);
+          offset += 8;
+          accessCount = view.getFloat64(offset, true);
+          offset += 8;
+          createdAt = accessedAt;
+        }
 
         this.entries.set(hash, {
           embedding,
-          createdAt: accessedAt, // Use accessedAt as createdAt for loaded entries
+          createdAt,
           accessedAt,
           accessCount,
         });

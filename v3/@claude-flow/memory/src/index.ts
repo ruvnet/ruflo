@@ -136,6 +136,10 @@ export type {
 export { PersistentSonaCoordinator } from './persistent-sona.js';
 export type { PersistentSonaConfig } from './persistent-sona.js';
 
+// ===== RVF Migration (Bidirectional) =====
+export { RvfMigrator } from './rvf-migration.js';
+export type { RvfMigrationOptions, RvfMigrationResult } from './rvf-migration.js';
+
 // ===== Knowledge Graph =====
 export { MemoryGraph } from './memory-graph.js';
 export type {
@@ -191,6 +195,8 @@ export type {
 } from './hybrid-backend.js';
 export { RvfBackend } from './rvf-backend.js';
 export type { RvfBackendConfig } from './rvf-backend.js';
+export { HnswLite, cosineSimilarity } from './hnsw-lite.js';
+export type { HnswSearchResult } from './hnsw-lite.js';
 export { HNSWIndex } from './hnsw-index.js';
 export { CacheManager, TieredCacheManager } from './cache-manager.js';
 export { QueryBuilder, query, QueryTemplates } from './query-builder.js';

@@ -139,6 +139,9 @@ export class RvfEmbeddingService extends EventEmitter implements IEmbeddingServi
   constructor(config: RvfEmbeddingConfig) {
     super();
     this.dimensions = config.dimensions ?? DEFAULT_DIMENSIONS;
+    if (this.dimensions <= 0 || !Number.isInteger(this.dimensions)) {
+      throw new Error(`Invalid dimensions: ${this.dimensions}. Must be a positive integer.`);
+    }
     this.cache = new LRUCache(config.cacheSize ?? DEFAULT_CACHE_SIZE);
     this.normalizationType = config.normalization ?? 'none';
 
@@ -160,6 +163,10 @@ export class RvfEmbeddingService extends EventEmitter implements IEmbeddingServi
    * Generate an embedding for a single text string.
    */
   async embed(text: string): Promise<EmbeddingResult> {
+    if (typeof text !== 'string') {
+      throw new Error('embed() expects a string argument');
+    }
+
     // Check in-memory cache
     const cached = this.cache.get(text);
     if (cached) {
@@ -203,6 +210,10 @@ export class RvfEmbeddingService extends EventEmitter implements IEmbeddingServi
    * Generate embeddings for multiple text strings.
    */
   async embedBatch(texts: string[]): Promise<BatchEmbeddingResult> {
+    if (!Array.isArray(texts)) {
+      throw new Error('embedBatch() expects an array of strings');
+    }
+
     this.emitEvent({ type: 'batch_start', count: texts.length });
     const startTime = performance.now();
 

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
 import type {
   IMemoryBackend,
   MemoryEntry,
@@ -13,6 +13,14 @@ import type {
   MemoryType,
 } from './types.js';
 import { HnswLite, cosineSimilarity } from './hnsw-lite.js';
+
+/** Validate a file path is safe (no null bytes, no traversal above root) */
+function validatePath(p: string): void {
+  if (p === ':memory:') return;
+  if (p.includes('\0')) throw new Error('Path contains null bytes');
+  const resolved = resolve(p);
+  if (resolved.includes('\0')) throw new Error('Resolved path contains null bytes');
+}
 
 export interface RvfBackendConfig {
   databasePath: string;
@@ -54,6 +62,7 @@ export class RvfBackend implements IMemoryBackend {
   private config: Required<RvfBackendConfig>;
   private initialized = false;
   private dirty = false;
+  private persisting = false;
   private persistTimer: ReturnType<typeof setInterval> | null = null;
   private queryTimes: number[] = [];
   private searchTimes: number[] = [];
@@ -71,6 +80,7 @@ export class RvfBackend implements IMemoryBackend {
       defaultNamespace: config.defaultNamespace ?? 'default',
       autoPersistInterval: config.autoPersistInterval ?? DEFAULT_PERSIST_INTERVAL,
     };
+    validatePath(this.config.databasePath);
   }
 
   async initialize(): Promise<void> {
@@ -91,6 +101,7 @@ export class RvfBackend implements IMemoryBackend {
       this.persistTimer = setInterval(() => {
         if (this.dirty) this.persistToDisk().catch(() => {});
       }, this.config.autoPersistInterval);
+      if (this.persistTimer.unref) this.persistTimer.unref();
     }
 
     this.initialized = true;
@@ -124,10 +135,12 @@ export class RvfBackend implements IMemoryBackend {
   }
 
   async store(entry: MemoryEntry): Promise<void> {
-    this.entries.set(entry.id, entry);
-    this.keyIndex.set(this.compositeKey(entry.namespace, entry.key), entry.id);
-    if (entry.embedding && this.hnswIndex) {
-      this.hnswIndex.add(entry.id, entry.embedding);
+    const ns = entry.namespace || this.config.defaultNamespace;
+    const e = ns !== entry.namespace ? { ...entry, namespace: ns } : entry;
+    this.entries.set(e.id, e);
+    this.keyIndex.set(this.compositeKey(e.namespace, e.key), e.id);
+    if (e.embedding && this.hnswIndex) {
+      this.hnswIndex.add(e.id, e.embedding);
     }
     this.dirty = true;
   }
@@ -268,17 +281,18 @@ export class RvfBackend implements IMemoryBackend {
   }
 
   async clearNamespace(namespace: string): Promise<number> {
-    let count = 0;
-    for (const [id, entry] of this.entries.entries()) {
-      if (entry.namespace === namespace) {
-        this.entries.delete(id);
-        this.keyIndex.delete(this.compositeKey(entry.namespace, entry.key));
-        if (this.hnswIndex) this.hnswIndex.remove(id);
-        count++;
-      }
+    const toDelete: string[] = [];
+    for (const [id, entry] of this.entries) {
+      if (entry.namespace === namespace) toDelete.push(id);
     }
-    this.dirty = true;
-    return count;
+    for (const id of toDelete) {
+      const entry = this.entries.get(id)!;
+      this.entries.delete(id);
+      this.keyIndex.delete(this.compositeKey(entry.namespace, entry.key));
+      if (this.hnswIndex) this.hnswIndex.remove(id);
+    }
+    if (toDelete.length > 0) this.dirty = true;
+    return toDelete.length;
   }
 
   async getStats(): Promise<BackendStats> {
@@ -433,11 +447,21 @@ export class RvfBackend implements IMemoryBackend {
 
   private async persistToDisk(): Promise<void> {
     if (this.config.databasePath === ':memory:') return;
+    if (this.persisting) return; // Prevent concurrent persist calls
+    this.persisting = true;
 
+    try {
     const dir = dirname(this.config.databasePath);
     if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 
     const entries = Array.from(this.entries.values());
+
+    // Compute min createdAt without spread operator (avoids stack overflow for large arrays)
+    let minCreatedAt = Date.now();
+    for (const e of entries) {
+      if (e.createdAt < minCreatedAt) minCreatedAt = e.createdAt;
+    }
+
     const header: RvfHeader = {
       magic: MAGIC,
       version: VERSION,
@@ -445,7 +469,7 @@ export class RvfBackend implements IMemoryBackend {
       metric: this.config.metric,
       quantization: this.config.quantization,
       entryCount: entries.length,
-      createdAt: entries.length > 0 ? Math.min(...entries.map(e => e.createdAt)) : Date.now(),
+      createdAt: entries.length > 0 ? minCreatedAt : Date.now(),
       updatedAt: Date.now(),
     };
 
@@ -468,7 +492,14 @@ export class RvfBackend implements IMemoryBackend {
     headerLenBuf.writeUInt32LE(headerBuf.length, 0);
 
     const output = Buffer.concat([magicBuf, headerLenBuf, headerBuf, ...entryBuffers]);
-    await writeFile(this.config.databasePath, output);
+
+    // Atomic write: write to temp file then rename (crash-safe)
+    const tmpPath = this.config.databasePath + '.tmp';
+    await writeFile(tmpPath, output);
+    await rename(tmpPath, this.config.databasePath);
     this.dirty = false;
+    } finally {
+      this.persisting = false;
+    }
   }
 }
