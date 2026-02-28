@@ -37,6 +37,15 @@ export {
 
 export type { AutoEmbeddingConfig } from './embedding-service.js';
 
+// RVF embedding service (pure-TS hash-based embeddings)
+export { RvfEmbeddingService } from './rvf-embedding-service.js';
+
+// RVF embedding cache (binary file persistence)
+export {
+  RvfEmbeddingCache,
+  type RvfEmbeddingCacheConfig,
+} from './rvf-embedding-cache.js';
+
 // Chunking utilities
 export {
   chunkText,
@@ -106,6 +115,7 @@ export type {
   TransformersEmbeddingConfig,
   MockEmbeddingConfig,
   AgenticFlowEmbeddingConfig,
+  RvfEmbeddingConfig,
   EmbeddingResult,
   BatchEmbeddingResult,
   IEmbeddingService,

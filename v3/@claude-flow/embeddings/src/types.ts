@@ -19,7 +19,7 @@
 /**
  * Supported embedding providers
  */
-export type EmbeddingProvider = 'openai' | 'transformers' | 'mock' | 'agentic-flow';
+export type EmbeddingProvider = 'openai' | 'transformers' | 'mock' | 'agentic-flow' | 'rvf';
 
 /**
  * Normalization type for embeddings
@@ -145,13 +145,31 @@ export interface AgenticFlowEmbeddingConfig extends EmbeddingBaseConfig {
 }
 
 /**
+ * RVF provider configuration
+ * Lightweight hash-based embeddings (no neural model, sub-ms latency)
+ */
+export interface RvfEmbeddingConfig extends EmbeddingBaseConfig {
+  provider: 'rvf';
+
+  /** Embedding dimensions (default: 384) */
+  dimensions?: number;
+
+  /** Path to binary cache file for persistent storage */
+  cachePath?: string;
+
+  /** Similarity metric preference (default: 'cosine') */
+  metric?: 'cosine' | 'l2' | 'dotproduct';
+}
+
+/**
  * Union of all provider configs
  */
 export type EmbeddingConfig =
   | OpenAIEmbeddingConfig
   | TransformersEmbeddingConfig
   | MockEmbeddingConfig
-  | AgenticFlowEmbeddingConfig;
+  | AgenticFlowEmbeddingConfig
+  | RvfEmbeddingConfig;
 
 // ============================================================================
 // Result Types

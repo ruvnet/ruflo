@@ -20,6 +20,7 @@ import type {
   TransformersEmbeddingConfig,
   MockEmbeddingConfig,
   AgenticFlowEmbeddingConfig,
+  RvfEmbeddingConfig,
   EmbeddingResult,
   BatchEmbeddingResult,
   IEmbeddingService,
@@ -32,6 +33,7 @@ import type {
 } from './types.js';
 import { normalize } from './normalization.js';
 import { PersistentEmbeddingCache } from './persistent-cache.js';
+import { RvfEmbeddingService } from './rvf-embedding-service.js';
 
 // ============================================================================
 // LRU Cache Implementation
@@ -874,6 +876,8 @@ export function createEmbeddingService(config: EmbeddingConfig): IEmbeddingServi
       return new MockEmbeddingService(config as MockEmbeddingConfig);
     case 'agentic-flow':
       return new AgenticFlowEmbeddingService(config as AgenticFlowEmbeddingConfig);
+    case 'rvf':
+      return new RvfEmbeddingService(config as RvfEmbeddingConfig);
     default:
       console.warn(`Unknown provider, using mock`);
       return new MockEmbeddingService({ provider: 'mock', dimensions: 384 });
@@ -927,7 +931,18 @@ export async function createEmbeddingServiceAsync(
 
   // Auto provider selection
   if (provider === 'auto') {
-    // Try agentic-flow first (fastest, ONNX-based)
+    // Try RVF first (52KB, always available, fast hash embeddings)
+    try {
+      const service = new RvfEmbeddingService({
+        provider: 'rvf',
+        dimensions: rest.dimensions ?? 384,
+        cacheSize: rest.cacheSize,
+      });
+      await service.embed('test');
+      return service;
+    } catch { /* fall through */ }
+
+    // Try agentic-flow (fastest neural, ONNX-based)
     let agenticFlowAvailable = await isAgenticFlowAvailable();
 
     // Auto-install if not available and autoInstall is enabled
@@ -995,6 +1010,12 @@ export async function createEmbeddingServiceAsync(
           provider: 'openai',
           apiKey: rest.apiKey,
           dimensions: rest.dimensions,
+          cacheSize: rest.cacheSize,
+        });
+      case 'rvf':
+        return new RvfEmbeddingService({
+          provider: 'rvf',
+          dimensions: rest.dimensions ?? 384,
           cacheSize: rest.cacheSize,
         });
       case 'mock':

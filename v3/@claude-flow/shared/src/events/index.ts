@@ -79,6 +79,10 @@ export type {
   MemoryProjectionState,
 } from './projections.js';
 
+// RVF Event Log (ADR-057 — zero-dependency alternative to EventStore)
+export { RvfEventLog } from './rvf-event-log.js';
+export type { RvfEventLogConfig } from './rvf-event-log.js';
+
 // State Reconstruction (ADR-007)
 export {
   StateReconstructor,

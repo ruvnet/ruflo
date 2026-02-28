@@ -28,7 +28,7 @@ import { SqlJsBackend, SqlJsBackendConfig } from './sqljs-backend.js';
 /**
  * Available database provider types
  */
-export type DatabaseProvider = 'better-sqlite3' | 'sql.js' | 'json' | 'auto';
+export type DatabaseProvider = 'better-sqlite3' | 'sql.js' | 'json' | 'rvf' | 'auto';
 
 /**
  * Database creation options
@@ -92,6 +92,13 @@ function detectPlatform(): PlatformInfo {
 }
 
 /**
+ * Test if RVF backend is available (always true — pure-TS fallback)
+ */
+async function testRvf(): Promise<boolean> {
+  return true;
+}
+
+/**
  * Test if better-sqlite3 is available and working
  */
 async function testBetterSqlite3(): Promise<boolean> {
@@ -141,7 +148,15 @@ async function selectProvider(
     console.log(`[DatabaseProvider] Recommended provider: ${platformInfo.recommendedProvider}`);
   }
 
-  // Try recommended provider first
+  // Try RVF first (always available via pure-TS fallback, native when @ruvector/rvf installed)
+  if (await testRvf()) {
+    if (verbose) {
+      console.log('[DatabaseProvider] RVF backend available');
+    }
+    return 'rvf';
+  }
+
+  // Try recommended provider
   if (platformInfo.recommendedProvider === 'better-sqlite3') {
     if (await testBetterSqlite3()) {
       if (verbose) {
@@ -247,6 +262,18 @@ export async function createDatabase(
       break;
     }
 
+    case 'rvf': {
+      const { RvfBackend } = await import('./rvf-backend.js');
+      backend = new RvfBackend({
+        databasePath: path.replace(/\.(db|json)$/, '.rvf'),
+        dimensions: 1536,
+        verbose,
+        defaultNamespace,
+        autoPersistInterval,
+      });
+      break;
+    }
+
     case 'json': {
       // Simple JSON file backend (minimal implementation)
       backend = new JsonBackend(path, verbose);
@@ -278,14 +305,16 @@ export function getPlatformInfo(): PlatformInfo {
  * Check which providers are available
  */
 export async function getAvailableProviders(): Promise<{
+  rvf: boolean;
   betterSqlite3: boolean;
   sqlJs: boolean;
   json: boolean;
 }> {
   return {
+    rvf: true,
     betterSqlite3: await testBetterSqlite3(),
     sqlJs: await testSqlJs(),
-    json: true, // Always available
+    json: true,
   };
 }
 
