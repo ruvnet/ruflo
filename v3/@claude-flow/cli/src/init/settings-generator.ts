@@ -61,8 +61,8 @@ export function generateSettings(options: InitOptions): object {
     version: '3.0.0',
     enabled: true,
     modelPreferences: {
-      default: 'kimi-k2-5',
-      routing: 'kimi-k2',
+      default: 'kimi-k2.5',
+      routing: 'kimi-k2-turbo-preview',
     },
     agentTeams: {
       enabled: true,
