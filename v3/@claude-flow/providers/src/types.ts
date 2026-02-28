@@ -18,6 +18,7 @@ export type LLMProvider =
   | 'cohere'
   | 'ollama'
   | 'ruvector'
+  | 'novita'
   | 'openrouter'
   | 'litellm'
   | 'custom';
