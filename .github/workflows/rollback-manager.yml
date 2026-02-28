@@ -52,12 +52,12 @@ jobs:
       rollback-session-id: ${{ steps.detect.outputs.rollback-session-id }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 50
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -156,7 +156,7 @@ jobs:
 
       - name: Upload failure detection results
         if: steps.detect.outputs.rollback-required == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: failure-detection-${{ steps.detect.outputs.rollback-session-id }}
           path: rollback-data/
@@ -173,12 +173,12 @@ jobs:
       backup-created: ${{ steps.validate.outputs.backup-created }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 100
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -271,7 +271,7 @@ jobs:
           echo "✅ Rollback target viability tested successfully"
 
       - name: Upload pre-rollback validation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pre-rollback-validation-${{ needs.failure-detection.outputs.rollback-session-id || 'manual' }}
           path: rollback-data/
@@ -290,18 +290,18 @@ jobs:
       rollback-commit: ${{ steps.rollback.outputs.rollback-commit }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 100
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Download validation artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: pre-rollback-validation-${{ needs.failure-detection.outputs.rollback-session-id || 'manual' }}
           path: rollback-data/
@@ -413,12 +413,12 @@ jobs:
     if: needs.execute-rollback.outputs.rollback-executed == 'true'
     steps:
       - name: Checkout rolled back code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.execute-rollback.outputs.rollback-commit }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -516,7 +516,7 @@ jobs:
     if: needs.execute-rollback.outputs.rollback-executed == 'true'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Monitor system stability
         run: |
@@ -605,7 +605,7 @@ jobs:
           EOF
 
       - name: Upload rollback reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rollback-reports-${{ needs.failure-detection.outputs.rollback-session-id || 'manual' }}
           path: rollback-reports/
@@ -613,7 +613,7 @@ jobs:
 
       - name: Notify stakeholders
         if: github.event_name != 'workflow_dispatch'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const report = `

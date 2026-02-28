@@ -46,10 +46,10 @@ jobs:
       test-scenarios: ${{ steps.setup.outputs.test-scenarios }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -135,7 +135,7 @@ jobs:
           cp ${{ env.INTEGRATION_DB_PATH }} integration-test-data/
 
       - name: Upload integration test setup
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: integration-setup-${{ steps.setup.outputs.test-session-id }}
           path: integration-test-data/
@@ -151,10 +151,10 @@ jobs:
       matrix: ${{ fromJson(needs.integration-setup.outputs.agent-matrix) }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -163,7 +163,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Download integration setup
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: integration-setup-${{ needs.integration-setup.outputs.test-session-id }}
           path: integration-test-data/
@@ -284,7 +284,7 @@ jobs:
           "
 
       - name: Upload agent coordination results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coordination-results-${{ matrix.type }}-${{ needs.integration-setup.outputs.test-session-id }}
           path: |
@@ -300,10 +300,10 @@ jobs:
     needs: integration-setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -312,7 +312,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Download integration setup
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: integration-setup-${{ needs.integration-setup.outputs.test-session-id }}
           path: integration-test-data/
@@ -407,7 +407,7 @@ jobs:
           "
 
       - name: Upload memory integration results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: memory-integration-${{ needs.integration-setup.outputs.test-session-id }}
           path: |
@@ -422,10 +422,10 @@ jobs:
     needs: integration-setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -535,7 +535,7 @@ jobs:
           "
 
       - name: Upload fault tolerance results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fault-tolerance-${{ needs.integration-setup.outputs.test-session-id }}
           path: |
@@ -550,10 +550,10 @@ jobs:
     needs: integration-setup
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -676,7 +676,7 @@ jobs:
           "
 
       - name: Upload performance integration results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: performance-integration-${{ needs.integration-setup.outputs.test-session-id }}
           path: |
@@ -698,10 +698,10 @@ jobs:
     if: always()
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download all test artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: integration-test-results/
 
@@ -840,7 +840,7 @@ jobs:
           "
 
       - name: Upload final integration report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: integration-test-final-report-${{ needs.integration-setup.outputs.test-session-id }}
           path: final-report/
@@ -848,7 +848,7 @@ jobs:
 
       - name: Comment PR with integration results
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         continue-on-error: true
         with:
           script: |
