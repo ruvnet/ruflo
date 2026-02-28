@@ -7,8 +7,9 @@
 
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
-import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync, statSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { execSync, exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -240,54 +241,37 @@ async function checkBuildTools(): Promise<HealthCheck> {
 async function checkVersionFreshness(): Promise<HealthCheck> {
   try {
     // Get current CLI version from package.json
+    // Use import.meta.url to reliably locate our own package.json,
+    // regardless of how deep the compiled file sits (e.g. dist/src/commands/).
     let currentVersion = '0.0.0';
     try {
-      // Get directory of current module and walk up to find package.json
-      const moduleUrl = new URL(import.meta.url);
-      const modulePath = moduleUrl.protocol === 'file:' ? moduleUrl.pathname : import.meta.url;
-      const moduleDir = modulePath.substring(0, modulePath.lastIndexOf('/'));
+      const thisFile = fileURLToPath(import.meta.url);
+      let dir = dirname(thisFile);
 
-      // Look for package.json in multiple locations
-      const possiblePaths = [
-        join(moduleDir, '..', 'package.json'),         // ../package.json from dist/commands
-        join(moduleDir, '..', '..', 'package.json'),   // ../../package.json from dist/commands
-        join(process.cwd(), 'package.json'),           // Current working directory
-        join(process.cwd(), 'node_modules/@claude-flow/cli/package.json')
-      ];
-
-      // Also search in npx cache directories (Linux/macOS)
-      const homeDir = process.env.HOME || process.env.USERPROFILE || '';
-      if (homeDir) {
-        // Check common npx cache locations
+      // Walk up from the current file's directory until we find the
+      // package.json that belongs to @claude-flow/cli (or claude-flow/cli).
+      // Stop at the filesystem root to avoid an infinite loop.
+      const root = (process.platform === 'win32') ? dir.split('\\')[0] + '\\' : '/';
+      while (dir !== root) {
+        const candidate = join(dir, 'package.json');
         try {
-          const npxCacheDir = join(homeDir, '.npm', '_npx');
-          if (existsSync(npxCacheDir)) {
-            const cacheEntries = readdirSync(npxCacheDir);
-            for (const entry of cacheEntries) {
-              const npxPkgPath = join(npxCacheDir, entry, 'node_modules', '@claude-flow', 'cli', 'package.json');
-              if (existsSync(npxPkgPath)) {
-                possiblePaths.push(npxPkgPath);
-              }
-            }
-          }
-        } catch {
-          // Ignore errors scanning npx cache
-        }
-      }
-
-      for (const pkgPath of possiblePaths) {
-        try {
-          if (existsSync(pkgPath)) {
-            const packageJson = JSON.parse(readFileSync(pkgPath, 'utf8'));
-            // Make sure it's the right package
-            if (packageJson.name === '@claude-flow/cli' && packageJson.version) {
-              currentVersion = packageJson.version;
+          if (existsSync(candidate)) {
+            const pkg = JSON.parse(readFileSync(candidate, 'utf8'));
+            if (
+              pkg.version &&
+              typeof pkg.name === 'string' &&
+              (pkg.name === '@claude-flow/cli' || pkg.name === 'claude-flow' || pkg.name === 'ruflo')
+            ) {
+              currentVersion = pkg.version;
               break;
             }
           }
         } catch {
-          continue;
+          // Unreadable/invalid JSON -- skip and keep walking up
         }
+        const parent = dirname(dir);
+        if (parent === dir) break; // reached root
+        dir = parent;
       }
     } catch {
       // Fall back to a default

@@ -268,13 +268,9 @@ function mergeSettingsForUpgrade(existing: Record<string, unknown>): Record<stri
   // Platform-specific command wrappers
   // Windows: Use PowerShell-compatible commands
   // Mac/Linux: Use bash-compatible commands with 2>/dev/null
-  const teammateIdleCmd = isWindows
-    ? 'npx @claude-flow/cli@latest hooks teammate-idle --auto-assign true 2>$null; exit 0'
-    : 'npx @claude-flow/cli@latest hooks teammate-idle --auto-assign true 2>/dev/null || true';
-
-  const taskCompletedCmd = isWindows
-    ? 'if ($env:TASK_ID) { npx @claude-flow/cli@latest hooks task-completed --task-id $env:TASK_ID --train-patterns true 2>$null }; exit 0'
-    : '[ -n "$TASK_ID" ] && npx @claude-flow/cli@latest hooks task-completed --task-id "$TASK_ID" --train-patterns true 2>/dev/null || true';
+  // NOTE: teammateIdleCmd and taskCompletedCmd were removed.
+  // TeammateIdle/TaskCompleted are not valid Claude Code hook events and caused warnings.
+  // Agent Teams hook config lives in claudeFlow.agentTeams.hooks instead.
 
   // 1. Merge env vars (preserve existing, add new)
   const existingEnv = (existing.env as Record<string, string>) || {};
@@ -336,37 +332,12 @@ function mergeSettingsForUpgrade(existing: Record<string, unknown>): Record<stri
     });
   }
 
-  // Add TeammateIdle hook if not present
-  if (!existingHooks.TeammateIdle) {
-    (merged.hooks as Record<string, unknown[]>).TeammateIdle = [
-      {
-        hooks: [
-          {
-            type: 'command',
-            command: teammateIdleCmd,
-            timeout: 5000,
-            continueOnError: true,
-          },
-        ],
-      },
-    ];
-  }
-
-  // Add TaskCompleted hook if not present
-  if (!existingHooks.TaskCompleted) {
-    (merged.hooks as Record<string, unknown[]>).TaskCompleted = [
-      {
-        hooks: [
-          {
-            type: 'command',
-            command: taskCompletedCmd,
-            timeout: 5000,
-            continueOnError: true,
-          },
-        ],
-      },
-    ];
-  }
+  // NOTE: TeammateIdle and TaskCompleted are NOT valid Claude Code hook events.
+  // They cause warnings when present in settings.json hooks.
+  // Remove them if they exist from a previous init.
+  delete (merged.hooks as Record<string, unknown>).TeammateIdle;
+  delete (merged.hooks as Record<string, unknown>).TaskCompleted;
+  // Their configuration lives in claudeFlow.agentTeams.hooks instead.
 
   // 3. Fix statusLine config (remove invalid fields, ensure correct format)
   // Claude Code only supports: type, command, padding
@@ -586,8 +557,8 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
             'env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS',
             'hooks.SessionStart (auto-memory import)',
             'hooks.SessionEnd (auto-memory sync)',
-            'hooks.TeammateIdle',
-            'hooks.TaskCompleted',
+            'hooks.TeammateIdle (removed — not a valid Claude Code hook)',
+            'hooks.TaskCompleted (removed — not a valid Claude Code hook)',
             'claudeFlow.agentTeams',
             'claudeFlow.memory (learningBridge, memoryGraph, agentScopes)',
           ];
