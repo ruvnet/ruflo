@@ -32,12 +32,12 @@ jobs:
       cache-key: ${{ steps.setup.outputs.cache-key }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -54,7 +54,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             node_modules
@@ -70,16 +70,16 @@ jobs:
     needs: setup-verification
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Restore dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             node_modules
@@ -108,7 +108,7 @@ jobs:
           npx audit-ci --config .audit-ci.json || true
 
       - name: Upload security reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: security-reports-${{ needs.setup-verification.outputs.verification-id }}
           path: |
@@ -123,16 +123,16 @@ jobs:
     needs: setup-verification
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Restore dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             node_modules
@@ -167,7 +167,7 @@ jobs:
           npx complexity-report --format json --output complexity-report.json src/ || true
 
       - name: Upload quality reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quality-reports-${{ needs.setup-verification.outputs.verification-id }}
           path: |
@@ -185,10 +185,10 @@ jobs:
       matrix: ${{ fromJson(needs.setup-verification.outputs.test-matrix) }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
@@ -231,7 +231,7 @@ jobs:
           
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ matrix.os }}-node${{ matrix.node }}-${{ needs.setup-verification.outputs.verification-id }}
           path: |
@@ -246,10 +246,10 @@ jobs:
     needs: [setup-verification, code-quality]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -283,7 +283,7 @@ jobs:
     needs: setup-verification
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check documentation files
         run: |
@@ -307,16 +307,16 @@ jobs:
     if: github.event_name == 'push' || github.event.inputs.verification_mode == 'full'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build-artifacts-${{ needs.setup-verification.outputs.verification-id }}
 
@@ -334,7 +334,7 @@ jobs:
           node --expose-gc --max-old-space-size=128 dist/cli/main.js --version || true
 
       - name: Upload performance reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: performance-reports-${{ needs.setup-verification.outputs.verification-id }}
           path: |
@@ -357,7 +357,7 @@ jobs:
     if: always()
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Generate verification report
         run: |
@@ -386,7 +386,7 @@ jobs:
           cat verification-summary.md
 
       - name: Upload verification summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: verification-summary-${{ needs.setup-verification.outputs.verification-id }}
           path: verification-summary.md
