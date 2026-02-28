@@ -4,6 +4,7 @@
  * Multi-LLM Provider System for Claude Flow V3
  *
  * Supports:
+ * - Moonshot (Kimi K2.5, K2, K2 Thinking)
  * - Anthropic (Claude 3.5, 3 Opus, Sonnet, Haiku)
  * - OpenAI (GPT-4o, o1, GPT-4, GPT-3.5)
  * - Google (Gemini 2.0, 1.5 Pro, Flash)
@@ -30,6 +31,7 @@ export type { BaseProviderOptions, ILogger } from './base-provider.js';
 
 // Export providers
 export { AnthropicProvider } from './anthropic-provider.js';
+export { MoonshotProvider } from './moonshot-provider.js';
 export { OpenAIProvider } from './openai-provider.js';
 export { GoogleProvider } from './google-provider.js';
 export { CohereProvider } from './cohere-provider.js';
