@@ -208,10 +208,16 @@ export class MoonshotProvider extends BaseProvider {
       model,
       messages,
       max_tokens: request.maxTokens || 4096,
-      temperature: request.temperature ?? 0.7,
-      top_p: request.topP ?? 1.0,
       stream: false,
     };
+    
+    // Only add optional params if explicitly set
+    if (request.temperature !== undefined) {
+      (body as any).temperature = request.temperature;
+    }
+    if (request.topP !== undefined) {
+      (body as any).top_p = request.topP;
+    }
 
     try {
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
