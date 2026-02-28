@@ -214,7 +214,7 @@ async function startBackgroundDaemon(projectRoot: string, quiet: boolean): Promi
   // This prevents command injection via paths
   const child = spawn(process.execPath, [
     cliPath,
-    'daemon', 'start', '--foreground', '--quiet'
+    'daemon', 'start', '--foreground'
   ], {
     cwd: resolvedRoot,
     detached: true,

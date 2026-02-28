@@ -135,8 +135,14 @@ export class WorkerDaemon extends EventEmitter {
       maxConcurrent: config?.maxConcurrent ?? 2, // P0 fix: Limit concurrent workers
       workerTimeoutMs: config?.workerTimeoutMs ?? DEFAULT_WORKER_TIMEOUT_MS,
       resourceThresholds: config?.resourceThresholds ?? {
-        maxCpuLoad: 2.0,
-        minFreeMemoryPercent: 20,
+        // Load average is per-system (not per-core), so threshold must
+        // account for core count.  Default to 0 (disabled) and let
+        // canRunWorker() compute a dynamic, core-aware threshold.
+        maxCpuLoad: 0,
+        // macOS os.freemem() only reports truly unused RAM, excluding
+        // reclaimable cached/purgeable memory, so it typically shows 1-5%
+        // even when plenty of memory is available.  Use a low default.
+        minFreeMemoryPercent: 1,
       },
       workers: config?.workers ?? DEFAULT_WORKERS,
     };
@@ -239,8 +245,16 @@ export class WorkerDaemon extends EventEmitter {
     const freeMem = os.freemem();
     const freePercent = (freeMem / totalMem) * 100;
 
-    if (cpuLoad > this.config.resourceThresholds.maxCpuLoad) {
-      return { allowed: false, reason: `CPU load too high: ${cpuLoad.toFixed(2)}` };
+    // CPU check: use configured threshold, or if 0 (default), compute a
+    // dynamic core-aware threshold (3x core count).  os.loadavg() returns
+    // the system-wide load average, not per-core, so on an 8-core machine
+    // a load of 8 means 100% utilization — not overload.
+    const cpuThreshold = this.config.resourceThresholds.maxCpuLoad > 0
+      ? this.config.resourceThresholds.maxCpuLoad
+      : os.cpus().length * 3;
+
+    if (cpuLoad > cpuThreshold) {
+      return { allowed: false, reason: `CPU load too high: ${cpuLoad.toFixed(2)} > ${cpuThreshold}` };
     }
     if (freePercent < this.config.resourceThresholds.minFreeMemoryPercent) {
       return { allowed: false, reason: `Memory too low: ${freePercent.toFixed(1)}% free` };
