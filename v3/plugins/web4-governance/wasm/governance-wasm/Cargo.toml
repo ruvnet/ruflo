@@ -1,0 +1,26 @@
+[package]
+name = "governance-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Trust-based policy evaluation WASM module for claude-flow"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook"]
+console_error_panic_hook = ["dep:console_error_panic_hook"]
+
+[dependencies]
+wasm-bindgen.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde-wasm-bindgen.workspace = true
+js-sys.workspace = true
+sha2.workspace = true
+gastown-shared.workspace = true
+console_error_panic_hook = { version = "0.1", optional = true }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
