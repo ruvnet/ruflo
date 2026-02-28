@@ -107,13 +107,14 @@ export class MoonshotProvider extends BaseProvider {
     },
   };
 
-  constructor(options: BaseProviderOptions = {}) {
+  constructor(options: BaseProviderOptions) {
     super(options);
-    this.baseUrl = options.baseUrl || 'https://api.moonshot.cn/v1';
-    this.apiKey = options.apiKey || process.env.MOONSHOT_API_KEY || '';
   }
 
-  validate(): void {
+  protected async doInitialize(): Promise<void> {
+    this.baseUrl = this.config.apiUrl || 'https://api.moonshot.cn/v1';
+    this.apiKey = this.config.apiKey || process.env.MOONSHOT_API_KEY || '';
+    
     if (!this.apiKey) {
       throw new AuthenticationError(
         'Moonshot API key is required. Set MOONSHOT_API_KEY environment variable.',
@@ -198,7 +199,7 @@ export class MoonshotProvider extends BaseProvider {
   }
 
   async complete(request: LLMRequest): Promise<LLMResponse> {
-    this.validate();
+    if (!this.apiKey) { throw new AuthenticationError("Moonshot API key not initialized", "moonshot"); }
 
     const model = request.model || 'kimi-k2-5';
     const messages = this.buildMessages(request);
