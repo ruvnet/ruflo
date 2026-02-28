@@ -133,7 +133,7 @@ export class ConnectionPool extends EventEmitter implements IConnectionPool {
    * Initialize minimum number of connections
    */
   private async initializeMinConnections(): Promise<void> {
-    const promises: Promise<void>[] = [];
+    const promises: Promise<unknown>[] = [];
     for (let i = 0; i < this.config.minConnections; i++) {
       promises.push(this.createConnection());
     }

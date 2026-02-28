@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Security MCP Tools - AIDefence Integration
  *

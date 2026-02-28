@@ -520,6 +520,7 @@ export const broadcastTool: MCPTool = {
         description: 'Source swarm ID',
       },
       message: {
+        type: 'object',
         description: 'Message payload',
       },
     },
@@ -549,6 +550,7 @@ export const proposeTool: MCPTool = {
         description: 'Proposal type',
       },
       value: {
+        type: 'object',
         description: 'Proposal value',
       },
       timeoutMs: {

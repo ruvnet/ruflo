@@ -143,7 +143,7 @@ export class ConfigTools implements MCPToolProvider {
 
   private async loadConfigTool(path: string): Promise<MCPToolResult> {
     const config = await this.loadConfig(path);
-    return { success: true, config };
+    return { success: true, config: config as unknown as Record<string, unknown> };
   }
 
   private async saveConfigTool(path: string, config: V3Config): Promise<MCPToolResult> {
@@ -180,9 +180,9 @@ export class ConfigTools implements MCPToolProvider {
   private async getConfigTool(path?: string): Promise<MCPToolResult> {
     if (path) {
       const config = this.configs.get(path);
-      return { success: true, config };
+      return { success: true, config: config as unknown as Record<string, unknown> };
     }
-    return { success: true, config: this.getDefaultConfig() };
+    return { success: true, config: this.getDefaultConfig() as unknown as Record<string, unknown> };
   }
 
   private getDefaultConfig(): V3Config {

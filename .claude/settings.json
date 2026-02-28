@@ -1,45 +1,4 @@
 {
-  "model": "claude-opus-4-6",
-  "customInstructions": "Follow the project's CLAUDE.md guidelines. Use concurrent execution for all operations. Prioritize v3 implementation with security-first development, 15-agent swarm coordination, phased performance optimization, and cross-platform helper automation.",
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "CLAUDE_FLOW_V3_ENABLED": "true",
-    "CLAUDE_FLOW_HOOKS_ENABLED": "true"
-  },
-  "permissions": {
-    "allow": [
-      "Bash(npx @claude-flow*)",
-      "Bash(npx claude-flow*)",
-      "Bash(node .claude/*)",
-      "Bash(npm run:*)",
-      "Bash(npm test:*)",
-      "Bash(git status)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push)",
-      "Bash(git config:*)",
-      "Bash(git tag:*)",
-      "Bash(git branch:*)",
-      "Bash(git checkout:*)",
-      "Bash(git stash:*)",
-      "Bash(jq:*)",
-      "Bash(node:*)",
-      "Bash(which:*)",
-      "Bash(pwd)",
-      "Bash(ls:*)",
-      "Bash(npx:*)",
-      "mcp__claude-flow__*",
-      "mcp__ruv-swarm__*",
-      "mcp__flow-nexus__*"
-    ],
-    "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Bash(rm -rf /)"
-    ]
-  },
   "hooks": {
     "PreToolUse": [
       {
@@ -47,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" pre-bash",
+            "command": "node .claude/helpers/hook-handler.cjs pre-bash",
             "timeout": 5000
           }
         ]
@@ -59,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" post-edit",
+            "command": "node .claude/helpers/hook-handler.cjs post-edit",
             "timeout": 10000
           }
         ]
@@ -70,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" route",
+            "command": "node .claude/helpers/hook-handler.cjs route",
             "timeout": 10000
           }
         ]
@@ -81,12 +40,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" session-restore",
+            "command": "node .claude/helpers/hook-handler.cjs session-restore",
             "timeout": 15000
           },
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/auto-memory-hook.mjs\" import",
+            "command": "node .claude/helpers/auto-memory-hook.mjs import",
             "timeout": 8000
           }
         ]
@@ -97,7 +56,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" session-end",
+            "command": "node .claude/helpers/hook-handler.cjs session-end",
             "timeout": 10000
           }
         ]
@@ -108,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/auto-memory-hook.mjs\" sync",
+            "command": "node .claude/helpers/auto-memory-hook.mjs sync",
             "timeout": 10000
           }
         ]
@@ -120,11 +79,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" compact-manual"
+            "command": "node .claude/helpers/hook-handler.cjs compact-manual"
           },
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" session-end",
+            "command": "node .claude/helpers/hook-handler.cjs session-end",
             "timeout": 5000
           }
         ]
@@ -134,11 +93,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" compact-auto"
+            "command": "node .claude/helpers/hook-handler.cjs compact-auto"
           },
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" session-end",
+            "command": "node .claude/helpers/hook-handler.cjs session-end",
             "timeout": 6000
           }
         ]
@@ -149,38 +108,37 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" status",
+            "command": "node .claude/helpers/hook-handler.cjs status",
             "timeout": 3000
-          }
-        ]
-      }
-    ],
-    "TeammateIdle": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" post-task",
-            "timeout": 5000
-          }
-        ]
-      }
-    ],
-    "TaskCompleted": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" post-task",
-            "timeout": 5000
           }
         ]
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "node .claude/helpers/statusline.cjs"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npx @claude-flow*)",
+      "Bash(npx claude-flow*)",
+      "Bash(node .claude/*)",
+      "mcp__claude-flow__:*"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  },
   "attribution": {
     "commit": "Co-Authored-By: claude-flow <ruv@ruv.net>",
-    "pr": "\ud83e\udd16 Generated with [claude-flow](https://github.com/ruvnet/claude-flow)"
+    "pr": "🤖 Generated with [claude-flow](https://github.com/ruvnet/claude-flow)"
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_FLOW_V3_ENABLED": "true",
+    "CLAUDE_FLOW_HOOKS_ENABLED": "true"
   },
   "claudeFlow": {
     "version": "3.0.0",
@@ -220,9 +178,15 @@
     "memory": {
       "backend": "hybrid",
       "enableHNSW": true,
-      "learningBridge": { "enabled": true },
-      "memoryGraph": { "enabled": true },
-      "agentScopes": { "enabled": true }
+      "learningBridge": {
+        "enabled": true
+      },
+      "memoryGraph": {
+        "enabled": true
+      },
+      "agentScopes": {
+        "enabled": true
+      }
     },
     "neural": {
       "enabled": true
@@ -242,18 +206,47 @@
         "benchmark"
       ],
       "schedules": {
-        "audit": { "interval": "1h", "priority": "critical" },
-        "optimize": { "interval": "30m", "priority": "high" },
-        "consolidate": { "interval": "2h", "priority": "low" },
-        "document": { "interval": "1h", "priority": "normal" },
-        "deepdive": { "interval": "4h", "priority": "normal" },
-        "ultralearn": { "interval": "1h", "priority": "normal" }
+        "audit": {
+          "interval": "1h",
+          "priority": "critical"
+        },
+        "optimize": {
+          "interval": "30m",
+          "priority": "high"
+        },
+        "consolidate": {
+          "interval": "2h",
+          "priority": "low"
+        },
+        "document": {
+          "interval": "1h",
+          "priority": "normal",
+          "triggers": [
+            "adr-update",
+            "api-change"
+          ]
+        },
+        "deepdive": {
+          "interval": "4h",
+          "priority": "normal",
+          "triggers": [
+            "complex-change"
+          ]
+        },
+        "ultralearn": {
+          "interval": "1h",
+          "priority": "normal"
+        }
       }
     },
     "learning": {
       "enabled": true,
       "autoTrain": true,
-      "patterns": ["coordination", "optimization", "prediction"],
+      "patterns": [
+        "coordination",
+        "optimization",
+        "prediction"
+      ],
       "retention": {
         "shortTerm": "24h",
         "longTerm": "30d"
@@ -275,31 +268,5 @@
       "cveCheck": true,
       "threatModel": true
     }
-  },
-  "agents": {
-    "source": ".claude/agents",
-    "customAgents": []
-  },
-  "skills": {
-    "source": ".claude/commands",
-    "enabled": true
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "node \"$(git rev-parse --show-toplevel)/.claude/helpers/statusline.cjs\""
-  },
-  "mcpServers": {
-    "claude-flow": {
-      "command": "node",
-      "args": [
-        "/workspaces/claude-flow/v3/@claude-flow/cli/bin/cli.js",
-        "mcp",
-        "start"
-      ]
-    }
-  },
-  "enabledMcpjsonServers": [
-    "claude-flow",
-    "ruv-swarm"
-  ]
+  }
 }

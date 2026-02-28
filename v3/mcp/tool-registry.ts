@@ -400,7 +400,7 @@ export class ToolRegistry extends EventEmitter {
       };
     }
 
-    const execContext = { ...this.defaultContext, ...context };
+    const execContext = { ...this.defaultContext, ...context } as ToolContext;
     this.totalExecutions++;
     metadata.callCount++;
     metadata.lastCalled = new Date();

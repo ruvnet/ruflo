@@ -21,7 +21,22 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": false,
     "paths": {
-      "@v3/*": ["./v3/*"]
+      "@v3/*": ["./v3/*"],
+      "@claude-flow/security": ["./v3/@claude-flow/security/src"],
+      "@claude-flow/memory": ["./v3/@claude-flow/memory/src"],
+      "@claude-flow/integration": ["./v3/@claude-flow/integration/src"],
+      "@claude-flow/swarm": ["./v3/@claude-flow/swarm/src"],
+      "@claude-flow/performance": ["./v3/@claude-flow/performance/src"],
+      "@claude-flow/cli": ["./v3/@claude-flow/cli/src"],
+      "@claude-flow/neural": ["./v3/@claude-flow/neural/src"],
+      "@claude-flow/testing": ["./v3/@claude-flow/testing/src"],
+      "@claude-flow/deployment": ["./v3/@claude-flow/deployment/src"],
+      "@claude-flow/shared": ["./v3/@claude-flow/shared/src"],
+      "@claude-flow/hooks": ["./v3/@claude-flow/hooks/src"],
+      "@claude-flow/mcp": ["./v3/mcp"],
+      "@claude-flow/embeddings": ["./v3/@claude-flow/embeddings/src"],
+      "@claude-flow/aidefence": ["./v3/@claude-flow/security/src"],
+      "@claude-flow/guidance/*": ["./v3/@claude-flow/guidance/src/*"]
     },
     "baseUrl": "."
   },
@@ -33,6 +48,27 @@
     "dist",
     "**/*.test.ts",
     "**/*.bench.ts",
-    "v3/__tests__/**/*.ts"
+    "v3/__tests__/**/*.ts",
+    "v3/plugins/**/*.ts",
+    "v3/@claude-flow/plugins/**/*.ts",
+    "v3/@claude-flow/**/examples/**/*.ts",
+    "v3/@claude-flow/embeddings/**/*.ts",
+    "v3/@claude-flow/providers/**/*.ts",
+    "v3/@claude-flow/deployment/examples/**/*.ts",
+    "v3/@claude-flow/testing/**/*.ts",
+    "v3/@claude-flow/security/__tests__/**/*.ts",
+    "v3/@claude-flow/performance/src/attention-benchmarks.ts",
+    "v3/@claude-flow/performance/src/attention-integration.ts",
+    "v3/@claude-flow/cli/src/commands/security.ts",
+    "v3/@claude-flow/cli/src/mcp-tools/security-tools.ts",
+    "v3/index.ts",
+    "v3/mcp/tools/v2-compat-tools.ts",
+    "v3/mcp/tools/sona-tools.ts",
+    "v3/mcp/tools/agent-tools.ts",
+    "v3/mcp/tools/config-tools.ts",
+    "v3/mcp/tools/memory-tools.ts",
+    "v3/mcp/tools/swarm-tools.ts",
+    "v3/mcp/transport/http.ts",
+    "**/tests/validate.ts"
   ]
 }

@@ -43,4 +43,4 @@ export const ExtensionPointNames = {
 
 export type ExtensionPointName = typeof ExtensionPointNames[keyof typeof ExtensionPointNames];
 
-export { ExtensionPoint as default };
+export type { ExtensionPoint as default };

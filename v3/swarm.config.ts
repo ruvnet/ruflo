@@ -5,21 +5,39 @@
  * Based on the V3 Architecture Decision Records and Swarm Implementation Plan
  */
 
-import {
-  SwarmConfig,
-  TopologyType,
-  LoadBalancingStrategy,
-  AgentDomain,
-  PhaseId,
-  PerformanceTargets,
-  V3_PERFORMANCE_TARGETS
-} from './shared/types';
+// Types defined locally — these are swarm-config-specific and not in shared types
+export type TopologyType = 'hierarchical-mesh' | 'mesh' | 'hierarchical' | 'centralized';
+export type LoadBalancingStrategy = 'round-robin' | 'least-loaded' | 'capability-match';
+export type AgentDomain = 'security' | 'core' | 'integration' | 'quality' | 'performance' | 'deployment';
+export type PhaseId = 'phase-1-foundation' | 'phase-2-core' | 'phase-3-integration' | 'phase-4-release';
+
+export interface PerformanceTargets {
+  flashAttention: { targetSpeedup: string; };
+  memoryReduction: { target: string; };
+  hnswSearch: { targetSpeedup: string; };
+  mcpResponse: { target: string; };
+  cliStartup: { target: string; };
+}
+
+export const V3_PERFORMANCE_TARGETS: PerformanceTargets = {
+  flashAttention: { targetSpeedup: '2.49x-7.47x' },
+  memoryReduction: { target: '50-75%' },
+  hnswSearch: { targetSpeedup: '150x-12500x' },
+  mcpResponse: { target: '<100ms' },
+  cliStartup: { target: '<500ms' },
+};
 
 // =============================================================================
 // Swarm Configuration
 // =============================================================================
 
-export interface V3SwarmConfig extends SwarmConfig {
+export interface V3SwarmConfig {
+  topology: TopologyType;
+  maxAgents: number;
+  messageTimeout: number;
+  retryAttempts: number;
+  healthCheckInterval: number;
+  loadBalancingStrategy: LoadBalancingStrategy;
   name: string;
   version: string;
   description: string;

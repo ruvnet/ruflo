@@ -99,7 +99,7 @@ export class MemoryTools implements MCPToolProvider {
     try {
       switch (toolName) {
         case 'memory_store':
-          return await this.storeMemory(params as Memory);
+          return await this.storeMemory(params as unknown as Memory);
 
         case 'memory_search':
           return await this.searchMemories(params as MemoryQuery);

@@ -78,7 +78,7 @@ export class AgentTools implements MCPToolProvider {
     try {
       switch (toolName) {
         case 'agent_spawn':
-          return await this.spawnAgent(params as AgentConfig);
+          return await this.spawnAgent(params as unknown as AgentConfig);
 
         case 'agent_list':
           return await this.listAgents();

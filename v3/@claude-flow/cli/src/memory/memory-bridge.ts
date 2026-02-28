@@ -825,7 +825,7 @@ export async function bridgeGenerateEmbedding(
     if (!embedder) return null;
 
     const emb = await embedder.embed(text);
-    if (!emb) return null;
+    if (!emb || typeof emb.length === 'undefined') return null;
 
     return {
       embedding: Array.from(emb),
@@ -1006,6 +1006,10 @@ export async function bridgeAddToHNSW(
 
   const ctx = getDb(registry);
   if (!ctx) return null;
+
+  if (!embedding || !Array.isArray(embedding) || embedding.length === 0) {
+    return null;
+  }
 
   try {
     const now = Date.now();

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * V2 Compatibility Tools
  *

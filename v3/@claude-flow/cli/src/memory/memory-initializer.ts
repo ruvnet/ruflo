@@ -522,6 +522,10 @@ export async function addToHNSWIndex(
     if (bridgeResult === true) return true;
   }
 
+  if (!embedding || !Array.isArray(embedding) || embedding.length === 0) {
+    return false;
+  }
+
   const index = await getHNSWIndex({ dimensions: embedding.length });
   if (!index) return false;
 
@@ -557,6 +561,10 @@ export async function searchHNSWIndex(
   if (bridge) {
     const bridgeResult = await bridge.bridgeSearchHNSW(queryEmbedding, options);
     if (bridgeResult) return bridgeResult;
+  }
+
+  if (!queryEmbedding || !Array.isArray(queryEmbedding) || queryEmbedding.length === 0) {
+    return null;
   }
 
   const index = await getHNSWIndex({ dimensions: queryEmbedding.length });

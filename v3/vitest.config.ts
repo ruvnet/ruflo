@@ -82,12 +82,6 @@ export default defineConfig({
 
     // Parallel execution
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: false,
-        isolate: true,
-      },
-    },
 
     // Globals for easier testing
     globals: true,

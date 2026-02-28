@@ -719,6 +719,12 @@ export const hooksRoute: MCPTool = {
   },
   handler: async (params: Record<string, unknown>) => {
     const task = params.task as string;
+    if (!task || typeof task !== 'string') {
+      return {
+        error: 'Missing required parameter: task',
+        usage: 'Provide a task description to route, e.g. { "task": "implement authentication" }',
+      };
+    }
     const context = params.context as string | undefined;
     const useSemanticRouter = params.useSemanticRouter !== false;
 
