@@ -1,7 +1,7 @@
 {
   "name": "@claude-flow/plugin-agentic-qe",
   "version": "3.0.0-alpha.4",
-  "description": "Quality Engineering plugin for Claude Flow V3 with 51 specialized agents across 12 DDD bounded contexts",
+  "description": "Quality Engineering plugin for Claude Flow V3 with 59+ specialized agents across 13 DDD bounded contexts, 63 skills, O(log n) coverage analysis, and ReasoningBank learning",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -54,12 +54,16 @@
     "zod": "^3.23.0"
   },
   "peerDependencies": {
+    "agentic-qe": ">=3.6.0",
     "@claude-flow/plugins": ">=3.0.0",
     "@claude-flow/memory": ">=3.0.0",
     "@claude-flow/security": ">=3.0.0",
     "@claude-flow/embeddings": ">=3.0.0"
   },
   "peerDependenciesMeta": {
+    "agentic-qe": {
+      "optional": false
+    },
     "@claude-flow/plugins": {
       "optional": true
     },

@@ -4,7 +4,7 @@
 
 ## What is this?
 
-This plugin adds 58 AI agents to Claude Flow that handle all aspects of software quality:
+This plugin adds 59+ AI agents and 63 skills to Claude Flow that handle all aspects of software quality:
 
 - **Write tests for you** - Unit tests, integration tests, E2E tests, even chaos tests
 - **Find coverage gaps** - Shows exactly which code paths aren't tested
