@@ -23,6 +23,7 @@ import { spawn, execSync, type ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import { existsSync, readFileSync, readdirSync, mkdirSync, writeFileSync } from 'fs';
 import { join, relative } from 'path';
+import { resolveCommand } from '../resolve-command.js';
 import type { WorkerType } from './worker-daemon.js';
 
 // ============================================
@@ -629,7 +630,7 @@ export class HeadlessWorkerExecutor extends EventEmitter {
     }
 
     try {
-      const output = execSync('claude --version', {
+      const output = execSync(`"${resolveCommand('claude')}" --version`, {
         encoding: 'utf-8',
         stdio: 'pipe',
         timeout: 5000,
@@ -1122,7 +1123,9 @@ Analyze the above codebase context and provide your response following the forma
       env.ANTHROPIC_MODEL = MODEL_IDS[options.model];
 
       // Spawn claude CLI process
-      const child = spawn('claude', ['--print', prompt], {
+      // Use resolved absolute path to avoid shell: true, which causes
+      // cmd.exe escaping vulnerabilities and process orphaning on Windows
+      const child = spawn(resolveCommand('claude'), ['--print', prompt], {
         cwd: this.projectRoot,
         env,
         stdio: ['pipe', 'pipe', 'pipe'],

@@ -10,9 +10,10 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
-import { spawn as childSpawn, execSync } from 'child_process';
+import { spawn as childSpawn } from 'child_process';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { resolveCommand, isCommandAvailable } from '../resolve-command.js';
 
 // Worker type definitions for prompt generation
 interface HiveWorker {
@@ -224,12 +225,9 @@ async function spawnClaudeCodeInstance(
     output.writeln();
     output.printSuccess(`Hive Mind prompt saved to: ${promptFile}`);
 
-    // Check if claude command exists
-    let claudeAvailable = false;
-    try {
-      execSync('which claude', { stdio: 'ignore' });
-      claudeAvailable = true;
-    } catch {
+    // Check if claude command exists (cross-platform, no shell needed)
+    const claudeAvailable = isCommandAvailable('claude');
+    if (!claudeAvailable) {
       output.writeln();
       output.printWarning('Claude Code CLI not found in PATH');
       output.writeln(output.dim('Install it with: npm install -g @anthropic-ai/claude-code'));
@@ -267,10 +265,10 @@ async function spawnClaudeCodeInstance(
       output.printInfo('Launching Claude Code...');
       output.writeln(output.dim('Press Ctrl+C to pause the session'));
 
-      // Spawn claude with properly ordered arguments
-      const claudeProcess = childSpawn('claude', claudeArgs, {
+      // Spawn claude with resolved absolute path (avoids shell: true which
+      // causes cmd.exe escaping vulnerabilities and process orphaning on Windows)
+      const claudeProcess = childSpawn(resolveCommand('claude'), claudeArgs, {
         stdio: 'inherit',
-        shell: false,
       });
 
       // Set up SIGINT handler for session management

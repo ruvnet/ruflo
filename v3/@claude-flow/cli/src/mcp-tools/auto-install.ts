@@ -66,7 +66,7 @@ export async function autoInstallPackage(
     const result = spawnSync('npm', args, {
       stdio: silent ? 'pipe' : ['pipe', 'pipe', 'pipe'],
       timeout,
-      shell: false, // Explicitly disable shell
+      shell: process.platform === 'win32', // Enable shell on Windows for PATH resolution
     });
 
     if (result.status !== 0) {
