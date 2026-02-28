@@ -7,7 +7,7 @@
  *
  * For new code, use UnifiedSwarmCoordinator directly:
  * ```typescript
- * import { createUnifiedSwarmCoordinator } from '@claude-flow/swarm';
+ * import { createUnifiedSwarmCoordinator } from '@anthill/swarm';
  * const coordinator = createUnifiedSwarmCoordinator(config);
  * await coordinator.initialize();
  * ```
@@ -741,7 +741,7 @@ export class SwarmHub implements ISwarmHub {
  * const hub = createSwarmHub();
  *
  * // NEW:
- * import { createUnifiedSwarmCoordinator } from '@claude-flow/swarm';
+ * import { createUnifiedSwarmCoordinator } from '@anthill/swarm';
  * const coordinator = createUnifiedSwarmCoordinator();
  * ```
  */

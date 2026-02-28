@@ -1,9 +1,9 @@
 /**
- * @claude-flow/swarm - Standalone Event System
+ * @anthill/swarm - Standalone Event System
  * Event-driven communication for multi-agent swarm coordination
  *
  * This file provides a complete event system for standalone operation
- * without dependency on @claude-flow/shared
+ * without dependency on @anthill/shared
  */
 
 import type { SwarmEvent, EventType, EventHandler, AgentId } from './types.js';

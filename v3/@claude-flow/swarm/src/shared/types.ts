@@ -1,9 +1,9 @@
 /**
- * @claude-flow/swarm - Standalone Types
+ * @anthill/swarm - Standalone Types
  * Core type definitions for multi-agent swarm coordination
  *
  * This file provides all types needed for standalone operation
- * without dependency on @claude-flow/shared
+ * without dependency on @anthill/shared
  */
 
 // =============================================================================

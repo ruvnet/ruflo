@@ -1,11 +1,11 @@
-# Contributing to Ruflo
+# Contributing to Anthill
 
-Thank you for your interest in contributing to Ruflo!
+Thank you for your interest in contributing to Anthill!
 
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/ruflo.git`
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/anthill.git`
 3. Install dependencies: `npm install`
 4. Create a branch: `git checkout -b feature/my-feature`
 

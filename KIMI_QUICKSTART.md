@@ -1,6 +1,6 @@
 # Kimi-First Quick Start
 
-This fork of Ruflo uses **Moonshot (Kimi)** as the default LLM provider.
+This fork of Anthill uses **Moonshot (Kimi)** as the default LLM provider.
 
 ## 1. Get Moonshot API Key
 
@@ -22,11 +22,11 @@ MOONSHOT_API_KEY=your_key_here
 
 ```bash
 # Initialize with Kimi defaults
-npx ruflo@latest init --config config/kimi-default.json
+npx anthill@latest init --config config/kimi-default.json
 
 # Or use environment variables
 export MOONSHOT_API_KEY=your_key_here
-npx ruflo@latest init
+npx anthill@latest init
 ```
 
 ## Available Kimi Models
@@ -43,10 +43,10 @@ While Kimi is default, you can still use others:
 
 ```bash
 # Use Claude for specific task
-ruflo run --provider anthropic --model claude-3-5-sonnet
+anthill run --provider anthropic --model claude-3-5-sonnet
 
 # Use GPT-4
-ruflo run --provider openai --model gpt-4o
+anthill run --provider openai --model gpt-4o
 ```
 
 ## Why Kimi?
@@ -59,4 +59,4 @@ ruflo run --provider openai --model gpt-4o
 ## Need Help?
 
 - [Moonshot Documentation](https://platform.moonshot.cn/docs)
-- [Ruflo Discord](https://discord.com/invite/dfxmpwkG2D)
+- [Anthill Discord](https://discord.com/invite/dfxmpwkG2D)

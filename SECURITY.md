@@ -77,7 +77,7 @@ RUFLO_DISABLE_TELEMETRY=false
 
 ## Security Features
 
-Ruflo includes several security features:
+Anthill includes several security features:
 
 - **API Key Validation**: All providers validate API keys before use
 - **Rate Limiting**: Built-in protection against API abuse
