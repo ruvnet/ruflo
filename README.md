@@ -7534,3 +7534,5 @@ MIT - [RuvNet](https://github.com/ruvnet)
 [![Reddit](https://img.shields.io/reddit/subreddit-subscribers/aipromptprogramming?style=for-the-badge&logo=reddit&color=FF4500&label=r/aipromptprogramming)](https://www.reddit.com/r/aipromptprogramming/)
 
 [![Crates.io](https://img.shields.io/badge/crates.io-ruvnet-E6732E?style=for-the-badge&logo=rust&logoColor=white)](https://crates.io/users/ruvnet)
+
+- [AgentMarket](https://agentmarket.cloud) - B2A marketplace for AI agents. 189 listings, 28M+ energy records, enterprise-ready API.
