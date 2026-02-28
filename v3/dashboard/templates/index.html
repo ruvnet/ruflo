@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude-Flow Kanban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        .task-card { transition: all 0.2s ease; }
+        .task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .task-card.dragging { opacity: 0.5; transform: rotate(3deg); }
+        .column-drop-zone { min-height: 100px; }
+        .agent-badge { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .sortable-ghost { opacity: 0.4; background: #c8ebfb; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                    🎯 Claude-Flow Kanban
+                </h1>
+                <span class="text-sm text-gray-400">Multi-Agent Task Orchestration</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="status-indicator" class="flex items-center gap-2 text-sm">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="text-gray-400">Connected</span>
+                </div>
+                <button onclick="location.reload()" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm">
+                    ↻ Refresh
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="p-6">
+        <!-- New Task Form -->
+        <div class="mb-6 bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <form action="/tasks" method="POST" class="flex gap-4 items-end">
+                <div class="flex-1">
+                    <label class="block text-sm text-gray-400 mb-1">Task Title</label>
+                    <input type="text" name="title" required
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                        placeholder="What needs to be done?">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm text-gray-400 mb-1">Description (optional)</label>
+                    <input type="text" name="description"
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                        placeholder="Additional details...">
+                </div>
+                <div class="w-48">
+                    <label class="block text-sm text-gray-400 mb-1">Agent Type</label>
+                    <select name="agent_type" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500">
+                        <option value="">-- Select --</option>
+                        {% for agent in agent_types %}
+                        <option value="{{ agent.id }}">{{ agent.icon }} {{ agent.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium">
+                    + Add Task
+                </button>
+            </form>
+        </div>
+
+        <!-- Kanban Board -->
+        <div class="grid grid-cols-4 gap-4">
+            {% for status in statuses %}
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+                    <h2 class="font-semibold flex items-center gap-2">
+                        {% if status.id == 'backlog' %}📋{% elif status.id == 'active' %}🚀{% elif status.id == 'review' %}👀{% else %}✅{% endif %}
+                        {{ status.name }}
+                    </h2>
+                    <span class="text-sm text-gray-400 bg-gray-700 px-2 py-0.5 rounded">
+                        {{ tasks_by_status[status.id]|length }}
+                    </span>
+                </div>
+                <div class="p-3 column-drop-zone space-y-3" data-status="{{ status.id }}" id="column-{{ status.id }}">
+                    {% for task in tasks_by_status[status.id] %}
+                    <div class="task-card bg-gray-700 rounded-lg p-3 cursor-move border border-gray-600 hover:border-gray-500"
+                         data-task-id="{{ task.id }}" draggable="true">
+                        <div class="flex items-start justify-between gap-2 mb-2">
+                            <h3 class="font-medium text-sm">{{ task.title }}</h3>
+                            <button onclick="deleteTask('{{ task.id }}')"
+                                class="text-gray-500 hover:text-red-400 text-xs">✕</button>
+                        </div>
+                        {% if task.description %}
+                        <p class="text-xs text-gray-400 mb-2">{{ task.description }}</p>
+                        {% endif %}
+                        <div class="flex items-center justify-between">
+                            {% if task.agent_type %}
+                            <span class="text-xs px-2 py-0.5 bg-blue-600/30 text-blue-300 rounded flex items-center gap-1">
+                                {% for agent in agent_types if agent.id == task.agent_type %}
+                                {{ agent.icon }} {{ agent.name }}
+                                {% endfor %}
+                                {% if task.agent_id %}
+                                <span class="agent-badge w-1.5 h-1.5 bg-green-400 rounded-full ml-1"></span>
+                                {% endif %}
+                            </span>
+                            {% else %}
+                            <select onchange="assignAgent('{{ task.id }}', this.value)"
+                                class="text-xs bg-gray-600 border border-gray-500 rounded px-2 py-1">
+                                <option value="">Assign agent...</option>
+                                {% for agent in agent_types %}
+                                <option value="{{ agent.id }}">{{ agent.icon }} {{ agent.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% endif %}
+                            <span class="text-xs text-gray-500">{{ task.id[-8:] }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Bottom Panel: Agents & Activity -->
+        <div class="mt-6 grid grid-cols-2 gap-4">
+            <!-- Active Agents -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="px-4 py-3 border-b border-gray-700">
+                    <h2 class="font-semibold">🤖 Active Agents</h2>
+                </div>
+                <div class="p-4 max-h-48 overflow-y-auto">
+                    {% if agents %}
+                    <div class="space-y-2">
+                        {% for agent in agents %}
+                        <div class="flex items-center justify-between bg-gray-700 rounded px-3 py-2 text-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full {% if agent.status == 'running' %}bg-green-500 animate-pulse{% elif agent.status == 'error' %}bg-red-500{% else %}bg-gray-500{% endif %}"></span>
+                                <span class="font-medium">{{ agent.name }}</span>
+                                <span class="text-gray-400">({{ agent.type }})</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-500">{{ agent.status }}</span>
+                                {% if agent.status == 'running' %}
+                                <button onclick="stopAgent('{{ agent.id }}')" class="text-red-400 hover:text-red-300 text-xs">Stop</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-sm">No active agents. Assign an agent to a task to get started.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="px-4 py-3 border-b border-gray-700">
+                    <h2 class="font-semibold">📜 Recent Activity</h2>
+                </div>
+                <div class="p-4 max-h-48 overflow-y-auto">
+                    {% if recent_activity %}
+                    <div class="space-y-2 text-sm">
+                        {% for activity in recent_activity %}
+                        <div class="flex items-center gap-2 text-gray-400">
+                            <span class="text-xs text-gray-600">{{ activity.timestamp[11:19] }}</span>
+                            <span>{{ activity.action.replace('_', ' ').title() }}</span>
+                            {% if activity.details %}
+                            <span class="text-gray-500">- {{ activity.details[:30] }}{% if activity.details|length > 30 %}...{% endif %}</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-sm">No activity yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Sortable for each column
+        document.querySelectorAll('.column-drop-zone').forEach(column => {
+            new Sortable(column, {
+                group: 'kanban',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: function(evt) {
+                    const taskId = evt.item.dataset.taskId;
+                    const newStatus = evt.to.dataset.status;
+                    moveTask(taskId, newStatus);
+                }
+            });
+        });
+
+        async function moveTask(taskId, status) {
+            const formData = new FormData();
+            formData.append('status', status);
+            await fetch(`/tasks/${taskId}/move`, {
+                method: 'POST',
+                body: formData
+            });
+        }
+
+        async function assignAgent(taskId, agentType) {
+            if (!agentType) return;
+            const formData = new FormData();
+            formData.append('agent_type', agentType);
+            await fetch(`/tasks/${taskId}/assign`, {
+                method: 'POST',
+                body: formData
+            });
+            location.reload();
+        }
+
+        async function deleteTask(taskId) {
+            if (!confirm('Delete this task?')) return;
+            await fetch(`/tasks/${taskId}/delete`, { method: 'POST' });
+            location.reload();
+        }
+
+        async function stopAgent(agentId) {
+            await fetch(`/agents/${agentId}/stop`, { method: 'POST' });
+            location.reload();
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            fetch('/health').then(r => r.json()).then(data => {
+                document.getElementById('status-indicator').innerHTML = `
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="text-gray-400">Connected</span>
+                `;
+            }).catch(() => {
+                document.getElementById('status-indicator').innerHTML = `
+                    <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span class="text-gray-400">Disconnected</span>
+                `;
+            });
+        }, 30000);
+    </script>
+</body>
+</html>
