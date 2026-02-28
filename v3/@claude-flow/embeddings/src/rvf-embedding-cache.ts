@@ -469,7 +469,8 @@ export class RvfEmbeddingCache {
         mkdirSync(dir, { recursive: true });
       }
 
-      const tmpPath = this.cachePath + '.tmp';
+      const tmpSuffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      const tmpPath = this.cachePath + '.tmp.' + tmpSuffix;
       writeFileSync(tmpPath, Buffer.from(buffer));
       renameSync(tmpPath, this.cachePath);
       this.dirty = false;

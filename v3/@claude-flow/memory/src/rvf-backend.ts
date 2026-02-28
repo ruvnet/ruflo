@@ -68,9 +68,13 @@ export class RvfBackend implements IMemoryBackend {
   private searchTimes: number[] = [];
 
   constructor(config: RvfBackendConfig) {
+    const dimensions = config.dimensions ?? DEFAULT_DIMENSIONS;
+    if (!Number.isInteger(dimensions) || dimensions < 1 || dimensions > 10000) {
+      throw new Error(`Invalid dimensions: ${dimensions}. Must be an integer between 1 and 10000.`);
+    }
     this.config = {
       databasePath: config.databasePath,
-      dimensions: config.dimensions ?? DEFAULT_DIMENSIONS,
+      dimensions,
       metric: config.metric ?? 'cosine',
       quantization: config.quantization ?? 'fp32',
       hnswM: config.hnswM ?? DEFAULT_M,
@@ -99,7 +103,7 @@ export class RvfBackend implements IMemoryBackend {
 
     if (this.config.autoPersistInterval > 0 && this.config.databasePath !== ':memory:') {
       this.persistTimer = setInterval(() => {
-        if (this.dirty) this.persistToDisk().catch(() => {});
+        if (this.dirty && !this.persisting) this.persistToDisk().catch(() => {});
       }, this.config.autoPersistInterval);
       if (this.persistTimer.unref) this.persistTimer.unref();
     }
@@ -417,8 +421,17 @@ export class RvfBackend implements IMemoryBackend {
       if (magic !== MAGIC) return;
 
       const headerLen = raw.readUInt32LE(4);
+      const MAX_HEADER_SIZE = 10 * 1024 * 1024; // 10MB max header
+      if (headerLen > MAX_HEADER_SIZE || 8 + headerLen > raw.length) return;
       const headerJson = raw.subarray(8, 8 + headerLen).toString('utf-8');
-      const header: RvfHeader = JSON.parse(headerJson);
+      let header: RvfHeader;
+      try {
+        header = JSON.parse(headerJson);
+      } catch {
+        if (this.config.verbose) console.error('[RvfBackend] Corrupt RVF header');
+        return;
+      }
+      if (!header || typeof header.entryCount !== 'number' || typeof header.version !== 'number') return;
 
       let offset = 8 + headerLen;
       for (let i = 0; i < header.entryCount; i++) {

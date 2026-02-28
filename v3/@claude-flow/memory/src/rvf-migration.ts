@@ -73,12 +73,19 @@ function serializeForJson(entry: MemoryEntry): Record<string, unknown> {
   return { ...entry, embedding: entry.embedding ? Array.from(entry.embedding) : undefined };
 }
 
+function validateMigrationPath(p: string): void {
+  if (!p || typeof p !== 'string') throw new Error('Path must be a non-empty string');
+  if (p.includes('\0')) throw new Error('Path contains null bytes');
+}
+
 async function ensureDir(filePath: string): Promise<void> {
+  validateMigrationPath(filePath);
   const dir = dirname(resolve(filePath));
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 }
 
 async function atomicWrite(targetPath: string, data: string | Buffer): Promise<void> {
+  validateMigrationPath(targetPath);
   const abs = resolve(targetPath);
   const tmp = abs + '.tmp.' + Date.now();
   await ensureDir(abs);

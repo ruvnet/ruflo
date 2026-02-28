@@ -343,9 +343,17 @@ export class RvfEventLog extends EventEmitter {
 
     let offset = MAGIC_LENGTH;
 
+    const MAX_PAYLOAD_SIZE = 100 * 1024 * 1024; // 100MB safety limit
     while (offset + LENGTH_PREFIX_BYTES <= buf.length) {
       const payloadLength = buf.readUInt32BE(offset);
       offset += LENGTH_PREFIX_BYTES;
+
+      if (payloadLength > MAX_PAYLOAD_SIZE) {
+        if (this.config.verbose) {
+          console.warn(`[RvfEventLog] Payload size ${payloadLength} exceeds safety limit`);
+        }
+        break;
+      }
 
       if (offset + payloadLength > buf.length) {
         // Truncated record — stop reading (crash recovery).
