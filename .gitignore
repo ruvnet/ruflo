@@ -160,3 +160,14 @@ hive-mind-prompt-*.txt
 .env
 .env.local
 .env.*.local
+
+# Ruflo specific
+.env
+.claude-flow/local/
+.ruflo/
+*.log
+logs/
+temp/
+tmp/
+dist/
+build/
