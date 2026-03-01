@@ -76,6 +76,15 @@ export interface SonaConfig {
   patternThreshold: number;
   maxSignals: number;
   maxPatterns: number;
+  /** WM-013: Optional LearningBridge config. When set, confidence lifecycle and
+   *  neural trajectory tracking are activated on top of the ReasoningBank. */
+  learningBridge?: {
+    sonaMode?: 'fast' | 'balanced' | 'deep';
+    confidenceDecayRate?: number;
+    accessBoostAmount?: number;
+    consolidationThreshold?: number;
+    enabled?: boolean;
+  };
 }
 
 export interface TrajectoryStep {
@@ -104,6 +113,8 @@ export interface IntelligenceStats {
   trajectoriesRecorded: number;
   lastAdaptation: number | null;
   avgAdaptationTime: number;
+  /** WM-013: true when LearningBridge is active and connected to the neural system */
+  learningBridgeEnabled: boolean;
 }
 
 interface Signal {
@@ -468,6 +479,10 @@ class LocalReasoningBank {
 
 let sonaCoordinator: LocalSonaCoordinator | null = null;
 let reasoningBank: LocalReasoningBank | null = null;
+// WM-013a: LearningBridge singleton — typed as `any` because @claude-flow/memory
+// is an optional peer, loaded dynamically at runtime.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _learningBridge: any | null = null;
 let intelligenceInitialized = false;
 let globalStats = {
   trajectoriesRecorded: 0,
@@ -521,13 +536,15 @@ export async function initializeIntelligence(config?: Partial<SonaConfig>): Prom
   success: boolean;
   sonaEnabled: boolean;
   reasoningBankEnabled: boolean;
+  learningBridgeEnabled: boolean;
   error?: string;
 }> {
   if (intelligenceInitialized) {
     return {
       success: true,
       sonaEnabled: !!sonaCoordinator,
-      reasoningBankEnabled: !!reasoningBank
+      reasoningBankEnabled: !!reasoningBank,
+      learningBridgeEnabled: !!_learningBridge,
     };
   }
 
@@ -547,6 +564,36 @@ export async function initializeIntelligence(config?: Partial<SonaConfig>): Prom
       persistence: true
     });
 
+    // WM-013b: Initialize LearningBridge — optional, degrades gracefully when
+    // @claude-flow/memory is not installed or when no IMemoryBackend is available.
+    // Follows the same optional-peer pattern used by LearningBridge for @claude-flow/neural.
+    if (finalConfig.learningBridge?.enabled !== false) {
+      try {
+        const memPkg = await import('@claude-flow/memory' as string).catch(() => null);
+        if (memPkg?.LearningBridge) {
+          // Resolve a backend: prefer the AgentDB controller if the bridge is available,
+          // otherwise skip — LearningBridge requires a real IMemoryBackend.
+          const bridgeMod = await import('./memory-bridge.js').catch(() => null);
+          const registry = bridgeMod ? await bridgeMod.getControllerRegistry?.().catch(() => null) : null;
+          const backend = registry?.getAgentDB?.() ?? null;
+
+          if (backend) {
+            const cfgLB = finalConfig.learningBridge ?? {};
+            _learningBridge = new memPkg.LearningBridge(backend, {
+              sonaMode: cfgLB.sonaMode ?? 'balanced',
+              confidenceDecayRate: cfgLB.confidenceDecayRate ?? 0.005,
+              accessBoostAmount: cfgLB.accessBoostAmount ?? 0.03,
+              consolidationThreshold: cfgLB.consolidationThreshold ?? 10,
+              enabled: true,
+            });
+          }
+        }
+      } catch {
+        // @claude-flow/memory unavailable or backend not ready — degrade silently.
+        _learningBridge = null;
+      }
+    }
+
     // Load persisted stats if available
     loadPersistedStats();
 
@@ -555,13 +602,15 @@ export async function initializeIntelligence(config?: Partial<SonaConfig>): Prom
     return {
       success: true,
       sonaEnabled: true,
-      reasoningBankEnabled: true
+      reasoningBankEnabled: true,
+      learningBridgeEnabled: !!_learningBridge,
     };
   } catch (error) {
     return {
       success: false,
       sonaEnabled: false,
       reasoningBankEnabled: false,
+      learningBridgeEnabled: false,
       error: error instanceof Error ? error.message : String(error)
     };
   }
@@ -725,7 +774,8 @@ export function getIntelligenceStats(): IntelligenceStats {
     patternsLearned: bankStats?.patternCount ?? 0,
     trajectoriesRecorded: globalStats.trajectoriesRecorded,
     lastAdaptation: globalStats.lastAdaptation,
-    avgAdaptationTime: sonaStats?.avgAdaptationMs ?? 0
+    avgAdaptationTime: sonaStats?.avgAdaptationMs ?? 0,
+    learningBridgeEnabled: !!_learningBridge,
   };
 }
 
@@ -744,11 +794,41 @@ export function getReasoningBank(): LocalReasoningBank | null {
 }
 
 /**
+ * WM-013c: Get the active LearningBridge instance.
+ *
+ * Returns `null` when @claude-flow/memory is not installed, when no AgentDB
+ * backend was available at init time, or when `learningBridge.enabled` is
+ * explicitly set to `false` in the SonaConfig.
+ *
+ * @example
+ * ```typescript
+ * const lb = getLearningBridge();
+ * if (lb) {
+ *   await lb.onInsightRecorded(insight, entryId);
+ *   await lb.decayConfidences('default');
+ * }
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getLearningBridge(): any | null {
+  return _learningBridge;
+}
+
+/**
  * Clear intelligence state
  */
 export function clearIntelligence(): void {
   sonaCoordinator = null;
   reasoningBank = null;
+  // WM-013: Tear down LearningBridge before nulling to flush active trajectories
+  if (_learningBridge && typeof _learningBridge.destroy === 'function') {
+    try {
+      _learningBridge.destroy();
+    } catch {
+      // Best-effort cleanup
+    }
+  }
+  _learningBridge = null;
   intelligenceInitialized = false;
   globalStats = {
     trajectoriesRecorded: 0,
