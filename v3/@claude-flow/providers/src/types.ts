@@ -12,6 +12,7 @@ import { EventEmitter } from 'events';
 // ===== PROVIDER TYPES =====
 
 export type LLMProvider =
+  | 'moonshot'
   | 'anthropic'
   | 'openai'
   | 'google'
@@ -29,6 +30,10 @@ export type LLMModel =
   | 'claude-3-opus-20240229'
   | 'claude-3-sonnet-20240229'
   | 'claude-3-haiku-20240307'
+  // Moonshot (Kimi) Models
+  | 'kimi-k2-5'
+  | 'kimi-k2'
+  | 'kimi-k2-thinking'
   // OpenAI Models (2024-2025)
   | 'gpt-4o'
   | 'gpt-4o-mini'
