@@ -31,6 +31,7 @@ export type { BaseProviderOptions, ILogger } from './base-provider.js';
 // Export providers
 export { AnthropicProvider } from './anthropic-provider.js';
 export { OpenAIProvider } from './openai-provider.js';
+export { NovitaProvider } from './novita-provider.js';
 export { GoogleProvider } from './google-provider.js';
 export { CohereProvider } from './cohere-provider.js';
 export { OllamaProvider } from './ollama-provider.js';

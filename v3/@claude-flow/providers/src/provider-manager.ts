@@ -31,6 +31,7 @@ import {
 import { BaseProviderOptions, ILogger, consoleLogger } from './base-provider.js';
 import { AnthropicProvider } from './anthropic-provider.js';
 import { OpenAIProvider } from './openai-provider.js';
+import { NovitaProvider } from './novita-provider.js';
 import { GoogleProvider } from './google-provider.js';
 import { CohereProvider } from './cohere-provider.js';
 import { OllamaProvider } from './ollama-provider.js';
@@ -119,6 +120,8 @@ export class ProviderManager extends EventEmitter {
         return new AnthropicProvider(options);
       case 'openai':
         return new OpenAIProvider(options);
+      case 'novita':
+        return new NovitaProvider(options);
       case 'google':
         return new GoogleProvider(options);
       case 'cohere':

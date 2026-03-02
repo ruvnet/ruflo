@@ -79,7 +79,7 @@ interface OpenAIResponse {
 }
 
 export class OpenAIProvider extends BaseProvider {
-  readonly name: LLMProvider = 'openai';
+  readonly name: LLMProvider;
   readonly capabilities: ProviderCapabilities = {
     supportedModels: [
       'gpt-4o',
@@ -168,16 +168,17 @@ export class OpenAIProvider extends BaseProvider {
     },
   };
 
-  private baseUrl: string = 'https://api.openai.com/v1';
+  protected baseUrl: string = 'https://api.openai.com/v1';
   private headers: Record<string, string> = {};
 
   constructor(options: BaseProviderOptions) {
     super(options);
+    this.name = options.config.provider === 'novita' ? 'novita' : 'openai';
   }
 
   protected async doInitialize(): Promise<void> {
     if (!this.config.apiKey) {
-      throw new AuthenticationError('OpenAI API key is required', 'openai');
+      throw new AuthenticationError(`${this.name} API key is required`, this.name);
     }
 
     this.baseUrl = this.config.apiUrl || 'https://api.openai.com/v1';
@@ -433,7 +434,7 @@ export class OpenAIProvider extends BaseProvider {
     return {
       id: data.id,
       model: model as LLMModel,
-      provider: 'openai',
+      provider: this.name,
       content: choice.message.content || '',
       toolCalls: choice.message.tool_calls,
       usage: {
@@ -465,22 +466,22 @@ export class OpenAIProvider extends BaseProvider {
 
     switch (response.status) {
       case 401:
-        throw new AuthenticationError(message, 'openai', errorData);
+        throw new AuthenticationError(message, this.name, errorData);
       case 429:
         const retryAfter = response.headers.get('retry-after');
         throw new RateLimitError(
           message,
-          'openai',
+          this.name,
           retryAfter ? parseInt(retryAfter) : undefined,
           errorData
         );
       case 404:
-        throw new ModelNotFoundError(this.config.model, 'openai', errorData);
+        throw new ModelNotFoundError(this.config.model, this.name, errorData);
       default:
         throw new LLMProviderError(
           message,
           `OPENAI_${response.status}`,
-          'openai',
+          this.name,
           response.status,
           response.status >= 500,
           errorData
