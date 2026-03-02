@@ -11,13 +11,32 @@
 
 import type { MCPTool } from './types.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import * as os from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
 const SYSTEM_DIR = 'system';
 const METRICS_FILE = 'metrics.json';
+
+/**
+ * Read the package version from the root package.json instead of hardcoding it.
+ * Walks up from this file's directory until it finds a package.json with a version field.
+ */
+function getPackageVersion(): string {
+  try {
+    // Try reading from the project root package.json
+    const rootPkg = join(process.cwd(), 'package.json');
+    if (existsSync(rootPkg)) {
+      const pkg = JSON.parse(readFileSync(rootPkg, 'utf-8'));
+      if (pkg.version) return pkg.version;
+    }
+  } catch {
+    // Fall through
+  }
+  return 'unknown';
+}
 
 interface SystemMetrics {
   startTime: string;
@@ -94,7 +113,7 @@ export const systemTools: MCPTool[] = [
         status: metrics.health >= 0.8 ? 'healthy' : metrics.health >= 0.5 ? 'degraded' : 'unhealthy',
         uptime,
         uptimeFormatted: `${Math.floor(uptime / 3600000)}h ${Math.floor((uptime % 3600000) / 60000)}m`,
-        version: '3.0.0-alpha',
+        version: getPackageVersion(),
         components: {
           swarm: { status: 'running', health: metrics.health },
           memory: { status: 'running', health: 0.95 },
@@ -288,7 +307,7 @@ export const systemTools: MCPTool[] = [
     },
     handler: async () => {
       return {
-        version: '3.0.0-alpha',
+        version: getPackageVersion(),
         nodeVersion: process.version,
         platform: process.platform,
         arch: process.arch,
