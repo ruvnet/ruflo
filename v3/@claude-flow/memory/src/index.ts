@@ -180,6 +180,7 @@ export type {
 // ===== Core Components =====
 export { AgentDBAdapter } from './agentdb-adapter.js';
 export type { AgentDBAdapterConfig } from './agentdb-adapter.js';
+export { withPreset, speedPreset, balancedPreset, accuracyPreset, edgePreset } from './optimization-presets.js';
 export { AgentDBBackend } from './agentdb-backend.js';
 export type { AgentDBBackendConfig } from './agentdb-backend.js';
 export { SQLiteBackend } from './sqlite-backend.js';

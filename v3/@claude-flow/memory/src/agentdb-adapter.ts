@@ -25,6 +25,7 @@ import {
   createDefaultEntry,
   CacheStats,
   HNSWStats,
+  QuantizationConfig,
 } from './types.js';
 import { HNSWIndex } from './hnsw-index.js';
 import { CacheManager } from './cache-manager.js';
@@ -54,6 +55,18 @@ export interface AgentDBAdapterConfig {
   /** HNSW efConstruction parameter */
   hnswEfConstruction: number;
 
+  /** HNSW ef parameter for search (higher = better recall, slower). Default: 100 */
+  hnswEfSearch: number;
+
+  /**
+   * Quantization for memory reduction and search speed.
+   * - 'scalar' (8-bit): 4x memory reduction, 3x faster, ~99% accuracy — good default
+   * - 'binary':        32x memory reduction, 10x faster, ~96% accuracy — edge/mobile
+   * - 'product':        8-16x memory reduction, 5x faster, ~95% accuracy — high-dim vecs
+   * Omit for full float32 precision.
+   */
+  quantization?: QuantizationConfig;
+
   /** Default namespace */
   defaultNamespace: string;
 
@@ -78,6 +91,7 @@ const DEFAULT_CONFIG: AgentDBAdapterConfig = {
   cacheTtl: 300000, // 5 minutes
   hnswM: 16,
   hnswEfConstruction: 200,
+  hnswEfSearch: 100,
   defaultNamespace: 'default',
   persistenceEnabled: false,
 };
@@ -123,6 +137,7 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
       efConstruction: this.config.hnswEfConstruction,
       maxElements: this.config.maxEntries,
       metric: 'cosine',
+      ...(this.config.quantization ? { quantization: this.config.quantization } : {}),
     });
 
     // Initialize cache
@@ -405,7 +420,7 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
   ): Promise<SearchResult[]> {
     const startTime = performance.now();
 
-    const indexResults = await this.index.search(embedding, options.k, options.ef);
+    const indexResults = await this.index.search(embedding, options.k, options.ef ?? this.config.hnswEfSearch);
 
     const results: SearchResult[] = [];
     for (const { id, distance } of indexResults) {
