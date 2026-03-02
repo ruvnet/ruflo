@@ -14,6 +14,7 @@ import { EventEmitter } from 'events';
 export type LLMProvider =
   | 'anthropic'
   | 'openai'
+  | 'novita'
   | 'google'
   | 'cohere'
   | 'ollama'
