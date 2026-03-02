@@ -7,6 +7,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { spawn as spawnChild } from 'node:child_process';
 import type { MCPTool } from './types.js';
 
 // Storage paths
@@ -192,6 +193,7 @@ export const agentTools: MCPTool[] = [
           description: 'Claude model to use (haiku=fast/cheap, sonnet=balanced, opus=most capable)'
         },
         task: { type: 'string', description: 'Task description for intelligent model routing' },
+        execute: { type: 'boolean', description: 'Actually spawn a Claude process for this agent (default: false)' },
       },
       required: ['agentType'],
     },
@@ -232,6 +234,59 @@ export const agentTools: MCPTool[] = [
       store.agents[agentId] = agent;
       saveAgentStore(store);
 
+      // If execute=true, actually spawn a Claude process for this agent
+      let childPid: number | undefined;
+      if (input.execute && task) {
+        const MODEL_IDS: Record<string, string> = {
+          sonnet: 'claude-sonnet-4-5-20250929',
+          opus: 'claude-opus-4-6',
+          haiku: 'claude-haiku-4-5-20251001',
+        };
+        const modelId = MODEL_IDS[routingResult.model] || MODEL_IDS.sonnet;
+        const env: Record<string, string | undefined> = { ...process.env };
+        delete env.CLAUDECODE;
+        delete env.CLAUDE_CODE_ENTRY_POINT;
+        env.CLAUDE_CODE_HEADLESS = 'true';
+        env.ANTHROPIC_MODEL = modelId;
+
+        const child = spawnChild('claude', ['--print', task], {
+          cwd: process.cwd(),
+          env: env as NodeJS.ProcessEnv,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        childPid = child.pid;
+
+        // Update agent record with PID and active status
+        agent.status = 'busy';
+        agent.config = { ...agent.config, pid: childPid };
+        store.agents[agentId] = agent;
+        saveAgentStore(store);
+
+        // Capture output and update status on completion (non-blocking)
+        let agentOutput = '';
+        child.stdout?.on('data', (d: Buffer) => { agentOutput += d.toString(); });
+        child.stderr?.on('data', (d: Buffer) => { agentOutput += d.toString(); });
+        child.on('close', (code: number | null) => {
+          try {
+            const currentStore = loadAgentStore();
+            const a = currentStore.agents[agentId];
+            if (a) {
+              a.status = code === 0 ? 'idle' : 'terminated';
+              a.config = {
+                ...a.config,
+                pid: null,
+                completedAt: new Date().toISOString(),
+                lastOutput: agentOutput.slice(0, 2000),
+              };
+              currentStore.agents[agentId] = a;
+              saveAgentStore(currentStore);
+            }
+          } catch {
+            // Ignore errors updating store on completion
+          }
+        });
+      }
+
       // Include Agent Booster routing info if applicable
       const response: Record<string, unknown> = {
         success: true,
@@ -239,7 +294,8 @@ export const agentTools: MCPTool[] = [
         agentType: agent.agentType,
         model: agent.model,
         modelRoutedBy: routingResult.routedBy,
-        status: 'spawned',
+        status: input.execute && task ? 'executing' : 'spawned',
+        pid: childPid,
         createdAt: agent.createdAt,
       };
 

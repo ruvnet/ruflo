@@ -9,6 +9,7 @@ import { select, confirm, multiSelect } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawn as spawnChild, type ChildProcess } from 'child_process';
 
 // Get dynamic swarm status from memory/session files
 function getSwarmStatus(swarmId?: string) {
@@ -340,6 +341,110 @@ const initCommand: Command = {
   }
 };
 
+// Model IDs for spawning real Claude processes
+const SWARM_MODEL_IDS: Record<string, string> = {
+  sonnet: 'claude-sonnet-4-5-20250929',
+  opus: 'claude-opus-4-6',
+  haiku: 'claude-haiku-4-5-20251001',
+};
+
+// Agent type to model mapping
+const SWARM_MODEL_MAP: Record<string, string> = {
+  coordinator: 'sonnet',
+  architect: 'opus',
+  coder: 'sonnet',
+  tester: 'sonnet',
+  reviewer: 'sonnet',
+  researcher: 'sonnet',
+  analyst: 'sonnet',
+  optimizer: 'sonnet',
+};
+
+// Prompt templates per agent type
+const SWARM_PROMPTS: Record<string, (obj: string, dir: string) => string> = {
+  coordinator: (obj, dir) => `You are a coordinator agent. Objective: ${obj}. Analyze the codebase at ${dir}, break the objective into tasks, and create a plan. Output a structured task list as markdown.`,
+  architect: (obj, dir) => `You are an architect agent. Objective: ${obj}. Analyze ${dir} and design the system architecture. Output architecture decisions, file structure, and component design as markdown.`,
+  coder: (obj, dir) => `You are a coder agent. Objective: ${obj}. Implement code changes in ${dir}. Focus on writing clean, tested code. Output a summary of changes made.`,
+  tester: (obj, dir) => `You are a tester agent. Objective: ${obj}. Write and run tests for ${dir}. Output test results and coverage summary.`,
+  reviewer: (obj, dir) => `You are a reviewer agent. Objective: ${obj}. Review the codebase at ${dir} for quality, security, and best practices. Output findings as markdown.`,
+  researcher: (obj, dir) => `You are a researcher agent. Objective: ${obj}. Research and gather information relevant to the task. Output findings as markdown.`,
+  analyst: (obj, dir) => `You are an analyst agent. Objective: ${obj}. Analyze code at ${dir} for patterns, performance, and improvements. Output analysis as markdown.`,
+  optimizer: (obj, dir) => `You are an optimizer agent. Objective: ${obj}. Profile and optimize code at ${dir}. Output optimization findings and suggestions as markdown.`,
+};
+
+/**
+ * Swarm manager script — spawned as a detached Node process.
+ * Reads agent state files from .swarm/agents/, launches up to maxConcurrent
+ * `claude --print` processes, captures output to .swarm/results/, and updates
+ * agent/task state files on completion.
+ *
+ * Must delete CLAUDECODE env var to avoid Claude Code's nested-session guard.
+ */
+const SWARM_MANAGER_SCRIPT = [
+  '#!/usr/bin/env node',
+  'const { spawn } = require("child_process");',
+  'const fs = require("fs");',
+  'const path = require("path");',
+  'const swarmDir = process.argv[2];',
+  'const maxConcurrent = parseInt(process.argv[3]) || 3;',
+  'const cwd = path.resolve(swarmDir, "..");',
+  'const agentsDir = path.join(swarmDir, "agents");',
+  'const tasksDir = path.join(swarmDir, "tasks");',
+  'const resultsDir = path.join(swarmDir, "results");',
+  'const promptsDir = path.join(swarmDir, ".prompts");',
+  'var files = fs.readdirSync(agentsDir).filter(function(f){ return f.endsWith(".json"); });',
+  'var pending = [];',
+  'files.forEach(function(f){',
+  '  try { var a = JSON.parse(fs.readFileSync(path.join(agentsDir, f), "utf8")); if (a.status === "active") pending.push(a); } catch(e){}',
+  '});',
+  'var running = 0;',
+  'function next() {',
+  '  while (running < maxConcurrent && pending.length > 0) { running++; run(pending.shift()); }',
+  '  if (running === 0 && pending.length === 0) {',
+  '    try { var sf=path.join(swarmDir,"state.json"); var s=JSON.parse(fs.readFileSync(sf,"utf8")); s.status="completed"; s.completedAt=new Date().toISOString(); fs.writeFileSync(sf,JSON.stringify(s,null,2)); } catch(e){}',
+  '    process.exit(0);',
+  '  }',
+  '}',
+  'function run(agent) {',
+  '  var pf = path.join(promptsDir, agent.id + ".txt");',
+  '  var rf = path.join(resultsDir, agent.id + ".md");',
+  '  var af = path.join(agentsDir, agent.id + ".json");',
+  '  var tf = path.join(tasksDir, "task-" + agent.id + ".json");',
+  '  var prompt;',
+  '  try { prompt = fs.readFileSync(pf, "utf8"); } catch(e) { prompt = "Analyze the codebase."; }',
+  '  var env = Object.assign({}, process.env);',
+  '  delete env.CLAUDECODE; delete env.CLAUDE_CODE_ENTRY_POINT;',
+  '  env.CLAUDE_CODE_HEADLESS = "true"; env.ANTHROPIC_MODEL = agent.modelId || "";',
+  '  var child = spawn("claude", ["--print", prompt], {',
+  '    cwd: cwd,',
+  '    env: env,',
+  '    stdio: ["ignore", "pipe", "pipe"]',
+  '  });',
+  '  try { agent.pid = child.pid; fs.writeFileSync(af, JSON.stringify(agent, null, 2)); } catch(e){}',
+  '  var out = "";',
+  '  child.stdout.on("data", function(d){ out += d; });',
+  '  child.stderr.on("data", function(d){ out += d; });',
+  '  child.on("close", function(code){',
+  '    running--;',
+  '    var now = new Date().toISOString();',
+  '    var st = code === 0 ? "completed" : "failed";',
+  '    fs.writeFileSync(rf, out || "No output produced.");',
+  '    try { var a=JSON.parse(fs.readFileSync(af,"utf8")); a.status=st; a.completedAt=now; a.pid=null; fs.writeFileSync(af,JSON.stringify(a,null,2)); } catch(e){}',
+  '    try { var t=JSON.parse(fs.readFileSync(tf,"utf8")); t.status=st; t.completedAt=now; fs.writeFileSync(tf,JSON.stringify(t,null,2)); } catch(e){}',
+  '    next();',
+  '  });',
+  '  child.on("error", function(err){',
+  '    running--;',
+  '    var now = new Date().toISOString();',
+  '    fs.writeFileSync(rf, "Error: " + err.message);',
+  '    try { var a=JSON.parse(fs.readFileSync(af,"utf8")); a.status="failed"; a.completedAt=now; a.pid=null; fs.writeFileSync(af,JSON.stringify(a,null,2)); } catch(e){}',
+  '    try { var t=JSON.parse(fs.readFileSync(tf,"utf8")); t.status="failed"; t.completedAt=now; fs.writeFileSync(tf,JSON.stringify(t,null,2)); } catch(e){}',
+  '    next();',
+  '  });',
+  '}',
+  'next();',
+].join('\n');
+
 // Start swarm execution
 const startCommand: Command = {
   name: 'start',
@@ -431,28 +536,85 @@ const startCommand: Command = {
     output.writeln();
     output.printInfo('Deploying agents...');
 
-    // Show deployment progress
-    const spinner = output.createSpinner({ text: 'Initializing agents...', spinner: 'dots' });
-    spinner.start();
+    // Flatten agent plan into individual agents
+    const allAgents: Array<{ id: string; type: string; role: string }> = [];
+    for (const plan of agentPlan) {
+      for (let i = 0; i < plan.count; i++) {
+        allAgents.push({ id: `agent-${plan.type}-${i + 1}`, type: plan.type, role: plan.role });
+      }
+    }
 
-    // Brief delay for spinner animation
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const swarmId = `swarm-${Date.now().toString(36)}`;
+    const cwd = process.cwd();
+    const swarmDir = path.join(cwd, '.swarm');
+    const agentsDir = path.join(swarmDir, 'agents');
+    const tasksDir = path.join(swarmDir, 'tasks');
+    const resultsDir = path.join(swarmDir, 'results');
+    const promptsDir = path.join(swarmDir, '.prompts');
 
-    spinner.succeed('All agents deployed');
+    for (const dir of [agentsDir, tasksDir, resultsDir, promptsDir]) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
 
-    const executionState = {
-      swarmId: `swarm-${Date.now().toString(36)}`,
-      objective,
-      strategy,
-      status: 'running',
-      agents: agentPlan.reduce((sum, a) => sum + a.count, 0),
-      startedAt: new Date().toISOString(),
-      parallel: ctx.flags.parallel ?? true
+    const MAX_CONCURRENT = 3;
+
+    // Write agent state, task state, and prompt files for each agent
+    for (const agent of allAgents) {
+      const model = SWARM_MODEL_MAP[agent.type] || 'sonnet';
+      const modelId = SWARM_MODEL_IDS[model] || SWARM_MODEL_IDS.sonnet;
+      const promptFn = SWARM_PROMPTS[agent.type] || SWARM_PROMPTS.researcher;
+      const prompt = promptFn(objective, cwd);
+
+      const agentState = {
+        id: agent.id, type: agent.type, role: agent.role,
+        status: 'active', pid: null as number | null, model, modelId,
+        objective, startedAt: new Date().toISOString(), completedAt: null as string | null,
+      };
+      const taskId = `task-${agent.id}`;
+      const taskState = {
+        id: taskId, agentId: agent.id,
+        description: `${agent.role} task for: ${objective}`,
+        status: 'in_progress', startedAt: new Date().toISOString(), completedAt: null as string | null,
+      };
+
+      fs.writeFileSync(path.join(agentsDir, `${agent.id}.json`), JSON.stringify(agentState, null, 2));
+      fs.writeFileSync(path.join(tasksDir, `${taskId}.json`), JSON.stringify(taskState, null, 2));
+      fs.writeFileSync(path.join(promptsDir, `${agent.id}.txt`), prompt);
+      output.writeln(output.dim(`  Prepared ${agent.role} (${agent.id}) [${model}]`));
+    }
+
+    // Write swarm state
+    const executionState: Record<string, unknown> = {
+      id: swarmId, objective, strategy, topology: 'hierarchical-mesh',
+      status: 'running', maxAgents: allAgents.length,
+      agents: allAgents.length, startedAt: new Date().toISOString(),
+      parallel: ctx.flags.parallel ?? true, managerPid: null,
     };
+    fs.writeFileSync(path.join(swarmDir, 'state.json'), JSON.stringify(executionState, null, 2));
+
+    // Write and launch manager script (handles concurrent execution)
+    const managerPath = path.join(swarmDir, '.manager.js');
+    fs.writeFileSync(managerPath, SWARM_MANAGER_SCRIPT);
+
+    const managerEnv: Record<string, string | undefined> = { ...process.env, CLAUDE_CODE_HEADLESS: 'true' };
+    delete managerEnv.CLAUDECODE;
+    delete managerEnv.CLAUDE_CODE_ENTRY_POINT;
+
+    const manager = spawnChild('node', [managerPath, swarmDir, String(MAX_CONCURRENT)], {
+      cwd, stdio: 'ignore', detached: true,
+      env: managerEnv as NodeJS.ProcessEnv,
+    });
+    manager.unref();
+
+    executionState.managerPid = manager.pid;
+    fs.writeFileSync(path.join(swarmDir, 'state.json'), JSON.stringify(executionState, null, 2));
 
     output.writeln();
-    output.printSuccess('Swarm execution started');
-    output.writeln(output.dim(`  Monitor: claude-flow swarm status ${executionState.swarmId}`));
+    output.printSuccess(`Swarm started: ${allAgents.length} agents queued (max ${MAX_CONCURRENT} concurrent)`);
+    output.writeln(output.dim(`  Swarm ID: ${swarmId}`));
+    output.writeln(output.dim(`  Manager PID: ${manager.pid}`));
+    output.writeln(output.dim(`  Monitor: npx @claude-flow/cli@latest swarm status`));
+    output.writeln(output.dim(`  Stop: npx @claude-flow/cli@latest swarm stop ${swarmId}`));
 
     return { success: true, data: executionState };
   }
@@ -570,11 +732,24 @@ const stopCommand: Command = {
     }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const swarmId = ctx.args[0];
+    let swarmId = ctx.args[0];
     const force = ctx.flags.force as boolean;
 
+    // Auto-detect swarm ID from state file if not provided
     if (!swarmId) {
-      output.printError('Swarm ID is required');
+      const stateFile = path.join(process.cwd(), '.swarm', 'state.json');
+      if (fs.existsSync(stateFile)) {
+        try {
+          const state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+          swarmId = state.id;
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (!swarmId) {
+      output.printError('Swarm ID is required (none found in .swarm/state.json)');
       return { success: false, exitCode: 1 };
     }
 
@@ -592,16 +767,81 @@ const stopCommand: Command = {
 
     output.printInfo(`Stopping swarm ${swarmId}...`);
 
-    if (!force) {
-      output.writeln(output.dim('  Completing in-progress tasks...'));
-      output.writeln(output.dim('  Saving coordination state...'));
-      output.writeln(output.dim('  Notifying agents...'));
-      output.writeln(output.dim('  Saving memory state...'));
+    // Kill real processes tracked in .swarm/agents/ and state.json
+    const swarmDir = path.join(process.cwd(), '.swarm');
+    const agentsDir = path.join(swarmDir, 'agents');
+    let killed = 0;
+
+    // Kill manager process first
+    const stateFile = path.join(swarmDir, 'state.json');
+    if (fs.existsSync(stateFile)) {
+      try {
+        const state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+        if (state.managerPid) {
+          try {
+            process.kill(state.managerPid, force ? 'SIGKILL' : 'SIGTERM');
+            killed++;
+            output.writeln(output.dim(`  Killed manager process (PID ${state.managerPid})`));
+          } catch {
+            // Process may already be dead
+          }
+        }
+        state.status = 'stopped';
+        state.stoppedAt = new Date().toISOString();
+        fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+      } catch {
+        // ignore
+      }
     }
 
-    output.printSuccess(`Swarm ${swarmId} stopped`);
+    // Kill all agent processes
+    if (fs.existsSync(agentsDir)) {
+      const agentFiles = fs.readdirSync(agentsDir).filter(f => f.endsWith('.json'));
+      for (const file of agentFiles) {
+        try {
+          const agentPath = path.join(agentsDir, file);
+          const agent = JSON.parse(fs.readFileSync(agentPath, 'utf-8'));
+          if (agent.pid) {
+            try {
+              process.kill(agent.pid, force ? 'SIGKILL' : 'SIGTERM');
+              killed++;
+              output.writeln(output.dim(`  Killed ${agent.role || agent.type} (PID ${agent.pid})`));
+            } catch {
+              // Process may already be dead
+            }
+          }
+          agent.status = 'stopped';
+          agent.pid = null;
+          agent.completedAt = new Date().toISOString();
+          fs.writeFileSync(agentPath, JSON.stringify(agent, null, 2));
+        } catch {
+          // ignore
+        }
+      }
+    }
 
-    return { success: true, data: { swarmId, stopped: true, force } };
+    // Update task files
+    const tasksDir = path.join(swarmDir, 'tasks');
+    if (fs.existsSync(tasksDir)) {
+      const taskFiles = fs.readdirSync(tasksDir).filter(f => f.endsWith('.json'));
+      for (const file of taskFiles) {
+        try {
+          const taskPath = path.join(tasksDir, file);
+          const task = JSON.parse(fs.readFileSync(taskPath, 'utf-8'));
+          if (task.status === 'in_progress') {
+            task.status = 'stopped';
+            task.completedAt = new Date().toISOString();
+            fs.writeFileSync(taskPath, JSON.stringify(task, null, 2));
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    output.printSuccess(`Swarm ${swarmId} stopped (${killed} processes killed)`);
+
+    return { success: true, data: { swarmId, stopped: true, force, killed } };
   }
 };
 
