@@ -5,7 +5,7 @@
  * Provides real-time progress, metrics, and status information.
  *
  * Format matches the working .claude/statusline.sh output:
- * ▊ Claude Flow V3 ● ruvnet  │  ⎇ v3  │  Opus 4.5
+ * ▊ Ruflo V3 ● ruvnet  │  ⎇ v3  │  Opus 4.5
  * ─────────────────────────────────────────────────────
  * 🏗️  DDD Domains    [●●●●●]  5/5    ⚡ 1.0x → 2.49x-7.47x
  * 🤖 Swarm  ◉ [58/15]  👥 0    🟢 CVE 3/3    💾 22282MB    📂  47%    🧠  10%
@@ -145,7 +145,7 @@ export class StatuslineGenerator {
     const lines: string[] = [];
 
     // Header Line: V3 Project + User + Branch + Model
-    let header = `${c.bold}${c.brightPurple}▊ Claude Flow V3 ${c.reset}`;
+    let header = `${c.bold}${c.brightPurple}▊ Ruflo V3 ${c.reset}`;
     header += `${data.swarm.coordinationActive ? c.brightCyan : c.dim}● ${c.brightCyan}${data.user.name}${c.reset}`;
     if (data.user.gitBranch) {
       header += `  ${c.dim}│${c.reset}  ${c.brightBlue}⎇ ${data.user.gitBranch}${c.reset}`;
@@ -164,7 +164,7 @@ export class StatuslineGenerator {
       data.v3Progress.totalDomains
     );
     const domainsColor = data.v3Progress.domainsCompleted >= 3 ? c.brightGreen :
-                         data.v3Progress.domainsCompleted > 0 ? c.yellow : c.red;
+      data.v3Progress.domainsCompleted > 0 ? c.yellow : c.red;
     const speedup = `${c.brightYellow}⚡ 1.0x${c.reset} ${c.dim}→${c.reset} ${c.brightYellow}${data.performance.flashAttentionTarget}${c.reset}`;
     lines.push(
       `${c.brightCyan}🏗️  DDD Domains${c.reset}    ${progressBar}  ` +
@@ -218,7 +218,7 @@ export class StatuslineGenerator {
 
     // Line 3: Architecture status
     const dddColor = data.v3Progress.dddProgress >= 50 ? c.brightGreen :
-                     data.v3Progress.dddProgress > 0 ? c.yellow : c.red;
+      data.v3Progress.dddProgress > 0 ? c.yellow : c.red;
     const dddDisplay = String(data.v3Progress.dddProgress).padStart(3);
     const integrationColor = data.swarm.coordinationActive ? c.brightCyan : c.dim;
 
@@ -266,10 +266,10 @@ export class StatuslineGenerator {
 
     const swarmIndicator = data.swarm.coordinationActive ? '●' : '○';
     const securityStatus = data.security.status === 'CLEAN' ? '✓' :
-                           data.security.cvesFixed > 0 ? '~' : '✗';
+      data.security.cvesFixed > 0 ? '~' : '✗';
 
     // Single line format: CF-V3 | D:3/5 | S:●2/15 | CVE:✓3/3 | 🧠12%
-    return `${c.brightPurple}CF-V3${c.reset} ${c.dim}|${c.reset} ` +
+    return `${c.brightPurple}Ruflo-V3${c.reset} ${c.dim}|${c.reset} ` +
       `${c.cyan}D:${data.v3Progress.domainsCompleted}/${data.v3Progress.totalDomains}${c.reset} ${c.dim}|${c.reset} ` +
       `${c.yellow}S:${swarmIndicator}${data.swarm.activeAgents}/${data.swarm.maxAgents}${c.reset} ${c.dim}|${c.reset} ` +
       `${data.security.status === 'CLEAN' ? c.green : c.red}CVE:${securityStatus}${data.security.cvesFixed}/${data.security.totalCves}${c.reset} ${c.dim}|${c.reset} ` +
@@ -293,7 +293,7 @@ export class StatuslineGenerator {
     const lines: string[] = [];
 
     // Line 1: Header (NOT collision zone)
-    let header = `${c.bold}${c.brightPurple}▊ Claude Flow V3 ${c.reset}`;
+    let header = `${c.bold}${c.brightPurple}▊ Ruflo V3 ${c.reset}`;
     header += `${data.swarm.coordinationActive ? c.brightCyan : c.dim}● ${c.brightCyan}${data.user.name}${c.reset}`;
     if (data.user.gitBranch) {
       header += `  ${c.dim}│${c.reset}  ${c.brightBlue}⎇ ${data.user.gitBranch}${c.reset}`;
@@ -312,7 +312,7 @@ export class StatuslineGenerator {
       data.v3Progress.totalDomains
     );
     const domainsColor = data.v3Progress.domainsCompleted >= 3 ? c.brightGreen :
-                         data.v3Progress.domainsCompleted > 0 ? c.yellow : c.red;
+      data.v3Progress.domainsCompleted > 0 ? c.yellow : c.red;
     const speedup = `${c.brightYellow}⚡ 1.0x${c.reset} ${c.dim}→${c.reset} ${c.brightYellow}${data.performance.flashAttentionTarget}${c.reset}`;
     lines.push(
       `${c.brightCyan}🏗️  DDD Domains${c.reset}    ${progressBar}  ` +
@@ -353,7 +353,7 @@ export class StatuslineGenerator {
 
     // Line 5: Architecture status (LAST LINE - Claude writes BELOW this)
     const dddColor = data.v3Progress.dddProgress >= 50 ? c.brightGreen :
-                     data.v3Progress.dddProgress > 0 ? c.yellow : c.red;
+      data.v3Progress.dddProgress > 0 ? c.yellow : c.red;
     const dddDisplay = String(data.v3Progress.dddProgress).padStart(3);
     const integrationColor = data.swarm.coordinationActive ? c.brightCyan : c.dim;
 
