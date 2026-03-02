@@ -1,0 +1,195 @@
+name: Yardstick
+
+# Measure what matters. One workflow, one truth.
+# Runs on every PR and push to main so the numbers are always fresh.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  measure:
+    name: Quality Metrics
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      # ── Source ────────────────────────────────────────────────────────────
+      - name: Count source lines
+        id: loc
+        run: |
+          TS=$(find src v3 -name "*.ts" ! -path "*/node_modules/*" ! -path "*/__tests__/*" ! -name "*.d.ts" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}')
+          TEST=$(find . -name "*.test.ts" -o -name "*.spec.ts" ! -path "*/node_modules/*" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}')
+          FILES=$(find src v3 -name "*.ts" ! -path "*/node_modules/*" ! -name "*.d.ts" 2>/dev/null | wc -l)
+          echo "source_lines=${TS:-0}" >> "$GITHUB_OUTPUT"
+          echo "test_lines=${TEST:-0}" >> "$GITHUB_OUTPUT"
+          echo "source_files=${FILES:-0}" >> "$GITHUB_OUTPUT"
+
+      # ── Type Safety ───────────────────────────────────────────────────────
+      - name: TypeScript check
+        id: typecheck
+        run: |
+          ERRORS=$(npm run typecheck 2>&1 | grep -c "error TS" || true)
+          echo "ts_errors=${ERRORS}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      # ── Tests ─────────────────────────────────────────────────────────────
+      - name: Run tests with coverage
+        id: tests
+        run: |
+          npm test -- --coverage --reporter=json --outputFile=coverage/results.json 2>/dev/null || true
+          PASS=$(cat coverage/results.json 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.log(d.numPassedTests||0)" 2>/dev/null || echo 0)
+          FAIL=$(cat coverage/results.json 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.log(d.numFailedTests||0)" 2>/dev/null || echo 0)
+          COV=$(cat coverage/coverage-summary.json 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.log(d.total?.lines?.pct||0)" 2>/dev/null || echo 0)
+          echo "pass=${PASS}" >> "$GITHUB_OUTPUT"
+          echo "fail=${FAIL}" >> "$GITHUB_OUTPUT"
+          echo "coverage=${COV}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      # ── Security ──────────────────────────────────────────────────────────
+      - name: Security audit
+        id: security
+        run: |
+          VULNS=$(npm audit --json 2>/dev/null | node -e "
+            const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+            const m=d.metadata?.vulnerabilities||{};
+            console.log((m.critical||0)+'C '+(m.high||0)+'H '+(m.moderate||0)+'M '+(m.low||0)+'L');
+          " 2>/dev/null || echo "unknown")
+          echo "vulns=${VULNS}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      # ── Dependencies ──────────────────────────────────────────────────────
+      - name: Dependency count
+        id: deps
+        run: |
+          PROD=$(node -e "const p=require('./package.json'); console.log(Object.keys(p.dependencies||{}).length)")
+          DEV=$(node -e "const p=require('./package.json'); console.log(Object.keys(p.devDependencies||{}).length)")
+          echo "prod=${PROD}" >> "$GITHUB_OUTPUT"
+          echo "dev=${DEV}" >> "$GITHUB_OUTPUT"
+
+      # ── Build ─────────────────────────────────────────────────────────────
+      - name: Build
+        id: build
+        run: |
+          START=$(date +%s)
+          npm run build:ts 2>/dev/null && STATUS=pass || STATUS=fail
+          END=$(date +%s)
+          echo "status=${STATUS}" >> "$GITHUB_OUTPUT"
+          echo "seconds=$((END-START))" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      # ── Report ────────────────────────────────────────────────────────────
+      - name: Write step summary
+        env:
+          TS_ERRORS: ${{ steps.typecheck.outputs.ts_errors }}
+          PASS: ${{ steps.tests.outputs.pass }}
+          FAIL: ${{ steps.tests.outputs.fail }}
+          COV: ${{ steps.tests.outputs.coverage }}
+          VULNS: ${{ steps.security.outputs.vulns }}
+          PROD_DEPS: ${{ steps.deps.outputs.prod }}
+          DEV_DEPS: ${{ steps.deps.outputs.dev }}
+          BUILD_STATUS: ${{ steps.build.outputs.status }}
+          BUILD_TIME: ${{ steps.build.outputs.seconds }}
+          SRC_LINES: ${{ steps.loc.outputs.source_lines }}
+          TEST_LINES: ${{ steps.loc.outputs.test_lines }}
+          SRC_FILES: ${{ steps.loc.outputs.source_files }}
+        run: |
+          {
+            echo "# Yardstick — Ruflo v3"
+            echo ""
+            echo "| Metric | Value |"
+            echo "|--------|-------|"
+            echo "| Source files | \`${SRC_FILES}\` .ts |"
+            echo "| Source lines | \`${SRC_LINES}\` |"
+            echo "| Test lines | \`${TEST_LINES}\` |"
+            echo "| TypeScript errors | \`${TS_ERRORS:-?}\` |"
+            echo "| Tests passed | \`${PASS:-?}\` |"
+            echo "| Tests failed | \`${FAIL:-?}\` |"
+            echo "| Line coverage | \`${COV:-?}%\` |"
+            echo "| Vulnerabilities | \`${VULNS:-unknown}\` |"
+            echo "| Production deps | \`${PROD_DEPS}\` |"
+            echo "| Dev deps | \`${DEV_DEPS}\` |"
+            echo "| Build | \`${BUILD_STATUS:-?}\` in ${BUILD_TIME:-?}s |"
+            echo ""
+            echo "> Commit: \`${{ github.sha }}\`  ·  Branch: \`${{ github.ref_name }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          TS_ERRORS: ${{ steps.typecheck.outputs.ts_errors }}
+          PASS: ${{ steps.tests.outputs.pass }}
+          FAIL: ${{ steps.tests.outputs.fail }}
+          COV: ${{ steps.tests.outputs.coverage }}
+          VULNS: ${{ steps.security.outputs.vulns }}
+          PROD_DEPS: ${{ steps.deps.outputs.prod }}
+          DEV_DEPS: ${{ steps.deps.outputs.dev }}
+          BUILD_STATUS: ${{ steps.build.outputs.status }}
+          BUILD_TIME: ${{ steps.build.outputs.seconds }}
+          SRC_LINES: ${{ steps.loc.outputs.source_lines }}
+          SRC_FILES: ${{ steps.loc.outputs.source_files }}
+        with:
+          script: |
+            const body = [
+              '## 📏 Yardstick — Quality Snapshot',
+              '',
+              '| Metric | Value |',
+              '|--------|-------|',
+              `| Source files | \`${process.env.SRC_FILES}\` .ts |`,
+              `| Source lines | \`${process.env.SRC_LINES}\` |`,
+              `| TypeScript errors | \`${process.env.TS_ERRORS ?? '?'}\` |`,
+              `| Tests | \`${process.env.PASS ?? '?'}\` passed · \`${process.env.FAIL ?? '?'}\` failed |`,
+              `| Line coverage | \`${process.env.COV ?? '?'}%\` |`,
+              `| Vulnerabilities | \`${process.env.VULNS ?? 'unknown'}\` |`,
+              `| Deps (prod/dev) | \`${process.env.PROD_DEPS}\` / \`${process.env.DEV_DEPS}\` |`,
+              `| Build | \`${process.env.BUILD_STATUS ?? '?'}\` in ${process.env.BUILD_TIME ?? '?'}s |`,
+              '',
+              `> \`${{ github.sha }}\``,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c =>
+              c.user.login === 'github-actions[bot]' &&
+              c.body.includes('📏 Yardstick')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
