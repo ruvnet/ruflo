@@ -74,13 +74,24 @@ function schemaToZodShape(schema) {
 }
 
 /**
- * Create and configure the MCP server with all registered tools
+ * Cache the tool list once at startup (avoids re-scanning on every request).
+ */
+const cachedTools = listMCPTools();
+console.error(`[ruflo-mcp] Discovered ${cachedTools.length} tools`);
+
+/**
+ * Create a fresh MCP server instance with all registered tools.
+ *
+ * The MCP SDK binds one transport per Server and throws if you call
+ * connect() twice.  In stateless HTTP mode every request needs its own
+ * transport, so we create a lightweight server per request.  Tool
+ * registration is pure in-memory object construction — fast enough even
+ * with 200+ tools.
  */
 function createServer() {
   const server = new McpServer({ name: 'ruflo', version: VERSION });
-  const tools = listMCPTools();
 
-  for (const tool of tools) {
+  for (const tool of cachedTools) {
     const zodShape = schemaToZodShape(tool.inputSchema);
     server.tool(tool.name, tool.description, zodShape, async (params) => {
       try {
@@ -103,7 +114,6 @@ function createServer() {
     });
   }
 
-  console.error(`[ruflo-mcp] Registered ${tools.length} tools on MCP server`);
   return server;
 }
 
@@ -112,15 +122,19 @@ function createServer() {
  */
 async function main() {
   const app = express();
-  const mcpServer = createServer();
+
+  console.error(`[ruflo-mcp] Registered ${cachedTools.length} tools on MCP server`);
 
   // POST /mcp — Handle client requests (stateless mode)
+  // Each request gets its own McpServer + Transport pair because the SDK
+  // binds one transport per server and throws on a second connect().
   app.post('/mcp', async (req, res) => {
     try {
+      const server = createServer();
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
       });
-      await mcpServer.connect(transport);
+      await server.connect(transport);
       await transport.handleRequest(req, res);
     } catch (error) {
       console.error('[ruflo-mcp] POST /mcp error:', error);
@@ -153,11 +167,10 @@ async function main() {
 
   // Health check
   app.get('/health', (_req, res) => {
-    const tools = listMCPTools();
     res.json({
       status: 'ok',
       version: VERSION,
-      tools: tools.length,
+      tools: cachedTools.length,
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     });
