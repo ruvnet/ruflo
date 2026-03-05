@@ -83,7 +83,7 @@ export const systemTools: MCPTool[] = [
       type: 'object',
       properties: {
         verbose: { type: 'boolean', description: 'Include detailed information' },
-        components: { type: 'array', description: 'Specific components to check' },
+        components: { type: 'array', items: { type: 'string' }, description: 'Specific components to check' },
       },
     },
     handler: async (input) => {
@@ -200,7 +200,7 @@ export const systemTools: MCPTool[] = [
       type: 'object',
       properties: {
         deep: { type: 'boolean', description: 'Perform deep health check' },
-        components: { type: 'array', description: 'Components to check' },
+        components: { type: 'array', items: { type: 'string' }, description: 'Components to check' },
         fix: { type: 'boolean', description: 'Attempt to fix issues' },
       },
     },
@@ -283,7 +283,7 @@ export const systemTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        include: { type: 'array', description: 'Information to include' },
+        include: { type: 'array', items: { type: 'string' }, description: 'Information to include' },
       },
     },
     handler: async () => {

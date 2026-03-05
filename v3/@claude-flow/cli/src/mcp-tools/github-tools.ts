@@ -241,8 +241,8 @@ export const githubTools: MCPTool[] = [
         issueNumber: { type: 'number', description: 'Issue number' },
         title: { type: 'string', description: 'Issue title' },
         body: { type: 'string', description: 'Issue body' },
-        labels: { type: 'array', description: 'Issue labels' },
-        assignees: { type: 'array', description: 'Assignees' },
+        labels: { type: 'array', items: { type: 'string' }, description: 'Issue labels' },
+        assignees: { type: 'array', items: { type: 'string' }, description: 'Assignees' },
       },
     },
     handler: async (input) => {

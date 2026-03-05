@@ -93,7 +93,7 @@ export const performanceTools: MCPTool[] = [
       properties: {
         timeRange: { type: 'string', description: 'Time range (1h, 24h, 7d)' },
         format: { type: 'string', enum: ['json', 'summary', 'detailed'], description: 'Report format' },
-        components: { type: 'array', description: 'Components to include' },
+        components: { type: 'array', items: { type: 'string' }, description: 'Components to include' },
       },
     },
     handler: async (input) => {

@@ -2346,7 +2346,7 @@ export const hooksIntelligenceLearn: MCPTool = {
   inputSchema: {
     type: 'object',
     properties: {
-      trajectoryIds: { type: 'array', description: 'Specific trajectories to learn from' },
+      trajectoryIds: { type: 'array', items: { type: 'string' }, description: 'Specific trajectories to learn from' },
       consolidate: { type: 'boolean', description: 'Run EWC++ consolidation' },
     },
   },

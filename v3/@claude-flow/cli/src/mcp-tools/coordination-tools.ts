@@ -489,7 +489,7 @@ export const coordinationTools: MCPTool[] = [
       type: 'object',
       properties: {
         task: { type: 'string', description: 'Task to orchestrate' },
-        agents: { type: 'array', description: 'Agent IDs to coordinate' },
+        agents: { type: 'array', items: { type: 'string' }, description: 'Agent IDs to coordinate' },
         strategy: { type: 'string', enum: ['parallel', 'sequential', 'pipeline', 'broadcast'], description: 'Orchestration strategy' },
         timeout: { type: 'number', description: 'Timeout in ms' },
       },
