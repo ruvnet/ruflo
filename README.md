@@ -1,8 +1,8 @@
-# 🌊 Ruflo v3: Enterprise AI Orchestration Platform
+# 🌊 RuFlo v3.5: Enterprise AI Orchestration Platform
 
 <div align="center">
 
-![Ruflo Banner](ruflo/assets/ruFlo.png)
+![Ruflo Banner](ruflo/assets/ruflo-small.jpeg)
 
 
 

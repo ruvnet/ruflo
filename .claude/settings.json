@@ -183,7 +183,7 @@
     "pr": "\ud83e\udd16 Generated with [claude-flow](https://github.com/ruvnet/claude-flow)"
   },
   "claudeFlow": {
-    "version": "3.0.0",
+    "version": "3.5.2",
     "enabled": true,
     "modelPreferences": {
       "default": "claude-opus-4-6",
