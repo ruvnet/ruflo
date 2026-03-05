@@ -892,7 +892,7 @@ export const pluginsCommand: Command = {
   ],
   action: async (): Promise<CommandResult> => {
     output.writeln();
-    output.writeln(output.bold('Claude Flow Plugin System'));
+    output.writeln(output.bold('RuFlo Plugin System'));
     output.writeln(output.dim('Decentralized plugin marketplace via IPFS'));
     output.writeln();
     output.writeln('Subcommands:');

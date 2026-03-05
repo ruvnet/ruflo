@@ -941,6 +941,12 @@ export interface MemoryInitResult {
     hnswIndexing: boolean;
     migrationTracking: boolean;
   };
+  /** ADR-053: Controllers activated via ControllerRegistry */
+  controllers?: {
+    activated: string[];
+    failed: string[];
+    initTimeMs: number;
+  };
   error?: string;
 }
 
@@ -1081,6 +1087,58 @@ export async function checkAndMigrateLegacy(options: {
 }
 
 /**
+ * ADR-053: Activate ControllerRegistry so AgentDB v3 controllers
+ * (ReasoningBank, SkillLibrary, ExplainableRecall, etc.) are instantiated.
+ *
+ * Uses the memory-bridge's getControllerRegistry() which lazily creates
+ * a singleton ControllerRegistry and initializes it with the given dbPath.
+ * After this call, all enabled controllers are ready for immediate use.
+ *
+ * Failures are isolated: if @claude-flow/memory or agentdb is not installed,
+ * this returns an empty result without throwing.
+ */
+async function activateControllerRegistry(
+  dbPath: string,
+  verbose?: boolean,
+): Promise<{ activated: string[]; failed: string[]; initTimeMs: number }> {
+  const startTime = performance.now();
+  const activated: string[] = [];
+  const failed: string[] = [];
+
+  try {
+    const bridge = await getBridge();
+    if (!bridge) {
+      return { activated, failed, initTimeMs: performance.now() - startTime };
+    }
+
+    const registry = await bridge.getControllerRegistry(dbPath);
+    if (!registry) {
+      return { activated, failed, initTimeMs: performance.now() - startTime };
+    }
+
+    // Collect controller status from the registry
+    if (typeof registry.listControllers === 'function') {
+      const controllers = registry.listControllers();
+      for (const ctrl of controllers) {
+        if (ctrl.enabled) {
+          activated.push(ctrl.name);
+        } else {
+          failed.push(ctrl.name);
+        }
+      }
+    }
+
+    if (verbose && activated.length > 0) {
+      console.log(`ControllerRegistry: ${activated.length} controllers activated`);
+    }
+  } catch {
+    // ControllerRegistry activation is best-effort
+  }
+
+  return { activated, failed, initTimeMs: performance.now() - startTime };
+}
+
+/**
  * Initialize the memory database properly using sql.js
  */
 export async function initializeMemoryDatabase(options: {
@@ -1178,6 +1236,10 @@ export async function initializeMemoryDatabase(options: {
       const schemaPath = path.join(dbDir, 'schema.sql');
       fs.writeFileSync(schemaPath, MEMORY_SCHEMA_V3 + '\n' + getInitialMetadata(backend));
 
+      // ADR-053: Activate ControllerRegistry so controllers (ReasoningBank,
+      // SkillLibrary, ExplainableRecall, etc.) are instantiated during init
+      const controllerResult = await activateControllerRegistry(dbPath, verbose);
+
       return {
         success: true,
         backend,
@@ -1215,7 +1277,8 @@ export async function initializeMemoryDatabase(options: {
           temporalDecay: true,
           hnswIndexing: true,
           migrationTracking: true
-        }
+        },
+        controllers: controllerResult,
       };
     } else {
       // Fall back to schema file approach
@@ -1236,6 +1299,9 @@ export async function initializeMemoryDatabase(options: {
       sqliteHeader[27] = 0x20; // leaf payload
 
       fs.writeFileSync(dbPath, sqliteHeader);
+
+      // ADR-053: Activate ControllerRegistry even on fallback path
+      const controllerResult = await activateControllerRegistry(dbPath, verbose);
 
       return {
         success: true,
@@ -1260,7 +1326,8 @@ export async function initializeMemoryDatabase(options: {
           temporalDecay: true,
           hnswIndexing: true,
           migrationTracking: true
-        }
+        },
+        controllers: controllerResult,
       };
     }
   } catch (error) {

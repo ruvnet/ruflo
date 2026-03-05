@@ -469,7 +469,7 @@ export const storeCommand: Command = {
   ],
   action: async (): Promise<CommandResult> => {
     output.writeln();
-    output.writeln(output.bold('Claude Flow Pattern Store'));
+    output.writeln(output.bold('RuFlo Pattern Store'));
     output.writeln(output.dim('Decentralized pattern marketplace via IPFS'));
     output.writeln();
     output.writeln('Subcommands:');

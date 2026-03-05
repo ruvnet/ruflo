@@ -748,6 +748,15 @@ async function executeGoapSearch(query, args) {
 // =============================================================================
 
 async function executeTool(name, args) {
+  // Validate that search-like tools have a non-empty query to prevent 400 errors
+  if (!args || typeof args !== "object") args = {};
+  const rawQuery = args.query ?? args.q ?? args.input ?? "";
+  const queryStr = typeof rawQuery === "string" ? rawQuery.trim() : String(rawQuery || "").trim();
+  const isSearchTool = name === "search" || name === "web_research" || /^(web_)?search/i.test(name);
+  if (isSearchTool && !queryStr) {
+    return { content: [{ type: "text", text: `No search query provided. Please specify a search query for '${name}'.` }] };
+  }
+
   switch (name) {
     case "search":
       if (!CLOUD_FUNCTIONS.search) return { error: "search endpoint not configured" };
@@ -856,12 +865,11 @@ function createMcpHandler(groupName) {
         case "tools/call": {
           const { name, arguments: toolArgs } = params;
           const result = await executeTool(name, toolArgs || {});
-          return res.json({
-            jsonrpc: "2.0", id,
-            result: {
-              content: [{ type: "text", text: typeof result === "string" ? result : JSON.stringify(result, null, 2) }],
-            },
-          });
+          // If executeTool already returned MCP-formatted content, pass through directly
+          const mcpResult = result && Array.isArray(result.content)
+            ? { content: result.content }
+            : { content: [{ type: "text", text: typeof result === "string" ? result : JSON.stringify(result, null, 2) }] };
+          return res.json({ jsonrpc: "2.0", id, result: mcpResult });
         }
         case "notifications/initialized":
           return res.json({ jsonrpc: "2.0", id, result: {} });
@@ -911,12 +919,11 @@ app.post("/mcp", async (req, res) => {
       case "tools/call": {
         const { name, arguments: toolArgs } = params;
         const result = await executeTool(name, toolArgs || {});
-        return res.json({
-          jsonrpc: "2.0", id,
-          result: {
-            content: [{ type: "text", text: typeof result === "string" ? result : JSON.stringify(result, null, 2) }],
-          },
-        });
+        // If executeTool already returned MCP-formatted content, pass through directly
+        const mcpResult = result && Array.isArray(result.content)
+          ? { content: result.content }
+          : { content: [{ type: "text", text: typeof result === "string" ? result : JSON.stringify(result, null, 2) }] };
+        return res.json({ jsonrpc: "2.0", id, result: mcpResult });
       }
       case "notifications/initialized":
         return res.json({ jsonrpc: "2.0", id, result: {} });

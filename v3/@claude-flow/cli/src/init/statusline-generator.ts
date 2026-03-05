@@ -15,7 +15,7 @@ import type { InitOptions } from './types.js';
 /**
  * Generate optimized statusline script
  * Output format:
- * ▊ Claude Flow V3 ● user  │  ⎇ branch  │  Opus 4.6
+ * ▊ RuFlo V3 ● user  │  ⎇ branch  │  Opus 4.6
  * ─────────────────────────────────────────────────────
  * 🏗️  DDD Domains    [●●○○○]  2/5    ⚡ HNSW 150x
  * 🤖 Swarm  ◉ [ 5/15]  👥 2    🪝 10/17    🟢 CVE 3/3    💾 4MB    🧠  63%
@@ -27,7 +27,7 @@ export function generateStatuslineScript(options: InitOptions): string {
 
   return `#!/usr/bin/env node
 /**
- * Claude Flow V3 Statusline Generator (Optimized)
+ * RuFlo V3 Statusline Generator (Optimized)
  * Displays real-time V3 implementation progress and system status
  *
  * Usage: node statusline.cjs [--json] [--compact]
@@ -582,7 +582,7 @@ function generateStatusline() {
   const lines = [];
 
   // Header
-  let header = c.bold + c.brightPurple + '\\u258A Claude Flow V3 ' + c.reset;
+  let header = c.bold + c.brightPurple + '\\u258A RuFlo V3 ' + c.reset;
   header += (swarm.coordinationActive ? c.brightCyan : c.dim) + '\\u25CF ' + c.brightCyan + git.name + c.reset;
   if (git.gitBranch) {
     header += '  ' + c.dim + '\\u2502' + c.reset + '  ' + c.brightBlue + '\\u23C7 ' + git.gitBranch + c.reset;
@@ -795,7 +795,7 @@ export function generateStatuslineHook(options: InitOptions): string {
   }
 
   return `#!/bin/bash
-# Claude Flow V3 Statusline Hook
+# RuFlo V3 Statusline Hook
 # Source this in your .bashrc/.zshrc for terminal statusline
 
 # Function to get statusline

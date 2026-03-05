@@ -957,7 +957,7 @@ export class GitHubSync {
         const claimantStr = claimant.type === 'human'
           ? `@${claimant.name.replace(/[^a-zA-Z0-9_-]/g, '')}`
           : `Agent: ${(claimant.agentType || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '')}`;
-        const comment = `🤖 **Issue claimed** by ${claimantStr}\n\n_Coordinated by Claude Flow V3_`;
+        const comment = `🤖 **Issue claimed** by ${claimantStr}\n\n_Coordinated by RuFlo V3_`;
         try {
           execFileSync('gh', [
             'issue', 'comment', String(issueNumber),

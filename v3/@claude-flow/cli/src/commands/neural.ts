@@ -1695,7 +1695,7 @@ export const neuralCommand: Command = {
   ],
   action: async (): Promise<CommandResult> => {
     output.writeln();
-    output.writeln(output.bold('Claude Flow Neural System'));
+    output.writeln(output.bold('RuFlo Neural System'));
     output.writeln(output.dim('Advanced AI pattern learning and inference'));
     output.writeln();
     output.writeln('Use --help with subcommands for more info');

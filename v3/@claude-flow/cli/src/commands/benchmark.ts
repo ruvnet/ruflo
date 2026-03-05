@@ -413,7 +413,7 @@ const allCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     output.writeln();
     output.writeln(output.bold(output.highlight('═'.repeat(65))));
-    output.writeln(output.bold('  Claude Flow V3 - Full Benchmark Suite'));
+    output.writeln(output.bold('  RuFlo V3 - Full Benchmark Suite'));
     output.writeln(output.bold(output.highlight('═'.repeat(65))));
 
     const startTime = Date.now();
@@ -491,7 +491,7 @@ export const benchmarkCommand: Command = {
   ],
   action: async (_ctx: CommandContext): Promise<CommandResult> => {
     output.writeln();
-    output.writeln(output.bold('Claude Flow V3 Benchmark Suite'));
+    output.writeln(output.bold('RuFlo V3 Benchmark Suite'));
     output.writeln(output.dim('─'.repeat(50)));
     output.writeln();
     output.writeln('Available subcommands:');

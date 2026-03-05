@@ -294,7 +294,7 @@ export const deploymentCommand: Command = {
   ],
   action: async (): Promise<CommandResult> => {
     output.writeln();
-    output.writeln(output.bold('Claude Flow Deployment'));
+    output.writeln(output.bold('RuFlo Deployment'));
     output.writeln(output.dim('Multi-environment deployment management'));
     output.writeln();
     output.writeln('Subcommands:');

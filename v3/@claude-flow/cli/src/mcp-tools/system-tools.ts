@@ -11,8 +11,23 @@
 
 import type { MCPTool } from './types.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as os from 'node:os';
+
+// Read version dynamically from package.json
+function getPackageVersion(): string {
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const pkgPath = join(__dirname, '..', '..', 'package.json');
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+    return pkg.version || '3.0.0';
+  } catch {
+    return '3.0.0';
+  }
+}
+const PKG_VERSION = getPackageVersion();
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -83,7 +98,7 @@ export const systemTools: MCPTool[] = [
       type: 'object',
       properties: {
         verbose: { type: 'boolean', description: 'Include detailed information' },
-        components: { type: 'array', description: 'Specific components to check' },
+        components: { type: 'array', items: { type: 'string' }, description: 'Specific components to check' },
       },
     },
     handler: async (input) => {
@@ -94,7 +109,7 @@ export const systemTools: MCPTool[] = [
         status: metrics.health >= 0.8 ? 'healthy' : metrics.health >= 0.5 ? 'degraded' : 'unhealthy',
         uptime,
         uptimeFormatted: `${Math.floor(uptime / 3600000)}h ${Math.floor((uptime % 3600000) / 60000)}m`,
-        version: '3.0.0-alpha',
+        version: PKG_VERSION,
         components: {
           swarm: { status: 'running', health: metrics.health },
           memory: { status: 'running', health: 0.95 },
@@ -200,7 +215,7 @@ export const systemTools: MCPTool[] = [
       type: 'object',
       properties: {
         deep: { type: 'boolean', description: 'Perform deep health check' },
-        components: { type: 'array', description: 'Components to check' },
+        components: { type: 'array', items: { type: 'string' }, description: 'Components to check' },
         fix: { type: 'boolean', description: 'Attempt to fix issues' },
       },
     },
@@ -283,12 +298,12 @@ export const systemTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        include: { type: 'array', description: 'Information to include' },
+        include: { type: 'array', items: { type: 'string' }, description: 'Information to include' },
       },
     },
     handler: async () => {
       return {
-        version: '3.0.0-alpha',
+        version: PKG_VERSION,
         nodeVersion: process.version,
         platform: process.platform,
         arch: process.arch,

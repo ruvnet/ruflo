@@ -555,18 +555,50 @@ export class RvfCollection<T = any> {
 		update: Record<string, unknown>,
 		options?: { upsert?: boolean }
 	): Promise<{ matchedCount: number; modifiedCount: number; upsertedCount?: number; acknowledged: boolean }> {
+		// Collect all matching docs to detect duplicates
+		const matches: Array<{ id: string; doc: Record<string, unknown> }> = [];
 		for (const [id, doc] of this.docs) {
 			if (matchesFilter(doc, filter)) {
-				applyUpdate(doc, update);
-				this.docs.set(id, doc);
-				scheduleSave();
-				return { matchedCount: 1, modifiedCount: 1, acknowledged: true };
+				matches.push({ id, doc });
 			}
 		}
 
+		// Deduplicate: if multiple docs match, keep only the newest and delete the rest
+		if (matches.length > 1) {
+			matches.sort((a, b) => {
+				const ta = a.doc.updatedAt instanceof Date ? a.doc.updatedAt.getTime()
+					: typeof a.doc.updatedAt === "string" ? new Date(a.doc.updatedAt).getTime() : 0;
+				const tb = b.doc.updatedAt instanceof Date ? b.doc.updatedAt.getTime()
+					: typeof b.doc.updatedAt === "string" ? new Date(b.doc.updatedAt).getTime() : 0;
+				return tb - ta;
+			});
+			for (let i = 1; i < matches.length; i++) {
+				this.docs.delete(matches[i].id);
+			}
+		}
+
+		if (matches.length > 0) {
+			const { id, doc } = matches[0];
+			applyUpdate(doc, update);
+			this.docs.set(id, doc);
+			scheduleSave();
+			return { matchedCount: 1, modifiedCount: 1, acknowledged: true };
+		}
+
 		if (options?.upsert) {
+			// Strip query operators from filter before using as doc fields
+			const cleanFilter: Record<string, unknown> = {};
+			for (const [key, val] of Object.entries(filter)) {
+				if (key.startsWith("$")) continue; // skip top-level operators like $or, $and
+				if (val !== null && typeof val === "object" && !Array.isArray(val) && !(val instanceof Date)) {
+					const hasOps = Object.keys(val as Record<string, unknown>).some((k) => k.startsWith("$"));
+					if (hasOps) continue; // skip fields with query operators like { $exists: false }
+				}
+				// Stringify ObjectId-like values for consistent storage
+				cleanFilter[key] = isObjectIdLike(val) ? String(val) : val;
+			}
 			const newDoc: Record<string, unknown> = {
-				...filter,
+				...cleanFilter,
 				...((update.$set as Record<string, unknown>) ?? {}),
 				...((update.$setOnInsert as Record<string, unknown>) ?? {}),
 			};
@@ -798,11 +830,44 @@ export class RvfCollection<T = any> {
 		update: Record<string, unknown>,
 		options?: { upsert?: boolean; returnDocument?: "before" | "after" }
 	): Promise<{ value: T | null }> {
-		const existing = await this.findOne(filter);
+		// Deduplicate: if multiple docs match the filter, keep only the newest
+		// and remove the rest. This prevents duplicate settings entries.
+		const allMatching: Array<{ id: string; doc: Record<string, unknown> }> = [];
+		for (const [id, doc] of this.docs) {
+			if (matchesFilter(doc, filter)) {
+				allMatching.push({ id, doc });
+			}
+		}
+		if (allMatching.length > 1) {
+			// Sort by updatedAt desc, keep the newest — handle both Date objects and ISO strings
+			allMatching.sort((a, b) => {
+				const ta = a.doc.updatedAt instanceof Date ? a.doc.updatedAt.getTime()
+					: typeof a.doc.updatedAt === "string" ? new Date(a.doc.updatedAt).getTime() : 0;
+				const tb = b.doc.updatedAt instanceof Date ? b.doc.updatedAt.getTime()
+					: typeof b.doc.updatedAt === "string" ? new Date(b.doc.updatedAt).getTime() : 0;
+				return tb - ta;
+			});
+			for (let i = 1; i < allMatching.length; i++) {
+				this.docs.delete(allMatching[i].id);
+			}
+			scheduleSave();
+		}
+
+		const existing = allMatching.length > 0 ? ({ ...allMatching[0].doc } as T) : null;
 
 		if (!existing && options?.upsert) {
+			// Strip query operators from filter before using as doc fields
+			const cleanFilter: Record<string, unknown> = {};
+			for (const [key, val] of Object.entries(filter)) {
+				if (key.startsWith("$")) continue;
+				if (val !== null && typeof val === "object" && !Array.isArray(val) && !(val instanceof Date)) {
+					const hasOps = Object.keys(val as Record<string, unknown>).some((k) => k.startsWith("$"));
+					if (hasOps) continue;
+				}
+				cleanFilter[key] = isObjectIdLike(val) ? String(val) : val;
+			}
 			const newDoc = {
-				...filter,
+				...cleanFilter,
 				...((update.$set as Record<string, unknown>) ?? {}),
 			};
 			await this.insertOne(newDoc as Partial<T> & Record<string, unknown>);

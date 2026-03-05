@@ -96,8 +96,8 @@ const startAction = async (ctx: CommandContext): Promise<CommandResult> => {
 
   // Check initialization
   if (!isInitialized(cwd)) {
-    output.printError('Claude Flow is not initialized in this directory');
-    output.printInfo('Run "claude-flow init" first to initialize');
+    output.printError('RuFlo is not initialized in this directory');
+    output.printInfo('Run "ruflo init" first to initialize');
     return { success: false, exitCode: 1 };
   }
 
@@ -112,7 +112,7 @@ const startAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const mcpPort = port || (mcpConfig.serverPort as number) || DEFAULT_PORT;
 
   output.writeln();
-  output.writeln(output.bold('Starting Claude Flow V3'));
+  output.writeln(output.bold('Starting RuFlo V3'));
   output.writeln();
 
   const spinner = output.createSpinner({ text: 'Initializing system...' });
@@ -185,7 +185,7 @@ const startAction = async (ctx: CommandContext): Promise<CommandResult> => {
 
     // Success output
     output.writeln();
-    output.printSuccess('Claude Flow V3 is running!');
+    output.printSuccess('RuFlo V3 is running!');
     output.writeln();
 
     // Status display
@@ -274,7 +274,7 @@ const startAction = async (ctx: CommandContext): Promise<CommandResult> => {
 // Stop subcommand
 const stopCommand: Command = {
   name: 'stop',
-  description: 'Stop the Claude Flow system',
+  description: 'Stop the RuFlo system',
   options: [
     {
       name: 'force',
@@ -295,12 +295,12 @@ const stopCommand: Command = {
     const timeout = ctx.flags.timeout as number;
 
     output.writeln();
-    output.writeln(output.bold('Stopping Claude Flow'));
+    output.writeln(output.bold('Stopping RuFlo'));
     output.writeln();
 
     if (!force && ctx.interactive) {
       const confirmed = await confirm({
-        message: 'Are you sure you want to stop Claude Flow?',
+        message: 'Are you sure you want to stop RuFlo?',
         default: false
       });
 
@@ -344,7 +344,7 @@ const stopCommand: Command = {
       }
 
       output.writeln();
-      output.printSuccess('Claude Flow stopped successfully');
+      output.printSuccess('RuFlo stopped successfully');
 
       return {
         success: true,
@@ -361,7 +361,7 @@ const stopCommand: Command = {
 // Restart subcommand
 const restartCommand: Command = {
   name: 'restart',
-  description: 'Restart the Claude Flow system',
+  description: 'Restart the RuFlo system',
   options: [
     {
       name: 'force',
@@ -373,7 +373,7 @@ const restartCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     output.writeln();
-    output.writeln(output.bold('Restarting Claude Flow'));
+    output.writeln(output.bold('Restarting RuFlo'));
     output.writeln();
 
     // Stop first
@@ -432,7 +432,7 @@ const quickCommand: Command = {
 // Main start command
 export const startCommand: Command = {
   name: 'start',
-  description: 'Start the Claude Flow orchestration system',
+  description: 'Start the RuFlo orchestration system',
   subcommands: [stopCommand, restartCommand, quickCommand],
   options: [
     {

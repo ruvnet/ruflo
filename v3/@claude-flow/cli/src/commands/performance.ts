@@ -624,7 +624,7 @@ export const performanceCommand: Command = {
   ],
   action: async (): Promise<CommandResult> => {
     output.writeln();
-    output.writeln(output.bold('Claude Flow Performance Suite'));
+    output.writeln(output.bold('RuFlo Performance Suite'));
     output.writeln(output.dim('Advanced performance profiling and optimization'));
     output.writeln();
     output.writeln('Subcommands:');

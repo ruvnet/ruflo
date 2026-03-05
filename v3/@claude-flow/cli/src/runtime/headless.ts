@@ -98,7 +98,7 @@ function parseArgs(): HeadlessConfig {
  */
 function showHelp(): void {
   console.log(`
-Headless Runtime for Claude Flow V3
+Headless Runtime for RuFlo V3
 
 Usage:
   headless --worker <type>    Run a specific worker
@@ -194,7 +194,7 @@ async function runDaemon(): Promise<void> {
  * Run benchmarks
  */
 async function runBenchmarks(): Promise<BenchmarkResults> {
-  console.log('=== Claude Flow V3 Performance Benchmarks ===\n');
+  console.log('=== RuFlo V3 Performance Benchmarks ===\n');
 
   // Initialize intelligence
   await initializeIntelligence();
@@ -274,7 +274,7 @@ async function runBenchmarks(): Promise<BenchmarkResults> {
  * Show system status
  */
 async function showStatus(): Promise<void> {
-  console.log('=== Claude Flow V3 System Status ===\n');
+  console.log('=== RuFlo V3 System Status ===\n');
 
   // Check daemon
   const daemon = getDaemon();

@@ -1331,6 +1331,31 @@ const initMemoryCommand: Command = {
       output.printBox(featureLines.join('\n'), 'Configuration');
       output.writeln();
 
+      // ADR-053: Show ControllerRegistry activation results
+      if (result.controllers) {
+        const { activated, failed, initTimeMs } = result.controllers;
+        if (activated.length > 0 || failed.length > 0) {
+          const controllerLines = [
+            output.bold('AgentDB Controllers:'),
+            `  Activated: ${activated.length}  Failed: ${failed.length}  Init: ${Math.round(initTimeMs)}ms`,
+          ];
+          if (verbose && activated.length > 0) {
+            controllerLines.push('');
+            for (const name of activated) {
+              controllerLines.push(`  ${output.success('✓')} ${name}`);
+            }
+          }
+          if (failed.length > 0 && verbose) {
+            controllerLines.push('');
+            for (const name of failed) {
+              controllerLines.push(`  ${output.dim('✗')} ${name}`);
+            }
+          }
+          output.printBox(controllerLines.join('\n'), 'Controller Registry (ADR-053)');
+          output.writeln();
+        }
+      }
+
       // Show tables created
       if (verbose && result.tablesCreated.length > 0) {
         output.writeln(output.bold('Tables Created:'));

@@ -26,7 +26,7 @@ async function initCodexAction(
   const { force, minimal, full, dualMode } = options;
 
   output.writeln();
-  output.writeln(output.bold('Initializing Claude Flow V3 for OpenAI Codex'));
+  output.writeln(output.bold('Initializing RuFlo V3 for OpenAI Codex'));
   output.writeln();
 
   // Determine template
@@ -192,7 +192,7 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const hasExisting = initialized.claude || initialized.claudeFlow;
 
   if (hasExisting && !force) {
-    output.printWarning('Claude Flow appears to be already initialized');
+    output.printWarning('RuFlo appears to be already initialized');
     if (initialized.claude) output.printInfo('  Found: .claude/settings.json');
     if (initialized.claudeFlow) output.printInfo('  Found: .claude-flow/config.yaml');
     output.printInfo('Use --force to reinitialize');
@@ -212,7 +212,7 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   }
 
   output.writeln();
-  output.writeln(output.bold('Initializing Claude Flow V3'));
+  output.writeln(output.bold('Initializing RuFlo V3'));
   output.writeln();
 
   // Build init options based on flags
@@ -258,7 +258,7 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
       return { success: false, exitCode: 1 };
     }
 
-    spinner.succeed('Claude Flow V3 initialized successfully!');
+    spinner.succeed('RuFlo V3 initialized successfully!');
     output.writeln();
 
     // Display summary
@@ -429,7 +429,7 @@ const wizardCommand: Command = {
   description: 'Interactive setup wizard for comprehensive configuration',
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     output.writeln();
-    output.writeln(output.bold('Claude Flow V3 Setup Wizard'));
+    output.writeln(output.bold('RuFlo V3 Setup Wizard'));
     output.writeln(output.dim('Answer questions to configure your project'));
     output.writeln();
 
@@ -682,7 +682,7 @@ const wizardCommand: Command = {
 // Check subcommand
 const checkCommand: Command = {
   name: 'check',
-  description: 'Check if Claude Flow is initialized',
+  description: 'Check if RuFlo is initialized',
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const initialized = isInitialized(ctx.cwd);
 
@@ -702,7 +702,7 @@ const checkCommand: Command = {
     }
 
     if (result.initialized) {
-      output.printSuccess('Claude Flow is initialized');
+      output.printSuccess('RuFlo is initialized');
       if (initialized.claude) {
         output.printInfo(`  Claude Code: .claude/settings.json`);
       }
@@ -710,8 +710,8 @@ const checkCommand: Command = {
         output.printInfo(`  V3 Runtime: .claude-flow/config.yaml`);
       }
     } else {
-      output.printWarning('Claude Flow is not initialized in this directory');
-      output.printInfo('Run "claude-flow init" to initialize');
+      output.printWarning('RuFlo is not initialized in this directory');
+      output.printInfo('Run "ruflo init" to initialize');
     }
 
     return { success: true, data: result };
@@ -866,7 +866,7 @@ const upgradeCommand: Command = {
     const upgradeSettings = (ctx.flags.settings) as boolean;
 
     output.writeln();
-    output.writeln(output.bold('Upgrading Claude Flow'));
+    output.writeln(output.bold('Upgrading RuFlo'));
     if (addMissing && upgradeSettings) {
       output.writeln(output.dim('Updates helpers, settings, and adds any missing skills/agents/commands'));
     } else if (addMissing) {
@@ -998,7 +998,7 @@ const upgradeCommand: Command = {
 // Main init command
 export const initCommand: Command = {
   name: 'init',
-  description: 'Initialize Claude Flow in the current directory',
+  description: 'Initialize RuFlo in the current directory',
   subcommands: [wizardCommand, checkCommand, skillsCommand, hooksCommand, upgradeCommand],
   options: [
     {

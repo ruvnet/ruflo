@@ -154,6 +154,61 @@ export function generateSettings(options: InitOptions): object {
 }
 
 /**
+ * Build a cross-platform hook command that resolves paths to the project root.
+ * Uses `git rev-parse --show-toplevel` at runtime so hooks work regardless of CWD.
+ * Falls back to process.cwd() when not inside a git repo.
+ *
+ * The generated command is a `node -e` one-liner that:
+ *   1. Finds the git root (or falls back to cwd)
+ *   2. Requires the target script with the resolved absolute path
+ *   3. Passes through process.argv so the script sees its subcommand in argv[2]
+ */
+function hookCmd(script: string, subcommand: string): string {
+  // Compact one-liner: resolve project root, then require the script.
+  // With `node -e "..." arg`, process.argv = ['node', 'arg'] (no -e entry).
+  // hook-handler.cjs reads argv[2] as its command, so we splice in the resolved
+  // script path at argv[1] to produce: ['node', '<script>', 'subcommand'].
+  // Use single quotes for the script path to avoid conflicting with outer double quotes.
+  const scriptLiteral = `'${script}'`;
+  const resolver = [
+    "var c=require('child_process'),p=require('path'),r;",
+    "try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}",
+    'catch(e){r=process.cwd()}',
+    `var s=p.join(r,${scriptLiteral});`,
+    'process.argv.splice(1,0,s);',
+    'require(s)',
+  ].join('');
+  return `node -e "${resolver}" ${subcommand}`.trim();
+}
+
+/**
+ * Build a cross-platform hook command for ESM scripts (.mjs).
+ * Uses dynamic import() with a file:// URL for cross-platform ESM loading.
+ */
+function hookCmdEsm(script: string, subcommand: string): string {
+  const scriptLiteral = `'${script}'`;
+  const resolver = [
+    "var c=require('child_process'),p=require('path'),u=require('url'),r;",
+    "try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}",
+    'catch(e){r=process.cwd()}',
+    `var f=p.join(r,${scriptLiteral});`,
+    'process.argv.splice(1,0,f);',
+    'import(u.pathToFileURL(f).href)',
+  ].join('');
+  return `node -e "${resolver}" ${subcommand}`.trim();
+}
+
+/** Shorthand for CJS hook-handler commands */
+function hookHandlerCmd(subcommand: string): string {
+  return hookCmd('.claude/helpers/hook-handler.cjs', subcommand);
+}
+
+/** Shorthand for ESM auto-memory-hook commands */
+function autoMemoryCmd(subcommand: string): string {
+  return hookCmdEsm('.claude/helpers/auto-memory-hook.mjs', subcommand);
+}
+
+/**
  * Generate statusLine configuration for Claude Code
  * Uses local helper script for cross-platform compatibility (no npx cold-start)
  */
@@ -163,16 +218,15 @@ function generateStatusLineConfig(_options: InitOptions): object {
   // The script runs after each assistant message (debounced 300ms).
   return {
     type: 'command',
-    command: 'node .claude/helpers/statusline.cjs',
+    command: hookCmd('.claude/helpers/statusline.cjs', ''),
   };
 }
 
 /**
  * Generate hooks configuration
  * Uses local hook-handler.cjs for cross-platform compatibility.
- * All hooks delegate to `node .claude/helpers/hook-handler.cjs <command>`
- * which works identically on Windows, macOS, and Linux without
- * shell-specific syntax (no bash 2>/dev/null, no PowerShell 2>$null).
+ * All hooks delegate to hook-handler.cjs via resolved absolute paths,
+ * so they work identically on Windows, macOS, and Linux regardless of CWD.
  */
 function generateHooksConfig(config: HooksConfig): object {
   const hooks: Record<string, unknown[]> = {};
@@ -188,7 +242,7 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: 'node .claude/helpers/hook-handler.cjs pre-bash',
+            command: hookHandlerCmd('pre-bash'),
             timeout: config.timeout,
           },
         ],
@@ -204,7 +258,7 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: 'node .claude/helpers/hook-handler.cjs post-edit',
+            command: hookHandlerCmd('post-edit'),
             timeout: 10000,
           },
         ],
@@ -219,7 +273,7 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: 'node .claude/helpers/hook-handler.cjs route',
+            command: hookHandlerCmd('route'),
             timeout: 10000,
           },
         ],
@@ -234,12 +288,12 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: 'node .claude/helpers/hook-handler.cjs session-restore',
+            command: hookHandlerCmd('session-restore'),
             timeout: 15000,
           },
           {
             type: 'command',
-            command: 'node .claude/helpers/auto-memory-hook.mjs import',
+            command: autoMemoryCmd('import'),
             timeout: 8000,
           },
         ],
@@ -254,7 +308,7 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: 'node .claude/helpers/hook-handler.cjs session-end',
+            command: hookHandlerCmd('session-end'),
             timeout: 10000,
           },
         ],
@@ -269,7 +323,7 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: 'node .claude/helpers/auto-memory-hook.mjs sync',
+            command: autoMemoryCmd('sync'),
             timeout: 10000,
           },
         ],
@@ -285,11 +339,11 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: 'node .claude/helpers/hook-handler.cjs compact-manual',
+            command: hookHandlerCmd('compact-manual'),
           },
           {
             type: 'command',
-            command: 'node .claude/helpers/hook-handler.cjs session-end',
+            command: hookHandlerCmd('session-end'),
             timeout: 5000,
           },
         ],
@@ -299,11 +353,11 @@ function generateHooksConfig(config: HooksConfig): object {
         hooks: [
           {
             type: 'command',
-            command: 'node .claude/helpers/hook-handler.cjs compact-auto',
+            command: hookHandlerCmd('compact-auto'),
           },
           {
             type: 'command',
-            command: 'node .claude/helpers/hook-handler.cjs session-end',
+            command: hookHandlerCmd('session-end'),
             timeout: 6000,
           },
         ],
@@ -317,7 +371,7 @@ function generateHooksConfig(config: HooksConfig): object {
       hooks: [
         {
           type: 'command',
-          command: 'node .claude/helpers/hook-handler.cjs status',
+          command: hookHandlerCmd('status'),
           timeout: 3000,
         },
       ],

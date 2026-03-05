@@ -586,7 +586,7 @@ export const securityCommand: Command = {
   ],
   action: async (): Promise<CommandResult> => {
     output.writeln();
-    output.writeln(output.bold('Claude Flow Security Suite'));
+    output.writeln(output.bold('RuFlo Security Suite'));
     output.writeln(output.dim('Comprehensive security scanning and vulnerability management'));
     output.writeln();
     output.writeln('Subcommands:');

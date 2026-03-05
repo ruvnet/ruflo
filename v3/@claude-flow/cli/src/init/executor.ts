@@ -285,13 +285,14 @@ function mergeSettingsForUpgrade(existing: Record<string, unknown>): Record<stri
   const existingHooks = (existing.hooks as Record<string, unknown[]>) || {};
   merged.hooks = { ...existingHooks };
 
-  // Platform-specific auto-memory hook commands
-  const autoMemoryImportCmd = isWindows
-    ? 'node .claude/helpers/auto-memory-hook.mjs import 2>$null; exit 0'
-    : 'node .claude/helpers/auto-memory-hook.mjs import 2>/dev/null || true';
-  const autoMemorySyncCmd = isWindows
-    ? 'node .claude/helpers/auto-memory-hook.mjs sync 2>$null; exit 0'
-    : 'node .claude/helpers/auto-memory-hook.mjs sync 2>/dev/null || true';
+  // Cross-platform auto-memory hook commands that resolve paths via git root.
+  // Uses node -e with git rev-parse so hooks work regardless of CWD (#1259, #1284).
+  const gitRootResolver = "var c=require('child_process'),p=require('path'),u=require('url'),r;"
+    + "try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}"
+    + 'catch(e){r=process.cwd()}';
+  const autoMemoryScript = '.claude/helpers/auto-memory-hook.mjs';
+  const autoMemoryImportCmd = `node -e "${gitRootResolver}var f=p.join(r,'${autoMemoryScript}');import(u.pathToFileURL(f).href)" import`;
+  const autoMemorySyncCmd = `node -e "${gitRootResolver}var f=p.join(r,'${autoMemoryScript}');import(u.pathToFileURL(f).href)" sync`;
 
   // Add auto-memory import to SessionStart (if not already present)
   const sessionStartHooks = existingHooks.SessionStart as Array<{ hooks?: Array<{ command?: string }> }> | undefined;
@@ -345,7 +346,7 @@ function mergeSettingsForUpgrade(existing: Record<string, unknown>): Record<stri
   if (existingStatusLine) {
     merged.statusLine = {
       type: 'command',
-      command: existingStatusLine.command || 'node .claude/helpers/statusline.cjs',
+      command: existingStatusLine.command || `node -e "var c=require('child_process'),p=require('path'),r;try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}catch(e){r=process.cwd()}var s=p.join(r,'.claude/helpers/statusline.cjs');process.argv.splice(1,0,s);require(s)"`,
       // Remove invalid fields: refreshMs, enabled (not supported by Claude Code)
     };
   }
