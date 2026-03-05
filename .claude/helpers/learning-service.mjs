@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Claude Flow V3 - Persistent Learning Service
+ * RuFlo V3 - Persistent Learning Service
  *
  * Connects ReasoningBank to AgentDB with HNSW indexing and ONNX embeddings.
  *
@@ -1112,7 +1112,7 @@ async function main() {
       case 'help':
       default:
         console.log(`
-Claude Flow V3 Learning Service
+RuFlo V3 Learning Service
 
 Usage: learning-service.mjs <command> [args]
 

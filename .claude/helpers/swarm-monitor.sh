@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Flow V3 - Real-time Swarm Activity Monitor
+# RuFlo V3 - Real-time Swarm Activity Monitor
 # Continuously monitors and updates metrics based on running processes
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -188,7 +188,7 @@ case "${1:-check}" in
         fi
         ;;
     "help"|"-h"|"--help")
-        echo "Claude Flow V3 Swarm Monitor"
+        echo "RuFlo V3 Swarm Monitor"
         echo ""
         echo "Usage: $0 [command] [options]"
         echo ""

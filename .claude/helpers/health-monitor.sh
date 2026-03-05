@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Flow V3 - Health Monitor Worker
+# RuFlo V3 - Health Monitor Worker
 # Checks disk space, memory pressure, process health
 
 set -euo pipefail

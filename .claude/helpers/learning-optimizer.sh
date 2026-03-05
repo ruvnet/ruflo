@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Flow V3 - Learning Optimizer Worker
+# RuFlo V3 - Learning Optimizer Worker
 # Runs SONA micro-LoRA optimization on patterns
 
 set -euo pipefail

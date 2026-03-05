@@ -1,5 +1,5 @@
 #!/bin/bash
-# Guidance Hooks for Claude Flow V3
+# Guidance Hooks for RuFlo V3
 # Provides context and routing for Claude Code operations
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

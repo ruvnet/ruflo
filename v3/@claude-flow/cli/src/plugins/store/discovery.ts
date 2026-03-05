@@ -537,7 +537,7 @@ export class PluginDiscoveryService {
         id: '@claude-flow/plugins',
         name: '@claude-flow/plugins',
         displayName: 'Plugin SDK',
-        description: 'Unified Plugin SDK for Claude Flow V3 - Worker, Hook, and Provider Integration. Create, test, and publish Claude Flow plugins.',
+        description: 'Unified Plugin SDK for RuFlo V3 - Worker, Hook, and Provider Integration. Create, test, and publish RuFlo plugins.',
         version: '3.0.0-alpha.2',
         cid: 'bafybeipluginsdk2024xyz',
         size: 156000,

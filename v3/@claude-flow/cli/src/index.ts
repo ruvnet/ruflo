@@ -1,6 +1,6 @@
 /**
  * V3 CLI Main Entry Point
- * Modernized CLI for Claude Flow V3
+ * Modernized CLI for RuFlo V3
  *
  * Created with ❤️ by ruv.io
  */

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Flow V3 - Security Scanner Worker
+# RuFlo V3 - Security Scanner Worker
 # Scans for secrets, vulnerabilities, CVE updates
 
 set -euo pipefail

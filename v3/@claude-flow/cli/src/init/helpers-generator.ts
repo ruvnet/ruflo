@@ -405,7 +405,35 @@ export function generateHookHandler(): string {
     "const intelligence = safeRequire(path.join(helpersDir, 'intelligence.cjs'));",
     '',
     'const [,, command, ...args] = process.argv;',
-    "const prompt = process.env.PROMPT || process.env.TOOL_INPUT_command || args.join(' ') || '';",
+    '',
+    '// Read stdin with timeout — Claude Code sends hook data as JSON via stdin.',
+    '// Timeout prevents hanging when stdin is in an ambiguous state (not TTY, not pipe).',
+    'async function readStdin() {',
+    '  if (process.stdin.isTTY) return "";',
+    '  return new Promise((resolve) => {',
+    '    let data = "";',
+    '    const timer = setTimeout(() => {',
+    '      process.stdin.removeAllListeners();',
+    '      process.stdin.pause();',
+    '      resolve(data);',
+    '    }, 500);',
+    '    process.stdin.setEncoding("utf8");',
+    '    process.stdin.on("data", (chunk) => { data += chunk; });',
+    '    process.stdin.on("end", () => { clearTimeout(timer); resolve(data); });',
+    '    process.stdin.on("error", () => { clearTimeout(timer); resolve(data); });',
+    '    process.stdin.resume();',
+    '  });',
+    '}',
+    '',
+    'async function main() {',
+    '  let stdinData = "";',
+    '  try { stdinData = await readStdin(); } catch (e) { /* ignore */ }',
+    '  let hookInput = {};',
+    '  if (stdinData.trim()) {',
+    '    try { hookInput = JSON.parse(stdinData); } catch (e) { /* ignore */ }',
+    '  }',
+    '  // Prefer stdin fields, then env, then argv',
+    "  var prompt = hookInput.prompt || hookInput.command || hookInput.toolInput || process.env.PROMPT || process.env.TOOL_INPUT_command || args.join(' ') || '';",
     '',
     'const handlers = {',
     "  'route': () => {",
@@ -558,6 +586,9 @@ export function generateHookHandler(): string {
     '} else {',
     "  console.log('Usage: hook-handler.cjs <route|pre-bash|post-edit|session-restore|session-end|pre-task|post-task|compact-manual|compact-auto|status|stats>');",
     '}',
+    '} // end main',
+    '',
+    'main().catch(() => {});',
   ];
   return lines.join('\n') + '\n';
 }
@@ -887,7 +918,7 @@ try {
  * Generate Windows PowerShell daemon manager
  */
 export function generateWindowsDaemonManager(): string {
-  return `# Claude Flow V3 Daemon Manager for Windows
+  return `# RuFlo V3 Daemon Manager for Windows
 # PowerShell script for managing background processes
 
 param(
@@ -953,7 +984,7 @@ function Stop-SwarmMonitor {
 
 function Show-Status {
     Write-Host ""
-    Write-Host "Claude Flow V3 Daemon Status" -ForegroundColor Cyan
+    Write-Host "RuFlo V3 Daemon Status" -ForegroundColor Cyan
     Write-Host "=============================" -ForegroundColor Cyan
 
     $swarmPid = Join-Path $PidDir 'swarm-monitor.pid'
@@ -994,7 +1025,7 @@ switch ($Action) {
  */
 export function generateWindowsBatchWrapper(): string {
   return `@echo off
-REM Claude Flow V3 - Windows Batch Wrapper
+REM RuFlo V3 - Windows Batch Wrapper
 REM Routes to PowerShell daemon manager
 
 PowerShell -ExecutionPolicy Bypass -File "%~dp0daemon-manager.ps1" %*

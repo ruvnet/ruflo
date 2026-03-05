@@ -75,6 +75,10 @@ const startCommand: Command = {
       process.on('exit', cleanup);
       process.on('SIGINT', () => { cleanup(); process.exit(0); });
       process.on('SIGTERM', () => { cleanup(); process.exit(0); });
+      // Ignore SIGHUP on macOS/Linux — prevents daemon death when terminal closes (#1283)
+      if (process.platform !== 'win32') {
+        process.on('SIGHUP', () => { /* ignore — keep running */ });
+      }
 
       if (!quiet) {
         const spinner = output.createSpinner({ text: 'Starting worker daemon...', spinner: 'dots' });
@@ -210,17 +214,27 @@ async function startBackgroundDaemon(projectRoot: string, quiet: boolean): Promi
     return { success: false, exitCode: 1 };
   }
 
+  // Platform-aware spawn flags
+  const isWin = process.platform === 'win32';
+  const spawnOpts: any = {
+    cwd: resolvedRoot,
+    detached: !isWin,  // detached is POSIX-only; Windows uses windowsHide
+    stdio: ['ignore', fs.openSync(logFile, 'a'), fs.openSync(logFile, 'a')],
+    env: {
+      ...process.env,
+      CLAUDE_FLOW_DAEMON: '1',
+      // Prevent macOS SIGHUP kill when terminal closes
+      ...(process.platform === 'darwin' ? { NOHUP: '1' } : {}),
+    },
+    ...(isWin ? { shell: true, windowsHide: true } : {}),
+  };
+
   // Use spawn with explicit arguments instead of shell string interpolation
   // This prevents command injection via paths
   const child = spawn(process.execPath, [
     cliPath,
     'daemon', 'start', '--foreground', '--quiet'
-  ], {
-    cwd: resolvedRoot,
-    detached: true,
-    stdio: ['ignore', fs.openSync(logFile, 'a'), fs.openSync(logFile, 'a')],
-    env: { ...process.env, CLAUDE_FLOW_DAEMON: '1' },
-  });
+  ], spawnOpts);
 
   // Get PID from spawned process directly (no shell echo needed)
   const pid = child.pid;
@@ -230,7 +244,14 @@ async function startBackgroundDaemon(projectRoot: string, quiet: boolean): Promi
     return { success: false, exitCode: 1 };
   }
 
-  // Save PID
+  // Unref BEFORE writing PID file — prevents race where parent exits
+  // but child hasn't fully detached yet (fixes macOS daemon death #1283)
+  child.unref();
+
+  // Small delay to let the child process fully detach on macOS
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  // Save PID only after child is detached
   fs.writeFileSync(pidFile, String(pid));
 
   if (!quiet) {
@@ -238,9 +259,6 @@ async function startBackgroundDaemon(projectRoot: string, quiet: boolean): Promi
     output.printInfo(`Logs: ${logFile}`);
     output.printInfo(`Stop with: claude-flow daemon stop`);
   }
-
-  // Unref so parent can exit immediately
-  child.unref();
 
   return { success: true };
 }
@@ -414,7 +432,7 @@ const statusCommand: Command = {
           `Workers Enabled: ${status.config.workers.filter(w => w.enabled).length}`,
           `Max Concurrent: ${status.config.maxConcurrent}`,
         ].filter(Boolean).join('\n'),
-        'Worker Daemon'
+        'RuFlo Daemon'
       );
 
       output.writeln();
@@ -494,7 +512,7 @@ const statusCommand: Command = {
           '',
           'Run "claude-flow daemon start" to start the daemon',
         ].join('\n'),
-        'Worker Daemon'
+        'RuFlo Daemon'
       );
 
       return { success: true };
@@ -629,7 +647,7 @@ export const daemonCommand: Command = {
   ],
   action: async (): Promise<CommandResult> => {
     output.writeln();
-    output.writeln(output.bold('Worker Daemon - Background Task Management'));
+    output.writeln(output.bold('RuFlo Daemon - Background Task Management'));
     output.writeln();
     output.writeln('Node.js-based background worker system that auto-runs like shell daemons.');
     output.writeln('Manages 12 specialized workers for continuous optimization and monitoring.');

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Claude Flow V3 - Metrics Database Manager
+ * RuFlo V3 - Metrics Database Manager
  * Uses sql.js for cross-platform SQLite storage
  * Single .db file with multiple tables
  */

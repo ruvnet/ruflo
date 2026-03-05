@@ -1,4 +1,4 @@
-# Claude Flow V3 Helpers
+# RuFlo V3 Helpers
 
 This directory contains helper scripts and utilities for V3 development.
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Flow V3 - Optimized Swarm Communications
+# RuFlo V3 - Optimized Swarm Communications
 # Non-blocking, batched, priority-based inter-agent messaging
 
 set -euo pipefail
@@ -317,7 +317,7 @@ case "${1:-help}" in
 
   "help"|*)
     cat << 'EOF'
-Claude Flow V3 - Optimized Swarm Communications
+RuFlo V3 - Optimized Swarm Communications
 
 Non-blocking, batched, priority-based inter-agent messaging.
 

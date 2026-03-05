@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Flow V3 - Pattern Consolidator Worker
+# RuFlo V3 - Pattern Consolidator Worker
 # Deduplicates patterns, prunes old ones, improves quality scores
 
 set -euo pipefail

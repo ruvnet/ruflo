@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Flow V3 Development Status Line
+# RuFlo V3 Development Status Line
 # Shows DDD architecture progress, security status, and performance targets
 
 # Read Claude Code JSON input from stdin (if available)
@@ -326,7 +326,7 @@ CURRENT_DIR=$(basename "$PROJECT_DIR" 2>/dev/null || echo "claude-flow")
 OUTPUT=""
 
 # Header Line: V3 Project + Branch + Integration Status
-OUTPUT="${BOLD}${BRIGHT_PURPLE}▊ Claude Flow V3 ${RESET}"
+OUTPUT="${BOLD}${BRIGHT_PURPLE}▊ RuFlo V3 ${RESET}"
 OUTPUT="${OUTPUT}${INTEGRATION_COLOR}${INTEGRATION_STATUS} ${BRIGHT_CYAN}${GH_USER}${RESET}"
 if [ -n "$GIT_BRANCH" ]; then
   OUTPUT="${OUTPUT}  ${DIM}│${RESET}  ${BRIGHT_BLUE}⎇ ${GIT_BRANCH}${RESET}"

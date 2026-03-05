@@ -234,7 +234,7 @@ function generateHooksConfig(config: HooksConfig): object {
   // Node.js scripts handle errors internally via try/catch.
   // No shell-level error suppression needed (2>/dev/null || true breaks Windows).
 
-  // PreToolUse — validate commands before execution
+  // PreToolUse — validate commands and edits before execution
   if (config.preToolUse) {
     hooks.PreToolUse = [
       {
@@ -247,10 +247,20 @@ function generateHooksConfig(config: HooksConfig): object {
           },
         ],
       },
+      {
+        matcher: 'Write|Edit|MultiEdit',
+        hooks: [
+          {
+            type: 'command',
+            command: hookHandlerCmd('pre-edit'),
+            timeout: config.timeout,
+          },
+        ],
+      },
     ];
   }
 
-  // PostToolUse — record edits for session metrics / learning
+  // PostToolUse — record edits and commands for session metrics / learning
   if (config.postToolUse) {
     hooks.PostToolUse = [
       {
@@ -260,6 +270,16 @@ function generateHooksConfig(config: HooksConfig): object {
             type: 'command',
             command: hookHandlerCmd('post-edit'),
             timeout: 10000,
+          },
+        ],
+      },
+      {
+        matcher: 'Bash',
+        hooks: [
+          {
+            type: 'command',
+            command: hookHandlerCmd('post-bash'),
+            timeout: config.timeout,
           },
         ],
       },
@@ -377,6 +397,34 @@ function generateHooksConfig(config: HooksConfig): object {
       ],
     },
   ];
+
+  // SubagentEnd — track agent completion for metrics
+  hooks.SubagentEnd = [
+    {
+      hooks: [
+        {
+          type: 'command',
+          command: hookHandlerCmd('post-task'),
+          timeout: 5000,
+        },
+      ],
+    },
+  ];
+
+  // Notification — capture Claude Code notifications for logging
+  if (config.notification) {
+    hooks.Notification = [
+      {
+        hooks: [
+          {
+            type: 'command',
+            command: hookHandlerCmd('notify'),
+            timeout: 3000,
+          },
+        ],
+      },
+    ];
+  }
 
   // NOTE: TeammateIdle and TaskCompleted are NOT valid Claude Code hook events.
   // Their configuration lives in claudeFlow.agentTeams.hooks instead (see generateSettings).

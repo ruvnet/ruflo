@@ -38,14 +38,23 @@ const intelligence = safeRequire(path.join(helpersDir, 'intelligence.cjs'));
 const [,, command, ...args] = process.argv;
 
 // Read stdin — Claude Code sends hook data as JSON via stdin
+// Uses a timeout to prevent hanging when stdin is in an ambiguous state
+// (not TTY, not a proper pipe) which happens with Claude Code hook invocations.
 async function readStdin() {
   if (process.stdin.isTTY) return '';
-  let data = '';
-  process.stdin.setEncoding('utf8');
-  for await (const chunk of process.stdin) {
-    data += chunk;
-  }
-  return data;
+  return new Promise((resolve) => {
+    let data = '';
+    const timer = setTimeout(() => {
+      process.stdin.removeAllListeners();
+      process.stdin.pause();
+      resolve(data);
+    }, 500);
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => { data += chunk; });
+    process.stdin.on('end', () => { clearTimeout(timer); resolve(data); });
+    process.stdin.on('error', () => { clearTimeout(timer); resolve(data); });
+    process.stdin.resume();
+  });
 }
 
 async function main() {

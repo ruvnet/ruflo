@@ -57,6 +57,23 @@ services:
       timeout: 5s
       retries: 3
 
+  # --- Nginx reverse proxy (brand injection, CORS, static assets) ---
+  nginx:
+    build:
+      context: ./src/nginx
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - chat-ui
+      - mcp-bridge
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   # --- RuFlo Chat UI (ruvocal SvelteKit fork — built from source) ---
   chat-ui:
     build:
@@ -65,8 +82,8 @@ services:
       args:
         INCLUDE_DB: "false"
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       # Runtime config injected via DOTENV_LOCAL (entrypoint.sh writes .env.local)
       DOTENV_LOCAL: |

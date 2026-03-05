@@ -1159,7 +1159,7 @@ async function writeRuntimeConfig(
     return;
   }
 
-  const config = `# Claude Flow V3 Runtime Configuration
+  const config = `# RuFlo V3 Runtime Configuration
 # Generated: ${new Date().toISOString()}
 
 version: "3.0.0"
@@ -1360,7 +1360,7 @@ async function writeCapabilitiesDoc(
     return;
   }
 
-  const capabilities = `# Claude Flow V3 - Complete Capabilities Reference
+  const capabilities = `# RuFlo V3 - Complete Capabilities Reference
 > Generated: ${new Date().toISOString()}
 > Full documentation: https://github.com/ruvnet/claude-flow
 
@@ -1380,7 +1380,7 @@ async function writeCapabilitiesDoc(
 
 ## Overview
 
-Claude Flow V3 is a domain-driven design architecture for multi-agent AI coordination with:
+RuFlo V3 is a domain-driven design architecture for multi-agent AI coordination with:
 
 - **15-Agent Swarm Coordination** with hierarchical and mesh topologies
 - **HNSW Vector Search** - 150x-12,500x faster pattern retrieval

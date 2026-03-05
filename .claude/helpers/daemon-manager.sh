@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Flow V3 - Daemon Manager
+# RuFlo V3 - Daemon Manager
 # Manages background services for real-time statusline updates
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -155,7 +155,7 @@ restart_all() {
 show_status() {
     echo ""
     echo -e "${CYAN}═══════════════════════════════════════════════════${RESET}"
-    echo -e "${CYAN}       Claude Flow V3 Daemon Status${RESET}"
+    echo -e "${CYAN}       RuFlo V3 Daemon Status${RESET}"
     echo -e "${CYAN}═══════════════════════════════════════════════════${RESET}"
     echo ""
 
@@ -225,7 +225,7 @@ case "${1:-status}" in
         start_metrics_daemon "${2:-60}"
         ;;
     "help"|"-h"|"--help")
-        echo "Claude Flow V3 Daemon Manager"
+        echo "RuFlo V3 Daemon Manager"
         echo ""
         echo "Usage: $0 [command] [options]"
         echo ""

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Flow V3 - Swarm Communication Hooks
+# RuFlo V3 - Swarm Communication Hooks
 # Enables agent-to-agent messaging, pattern sharing, consensus, and task handoffs
 #
 # Integration with:
@@ -715,7 +715,7 @@ case "${1:-help}" in
 
   "help"|"-h"|"--help")
     cat << 'EOF'
-Claude Flow V3 - Swarm Communication Hooks
+RuFlo V3 - Swarm Communication Hooks
 
 Usage: swarm-hooks.sh <command> [args]
 
