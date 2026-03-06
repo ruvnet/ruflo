@@ -53,6 +53,23 @@ function ensureMemoryDir(): void {
   }
 }
 
+// D-2: Input bounds for memory parameters
+const MAX_KEY_LENGTH = 1024;
+const MAX_VALUE_SIZE = 1024 * 1024; // 1MB
+const MAX_QUERY_LENGTH = 4096;
+
+function validateMemoryInput(key?: string, value?: string, query?: string): void {
+  if (key && key.length > MAX_KEY_LENGTH) {
+    throw new Error(`Key exceeds maximum length of ${MAX_KEY_LENGTH} characters`);
+  }
+  if (value && value.length > MAX_VALUE_SIZE) {
+    throw new Error(`Value exceeds maximum size of ${MAX_VALUE_SIZE} bytes`);
+  }
+  if (query && query.length > MAX_QUERY_LENGTH) {
+    throw new Error(`Query exceeds maximum length of ${MAX_QUERY_LENGTH} characters`);
+  }
+}
+
 /**
  * Check if legacy JSON store exists and needs migration
  */
@@ -187,6 +204,8 @@ export const memoryTools: MCPTool[] = [
       const ttl = input.ttl as number | undefined;
       const upsert = (input.upsert as boolean) || false;
 
+      validateMemoryInput(key, value);
+
       const startTime = performance.now();
 
       try {
@@ -307,6 +326,8 @@ export const memoryTools: MCPTool[] = [
       const namespace = (input.namespace as string) || 'default';
       const limit = (input.limit as number) || 10;
       const threshold = (input.threshold as number) || 0.3;
+
+      validateMemoryInput(undefined, undefined, query);
 
       const startTime = performance.now();
 

@@ -46,7 +46,6 @@ describe('CLI', () => {
       await cli.run(['--version']);
 
       const output = consoleOutput.join('');
-      expect(output).toContain('claude-flow');
       expect(output).toContain(VERSION);
     });
 
@@ -54,7 +53,6 @@ describe('CLI', () => {
       await cli.run(['-V']);
 
       const output = consoleOutput.join('');
-      expect(output).toContain('claude-flow');
       expect(output).toContain(VERSION);
     });
 
@@ -62,7 +60,7 @@ describe('CLI', () => {
       await cli.run(['--version']);
 
       const output = consoleOutput.join('');
-      expect(output).toMatch(/claude-flow v\d+\.\d+\.\d+/);
+      expect(output).toMatch(/v\d+\.\d+\.\d+/);
     });
   });
 

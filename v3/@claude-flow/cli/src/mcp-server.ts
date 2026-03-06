@@ -343,11 +343,24 @@ export class MCPServerManager extends EventEmitter {
       },
     }));
 
-    // Handle stdin messages
+    // Handle stdin messages (S-5: bounded buffer to prevent OOM)
+    const MAX_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB
     let buffer = '';
 
     process.stdin.on('data', async (chunk) => {
       buffer += chunk.toString();
+
+      if (buffer.length > MAX_BUFFER_SIZE) {
+        console.error(
+          `[${new Date().toISOString()}] ERROR [claude-flow-mcp] Buffer exceeded ${MAX_BUFFER_SIZE} bytes, rejecting`
+        );
+        buffer = '';
+        console.log(JSON.stringify({
+          jsonrpc: '2.0',
+          error: { code: -32600, message: 'Request too large' },
+        }));
+        return;
+      }
 
       // Process complete JSON messages
       let lines = buffer.split('\n');

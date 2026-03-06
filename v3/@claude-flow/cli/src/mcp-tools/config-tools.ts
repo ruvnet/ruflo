@@ -85,6 +85,18 @@ function getNestedValue(obj: Record<string, unknown>, key: string): unknown {
   return current;
 }
 
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function filterDangerousKeys(obj: Record<string, unknown>): Record<string, unknown> {
+  const filtered: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (!DANGEROUS_KEYS.has(key)) {
+      filtered[key] = value;
+    }
+  }
+  return filtered;
+}
+
 function setNestedValue(obj: Record<string, unknown>, key: string, value: unknown): void {
   const parts = key.split('.');
   let current = obj;
@@ -337,7 +349,7 @@ export const configTools: MCPTool[] = [
     },
     handler: async (input) => {
       const store = loadConfigStore();
-      const config = input.config as Record<string, unknown>;
+      const config = filterDangerousKeys(input.config as Record<string, unknown>);
       const scope = (input.scope as string) || 'default';
       const merge = input.merge !== false;
 

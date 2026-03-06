@@ -50,15 +50,23 @@ const intelligence = safeRequire(path.join(helpersDir, 'intelligence.cjs'));
 // Get the command from argv
 const [,, command, ...args] = process.argv;
 
-// Read stdin — Claude Code sends hook data as JSON via stdin
+// Read stdin with timeout — Claude Code sends hook data as JSON via stdin.
+// Timeout prevents hanging when stdin is not properly closed (common on Windows).
 async function readStdin() {
   if (process.stdin.isTTY) return '';
-  let data = '';
-  process.stdin.setEncoding('utf8');
-  for await (const chunk of process.stdin) {
-    data += chunk;
-  }
-  return data;
+  return new Promise((resolve) => {
+    let data = '';
+    const timer = setTimeout(() => {
+      process.stdin.removeAllListeners();
+      process.stdin.pause();
+      resolve(data);
+    }, 500);
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => { data += chunk; });
+    process.stdin.on('end', () => { clearTimeout(timer); resolve(data); });
+    process.stdin.on('error', () => { clearTimeout(timer); resolve(data); });
+    process.stdin.resume();
+  });
 }
 
 async function main() {
@@ -254,6 +262,10 @@ const handlers = {
   }
 }
 
+// Hooks must ALWAYS exit 0 — Claude Code treats non-zero as "hook error"
+// and skips all subsequent hooks for the event.
+process.exitCode = 0;
 main().catch((e) => {
-  console.log(`[WARN] Hook handler error: ${e.message}`);
+  try { console.log(`[WARN] Hook handler error: ${e.message}`); } catch (_) {}
+  process.exitCode = 0;
 });

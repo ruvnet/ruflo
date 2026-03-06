@@ -195,7 +195,7 @@ export class ErrorHandler {
 
     for (const [key, value] of Object.entries(input)) {
       const lowerKey = key.toLowerCase();
-      const isSensitive = SENSITIVE_KEYS.some(sk => lowerKey.includes(sk));
+      const isSensitive = SENSITIVE_KEYS.some(sk => lowerKey.includes(sk.toLowerCase()));
 
       if (isSensitive) {
         sanitized[key] = '[REDACTED]';
