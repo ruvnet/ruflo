@@ -12,7 +12,9 @@
   "scripts": {
     "test": "vitest run",
     "bench": "vitest bench",
-    "build": "tsc"
+    "build": "tsc",
+    "prebuild": "rm -rf dist",
+    "prepublishOnly": "npm run build && node -e \"const m = await import('./dist/index.js'); const required = ['ControllerRegistry','HnswLite','PersistentSonaCoordinator','RvfBackend','RvfLearningStore','RvfMigrator']; const missing = required.filter(k => !m[k]); if (missing.length) { console.error('Missing exports:', missing); process.exit(1); } console.log('All required exports present');\""
   },
   "dependencies": {
     "agentdb": "^3.0.0-alpha.10",
