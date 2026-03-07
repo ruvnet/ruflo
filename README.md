@@ -7318,6 +7318,25 @@ sudo chown -R $(whoami) ~/.npm
 # Or use nvm to manage Node.js
 ```
 
+**npm ECOMPROMISED / Lock compromised during npx install**
+```bash
+# npm may have stale integrity metadata for frequently updated alpha builds
+npm cache clean --force
+npm cache verify
+
+# Retry with a fresh package resolution
+npx --yes ruflo@latest init
+# or
+npx --yes claude-flow@latest init
+```
+
+If the cache error persists, clear only the integrity index and retry:
+
+```bash
+rm -rf ~/.npm/_cacache/index-v5
+npx --yes ruflo@latest init
+```
+
 **High memory usage**
 ```bash
 # Enable garbage collection
