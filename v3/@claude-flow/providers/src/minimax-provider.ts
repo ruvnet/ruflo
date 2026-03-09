@@ -275,7 +275,6 @@ export class MiniMaxProvider extends BaseProvider {
         'chat',
         'completion',
         'tool_calling',
-        'vision',
       ],
       pricing: this.capabilities.pricing[model],
     };
