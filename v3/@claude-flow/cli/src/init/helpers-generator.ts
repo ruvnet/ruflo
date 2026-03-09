@@ -11,12 +11,12 @@ import { generateStatuslineScript, generateStatuslineHook } from './statusline-g
  */
 export function generatePreCommitHook(): string {
   return `#!/bin/bash
-# Claude Flow Pre-Commit Hook
+# Ruflo Pre-Commit Hook
 # Validates code quality before commit
 
 set -e
 
-echo "🔍 Running Claude Flow pre-commit checks..."
+echo "🔍 Running Ruflo pre-commit checks..."
 
 # Get staged files
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
@@ -44,7 +44,7 @@ echo "✅ Pre-commit checks complete"
  */
 export function generatePostCommitHook(): string {
   return `#!/bin/bash
-# Claude Flow Post-Commit Hook
+# Ruflo Post-Commit Hook
 # Records commit metrics and trains patterns
 
 COMMIT_HASH=$(git rev-parse HEAD)
@@ -52,8 +52,8 @@ COMMIT_MSG=$(git log -1 --pretty=%B)
 
 echo "📊 Recording commit metrics..."
 
-# Notify claude-flow of commit
-npx @claude-flow/cli hooks notify \\
+# Notify ruflo of commit
+npx ruflo@latest hooks notify \\
   --message "Commit: $COMMIT_MSG" \\
   --level info \\
   --metadata '{"hash": "'$COMMIT_HASH'"}' 2>/dev/null || true
@@ -68,7 +68,7 @@ echo "✅ Commit recorded"
 export function generateSessionManager(): string {
   return `#!/usr/bin/env node
 /**
- * Claude Flow Session Manager
+ * Ruflo Session Manager
  * Handles session lifecycle: start, restore, end
  */
 
@@ -202,7 +202,7 @@ module.exports = commands;
 export function generateAgentRouter(): string {
   return `#!/usr/bin/env node
 /**
- * Claude Flow Agent Router
+ * Ruflo Agent Router
  * Routes tasks to optimal agents based on learned patterns
  */
 
@@ -275,7 +275,7 @@ module.exports = { routeTask, AGENT_CAPABILITIES, TASK_PATTERNS };
 export function generateMemoryHelper(): string {
   return `#!/usr/bin/env node
 /**
- * Claude Flow Memory Helper
+ * Ruflo Memory Helper
  * Simple key-value memory for cross-session context
  */
 
@@ -369,7 +369,7 @@ export function generateHookHandler(): string {
   const lines = [
     '#!/usr/bin/env node',
     '/**',
-    ' * Claude Flow Hook Handler (Cross-Platform)',
+    ' * Ruflo Hook Handler (Cross-Platform)',
     ' * Dispatches hook events to the appropriate helper modules.',
     ' */',
     '',
@@ -1039,7 +1039,7 @@ PowerShell -ExecutionPolicy Bypass -File "%~dp0daemon-manager.ps1" %*
 export function generateCrossPlatformSessionManager(): string {
   return `#!/usr/bin/env node
 /**
- * Claude Flow Cross-Platform Session Manager
+ * Ruflo Cross-Platform Session Manager
  * Works on Windows, macOS, and Linux
  */
 
