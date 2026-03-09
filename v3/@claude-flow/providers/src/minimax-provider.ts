@@ -134,7 +134,7 @@ export class MiniMaxProvider extends BaseProvider {
     },
   };
 
-  private baseUrl: string = 'https://api.minimax.chat/v1';
+  private baseUrl: string = 'https://api.minimax.io/v1';
   private headers: Record<string, string> = {};
 
   constructor(options: BaseProviderOptions) {
@@ -146,7 +146,7 @@ export class MiniMaxProvider extends BaseProvider {
       throw new AuthenticationError('MiniMax API key is required', 'minimax');
     }
 
-    this.baseUrl = this.config.apiUrl || 'https://api.minimax.chat/v1';
+    this.baseUrl = this.config.apiUrl || 'https://api.minimax.io/v1';
     this.headers = {
       Authorization: `Bearer ${this.config.apiKey}`,
       'Content-Type': 'application/json',
