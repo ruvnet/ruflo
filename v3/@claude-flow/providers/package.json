@@ -36,6 +36,7 @@
     "google",
     "cohere",
     "ollama",
+    "minimax",
     "multi-provider",
     "load-balancing",
     "failover"
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "dotenv": "^16.4.5",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0",

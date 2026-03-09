@@ -9,6 +9,7 @@
  * - Google (Gemini 2.0, 1.5 Pro, Flash)
  * - Cohere (Command R+, R, Light)
  * - Ollama (Local: Llama, Mistral, CodeLlama, Phi)
+ * - MiniMax (M2.5, M2.1, M2)
  *
  * Features:
  * - Load balancing (round-robin, latency, cost-based)
@@ -35,6 +36,7 @@ export { GoogleProvider } from './google-provider.js';
 export { CohereProvider } from './cohere-provider.js';
 export { OllamaProvider } from './ollama-provider.js';
 export { RuVectorProvider } from './ruvector-provider.js';
+export { MiniMaxProvider } from './minimax-provider.js';
 
 // Export provider manager
 export { ProviderManager, createProviderManager } from './provider-manager.js';

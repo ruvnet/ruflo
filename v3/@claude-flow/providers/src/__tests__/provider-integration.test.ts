@@ -19,6 +19,7 @@ import {
   GoogleProvider,
   OllamaProvider,
   RuVectorProvider,
+  MiniMaxProvider,
   ProviderManager,
   createProviderManager,
   LLMRequest,
@@ -194,6 +195,105 @@ describe('Provider Integration Tests', () => {
         console.log('Ollama not available locally, skipping test');
       }
     }, 60000);
+  });
+
+  describe('MiniMax Provider', () => {
+    const apiKey = process.env.MINIMAX_API_KEY;
+
+    it.skipIf(!apiKey)('should complete request with MiniMax-M2.5', async () => {
+      const provider = new MiniMaxProvider({
+        config: {
+          provider: 'minimax',
+          apiKey,
+          model: 'MiniMax-M2.5',
+          maxTokens: 100,
+        },
+        logger: consoleLogger,
+      });
+
+      await provider.initialize();
+
+      const response = await provider.complete(createTestRequest());
+
+      console.log('MiniMax Response:', response.content);
+      console.log('Usage:', response.usage);
+      console.log('Cost:', response.cost);
+
+      expect(response.content).toBeTruthy();
+      expect(response.provider).toBe('minimax');
+      expect(response.usage.totalTokens).toBeGreaterThan(0);
+
+      provider.destroy();
+    }, 30000);
+
+    it.skipIf(!apiKey)('should stream response', async () => {
+      const provider = new MiniMaxProvider({
+        config: {
+          provider: 'minimax',
+          apiKey,
+          model: 'MiniMax-M2.5',
+          maxTokens: 100,
+        },
+        logger: consoleLogger,
+      });
+
+      await provider.initialize();
+
+      const chunks: string[] = [];
+      for await (const event of provider.streamComplete(createTestRequest())) {
+        if (event.type === 'content' && event.delta?.content) {
+          chunks.push(event.delta.content);
+          process.stdout.write(event.delta.content);
+        }
+      }
+      console.log('\n');
+
+      expect(chunks.length).toBeGreaterThan(0);
+
+      provider.destroy();
+    }, 30000);
+
+    it.skipIf(!apiKey)('should list models', async () => {
+      const provider = new MiniMaxProvider({
+        config: {
+          provider: 'minimax',
+          apiKey,
+          model: 'MiniMax-M2.5',
+        },
+        logger: consoleLogger,
+      });
+
+      await provider.initialize();
+
+      const models = await provider.listModels();
+      console.log('MiniMax models:', models);
+
+      expect(models).toContain('MiniMax-M2.5');
+      expect(models).toContain('MiniMax-M2.5-highspeed');
+
+      provider.destroy();
+    }, 30000);
+
+    it.skipIf(!apiKey)('should get model info', async () => {
+      const provider = new MiniMaxProvider({
+        config: {
+          provider: 'minimax',
+          apiKey,
+          model: 'MiniMax-M2.5',
+        },
+        logger: consoleLogger,
+      });
+
+      await provider.initialize();
+
+      const info = await provider.getModelInfo('MiniMax-M2.5');
+      console.log('MiniMax-M2.5 info:', info);
+
+      expect(info.contextLength).toBe(204800);
+      expect(info.maxOutputTokens).toBe(192000);
+
+      provider.destroy();
+    }, 30000);
   });
 
   describe('RuVector Provider (ruvllm)', () => {
