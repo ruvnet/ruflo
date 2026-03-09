@@ -86,7 +86,7 @@ export class MiniMaxProvider extends BaseProvider {
     supportsStreaming: true,
     supportsToolCalling: true,
     supportsSystemMessages: true,
-    supportsVision: true,
+    supportsVision: false,
     supportsAudio: false,
     supportsFineTuning: false,
     supportsEmbeddings: false,
@@ -98,13 +98,13 @@ export class MiniMaxProvider extends BaseProvider {
     },
     pricing: {
       'MiniMax-M2.5': {
-        promptCostPer1k: 0.004,
-        completionCostPer1k: 0.016,
+        promptCostPer1k: 0.0003,
+        completionCostPer1k: 0.0012,
         currency: 'USD',
       },
       'MiniMax-M2.5-highspeed': {
-        promptCostPer1k: 0.002,
-        completionCostPer1k: 0.008,
+        promptCostPer1k: 0.0006,
+        completionCostPer1k: 0.0024,
         currency: 'USD',
       },
     },
