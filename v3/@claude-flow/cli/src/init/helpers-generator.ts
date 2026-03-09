@@ -588,7 +588,8 @@ export function generateHookHandler(): string {
     '}',
     '} // end main',
     '',
-    'main().catch(() => {});',
+    'process.exitCode = 0;',
+    'main().catch(() => { process.exitCode = 0; });',
   ];
   return lines.join('\n') + '\n';
 }

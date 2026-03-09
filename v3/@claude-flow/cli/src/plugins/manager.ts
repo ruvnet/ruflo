@@ -6,10 +6,20 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync, exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+/**
+ * Validate npm package name to prevent shell injection (S-3)
+ */
+const VALID_PACKAGE_RE = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*(@[a-z0-9._\-^~>=<]+)?$/;
+function validatePackageName(spec: string): void {
+  if (!VALID_PACKAGE_RE.test(spec)) {
+    throw new Error(`Invalid package name: ${spec}`);
+  }
+}
 
 // ============================================================================
 // Types
@@ -144,11 +154,14 @@ export class PluginManager {
       const installDir = path.join(this.config.pluginsDir, 'node_modules');
       await this.ensureDirectory(installDir);
 
-      // Use npm to install
+      // Validate package name to prevent injection (S-3)
+      validatePackageName(versionSpec);
+
+      // Use npm to install (array form prevents shell injection)
       console.log(`[PluginManager] Installing ${versionSpec}...`);
 
-      const { stdout, stderr } = await execAsync(
-        `npm install --prefix "${this.config.pluginsDir}" ${versionSpec}`,
+      await execFileAsync(
+        'npm', ['install', '--prefix', this.config.pluginsDir, versionSpec],
         { timeout: 120000 }
       );
 
@@ -277,8 +290,9 @@ export class PluginManager {
     try {
       // For npm-installed plugins, remove from node_modules
       if (plugin.source === 'npm') {
-        await execAsync(
-          `npm uninstall --prefix "${this.config.pluginsDir}" ${packageName}`,
+        validatePackageName(packageName);
+        await execFileAsync(
+          'npm', ['uninstall', '--prefix', this.config.pluginsDir, packageName],
           { timeout: 60000 }
         );
       }
@@ -430,9 +444,12 @@ export class PluginManager {
     try {
       const versionSpec = version ? `${packageName}@${version}` : `${packageName}@latest`;
 
-      // Reinstall with new version
-      await execAsync(
-        `npm install --prefix "${this.config.pluginsDir}" ${versionSpec}`,
+      // Validate package name to prevent injection (S-3)
+      validatePackageName(versionSpec);
+
+      // Reinstall with new version (array form prevents shell injection)
+      await execFileAsync(
+        'npm', ['install', '--prefix', this.config.pluginsDir, versionSpec],
         { timeout: 120000 }
       );
 
@@ -508,6 +525,8 @@ let defaultManager: PluginManager | null = null;
 export function getPluginManager(baseDir?: string): PluginManager {
   if (!defaultManager) {
     defaultManager = new PluginManager(baseDir);
+  } else if (baseDir && defaultManager.getPluginsDir() !== path.join(baseDir, '.claude-flow', 'plugins')) {
+    console.warn(`[PluginManager] Warning: getPluginManager called with different baseDir. Using existing instance. Call resetPluginManager() first to change.`);
   }
   return defaultManager;
 }

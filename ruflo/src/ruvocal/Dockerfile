@@ -30,6 +30,9 @@ USER user
 
 
 COPY --chown=1000 .env /app/.env
+# Remove empty placeholder values that block .env.local overrides via dotenv-cli -c
+RUN sed -i 's/^MODELS=$/# MODELS=/' /app/.env && \
+    sed -i 's/^TASK_MODEL=$/# TASK_MODEL=/' /app/.env
 COPY --chown=1000 entrypoint.sh /app/entrypoint.sh
 COPY --chown=1000 package.json /app/package.json
 COPY --chown=1000 package-lock.json /app/package-lock.json

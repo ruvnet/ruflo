@@ -38,8 +38,13 @@ export function isValidUrl(urlString: string): boolean {
 	try {
 		const url = new URL(urlString.trim());
 		const hostname = url.hostname.toLowerCase();
-		// Allow HTTP for localhost/loopback (dev & local MCP bridge)
-		if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+		// Allow HTTP for localhost/loopback/Docker-internal (dev & local MCP bridge)
+		if (
+			hostname === "localhost" ||
+			hostname === "127.0.0.1" ||
+			hostname === "::1" ||
+			hostname === "host.docker.internal"
+		) {
 			return url.protocol === "http:" || url.protocol === "https:";
 		}
 		// Allow HTTP for Docker-internal service names (no dots = private network)

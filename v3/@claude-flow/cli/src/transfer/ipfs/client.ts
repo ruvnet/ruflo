@@ -134,6 +134,7 @@ export async function fetchFromIPFS<T>(
   cid: string,
   preferredGateway?: string
 ): Promise<T | null> {
+  if (!isValidCID(cid)) return null;
   const gateways = preferredGateway
     ? [preferredGateway, ...IPFS_GATEWAYS.filter(g => g !== preferredGateway)]
     : IPFS_GATEWAYS;
@@ -184,6 +185,7 @@ export async function fetchFromIPFSWithMetadata<T>(
   cid: string,
   preferredGateway?: string
 ): Promise<FetchResult<T> | null> {
+  if (!isValidCID(cid)) return null;
   const gateways = preferredGateway
     ? [preferredGateway, ...IPFS_GATEWAYS.filter(g => g !== preferredGateway)]
     : IPFS_GATEWAYS;
@@ -229,6 +231,7 @@ export async function isPinned(
   cid: string,
   gateway: string = 'https://ipfs.io'
 ): Promise<boolean> {
+  if (!isValidCID(cid)) return false;
   try {
     const response = await fetch(`${gateway}/ipfs/${cid}`, {
       method: 'HEAD',
@@ -247,6 +250,7 @@ export async function checkAvailability(cid: string): Promise<{
   available: boolean;
   gateways: Array<{ url: string; available: boolean; latencyMs: number }>;
 }> {
+  if (!isValidCID(cid)) return { available: false, gateways: [] };
   const results = await Promise.all(
     IPFS_GATEWAYS.map(async (gateway) => {
       const startTime = Date.now();

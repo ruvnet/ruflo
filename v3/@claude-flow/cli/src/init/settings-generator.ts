@@ -3,7 +3,8 @@
  * Creates .claude/settings.json with V3-optimized hook configurations
  */
 
-import type { InitOptions, HooksConfig } from './types.js';
+import type { InitOptions, HooksConfig, PlatformInfo } from './types.js';
+import { detectPlatform } from './types.js';
 
 /**
  * Generate the complete settings.json content
@@ -54,10 +55,18 @@ export function generateSettings(options: InitOptions): object {
     CLAUDE_FLOW_HOOKS_ENABLED: 'true',
   };
 
+  // Detect platform for platform-aware configuration
+  const platform = detectPlatform();
+
   // Add V3-specific settings
   settings.claudeFlow = {
     version: '3.0.0',
     enabled: true,
+    platform: {
+      os: platform.os,
+      arch: platform.arch,
+      shell: platform.shell,
+    },
     modelPreferences: {
       default: 'claude-opus-4-6',
       routing: 'claude-haiku-4-5-20251001',
@@ -154,58 +163,36 @@ export function generateSettings(options: InitOptions): object {
 }
 
 /**
- * Build a cross-platform hook command that resolves paths to the project root.
- * Uses `git rev-parse --show-toplevel` at runtime so hooks work regardless of CWD.
- * Falls back to process.cwd() when not inside a git repo.
- *
- * The generated command is a `node -e` one-liner that:
- *   1. Finds the git root (or falls back to cwd)
- *   2. Requires the target script with the resolved absolute path
- *   3. Passes through process.argv so the script sees its subcommand in argv[2]
+ * Detect if we're on Windows for platform-aware hook commands.
+ */
+const IS_WINDOWS = process.platform === 'win32';
+
+/**
+ * Build a cross-platform hook command.
+ * On Windows, wraps with `cmd /c` to avoid PowerShell stdin/process issues
+ * that cause "UserPromptSubmit hook error" in Claude Code.
  */
 function hookCmd(script: string, subcommand: string): string {
-  // Compact one-liner: resolve project root, then require the script.
-  // With `node -e "..." arg`, process.argv = ['node', 'arg'] (no -e entry).
-  // hook-handler.cjs reads argv[2] as its command, so we splice in the resolved
-  // script path at argv[1] to produce: ['node', '<script>', 'subcommand'].
-  // Use single quotes for the script path to avoid conflicting with outer double quotes.
-  const scriptLiteral = `'${script}'`;
-  const resolver = [
-    "var c=require('child_process'),p=require('path'),r;",
-    "try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}",
-    'catch(e){r=process.cwd()}',
-    `var s=p.join(r,${scriptLiteral});`,
-    'process.argv.splice(1,0,s);',
-    'require(s)',
-  ].join('');
-  return `node -e "${resolver}" ${subcommand}`.trim();
+  const cmd = `node ${script} ${subcommand}`.trim();
+  return IS_WINDOWS ? `cmd /c ${cmd}` : cmd;
 }
 
 /**
  * Build a cross-platform hook command for ESM scripts (.mjs).
- * Uses dynamic import() with a file:// URL for cross-platform ESM loading.
  */
 function hookCmdEsm(script: string, subcommand: string): string {
-  const scriptLiteral = `'${script}'`;
-  const resolver = [
-    "var c=require('child_process'),p=require('path'),u=require('url'),r;",
-    "try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}",
-    'catch(e){r=process.cwd()}',
-    `var f=p.join(r,${scriptLiteral});`,
-    'process.argv.splice(1,0,f);',
-    'import(u.pathToFileURL(f).href)',
-  ].join('');
-  return `node -e "${resolver}" ${subcommand}`.trim();
+  const cmd = `node ${script} ${subcommand}`.trim();
+  return IS_WINDOWS ? `cmd /c ${cmd}` : cmd;
 }
 
 /** Shorthand for CJS hook-handler commands */
 function hookHandlerCmd(subcommand: string): string {
-  return hookCmd('.claude/helpers/hook-handler.cjs', subcommand);
+  return hookCmd('"$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs"', subcommand);
 }
 
 /** Shorthand for ESM auto-memory-hook commands */
 function autoMemoryCmd(subcommand: string): string {
-  return hookCmdEsm('.claude/helpers/auto-memory-hook.mjs', subcommand);
+  return hookCmdEsm('"$CLAUDE_PROJECT_DIR/.claude/helpers/auto-memory-hook.mjs"', subcommand);
 }
 
 /**
@@ -216,17 +203,19 @@ function generateStatusLineConfig(_options: InitOptions): object {
   // Claude Code pipes JSON session data to the script via stdin.
   // Valid fields: type, command, padding (optional).
   // The script runs after each assistant message (debounced 300ms).
+  // NOTE: statusline must NOT use `cmd /c` — Claude Code manages its stdin
+  // directly for statusline commands, and `cmd /c` blocks stdin forwarding.
   return {
     type: 'command',
-    command: hookCmd('.claude/helpers/statusline.cjs', ''),
+    command: `node "$CLAUDE_PROJECT_DIR/.claude/helpers/statusline.cjs"`,
   };
 }
 
 /**
  * Generate hooks configuration
  * Uses local hook-handler.cjs for cross-platform compatibility.
- * All hooks delegate to hook-handler.cjs via resolved absolute paths,
- * so they work identically on Windows, macOS, and Linux regardless of CWD.
+ * All hooks invoke scripts directly via `node <script> <subcommand>`,
+ * working identically on Windows, macOS, and Linux.
  */
 function generateHooksConfig(config: HooksConfig): object {
   const hooks: Record<string, unknown[]> = {};
@@ -385,7 +374,7 @@ function generateHooksConfig(config: HooksConfig): object {
     ];
   }
 
-  // SubagentStart — status update
+  // SubagentStart — status update when a sub-agent is spawned
   hooks.SubagentStart = [
     {
       hooks: [
@@ -398,8 +387,9 @@ function generateHooksConfig(config: HooksConfig): object {
     },
   ];
 
-  // SubagentEnd — track agent completion for metrics
-  hooks.SubagentEnd = [
+  // SubagentStop — track agent completion for metrics
+  // NOTE: The valid event is "SubagentStop" (not "SubagentEnd")
+  hooks.SubagentStop = [
     {
       hooks: [
         {

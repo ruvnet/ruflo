@@ -129,10 +129,7 @@ export function serializeToBuffer(cfp: CFPFormat, format: SerializationFormat): 
     case 'cbor.gz':
     case 'cbor.zstd':
     case 'msgpack':
-      // Fallback to JSON for now
-      // In production: use cbor-x, msgpack-lite, etc.
-      console.warn(`Format ${format} not implemented, using JSON`);
-      return Buffer.from(json, 'utf-8');
+      throw new Error(`Serialization format '${format}' is not implemented. Use 'json' instead.`);
     default:
       return Buffer.from(json, 'utf-8');
   }
@@ -143,14 +140,20 @@ export function serializeToBuffer(cfp: CFPFormat, format: SerializationFormat): 
  */
 export function deserializeCFP(data: string | Buffer): CFPFormat {
   const str = typeof data === 'string' ? data : data.toString('utf-8');
-  const parsed = JSON.parse(str);
+
+  let parsed: CFPFormat;
+  try {
+    parsed = JSON.parse(str);
+  } catch (e) {
+    throw new Error(`Invalid CFP file: ${e instanceof Error ? e.message : String(e)}`);
+  }
 
   // Validate magic bytes
   if (parsed.magic !== 'CFP1') {
     throw new Error(`Invalid CFP format: expected magic 'CFP1', got '${parsed.magic}'`);
   }
 
-  return parsed as CFPFormat;
+  return parsed;
 }
 
 /**

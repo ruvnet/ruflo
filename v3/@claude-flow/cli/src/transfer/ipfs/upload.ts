@@ -267,9 +267,6 @@ export async function uploadToIPFS(
   console.log(`[IPFS] Demo upload: ${size} bytes`);
   console.log(`[IPFS] Name: ${name}`);
 
-  // Simulate upload delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-
   const result: IPFSUploadResult = {
     cid,
     size,
