@@ -6,8 +6,8 @@
  * Run with: npx tsx v3/@claude-flow/performance/src/examples/quick-test.ts
  */
 
-import { FlashAttention } from '@ruvector/attention';
 import {
+  FlashAttention,
   createFlashAttentionOptimizer,
   quickBenchmark,
 } from '../attention-integration.js';

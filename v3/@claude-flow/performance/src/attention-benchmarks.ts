@@ -8,15 +8,11 @@
 import {
   FlashAttentionOptimizer,
   createFlashAttentionOptimizer,
+  FlashAttention,
+  DotProductAttention,
   type BenchmarkResult,
   type AttentionInput,
 } from './attention-integration.js';
-import {
-  FlashAttention,
-  DotProductAttention,
-  MultiHeadAttention,
-  LinearAttention,
-} from '@ruvector/attention';
 
 // ============================================================================
 // Types
