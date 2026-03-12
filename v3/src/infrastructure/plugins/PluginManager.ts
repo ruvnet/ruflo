@@ -94,7 +94,7 @@ export class PluginManager implements PluginManagerInterface {
     // Register extension points
     const extensionPoints = plugin.getExtensionPoints();
     for (const ep of extensionPoints) {
-      this.registerExtensionPoint(plugin.id, ep);
+      this.registerExtensionPoint(plugin.id, ep, plugin.priority);
     }
 
     // Emit event
@@ -205,12 +205,16 @@ export class PluginManager implements PluginManagerInterface {
   // Private Helper Methods
   // ============================================================================
 
-  private registerExtensionPoint(pluginId: string, ep: ExtensionPoint): void {
+  private registerExtensionPoint(
+    pluginId: string,
+    ep: ExtensionPoint,
+    pluginPriority?: number
+  ): void {
     const handlers = this.extensionPoints.get(ep.name) || [];
     handlers.push({
       pluginId,
       handler: ep.handler,
-      priority: ep.priority || 0
+      priority: ep.priority ?? pluginPriority ?? 0
     });
     this.extensionPoints.set(ep.name, handlers);
   }
@@ -231,14 +235,15 @@ export class PluginManager implements PluginManagerInterface {
   }
 
   private checkVersionCompatibility(plugin: Plugin): void {
-    const coreVersion = this.parseVersion(this.coreVersion);
+    const currentVersion = this.getCoreVersion();
+    const coreVersion = this.parseVersion(currentVersion);
 
     if (plugin.minCoreVersion) {
       const minVersion = this.parseVersion(plugin.minCoreVersion);
       if (this.compareVersions(coreVersion, minVersion) < 0) {
         throw new PluginError(
-          `Plugin ${plugin.id} requires core version >= ${plugin.minCoreVersion}, but core version is ${this.coreVersion}`,
-          { pluginId: plugin.id, minVersion: plugin.minCoreVersion, coreVersion: this.coreVersion }
+          `Plugin ${plugin.id} requires core version >= ${plugin.minCoreVersion}, but core version is ${currentVersion}`,
+          { pluginId: plugin.id, minVersion: plugin.minCoreVersion, coreVersion: currentVersion }
         );
       }
     }
@@ -247,8 +252,8 @@ export class PluginManager implements PluginManagerInterface {
       const maxVersion = this.parseVersion(plugin.maxCoreVersion);
       if (this.compareVersions(coreVersion, maxVersion) > 0) {
         throw new PluginError(
-          `Plugin ${plugin.id} requires core version <= ${plugin.maxCoreVersion}, but core version is ${this.coreVersion}`,
-          { pluginId: plugin.id, maxVersion: plugin.maxCoreVersion, coreVersion: this.coreVersion }
+          `Plugin ${plugin.id} requires core version <= ${plugin.maxCoreVersion}, but core version is ${currentVersion}`,
+          { pluginId: plugin.id, maxVersion: plugin.maxCoreVersion, coreVersion: currentVersion }
         );
       }
     }
