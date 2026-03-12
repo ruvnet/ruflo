@@ -16,6 +16,7 @@
  */
 
 import { performance, PerformanceObserver } from 'perf_hooks';
+import os from 'node:os';
 
 // ============================================================================
 // Types and Interfaces
@@ -367,7 +368,6 @@ export class BenchmarkRunner {
    * Get environment information
    */
   private getEnvironmentInfo(): EnvironmentInfo {
-    const os = require('os');
     return {
       nodeVersion: process.version,
       platform: process.platform,
