@@ -11,12 +11,61 @@
  * - Speedup tracking and validation
  */
 
-import {
-  FlashAttention,
-  DotProductAttention,
-  type BenchmarkResult as AttentionBenchmarkResult,
-  type ArrayInput,
-} from '@ruvector/attention';
+import { createRequire } from 'node:module';
+
+interface AttentionRuntimeModule {
+  FlashAttention: new (dim: number, blockSize?: number) => {
+    compute(query: Float32Array, keys: Float32Array[], values: Float32Array[]): Float32Array;
+  };
+  DotProductAttention: new (dim: number) => {
+    compute(query: Float32Array, keys: Float32Array[], values: Float32Array[]): Float32Array;
+    computeWithMask?(
+      query: Float32Array,
+      keys: Float32Array[],
+      values: Float32Array[],
+      mask: Float32Array,
+    ): Float32Array;
+  };
+}
+
+const require = createRequire(import.meta.url);
+const attentionRuntime = require('@ruvector/attention') as AttentionRuntimeModule;
+
+export class FlashAttention {
+  private readonly impl: InstanceType<AttentionRuntimeModule['FlashAttention']>;
+
+  constructor(dim: number, blockSize: number = 64) {
+    this.impl = new attentionRuntime.FlashAttention(dim, blockSize);
+  }
+
+  computeRaw(query: Float32Array, keys: Float32Array[], values: Float32Array[]): Float32Array {
+    return this.impl.compute(query, keys, values);
+  }
+
+  compute(query: Float32Array, keys: Float32Array[], values: Float32Array[]): Float32Array {
+    return this.impl.compute(query, keys, values);
+  }
+}
+
+export class DotProductAttention {
+  private readonly impl: InstanceType<AttentionRuntimeModule['DotProductAttention']>;
+
+  constructor(dim: number) {
+    this.impl = new attentionRuntime.DotProductAttention(dim);
+  }
+
+  computeRaw(query: Float32Array, keys: Float32Array[], values: Float32Array[]): Float32Array {
+    return this.impl.compute(query, keys, values);
+  }
+
+  compute(query: Float32Array, keys: Float32Array[], values: Float32Array[]): Float32Array {
+    return this.impl.compute(query, keys, values);
+  }
+}
+
+export type ArrayInput = Float32Array | number[];
+
+export type AttentionBenchmarkResult = BenchmarkResult;
 
 // ============================================================================
 // Types
@@ -495,13 +544,3 @@ export function quickBenchmark(dim: number = 512): BenchmarkResult {
   const optimizer = createFlashAttentionOptimizer(dim);
   return optimizer.benchmark();
 }
-
-// ============================================================================
-// Exports
-// ============================================================================
-
-export {
-  FlashAttention,
-  DotProductAttention,
-  type AttentionBenchmarkResult,
-};
