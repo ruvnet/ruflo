@@ -41,6 +41,15 @@ interface SonaEngineInstance {
   flush(): void;
 }
 
+/**
+ * ESM/CJS interop helper: handles packages that export via .default in CJS environments.
+ * Returns the module's default export if present, otherwise the raw module.
+ */
+async function importWithInterop<T = any>(packageName: string): Promise<T> {
+  const mod = await import(packageName);
+  return ((mod as any).default || mod) as T;
+}
+
 // Lazy-loaded WASM modules
 let microLoRA: WasmMicroLoRA | null = null;
 let scopedLoRA: WasmScopedLoRA | null = null;
@@ -136,7 +145,7 @@ export async function initializeTraining(config: TrainingConfig = {}): Promise<{
     features.push('TrajectoryBuffer');
 
     // Initialize attention mechanisms
-    const attention: any = await import('@ruvector/attention');
+    const attention = await importWithInterop('@ruvector/attention');
 
     if (config.useFlashAttention !== false) {
       flashAttention = new attention.FlashAttention(dim, 64);
@@ -180,7 +189,7 @@ export async function initializeTraining(config: TrainingConfig = {}): Promise<{
     // Initialize SONA (optional, backward compatible)
     if (config.useSona !== false) {
       try {
-        const sona = await import('@ruvector/sona');
+        const sona = await importWithInterop('@ruvector/sona');
         const sonaRank = config.sonaRank || 4;
         // SonaEngine constructor: (dim, rank, alpha, learningRate) - TypeScript types are wrong
         // @ts-expect-error - SonaEngine accepts 4 positional args but types say 1
@@ -459,7 +468,7 @@ export async function benchmarkTraining(
   dim?: number,
   iterations?: number
 ): Promise<BenchmarkResult[]> {
-  const attention: any = await import('@ruvector/attention');
+  const attention = await importWithInterop('@ruvector/attention');
   lastBenchmark = attention.benchmarkAttention(dim || 256, 100, iterations || 1000);
   return lastBenchmark ?? [];
 }
