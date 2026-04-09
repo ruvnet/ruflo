@@ -6,6 +6,7 @@
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { validateFeedbackPatterns } from '../memory/feedback-patterns.js';
 import { readCoverageFromDisk } from './coverage-reader.js';
+import { getAdrStats } from './adr-stats.js';
 import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
@@ -4620,6 +4621,8 @@ const statuslineCommand: Command = {
       } catch { /* ignore */ }
     }
 
+    const adrStats = getAdrStats(process.cwd());
+
     const domainsColor = progress.domainsCompleted >= 3 ? c.brightGreen : progress.domainsCompleted > 0 ? c.yellow : c.red;
     // Dynamic perf indicator based on patterns/HNSW
     let perfIndicator = `${c.dim}⚡ target: 150x-12500x${c.reset}`;
@@ -4661,9 +4664,11 @@ const statuslineCommand: Command = {
     const patternsDisplay = progress.patternsLearned >= 1000
       ? `${(progress.patternsLearned / 1000).toFixed(1)}k`
       : String(progress.patternsLearned);
+    const adrColor = adrStats.implemented > 0 ? c.brightGreen : c.dim;
     const line3 = `${c.brightPurple}🔧 Architecture${c.reset}    ` +
-      `${c.cyan}ADRs${c.reset} ${c.dim}●0/0${c.reset}  ${c.dim}│${c.reset}  ` +
+      `${c.cyan}ADRs${c.reset} ${adrColor}●${adrStats.implemented}/${adrStats.count}${c.reset}  ${c.dim}│${c.reset}  ` +
       `${c.cyan}Memory${c.reset} ${memoryColor}●${patternsDisplay}${c.reset}  ${c.dim}│${c.reset}  ` +
+
       `${c.cyan}Security${c.reset} ${securityColor}●${security.status}${c.reset}`;
 
     const vectorColor = agentdbStats.vectorCount > 0 ? c.brightGreen : c.dim;
