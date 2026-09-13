@@ -19,6 +19,8 @@
 
 # Ruflo
 
+[English](README.md) · [简体中文](README.zh-CN.md)
+
 **An agent meta-harness for Claude Code and Codex.**
 
 [![RuFlo Explained — build an AI team that plans, remembers, tests, and improves](docs/assets/ruflo-explained/ch14.jpg)](docs/ruflo-explained.md)
