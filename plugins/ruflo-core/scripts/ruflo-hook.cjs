@@ -40,7 +40,7 @@
 
 'use strict';
 
-const { spawnSync, execSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -51,17 +51,98 @@ function done() {
   process.exit(0);
 }
 
-/** Check if a binary is available on PATH */
-function commandExists(cmd) {
-  try {
-    const result = execSync(
-      process.platform === 'win32' ? `where ${cmd}` : `command -v ${cmd}`,
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
-    );
-    return result.trim().length > 0;
-  } catch {
-    return false;
+/** Case-insensitive env lookup — Windows env keys are not case-stable. */
+function envValue(env, name) {
+  const key = Object.keys(env).find((c) => c.toLowerCase() === name.toLowerCase());
+  return key ? env[key] : undefined;
+}
+
+/**
+ * Locate a command on PATH using fs only.
+ *
+ * Deliberately NOT `execSync('where ...')` / `command -v`: that spawns a
+ * shell on every hook invocation, which is both the thing this file is
+ * trying to get away from and a per-turn cost. Taking `env` and `platform`
+ * as arguments is what lets the Windows branch be exercised from a
+ * Linux/macOS CI run — see the Windows argv tests.
+ */
+function resolveCommandPath(command, env = process.env, platform = process.platform) {
+  const hasSeparator = command.includes('/') || command.includes('\\');
+  const dirs = hasSeparator
+    ? ['']
+    : (envValue(env, 'PATH') || '').split(platform === 'win32' ? ';' : path.delimiter);
+  const hasExtension = path.extname(command) !== '';
+  const extensions = platform === 'win32' && !(hasSeparator && hasExtension)
+    ? (envValue(env, 'PATHEXT') || '.COM;.EXE;.BAT;.CMD').split(';')
+    : [''];
+  for (const dir of dirs) {
+    for (const ext of extensions) {
+      const base = path.resolve(dir || '.', command);
+      const candidates = ext
+        ? [base + ext.toLowerCase(), base + ext.toUpperCase()]
+        : [base];
+      for (const file of candidates) {
+        try {
+          fs.accessSync(file, platform === 'win32' ? fs.constants.F_OK : fs.constants.X_OK);
+          if (fs.statSync(file).isFile()) return file;
+        } catch { /* keep searching */ }
+      }
+    }
   }
+  return null;
+}
+
+/**
+ * Map an npm-generated Windows shim (ruflo.cmd / npx.cmd / …) to the .js
+ * entrypoint it would have run, so it can be executed as `node <entry>`
+ * with no shell.
+ *
+ * Handles both npm layouts: a global prefix (`<prefix>/ruflo.cmd` beside
+ * `<prefix>/node_modules/ruflo`) and a local one (`node_modules/.bin/ruflo.cmd`
+ * beside `node_modules/ruflo`). `npx` lives in the `npm` package, hence the
+ * command→package mapping rather than assuming they match.
+ *
+ * The entrypoint comes from the package's own `bin` field, never a guessed
+ * filename, and is required to resolve inside the package directory — a
+ * manifest pointing outside it is refused rather than followed.
+ */
+function resolveNpmShim(shimPath) {
+  const command = path.basename(shimPath, path.extname(shimPath)).toLowerCase();
+  const packageName = command === 'npx' ? 'npm' : command;
+  if (!['ruflo', 'claude-flow', 'npm'].includes(packageName)) return null;
+  try {
+    const shimDir = path.dirname(shimPath);
+    const packageDir = path.basename(shimDir).toLowerCase() === '.bin'
+      ? path.resolve(shimDir, '..', packageName)
+      : path.resolve(shimDir, 'node_modules', packageName);
+    const manifest = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), 'utf8'));
+    const declared = typeof manifest.bin === 'string' ? manifest.bin : manifest.bin?.[command];
+    if (typeof declared !== 'string') return null;
+    const canonicalPackageDir = fs.realpathSync(packageDir);
+    const canonicalEntry = fs.realpathSync(path.resolve(packageDir, declared));
+    const relativeEntry = path.relative(canonicalPackageDir, canonicalEntry);
+    if (relativeEntry.startsWith('..' + path.sep) || path.isAbsolute(relativeEntry)) return null;
+    if (!fs.statSync(canonicalEntry).isFile()) return null;
+    return { command: process.execPath, args: [canonicalEntry] };
+  } catch { return null; }
+}
+
+/**
+ * Decide how to run `bin` without a shell. Returns {command, args}, or null
+ * when no shell-free invocation could be identified (Windows shim that is
+ * not an npm package entry) — the caller then falls back to the escaped
+ * cmd.exe path rather than dropping the hook.
+ */
+function resolveInvocation(bin, binArgs, options = {}) {
+  const env = options.env || process.env;
+  const platform = options.platform || process.platform;
+  const commandPath = resolveCommandPath(bin, env, platform);
+  if (!commandPath) return null;
+  if (platform === 'win32' && /\.(?:cmd|bat|ps1)$/i.test(commandPath)) {
+    const npmBin = resolveNpmShim(commandPath);
+    return npmBin ? { command: npmBin.command, args: [...npmBin.args, ...binArgs] } : null;
+  }
+  return { command: commandPath, args: binArgs };
 }
 
 /**
@@ -94,35 +175,48 @@ function escapeCmdArg(arg) {
  * Spawn the CLI with the hook subcommand + args, forwarding stdinData.
  * Returns true on success (exit 0), false otherwise. Never throws.
  */
-function invokeHook(bin, binArgs, hookSubcommand, hookArgs, stdinData) {
+function invokeHook(bin, binArgs, hookSubcommand, hookArgs, stdinData, options = {}) {
+  const env = options.env || process.env;
+  const platform = options.platform || process.platform;
   const args = [...binArgs, 'hooks', hookSubcommand, ...hookArgs];
-  // On Windows, shell: true is needed to resolve .cmd/.ps1 shims that npm
-  // creates for globally-installed bins (`ruflo`, `claude-flow`, `npx`) —
-  // CreateProcess cannot execute those directly. `node` itself is always a
-  // real .exe (never a shim), so skip the shell entirely there —
-  // CreateProcess gets the argv array verbatim, byte-for-byte, no
-  // cmd.exe involved at all. This covers the common `node <cli.js>`
-  // invocation (test harness, npx-resolved runs). A real global
-  // `ruflo`/`claude-flow` install still goes through the shim path below;
-  // every array element is escaped with escapeCmdArg() before it reaches
-  // cmd.exe so hook-derived values can't be reinterpreted as shell syntax.
-  const useShell = process.platform === 'win32' && bin !== 'node' && bin !== process.execPath;
-  const spawnBin = useShell ? escapeCmdArg(bin) : bin;
-  const spawnArgs = useShell ? args.map(escapeCmdArg) : args;
   // Test-only: RUFLO_HOOK_DEBUG_STDOUT surfaces the invoked CLI's own
   // stdout/stderr instead of swallowing them, so test-hooks.mjs can assert
   // on the CLI's actual recorded value (e.g. catching #1859/#1862-style
   // flag-wiring regressions). Production never sets this — hooks must
   // never leak CLI output into the host (Cursor's PreToolUse contract).
-  const debug = process.env.RUFLO_HOOK_DEBUG_STDOUT === '1';
+  const debug = (envValue(env, 'RUFLO_HOOK_DEBUG_STDOUT') || '') === '1';
+  const base = {
+    input: stdinData || '',
+    encoding: 'utf8',
+    stdio: debug ? ['pipe', 'pipe', 'pipe'] : ['pipe', 'ignore', 'ignore'],
+    timeout: 30_000,
+    env,
+  };
   try {
-    const result = spawnSync(spawnBin, spawnArgs, {
-      shell: useShell,
-      input: stdinData || '',
-      encoding: 'utf8',
-      stdio: debug ? ['pipe', 'pipe', 'pipe'] : ['pipe', 'ignore', 'ignore'],
-      timeout: 30_000,
-    });
+    // Layer 1 — no shell. resolveInvocation() maps the command to a real
+    // executable, and on Windows maps npm's .cmd/.ps1 shim to the .js
+    // entrypoint it wraps, so this becomes `node <entry>` and CreateProcess
+    // receives the argv array verbatim. Nothing to escape, no second
+    // cmd.exe tokenizer, and no %VAR% expansion.
+    const invocation = resolveInvocation(bin, binArgs, { env, platform });
+    let result;
+    if (invocation) {
+      result = spawnSync(invocation.command, [...invocation.args, 'hooks', hookSubcommand, ...hookArgs], {
+        ...base,
+        shell: false,
+      });
+    } else {
+      // Layer 2 — a Windows shim we could not map to an entrypoint. cmd.exe
+      // is unavoidable (CreateProcess cannot launch a .cmd, and Node has
+      // refused to since CVE-2024-27980), so every element is escaped.
+      // Dropping the hook instead would hide breakage rather than surface it.
+      const useShell = platform === 'win32' && bin !== 'node' && bin !== process.execPath;
+      result = spawnSync(
+        useShell ? escapeCmdArg(bin) : bin,
+        useShell ? args.map(escapeCmdArg) : args,
+        { ...base, shell: useShell },
+      );
+    }
     if (debug) {
       if (result.stdout) process.stdout.write(result.stdout);
       if (result.stderr) process.stderr.write(result.stderr);
@@ -146,11 +240,11 @@ function invokeCli(hookSubcommand, hookArgs, stdinData) {
     invokeHook(bin, binArgs, hookSubcommand, hookArgs, stdinData);
     return;
   }
-  if (commandExists('ruflo')) {
+  if (resolveCommandPath('ruflo')) {
     invokeHook('ruflo', [], hookSubcommand, hookArgs, stdinData);
     return;
   }
-  if (commandExists('claude-flow')) {
+  if (resolveCommandPath('claude-flow')) {
     invokeHook('claude-flow', [], hookSubcommand, hookArgs, stdinData);
     return;
   }
@@ -346,4 +440,4 @@ if (process.env.RUFLO_HOOK_UNIT_TEST !== '1') {
   main();
 }
 
-module.exports = { escapeCmdArg };
+module.exports = { escapeCmdArg, invokeHook, resolveCommandPath, resolveInvocation, resolveNpmShim };
