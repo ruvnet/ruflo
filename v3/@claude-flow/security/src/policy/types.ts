@@ -44,6 +44,7 @@ export interface PolicyAction {
   destructive?: boolean;
 }
 
+/** Authority constraints: absent lists are unrestricted; explicit [] grants nothing. */
 export interface CapabilityEnvelope {
   actions?: string[];
   resources?: string[];

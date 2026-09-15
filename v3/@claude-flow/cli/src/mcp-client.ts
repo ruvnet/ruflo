@@ -25,7 +25,7 @@ import { progressTools } from './mcp-tools/progress-tools.js';
 import { embeddingsTools } from './mcp-tools/embeddings-tools.js';
 import { claimsTools } from './mcp-tools/claims-tools.js';
 import { policyTools } from './mcp-tools/policy-tools.js';
-import { authorizeMcpTool, classifyMcpTool } from './services/policy-runtime.js';
+import { invokeAuthorizedMcpTool } from './services/policy-runtime.js';
 import { securityTools } from './mcp-tools/security-tools.js';
 import { transferTools } from './mcp-tools/transfer-tools.js';
 // V2 Compatibility tools
@@ -262,12 +262,8 @@ export async function callMCPTool<T = unknown>(
     // directly, so there is no recursive MCP dispatch. In enforce mode an
     // administrator must explicitly allow policy.* actions or use the local
     // CLI bootstrap path.
-    const decision = await authorizeMcpTool(toolName, input, context, classifyMcpTool(toolName));
-    if (decision.enforcedOutcome !== 'allowed') {
-      throw new Error(`policy-${decision.enforcedOutcome}:${decision.reason}; receipt=${decision.receiptId}`);
-    }
-    // Call the tool handler
-    const result = await tool.handler(input, context);
+    const result = await invokeAuthorizedMcpTool(toolName, input, context,
+      (args, ctx) => tool.handler(args, ctx));
     // ADR-146 P2: scan every tool result for indirect-injection before it
     // returns to the caller. The screen is opt-in via env (default off in
     // 3.10.34 — flip to default in v4) so existing pipelines keep their
