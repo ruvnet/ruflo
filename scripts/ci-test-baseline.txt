@@ -7,6 +7,7 @@ plugins/ruflo-adr/scripts/__tests__/index-idempotency-2660.test.mjs
 plugins/ruflo-adr/scripts/__tests__/parser-bullets-2659.test.mjs
 plugins/ruflo-adr/scripts/__tests__/skip-brain-dir-2911.test.mjs
 plugins/ruflo-business-pods/scripts/pod-tick.test.mjs
+plugins/ruflo-core/scripts/escape-cmd-arg.test.cjs
 plugins/ruflo-core/scripts/mcp-launch.test.cjs
 plugins/ruflo-workflows/scripts/gaia-audit.test.mjs
 ruflo/src/ruvocal/src/lib/components/chat/MarkdownRenderer.svelte.test.ts
@@ -74,7 +75,6 @@ v3/@claude-flow/cli/__tests__/neural-router.test.ts
 v3/@claude-flow/cli/__tests__/output.test.ts
 v3/@claude-flow/cli/__tests__/planflip-mempoison-2752.test.ts
 v3/@claude-flow/cli/__tests__/plugins-transfer-deep.test.ts
-v3/@claude-flow/cli/__tests__/policy-runtime.test.ts
 v3/@claude-flow/cli/__tests__/pq-validation.test.ts
 v3/@claude-flow/cli/__tests__/proxy-extract-archive.test.ts
 v3/@claude-flow/cli/__tests__/security-scan-enum-validation.test.ts
@@ -92,6 +92,7 @@ v3/@claude-flow/hooks/src/__tests__/guidance-provider.test.ts
 v3/@claude-flow/hooks/src/__tests__/reasoningbank.test.ts
 v3/@claude-flow/memory/src/agentdb-backend.test.ts
 v3/@claude-flow/memory/src/agentdb-retrieval-guard.test.ts
+v3/@claude-flow/memory/src/consolidator-embedding-benchmark.test.ts
 v3/@claude-flow/memory/src/consolidator.test.ts
 v3/@claude-flow/memory/src/controller-registry.test.ts
 v3/@claude-flow/memory/src/database-provider.test.ts
@@ -121,3 +122,8 @@ v3/plugins/quantum-optimizer/tests/mcp-tools.test.ts
 
 # ruflo-x-gateway: node:test suite with its own deps (nostr-tools, ws, MCP SDK) — run via `npm test` in plugins/ruflo-x-gateway; root vitest cannot resolve them (same pattern as plugins/ruflo-adr)
 plugins/ruflo-x-gateway/test/gateway.test.mjs
+plugins/ruflo-x-gateway/test/oauth.test.mjs
+
+# ruflo-chatgpt-federation: same pattern — plugin-local deps (jose, nostr-tools/pure) not resolvable from root vitest
+plugins/ruflo-chatgpt-federation/test/oauth.test.mjs
+plugins/ruflo-chatgpt-federation/test/publisher.test.mjs

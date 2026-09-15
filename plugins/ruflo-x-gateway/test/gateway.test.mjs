@@ -148,6 +148,69 @@ test('hardening: publish bounds, bucket eviction, ws maxPayload/404, fetchManyOn
   assert.equal(out.length, 3); assert.equal(handshakes, 1); assert.equal(reqs, 3);
 });
 
+test('security: verified pubkey/id/created_at cannot be overridden by spoofed content (fetchRecent, fetchManyOn, fetchChannel)', async () => {
+  const { fetchRecent, fetchManyOn, fetchChannel } = await import('../src/nostr-federation.mjs');
+  const attacker = generateSecretKey(); const attackerPk = getPublicKey(attacker);
+  const victimPk = getPublicKey(generateSecretKey());
+  // Signed legitimately under the attacker's OWN key, but the JSON content
+  // claims to be a ClaimReleased from the victim — this is exactly what
+  // reduceClaims would need to see to let the attacker forge a release/handoff.
+  const spoofContent = JSON.stringify({ type: 'ClaimReleased', pubkey: victimPk, id: 'f'.repeat(64), created_at: 1, resourceId: 'r1' });
+
+  // fetchRecent
+  let wss = new WebSocketServer({ port: 0 });
+  await new Promise((r) => wss.once('listening', r));
+  wss.on('connection', (s) => { s.send(JSON.stringify(['AUTH', 'c'])); s.on('message', (d) => {
+    const m = JSON.parse(d);
+    if (m[0] === 'AUTH') s.send(JSON.stringify(['OK', m[1].id, true, '']));
+    if (m[0] === 'REQ') {
+      const ev = finalizeEvent({ kind: 1, created_at: 1000, tags: [], content: spoofContent }, attacker);
+      s.send(JSON.stringify(['EVENT', m[1], ev]));
+      s.send(JSON.stringify(['EOSE', m[1]]));
+    }
+  }); });
+  let out = await fetchRecent(`ws://127.0.0.1:${wss.address().port}`, generateSecretKey(), {});
+  wss.close();
+  assert.equal(out.length, 1);
+  assert.equal(out[0].pubkey, attackerPk, 'fetchRecent: verified pubkey must win over spoofed content.pubkey');
+  assert.notEqual(out[0].pubkey, victimPk);
+  assert.equal(out[0].created_at, 1000, 'fetchRecent: verified created_at must win over spoofed content.created_at');
+
+  // fetchManyOn (per-filter 'qN' REQ ids)
+  wss = new WebSocketServer({ port: 0 });
+  await new Promise((r) => wss.once('listening', r));
+  wss.on('connection', (s) => { s.send(JSON.stringify(['AUTH', 'c'])); s.on('message', (d) => {
+    const m = JSON.parse(d);
+    if (m[0] === 'AUTH') s.send(JSON.stringify(['OK', m[1].id, true, '']));
+    if (m[0] === 'REQ') {
+      const ev = finalizeEvent({ kind: 1, created_at: 1000, tags: [], content: spoofContent }, attacker);
+      s.send(JSON.stringify(['EVENT', m[1], ev]));
+      s.send(JSON.stringify(['EOSE', m[1]]));
+    }
+  }); });
+  const [many] = await fetchManyOn(`ws://127.0.0.1:${wss.address().port}`, generateSecretKey(), [{ limit: 1 }]);
+  wss.close();
+  assert.equal(many.length, 1);
+  assert.equal(many[0].pubkey, attackerPk, 'fetchManyOn: verified pubkey must win over spoofed content.pubkey');
+
+  // fetchChannel (plaintext branch)
+  wss = new WebSocketServer({ port: 0 });
+  await new Promise((r) => wss.once('listening', r));
+  wss.on('connection', (s) => { s.send(JSON.stringify(['AUTH', 'c'])); s.on('message', (d) => {
+    const m = JSON.parse(d);
+    if (m[0] === 'AUTH') s.send(JSON.stringify(['OK', m[1].id, true, '']));
+    if (m[0] === 'REQ') {
+      const ev = finalizeEvent({ kind: 1, created_at: 1000, tags: [['c', 'pub:ops'], ['k', 'ClaimReleased']], content: spoofContent }, attacker);
+      s.send(JSON.stringify(['EVENT', m[1], ev]));
+      s.send(JSON.stringify(['EOSE', m[1]]));
+    }
+  }); });
+  const chan = await fetchChannel(`ws://127.0.0.1:${wss.address().port}`, generateSecretKey(), { channelId: 'pub:ops' });
+  wss.close();
+  assert.equal(chan.length, 1);
+  assert.equal(chan[0].pubkey, attackerPk, 'fetchChannel: verified pubkey must win over spoofed content.pubkey');
+});
+
 // ---- ADR-386 channels ----
 test('channels: ids, seal/open, non-member cannot open, type hidden on private', async () => {
   const c = await import('../src/channels.mjs');
