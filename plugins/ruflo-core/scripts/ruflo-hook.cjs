@@ -65,6 +65,32 @@ function commandExists(cmd) {
 }
 
 /**
+ * Escape one argv element so it survives BOTH parsers a Windows shell:true
+ * spawn puts it through before the target CLI ever sees it:
+ *   1. cmd.exe's own line tokenizer, which still scans for & | < > ^ % ! " ( )
+ *      even inside a per-argument quoted segment — quoting alone does not
+ *      shield cmd.exe metacharacters, and this runs a SECOND time when the
+ *      resolved binary is itself a .cmd shim (npm's `ruflo`/`claude-flow`/
+ *      `npx` global installs on Windows), because launching a .cmd file is
+ *      cmd.exe re-invoking itself on the command line.
+ *   2. The eventual CommandLineToArgvW argv parse in the target process,
+ *      which needs backslash-before-quote sequences doubled and the value
+ *      quoted so it lands as ONE argument.
+ * Without this, a hook-derived value (e.g. a Bash tool's `command`, or a
+ * file path) containing a shell metacharacter can be reinterpreted as a
+ * separate command / redirection instead of reaching the CLI as literal
+ * data — this is the class of bug in CVE-2024-27980 (Node's own .bat/.cmd
+ * argument-injection advisory). Algorithm: https://qntm.org/cmd, the same
+ * reference the `cross-spawn` package's Windows escaping is built from.
+ */
+function escapeCmdArg(arg) {
+  let s = String(arg);
+  s = s.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1');
+  s = `"${s}"`;
+  return s.replace(/[()%!^"<>&|;,]/g, '^$&');
+}
+
+/**
  * Spawn the CLI with the hook subcommand + args, forwarding stdinData.
  * Returns true on success (exit 0), false otherwise. Never throws.
  */
@@ -72,20 +98,17 @@ function invokeHook(bin, binArgs, hookSubcommand, hookArgs, stdinData) {
   const args = [...binArgs, 'hooks', hookSubcommand, ...hookArgs];
   // On Windows, shell: true is needed to resolve .cmd/.ps1 shims that npm
   // creates for globally-installed bins (`ruflo`, `claude-flow`, `npx`) —
-  // CreateProcess cannot execute those directly. BUT shell:true hands the
-  // whole command line to cmd.exe, which re-tokenizes it (no automatic
-  // quoting of array elements), corrupting any argument containing spaces
-  // or shell metacharacters — e.g. a `post-command` value of "echo hi"
-  // silently truncates to "echo", and a heredoc value containing `<<`
-  // errors outright. `node` itself is always a real .exe (never a shim),
-  // so skip the shell entirely there — CreateProcess gets the argv array
-  // verbatim, byte-for-byte, no re-tokenization possible. This covers the
-  // common `node <cli.js>` invocation (test harness, npx-resolved runs).
-  // A real global `ruflo`/`claude-flow` install still goes through the
-  // shim path below and inherits cmd.exe's pre-existing argv-mangling
-  // limitation for complex values — not a regression from this change,
-  // just not fully solved by it; tracked as a follow-up.
+  // CreateProcess cannot execute those directly. `node` itself is always a
+  // real .exe (never a shim), so skip the shell entirely there —
+  // CreateProcess gets the argv array verbatim, byte-for-byte, no
+  // cmd.exe involved at all. This covers the common `node <cli.js>`
+  // invocation (test harness, npx-resolved runs). A real global
+  // `ruflo`/`claude-flow` install still goes through the shim path below;
+  // every array element is escaped with escapeCmdArg() before it reaches
+  // cmd.exe so hook-derived values can't be reinterpreted as shell syntax.
   const useShell = process.platform === 'win32' && bin !== 'node' && bin !== process.execPath;
+  const spawnBin = useShell ? escapeCmdArg(bin) : bin;
+  const spawnArgs = useShell ? args.map(escapeCmdArg) : args;
   // Test-only: RUFLO_HOOK_DEBUG_STDOUT surfaces the invoked CLI's own
   // stdout/stderr instead of swallowing them, so test-hooks.mjs can assert
   // on the CLI's actual recorded value (e.g. catching #1859/#1862-style
@@ -93,7 +116,7 @@ function invokeHook(bin, binArgs, hookSubcommand, hookArgs, stdinData) {
   // never leak CLI output into the host (Cursor's PreToolUse contract).
   const debug = process.env.RUFLO_HOOK_DEBUG_STDOUT === '1';
   try {
-    const result = spawnSync(bin, args, {
+    const result = spawnSync(spawnBin, spawnArgs, {
       shell: useShell,
       input: stdinData || '',
       encoding: 'utf8',
@@ -313,4 +336,14 @@ function main() {
   done();
 }
 
-main();
+// Test-only: RUFLO_HOOK_UNIT_TEST skips main() so a unit test can require()
+// this file for its pure helpers (escapeCmdArg) without triggering the real
+// hook flow / process.exit(0). hooks.json always invokes this file via a
+// plain require() inside a `node -e` wrapper (see the header comment) — there
+// is no `require.main === module` boundary to gate on — so main() must
+// default to running unconditionally in every other context.
+if (process.env.RUFLO_HOOK_UNIT_TEST !== '1') {
+  main();
+}
+
+module.exports = { escapeCmdArg };

@@ -87,7 +87,12 @@ export async function fetchRecent(relayUrl, sk, { sinceSeconds = 3600, limit = 1
       const m = JSON.parse(data.toString());
       if (m[0] === 'EVENT' && verifyEvent(m[2])) {
         let body; try { body = JSON.parse(m[2].content); } catch { body = { raw: m[2].content }; }
-        out.push({ id: m[2].id, pubkey: m[2].pubkey, created_at: m[2].created_at, ...body });
+        // Verified envelope fields MUST win over anything the publisher put in
+        // their own (attacker-controlled) content — spreading body first, then
+        // overwriting id/pubkey/created_at, is the only order a publisher can't
+        // use to impersonate another member's identity downstream (reduceClaims
+        // trusts .pubkey for release/handoff authorization).
+        out.push({ ...body, id: m[2].id, pubkey: m[2].pubkey, created_at: m[2].created_at });
       } else if (m[0] === 'EOSE') { clearTimeout(timer); try { ws.close(); } catch {} resolve(out); }
     });
     ws.send(JSON.stringify(['REQ', 'ruflo-sync', filter]));
@@ -105,7 +110,7 @@ export async function fetchManyOn(relayUrl, sk, filters) {
     ws.on('message', (data) => {
       const m = JSON.parse(data.toString());
       const idx = typeof m[1] === 'string' && m[1].startsWith('q') ? Number(m[1].slice(1)) : -1;
-      if (m[0] === 'EVENT' && idx >= 0 && verifyEvent(m[2])) { let body; try { body = JSON.parse(m[2].content); } catch { body = { raw: m[2].content }; } results[idx].push({ id: m[2].id, pubkey: m[2].pubkey, created_at: m[2].created_at, ...body }); }
+      if (m[0] === 'EVENT' && idx >= 0 && verifyEvent(m[2])) { let body; try { body = JSON.parse(m[2].content); } catch { body = { raw: m[2].content }; } results[idx].push({ ...body, id: m[2].id, pubkey: m[2].pubkey, created_at: m[2].created_at }); }
       else if (m[0] === 'EOSE' && idx >= 0) { ws.send(JSON.stringify(['CLOSE', m[1]])); if (--open === 0) { clearTimeout(timer); finish(); } }
     });
     filters.forEach((f, i) => ws.send(JSON.stringify(['REQ', 'q' + i, { kinds: [SWARM_KIND], '#t': [SWARM_TAG], since: Math.floor(Date.now() / 1000) - (f.sinceSeconds ?? 3600), limit: f.limit ?? 100, ...(f.type ? { '#k': [String(f.type)] } : {}) }])));
@@ -158,7 +163,9 @@ export async function fetchChannel(relayUrl, sk, { channelId, sinceSeconds = 360
         const k = e.tags.find((t) => t[0] === 'k')?.[1];
         const rec = { id: e.id, pubkey: e.pubkey, created_at: e.created_at, channel: h, k };
         if (k === 'enc') out.push({ ...rec, encrypted: true, content: e.content });
-        else { let body; try { body = JSON.parse(e.content); } catch { body = { raw: e.content }; } out.push({ ...rec, ...body }); }
+        // Same override hazard as fetchRecent/fetchManyOn: rec's verified id/pubkey/
+        // created_at must be applied AFTER body, not before.
+        else { let body; try { body = JSON.parse(e.content); } catch { body = { raw: e.content }; } out.push({ ...body, ...rec }); }
       } else if (m[0] === 'EOSE') { clearTimeout(timer); try { ws.close(); } catch {} resolve(out); }
     });
     ws.send(JSON.stringify(['REQ', 'ruflo-channel', filter]));

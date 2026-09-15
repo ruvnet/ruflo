@@ -1,6 +1,6 @@
 {
   "name": "@ruflo/x-gateway",
-  "version": "0.5.0",
+  "version": "0.7.2",
   "private": true,
   "type": "module",
   "description": "x.ruv.io gateway — MCP server for ruflo swarm federation + claims over a signed, membership-gated Nostr relay. Exposes /mcp tools and ruv:// resources.",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "jose": "^6.2.12",
     "nostr-tools": "^2.7.0",
     "ws": "^8.18.0",
     "zod": "^3.23.0"

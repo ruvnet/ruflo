@@ -2132,7 +2132,12 @@ export async function bridgeStorePattern(options: {
       } catch { /* HNSW is best-effort */ }
     }
 
-    return { success: true, patternId: result.id, controller: 'bridge-fallback' };
+    // #3324: bridgeStoreEntry's `result.id` is its OWN internally generated
+    // row id (generateId('entry')), a different value from the `key` the row
+    // was actually stored under. getEntry/memory_retrieve look up by `key`,
+    // so returning result.id here handed the caller a handle that can never
+    // be read back — return `patternId` (the real key) instead.
+    return { success: true, patternId, controller: 'bridge-fallback' };
   } catch {
     return null;
   }
@@ -2187,10 +2192,13 @@ export async function bridgeSearchPatterns(options: {
         const qEmb = await generateEmbedding(options.query);
         if (qEmb && Array.isArray(qEmb.embedding) && qEmb.embedding.length > 0) {
           const hits = reasoningBank.findSimilar(qEmb.embedding, { k, threshold });
+          // findSimilar() no longer overwrites confidence with the query-match
+          // score — prefer similarity (the actual match strength) for search ranking,
+          // falling back to confidence/score only for older/foreign result shapes.
           mapped = (Array.isArray(hits) ? hits : []).map((r: any) => ({
             id: r.id ?? '',
             content: r.content ?? '',
-            score: r.confidence ?? r.score ?? 0,
+            score: r.similarity ?? r.confidence ?? r.score ?? 0,
           }));
         }
       } catch { /* embedding unavailable — fall through to substring scan */ }

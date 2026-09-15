@@ -53,11 +53,15 @@ const REPO_ROOT = resolve(__dirname, '..');
 const KNOWN_ESCAPE_HATCHES = new Set([
   // ── CI / test escape hatches ────────────────────────────────────────────────
   'CLAUDE_FLOW_DISABLE_BRIDGE',   // CI/test: force raw sql.js path — intentionally no CLI flag
+  'RUFLO_ADMIN_TOKEN',            // credential: the x.ruv.io gateway's OWN admin token, read by plugins/ruflo-x-gateway. Env-only by design — a secret must never be a CLI flag (shell history / process lists), and the gateway is a service with no typed command surface at all.
+  'RUFLO_SERAPHINA_DAILY_CAP',    // gateway spend guard (#3275): shared daily Seraphina budget. Read by a long-running service, not a typed command — there is no invocation to attach a flag to.
+  'RUFLO_SERAPHINA_IP_HOURLY_CAP',// gateway spend guard (#3275): per-client hourly Seraphina budget. Same service-only reasoning.
   'RUFLO_X_ADMIN_TOKEN',          // credential: gateway admin token for x.ruv.io gateway-identity writes (x_federation_publish/invite_mint/admit). Env-only by design — a secret must never be a CLI flag (shell history / process lists). URL config (RUFLO_X_GATEWAY_URL) DOES take a flag: `ruflo federation --gateway`.
   'SERAPHINA_METALLM_KEY',        // credential: cognitum meta-llm API key for seraphina_guidance. Env-only by design (same reasoning). URL config (SERAPHINA_METALLM_URL) takes the metaLlmUrl tool arg.
   'RUFLO_HOOK_SKIP_NPX',          // CI: suppress cold-install latency in smoke tests
   'RUFLO_HOOK_CLI_OVERRIDE',      // #2721 test-only: point plugins/ruflo-core/scripts/ruflo-hook.cjs at a local CLI build instead of the ruflo/claude-flow/npx PATH probe. Hook scripts have no CLI-flag surface (invoked by hooks.json, never a user-typed command)
   'RUFLO_HOOK_DEBUG_STDOUT',      // #2721 test-only: surface the invoked CLI's stdout/stderr from ruflo-hook.cjs instead of swallowing it, so test-hooks.mjs can assert on recorded values. Same no-CLI-surface reasoning as RUFLO_HOOK_CLI_OVERRIDE above — production never sets this
+  'RUFLO_HOOK_UNIT_TEST',         // test-only: skip main() when ruflo-hook.cjs is require()'d by escape-cmd-arg.test.cjs, so the unit test can reach escapeCmdArg() without triggering the real hook flow / process.exit(0). Same no-CLI-surface reasoning — hooks.json always require()s this file directly, there is no invocation to attach a flag to
   'RUFLO_SUBLINEAR_NATIVE',       // Manual override for native vs WASM sublinear — CI/perf knob
   'RUFLO_METAHARNESS_CACHE_BASE', // CI/test seam: relocates the ~/.ruflo pinned-cache root in metaharness smoke tests — intentionally env-only, plugin scripts have no CLI-flag surface
   'RUFLO_FUNNEL',                 // Read inside the generated hook-handler.cjs (ADR-312/313 rate-limit nudge), not a typed CLI invocation — no command surface to attach a flag to
@@ -168,6 +172,16 @@ const KNOWN_ESCAPE_HATCHES = new Set([
   // this label as issuer proof.
   'CLAUDE_FLOW_PRINCIPAL_ID',
 
+  // ── ADR-377 Phase 3: per-worker Ed25519 caller-identity credential ─────────
+  // DualModeOrchestrator mints these into a spawned worker's OWN environment
+  // (workerEnvironment()) — a credential pair for authorizeMcpTool's
+  // resolveMcpCallerIdentity() to verify, not a value any caller should be
+  // able to select via a CLI flag (that would let a process simply assert a
+  // signature instead of proving one). Same no-CLI-surface reasoning as
+  // CLAUDE_FLOW_PRINCIPAL_ID above.
+  'CLAUDE_FLOW_MCP_CALLER_PUBKEY',
+  'CLAUDE_FLOW_MCP_INVOCATION_TOKEN',
+
   // ── OS / runtime standard env ────────────────────────────────────────────────
   'HOME',
   'USERPROFILE',
@@ -247,7 +261,7 @@ const SCAN_ROOTS = [
 ];
 
 // ── Skip patterns ─────────────────────────────────────────────────────────────
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'coverage', '__tests__', 'tests']);
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'coverage', '__tests__', 'tests', 'test']);
 const SCAN_EXTS = new Set(['.ts', '.mjs', '.cjs', '.js']);
 
 // ── Regex to find process.env.CLAUDE_FLOW_* reads ────────────────────────────
