@@ -280,6 +280,81 @@ async function describeBackend(): Promise<string> {
   }
 }
 
+/** #3311: one page per round trip, so a store larger than one page is
+ * counted rather than silently cut off at the old hardcoded 100000. */
+const MEMORY_STATS_PAGE = 10000;
+
+/** #3311: a hard stop so a `total` that never agrees with the rows returned
+ * cannot spin forever. Reaching it is reported as a truncated count, not as
+ * a complete one. */
+const MEMORY_STATS_MAX_PAGES = 200;
+
+/** The shape one page of `listEntries` comes back in, generic over the row
+ * type so paging does not widen or narrow what the caller already has. */
+type ListPage<E> = {
+  success: boolean;
+  entries: E[];
+  total: number;
+  error?: string;
+};
+
+/**
+ * Page through the store and return every row, or the first failure.
+ *
+ * The old call asked for `limit: 100000` in one shot and read only
+ * `entries`/`total` off the result — so a bigger store had its namespace
+ * breakdown and embedding coverage computed from a prefix, and a listing
+ * that reported `success: false` was read as an empty one.
+ */
+async function collectAllEntries<E>(
+  listEntries: (options: { limit?: number; offset?: number }) => Promise<ListPage<E>>,
+): Promise<ListPage<E>> {
+  const entries: E[] = [];
+  let total = 0;
+
+  for (let page = 0; page < MEMORY_STATS_MAX_PAGES; page++) {
+    const result = await listEntries({ limit: MEMORY_STATS_PAGE, offset: entries.length });
+    if (!result.success) {
+      return { success: false, entries, total: result.total ?? total, error: result.error };
+    }
+    total = result.total;
+    entries.push(...result.entries);
+    if (result.entries.length === 0 || entries.length >= total) break;
+  }
+
+  return { success: true, entries, total };
+}
+
+/** #3311: unavailable is its own answer. The zeros this replaces were
+ * indistinguishable from a store that really is empty. */
+function memoryStatsUnavailable(error: string): {
+  initialized: null;
+  available: false;
+  error: string;
+} {
+  return { initialized: null, available: false, error };
+}
+
+/**
+ * Version and feature labels from the initialization probe.
+ *
+ * Metadata only. The probe reads a whole-image snapshot that cannot see live
+ * WAL frames, so it is allowed to fail without that meaning the store is
+ * missing — which is exactly the conflation #3311 reports.
+ */
+async function readMemoryStatusLabels(): Promise<{
+  version?: string;
+  features?: { vectorEmbeddings: boolean; patternLearning: boolean; temporalDecay: boolean };
+}> {
+  try {
+    const { checkMemoryInitialization } = await getMemoryFunctions();
+    const status = await checkMemoryInitialization();
+    return { version: status.version, features: status.features };
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Ensure memory database is initialized and migrate legacy data if needed.
  * #1606: Wrapped in try/catch to prevent process-level crashes that kill
@@ -772,43 +847,62 @@ export const memoryTools: MCPTool[] = [
     },
     handler: async () => {
       await ensureInitialized();
-      const { checkMemoryInitialization, listEntries } = await getMemoryFunctions();
+      const { listEntries } = await getMemoryFunctions();
 
+      // #3311: the store's own listing decides whether memory is there.
+      // `checkMemoryInitialization` opens a whole-image sql.js snapshot of
+      // the main database file, which cannot include live SQLite WAL frames
+      // — so a store the bridge reads and searches perfectly well came back
+      // `initialized: false` from this tool alone. The probe is still read
+      // below, for the version and feature labels it is the only source of,
+      // but it no longer gets to overrule a working store.
+      let listing: ListPage<{ namespace: string; hasEmbedding: boolean }>;
       try {
-        const status = await checkMemoryInitialization();
-        const allEntries = await listEntries({ limit: 100000 });
-
-        // Count by namespace
-        const namespaces: Record<string, number> = {};
-        let withEmbeddings = 0;
-
-        for (const entry of allEntries.entries) {
-          namespaces[entry.namespace] = (namespaces[entry.namespace] || 0) + 1;
-          if (entry.hasEmbedding) withEmbeddings++;
-        }
-
-        return {
-          initialized: status.initialized,
-          totalEntries: allEntries.total,
-          entriesWithEmbeddings: withEmbeddings,
-          embeddingCoverage: allEntries.total > 0
-            ? `${((withEmbeddings / allEntries.total) * 100).toFixed(1)}%`
-            : '0%',
-          namespaces,
-          backend: await describeBackend(),
-          version: status.version || '3.0.0',
-          features: status.features || {
-            vectorEmbeddings: true,
-            hnswIndex: true,
-            semanticSearch: true,
-          },
-        };
+        listing = await collectAllEntries(listEntries);
       } catch (error) {
-        return {
-          initialized: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        };
+        return memoryStatsUnavailable(error instanceof Error ? error.message : 'Unknown error');
       }
+      if (!listing.success) {
+        // A failed query is not an empty store. Reporting zeros here is
+        // what made a WAL refusal look like "you have no memories".
+        return memoryStatsUnavailable(listing.error || 'listEntries reported failure');
+      }
+
+      // Object.create(null): a namespace literally named `__proto__` is a
+      // legal key, and assigning it on an object literal sets the prototype
+      // instead of counting anything — so that namespace's entries vanished
+      // from the breakdown while still being counted in the total.
+      const namespaces: Record<string, number> = Object.create(null) as Record<string, number>;
+      let withEmbeddings = 0;
+      for (const entry of listing.entries) {
+        namespaces[entry.namespace] = (namespaces[entry.namespace] || 0) + 1;
+        if (entry.hasEmbedding) withEmbeddings++;
+      }
+
+      const counted = listing.entries.length;
+      const status = await readMemoryStatusLabels();
+
+      return {
+        initialized: true,
+        totalEntries: listing.total,
+        entriesCounted: counted,
+        // The breakdown below covers `entriesCounted` rows, which is every
+        // row unless the listing was truncated; say so rather than letting
+        // a partial count read as the whole store.
+        ...(counted < listing.total ? { truncated: true } : {}),
+        entriesWithEmbeddings: withEmbeddings,
+        embeddingCoverage: counted > 0
+          ? `${((withEmbeddings / counted) * 100).toFixed(1)}%`
+          : '0%',
+        namespaces: { ...namespaces },
+        backend: await describeBackend(),
+        version: status.version || '3.0.0',
+        features: status.features || {
+          vectorEmbeddings: true,
+          hnswIndex: true,
+          semanticSearch: true,
+        },
+      };
     },
   },
   {
