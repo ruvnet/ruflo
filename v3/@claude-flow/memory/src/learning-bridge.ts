@@ -90,8 +90,27 @@ type ResolvedConfig = Required<Omit<LearningBridgeConfig, 'neuralLoader'>> & {
   neuralLoader?: NeuralLoader;
 };
 
+const VALID_SONA_MODES: readonly SONAMode[] = [
+  'real-time',
+  'balanced',
+  'research',
+  'edge',
+  'batch',
+];
+
+/**
+ * The SONA mode from `RUFLO_INTELLIGENCE_MODE`, if the operator set a recognised
+ * one — the fleet-wide default (e.g. `research` for higher accuracy) without a
+ * per-call `sonaMode`. An unset or unknown value returns undefined so the caller
+ * keeps its own default; a typo never silently selects a profile.
+ */
+function sonaModeFromEnv(): SONAMode | undefined {
+  const raw = (process.env.RUFLO_INTELLIGENCE_MODE?.trim() ?? '') as SONAMode;
+  return VALID_SONA_MODES.includes(raw) ? raw : undefined;
+}
+
 const DEFAULT_CONFIG: ResolvedConfig = {
-  sonaMode: 'balanced',
+  sonaMode: sonaModeFromEnv() || 'balanced',
   confidenceDecayRate: 0.005,
   accessBoostAmount: 0.03,
   maxConfidence: 1.0,
