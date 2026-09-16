@@ -110,7 +110,7 @@ function sonaModeFromEnv(): SONAMode | undefined {
 }
 
 const DEFAULT_CONFIG: ResolvedConfig = {
-  sonaMode: sonaModeFromEnv() || 'balanced',
+  sonaMode: 'balanced',
   confidenceDecayRate: 0.005,
   accessBoostAmount: 0.03,
   maxConfidence: 1.0,
@@ -155,7 +155,17 @@ export class LearningBridge extends EventEmitter {
   constructor(backend: IMemoryBackend, config?: LearningBridgeConfig) {
     super();
     this.backend = backend;
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    // sonaMode is resolved here, not baked into the module-scope DEFAULT_CONFIG
+    // above: DEFAULT_CONFIG is evaluated once, the first time this module is
+    // imported, so capturing sonaModeFromEnv() there would permanently miss any
+    // RUFLO_INTELLIGENCE_MODE set afterward in the same process (tests included).
+    // Resolving it per-instance keeps this in step with sona-adapter.ts's
+    // mergeConfig(), which reads the same env var fresh on every call.
+    this.config = {
+      ...DEFAULT_CONFIG,
+      ...config,
+      sonaMode: config?.sonaMode ?? sonaModeFromEnv() ?? DEFAULT_CONFIG.sonaMode,
+    };
   }
 
   // ===== Public API =====
@@ -380,6 +390,11 @@ export class LearningBridge extends EventEmitter {
       avgConfidenceBoost: avgBoost,
       neuralAvailable: this.neural !== null,
     };
+  }
+
+  /** Return the resolved SONA mode (explicit config > RUFLO_INTELLIGENCE_MODE > default) */
+  getSonaMode(): SONAMode {
+    return this.config.sonaMode;
   }
 
   /** Tear down the bridge. Subsequent method calls become no-ops. */
