@@ -894,4 +894,43 @@ describe('LearningBridge', () => {
       b.destroy();
     });
   });
+
+  // ===== Real @claude-flow/neural construction shape (no injected loader) =====
+
+  describe('default neural loader (real @claude-flow/neural import)', () => {
+    afterEach(() => {
+      vi.doUnmock('@claude-flow/neural');
+    });
+
+    it('constructs NeuralLearningSystem with a bare mode string, not a config object', async () => {
+      // Regression test: loadNeural() used to call
+      // `new NeuralLearningSystem({ mode, ewcLambda })`, but the real
+      // constructor is `constructor(mode: SONAMode = 'balanced')` — a bare
+      // string. Passing an object never throws (SONAManager's
+      // `MODE_CONFIGS[mode]` lookup just silently misses and falls back to
+      // `{}`), so this had to be caught by inspecting the actual argument,
+      // not by whether construction succeeds.
+      const ctorArgs: unknown[][] = [];
+      vi.doMock('@claude-flow/neural', () => ({
+        NeuralLearningSystem: class {
+          constructor(...args: unknown[]) {
+            ctorArgs.push(args);
+          }
+          initialize = vi.fn().mockResolvedValue(undefined);
+        },
+      }));
+      vi.resetModules();
+
+      const { LearningBridge: FreshLearningBridge } = await import('./learning-bridge.js');
+      const freshBackend = createMockBackend();
+      const b = new FreshLearningBridge(freshBackend, { sonaMode: 'research' });
+
+      await b.onInsightRecorded(createTestInsight(), 'entry-1');
+
+      expect(ctorArgs).toHaveLength(1);
+      expect(ctorArgs[0]).toEqual(['research']);
+      expect(b.getStats().neuralAvailable).toBe(true);
+      b.destroy();
+    });
+  });
 });

@@ -445,10 +445,15 @@ export class LearningBridge extends EventEmitter {
       const NeuralLearningSystem = mod.NeuralLearningSystem ?? mod.default;
       if (!NeuralLearningSystem) return;
 
-      const instance = new NeuralLearningSystem({
-        mode: this.config.sonaMode,
-        ewcLambda: this.config.ewcLambda,
-      });
+      // NeuralLearningSystem's constructor takes a bare SONAMode string
+      // (see @claude-flow/neural's index.ts / cli's neural-package-bridge.ts
+      // for the reference-correct call shape) — it has no ewcLambda param;
+      // each mode carries its own fixed lambda via MODE_CONFIGS. Passing an
+      // object here (as this used to) doesn't throw: SONAManager's
+      // `MODE_CONFIGS[mode]` lookup coerces the object to the string
+      // "[object Object]", finds nothing, and `{...undefined}` silently
+      // produces an empty config instead of the intended mode's settings.
+      const instance = new NeuralLearningSystem(this.config.sonaMode);
 
       if (typeof instance.initialize === 'function') {
         await instance.initialize();
