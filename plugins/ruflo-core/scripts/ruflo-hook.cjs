@@ -227,16 +227,32 @@ function invokeHook(bin, binArgs, hookSubcommand, hookArgs, stdinData, options =
   }
 }
 
+/**
+ * Split a test-only CLI override string into argv, honouring double-quoted
+ * tokens. A bare `.split(' ')` breaks the moment any token contains a space —
+ * which `process.execPath` does on a standard Windows Node install
+ * (`C:\Program Files\nodejs\node.exe`), splitting it into `C:\Program` (an
+ * invalid command) plus stray trailing tokens. Only ever fed a string this
+ * repo's own test harness built, never external/user input.
+ */
+function splitCliOverride(str) {
+  const tokens = [];
+  const re = /"([^"]*)"|(\S+)/g;
+  let m;
+  while ((m = re.exec(str)) !== null) tokens.push(m[1] !== undefined ? m[1] : m[2]);
+  return tokens;
+}
+
 /** Best-effort: try ruflo, then claude-flow, then npx. Never throws. */
 function invokeCli(hookSubcommand, hookArgs, stdinData) {
   // Test-only escape hatch: point at a specific local build instead of the
   // commandExists() PATH probe (used by test-hooks.mjs and the plugin-hooks
   // real-command smoke so tests exercise the build under test, not whatever
-  // happens to be on the runner's PATH). Space-split — always a simple
-  // "node /abs/path/cli.js" invocation in practice, never quoted args.
+  // happens to be on the runner's PATH). A token containing a space must be
+  // double-quoted by the caller — see splitCliOverride() above.
   const override = process.env.RUFLO_HOOK_CLI_OVERRIDE;
   if (override) {
-    const [bin, ...binArgs] = override.split(' ').filter(Boolean);
+    const [bin, ...binArgs] = splitCliOverride(override);
     invokeHook(bin, binArgs, hookSubcommand, hookArgs, stdinData);
     return;
   }

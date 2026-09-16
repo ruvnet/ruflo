@@ -138,7 +138,7 @@ const codexEnv = {
     PLUGIN_ROOT,
     PLUGIN_DATA: join(PLUGIN_ROOT, '.test-data'),
   },
-  cliOverride: `${process.execPath} ${HOOK_RECORDER}`,
+  cliOverride: `"${process.execPath}" "${HOOK_RECORDER}"`,
 };
 
 run('Cursor PreToolUse (Bash) emits permission-allow JSON',
@@ -285,7 +285,7 @@ run('Stop hook runs session-end without error',
     ...process.env,
     CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT,
     CLAUDE_PROJECT_DIR: PLUGIN_ROOT,
-    RUFLO_HOOK_CLI_OVERRIDE: `${process.execPath} ${HOOK_RECORDER}`,
+    RUFLO_HOOK_CLI_OVERRIDE: `"${process.execPath}" "${HOOK_RECORDER}"`,
     RUFLO_HOOK_DEBUG_STDOUT: '1',
     RUFLO_HOOK_SKIP_NPX: '1',
     RUFLO_HOOK_DEDUP_DIR: dedupDir,
