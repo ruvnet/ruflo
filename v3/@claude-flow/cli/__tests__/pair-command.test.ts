@@ -71,6 +71,11 @@ describe('ruflo pair — session lifecycle', () => {
     expect(readSession(cwd)?.aiRole).toBe('navigator');
   });
 
+  it('accepts the mode as a bare word: pair start tdd', async () => {
+    await sub('start')(ctx({ _: [], mode: 'driver' }, ['tdd']));
+    expect(readSession(cwd)?.mode).toBe('tdd');
+  });
+
   it('--role overrides the mode default', async () => {
     await sub('start')(ctx({ _: [], mode: 'tdd', role: 'navigator' }));
     expect(readSession(cwd)?.aiRole).toBe('navigator');

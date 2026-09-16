@@ -144,7 +144,9 @@ function noSession(ctx: CommandContext): CommandResult {
 }
 
 async function startAction(ctx: CommandContext): Promise<CommandResult> {
-  const mode = ctx.flags.mode ?? 'driver';
+  // `pair start tdd` and `pair start --mode tdd` both work; a bare word wins
+  // over the option default so it is never silently ignored.
+  const mode = ctx.args[0] ?? ctx.flags.mode ?? 'driver';
   if (!isMode(mode)) {
     output.printError(`Unknown mode "${String(mode)}". Choose one of: ${Object.keys(PAIR_MODES).join(', ')}`);
     return { success: false, exitCode: 1 };
