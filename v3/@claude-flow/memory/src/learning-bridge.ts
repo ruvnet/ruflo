@@ -90,6 +90,25 @@ type ResolvedConfig = Required<Omit<LearningBridgeConfig, 'neuralLoader'>> & {
   neuralLoader?: NeuralLoader;
 };
 
+const VALID_SONA_MODES: readonly SONAMode[] = [
+  'real-time',
+  'balanced',
+  'research',
+  'edge',
+  'batch',
+];
+
+/**
+ * The SONA mode from `RUFLO_INTELLIGENCE_MODE`, if the operator set a recognised
+ * one — the fleet-wide default (e.g. `research` for higher accuracy) without a
+ * per-call `sonaMode`. An unset or unknown value returns undefined so the caller
+ * keeps its own default; a typo never silently selects a profile.
+ */
+function sonaModeFromEnv(): SONAMode | undefined {
+  const raw = (process.env.RUFLO_INTELLIGENCE_MODE?.trim() ?? '') as SONAMode;
+  return VALID_SONA_MODES.includes(raw) ? raw : undefined;
+}
+
 const DEFAULT_CONFIG: ResolvedConfig = {
   sonaMode: 'balanced',
   confidenceDecayRate: 0.005,
@@ -136,7 +155,17 @@ export class LearningBridge extends EventEmitter {
   constructor(backend: IMemoryBackend, config?: LearningBridgeConfig) {
     super();
     this.backend = backend;
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    // sonaMode is resolved here, not baked into the module-scope DEFAULT_CONFIG
+    // above: DEFAULT_CONFIG is evaluated once, the first time this module is
+    // imported, so capturing sonaModeFromEnv() there would permanently miss any
+    // RUFLO_INTELLIGENCE_MODE set afterward in the same process (tests included).
+    // Resolving it per-instance keeps this in step with sona-adapter.ts's
+    // mergeConfig(), which reads the same env var fresh on every call.
+    this.config = {
+      ...DEFAULT_CONFIG,
+      ...config,
+      sonaMode: config?.sonaMode ?? sonaModeFromEnv() ?? DEFAULT_CONFIG.sonaMode,
+    };
   }
 
   // ===== Public API =====
@@ -361,6 +390,11 @@ export class LearningBridge extends EventEmitter {
       avgConfidenceBoost: avgBoost,
       neuralAvailable: this.neural !== null,
     };
+  }
+
+  /** Return the resolved SONA mode (explicit config > RUFLO_INTELLIGENCE_MODE > default) */
+  getSonaMode(): SONAMode {
+    return this.config.sonaMode;
   }
 
   /** Tear down the bridge. Subsequent method calls become no-ops. */
