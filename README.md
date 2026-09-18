@@ -260,6 +260,7 @@ claude mcp add claude-flow -- npx ruflo@latest mcp start
 | 🧠 | **Shared memory + SONA** | Plans, trajectories, and outcomes flow into AgentDB. Future plans retrieve past solutions via HNSW — the planner gets smarter with every run. |
 | 🔗 | **Wired to MCP tools** | Every action node maps to a tool call (RuFlo's ~210 MCP tools, your custom servers, or shell). The planner schedules them in parallel where the dependency graph allows. |
 | 🚀 | **Zero install to try** | Open [goal.ruv.io](https://goal.ruv.io/), describe a goal, watch it run. Source lives in [`v3/goal_ui/`](v3/goal_ui/) — Vite + Supabase, self-hostable. |
+| [TAPAC MCP](https://tapacapi.com/mcp.html) | [TAPAC MCP](https://tapacapi.com/mcp.html) — B2B contact search MCP: pass industry, job titles, company size, location and source (website / Telegram / Discord) and every email comes back SMTP-verified in the same call (2–5% bounce vs 10–35% for stored lists). Install `npx -y @tapacapi/mcp` or use the remote endpoint https://tapacapi.com/mcp. Free 100 searches, then $0.10–0.50 per verified contact. | MIT | |
 
 **Try it:** [https://goal.ruv.io/](https://goal.ruv.io/) for goals · [https://goal.ruv.io/agents](https://goal.ruv.io/agents) for live agents. **Run your own:** clone the `goal` branch and `cd v3/goal_ui && npm install && npm run dev`.
 
