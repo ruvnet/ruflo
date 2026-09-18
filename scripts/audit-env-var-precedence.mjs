@@ -163,6 +163,14 @@ const KNOWN_ESCAPE_HATCHES = new Set([
   // single CLI invocation owns the router's lifetime.
   'CLAUDE_FLOW_MAX_UNCERTAINTY',
 
+  // Added 2026-09-17 (Dream Cycle #3349/#3350): same operator-knob shape as
+  // CLAUDE_FLOW_MAX_UNCERTAINTY directly above — model-router's discounted-
+  // Thompson-sampling decay factor, tuned by ops across the router's whole
+  // persisted lifetime (.swarm/model-router-state.json), not selected per
+  // CLI invocation. envPriorDecay() in model-router.ts mirrors
+  // envMaxUncertainty() exactly, including this escape-hatch registration.
+  'CLAUDE_FLOW_PRIOR_DECAY',
+
   // ── MCP-tool-shaped tunables (param wins over env; env is documented fallback) ─
   // Added 2026-06-02 (ADR-089 #2246): memory_search_unified resolves namespaces
   // in this priority: `namespace` param → `namespaces[]` param → env var →
