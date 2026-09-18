@@ -215,7 +215,7 @@ import { coordinationTools } from '../src/mcp-tools/coordination-tools.js';
 import { daaTools } from '../src/mcp-tools/daa-tools.js';
 import { embeddingsTools } from '../src/mcp-tools/embeddings-tools.js';
 import { githubTools } from '../src/mcp-tools/github-tools.js';
-import { hiveMindTools } from '../src/mcp-tools/hive-mind-tools.js';
+import { hiveMindTools, getHiveBootstrapSecretForCli } from '../src/mcp-tools/hive-mind-tools.js';
 import { memoryTools } from '../src/mcp-tools/memory-tools.js';
 import { neuralTools } from '../src/mcp-tools/neural-tools.js';
 import { performanceTools } from '../src/mcp-tools/performance-tools.js';
@@ -716,7 +716,7 @@ describe('MCP Tools Deep Test Suite', () => {
   describe('Hive Mind Tools - Handler Invocation', () => {
     it('hive-mind_init initializes the hive', async () => {
       const tool = hiveMindTools.find(t => t.name === 'hive-mind_init')!;
-      const result: any = await tool.handler({ topology: 'mesh' });
+      const result: any = await tool.handler({ topology: 'mesh', bootstrapSecret: getHiveBootstrapSecretForCli() });
       expect(result.success).toBe(true);
       expect(result.topology).toBe('mesh');
     });

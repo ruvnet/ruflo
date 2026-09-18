@@ -200,6 +200,71 @@ export function getHiveTokenForCli(): string | undefined {
   return loadHiveState().hiveToken;
 }
 
+const BOOTSTRAP_FILE = 'bootstrap.secret';
+
+function getBootstrapSecretPath(): string {
+  return join(getHiveDir(), BOOTSTRAP_FILE);
+}
+
+/**
+ * Lazily creates (0600, same-machine-only) and reads the bootstrap secret
+ * gating hive-mind_init itself. Fixes the gap review found in #3339 round 1:
+ * requireHiveToken alone does not "establish authorization" while the
+ * credential-issuance point (hive-mind_init) is reachable by anyone --
+ * previously ANY caller, including one with zero prior standing, could call
+ * hive-mind_init (fresh bootstrap or re-init) and either mint the very
+ * first token themselves or receive the current one back in the response,
+ * defeating every requireHiveToken gate at the source.
+ *
+ * The fix follows the same trust boundary getHiveTokenForCli() already
+ * relies on: same-machine filesystem access. This file is created on first
+ * touch and never returned to a caller who cannot already read it directly
+ * (requireBootstrapSecret only ever compares against it, never echoes it
+ * back on failure), so a pure MCP caller with no filesystem access to the
+ * project directory -- the actual "unauthenticated" case in this codebase's
+ * threat model, same as the one getHiveTokenForCli() itself relies on --
+ * can never produce it and can never call hive-mind_init at all, first-time
+ * bootstrap included.
+ */
+function getOrCreateBootstrapSecret(): string {
+  ensureHiveDir();
+  const path = getBootstrapSecretPath();
+  try {
+    if (existsSync(path)) {
+      const existing = readFileSync(path, 'utf-8').trim();
+      if (existing) return existing;
+    }
+  } catch {
+    // fall through to (re)creating it
+  }
+  const secret = randomBytes(32).toString('hex');
+  writeFileSync(path, secret, { encoding: 'utf-8', mode: 0o600 });
+  return secret;
+}
+
+/** Same-machine accessor for the CLI's own `hive-mind init` subcommand. */
+export function getHiveBootstrapSecretForCli(): string {
+  return getOrCreateBootstrapSecret();
+}
+
+/**
+ * Gates hive-mind_init itself (both first-time bootstrap and re-init) --
+ * see getOrCreateBootstrapSecret() for why this is the real fix, not
+ * requireHiveToken alone. Never leaks the expected secret on denial.
+ */
+function requireBootstrapSecret(suppliedSecret: unknown): string | null {
+  const expectedStr = getOrCreateBootstrapSecret();
+  if (typeof suppliedSecret !== 'string' || !suppliedSecret) {
+    return 'bootstrapSecret is required';
+  }
+  const expected = Buffer.from(expectedStr, 'utf-8');
+  const actual = Buffer.from(suppliedSecret, 'utf-8');
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+    return 'Invalid bootstrapSecret';
+  }
+  return null;
+}
+
 function getHiveDir(): string {
   return join(getProjectCwd(), STORAGE_DIR, HIVE_DIR);
 }
@@ -275,13 +340,26 @@ export const hiveMindTools: MCPTool[] = [
         role: { type: 'string', enum: ['worker', 'specialist', 'scout'], description: 'Worker role in hive', default: 'worker' },
         agentType: { type: 'string', description: 'Agent type for spawned workers', default: 'worker' },
         prefix: { type: 'string', description: 'Prefix for worker IDs', default: 'hive-worker' },
+        hiveToken: { type: 'string', description: 'Capability token minted by hive-mind_init' },
       },
+      required: ['hiveToken'],
     },
     handler: async (input) => {
       const state = loadHiveState();
 
       if (!state.initialized) {
         return { success: false, error: 'Hive-mind not initialized. Run hive-mind/init first.' };
+      }
+
+      // Fail-closed: spawned agents are pushed straight into state.workers,
+      // which hive-mind_consensus's vote tally treats as legitimate voting
+      // roster members (`state.workers.includes(voterId)`). Without this
+      // gate, an unauthenticated caller could mint arbitrary "workers" here
+      // and then vote as them -- bypassing #3291's join/leave/vote Sybil
+      // fix entirely via this sibling tool. No token, no spawn.
+      const tokenError = requireHiveToken(state, input.hiveToken);
+      if (tokenError) {
+        return { success: false, error: tokenError };
       }
 
       if (input.agentType) { const v = validateIdentifier(input.agentType as string, 'agentType'); if (!v.valid) return { success: false, error: v.error }; }
@@ -352,9 +430,19 @@ export const hiveMindTools: MCPTool[] = [
           description: 'Consensus strategy. Default: raft (anti-drift). Use byzantine for f<n/3 fault tolerance.',
         },
         queenId: { type: 'string', description: 'Initial queen agent ID' },
+        bootstrapSecret: { type: 'string', description: 'Same-machine bootstrap credential (see hive-mind_init doctor/CLI docs) -- required for both first-time init and re-init' },
       },
+      required: ['bootstrapSecret'],
     },
     handler: async (input) => {
+      // Fail-closed: gates hive-mind_init itself, first-time bootstrap
+      // included -- see getOrCreateBootstrapSecret()'s doc comment for why
+      // requireHiveToken on the other tools isn't sufficient on its own.
+      const bootstrapError = requireBootstrapSecret(input.bootstrapSecret);
+      if (bootstrapError) {
+        return { success: false, error: bootstrapError };
+      }
+
       if (input.queenId) { const v = validateIdentifier(input.queenId as string, 'queenId'); if (!v.valid) return { success: false, error: v.error }; }
 
       const state = loadHiveState();
@@ -389,7 +477,11 @@ export const hiveMindTools: MCPTool[] = [
         consensus: state.consensusStrategy,
         queenId,
         status: 'initialized',
-        hiveToken: state.hiveToken,
+        // Deliberately NOT echoing state.hiveToken here (even though this
+        // call is itself now bootstrap-secret-gated): the CLI never reads
+        // it off this response (it uses getHiveTokenForCli()'s direct
+        // same-machine state.json read instead), so there's no reason to
+        // widen the token's exposure onto an MCP tool response at all.
         config: {
           topology: state.topology,
           consensus: state.consensusStrategy,
@@ -620,6 +712,16 @@ export const hiveMindTools: MCPTool[] = [
       const totalNodes = state.workers.length || 1;
 
       if (action === 'propose') {
+        // Fail-closed: an unauthenticated caller could otherwise inject
+        // arbitrary consensus proposals (type/value of their choosing) for
+        // legitimate workers to vote on, or exhaust raft's one-pending-
+        // proposal-per-term slot as a denial-of-service. No token, no
+        // proposal recorded.
+        const proposeTokenError = requireHiveToken(state, input.hiveToken);
+        if (proposeTokenError) {
+          return { action, error: proposeTokenError };
+        }
+
         const proposalId = `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const quorumPreset = (input.quorumPreset as QuorumPreset) || 'majority';
         const term = (input.term as number) || (state.queen?.term ?? 1);
@@ -941,14 +1043,23 @@ export const hiveMindTools: MCPTool[] = [
         message: { type: 'string', description: 'Message to broadcast' },
         priority: { type: 'string', enum: ['low', 'normal', 'high', 'critical'], description: 'Message priority' },
         fromId: { type: 'string', description: 'Sender agent ID' },
+        hiveToken: { type: 'string', description: 'Capability token minted by hive-mind_init' },
       },
-      required: ['message'],
+      required: ['message', 'hiveToken'],
     },
     handler: async (input) => {
       const state = loadHiveState();
 
       if (!state.initialized) {
         return { success: false, error: 'Hive-mind not initialized' };
+      }
+
+      // Fail-closed: no token, no message stored -- otherwise any caller
+      // could inject spoofed broadcasts (arbitrary fromId) into shared
+      // memory that every real worker reads.
+      const tokenError = requireHiveToken(state, input.hiveToken);
+      if (tokenError) {
+        return { success: false, error: tokenError };
       }
 
       { const v = validateText(input.message as string, 'message'); if (!v.valid) return { success: false, error: v.error }; }
@@ -988,13 +1099,23 @@ export const hiveMindTools: MCPTool[] = [
       properties: {
         graceful: { type: 'boolean', description: 'Graceful shutdown (wait for pending tasks)', default: true },
         force: { type: 'boolean', description: 'Force immediate shutdown', default: false },
+        hiveToken: { type: 'string', description: 'Capability token minted by hive-mind_init' },
       },
+      required: ['hiveToken'],
     },
     handler: async (input) => {
       const state = loadHiveState();
 
       if (!state.initialized) {
         return { success: false, error: 'Hive-mind not initialized or already shut down' };
+      }
+
+      // Fail-closed: no token, no shutdown -- otherwise any caller could
+      // terminate a running hive (wiping workers/pending consensus/shared
+      // memory) as a denial-of-service with zero proof of membership.
+      const tokenError = requireHiveToken(state, input.hiveToken);
+      if (tokenError) {
+        return { success: false, error: tokenError };
       }
 
       const graceful = input.graceful !== false;
@@ -1054,6 +1175,7 @@ export const hiveMindTools: MCPTool[] = [
         action: { type: 'string', enum: ['get', 'set', 'delete', 'list'], description: 'Memory action' },
         key: { type: 'string', description: 'Memory key' },
         value: { description: 'Value to store (for set)' },
+        hiveToken: { type: 'string', description: 'Capability token minted by hive-mind_init (required for set/delete)' },
       },
       required: ['action'],
     },
@@ -1076,6 +1198,14 @@ export const hiveMindTools: MCPTool[] = [
 
       if (action === 'set') {
         if (!key) return { action, error: 'Key required' };
+        // Fail-closed: no token, no write -- otherwise any caller could
+        // tamper with or inject entries into shared memory every worker
+        // and the queen read, the same attack class hive-mind_broadcast
+        // was gated for.
+        const tokenError = requireHiveToken(state, input.hiveToken);
+        if (tokenError) {
+          return { action, key, error: tokenError };
+        }
         state.sharedMemory[key] = input.value;
         saveHiveState(state);
 
@@ -1099,6 +1229,11 @@ export const hiveMindTools: MCPTool[] = [
 
       if (action === 'delete') {
         if (!key) return { action, error: 'Key required' };
+        // Fail-closed, same reasoning as 'set' above.
+        const tokenError = requireHiveToken(state, input.hiveToken);
+        if (tokenError) {
+          return { action, key, error: tokenError };
+        }
         const existed = key in state.sharedMemory;
         delete state.sharedMemory[key];
         saveHiveState(state);
@@ -1133,12 +1268,21 @@ export const hiveMindTools: MCPTool[] = [
       type: 'object',
       properties: {
         qualityThreshold: { type: 'number', description: 'Quality threshold for pattern retention (advisory — not enforced yet)' },
+        hiveToken: { type: 'string', description: 'Capability token minted by hive-mind_init' },
       },
+      required: ['hiveToken'],
     },
-    handler: async () => {
+    handler: async (input) => {
       const t0 = Date.now();
       const state = loadHiveState();
       if (!state.initialized) return { optimized: false, error: 'Hive-mind not initialized', before: { patterns: 0, memory: '0' }, after: { patterns: 0, memory: '0' }, removed: 0, consolidated: 0, timeMs: 0 };
+      // Fail-closed: no token, no prune -- this mutates state.sharedMemory
+      // via the same saveHiveState() path set/delete/broadcast were gated
+      // for (found in round 2 review, #3339).
+      const tokenError = requireHiveToken(state, input.hiveToken);
+      if (tokenError) {
+        return { optimized: false, error: tokenError, before: { patterns: 0, memory: '0' }, after: { patterns: 0, memory: '0' }, removed: 0, consolidated: 0, timeMs: 0 };
+      }
       const beforeKeys = Object.keys(state.sharedMemory);
       const before = beforeKeys.length;
       for (const k of beforeKeys) {
