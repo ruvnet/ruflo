@@ -2094,16 +2094,33 @@ export async function bridgeStorePattern(options: {
     const reasoningBank = registry.get('reasoningBank');
     const patternId = generateId('pattern');
 
-    if (reasoningBank && typeof reasoningBank.store === 'function') {
-      await reasoningBank.store({
-        id: patternId,
-        content: options.pattern,
-        type: options.type,
-        confidence: options.confidence,
+    // #3327 Finding A — the real method is `storePattern`, and it takes a
+    // ReasoningPattern, NOT the {id, content, type, confidence} shape used
+    // here before. `reasoningBank.store` has never existed on agentdb's
+    // ReasoningBank, so `typeof ... === 'function'` was always false and this
+    // branch was dead code — every write fell through to bridge-fallback while
+    // `agentdb_controllers` cheerfully reported `reasoningBank: enabled=true`.
+    //
+    // Contract (agentdb ReasoningBank.d.ts):
+    //   storePattern({ taskType, approach, successRate, uses?, avgReward?,
+    //                  tags?, metadata? }) => Promise<number>   // sqlite rowid
+    // The embedded text is `${taskType}: ${approach}`, so the caller's pattern
+    // text must land in `approach` for search to match on it.
+    if (reasoningBank && typeof reasoningBank.storePattern === 'function') {
+      const rowId = await reasoningBank.storePattern({
+        taskType: options.type,
+        approach: options.pattern,
+        successRate: options.confidence,
+        tags: [options.type, 'reasoning-pattern'],
         metadata: options.metadata,
-        timestamp: Date.now(),
       });
-      return { success: true, patternId, controller: 'reasoningBank' };
+      // storePattern returns a numeric rowid; surface it as the caller-facing
+      // id so a later getPattern/deletePattern by this id resolves.
+      return {
+        success: true,
+        patternId: rowId != null ? String(rowId) : patternId,
+        controller: 'reasoningBank',
+      };
     }
 
     // Fallback: store via bridge SQL
@@ -2138,7 +2155,13 @@ export async function bridgeStorePattern(options: {
     // so returning result.id here handed the caller a handle that can never
     // be read back — return `patternId` (the real key) instead.
     return { success: true, patternId, controller: 'bridge-fallback' };
-  } catch {
+  } catch (err) {
+    // #3327 Finding A — this catch is what hid the defect for months. When
+    // ReasoningBank threw `embedPassage is not a function`, the error was
+    // discarded and the caller saw an ordinary fallback, indistinguishable
+    // from "no controller registered". Record it so `agentdb_health` and the
+    // degraded `reason` can name the real cause instead of guessing.
+    bridgeFailureReason = err instanceof Error ? err.message : String(err);
     return null;
   }
 }
@@ -2166,11 +2189,17 @@ export async function bridgeSearchPatterns(options: {
       } else {
         results = await reasoningBank.search(options.query, { topK: options.topK || 5, minScore: options.minConfidence || 0.3 });
       }
+      // #3327 Finding A — agentdb returns ReasoningPattern[]: the text lives in
+      // `approach` and the cosine score in `similarity`. Neither `content`/
+      // `pattern` nor `score`/`confidence` exists on that shape, so the old
+      // mapping produced `content: ''` and `score: 0` for every hit even when
+      // the search itself succeeded. Read the real fields first, keeping the
+      // legacy names as fallbacks for the pre-agentdb shape.
       return {
         results: Array.isArray(results) ? results.map((r: any) => ({
-          id: r.id || r.patternId || '',
-          content: r.content || r.pattern || '',
-          score: r.score ?? r.confidence ?? 0,
+          id: String(r.id ?? r.patternId ?? ''),
+          content: r.approach ?? r.content ?? r.pattern ?? '',
+          score: r.similarity ?? r.score ?? r.successRate ?? r.confidence ?? 0,
         })) : [],
         controller: 'reasoningBank',
       };
@@ -2228,7 +2257,12 @@ export async function bridgeSearchPatterns(options: {
       results: result.results.map(r => ({ id: r.id, content: r.content, score: r.score })),
       controller: 'bridge-fallback',
     } : null;
-  } catch {
+  } catch (err) {
+    // #3327 Finding A — see bridgeStorePattern's catch. `embedQuery is not a
+    // function` died here silently, which is why search reported
+    // `reasoningBank-unavailable:registry-null` (a null return) even though
+    // the registry was present and the controller was reported enabled.
+    bridgeFailureReason = err instanceof Error ? err.message : String(err);
     return null;
   }
 }
