@@ -2101,6 +2101,26 @@ async function checkMetaharness(): Promise<HealthCheck> {
   }
 }
 
+// Opt-in @ruvector/typesafe task router (optional peer). `--component typesafe` only.
+async function checkTypesafeRouter(): Promise<HealthCheck> {
+  const name = '@ruvector/typesafe router';
+  const { readTypesafeConfig } = await import('../ruvector/typesafe-router.js');
+  const cfg = readTypesafeConfig();
+  const gate = cfg.enabled ? `enabled (${cfg.embedder === 'hash' ? 'hash embedder, uncalibrated' : 'onnx embedder'})` : 'disabled (set CLAUDE_FLOW_ROUTER_TYPESAFE=1)';
+  try {
+    const { createRequire } = await import('module');
+    const pj = createRequire(import.meta.url)('@ruvector/typesafe/package.json') as { version?: string };
+    return { name, status: 'pass', message: `v${pj.version ?? '?'} installed; ${gate}` };
+  } catch {
+    return {
+      name,
+      status: cfg.enabled ? 'warn' : 'pass',
+      message: `Not installed; ${gate} — hooks_route uses the built-in router`,
+      ...(cfg.enabled ? { fix: 'npm install @ruvector/typesafe  # optional peer' } : {}),
+    };
+  }
+}
+
 async function checkClaudeCode(): Promise<HealthCheck> {
   try {
     const version = await runCommand('claude --version');
@@ -2290,7 +2310,7 @@ export const doctorCommand: Command = {
     {
       name: 'component',
       short: 'c',
-      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, metaharness)',
+      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, metaharness, typesafe)',
       type: 'string'
     },
     {
@@ -2482,6 +2502,7 @@ export const doctorCommand: Command = {
       // a user would actually debug them (is it installed? running? exposed?).
       'proxy': [checkProxySponsoredConsent, checkProxyBinary, checkProxyProcess, checkProxyBindAddress],
       'auth': checkAuth, // ADR-306
+      'typesafe': checkTypesafeRouter, // opt-in @ruvector/typesafe task router
     };
 
     let checksToRun = allChecks;

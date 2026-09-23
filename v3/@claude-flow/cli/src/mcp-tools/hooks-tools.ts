@@ -14,6 +14,7 @@ import {
   type LearnedRoutingOutcome,
   type LearnedRoutingPattern,
 } from '../services/learned-routing.js';
+import { applyTypesafeRouting, getTypesafeRouter } from '../ruvector/typesafe-router.js';
 
 // Real vector search functions - lazy loaded to avoid circular imports
 let searchEntriesFn: ((options: {
@@ -324,6 +325,12 @@ const TASK_PATTERNS: Record<string, RoutingPattern> = {
     agents: ['memory-specialist', 'architect', 'coder'],
   },
 };
+
+/** Wrap hooks_route so the opt-in typesafe router (src/ruvector/typesafe-router.ts) can override the legacy pick. */
+function withTypesafeRouting(legacy: (params: Record<string, unknown>) => Promise<object>) {
+  return async (params: Record<string, unknown>) =>
+    applyTypesafeRouting(params, (await legacy(params)) as Record<string, unknown>, TASK_PATTERNS, getTypesafeRouter());
+}
 
 /**
  * Get the semantic router with environment detection.
@@ -1116,7 +1123,8 @@ export const hooksRoute: MCPTool = {
     },
     required: ['task'],
   },
-  handler: async (params: Record<string, unknown>) => {
+  // Opt-in @ruvector/typesafe augmentation (CLAUDE_FLOW_ROUTER_TYPESAFE=1); returns the legacy result unchanged when unset.
+  handler: withTypesafeRouting(async (params: Record<string, unknown>) => {
     const task = params.task as string;
     const context = params.context as string | undefined;
     const useSemanticRouter = params.useSemanticRouter !== false;
@@ -1296,7 +1304,7 @@ export const hooksRoute: MCPTool = {
         coordination: 'queen-led',
       } : null,
     };
-  },
+  }),
 };
 
 export const hooksMetrics: MCPTool = {

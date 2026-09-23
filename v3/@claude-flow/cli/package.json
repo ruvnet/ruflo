@@ -143,10 +143,14 @@
   },
   "peerDependencies": {
     "@metaharness/router": "^0.4.0",
+    "@ruvector/typesafe": "^0.1.0",
     "metaharness": "^0.4.1"
   },
   "peerDependenciesMeta": {
     "@metaharness/router": {
+      "optional": true
+    },
+    "@ruvector/typesafe": {
       "optional": true
     },
     "metaharness": {
