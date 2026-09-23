@@ -87,6 +87,31 @@ function validateMemoryInput(key?: string, value?: string, query?: string, names
   }
 }
 
+/**
+ * #3374 — presence check for a schema-`required` string parameter.
+ *
+ * `validateMemoryInput` above is a bounds-and-charset validator: every branch
+ * is truthiness-guarded, so an omitted parameter passes it silently. Nothing
+ * else enforces `inputSchema.required` for these tools, so without this an
+ * omitted `query` travelled down to `generateHashEmbedding`'s
+ * `text.toLowerCase()` and came back as an unrelated TypeError.
+ */
+const MISSING_REQUIRED_PARAM = 'MISSING_REQUIRED_PARAM' as const;
+
+function missingRequiredString(
+  input: Record<string, unknown>,
+  param: string,
+  tool: string,
+): { error: string; code: typeof MISSING_REQUIRED_PARAM } | null {
+  const v = input[param];
+  if (typeof v === 'string' && v.length > 0) return null;
+  const got = v === undefined ? 'it was omitted' : v === '' ? 'it was an empty string' : `got ${v === null ? 'null' : typeof v}`;
+  return {
+    error: `${tool}: required parameter "${param}" must be a non-empty string (${got})`,
+    code: MISSING_REQUIRED_PARAM,
+  };
+}
+
 // #1884 — sanitize a key produced from arbitrary input (markdown headings,
 // frontmatter names, file names) so it survives validateMemoryInput on the
 // read/delete path. Replaces every dangerous char with `_`. Truncates to
@@ -428,6 +453,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key', 'value'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_store');
+      if (missingKey) {
+        return { success: false, key: input.key, stored: false, hasEmbedding: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { storeEntry } = await getMemoryFunctions();
 
@@ -506,6 +536,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_retrieve');
+      if (missingKey) {
+        return { key: input.key, namespace: input.namespace, value: null, found: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { getEntry } = await getMemoryFunctions();
 
@@ -578,6 +613,11 @@ export const memoryTools: MCPTool[] = [
       required: ['query'],
     },
     handler: async (input) => {
+      const missingQuery = missingRequiredString(input, 'query', 'memory_search');
+      if (missingQuery) {
+        return { query: input.query, results: [], total: 0, ...missingQuery };
+      }
+
       await ensureInitialized();
       const { searchEntries } = await getMemoryFunctions();
 
@@ -752,6 +792,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_delete');
+      if (missingKey) {
+        return { success: false, key: input.key, namespace: input.namespace, deleted: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { deleteEntry } = await getMemoryFunctions();
 
@@ -1234,6 +1279,11 @@ export const memoryTools: MCPTool[] = [
       required: ['query'],
     },
     handler: async (input) => {
+      const missingQuery = missingRequiredString(input, 'query', 'memory_search_unified');
+      if (missingQuery) {
+        return { success: false, query: input.query, results: [], total: 0, ...missingQuery };
+      }
+
       await ensureInitialized();
       const { searchEntries, listEntries } = await getMemoryFunctions();
       validateMemoryInput(undefined, undefined, input.query as string);
