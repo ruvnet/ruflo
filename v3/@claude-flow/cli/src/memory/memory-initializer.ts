@@ -2204,7 +2204,17 @@ interface EmbeddingModel {
   dimensions: number;
 }
 
+/**
+ * State of the LOCAL embedding chain only (transformers.js / agentic-flow /
+ * ruvector ONNX / hash). #3375: the AgentDB bridge's result is cached
+ * separately in `bridgeEmbeddingInfo` and must never be written here — it used
+ * to be recorded as `{ loaded: true, model: null }`, which made
+ * generateLocalEmbedding() skip loading any local model and always return the
+ * hash fallback, so rescueAgentdbEmbedder()'s `backend === 'onnx'` probe could
+ * never pass.
+ */
 let embeddingModelState: EmbeddingModel | null = null;
+let bridgeEmbeddingInfo: { dimensions: number } | null = null;
 
 /**
  * Lazy load ONNX embedding model
@@ -2224,10 +2234,11 @@ export async function loadEmbeddingModel(options?: {
   const startTime = Date.now();
 
   // Already loaded
-  if (embeddingModelState?.loaded) {
+  const cached = bridgeEmbeddingInfo ?? (embeddingModelState?.loaded ? embeddingModelState : null);
+  if (cached) {
     return {
       success: true,
-      dimensions: embeddingModelState.dimensions,
+      dimensions: cached.dimensions,
       modelName: 'cached',
       loadTime: 0
     };
@@ -2238,15 +2249,31 @@ export async function loadEmbeddingModel(options?: {
   if (bridge) {
     const bridgeResult = await bridge.bridgeLoadEmbeddingModel();
     if (bridgeResult && bridgeResult.success) {
-      // Mark local state as loaded too so subsequent calls use cache
-      embeddingModelState = {
-        loaded: true,
-        model: null, // Bridge handles embedding
-        tokenizer: null,
-        dimensions: bridgeResult.dimensions
-      };
+      // #3375: cache the bridge result on its own. Do NOT mark the local
+      // chain as loaded — the bridge's model is not callable from here.
+      bridgeEmbeddingInfo = { dimensions: bridgeResult.dimensions };
       return bridgeResult;
     }
+  }
+
+  return loadLocalEmbeddingChain(verbose, startTime);
+}
+
+/**
+ * Load the LOCAL embedding chain into `embeddingModelState`, never consulting
+ * the AgentDB bridge. Used by loadEmbeddingModel() after the bridge declines,
+ * and directly by generateLocalEmbedding() so the "bridge-free" contract the
+ * #2312 comment on that function describes actually holds (#3375).
+ */
+async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()): Promise<{
+  success: boolean;
+  dimensions: number;
+  modelName: string;
+  loadTime?: number;
+  error?: string;
+}> {
+  if (embeddingModelState?.loaded) {
+    return { success: true, dimensions: embeddingModelState.dimensions, modelName: 'cached', loadTime: 0 };
   }
 
   try {
@@ -2480,9 +2507,12 @@ export async function generateLocalEmbedding(text: string): Promise<{
   model: string;
   backend: 'onnx' | 'mock';
 }> {
-  // Ensure model is loaded
+  // Ensure the LOCAL model is loaded. #3375: this must not go through
+  // loadEmbeddingModel(), which is bridge-first — when the bridge answered
+  // there, no local model was ever loaded and this function always returned
+  // the hash fallback.
   if (!embeddingModelState?.loaded) {
-    await loadEmbeddingModel();
+    await loadLocalEmbeddingChain();
   }
 
   // #2461: loadEmbeddingModel() can leave embeddingModelState null when an
