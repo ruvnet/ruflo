@@ -86,6 +86,23 @@ function hasNativeWalSidecars(dbPath: string): boolean {
 }
 
 /**
+ * #3397 — this process's own graph-edge-writer handle keeps -wal/-shm on disk
+ * between its idle-release ticks. Release (checkpoint + close) it before the
+ * #2735 guard runs, so the guard only sees sidecars some OTHER native
+ * connection is holding. The guard itself is unchanged: even a same-process
+ * open WAL connection makes a whole-image sql.js write unsafe until its WAL
+ * has been checkpointed, which is exactly what releasing does.
+ */
+async function releaseOwnNativeHandle(dbPath: string): Promise<void> {
+  try {
+    const { releaseBridgeDb } = await import('./graph-edge-writer.js');
+    releaseBridgeDb(dbPath);
+  } catch {
+    // Writer module unavailable — nothing of ours to release; the guard decides.
+  }
+}
+
+/**
  * #1854: previously every site that needed the memory directory hardcoded
  * `getMemoryRoot()`, so the documented config entry
  * points (`memory.persistPath` config field, `memory configure --path`,
@@ -2912,6 +2929,7 @@ export async function storeEntry(options: {
     // this closes and its known residual (the narrow assess-then-write
     // race). This check gates ensureSchemaColumns()'s own whole-image
     // write below too, not just this function's.
+    await releaseOwnNativeHandle(dbPath);
     if (hasNativeWalSidecars(dbPath)) {
       return {
         success: false,
@@ -3586,6 +3604,7 @@ export async function getEntry(options: {
     // this closes. Applies here too because the fallback's access_count
     // bump is itself a whole-image write, not a lightweight read, even
     // though this function's contract reads as a "get".
+    await releaseOwnNativeHandle(dbPath);
     if (hasNativeWalSidecars(dbPath)) {
       return {
         success: false,
@@ -3736,6 +3755,7 @@ export async function deleteEntry(options: {
 
     // #2735 — see storeEntry's identical gate for the corruption mechanism
     // this closes.
+    await releaseOwnNativeHandle(dbPath);
     if (hasNativeWalSidecars(dbPath)) {
       return {
         success: false,
