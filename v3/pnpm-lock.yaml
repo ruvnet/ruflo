@@ -147,6 +147,9 @@ importers:
       '@ruvector/rabitq-wasm':
         specifier: 0.1.0
         version: 0.1.0
+      '@ruvector/typesafe':
+        specifier: ^0.1.0
+        version: 0.1.0
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -6148,6 +6151,12 @@ packages:
       '@ruvector/tiny-dancer-linux-x64-musl': 0.1.22
       '@ruvector/tiny-dancer-win32-arm64-msvc': 0.1.22
       '@ruvector/tiny-dancer-win32-x64-msvc': 0.1.22
+
+  /@ruvector/typesafe@0.1.0:
+    resolution: {integrity: sha512-PEEabuznFjxABV9P7qC140N9zZYYi1THWPpyFi/7DB8P21VCZqBU1fKZ690jqWcgEe9tEfW9pIiI1nIrCSzVCA==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+    dev: false
 
   /@ruvector/wasm@0.1.16:
     resolution: {integrity: sha512-BvtXLvBDxDxsnFVIi7rsRE8AvPxYOWqHvj8PUOEb3TfsCWBEA2gT5VodMJEv+DWx/mVqdongxRkuHGlVcK9pug==}
