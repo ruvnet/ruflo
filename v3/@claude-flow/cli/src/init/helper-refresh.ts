@@ -84,6 +84,10 @@ export const CRITICAL_HELPERS = [
   // statusline.cjs is here so the funnel disclosure row (ADR-301) reaches
   // existing installs on the next `ruflo` command, not only fresh `ruflo init`.
   'statusline.cjs',
+  // router.js is loaded by hook-handler.cjs to label each prompt with an agent.
+  // Without it here, installs kept the pre-#2257 substring router forever
+  // ("latest" -> tester). ADR-389 / #3401.
+  'router.js',
 ];
 
 function errorCode(error: unknown): string | undefined {
@@ -301,6 +305,7 @@ async function writeCriticalHelpers(
     'hook-handler.cjs': gen.generateHookHandler(),
     'intelligence.cjs': gen.generateIntelligenceStub(),
     'auto-memory-hook.mjs': gen.generateAutoMemoryHook(),
+    'router.js': gen.generateAgentRouter(), // ADR-389
     // Fallback needs the same generator inputs `ruflo init` uses. We match the
     // hardcoded default (maxAgents 15) because the fallback fires when the
     // installed package is unresolvable — no way to read the user's project
