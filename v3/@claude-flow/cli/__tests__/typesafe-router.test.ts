@@ -193,7 +193,10 @@ describe.skipIf(!realModule)('typesafe-router: real @ruvector/typesafe (hash emb
     expect(out.primaryAgent).toEqual(LEGACY.primaryAgent);
   });
 
-  it('(e) hooks_route end to end: the "latest"→tester keyword misroute is overridden to researcher', async () => {
+  // Since #3402 the keyword fallback matches whole words, so it no longer
+  // routes "latest" to tester; the legacy pick is whatever the local router
+  // returns now. What this test guards is the typesafe override itself.
+  it('(e) hooks_route end to end: typesafe routes "sync and review latest issues" to researcher, legacy kept as fallback', async () => {
     process.env.CLAUDE_FLOW_ROUTER_TYPESAFE = '1';
     try {
       const { hooksRoute } = await import('../src/mcp-tools/hooks-tools.js');
@@ -201,7 +204,9 @@ describe.skipIf(!realModule)('typesafe-router: real @ruvector/typesafe (hash emb
       expect(res.routedBy).toBe('typesafe');
       expect((res.primaryAgent as Record<string, unknown>).type).toBe('researcher');
       expect((res.primaryAgent as Record<string, unknown>).confidenceCalibrated).toBe(false);
-      expect((res.fallbackRoute as Record<string, unknown>).agent).toBe('tester');
+      const fallback = res.fallbackRoute as Record<string, unknown>;
+      expect(typeof fallback.agent).toBe('string');
+      expect(fallback.agent).not.toBe('researcher');
     } finally {
       delete process.env.CLAUDE_FLOW_ROUTER_TYPESAFE;
     }

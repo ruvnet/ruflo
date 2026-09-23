@@ -1,6 +1,6 @@
 # ADR-389 — Refresh the Keyword Router Helper on Upgrade
 
-**Status**: Proposed
+**Status**: Implemented (3.44.0)
 **Date**: 2026-09-23
 **Related**: ADR-174 (signed helpers manifest), ADR-390 (semantic router embedder), ADR-391 (router benchmark gate), #2257, #3401, PR #3402
 **Surfaces**: `v3/@claude-flow/cli/src/init/helper-refresh.ts`, `v3/@claude-flow/cli/.claude/helpers/helpers.manifest.json`

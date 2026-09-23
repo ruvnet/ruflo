@@ -1,6 +1,6 @@
 # ADR-390 — The Semantic Router Uses the Real Sentence Embedder
 
-**Status**: Proposed (gated by ADR-391)
+**Status**: Implemented as opt-in (3.44.0); default unchanged — did not pass the ADR-391 gate
 **Date**: 2026-09-23
 **Related**: ADR-389 (keyword router refresh), ADR-391 (router benchmark gate), #2312 (embedder recursion), #3375, PR #3407
 **Surfaces**: `v3/@claude-flow/cli/src/mcp-tools/hooks-tools.ts` (`getSemanticRouter`, `hooks_route`)

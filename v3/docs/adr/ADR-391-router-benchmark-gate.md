@@ -1,6 +1,6 @@
 # ADR-391 — Change the Default Router Only on a Measured Win
 
-**Status**: Proposed
+**Status**: Implemented (3.44.0) — first run: no candidate promoted
 **Date**: 2026-09-23
 **Related**: ADR-150 (MetaHarness AND-gate), ADR-389, ADR-390, PR #3406 (opt-in `@ruvector/typesafe` router)
 **Surfaces**: `hooks_route`, `v3/@claude-flow/cli/src/ruvector/router-parallel-recorder.ts`, a new bench under `v3/@claude-flow/cli/benchmarks/`
@@ -73,3 +73,57 @@ today.
   pinned model hashes).
 - A CI job re-runs the bench on changes to `hooks_route` and fails if the default's
   accuracy on the test split drops below the committed receipt.
+
+## Results — first run (2026-09-23)
+
+Corpus: 197 prompts, frozen at sha256 `b0c1923b2813b61907304dff56c53d199b709797bfb9600a7c1f496cf0c0bf04`
+(84 dev / 113 test, 64 trap cases), labelled blind by an agent that never ran or read any router.
+Receipt: `v3/@claude-flow/cli/benchmarks/router/results/router-bench-2026-09-23.json`.
+Re-run: `node benchmarks/router/run-bench.mjs` (D needs `ROUTER_BENCH_TYPESAFE_MODEL_DIR`).
+
+**Test split (n=113):**
+
+| Candidate | Accuracy | Macro-F1 | Trap accuracy | Wrong at ≥0.7 confidence | p50 / p95 warm | Cold |
+|---|---|---|---|---|---|---|
+| A current (hash) | **25.7%** | 0.178 | 29.0% | 29.2% | 0.66 / 1.06 ms | 38 ms |
+| B MiniLM (ADR-390) | **36.3%** | 0.334 | 25.8% | 46.9%* | 2.19 / 6.21 ms | 326 ms |
+| C typesafe, hash | 26.5% | 0.199 | 29.0% | 26.6% | 0.77 / 1.20 ms | 90 ms |
+| D typesafe, ONNX (bge-small-en-v1.5) | 29.2% | 0.227 | 32.3% | 26.6% | 6.07 / 8.35 ms | 680 ms |
+
+Raw typesafe pick before its lift/abstain gate: C 30.1%, D **44.3%**. The gate
+let typesafe decide on only 13.2% (C) and 5.6% (D) of prompts.
+
+**Gate verdict: no candidate is promoted.**
+
+- **B** clears accuracy (+10.6 pts) and dependency, but fails latency: p95 +485%
+  (1.06 → 6.21 ms).
+- **C** fails accuracy (+0.9 pts) and latency.
+- **D** clears accuracy (+3.5 pts), but fails latency (+686%) and is an optional
+  peer, so it can only ever be opt-in.
+
+`DEFAULT_ROUTER_EMBEDDER` stays `hash`, and typesafe stays opt-in.
+
+**Findings (recorded, not acted on in this run):**
+
+1. **The router structurally cannot answer 59 of 197 prompts.** No `TASK_PATTERNS`
+   entry returns `researcher`, `reviewer` or `none` as the primary agent, so A and
+   B have a ceiling of about 70% before any embedder question. Adding
+   research/review patterns is likely worth more than any embedder change. First
+   follow-up.
+2. **The latency criterion is mis-specified for this workload.** A relative bound
+   (≤5% p95) on a ~1 ms baseline fails any embedder that does real work, even
+   though B's absolute cost is about 5 ms on a pre-task hook. Proposed revision,
+   for the owner and **not applied here**: an absolute bound (e.g. p95 ≤ 10 ms
+   warm, cold reported), then re-run. Changing the gate in the same commit as the
+   result it would flip is exactly what this ADR forbids.
+3. *B's "wrong at ≥0.7" isn't comparable with A's.* The 0.4 score gate and the
+   `1 - distance` confidence were calibrated for hash vectors; MiniLM cosines sit
+   on a different scale. B needs its own threshold, tuned on the dev split, before
+   this metric means anything.
+4. **Typesafe is held back by its gate, not its accuracy.** D's raw pick is the
+   most accurate of anything measured (44.3%), but the lift/abstain thresholds were
+   set from a 10-task hash sample and admit only 5.6% of its decisions. Tune them on
+   the dev split, then re-run on test.
+5. The labeller flagged three debatable rows (two memory-area design prompts, one
+   benchmark-measurement fix, one topology question). They were left as labelled,
+   because relabelling after seeing router output would break the blind protocol.
