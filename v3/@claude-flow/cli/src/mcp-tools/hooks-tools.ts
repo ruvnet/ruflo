@@ -779,12 +779,22 @@ function suggestAgentsForFile(filePath: string): string[] {
   return AGENT_PATTERNS[ext] || ['coder', 'architect'];
 }
 
-function suggestAgentsForTask(task: string): { agents: string[]; confidence: number } {
-  const taskLower = task.toLowerCase();
+// Whole-word matchers for KEYWORD_PATTERNS. A bare `includes()` matched
+// substrings: 'test' hit "latest" (tester @ 0.95), 'auth' hit "author",
+// 'fix' hit "prefix", 'api' hit "capitalize". Single words get \b anchors plus
+// simple inflections (tests, testing, fixes, deployed); phrases containing
+// whitespace or '/' (e.g. 'ci/cd') match literally between word boundaries.
+const KEYWORD_MATCHERS = Object.entries(KEYWORD_PATTERNS).map(([keyword, result]) => {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const body = /[\s/]/.test(keyword) ? escaped : `${escaped}(?:s|es|ing|ed)?`;
+  return { regex: new RegExp(`\\b${body}\\b`, 'i'), result };
+});
 
+/** Exported for tests. */
+export function suggestAgentsForTask(task: string): { agents: string[]; confidence: number } {
   // Check static keyword patterns first
-  for (const [pattern, result] of Object.entries(KEYWORD_PATTERNS)) {
-    if (taskLower.includes(pattern)) {
+  for (const { regex, result } of KEYWORD_MATCHERS) {
+    if (regex.test(task)) {
       return result;
     }
   }
