@@ -2310,7 +2310,7 @@ export const doctorCommand: Command = {
     {
       name: 'component',
       short: 'c',
-      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, metaharness, typesafe)',
+      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, metaharness)',
       type: 'string'
     },
     {
