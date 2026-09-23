@@ -2881,6 +2881,9 @@ export async function storeEntry(options: {
   /** #2968: set when the bridge's checkpoint failed in a way indicating
    *  this write may not be durably persisted (sql.js fallback driver). */
   persistWarning?: string;
+  /** #3325: set by the bridge when an embedding was requested but none could
+   *  be produced — the row is stored without a vector. */
+  embeddingError?: string;
 }> {
   // ADR-323: validate before touching either backend so an invalid value
   // gets one clear error instead of a raw SQLite CHECK-constraint failure

@@ -61,12 +61,13 @@ type AgentdbEmbedder = { pipeline?: unknown; embed: (t: string) => Promise<Float
 
 async function setup(embedder: AgentdbEmbedder, cache?: Map<string, unknown>) {
   vi.resetModules();
-  // Load memory-initializer up front. If the bridge's fire-and-forget rescue
-  // and the write path dynamic-import it (or `ruvector`) at the same moment,
-  // vitest's module runner can hand the second caller a partially-evaluated
-  // module, or the un-mocked real package. Native ESM awaits one evaluation
-  // for both, so this only removes a test-runner artifact. (The cases below
-  // also avoid triggering the rescue at all — see the `pipeline` note.)
+  // Load memory-initializer up front. When the bridge's fire-and-forget rescue
+  // and the write path dynamic-import modules at the same moment, vitest's
+  // module runner was observed to hand one caller a partially-evaluated
+  // memory-initializer (TDZ error) or the real, un-mocked `ruvector`. Native
+  // ESM awaits one evaluation for both, so this removes a test-runner
+  // artifact. The cases below also keep the rescue out of the picture (either
+  // no embedder, or `pipeline` set) so they test the write path alone.
   await import('../src/memory/memory-initializer.js');
   const bridge = await import('../src/memory/memory-bridge.js');
   bridge.__setMemoryBridgeRegistryForTests({
@@ -132,6 +133,19 @@ describe('#3325 bridge-fallback pattern writes get an embedding', () => {
     expect(stored!.hasEmbedding).toBe(false);
     expect(stored!.embeddingError).toMatch(/agentdb embedder unavailable/);
     expect(stored!.embeddingError).toMatch(/backend=mock/);
+  });
+
+  it('does not store agentdb mock vectors as if they were real', async () => {
+    local.ruvectorAvailable = false;
+    // What the rescue leaves behind when it cannot replace a degraded embedder.
+    const mock = { pipeline: {}, backend: 'mock', embed: async () => new Float32Array(384).fill(0.25) };
+    const { bridge } = await setup(mock as AgentdbEmbedder);
+
+    const stored = await bridge.bridgeStorePattern({ pattern: PATTERN, type: 'error-recovery', confidence: 0.9, dbPath });
+
+    expect(storedEmbedding(stored!.patternId)).toBeNull();
+    expect(stored!.hasEmbedding).toBe(false);
+    expect(stored!.embeddingError).toMatch(/serving mock vectors/);
   });
 
   it('agentdb_pattern-store surfaces the missing embedding on the degraded response', async () => {

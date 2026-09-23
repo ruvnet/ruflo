@@ -841,12 +841,17 @@ async function rescueAgentdbEmbedder(agentdb: { embedder?: { pipeline?: unknown;
  * were a bare `catch {}` that stored embedding=NULL and reported nothing.
  */
 async function embedForBridge(
-  agentdb: { embedder?: { embed?: (t: string) => Promise<ArrayLike<number> | null | undefined> } } | null | undefined,
+  agentdb: { embedder?: { embed?: (t: string) => Promise<ArrayLike<number> | null | undefined>; isMock?: boolean; backend?: string } } | null | undefined,
   text: string,
 ): Promise<{ vector: number[]; model: string } | { vector: null; reason: string }> {
   let agentdbProblem: string;
   const embedder = agentdb?.embedder;
-  if (embedder && typeof embedder.embed === 'function') {
+  // Same mock signal bridgeGenerateEmbedding honours (AUDIT #3): the rescue
+  // tags a degraded embedder backend='mock' when it cannot replace it.
+  const agentdbIsMock = embedder?.isMock === true || embedder?.backend === 'mock';
+  if (agentdbIsMock) {
+    agentdbProblem = 'agentdb embedder is serving mock vectors';
+  } else if (embedder && typeof embedder.embed === 'function') {
     try {
       const emb = await embedder.embed(text);
       if (emb && emb.length > 0) {

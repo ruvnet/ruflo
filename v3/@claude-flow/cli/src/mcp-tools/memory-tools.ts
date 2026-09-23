@@ -483,6 +483,8 @@ export const memoryTools: MCPTool[] = [
           backend: await describeBackend(),
           storeTime: `${duration.toFixed(2)}ms`,
           error: result.error,
+          // #3325: why hasEmbedding is false, when the bridge could not embed.
+          ...(result.embeddingError ? { embeddingError: result.embeddingError } : {}),
         };
       } catch (error) {
         return {
