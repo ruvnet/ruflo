@@ -1597,13 +1597,15 @@ export const hooksPostTask: MCPTool = {
       // Non-fatal
     }
 
-    // Record trajectory via intelligence module (SONA + ReasoningBank)
+    // Record trajectory via intelligence module (SONA + ReasoningBank).
+    // #3353: keep the observed result instead of discarding it.
+    let trajectoryRecorded = false;
     try {
       const intelligence = await import('../memory/intelligence.js');
-      await intelligence.recordTrajectory(
+      trajectoryRecorded = (await intelligence.recordTrajectory(
         [{ type: 'result' as const, content: (params.task as string) || taskId, metadata: { success, agent, quality }, timestamp: Date.now() }],
         success ? 'success' : 'failure'
-      );
+      )) === true;
     } catch {
       // Intelligence module not available — non-fatal
     }
@@ -1741,17 +1743,32 @@ export const hooksPostTask: MCPTool = {
       writeFileSync(storePath, JSON.stringify(store, null, 2), 'utf-8');
     } catch { /* non-critical */ }
 
+    // #3353: report only observed learning results. The previous
+    // `feedbackResult?.updated || (success ? 2 : 1)` / `newPatterns: success ? 1 : 0`
+    // invented counts whenever the feedback controller was unavailable (and the
+    // `||` turned an observed 0 into 2). No path reports pattern *creation*, so
+    // newPatterns is null (unknown) rather than a guess; the trajectory has no
+    // real id to surface, so trajectoryId is null.
+    const feedbackRecorded = feedbackResult?.success === true;
+    const learningAvailable = feedbackRecorded;
     return {
       taskId,
       success,
       duration,
       learningUpdates: {
-        patternsUpdated: feedbackResult?.updated || (success ? 2 : 1),
-        newPatterns: success ? 1 : 0,
-        trajectoryId: `traj-${Date.now()}`,
+        patternsUpdated: feedbackRecorded ? (feedbackResult?.updated ?? 0) : 0,
+        newPatterns: null as number | null,
+        trajectoryId: null as string | null,
         controller: feedbackResult?.controller || 'none',
         outcomePersisted,
+        available: learningAvailable,
+        ...(learningAvailable ? {} : {
+          reason: feedbackResult
+            ? `feedback controller '${feedbackResult.controller}' did not record the outcome`
+            : 'feedback controller unavailable',
+        }),
       },
+      trajectory: { recorded: trajectoryRecorded },
       quality,
       pheromone,
       feedback: feedbackResult ? {
