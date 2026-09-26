@@ -3280,37 +3280,99 @@ export async function bridgeBatchOperation(params: { operation: string; entries:
  * Synthesize context from memories.
  * ContextSynthesizer.synthesize is a static method that takes MemoryPattern[] (not a string).
  */
+type ContextEpisode = {
+  task: string;
+  reward: number;
+  success: boolean;
+  critique?: string;
+  input?: string;
+  output?: string;
+};
+
+function contextEpisodeFrom(value: unknown): ContextEpisode | null {
+  if (typeof value === 'string') {
+    try { value = JSON.parse(value); }
+    catch { return null; }
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+
+  const record = value as Record<string, unknown>;
+  const owns = (key: string) => Object.prototype.hasOwnProperty.call(record, key);
+  if (!owns('task') || !owns('reward') || !owns('success')
+      || typeof record.task !== 'string' || !record.task.trim()
+      || typeof record.reward !== 'number' || !Number.isFinite(record.reward)
+      || typeof record.success !== 'boolean') return null;
+
+  const episode: ContextEpisode = {
+    task: record.task.trim(),
+    reward: record.reward,
+    success: record.success,
+  };
+  for (const field of ['critique', 'input', 'output'] as const) {
+    if (owns(field)) {
+      if (typeof record[field] !== 'string') return null;
+      episode[field] = record[field];
+    }
+  }
+  return episode;
+}
+
+function contextEpisodeFromRecall(row: unknown): ContextEpisode | null {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return null;
+  const record = row as Record<string, unknown>;
+  for (const field of [null, 'metadata', 'value', 'content'] as const) {
+    const candidate = field === null ? record
+      : Object.prototype.hasOwnProperty.call(record, field) ? record[field] : undefined;
+    const episode = contextEpisodeFrom(candidate);
+    if (episode) return episode;
+  }
+  return null;
+}
+
 export async function bridgeContextSynthesize(params: { query: string; maxEntries?: number }): Promise<any> {
   const registry = await getRegistry();
   if (!registry) return null;
   try {
     const CS = registry.get('contextSynthesizer');
     if (!CS || typeof CS.synthesize !== 'function') {
-      return { success: false, error: 'ContextSynthesizer not available' };
+      return { success: false, reason: 'synthesizer-unavailable', error: 'ContextSynthesizer not available' };
     }
-    // Gather memory patterns from hierarchical memory as input
     const hm = registry.get('hierarchicalMemory');
-    let memories: any[] = [];
-    if (hm && typeof hm.recall === 'function') {
-      // Detect real HierarchicalMemory (MemoryQuery object) vs stub (string, number)
-      let recalled: any[];
-      if (typeof hm.promote === 'function') {
-        // Real agentdb HierarchicalMemory
-        recalled = await hm.recall({ query: params.query, k: params.maxEntries || 10 });
-      } else {
-        // Stub
-        recalled = hm.recall(params.query, params.maxEntries || 10);
-      }
-      memories = (recalled || []).map((r: any) => ({
-        content: r.value || r.content || '',
-        key: r.key || r.id || '',
-        reward: 1,
-        verdict: 'success',
-      }));
+    if (!hm || typeof hm.recall !== 'function') {
+      return { success: false, reason: 'memory-unavailable', error: 'HierarchicalMemory not available' };
     }
-    const result = CS.synthesize(memories, { includeRecommendations: true });
-    return { success: true, synthesis: result };
-  } catch (e: any) { return { success: false, error: e.message }; }
+    let recalled: unknown;
+    try {
+      // Native HierarchicalMemory accepts a query object; the tiered fallback
+      // accepts positional arguments. Either implementation may be async.
+      recalled = typeof hm.promote === 'function'
+        ? await hm.recall({ query: params.query, k: params.maxEntries || 10 })
+        : await hm.recall(params.query, params.maxEntries || 10);
+    } catch (e: any) {
+      return { success: false, reason: 'recall-failed', error: e.message };
+    }
+    if (!Array.isArray(recalled)) {
+      return { success: false, reason: 'invalid-recall-result', error: 'HierarchicalMemory recall did not return an array' };
+    }
+    const recalledCount = recalled.length;
+    if (recalledCount === 0) {
+      return { success: false, reason: 'no-memories', error: 'No memories matched the query', recalled: 0, eligible: 0, skipped: 0 };
+    }
+    const memories = recalled.map(contextEpisodeFromRecall).filter((episode): episode is ContextEpisode => episode !== null);
+    const counts = { recalled: recalledCount, eligible: memories.length, skipped: recalledCount - memories.length };
+    if (memories.length === 0) {
+      return { success: false, reason: 'no-eligible-episodes', error: 'Recalled memories have no validated task outcomes', ...counts };
+    }
+    try {
+      const result = await CS.synthesize(memories, { includeRecommendations: true });
+      if (!result || typeof result !== 'object') {
+        return { success: false, reason: 'invalid-synthesis', error: 'ContextSynthesizer returned no result', ...counts };
+      }
+      return { success: true, synthesis: result, ...counts };
+    } catch (e: any) {
+      return { success: false, reason: 'synthesizer-failed', error: e.message, ...counts };
+    }
+  } catch (e: any) { return { success: false, reason: 'bridge-error', error: e.message }; }
 }
 
 /**
