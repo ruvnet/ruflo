@@ -49,6 +49,7 @@ export interface MCPServerOptions {
   tools?: string[] | 'all';
   daemonize?: boolean;
   timeout?: number;
+  requestTimeoutMs?: number;
 }
 
 /**
@@ -82,6 +83,7 @@ const DEFAULT_OPTIONS: Required<MCPServerOptions> = {
   tools: 'all',
   daemonize: false,
   timeout: 30000,
+  requestTimeoutMs: 30000,
 };
 
 export function parseMcpToolSelection(value: string | undefined): string[] | 'all' {
@@ -774,6 +776,7 @@ export class MCPServerManager extends EventEmitter {
         port: this.options.port,
         enableMetrics: true,
         enableCaching: true,
+        requestTimeout: this.options.requestTimeoutMs,
       },
       logger
     );

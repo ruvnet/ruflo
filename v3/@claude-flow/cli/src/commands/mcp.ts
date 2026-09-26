@@ -83,6 +83,11 @@ const startCommand: Command = {
       type: 'string'
     },
     {
+      name: 'request-timeout-ms',
+      description: 'HTTP request timeout in milliseconds (default 30000; env RUFLO_MCP_REQUEST_TIMEOUT_MS)',
+      type: 'number'
+    },
+    {
       name: 'daemon',
       short: 'd',
       description: 'Run as background daemon',
@@ -100,6 +105,7 @@ const startCommand: Command = {
   examples: [
     { command: 'claude-flow mcp start', description: 'Start with defaults (stdio)' },
     { command: 'claude-flow mcp start -p 8080 -t http', description: 'Start HTTP server' },
+    { command: 'claude-flow mcp start -t http --request-timeout-ms 120000', description: 'Allow slower cold-start HTTP tools' },
     { command: 'claude-flow mcp start -d', description: 'Start as daemon' },
     { command: 'claude-flow mcp start -f', description: 'Force restart (kill existing)' }
   ],
@@ -110,6 +116,15 @@ const startCommand: Command = {
     const tools = (ctx.flags.tools as string | undefined)
       || process.env.CLAUDE_FLOW_MCP_TOOLS
       || 'all';
+    const timeoutInput = ctx.flags.requestTimeoutMs
+      ?? ctx.flags['request-timeout-ms']
+      ?? process.env.RUFLO_MCP_REQUEST_TIMEOUT_MS;
+    const requestTimeoutMs = timeoutInput === undefined ? undefined : Number(timeoutInput);
+    if (requestTimeoutMs !== undefined &&
+        (!Number.isSafeInteger(requestTimeoutMs) || requestTimeoutMs < 1 || requestTimeoutMs > 3_600_000)) {
+      output.printError('Request timeout must be an integer from 1 to 3600000 milliseconds');
+      return { success: false, exitCode: 1 };
+    }
     const daemon = (ctx.flags.daemon as boolean) ?? false;
     const force = (ctx.flags.force as boolean) ?? false;
 
@@ -163,6 +178,7 @@ const startCommand: Command = {
       host,
       port,
       tools: !tools || tools === 'all' ? 'all' : tools.split(','),
+      ...(requestTimeoutMs === undefined ? {} : { requestTimeoutMs }),
       daemonize: daemon,
     };
 

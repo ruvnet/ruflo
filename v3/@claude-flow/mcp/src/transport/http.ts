@@ -239,9 +239,11 @@ export class HttpTransport extends EventEmitter implements ITransport {
     if (this.config.requestTimeout) {
       this.app.use((req, res, next) => {
         res.setTimeout(this.config.requestTimeout!, () => {
+          // A handler may have completed just as the socket timeout fired.
+          if (res.headersSent || res.writableEnded || res.destroyed) return;
           res.status(408).json({
             jsonrpc: '2.0',
-            id: null,
+            id: req.body?.id ?? null,
             error: { code: -32000, message: 'Request timeout' },
           });
         });
@@ -331,6 +333,7 @@ export class HttpTransport extends EventEmitter implements ITransport {
     this.app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       this.logger.error('Express error', { error: err });
       this.errors++;
+      if (res.headersSent || res.writableEnded || res.destroyed) return;
       res.status(500).json({
         jsonrpc: '2.0',
         id: null,
@@ -450,6 +453,7 @@ export class HttpTransport extends EventEmitter implements ITransport {
       if (this.notificationHandler) {
         await this.notificationHandler(message as MCPNotification);
       }
+      if (res.headersSent || res.writableEnded || res.destroyed) return;
       res.status(sseResponse ? 202 : 204).end();
     } else {
       if (!this.requestHandler) {
@@ -463,6 +467,9 @@ export class HttpTransport extends EventEmitter implements ITransport {
 
       try {
         const response = await this.requestHandler(message as MCPRequest);
+        // A timed-out request can still finish its tool work; its HTTP reply
+        // already belongs to the timeout path and must not be written again.
+        if (res.headersSent || res.writableEnded || res.destroyed) return;
         if (sseResponse) {
           sseResponse.write(`event: message\ndata: ${JSON.stringify(response)}\n\n`);
           res.status(202).end();
@@ -472,6 +479,7 @@ export class HttpTransport extends EventEmitter implements ITransport {
         this.messagesSent++;
       } catch (error) {
         this.errors++;
+        if (res.headersSent || res.writableEnded || res.destroyed) return;
         res.status(500).json({
           jsonrpc: '2.0',
           id: message.id,
