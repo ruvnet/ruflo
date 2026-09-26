@@ -13,7 +13,7 @@ tool; pure static analysis.
 
 Implementation: [`scripts/mcp-scan.mjs`](../../scripts/mcp-scan.mjs).
 
-1. Invoke the pinned `harness` binary (`metaharness@~0.3.0`, resolved from a
+1. Invoke the pinned `harness` binary (`metaharness@~0.4.1`, resolved from a
    local install or the one-time `~/.ruflo/metaharness-cache-<pin>` cache —
    never `@latest`): `harness mcp-scan <path> --json`.
 2. Parse `findings[]` with `{ severity, id, server, tool, message }`.

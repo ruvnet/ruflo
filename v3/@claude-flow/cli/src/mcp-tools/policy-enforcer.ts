@@ -30,10 +30,10 @@
  * misconfiguration defeats the feature. See `evaluateToolCall()`.
  *
  * Known scope limits (disclosed, not fixed here):
- *   - Only wired into the stdio `tools/call` dispatch
- *     (`MCPServerManager.handleMCPMessage`). The separate HTTP/websocket
- *     path (`startHttpServer()`, via `@claude-flow/mcp`) does not call
- *     this module and is unaffected even when this flag is set.
+ *   - Wired into all three stdio `tools/call` dispatchers: the CLI fast
+ *     path, the standalone MCP launcher, and MCPServerManager. The separate
+ *     HTTP/websocket path (`startHttpServer()`, via `@claude-flow/mcp`)
+ *     does not call this module and is unaffected even when this flag is set.
  *
  * `maxToolCallsPerTurn` reset semantics (dream-cycle 2026-09-01, follow-up
  * to 2026-08-31 review round 1): despite the field's name, the original

@@ -50,6 +50,38 @@ export function evaluateTestReport(report, baselineEntries, repoRoot = REPO_ROOT
   };
 }
 
+/**
+ * Render each unexpected failure with the assertion that caused it (#3208).
+ *
+ * The report is written with --outputFile, so nothing vitest prints reaches
+ * the job log, and a rerun replaces the artifact — which leaves the filename
+ * as the only surviving record of an attempt. The failure messages are
+ * already in the report this process parsed, so putting them in the log
+ * costs nothing and survives the rerun, because logs are per-attempt.
+ *
+ * Every field is optional by design: a file-level abort ("No test suite
+ * found") has `message` and no assertions, and a report from another
+ * reporter version may carry neither.
+ */
+export function formatUnexpectedFailures(report, unexpected, repoRoot = REPO_ROOT) {
+  const lines = [];
+  for (const name of unexpected) {
+    lines.push(`  + ${name}`);
+    const file = (report?.testResults ?? []).find(
+      (result) => typeof result?.name === 'string' && normalizeTestPath(result.name, repoRoot) === name,
+    );
+    const firstLine = (text) => String(text).split('\n')[0].trim();
+    if (file?.message) lines.push(`      ${firstLine(file.message)}`);
+    for (const assertion of file?.assertionResults ?? []) {
+      if (assertion?.status !== 'failed') continue;
+      lines.push(`      ✗ ${assertion.fullName || assertion.title || '(unnamed test)'}`);
+      const [message] = assertion.failureMessages ?? [];
+      if (message) lines.push(`        ${firstLine(message)}`);
+    }
+  }
+  return lines;
+}
+
 function parseArgs(argv) {
   const args = { report: '', baseline: resolve(REPO_ROOT, 'scripts/ci-test-baseline.txt'), run: true };
   for (let i = 0; i < argv.length; i += 1) {
@@ -106,7 +138,7 @@ function main() {
 
   if (!result.ok) {
     console.error(`CI test ratchet: FAILED — ${result.unexpected?.length ?? 0} unexpected failing file(s)`);
-    for (const name of result.unexpected ?? []) console.error(`  + ${name}`);
+    for (const line of formatUnexpectedFailures(report, result.unexpected ?? [])) console.error(line);
     if (result.error) console.error(`  ${result.error}`);
     process.exit(1);
   }

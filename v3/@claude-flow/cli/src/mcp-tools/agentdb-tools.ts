@@ -1027,7 +1027,7 @@ interface ComplexityBudget {
 
 export const agentdbGraphQuery: MCPTool = {
   name: 'agentdb_graph-query',
-  description: 'Unified graph traversal across the knowledge graph (ADR-130). Dispatches to the most capable backend: graph-node native for k-hop, sql.js CTE for fallback, HNSW cosine for semantic, ruflo-graph-intelligence PageRank for pagerank mode. Use when you need structured graph traversal beyond flat memory search.',
+  description: 'Unified graph traversal across the knowledge graph (ADR-130). Native graph-node k-hop cannot filter by relation and returns an explicit unsupported error for that request; the SQL fallback can filter by relation. Inspect appliedDepth/truncated because SQL is bounded at 3 hops. Semantic and PageRank modes use their own backends. Use when you need structured graph traversal beyond flat memory search.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -1037,7 +1037,7 @@ export const agentdbGraphQuery: MCPTool = {
         enum: ['k-hop', 'semantic', 'pagerank'],
         description: 'Query mode: k-hop neighbor expansion, semantic cosine search, or PageRank scoring',
       },
-      depth: { type: 'number', description: 'Hop depth for k-hop mode (default 2, max 5)' },
+      depth: { type: 'number', description: 'Requested k-hop depth (default 2, max 5); SQL responses report appliedDepth and truncated when limited to 3' },
       topK: { type: 'number', description: 'Max results for semantic and pagerank modes (default 10)' },
       relation: { type: 'string', description: 'Optional edge relation filter' },
       complexityBudget: {
@@ -1079,34 +1079,43 @@ export const agentdbGraphQuery: MCPTool = {
 
       // ── k-hop mode ──────────────────────────────────────────────────────────
       if (mode === 'k-hop') {
-        // Try graph-node native first
+        // graph-node's kHopNeighbors API has no relation parameter. Its graph
+        // and the SQL graph are separate stores, and SQL writes can be async;
+        // switching stores here could report a false negative. Refuse the
+        // unsupported native query instead of silently widening it.
         try {
           const graphBackend = await getGraphBackend();
           if (await graphBackend.isGraphBackendAvailable()) {
+            if (relation) {
+              return { success: false, error: 'Native graph-node k-hop does not support relation filtering', unsupported: 'relation', mode, nodeId, relation, backend: 'graph-node' };
+            }
             const neighbors = await graphBackend.getNeighbors(nodeId, depth);
             return {
-              success: true, mode, nodeId, depth,
+              success: true, mode, nodeId, depth, appliedDepth: depth,
               results: neighbors.map(id => ({ nodeId: id })),
               count: neighbors.length,
               backend: 'graph-node',
               elapsedMs: Date.now() - t0,
             };
           }
-        } catch { /* fall through to sql.js */ }
+        } catch { /* fall through to SQL */ }
 
-        // SQL CTE fallback for k-hop up to depth 3
+        // SQL CTE fallback is bounded at depth 3. Report that bound so callers
+        // cannot mistake an incomplete depth-5 cycle check for a complete one.
         try {
           const { getBridgeDb } = await getGraphEdgeWriter();
           const db = await getBridgeDb();
           if (db) {
-            const cteSql = buildKHopCTE(nodeId, Math.min(depth, 3), relation, budget.maxNodesVisited);
+            const appliedDepth = Math.min(depth, 3);
+            const cteSql = buildKHopCTE(nodeId, appliedDepth, relation, budget.maxNodesVisited);
             // graph-edge-writer returns a better-sqlite3 Database after #2431.
             // `db.exec(sql, params)` (sql.js style) is a runner with no result
             // on better-sqlite3 — use `prepare(sql).raw().all(...)` to get the
             // same array-of-arrays shape the downstream code expects.
             const rows = db.prepare(cteSql).raw().all() as unknown[][];
             return {
-              success: true, mode, nodeId, depth,
+              success: true, mode, nodeId, depth, appliedDepth,
+              ...(appliedDepth < depth ? { truncated: true } : {}),
               results: rows.map((r: unknown[]) => ({ nodeId: r[0], depth: r[1] })),
               count: rows.length,
               backend: 'sql-cte',
@@ -1115,6 +1124,9 @@ export const agentdbGraphQuery: MCPTool = {
           }
         } catch { /* db unavailable */ }
 
+        if (relation) {
+          return { success: false, error: 'Relation-filtered k-hop query requires the SQL graph_edges backend', mode, nodeId, relation };
+        }
         return { success: false, error: 'No graph backend available for k-hop query', mode, nodeId };
       }
 

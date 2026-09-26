@@ -87,6 +87,31 @@ function validateMemoryInput(key?: string, value?: string, query?: string, names
   }
 }
 
+/**
+ * #3374 — presence check for a schema-`required` string parameter.
+ *
+ * `validateMemoryInput` above is a bounds-and-charset validator: every branch
+ * is truthiness-guarded, so an omitted parameter passes it silently. Nothing
+ * else enforces `inputSchema.required` for these tools, so without this an
+ * omitted `query` travelled down to `generateHashEmbedding`'s
+ * `text.toLowerCase()` and came back as an unrelated TypeError.
+ */
+const MISSING_REQUIRED_PARAM = 'MISSING_REQUIRED_PARAM' as const;
+
+function missingRequiredString(
+  input: Record<string, unknown>,
+  param: string,
+  tool: string,
+): { error: string; code: typeof MISSING_REQUIRED_PARAM } | null {
+  const v = input[param];
+  if (typeof v === 'string' && v.length > 0) return null;
+  const got = v === undefined ? 'it was omitted' : v === '' ? 'it was an empty string' : `got ${v === null ? 'null' : typeof v}`;
+  return {
+    error: `${tool}: required parameter "${param}" must be a non-empty string (${got})`,
+    code: MISSING_REQUIRED_PARAM,
+  };
+}
+
 // #1884 — sanitize a key produced from arbitrary input (markdown headings,
 // frontmatter names, file names) so it survives validateMemoryInput on the
 // read/delete path. Replaces every dangerous char with `_`. Truncates to
@@ -428,6 +453,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key', 'value'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_store');
+      if (missingKey) {
+        return { success: false, key: input.key, stored: false, hasEmbedding: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { storeEntry } = await getMemoryFunctions();
 
@@ -483,6 +513,8 @@ export const memoryTools: MCPTool[] = [
           backend: await describeBackend(),
           storeTime: `${duration.toFixed(2)}ms`,
           error: result.error,
+          // #3325: why hasEmbedding is false, when the bridge could not embed.
+          ...(result.embeddingError ? { embeddingError: result.embeddingError } : {}),
         };
       } catch (error) {
         return {
@@ -506,6 +538,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_retrieve');
+      if (missingKey) {
+        return { key: input.key, namespace: input.namespace, value: null, found: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { getEntry } = await getMemoryFunctions();
 
@@ -578,6 +615,11 @@ export const memoryTools: MCPTool[] = [
       required: ['query'],
     },
     handler: async (input) => {
+      const missingQuery = missingRequiredString(input, 'query', 'memory_search');
+      if (missingQuery) {
+        return { query: input.query, results: [], total: 0, ...missingQuery };
+      }
+
       await ensureInitialized();
       const { searchEntries } = await getMemoryFunctions();
 
@@ -752,6 +794,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_delete');
+      if (missingKey) {
+        return { success: false, key: input.key, namespace: input.namespace, deleted: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { deleteEntry } = await getMemoryFunctions();
 
@@ -1071,14 +1118,16 @@ export const memoryTools: MCPTool[] = [
             if (nameMatch) name = nameMatch[1].trim();
           }
 
-          // Split into sections for granular search
+          // Split into sections for granular search. Persist each full section:
+          // clipping at 4096 characters silently discarded its searchable tail (#3217).
           const sections = body.split(/^(?=## )/m).filter(s => s.trim().length > 20);
 
           if (sections.length === 0 && body.length > 10) {
             // #1884 — sanitize key so memory_delete can later remove it. Without
             // this, dangerous chars from frontmatter `name` strand the key.
             const key = sanitizeMemoryKey(`claude:${memFile.project}:${name}`);
-            await storeEntry({ key, value: body.slice(0, 4096), namespace: ns, generateEmbeddingFlag: true });
+            const stored = await storeEntry({ key, value: body, namespace: ns, generateEmbeddingFlag: true });
+            if (!stored.success) throw new Error(stored.error || `Failed to store ${key}`);
             imported++;
           } else {
             for (const section of sections) {
@@ -1089,7 +1138,8 @@ export const memoryTools: MCPTool[] = [
               // #1884 — sanitize so any dangerous chars in the heading don't
               // produce keys memory_delete will reject.
               const key = sanitizeMemoryKey(`claude:${memFile.project}:${name}:${sectionTitle.slice(0, 50)}`);
-              await storeEntry({ key, value: sectionBody.slice(0, 4096), namespace: ns, generateEmbeddingFlag: true });
+              const stored = await storeEntry({ key, value: sectionBody, namespace: ns, generateEmbeddingFlag: true });
+              if (!stored.success) throw new Error(stored.error || `Failed to store ${key}`);
               imported++;
             }
           }
@@ -1109,7 +1159,7 @@ export const memoryTools: MCPTool[] = [
       } catch { /* probe failed — leave 'unknown' */ }
 
       return {
-        success: true,
+        success: skipped === 0,
         imported,
         skipped,
         duplicatesSkipped,
@@ -1234,6 +1284,11 @@ export const memoryTools: MCPTool[] = [
       required: ['query'],
     },
     handler: async (input) => {
+      const missingQuery = missingRequiredString(input, 'query', 'memory_search_unified');
+      if (missingQuery) {
+        return { success: false, query: input.query, results: [], total: 0, ...missingQuery };
+      }
+
       await ensureInitialized();
       const { searchEntries, listEntries } = await getMemoryFunctions();
       validateMemoryInput(undefined, undefined, input.query as string);

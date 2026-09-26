@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc",
     "benchmark:canonicalization": "npm run build && node scripts/benchmark-envelope-canonicalization.mjs",
+    "benchmark:planner-descriptor": "npm run build && node scripts/benchmark-planner-descriptor.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist"

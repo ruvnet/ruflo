@@ -61,7 +61,18 @@ jobs:
           cache-dependency-path: v3/pnpm-lock.yaml
 
       - name: Install root release-audit dependencies
-        run: npm ci --ignore-scripts --omit=dev --omit=optional --no-audit --no-fund
+        # --workspaces=false is load-bearing, not tidying. v3/@claude-flow/security
+        # is BOTH a root workspace and a root dependency, and carries
+        # "prepare": "npm run build" -> `tsc && verify-oauth-exports.mjs`. It does
+        # not declare @types/node itself, relying on a hoist from the root, so with
+        # --omit=dev (no @types/node) and --omit=optional (no @napi-rs/keyring) that
+        # prepare compiles Node-heavy OAuth code with no Node types and dies on
+        # TS2591 "Cannot find name 'crypto'/'Buffer'/'process'" + TS2307. That sank
+        # the first v3.42.5 attempt (run 35641592705) at this step, 9 steps before
+        # anything was published. This step exists ONLY to provide `semver` to
+        # audit-umbrella-version-lockstep.mjs below, so it has no reason to link or
+        # build workspaces at all.
+        run: npm ci --ignore-scripts --omit=dev --omit=optional --no-audit --no-fund --workspaces=false
 
       - name: Validate version train
         shell: bash

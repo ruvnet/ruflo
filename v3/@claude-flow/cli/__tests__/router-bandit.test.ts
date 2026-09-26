@@ -14,7 +14,7 @@
  * escalated` strings, which is exactly what hooks_model-outcome delivers.
  */
 
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { rmSync, mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -302,4 +302,62 @@ describe('ModelRouter — priorDecay (discounted Thompson sampling, arXiv 2305.1
     const candidate = await runStationary(0.995);
     expect(candidate).toBeGreaterThanOrEqual(baseline - 0.05); // no material regression
   }, 30_000);
+});
+
+describe('ModelRouter — CLAUDE_FLOW_PRIOR_DECAY env override (Dream Cycle 2026-09-17, mirrors #2250 envMaxUncertainty)', () => {
+  const ENV_KEY = 'CLAUDE_FLOW_PRIOR_DECAY';
+  let originalEnv: string | undefined;
+
+  beforeEach(() => {
+    setupTempCwd();
+    originalEnv = process.env[ENV_KEY];
+  });
+
+  afterEach(() => {
+    cleanupTempCwd();
+    if (originalEnv === undefined) delete process.env[ENV_KEY];
+    else process.env[ENV_KEY] = originalEnv;
+    vi.resetModules();
+  });
+
+  it('wires the env var into the default priorDecay for a router built with no explicit config', async () => {
+    process.env[ENV_KEY] = '0.5';
+    vi.resetModules();
+    const { ModelRouter: FreshModelRouter } = await import('../src/ruvector/model-router.js');
+    const router = new FreshModelRouter();
+    const task = 'simple task';
+    const bucket = bucketOf(router, task);
+    router.recordOutcome(task, 'haiku', 'success');
+    const p = router.getBanditPriors(bucket);
+    // Same math as the explicit `new ModelRouter({ priorDecay: 0.5 })` case above:
+    // decay Beta(1,1)->Beta(0.5,0.5) (no-op at the uniform prior) then +1.0 success.
+    expect(p.haiku.alpha).toBeCloseTo(1.5, 5);
+    expect(p.haiku.beta).toBeCloseTo(0.5, 5);
+  });
+
+  it('falls back to disabled (1) for an out-of-range env value, matching the constructor guard', async () => {
+    process.env[ENV_KEY] = '1.5';
+    vi.resetModules();
+    const { ModelRouter: FreshModelRouter } = await import('../src/ruvector/model-router.js');
+    const router = new FreshModelRouter();
+    const task = 'simple task';
+    const bucket = bucketOf(router, task);
+    router.recordOutcome(task, 'haiku', 'success');
+    const p = router.getBanditPriors(bucket);
+    expect(p.haiku.alpha).toBeCloseTo(2.0, 5); // no decay: 1 + 1*1.0
+    expect(p.haiku.beta).toBeCloseTo(1.0, 5);
+  });
+
+  it('defaults to disabled (1) when unset — zero behavior change for existing deployments', async () => {
+    delete process.env[ENV_KEY];
+    vi.resetModules();
+    const { ModelRouter: FreshModelRouter } = await import('../src/ruvector/model-router.js');
+    const router = new FreshModelRouter();
+    const task = 'simple task';
+    const bucket = bucketOf(router, task);
+    router.recordOutcome(task, 'haiku', 'success');
+    const p = router.getBanditPriors(bucket);
+    expect(p.haiku.alpha).toBeCloseTo(2.0, 5);
+    expect(p.haiku.beta).toBeCloseTo(1.0, 5);
+  });
 });

@@ -115,7 +115,7 @@ importers:
   '@claude-flow/cli':
     dependencies:
       '@claude-flow/cli-core':
-        specifier: 3.7.0-alpha.5
+        specifier: 3.7.0-alpha.6
         version: link:../cli-core
       '@claude-flow/codex':
         specifier: 3.0.3
@@ -124,7 +124,7 @@ importers:
         specifier: 3.0.0-alpha.10
         version: link:../mcp
       '@claude-flow/neural':
-        specifier: 3.0.0-alpha.9
+        specifier: 3.0.0-alpha.10
         version: link:../neural
       '@claude-flow/plugin-agent-federation':
         specifier: 1.0.0-alpha.18
@@ -146,6 +146,9 @@ importers:
         version: 2.3.0
       '@ruvector/rabitq-wasm':
         specifier: 0.1.0
+        version: 0.1.0
+      '@ruvector/typesafe':
+        specifier: ^0.1.0
         version: 0.1.0
       ajv:
         specifier: ^8.20.0
@@ -206,8 +209,8 @@ importers:
         specifier: 2.0.0-alpha.5
         version: 2.0.0-alpha.5
       '@claude-flow/memory':
-        specifier: ^3.0.0-alpha.23
-        version: 3.0.0-alpha.24(@types/node@20.19.27)(zod@3.25.76)
+        specifier: 3.0.0-alpha.26
+        version: 3.0.0-alpha.26(@types/node@20.19.27)(zod@3.25.76)
       '@metaharness/darwin':
         specifier: ~0.10.2
         version: 0.10.2
@@ -916,6 +919,44 @@ packages:
 
   /@claude-flow/memory@3.0.0-alpha.24(@types/node@20.19.27)(zod@3.25.76):
     resolution: {integrity: sha512-V0ca9Nh7VusKbzjS+h59lnpBDKe4ZoQ0kYzYVzXypBYuvuhNF6ngRARbA/ZXCYwO7Uh85BNkQSGRe45TmOKjBg==}
+    cpu: [x64, arm64]
+    os: [darwin, linux, win32]
+    dependencies:
+      '@claude-flow/security': 3.0.0-alpha.12
+      agentdb: 3.0.0-alpha.17(@types/node@20.19.27)(zod@3.25.76)
+      sql.js: 1.14.1
+    optionalDependencies:
+      better-sqlite3: 12.9.0
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@types/node'
+      - bare-abort-controller
+      - bare-buffer
+      - react-native-b4a
+      - supports-color
+      - zod
+
+  /@claude-flow/memory@3.0.0-alpha.25(@types/node@20.19.27)(zod@3.25.76):
+    resolution: {integrity: sha512-yjeFlIlUkAE0jBUTx4ocvqWm71CsJEhps8gz0tU1Kl0POelxOsLsEUVQUCQ2E4ZEuQ0xii12K8+3tzK2hvWD3g==}
+    cpu: [x64, arm64]
+    os: [darwin, linux, win32]
+    dependencies:
+      '@claude-flow/security': 3.0.0-alpha.12
+      agentdb: 3.0.0-alpha.17(@types/node@20.19.27)(zod@3.25.76)
+      sql.js: 1.14.1
+    optionalDependencies:
+      better-sqlite3: 12.9.0
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@types/node'
+      - bare-abort-controller
+      - bare-buffer
+      - react-native-b4a
+      - supports-color
+      - zod
+
+  /@claude-flow/memory@3.0.0-alpha.26(@types/node@20.19.27)(zod@3.25.76):
+    resolution: {integrity: sha512-GUovnRYsvguwpHjsSD4zV4H4b2fuWQW69p8C06NFBSFCYDU7MfeKkQqL7YqqRC9PikE7CGwMJ6pfB0UAnZ+iiA==}
     cpu: [x64, arm64]
     os: [darwin, linux, win32]
     dependencies:
@@ -6148,6 +6189,12 @@ packages:
       '@ruvector/tiny-dancer-linux-x64-musl': 0.1.22
       '@ruvector/tiny-dancer-win32-arm64-msvc': 0.1.22
       '@ruvector/tiny-dancer-win32-x64-msvc': 0.1.22
+
+  /@ruvector/typesafe@0.1.0:
+    resolution: {integrity: sha512-PEEabuznFjxABV9P7qC140N9zZYYi1THWPpyFi/7DB8P21VCZqBU1fKZ690jqWcgEe9tEfW9pIiI1nIrCSzVCA==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+    dev: false
 
   /@ruvector/wasm@0.1.16:
     resolution: {integrity: sha512-BvtXLvBDxDxsnFVIi7rsRE8AvPxYOWqHvj8PUOEb3TfsCWBEA2gT5VodMJEv+DWx/mVqdongxRkuHGlVcK9pug==}

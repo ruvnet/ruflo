@@ -869,6 +869,7 @@ export interface UnifiedLearningStats {
     signalsProcessed: number;
     lastAdaptation: number | null;
     source: string;
+    scope: 'project-persisted';
   };
   sona: {
     trajectoriesTotal: number;
@@ -877,6 +878,8 @@ export interface UnifiedLearningStats {
     avgAdaptationTimeMs: number;
     source: string;
     available: boolean;
+    scope: 'process-local';
+    metric: 'recent-buffered-trajectories';
   };
   memoryBridge: {
     totalEntries: number;
@@ -891,8 +894,9 @@ export interface UnifiedLearningStats {
     source: string;
   };
   consistency: {
-    sonaTracksGlobal: boolean;
-    sonaTracksGlobalDelta: number;
+    /** These counters measure different lifetimes and cannot be compared. */
+    sonaTracksGlobal: null;
+    sonaTracksGlobalDelta: null;
     notes: string[];
   };
   generatedAt: string;
@@ -908,12 +912,15 @@ export async function getUnifiedLearningStats(): Promise<UnifiedLearningStats> {
   let sonaStats = { trajectoriesTotal: 0, patternsLearned: 0, reasoningBankSize: 0, avgAdaptationTimeMs: 0 };
   if (sonaCoord) {
     try {
-      const s = (sonaCoord as unknown as { stats?: () => Record<string, number> }).stats?.() ?? {};
+      const s = sonaCoord.stats();
       sonaStats = {
-        trajectoriesTotal: Number(s.trajectoriesTotal ?? s.trajectoriesProcessed ?? 0),
-        patternsLearned: Number(s.totalPatterns ?? s.patternsLearned ?? 0),
-        reasoningBankSize: (bank as unknown as { stats?: () => { patternCount?: number } })?.stats?.()?.patternCount ?? 0,
-        avgAdaptationTimeMs: (sonaCoord as unknown as { getAvgAdaptationTime?: () => number }).getAvgAdaptationTime?.() ?? 0,
+        // LocalSonaCoordinator.stats() reports trajectoryCount, a bounded
+        // recent buffer. Reading nonexistent trajectoriesTotal / processed
+        // fields made this metric permanently 0, even after learning.
+        trajectoriesTotal: s.trajectoryCount,
+        patternsLearned: 0,
+        reasoningBankSize: bank?.stats().patternCount ?? 0,
+        avgAdaptationTimeMs: s.avgAdaptationMs,
       };
     } catch { /* SONA not yet initialised */ }
   }
@@ -936,11 +943,12 @@ export async function getUnifiedLearningStats(): Promise<UnifiedLearningStats> {
     neuralStats = nt.getNeuralStoreStats();
   } catch { /* neural module not loadable */ }
 
-  // Consistency notes — describe (don't enforce) the cross-store relationships
-  const sonaTracksGlobalDelta = sonaStats.trajectoriesTotal - intel.trajectoriesRecorded;
+  // SONA's coordinator is recreated on each process start, while globalStats
+  // is restored from disk. Their counts can differ by thousands after a
+  // restart even when both learning paths work correctly (#3198).
   const notes: string[] = [];
-  if (sonaAvailable && Math.abs(sonaTracksGlobalDelta) > 2) {
-    notes.push(`sona.trajectoriesTotal (${sonaStats.trajectoriesTotal}) drifts from globalStats.trajectoriesRecorded (${intel.trajectoriesRecorded}) by ${sonaTracksGlobalDelta} — expected to track within ±1`);
+  if (sonaAvailable && sonaStats.trajectoriesTotal !== intel.trajectoriesRecorded) {
+    notes.push('sona.trajectoriesTotal is a process-local, bounded recent trajectory buffer; global.trajectoriesRecorded is project-persisted. These counters have different lifetimes and are not comparable.');
   }
   if (intel.patternsLearned > 0 && neuralStats.patternCount === 0) {
     notes.push(`globalStats reports ${intel.patternsLearned} patterns learned but neural_patterns store is empty — pretrain has not written here, or trajectory-end isn't promoting patterns to the neural store yet`);
@@ -956,17 +964,20 @@ export async function getUnifiedLearningStats(): Promise<UnifiedLearningStats> {
       signalsProcessed: intel.signalsProcessed,
       lastAdaptation: intel.lastAdaptation,
       source: '.claude-flow/neural/stats.json (globalStats)',
+      scope: 'project-persisted',
     },
     sona: {
       ...sonaStats,
       source: 'sonaCoordinator (in-memory, resets per process)',
       available: sonaAvailable,
+      scope: 'process-local',
+      metric: 'recent-buffered-trajectories',
     },
     memoryBridge: bridgeStats,
     neuralPatterns: neuralStats,
     consistency: {
-      sonaTracksGlobal: sonaAvailable ? Math.abs(sonaTracksGlobalDelta) <= 1 : true,
-      sonaTracksGlobalDelta,
+      sonaTracksGlobal: null,
+      sonaTracksGlobalDelta: null,
       notes,
     },
     generatedAt: new Date().toISOString(),

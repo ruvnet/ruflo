@@ -11,18 +11,21 @@ import { existsSync, readFileSync, statSync, openSync, readSync, closeSync } fro
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
-import { execSync, exec } from 'child_process';
+import { execSync, exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { decodeKey, isEncryptionEnabled } from '../encryption/vault.js';
 import { isEncryptedBlob } from '../encryption/vault.js';
+import * as semver from 'semver';
 import {
   resolveMemoryPackageFromProject,
+  resolveMemoryPackageFromCli,
   readMemoryPackageVersion,
   recordMemoryPackagePath,
 } from '../init/memory-package-resolver.js';
 
 // Promisified exec with proper shell and env inheritance for cross-platform support
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 /**
  * Execute command asynchronously with proper environment inheritance
@@ -73,6 +76,42 @@ async function checkNpmVersion(): Promise<HealthCheck> {
     }
   } catch {
     return { name: 'npm Version', status: 'fail', message: 'npm not found', fix: 'Install Node.js from https://nodejs.org' };
+  }
+}
+
+/** ADR-122 Phase 0: probe only the CLI version, without launching a browser. */
+export function evaluateAgentBrowserVersion(rawOutput: string): HealthCheck {
+  const name = 'agent-browser CLI (ADR-122)';
+  const fix = 'npm install -g agent-browser@latest';
+  const versionOutput = rawOutput.trim().replace(/\x1b\[[0-9;]*m/g, '');
+  const match = /^(?:agent-browser(?:\s+version)?\s+)?v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\s|$)/i.exec(versionOutput);
+  const version = match ? semver.parse(match[1]) : null;
+  if (!version) {
+    return { name, status: 'warn', message: `Unable to parse agent-browser version${versionOutput ? `: ${versionOutput.slice(0, 120)}` : ' (empty output)'}. Browser MCP tools may be unavailable.`, fix };
+  }
+  if (semver.lt(version, '0.27.0')) {
+    return { name, status: 'warn', message: `v${version.version} is below the ADR-122 v0.27.0 minimum for browser MCP tools`, fix };
+  }
+  return { name, status: 'pass', message: `v${version.version} meets the ADR-122 v0.27.0 minimum for browser MCP tools` };
+}
+
+export async function checkAgentBrowserVersion(
+  probe: () => Promise<string> = async () => {
+    const { stdout } = await execFileAsync('agent-browser', ['--version'], {
+      encoding: 'utf8', timeout: 3000, maxBuffer: 16 * 1024, windowsHide: true,
+    });
+    return String(stdout);
+  },
+): Promise<HealthCheck> {
+  try {
+    return evaluateAgentBrowserVersion(await probe());
+  } catch (error) {
+    const name = 'agent-browser CLI (ADR-122)';
+    const fix = 'npm install -g agent-browser@latest';
+    const code = (error as NodeJS.ErrnoException).code;
+    return code === 'ENOENT'
+      ? { name, status: 'warn', message: 'Not found on PATH; @claude-flow/browser and browser MCP tools need agent-browser v0.27.0 or newer', fix }
+      : { name, status: 'warn', message: `Version check failed: ${error instanceof Error ? error.message : String(error)}`, fix };
   }
 }
 
@@ -331,6 +370,22 @@ async function resolveMemoryDbPath(): Promise<string | null> {
   return null;
 }
 
+/** Native AgentDB writes to a plaintext sibling of the sql.js memory file.
+ * Probe only stores that already exist: projects without the native bridge
+ * should not acquire an extra warning just by running doctor (#3195). */
+async function existingNativeAgentDbPaths(): Promise<string[]> {
+  const candidates = new Set<string>();
+  try {
+    const { getMemoryRoot, resolveDbPath } = await import('../memory/memory-initializer.js');
+    candidates.add(join(getMemoryRoot(), 'agentdb-memory.db'));
+    // Explicit CLAUDE_FLOW_DB_PATH callers may put the sibling elsewhere.
+    candidates.add(join(dirname(resolveDbPath()), 'agentdb-memory.db'));
+  } catch {
+    candidates.add(join(process.cwd(), '.swarm', 'agentdb-memory.db'));
+  }
+  return [...candidates].filter((path) => existsSync(path));
+}
+
 /** Open a sql.js Database over an on-disk file, returning null when the
  * file can't be opened as a SQLite database (encrypted / corrupted / not
  * a database). Callers decide whether that's warn or fail. */
@@ -531,6 +586,76 @@ async function checkMemoryStructuralIntegrity(): Promise<HealthCheck> {
       status: 'fail',
       message: `${dbPath} — quick_check probe threw: ${msg} (unencrypted) [structural-only]`,
       fix: 'back up .swarm/memory.db then `claude-flow memory init --force`',
+    };
+  } finally {
+    try { db.close(); } catch { /* best-effort */ }
+  }
+}
+
+/** Check the AgentDB authority independently from the legacy memory.db.
+ * Opening read-only with SQLite keeps WAL commits visible without mutating
+ * either store; the existing legacy health checks retain their own scope. */
+async function checkNativeAgentDbStructuralIntegrity(dbPath: string): Promise<HealthCheck> {
+  const NAME = 'Native AgentDB Structural Integrity (quick_check)';
+  if (!existsSync(dbPath)) {
+    return { name: NAME, status: 'warn', message: `${dbPath} disappeared before the native check could run` };
+  }
+  if (isMemoryDbEncryptedAtRest(dbPath)) {
+    return {
+      name: NAME,
+      status: 'fail',
+      message: `${dbPath} — RFE1-encrypted; native AgentDB requires a plaintext SQLite file`,
+      fix: `back up ${dbPath} and restore a usable native AgentDB database`,
+    };
+  }
+
+  let Database: any;
+  try {
+    Database = ((await import('better-sqlite3')) as any).default;
+  } catch {
+    return {
+      name: NAME,
+      status: 'warn',
+      message: `${dbPath} — better-sqlite3 not installed; native AgentDB structural health is unverified`,
+      fix: 'install better-sqlite3 with npm install scripts enabled, then rerun this check',
+    };
+  }
+
+  let db: any;
+  try {
+    db = new Database(dbPath, { readonly: true, fileMustExist: true });
+  } catch (error) {
+    if (isNativeSqliteBindingUnavailable(error)) {
+      return nativeBindingUnavailableCheck(NAME, dbPath, error, '[native AgentDB structural health unverified]');
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      name: NAME,
+      status: 'fail',
+      message: `${dbPath} — better-sqlite3 failed to open: ${message} [native AgentDB]`,
+      fix: `back up ${dbPath} and its WAL sidecars, then restore a known-good native AgentDB database`,
+    };
+  }
+
+  try {
+    const rows = db.pragma('quick_check') as Array<Record<string, unknown>>;
+    const values = rows.map((row) => String(Object.values(row)[0]));
+    if (values.length === 1 && values[0] === 'ok') {
+      return { name: NAME, status: 'pass', message: `${dbPath} — PRAGMA quick_check: ok [native AgentDB, WAL-aware]` };
+    }
+    return {
+      name: NAME,
+      status: 'fail',
+      message: `${dbPath} — PRAGMA quick_check: ${values.slice(0, 3).join('; ')}${values.length > 3 ? ` (+${values.length - 3} more)` : ''} [native AgentDB]`,
+      fix: `back up ${dbPath} and its WAL sidecars, then restore a known-good native AgentDB database`,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      name: NAME,
+      status: 'fail',
+      message: `${dbPath} — quick_check probe threw: ${message} [native AgentDB]`,
+      fix: `back up ${dbPath} and its WAL sidecars, then restore a known-good native AgentDB database`,
     };
   } finally {
     try { db.close(); } catch { /* best-effort */ }
@@ -1038,6 +1163,74 @@ async function checkLearningBridge(): Promise<HealthCheck> {
     message: '@claude-flow/memory NOT resolvable — SessionStart self-learning imports are a silent no-op',
     fix: 'npm i -D @claude-flow/memory   (optional dep appears absent — likely --omit=optional install)',
   };
+}
+
+/**
+ * #3392: pure verdict for "does the @claude-flow/memory the CLI loads satisfy
+ * the range the CLI declares?". `npx @claude-flow/cli@latest` reuses one npx
+ * cache directory across CLI versions, and npm keeps an already-installed
+ * dependency that still satisfies a caret range, so a stale memory could
+ * survive a CLI upgrade with no error. Exported for unit testing.
+ */
+export function evaluateMemoryPackageVersion(declared: string | null, installed: string | null): HealthCheck {
+  const NAME = '@claude-flow/memory version';
+  if (!declared) {
+    return { name: NAME, status: 'warn', message: 'could not read the @claude-flow/memory range declared by @claude-flow/cli' };
+  }
+  if (!installed) {
+    return {
+      name: NAME,
+      status: 'warn',
+      message: `@claude-flow/memory is not resolvable from the CLI (declared ${declared}) — memory features fall back to degraded paths`,
+      fix: `npm install @claude-flow/memory@${declared} --include=optional`,
+    };
+  }
+  if (!semver.validRange(declared) || !semver.valid(installed)) {
+    return { name: NAME, status: 'warn', message: `cannot compare installed ${installed} against declared ${declared}` };
+  }
+  if (semver.satisfies(installed, declared, { includePrerelease: true })) {
+    return { name: NAME, status: 'pass', message: `v${installed} satisfies declared ${declared}` };
+  }
+  // warn, not fail: a dev/hoisted layout can legitimately differ, and doctor's
+  // exit code must not depend on which copy a package manager happened to hoist.
+  return {
+    name: NAME,
+    status: 'warn',
+    message: `installed v${installed} does not satisfy declared ${declared} — a stale cached copy is running, so fixes shipped in a newer @claude-flow/memory are silently absent`,
+    fix: `rm -rf "$(npm config get cache)/_npx" && npx @claude-flow/cli@latest doctor   # or: npm install @claude-flow/memory@${declared}`,
+  };
+}
+
+export async function checkMemoryPackageVersion(): Promise<HealthCheck> {
+  try {
+    // Walk up from this module to the CLI package root (npx cache, global,
+    // project-local and monorepo dev all resolve the same way).
+    let declared: string | null = null;
+    let dir = dirname(fileURLToPath(import.meta.url));
+    for (let i = 0; i < 8 && declared === null; i++) {
+      const pj = join(dir, 'package.json');
+      if (existsSync(pj)) {
+        try {
+          const pkg = JSON.parse(readFileSync(pj, 'utf-8')) as {
+            name?: string;
+            dependencies?: Record<string, string>;
+            optionalDependencies?: Record<string, string>;
+          };
+          if (pkg.name === '@claude-flow/cli') {
+            declared = pkg.optionalDependencies?.['@claude-flow/memory'] ?? pkg.dependencies?.['@claude-flow/memory'] ?? null;
+            break;
+          }
+        } catch { /* keep walking */ }
+      }
+      dir = dirname(dir);
+    }
+    // Resolve exactly as the CLI's own runtime does (its module context),
+    // not from process.cwd() — that would report the project's copy instead.
+    const distPath = resolveMemoryPackageFromCli();
+    return evaluateMemoryPackageVersion(declared, distPath ? readMemoryPackageVersion(distPath) : null);
+  } catch (err) {
+    return { name: '@claude-flow/memory version', status: 'warn', message: `check failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
 }
 
 // Check API keys
@@ -2101,6 +2294,26 @@ async function checkMetaharness(): Promise<HealthCheck> {
   }
 }
 
+// Opt-in @ruvector/typesafe task router (optional peer). `--component typesafe` only.
+async function checkTypesafeRouter(): Promise<HealthCheck> {
+  const name = '@ruvector/typesafe router';
+  const { readTypesafeConfig } = await import('../ruvector/typesafe-router.js');
+  const cfg = readTypesafeConfig();
+  const gate = cfg.enabled ? `enabled (${cfg.embedder === 'hash' ? 'hash embedder, uncalibrated' : 'onnx embedder'})` : 'disabled (set CLAUDE_FLOW_ROUTER_TYPESAFE=1)';
+  try {
+    const { createRequire } = await import('module');
+    const pj = createRequire(import.meta.url)('@ruvector/typesafe/package.json') as { version?: string };
+    return { name, status: 'pass', message: `v${pj.version ?? '?'} installed; ${gate}` };
+  } catch {
+    return {
+      name,
+      status: cfg.enabled ? 'warn' : 'pass',
+      message: `Not installed; ${gate} — hooks_route uses the built-in router`,
+      ...(cfg.enabled ? { fix: 'npm install @ruvector/typesafe  # optional peer' } : {}),
+    };
+  }
+}
+
 async function checkClaudeCode(): Promise<HealthCheck> {
   try {
     const version = await runCommand('claude --version');
@@ -2290,7 +2503,7 @@ export const doctorCommand: Command = {
     {
       name: 'component',
       short: 'c',
-      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, metaharness)',
+      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, browser, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, metaharness)',
       type: 'string'
     },
     {
@@ -2405,11 +2618,15 @@ export const doctorCommand: Command = {
     output.writeln(output.dim('─'.repeat(50)));
     output.writeln();
 
+    const nativeAgentDbChecks = (await existingNativeAgentDbPaths())
+      .map((dbPath) => () => checkNativeAgentDbStructuralIntegrity(dbPath));
+
     const allChecks: (() => Promise<HealthCheck>)[] = [
       checkVersionFreshness,
       checkNodeVersion,
       checkNpmVersion,
       checkClaudeCode,
+      checkAgentBrowserVersion, // ADR-122 Phase 0 — browser runtime compatibility
       checkGit,
       checkGitRepo,
       checkConfigFile,
@@ -2417,8 +2634,10 @@ export const doctorCommand: Command = {
       checkDaemonStatus,
       checkMemoryDatabase,
       checkMemoryStructuralIntegrity, // #2737 — bounded, native quick_check on every default run
+      ...nativeAgentDbChecks, // #3195 — verify each present native authority file
       checkMemoryPersistenceDriver, // #2968/#3321 — read-only native capability probe
       checkLearningBridge, // #2545 — can the auto-memory hook actually load @claude-flow/memory?
+      checkMemoryPackageVersion, // #3392 — loaded @claude-flow/memory must satisfy the CLI's declared range
       checkApiKeys,
       checkMcpServers,
       checkMcpSchemaOverhead, // #2726 — fixed tools/list prompt cost
@@ -2450,18 +2669,22 @@ export const doctorCommand: Command = {
       'node': checkNodeVersion,
       'npm': checkNpmVersion,
       'claude': checkClaudeCode,
+      'browser': checkAgentBrowserVersion,
       'config': checkConfigFile,
       'stale-settings': checkStaleSettingsNpx, // #2448
       'daemon': checkDaemonStatus,
       'memory': [
         checkMemoryDatabase,         // existing: exists + statable (unchanged)
         checkMemoryIntegrity,        // #2677 check 1: sql.js open + PRAGMA integrity_check
+        ...nativeAgentDbChecks,       // #3195: present AgentDB authority, checked independently
         checkMemoryPersistenceDriver, // #2968/#3321: read-only native capability probe
+        checkMemoryPackageVersion,   // #3392: loaded memory package satisfies the declared range
         checkMemoryContent,          // #2677 check 2: memory_entries content coverage
         checkMemoryEmbeddingCoverage, // #2677 check 3: vector coverage on populated rows
         checkMemoryReflexionCoverage, // #2677 check 6: episodes are retrievable
         checkMemoryCritiqueCoverage,  // #2677 check 6: feedback carries lessons
       ],
+      'memory-package': checkMemoryPackageVersion, // #3392
       'learning': checkLearningBridge, // #2545
       'learning-bridge': checkLearningBridge, // #2545
       'api': checkApiKeys,
@@ -2482,6 +2705,7 @@ export const doctorCommand: Command = {
       // a user would actually debug them (is it installed? running? exposed?).
       'proxy': [checkProxySponsoredConsent, checkProxyBinary, checkProxyProcess, checkProxyBindAddress],
       'auth': checkAuth, // ADR-306
+      'typesafe': checkTypesafeRouter, // opt-in @ruvector/typesafe task router
     };
 
     let checksToRun = allChecks;

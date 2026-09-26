@@ -86,6 +86,23 @@ function hasNativeWalSidecars(dbPath: string): boolean {
 }
 
 /**
+ * #3397 — this process's own graph-edge-writer handle keeps -wal/-shm on disk
+ * between its idle-release ticks. Release (checkpoint + close) it before the
+ * #2735 guard runs, so the guard only sees sidecars some OTHER native
+ * connection is holding. The guard itself is unchanged: even a same-process
+ * open WAL connection makes a whole-image sql.js write unsafe until its WAL
+ * has been checkpointed, which is exactly what releasing does.
+ */
+async function releaseOwnNativeHandle(dbPath: string): Promise<void> {
+  try {
+    const { releaseBridgeDb } = await import('./graph-edge-writer.js');
+    releaseBridgeDb(dbPath);
+  } catch {
+    // Writer module unavailable — nothing of ours to release; the guard decides.
+  }
+}
+
+/**
  * #1854: previously every site that needed the memory directory hardcoded
  * `getMemoryRoot()`, so the documented config entry
  * points (`memory.persistPath` config field, `memory configure --path`,
@@ -2204,7 +2221,17 @@ interface EmbeddingModel {
   dimensions: number;
 }
 
+/**
+ * State of the LOCAL embedding chain only (transformers.js / agentic-flow /
+ * ruvector ONNX / hash). #3375: the AgentDB bridge's result is cached
+ * separately in `bridgeEmbeddingInfo` and must never be written here — it used
+ * to be recorded as `{ loaded: true, model: null }`, which made
+ * generateLocalEmbedding() skip loading any local model and always return the
+ * hash fallback, so rescueAgentdbEmbedder()'s `backend === 'onnx'` probe could
+ * never pass.
+ */
 let embeddingModelState: EmbeddingModel | null = null;
+let bridgeEmbeddingInfo: { dimensions: number } | null = null;
 
 /**
  * Lazy load ONNX embedding model
@@ -2224,10 +2251,11 @@ export async function loadEmbeddingModel(options?: {
   const startTime = Date.now();
 
   // Already loaded
-  if (embeddingModelState?.loaded) {
+  const cached = bridgeEmbeddingInfo ?? (embeddingModelState?.loaded ? embeddingModelState : null);
+  if (cached) {
     return {
       success: true,
-      dimensions: embeddingModelState.dimensions,
+      dimensions: cached.dimensions,
       modelName: 'cached',
       loadTime: 0
     };
@@ -2238,15 +2266,31 @@ export async function loadEmbeddingModel(options?: {
   if (bridge) {
     const bridgeResult = await bridge.bridgeLoadEmbeddingModel();
     if (bridgeResult && bridgeResult.success) {
-      // Mark local state as loaded too so subsequent calls use cache
-      embeddingModelState = {
-        loaded: true,
-        model: null, // Bridge handles embedding
-        tokenizer: null,
-        dimensions: bridgeResult.dimensions
-      };
+      // #3375: cache the bridge result on its own. Do NOT mark the local
+      // chain as loaded — the bridge's model is not callable from here.
+      bridgeEmbeddingInfo = { dimensions: bridgeResult.dimensions };
       return bridgeResult;
     }
+  }
+
+  return loadLocalEmbeddingChain(verbose, startTime);
+}
+
+/**
+ * Load the LOCAL embedding chain into `embeddingModelState`, never consulting
+ * the AgentDB bridge. Used by loadEmbeddingModel() after the bridge declines,
+ * and directly by generateLocalEmbedding() so the "bridge-free" contract the
+ * #2312 comment on that function describes actually holds (#3375).
+ */
+async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()): Promise<{
+  success: boolean;
+  dimensions: number;
+  modelName: string;
+  loadTime?: number;
+  error?: string;
+}> {
+  if (embeddingModelState?.loaded) {
+    return { success: true, dimensions: embeddingModelState.dimensions, modelName: 'cached', loadTime: 0 };
   }
 
   try {
@@ -2480,9 +2524,12 @@ export async function generateLocalEmbedding(text: string): Promise<{
   model: string;
   backend: 'onnx' | 'mock';
 }> {
-  // Ensure model is loaded
+  // Ensure the LOCAL model is loaded. #3375: this must not go through
+  // loadEmbeddingModel(), which is bridge-first — when the bridge answered
+  // there, no local model was ever loaded and this function always returned
+  // the hash fallback.
   if (!embeddingModelState?.loaded) {
-    await loadEmbeddingModel();
+    await loadLocalEmbeddingChain();
   }
 
   // #2461: loadEmbeddingModel() can leave embeddingModelState null when an
@@ -2851,6 +2898,9 @@ export async function storeEntry(options: {
   /** #2968: set when the bridge's checkpoint failed in a way indicating
    *  this write may not be durably persisted (sql.js fallback driver). */
   persistWarning?: string;
+  /** #3325: set by the bridge when an embedding was requested but none could
+   *  be produced — the row is stored without a vector. */
+  embeddingError?: string;
 }> {
   // ADR-323: validate before touching either backend so an invalid value
   // gets one clear error instead of a raw SQLite CHECK-constraint failure
@@ -2912,6 +2962,7 @@ export async function storeEntry(options: {
     // this closes and its known residual (the narrow assess-then-write
     // race). This check gates ensureSchemaColumns()'s own whole-image
     // write below too, not just this function's.
+    await releaseOwnNativeHandle(dbPath);
     if (hasNativeWalSidecars(dbPath)) {
       return {
         success: false,
@@ -3586,6 +3637,7 @@ export async function getEntry(options: {
     // this closes. Applies here too because the fallback's access_count
     // bump is itself a whole-image write, not a lightweight read, even
     // though this function's contract reads as a "get".
+    await releaseOwnNativeHandle(dbPath);
     if (hasNativeWalSidecars(dbPath)) {
       return {
         success: false,
@@ -3736,6 +3788,7 @@ export async function deleteEntry(options: {
 
     // #2735 — see storeEntry's identical gate for the corruption mechanism
     // this closes.
+    await releaseOwnNativeHandle(dbPath);
     if (hasNativeWalSidecars(dbPath)) {
       return {
         success: false,

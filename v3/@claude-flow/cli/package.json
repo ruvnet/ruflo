@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/cli",
-  "version": "3.42.4",
+  "version": "3.46.0",
   "type": "module",
   "description": "Ruflo CLI - Enterprise AI agent orchestration with 60+ specialized agents, swarm coordination, MCP server, self-learning hooks, and vector memory for Claude Code",
   "main": "dist/src/index.js",
@@ -98,10 +98,10 @@
     "vitest": "^4.1.0"
   },
   "dependencies": {
-    "@claude-flow/cli-core": "3.7.0-alpha.5",
+    "@claude-flow/cli-core": "3.7.0-alpha.6",
     "@claude-flow/codex": "3.0.3",
     "@claude-flow/mcp": "3.0.0-alpha.10",
-    "@claude-flow/neural": "3.0.0-alpha.9",
+    "@claude-flow/neural": "3.0.0-alpha.10",
     "@claude-flow/plugin-agent-federation": "1.0.0-alpha.18",
     "@claude-flow/security": "3.0.0-alpha.14",
     "@claude-flow/shared": "3.0.0-alpha.7",
@@ -125,11 +125,11 @@
     "ws": "^8.21.0",
     "yaml": "^2.8.0",
     "zod": "^3.22.0",
-    "@claude-flow/memory": "^3.0.0-alpha.23"
+    "@claude-flow/memory": "3.0.0-alpha.26"
   },
   "optionalDependencies": {
     "@agntcy/slim-bindings": "2.0.0-alpha.5",
-    "@claude-flow/memory": "^3.0.0-alpha.23",
+    "@claude-flow/memory": "3.0.0-alpha.26",
     "@metaharness/darwin": "~0.10.2",
     "@metaharness/flywheel": "~0.1.10",
     "@metaharness/radio": "~0.1.0",
@@ -143,10 +143,14 @@
   },
   "peerDependencies": {
     "@metaharness/router": "^0.4.0",
+    "@ruvector/typesafe": "^0.1.0",
     "metaharness": "^0.4.1"
   },
   "peerDependenciesMeta": {
     "@metaharness/router": {
+      "optional": true
+    },
+    "@ruvector/typesafe": {
       "optional": true
     },
     "metaharness": {

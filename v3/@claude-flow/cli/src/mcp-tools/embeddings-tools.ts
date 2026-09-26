@@ -20,6 +20,14 @@ interface EmbeddingsConfig {
   modelPath: string;
   dimension: number;
   cacheSize: number;
+  /**
+   * #3376 — whether a model was actually downloaded into `modelPath`.
+   * Optional: configs written before this field existed omit it, and
+   * `undefined` means "unknown", not "false". `embeddings init` (CLI) sets it.
+   */
+  modelDownloaded?: boolean;
+  /** #3376 — why no model was downloaded, when `modelDownloaded` is false. */
+  modelSkipReason?: string;
   hyperbolic: {
     enabled: boolean;
     curvature: number;
