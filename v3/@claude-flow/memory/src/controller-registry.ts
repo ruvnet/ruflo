@@ -961,7 +961,31 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const RB = agentdbModule.ReasoningBank;
           if (!RB) return null;
-          const embedder = this.createEmbeddingService();
+          // #3327 Finding A — ReasoningBank MUST get AgentDB's own embedder,
+          // not createEmbeddingService(). Two independent reasons, both fatal:
+          //
+          //   1. agentdb's ReasoningBank calls `embedder.embedPassage()` on
+          //      store and `embedder.embedQuery()` on search (asymmetric
+          //      query/passage embedding). createEmbeddingService() returns
+          //      only {embed, embedBatch, initialize}, so BOTH paths threw
+          //      `TypeError: this.embedder.embedPassage is not a function`.
+          //      The throw was swallowed by the bridge's catch, which is why
+          //      the controller reported `enabled: true` while every write and
+          //      read silently routed to bridge-fallback/substring instead.
+          //   2. Even with the names shimmed, the no-generator branch of
+          //      createEmbeddingService() returns ZERO vectors, so every
+          //      pattern would embed identically and rank meaninglessly.
+          //
+          // `this.agentdb.embedder` is normally the real Transformers.js
+          // service, which already implements the full contract. But when the
+          // model cannot load (offline, or agentdb's `sharp`/transformers
+          // optional dep fails to install) agentdb silently swaps in a MOCK
+          // embedder that exposes only `embed` — so taking it as-is
+          // reintroduces the exact crash this fixes. Adapt whatever we get,
+          // and fall back to the local service only when there is no embedder
+          // at all.
+          const embedder = this.adaptEmbedderForAgentdb(this.agentdb.embedder)
+            ?? this.createEmbeddingService();
           return new RB(this.agentdb.database, embedder);
         } catch { return null; }
       }
@@ -1150,18 +1174,68 @@ export class ControllerRegistry extends EventEmitter {
    * Create an EmbeddingService for controllers that need it.
    * Uses the config's embedding generator or creates a minimal local service.
    */
+  /**
+   * Adapt an arbitrary embedder to the contract agentdb's controllers call
+   * (#3327).
+   *
+   * ReasoningBank uses asymmetric query/passage embedding — `embedQuery()` on
+   * search, `embedPassage()` on store. Several embedders reaching here expose
+   * only `embed()`:
+   *   • agentdb's mock embedder, substituted whenever the Transformers.js
+   *     model fails to load (offline, or a failed `sharp` optional install);
+   *   • any host-supplied `embeddingGenerator` wrapper.
+   *
+   * Passing one of those through unchanged throws `... is not a function`
+   * deep inside the controller, where the bridge's catch converts it into a
+   * silent fallback — the failure this whole fix is about. Aliasing is
+   * semantically safe: a symmetric model returns the same vector for both
+   * roles, which is precisely what a single `embed()` implies.
+   *
+   * Returns null when there is nothing usable to adapt.
+   */
+  private adaptEmbedderForAgentdb(embedder: any): any {
+    if (!embedder || typeof embedder.embed !== 'function') return null;
+    if (typeof embedder.embedQuery === 'function' && typeof embedder.embedPassage === 'function') {
+      return embedder; // already satisfies the contract — pass through untouched
+    }
+    const embed = embedder.embed.bind(embedder);
+    return Object.assign(Object.create(embedder), {
+      embed,
+      embedQuery: typeof embedder.embedQuery === 'function' ? embedder.embedQuery.bind(embedder) : embed,
+      embedPassage: typeof embedder.embedPassage === 'function' ? embedder.embedPassage.bind(embedder) : embed,
+      embedBatch: typeof embedder.embedBatch === 'function'
+        ? embedder.embedBatch.bind(embedder)
+        : async (texts: string[]) => Promise.all(texts.map((t) => embed(t))),
+    });
+  }
+
   private createEmbeddingService(): any {
-    // If user provided an embedding generator, wrap it
+    // #3327 — agentdb controllers call the asymmetric query/passage methods
+    // (`embedQuery` / `embedPassage`), not just `embed`. Anything handed this
+    // object must satisfy that wider contract or it throws at call time, deep
+    // inside a controller, where the bridge's catch turns it into a silent
+    // fallback. Alias them onto both branches.
     if (this.config.embeddingGenerator) {
+      const embed = async (text: string) => this.config.embeddingGenerator!(text);
       return {
-        embed: async (text: string) => this.config.embeddingGenerator!(text),
+        embed,
+        embedQuery: embed,
+        embedPassage: embed,
         embedBatch: async (texts: string[]) => Promise.all(texts.map(t => this.config.embeddingGenerator!(t))),
         initialize: async () => {},
       };
     }
-    // Return a minimal stub — HierarchicalMemory falls back to manualSearch without embeddings
+    // Zero-vector stub — HierarchicalMemory falls back to manualSearch without
+    // embeddings. NOTE: these vectors are all-zero and carry NO semantic
+    // signal; every pair scores identically. `isStubEmbedder` is exposed so a
+    // caller that needs real similarity can detect this and refuse, rather
+    // than ranking on noise (#3327).
+    const zero = async () => new Float32Array(this.config.dimension || 384);
     return {
-      embed: async () => new Float32Array(this.config.dimension || 384),
+      isStubEmbedder: true,
+      embed: zero,
+      embedQuery: zero,
+      embedPassage: zero,
       embedBatch: async (texts: string[]) => texts.map(() => new Float32Array(this.config.dimension || 384)),
       initialize: async () => {},
     };

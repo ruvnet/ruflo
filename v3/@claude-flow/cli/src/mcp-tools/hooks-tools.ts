@@ -14,6 +14,13 @@ import {
   type LearnedRoutingOutcome,
   type LearnedRoutingPattern,
 } from '../services/learned-routing.js';
+import { applyTypesafeRouting, getTypesafeRouter } from '../ruvector/typesafe-router.js';
+import {
+  DEFAULT_ROUTER_EMBEDDER,
+  embedForRouter,
+  resolveRouterEmbedder,
+  type RouterEmbedderKind,
+} from '../ruvector/router-embedder.js';
 
 // Real vector search functions - lazy loaded to avoid circular imports
 let searchEntriesFn: ((options: {
@@ -138,54 +145,18 @@ async function getMoERouter() {
 // Tries native VectorDb first (16k+ routes/s HNSW), falls back to pure JS (47k routes/s cosine)
 let semanticRouter: import('../ruvector/semantic-router.js').SemanticRouter | null = null;
 let nativeVectorDb: unknown = null;
-let semanticRouterInitialized = false;
 let routerBackend: 'native' | 'pure-js' | 'none' = 'none';
 
 // Pre-computed embeddings for common task patterns (cached)
 const TASK_PATTERN_EMBEDDINGS: Map<string, Float32Array> = new Map();
 
-function generateSimpleEmbedding(text: string, dimension: number = 384): Float32Array {
-  // Simple deterministic embedding based on character codes
-  // This is for routing purposes where we need consistent, fast embeddings
-  const embedding = new Float32Array(dimension);
-  const normalized = text.toLowerCase().replace(/[^a-z0-9\s]/g, '');
-  const words = normalized.split(/\s+/).filter(w => w.length > 0);
-
-  // Combine word-level and character-level features
-  for (let i = 0; i < dimension; i++) {
-    let value = 0;
-
-    // Word-level features
-    for (let w = 0; w < words.length; w++) {
-      const word = words[w];
-      for (let c = 0; c < word.length; c++) {
-        const charCode = word.charCodeAt(c);
-        value += Math.sin((charCode * (i + 1) + w * 17 + c * 23) * 0.0137);
-      }
-    }
-
-    // Character-level features
-    for (let c = 0; c < text.length; c++) {
-      value += Math.cos((text.charCodeAt(c) * (i + 1) + c * 7) * 0.0073);
-    }
-
-    embedding[i] = value / Math.max(1, text.length);
-  }
-
-  // Normalize
-  let norm = 0;
-  for (let i = 0; i < dimension; i++) {
-    norm += embedding[i] * embedding[i];
-  }
-  norm = Math.sqrt(norm);
-  if (norm > 0) {
-    for (let i = 0; i < dimension; i++) {
-      embedding[i] /= norm;
-    }
-  }
-
-  return embedding;
-}
+// ADR-390: the router's embedder (MiniLM or the historical hash). Pattern and
+// query vectors always come from the SAME embedder; `routerEmbedder` records the
+// one that actually built the current index (after any degradation to hash).
+let routerEmbedder: RouterEmbedderKind = DEFAULT_ROUTER_EMBEDDER;
+let routerEmbedderReason: string | undefined;
+let routerRequestedEmbedder: RouterEmbedderKind | null = null;
+let routerInitPromise: Promise<SemanticRouterHandle> | null = null;
 
 // ── Runtime routing outcome persistence ──────────────────────────────
 // Closes the learning loop: post-task records outcomes → route loads them.
@@ -242,7 +213,8 @@ function saveRoutingOutcomes(outcomes: RoutingOutcome[]): void {
     // The prior singleton cache made the learned store inert until restart.
     semanticRouter = null;
     nativeVectorDb = null;
-    semanticRouterInitialized = false;
+    routerInitPromise = null;
+    routerRequestedEmbedder = null;
     routerBackend = 'none';
     TASK_PATTERN_EMBEDDINGS.clear();
   } catch { /* non-critical */ }
@@ -325,15 +297,82 @@ const TASK_PATTERNS: Record<string, RoutingPattern> = {
   },
 };
 
+/** Wrap hooks_route so the opt-in typesafe router (src/ruvector/typesafe-router.ts) can override the legacy pick. */
+function withTypesafeRouting(legacy: (params: Record<string, unknown>) => Promise<object>) {
+  return async (params: Record<string, unknown>) =>
+    applyTypesafeRouting(params, (await legacy(params)) as Record<string, unknown>, TASK_PATTERNS, getTypesafeRouter());
+}
+
+interface SemanticRouterHandle {
+  router: import('../ruvector/semantic-router.js').SemanticRouter | null;
+  backend: 'native' | 'pure-js' | 'none';
+  native: unknown;
+  /** Embedder that built this index (ADR-390); the query MUST use the same one. */
+  embedder: RouterEmbedderKind;
+  embedderReason?: string;
+}
+
 /**
  * Get the semantic router with environment detection.
  * Tries native VectorDb first (HNSW, 16k routes/s), falls back to pure JS (47k routes/s cosine).
+ *
+ * ADR-390: `requested` (else CLAUDE_FLOW_ROUTER_EMBEDDER, else the default)
+ * picks the embedder. The index is rebuilt when the requested embedder changes.
+ * Concurrent callers share one in-flight build.
  */
-async function getSemanticRouter() {
-  if (semanticRouterInitialized) {
-    return { router: semanticRouter, backend: routerBackend, native: nativeVectorDb };
+async function getSemanticRouter(requested?: RouterEmbedderKind): Promise<SemanticRouterHandle> {
+  const selection = resolveRouterEmbedder(requested);
+  if (routerInitPromise && routerRequestedEmbedder === selection.kind) {
+    return routerInitPromise;
   }
-  semanticRouterInitialized = true;
+  semanticRouter = null;
+  nativeVectorDb = null;
+  routerBackend = 'none';
+  TASK_PATTERN_EMBEDDINGS.clear();
+  routerRequestedEmbedder = selection.kind;
+  routerInitPromise = buildSemanticRouter(selection.kind, selection.reason);
+  return routerInitPromise;
+}
+
+/** Test hook: drop the cached semantic index so the next route rebuilds it. */
+export function resetSemanticRouterForTests(): void {
+  semanticRouter = null;
+  nativeVectorDb = null;
+  routerBackend = 'none';
+  routerInitPromise = null;
+  routerRequestedEmbedder = null;
+  TASK_PATTERN_EMBEDDINGS.clear();
+}
+
+/** Embed every pattern keyword with ONE embedder (ADR-390: never mix spaces). */
+async function embedPatternKeywords(
+  patterns: Record<string, RoutingPattern>,
+  kind: RouterEmbedderKind,
+): Promise<{ vectors: Map<string, Float32Array[]>; embedder: RouterEmbedderKind; reason?: string }> {
+  const entries = Object.entries(patterns);
+  const flat = entries.flatMap(([, p]) => p.keywords);
+  const res = await embedForRouter(flat, kind);
+  const vectors = new Map<string, Float32Array[]>();
+  let i = 0;
+  for (const [name, p] of entries) {
+    vectors.set(name, res.vectors.slice(i, i + p.keywords.length));
+    i += p.keywords.length;
+  }
+  return { vectors, embedder: res.embedder, reason: res.reason };
+}
+
+async function buildSemanticRouter(kind: RouterEmbedderKind, selectionReason?: string): Promise<SemanticRouterHandle> {
+  const patterns = getMergedTaskPatterns();
+  const embedded = await embedPatternKeywords(patterns, kind);
+  routerEmbedder = embedded.embedder;
+  routerEmbedderReason = embedded.reason ?? selectionReason;
+  const handle = (): SemanticRouterHandle => ({
+    router: semanticRouter,
+    backend: routerBackend,
+    native: nativeVectorDb,
+    embedder: routerEmbedder,
+    ...(routerEmbedderReason ? { embedderReason: routerEmbedderReason } : {}),
+  });
 
   // STEP 1: Try native VectorDb from @ruvector/router (HNSW-backed)
   // Note: Native VectorDb uses a persistent database file which can have lock issues
@@ -357,18 +396,18 @@ async function getSemanticRouter() {
       });
 
       // Initialize with static + runtime-learned task patterns
-      for (const [patternName, { keywords }] of Object.entries(getMergedTaskPatterns())) {
-        for (const keyword of keywords) {
-          const embedding = generateSimpleEmbedding(keyword);
-          db.insert(`${patternName}:${keyword}`, embedding);
-          TASK_PATTERN_EMBEDDINGS.set(`${patternName}:${keyword}`, embedding);
-        }
+      for (const [patternName, { keywords }] of Object.entries(patterns)) {
+        const embeddings = embedded.vectors.get(patternName) ?? [];
+        keywords.forEach((keyword, i) => {
+          db.insert(`${patternName}:${keyword}`, embeddings[i]);
+          TASK_PATTERN_EMBEDDINGS.set(`${patternName}:${keyword}`, embeddings[i]);
+        });
       }
 
       nativeVectorDb = db;
       routerBackend = 'native';
-      console.log('[hooks] Semantic router initialized: native VectorDb (HNSW, 16k+ routes/s)');
-      return { router: null, backend: routerBackend, native: nativeVectorDb };
+      console.log(`[hooks] Semantic router initialized: native VectorDb (HNSW, 16k+ routes/s), embedder=${routerEmbedder}`);
+      return handle();
     }
   } catch (err) {
     // Native not available or database locked - fall back to pure JS
@@ -381,8 +420,8 @@ async function getSemanticRouter() {
     const { SemanticRouter } = await import('../ruvector/semantic-router.js');
     semanticRouter = new SemanticRouter({ dimension: 384 });
 
-    for (const [patternName, { keywords, agents, source, support, reliability }] of Object.entries(getMergedTaskPatterns())) {
-      const embeddings = keywords.map(kw => generateSimpleEmbedding(kw));
+    for (const [patternName, { keywords, agents, source, support, reliability }] of Object.entries(patterns)) {
+      const embeddings = embedded.vectors.get(patternName) ?? [];
       semanticRouter.addIntentWithEmbeddings(patternName, embeddings, {
         agents,
         keywords,
@@ -398,14 +437,14 @@ async function getSemanticRouter() {
     }
 
     routerBackend = 'pure-js';
-    console.log('[hooks] Semantic router initialized: pure JS (cosine, 47k routes/s)');
+    console.log(`[hooks] Semantic router initialized: pure JS (cosine, 47k routes/s), embedder=${routerEmbedder}`);
   } catch {
     semanticRouter = null;
     routerBackend = 'none';
     console.log('[hooks] Semantic router initialized: none (no backend available)');
   }
 
-  return { router: semanticRouter, backend: routerBackend, native: nativeVectorDb };
+  return handle();
 }
 
 /**
@@ -779,12 +818,22 @@ function suggestAgentsForFile(filePath: string): string[] {
   return AGENT_PATTERNS[ext] || ['coder', 'architect'];
 }
 
-function suggestAgentsForTask(task: string): { agents: string[]; confidence: number } {
-  const taskLower = task.toLowerCase();
+// Whole-word matchers for KEYWORD_PATTERNS. A bare `includes()` matched
+// substrings: 'test' hit "latest" (tester @ 0.95), 'auth' hit "author",
+// 'fix' hit "prefix", 'api' hit "capitalize". Single words get \b anchors plus
+// simple inflections (tests, testing, fixes, deployed); phrases containing
+// whitespace or '/' (e.g. 'ci/cd') match literally between word boundaries.
+const KEYWORD_MATCHERS = Object.entries(KEYWORD_PATTERNS).map(([keyword, result]) => {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const body = /[\s/]/.test(keyword) ? escaped : `${escaped}(?:s|es|ing|ed)?`;
+  return { regex: new RegExp(`\\b${body}\\b`, 'i'), result };
+});
 
+/** Exported for tests. */
+export function suggestAgentsForTask(task: string): { agents: string[]; confidence: number } {
   // Check static keyword patterns first
-  for (const [pattern, result] of Object.entries(KEYWORD_PATTERNS)) {
-    if (taskLower.includes(pattern)) {
+  for (const { regex, result } of KEYWORD_MATCHERS) {
+    if (regex.test(task)) {
       return result;
     }
   }
@@ -1116,7 +1165,8 @@ export const hooksRoute: MCPTool = {
     },
     required: ['task'],
   },
-  handler: async (params: Record<string, unknown>) => {
+  // Opt-in @ruvector/typesafe augmentation (CLAUDE_FLOW_ROUTER_TYPESAFE=1); returns the legacy result unchanged when unset.
+  handler: withTypesafeRouting(async (params: Record<string, unknown>) => {
     const task = params.task as string;
     const context = params.context as string | undefined;
     const useSemanticRouter = params.useSemanticRouter !== false;
@@ -1165,10 +1215,30 @@ export const hooksRoute: MCPTool = {
       }
     }
 
+    return routeTaskLocal(task, context, useSemanticRouter);
+  }),
+};
+
+/**
+ * hooks_route's local routing (semantic index + keyword fallback), run after the
+ * AgentDB pre-route. Shared with {@link routeTaskForBench} so the benchmark
+ * measures exactly the path hooks_route takes. (Body kept at its original
+ * indentation to keep this refactor's diff small.)
+ */
+async function routeTaskLocal(
+  task: string,
+  context: string | undefined,
+  useSemanticRouter: boolean,
+  embedderOverride?: RouterEmbedderKind,
+): Promise<LocalRouteResult> {
     // Get router (tries native VectorDb first, falls back to pure JS)
-    const { router, backend, native } = useSemanticRouter
-      ? await getSemanticRouter()
-      : { router: null, backend: 'none' as const, native: null };
+    let handle: SemanticRouterHandle = useSemanticRouter
+      ? await getSemanticRouter(embedderOverride)
+      : {
+        router: null, backend: 'none', native: null,
+        embedder: resolveRouterEmbedder(embedderOverride).kind,
+        embedderReason: 'semantic router disabled (useSemanticRouter=false)',
+      };
 
     let semanticResult: { intent: string; score: number; metadata: Record<string, unknown> }[] = [];
     let routingMethod = 'keyword';
@@ -1176,10 +1246,22 @@ export const hooksRoute: MCPTool = {
     let backendInfo = '';
 
     const queryText = context ? `${task} ${context}` : task;
-    const queryEmbedding = generateSimpleEmbedding(queryText);
+    // ADR-390: the query is embedded with the embedder that built the index.
+    let queryEmbedding: Float32Array | null = null;
+    if (handle.router || handle.native) {
+      const q = await embedForRouter([queryText], handle.embedder);
+      if (q.embedder !== handle.embedder) {
+        // MiniLM failed on the query after building a MiniLM index: rebuild the
+        // index with the hash so patterns and query share one space again.
+        routerInitPromise = buildSemanticRouter('hash', q.reason);
+        handle = await routerInitPromise;
+      }
+      queryEmbedding = q.vectors[0];
+    }
+    const { router, backend, native } = handle;
 
     // Try native VectorDb (HNSW-backed)
-    if (native && backend === 'native') {
+    if (native && backend === 'native' && queryEmbedding) {
       const routeStart = performance.now();
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1210,7 +1292,7 @@ export const hooksRoute: MCPTool = {
     }
 
     // Try pure JS SemanticRouter fallback
-    if (router && backend === 'pure-js' && semanticResult.length === 0) {
+    if (router && backend === 'pure-js' && queryEmbedding && semanticResult.length === 0) {
       const routeStart = performance.now();
       semanticResult = router.routeWithEmbedding(queryEmbedding, 3);
       routingLatencyMs = performance.now() - routeStart;
@@ -1295,9 +1377,58 @@ export const hooksRoute: MCPTool = {
         agents,
         coordination: 'queen-led',
       } : null,
+      // ADR-390: which embedder the semantic index + query used ('hash' when degraded).
+      embedder: handle.embedder,
+      ...(handle.embedderReason ? { embedderReason: handle.embedderReason } : {}),
     };
-  },
+}
+
+type LocalRouteResult = Record<string, unknown> & {
+  primaryAgent: { type: string; confidence: number; reason: string };
+  matchedPattern: string;
+  embedder: RouterEmbedderKind;
+  embedderReason?: string;
 };
+
+/** Result of {@link routeTaskForBench}. */
+export interface BenchRouteResult {
+  primaryAgent: string;
+  confidence: number;
+  /** Matched pattern name, or 'keyword-fallback'. */
+  pattern: string;
+  /** Embedder actually used ('hash' if MiniLM was requested but unavailable). */
+  embedder: RouterEmbedderKind;
+  embedderReason?: string;
+  /** routing.method of the underlying route ('semantic-native' | 'semantic-pure-js' | 'keyword'). */
+  method: string;
+}
+
+/**
+ * INTERNAL / BENCH-ONLY (ADR-391). Not a public API; may change without notice.
+ *
+ * Routes `task` through the same local path `hooks_route` uses (semantic index +
+ * keyword fallback) with an explicit embedder, without the MCP layer. It skips
+ * the two steps that are neither ADR-391 candidate A nor B: the AgentDB
+ * pre-route (`bridgeRouteTask`, which answers first when its confidence > 0.5)
+ * and the opt-in typesafe wrapper (CLAUDE_FLOW_ROUTER_TYPESAFE). With those
+ * inactive, `primaryAgent` equals `hooks_route`'s `primaryAgent.type`.
+ *
+ * Switching `embedder` between calls rebuilds the index; benchmark in blocks.
+ */
+export async function routeTaskForBench(
+  task: string,
+  opts: { embedder: RouterEmbedderKind; context?: string },
+): Promise<BenchRouteResult> {
+  const r = await routeTaskLocal(task, opts.context, true, opts.embedder);
+  return {
+    primaryAgent: r.primaryAgent.type,
+    confidence: r.primaryAgent.confidence,
+    pattern: r.matchedPattern,
+    embedder: r.embedder,
+    ...(r.embedderReason ? { embedderReason: r.embedderReason } : {}),
+    method: String((r.routing as { method?: unknown } | undefined)?.method ?? ''),
+  };
+}
 
 export const hooksMetrics: MCPTool = {
   name: 'hooks_metrics',
@@ -1597,13 +1728,15 @@ export const hooksPostTask: MCPTool = {
       // Non-fatal
     }
 
-    // Record trajectory via intelligence module (SONA + ReasoningBank)
+    // Record trajectory via intelligence module (SONA + ReasoningBank).
+    // #3353: keep the observed result instead of discarding it.
+    let trajectoryRecorded = false;
     try {
       const intelligence = await import('../memory/intelligence.js');
-      await intelligence.recordTrajectory(
+      trajectoryRecorded = (await intelligence.recordTrajectory(
         [{ type: 'result' as const, content: (params.task as string) || taskId, metadata: { success, agent, quality }, timestamp: Date.now() }],
         success ? 'success' : 'failure'
-      );
+      )) === true;
     } catch {
       // Intelligence module not available — non-fatal
     }
@@ -1741,17 +1874,32 @@ export const hooksPostTask: MCPTool = {
       writeFileSync(storePath, JSON.stringify(store, null, 2), 'utf-8');
     } catch { /* non-critical */ }
 
+    // #3353: report only observed learning results. The previous
+    // `feedbackResult?.updated || (success ? 2 : 1)` / `newPatterns: success ? 1 : 0`
+    // invented counts whenever the feedback controller was unavailable (and the
+    // `||` turned an observed 0 into 2). No path reports pattern *creation*, so
+    // newPatterns is null (unknown) rather than a guess; the trajectory has no
+    // real id to surface, so trajectoryId is null.
+    const feedbackRecorded = feedbackResult?.success === true;
+    const learningAvailable = feedbackRecorded;
     return {
       taskId,
       success,
       duration,
       learningUpdates: {
-        patternsUpdated: feedbackResult?.updated || (success ? 2 : 1),
-        newPatterns: success ? 1 : 0,
-        trajectoryId: `traj-${Date.now()}`,
+        patternsUpdated: feedbackRecorded ? (feedbackResult?.updated ?? 0) : 0,
+        newPatterns: null as number | null,
+        trajectoryId: null as string | null,
         controller: feedbackResult?.controller || 'none',
         outcomePersisted,
+        available: learningAvailable,
+        ...(learningAvailable ? {} : {
+          reason: feedbackResult
+            ? `feedback controller '${feedbackResult.controller}' did not record the outcome`
+            : 'feedback controller unavailable',
+        }),
       },
+      trajectory: { recorded: trajectoryRecorded },
       quality,
       pheromone,
       feedback: feedbackResult ? {
