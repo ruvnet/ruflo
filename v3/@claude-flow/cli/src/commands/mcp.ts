@@ -137,10 +137,17 @@ const startCommand: Command = {
     // PID file exists, which would cause us to SIGKILL ourselves)
     const existingStatus = await getMCPServerStatus();
     const isSelfDetected = existingStatus.pid === process.pid;
-    if (existingStatus.running && !isSelfDetected) {
-      // For stdio transport, always force restart since we can't health check it
-      // For other transports, check health unless --force is specified
-      const shouldForceRestart = force || transport === 'stdio';
+    // #3364: only a port-bound transport (http/websocket) is single-instance.
+    // A stdio server belongs to the client that spawned it, over that client's
+    // own pipes, and any number run side by side. The PID file is a single
+    // slot per os.tmpdir(), so for stdio "already running" only ever meant
+    // "some other server is recorded" — and force-restarting SIGKILLed it
+    // (another terminal's stdio server, or a live http server). Stdio now
+    // kills a recorded server only when explicitly asked with --force.
+    const isSingleInstance = transport !== 'stdio';
+    if (existingStatus.running && !isSelfDetected && (isSingleInstance || force)) {
+      // --force always restarts; otherwise check health (http/websocket)
+      const shouldForceRestart = force;
 
       if (!shouldForceRestart) {
         // Verify the server is actually healthy/responsive
