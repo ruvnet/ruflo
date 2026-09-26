@@ -12,12 +12,16 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const PROJECT_ROOT = join(__dirname, '../..');
+// Home-level helpers can serve a different project. Keep the memory writer on
+// the same project root as intelligence.cjs, which reads CLAUDE_PROJECT_DIR.
+const PROJECT_ROOT = process.env.CLAUDE_PROJECT_DIR
+  ? resolve(process.env.CLAUDE_PROJECT_DIR)
+  : join(__dirname, '../..');
 const DATA_DIR = join(PROJECT_ROOT, '.claude-flow', 'data');
 const STORE_PATH = join(DATA_DIR, 'auto-memory-store.json');
 
