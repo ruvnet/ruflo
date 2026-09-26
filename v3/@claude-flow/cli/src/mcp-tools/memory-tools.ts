@@ -385,40 +385,46 @@ async function readMemoryStatusLabels(): Promise<{
  * #1606: Wrapped in try/catch to prevent process-level crashes that kill
  * the stdio MCP transport on Windows/Codex.
  */
-async function ensureInitialized(): Promise<void> {
+async function ensureInitialized(dbPath?: string): Promise<void> {
   try {
     const { initializeMemoryDatabase, checkMemoryInitialization, storeEntry } = await getMemoryFunctions();
 
     // Check if already initialized
-    const status = await checkMemoryInitialization();
+    const status = await checkMemoryInitialization(dbPath);
     if (!status.initialized) {
-      await initializeMemoryDatabase({ force: false, verbose: false });
+      await initializeMemoryDatabase({ force: false, verbose: false, dbPath });
     }
 
     // Migrate legacy JSON data if exists (from old .claude-flow/memory/ location)
+    // A custom import target must not consume the one-time migration marker
+    // for the project's normal memory store.
     if (hasLegacyStore()) {
-      const legacyStore = loadLegacyStore();
-      if (legacyStore && Object.keys(legacyStore.entries).length > 0) {
-        console.error('[MCP Memory] Migrating legacy JSON store to sql.js...');
-        let migrated = 0;
+      const { resolveDbPath } = await import('../memory/memory-initializer.js');
+      if (!dbPath || dbPath === resolveDbPath()) {
+        const legacyStore = loadLegacyStore();
+        if (legacyStore && Object.keys(legacyStore.entries).length > 0) {
+          console.error('[MCP Memory] Migrating legacy JSON store to sql.js...');
+          let migrated = 0;
 
-        for (const [key, entry] of Object.entries(legacyStore.entries)) {
-          try {
-            const value = typeof entry.value === 'string' ? entry.value : JSON.stringify(entry.value);
-            await storeEntry({
-              key,
-              value,
-              namespace: 'default',
-              generateEmbeddingFlag: true,
-            });
-            migrated++;
-          } catch (e) {
-            console.error(`[MCP Memory] Failed to migrate key "${key}":`, e);
+          for (const [key, entry] of Object.entries(legacyStore.entries)) {
+            try {
+              const value = typeof entry.value === 'string' ? entry.value : JSON.stringify(entry.value);
+              await storeEntry({
+                key,
+                value,
+                namespace: 'default',
+                generateEmbeddingFlag: true,
+                dbPath,
+              });
+              migrated++;
+            } catch (e) {
+              console.error(`[MCP Memory] Failed to migrate key "${key}":`, e);
+            }
           }
-        }
 
-        console.error(`[MCP Memory] Migrated ${migrated}/${Object.keys(legacyStore.entries).length} entries`);
-        markMigrationComplete();
+          console.error(`[MCP Memory] Migrated ${migrated}/${Object.keys(legacyStore.entries).length} entries`);
+          markMigrationComplete();
+        }
       }
     }
   } catch (error) {
@@ -1547,11 +1553,15 @@ export const memoryTools: MCPTool[] = [
         inputPath: { type: 'string', description: 'Path to the JSON export file' },
         merge: { type: 'boolean', description: 'Merge into existing entries (upsert) vs. fail on conflict (default true)' },
         namespace: { type: 'string', description: 'Override the namespace for all imported entries' },
+        dbPath: { type: 'string', description: 'Database file to import into (defaults to the MCP memory store)' },
       },
       required: ['inputPath'],
     },
     handler: async (input) => {
-      await ensureInitialized();
+      const dbPath = typeof input.dbPath === 'string' && input.dbPath.trim()
+        ? resolve(input.dbPath)
+        : undefined;
+      await ensureInitialized(dbPath);
       const { storeEntry } = await getMemoryFunctions();
       const t0 = Date.now();
       const inputPath = String(input.inputPath ?? '');
@@ -1567,8 +1577,9 @@ export const memoryTools: MCPTool[] = [
         if (!e || typeof e.key !== 'string') { skipped++; continue; }
         const value = typeof e.value === 'string' ? e.value : JSON.stringify(e.value ?? null);
         try {
-          await storeEntry({ key: e.key, value, namespace: nsOverride ?? e.namespace ?? 'default', upsert: input.merge !== false });
-          imported++;
+          const result = await storeEntry({ key: e.key, value, namespace: nsOverride ?? e.namespace ?? 'default', upsert: input.merge !== false, dbPath });
+          if (result.success) imported++;
+          else skipped++;
         } catch { skipped++; }
       }
       return {

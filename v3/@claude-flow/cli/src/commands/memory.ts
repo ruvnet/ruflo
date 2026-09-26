@@ -1699,7 +1699,8 @@ const importCommand: Command = {
       short: 'n',
       description: 'Import into specific namespace',
       type: 'string'
-    }
+    },
+    DB_PATH_OPTION
   ],
   examples: [
     { command: 'claude-flow memory import -i ./backup.json', description: 'Import from file' },
@@ -1729,6 +1730,7 @@ const importCommand: Command = {
         inputPath,
         merge: ctx.flags.merge ?? true,
         namespace: ctx.flags.namespace,
+        dbPath: resolveDbPath(ctx.flags.path as string | undefined),
       });
 
       output.printSuccess(`Imported from ${result.inputPath}`);
