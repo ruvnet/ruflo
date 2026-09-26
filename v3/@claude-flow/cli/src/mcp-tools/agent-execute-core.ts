@@ -586,7 +586,14 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
   // Kept for legacy error-path remediation message + final-result `model` field
   // (returned when the request fully fails with no successful retry).
   const anthropicModel = firstCallModel;
+  // The agent registry persists per-agent instructions, including those set
+  // through agent_update. Workflow steps do not supply a systemPrompt, so
+  // omitting this fallback silently discards the configured agent context.
+  const configuredInstructions = typeof agent.config?.instructions === 'string' && agent.config.instructions.trim()
+    ? agent.config.instructions
+    : undefined;
   const systemPrompt = input.systemPrompt ||
+    configuredInstructions ||
     `You are a ${agent.agentType} agent operating as part of a Ruflo swarm. ` +
     `Agent ID: ${input.agentId}. Domain: ${agent.domain ?? 'general'}. ` +
     `Respond directly and stay focused on the task. If you need information you don't have, state that explicitly.`;
