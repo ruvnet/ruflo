@@ -40,7 +40,7 @@
     "package:rvf": "bash src/scripts/package-rvf.sh"
   },
   "dependencies": {
-    "@claude-flow/cli": "^3.33.0"
+    "@claude-flow/cli": "3.45.0"
   },
   "optionalDependencies": {},
   "overrides": {
