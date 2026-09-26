@@ -11,7 +11,7 @@ import { existsSync, readFileSync, statSync, openSync, readSync, closeSync } fro
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
-import { execSync, exec } from 'child_process';
+import { execSync, exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { decodeKey, isEncryptionEnabled } from '../encryption/vault.js';
 import { isEncryptedBlob } from '../encryption/vault.js';
@@ -25,6 +25,7 @@ import {
 
 // Promisified exec with proper shell and env inheritance for cross-platform support
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 /**
  * Execute command asynchronously with proper environment inheritance
@@ -75,6 +76,42 @@ async function checkNpmVersion(): Promise<HealthCheck> {
     }
   } catch {
     return { name: 'npm Version', status: 'fail', message: 'npm not found', fix: 'Install Node.js from https://nodejs.org' };
+  }
+}
+
+/** ADR-122 Phase 0: probe only the CLI version, without launching a browser. */
+export function evaluateAgentBrowserVersion(rawOutput: string): HealthCheck {
+  const name = 'agent-browser CLI (ADR-122)';
+  const fix = 'npm install -g agent-browser@latest';
+  const versionOutput = rawOutput.trim().replace(/\x1b\[[0-9;]*m/g, '');
+  const match = /^(?:agent-browser(?:\s+version)?\s+)?v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\s|$)/i.exec(versionOutput);
+  const version = match ? semver.parse(match[1]) : null;
+  if (!version) {
+    return { name, status: 'warn', message: `Unable to parse agent-browser version${versionOutput ? `: ${versionOutput.slice(0, 120)}` : ' (empty output)'}. Browser MCP tools may be unavailable.`, fix };
+  }
+  if (semver.lt(version, '0.27.0')) {
+    return { name, status: 'warn', message: `v${version.version} is below the ADR-122 v0.27.0 minimum for browser MCP tools`, fix };
+  }
+  return { name, status: 'pass', message: `v${version.version} meets the ADR-122 v0.27.0 minimum for browser MCP tools` };
+}
+
+export async function checkAgentBrowserVersion(
+  probe: () => Promise<string> = async () => {
+    const { stdout } = await execFileAsync('agent-browser', ['--version'], {
+      encoding: 'utf8', timeout: 3000, maxBuffer: 16 * 1024, windowsHide: true,
+    });
+    return String(stdout);
+  },
+): Promise<HealthCheck> {
+  try {
+    return evaluateAgentBrowserVersion(await probe());
+  } catch (error) {
+    const name = 'agent-browser CLI (ADR-122)';
+    const fix = 'npm install -g agent-browser@latest';
+    const code = (error as NodeJS.ErrnoException).code;
+    return code === 'ENOENT'
+      ? { name, status: 'warn', message: 'Not found on PATH; @claude-flow/browser and browser MCP tools need agent-browser v0.27.0 or newer', fix }
+      : { name, status: 'warn', message: `Version check failed: ${error instanceof Error ? error.message : String(error)}`, fix };
   }
 }
 
@@ -2466,7 +2503,7 @@ export const doctorCommand: Command = {
     {
       name: 'component',
       short: 'c',
-      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, metaharness)',
+      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, browser, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, metaharness)',
       type: 'string'
     },
     {
@@ -2589,6 +2626,7 @@ export const doctorCommand: Command = {
       checkNodeVersion,
       checkNpmVersion,
       checkClaudeCode,
+      checkAgentBrowserVersion, // ADR-122 Phase 0 — browser runtime compatibility
       checkGit,
       checkGitRepo,
       checkConfigFile,
@@ -2631,6 +2669,7 @@ export const doctorCommand: Command = {
       'node': checkNodeVersion,
       'npm': checkNpmVersion,
       'claude': checkClaudeCode,
+      'browser': checkAgentBrowserVersion,
       'config': checkConfigFile,
       'stale-settings': checkStaleSettingsNpx, // #2448
       'daemon': checkDaemonStatus,
