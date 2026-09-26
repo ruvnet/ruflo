@@ -333,6 +333,22 @@ async function resolveMemoryDbPath(): Promise<string | null> {
   return null;
 }
 
+/** Native AgentDB writes to a plaintext sibling of the sql.js memory file.
+ * Probe only stores that already exist: projects without the native bridge
+ * should not acquire an extra warning just by running doctor (#3195). */
+async function existingNativeAgentDbPaths(): Promise<string[]> {
+  const candidates = new Set<string>();
+  try {
+    const { getMemoryRoot, resolveDbPath } = await import('../memory/memory-initializer.js');
+    candidates.add(join(getMemoryRoot(), 'agentdb-memory.db'));
+    // Explicit CLAUDE_FLOW_DB_PATH callers may put the sibling elsewhere.
+    candidates.add(join(dirname(resolveDbPath()), 'agentdb-memory.db'));
+  } catch {
+    candidates.add(join(process.cwd(), '.swarm', 'agentdb-memory.db'));
+  }
+  return [...candidates].filter((path) => existsSync(path));
+}
+
 /** Open a sql.js Database over an on-disk file, returning null when the
  * file can't be opened as a SQLite database (encrypted / corrupted / not
  * a database). Callers decide whether that's warn or fail. */
@@ -533,6 +549,76 @@ async function checkMemoryStructuralIntegrity(): Promise<HealthCheck> {
       status: 'fail',
       message: `${dbPath} — quick_check probe threw: ${msg} (unencrypted) [structural-only]`,
       fix: 'back up .swarm/memory.db then `claude-flow memory init --force`',
+    };
+  } finally {
+    try { db.close(); } catch { /* best-effort */ }
+  }
+}
+
+/** Check the AgentDB authority independently from the legacy memory.db.
+ * Opening read-only with SQLite keeps WAL commits visible without mutating
+ * either store; the existing legacy health checks retain their own scope. */
+async function checkNativeAgentDbStructuralIntegrity(dbPath: string): Promise<HealthCheck> {
+  const NAME = 'Native AgentDB Structural Integrity (quick_check)';
+  if (!existsSync(dbPath)) {
+    return { name: NAME, status: 'warn', message: `${dbPath} disappeared before the native check could run` };
+  }
+  if (isMemoryDbEncryptedAtRest(dbPath)) {
+    return {
+      name: NAME,
+      status: 'fail',
+      message: `${dbPath} — RFE1-encrypted; native AgentDB requires a plaintext SQLite file`,
+      fix: `back up ${dbPath} and restore a usable native AgentDB database`,
+    };
+  }
+
+  let Database: any;
+  try {
+    Database = ((await import('better-sqlite3')) as any).default;
+  } catch {
+    return {
+      name: NAME,
+      status: 'warn',
+      message: `${dbPath} — better-sqlite3 not installed; native AgentDB structural health is unverified`,
+      fix: 'install better-sqlite3 with npm install scripts enabled, then rerun this check',
+    };
+  }
+
+  let db: any;
+  try {
+    db = new Database(dbPath, { readonly: true, fileMustExist: true });
+  } catch (error) {
+    if (isNativeSqliteBindingUnavailable(error)) {
+      return nativeBindingUnavailableCheck(NAME, dbPath, error, '[native AgentDB structural health unverified]');
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      name: NAME,
+      status: 'fail',
+      message: `${dbPath} — better-sqlite3 failed to open: ${message} [native AgentDB]`,
+      fix: `back up ${dbPath} and its WAL sidecars, then restore a known-good native AgentDB database`,
+    };
+  }
+
+  try {
+    const rows = db.pragma('quick_check') as Array<Record<string, unknown>>;
+    const values = rows.map((row) => String(Object.values(row)[0]));
+    if (values.length === 1 && values[0] === 'ok') {
+      return { name: NAME, status: 'pass', message: `${dbPath} — PRAGMA quick_check: ok [native AgentDB, WAL-aware]` };
+    }
+    return {
+      name: NAME,
+      status: 'fail',
+      message: `${dbPath} — PRAGMA quick_check: ${values.slice(0, 3).join('; ')}${values.length > 3 ? ` (+${values.length - 3} more)` : ''} [native AgentDB]`,
+      fix: `back up ${dbPath} and its WAL sidecars, then restore a known-good native AgentDB database`,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      name: NAME,
+      status: 'fail',
+      message: `${dbPath} — quick_check probe threw: ${message} [native AgentDB]`,
+      fix: `back up ${dbPath} and its WAL sidecars, then restore a known-good native AgentDB database`,
     };
   } finally {
     try { db.close(); } catch { /* best-effort */ }
@@ -2495,6 +2581,9 @@ export const doctorCommand: Command = {
     output.writeln(output.dim('─'.repeat(50)));
     output.writeln();
 
+    const nativeAgentDbChecks = (await existingNativeAgentDbPaths())
+      .map((dbPath) => () => checkNativeAgentDbStructuralIntegrity(dbPath));
+
     const allChecks: (() => Promise<HealthCheck>)[] = [
       checkVersionFreshness,
       checkNodeVersion,
@@ -2507,6 +2596,7 @@ export const doctorCommand: Command = {
       checkDaemonStatus,
       checkMemoryDatabase,
       checkMemoryStructuralIntegrity, // #2737 — bounded, native quick_check on every default run
+      ...nativeAgentDbChecks, // #3195 — verify each present native authority file
       checkMemoryPersistenceDriver, // #2968/#3321 — read-only native capability probe
       checkLearningBridge, // #2545 — can the auto-memory hook actually load @claude-flow/memory?
       checkMemoryPackageVersion, // #3392 — loaded @claude-flow/memory must satisfy the CLI's declared range
@@ -2547,6 +2637,7 @@ export const doctorCommand: Command = {
       'memory': [
         checkMemoryDatabase,         // existing: exists + statable (unchanged)
         checkMemoryIntegrity,        // #2677 check 1: sql.js open + PRAGMA integrity_check
+        ...nativeAgentDbChecks,       // #3195: present AgentDB authority, checked independently
         checkMemoryPersistenceDriver, // #2968/#3321: read-only native capability probe
         checkMemoryPackageVersion,   // #3392: loaded memory package satisfies the declared range
         checkMemoryContent,          // #2677 check 2: memory_entries content coverage
