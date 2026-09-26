@@ -87,6 +87,31 @@ function validateMemoryInput(key?: string, value?: string, query?: string, names
   }
 }
 
+/**
+ * #3374 — presence check for a schema-`required` string parameter.
+ *
+ * `validateMemoryInput` above is a bounds-and-charset validator: every branch
+ * is truthiness-guarded, so an omitted parameter passes it silently. Nothing
+ * else enforces `inputSchema.required` for these tools, so without this an
+ * omitted `query` travelled down to `generateHashEmbedding`'s
+ * `text.toLowerCase()` and came back as an unrelated TypeError.
+ */
+const MISSING_REQUIRED_PARAM = 'MISSING_REQUIRED_PARAM' as const;
+
+function missingRequiredString(
+  input: Record<string, unknown>,
+  param: string,
+  tool: string,
+): { error: string; code: typeof MISSING_REQUIRED_PARAM } | null {
+  const v = input[param];
+  if (typeof v === 'string' && v.length > 0) return null;
+  const got = v === undefined ? 'it was omitted' : v === '' ? 'it was an empty string' : `got ${v === null ? 'null' : typeof v}`;
+  return {
+    error: `${tool}: required parameter "${param}" must be a non-empty string (${got})`,
+    code: MISSING_REQUIRED_PARAM,
+  };
+}
+
 // #1884 — sanitize a key produced from arbitrary input (markdown headings,
 // frontmatter names, file names) so it survives validateMemoryInput on the
 // read/delete path. Replaces every dangerous char with `_`. Truncates to
@@ -280,6 +305,81 @@ async function describeBackend(): Promise<string> {
   }
 }
 
+/** #3311: one page per round trip, so a store larger than one page is
+ * counted rather than silently cut off at the old hardcoded 100000. */
+const MEMORY_STATS_PAGE = 10000;
+
+/** #3311: a hard stop so a `total` that never agrees with the rows returned
+ * cannot spin forever. Reaching it is reported as a truncated count, not as
+ * a complete one. */
+const MEMORY_STATS_MAX_PAGES = 200;
+
+/** The shape one page of `listEntries` comes back in, generic over the row
+ * type so paging does not widen or narrow what the caller already has. */
+type ListPage<E> = {
+  success: boolean;
+  entries: E[];
+  total: number;
+  error?: string;
+};
+
+/**
+ * Page through the store and return every row, or the first failure.
+ *
+ * The old call asked for `limit: 100000` in one shot and read only
+ * `entries`/`total` off the result — so a bigger store had its namespace
+ * breakdown and embedding coverage computed from a prefix, and a listing
+ * that reported `success: false` was read as an empty one.
+ */
+async function collectAllEntries<E>(
+  listEntries: (options: { limit?: number; offset?: number }) => Promise<ListPage<E>>,
+): Promise<ListPage<E>> {
+  const entries: E[] = [];
+  let total = 0;
+
+  for (let page = 0; page < MEMORY_STATS_MAX_PAGES; page++) {
+    const result = await listEntries({ limit: MEMORY_STATS_PAGE, offset: entries.length });
+    if (!result.success) {
+      return { success: false, entries, total: result.total ?? total, error: result.error };
+    }
+    total = result.total;
+    entries.push(...result.entries);
+    if (result.entries.length === 0 || entries.length >= total) break;
+  }
+
+  return { success: true, entries, total };
+}
+
+/** #3311: unavailable is its own answer. The zeros this replaces were
+ * indistinguishable from a store that really is empty. */
+function memoryStatsUnavailable(error: string): {
+  initialized: null;
+  available: false;
+  error: string;
+} {
+  return { initialized: null, available: false, error };
+}
+
+/**
+ * Version and feature labels from the initialization probe.
+ *
+ * Metadata only. The probe reads a whole-image snapshot that cannot see live
+ * WAL frames, so it is allowed to fail without that meaning the store is
+ * missing — which is exactly the conflation #3311 reports.
+ */
+async function readMemoryStatusLabels(): Promise<{
+  version?: string;
+  features?: { vectorEmbeddings: boolean; patternLearning: boolean; temporalDecay: boolean };
+}> {
+  try {
+    const { checkMemoryInitialization } = await getMemoryFunctions();
+    const status = await checkMemoryInitialization();
+    return { version: status.version, features: status.features };
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Ensure memory database is initialized and migrate legacy data if needed.
  * #1606: Wrapped in try/catch to prevent process-level crashes that kill
@@ -353,6 +453,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key', 'value'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_store');
+      if (missingKey) {
+        return { success: false, key: input.key, stored: false, hasEmbedding: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { storeEntry } = await getMemoryFunctions();
 
@@ -408,6 +513,8 @@ export const memoryTools: MCPTool[] = [
           backend: await describeBackend(),
           storeTime: `${duration.toFixed(2)}ms`,
           error: result.error,
+          // #3325: why hasEmbedding is false, when the bridge could not embed.
+          ...(result.embeddingError ? { embeddingError: result.embeddingError } : {}),
         };
       } catch (error) {
         return {
@@ -431,6 +538,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_retrieve');
+      if (missingKey) {
+        return { key: input.key, namespace: input.namespace, value: null, found: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { getEntry } = await getMemoryFunctions();
 
@@ -484,7 +596,7 @@ export const memoryTools: MCPTool[] = [
   },
   {
     name: 'memory_search',
-    description: 'Find stored memories by meaning (vector similarity), not by literal text — finds "JWT auth pattern" when you query "token-based login flow". Use when native Grep is wrong because Grep matches characters and you need to find conceptually-related entries across past sessions. Backed by HNSW index over ONNX embeddings; returns top-k with similarity scores. Pair with smart=true for query expansion + MMR diversity.',
+    description: 'Find stored memories by meaning (vector similarity), not by literal text — finds "JWT auth pattern" when you query "token-based login flow". Use when native Grep is wrong because Grep matches characters and you need to find conceptually-related entries across past sessions. Returns top-k with similarity: raw retrieval relevance, which may include lexical scoring and is not guaranteed to be cosine similarity. With smart=true, similarity is the highest raw score across query variants; rankingScore is the composite relevance score used by the ranking pipeline, not cosine similarity, probability, or confidence. Diversity can change result order.',
     category: 'memory',
     inputSchema: {
       type: 'object',
@@ -492,8 +604,8 @@ export const memoryTools: MCPTool[] = [
         query: { type: 'string', description: 'Search query (semantic similarity)' },
         namespace: { type: 'string', description: 'Namespace to search (default: all namespaces — omit to search across every namespace)' },
         limit: { type: 'number', description: 'Maximum results (default: 10)' },
-        threshold: { type: 'number', description: 'Minimum similarity threshold 0-1 (default: 0.3)' },
-        smart: { type: 'boolean', description: 'Enable SmartRetrieval pipeline — query expansion, RRF fusion, recency boost, MMR diversity (default: false)' },
+        threshold: { type: 'number', description: 'Minimum raw retrieval relevance 0-1 for candidate admission, applied per query before SmartRetrieval ranking; not a floor on rankingScore (default: 0.3)' },
+        smart: { type: 'boolean', description: 'Enable SmartRetrieval — query expansion, RRF fusion, recency boost, MMR diversity; preserves raw similarity and adds rankingScore (default: false)' },
         provenance_filter: {
           type: 'array',
           items: { type: 'string', enum: ['user_claim', 'agent_output', 'system_observation', 'tool_result', 'unknown'] },
@@ -503,6 +615,11 @@ export const memoryTools: MCPTool[] = [
       required: ['query'],
     },
     handler: async (input) => {
+      const missingQuery = missingRequiredString(input, 'query', 'memory_search');
+      if (missingQuery) {
+        return { query: input.query, results: [], total: 0, ...missingQuery };
+      }
+
       await ensureInitialized();
       const { searchEntries } = await getMemoryFunctions();
 
@@ -560,6 +677,7 @@ export const memoryTools: MCPTool[] = [
                   key: e.key,
                   content: e.content,
                   score: e.score,
+                  rawScore: e.score,
                   namespace: e.namespace,
                   provenanceType: e.provenanceType,
                   // Dream Cycle 2026-09-03: thread the already-computed
@@ -579,14 +697,15 @@ export const memoryTools: MCPTool[] = [
 
             const duration = performance.now() - startTime;
 
-            const results = smartResult.results.map((r: { content: string; key: string; namespace: string; score: number; provenanceType?: string }) => {
+            const results = smartResult.results.map((r: { content: string; key: string; namespace: string; score: number; rawScore?: number; provenanceType?: string }) => {
               let value: unknown = r.content;
               try { value = JSON.parse(r.content); } catch { /* keep as string */ }
               return {
                 key: r.key,
                 namespace: r.namespace,
                 value,
-                similarity: r.score,
+                similarity: r.rawScore,
+                rankingScore: r.score,
                 provenanceType: r.provenanceType,
               };
             });
@@ -675,6 +794,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_delete');
+      if (missingKey) {
+        return { success: false, key: input.key, namespace: input.namespace, deleted: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { deleteEntry } = await getMemoryFunctions();
 
@@ -772,43 +896,62 @@ export const memoryTools: MCPTool[] = [
     },
     handler: async () => {
       await ensureInitialized();
-      const { checkMemoryInitialization, listEntries } = await getMemoryFunctions();
+      const { listEntries } = await getMemoryFunctions();
 
+      // #3311: the store's own listing decides whether memory is there.
+      // `checkMemoryInitialization` opens a whole-image sql.js snapshot of
+      // the main database file, which cannot include live SQLite WAL frames
+      // — so a store the bridge reads and searches perfectly well came back
+      // `initialized: false` from this tool alone. The probe is still read
+      // below, for the version and feature labels it is the only source of,
+      // but it no longer gets to overrule a working store.
+      let listing: ListPage<{ namespace: string; hasEmbedding: boolean }>;
       try {
-        const status = await checkMemoryInitialization();
-        const allEntries = await listEntries({ limit: 100000 });
-
-        // Count by namespace
-        const namespaces: Record<string, number> = {};
-        let withEmbeddings = 0;
-
-        for (const entry of allEntries.entries) {
-          namespaces[entry.namespace] = (namespaces[entry.namespace] || 0) + 1;
-          if (entry.hasEmbedding) withEmbeddings++;
-        }
-
-        return {
-          initialized: status.initialized,
-          totalEntries: allEntries.total,
-          entriesWithEmbeddings: withEmbeddings,
-          embeddingCoverage: allEntries.total > 0
-            ? `${((withEmbeddings / allEntries.total) * 100).toFixed(1)}%`
-            : '0%',
-          namespaces,
-          backend: await describeBackend(),
-          version: status.version || '3.0.0',
-          features: status.features || {
-            vectorEmbeddings: true,
-            hnswIndex: true,
-            semanticSearch: true,
-          },
-        };
+        listing = await collectAllEntries(listEntries);
       } catch (error) {
-        return {
-          initialized: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        };
+        return memoryStatsUnavailable(error instanceof Error ? error.message : 'Unknown error');
       }
+      if (!listing.success) {
+        // A failed query is not an empty store. Reporting zeros here is
+        // what made a WAL refusal look like "you have no memories".
+        return memoryStatsUnavailable(listing.error || 'listEntries reported failure');
+      }
+
+      // Object.create(null): a namespace literally named `__proto__` is a
+      // legal key, and assigning it on an object literal sets the prototype
+      // instead of counting anything — so that namespace's entries vanished
+      // from the breakdown while still being counted in the total.
+      const namespaces: Record<string, number> = Object.create(null) as Record<string, number>;
+      let withEmbeddings = 0;
+      for (const entry of listing.entries) {
+        namespaces[entry.namespace] = (namespaces[entry.namespace] || 0) + 1;
+        if (entry.hasEmbedding) withEmbeddings++;
+      }
+
+      const counted = listing.entries.length;
+      const status = await readMemoryStatusLabels();
+
+      return {
+        initialized: true,
+        totalEntries: listing.total,
+        entriesCounted: counted,
+        // The breakdown below covers `entriesCounted` rows, which is every
+        // row unless the listing was truncated; say so rather than letting
+        // a partial count read as the whole store.
+        ...(counted < listing.total ? { truncated: true } : {}),
+        entriesWithEmbeddings: withEmbeddings,
+        embeddingCoverage: counted > 0
+          ? `${((withEmbeddings / counted) * 100).toFixed(1)}%`
+          : '0%',
+        namespaces: { ...namespaces },
+        backend: await describeBackend(),
+        version: status.version || '3.0.0',
+        features: status.features || {
+          vectorEmbeddings: true,
+          hnswIndex: true,
+          semanticSearch: true,
+        },
+      };
     },
   },
   {
@@ -1138,6 +1281,11 @@ export const memoryTools: MCPTool[] = [
       required: ['query'],
     },
     handler: async (input) => {
+      const missingQuery = missingRequiredString(input, 'query', 'memory_search_unified');
+      if (missingQuery) {
+        return { success: false, query: input.query, results: [], total: 0, ...missingQuery };
+      }
+
       await ensureInitialized();
       const { searchEntries, listEntries } = await getMemoryFunctions();
       validateMemoryInput(undefined, undefined, input.query as string);

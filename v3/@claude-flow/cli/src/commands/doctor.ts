@@ -15,8 +15,10 @@ import { execSync, exec } from 'child_process';
 import { promisify } from 'util';
 import { decodeKey, isEncryptionEnabled } from '../encryption/vault.js';
 import { isEncryptedBlob } from '../encryption/vault.js';
+import * as semver from 'semver';
 import {
   resolveMemoryPackageFromProject,
+  resolveMemoryPackageFromCli,
   readMemoryPackageVersion,
   recordMemoryPackagePath,
 } from '../init/memory-package-resolver.js';
@@ -537,24 +539,14 @@ async function checkMemoryStructuralIntegrity(): Promise<HealthCheck> {
   }
 }
 
-// #2968 option 1 — read-only doctor check for the active SQLite driver.
-//
-// Native better-sqlite3 (durable, WAL-capable) can silently degrade to the
-// sql.js WASM fallback (non-durable — `wal_checkpoint` calls are rejected
-// and the write is lost) when a postinstall script is skipped. `memory
-// store` still printed "Data stored successfully" before the persistWarning
-// fix in #2983/3.38.1 (see memory-store-persist-warning-2968.test.ts); this
-// check gives a standing, read-only signal so the driver split is visible
-// any time doctor runs, independent of any single store call.
-//
-// Table count in the on-disk memory.db is the cheap, reliable signal from
-// the issue report: the native driver's schema produces 47 tables, the
-// sql.js fallback's produces only 10. Deliberately does NOT change install
-// behavior (that's option 2 from #2968, explicitly out of scope here) —
-// this only reports, it never repairs.
-const MEMORY_DRIVER_NATIVE_TABLE_FLOOR = 20; // roughly midpoint of sql.js's ~10 and native's ~47
+// #2968/#3321 — read-only native SQLite capability probe. A skipped
+// postinstall can leave the wrapper importable but its binding unavailable.
+// Schema size cannot identify the runtime driver or the database's history:
+// memory init creates its schema with sql.js even when native is available.
+// This probe does not verify schema compatibility or cross-process writes;
+// integrity checks and memory store's persistWarning retain their own roles.
 
-async function checkMemoryPersistenceDriver(): Promise<HealthCheck> {
+export async function checkMemoryPersistenceDriver(): Promise<HealthCheck> {
   const NAME = 'Memory Persistence Driver';
   const dbPath = await resolveMemoryDbPath();
   if (!dbPath) {
@@ -583,6 +575,7 @@ async function checkMemoryPersistenceDriver(): Promise<HealthCheck> {
   let tableCount: number | null = null;
   let nativeUnavailableReason: string | null = null;
   let nativeOpenOtherError: string | null = null;
+  let nativeQueryError: string | null = null;
 
   if (Database) {
     let db: any;
@@ -598,10 +591,14 @@ async function checkMemoryPersistenceDriver(): Promise<HealthCheck> {
     }
     if (db) {
       try {
-        const row = db.prepare("SELECT count(*) AS c FROM sqlite_master WHERE type='table'").get() as { c: number };
-        tableCount = Number(row?.c ?? 0);
-      } catch {
-        // leave null — Memory Integrity above already reports open/query failures
+        const row = db.prepare("SELECT count(*) AS c FROM sqlite_master WHERE type='table'").get() as { c?: unknown } | undefined;
+        if (typeof row?.c === 'number' && Number.isSafeInteger(row.c) && row.c >= 0) {
+          tableCount = row.c;
+        } else {
+          nativeQueryError = 'query returned no reliable table count';
+        }
+      } catch (e) {
+        nativeQueryError = (e as Error).message || String(e);
       } finally {
         try { db.close(); } catch { /* best-effort */ }
       }
@@ -617,7 +614,10 @@ async function checkMemoryPersistenceDriver(): Promise<HealthCheck> {
     if (sdb) {
       try {
         const res = sdb.exec("SELECT count(*) FROM sqlite_master WHERE type='table'");
-        tableCount = Number(res[0]?.values?.[0]?.[0] ?? 0);
+        const count = res[0]?.values?.[0]?.[0];
+        if (typeof count === 'number' && Number.isSafeInteger(count) && count >= 0) {
+          tableCount = count;
+        }
       } catch {
         // leave null
       } finally {
@@ -628,13 +628,13 @@ async function checkMemoryPersistenceDriver(): Promise<HealthCheck> {
 
   const tableSummary = tableCount === null
     ? 'table count unavailable'
-    : `${tableCount} tables (native schema ~47, sql.js-fallback schema ~10 — #2968)`;
+    : `${tableCount} tables`;
 
   if (nativeUnavailableReason) {
     return {
       name: NAME,
       status: 'warn',
-      message: `${dbPath} — active driver: sql.js (WASM fallback, non-durable) — native better-sqlite3 binding unavailable: ${nativeUnavailableReason} — wal_checkpoint calls silently no-op, writes may not persist across processes (#2968/#2867/#2219) [${tableSummary}]`,
+      message: `${dbPath} — native better-sqlite3 binding unavailable: ${nativeUnavailableReason} — native read-only probe unavailable; runtime driver and write persistence not verified (#2968) [${tableSummary}; sql.js main-image-only fallback]`,
       fix: 'reinstall with npm install scripts enabled, or run `npm rebuild better-sqlite3`; then rerun this check',
     };
   }
@@ -647,19 +647,18 @@ async function checkMemoryPersistenceDriver(): Promise<HealthCheck> {
     };
   }
 
-  if (tableCount !== null && tableCount < MEMORY_DRIVER_NATIVE_TABLE_FLOOR) {
+  if (nativeQueryError || tableCount === null) {
     return {
       name: NAME,
       status: 'warn',
-      message: `${dbPath} — active driver: native better-sqlite3, but this database has only ${tableCount} tables — that matches the sql.js-fallback schema shape (~10), not the native schema (~47); it was likely created before the native binding became available, and durable writes made before then may be missing`,
-      fix: 'back up .swarm/memory.db then `claude-flow memory init --force` to rebuild under the native driver',
+      message: `${dbPath} — native better-sqlite3 opened read-only, but table count unavailable: ${nativeQueryError ?? 'query returned no reliable result'}; runtime driver and write persistence not verified`,
     };
   }
 
   return {
     name: NAME,
     status: 'pass',
-    message: `${dbPath} — active driver: native better-sqlite3 (durable, WAL-capable) [${tableSummary}]`,
+    message: `${dbPath} — native better-sqlite3 read-only open and schema query succeeded [${tableSummary}]; runtime driver, schema compatibility, and write persistence not verified`,
   };
 }
 
@@ -1041,6 +1040,74 @@ async function checkLearningBridge(): Promise<HealthCheck> {
     message: '@claude-flow/memory NOT resolvable — SessionStart self-learning imports are a silent no-op',
     fix: 'npm i -D @claude-flow/memory   (optional dep appears absent — likely --omit=optional install)',
   };
+}
+
+/**
+ * #3392: pure verdict for "does the @claude-flow/memory the CLI loads satisfy
+ * the range the CLI declares?". `npx @claude-flow/cli@latest` reuses one npx
+ * cache directory across CLI versions, and npm keeps an already-installed
+ * dependency that still satisfies a caret range, so a stale memory could
+ * survive a CLI upgrade with no error. Exported for unit testing.
+ */
+export function evaluateMemoryPackageVersion(declared: string | null, installed: string | null): HealthCheck {
+  const NAME = '@claude-flow/memory version';
+  if (!declared) {
+    return { name: NAME, status: 'warn', message: 'could not read the @claude-flow/memory range declared by @claude-flow/cli' };
+  }
+  if (!installed) {
+    return {
+      name: NAME,
+      status: 'warn',
+      message: `@claude-flow/memory is not resolvable from the CLI (declared ${declared}) — memory features fall back to degraded paths`,
+      fix: `npm install @claude-flow/memory@${declared} --include=optional`,
+    };
+  }
+  if (!semver.validRange(declared) || !semver.valid(installed)) {
+    return { name: NAME, status: 'warn', message: `cannot compare installed ${installed} against declared ${declared}` };
+  }
+  if (semver.satisfies(installed, declared, { includePrerelease: true })) {
+    return { name: NAME, status: 'pass', message: `v${installed} satisfies declared ${declared}` };
+  }
+  // warn, not fail: a dev/hoisted layout can legitimately differ, and doctor's
+  // exit code must not depend on which copy a package manager happened to hoist.
+  return {
+    name: NAME,
+    status: 'warn',
+    message: `installed v${installed} does not satisfy declared ${declared} — a stale cached copy is running, so fixes shipped in a newer @claude-flow/memory are silently absent`,
+    fix: `rm -rf "$(npm config get cache)/_npx" && npx @claude-flow/cli@latest doctor   # or: npm install @claude-flow/memory@${declared}`,
+  };
+}
+
+export async function checkMemoryPackageVersion(): Promise<HealthCheck> {
+  try {
+    // Walk up from this module to the CLI package root (npx cache, global,
+    // project-local and monorepo dev all resolve the same way).
+    let declared: string | null = null;
+    let dir = dirname(fileURLToPath(import.meta.url));
+    for (let i = 0; i < 8 && declared === null; i++) {
+      const pj = join(dir, 'package.json');
+      if (existsSync(pj)) {
+        try {
+          const pkg = JSON.parse(readFileSync(pj, 'utf-8')) as {
+            name?: string;
+            dependencies?: Record<string, string>;
+            optionalDependencies?: Record<string, string>;
+          };
+          if (pkg.name === '@claude-flow/cli') {
+            declared = pkg.optionalDependencies?.['@claude-flow/memory'] ?? pkg.dependencies?.['@claude-flow/memory'] ?? null;
+            break;
+          }
+        } catch { /* keep walking */ }
+      }
+      dir = dirname(dir);
+    }
+    // Resolve exactly as the CLI's own runtime does (its module context),
+    // not from process.cwd() — that would report the project's copy instead.
+    const distPath = resolveMemoryPackageFromCli();
+    return evaluateMemoryPackageVersion(declared, distPath ? readMemoryPackageVersion(distPath) : null);
+  } catch (err) {
+    return { name: '@claude-flow/memory version', status: 'warn', message: `check failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
 }
 
 // Check API keys
@@ -2059,20 +2126,40 @@ async function checkMetaharnessDeclaredPackages(): Promise<HealthCheck> {
 
 async function checkMetaharness(): Promise<HealthCheck> {
   try {
-    const version = await runCommand('npx -y metaharness@latest --version 2>&1', 15000);
-    // metaharness emits multi-line stdout; parse a version-shaped line.
-    const versionMatch = version.match(/(\d+\.\d+\.\d+)/);
-    if (!versionMatch) {
+    // `metaharness` has no --version flag (it falls through to the usage
+    // banner, which never matches a version regex) and shelling out via
+    // `npx metaharness@latest` ignores the installed version and hits the
+    // network every run. Resolve the version from the installed package's
+    // own package.json instead. `import.meta.resolve` is the reliable route:
+    // `require('metaharness/package.json')` is blocked by the package's
+    // `exports` map, and `createRequire().resolve()` fails on its ESM-only
+    // entry point.
+    const resolved = import.meta.resolve('metaharness');
+    let dir = dirname(fileURLToPath(resolved));
+    let version: string | null = null;
+    for (let i = 0; i < 8; i++) {
+      const pj = join(dir, 'package.json');
+      if (existsSync(pj)) {
+        try {
+          const j = JSON.parse(readFileSync(pj, 'utf-8')) as { name?: string; version?: string };
+          if (j.name === 'metaharness') { version = j.version ?? null; break; }
+        } catch { /* keep walking */ }
+      }
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+    if (!version) {
       return {
         name: 'MetaHarness (ADR-150)',
         status: 'warn',
-        message: 'Installed but version-string not parseable; integration may still work',
+        message: 'Installed but its package.json was not found while walking up from the resolved module; integration may still work',
       };
     }
     return {
       name: 'MetaHarness (ADR-150)',
       status: 'pass',
-      message: `v${versionMatch[1]} — run \`npx ruflo metaharness score\` for the full scorecard`,
+      message: `v${version} — run \`npx ruflo metaharness score\` for the full scorecard`,
     };
   } catch {
     return {
@@ -2080,6 +2167,26 @@ async function checkMetaharness(): Promise<HealthCheck> {
       status: 'warn',
       message: 'Not installed — `npx ruflo metaharness *` commands will degrade gracefully',
       fix: 'npm install --include=optional  # to enable the metaharness optional dep',
+    };
+  }
+}
+
+// Opt-in @ruvector/typesafe task router (optional peer). `--component typesafe` only.
+async function checkTypesafeRouter(): Promise<HealthCheck> {
+  const name = '@ruvector/typesafe router';
+  const { readTypesafeConfig } = await import('../ruvector/typesafe-router.js');
+  const cfg = readTypesafeConfig();
+  const gate = cfg.enabled ? `enabled (${cfg.embedder === 'hash' ? 'hash embedder, uncalibrated' : 'onnx embedder'})` : 'disabled (set CLAUDE_FLOW_ROUTER_TYPESAFE=1)';
+  try {
+    const { createRequire } = await import('module');
+    const pj = createRequire(import.meta.url)('@ruvector/typesafe/package.json') as { version?: string };
+    return { name, status: 'pass', message: `v${pj.version ?? '?'} installed; ${gate}` };
+  } catch {
+    return {
+      name,
+      status: cfg.enabled ? 'warn' : 'pass',
+      message: `Not installed; ${gate} — hooks_route uses the built-in router`,
+      ...(cfg.enabled ? { fix: 'npm install @ruvector/typesafe  # optional peer' } : {}),
     };
   }
 }
@@ -2273,7 +2380,7 @@ export const doctorCommand: Command = {
     {
       name: 'component',
       short: 'c',
-      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, metaharness)',
+      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, metaharness)',
       type: 'string'
     },
     {
@@ -2400,8 +2507,9 @@ export const doctorCommand: Command = {
       checkDaemonStatus,
       checkMemoryDatabase,
       checkMemoryStructuralIntegrity, // #2737 — bounded, native quick_check on every default run
-      checkMemoryPersistenceDriver, // #2968 — native better-sqlite3 vs sql.js fallback, read-only
+      checkMemoryPersistenceDriver, // #2968/#3321 — read-only native capability probe
       checkLearningBridge, // #2545 — can the auto-memory hook actually load @claude-flow/memory?
+      checkMemoryPackageVersion, // #3392 — loaded @claude-flow/memory must satisfy the CLI's declared range
       checkApiKeys,
       checkMcpServers,
       checkMcpSchemaOverhead, // #2726 — fixed tools/list prompt cost
@@ -2439,12 +2547,14 @@ export const doctorCommand: Command = {
       'memory': [
         checkMemoryDatabase,         // existing: exists + statable (unchanged)
         checkMemoryIntegrity,        // #2677 check 1: sql.js open + PRAGMA integrity_check
-        checkMemoryPersistenceDriver, // #2968: native better-sqlite3 vs sql.js fallback
+        checkMemoryPersistenceDriver, // #2968/#3321: read-only native capability probe
+        checkMemoryPackageVersion,   // #3392: loaded memory package satisfies the declared range
         checkMemoryContent,          // #2677 check 2: memory_entries content coverage
         checkMemoryEmbeddingCoverage, // #2677 check 3: vector coverage on populated rows
         checkMemoryReflexionCoverage, // #2677 check 6: episodes are retrievable
         checkMemoryCritiqueCoverage,  // #2677 check 6: feedback carries lessons
       ],
+      'memory-package': checkMemoryPackageVersion, // #3392
       'learning': checkLearningBridge, // #2545
       'learning-bridge': checkLearningBridge, // #2545
       'api': checkApiKeys,
@@ -2465,6 +2575,7 @@ export const doctorCommand: Command = {
       // a user would actually debug them (is it installed? running? exposed?).
       'proxy': [checkProxySponsoredConsent, checkProxyBinary, checkProxyProcess, checkProxyBindAddress],
       'auth': checkAuth, // ADR-306
+      'typesafe': checkTypesafeRouter, // opt-in @ruvector/typesafe task router
     };
 
     let checksToRun = allChecks;

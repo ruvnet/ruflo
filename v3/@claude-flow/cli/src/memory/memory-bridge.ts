@@ -830,6 +830,53 @@ async function rescueAgentdbEmbedder(agentdb: { embedder?: { pipeline?: unknown;
   _embedderPatched = true;
 }
 
+/**
+ * #3325: embed text for a bridge row or query.
+ *
+ * AgentDB's embedder is tried first. If it is absent or throws, fall back to
+ * the LOCAL chain — `generateLocalEmbedding`, never the bridge-first
+ * `generateEmbedding`, which would re-enter this bridge (#2312). Only a real
+ * ONNX vector is accepted from the local chain; a hash vector would make the
+ * row look embedded while carrying no meaning. Previously both failure modes
+ * were a bare `catch {}` that stored embedding=NULL and reported nothing.
+ */
+async function embedForBridge(
+  agentdb: { embedder?: { embed?: (t: string) => Promise<ArrayLike<number> | null | undefined>; isMock?: boolean; backend?: string } } | null | undefined,
+  text: string,
+): Promise<{ vector: number[]; model: string } | { vector: null; reason: string }> {
+  let agentdbProblem: string;
+  const embedder = agentdb?.embedder;
+  // Same mock signal bridgeGenerateEmbedding honours (AUDIT #3): the rescue
+  // tags a degraded embedder backend='mock' when it cannot replace it.
+  const agentdbIsMock = embedder?.isMock === true || embedder?.backend === 'mock';
+  if (agentdbIsMock) {
+    agentdbProblem = 'agentdb embedder is serving mock vectors';
+  } else if (embedder && typeof embedder.embed === 'function') {
+    try {
+      const emb = await embedder.embed(text);
+      if (emb && emb.length > 0) {
+        return { vector: Array.from(emb), model: 'Xenova/all-MiniLM-L6-v2' };
+      }
+      agentdbProblem = 'agentdb embedder returned no vector';
+    } catch (err) {
+      agentdbProblem = `agentdb embedder threw: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  } else {
+    agentdbProblem = 'agentdb embedder unavailable';
+  }
+
+  try {
+    const { generateLocalEmbedding } = await import('./memory-initializer.js');
+    const local = await generateLocalEmbedding(text);
+    if (local.backend === 'onnx' && local.embedding.length > 0) {
+      return { vector: Array.from(local.embedding), model: local.model };
+    }
+    return { vector: null, reason: `${agentdbProblem}; local embedding chain has no real model (backend=${local.backend})` };
+  } catch (err) {
+    return { vector: null, reason: `${agentdbProblem}; local embedding chain failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
 // ===== Bridge functions — match memory-initializer.ts signatures =====
 
 /**
@@ -864,6 +911,10 @@ export async function bridgeStoreEntry(options: {
    *  still true — this is advisory, not a failure — but callers should
    *  surface it instead of only printing an unconditional success message. */
   persistWarning?: string;
+  /** #3325: set when an embedding was requested but none could be produced
+   *  (agentdb embedder absent/threw AND no real local model). The row was
+   *  written without a vector, so semantic search cannot find it. */
+  embeddingError?: string;
 } | null> {
   // ADR-323 — validated once in storeEntry() before this is reached on that
   // path, but bridgeStoreEntry() also has direct internal callers, so check
@@ -912,26 +963,24 @@ export async function bridgeStoreEntry(options: {
       return { success: false, id, error: `MutationGuard rejected: ${guardResult.reason}` };
     }
 
-    // Generate embedding via AgentDB's embedder
+    // Generate embedding via AgentDB's embedder, falling back to the local
+    // chain (#3325). If neither can produce one, the row is still written but
+    // the result says why instead of silently storing embedding=NULL.
     let embeddingJson: string | null = null;
     let embeddingArr: number[] | null = null;
     let dimensions = 0;
     let model = 'local';
+    let embeddingError: string | undefined;
 
     if (options.generateEmbeddingFlag !== false && value.length > 0) {
-      try {
-        const embedder = ctx.agentdb.embedder;
-        if (embedder) {
-          const emb = await embedder.embed(value);
-          if (emb) {
-            embeddingArr = Array.from(emb) as number[];
-            embeddingJson = JSON.stringify(embeddingArr);
-            dimensions = emb.length;
-            model = 'Xenova/all-MiniLM-L6-v2';
-          }
-        }
-      } catch {
-        // Embedding failed — store without
+      const emb = await embedForBridge(ctx.agentdb, value);
+      if (emb.vector) {
+        embeddingArr = emb.vector;
+        embeddingJson = JSON.stringify(embeddingArr);
+        dimensions = embeddingArr.length;
+        model = emb.model;
+      } else {
+        embeddingError = emb.reason;
       }
     }
 
@@ -1089,6 +1138,7 @@ export async function bridgeStoreEntry(options: {
       cached: true,
       attested: true,
       ...(persistWarning ? { persistWarning } : {}),
+      ...(embeddingError ? { embeddingError } : {}),
     };
   } catch (err) {
     // #2775: distinguish a data-level UNIQUE constraint violation (key
@@ -1165,17 +1215,10 @@ export async function bridgeSearchEntries(options: {
     const effectiveNamespace = namespace || 'all';
     const startTime = Date.now();
 
-    // Generate query embedding
-    let queryEmbedding: number[] | null = null;
-    try {
-      const embedder = ctx.agentdb.embedder;
-      if (embedder) {
-        const emb = await embedder.embed(queryStr);
-        queryEmbedding = Array.from(emb);
-      }
-    } catch {
-      // Fall back to keyword search
-    }
+    // Generate query embedding — same agentdb-then-local chain as the write
+    // path (#3325), so rows embedded by the local fallback are searchable.
+    // No vector → keyword (BM25) search only.
+    const queryEmbedding: number[] | null = (await embedForBridge(ctx.agentdb, queryStr)).vector;
 
     // better-sqlite3: .prepare().all() returns array of objects
     // ADR-323: compose namespace + provenance filters into one WHERE clause.
@@ -1465,7 +1508,10 @@ export async function bridgeGetEntry(options: {
           accessCount: cached.accessCount ?? 0,
           createdAt: cached.createdAt || new Date().toISOString(),
           updatedAt: cached.updatedAt || new Date().toISOString(),
-          hasEmbedding: !!cached.embedding,
+          // #3325: the cache holds the `entry` object built below, which has
+          // `hasEmbedding` but no `embedding` field — so `!!cached.embedding`
+          // reported false on every cache hit, even for embedded rows.
+          hasEmbedding: typeof cached.hasEmbedding === 'boolean' ? cached.hasEmbedding : !!cached.embedding,
           tags: cached.tags || [],
         },
       };
@@ -2086,7 +2132,7 @@ export async function bridgeStorePattern(options: {
   confidence: number;
   metadata?: Record<string, unknown>;
   dbPath?: string;
-}): Promise<{ success: boolean; patternId: string; controller: string } | null> {
+}): Promise<{ success: boolean; patternId: string; controller: string; hasEmbedding?: boolean; embeddingError?: string } | null> {
   const registry = await getRegistry(options.dbPath);
   if (!registry) return null;
 
@@ -2094,16 +2140,33 @@ export async function bridgeStorePattern(options: {
     const reasoningBank = registry.get('reasoningBank');
     const patternId = generateId('pattern');
 
-    if (reasoningBank && typeof reasoningBank.store === 'function') {
-      await reasoningBank.store({
-        id: patternId,
-        content: options.pattern,
-        type: options.type,
-        confidence: options.confidence,
+    // #3327 Finding A — the real method is `storePattern`, and it takes a
+    // ReasoningPattern, NOT the {id, content, type, confidence} shape used
+    // here before. `reasoningBank.store` has never existed on agentdb's
+    // ReasoningBank, so `typeof ... === 'function'` was always false and this
+    // branch was dead code — every write fell through to bridge-fallback while
+    // `agentdb_controllers` cheerfully reported `reasoningBank: enabled=true`.
+    //
+    // Contract (agentdb ReasoningBank.d.ts):
+    //   storePattern({ taskType, approach, successRate, uses?, avgReward?,
+    //                  tags?, metadata? }) => Promise<number>   // sqlite rowid
+    // The embedded text is `${taskType}: ${approach}`, so the caller's pattern
+    // text must land in `approach` for search to match on it.
+    if (reasoningBank && typeof reasoningBank.storePattern === 'function') {
+      const rowId = await reasoningBank.storePattern({
+        taskType: options.type,
+        approach: options.pattern,
+        successRate: options.confidence,
+        tags: [options.type, 'reasoning-pattern'],
         metadata: options.metadata,
-        timestamp: Date.now(),
       });
-      return { success: true, patternId, controller: 'reasoningBank' };
+      // storePattern returns a numeric rowid; surface it as the caller-facing
+      // id so a later getPattern/deletePattern by this id resolves.
+      return {
+        success: true,
+        patternId: rowId != null ? String(rowId) : patternId,
+        controller: 'reasoningBank',
+      };
     }
 
     // Fallback: store via bridge SQL
@@ -2137,8 +2200,22 @@ export async function bridgeStorePattern(options: {
     // was actually stored under. getEntry/memory_retrieve look up by `key`,
     // so returning result.id here handed the caller a handle that can never
     // be read back — return `patternId` (the real key) instead.
-    return { success: true, patternId, controller: 'bridge-fallback' };
-  } catch {
+    // #3325: say whether the row got a vector. Without one, Tier-1 (semantic)
+    // pattern search cannot find it — report that here, at write time.
+    return {
+      success: true,
+      patternId,
+      controller: 'bridge-fallback',
+      hasEmbedding: !!result.embedding,
+      ...(result.embeddingError ? { embeddingError: result.embeddingError } : {}),
+    };
+  } catch (err) {
+    // #3327 Finding A — this catch is what hid the defect for months. When
+    // ReasoningBank threw `embedPassage is not a function`, the error was
+    // discarded and the caller saw an ordinary fallback, indistinguishable
+    // from "no controller registered". Record it so `agentdb_health` and the
+    // degraded `reason` can name the real cause instead of guessing.
+    bridgeFailureReason = err instanceof Error ? err.message : String(err);
     return null;
   }
 }
@@ -2166,11 +2243,17 @@ export async function bridgeSearchPatterns(options: {
       } else {
         results = await reasoningBank.search(options.query, { topK: options.topK || 5, minScore: options.minConfidence || 0.3 });
       }
+      // #3327 Finding A — agentdb returns ReasoningPattern[]: the text lives in
+      // `approach` and the cosine score in `similarity`. Neither `content`/
+      // `pattern` nor `score`/`confidence` exists on that shape, so the old
+      // mapping produced `content: ''` and `score: 0` for every hit even when
+      // the search itself succeeded. Read the real fields first, keeping the
+      // legacy names as fallbacks for the pre-agentdb shape.
       return {
         results: Array.isArray(results) ? results.map((r: any) => ({
-          id: r.id || r.patternId || '',
-          content: r.content || r.pattern || '',
-          score: r.score ?? r.confidence ?? 0,
+          id: String(r.id ?? r.patternId ?? ''),
+          content: r.approach ?? r.content ?? r.pattern ?? '',
+          score: r.similarity ?? r.score ?? r.successRate ?? r.confidence ?? 0,
         })) : [],
         controller: 'reasoningBank',
       };
@@ -2228,7 +2311,12 @@ export async function bridgeSearchPatterns(options: {
       results: result.results.map(r => ({ id: r.id, content: r.content, score: r.score })),
       controller: 'bridge-fallback',
     } : null;
-  } catch {
+  } catch (err) {
+    // #3327 Finding A — see bridgeStorePattern's catch. `embedQuery is not a
+    // function` died here silently, which is why search reported
+    // `reasoningBank-unavailable:registry-null` (a null return) even though
+    // the registry was present and the controller was reported enabled.
+    bridgeFailureReason = err instanceof Error ? err.message : String(err);
     return null;
   }
 }

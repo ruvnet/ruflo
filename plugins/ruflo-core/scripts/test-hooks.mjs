@@ -38,13 +38,15 @@
  * (windows-latest, macos-latest, ubuntu-latest).
  */
 
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 const PLUGIN_ROOT = join(__dirname, '..');
 const HOOKS_JSON = join(PLUGIN_ROOT, 'hooks', 'hooks.json');
 const HOOK_RECORDER = join(__dirname, 'fixtures', 'hook-cli-recorder.cjs');
@@ -136,7 +138,7 @@ const codexEnv = {
     PLUGIN_ROOT,
     PLUGIN_DATA: join(PLUGIN_ROOT, '.test-data'),
   },
-  cliOverride: `${process.execPath} ${HOOK_RECORDER}`,
+  cliOverride: `"${process.execPath}" "${HOOK_RECORDER}"`,
 };
 
 run('Cursor PreToolUse (Bash) emits permission-allow JSON',
@@ -283,7 +285,7 @@ run('Stop hook runs session-end without error',
     ...process.env,
     CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT,
     CLAUDE_PROJECT_DIR: PLUGIN_ROOT,
-    RUFLO_HOOK_CLI_OVERRIDE: `${process.execPath} ${HOOK_RECORDER}`,
+    RUFLO_HOOK_CLI_OVERRIDE: `"${process.execPath}" "${HOOK_RECORDER}"`,
     RUFLO_HOOK_DEBUG_STDOUT: '1',
     RUFLO_HOOK_SKIP_NPX: '1',
     RUFLO_HOOK_DEDUP_DIR: dedupDir,
@@ -303,6 +305,131 @@ run('Stop hook runs session-end without error',
     cases.push('duplicate post-edit event executes side effects exactly once');
   } finally {
     rmSync(dedupDir, { recursive: true, force: true });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Windows argv integrity: hook-derived values must never be re-parsed as
+// shell syntax. Extends the escaping added in #3322 to the remaining copies.
+//
+// This job runs on windows-latest as well as ubuntu/macos (see the "Plugin
+// hooks smoke" matrix in .github/workflows/v3-ci.yml), which makes it the one
+// place in the repo where the Windows behaviour can be executed for real
+// rather than asserted as a string transform. PR #3322 could only be verified
+// at the string level; this closes that gap.
+//
+// Layer 1 (all platforms): resolveInvocation() maps an npm .cmd shim to the
+// .js entrypoint it wraps, so the spawn is `node <entry>` with shell:false and
+// cmd.exe never runs. Driven with an injected { platform: 'win32', env }, so
+// the Windows branch is exercised on every OS in the matrix.
+//
+// Layer 2 (windows only): a .cmd that is NOT an npm package layout cannot be
+// resolved, so escapeCmdArg() + shell:true is used. On a real Windows runner
+// this executes cmd.exe for real.
+{
+  globalThis.__RUFLO_HOOK_IMPORT_ONLY__ = true;
+  process.env.RUFLO_HOOK_UNIT_TEST = '1';
+  const hook = require('./ruflo-hook.cjs');
+  delete globalThis.__RUFLO_HOOK_IMPORT_ONLY__;
+  delete process.env.RUFLO_HOOK_UNIT_TEST;
+
+  const secDir = mkdtempSync(join(tmpdir(), 'ruflo-hook-667-'));
+  // Every metacharacter escapeCmdArg() claims to neutralise. %VAR% is
+  // deliberately excluded here and probed separately below.
+  const PAYLOAD = 'x & calc.exe | "q" ^ !v! <in >out; a,b (c)';
+
+  try {
+    // ---- Layer 1: npm shim resolves to the package entry, no shell ----
+    for (const sc of [
+      { cmd: 'ruflo', pkg: 'ruflo', entry: 'bin/ruflo.js', binArgs: [] },
+      { cmd: 'claude-flow', pkg: 'claude-flow', entry: 'bin/cli.js', binArgs: [] },
+      { cmd: 'npx', pkg: 'npm', entry: 'bin/npx-cli.js', binArgs: ['--prefer-offline', '--yes', 'ruflo@latest'] },
+    ]) for (const layout of ['global', 'local']) {
+      const prefix = join(secDir, `${sc.cmd}-${layout} with spaces`);
+      const shimDir = layout === 'local' ? join(prefix, 'node_modules', '.bin') : prefix;
+      const pkgDir = join(prefix, 'node_modules', sc.pkg);
+      const entryPath = join(pkgDir, sc.entry);
+      const argvFile = join(prefix, 'argv.json');
+      mkdirSync(dirname(entryPath), { recursive: true });
+      mkdirSync(shimDir, { recursive: true });
+      // Sibling shims that must never execute — if one does, the resolver
+      // took a shell path instead of the package entrypoint.
+      writeFileSync(join(shimDir, `${sc.cmd}.cmd`), '@echo off\r\nexit /b 3\r\n');
+      writeFileSync(join(shimDir, `${sc.cmd}.ps1`), 'throw "must not execute"\r\n');
+      writeFileSync(join(shimDir, sc.cmd), '#!/bin/sh\nexit 99\n');
+      writeFileSync(join(pkgDir, 'package.json'), JSON.stringify({ name: sc.pkg, bin: { [sc.cmd]: sc.entry } }));
+      writeFileSync(entryPath, `#!${process.execPath}\nrequire('node:fs').writeFileSync(process.env.RUFLO_TEST_ARGV_FILE, JSON.stringify(process.argv.slice(2)));\n`);
+      chmodSync(entryPath, 0o755);
+
+      const ok = hook.invokeHook(sc.cmd, sc.binArgs, 'post-command', ['-c', PAYLOAD], '{}', {
+        platform: 'win32',
+        env: { ...process.env, PATH: shimDir, PATHEXT: '.COM;.EXE;.BAT;.CMD', RUFLO_TEST_ARGV_FILE: argvFile },
+      });
+      const argv = existsSync(argvFile) ? JSON.parse(readFileSync(argvFile, 'utf8')) : null;
+      const want = [...sc.binArgs, 'hooks', 'post-command', '-c', PAYLOAD];
+      const name = `win32 argv: ${layout} ${sc.cmd}.cmd resolves to the package entry and forwards argv intact`;
+      if (ok && JSON.stringify(argv) === JSON.stringify(want)) {
+        console.log(`ok: ${name}`);
+      } else {
+        console.error(`FAIL: ${name}\n     got: ${JSON.stringify(argv)}`);
+        failed++;
+      }
+      cases.push(name);
+    }
+
+    // ---- Layer 2: unresolvable .cmd, escaped through real cmd.exe ----
+    // Only meaningful where cmd.exe exists. On the windows-latest runner this
+    // is the first real execution of the #3322 escaping.
+    if (process.platform === 'win32') {
+      const prefix = join(secDir, 'bare-shim');
+      mkdirSync(prefix, { recursive: true });
+      const argvFile = join(prefix, 'argv.json');
+      const marker = join(prefix, 'INJECTED');
+      const recorder = join(prefix, 'record.js');
+      writeFileSync(recorder, `require('node:fs').writeFileSync(process.env.RUFLO_TEST_ARGV_FILE, JSON.stringify(process.argv.slice(2)));\n`);
+      // No node_modules/<pkg> beside it, so resolveNpmShim() returns null and
+      // invokeHook() must fall back to the escaped shell. `%*` re-expands the
+      // arguments — the second cmd.exe parse the escaping exists to survive.
+      writeFileSync(join(prefix, 'ruflo.cmd'), `@echo off\r\n"${process.execPath}" "${recorder}" %*\r\n`);
+
+      const ok = hook.invokeHook('ruflo', [], 'post-command', ['-c', PAYLOAD], '{}', {
+        env: { ...process.env, PATH: prefix, PATHEXT: '.COM;.EXE;.BAT;.CMD', RUFLO_TEST_ARGV_FILE: argvFile },
+      });
+      const argv = existsSync(argvFile) ? JSON.parse(readFileSync(argvFile, 'utf8')) : null;
+      const want = ['hooks', 'post-command', '-c', PAYLOAD];
+      const name = 'win32 argv: unresolvable .cmd — escaped argv survives a real cmd.exe round trip';
+      if (ok && JSON.stringify(argv) === JSON.stringify(want) && !existsSync(marker)) {
+        console.log(`ok: ${name}`);
+      } else {
+        console.error(`FAIL: ${name}\n     got: ${JSON.stringify(argv)}`);
+        failed++;
+      }
+      cases.push(name);
+
+      // Known residual: carets do not reliably escape %, and quoting does not
+      // suppress percent expansion, so a %VAR% in a hook value may be
+      // substituted on the shim's second parse. That is data corruption, not
+      // injection — so the hard assertion is only that nothing extra executed.
+      // The round-trip result is REPORTED so the Windows runner tells us what
+      // actually happens; it does not fail the build on a documented residual.
+      const pctFile = join(prefix, 'argv-pct.json');
+      const pctMarker = join(prefix, 'PCT_INJECTED');
+      hook.invokeHook('ruflo', [], 'post-command', ['-c', '%USERPROFILE% & echo pwned > "' + pctMarker + '"'], '{}', {
+        env: { ...process.env, PATH: prefix, PATHEXT: '.COM;.EXE;.BAT;.CMD', RUFLO_TEST_ARGV_FILE: pctFile },
+      });
+      const pctArgv = existsSync(pctFile) ? JSON.parse(readFileSync(pctFile, 'utf8')) : null;
+      const pctName = 'win32 argv: %VAR% in a hook value does not inject a command';
+      if (!existsSync(pctMarker)) {
+        console.log(`ok: ${pctName}`);
+        console.log(`     note (known residual, not a failure) — %VAR% round trip: ${JSON.stringify(pctArgv?.[3])}`);
+      } else {
+        console.error(`FAIL: ${pctName} — a redirection executed`);
+        failed++;
+      }
+      cases.push(pctName);
+    }
+  } finally {
+    rmSync(secDir, { recursive: true, force: true });
   }
 }
 

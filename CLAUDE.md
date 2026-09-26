@@ -967,8 +967,44 @@ memory_search_unified({ query: "authentication security", limit: 5 })
 
 - The normal public release train is exactly THREE packages:
   `@claude-flow/cli`, `claude-flow`, and `ruflo`.
-- Internal `@claude-flow/*` components are bundled into the public artifacts;
-  do not publish them standalone as part of the normal release.
+- **Exactly FOUR `@claude-flow/*` components are bundled** into the public
+  artifacts: `security`, `codex`, `mcp`, `plugin-agent-federation` — the list
+  is `INTERNAL_RUNTIME_PACKAGES` in `scripts/stage-internal-runtime-bundles.mjs`.
+  These are built from the tagged source and staged into the tarball's
+  `package/node_modules/`, so a source change in them ships with the train.
+  Do not publish those four standalone.
+- **Every OTHER `@claude-flow/*` dependency resolves from the registry**, at the
+  version `v3/@claude-flow/cli/package.json` pins. A source change in one of
+  those does NOT ship with the train — the release silently carries the last
+  *published* copy of that package, not the code you just merged. It must be
+  bumped and published standalone in the same release or the fix reaches nobody:
+
+  | dep of `@claude-flow/cli` | bundled? | how a source change reaches users |
+  |---|---|---|
+  | `security`, `codex`, `mcp`, `plugin-agent-federation` | yes | with the train |
+  | `cli-core`, `neural`, `shared`, `memory` | **no** | **standalone publish required** |
+
+  `memory` is the easiest of these to miss, for three compounding reasons: it is
+  the only one on a caret range (`^3.0.0-alpha.23`) rather than an exact pin, so
+  nothing drifts visibly; `v3/pnpm-lock.yaml` resolves it from the registry
+  rather than `link:../memory`, so workspace CI never exercises the CLI against
+  workspace `memory` source; and its own package tests DO run against source, so
+  CI goes green on a change that cannot ship. #3390 (#3327 Finding A) is the
+  worked example — it fixed `memory/src/controller-registry.ts` and
+  `cli/src/memory/memory-bridge.ts` together, and without a standalone `memory`
+  publish only the `cli` half would have shipped, leaving the fix inert.
+- Before tagging, check every non-bundled leaf for drift between what the CLI
+  pins and what the workspace source says — a mismatch means an unpublished
+  change is about to be skipped by the release:
+
+  ```bash
+  # needs root deps for `semver` — run after `npm ci` at repo root
+  node -e 'const semver=require("semver"),c=require("./v3/@claude-flow/cli/package.json"),d={...c.dependencies,...c.optionalDependencies},b=["security","codex","mcp","plugin-agent-federation"];let n_=0;for(const[n,v]of Object.entries(d)){if(!n.startsWith("@claude-flow/"))continue;if(b.includes(n.slice(13)))continue;let w;try{w=require(`./v3/${n}/package.json`).version}catch{continue}n_++;if(!semver.satisfies(w,v,{includePrerelease:true}))console.log(`DRIFT ${n}: cli pins ${v}, workspace source ${w} — publish it or the release skips the change`)}if(!n_){console.error("checked 0 leaves — check is broken, do not trust a clean result");process.exit(1)}console.log(`checked ${n_} non-bundled leaves`)'
+  ```
+
+  It must use `semver.satisfies`, not a string compare: `memory` is on a range,
+  so a literal match reports a false DRIFT on every release. It also fails loudly
+  at zero leaves checked — a guard that inspects nothing must not report clean.
 - MUST update ALL dist-tags for ALL THREE packages after publishing (latest + alpha + v3alpha all point to the same version)
 - Publish order: `@claude-flow/cli` first, then `claude-flow` (umbrella), then `ruflo` (alias umbrella)
 - MUST run verification for ALL THREE before telling user publishing is complete

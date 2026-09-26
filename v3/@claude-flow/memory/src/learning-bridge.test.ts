@@ -160,6 +160,7 @@ describe('LearningBridge', () => {
         consolidationThreshold: 20,
       });
       expect(custom.getStats().totalTrajectories).toBe(0);
+      expect(custom.getSonaMode()).toBe('research');
       custom.destroy();
     });
 
@@ -171,6 +172,64 @@ describe('LearningBridge', () => {
       await disabled.onInsightRecorded(createTestInsight(), 'entry-1');
       expect(neural.beginTask).not.toHaveBeenCalled();
       disabled.destroy();
+    });
+  });
+
+  // ===== sonaMode resolution (RUFLO_INTELLIGENCE_MODE) =====
+
+  describe('sonaMode resolution', () => {
+    const ENV_KEY = 'RUFLO_INTELLIGENCE_MODE';
+    let originalEnv: string | undefined;
+
+    beforeEach(() => {
+      originalEnv = process.env[ENV_KEY];
+    });
+
+    afterEach(() => {
+      if (originalEnv === undefined) delete process.env[ENV_KEY];
+      else process.env[ENV_KEY] = originalEnv;
+    });
+
+    it('falls back to balanced when RUFLO_INTELLIGENCE_MODE is unset', () => {
+      delete process.env[ENV_KEY];
+      const b = new LearningBridge(backend);
+      expect(b.getSonaMode()).toBe('balanced');
+      b.destroy();
+    });
+
+    it('reads RUFLO_INTELLIGENCE_MODE set before construction', () => {
+      process.env[ENV_KEY] = 'research';
+      const b = new LearningBridge(backend);
+      expect(b.getSonaMode()).toBe('research');
+      b.destroy();
+    });
+
+    it('reads RUFLO_INTELLIGENCE_MODE freshly on each construction, not just at module load', () => {
+      // Regression test: the env var must be re-read per-instance, not captured
+      // once into a module-scope default the first time this file is imported.
+      delete process.env[ENV_KEY];
+      const before = new LearningBridge(backend);
+      expect(before.getSonaMode()).toBe('balanced');
+      before.destroy();
+
+      process.env[ENV_KEY] = 'research';
+      const after = new LearningBridge(backend);
+      expect(after.getSonaMode()).toBe('research');
+      after.destroy();
+    });
+
+    it('ignores an unrecognised RUFLO_INTELLIGENCE_MODE value', () => {
+      process.env[ENV_KEY] = 'not-a-real-mode';
+      const b = new LearningBridge(backend);
+      expect(b.getSonaMode()).toBe('balanced');
+      b.destroy();
+    });
+
+    it('an explicit config.sonaMode wins over RUFLO_INTELLIGENCE_MODE', () => {
+      process.env[ENV_KEY] = 'research';
+      const b = new LearningBridge(backend, { sonaMode: 'edge' });
+      expect(b.getSonaMode()).toBe('edge');
+      b.destroy();
     });
   });
 
@@ -832,6 +891,45 @@ describe('LearningBridge', () => {
 
       expect(loaderFn).toHaveBeenCalledTimes(1);
       expect(b.getStats().neuralAvailable).toBe(false);
+      b.destroy();
+    });
+  });
+
+  // ===== Real @claude-flow/neural construction shape (no injected loader) =====
+
+  describe('default neural loader (real @claude-flow/neural import)', () => {
+    afterEach(() => {
+      vi.doUnmock('@claude-flow/neural');
+    });
+
+    it('constructs NeuralLearningSystem with a bare mode string, not a config object', async () => {
+      // Regression test: loadNeural() used to call
+      // `new NeuralLearningSystem({ mode, ewcLambda })`, but the real
+      // constructor is `constructor(mode: SONAMode = 'balanced')` — a bare
+      // string. Passing an object never throws (SONAManager's
+      // `MODE_CONFIGS[mode]` lookup just silently misses and falls back to
+      // `{}`), so this had to be caught by inspecting the actual argument,
+      // not by whether construction succeeds.
+      const ctorArgs: unknown[][] = [];
+      vi.doMock('@claude-flow/neural', () => ({
+        NeuralLearningSystem: class {
+          constructor(...args: unknown[]) {
+            ctorArgs.push(args);
+          }
+          initialize = vi.fn().mockResolvedValue(undefined);
+        },
+      }));
+      vi.resetModules();
+
+      const { LearningBridge: FreshLearningBridge } = await import('./learning-bridge.js');
+      const freshBackend = createMockBackend();
+      const b = new FreshLearningBridge(freshBackend, { sonaMode: 'research' });
+
+      await b.onInsightRecorded(createTestInsight(), 'entry-1');
+
+      expect(ctorArgs).toHaveLength(1);
+      expect(ctorArgs[0]).toEqual(['research']);
+      expect(b.getStats().neuralAvailable).toBe(true);
       b.destroy();
     });
   });
