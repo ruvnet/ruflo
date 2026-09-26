@@ -53,6 +53,7 @@ const REPO_ROOT = resolve(__dirname, '..');
 const KNOWN_ESCAPE_HATCHES = new Set([
   // ── CI / test escape hatches ────────────────────────────────────────────────
   'CLAUDE_FLOW_DISABLE_BRIDGE',   // CI/test: force raw sql.js path — intentionally no CLI flag
+  'CLAUDE_FLOW_GRAPH_EDGE_IDLE_MS', // CI/test tuning: idle-close window (ms) for graph-edge-writer's native WAL handle (#3397). Internal lifecycle knob with a safe default (1000); no user-facing command owns it, so no CLI flag.
   'RUFLO_ADMIN_TOKEN',            // credential: the x.ruv.io gateway's OWN admin token, read by plugins/ruflo-x-gateway. Env-only by design — a secret must never be a CLI flag (shell history / process lists), and the gateway is a service with no typed command surface at all.
   'RUFLO_SERAPHINA_DAILY_CAP',    // gateway spend guard (#3275): shared daily Seraphina budget. Read by a long-running service, not a typed command — there is no invocation to attach a flag to.
   'RUFLO_SERAPHINA_IP_HOURLY_CAP',// gateway spend guard (#3275): per-client hourly Seraphina budget. Same service-only reasoning.
@@ -81,6 +82,7 @@ const KNOWN_ESCAPE_HATCHES = new Set([
   'RUFLO_METAHARNESS_SKIP_LOCAL',   // plugins/ruflo-metaharness/scripts/_invoke.mjs — CI seam that forces the invoke shim off the local vendored metaharness and onto the pinned-cache resolver. Plugin script has no CLI-flag surface (invoked internally by MCP tools)
   'RUFLO_HELPERS_LOCKED',           // v3.30.0 — env-level opt-out for the .claude/helpers/ auto-refresh (init/helper-refresh.ts). Sibling to the `.LOCKED` marker file; helper-refresh runs from a hook, not a user-typed CLI command — no per-invocation flag surface. See CLAUDE.md "Concurrent-session helper corruption" for rationale
   'CLAUDE_FLOW_DISABLE_NATIVE_ROUTER', // Test/lock-constrained MCP escape hatch: forces hooks routing onto the deterministic pure-JS backend. The router is process-lifetime state, not owned by one CLI invocation.
+  'CLAUDE_FLOW_ROUTER_EMBEDDER',    // ADR-390/391: selects the hooks_route semantic-index embedder (minilm|hash; default hash). Same process-lifetime MCP router state as CLAUDE_FLOW_DISABLE_NATIVE_ROUTER — the index is built once per process, not per CLI invocation; the ADR-391 bench passes the embedder explicitly instead.
   'RUFLO_FLYWHEEL_ALLOW_BUILTIN_ANCHOR', // Explicit compatibility escape hatch for pre-ADR-331 downstream behavior. Intentionally env-only and visibly unsafe-by-choice; normal CLI/MCP use supplies a project anchor path + hash.
 
   // ── Embedding substrate toggles (3.25.x — opt-in tier + fail-closed ops flag) ─

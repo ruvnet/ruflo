@@ -87,6 +87,31 @@ function validateMemoryInput(key?: string, value?: string, query?: string, names
   }
 }
 
+/**
+ * #3374 — presence check for a schema-`required` string parameter.
+ *
+ * `validateMemoryInput` above is a bounds-and-charset validator: every branch
+ * is truthiness-guarded, so an omitted parameter passes it silently. Nothing
+ * else enforces `inputSchema.required` for these tools, so without this an
+ * omitted `query` travelled down to `generateHashEmbedding`'s
+ * `text.toLowerCase()` and came back as an unrelated TypeError.
+ */
+const MISSING_REQUIRED_PARAM = 'MISSING_REQUIRED_PARAM' as const;
+
+function missingRequiredString(
+  input: Record<string, unknown>,
+  param: string,
+  tool: string,
+): { error: string; code: typeof MISSING_REQUIRED_PARAM } | null {
+  const v = input[param];
+  if (typeof v === 'string' && v.length > 0) return null;
+  const got = v === undefined ? 'it was omitted' : v === '' ? 'it was an empty string' : `got ${v === null ? 'null' : typeof v}`;
+  return {
+    error: `${tool}: required parameter "${param}" must be a non-empty string (${got})`,
+    code: MISSING_REQUIRED_PARAM,
+  };
+}
+
 // #1884 — sanitize a key produced from arbitrary input (markdown headings,
 // frontmatter names, file names) so it survives validateMemoryInput on the
 // read/delete path. Replaces every dangerous char with `_`. Truncates to
@@ -428,6 +453,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key', 'value'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_store');
+      if (missingKey) {
+        return { success: false, key: input.key, stored: false, hasEmbedding: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { storeEntry } = await getMemoryFunctions();
 
@@ -483,6 +513,8 @@ export const memoryTools: MCPTool[] = [
           backend: await describeBackend(),
           storeTime: `${duration.toFixed(2)}ms`,
           error: result.error,
+          // #3325: why hasEmbedding is false, when the bridge could not embed.
+          ...(result.embeddingError ? { embeddingError: result.embeddingError } : {}),
         };
       } catch (error) {
         return {
@@ -506,6 +538,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_retrieve');
+      if (missingKey) {
+        return { key: input.key, namespace: input.namespace, value: null, found: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { getEntry } = await getMemoryFunctions();
 
@@ -559,7 +596,7 @@ export const memoryTools: MCPTool[] = [
   },
   {
     name: 'memory_search',
-    description: 'Find stored memories by meaning (vector similarity), not by literal text — finds "JWT auth pattern" when you query "token-based login flow". Use when native Grep is wrong because Grep matches characters and you need to find conceptually-related entries across past sessions. Backed by HNSW index over ONNX embeddings; returns top-k with similarity scores. Pair with smart=true for query expansion + MMR diversity.',
+    description: 'Find stored memories by meaning (vector similarity), not by literal text — finds "JWT auth pattern" when you query "token-based login flow". Use when native Grep is wrong because Grep matches characters and you need to find conceptually-related entries across past sessions. Returns top-k with similarity: raw retrieval relevance, which may include lexical scoring and is not guaranteed to be cosine similarity. With smart=true, similarity is the highest raw score across query variants; rankingScore is the composite relevance score used by the ranking pipeline, not cosine similarity, probability, or confidence. Diversity can change result order.',
     category: 'memory',
     inputSchema: {
       type: 'object',
@@ -567,8 +604,8 @@ export const memoryTools: MCPTool[] = [
         query: { type: 'string', description: 'Search query (semantic similarity)' },
         namespace: { type: 'string', description: 'Namespace to search (default: all namespaces — omit to search across every namespace)' },
         limit: { type: 'number', description: 'Maximum results (default: 10)' },
-        threshold: { type: 'number', description: 'Minimum similarity threshold 0-1 (default: 0.3)' },
-        smart: { type: 'boolean', description: 'Enable SmartRetrieval pipeline — query expansion, RRF fusion, recency boost, MMR diversity (default: false)' },
+        threshold: { type: 'number', description: 'Minimum raw retrieval relevance 0-1 for candidate admission, applied per query before SmartRetrieval ranking; not a floor on rankingScore (default: 0.3)' },
+        smart: { type: 'boolean', description: 'Enable SmartRetrieval — query expansion, RRF fusion, recency boost, MMR diversity; preserves raw similarity and adds rankingScore (default: false)' },
         provenance_filter: {
           type: 'array',
           items: { type: 'string', enum: ['user_claim', 'agent_output', 'system_observation', 'tool_result', 'unknown'] },
@@ -578,6 +615,11 @@ export const memoryTools: MCPTool[] = [
       required: ['query'],
     },
     handler: async (input) => {
+      const missingQuery = missingRequiredString(input, 'query', 'memory_search');
+      if (missingQuery) {
+        return { query: input.query, results: [], total: 0, ...missingQuery };
+      }
+
       await ensureInitialized();
       const { searchEntries } = await getMemoryFunctions();
 
@@ -635,6 +677,7 @@ export const memoryTools: MCPTool[] = [
                   key: e.key,
                   content: e.content,
                   score: e.score,
+                  rawScore: e.score,
                   namespace: e.namespace,
                   provenanceType: e.provenanceType,
                   // Dream Cycle 2026-09-03: thread the already-computed
@@ -654,14 +697,15 @@ export const memoryTools: MCPTool[] = [
 
             const duration = performance.now() - startTime;
 
-            const results = smartResult.results.map((r: { content: string; key: string; namespace: string; score: number; provenanceType?: string }) => {
+            const results = smartResult.results.map((r: { content: string; key: string; namespace: string; score: number; rawScore?: number; provenanceType?: string }) => {
               let value: unknown = r.content;
               try { value = JSON.parse(r.content); } catch { /* keep as string */ }
               return {
                 key: r.key,
                 namespace: r.namespace,
                 value,
-                similarity: r.score,
+                similarity: r.rawScore,
+                rankingScore: r.score,
                 provenanceType: r.provenanceType,
               };
             });
@@ -750,6 +794,11 @@ export const memoryTools: MCPTool[] = [
       required: ['key'],
     },
     handler: async (input) => {
+      const missingKey = missingRequiredString(input, 'key', 'memory_delete');
+      if (missingKey) {
+        return { success: false, key: input.key, namespace: input.namespace, deleted: false, ...missingKey };
+      }
+
       await ensureInitialized();
       const { deleteEntry } = await getMemoryFunctions();
 
@@ -1232,6 +1281,11 @@ export const memoryTools: MCPTool[] = [
       required: ['query'],
     },
     handler: async (input) => {
+      const missingQuery = missingRequiredString(input, 'query', 'memory_search_unified');
+      if (missingQuery) {
+        return { success: false, query: input.query, results: [], total: 0, ...missingQuery };
+      }
+
       await ensureInitialized();
       const { searchEntries, listEntries } = await getMemoryFunctions();
       validateMemoryInput(undefined, undefined, input.query as string);

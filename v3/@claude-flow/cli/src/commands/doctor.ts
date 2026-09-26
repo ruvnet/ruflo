@@ -15,8 +15,10 @@ import { execSync, exec } from 'child_process';
 import { promisify } from 'util';
 import { decodeKey, isEncryptionEnabled } from '../encryption/vault.js';
 import { isEncryptedBlob } from '../encryption/vault.js';
+import * as semver from 'semver';
 import {
   resolveMemoryPackageFromProject,
+  resolveMemoryPackageFromCli,
   readMemoryPackageVersion,
   recordMemoryPackagePath,
 } from '../init/memory-package-resolver.js';
@@ -1038,6 +1040,74 @@ async function checkLearningBridge(): Promise<HealthCheck> {
     message: '@claude-flow/memory NOT resolvable — SessionStart self-learning imports are a silent no-op',
     fix: 'npm i -D @claude-flow/memory   (optional dep appears absent — likely --omit=optional install)',
   };
+}
+
+/**
+ * #3392: pure verdict for "does the @claude-flow/memory the CLI loads satisfy
+ * the range the CLI declares?". `npx @claude-flow/cli@latest` reuses one npx
+ * cache directory across CLI versions, and npm keeps an already-installed
+ * dependency that still satisfies a caret range, so a stale memory could
+ * survive a CLI upgrade with no error. Exported for unit testing.
+ */
+export function evaluateMemoryPackageVersion(declared: string | null, installed: string | null): HealthCheck {
+  const NAME = '@claude-flow/memory version';
+  if (!declared) {
+    return { name: NAME, status: 'warn', message: 'could not read the @claude-flow/memory range declared by @claude-flow/cli' };
+  }
+  if (!installed) {
+    return {
+      name: NAME,
+      status: 'warn',
+      message: `@claude-flow/memory is not resolvable from the CLI (declared ${declared}) — memory features fall back to degraded paths`,
+      fix: `npm install @claude-flow/memory@${declared} --include=optional`,
+    };
+  }
+  if (!semver.validRange(declared) || !semver.valid(installed)) {
+    return { name: NAME, status: 'warn', message: `cannot compare installed ${installed} against declared ${declared}` };
+  }
+  if (semver.satisfies(installed, declared, { includePrerelease: true })) {
+    return { name: NAME, status: 'pass', message: `v${installed} satisfies declared ${declared}` };
+  }
+  // warn, not fail: a dev/hoisted layout can legitimately differ, and doctor's
+  // exit code must not depend on which copy a package manager happened to hoist.
+  return {
+    name: NAME,
+    status: 'warn',
+    message: `installed v${installed} does not satisfy declared ${declared} — a stale cached copy is running, so fixes shipped in a newer @claude-flow/memory are silently absent`,
+    fix: `rm -rf "$(npm config get cache)/_npx" && npx @claude-flow/cli@latest doctor   # or: npm install @claude-flow/memory@${declared}`,
+  };
+}
+
+export async function checkMemoryPackageVersion(): Promise<HealthCheck> {
+  try {
+    // Walk up from this module to the CLI package root (npx cache, global,
+    // project-local and monorepo dev all resolve the same way).
+    let declared: string | null = null;
+    let dir = dirname(fileURLToPath(import.meta.url));
+    for (let i = 0; i < 8 && declared === null; i++) {
+      const pj = join(dir, 'package.json');
+      if (existsSync(pj)) {
+        try {
+          const pkg = JSON.parse(readFileSync(pj, 'utf-8')) as {
+            name?: string;
+            dependencies?: Record<string, string>;
+            optionalDependencies?: Record<string, string>;
+          };
+          if (pkg.name === '@claude-flow/cli') {
+            declared = pkg.optionalDependencies?.['@claude-flow/memory'] ?? pkg.dependencies?.['@claude-flow/memory'] ?? null;
+            break;
+          }
+        } catch { /* keep walking */ }
+      }
+      dir = dirname(dir);
+    }
+    // Resolve exactly as the CLI's own runtime does (its module context),
+    // not from process.cwd() — that would report the project's copy instead.
+    const distPath = resolveMemoryPackageFromCli();
+    return evaluateMemoryPackageVersion(declared, distPath ? readMemoryPackageVersion(distPath) : null);
+  } catch (err) {
+    return { name: '@claude-flow/memory version', status: 'warn', message: `check failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
 }
 
 // Check API keys
@@ -2101,6 +2171,26 @@ async function checkMetaharness(): Promise<HealthCheck> {
   }
 }
 
+// Opt-in @ruvector/typesafe task router (optional peer). `--component typesafe` only.
+async function checkTypesafeRouter(): Promise<HealthCheck> {
+  const name = '@ruvector/typesafe router';
+  const { readTypesafeConfig } = await import('../ruvector/typesafe-router.js');
+  const cfg = readTypesafeConfig();
+  const gate = cfg.enabled ? `enabled (${cfg.embedder === 'hash' ? 'hash embedder, uncalibrated' : 'onnx embedder'})` : 'disabled (set CLAUDE_FLOW_ROUTER_TYPESAFE=1)';
+  try {
+    const { createRequire } = await import('module');
+    const pj = createRequire(import.meta.url)('@ruvector/typesafe/package.json') as { version?: string };
+    return { name, status: 'pass', message: `v${pj.version ?? '?'} installed; ${gate}` };
+  } catch {
+    return {
+      name,
+      status: cfg.enabled ? 'warn' : 'pass',
+      message: `Not installed; ${gate} — hooks_route uses the built-in router`,
+      ...(cfg.enabled ? { fix: 'npm install @ruvector/typesafe  # optional peer' } : {}),
+    };
+  }
+}
+
 async function checkClaudeCode(): Promise<HealthCheck> {
   try {
     const version = await runCommand('claude --version');
@@ -2290,7 +2380,7 @@ export const doctorCommand: Command = {
     {
       name: 'component',
       short: 'c',
-      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, metaharness)',
+      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, metaharness)',
       type: 'string'
     },
     {
@@ -2419,6 +2509,7 @@ export const doctorCommand: Command = {
       checkMemoryStructuralIntegrity, // #2737 — bounded, native quick_check on every default run
       checkMemoryPersistenceDriver, // #2968/#3321 — read-only native capability probe
       checkLearningBridge, // #2545 — can the auto-memory hook actually load @claude-flow/memory?
+      checkMemoryPackageVersion, // #3392 — loaded @claude-flow/memory must satisfy the CLI's declared range
       checkApiKeys,
       checkMcpServers,
       checkMcpSchemaOverhead, // #2726 — fixed tools/list prompt cost
@@ -2457,11 +2548,13 @@ export const doctorCommand: Command = {
         checkMemoryDatabase,         // existing: exists + statable (unchanged)
         checkMemoryIntegrity,        // #2677 check 1: sql.js open + PRAGMA integrity_check
         checkMemoryPersistenceDriver, // #2968/#3321: read-only native capability probe
+        checkMemoryPackageVersion,   // #3392: loaded memory package satisfies the declared range
         checkMemoryContent,          // #2677 check 2: memory_entries content coverage
         checkMemoryEmbeddingCoverage, // #2677 check 3: vector coverage on populated rows
         checkMemoryReflexionCoverage, // #2677 check 6: episodes are retrievable
         checkMemoryCritiqueCoverage,  // #2677 check 6: feedback carries lessons
       ],
+      'memory-package': checkMemoryPackageVersion, // #3392
       'learning': checkLearningBridge, // #2545
       'learning-bridge': checkLearningBridge, // #2545
       'api': checkApiKeys,
@@ -2482,6 +2575,7 @@ export const doctorCommand: Command = {
       // a user would actually debug them (is it installed? running? exposed?).
       'proxy': [checkProxySponsoredConsent, checkProxyBinary, checkProxyProcess, checkProxyBindAddress],
       'auth': checkAuth, // ADR-306
+      'typesafe': checkTypesafeRouter, // opt-in @ruvector/typesafe task router
     };
 
     let checksToRun = allChecks;

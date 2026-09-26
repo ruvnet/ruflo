@@ -147,6 +147,9 @@ importers:
       '@ruvector/rabitq-wasm':
         specifier: 0.1.0
         version: 0.1.0
+      '@ruvector/typesafe':
+        specifier: ^0.1.0
+        version: 0.1.0
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -206,8 +209,8 @@ importers:
         specifier: 2.0.0-alpha.5
         version: 2.0.0-alpha.5
       '@claude-flow/memory':
-        specifier: ^3.0.0-alpha.23
-        version: link:../memory
+        specifier: 3.0.0-alpha.25
+        version: 3.0.0-alpha.25(@types/node@20.19.27)(zod@3.25.76)
       '@metaharness/darwin':
         specifier: ~0.10.2
         version: 0.10.2
@@ -345,7 +348,7 @@ importers:
         version: link:../hooks
       '@claude-flow/memory':
         specifier: ^3.0.0-alpha.2
-        version: link:../memory
+        version: 3.0.0-alpha.24(@types/node@20.19.27)(zod@3.25.76)
       '@claude-flow/shared':
         specifier: ^3.0.0-alpha.1
         version: link:../shared
@@ -364,7 +367,7 @@ importers:
     dependencies:
       '@claude-flow/memory':
         specifier: ^3.0.0-alpha.2
-        version: link:../memory
+        version: 3.0.0-alpha.24(@types/node@20.19.27)(zod@3.25.76)
       '@claude-flow/neural':
         specifier: ^3.0.0-alpha.2
         version: link:../neural
@@ -473,7 +476,7 @@ importers:
     dependencies:
       '@claude-flow/memory':
         specifier: ^3.0.0-alpha.16
-        version: link:../memory
+        version: 3.0.0-alpha.24(@types/node@20.19.27)(zod@3.25.76)
       '@ruvector/sona':
         specifier: 0.1.5
         version: 0.1.5
@@ -552,7 +555,7 @@ importers:
         version: link:../hooks
       '@claude-flow/memory':
         specifier: ^3.0.0-alpha.2
-        version: link:../memory
+        version: 3.0.0-alpha.24(@types/node@20.19.27)(zod@3.25.76)
       '@ruvector/learning-wasm':
         specifier: ^0.1.0
         version: 0.1.29
@@ -668,7 +671,7 @@ importers:
     devDependencies:
       '@claude-flow/memory':
         specifier: ^3.0.0-alpha.2
-        version: link:../memory
+        version: 3.0.0-alpha.24(@types/node@20.19.27)(zod@3.25.76)
       '@claude-flow/shared':
         specifier: ^3.0.0-alpha.1
         version: link:../shared
@@ -913,6 +916,53 @@ packages:
   /@borewit/text-codec@0.2.1:
     resolution: {integrity: sha512-k7vvKPbf7J2fZ5klGRD9AeKfUvojuZIQ3BT5u7Jfv+puwXkUBUT5PVyMDfJZpy30CBDXGMgw7fguK/lpOMBvgw==}
     requiresBuild: true
+
+  /@claude-flow/memory@3.0.0-alpha.24(@types/node@20.19.27)(zod@3.25.76):
+    resolution: {integrity: sha512-V0ca9Nh7VusKbzjS+h59lnpBDKe4ZoQ0kYzYVzXypBYuvuhNF6ngRARbA/ZXCYwO7Uh85BNkQSGRe45TmOKjBg==}
+    cpu: [x64, arm64]
+    os: [darwin, linux, win32]
+    dependencies:
+      '@claude-flow/security': 3.0.0-alpha.12
+      agentdb: 3.0.0-alpha.17(@types/node@20.19.27)(zod@3.25.76)
+      sql.js: 1.14.1
+    optionalDependencies:
+      better-sqlite3: 12.9.0
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@types/node'
+      - bare-abort-controller
+      - bare-buffer
+      - react-native-b4a
+      - supports-color
+      - zod
+
+  /@claude-flow/memory@3.0.0-alpha.25(@types/node@20.19.27)(zod@3.25.76):
+    resolution: {integrity: sha512-yjeFlIlUkAE0jBUTx4ocvqWm71CsJEhps8gz0tU1Kl0POelxOsLsEUVQUCQ2E4ZEuQ0xii12K8+3tzK2hvWD3g==}
+    cpu: [x64, arm64]
+    os: [darwin, linux, win32]
+    dependencies:
+      '@claude-flow/security': 3.0.0-alpha.12
+      agentdb: 3.0.0-alpha.17(@types/node@20.19.27)(zod@3.25.76)
+      sql.js: 1.14.1
+    optionalDependencies:
+      better-sqlite3: 12.9.0
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@types/node'
+      - bare-abort-controller
+      - bare-buffer
+      - react-native-b4a
+      - supports-color
+      - zod
+
+  /@claude-flow/security@3.0.0-alpha.12:
+    resolution: {integrity: sha512-/b1V6zXOhFSs+Y8UztyPFHqkNjDKslwpAn9+KJFWHqZMwnnPnBnW0WQHoZAGx+5+rewI619pVT9gIANkyt3luQ==}
+    dependencies:
+      '@noble/ed25519': 2.3.0
+      bcryptjs: 3.0.3
+      zod: 3.25.76
+    optionalDependencies:
+      '@napi-rs/keyring': 1.3.0
 
   /@claude-flow/shared@3.0.0-alpha.7:
     resolution: {integrity: sha512-5iehTHguBFjlyZqy+fRoKfZVL/nFeE93A94nUUKJvu8y7AmhfpVqtQAZbmKztwQGJ5rv7iBb3Kwl1MUo3K5QkA==}
@@ -6120,6 +6170,12 @@ packages:
       '@ruvector/tiny-dancer-linux-x64-musl': 0.1.22
       '@ruvector/tiny-dancer-win32-arm64-msvc': 0.1.22
       '@ruvector/tiny-dancer-win32-x64-msvc': 0.1.22
+
+  /@ruvector/typesafe@0.1.0:
+    resolution: {integrity: sha512-PEEabuznFjxABV9P7qC140N9zZYYi1THWPpyFi/7DB8P21VCZqBU1fKZ690jqWcgEe9tEfW9pIiI1nIrCSzVCA==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+    dev: false
 
   /@ruvector/wasm@0.1.16:
     resolution: {integrity: sha512-BvtXLvBDxDxsnFVIi7rsRE8AvPxYOWqHvj8PUOEb3TfsCWBEA2gT5VodMJEv+DWx/mVqdongxRkuHGlVcK9pug==}

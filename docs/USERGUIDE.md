@@ -4446,6 +4446,48 @@ npx ruflo@latest hooks route "implement caching layer" --include-explanation
 npx ruflo@latest hooks post-task --task-id "task-123" --success true --agent coder
 ```
 
+### Opt-in: `@ruvector/typesafe` Task Router
+
+`hooks_route` can ask [`@ruvector/typesafe`](https://github.com/ruvnet/RuVector/blob/main/npm/packages/typesafe/README.md)
+— local typed decisions over sentence embeddings — to pick the agent, instead of
+relying only on keyword matching (which, for example, routes "sync and review
+latest issues" to `tester` because "la**test**" contains "test"). It is off by
+default, an optional peer dependency, and removable: with the flag unset the
+package is never imported and `hooks_route` output is unchanged.
+
+```bash
+npm install @ruvector/typesafe          # optional peer of @claude-flow/cli
+export CLAUDE_FLOW_ROUTER_TYPESAFE=1
+npx ruflo@latest doctor --component typesafe
+```
+
+The choice options are built from the router's own pattern table (each primary
+agent plus its keywords), with `not_for` hints separating `tester` / `reviewer` /
+`researcher`. typesafe's answer replaces the built-in pick only if every gate holds;
+otherwise the built-in route is kept and `typesafe.reason` names the failed gate:
+
+| Gate | Env var | Default |
+|------|---------|---------|
+| abstain mass at most | `CLAUDE_FLOW_ROUTER_TYPESAFE_MAX_ABSTAIN` | `0.30` |
+| lift (top-1 probability × option count; 1.0 = chance) at least | `CLAUDE_FLOW_ROUTER_TYPESAFE_MIN_LIFT` | `1.2` |
+| top-1 minus runner-up probability at least | `CLAUDE_FLOW_ROUTER_TYPESAFE_MIN_MARGIN` | `0.005` |
+
+When typesafe wins, the result carries `routedBy: "typesafe"`, the answer's
+`confidence`, `abstain` and `calibrated` flag, `primaryAgent.confidenceCalibrated`,
+and the built-in pick under `fallbackRoute`. When it does not, `routedBy` is the
+built-in method and `typesafe.used` is `false`.
+
+Limitations:
+- The default `hash` embedder is a bag-of-words test double. Its answers are
+  always `calibrated: false`, confidences are near chance (~0.1 with ten agents),
+  and that confidence is never copied into `estimatedMetrics.successProbability`.
+- For calibrated answers use the ONNX embedder: fetch models with the package's
+  `scripts/fetch-models.mjs`, then set `CLAUDE_FLOW_ROUTER_TYPESAFE_MODEL_DIR`
+  and `CLAUDE_FLOW_ROUTER_TYPESAFE_MANIFEST`.
+- `@ruvector/typesafe@0.1.0` ships a native binary for linux-x64-gnu only; other
+  platforms use its WASM fallback. Any load or decide error falls back to the
+  built-in router silently (set `CLAUDE_FLOW_LOG_LEVEL=debug` to see why).
+
 ### How Q-Learning Improves Over Time
 
 | Iteration | Action | Result |

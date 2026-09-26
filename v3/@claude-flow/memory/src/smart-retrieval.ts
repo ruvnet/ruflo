@@ -22,7 +22,14 @@ export interface SearchCandidate {
   id: string;
   key: string;
   content: string;
+  /** Raw retrieval score on input; pipeline ranking score on smartSearch output. */
   score: number;
+  /**
+   * Underlying retrieval relevance before SmartRetrieval ranking, not necessarily
+   * cosine similarity. Defaults to the selected candidate's input score; RRF
+   * selects the candidate with the highest input score across query variants.
+   */
+  rawScore?: number;
   namespace: string;
   /** Optional metadata pulled through from the underlying store. */
   metadata?: Record<string, unknown>;
@@ -60,7 +67,7 @@ export interface SmartSearchOptions {
   namespace?: string;
   /** Final number of results to return (default 10). */
   limit?: number;
-  /** Similarity floor applied to the raw store (default 0.3). */
+  /** Retrieval relevance floor applied to the raw store, not final ranking (default 0.3). */
   threshold?: number;
 
   // ── Phase toggles ──
@@ -533,6 +540,7 @@ export async function smartSearch(
   return {
     results: final.slice(0, limit).map(({ candidate, score }) => ({
       ...candidate,
+      rawScore: candidate.rawScore ?? candidate.score,
       score,
     })),
     stats: {
