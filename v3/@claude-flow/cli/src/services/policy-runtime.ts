@@ -67,11 +67,35 @@ async function acquireLock(lockPath: string): Promise<() => void> {
   throw new Error('policy-state-lock-timeout');
 }
 
-function writeJsonAtomic(file: string, value: unknown): void {
+// #3398: Windows rename over a file another process holds open fails with
+// EPERM/EBUSY/EACCES. Retry (~1.3s total, inside LOCK_WAIT_MS), never leave the
+// temp file; a final failure still throws — the state holds the receipt ledger
+// and consumed approval uses, so dropping it would let an approval be reused.
+const RENAME_RETRY_DELAYS_MS = [25, 50, 100, 150, 250, 300, 400];
+const TRANSIENT_RENAME_CODES = new Set(['EPERM', 'EBUSY', 'EACCES']);
+
+async function writeJsonAtomic(file: string, value: unknown): Promise<void> {
   mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
   const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
-  writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
-  renameSync(temporary, file);
+  let renamed = false;
+  try {
+    writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
+    for (let attempt = 0; ; attempt++) {
+      try {
+        renameSync(temporary, file);
+        renamed = true;
+        return;
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException)?.code ?? '';
+        if (!TRANSIENT_RENAME_CODES.has(code) || attempt >= RENAME_RETRY_DELAYS_MS.length) throw error;
+        await sleep(RENAME_RETRY_DELAYS_MS[attempt]);
+      }
+    }
+  } finally {
+    if (!renamed) {
+      try { unlinkSync(temporary); } catch { /* never created or already gone */ }
+    }
+  }
 }
 
 function trustPaths(projectRoot: string): { key: string; anchor: string } {
@@ -112,7 +136,7 @@ function verifyStateAnchor(projectRoot: string, state: PolicyState | undefined):
   }
 }
 
-function writePolicyState(projectRoot: string, statePath: string, state: PolicyState): void {
+async function writePolicyState(projectRoot: string, statePath: string, state: PolicyState): Promise<void> {
   const anchorPath = trustPaths(projectRoot).anchor;
   if (state.mode === 'enforce' || existsSync(anchorPath)) {
     const key = trustKey(projectRoot, true)!;
@@ -127,15 +151,15 @@ function writePolicyState(projectRoot: string, statePath: string, state: PolicyS
     // crash then leaves either a valid pair or an anchored mismatch that
     // fails closed; it can never leave enforce state silently unanchored.
     if (!existsSync(anchorPath)) {
-      writeJsonAtomic(anchorPath, anchor);
-      writeJsonAtomic(statePath, state);
+      await writeJsonAtomic(anchorPath, anchor);
+      await writeJsonAtomic(statePath, state);
       return;
     }
-    writeJsonAtomic(statePath, state);
-    writeJsonAtomic(anchorPath, anchor);
+    await writeJsonAtomic(statePath, state);
+    await writeJsonAtomic(anchorPath, anchor);
     return;
   }
-  writeJsonAtomic(statePath, state);
+  await writeJsonAtomic(statePath, state);
 }
 
 function detectLegacyCapabilities(projectRoot: string): string {
@@ -209,7 +233,7 @@ export async function autoMigratePolicyStateIfNeeded(projectRoot = process.cwd()
         state.mode = configured;
         state.configuredMode = configured;
       }
-      writePolicyState(projectRoot, target.state, state);
+      await writePolicyState(projectRoot, target.state, state);
     }
   } finally {
     release();
@@ -237,7 +261,7 @@ export async function withPolicyTransaction<T>(
     const result = await operation(engine);
     const nextState = engine.exportState();
     if (!engine.verifyLedger().valid) throw new Error('policy-ledger-verification-failed');
-    writePolicyState(projectRoot, target.state, nextState);
+    await writePolicyState(projectRoot, target.state, nextState);
     return result;
   } finally {
     release();

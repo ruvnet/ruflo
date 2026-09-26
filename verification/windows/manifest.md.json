@@ -1,9 +1,9 @@
 {
   "manifest": {
     "schema": "ruflo-witness/v1",
-    "issuedAt": "2026-07-18T23:40:27.660Z",
-    "gitCommit": "b68ad4ccbad398072c3b4418ca812ac857b0050d",
-    "branch": "fix/2721-plugin-hooks-windows",
+    "issuedAt": "2026-09-24T22:23:42.618Z",
+    "gitCommit": "d921b207e42ed21e9c7e0ac017f452c612984cd7",
+    "branch": "fix/pin-memory-3392",
     "os": "windows",
     "releases": {},
     "summary": {
@@ -112,7 +112,7 @@
         "id": "#1697",
         "desc": "rvf-wasm overrides",
         "file": "package.json",
-        "sha256": "bd4b6213a4d9b9610b0dfcb91889abb3a78d57e9483fd78b270caba016f08900",
+        "sha256": "2e191216ed68f2b24624a3b0b3d7c8767283c7564be95217b744f4a1bfd77091",
         "marker": "@ruvector/rvf-wasm",
         "markerVerified": true
       },
@@ -136,7 +136,7 @@
         "id": "#1721",
         "desc": "postinstall copies all dist/src/* siblings",
         "file": "v3/@claude-flow/cli/package.json",
-        "sha256": "38bb257d5b5ad2d035b9772d479d65dcb5d52c98acc66bcb857e7bb2c5eb5975",
+        "sha256": "dd0bea3c3cb67c507b4d7862a6175fe577ad98f57cf2abe765a8bb0fb8f6c001",
         "marker": "postinstall.cjs",
         "markerVerified": true
       },
@@ -176,7 +176,7 @@
         "id": "G6",
         "desc": "auto-memory content-hash dedup",
         "file": "v3/@claude-flow/cli/.claude/helpers/intelligence.cjs",
-        "sha256": "5a55d979cb7ba5c8c4f27f3b2e6d686fbb1045d180023b803da672a37e05b915",
+        "sha256": "30e42ed7ec4ca5a94ac54fdb1330d2d47ac5f3fdeeef207753574723a9e77b5c",
         "marker": "deduplicateByContent",
         "markerVerified": true
       },
@@ -456,7 +456,7 @@
         "id": "#1795",
         "desc": "umbrella package missing cli-core dep (ERR_MODULE_NOT_FOUND)",
         "file": "package.json",
-        "sha256": "bd4b6213a4d9b9610b0dfcb91889abb3a78d57e9483fd78b270caba016f08900",
+        "sha256": "2e191216ed68f2b24624a3b0b3d7c8767283c7564be95217b744f4a1bfd77091",
         "marker": "@claude-flow/cli-core",
         "markerVerified": true
       },
@@ -584,7 +584,7 @@
         "id": "#1574",
         "desc": "github-project-management skill: Security Considerations section",
         "file": ".claude/skills/github-project-management/SKILL.md",
-        "sha256": "8205b14f40694d38977ee627e1627bf27afde10858ddc3f1fc4e0ef07f4c1d39",
+        "sha256": "3dc34b30895bde5204dadf80127c73452cb57b2c917730b3e1d7515be50fc0fc",
         "marker": "Security Considerations (read first)",
         "markerVerified": true
       },
@@ -600,7 +600,7 @@
         "id": "#1609",
         "desc": "vitest bumped to ^4.1.0 (ADR-165 Phase 1: closes critical GHSA-5xrq + 4 moderate esbuild CVEs)",
         "file": "v3/@claude-flow/aidefence/package.json",
-        "sha256": "770ec3bf3949f803db7f9cb579b4e9b8fbb795e3506d098db19cdc4512c97d1f",
+        "sha256": "06e884242aea1b0eeeb00b6842a80eceaadd00d50fa91b38bae2f26147e521e5",
         "marker": "\"vitest\": \"^4.1.0\"",
         "markerVerified": true
       },
@@ -616,7 +616,7 @@
         "id": "#1463",
         "desc": "statusline detects Python test_*.py / spec_*.py",
         "file": ".claude/helpers/statusline.cjs",
-        "sha256": "af2703bdd710fb52af3221669266771ba1684157f34d77de21373890b5c2a126",
+        "sha256": "d951be92aa434a293b1a747d79b0a3094f6793270315a6ba0cff1c42035fc12b",
         "marker": "startsWith('test_')",
         "markerVerified": true
       },
@@ -624,15 +624,15 @@
         "id": "#1825",
         "desc": "hotfix: workspace: protocol leak in cli optionalDependencies",
         "file": "v3/@claude-flow/cli/package.json",
-        "sha256": "38bb257d5b5ad2d035b9772d479d65dcb5d52c98acc66bcb857e7bb2c5eb5975",
-        "marker": "\"@claude-flow/memory\": \"^3.0.0-alpha.",
+        "sha256": "dd0bea3c3cb67c507b4d7862a6175fe577ad98f57cf2abe765a8bb0fb8f6c001",
+        "marker": "\"@claude-flow/memory\": \"3.0.0-alpha.",
         "markerVerified": true
       },
       {
         "id": "#1834",
         "desc": "skill listing budget bumped + duplicates pruned",
         "file": ".claude/settings.json",
-        "sha256": "78467be525e3b96c2b5f88d7f913747f21b5da1c06b87b824d1494e29fcf074e",
+        "sha256": "b560b28c6ac9c76d2ab140ac3536ae795f45324fa2771b3d557181ab4ed71b8e",
         "marker": "skillListingBudgetFraction",
         "markerVerified": true
       },
@@ -808,7 +808,7 @@
         "id": "ADR-112",
         "desc": "MCP tool discoverability audit — every tool description must include 'Use when ... is wrong because ...' guidance so Claude picks Ruflo over native Bash/Read/Write/Task correctly. CI guard at scripts/audit-tool-descriptions.mjs gates against regressions via monotone-decreasing baseline at verification/mcp-tool-baseline.json. 285/285 tools have guidance (was 6/285 before this work).",
         "file": "scripts/audit-tool-descriptions.mjs",
-        "sha256": "4c45458f298eaa525f6ed5d2498ee04f7085f42ee32ecae3f0fe70a22100d0c1",
+        "sha256": "78db63bc21ccb548872dc53a8f2b115bcb321a401365fb055ff2f434d3213e72",
         "marker": "MIN_DESCRIPTION_LENGTH",
         "markerVerified": true
       },
@@ -816,7 +816,7 @@
         "id": "#1892",
         "desc": "Statusline version no longer hardcoded to V3.5/V3.6 — reads from installed @claude-flow/cli package.json at runtime via resolveBannerVersion() so UI matches `ruflo doctor` output.",
         "file": "v3/@claude-flow/cli/.claude/helpers/statusline.js",
-        "sha256": "3c353f8f404deba90522c278f383a00afaa0c152fa02bbddc51042e1678ac0be",
+        "sha256": "d8a7cd9be1bc61b8670910cc3a478131f0542a459379c130f7b5d849950eb89a",
         "marker": "resolveBannerVersion",
         "markerVerified": true
       },
@@ -856,7 +856,7 @@
         "id": "#1916-guard",
         "desc": "CLI↔MCP tool coverage CI guard (scripts/audit-cli-mcp-tools.mjs) — fails if any `ruflo <cmd>` subcommand callMCPTool()s a name not registered in src/mcp-tools/*.ts. Monotone-decreasing baseline at verification/cli-mcp-tool-baseline.json — now at 0 (was 20). Wired into v3-ci.yml `tool-descriptions-audit` job (already in witness-verify needs[]).",
         "file": "scripts/audit-cli-mcp-tools.mjs",
-        "sha256": "77883bac35c00c92eda4a5999853f8d1d2864806065b0b900548f501f5511b7c",
+        "sha256": "39cff77e40a0891b80e07bf0356bc5344f84579f67c383ea5b6cab2115b43b73",
         "marker": "cli-mcp-tool-baseline.json",
         "markerVerified": true
       },
@@ -872,7 +872,7 @@
         "id": "#1902-#1903-guard",
         "desc": "Plugin package.json install-safety CI guard (scripts/audit-plugin-packages.mjs) — fails CI on (A) an unpublished @claude-flow/* hard dep / non-optional peer (#1903 ruvector-upstream class), (B) a bare-stable peer range that can't resolve a 3.x prerelease publish (#1902), (C) a main/module/exports path not covered by `files`, (D) post-build, a main/module/exports path that doesn't exist on disk (#1904). Wired into v3-ci.yml as `plugin-package-audit` (builds plugins first so check D is live) and added to witness-verify needs[].",
         "file": "scripts/audit-plugin-packages.mjs",
-        "sha256": "722264ab6380eb185daf27270003225c1871e0164c84cff110fcf2c69d10ac86",
+        "sha256": "a4daac5d4732d9030890e937a78963346f30f3002303429a0d0aa95ac8d5f73a",
         "marker": "KNOWN_PUBLISHED",
         "markerVerified": true
       },
@@ -880,7 +880,7 @@
         "id": "#1904",
         "desc": "plugin-gastown-bridge — package.json `exports` advertised ./dist/index.mjs (+ ./formula, ./convoy subpaths) that the build never emitted, so those import specifiers 404'd in the published tarball. Fix: tsup.config.ts builds the formula/convoy entries (previously commented out), and package.json exports/main/module point at the actually-emitted .js/.cjs filenames. Validated by the plugin-package-audit CI guard (check D).",
         "file": "v3/plugins/gastown-bridge/tsup.config.ts",
-        "sha256": "515c6a7951e7b51b2c409a84c87a2b395164ff9e1452e6c459b4f71ebb2ec383",
+        "sha256": "e8bcf68635d45764e46be0c80647781134f8f437b395b949a95e56cce717a9e3",
         "marker": "formula: 'src/formula/index.ts'",
         "markerVerified": true
       },
@@ -888,7 +888,7 @@
         "id": "#1921",
         "desc": "Plugin hooks no longer do a bare `npx <pkg>@alpha hooks …` on every PreToolUse/PostToolUse/Stop fire — they invoke scripts/ruflo-hook.sh, which prefers a locally-installed `ruflo`/`claude-flow` binary, falls back to `npx --prefer-offline`, and ALWAYS exits 0 so a CLI/install crash (e.g. arborist `Invalid Version` on npm 10.8.x) never surfaces a hook error in Claude Code or wastes a cold-cache reinstall per turn. CI guard: scripts/audit-hook-commands.mjs (fails on bare-npx-without-prefer-offline / non-guarded CLI invocation) wired into v3-ci.yml `hook-command-audit` + added to witness-verify needs[].",
         "file": "scripts/audit-hook-commands.mjs",
-        "sha256": "92a62cc9f70b3acfbfbe6d039e8667512242511ee2707c06d42e92d28838f162",
+        "sha256": "6f2702c59f1cb2438533ee4e7b2648dc2c2076334c60e5ca4dc30db5a0c99c5b",
         "marker": "NONFATAL_RE",
         "markerVerified": true
       },
@@ -896,7 +896,7 @@
         "id": "#1921-shim",
         "desc": "scripts/ruflo-hook.sh — resilient invoker shipped in each plugin (.claude-plugin/, plugin/, plugins/ruflo-core/): prefers a local `ruflo`/`claude-flow` binary, else `npx --prefer-offline --yes ruflo@latest`, always `exit 0`. stdin (hook event JSON) passes through unchanged. Companion to #1921.",
         "file": "plugins/ruflo-core/scripts/ruflo-hook.sh",
-        "sha256": "66f2c736e9383557c280c23a82a1f310f6dcf4ff36bf0d5043bea439c495ac3b",
+        "sha256": "e071b4e0087e1b2dbfa42256ffd95072f4e6f818561f831b81e114f9bac6f911",
         "marker": "npx --prefer-offline --yes ruflo@latest hooks",
         "markerVerified": true
       },
@@ -904,7 +904,7 @@
         "id": "#1862",
         "desc": "ruflo-core PostToolUse hooks call documented CLI flags (-c/-s/-e, -f/-s) instead of bogus --format true. (#1921 moved the invocation behind scripts/ruflo-hook.sh; #2721 rewired hooks.json to a node -e bootstrap and moved the flag-construction logic itself into scripts/ruflo-hook.cjs — the documented-flag form is preserved there.)",
         "file": "plugins/ruflo-core/scripts/ruflo-hook.cjs",
-        "sha256": "f3294a4b6683797518a54edc5bbbe901c13f57c882bc1789a8cb157088128f7c",
+        "sha256": "a68899a8f4945a1bb192499956de90f5906f40155dba03562bc3999151a3603b",
         "marker": "['-f', String(file), '-s', 'true']",
         "markerVerified": true
       },
@@ -912,7 +912,7 @@
         "id": "#1927",
         "desc": "ruflo-cost-tracker track.mjs encodeProjectPath now replaces Windows path separators (`\\`) and the drive colon (`:`), not just `/`, so `D:\\project\\Foo` encodes to `D--project-Foo` (matching Claude Code's ~/.claude/projects/<encoded-cwd>/ scheme) instead of being passed through unchanged on Windows. Behavioral CI guard: smoke.sh step 29b runs track.mjs with a Windows-style TRACK_CWD and asserts the 'looked under' path is encoded. (Also fixed smoke.sh step 8 — ADR-0001 is Accepted, not Proposed.)",
         "file": "plugins/ruflo-cost-tracker/scripts/track.mjs",
-        "sha256": "3c054247da47273135831f8cf1c951dab351e2e6526166c9904b4c7fb02c3cae",
+        "sha256": "68c851857ee185511fbe680c36513186f9ccf766518c94c9f6a9dc1d76c16db9",
         "marker": "#1927: Claude Code encodes",
         "markerVerified": true
       },
@@ -952,10 +952,10 @@
   },
   "integrity": {
     "manifestHashAlgo": "sha256",
-    "manifestHash": "233d5dd0f90e3db059aa6330edb5fd2a8aa358a10776b3495b32967566b8ef8a",
+    "manifestHash": "e7121a19618230904d711103781fdb878966f6621a7079cefbf2a591cd4ec764",
     "signatureAlgo": "ed25519",
-    "publicKey": "e16d2f8d5e031947092f09e06b0fed17128a78975fd89b935ea5cdf39510cf29",
-    "signature": "de27be8079c42502b0ed3483b866960a01974cae449fccadda940a8ebf1ec17fb2ea347468a7f37b00e29f3a1ce0080e15ed24cc8922a78f20bdb72f4053ec0f",
+    "publicKey": "2c0b98b6fd011daaa3a1c57def61355ad9455000089922315259dd726daa7b05",
+    "signature": "bba14cec6dda7df51cc14b578c3f2e09752ab381abcbff5f85df8ad3244a638092d0902fa9669495cfaea68dae702594bfcc1e3cd42cf6bb43fcc724f2847107",
     "seedDerivation": "sha256(gitCommit + ':ruflo-witness/v1')"
   }
 }

@@ -44,6 +44,61 @@ let _db: any = null;
 let _dbPath = '';
 let _dbInitializing = false;
 
+// #3397 — the handle used to live for the whole MCP server process, keeping
+// the -wal/-shm sidecars on disk forever; the #2735 guard then refused every
+// later sql.js whole-image write (memory_store on Windows, where the native
+// bridge is off by default). The handle is now released after a short idle
+// window, and memory-initializer releases it on demand before its guard.
+//
+// Invariant this relies on: every caller of getBridgeDb() finishes using the
+// returned handle synchronously after the await (no await between it and the
+// last `db.` call), so a release can only land between operations. If a
+// caller ever breaks that, it gets "database connection is not open", which
+// every call site already catches.
+const DEFAULT_IDLE_RELEASE_MS = 1000;
+let _idleTimer: ReturnType<typeof setTimeout> | null = null;
+let _exitHookInstalled = false;
+
+function idleReleaseMs(): number {
+  const configured = Number(process.env.CLAUDE_FLOW_GRAPH_EDGE_IDLE_MS);
+  return Number.isFinite(configured) && configured >= 0 ? configured : DEFAULT_IDLE_RELEASE_MS;
+}
+
+function armIdleRelease(): void {
+  if (_idleTimer) clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(() => { _idleTimer = null; releaseBridgeDb(); }, idleReleaseMs());
+  _idleTimer.unref?.();
+  if (!_exitHookInstalled) {
+    _exitHookInstalled = true;
+    // 'exit' (not SIGINT/SIGTERM handlers, which would change Node's default
+    // termination) — sync-only work, so a clean shutdown checkpoints and
+    // removes the sidecars instead of leaving them for the next process.
+    process.once('exit', () => { releaseBridgeDb(); });
+  }
+}
+
+/**
+ * Checkpoint and close the cached handle if it is open (optionally only if it
+ * is open on `dbPath`). Returns true if a handle was released. Never throws.
+ *
+ * busy_timeout is dropped to 0 first so the TRUNCATE checkpoint cannot stall
+ * the event loop behind another connection: if another native connection is
+ * attached the sidecars stay anyway (it owns them), so a busy checkpoint loses
+ * nothing; if this is the only connection, the checkpoint is never busy.
+ */
+export function releaseBridgeDb(dbPath?: string): boolean {
+  if (!_db) return false;
+  if (dbPath !== undefined && path.resolve(dbPath) !== path.resolve(_dbPath)) return false;
+  if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
+  const db = _db;
+  _db = null;
+  _dbPath = '';
+  try { db.pragma('busy_timeout = 0'); } catch { /* best-effort */ }
+  try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch { /* best-effort */ }
+  try { db.close(); } catch { /* best-effort */ }
+  return true;
+}
+
 /**
  * Return the better-sqlite3 Database instance for graph_edges writes.
  * Creates the graph_edges table if it is absent (idempotent).
@@ -61,7 +116,7 @@ export async function getBridgeDb(customDbPath?: string, opts?: { createIfMissin
   const dbPath = customDbPath ?? path.join(getMemoryRoot(), 'memory.db');
   const createIfMissing = opts?.createIfMissing === true;
 
-  if (_db && _dbPath === dbPath) return _db;
+  if (_db && _dbPath === dbPath) { armIdleRelease(); return _db; }
   if (_dbInitializing) return null;
   _dbInitializing = true;
 
@@ -127,8 +182,12 @@ export async function getBridgeDb(customDbPath?: string, opts?: { createIfMissin
       CREATE INDEX IF NOT EXISTS idx_graph_edges_reinforced ON graph_edges (last_reinforced);
     `);
 
+    // A handle cached for a different path would otherwise be orphaned
+    // (still open, sidecars still on disk) by the reassignment below.
+    releaseBridgeDb();
     _db = db;
     _dbPath = dbPath;
+    armIdleRelease();
     return db;
   } catch {
     return null;
@@ -267,6 +326,7 @@ export async function countGraphEdges(dbPath?: string): Promise<number> {
  * writes deterministically, regardless of platform/timing.
  */
 export function _resetBridgeDb(): void {
+  if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
   if (_db) {
     try { _db.pragma('wal_checkpoint(TRUNCATE)'); } catch { /* best-effort */ }
     try { _db.close(); } catch { /* best-effort */ }
