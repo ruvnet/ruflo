@@ -254,6 +254,21 @@ describe('TopologyManager', () => {
       expect(leader).toBe('agent-1');
       expect(topology.getLeader()).toBe('agent-1');
     });
+
+    it('should connect the queen back to every worker (regression: Dream Cycle 2026-09-19)', async () => {
+      await topology.addNode('agent-1', 'queen');
+      await topology.addNode('agent-2', 'worker');
+      await topology.addNode('agent-3', 'worker');
+
+      const queen = topology.getNode('agent-1');
+
+      expect(queen?.connections).toContain('agent-2');
+      expect(queen?.connections).toContain('agent-3');
+      expect(topology.getNeighbors('agent-1')).toEqual(
+        expect.arrayContaining(['agent-2', 'agent-3'])
+      );
+      expect(topology.findOptimalPath('agent-1', 'agent-3')).toEqual(['agent-1', 'agent-3']);
+    });
   });
 
   describe('Centralized Topology', () => {
@@ -290,6 +305,20 @@ describe('TopologyManager', () => {
 
       expect(leader).toBe('agent-1');
     });
+
+    it('should connect the coordinator back to every worker (regression: Dream Cycle 2026-09-19)', async () => {
+      await topology.addNode('agent-1', 'coordinator');
+      await topology.addNode('agent-2', 'worker');
+      await topology.addNode('agent-3', 'worker');
+
+      const coordinator = topology.getNode('agent-1');
+
+      expect(coordinator?.connections).toContain('agent-2');
+      expect(coordinator?.connections).toContain('agent-3');
+      expect(topology.getNeighbors('agent-1')).toEqual(
+        expect.arrayContaining(['agent-2', 'agent-3'])
+      );
+    });
   });
 
   describe('Hybrid Topology', () => {
@@ -325,6 +354,18 @@ describe('TopologyManager', () => {
       // In hybrid topology, connections may be established after rebalance
       expect(queen?.connections.length).toBeGreaterThanOrEqual(0);
       expect(coord?.connections.length).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should connect leaders back to workers/peers immediately on add (regression: Dream Cycle 2026-09-19)', async () => {
+      await topology.addNode('agent-1', 'queen');
+      await topology.addNode('agent-2', 'coordinator');
+      await topology.addNode('agent-3', 'peer');
+
+      const queen = topology.getNode('agent-1');
+      const coord = topology.getNode('agent-2');
+
+      expect(queen?.connections).toContain('agent-3');
+      expect(coord?.connections).toContain('agent-3');
     });
   });
 

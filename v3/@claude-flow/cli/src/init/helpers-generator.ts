@@ -289,7 +289,7 @@ const AGENT_CAPABILITIES = {
 // the whitespace acts as a natural boundary.
 const TASK_PATTERNS = [
   { tokens: ['implement', 'create', 'build', 'add', 'write code', 'refactor', 'debug'], agent: 'coder' },
-  { tokens: ['test', 'tests', 'spec', 'coverage', 'unit test', 'integration test'], agent: 'tester' },
+  { tokens: ['test', 'tests', 'testing', 'spec', 'specs', 'coverage', 'unit test', 'integration test'], agent: 'tester' },
   { tokens: ['review', 'audit', 'check', 'validate', 'security'], agent: 'reviewer' },
   { tokens: ['research', 'find', 'search', 'documentation', 'explore'], agent: 'researcher' },
   { tokens: ['design', 'architect', 'architecture', 'structure', 'plan'], agent: 'architect' },
@@ -335,15 +335,16 @@ function routeTask(task) {
   };
 }
 
-// CLI
-const task = process.argv.slice(2).join(' ');
-
-if (task) {
-  const result = routeTask(task);
-  console.log(JSON.stringify(result, null, 2));
-} else {
-  console.log('Usage: router.js <task description>');
-  console.log('\\nAvailable agents:', Object.keys(AGENT_CAPABILITIES).join(', '));
+// CLI — only when executed directly, not when require()d by hook-handler.cjs
+if (require.main === module) {
+  const task = process.argv.slice(2).join(' ');
+  if (task) {
+    const result = routeTask(task);
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log('Usage: router.js <task description>');
+    console.log('\\nAvailable agents:', Object.keys(AGENT_CAPABILITIES).join(', '));
+  }
 }
 
 module.exports = { routeTask, AGENT_CAPABILITIES, TASK_PATTERNS, buildPattern };
