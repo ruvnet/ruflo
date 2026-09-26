@@ -882,5 +882,29 @@ describe('WorkerDaemon resource thresholds', () => {
       clearInterval((daemon as any).lifecycleTimer);
       (daemon as any).lifecycleTimer = undefined;
     });
+
+    it('measures idle time from this start when restored worker activity is stale (#3194)', () => {
+      const stateFile = join(tempDir, '.claude-flow', 'daemon-state.json');
+      const previousRun = new Date('2026-01-01T00:00:00.000Z');
+      const startedMs = new Date('2026-01-02T00:00:00.000Z').getTime();
+      writeFileSync(stateFile, JSON.stringify({
+        workers: { audit: { lastRun: previousRun, lastStartedAt: previousRun } },
+      }));
+
+      const daemon = new WorkerDaemon(tempDir, { ttlMs: 0, idleShutdownMs: 90_000 });
+      const internal = daemon as any;
+      internal.startedAt = new Date(startedMs);
+      expect(internal.workers.get('audit').lastRun).toEqual(previousRun);
+
+      // The first lifecycle tick must not kill a fresh daemon because of
+      // activity from a previous process, but idle shutdown still applies.
+      expect(internal.lifecycleShutdownReason(startedMs + 60_000)).toBeNull();
+      expect(internal.lifecycleShutdownReason(startedMs + 90_000)).toMatch(/idle for 90s/);
+
+      // A worker run in this process resets the idle window normally.
+      internal.workers.get('audit').lastRun = new Date(startedMs + 45_000);
+      expect(internal.lifecycleShutdownReason(startedMs + 120_000)).toBeNull();
+      expect(internal.lifecycleShutdownReason(startedMs + 135_000)).toMatch(/idle for 90s/);
+    });
   });
 });

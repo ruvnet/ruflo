@@ -1166,7 +1166,9 @@ export class WorkerDaemon extends EventEmitter {
       return `max age ${Math.round(ttlMs / 1000)}s reached`;
     }
     if (idleMs > 0) {
-      const lastActivity = this.lastWorkerActivityMs() ?? startedMs;
+      // Worker timestamps survive restarts; they cannot make this process
+      // idle before it has been alive for a full idle window (#3194).
+      const lastActivity = Math.max(this.lastWorkerActivityMs() ?? startedMs, startedMs);
       if (now - lastActivity >= idleMs) {
         return `idle for ${Math.round(idleMs / 1000)}s (no worker activity)`;
       }
