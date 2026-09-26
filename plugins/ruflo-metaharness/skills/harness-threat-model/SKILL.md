@@ -13,7 +13,7 @@ categorized report suitable for sharing with an InfoSec team.
 
 Implementation: [`scripts/threat-model.mjs`](../../scripts/threat-model.mjs).
 
-1. Invoke the pinned `harness` binary (`metaharness@~0.3.0`, resolved from a
+1. Invoke the pinned `harness` binary (`metaharness@~0.4.1`, resolved from a
    local install or the one-time `~/.ruflo/metaharness-cache-<pin>` cache —
    never `@latest`): `harness threat-model <path> --json`.
 2. Parse `{ worst, findings[] }`.

@@ -253,6 +253,24 @@ grep -q "bin.harness" "$F" 2>/dev/null || miss="$miss no-harness-bin"
 grep -q "cwd: opts" "$F" || miss="$miss no-cwd-passthrough"
 [[ -z "$miss" ]] && ok || bad "$miss"
 
+step "17r2. no tool-time npx: darwin / redblue / memory use what is installed (#3366)"
+miss=""
+# 17r locked _harness.mjs off npx; _darwin.mjs still ran `npx -y -p
+# @metaharness/darwin@<pin>` per call, _redblue.mjs npm-installed into its
+# cache ignoring the installed copy, and 4 scripts ran
+# `npx @claude-flow/cli@latest memory …`. Static guard + hermetic runtime
+# gate (stub packages in the published layout, npm/npx trap).
+if grep -qE "spawn(Sync)?\('npx'" "$ROOT/scripts/_darwin.mjs" 2>/dev/null; then
+  miss="$miss darwin-npx-regressed"
+fi
+for s in audit-list audit-trend oia-audit similarity; do
+  grep -q "runRufloCli" "$ROOT/scripts/${s}.mjs" 2>/dev/null || miss="$miss ${s}-not-using-runRufloCli"
+done
+F="$ROOT/scripts/test-no-tool-time-npx.mjs"
+[[ -x "$F" ]] || miss="$miss not-executable"
+node "$F" >/dev/null 2>&1 || miss="$miss test-no-tool-time-npx-fails"
+[[ -z "$miss" ]] && ok || bad "$miss"
+
 step "17z80. HIGH security findings survive wrapper + composite boundaries (#2750)"
 miss=""
 SEC_FIXTURE=$(mktemp -d)
@@ -459,6 +477,19 @@ for pkg in "metaharness" "@metaharness/router" "@metaharness/kernel" "@metaharne
     miss="$miss ${pkg}-pin-drift:root=${ROOT_PIN},ruflo=${RUFLO_PIN},cli=${CLI_PIN}"
   fi
 done
+[[ -z "$miss" ]] && ok || bad "$miss"
+
+step "17z74a. plugin helper pins accept the CLI-declared ranges — no tool-time download (#3366)"
+miss=""
+# 17z74 compares package.json files with each other; the helpers' own
+# *_PIN_VERSION constants (what findLocalPackageDir accepts) were never
+# compared with them and drifted (~0.3.0 / ~0.8.0 vs declared ^0.4.1 /
+# ~0.10.2), so every metaharness_* call npm-installed an older release next
+# to the one ruflo ships. Hermetic runtime gate: stub packages at the declared
+# versions, published layout, npm/npx trap.
+F="$ROOT/scripts/test-pin-alignment.mjs"
+[[ -x "$F" ]] || miss="$miss not-executable"
+node "$F" >/dev/null 2>&1 || miss="$miss test-pin-alignment-fails"
 [[ -z "$miss" ]] && ok || bad "$miss"
 
 step "17z73. metaharness packages tilde-pinned (anti-caret regression, iter 110)"
