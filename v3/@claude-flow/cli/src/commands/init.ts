@@ -150,7 +150,9 @@ async function maybeAutoDetectCodex(
   options: { force: boolean; minimal: boolean; full: boolean },
 ): Promise<void> {
   try {
-    if (ctx.flags['no-codex-detect'] === true) return;
+    // The CLI parser turns `--no-codex-detect` into `codexDetect: false`.
+    // Retain the literal key for programmatic CommandContext callers.
+    if (ctx.flags.codexDetect === false || ctx.flags['no-codex-detect'] === true) return;
     if (ctx.flags.format === 'json') return; // scripted output stays pure
     if (!commandExists('codex')) return;
 
@@ -328,7 +330,8 @@ function isBloatedRufloSkillDir(dir: string): boolean {
 
 async function maybeInstallSkillsSh(ctx: CommandContext): Promise<void> {
   try {
-    if (ctx.flags['no-skills-sh'] === true) return;
+    // The CLI parser turns `--no-skills-sh` into `skillsSh: false`.
+    if (ctx.flags.skillsSh === false || ctx.flags['no-skills-sh'] === true) return;
     if (ctx.flags.format === 'json') return;
     if (/^(1|true|on|yes)$/i.test(String(process.env.RUFLO_NO_SKILLS_SH || ''))) return;
 
