@@ -1341,10 +1341,14 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
       }
 
       let timeoutHandle: ReturnType<typeof setTimeout>;
-      const settle = (result: ParallelExecutionResult): void => {
-        clearTimeout(timeoutHandle);
+      const detach = (): void => {
         this.off('task.completed', onTaskEvent);
         this.off('task.failed', onTaskEvent);
+        this.off('swarm.stopped', onSwarmStopped);
+      };
+      const settle = (result: ParallelExecutionResult): void => {
+        clearTimeout(timeoutHandle);
+        detach();
         resolve(result);
       };
       const onTaskEvent = (event: SwarmEvent): void => {
@@ -1352,15 +1356,23 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
         const result = resultForCurrentStatus();
         if (result) settle(result);
       };
+      // shutdown() clears state.tasks without a per-task terminal event; the
+      // old 100ms poll noticed that ("not found") almost immediately. Re-check
+      // on 'swarm.stopped' so an in-flight wait settles instead of hanging
+      // (and holding the event loop open) until taskTimeoutMs.
+      const onSwarmStopped = (): void => {
+        const result = resultForCurrentStatus();
+        if (result) settle(result);
+      };
 
       this.on('task.completed', onTaskEvent);
       this.on('task.failed', onTaskEvent);
+      this.on('swarm.stopped', onSwarmStopped);
 
       // Timeout after configured duration — a client-side deadline, not a
       // coordinator-observed state, so it stays a timer rather than an event.
       timeoutHandle = setTimeout(() => {
-        this.off('task.completed', onTaskEvent);
-        this.off('task.failed', onTaskEvent);
+        detach();
         const task = this.state.tasks.get(taskId);
         if (task && task.status !== 'completed') {
           task.status = 'timeout';
@@ -1392,10 +1404,14 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
       }
 
       let timeoutHandle: ReturnType<typeof setTimeout>;
-      const cleanup = (): void => {
-        clearTimeout(timeoutHandle);
+      const detach = (): void => {
         this.off('task.completed', onTaskEvent);
         this.off('task.failed', onTaskEvent);
+        this.off('swarm.stopped', onSwarmStopped);
+      };
+      const cleanup = (): void => {
+        clearTimeout(timeoutHandle);
+        detach();
       };
       const onTaskEvent = (event: SwarmEvent): void => {
         if (event.data.taskId !== taskId) return;
@@ -1405,13 +1421,26 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
           resolve(task);
         }
       };
+      // See waitForQueuedTask(): shutdown() clears state.tasks with no
+      // per-task event, so re-check on 'swarm.stopped' rather than hanging
+      // until timeoutMs (matches the old poll's "not found" rejection).
+      const onSwarmStopped = (): void => {
+        const task = this.state.tasks.get(taskId);
+        if (!task) {
+          cleanup();
+          reject(new Error(`Task ${taskId} not found`));
+        } else if (isTerminal(task)) {
+          cleanup();
+          resolve(task);
+        }
+      };
 
       this.on('task.completed', onTaskEvent);
       this.on('task.failed', onTaskEvent);
+      this.on('swarm.stopped', onSwarmStopped);
 
       timeoutHandle = setTimeout(() => {
-        this.off('task.completed', onTaskEvent);
-        this.off('task.failed', onTaskEvent);
+        detach();
         const task = this.state.tasks.get(taskId);
         if (task) {
           task.status = 'timeout';

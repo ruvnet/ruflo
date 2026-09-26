@@ -263,4 +263,47 @@ describe('UnifiedSwarmCoordinator event-driven task wait (Dream Cycle 2026-09-20
     expect(result).toBeDefined();
     expect(result?.status).toBe('cancelled');
   });
+
+  it('settles in-flight waits on shutdown() (tasks cleared, no per-task event) instead of hanging until taskTimeoutMs', async () => {
+    vi.useFakeTimers();
+
+    const submit = (name: string) => coordinator.submitTask({
+      type: 'coding',
+      name,
+      description: 'shutdown-while-waiting test',
+      priority: 'normal',
+      dependencies: [],
+      input: {},
+      timeoutMs: 10000,
+      retries: 0,
+      maxRetries: 3,
+      metadata: {},
+    });
+    const queuedId = await submit('queued wait');
+    const completionId = await submit('completion wait');
+
+    const internals = coordinator as unknown as {
+      waitForQueuedTask(taskId: string, domain: 'core', startTime: number): Promise<{ success: boolean; error?: Error }>;
+      waitForTaskCompletion(taskId: string, timeoutMs: number): Promise<unknown>;
+    };
+
+    let queuedResult: { success: boolean; error?: Error } | undefined;
+    void internals.waitForQueuedTask(queuedId, 'core', performance.now()).then((r) => { queuedResult = r; });
+
+    let completionError: Error | undefined;
+    void internals.waitForTaskCompletion(completionId, 10000).catch((e: Error) => { completionError = e; });
+
+    await coordinator.shutdown();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // No timer advanced: both must have settled off the 'swarm.stopped' event.
+    expect(queuedResult?.success).toBe(false);
+    expect(queuedResult?.error?.message).toBe(`Task ${queuedId} not found`);
+    expect(completionError?.message).toBe(`Task ${completionId} not found`);
+    // And no listener or pending timeout is left behind.
+    expect(coordinator.listenerCount('task.completed')).toBe(0);
+    expect(coordinator.listenerCount('swarm.stopped')).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
