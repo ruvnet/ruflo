@@ -574,6 +574,79 @@ async function cacheGet(registry: any, cacheKey: string): Promise<any | null> {
 }
 
 /**
+ * Cross-process cache coherence.
+ *
+ * The TieredCache lives in this process, but the database file is shared:
+ * Claude Code, Codex and Grok each run their own `mcp start` against the
+ * same `.swarm/` store, and each process only invalidates entries on its
+ * OWN writes. A key another process updated or deleted kept coming back
+ * from this process's cache — old value, `found: true` — until the cached
+ * entry expired (TieredCache TTL, 5 minutes by default; reads don't extend
+ * it).
+ *
+ * SQLite's `PRAGMA data_version` changes whenever a DIFFERENT connection has
+ * committed to the database file since this connection last asked, and never
+ * for this connection's own writes (https://sqlite.org/pragma.html#pragma_data_version).
+ * Checking it before a cached read is an exact "has anyone else written?"
+ * test that costs one pragma call. When it moves, drop the whole cache:
+ * every cached shape was derived from the old database state. The first
+ * check on a handle records its baseline and clears: a no-op for a fresh
+ * handle, and the right thing if a handle is ever replaced under a live
+ * cache.
+ *
+ * Native better-sqlite3 handles only. agentdb's sql.js fallback works on a
+ * private in-memory image that never sees another process's commits, so
+ * there is nothing to detect; it is skipped rather than probed. A handle
+ * that cannot prepare the check is remembered and never probed again; a
+ * check that fails on a given read (e.g. SQLITE_BUSY) clears the cache for
+ * safety and is simply retried on the next read.
+ */
+const _cacheDataVersionStmts = new WeakMap<object, { get(): { data_version?: unknown } | undefined }>();
+const _cacheDataVersions = new WeakMap<object, number>();
+const _cacheDataVersionUnsupported = new WeakSet<object>();
+
+function dropCacheIfDbChangedElsewhere(registry: any, ctx: { db: any; agentdb?: any }): void {
+  // Never let this check break the read it guards: any throw falls back to
+  // the pre-fix behaviour (a possibly stale hit).
+  try {
+    const db = ctx.db;
+    if (!db || ctx.agentdb?.isWasm === true || !('inTransaction' in db)) return;
+    if (_cacheDataVersionUnsupported.has(db)) return;
+    let stmt = _cacheDataVersionStmts.get(db);
+    if (!stmt) {
+      try {
+        stmt = db.prepare('PRAGMA data_version');
+        _cacheDataVersionStmts.set(db, stmt!);
+      } catch {
+        _cacheDataVersionUnsupported.add(db); // structural: this handle can't answer
+        return;
+      }
+    }
+    let cache: any = null;
+    try { cache = registry.get('tieredCache'); } catch { /* no cache, nothing to drop */ }
+    try {
+      const version = stmt!.get()?.data_version;
+      if (typeof version !== 'number') {
+        // #3360: an unusable answer is not evidence the store is unchanged.
+        // Same posture as the catch below — a check we cannot validate drops
+        // the cache rather than trusting it, and leaves the baseline alone so
+        // the next read re-checks.
+        if (cache && typeof cache.clear === 'function') cache.clear();
+        return;
+      }
+      if (_cacheDataVersions.get(db) === version) return;
+      if (cache && typeof cache.clear === 'function') cache.clear();
+      _cacheDataVersions.set(db, version);
+    } catch {
+      // Transient (e.g. SQLITE_BUSY): don't trust the cache for this read.
+      if (cache && typeof cache.clear === 'function') cache.clear();
+    }
+  } catch {
+    // Non-fatal.
+  }
+}
+
+/**
  * Write to TieredCache after DB write.
  */
 async function cacheSet(registry: any, cacheKey: string, value: any): Promise<void> {
@@ -1494,6 +1567,7 @@ export async function bridgeGetEntry(options: {
     const safeNs = String(namespace).replace(/:/g, '_');
     const safeKey = String(key).replace(/:/g, '_');
     const cacheKey = `entry:${safeNs}:${safeKey}`;
+    dropCacheIfDbChangedElsewhere(registry, ctx);
     const cached = await cacheGet(registry, cacheKey);
     if (cached && cached.content) {
       return {
