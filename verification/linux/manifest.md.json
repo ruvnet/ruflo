@@ -1,9 +1,9 @@
 {
   "manifest": {
     "schema": "ruflo-witness/v1",
-    "issuedAt": "2026-09-26T15:41:18.196Z",
-    "gitCommit": "f9c49c9630ff95c67be4df1f01720dd31b22e94f",
-    "branch": "release/3.46.0",
+    "issuedAt": "2026-09-26T22:49:20.078Z",
+    "gitCommit": "d6542a9b7a1942ef809928640bbfea394bea856c",
+    "branch": "fix/browser-win-shell-boundary",
     "os": "linux",
     "releases": {},
     "summary": {
@@ -112,7 +112,7 @@
         "id": "#1697",
         "desc": "rvf-wasm overrides",
         "file": "package.json",
-        "sha256": "f7e2a7c7e2c3229dae10da03d29b4b6049bda2f5fbf6b5c3b458477ad5212f0f",
+        "sha256": "d3874b687dcbb4407f8628dff492be04717c78a19098f21f7d42a5eae9d9ef04",
         "marker": "@ruvector/rvf-wasm",
         "markerVerified": true
       },
@@ -136,7 +136,7 @@
         "id": "#1721",
         "desc": "postinstall copies all dist/src/* siblings",
         "file": "v3/@claude-flow/cli/package.json",
-        "sha256": "d716b1be9fb17f45f5ef20699105292cb78084d1973c0a2dd4576bec0e537d54",
+        "sha256": "c3d87d1dacd5ac02be56b04d8ca9cd440ab86710336a702b2143b1f7af0aa6af",
         "marker": "postinstall.cjs",
         "markerVerified": true
       },
@@ -264,7 +264,7 @@
         "id": "CAP-MCP-browser-tools",
         "desc": "MCP tools (23): browser_back, browser_check, browser_click, …",
         "file": "v3/@claude-flow/cli/dist/src/mcp-tools/browser-tools.js",
-        "sha256": "b90be59649e14c8a0c1e56a2b3a51c26c5dca1311547775c8aaa0c9fea7341ba",
+        "sha256": "c239eeaef811fe06f0c75777c8c24ebdc63f84b576eb71f39ab0c7907416a3bf",
         "marker": "browser_back",
         "markerVerified": true
       },
@@ -456,7 +456,7 @@
         "id": "#1795",
         "desc": "umbrella package missing cli-core dep (ERR_MODULE_NOT_FOUND)",
         "file": "package.json",
-        "sha256": "f7e2a7c7e2c3229dae10da03d29b4b6049bda2f5fbf6b5c3b458477ad5212f0f",
+        "sha256": "d3874b687dcbb4407f8628dff492be04717c78a19098f21f7d42a5eae9d9ef04",
         "marker": "@claude-flow/cli-core",
         "markerVerified": true
       },
@@ -624,7 +624,7 @@
         "id": "#1825",
         "desc": "hotfix: workspace: protocol leak in cli optionalDependencies",
         "file": "v3/@claude-flow/cli/package.json",
-        "sha256": "d716b1be9fb17f45f5ef20699105292cb78084d1973c0a2dd4576bec0e537d54",
+        "sha256": "c3d87d1dacd5ac02be56b04d8ca9cd440ab86710336a702b2143b1f7af0aa6af",
         "marker": "\"@claude-flow/memory\": \"3.0.0-alpha.",
         "markerVerified": true
       },
@@ -952,10 +952,10 @@
   },
   "integrity": {
     "manifestHashAlgo": "sha256",
-    "manifestHash": "f8828b43191ac8d8d49d26a9a2d8bed604f55e54d5897fbf81a4e302575d6403",
+    "manifestHash": "92e8f7664144c954ef3fa2e87acc8a4df54003bf6d55844ee79011287b71198c",
     "signatureAlgo": "ed25519",
-    "publicKey": "437feb7956b094f43bb0ef71695e49c84d8cfe133e21f571590a5ce150c67337",
-    "signature": "0330532498882071e67603e87faf1bc54ea98f1f3c8031884f3f89f3ce7e42fee63600d239ae9d45ee9f4c668735f1023523cd776d6600b142ed668fa9129d0c",
+    "publicKey": "940b8bd5bb982ee66093b5232ba0dba2b99d21790a459e78598f9ae379acd547",
+    "signature": "e9aa2e390ac153590f5aed0daff3922680f3b83bc4ab8b5585aacc263e83dd7ec7548179ef786b7eb9b1aaadb83d2275f0548524f321b705514d222f50b9ba0e",
     "seedDerivation": "sha256(gitCommit + ':ruflo-witness/v1')"
   }
 }
