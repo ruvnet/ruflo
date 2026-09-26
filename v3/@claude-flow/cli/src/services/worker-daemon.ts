@@ -15,6 +15,7 @@ import { EventEmitter } from 'events';
 import { existsSync, mkdirSync, writeFileSync, readFileSync, appendFileSync, unlinkSync, renameSync } from 'fs';
 import { cpus } from 'os';
 import { join } from 'path';
+import { createRequire } from 'node:module';
 import { writeFileAtomic } from '../fs-secure.js';
 import {
   HeadlessWorkerExecutor,
@@ -34,6 +35,10 @@ import { backupMemoryDb } from './memory-backup.js';
 import { resolveGitWorkspaceIdentity, type GitWorkspaceIdentity } from './git-workspace-identity.js';
 import { getWorkspaceLeaseRegistry } from './workspace-lease.js';
 import { getRepoSupervisorRegistry, type SupervisorRecord } from './repo-supervisor.js';
+
+// Daemon config is read synchronously from the constructor. In an ESM build,
+// bare `require` is undefined, so use a module-relative require for YAML.
+const requireYaml = createRequire(import.meta.url);
 
 // Worker types matching hooks-tools.ts
 export type WorkerType =
@@ -517,8 +522,7 @@ export class WorkerDaemon extends EventEmitter {
       try {
         // Lazy-load yaml so the daemon doesn't hard-require it; if the
         // dep isn't installed, fall back to the previous warn-only path.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const yamlMod = require('yaml') as { parse(s: string): unknown };
+        const yamlMod = requireYaml('yaml') as { parse(s: string): unknown };
         const parsed = yamlMod.parse(readFileSync(yPath, 'utf-8'));
         if (parsed && typeof parsed === 'object') {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1162,7 +1166,9 @@ export class WorkerDaemon extends EventEmitter {
       return `max age ${Math.round(ttlMs / 1000)}s reached`;
     }
     if (idleMs > 0) {
-      const lastActivity = this.lastWorkerActivityMs() ?? startedMs;
+      // Worker timestamps survive restarts; they cannot make this process
+      // idle before it has been alive for a full idle window (#3194).
+      const lastActivity = Math.max(this.lastWorkerActivityMs() ?? startedMs, startedMs);
       if (now - lastActivity >= idleMs) {
         return `idle for ${Math.round(idleMs / 1000)}s (no worker activity)`;
       }

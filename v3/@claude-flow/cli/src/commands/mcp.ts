@@ -83,6 +83,11 @@ const startCommand: Command = {
       type: 'string'
     },
     {
+      name: 'request-timeout-ms',
+      description: 'HTTP request timeout in milliseconds (default 30000; env RUFLO_MCP_REQUEST_TIMEOUT_MS)',
+      type: 'number'
+    },
+    {
       name: 'daemon',
       short: 'd',
       description: 'Run as background daemon',
@@ -100,6 +105,7 @@ const startCommand: Command = {
   examples: [
     { command: 'claude-flow mcp start', description: 'Start with defaults (stdio)' },
     { command: 'claude-flow mcp start -p 8080 -t http', description: 'Start HTTP server' },
+    { command: 'claude-flow mcp start -t http --request-timeout-ms 120000', description: 'Allow slower cold-start HTTP tools' },
     { command: 'claude-flow mcp start -d', description: 'Start as daemon' },
     { command: 'claude-flow mcp start -f', description: 'Force restart (kill existing)' }
   ],
@@ -110,6 +116,15 @@ const startCommand: Command = {
     const tools = (ctx.flags.tools as string | undefined)
       || process.env.CLAUDE_FLOW_MCP_TOOLS
       || 'all';
+    const timeoutInput = ctx.flags.requestTimeoutMs
+      ?? ctx.flags['request-timeout-ms']
+      ?? process.env.RUFLO_MCP_REQUEST_TIMEOUT_MS;
+    const requestTimeoutMs = timeoutInput === undefined ? undefined : Number(timeoutInput);
+    if (requestTimeoutMs !== undefined &&
+        (!Number.isSafeInteger(requestTimeoutMs) || requestTimeoutMs < 1 || requestTimeoutMs > 3_600_000)) {
+      output.printError('Request timeout must be an integer from 1 to 3600000 milliseconds');
+      return { success: false, exitCode: 1 };
+    }
     const daemon = (ctx.flags.daemon as boolean) ?? false;
     const force = (ctx.flags.force as boolean) ?? false;
 
@@ -122,10 +137,17 @@ const startCommand: Command = {
     // PID file exists, which would cause us to SIGKILL ourselves)
     const existingStatus = await getMCPServerStatus();
     const isSelfDetected = existingStatus.pid === process.pid;
-    if (existingStatus.running && !isSelfDetected) {
-      // For stdio transport, always force restart since we can't health check it
-      // For other transports, check health unless --force is specified
-      const shouldForceRestart = force || transport === 'stdio';
+    // #3364: only a port-bound transport (http/websocket) is single-instance.
+    // A stdio server belongs to the client that spawned it, over that client's
+    // own pipes, and any number run side by side. The PID file is a single
+    // slot per os.tmpdir(), so for stdio "already running" only ever meant
+    // "some other server is recorded" — and force-restarting SIGKILLed it
+    // (another terminal's stdio server, or a live http server). Stdio now
+    // kills a recorded server only when explicitly asked with --force.
+    const isSingleInstance = transport !== 'stdio';
+    if (existingStatus.running && !isSelfDetected && (isSingleInstance || force)) {
+      // --force always restarts; otherwise check health (http/websocket)
+      const shouldForceRestart = force;
 
       if (!shouldForceRestart) {
         // Verify the server is actually healthy/responsive
@@ -163,6 +185,7 @@ const startCommand: Command = {
       host,
       port,
       tools: !tools || tools === 'all' ? 'all' : tools.split(','),
+      ...(requestTimeoutMs === undefined ? {} : { requestTimeoutMs }),
       daemonize: daemon,
     };
 

@@ -30,6 +30,7 @@ import {
 } from './types.js';
 import { HNSWIndex } from './hnsw-index.js';
 import { CacheManager } from './cache-manager.js';
+import { encodeMemoryKey } from './memory-key.js';
 
 /**
  * Configuration for AgentDB Adapter
@@ -100,7 +101,7 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
   private index: HNSWIndex;
   private cache: CacheManager<MemoryEntry>;
   private namespaceIndex: Map<string, Set<string>> = new Map();
-  private keyIndex: Map<string, string> = new Map(); // namespace:key -> id
+  private keyIndex: Map<string, string> = new Map(); // encoded [namespace, key] -> id
   private tagIndex: Map<string, Set<string>> = new Map();
   private initialized: boolean = false;
 
@@ -185,7 +186,7 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
     // Namespace is resolved once, up front, so the dedup lookup below and the
     // index updates further down agree on the same value.
     const namespace = entry.namespace || this.config.defaultNamespace;
-    const keyIndexKey = `${namespace}:${entry.key}`;
+    const keyIndexKey = encodeMemoryKey(namespace, entry.key);
 
     // Idempotent upsert-by-key (Dream Cycle 2026-09-18, hardened post-review):
     // entry.id is always a fresh random id (generateMemoryId()), so a second
@@ -276,7 +277,7 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
    * Get a memory entry by key within a namespace
    */
   async getByKey(namespace: string, key: string): Promise<MemoryEntry | null> {
-    const keyIndexKey = `${namespace}:${key}`;
+    const keyIndexKey = encodeMemoryKey(namespace, key, this.config.defaultNamespace);
     const id = this.keyIndex.get(keyIndexKey);
     if (!id) return null;
     return this.get(id);
@@ -371,8 +372,8 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
 
     // Remove from key index
     if (touchKeyIndex) {
-      const keyIndexKey = `${entry.namespace}:${entry.key}`;
-      this.keyIndex.delete(keyIndexKey);
+      const keyIndexKey = encodeMemoryKey(entry.namespace, entry.key, this.config.defaultNamespace);
+      if (this.keyIndex.get(keyIndexKey) === id) this.keyIndex.delete(keyIndexKey);
     }
 
     // Remove from tag index
@@ -511,7 +512,7 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
     // id that isn't the winner for its key -- a pre-existing occupant or an
     // earlier same-key entry within this very batch -- is scheduled for
     // eviction once the winners are safely indexed.
-    const keyOf = (e: MemoryEntry) => `${e.namespace || this.config.defaultNamespace}:${e.key}`;
+    const keyOf = (e: MemoryEntry) => encodeMemoryKey(e.namespace, e.key, this.config.defaultNamespace);
     const winnerIdForKey = new Map<string, string>();
     for (const entry of entries) {
       winnerIdForKey.set(keyOf(entry), entry.id);
@@ -623,8 +624,8 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
         this.namespaceIndex.get(entry.namespace)?.delete(id);
 
         // Remove from key index
-        const keyIndexKey = `${entry.namespace}:${entry.key}`;
-        this.keyIndex.delete(keyIndexKey);
+        const keyIndexKey = encodeMemoryKey(entry.namespace, entry.key, this.config.defaultNamespace);
+        if (this.keyIndex.get(keyIndexKey) === id) this.keyIndex.delete(keyIndexKey);
 
         // Remove from tag index
         for (const tag of entry.tags) {
@@ -905,10 +906,10 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
     const prefix = query.keyPrefix || '';
     const namespace = query.namespace || this.config.defaultNamespace;
 
-    for (const [key, id] of this.keyIndex) {
-      if (key.startsWith(`${namespace}:${prefix}`)) {
-        const entry = this.entries.get(id);
-        if (entry) results.push(entry);
+    for (const id of this.keyIndex.values()) {
+      const entry = this.entries.get(id);
+      if (entry && (entry.namespace || this.config.defaultNamespace) === namespace && entry.key.startsWith(prefix)) {
+        results.push(entry);
       }
     }
 
@@ -1241,12 +1242,21 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
             : undefined,
         };
         this.entries.set(entry.id, entry);
+        // Rebuild from full tuple fields: legacy v1 keys used ambiguous
+        // namespace:key strings and could omit a colliding tuple entirely.
+        this.keyIndex.set(encodeMemoryKey(entry.namespace, entry.key, this.config.defaultNamespace), entry.id);
       }
       for (const [ns, ids] of Object.entries(meta.namespaceIndex)) {
         this.namespaceIndex.set(ns, new Set(ids));
       }
-      for (const [key, id] of Object.entries(meta.keyIndex)) {
-        this.keyIndex.set(key, id);
+      // Preserve the saved winner for true same-tuple duplicates. Entries
+      // are sorted by random ID on disk, not by their original write order.
+      // Reading IDs also accepts both v1 and v2 key encodings.
+      for (const id of Object.values(meta.keyIndex)) {
+        const entry = this.entries.get(id);
+        if (entry) {
+          this.keyIndex.set(encodeMemoryKey(entry.namespace, entry.key, this.config.defaultNamespace), id);
+        }
       }
       for (const [tag, ids] of Object.entries(meta.tagIndex)) {
         this.tagIndex.set(tag, new Set(ids));
@@ -1351,7 +1361,7 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
       tagIndex[t] = [...this.tagIndex.get(t)!].sort();
     }
 
-    return { version: 1, entries: persistedEntries, namespaceIndex, keyIndex, tagIndex };
+    return { version: 2, entries: persistedEntries, namespaceIndex, keyIndex, tagIndex };
   }
 }
 
@@ -1360,7 +1370,7 @@ export class AgentDBAdapter extends EventEmitter implements IMemoryBackend {
  * `embedding` is stored as a plain number[] to keep the JSON canonical.
  */
 interface PersistedMeta {
-  version: 1;
+  version: 1 | 2;
   entries: Array<Omit<MemoryEntry, 'embedding'> & { embedding?: number[] }>;
   namespaceIndex: Record<string, string[]>;
   keyIndex: Record<string, string>;

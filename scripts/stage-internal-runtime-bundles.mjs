@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, '..');
 
-const INTERNAL_RUNTIME_PACKAGES = [
+export const INTERNAL_RUNTIME_PACKAGES = [
   {
     directory: 'security',
     name: '@claude-flow/security',

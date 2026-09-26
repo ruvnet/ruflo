@@ -347,6 +347,10 @@ jobs:
         working-directory: v3
         run: pnpm install --frozen-lockfile
 
+      - name: Verify opt-in MCP policy through both shipped stdio launchers
+        working-directory: v3/@claude-flow/cli
+        run: node scripts/test-mcp-policy-stdio.mjs
+
       - name: Build (so workspace dist/ exists for runtime imports)
         # Some test suites do `await import('@claude-flow/X')` and Vite's
         # import-analysis pass needs dist/ files at the resolved path.
@@ -1741,6 +1745,34 @@ jobs:
         # this audit enforces it so drift can't reach a release.
         shell: bash
         run: node scripts/audit-umbrella-version-lockstep.mjs
+
+      - name: Fetch PR base ref (for the leaf-publish diff check)
+        # The leaf-publish audit's diff check needs the base commit to compare
+        # against. actions/checkout is shallow by default, so without this the
+        # audit reports the diff check as NOT EXERCISED (it says so loudly
+        # rather than passing silently) and only the range check runs.
+        if: github.event_name == 'pull_request'
+        shell: bash
+        # --depth=1 is NOT enough: it fetches the base tip with no shared history,
+        # so `base...HEAD` fails with "no merge base" and the check sits out. Fetch
+        # enough history for a merge base, and map it to refs/remotes so the audit
+        # can name it as origin/<base>.
+        run: |
+          git fetch --no-tags --depth=50 origin \
+            "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
+
+      - name: Run leaf-package publish audit (#3335, #3390)
+        # Only four @claude-flow/* components are bundled into the release
+        # tarballs (INTERNAL_RUNTIME_PACKAGES). cli-core, neural, shared and
+        # memory resolve from the REGISTRY, so a merged source change in one of
+        # them does NOT ship with the three-package train — the release carries
+        # the last published copy instead. #3334 lost a fix that way (#3335),
+        # and #3390's reasoningBank fix would have shipped only its cli half if
+        # @claude-flow/memory had not been published alongside v3.42.5. CI goes
+        # green on such a change because the leaf's own tests run against
+        # workspace source, which is exactly what makes it easy to miss.
+        shell: bash
+        run: node scripts/audit-leaf-package-publish.mjs
 
       - name: Run better-sqlite3 override audit (#2219)
         # agentdb pins better-sqlite3 as an OPTIONAL dep at ^11.8.1, which has

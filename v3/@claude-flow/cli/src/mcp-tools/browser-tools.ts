@@ -16,6 +16,34 @@ const browserSessions = new Map<string, {
   lastActivity: string;
 }>();
 
+/** Preserve agent-browser's JSON error on non-zero exit without echoing other process output. */
+function browserCommandFailure(error: unknown, missingExecutable?: string): MCPToolResult {
+  const err = error as NodeJS.ErrnoException & { stdout?: string | Buffer; status?: number };
+  const stdout = typeof err?.stdout === 'string'
+    ? err.stdout
+    : Buffer.isBuffer(err?.stdout) ? err.stdout.toString('utf8') : '';
+  let reason: string | undefined;
+  if (stdout.trim()) {
+    try {
+      const parsed: unknown = JSON.parse(stdout);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const failure = parsed as { success?: unknown; error?: unknown };
+        if (failure.success === false && typeof failure.error === 'string' && failure.error.trim()) {
+          reason = failure.error.slice(0, 2000);
+        }
+      }
+    } catch { /* non-JSON stdout is not an error message */ }
+  }
+  reason ??= err?.code === 'ENOENT' && missingExecutable
+    ? missingExecutable
+    : err?.code === 'ETIMEDOUT'
+      ? 'agent-browser command timed out'
+      : typeof err?.status === 'number'
+        ? `agent-browser exited with status ${err.status} without a JSON error`
+        : `agent-browser failed${err?.code ? ` (${err.code})` : ''} without a JSON error`;
+  return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: reason }) }], isError: true };
+}
+
 /**
  * Execute agent-browser CLI command.
  * Tries global agent-browser first, falls back to npx if ENOENT.
@@ -50,31 +78,10 @@ export async function execBrowserCommand(args: string[], session = 'default'): P
           windowsHide: true,
         });
       } catch (npxError) {
-        const npxErr = npxError as NodeJS.ErrnoException;
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: npxErr.code === 'ENOENT'
-                ? 'Neither agent-browser nor npx found. Install with: npm i -g agent-browser'
-                : npxErr instanceof Error ? npxErr.message : String(npxError),
-            }),
-          }],
-          isError: true,
-        };
+        return browserCommandFailure(npxError, 'Neither agent-browser nor npx found. Install with: npm i -g agent-browser');
       }
     } else {
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            success: false,
-            error: err instanceof Error ? err.message : String(error),
-          }),
-        }],
-        isError: true,
-      };
+      return browserCommandFailure(error);
     }
   }
 

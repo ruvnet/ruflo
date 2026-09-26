@@ -42,9 +42,8 @@ import { fileURLToPath } from 'node:url';
 
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const NS = process.env.METAHARNESS_AUDIT_NAMESPACE || 'metaharness-audit';
-const CLI_PKG = process.env.CLI_CORE === '1'
-  ? '@claude-flow/cli-core@alpha'
-  : '@claude-flow/cli@latest';
+// Memory access is delegated to audit-list / oia-audit / audit-trend (they
+// call the shipping ruflo CLI through _invoke.runRufloCli — #3366).
 
 const ARGS = (() => {
   const a = {

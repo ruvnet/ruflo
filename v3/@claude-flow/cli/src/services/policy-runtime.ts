@@ -18,10 +18,15 @@ import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from
 import { execFileSync } from 'node:child_process';
 import {
   closeSync,
+  constants as fsConstants,
   existsSync,
+  fstatSync,
+  lstatSync,
   mkdirSync,
   openSync,
   readFileSync,
+  readSync,
+  readlinkSync,
   realpathSync,
   renameSync,
   statSync,
@@ -29,13 +34,28 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { userInfo } from 'node:os';
+import { hostname, userInfo } from 'node:os';
 
 const POLICY_DIR = join('.claude-flow', 'policy');
 const POLICY_FILE = 'state.json';
 const LOCK_FILE = 'state.lock';
 const LOCK_STALE_MS = 30_000;
 const LOCK_WAIT_MS = 5_000;
+// A lock is ~170 bytes plus the hostname (at most 255 bytes).
+const LOCK_MAX_BYTES = 1_024;
+// Linux PID namespace of this process, e.g. `pid:[4026531836]`; undefined on
+// other platforms or without /proc. Recorded in the lock because a pid only
+// identifies a process inside the namespace that wrote it.
+const PID_NAMESPACE = (() => {
+  try { return readlinkSync('/proc/self/ns/pid'); } catch { return undefined; }
+})();
+// Linux boot id: one uuid per kernel boot, shared by every process on that
+// kernel and readable inside containers. Recorded because `host` is only a
+// name: two machines that share a project directory can report the same
+// hostname, and the init PID namespace has the same inode on every Linux host.
+const BOOT_ID = (() => {
+  try { return readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim(); } catch { return undefined; }
+})();
 
 function paths(projectRoot: string): { dir: string; state: string; lock: string } {
   const root = resolve(projectRoot);
@@ -47,19 +67,102 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 }
 
+/**
+ * Signal-0 existence probe, as in #1799 (`isPidAlive` in swarm-tools.ts), but
+ * only ESRCH counts as dead (as `processIsAlive` in helper-refresh.ts): here a
+ * false "dead" breaks mutual exclusion, so EPERM (another user's process) and
+ * any unexpected error mean alive.
+ */
+function isPidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code !== 'ESRCH';
+  }
+}
+
+/**
+ * Reads a lock only if it is a small regular file: never follows a symlink,
+ * never blocks on a FIFO or device, never reads more than LOCK_MAX_BYTES.
+ * Anything else returns undefined and the caller keeps the mtime rule.
+ */
+function readLockFile(lockPath: string): string | undefined {
+  if (!lstatSync(lockPath).isFile()) return undefined;
+  const fd = openSync(
+    lockPath,
+    fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0) | (fsConstants.O_NONBLOCK ?? 0),
+  );
+  try {
+    const stat = fstatSync(fd);
+    if (!stat.isFile() || stat.size > LOCK_MAX_BYTES) return undefined;
+    const buffer = Buffer.alloc(LOCK_MAX_BYTES);
+    return buffer.toString('utf8', 0, readSync(fd, buffer, 0, LOCK_MAX_BYTES, 0));
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/**
+ * A process killed inside a transaction (SIGKILL, OOM, or a signal whose
+ * default action terminates it) never runs `finally { release() }`, so every
+ * caller, MCP reads included, waited LOCK_WAIT_MS and failed with
+ * policy-state-lock-timeout until the orphan's mtime crossed LOCK_STALE_MS.
+ * The pid is trusted only if the lock was written by this OS, on this kernel
+ * boot and in this PID namespace: anywhere else (a bwrap --unshare-pid
+ * sandbox, a container, another machine on a shared filesystem) a live owner
+ * also answers ESRCH. Locks without that identity (older ruflo, a crash
+ * between create and write, anything unparsable) return false and keep the
+ * mtime rule.
+ */
+function lockOwnerIsDead(lockPath: string): boolean {
+  try {
+    const read = readLockFile(lockPath);
+    if (read === undefined) return false;
+    const owner = JSON.parse(read) as
+      { pid?: unknown; host?: unknown; platform?: unknown; pidns?: unknown; boot?: unknown } | null;
+    if (!owner || owner.host !== hostname() || owner.platform !== process.platform
+      || owner.pidns !== PID_NAMESPACE || owner.boot !== BOOT_ID) return false;
+    // Without /proc, one Linux kernel boot or PID namespace cannot be told
+    // from another, and `host` is only a name.
+    if (process.platform === 'linux'
+      && (PID_NAMESPACE === undefined || BOOT_ID === undefined)) return false;
+    const pid = owner.pid;
+    if (typeof pid !== 'number' || !Number.isInteger(pid) || pid <= 0 || pid > 0x7fffffff
+      || isPidAlive(pid)) return false;
+    // The lock can change hands while it is read and probed (its owner
+    // releases and exits, another process acquires). Re-read it and answer
+    // only if it is byte for byte the lock that was read: the next owner's
+    // lock always differs in `pid` or `acquiredAt`. `dev`/`ino`/`ctime` cannot
+    // stand in for that — ext4 reuses a freed inode number at once, and before
+    // Linux 6.13 two files created in one clock tick share a ctime.
+    return readLockFile(lockPath) === read;
+  } catch {
+    return false;
+  }
+}
+
 async function acquireLock(lockPath: string): Promise<() => void> {
   const started = Date.now();
   while (Date.now() - started < LOCK_WAIT_MS) {
     try {
       const fd = openSync(lockPath, 'wx', 0o600);
-      writeFileSync(fd, JSON.stringify({ pid: process.pid, acquiredAt: Date.now() }));
+      writeFileSync(fd, JSON.stringify({
+        pid: process.pid,
+        acquiredAt: Date.now(),
+        host: hostname(),
+        platform: process.platform,
+        pidns: PID_NAMESPACE,
+        boot: BOOT_ID,
+      }));
       closeSync(fd);
       return () => {
         try { unlinkSync(lockPath); } catch { /* already released */ }
       };
     } catch {
       try {
-        if (Date.now() - statSync(lockPath).mtimeMs > LOCK_STALE_MS) unlinkSync(lockPath);
+        if (lockOwnerIsDead(lockPath)
+          || Date.now() - statSync(lockPath).mtimeMs > LOCK_STALE_MS) unlinkSync(lockPath);
       } catch { /* another process changed the lock */ }
       await sleep(10);
     }

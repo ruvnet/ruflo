@@ -307,7 +307,7 @@ export const workflowTools: MCPTool[] = [
 
       // Variable substitution: {{name}} → workflow.variables[name] OR steps[stepId].output
       const interp = (text: string): string => {
-        return text.replace(/\{\{\s*([a-zA-Z_][\w.]*)\s*\}\}/g, (_, key) => {
+        return text.replace(/\{\{\s*([a-zA-Z_][\w.-]*)\s*\}\}/g, (_, key) => {
           // Direct variable
           if (key in workflow.variables) return String(workflow.variables[key]);
           // Step-output reference: stepId.output
