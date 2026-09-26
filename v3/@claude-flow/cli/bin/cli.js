@@ -164,6 +164,8 @@ const isMCPMode = !process.stdin.isTTY
 if (isMCPMode) {
   // Run MCP server mode
   const { listMCPTools, callMCPTool, hasTool } = await import('../dist/src/mcp-client.js');
+  const { isPolicyEnforcementEnabled, loadMcpPolicy, evaluateToolCall } =
+    await import('../dist/src/mcp-tools/policy-enforcer.js');
 
   const VERSION = '3.0.0';
   const sessionId = `mcp-${Date.now()}-${randomUUID().slice(0, 8)}`;
@@ -285,6 +287,17 @@ if (isMCPMode) {
             id: message.id,
             error: { code: -32601, message: `Tool not found: ${toolName}` },
           };
+        }
+
+        if (isPolicyEnforcementEnabled()) {
+          const check = evaluateToolCall(loadMcpPolicy(), sessionId, toolName);
+          if (!check.allowed) {
+            return {
+              jsonrpc: '2.0',
+              id: message.id,
+              error: { code: -32001, message: `Policy denied: ${check.reason}` },
+            };
+          }
         }
 
         try {

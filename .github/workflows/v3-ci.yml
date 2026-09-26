@@ -347,6 +347,10 @@ jobs:
         working-directory: v3
         run: pnpm install --frozen-lockfile
 
+      - name: Verify opt-in MCP policy through both shipped stdio launchers
+        working-directory: v3/@claude-flow/cli
+        run: node scripts/test-mcp-policy-stdio.mjs
+
       - name: Build (so workspace dist/ exists for runtime imports)
         # Some test suites do `await import('@claude-flow/X')` and Vite's
         # import-analysis pass needs dist/ files at the resolved path.
