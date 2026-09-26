@@ -19,11 +19,11 @@ Foundation plugin. Registers the `ruflo` MCP server (314 tools), provides three 
 
 ## Configuration
 
-The MCP server starts automatically when this plugin is active. Override environment variables in `.mcp.json` as needed.
+The MCP server starts automatically when this plugin is active. Its launcher uses a built `@claude-flow/cli` from the project, an ancestor `node_modules`, or a global npm install reachable from `PATH` before falling back to `npx @latest`. Set `RUFLO_MCP_CLI_OVERRIDE` to a built `@claude-flow/cli/bin/cli.js` for a nonstandard install; an invalid override fails instead of running another version. Set `RUFLO_MCP_SKIP_NPX=1` to refuse the unpinned fallback. Override environment variables in `.mcp.json` as needed.
 
 ## Compatibility
 
-- **CLI:** pinned to `@claude-flow/cli` v3.6 major+minor. The `.mcp.json` invocation uses `@latest` for dynamic resolution; the smoke contract verifies the resolved CLI matches the v3.6 line.
+- **CLI:** `.mcp.json` invokes the launcher above. Its resolved local or global CLI determines the version; `@latest` is the fallback only when no built install resolves.
 - **Verification:** `bash plugins/ruflo-core/scripts/smoke.sh` is the contract.
 
 ## MCP server contract
