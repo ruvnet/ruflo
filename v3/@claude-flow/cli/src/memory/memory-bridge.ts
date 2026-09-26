@@ -19,6 +19,7 @@
 
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
 // ===== Lazy registry cache, keyed by database path =====
@@ -49,22 +50,34 @@ const registryInstances = new Map<string, any>();
  * pass the same path the seam guessed, which is how #2968's fixture broke.
  */
 let testRegistryOverride: any = null;
-let bridgeAvailable: boolean | null = null;
+let testRegistryFactory: (() => any) | null = null;
 // #2652/#2120: rows created before the status column existed receive NULL
 // during migration. They are live rows, not tombstones. Every user-facing
 // read/delete path must agree with list() about their visibility.
 const ACTIVE_MEMORY_ROW_SQL = `(status = 'active' OR status IS NULL)`;
 /**
- * Why the bridge is unavailable, when it is.
- *
- * `bridgeAvailable = false` latches for the life of the process, so a single
- * transient init failure (a slow Xenova/ONNX fetch, a locked db) routes every
- * later write to the sql.js whole-image fallback — which then refuses whenever
- * -wal/-shm sidecars are present. Without this, that refusal is the only
- * symptom the caller ever sees, and it names a cause ("restore the native
- * better-sqlite3 bridge") the caller has no way to check.
+ * A failed open must only affect its own database. A process can serve several
+ * projects, and an error from one must not disable the native bridge for all.
  */
-let bridgeFailureReason: string | null = null;
+const bridgeFailureReasons = new Map<string, string>();
+
+/** Resolve aliases even when the database file or some parent dirs do not exist yet. */
+function canonicalDbPath(dbPath?: string): string {
+  const resolved = dbPath === ':memory:' ? ':memory:' : path.resolve(dbPath ?? getAgentDbPath());
+  if (resolved === ':memory:') return resolved;
+  let ancestor = resolved;
+  const suffix: string[] = [];
+  for (;;) {
+    try {
+      return path.join(realpathSync(ancestor), ...suffix);
+    } catch {
+      const parent = path.dirname(ancestor);
+      if (parent === ancestor) return resolved;
+      suffix.unshift(path.basename(ancestor));
+      ancestor = parent;
+    }
+  }
+}
 
 /**
  * #3024: AgentDB's optional native controller stack can abort the whole Node
@@ -197,19 +210,12 @@ export function shouldSuppressInitLog(msg: string): boolean {
  * Returns null if @claude-flow/memory is not available.
  */
 async function getRegistry(dbPath?: string): Promise<any | null> {
-  if (shouldDisableNativeBridge()) {
-    bridgeFailureReason = process.platform === 'win32'
-      ? 'AgentDB native bridge disabled on Windows after #3024; set CLAUDE_FLOW_ENABLE_NATIVE_BRIDGE_ON_WINDOWS=1 to opt in'
-      : 'AgentDB native bridge disabled by CLAUDE_FLOW_DISABLE_BRIDGE=1';
-    return null;
-  }
+  if (shouldDisableNativeBridge()) return null;
   if (testRegistryOverride) return testRegistryOverride;
-  if (bridgeAvailable === false) return null;
 
-  // Resolve first, then cache on the resolved value: `undefined`, a relative
-  // path and its absolute form must not become three different registries over
-  // the same file.
-  const resolvedPath = dbPath ? path.resolve(dbPath) : getAgentDbPath();
+  // Resolve before caching: relative, absolute and symlink paths to one file
+  // must not open multiple native handles to the same database.
+  const resolvedPath = canonicalDbPath(dbPath);
 
   const cached = registryInstances.get(resolvedPath);
   if (cached) return cached;
@@ -217,9 +223,11 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
   let registryPromise = registryPromises.get(resolvedPath);
   if (!registryPromise) {
     registryPromise = (async () => {
+      let registry: any;
       try {
-        const { ControllerRegistry } = await import('@claude-flow/memory');
-        const registry = new ControllerRegistry();
+        registry = testRegistryFactory
+          ? testRegistryFactory()
+          : new (await import('@claude-flow/memory')).ControllerRegistry();
 
         // Suppress noisy console.log during init — but never suppress a
         // DEGRADATION notice (see shouldSuppressInitLog).
@@ -453,16 +461,14 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
         }
 
         registryInstances.set(resolvedPath, registry);
-        bridgeAvailable = true;
-        bridgeFailureReason = null;
+        bridgeFailureReasons.delete(resolvedPath);
         return registry;
       } catch (err) {
-        // Record WHY. This latches for the process lifetime (see the
-        // bridgeFailureReason doc comment), so discarding the error here
-        // makes the resulting sql.js-fallback refusal undiagnosable.
-        bridgeFailureReason = err instanceof Error ? err.message : String(err);
-        bridgeAvailable = false;
-        registryPromises.delete(resolvedPath);
+        // initialize() may have opened a native handle before it failed.
+        try { await registry?.shutdown(); } catch { /* best-effort cleanup */ }
+        // Keep the failed promise for this path only. Other databases can
+        // still initialize; shutdownBridge() clears the latch for a retry.
+        bridgeFailureReasons.set(resolvedPath, err instanceof Error ? err.message : String(err));
         return null;
       }
     })();
@@ -477,8 +483,13 @@ export function _resetRegistryCacheForTest(): void {
   registryPromises.clear();
   registryInstances.clear();
   testRegistryOverride = null;
-  bridgeAvailable = null;
-  bridgeFailureReason = null;
+  testRegistryFactory = null;
+  bridgeFailureReasons.clear();
+}
+
+/** Inject registry construction without requiring the optional native package in tests. */
+export function __setMemoryBridgeRegistryFactoryForTests(factory: (() => any) | null): void {
+  testRegistryFactory = factory;
 }
 
 /** #3196: the sibling store AgentDB owns next to a given sql.js database. */
@@ -1052,7 +1063,7 @@ export async function bridgeStoreEntry(options: {
     // A completed native write proves the bridge is currently healthy. Do not
     // retain a diagnostic from an earlier transient failure and append it to a
     // later, unrelated sql.js fallback refusal.
-    bridgeFailureReason = null;
+    bridgeFailureReasons.delete(canonicalDbPath(options.dbPath));
 
     // #2775: strict insert against an ACTIVE existing row → changes === 0
     // (the ON CONFLICT WHERE clause above suppressed the update). Surface
@@ -1163,7 +1174,7 @@ export async function bridgeStoreEntry(options: {
     // whose WAL-sidecar guard then reports a cause that has nothing to do with
     // what actually went wrong here. Record the real error so it can be
     // surfaced alongside that guard's message.
-    bridgeFailureReason = msg;
+    bridgeFailureReasons.set(canonicalDbPath(options.dbPath), msg);
     return null;
   }
 }
@@ -2049,7 +2060,6 @@ export async function bridgeListControllers(
  * Check if the AgentDB v3 bridge is available.
  */
 export async function isBridgeAvailable(dbPath?: string): Promise<boolean> {
-  if (bridgeAvailable !== null) return bridgeAvailable;
   const registry = await getRegistry(dbPath);
   return registry !== null;
 }
@@ -2064,8 +2074,7 @@ export async function getControllerRegistry(dbPath?: string): Promise<any | null
 /**
  * Why the bridge last declined a write, or null when it has not.
  *
- * Deliberately NOT gated on `bridgeAvailable === false`. A bridge that
- * initialised fine can still fail every write — a schema mismatch throws
+ * A bridge that initialised fine can still fail every write — a schema mismatch throws
  * per-operation while the registry stays healthy — and that case is exactly
  * the one worth reporting, since the caller then demotes to a fallback whose
  * error message describes something else entirely.
@@ -2073,8 +2082,13 @@ export async function getControllerRegistry(dbPath?: string): Promise<any | null
  * Callers that surface a degraded-path error should include this so the
  * operator learns the cause instead of only the symptom.
  */
-export function getBridgeFailureReason(): string | null {
-  return bridgeFailureReason;
+export function getBridgeFailureReason(dbPath?: string): string | null {
+  if (shouldDisableNativeBridge()) {
+    return process.platform === 'win32'
+      ? 'AgentDB native bridge disabled on Windows after #3024; set CLAUDE_FLOW_ENABLE_NATIVE_BRIDGE_ON_WINDOWS=1 to opt in'
+      : 'AgentDB native bridge disabled by CLAUDE_FLOW_DISABLE_BRIDGE=1';
+  }
+  return bridgeFailureReasons.get(canonicalDbPath(dbPath)) ?? null;
 }
 
 /**
@@ -2090,22 +2104,22 @@ export function __setMemoryBridgeRegistryForTests(registry: any | null): void {
   registryPromises.clear();
   registryInstances.clear();
   testRegistryOverride = registry;
-  bridgeAvailable = registry ? true : null;
-  bridgeFailureReason = null;
+  testRegistryFactory = null;
+  bridgeFailureReasons.clear();
 }
 
 /**
  * Shutdown the bridge and release resources.
  *
  * The cached state is cleared unconditionally. Previously the reset lived
- * inside `if (registryInstance)`, so it could not clear a FAILED init — the
- * one state that actually needs clearing, since `registryInstance` is null
- * precisely when init failed. A process that latched `bridgeAvailable = false`
- * therefore had no recovery path short of a restart.
+ * inside `if (registryInstance)`, so it could not clear a FAILED init. This
+ * also clears per-path failed promises, allowing a later retry.
  */
 export async function shutdownBridge(): Promise<void> {
-  // #3196: every cached registry owns an open database handle, so shutting down
-  // one of several would leave the rest holding files open.
+  // An initialization already in flight can publish a native handle after a
+  // synchronous cache clear. Wait for the opens we know about before closing.
+  await Promise.allSettled([...registryPromises.values()]);
+  // #3196: every cached registry owns an open database handle.
   for (const registry of registryInstances.values()) {
     try {
       await registry.shutdown();
@@ -2116,8 +2130,8 @@ export async function shutdownBridge(): Promise<void> {
   registryInstances.clear();
   registryPromises.clear();
   testRegistryOverride = null;
-  bridgeAvailable = null;
-  bridgeFailureReason = null;
+  testRegistryFactory = null;
+  bridgeFailureReasons.clear();
 }
 
 // ===== Phase 3: ReasoningBank pattern operations =====
@@ -2215,7 +2229,7 @@ export async function bridgeStorePattern(options: {
     // discarded and the caller saw an ordinary fallback, indistinguishable
     // from "no controller registered". Record it so `agentdb_health` and the
     // degraded `reason` can name the real cause instead of guessing.
-    bridgeFailureReason = err instanceof Error ? err.message : String(err);
+    bridgeFailureReasons.set(canonicalDbPath(options.dbPath), err instanceof Error ? err.message : String(err));
     return null;
   }
 }
@@ -2316,7 +2330,7 @@ export async function bridgeSearchPatterns(options: {
     // function` died here silently, which is why search reported
     // `reasoningBank-unavailable:registry-null` (a null return) even though
     // the registry was present and the controller was reported enabled.
-    bridgeFailureReason = err instanceof Error ? err.message : String(err);
+    bridgeFailureReasons.set(canonicalDbPath(options.dbPath), err instanceof Error ? err.message : String(err));
     return null;
   }
 }
