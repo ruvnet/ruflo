@@ -21,13 +21,22 @@
  * call makes literally zero state change (no membership write, no vote
  * write), verified below by reloading state fresh from disk (simulating a
  * process restart/reopen) after each denial.
+ *
+ * Round 2 review feedback (#3339) correctly pointed out that requireHiveToken
+ * alone doesn't "establish authorization" while hive-mind_init -- the
+ * credential-issuance point -- was itself reachable by any caller (either to
+ * mint the very first token, or to have the current one echoed back on
+ * re-init). hive-mind_init now requires its own same-machine `bootstrapSecret`
+ * (see getOrCreateBootstrapSecret()), and no longer returns `hiveToken` in its
+ * response at all -- tests below read it via `getHiveTokenForCli()` instead,
+ * the same same-machine accessor the CLI itself uses.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { hiveMindTools } from '../src/mcp-tools/hive-mind-tools.js';
+import { hiveMindTools, getHiveTokenForCli, getHiveBootstrapSecretForCli } from '../src/mcp-tools/hive-mind-tools.js';
 
 function tool(name: string) {
   const t = hiveMindTools.find(t => t.name === name);
@@ -60,11 +69,16 @@ describe('hive-mind_consensus / join / leave capability-token authentication', (
   });
 
   async function initHive(strategy: 'raft' | 'byzantine' | 'quorum'): Promise<string> {
-    const init = await tool('hive-mind_init').handler({ consensus: strategy }) as any;
+    const init = await tool('hive-mind_init').handler({
+      consensus: strategy,
+      bootstrapSecret: getHiveBootstrapSecretForCli(),
+    }) as any;
     expect(init.success).toBe(true);
-    expect(typeof init.hiveToken).toBe('string');
-    expect(init.hiveToken.length).toBeGreaterThanOrEqual(32);
-    return init.hiveToken as string;
+    expect(init.hiveToken).toBeUndefined();
+    const token = getHiveTokenForCli();
+    expect(typeof token).toBe('string');
+    expect((token as string).length).toBeGreaterThanOrEqual(32);
+    return token as string;
   }
 
   async function joinWorkers(token: string, count: number) {
@@ -129,6 +143,7 @@ describe('hive-mind_consensus / join / leave capability-token authentication', (
       type: 'test',
       value: 'x',
       strategy: 'raft',
+      hiveToken: token,
     }) as any;
     expect(propose.status).toBe('pending');
 
@@ -180,6 +195,7 @@ describe('hive-mind_consensus / join / leave capability-token authentication', (
       type: 'test',
       value: 'x',
       strategy: 'raft',
+      hiveToken: token,
     }) as any;
 
     const vote = await tool('hive-mind_consensus').handler({
@@ -207,6 +223,7 @@ describe('hive-mind_consensus / join / leave capability-token authentication', (
       type: 'test',
       value: 'x',
       strategy: 'bft',
+      hiveToken: token,
     }) as any;
 
     for (const voterId of ['sybil-a', 'sybil-b', 'sybil-c']) {

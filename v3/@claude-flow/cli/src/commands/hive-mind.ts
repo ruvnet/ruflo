@@ -15,7 +15,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { resolveClaudeLaunchCommand } from '../runtime/claude-command.js';
-import { getHiveTokenForCli } from '../mcp-tools/hive-mind-tools.js';
+import { getHiveTokenForCli, getHiveBootstrapSecretForCli } from '../mcp-tools/hive-mind-tools.js';
 
 // Worker type definitions for prompt generation
 interface HiveWorker {
@@ -509,7 +509,8 @@ const initCommand: Command = {
       consensus: consensus || 'byzantine',
       maxAgents: ctx.flags.maxAgents as number || 15,
       persist: ctx.flags.persist as boolean,
-      memoryBackend: ctx.flags.memoryBackend as string || 'hybrid'
+      memoryBackend: ctx.flags.memoryBackend as string || 'hybrid',
+      bootstrapSecret: getHiveBootstrapSecretForCli(),
     };
 
     output.writeln();
@@ -681,6 +682,7 @@ const spawnCommand: Command = {
         role,
         agentType,
         prefix,
+        hiveToken: getHiveTokenForCli(),
       });
 
       // Check for errors from MCP tool
@@ -1122,6 +1124,7 @@ const optimizeMemoryCommand: Command = {
       }>('hive-mind_optimize-memory', {
         aggressive,
         qualityThreshold: threshold,
+        hiveToken: getHiveTokenForCli(),
       });
 
       spinner.succeed('Memory optimized');
@@ -1246,7 +1249,7 @@ const broadcastCommand: Command = {
     const message = ctx.args.join(' ') || ctx.flags.message as string;
     if (!message) { output.printError('Message required. Use --message or -m flag.'); return { success: false, exitCode: 1 }; }
     try {
-      const result = await callMCPTool<{ success: boolean; messageId: string; recipients: number; error?: string }>('hive-mind_broadcast', { message, priority: ctx.flags.priority, fromId: ctx.flags.from });
+      const result = await callMCPTool<{ success: boolean; messageId: string; recipients: number; error?: string }>('hive-mind_broadcast', { message, priority: ctx.flags.priority, fromId: ctx.flags.from, hiveToken: getHiveTokenForCli() });
       if (!result.success) { output.printError(result.error || 'Failed'); return { success: false, exitCode: 1 }; }
       output.printSuccess(`Message broadcast to ${result.recipients} workers (ID: ${result.messageId})`);
       return { success: true, data: result };
@@ -1270,7 +1273,7 @@ const memorySubCommand: Command = {
     if ((action === 'get' || action === 'delete') && !key) { output.printError('Key required for get/delete.'); return { success: false, exitCode: 1 }; }
     if (action === 'set' && (!key || value === undefined)) { output.printError('Key and value required for set.'); return { success: false, exitCode: 1 }; }
     try {
-      const result = await callMCPTool<Record<string, unknown>>('hive-mind_memory', { action, key, value });
+      const result = await callMCPTool<Record<string, unknown>>('hive-mind_memory', { action, key, value, hiveToken: getHiveTokenForCli() });
       if (ctx.flags.format === 'json') { output.printJson(result); return { success: true, data: result }; }
       if (action === 'list') {
         const keys = (result.keys as string[]) || [];
@@ -1337,6 +1340,7 @@ const shutdownCommand: Command = {
       }>('hive-mind_shutdown', {
         force,
         saveState,
+        hiveToken: getHiveTokenForCli(),
       });
 
       spinner.succeed('Hive mind shutdown complete');
