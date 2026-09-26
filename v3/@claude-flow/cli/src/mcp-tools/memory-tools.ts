@@ -1118,14 +1118,16 @@ export const memoryTools: MCPTool[] = [
             if (nameMatch) name = nameMatch[1].trim();
           }
 
-          // Split into sections for granular search
+          // Split into sections for granular search. Persist each full section:
+          // clipping at 4096 characters silently discarded its searchable tail (#3217).
           const sections = body.split(/^(?=## )/m).filter(s => s.trim().length > 20);
 
           if (sections.length === 0 && body.length > 10) {
             // #1884 — sanitize key so memory_delete can later remove it. Without
             // this, dangerous chars from frontmatter `name` strand the key.
             const key = sanitizeMemoryKey(`claude:${memFile.project}:${name}`);
-            await storeEntry({ key, value: body.slice(0, 4096), namespace: ns, generateEmbeddingFlag: true });
+            const stored = await storeEntry({ key, value: body, namespace: ns, generateEmbeddingFlag: true });
+            if (!stored.success) throw new Error(stored.error || `Failed to store ${key}`);
             imported++;
           } else {
             for (const section of sections) {
@@ -1136,7 +1138,8 @@ export const memoryTools: MCPTool[] = [
               // #1884 — sanitize so any dangerous chars in the heading don't
               // produce keys memory_delete will reject.
               const key = sanitizeMemoryKey(`claude:${memFile.project}:${name}:${sectionTitle.slice(0, 50)}`);
-              await storeEntry({ key, value: sectionBody.slice(0, 4096), namespace: ns, generateEmbeddingFlag: true });
+              const stored = await storeEntry({ key, value: sectionBody, namespace: ns, generateEmbeddingFlag: true });
+              if (!stored.success) throw new Error(stored.error || `Failed to store ${key}`);
               imported++;
             }
           }
@@ -1156,7 +1159,7 @@ export const memoryTools: MCPTool[] = [
       } catch { /* probe failed — leave 'unknown' */ }
 
       return {
-        success: true,
+        success: skipped === 0,
         imported,
         skipped,
         duplicatesSkipped,
