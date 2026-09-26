@@ -830,6 +830,17 @@ async function rescueAgentdbEmbedder(agentdb: { embedder?: { pipeline?: unknown;
   _embedderPatched = true;
 }
 
+/** AgentDB uses a null pipeline while its transformer failed and it serves mock vectors. */
+function isMockAgentdbEmbedder(embedder: {
+  isMock?: boolean;
+  backend?: string;
+  pipeline?: unknown;
+  __ruvectorRescued?: boolean;
+} | null | undefined): boolean {
+  return embedder?.isMock === true || embedder?.backend === 'mock'
+    || (embedder?.pipeline === null && embedder.__ruvectorRescued !== true);
+}
+
 /**
  * #3325: embed text for a bridge row or query.
  *
@@ -841,14 +852,16 @@ async function rescueAgentdbEmbedder(agentdb: { embedder?: { pipeline?: unknown;
  * were a bare `catch {}` that stored embedding=NULL and reported nothing.
  */
 async function embedForBridge(
-  agentdb: { embedder?: { embed?: (t: string) => Promise<ArrayLike<number> | null | undefined>; isMock?: boolean; backend?: string } } | null | undefined,
+  agentdb: { embedder?: { embed?: (t: string) => Promise<ArrayLike<number> | null | undefined>; isMock?: boolean; backend?: string; pipeline?: unknown; __ruvectorRescued?: boolean } } | null | undefined,
   text: string,
 ): Promise<{ vector: number[]; model: string } | { vector: null; reason: string }> {
   let agentdbProblem: string;
   const embedder = agentdb?.embedder;
   // Same mock signal bridgeGenerateEmbedding honours (AUDIT #3): the rescue
   // tags a degraded embedder backend='mock' when it cannot replace it.
-  const agentdbIsMock = embedder?.isMock === true || embedder?.backend === 'mock';
+  // The rescue launched by getDb() is fire-and-forget. Do not persist mock
+  // vectors during that window just because they happen to be 384-dimension.
+  const agentdbIsMock = isMockAgentdbEmbedder(embedder);
   if (agentdbIsMock) {
     agentdbProblem = 'agentdb embedder is serving mock vectors';
   } else if (embedder && typeof embedder.embed === 'function') {
@@ -1740,7 +1753,7 @@ export async function bridgeGenerateEmbedding(
   try {
     const agentdb = registry.getAgentDB();
     const embedder = agentdb?.embedder;
-    if (!embedder) return null;
+    if (!embedder || isMockAgentdbEmbedder(embedder)) return null;
 
     const emb = await embedder.embed(text);
     if (!emb) return null;
@@ -1793,7 +1806,7 @@ export async function bridgeLoadEmbeddingModel(
   try {
     const agentdb = registry.getAgentDB();
     const embedder = agentdb?.embedder;
-    if (!embedder) return null;
+    if (!embedder || isMockAgentdbEmbedder(embedder)) return null;
 
     // Verify embedder works by generating a test embedding
     const test = await embedder.embed('test');
