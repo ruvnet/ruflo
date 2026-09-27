@@ -9,6 +9,7 @@
  *   route          - Route a task to optimal agent (reads PROMPT from env/stdin)
  *   pre-bash       - Validate command safety before execution
  *   post-edit      - Record edit outcome for learning
+ *   post-agent     - Record an Agent/Task call for routing learning (PostToolUse)
  *   session-restore - Restore previous session state
  *   session-end    - End session and persist state
  */
@@ -211,23 +212,51 @@ function spawnDetachedAdvisorRefresh() {
 // Safe require with stdout suppression - the helper modules have CLI
 // sections that run unconditionally on require(), so we mute console
 // during the require to prevent noisy output.
+// Compile a helper as CommonJS regardless of the project's package "type".
+function loadCommonJs(modulePath) {
+  const Module = require('module');
+  const mod = new Module(modulePath, module);
+  mod.filename = modulePath;
+  mod.paths = Module._nodeModulePaths(path.dirname(modulePath));
+  mod._compile(fs.readFileSync(modulePath, 'utf8'), modulePath);
+  return mod.exports;
+}
+
+// In a project whose package.json says "type": "module", Node treats these
+// CommonJS .js helpers as ES modules. Depending on the Node version and the
+// helper, require() then returns an empty namespace, throws ERR_REQUIRE_ESM,
+// or throws "require is not defined in ES module scope" (a ReferenceError
+// with no code), and routing silently disappeared. Prefer a .cjs sibling;
+// otherwise a .js helper that fails or loads empty gets one retry compiled
+// explicitly as CommonJS.
 function safeRequire(modulePath) {
-  try {
-    if (fs.existsSync(modulePath)) {
-      const origLog = console.log;
-      const origError = console.error;
-      console.log = () => {};
-      console.error = () => {};
+  const candidates = modulePath.endsWith('.js')
+    ? [modulePath.slice(0, -3) + '.cjs', modulePath]
+    : [modulePath];
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) continue;
+    const origLog = console.log;
+    const origError = console.error;
+    console.log = () => {};
+    console.error = () => {};
+    try {
+      let mod;
       try {
-        const mod = require(modulePath);
-        return mod;
-      } finally {
-        console.log = origLog;
-        console.error = origError;
+        mod = require(candidate);
+      } catch (e) {
+        if (!candidate.endsWith('.js')) throw e;
+        mod = loadCommonJs(candidate);
       }
+      if (candidate.endsWith('.js') && mod && typeof mod === 'object' && Object.keys(mod).length === 0) {
+        mod = loadCommonJs(candidate);
+      }
+      return mod;
+    } catch (e) {
+      // silently fail; try the next candidate
+    } finally {
+      console.log = origLog;
+      console.error = origError;
     }
-  } catch (e) {
-    // silently fail
   }
   return null;
 }
@@ -236,6 +265,127 @@ const router = safeRequire(path.join(helpersDir, 'router.js'));
 const session = safeRequire(path.join(helpersDir, 'session.js'));
 const memory = safeRequire(path.join(helpersDir, 'memory.js'));
 const intelligence = safeRequire(path.join(helpersDir, 'intelligence.cjs'));
+
+// ── Routing learning loop ──────────────────────────────────────────────
+// post-agent appends every Agent/Task call to .claude-flow/routing-observations.jsonl
+// (see services/routing-outcome-store.ts). Only keywords and a prompt hash are
+// stored, never prompt text. A completed call is `unknown`, not a success:
+// only an explicit outcome (hooks_post-task, routing-outcomes.json) labels a
+// success. The TS side compiles learned-patterns.json from the labelled rows;
+// route reads it (behind CLAUDE_FLOW_ROUTER_LEARNED) only when the keyword
+// router had no match. Keep ROUTING_STOPWORDS and
+// extractRoutingKeywords identical to routing-outcome-store.ts (parity test).
+const ROUTING_STOPWORDS = new Set([
+  'the','a','an','is','are','was','were','be','been','being','have','has','had',
+  'do','does','did','will','would','could','should','may','might','shall','can',
+  'to','of','in','for','on','with','at','by','from','as','into','through','during',
+  'before','after','above','below','between','under','again','further','then','once',
+  'it','its','this','that','these','those','i','me','my','we','our','you','your',
+  'he','she','they','them','and','but','or','nor','not','no','so','if','when','than',
+  'very','just','also','only','both','each','all','any','few','more','most','other',
+  'some','such','same','new','now','here','there','where','how','what','which','who',
+]);
+const MAX_ROUTING_STORE_BYTES = 5 * 1024 * 1024;
+const AGENT_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9:._-]{0,79}$/;
+
+function extractRoutingKeywords(text) {
+  if (!text) return [];
+  return String(text).toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !ROUTING_STOPWORDS.has(w));
+}
+
+// Same precedence as getProjectCwd() in @claude-flow/cli-core, so the hook and
+// the MCP server resolve the same store, then Claude Code's project dir.
+// Keywords safe to persist (identical to storableRoutingKeywords in TS):
+// plain words only, so tokens shaped like credentials or IDs are never stored.
+const STORABLE_KEYWORD = /^[a-z](?:[a-z-]{1,22}[a-z])$/;
+function storableRoutingKeywords(text, max) {
+  const limit = max || 40;
+  return Array.from(new Set(extractRoutingKeywords(text).filter((w) => STORABLE_KEYWORD.test(w)))).slice(0, limit);
+}
+
+function projectRoot(hi) {
+  const flowCwd = process.env.CLAUDE_FLOW_CWD;
+  if (flowCwd && flowCwd !== '/' && flowCwd !== process.env.HOME) return path.resolve(flowCwd);
+  const dir = process.env.CLAUDE_PROJECT_DIR
+    || (hi && typeof hi.cwd === 'string' && hi.cwd)
+    || process.cwd();
+  return path.resolve(dir);
+}
+
+// Agent responses are prose that often mentions errors that were fixed, so
+// only a structured error flag counts as failure here (not the keyword match
+// toolFailed uses for Bash output).
+function agentCallFailed(hi) {
+  const tr = hi && (hi.tool_response != null ? hi.tool_response : hi.toolResponse);
+  return !!(tr && typeof tr === 'object' && (tr.is_error === true || tr.isError === true));
+}
+
+// Observations go to their own append-only JSONL file, NOT routing-outcomes.json.
+// That store holds the rare labelled outcomes the learner uses; sharing its
+// 500-row cap with a row per agent call would evict every label within days,
+// and a read-modify-write there loses rows when parallel agents finish at once.
+// One appendFileSync of a short line is atomic enough for concurrent hooks.
+function recordAgentOutcome(hi) {
+  const ti = (hi && (hi.tool_input || hi.toolInput)) || {};
+  // subagent_type is optional on the Agent tool; omitting it runs general-purpose.
+  const agent = typeof ti.subagent_type === 'string' && ti.subagent_type.trim()
+    ? ti.subagent_type.trim()
+    : 'general-purpose';
+  const text = typeof ti.prompt === 'string' ? ti.prompt
+    : (typeof ti.description === 'string' ? ti.description : '');
+  if (!AGENT_NAME_RE.test(agent) || !text.trim()) return null;
+  const failed = agentCallFailed(hi);
+  const row = {
+    agent,
+    promptHash: 'sha256:' + require('crypto').createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 16),
+    keywords: storableRoutingKeywords(text),
+    outcome: failed ? 'failure' : 'unknown',
+    signal: failed ? 'tool_error' : 'none',
+    // A background agent's PostToolUse fires at spawn, so its result is unknown here.
+    background: ti.run_in_background === true,
+    source: 'hook',
+    timestamp: new Date().toISOString(),
+  };
+  const file = path.join(projectRoot(hi), '.claude-flow', 'routing-observations.jsonl');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  try {
+    // Keep one rotated generation so the file stays bounded.
+    if (fs.statSync(file).size > MAX_ROUTING_STORE_BYTES) fs.renameSync(file, `${file}.1`);
+  } catch (e) { /* no file yet */ }
+  fs.appendFileSync(file, JSON.stringify(row) + '\n');
+  return row;
+}
+
+// Opt-in (CLAUDE_FLOW_ROUTER_LEARNED=1) until the ADR-391 benchmark shows a
+// gain. Consulted only when the keyword router fell through to its default.
+function learnedFallback(promptText, root) {
+  if (!/^(1|true|on|yes)$/i.test(String(process.env.CLAUDE_FLOW_ROUTER_LEARNED || '').trim())) return null;
+  const minSupport = Math.max(1, parseInt(process.env.CLAUDE_FLOW_ROUTER_LEARNED_MIN_SUPPORT || '30', 10) || 30);
+  let data;
+  try {
+    const file = path.join(root, '.claude-flow', 'learned-patterns.json');
+    if (fs.statSync(file).size > 1024 * 1024) return null;
+    data = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) { return null; }
+  const words = new Set(extractRoutingKeywords(promptText));
+  let best = null;
+  for (const p of Object.values((data && data.patterns) || {})) {
+    if (!p || !Array.isArray(p.keywords) || !Array.isArray(p.agents)) continue;
+    const agent = p.agents[0];
+    if (typeof agent !== 'string' || !AGENT_NAME_RE.test(agent)) continue;
+    const support = Number(p.support) || 0;
+    const reliability = Math.max(0, Math.min(1, Number(p.reliability) || 0));
+    if (support < minSupport) continue;
+    const hits = p.keywords.filter((k) => words.has(k)).length;
+    if (hits < 2) continue;
+    const score = hits * reliability;
+    if (!best || score > best.score) best = { agent, hits, score, support, reliability };
+  }
+  return best;
+}
 
 // ── Intelligence timeout protection (fixes #1530, #1531) ───────────────────
 const INTELLIGENCE_TIMEOUT_MS = 3000;
@@ -373,7 +523,19 @@ const handlers = {
       } catch (e) { /* non-fatal */ }
     }
     if (router && router.routeTask) {
-      const result = router.routeTask(prompt);
+      let result = router.routeTask(prompt);
+      if (result && /^Default routing/.test(result.reason || '')) {
+        try {
+          const learned = learnedFallback(prompt, projectRoot(hookInput));
+          if (learned) {
+            result = {
+              agent: learned.agent,
+              confidence: Math.min(0.6, 0.3 + 0.05 * learned.hits),
+              reason: `Learned from ${learned.support} outcomes (${learned.hits} keyword hits)`,
+            };
+          }
+        } catch (e) { /* keep the keyword result */ }
+      }
       // Format output for Claude Code hook consumption — real data only
       const output = [
         `[INFO] Routing task: ${prompt.substring(0, 80) || '(no prompt)'}`,
@@ -560,6 +722,17 @@ const handlers = {
     console.log(toolFailed ? '[LEARN] Task FAILURE recorded' : '[OK] Task completed');
   },
 
+  'post-agent': () => {
+    if (toolName !== 'Task' && toolName !== 'Agent') {
+      console.log('[OK] post-agent: not an agent call');
+      return;
+    }
+    const row = recordAgentOutcome(hookInput);
+    console.log(row
+      ? `[LEARN] Agent outcome recorded (${row.agent}: ${row.outcome})`
+      : '[OK] post-agent: nothing to record');
+  },
+
   'stats': () => {
     if (intelligence && intelligence.stats) {
       intelligence.stats(args.includes('--json'));
@@ -603,4 +776,13 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runWithTimeout, INTELLIGENCE_TIMEOUT_MS };
+module.exports = {
+  runWithTimeout,
+  INTELLIGENCE_TIMEOUT_MS,
+  safeRequire,
+  extractRoutingKeywords,
+  storableRoutingKeywords,
+  ROUTING_STOPWORDS,
+  recordAgentOutcome,
+  learnedFallback,
+};

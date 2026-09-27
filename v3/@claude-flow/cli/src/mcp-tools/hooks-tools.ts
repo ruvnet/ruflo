@@ -11,9 +11,16 @@ import { validateIdentifier, validateText, validatePath } from './validate-input
 import { checkCommandLoop, recordCommandOutcome } from './tool-loop-guardrail.js';
 import {
   buildLearnedRoutingPatterns,
-  type LearnedRoutingOutcome,
   type LearnedRoutingPattern,
 } from '../services/learned-routing.js';
+import {
+  extractRoutingKeywords,
+  loadRoutingOutcomes as loadStoredRoutingOutcomes,
+  routingOutcomesPath,
+  saveRoutingOutcomes as persistRoutingOutcomes,
+  toRoutingOutcomeRow,
+  type RoutingOutcomeRow,
+} from '../services/routing-outcome-store.js';
 import { applyTypesafeRouting, getTypesafeRouter } from '../ruvector/typesafe-router.js';
 import {
   DEFAULT_ROUTER_EMBEDDER,
@@ -161,20 +168,11 @@ let routerInitPromise: Promise<SemanticRouterHandle> | null = null;
 // ── Runtime routing outcome persistence ──────────────────────────────
 // Closes the learning loop: post-task records outcomes → route loads them.
 
-const ROUTING_OUTCOMES_PATH = join(resolve('.'), '.claude-flow/routing-outcomes.json');
+// Storage lives in services/routing-outcome-store.ts: project-scoped paths
+// (not the MCP server's cwd), hashed prompts instead of raw task text, and a
+// compiled learned-patterns.json that the prompt-time hook router reads.
 
-const ROUTING_STOPWORDS = new Set([
-  'the','a','an','is','are','was','were','be','been','being','have','has','had',
-  'do','does','did','will','would','could','should','may','might','shall','can',
-  'to','of','in','for','on','with','at','by','from','as','into','through','during',
-  'before','after','above','below','between','under','again','further','then','once',
-  'it','its','this','that','these','those','i','me','my','we','our','you','your',
-  'he','she','they','them','and','but','or','nor','not','no','so','if','when','than',
-  'very','just','also','only','both','each','all','any','few','more','most','other',
-  'some','such','same','new','now','here','there','where','how','what','which','who',
-]);
-
-type RoutingOutcome = LearnedRoutingOutcome;
+type RoutingOutcome = RoutingOutcomeRow;
 
 interface RoutingPattern {
   keywords: string[];
@@ -184,31 +182,15 @@ interface RoutingPattern {
   reliability?: number;
 }
 
-function extractKeywords(text: string): string[] {
-  if (!text) return [];
-  return text.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length > 2 && !ROUTING_STOPWORDS.has(w));
-}
+const extractKeywords = extractRoutingKeywords;
 
 function loadRoutingOutcomes(): RoutingOutcome[] {
-  try {
-    if (existsSync(ROUTING_OUTCOMES_PATH)) {
-      const data = JSON.parse(readFileSync(ROUTING_OUTCOMES_PATH, 'utf-8'));
-      return data.outcomes || [];
-    }
-  } catch { /* corrupt file, start fresh */ }
-  return [];
+  return loadStoredRoutingOutcomes(routingOutcomesPath());
 }
 
 function saveRoutingOutcomes(outcomes: RoutingOutcome[]): void {
   try {
-    const dir = dirname(ROUTING_OUTCOMES_PATH);
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    // Cap at 500 entries to bound file size
-    const capped = outcomes.slice(-500);
-    writeFileSync(ROUTING_OUTCOMES_PATH, JSON.stringify({ outcomes: capped }, null, 2));
+    persistRoutingOutcomes(outcomes);
     // A long-lived MCP process must observe the new label on the next route.
     // The prior singleton cache made the learned store inert until restart.
     semanticRouter = null;
@@ -1784,14 +1766,7 @@ export const hooksPostTask: MCPTool = {
     if (taskText && agent) {
       try {
         const outcomes = loadRoutingOutcomes();
-        outcomes.push({
-          task: taskText,
-          agent,
-          success,
-          quality,
-          keywords: outcomeKeywords,
-          timestamp: new Date().toISOString(),
-        });
+        outcomes.push(toRoutingOutcomeRow({ task: taskText, agent, success, quality }));
         saveRoutingOutcomes(outcomes);
         outcomePersisted = true;
       } catch { /* non-critical */ }

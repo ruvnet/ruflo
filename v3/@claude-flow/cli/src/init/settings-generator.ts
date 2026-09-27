@@ -340,6 +340,18 @@ function generateHooksConfig(config: HooksConfig): object {
           },
         ],
       },
+      // Routing learning loop: record which agent handled which kind of task
+      // (keywords + prompt hash only). See services/routing-outcome-store.ts.
+      {
+        matcher: 'Task|Agent',
+        hooks: [
+          {
+            type: 'command',
+            command: hookHandlerCmd('post-agent'),
+            timeout: 5000,
+          },
+        ],
+      },
     ];
   }
 

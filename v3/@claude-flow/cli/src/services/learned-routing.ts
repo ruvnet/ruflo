@@ -10,7 +10,8 @@
  */
 
 export interface LearnedRoutingOutcome {
-  task: string;
+  /** Not read by the learner. Legacy rows carried raw task text; new rows omit it. */
+  task?: string;
   agent: string;
   success: boolean;
   quality: number;

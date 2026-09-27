@@ -64,6 +64,16 @@
             "timeout": 10000
           }
         ]
+      },
+      {
+        "matcher": "Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs\" post-agent",
+            "timeout": 5000
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [

@@ -49,7 +49,7 @@ const { hooksPostTask } = await import('../src/mcp-tools/hooks-tools.js');
 
 const outcomesPath = join(testRoot, '.claude-flow', 'routing-outcomes.json');
 
-function readOutcomes(): Array<{ task: string; agent: string; success: boolean }> {
+function readOutcomes(): Array<{ task?: string; agent: string; success: boolean; promptHash?: string; keywords?: string[] }> {
   if (!existsSync(outcomesPath)) return [];
   const raw = JSON.parse(readFileSync(outcomesPath, 'utf-8'));
   if (Array.isArray(raw)) return raw;
@@ -64,12 +64,16 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+  // The store resolves the project dir per call (getProjectCwd), so point it
+  // at the temp project explicitly rather than relying on import-time cwd.
+  process.env.CLAUDE_FLOW_CWD = testRoot;
   // Fresh outcomes file per test so counts start at 0.
   mkdirSync(join(testRoot, '.claude-flow'), { recursive: true });
   writeFileSync(outcomesPath, JSON.stringify({ outcomes: [] }));
 });
 
 afterAll(() => {
+  delete process.env.CLAUDE_FLOW_CWD;
   try { rmSync(testRoot, { recursive: true, force: true }); } catch { /* ignore */ }
 });
 
@@ -99,7 +103,12 @@ describe('#3064 — hooks_post-task accepts colon-namespaced plugin agents', () 
       const [only] = outcomes;
       expect(only.agent).toBe(agent);
       expect(only.success).toBe(true);
-      expect(only.task).toBe(`test task for ${agent}`);
+      // Prompt text is no longer stored (it can carry secrets): a hash and
+      // extracted keywords stand in for it.
+      expect(only.task).toBeUndefined();
+      expect(only.promptHash).toMatch(/^sha256:[0-9a-f]{16}$/);
+      expect(only.keywords).toContain('test');
+      expect(readFileSync(outcomesPath, 'utf-8')).not.toContain(`test task for ${agent}`);
     });
   }
 });
