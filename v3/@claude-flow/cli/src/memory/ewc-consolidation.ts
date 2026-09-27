@@ -152,10 +152,29 @@ interface GradientSample {
 // Default Configuration
 // ============================================================================
 
+/**
+ * Optional env override for `fisherDecayRate`, mirroring the
+ * `envPriorDecay()`/`envMaxUncertainty()` pattern in
+ * `v3/@claude-flow/cli/src/ruvector/model-router.ts` — the two sibling
+ * `globalFisher`-updating EMA sites (`computeFisherMatrix()`,
+ * `recordGradient()`) and the production-wired `updateFisherFromConfidences()`
+ * all now share a single, correct EMA direction (dream-cycle #3395), so the
+ * decay rate itself is a legitimate tunable rather than a value tied to a
+ * still-broken direction. Invalid/unset input falls back to the unchanged
+ * default (0.01) — this is opt-in only, no default-behavior change.
+ */
+function envFisherDecayRate(): number | undefined {
+  const raw = process.env.CLAUDE_FLOW_FISHER_DECAY;
+  if (!raw) return undefined;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0 || n > 1) return undefined;
+  return n;
+}
+
 const DEFAULT_EWC_CONFIG: EWCConfig = {
   lambda: 0.4,
   maxPatterns: 1000,
-  fisherDecayRate: 0.01,
+  fisherDecayRate: envFisherDecayRate() ?? 0.01,
   importanceThreshold: 0.3,
   storagePath: path.join(process.cwd(), '.swarm', 'ewc-fisher.json'),
   onlineMode: true,
