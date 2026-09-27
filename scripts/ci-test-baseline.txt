@@ -123,6 +123,12 @@ v3/plugins/quantum-optimizer/tests/mcp-tools.test.ts
 # ruflo-x-gateway: node:test suite with its own deps (nostr-tools, ws, MCP SDK) — run via `npm test` in plugins/ruflo-x-gateway; root vitest cannot resolve them (same pattern as plugins/ruflo-adr)
 plugins/ruflo-x-gateway/test/gateway.test.mjs
 plugins/ruflo-x-gateway/test/oauth.test.mjs
+plugins/ruflo-x-gateway/execution/test/benchmark.test.mjs
+plugins/ruflo-x-gateway/execution/test/coordinator.test.mjs
+plugins/ruflo-x-gateway/execution/test/evaluation.test.mjs
+plugins/ruflo-x-gateway/execution/test/evidence.test.mjs
+plugins/ruflo-x-gateway/execution/test/routing.test.mjs
+plugins/ruflo-x-gateway/execution/test/service.test.mjs
 
 # ruflo-chatgpt-federation: same pattern — plugin-local deps (jose, nostr-tools/pure) not resolvable from root vitest
 plugins/ruflo-chatgpt-federation/test/oauth.test.mjs
