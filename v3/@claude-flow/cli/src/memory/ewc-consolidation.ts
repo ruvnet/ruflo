@@ -162,6 +162,13 @@ interface GradientSample {
  * decay rate itself is a legitimate tunable rather than a value tied to a
  * still-broken direction. Invalid/unset input falls back to the unchanged
  * default (0.01) — this is opt-in only, no default-behavior change.
+ *
+ * OPERATOR NOTE: like `envPriorDecay()`, this is read once, at
+ * `DEFAULT_EWC_CONFIG` module-evaluation time, and baked into the process's
+ * EWC singleton (`getEWCConsolidator()`) on first construction. Changing the
+ * env var mid-process has no effect until the process restarts (or
+ * `resetEWCConsolidator()` is called and a fresh consolidator is built) —
+ * it is not a live-reloadable setting.
  */
 function envFisherDecayRate(): number | undefined {
   const raw = process.env.CLAUDE_FLOW_FISHER_DECAY;
