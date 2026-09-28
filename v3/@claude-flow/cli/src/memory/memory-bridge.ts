@@ -124,6 +124,19 @@ export function shouldDisableNativeBridge(
 }
 
 /**
+ * Build the operand for `tags LIKE '%' || pattern || '%' ESCAPE '\'`,
+ * matching a tag's exact JSON-quoted form inside the `tags` column
+ * (`memory_entries.tags` is a JSON array stored as TEXT, e.g. `["a","b"]`).
+ * Escapes the tag's own JSON-escaped backslashes plus the SQL LIKE
+ * metacharacters `%`/`_`, so an entry only matches when it carries this
+ * tag exactly — not merely a substring of a longer tag.
+ */
+function tagLikePattern(tag: string): string {
+  const jsonTag = JSON.stringify(tag);
+  return jsonTag.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
+/**
  * ADR-323: reuse memory-initializer's provenance-type allowlist rather than
  * duplicating it (drift risk). Lazy CJS require for the same circular-ESM-
  * dependency reason as getDbPath() below.
@@ -1495,6 +1508,8 @@ export async function bridgeListEntries(options: {
   includeContent?: boolean;
   /** ADR-323: restrict rows to these provenance types. */
   provenanceFilter?: string[];
+  /** Require entries to include all of these tags (AND). */
+  tags?: string[];
 }): Promise<{
   success: boolean;
   entries: {
@@ -1509,6 +1524,8 @@ export async function bridgeListEntries(options: {
     /** #2073: Present when `includeContent: true` was requested. */
     content?: string;
     provenanceType?: string;
+    /** Tag set stored with the entry (empty array when none). */
+    tags?: string[];
   }[];
   total: number;
   error?: string;
@@ -1521,7 +1538,7 @@ export async function bridgeListEntries(options: {
   if (!ctx) return null;
 
   try {
-    const { namespace, limit = 20, offset = 0, provenanceFilter } = options;
+    const { namespace, limit = 20, offset = 0, provenanceFilter, tags: requiredTags } = options;
     if (provenanceFilter?.some(p => !isValidProvenanceType(p))) return null;
 
     const filters: string[] = [];
@@ -1534,6 +1551,16 @@ export async function bridgeListEntries(options: {
       filters.push(`provenance_type IN (${provenanceFilter.map(() => '?').join(',')})`);
       filterParams.push(...provenanceFilter);
     }
+    // Tags are stored as JSON-array TEXT (e.g. `["a","b"]`). Match each
+    // required tag as its exact JSON-quoted substring so the filter runs in
+    // SQL instead of pulling the whole table into memory to filter there.
+    const tagFilter = Array.isArray(requiredTags)
+      ? requiredTags.filter((t): t is string => typeof t === 'string' && t.length > 0)
+      : [];
+    for (const tag of tagFilter) {
+      filters.push(`tags LIKE ? ESCAPE '\\'`);
+      filterParams.push(`%${tagLikePattern(tag)}%`);
+    }
     const extraFilter = filters.length > 0 ? `AND ${filters.join(' AND ')}` : '';
 
     // #2120 — `status IS NULL` accepted alongside `'active'`. Old
@@ -1545,6 +1572,9 @@ export async function bridgeListEntries(options: {
     // "legacy-active" — the safe default for any entry that predates the
     // status column.
     const statusFilter = liveMemoryRowSql();
+
+    const safeLimit = parseInt(String(limit), 10) || 20;
+    const safeOffset = parseInt(String(offset), 10) || 0;
 
     // Count
     let total = 0;
@@ -1561,15 +1591,25 @@ export async function bridgeListEntries(options: {
     // List
     const entries: any[] = [];
     try {
+      // Include tags so export/list can round-trip them.
       const stmt = ctx.db.prepare(`
-        SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type
+        SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type, tags
         FROM memory_entries
         WHERE ${statusFilter} ${extraFilter}
         ORDER BY updated_at DESC
         LIMIT ? OFFSET ?
       `);
-      const rows = stmt.all(...filterParams, limit, offset);
+      const rows = stmt.all(...filterParams, safeLimit, safeOffset);
       for (const row of rows) {
+        let tags: string[] = [];
+        if (row.tags) {
+          try {
+            const parsed = typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags;
+            if (Array.isArray(parsed)) {
+              tags = parsed.filter((t: unknown): t is string => typeof t === 'string');
+            }
+          } catch { /* invalid tags JSON */ }
+        }
         const entry: Record<string, unknown> = {
           // #2073: don't truncate id when content is requested — callers
           // (notably memory_export) need the full id to round-trip via import.
@@ -1582,6 +1622,7 @@ export async function bridgeListEntries(options: {
           updatedAt: row.updated_at || new Date().toISOString(),
           hasEmbedding: !!(row.embedding && String(row.embedding).length > 10),
           provenanceType: row.provenance_type || 'unknown',
+          tags,
         };
         if (options.includeContent) {
           entry.content = row.content || '';

@@ -39,6 +39,21 @@ export function isValidProvenanceType(value: unknown): value is ProvenanceType {
 }
 
 /**
+ * Build the operand for `tags LIKE '%' || pattern || '%' ESCAPE '\'`,
+ * matching a tag's exact JSON-quoted form inside the `tags` column
+ * (`memory_entries.tags` is a JSON array stored as TEXT, e.g. `["a","b"]`).
+ * Escapes the tag's own JSON-escaped backslashes plus the SQL LIKE
+ * metacharacters `%`/`_`, so an entry only matches when it carries this
+ * tag exactly — not merely a substring of a longer tag. Mirrors
+ * memory-bridge.ts:tagLikePattern (duplicated rather than imported to
+ * avoid the circular-ESM-dependency issue noted elsewhere in this file).
+ */
+function tagLikePattern(tag: string): string {
+  const jsonTag = JSON.stringify(tag);
+  return jsonTag.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
+/**
  * #2356 — cached, synchronous capability probe for @ruvector/core. `getHNSWStatus`
  * is sync and is called by `neural status` in a fresh process that never warms
  * the lazy HNSW singleton, so reporting availability off the warm singleton
@@ -3423,6 +3438,8 @@ export async function listEntries(options: {
   includeContent?: boolean;
   /** ADR-323: restrict rows to these provenance types. */
   provenanceFilter?: string[];
+  /** Require entries to include all of these tags (AND). */
+  tags?: string[];
 }): Promise<{
   success: boolean;
   entries: {
@@ -3437,6 +3454,8 @@ export async function listEntries(options: {
     /** #2073: Present when `includeContent: true` was requested. */
     content?: string;
     provenanceType?: string;
+    /** Tag set stored with the entry (empty array when none). */
+    tags?: string[];
   }[];
   total: number;
   error?: string;
@@ -3466,7 +3485,8 @@ export async function listEntries(options: {
     limit = 20,
     offset = 0,
     dbPath: customPath,
-    provenanceFilter
+    provenanceFilter,
+    tags: requiredTags,
   } = options;
 
   const swarmDir = getMemoryRoot();
@@ -3496,18 +3516,28 @@ export async function listEntries(options: {
     // #2120 — accept `status IS NULL` alongside `'active'`. Old DBs
     // that predate the status column may have NULL after migration.
     // See memory-bridge.ts:bridgeListEntries for full context.
-    // Get total count
     const whereClauses = [liveMemoryRowSql()];
     const whereParams: string[] = [];
     if (namespace) {
       whereClauses.push('namespace = ?');
       whereParams.push(namespace);
     }
-    if (provenanceFilter?.length) {
-      whereClauses.push(`provenance_type IN (${provenanceFilter.map(() => '?').join(',')})`);
-      whereParams.push(...provenanceFilter);
+    // Tags are stored as JSON-array TEXT (e.g. `["a","b"]`). Match each
+    // required tag as its exact JSON-quoted substring so the filter runs in
+    // SQL instead of pulling the whole table into memory to filter there.
+    const tagFilter = Array.isArray(requiredTags)
+      ? requiredTags.filter((t): t is string => typeof t === 'string' && t.length > 0)
+      : [];
+    for (const tag of tagFilter) {
+      whereClauses.push(`tags LIKE ? ESCAPE '\\'`);
+      whereParams.push(`%${tagLikePattern(tag)}%`);
     }
     const whereSql = whereClauses.join(' AND ');
+
+    const safeLimit = parseInt(String(limit), 10) || 100;
+    const safeOffset = parseInt(String(offset), 10) || 0;
+
+    // Get total count
     const countStmt = db.prepare(`SELECT COUNT(*) as cnt FROM memory_entries WHERE ${whereSql}`);
     if (whereParams.length > 0) countStmt.bind(whereParams);
     const countRows: unknown[][] = [];
@@ -3515,15 +3545,11 @@ export async function listEntries(options: {
       countRows.push(countStmt.get());
     }
     countStmt.free();
-    const countResult = countRows.length > 0 ? [{ values: countRows }] : [];
-    const total = countResult[0]?.values?.[0]?.[0] as number || 0;
+    const total = (countRows[0]?.[0] as number) || 0;
 
-    // Get entries
-    const safeLimit = parseInt(String(limit), 10) || 100;
-    const safeOffset = parseInt(String(offset), 10) || 0;
-    // #2120 — same NULL-as-active acceptance as the count above.
+    // Include tags so export/list can round-trip them.
     const listStmt = db.prepare(
-      `SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type
+      `SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type, tags
        FROM memory_entries WHERE ${whereSql}
        ORDER BY updated_at DESC LIMIT ? OFFSET ?`
     );
@@ -3533,7 +3559,7 @@ export async function listEntries(options: {
       listRows.push(listStmt.get());
     }
     listStmt.free();
-    const result = listRows.length > 0 ? [{ values: listRows }] : [];
+
     const entries: {
       id: string;
       key: string;
@@ -3545,42 +3571,52 @@ export async function listEntries(options: {
       hasEmbedding: boolean;
       content?: string;
       provenanceType?: string;
+      tags?: string[];
     }[] = [];
 
-    if (result[0]?.values) {
-      for (const row of result[0].values) {
-        const [id, key, ns, content, embedding, accessCount, createdAt, updatedAt, provenanceTypeVal] = row as [
-          string, string, string, string, string | null, number, string, string, string | null
-        ];
-        const entry: {
-          id: string;
-          key: string;
-          namespace: string;
-          size: number;
-          accessCount: number;
-          createdAt: string;
-          updatedAt: string;
-          hasEmbedding: boolean;
-          content?: string;
-          provenanceType?: string;
-        } = {
-          // #2073: don't truncate id when content is requested — callers
-          // (notably memory_export) need the full id to round-trip via import.
-          id: options.includeContent ? String(id) : String(id).substring(0, 20),
-          key: key || String(id).substring(0, 15),
-          namespace: ns || 'default',
-          size: (content || '').length,
-          accessCount: accessCount || 0,
-          createdAt: createdAt || new Date().toISOString(),
-          updatedAt: updatedAt || new Date().toISOString(),
-          hasEmbedding: !!embedding && embedding.length > 10,
-          provenanceType: provenanceTypeVal || 'unknown'
-        };
-        if (options.includeContent) {
-          entry.content = content || '';
-        }
-        entries.push(entry);
+    for (const row of listRows) {
+      const [id, key, ns, content, embedding, accessCount, createdAt, updatedAt, provenanceTypeVal, tagsJson] = row as [
+        string, string, string, string, string | null, number, string, string, string | null, string | null
+      ];
+      let tags: string[] = [];
+      if (tagsJson) {
+        try {
+          const parsed = JSON.parse(tagsJson);
+          if (Array.isArray(parsed)) {
+            tags = parsed.filter((t): t is string => typeof t === 'string');
+          }
+        } catch { /* invalid tags JSON */ }
       }
+      const entry: {
+        id: string;
+        key: string;
+        namespace: string;
+        size: number;
+        accessCount: number;
+        createdAt: string;
+        updatedAt: string;
+        hasEmbedding: boolean;
+        content?: string;
+        provenanceType?: string;
+        tags?: string[];
+      } = {
+        // #2073: don't truncate id when content is requested — callers
+        // (notably memory_export) need the full id to round-trip via import.
+        id: options.includeContent ? String(id) : String(id).substring(0, 20),
+        key: key || String(id).substring(0, 15),
+        namespace: ns || 'default',
+        size: (content || '').length,
+        accessCount: accessCount || 0,
+        createdAt: createdAt || new Date().toISOString(),
+        updatedAt: updatedAt || new Date().toISOString(),
+        hasEmbedding: !!embedding && embedding.length > 10,
+        provenanceType: provenanceTypeVal || 'unknown',
+        tags,
+      };
+      if (options.includeContent) {
+        entry.content = content || '';
+      }
+      entries.push(entry);
     }
 
     db.close();

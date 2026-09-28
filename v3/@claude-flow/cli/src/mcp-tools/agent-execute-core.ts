@@ -183,8 +183,11 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
   // when no Anthropic key is available (same precedence as the Ollama
   // branch above).
   const openrouterKey = process.env.OPENROUTER_API_KEY;
+  // Key-presence inference only runs when no provider was chosen explicitly:
+  // RUFLO_PROVIDER=ollama (or a per-agent --provider) must not be hijacked
+  // by a stray OPENROUTER_API_KEY sitting in the environment.
   const useOpenRouter =
-    explicitProvider === 'openrouter' || (!anthropicKey && !!openrouterKey);
+    explicitProvider === 'openrouter' || (!explicitProvider && !anthropicKey && !!openrouterKey);
   // #2962 — only consult the persisted config when a candidate is actually
   // relevant (explicit choice, or no env key found anywhere), so a normal
   // ANTHROPIC_API_KEY-only setup never pays a config-file read.
@@ -195,7 +198,8 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
   const persistedOpenRouter =
     explicitProvider === 'openrouter' && !openrouterKey ? getPersistedProviderConfig('openrouter') : undefined;
   const useOllama =
-    explicitProvider === 'ollama' || (!anthropicKey && !openrouterKey && (!!ollamaKey || !!persistedOllama));
+    explicitProvider === 'ollama' ||
+    (!explicitProvider && !anthropicKey && !openrouterKey && (!!ollamaKey || !!persistedOllama));
 
   if (useOpenRouter) {
     const apiKey = openrouterKey || persistedOpenRouter?.apiKey;
@@ -227,7 +231,11 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
         ...input,
         apiKey: ollamaKey || persistedOllama?.apiKey || 'local',
         baseUrl: resolvedBaseUrl,
-        model: input.model || persistedOllama?.model,
+        model: input.model,
+        // Local default for tier aliases / Anthropic ids (see
+        // resolveOllamaModel): OLLAMA_DEFAULT_MODEL, then the model saved by
+        // `providers configure -p ollama -m <tag>`.
+        defaultModel: process.env.OLLAMA_DEFAULT_MODEL || persistedOllama?.model,
       });
     }
   }
@@ -324,9 +332,9 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
  *   - explicit 'ollama:<model>' or bare provider-native name → passed through
  */
 async function callOllamaCompat(
-  input: AnthropicCallInput & { apiKey: string; baseUrl?: string },
+  input: AnthropicCallInput & { apiKey: string; baseUrl?: string; defaultModel?: string },
 ): Promise<AnthropicCallResult> {
-  const model = resolveOllamaModel(input.model);
+  const model = resolveOllamaModel(input.model, input.defaultModel);
   const startedAt = Date.now();
   // #2962 — input.baseUrl (resolved by the caller from persisted
   // `providers configure` config, then OLLAMA_BASE_URL) takes precedence
@@ -497,16 +505,21 @@ function resolveOpenAICompatModel(input: string | undefined, fallback: string): 
   return input;
 }
 
-function resolveOllamaModel(input: string | undefined): string {
-  const DEFAULT = 'gpt-oss:120b-cloud';
+function resolveOllamaModel(input: string | undefined, defaultModel?: string): string {
+  // Self-hosted setups name their default via OLLAMA_DEFAULT_MODEL or
+  // `providers configure -p ollama -m <tag>`; Ollama Cloud keeps its own.
+  const DEFAULT = defaultModel || 'gpt-oss:120b-cloud';
   if (!input) return DEFAULT;
-  // Logical → cloud default
+  // Logical tier alias → default
   if (input === 'haiku' || input === 'sonnet' || input === 'opus' || input === 'inherit') {
     return DEFAULT;
   }
   // Explicit provider prefix
   if (input.startsWith('ollama:')) return input.slice('ollama:'.length);
-  // Bare name with cloud suffix (e.g. 'llama3:70b-cloud') passes through
+  // Anthropic model ids (what executeAgentTask sends for a tier-routed agent
+  // via MODEL_MAP) never exist on an Ollama endpoint → default.
+  if (/^claude-/i.test(input)) return DEFAULT;
+  // Bare name (e.g. 'qwen3-coder:30b', 'llama3:70b-cloud') passes through
   return input;
 }
 
