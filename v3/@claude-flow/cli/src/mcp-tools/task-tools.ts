@@ -67,6 +67,52 @@ function saveTaskStore(store: TaskStore): void {
   writeFileSync(getTaskPath(), JSON.stringify(store, null, 2), 'utf-8');
 }
 
+type AgentRow = Record<string, unknown>;
+
+/**
+ * Apply an agent-state change to every store that holds the agent.
+ *
+ * `hive-mind_spawn` keeps its workers in `.claude-flow/agents.json`, not the
+ * canonical `.claude-flow/agents/store.json` (#1916). Syncing only the
+ * canonical store meant assigning a task to a hive worker never marked it
+ * busy, and completing one never counted it: `hive-mind status` showed the
+ * worker idle with 0 completed while its task sat in the queue.
+ */
+function updateAgents(agentIds: string[], mutate: (agent: AgentRow) => void): void {
+  if (agentIds.length === 0) return;
+  const paths = [
+    join(getProjectCwd(), STORAGE_DIR, 'agents', 'store.json'),
+    join(getProjectCwd(), STORAGE_DIR, 'agents.json'),
+  ];
+  for (const path of paths) {
+    try {
+      if (!existsSync(path)) continue;
+      const store = JSON.parse(readFileSync(path, 'utf-8')) as { agents?: Record<string, AgentRow> };
+      if (!store.agents) continue;
+      let touched = false;
+      for (const id of agentIds) {
+        if (store.agents[id]) {
+          mutate(store.agents[id]);
+          touched = true;
+        }
+      }
+      if (touched) writeFileSync(path, JSON.stringify(store, null, 2), 'utf-8');
+    } catch {
+      // Best-effort agent sync: a corrupt agent store must not fail the task op.
+    }
+  }
+}
+
+/** Return agents still holding `taskId` to idle. */
+function releaseAgents(agentIds: string[], taskId: string): void {
+  updateAgents(agentIds, (agent) => {
+    if (agent.currentTask === taskId) {
+      agent.status = 'idle';
+      agent.currentTask = null;
+    }
+  });
+}
+
 export const taskTools: MCPTool[] = [
   {
     name: 'task_create',
@@ -260,28 +306,13 @@ export const taskTools: MCPTool[] = [
         saveTaskStore(store);
 
         // Sync assigned agents back to idle and increment taskCount
-        if (task.assignedTo.length > 0) {
-          const agentStorePath = join(getProjectCwd(), STORAGE_DIR, 'agents', 'store.json');
-          try {
-            let agentStore: { agents: Record<string, Record<string, unknown>> } = { agents: {} };
-            if (existsSync(agentStorePath)) {
-              agentStore = JSON.parse(readFileSync(agentStorePath, 'utf-8'));
-            }
-            for (const agentId of task.assignedTo) {
-              if (agentStore.agents[agentId]) {
-                if (agentStore.agents[agentId].currentTask === taskId) {
-                  agentStore.agents[agentId].status = 'idle';
-                  agentStore.agents[agentId].currentTask = null;
-                }
-                agentStore.agents[agentId].taskCount =
-                  ((agentStore.agents[agentId].taskCount as number) || 0) + 1;
-              }
-            }
-            writeFileSync(agentStorePath, JSON.stringify(agentStore, null, 2), 'utf-8');
-          } catch {
-            // Best-effort agent sync
+        updateAgents(task.assignedTo, (agent) => {
+          if (agent.currentTask === taskId) {
+            agent.status = 'idle';
+            agent.currentTask = null;
           }
-        }
+          agent.taskCount = ((agent.taskCount as number) || 0) + 1;
+        });
 
         return {
           taskId: task.taskId,
@@ -309,6 +340,7 @@ export const taskTools: MCPTool[] = [
         status: { type: 'string', description: 'New status' },
         progress: { type: 'number', description: 'Progress percentage (0-100)' },
         assignTo: { type: 'array', items: { type: 'string' }, description: 'Agent IDs to assign' },
+        result: { type: 'object', description: 'Result data (e.g. the failure of a failed task)' },
       },
       required: ['taskId'],
     },
@@ -328,12 +360,21 @@ export const taskTools: MCPTool[] = [
           if (newStatus === 'in_progress' && !task.startedAt) {
             task.startedAt = new Date().toISOString();
           }
+          // A failed task frees its workers, as task_complete and task_cancel do;
+          // otherwise a worker whose run failed stays `busy` forever.
+          if (newStatus === 'failed') {
+            task.completedAt = new Date().toISOString();
+            releaseAgents(task.assignedTo, taskId);
+          }
         }
         if (typeof input.progress === 'number') {
           task.progress = Math.min(100, Math.max(0, input.progress as number));
         }
         if (input.assignTo) {
           task.assignedTo = input.assignTo as string[];
+        }
+        if (input.result && typeof input.result === 'object') {
+          task.result = input.result as Record<string, unknown>;
         }
         saveTaskStore(store);
 
@@ -381,40 +422,19 @@ export const taskTools: MCPTool[] = [
 
       const previouslyAssigned = [...task.assignedTo];
 
-      // Load agent store to sync worker state
-      const agentStorePath = join(getProjectCwd(), STORAGE_DIR, 'agents', 'store.json');
-      let agentStore: { agents: Record<string, Record<string, unknown>> } = { agents: {} };
-      try {
-        if (existsSync(agentStorePath)) {
-          agentStore = JSON.parse(readFileSync(agentStorePath, 'utf-8'));
-        }
-      } catch { /* ignore */ }
-
       if (input.unassign) {
         // Revert previously assigned agents to idle
-        for (const agentId of previouslyAssigned) {
-          if (agentStore.agents[agentId]?.currentTask === taskId) {
-            agentStore.agents[agentId].status = 'idle';
-            agentStore.agents[agentId].currentTask = null;
-          }
-        }
+        releaseAgents(previouslyAssigned, taskId);
         task.assignedTo = [];
       } else {
         const agentIds = (input.agentIds as string[]) || [];
         // Revert old agents to idle
-        for (const agentId of previouslyAssigned) {
-          if (!agentIds.includes(agentId) && agentStore.agents[agentId]?.currentTask === taskId) {
-            agentStore.agents[agentId].status = 'idle';
-            agentStore.agents[agentId].currentTask = null;
-          }
-        }
+        releaseAgents(previouslyAssigned.filter((id) => !agentIds.includes(id)), taskId);
         // Set new agents to active
-        for (const agentId of agentIds) {
-          if (agentStore.agents[agentId]) {
-            agentStore.agents[agentId].status = 'busy';
-            agentStore.agents[agentId].currentTask = taskId;
-          }
-        }
+        updateAgents(agentIds, (agent) => {
+          agent.status = 'busy';
+          agent.currentTask = taskId;
+        });
         task.assignedTo = agentIds;
         // Auto-transition task to in_progress if pending
         if (task.status === 'pending' && agentIds.length > 0) {
@@ -426,12 +446,6 @@ export const taskTools: MCPTool[] = [
       }
 
       saveTaskStore(store);
-      // Save agent store
-      const agentDir = join(getProjectCwd(), STORAGE_DIR, 'agents');
-      if (!existsSync(agentDir)) {
-        mkdirSync(agentDir, { recursive: true });
-      }
-      writeFileSync(agentStorePath, JSON.stringify(agentStore, null, 2), 'utf-8');
 
       return {
         taskId: task.taskId,
@@ -471,20 +485,7 @@ export const taskTools: MCPTool[] = [
         task.completedAt = new Date().toISOString();
         task.result = { cancelReason: input.reason || 'Cancelled by user' };
         saveTaskStore(store);
-        const agentStorePath = join(getProjectCwd(), STORAGE_DIR, 'agents', 'store.json');
-        try {
-          if (existsSync(agentStorePath)) {
-            const agents = JSON.parse(readFileSync(agentStorePath, 'utf-8'));
-            for (const agentId of task.assignedTo) {
-              if (agents.agents[agentId]?.currentTask === taskId) {
-                agents.agents[agentId].status = 'idle';
-                agents.agents[agentId].currentTask = null;
-              }
-            }
-            writeFileSync(agentStorePath, JSON.stringify(agents, null, 2), 'utf-8');
-          }
-        } catch { /* best-effort agent sync, as in task_complete */ }
-
+        releaseAgents(task.assignedTo, taskId);
 
         return {
           success: true,
