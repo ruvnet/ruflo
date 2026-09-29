@@ -124,19 +124,6 @@ export function shouldDisableNativeBridge(
 }
 
 /**
- * Build the operand for `tags LIKE '%' || pattern || '%' ESCAPE '\'`,
- * matching a tag's exact JSON-quoted form inside the `tags` column
- * (`memory_entries.tags` is a JSON array stored as TEXT, e.g. `["a","b"]`).
- * Escapes the tag's own JSON-escaped backslashes plus the SQL LIKE
- * metacharacters `%`/`_`, so an entry only matches when it carries this
- * tag exactly — not merely a substring of a longer tag.
- */
-function tagLikePattern(tag: string): string {
-  const jsonTag = JSON.stringify(tag);
-  return jsonTag.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-}
-
-/**
  * ADR-323: reuse memory-initializer's provenance-type allowlist rather than
  * duplicating it (drift risk). Lazy CJS require for the same circular-ESM-
  * dependency reason as getDbPath() below.
@@ -1552,14 +1539,18 @@ export async function bridgeListEntries(options: {
       filterParams.push(...provenanceFilter);
     }
     // Tags are stored as JSON-array TEXT (e.g. `["a","b"]`). Match each
-    // required tag as its exact JSON-quoted substring so the filter runs in
-    // SQL instead of pulling the whole table into memory to filter there.
+    // required tag as an exact element via SQLite's json_each so the filter
+    // runs in SQL instead of pulling the whole table into memory to filter
+    // there. A LIKE-based substring match is ASCII case-insensitive (so
+    // `prod` would match `PROD`) and matches raw JSON bytes rather than
+    // parsed array elements (so a tag literally containing `"prod` could
+    // false-match) — json_each compares real, decoded array values.
     const tagFilter = Array.isArray(requiredTags)
       ? requiredTags.filter((t): t is string => typeof t === 'string' && t.length > 0)
       : [];
     for (const tag of tagFilter) {
-      filters.push(`tags LIKE ? ESCAPE '\\'`);
-      filterParams.push(`%${tagLikePattern(tag)}%`);
+      filters.push(`EXISTS (SELECT 1 FROM json_each(tags) WHERE value = ?)`);
+      filterParams.push(tag);
     }
     const extraFilter = filters.length > 0 ? `AND ${filters.join(' AND ')}` : '';
 
@@ -1573,8 +1564,13 @@ export async function bridgeListEntries(options: {
     // status column.
     const statusFilter = liveMemoryRowSql();
 
-    const safeLimit = parseInt(String(limit), 10) || 20;
-    const safeOffset = parseInt(String(offset), 10) || 0;
+    // `|| 20` would treat an explicit `limit: 0` as falsy and silently
+    // substitute the default (returning 20 rows instead of the requested
+    // zero) — only fall back to the default when parsing genuinely failed.
+    const parsedLimit = parseInt(String(limit), 10);
+    const safeLimit = Number.isNaN(parsedLimit) ? 20 : parsedLimit;
+    const parsedOffset = parseInt(String(offset), 10);
+    const safeOffset = Number.isNaN(parsedOffset) ? 0 : parsedOffset;
 
     // Count
     let total = 0;

@@ -159,12 +159,49 @@ describe('self-hosted Ollama: explicit provider precedence + local default model
     expect(lastRequest().body.model).toBe('qwen3-coder:30b');
   });
 
-  it('without any local default the Ollama Cloud fallback name is unchanged', async () => {
+  // Regression: a signed-in local Ollama daemon forwards any
+  // `-cloud`-suffixed model name straight to Ollama's real cloud service.
+  // Silently rewriting a tier-routed/self-hosted request to
+  // 'gpt-oss:120b-cloud' when the endpoint is NOT actually Ollama Cloud
+  // (here, a local 127.0.0.1 base URL) would leak the prompt off-machine
+  // without the user ever asking for that. This must fail loudly instead —
+  // no request should even be sent.
+  it('without OLLAMA_DEFAULT_MODEL, a self-hosted/local base URL fails loudly instead of synthesizing a -cloud model name', async () => {
     process.env.RUFLO_PROVIDER = 'ollama';
     process.env.OLLAMA_BASE_URL = OLLAMA;
 
-    await callAnthropicMessages({ prompt: 'ping', model: 'claude-sonnet-5' });
+    const result = await callAnthropicMessages({ prompt: 'ping', model: 'claude-sonnet-5' });
 
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/OLLAMA_DEFAULT_MODEL/);
+    expect(result.error).not.toBeUndefined();
+    // No -cloud model name was ever synthesized or sent anywhere.
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('without OLLAMA_DEFAULT_MODEL, a tier alias against a self-hosted/local base URL also fails loudly (no silent cloud default)', async () => {
+    process.env.RUFLO_PROVIDER = 'ollama';
+    process.env.OLLAMA_BASE_URL = OLLAMA;
+
+    const result = await callAnthropicMessages({ prompt: 'ping', model: 'sonnet' });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/OLLAMA_DEFAULT_MODEL/);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  // A base URL that IS genuinely Ollama's cloud endpoint (the default when
+  // no OLLAMA_BASE_URL override is given at all) may still fall back to the
+  // cloud-suffixed default — that's the one case where sending a
+  // `-cloud`-suffixed name is not a surprise cloud egress.
+  it('with no OLLAMA_BASE_URL override at all (real Ollama Cloud endpoint), the -cloud fallback default still applies', async () => {
+    process.env.RUFLO_PROVIDER = 'ollama';
+    process.env.OLLAMA_API_KEY = 'sk-ollama-cloud-test';
+
+    const result = await callAnthropicMessages({ prompt: 'ping', model: 'claude-sonnet-5' });
+
+    expect(result.success).toBe(true);
+    expect(lastRequest().url).toBe('https://ollama.com/v1/chat/completions');
     expect(lastRequest().body.model).toBe('gpt-oss:120b-cloud');
   });
 });

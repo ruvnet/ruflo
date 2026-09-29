@@ -39,21 +39,6 @@ export function isValidProvenanceType(value: unknown): value is ProvenanceType {
 }
 
 /**
- * Build the operand for `tags LIKE '%' || pattern || '%' ESCAPE '\'`,
- * matching a tag's exact JSON-quoted form inside the `tags` column
- * (`memory_entries.tags` is a JSON array stored as TEXT, e.g. `["a","b"]`).
- * Escapes the tag's own JSON-escaped backslashes plus the SQL LIKE
- * metacharacters `%`/`_`, so an entry only matches when it carries this
- * tag exactly — not merely a substring of a longer tag. Mirrors
- * memory-bridge.ts:tagLikePattern (duplicated rather than imported to
- * avoid the circular-ESM-dependency issue noted elsewhere in this file).
- */
-function tagLikePattern(tag: string): string {
-  const jsonTag = JSON.stringify(tag);
-  return jsonTag.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-}
-
-/**
  * #2356 — cached, synchronous capability probe for @ruvector/core. `getHNSWStatus`
  * is sync and is called by `neural status` in a fresh process that never warms
  * the lazy HNSW singleton, so reporting availability off the warm singleton
@@ -3522,20 +3507,35 @@ export async function listEntries(options: {
       whereClauses.push('namespace = ?');
       whereParams.push(namespace);
     }
+    // ADR-323: restrict to the requested provenance types. This must be
+    // ANDed alongside any tags filter below, never replaced by it — dropping
+    // this clause lets unverified user_claim rows leak into results that
+    // are supposed to be tool_result-only.
+    if (provenanceFilter?.length) {
+      whereClauses.push(`provenance_type IN (${provenanceFilter.map(() => '?').join(',')})`);
+      whereParams.push(...provenanceFilter);
+    }
     // Tags are stored as JSON-array TEXT (e.g. `["a","b"]`). Match each
-    // required tag as its exact JSON-quoted substring so the filter runs in
-    // SQL instead of pulling the whole table into memory to filter there.
+    // required tag as an exact element via SQLite's json_each so a tag of
+    // `prod` can't be satisfied by a substring like `"prod` or by a
+    // differently-cased value like `PROD` (LIKE is ASCII case-insensitive
+    // and matches raw JSON-array bytes, not parsed array elements).
     const tagFilter = Array.isArray(requiredTags)
       ? requiredTags.filter((t): t is string => typeof t === 'string' && t.length > 0)
       : [];
     for (const tag of tagFilter) {
-      whereClauses.push(`tags LIKE ? ESCAPE '\\'`);
-      whereParams.push(`%${tagLikePattern(tag)}%`);
+      whereClauses.push(`EXISTS (SELECT 1 FROM json_each(tags) WHERE value = ?)`);
+      whereParams.push(tag);
     }
     const whereSql = whereClauses.join(' AND ');
 
-    const safeLimit = parseInt(String(limit), 10) || 100;
-    const safeOffset = parseInt(String(offset), 10) || 0;
+    // `|| 100` would treat an explicit `limit: 0` as falsy and silently
+    // substitute the default (returning rows instead of the requested
+    // zero) — only fall back to the default when parsing genuinely failed.
+    const parsedLimit = parseInt(String(limit), 10);
+    const safeLimit = Number.isNaN(parsedLimit) ? 100 : parsedLimit;
+    const parsedOffset = parseInt(String(offset), 10);
+    const safeOffset = Number.isNaN(parsedOffset) ? 0 : parsedOffset;
 
     // Get total count
     const countStmt = db.prepare(`SELECT COUNT(*) as cnt FROM memory_entries WHERE ${whereSql}`);

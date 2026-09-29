@@ -1,14 +1,18 @@
 /**
- * Coverage for `bridgeListEntries({ tags })` (split out of #3512 — see
- * memory-bridge.ts:tagLikePattern).
+ * Coverage for `bridgeListEntries({ tags })` (split out of #3512).
  *
- * The tag filter is pushed into the SQL query as a `tags LIKE '%"<tag>"%'
- * ESCAPE '\'` clause per required tag (AND semantics) instead of pulling
- * every row into the process to filter in JS — a prior version fetched up
- * to 100k rows per call whenever a tag filter was set. This suite checks
- * both the filtering semantics (AND, exact-tag matching, pagination/total)
- * and the substring-safety of the LIKE pattern (a tag must not match a
- * longer tag that merely contains it as a substring).
+ * The tag filter is pushed into the SQL query as
+ * `EXISTS (SELECT 1 FROM json_each(tags) WHERE value = ?)` per required tag
+ * (AND semantics) instead of pulling every row into the process to filter
+ * in JS — a prior version fetched up to 100k rows per call whenever a tag
+ * filter was set. An earlier revision of this filter used SQL `LIKE`
+ * against the raw JSON-array TEXT, which was both ASCII case-insensitive
+ * and matched raw JSON bytes rather than parsed array elements (#3526
+ * review); `json_each` compares real, decoded array values instead. This
+ * suite checks the filtering semantics (AND, exact-tag matching,
+ * pagination/total), that a tag must not match a longer tag that merely
+ * contains it as a substring, case-sensitivity, and JSON-injection-shaped
+ * tag values.
  */
 
 import { describe, it, expect, afterAll } from 'vitest';
@@ -180,5 +184,66 @@ describe('bridgeListEntries({ tags }) — SQL-pushed tag filter', () => {
     const page2 = await bridgeListEntries({ namespace: 'probe-tags', tags: ['keep'], limit: 2, offset: 2, dbPath });
     expect(page2!.total).toBe(3);
     expect(page2!.entries).toHaveLength(1);
+  });
+
+  // #3526 review — exact match via json_each, not a case-insensitive LIKE
+  // substring match against raw JSON text.
+  it('a tag filter of "prod" does not match an entry tagged "PROD" (case-sensitive exact match)', async () => {
+    const { __setMemoryBridgeRegistryForTests, bridgeListEntries } = await import('../src/memory/memory-bridge.js');
+
+    const dbPath = freshDbPath();
+    db = makeDb(dbPath);
+    seed(db, [
+      { id: '1', key: 'upper', tags: ['PROD'] },
+      { id: '2', key: 'lower', tags: ['prod'] },
+    ]);
+    __setMemoryBridgeRegistryForTests({
+      getAgentDB: () => ({ database: db, embedder: null }),
+      get: (kind: string) => (kind === 'tieredCache' ? makeTieredCache() : null),
+    });
+
+    const result = await bridgeListEntries({ namespace: 'probe-tags', tags: ['prod'], dbPath });
+    expect(result!.entries.map(e => e.key)).toEqual(['lower']);
+  });
+
+  it('a tag filter does not false-match a JSON-injection-shaped tag value', async () => {
+    const { __setMemoryBridgeRegistryForTests, bridgeListEntries } = await import('../src/memory/memory-bridge.js');
+
+    const dbPath = freshDbPath();
+    db = makeDb(dbPath);
+    seed(db, [
+      { id: '1', key: 'injected', tags: ['x","prod'] },
+      { id: '2', key: 'real', tags: ['prod'] },
+    ]);
+    __setMemoryBridgeRegistryForTests({
+      getAgentDB: () => ({ database: db, embedder: null }),
+      get: (kind: string) => (kind === 'tieredCache' ? makeTieredCache() : null),
+    });
+
+    const result = await bridgeListEntries({ namespace: 'probe-tags', tags: ['prod'], dbPath });
+    expect(result!.entries.map(e => e.key)).toEqual(['real']);
+  });
+
+  // #3526 review — an explicit limit: 0 must return zero rows, not fall
+  // back to the default limit (`parseInt(...) || 20` treated 0 as falsy).
+  it('limit: 0 returns zero entries, not the default', async () => {
+    const { __setMemoryBridgeRegistryForTests, bridgeListEntries } = await import('../src/memory/memory-bridge.js');
+
+    const dbPath = freshDbPath();
+    db = makeDb(dbPath);
+    seed(db, [
+      { id: '1', key: 'a', tags: null },
+      { id: '2', key: 'b', tags: null },
+      { id: '3', key: 'c', tags: null },
+    ]);
+    __setMemoryBridgeRegistryForTests({
+      getAgentDB: () => ({ database: db, embedder: null }),
+      get: (kind: string) => (kind === 'tieredCache' ? makeTieredCache() : null),
+    });
+
+    const result = await bridgeListEntries({ namespace: 'probe-tags', limit: 0, dbPath });
+    expect(result!.success).toBe(true);
+    expect(result!.entries).toHaveLength(0);
+    expect(result!.total).toBe(3);
   });
 });
