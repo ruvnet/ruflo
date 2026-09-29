@@ -253,7 +253,7 @@ test('channels: tools are registered, private publish refused, ids validated', a
   const rpc = (m) => fetch(base + '/mcp', { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' }, body: JSON.stringify(m) }).then((r) => r.text());
   const list = await rpc({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} });
   for (const n of ['channel_list', 'channel_sync', 'channel_publish']) assert.ok(list.includes(`"name":"${n}"`), n);
-  assert.ok(list.includes('Use when'), 'ADR-112 descriptions');
+  assert.ok(list.includes('Lists recently observed swarm channels'), 'channel list description');
 
   // channel_publish is admin-gated like every other gateway-identity write
   const noTok = await rpc({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'channel_publish', arguments: { channel: 'pub:ops', msgType: 'Status', payload: {} } } });
@@ -426,8 +426,8 @@ test('onboarding: exposed as an open tool and an open resource', async () => {
   const ob = tools.find((t) => t.name === 'federation_onboarding');
   assert.ok(ob, 'federation_onboarding must be registered');
   assert.deepEqual(ob.inputSchema.required ?? [], [], 'onboarding must take no credential');
-  assert.match(ob.description, /Use when/);
-  assert.match(ob.description, /wrong turn|is wrong/);
+  assert.match(ob.description, /onboarding guide/);
+  assert.doesNotMatch(ob.description, /\b(use when|wrong turn|is wrong|other tool|ignore previous)\b/i);
 
   // Callable with no arguments and no token at all.
   const called = await rpc({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'federation_onboarding', arguments: {} } });
@@ -659,6 +659,17 @@ test('Claude directory endpoint exposes the same hardened 12-tool profile', asyn
   assert.equal(claude.length, 12);
   assert.deepEqual(claude, chatgpt,
     'Claude and ChatGPT directory profiles must not drift in tools, schemas, titles, or annotations');
+  gw.close();
+});
+
+test('Claude directory tool descriptions contain capability facts, not model-routing instructions', async () => {
+  process.env.RUFLO_ADMIN_TOKEN = 'test-admin-token';
+  const gw = await startGateway();
+  const tools = await toolsAt(gw.base, '/claude/mcp');
+  const prohibited = /\b(use when|wrong turn|is wrong|ignore (?:all |any )?(?:previous |prior )?instructions?|call (?:the )?\w+ tool|users? should|instead use)\b/i;
+  for (const tool of tools) {
+    assert.doesNotMatch(tool.description, prohibited, `${tool.name} description contains routing or model-behavior instructions`);
+  }
   gw.close();
 });
 

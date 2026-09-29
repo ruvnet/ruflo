@@ -201,7 +201,7 @@ export function createGateway({ relay, keyFile, port, registration } = {}) {
       // is a string a third party chose. Same surface, same envelope.
       async () => { const ev = await fetchRecent(RELAY, sk, { sinceSeconds: 86400, limit: 500 }); return relayText(reduceClaims(ev.filter((e) => String(e.type).startsWith('Claim')))); });
     // ---- admin-gated writes (use the GATEWAY identity) ----
-    mcp.tool('federation_join', 'Publish a signed PeerHello AS THE GATEWAY. Authorised by OAuth swarm:publish or the service-side admin token. Users should normally join with their own key via invite→claim instead.',
+    mcp.tool('federation_join', 'Publishes a signed PeerHello using the gateway identity. Requires OAuth swarm:publish or the service-side admin token.',
       { name: z.string(), platform: z.string().optional(), note: z.string().optional(), ...adminSchema },
       // Appends a PeerHello event that cannot be retracted. Under Apps SDK
       // review semantics, an irreversible send is destructive even though it
@@ -250,12 +250,12 @@ export function createGateway({ relay, keyFile, port, registration } = {}) {
         adminOnly(async ({ pubkey: pk, role }) => text(await admitMember(RELAY, sk, pk, role))));
     }
     // ---- ADR-386 channels ----
-    mcp.tool('channel_list', 'List swarm channels seen recently, with visibility, message count and publisher count. Open read. Public channel ids carry their name (pub:<name>); private ids are opaque (prv:<hex>) and reveal nothing about the topic. Well-known channels (pub:announce, pub:help, pub:claims, pub:showcase) are always listed even when quiet, with messages:0 and a purpose — a channel nobody posted in today is otherwise undiscoverable, which is how it stays empty. Use when you want to find where coordination is happening before reading a stream. Reading the flat firehose with federation_sync instead is wrong once channels are in use, because it mixes unrelated work and cannot show you private traffic exists at all.',
+    mcp.tool('channel_list', 'Lists recently observed swarm channels with visibility, message count, publisher count, and purpose. Public channel ids contain their name (pub:<name>); private ids are opaque (prv:<hex>) and reveal no topic. Well-known public channels are included even when quiet.',
       { sinceSeconds: z.number().optional(), limit: z.number().optional() },
       READ('List swarm channels', { openWorld: true }),
       // Public channel ids carry their name, and members choose those names.
       async (a) => relayText({ channels: await listChannels(RELAY, sk, a) }));
-    mcp.tool('channel_sync', 'Read one channel. Open read. A public channel returns parsed JSON messages. A PRIVATE channel returns NIP-44 ciphertext verbatim with encrypted:true — the gateway holds no channel keys and cannot decrypt, by design (ADR-386); open it client-side with `ruflo federation channel read`. Use when you know the channel id. Asking the gateway to decrypt is wrong because a gateway that could would be a custodian of every private channel on the service.',
+    mcp.tool('channel_sync', 'Returns recent messages from one channel. Public channels contain parsed JSON messages. Private channels contain NIP-44 ciphertext with encrypted:true because the gateway does not hold channel keys.',
       { channel: z.string().describe('Channel id: pub:<name> or prv:<16 hex>'), sinceSeconds: z.number().optional(), limit: z.number().optional() },
       READ('Read a channel', { openWorld: true }),
       async ({ channel, sinceSeconds, limit }) => {
@@ -268,7 +268,7 @@ export function createGateway({ relay, keyFile, port, registration } = {}) {
           priv ? 'Note from the gateway: this is a private channel, so the bodies below are NIP-44 ciphertext. The gateway holds no channel keys and cannot decrypt them.' : undefined,
         );
       });
-    mcp.tool('channel_publish', 'Publish a message to a PUBLIC channel as the gateway. Authorised by OAuth swarm:publish or the service-side admin token. Private channels are refused here on purpose: their content is encrypted with a key only clients hold, so publish to them with your own key via `ruflo federation channel publish`.',
+    mcp.tool('channel_publish', 'Publishes a signed gateway message to a public channel. Requires OAuth swarm:publish or the service-side admin token. Private channels are rejected because their encryption keys remain client-held.',
       { channel: z.string(), msgType: z.string(), payload: z.record(z.any()), ...adminSchema },
       // Public-channel events are append-only and cannot be deleted or
       // retracted, so publication is destructive for review purposes.
@@ -282,7 +282,7 @@ export function createGateway({ relay, keyFile, port, registration } = {}) {
         return text({ ok: true, channel: id, eventId: await publishTagged(RELAY, sk, channelTags(id, msgType, false), content) });
       }));
     mcp.tool('federation_onboarding',
-      "How to join and publish as yourself, and which identity signs what. Open — no token. Use when you are new here, when a publish was refused for a credential, or before telling someone to paste a token anywhere. Reaching for federation_publish to speak as a person is the usual wrong turn: it signs as the GATEWAY, which is why it is gated; you publish with your own key over the relay connection. This never generates or asks for a secret key — it returns the code for you to run locally, because a service that mints your key has seen it.",
+      'Returns the public federation onboarding guide, including identity ownership, signing boundaries, enrollment steps, and local client commands. It never generates, receives, or requests a secret key.',
       {},
       READ('Joining guide'),
       async () => text(onboardingGuide({ relay: RELAY, httpBase: HTTP_BASE, gatewayPubkey: pubkey, defaultChannels: DEFAULT_CHANNELS, registration: enrollment.info() })));
