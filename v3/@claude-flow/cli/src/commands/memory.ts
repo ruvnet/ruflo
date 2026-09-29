@@ -807,12 +807,17 @@ const listCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const namespace = ctx.flags.namespace as string;
     const limit = ctx.flags.limit as number;
+    // Mirrors memory_list's MCP tool handling: comma-separated flag →
+    // non-empty string array, require entries to carry every tag (AND).
+    const tags = ctx.flags.tags
+      ? (ctx.flags.tags as string).split(',').map(t => t.trim()).filter((t): t is string => t.length > 0)
+      : undefined;
 
     // Use sql.js directly for consistent data access
     try {
       const { listEntries, resolveDbPath: _rdbList } = await import('../memory/memory-initializer.js');
       const dbPathList = _rdbList(ctx.flags.path as string | undefined);
-      const listResult = await listEntries({ namespace, limit, offset: 0, dbPath: dbPathList });
+      const listResult = await listEntries({ namespace, limit, offset: 0, dbPath: dbPathList, tags });
 
       if (!listResult.success) {
         output.printError(`Failed to list: ${listResult.error}`);
