@@ -115,7 +115,9 @@ test('tenant isolation hides foreign team and run identifiers', async (t) => {
   const f=await fixture(); t.after(()=>f.server.close());
   const created=value(await call(f.base,'team_create',{name:'Alpha',objective:'Private alpha objective'},'alpha:all'));
   assert.equal(value(await call(f.base,'team_get',{teamId:created.id},'alpha:all')).name,'Alpha');
-  assert.deepEqual(value(await call(f.base,'team_get',{teamId:created.id},'beta:all')),{error:'not_found'});
+  const foreignTeam = await call(f.base,'team_get',{teamId:created.id},'beta:all');
+  assert.equal(foreignTeam.body.result.isError, true);
+  assert.deepEqual(value(foreignTeam),{error:'not_found'});
   assert.deepEqual(value(await call(f.base,'team_list',{},'beta:all')).teams,[]);
   const foreignRun=value(await call(f.base,'run_create',{teamId:created.id,objective:'steal',budgetUnits:1},'beta:all'));
   assert.deepEqual(foreignRun,{error:'not_found'});

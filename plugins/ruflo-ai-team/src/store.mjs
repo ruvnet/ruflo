@@ -50,6 +50,7 @@ export class InMemoryStore {
     bucket.memories.set(id, value); this.#audit(bucket, actor, 'memory.remembered', id); return clone(value);
   }
   async listMemories(tenantId, { teamId } = {}) { return [...this.#bucket(tenantId).memories.values()].filter((x) => !teamId || x.teamId === teamId).map(clone); }
+  async getMemories(tenantId, ids, { teamId } = {}) { return ids.map((id) => this.#bucket(tenantId).memories.get(id)).filter((x) => x && (!teamId || x.teamId === teamId)).map(clone); }
   async usage(tenantId) {
     const b = this.#bucket(tenantId); return { teams: b.teams.size, runs: b.runs.size, tasks: b.tasks.size, memories: b.memories.size, limits: { teams: 1, agentsPerTeam: 3, monthlyTasks: 100, runBudgetUnits: 100 } };
   }
@@ -90,6 +91,7 @@ export class FirestoreStore {
   async updateTask(t,id,p,a='-') { const c=await this.#get(t,'tasks',id); if(!c||(await this.#get(t,'runs',c.runId))?.status==='complete')return null; const v={...c,...p,id,updatedAt:now()}; await this.#put(t,'tasks',v); await this.#audit(t,a,'task.updated',id); return v; }
   async remember(t,i,a='-') { const timestamp=now(); const v={id:i.key||`mem_${randomUUID()}`,teamId:i.teamId,runId:i.runId||null,text:i.text,tags:i.tags||[],provenance:i.provenance||'user',actorHash:a,contentHash:createHash('sha256').update(i.text).digest('hex'),safetyStatus:i.safetyStatus||'accepted',embeddingModel:'feature-hash-256',embeddingVersion:'1',createdAt:timestamp,updatedAt:timestamp}; await this.#put(t,'memories',v); await this.#audit(t,a,'memory.remembered',v.id); return v; }
   async listMemories(t,{teamId}={}) { let query=this.#tenant(t).collection('memories'); if(teamId)query=query.where('teamId','==',teamId); const snap=await query.limit(1000).get(); return snap.docs.map(d=>d.data()); }
+  async getMemories(t,ids,{teamId}={}) { if(!ids.length)return []; const col=this.#tenant(t).collection('memories'); const snaps=await this.db.getAll(...ids.map(id=>col.doc(id))); return snaps.filter(s=>s.exists).map(s=>s.data()).filter(m=>!teamId||m.teamId===teamId); }
   async usage(t) { const [teams,runs,tasks,memories]=await Promise.all(['teams','runs','tasks','memories'].map(k=>this.#list(t,k))); return {teams:teams.length,runs:runs.length,tasks:tasks.length,memories:memories.length,limits:{teams:1,agentsPerTeam:3,monthlyTasks:100,runBudgetUnits:100}}; }
   async evidence(t,runId) { const run=await this.#get(t,'runs',runId); if(!run)return null; return {schema:'ruflo.ai-team.evidence.v1',generatedAt:now(),run,team:await this.#get(t,'teams',run.teamId),tasks:await this.listTasks(t,runId),audit:(await this.#list(t,'audit')).filter(x=>x.targetId===runId||x.targetId===run.teamId)}; }
 }

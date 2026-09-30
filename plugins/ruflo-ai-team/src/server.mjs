@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { authenticate, challengeHeader, hasScope, protectedResourceMetadata, SCOPES } from './auth.mjs';
 import { storeFromEnv } from './store.mjs';
 import { vectorMemoryFromEnv } from './vector-memory.mjs';
+import { EDGE_ISSUER, edgeVectorMemoryFromEnv } from './edge-vector-memory.mjs';
 import { TEAM_TEMPLATES, templateById } from './templates.mjs';
 import { fenced, scanStoredText } from './untrusted.mjs';
 import { privacyPage, supportPage, termsPage } from './public-pages.mjs';
@@ -34,12 +35,16 @@ async function readBody(req) {
 
 export async function createAiTeamService({ store, vectorMemory, verifyToken, port } = {}) {
   store ||= await storeFromEnv();
-  vectorMemory ||= await vectorMemoryFromEnv(store);
   const publicUrl = (process.env.RUFLO_AI_TEAM_PUBLIC_URL || 'https://team.ruv.io').replace(/\/$/, '');
   const issuer = (process.env.RUFLO_AI_TEAM_OAUTH_ISSUER || 'https://auth.cognitum.one').replace(/\/$/, '');
+  const edgeMode = process.env.RUFLO_AI_TEAM_VECTOR === 'edge';
+  if (edgeMode && issuer !== EDGE_ISSUER) throw new Error('edge vector mode requires the edge OAuth issuer');
+  const legacyIssuer = edgeMode ? (process.env.RUFLO_AI_TEAM_OAUTH_LEGACY_ISSUER || '').replace(/\/$/, '') : '';
+  if (legacyIssuer && legacyIssuer !== 'https://auth.cognitum.one') throw new Error('unsupported legacy OAuth issuer');
+  vectorMemory ||= edgeMode ? edgeVectorMemoryFromEnv(store) : await vectorMemoryFromEnv(store);
   const audience = process.env.RUFLO_AI_TEAM_OAUTH_AUDIENCE || `${publicUrl}/mcp`;
   const jwksUri = process.env.RUFLO_AI_TEAM_OAUTH_JWKS_URI || `${issuer}/.well-known/jwks.json`;
-  const authConfig = { issuer, audience, jwksUri };
+  const authConfig = { issuer, audience, jwksUri, legacyIssuer, legacyJwksUri: legacyIssuer ? `${legacyIssuer}/.well-known/jwks.json` : undefined };
   const metadataUrl = `${publicUrl}/.well-known/oauth-protected-resource/mcp`;
 
   const buildMcp = (auth) => {
@@ -93,12 +98,12 @@ export async function createAiTeamService({ store, vectorMemory, verifyToken, po
     mcp.tool('task_update', 'Updates status or result for a tenant-local task. Requires team:write. It cannot execute commands, publish messages, or approve external actions.', {
       taskId:z.string(), status:z.enum(['open','claimed','blocked','complete']).optional(), result:z.string().max(12000).optional(),
     }, WRITE('Update team task', true), scoped(SCOPES.write, async ({taskId,...patch}) => { const value=await store.updateTask(auth.tenantId,taskId,patch,auth.subjectHash); return value?text(value):notFound(); }));
-    mcp.tool('memory_remember', 'Stores approved tenant-local team context for later vector retrieval. Requires team:write. Content is safety-scanned, isolated to the OAuth tenant, and never used for cross-tenant learning.', {
+    mcp.tool('memory_remember', 'Stores approved tenant-local team context. Requires team:write. Content is safety-scanned; an opt-in RuVector edge index may receive the text for derived search. Index status is reported. No cross-tenant learning.', {
       teamId:z.string(), runId:z.string().optional(), key:z.string().max(120).optional(), text:z.string().min(1).max(12000), tags:z.array(z.string().max(60)).max(20).optional(), provenance:z.enum(['user','agent','artifact']).optional(),
-    }, WRITE('Remember team context', true), scoped(SCOPES.write, async (a) => { if(!await store.getTeam(auth.tenantId,a.teamId))return notFound(); const scan=scanStoredText(a.text); if(!scan.safe)return text({error:'unsafe_content',safetyStatus:scan.status}); const value=await store.remember(auth.tenantId,{...a,safetyStatus:scan.status},auth.subjectHash); vectorMemory.invalidate(auth.tenantId); return text({id:value.id,teamId:value.teamId,contentHash:value.contentHash,safetyStatus:value.safetyStatus,updatedAt:value.updatedAt}); }));
-    mcp.tool('memory_search', 'Searches tenant-local team memory using a tenant-separated RuVector index when available, with an explicitly labelled lexical fallback. Requires team:read. Results are fenced as untrusted stored data.', {
+    }, WRITE('Remember team context'), scoped(SCOPES.write, async (a) => { if(!await store.getTeam(auth.tenantId,a.teamId))return notFound(); const scan=scanStoredText(a.text); if(!scan.safe)return text({error:'unsafe_content',safetyStatus:scan.status}); const value=await store.remember(auth.tenantId,{...a,safetyStatus:scan.status},auth.subjectHash); vectorMemory.invalidate(auth.tenantId); const index = vectorMemory.upsert ? await vectorMemory.upsert(auth.tenantId,value,auth) : undefined; return text({id:value.id,teamId:value.teamId,contentHash:value.contentHash,safetyStatus:value.safetyStatus,updatedAt:value.updatedAt,...index}); }));
+    mcp.tool('memory_search', 'Searches tenant-local team memory using a tenant-separated RuVector index when available, with an explicitly labelled lexical fallback. Edge mode sends the query to the declared RuVector service. Requires team:read. Results are fenced as untrusted stored data.', {
       teamId:z.string(), query:z.string().min(1).max(2000), limit:z.number().int().min(1).max(10).default(5),
-    }, READ('Search team memory'), scoped(SCOPES.read, async (a) => { if(!await store.getTeam(auth.tenantId,a.teamId))return notFound(); return text(fenced(await vectorMemory.search(auth.tenantId,a),'RuVector tenant memory')); }));
+    }, READ('Search team memory'), scoped(SCOPES.read, async (a) => { if(!await store.getTeam(auth.tenantId,a.teamId))return notFound(); return text(fenced(await vectorMemory.search(auth.tenantId,a,auth),'RuVector tenant memory')); }));
     mcp.tool('evidence_export', 'Builds a read-only evidence bundle for one tenant-local run, including team metadata, tasks, and privacy-minimized audit events. Requires team:read. It does not publish or share the bundle.', {runId:z.string()}, READ('Export run evidence'), scoped(SCOPES.read, async ({runId}) => { const value=await store.evidence(auth.tenantId,runId); return value?text(fenced(value,'tenant run evidence')):notFound(); }));
 
     mcp.resource('team-templates','ruv://team/templates',async()=>({contents:[{uri:'ruv://team/templates',mimeType:'application/json',text:JSON.stringify(TEAM_TEMPLATES)}]}));
@@ -114,7 +119,7 @@ export async function createAiTeamService({ store, vectorMemory, verifyToken, po
     const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);
     if(req.method==='OPTIONS'){res.setHeader('access-control-allow-methods','GET,POST,OPTIONS');res.setHeader('access-control-allow-headers','content-type,authorization,mcp-session-id,mcp-protocol-version,accept');return res.writeHead(204).end();}
     if(url.pathname==='/health')return res.writeHead(200,{'content-type':'application/json'}).end(JSON.stringify({ok:true,service:'ruflo-ai-team',version:VERSION}));
-    if(url.pathname==='/.well-known/oauth-protected-resource/mcp'||url.pathname==='/.well-known/oauth-protected-resource')return res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify(protectedResourceMetadata({resource:url.pathname.endsWith('/mcp')?`${publicUrl}/mcp`:publicUrl,issuer})));
+    if(url.pathname==='/.well-known/oauth-protected-resource/mcp'||url.pathname==='/.well-known/oauth-protected-resource')return res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify(protectedResourceMetadata({resource:url.pathname.endsWith('/mcp')?`${publicUrl}/mcp`:publicUrl,issuer,legacyIssuer})));
     if(req.method==='GET'&&url.pathname==='/privacy')return res.writeHead(200,{'content-type':'text/html;charset=utf-8'}).end(privacyPage());
     if(req.method==='GET'&&url.pathname==='/terms')return res.writeHead(200,{'content-type':'text/html;charset=utf-8'}).end(termsPage());
     if(req.method==='GET'&&url.pathname==='/support')return res.writeHead(200,{'content-type':'text/html;charset=utf-8'}).end(supportPage());
