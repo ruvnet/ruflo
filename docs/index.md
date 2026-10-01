@@ -10,6 +10,8 @@ description: Claude Code native agents, swarms, workers, and MCP tools for conti
 
 RuFlo provides native Claude Code plugins for multi-agent orchestration, /loop workers, security auditing, memory-powered RAG, and test generation.
 
+For work that waits across process restarts, see [durable missions](durable-missions.md) for typed signals, action receipts, and explicit recovery.
+
 ## Quick Install
 
 ```bash

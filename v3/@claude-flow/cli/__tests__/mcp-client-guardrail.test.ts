@@ -26,6 +26,7 @@ vi.mock('../src/mcp-tools/task-tools.js', () => ({ taskTools: [] }));
 vi.mock('../src/mcp-tools/session-tools.js', () => ({ sessionTools: [] }));
 vi.mock('../src/mcp-tools/hive-mind-tools.js', () => ({ hiveMindTools: [] }));
 vi.mock('../src/mcp-tools/workflow-tools.js', () => ({ workflowTools: [] }));
+vi.mock('../src/mcp-tools/mission-tools.js', () => ({ missionTools: [] }));
 vi.mock('../src/mcp-tools/analyze-tools.js', () => ({ analyzeTools: [] }));
 vi.mock('../src/mcp-tools/progress-tools.js', () => ({ progressTools: [] }));
 vi.mock('../src/mcp-tools/embeddings-tools.js', () => ({ embeddingsTools: [] }));

@@ -20,6 +20,7 @@ import { taskTools } from './mcp-tools/task-tools.js';
 import { sessionTools } from './mcp-tools/session-tools.js';
 import { hiveMindTools } from './mcp-tools/hive-mind-tools.js';
 import { workflowTools } from './mcp-tools/workflow-tools.js';
+import { missionTools } from './mcp-tools/mission-tools.js';
 import { analyzeTools } from './mcp-tools/analyze-tools.js';
 import { progressTools } from './mcp-tools/progress-tools.js';
 import { embeddingsTools } from './mcp-tools/embeddings-tools.js';
@@ -140,6 +141,7 @@ registerTools([
   ...sessionTools,
   ...hiveMindTools,
   ...workflowTools,
+  ...missionTools,
   ...analyzeTools,
   ...progressTools,
   ...embeddingsTools,

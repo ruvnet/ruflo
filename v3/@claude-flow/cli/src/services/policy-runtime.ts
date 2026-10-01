@@ -609,6 +609,7 @@ export function classifyMcpTool(toolName: string): {
     || terminal
     || /(delete|remove|clear|purge|revoke|promote|deploy|integrate|cleanup|terminate|stop)/.test(normalized);
   const network = terminal
+    || normalized === 'mission_advance' // dispatches agent/provider calls
     || /(github|browser|web_|http_|fetch|managed_agent|federation|ipfs|openrouter|provider)/.test(normalized);
   return {
     actionType: policyAdmin
