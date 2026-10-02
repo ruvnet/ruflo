@@ -1,0 +1,49 @@
+{
+  "name": "ruflo-mods-manager",
+  "description": "A pane for ruflo's Claude Code mods (function hooks, ADR-406): /mods lists each ruflo-family mod with where it is enabled, whether Claude Code can resolve it and what ruflo-mods' trust gate makes of it, draws which mod hooks which engine event and the init chain, and charts doctor health. Enables or disables a mod through the ruflo CLI; read-only otherwise. Installing other mods stays with /plugin.",
+  "version": "0.1.0",
+  "author": {
+    "name": "ruvnet",
+    "url": "https://github.com/ruvnet"
+  },
+  "homepage": "https://github.com/ruvnet/ruflo",
+  "license": "MIT",
+  "keywords": [
+    "ruflo",
+    "mods",
+    "function-hooks",
+    "pane",
+    "manager",
+    "trust"
+  ],
+  "userConfig": {
+    "cli": {
+      "type": "string",
+      "title": "ruflo CLI",
+      "description": "How the pane reaches the ruflo CLI. auto (default) uses the project's node_modules/@claude-flow/cli when present, else the locally cached @claude-flow/cli without touching the network; npx may download it; ruflo and claude-flow use a global install.",
+      "required": false,
+      "default": "auto",
+      "options": [
+        "auto",
+        "npx-offline",
+        "npx",
+        "ruflo",
+        "claude-flow"
+      ]
+    },
+    "refreshSeconds": {
+      "type": "number",
+      "title": "Refresh (s)",
+      "description": "How often the open pane re-reads ruflo mods list and status, 10 to 600 seconds. Nothing polls while the pane is closed.",
+      "required": false,
+      "default": 30
+    },
+    "animate": {
+      "type": "boolean",
+      "title": "Animate the health pulse",
+      "description": "Animate the health view's pulse (refresh times on the real clock). Off draws it still.",
+      "required": false,
+      "default": true
+    }
+  }
+}

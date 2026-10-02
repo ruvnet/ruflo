@@ -222,6 +222,11 @@
       "description": "Early access (ADR-404): ruflo as a Claude Code mod (function hooks) \u2014 in-process routing, edit learning signals, tighten-only tool checks from ruflo policy, and the cost budget ladder. Opt-in via `ruflo mods install`; classic hooks stay the fallback"
     },
     {
+      "name": "ruflo-mods-manager",
+      "source": "./plugins/ruflo-mods-manager",
+      "description": "Early access (ADR-406): a /mods pane for ruflo-family Claude Code mods \u2014 where each is enabled, whether Claude Code can resolve it, what it hooks and what the trust gate makes of it, with diagrams and doctor health; enables or disables through the ruflo CLI. Installed by `ruflo init --mods`"
+    },
+    {
       "name": "ruflo-ruos",
       "source": "./plugins/ruflo-ruos",
       "description": "Run ruflo swarm agents on your own ruOS cloud desktops via the tenant-authenticated fleet MCP or per-tenant SSH; optional, removable"
