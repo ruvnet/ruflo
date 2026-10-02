@@ -23,6 +23,7 @@ export type Controller = {
   refresh: () => Promise<void>
   startPolling: () => void
   animate: () => void
+  resume: () => Promise<void>
   open: (view?: View) => Promise<string>
   setView: (view: View) => Promise<void>
   step: (by: 1 | -1) => void
@@ -201,6 +202,29 @@ export function controllerOf(state: State, host: () => Host | null): Controller 
     }
   }
 
+  /** After a draw: poll and animate only while the engine lists the pane as open. */
+  async function resume(): Promise<void> {
+    const bound = host()
+
+    if (bound === null) {
+      return
+    }
+
+    const isOpen = await bound.panes().then(
+      panes => panes.some(pane => pane.id === PANE_ID),
+      () => state.pane.isOpen,
+    )
+
+    state.pane.isOpen = isOpen
+
+    if (isOpen) {
+      startPolling()
+      animate()
+    } else {
+      stopTimers(state, ['poll', 'frames'])
+    }
+  }
+
   async function open(view?: View): Promise<string> {
     const bound = host()
 
@@ -357,5 +381,5 @@ export function controllerOf(state: State, host: () => Host | null): Controller 
     }
   }
 
-  return { refresh, startPolling, animate, open, setView, step, select, toggle, pressDisable, configure, tell }
+  return { refresh, startPolling, animate, resume, open, setView, step, select, toggle, pressDisable, configure, tell }
 }

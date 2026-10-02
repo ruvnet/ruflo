@@ -50,6 +50,7 @@ describe('the CLI output, read as untrusted', () => {
     expect(list.mods[0]?.verdict).toBe('unknown')
     expect(() => parseList('not json')).toThrow()
     expect(() => parseList('{"version":2,"mods":[]}')).toThrow()
+    expect(() => parseList('[{"name":"ruflo-mods plugin","status":"warn"}]')).toThrow('predates ADR-406')
   })
 
   it('reads JSON after a banner line, and strips terminal escapes and control characters', () => {

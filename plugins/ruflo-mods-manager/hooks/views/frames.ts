@@ -26,7 +26,11 @@ export function hookMapFrame(map: HookMap, box: Box): Grid {
   const middle = Math.max(2, grid.columns - left - right - 2)
   const shownEvents = map.events.length > grid.rows ? map.events.slice(0, grid.rows - 1) : map.events
   const shownMods = map.mods.slice(0, grid.rows)
-  const yOf = (i: number, n: number) => (n <= 1 ? Math.floor((grid.rows - 1) / 2) : Math.round((i * (grid.rows - 1)) / (n - 1)))
+  const isFolded = shownEvents.length < map.events.length
+  // Spread `n` items over the first `lines` rows; a folded event list leaves the last row to its `+n more` label.
+  const spread = (i: number, n: number, lines: number) => (n <= 1 ? Math.floor((lines - 1) / 2) : Math.round((i * (lines - 1)) / (n - 1)))
+  const yOf = (i: number, n: number) => spread(i, n, grid.rows)
+  const yOfEvent = (i: number) => spread(i, shownEvents.length, isFolded ? grid.rows - 1 : grid.rows)
   const canvas = new Braille(middle, grid.rows)
 
   for (const [m, ev, isRisky] of map.edges) {
@@ -35,7 +39,7 @@ export function hookMapFrame(map: HookMap, box: Box): Grid {
     }
 
     const y0 = yOf(m, shownMods.length) * 4 + 1.5
-    const y1 = yOf(ev, shownEvents.length) * 4 + 1.5
+    const y1 = yOfEvent(ev) * 4 + 1.5
 
     canvas.line(0, y0, canvas.width - 1, y1, isRisky ? RGB.risky : RGB.edge, isRisky ? 2 : 1)
   }
@@ -46,10 +50,10 @@ export function hookMapFrame(map: HookMap, box: Box): Grid {
   shownEvents.forEach((name, i) => {
     const risky = map.edges.some(([, ev, r]) => ev === i && r)
 
-    grid.text(left + middle + 2, yOf(i, shownEvents.length), name.slice(0, right), risky ? RGB.risky : RGB.label, right)
+    grid.text(left + middle + 2, yOfEvent(i), name.slice(0, right), risky ? RGB.risky : RGB.label, right)
   })
 
-  if (shownEvents.length < map.events.length) {
+  if (isFolded) {
     grid.text(left + middle + 2, grid.rows - 1, `+${map.events.length - shownEvents.length} more`, RGB.label, right)
   }
 

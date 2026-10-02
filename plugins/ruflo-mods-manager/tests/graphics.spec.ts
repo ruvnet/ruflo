@@ -139,3 +139,18 @@ describe('the pulse says only what was measured', () => {
     expect(lines).toMatch(/[⠁-⣿]/)
   })
 })
+
+describe('the hook map folds events it has no rows for', () => {
+  it('keeps the last row for "+n more" and every shown label whole', () => {
+    const events = Array.from({ length: 16 }, (_, i) => `event.${String(i).padStart(2, '0')}`)
+    const grid = hookMapFrame({ mods: ['a', 'b'], events, edges: events.map((_, i) => [i % 2, i, false] as [number, number, boolean]) }, { columns: 80, rows: 14 })
+    const lines = rowsOf(grid)
+
+    expect(lines[13]).toContain('+3 more')
+    expect(lines[13]).not.toMatch(/event\./)
+
+    for (const name of events.slice(0, 13)) {
+      expect(lines.join('\n')).toContain(name)
+    }
+  })
+})

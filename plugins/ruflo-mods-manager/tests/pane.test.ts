@@ -299,6 +299,23 @@ describe('lifecycle', () => {
     expect(world.statuses.at(-1)).toBeUndefined()
   })
 
+  test('a draw that lands after the close does not restart polling (seen live on 2.1.287)', async ($, on) => {
+    const world = worldOf(on)
+    const clock = mock.clock(on)
+
+    await $.session.start(SESSION)
+    await $.command.run(command())
+    await clock.settle()
+    await $.command.run(command('close'))
+    await $.ui.render(PANE)
+    await clock.settle()
+
+    const closed = world.runs.length
+
+    await clock.advance(90_000)
+    expect(world.runs.length).toBe(closed)
+  })
+
   test('the doctor timeline survives in the store and comes back next session', async ($, on) => {
     const world = worldOf(on)
     const clock = mock.clock(on)

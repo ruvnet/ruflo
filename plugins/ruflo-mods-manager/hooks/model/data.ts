@@ -106,6 +106,11 @@ function rowOf(v: unknown): ModRow | null {
 export function parseList(stdout: string): ModList {
   const v = jsonOf(stdout)
 
+  if (Array.isArray(v)) {
+    // A ruflo CLI from before ADR-406 has no `mods list`: its `mods` falls through to the status findings.
+    throw new Error('this ruflo CLI has no `mods list` (it predates ADR-406): install @claude-flow/cli in the project, or set the cli option')
+  }
+
   if (!isRecord(v) || v.version !== 1 || !Array.isArray(v.mods)) {
     throw new Error('mods list --json: not a version 1 list')
   }

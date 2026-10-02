@@ -210,12 +210,12 @@ export function register(on: On, raw: PluginOptions) {
     const rows = Math.max(6, Math.floor(Number(e.props.scroll?.bodyRows) || 0))
     const nowMs = await host.now()
 
-    state.pane = { isOpen: true, columns, rows, isFocused: e.props.isFocused === true, placement: String(e.props.placement ?? 'inline'), hasRaster: kit.Raster !== undefined }
+    state.pane = { ...state.pane, columns, rows, isFocused: e.props.isFocused === true, placement: String(e.props.placement ?? 'inline'), hasRaster: kit.Raster !== undefined }
     state.pulseBox = { columns, rows: PULSE_ROWS }
 
-    // A reload or resume left the pane up with nothing polling: start again from here.
-    control.startPolling()
-    control.animate()
+    // A reload or resume can leave the pane up with nothing polling; a closing pane can draw once more after its
+    // `ui.close`. Only the engine's record tells the two apart, so polling resumes only when it lists the pane.
+    void control.resume()
 
     return paneView(kit, paneModelOf(state, columns, rows, nowMs), actionsOf(state, control), nowMs)
   })
