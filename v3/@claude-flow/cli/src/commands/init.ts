@@ -1709,6 +1709,12 @@ export const initCommand: Command = {
       default: true,
     },
     {
+      name: 'plugin-install',
+      description: 'With --mods, run claude plugin install for the mods (--no-plugin-install only writes settings, as ruflo mods install takes it)',
+      type: 'boolean',
+      default: true,
+    },
+    {
       name: 'dry-run',
       description: 'Do no work; print what --mods would write and run (init has no whole-command dry run yet)',
       type: 'boolean',
