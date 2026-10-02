@@ -57,6 +57,11 @@ export interface MCPServerOptions {
   daemonize?: boolean;
   timeout?: number;
   requestTimeoutMs?: number;
+  rateLimitPerIp?: number;
+  rateLimitWindowMs?: number;
+  rateLimitPerSession?: number;
+  rateLimitGlobalRps?: number;
+  rateLimitGlobalBurst?: number;
 }
 
 /**
@@ -174,10 +179,23 @@ function processStartToken(pid: number): string | undefined {
   }
 }
 
+type RateLimitOption =
+  | 'rateLimitPerIp'
+  | 'rateLimitWindowMs'
+  | 'rateLimitPerSession'
+  | 'rateLimitGlobalRps'
+  | 'rateLimitGlobalBurst';
+
+function definedFields<T extends Record<string, number | undefined>>(fields: T): Partial<T> | undefined {
+  const entries = Object.entries(fields).filter(([, value]) => value !== undefined);
+  return entries.length === 0 ? undefined : Object.fromEntries(entries) as Partial<T>;
+}
+
 /**
- * Default configuration
+ * Default configuration. Rate limits are left unset so @claude-flow/mcp
+ * applies its own defaults.
  */
-const DEFAULT_OPTIONS: Required<MCPServerOptions> = {
+const DEFAULT_OPTIONS: Required<Omit<MCPServerOptions, RateLimitOption>> = {
   transport: 'stdio',
   host: 'localhost',
   port: 3000,
@@ -259,7 +277,7 @@ export function assessMcpSchemaOverhead(
  * Manages the lifecycle of the MCP server process
  */
 export class MCPServerManager extends EventEmitter {
-  private options: Required<MCPServerOptions>;
+  private options: typeof DEFAULT_OPTIONS & MCPServerOptions;
   private process?: ChildProcess;
   private server?: Server;
   private startTime?: Date;
@@ -961,6 +979,12 @@ export class MCPServerManager extends EventEmitter {
         enableMetrics: true,
         enableCaching: true,
         requestTimeout: this.options.requestTimeoutMs,
+        rateLimit: definedFields({ windowMs: this.options.rateLimitWindowMs, limit: this.options.rateLimitPerIp }),
+        sessionRateLimit: definedFields({
+          requestsPerSecond: this.options.rateLimitGlobalRps,
+          burstSize: this.options.rateLimitGlobalBurst,
+          perSessionLimit: this.options.rateLimitPerSession,
+        }),
       },
       logger
     );
