@@ -37,7 +37,7 @@ A mod cannot read `~/.claude/plugins/installed_plugins.json` without reading `HO
 | Fact | Source | How |
 |---|---|---|
 | Enabled, per scope | `$.settings.read({ source })` for `user`, `project`, `local` | in-process, no spawn |
-| ruflo-mods trust policy (`modTrust`, `modTrustAllow`) | `$.settings.read()` merged, `pluginConfigs["ruflo-mods@ruflo"].options` | in-process |
+| ruflo-mods trust policy (`modTrust`, `modTrustAllow`) | `pluginConfigs["ruflo-mods@ruflo"].options`, read from the settings files by the CLI | inside `ruflo mods list --json` (`gate`) |
 | Installed, version, scope, install path | `claude plugin list --json` | inside `ruflo mods list --json` |
 | Resolvable | installed and its `installPath` exists, as #3612's `installedState` decides | inside `ruflo mods list --json` |
 | Hooked events and `$` calls | `claude plugin validate --json <installPath>`, the `notes` lines `hooks:` and `calls:` | inside `ruflo mods list --json` |
@@ -136,7 +136,7 @@ Options (`userConfig`): `cli` (the argv prefix table above, validated against it
 
 ## Review of the field guide against the 2.1.287 types
 
-The guide says the types win, and they do. Where it and the declarations disagree or the guide leaves something out:
+The guide says the types win, and they do. Where it and the declarations disagree or the guide leaves something out (19 rows; row 13 is a claim checked and confirmed):
 
 | # | Guide says | Types say (2.1.287) | Effect here |
 |---|---|---|---|
@@ -152,7 +152,7 @@ The guide says the types win, and they do. Where it and the declarations disagre
 | 10 | §5.4: hand-roll base64, no `Buffer` | the types' own examples use `Uint8Array.prototype.toBase64()`, and it exists at runtime (probed) | native first, encoder as fallback |
 | 11 | §5.4: code point, fg, bg | code point must be a printable width-1 BMP character, or the tree is refused; Raster is 1–512 columns, 1–256 rows | glyph set restricted |
 | 12 | §5.5: blit size must equal the mounted Raster's | `columns` and `rows` on a blit are optional (absent: the mounted size) | pass them anyway so a mismatch is refused, not mis-laid |
-| 13 | §5.5: about 10 invalidates a second | ten a second, thirty for the shown pane and the band | as guide |
+| 13 | §5.5: about 10 invalidates a second | ten a second, thirty for the shown pane and the band | confirmed: no discrepancy |
 | 14 | §4.4, §8: `$.process.run` | default timeout 30 s, ten minutes at most; each stream capped at 4 MiB with `isStdoutTruncated`; `$.process.spawn` streams | timeouts set per call; truncation reported |
 | 15 | not mentioned | `$.settings.read({ source })` reads one settings source, or the merge | the data layer's first source |
 | 16 | §5.7: `Markdown` | at most 10,000 characters; only `https:`, `http:`, `file:` links are clickable | help overlay stays under the cap |
