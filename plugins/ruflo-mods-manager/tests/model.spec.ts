@@ -208,6 +208,7 @@ describe('views with and without Raster', () => {
   it('says when the keys go to the prompt', () => {
     expect(text(draw(KIT as unknown as Kit, 'list', false))).toContain('keys go to the prompt')
     expect(text(draw(KIT as unknown as Kit, 'list', true))).not.toContain('keys go to the prompt')
+    expect(text(draw(KIT as unknown as Kit, 'list', true))).toContain('ruflo-swarm@ruflo calls: ')
   })
 
   it('/mods list as text names every mod with its state', () => {

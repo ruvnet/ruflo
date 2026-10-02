@@ -118,7 +118,7 @@ function rowLine(kit: Kit, row: Row, columns: number): RenderChildren {
       <Text color={VERDICT_COLORS[row.verdict]} dimColor={VERDICT_COLORS[row.verdict] === undefined}>{pad(verdict, 10)}</Text>
       <Text dimColor>{row.events === null ? ' ?' : ` ${row.events}`}</Text>
       <Box position="absolute" top={1} left={4} display="none" hover={{ display: 'flex' }} borderStyle="round" paddingX={1}>
-        <Text>{clip(`${row.id}: enabled ${mark(row.enabled)} installed ${mark(row.installed)} resolvable ${mark(row.resolvable)}`, Math.max(10, columns - 8))}</Text>
+        <Text>{clip(`${row.id} ${row.calls}`, Math.max(10, columns - 8))}</Text>
       </Box>
     </Box>
   )

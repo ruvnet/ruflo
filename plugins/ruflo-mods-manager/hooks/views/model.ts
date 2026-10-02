@@ -32,6 +32,8 @@ export type Row = {
   resolvable: boolean | null
   verdict: Verdict
   events: number | null
+  /** The `$` calls the scan found, for the row's hover card. */
+  calls: string
   isSelected: boolean
 }
 
@@ -47,7 +49,7 @@ export type PaneModel = {
   isActing: boolean
   freshness: Freshness
   rows_: Row[]
-  selected: (Row & { detail: string[]; calls: string[]; configure: string }) | null
+  selected: (Row & { detail: string[]; configure: string }) | null
   confirm: string | null
   outcome: { text: string; ok: boolean } | null
   hookMap: HookMap
@@ -163,6 +165,7 @@ export function paneModelOf(state: State, columns: number, rows: number, nowMs: 
     resolvable: row.source === 'settings' ? null : row.resolvable,
     verdict: row.verdict,
     events: row.events?.length ?? null,
+    calls: row.calls === null ? `calls unknown: ${row.scanError ?? 'no scan'}` : `calls: ${row.calls.join(', ') || 'none'}`,
     isSelected: row.id === selectedId,
   }))
 
@@ -172,7 +175,6 @@ export function paneModelOf(state: State, columns: number, rows: number, nowMs: 
     pick !== undefined && pickRow !== undefined
       ? {
           ...pickRow,
-          calls: pick.calls ?? [],
           configure: configureLine(pick.id),
           detail: [
             `path ${pick.installPath ?? 'not installed'}${pick.installScope !== null ? ` (${pick.installScope} scope)` : ''}`,
