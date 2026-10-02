@@ -871,9 +871,11 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     if (ctx.flags.mods === true) {
       output.writeln();
       try {
-        const { installMod } = await import('../mods/install.js');
-        const installed = installMod(ctx.cwd, 'local');
-        output.writeln(output.success(`  ✓ ruflo-mods enabled in ${installed.settingsFile} (early access; run "ruflo mods doctor")`));
+        // ADR-407: ruflo-mods, then the mod manager unless --no-mods-manager; made resolvable via #3612's repair.
+        const { runModsStep, printModsReport } = await import('../init/mods-generator.js');
+        const manager = ctx.flags.modsManager !== false && ctx.flags['mods-manager'] !== false;
+        const pluginInstall = ctx.flags.pluginInstall !== false && ctx.flags['plugin-install'] !== false;
+        printModsReport(await runModsStep({ projectRoot: ctx.cwd, manager, pluginInstall }), output);
       } catch (err) {
         output.writeln(output.warning(`  ruflo-mods not enabled: ${err instanceof Error ? err.message : String(err)}`));
       }
@@ -916,6 +918,16 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
  * CLAUDE.md stub so the full native Claude scaffold remains authoritative.
  */
 const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
+  // ADR-407: init has no whole-command dry run; with --dry-run it does no work and shows only the mods plan.
+  if (ctx.flags.dryRun === true || ctx.flags['dry-run'] === true) {
+    if (ctx.flags.mods === true) {
+      const { runModsStep, printModsReport } = await import('../init/mods-generator.js');
+      const manager = ctx.flags.modsManager !== false && ctx.flags['mods-manager'] !== false;
+      printModsReport(await runModsStep({ projectRoot: ctx.cwd, manager, dryRun: true }), output);
+    }
+    output.writeln('dry run: init wrote nothing; only the mods step has a plan to show');
+    return { success: true, data: { dryRun: true } };
+  }
   const force = ctx.flags.force as boolean;
   const minimal = ctx.flags.minimal as boolean;
   const full = ctx.flags.full as boolean;
@@ -1686,6 +1698,19 @@ export const initCommand: Command = {
       // ADR-404 — Claude Code function hooks are early access; opt-in only.
       name: 'mods',
       description: 'Also enable the ruflo Claude Code mod (function hooks, early access); classic hooks stay as fallback',
+      type: 'boolean',
+      default: false,
+    },
+    {
+      // ADR-407 — only matters with --mods: --no-mods-manager keeps ADR-404's ruflo-mods-only step.
+      name: 'mods-manager',
+      description: 'With --mods, also install the mod manager pane (ruflo-mods-manager); --no-mods-manager skips it',
+      type: 'boolean',
+      default: true,
+    },
+    {
+      name: 'dry-run',
+      description: 'Do no work; print what --mods would write and run (init has no whole-command dry run yet)',
       type: 'boolean',
       default: false,
     },

@@ -15,6 +15,8 @@ import { probeMods, type Finding } from '../mods/probe.js';
 import { claudeConfigDir, marketplaceState, repairCommands, resolveFindings } from '../mods/plugin-resolve.js';
 import { findClaudeBinary, repairArgv, repairPluginInstall } from '../mods/plugin-repair.js';
 import { homedir } from 'node:os';
+import { modsDisableSub, modsEnableSub, modsListSub } from './mods-manage.js';
+import { installManager, MANAGER_PLUGIN_ID, removeManager } from '../init/mods-generator.js';
 
 function projectRoot(ctx: CommandContext): string {
   return (ctx.flags.projectRoot as string | undefined) ?? (ctx.flags['project-root'] as string | undefined) ?? ctx.cwd ?? process.cwd();
@@ -39,6 +41,7 @@ const installSub: Command = {
     { name: 'dry-run', description: 'Show the settings that would be written and the claude commands that would run', type: 'boolean', default: false },
     { name: 'plugin-install', description: 'Refresh the ruflo marketplace and run `claude plugin install` (--no-plugin-install to only write settings)', type: 'boolean', default: true },
     { name: 'strict', description: 'Exit 1 when the plugin could not be made resolvable', type: 'boolean', default: false },
+    { name: 'manager', description: 'Also enable and install the mod manager, ruflo-mods-manager (ADR-407; --no-manager skips it)', type: 'boolean', default: true },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const scope = (ctx.flags.scope as string | undefined) ?? 'local';
@@ -62,6 +65,10 @@ const installSub: Command = {
     await syncPolicy(root, true);
     output.printSuccess(`ruflo-mods enabled in ${result.settingsFile}${result.backup ? ` (backup: ${result.backup})` : ''}`);
     const resolvable = pluginInstall ? await makeResolvable(root, scope as Scope) : true;
+    if (ctx.flags.manager !== false) {
+      const m = await installManager({ projectRoot: root, pluginInstall: pluginInstall && resolvable });
+      output.writeln(m.step ? `${m.step.ok ? output.success('✓') : output.error('✗')} claude ${m.step.argv.join(' ')}` : output.dim(`${MANAGER_PLUGIN_ID} enabled in settings; not installed: ${m.skip}`));
+    }
     if (resolvable) {
       output.writeln('Restart Claude Code, then run /ruflo-mods in a session to see what the mod owns.');
       output.writeln(output.dim('Early access: Claude Code loads it only where function hooks are on. Run `ruflo mods doctor`.'));
@@ -108,7 +115,10 @@ const uninstallSub: Command = {
   description: 'Remove what `ruflo mods install` added (classic hooks take every event back)',
   options: [rootOption, { name: 'dry-run', description: 'Show what would be removed', type: 'boolean', default: false }],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
-    const result = uninstallMod(projectRoot(ctx), (ctx.flags.dryRun === true || ctx.flags['dry-run'] === true));
+    const dry = ctx.flags.dryRun === true || ctx.flags['dry-run'] === true;
+    const manager = removeManager(projectRoot(ctx), dry);
+    if (manager.removed) output.writeln(`${dry ? 'Would remove' : 'Removed'} ${MANAGER_PLUGIN_ID}'s record (and its key, where ruflo added it)`);
+    const result = uninstallMod(projectRoot(ctx), dry);
     if (!result.removed) {
       output.printWarning('No install record (.claude-flow/mods/install.json): nothing ruflo added to remove.');
       return { success: true, data: result };
@@ -168,6 +178,9 @@ export const modsCommand: Command = {
     statusSub,
     findingsCommand('doctor', 'Check the mod path; exits 1 only on a failure'),
     syncPolicySub,
+    modsListSub,
+    modsEnableSub,
+    modsDisableSub,
   ],
   examples: [
     { command: 'ruflo mods install', description: 'Enable for this project (settings.local.json) and install the plugin with claude' },

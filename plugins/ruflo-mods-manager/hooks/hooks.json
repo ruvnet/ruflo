@@ -1,0 +1,4 @@
+{
+  "description": "The ruflo mod manager pane (/mods). Without function hooks nothing here loads.",
+  "modules": ["./register.ts"]
+}

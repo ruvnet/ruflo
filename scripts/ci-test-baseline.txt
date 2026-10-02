@@ -144,6 +144,8 @@ plugins/ruflo-swarm/tests/parse.test.ts
 plugins/ruflo-swarm/tests/register.test.ts
 plugins/ruflo-swarm/tests/ruos.test.ts
 plugins/ruflo-swarm/tests/views.test.ts
+# ruflo-mods-manager (ADR-406): engine-kit tests, same reason as ruflo-swarm (`claude plugin test plugins/ruflo-mods-manager`); the pure model and graphics run under root vitest via tests/*.spec.ts
+plugins/ruflo-mods-manager/tests/pane.test.ts
 
 
 # ruflo-ruos (ADR-405, PR #3605): node:test files, not vitest suites — root vitest reports

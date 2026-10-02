@@ -29,9 +29,11 @@ describe.skipIf(!CLI_BUILT)('ADR-404 mods through the built CLI', () => {
   it('init --mods enables the plugin beside the classic hooks; doctor and mods status report it', () => {
     const t = isolated();
     try {
-      t.run('init', '--mods', '--no-signup', '--no-global', '--no-codex-detect');
+      // ADR-407: init --mods now installs via claude; --no-plugin-install keeps this test settings-only and offline.
+      t.run('init', '--mods', '--no-plugin-install', '--no-signup', '--no-global', '--no-codex-detect');
       const local = JSON.parse(readFileSync(join(t.cwd, '.claude', 'settings.local.json'), 'utf8'));
       expect(local.enabledPlugins['ruflo-mods@ruflo']).toBe(true);
+      expect(local.enabledPlugins['ruflo-mods-manager@ruflo']).toBe(true); // ADR-407
       // Classic hooks are untouched: still the default and the fallback.
       const shared = JSON.parse(readFileSync(join(t.cwd, '.claude', 'settings.json'), 'utf8'));
       expect(JSON.stringify(shared.hooks.UserPromptSubmit)).toContain('hook-handler.cjs');
@@ -55,6 +57,19 @@ describe.skipIf(!CLI_BUILT)('ADR-404 mods through the built CLI', () => {
 
       t.run('mods', 'uninstall');
       expect(JSON.parse(readFileSync(join(t.cwd, '.claude', 'settings.local.json'), 'utf8'))).toEqual({});
+    } finally {
+      t.done();
+    }
+  });
+
+  it('init --mods --dry-run writes nothing and shows the mods plan (ADR-407)', () => {
+    const t = isolated();
+    try {
+      const out = t.run('init', '--mods', '--dry-run', '--no-signup', '--no-global', '--no-codex-detect');
+      expect(out).toContain('ruflo-mods-manager@ruflo');
+      expect(out).toContain('dry run: init wrote nothing');
+      expect(existsSync(join(t.cwd, '.claude'))).toBe(false);
+      expect(existsSync(join(t.cwd, '.claude-flow'))).toBe(false);
     } finally {
       t.done();
     }
