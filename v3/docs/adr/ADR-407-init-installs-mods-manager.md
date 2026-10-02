@@ -36,7 +36,7 @@ ADR 406 adds a second ruflo mod, `ruflo-mods-manager`. This ADR decides how `ini
 `v3/@claude-flow/cli/src/init/mods-generator.ts` exports `planModsStep` (pure) and `runModsStep` (effects, with injected `exec` and filesystem reads). `init.ts` calls `runModsStep` where it now calls `installMod`.
 
 1. **Settings, ruflo-mods.** `installMod(root, 'local')` from #3612's `install.ts`, unchanged. It writes the three keys above and `.claude-flow/mods/install.json`.
-2. **Settings, manager.** The same file gains `enabledPlugins["ruflo-mods-manager@ruflo"] = true`, written with #3612's `readSettingsFile`, `settingsFileFor` and the same atomic write. The install record gains `added.manager: true` only when the key was absent, so `ruflo mods uninstall` removes it exactly as it removes the others. A record without the field reads as `false` (older records stay valid).
+2. **Settings, manager.** The same file gains `enabledPlugins["ruflo-mods-manager@ruflo"] = true`, written with #3612's `readSettingsFile`, `settingsFileFor` and the same atomic write. What was added is recorded in its own file, `.claude-flow/mods/manager.json` (`{ version: 1, settingsFile, added }`, `added` true only when the key was absent), beside #3612's `install.json`, which is left exactly as `installMod` writes it. `ruflo mods uninstall` reads both records and removes the manager's key only when its record says ruflo added it. A separate file keeps `install.ts` untouched and keeps a later `ruflo mods install` (which rewrites `install.json`) from dropping the manager's claim.
 3. **Claude Code, ruflo-mods.** `repairPluginInstall({ projectRoot, scope: 'local', marketplaceKnown, claude })` from #3612's `plugin-repair.ts`: refresh or add the marketplace, then `claude plugin install ruflo-mods@ruflo --scope local`.
 4. **Claude Code, manager.** `claude plugin install ruflo-mods-manager@ruflo --scope local`, through #3612's `nodeExec` and `findClaudeBinary`, with its `INSTALL_TIMEOUT_MS`. The marketplace step is not repeated: step 3 already refreshed the clone.
 5. **Verify.** `resolveFindings` from #3612 for ruflo-mods; for the manager, the same check on `installed_plugins.json` (an entry for `ruflo-mods-manager@ruflo` whose `installPath` exists, user scope or this project).
@@ -57,7 +57,8 @@ The manager-specific argv in step 4 and the check in step 5 are the only new ins
 |---|---|---|
 | `.claude/settings.local.json` | `enabledPlugins["ruflo-mods@ruflo"]`, `enabledPlugins["ruflo-mods-manager@ruflo"]`, `extraKnownMarketplaces.ruflo` (if absent), `env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` | `ruflo mods uninstall` |
 | `.claude/settings.local.json.bak-ruflo-mods-<ms>` | backup when the file existed (install.ts) | person |
-| `.claude-flow/mods/install.json` | the install record, now with `added.manager` | `ruflo mods uninstall` |
+| `.claude-flow/mods/install.json` | ruflo-mods' install record, unchanged in shape | `ruflo mods uninstall` |
+| `.claude-flow/mods/manager.json` | the manager's install record | `ruflo mods uninstall` |
 | `.claude-flow/policy/claude-code.json` | not written by init (`ruflo mods install` syncs it; init did not before either) | — |
 | Claude Code's config dir | whatever `claude plugin marketplace update/add` and `claude plugin install` write (`plugins/known_marketplaces.json`, `plugins/installed_plugins.json`, `plugins/cache/ruflo/…`) | `claude plugin uninstall` |
 
@@ -68,7 +69,7 @@ Nothing under `.claude/helpers/` is written by this step.
 ### Idempotence
 
 - `installMod` already keeps the first record's claims and rewrites the same keys.
-- The manager key is set to `true` whether or not it was there; `added.manager` is OR-ed with the previous record's, so a second run never loses the claim and never claims a key a person set themselves.
+- The manager key is set to `true` whether or not it was there; the manager record's `added` is OR-ed with the previous one's, so a second run never loses the claim and never claims a key a person set themselves.
 - `claude plugin install` of an installed plugin succeeds and leaves it installed. Step 3's marketplace update is a `git pull` of the clone.
 - A second `init --mods` therefore produces byte-identical settings and record (apart from `installedAt`) and the same installed state. The tests run the step twice and compare.
 
@@ -83,7 +84,7 @@ That keeps the flag honest: it never writes half an init, and it never claims to
 
 ### Relation to `ruflo mods install`
 
-`ruflo mods install` stays the way to add mods to an existing project. It gains a `--manager` flag (default true) that runs steps 2, 4 and 5 after its own. `init --mods` and `mods install` then end in the same state, through the same functions.
+`ruflo mods install` stays the way to add mods to an existing project. It gains `--manager` (default true; `--no-manager` skips it), which runs steps 2, 4 and 5 after its own, and `ruflo mods uninstall` also removes what `manager.json` records. Both are small additions to `commands/mods.ts`: calls into `mods-generator.ts`, nothing in #3612's `src/mods/*` changes. `init --mods` and `mods install` then end in the same state, through the same functions.
 
 `mods-manage.ts` adds `ruflo mods list|enable|disable`, each with `--json`, and is registered in `commands/mods.ts`'s subcommand list with a two-line change, so #3612 can absorb it.
 
