@@ -722,7 +722,10 @@ export const agentTools: MCPTool[] = [
       }
 
       if (action === 'scale') {
-        const targetSize = (input.targetSize as number) || 5;
+        const targetSize = input.targetSize === undefined ? 5 : input.targetSize;
+        if (typeof targetSize !== 'number' || !Number.isSafeInteger(targetSize) || targetSize < 0) {
+          return { action, error: 'targetSize must be a non-negative safe integer' };
+        }
         const agentType = (input.agentType as string) || 'worker';
         const currentSize = agents.filter(a => a.agentType === agentType).length;
         const delta = targetSize - currentSize;
@@ -757,7 +760,7 @@ export const agentTools: MCPTool[] = [
           agentType,
           previousSize: currentSize,
           targetSize,
-          newSize: currentSize + delta,
+          newSize: currentSize + added.length - removed.length,
           added,
           removed,
         };
