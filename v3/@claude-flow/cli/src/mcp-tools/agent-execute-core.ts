@@ -629,6 +629,8 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
   // upstream outages don't cause retry storms.
   const fallbackBudget = Math.max(0, parseInt(process.env.CLAUDE_FLOW_ROUTER_FALLBACK_MAX_RETRIES ?? '1', 10) || 1);
   const fallbackHistory: Array<{ modelId: string; error: string }> = [];
+  // Keep feedback for each completed attempt before switching model identity.
+  const failedAttempts: Array<{ model: ClaudeModel; modelId: string }> = [];
   if (!result.success && agent.modelId && fallbackBudget > 0) {
     const isRetryable = /\b(429|500|502|503|504|timeout|ECONNRESET|ETIMEDOUT)\b/i.test(result.error ?? '');
     if (isRetryable) {
@@ -657,7 +659,9 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
             });
             // Record the model that ACTUALLY answered (or errored). On success,
             // update agent.modelId so downstream observers see the retry winner.
+            failedAttempts.push({ model: agent.model ?? 'sonnet', modelId: agent.modelId! });
             agent.modelId = alt.modelId;
+            agent.model = alt.model;
             result = altResult;
           }
         }
@@ -685,6 +689,10 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
       agent.model === 'opus-4.7' ? 'opus' :
       (agent.model as 'haiku' | 'sonnet' | 'opus' | 'inherit' | undefined) ?? 'sonnet';
     const outcome: 'success' | 'failure' = result.success ? 'success' : 'failure';
+    for (const attempt of failedAttempts) {
+      recordModelOutcome(input.prompt, attempt.model === 'opus-4.7' ? 'opus' : attempt.model, 'failure');
+      recordModelOutcomeByModelId(input.prompt, attempt.modelId, 'failure');
+    }
     recordModelOutcome(input.prompt, tier, outcome);
     // ADR-149 — also write to the shadow per-modelId priors when the cost-
     // optimal neural backend picked a concrete model id. Selection logic
