@@ -59,7 +59,7 @@ Skipped: this is a correctness/persistence fix (quantizer state either round-tri
 | Field | Value |
 |---|---|
 | Session commit | `52d7a9d247c210a725e25bac9af2559ecc79a697` |
-| Candidate commit | PENDING — filled on `dream/2026-10-03-memory` before push |
+| Candidate commit | `7eb7ceba8c9327023d448d01fefac2f2eca7f247` |
 | Gist SHA-256 | `b9969030fa3927b5e979aee6201eb4b9a251bc6e44a9d88dcc5f996eeb8c368a` |
 | Witness stamp | `98d206b036e3d7d4e8e27c469288792085f3e1b402a24811a040fe45767d3507` |
 
