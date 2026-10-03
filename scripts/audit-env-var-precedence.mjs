@@ -176,6 +176,16 @@ const KNOWN_ESCAPE_HATCHES = new Set([
   // envMaxUncertainty() exactly, including this escape-hatch registration.
   'CLAUDE_FLOW_PRIOR_DECAY',
 
+  // Added 2026-09-27 (Dream Cycle #3475/#3476): same operator-knob shape as
+  // CLAUDE_FLOW_PRIOR_DECAY directly above — EWCConsolidator's Fisher-EMA
+  // decay rate, tuned by ops across the consolidator's whole persisted
+  // lifetime (.swarm/ewc-fisher.json), not selected per CLI invocation. No
+  // single CLI command owns EWCConsolidator's lifetime (it is a
+  // process-lifetime singleton read from intelligence.ts's distill path).
+  // envFisherDecayRate() in ewc-consolidation.ts mirrors envPriorDecay()
+  // exactly, including this escape-hatch registration.
+  'CLAUDE_FLOW_FISHER_DECAY',
+
   // ── MCP-tool-shaped tunables (param wins over env; env is documented fallback) ─
   // Added 2026-06-02 (ADR-089 #2246): memory_search_unified resolves namespaces
   // in this priority: `namespace` param → `namespaces[]` param → env var →
