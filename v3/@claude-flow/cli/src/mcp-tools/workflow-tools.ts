@@ -289,6 +289,23 @@ export const workflowTools: MCPTool[] = [
         return { workflowId, error: 'Workflow already running' };
       }
 
+      // Indices may name a step or the end boundary (used when resuming
+      // after the final step). Reject invalid control flow before any writes.
+      const validIndex = (value: unknown): value is number =>
+        typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 && value <= workflow.steps.length;
+      const startFromStep = input.startFromStep === undefined ? 0 : input.startFromStep;
+      if (!validIndex(startFromStep)) {
+        return { workflowId, error: `startFromStep must be an integer between 0 and ${workflow.steps.length}` };
+      }
+      for (const step of workflow.steps) {
+        if (step.type !== 'condition') continue;
+        for (const target of ['thenStep', 'elseStep']) {
+          if (step.config[target] !== undefined && !validIndex(step.config[target])) {
+            return { workflowId, error: `${step.stepId}.${target} must be an integer between 0 and ${workflow.steps.length}` };
+          }
+        }
+      }
+
       // Inject runtime variables
       if (input.variables) {
         workflow.variables = { ...workflow.variables, ...(input.variables as Record<string, unknown>) };
@@ -296,7 +313,7 @@ export const workflowTools: MCPTool[] = [
 
       workflow.status = 'running';
       workflow.startedAt = new Date().toISOString();
-      workflow.currentStep = (input.startFromStep as number) || 0;
+      workflow.currentStep = startFromStep;
       saveWorkflowStore(store);
 
       // ADR-095 G3: real workflow runtime. Walk the steps in order;
