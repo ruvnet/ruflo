@@ -184,7 +184,7 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
   // branch above).
   const openrouterKey = process.env.OPENROUTER_API_KEY;
   const useOpenRouter =
-    explicitProvider === 'openrouter' || (!anthropicKey && !!openrouterKey);
+    explicitProvider === 'openrouter' || (!explicitProvider && !anthropicKey && !!openrouterKey);
   // #2962 — only consult the persisted config when a candidate is actually
   // relevant (explicit choice, or no env key found anywhere), so a normal
   // ANTHROPIC_API_KEY-only setup never pays a config-file read.
@@ -195,7 +195,7 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
   const persistedOpenRouter =
     explicitProvider === 'openrouter' && !openrouterKey ? getPersistedProviderConfig('openrouter') : undefined;
   const useOllama =
-    explicitProvider === 'ollama' || (!anthropicKey && !openrouterKey && (!!ollamaKey || !!persistedOllama));
+    explicitProvider === 'ollama' || (!explicitProvider && !anthropicKey && !openrouterKey && (!!ollamaKey || !!persistedOllama));
 
   if (useOpenRouter) {
     const apiKey = openrouterKey || persistedOpenRouter?.apiKey;
@@ -212,6 +212,7 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
         defaultModel: process.env.OPENROUTER_DEFAULT_MODEL || persistedOpenRouter?.model || 'anthropic/claude-sonnet-4-6',
       });
     }
+    return { success: false, error: 'OpenRouter was selected but no API key is configured.' };
   }
   if (useOllama) {
     // #2962 — retire the undocumented OLLAMA_API_KEY=local sentinel
@@ -230,6 +231,7 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
         model: input.model || persistedOllama?.model,
       });
     }
+    return { success: false, error: 'Ollama was selected but no API key or self-hosted endpoint is configured.' };
   }
   if (!anthropicKey) {
     return {
@@ -791,4 +793,3 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
     }),
   };
 }
-
