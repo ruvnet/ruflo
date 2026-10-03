@@ -175,7 +175,9 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
   // key-presence inference, kept below as the last-resort fallback.
   const explicitProvider = (input.provider || process.env.RUFLO_PROVIDER || '').toLowerCase();
   const ollamaKey = process.env.OLLAMA_API_KEY;
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const anthropicAuthToken = process.env.ANTHROPIC_AUTH_TOKEN;
+  // A gateway bearer token is also an Anthropic credential for provider inference.
+  const anthropicKey = process.env.ANTHROPIC_API_KEY || anthropicAuthToken;
   // #2042 — OpenRouter is an OpenAI-compat endpoint that fronts dozens of
   // providers. Reporter (@ummcke00) had `providers.openrouter.apiKey` in
   // their config.yaml but agent_execute hardcoded Anthropic. Detect via
@@ -235,7 +237,7 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
     return {
       success: false,
       error:
-        'No LLM provider configured. Set ANTHROPIC_API_KEY (Tier-3), OPENROUTER_API_KEY (#2042), or OLLAMA_API_KEY (Tier-2 — #1725).',
+        'No LLM provider configured. Set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN (Tier-3), OPENROUTER_API_KEY (#2042), or OLLAMA_API_KEY (Tier-2 — #1725).',
     };
   }
   const model = input.model || DEFAULT_ANTHROPIC_MODEL;
@@ -243,10 +245,13 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), input.timeoutMs || 60000);
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const baseUrl = (process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/+$/, '');
+    const res = await fetch(`${baseUrl}/v1/messages`, {
       method: 'POST',
       headers: {
-        'x-api-key': anthropicKey,
+        ...(anthropicAuthToken
+          ? { Authorization: `Bearer ${anthropicAuthToken}` }
+          : { 'x-api-key': anthropicKey }),
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
       },
@@ -791,4 +796,3 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
     }),
   };
 }
-
