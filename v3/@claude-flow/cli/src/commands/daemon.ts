@@ -5,7 +5,7 @@
 
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
-import { WorkerDaemon, getDaemon, startDaemon, stopDaemon, type WorkerType, type DaemonConfig } from '../services/worker-daemon.js';
+import { WorkerDaemon, getDaemon, startDaemon, stopDaemon, type WorkerType, type DaemonConfig, parseEnabledWorkers } from '../services/worker-daemon.js';
 import { resolveDaemonProjectRoot } from '../services/daemon-autostart.js';
 import { spawn, execFile, fork } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -18,7 +18,7 @@ const startCommand: Command = {
   name: 'start',
   description: 'Start the worker daemon with all enabled background workers',
   options: [
-    { name: 'workers', short: 'w', type: 'string', description: 'Comma-separated list of workers to enable (default: map,audit,optimize,consolidate,testgaps)' },
+    { name: 'workers', short: 'w', type: 'string', description: 'Comma-separated list of workers to enable (default: saved selection or map,audit,optimize,consolidate,testgaps,backup,harness)' },
     // ADR-174 M3: consolidate now runs a real memory-distillation pass
     // (memory_entries -> episodes/reasoning_patterns/causal_edges) instead of
     // a no-op stub. This opt-out skips just that pass for the life of this
@@ -74,6 +74,14 @@ const startCommand: Command = {
 
     // Parse resource threshold overrides from CLI flags
     const config: Partial<DaemonConfig> = {};
+    if (ctx.flags.workers !== undefined) {
+      try {
+        config.enabledWorkers = parseEnabledWorkers(ctx.flags.workers as string);
+      } catch (error) {
+        if (!quiet) output.printError((error as Error).message);
+        return { success: false, exitCode: 1 };
+      }
+    }
 
     // #2661: thread --headless into DaemonConfig so it actually gates the
     // headless executor. Previously the flag was forwarded to the forked
