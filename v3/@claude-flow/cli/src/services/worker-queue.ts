@@ -366,9 +366,9 @@ export class WorkerQueue extends EventEmitter {
     // Check queues in priority order
     for (const workerType of workerTypes) {
       const queueName = this.getQueueName(workerType);
-      const taskId = this.store.popFromQueue(queueName);
-
-      if (taskId) {
+      let taskId: string | null;
+      // Cancelled or otherwise stale entries do not exhaust this worker type.
+      while ((taskId = this.store.popFromQueue(queueName)) !== null) {
         const task = this.store.getTask(taskId);
         if (task && task.status === 'pending') {
           task.status = 'processing';
