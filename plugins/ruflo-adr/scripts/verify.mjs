@@ -12,11 +12,13 @@
 //   VERIFY_STRICT=1 node scripts/verify.mjs     # exit 1 on ANY issue (default: only on cycles)
 //   ADR_ROOT=/path/to/repo node scripts/verify.mjs   # same root import.mjs was run with
 
-import { spawnSync } from 'node:child_process';
 import { CLI_PKG, parseEdgeKey } from './lib/index-records.mjs';
+import { spawnCliSync } from './lib/ruflo-cli.mjs';
 
 // Import/reindex always use the default CLI's SQLite store (#2781). Reading
-// cli-core's separate JSON store would verify a different graph.
+// cli-core's separate JSON store would verify a different graph. #3558: the
+// read goes through the same installed-CLI resolution as the writers
+// (lib/ruflo-cli.mjs), so verify reads the store import/reindex wrote.
 if (process.env.CLI_CORE === '1') {
   console.warn('[ruflo-adr] warning: CLI_CORE=1 is ignored for verification (#2781).');
 }
@@ -34,7 +36,7 @@ const READ_TIMEOUT_MS = Math.min(120_000, Math.max(100,
 const MAX_BUFFER = 32 * 1024 * 1024;
 
 function memoryListJson(namespace) {
-  const r = spawnSync('npx', [
+  const r = spawnCliSync([
     CLI_PKG, 'memory', 'list',
     `--namespace=${namespace}`, '--format=json', `--limit=${READ_LIMIT}`,
   ], {
