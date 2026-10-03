@@ -995,9 +995,11 @@ describe('RuVector Streaming', () => {
 
       const memAfter = process.memoryUsage().heapUsed;
 
-      // Memory growth should be reasonable (allow 50MB variance for test environment)
-      // In production with proper GC, this would be much lower
-      expect(Math.abs(memAfter - memBefore)).toBeLessThan(50 * 1024 * 1024);
+      expect(generator.destroyed).toBe(true);
+      expect(generator.readableLength).toBe(0);
+      // Bound heap growth; GC may legitimately release more than 50MB of garbage
+      // from earlier tests, which must not be mistaken for retained stream data.
+      expect(memAfter - memBefore).toBeLessThan(50 * 1024 * 1024);
     });
   });
 
