@@ -289,6 +289,25 @@ export const workflowTools: MCPTool[] = [
         return { workflowId, error: 'Workflow already running' };
       }
 
+      const persistProgress = (): void => {
+        // An awaited step may overlap pause/stop/delete or a sibling workflow
+        // mutation. Merge only this workflow into the latest store snapshot.
+        const latest = loadWorkflowStore();
+        const current = latest.workflows[workflowId];
+        if (!current) {
+          workflow.status = 'failed';
+          workflow.error = 'Workflow was deleted during execution';
+          return;
+        }
+        if (current.status === 'failed') {
+          Object.assign(workflow, current);
+          return;
+        }
+        if (current.status === 'paused' && workflow.status !== 'failed') workflow.status = 'paused';
+        latest.workflows[workflowId] = workflow;
+        saveWorkflowStore(latest);
+      };
+
       // Inject runtime variables
       if (input.variables) {
         workflow.variables = { ...workflow.variables, ...(input.variables as Record<string, unknown>) };
@@ -296,6 +315,8 @@ export const workflowTools: MCPTool[] = [
 
       workflow.status = 'running';
       workflow.startedAt = new Date().toISOString();
+      delete workflow.error;
+      delete workflow.completedAt;
       workflow.currentStep = (input.startFromStep as number) || 0;
       saveWorkflowStore(store);
 
@@ -327,15 +348,19 @@ export const workflowTools: MCPTool[] = [
       while (i < workflow.steps.length) {
         // Honor pause/cancel signals between steps.
         const live = loadWorkflowStore().workflows[workflowId];
-        if (!live || live.status === 'paused') {
+        if (!live) {
+          workflow.status = 'failed';
+          workflow.error = 'Workflow was deleted during execution';
+          break;
+        }
+        if (live.status === 'paused') {
           workflow.status = 'paused';
           workflow.currentStep = i;
-          saveWorkflowStore(store);
+          persistProgress();
           break;
         }
         if (live.status === 'failed') {
-          workflow.status = 'failed';
-          saveWorkflowStore(store);
+          Object.assign(workflow, live);
           break;
         }
 
@@ -343,7 +368,7 @@ export const workflowTools: MCPTool[] = [
         step.status = 'running';
         step.startedAt = new Date().toISOString();
         const stepStart = Date.now();
-        saveWorkflowStore(store);
+        persistProgress();
 
         let stepEntry: typeof stepResults[number] = { stepId: step.stepId, type: step.type, status: 'running' };
 
@@ -407,7 +432,7 @@ export const workflowTools: MCPTool[] = [
           workflow.status = 'failed';
           workflow.error = msg;
           workflow.completedAt = new Date().toISOString();
-          saveWorkflowStore(store);
+          persistProgress();
           return {
             workflowId,
             status: 'failed',
@@ -422,19 +447,20 @@ export const workflowTools: MCPTool[] = [
         if (typeof stepEntry.durationMs !== 'number') stepEntry.durationMs = Date.now() - stepStart;
         stepResults.push(stepEntry);
         workflow.currentStep = i + 1;
-        saveWorkflowStore(store);
+        persistProgress();
         i++;
       }
 
       if (workflow.status === 'running') {
         workflow.status = 'completed';
         workflow.completedAt = new Date().toISOString();
-        saveWorkflowStore(store);
+        persistProgress();
       }
 
       return {
         workflowId,
         status: workflow.status,
+        ...(workflow.error ? { error: workflow.error } : {}),
         totalSteps: workflow.steps.length,
         stepsCompleted: stepResults.filter(s => s.status === 'completed').length,
         stepsSkipped: stepResults.filter(s => s.status === 'skipped').length,
