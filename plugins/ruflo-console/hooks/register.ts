@@ -111,6 +111,10 @@ export const register: Register = (on, raw: PluginOptions) => {
 
     if (panel === 'command' || panel === 'off') state.options.panel = panel
     state.dockColumns = Number.isInteger(asked) && asked >= 40 && asked <= 400 ? asked : 0
+
+    const askedRows = Number(await (async () => $.env.get('RUFLO_CONSOLE_ROWS'))().catch(() => ''))
+
+    state.dockRows = Number.isInteger(askedRows) && askedRows >= 8 && askedRows <= 200 ? askedRows : 0
     // The x.ruv.io board's admin rows: only whether the token is set is kept, never its value.
     state.xruv.hasAdminToken = await (async () => $.env.get('RUFLO_X_ADMIN_TOKEN'))().then(
       value => typeof value === 'string' && value !== '',

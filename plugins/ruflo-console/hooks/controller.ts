@@ -19,7 +19,7 @@ import { loadAllowed } from './remember'
 import { loadAiPrefs } from './settings'
 import { openLoaders } from './view-open'
 import { listSkills } from './skills'
-import { CLI_PREFIXES, isBooting, NAV_KEY, NAV_STYLES, PANE_ID, push, rowsOf, storeKeyOf, type State } from './state'
+import { CLI_PREFIXES, isBooting, NAV_KEY, NAV_STYLES, PANE_ID, paneRowsOf, push, storeKeyOf, type State } from './state'
 import type { Actions } from './views/common'
 import { picturesOf } from './views/frames'
 import { pulseDue } from './pulse'
@@ -351,7 +351,7 @@ export function createController(state: State, host: Host): Controller {
   /** `closeOnEscape` false: take the keys but leave Esc handing them back, as an auto-opened pane does. */
   async function open(focus = true, closeOnEscape = focus): Promise<{ isPlaced: boolean; reason: string }> {
     try {
-      const result = await host.openPane({ id: PANE_ID, title: 'ruflo', rows: rowsOf(state.view), ...(state.dockColumns > 0 && { columns: state.dockColumns }), ...(focus && { focus: true, holdToasts: true }), ...(closeOnEscape && { closeOnEscape: true }) })
+      const result = await host.openPane({ id: PANE_ID, title: 'ruflo', rows: paneRowsOf(state.dockRows, state.view), ...(state.dockColumns > 0 && { columns: state.dockColumns }), ...(focus && { focus: true, holdToasts: true }), ...(closeOnEscape && { closeOnEscape: true }) })
       const isPlaced = result === undefined || result.isPlaced !== false
 
       if (isPlaced && !state.pane.isOpen) state.pane.bootAtMs = Date.now()
@@ -411,7 +411,7 @@ export function createController(state: State, host: Host): Controller {
       state.mounted.clear()
       persist()
       // A new view asks for its own height inline; the dock ignores it.
-      if (state.pane.isOpen) void host.openPane({ id: PANE_ID, title: 'ruflo', rows: rowsOf(view), ...(state.dockColumns > 0 && { columns: state.dockColumns }) }).catch(() => undefined)
+      if (state.pane.isOpen) void host.openPane({ id: PANE_ID, title: 'ruflo', rows: paneRowsOf(state.dockRows, view), ...(state.dockColumns > 0 && { columns: state.dockColumns }) }).catch(() => undefined)
       void probe(true)
     }
 

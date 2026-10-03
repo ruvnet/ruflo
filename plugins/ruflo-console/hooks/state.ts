@@ -67,6 +67,9 @@ export const AGENT_VIEW = { id: 'agent' as const, rows: 28 }
 
 export const rowsOf = (view: ViewId): number => (view === 'agent' ? AGENT_VIEW.rows : (VIEWS.find(entry => entry.id === view)?.rows ?? 24))
 
+/** The body rows the pane asks the engine for: RUFLO_CONSOLE_ROWS when set (a recording that wants every view as tall as the layout allows), else what the view wants. */
+export const paneRowsOf = (dockRows: number, view: ViewId): number => (dockRows > 0 ? dockRows : rowsOf(view))
+
 /** A view by id, digit, label, or a prefix of three letters or more. */
 export const viewOf = (word: string): ViewId | null => {
   const lower = word.trim().toLowerCase()
@@ -216,6 +219,8 @@ export type State = {
   fieldText: Map<string, string>
   /** The dock width asked for (RUFLO_CONSOLE_COLUMNS, 40 to 400); 0 leaves the engine's share. A request: a dragged width wins. */
   dockColumns: number
+  /** The inline pane height asked for (RUFLO_CONSOLE_ROWS, 8 to 200); 0 leaves each view's own. A request: the layout still caps it. */
+  dockRows: number
   pane: { isOpen: boolean; isShown: boolean; isFocused: boolean; columns: number; rows: number; placement: 'dock' | 'inline'; isClosedByPerson: boolean; autoTried: boolean; autoReason: string; /** When the pane last opened: the BBS boot screen plays from here. */ bootAtMs: number }
   /** The size of each Raster as last mounted, by key: a blit of any other size is refused, so none is sent. */
   mounted: Map<string, { columns: number; rows: number }>
@@ -305,6 +310,7 @@ export function newState(raw: PluginOptions | undefined): State {
     eventFilter: 'all',
     curveGrewAtMs: 0,
     dockColumns: 0,
+    dockRows: 0,
     nav: 'auto',
     turnActive: false,
     commandNames: [],
