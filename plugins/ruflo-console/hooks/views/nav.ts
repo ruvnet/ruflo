@@ -30,7 +30,8 @@ export function groupedTabs(ctx: Ctx, hasHotkey: (view: View) => boolean): Rende
   // What a page spells: its icon, and from `brief` a short name, from `full` the whole name. The engine puts a hotkey in front ("3: ").
   const spell = (view: View, form: string) => (form === 'icons' ? view.icon : form === 'brief' ? `${view.icon} ${view.short}` : `${view.icon} ${view.label}`)
   const cells = (view: View, form: string) => (hasHotkey(view) && view.key !== '' ? 3 : 0) + spell(view, form).length + 3
-  const widest = (form: string) => Math.max(0, ...pages.map(ids => ids.reduce((sum, id) => sum + (find(id) === undefined ? 0 : cells(find(id) as View, form)), 0)))
+  // A row's width: its pages, plus the gap and bar between each two (2 columns).
+  const widest = (form: string) => Math.max(0, ...pages.map(ids => ids.reduce((sum, id) => sum + (find(id) === undefined ? 0 : cells(find(id) as View, form)), 0) + 2 * Math.max(0, ids.length - 1)))
   // auto: the richest form whose widest row fits the page; the others are the person's choice (Settings).
   const form = state.nav === 'auto' ? (['full', 'brief'].find(candidate => widest(candidate) <= inner) ?? 'icons') : state.nav
 
@@ -47,7 +48,8 @@ export function groupedTabs(ctx: Ctx, hasHotkey: (view: View) => boolean): Rende
   const menu = find('menu')
   // The group chips spell their icon only where the row has room; the search field shares their row only where it fits, else it has its own.
   const icons = inner >= 130
-  const chipCells = NAV_GROUPS.reduce((sum, group) => sum + group.title.length + (icons ? 5 : 3), 12)
+  // Each group takes its label, its gap and the bar that follows it (2 columns).
+  const chipCells = NAV_GROUPS.reduce((sum, group) => sum + group.title.length + (icons ? 5 : 3) + 2, 12)
   const isSearchInline = inner - chipCells >= 28
   const chips = NAV_GROUPS.map(group =>
     group.title === shown && found === null
@@ -57,18 +59,23 @@ export function groupedTabs(ctx: Ctx, hasHotkey: (view: View) => boolean): Rende
   const Input = ctx.kit.Input
   const search = Input === undefined ? [] : [Input({ key: 'nav-find', label: '🔎', placeholder: 'find a page', submitLabel: 'go', onSubmit: (value: string) => ctx.act.navigator.find(value) })]
   const clear = query === '' ? [] : [ctx.kit.Button({ key: 'nav-find-clear', label: ' ✕ ', plain: true, dimColor: true, onPress: () => ctx.act.navigator.clear() })]
+  // A dim bar between the things on a row: the menu, each group and the search. The bar is one column with the row's gap either side.
+  const bar = (key: string) => ctx.kit.Text({ key, dimColor: true, color: THEME.info, children: '│' })
+  const menuCell = menu === undefined ? ctx.kit.Text({ children: '' }) : open === 'menu' ? tab(menu) : ctx.kit.Button({ key: 'tab-menu', label: ' 📟 MAIN ', plain: true, hotkey: '0', onPress: () => ctx.act.view('menu') })
+  const groupCells = chips.flatMap((chip, i) => [bar(`nav-bar-${i}`), chip])
+  const searchCells = isSearchInline ? [bar('nav-bar-find'), ...search, ...clear] : []
   const head = ctx.kit.Box({
     flexDirection: 'row',
     gap: 1,
     key: 'tabs-groups',
-    children: [menu === undefined ? ctx.kit.Text({ children: '' }) : open === 'menu' ? tab(menu) : ctx.kit.Button({ key: 'tab-menu', label: ' 📟 MAIN ', plain: true, hotkey: '0', onPress: () => ctx.act.view('menu') }), ...chips, ...(isSearchInline ? [...search, ...clear] : [])],
+    children: [menuCell, ...groupCells, ...searchCells],
   })
   const findRow = isSearchInline ? [] : [ctx.kit.Box({ flexDirection: 'row', gap: 1, key: 'tabs-find', children: [...search, ...clear] })]
   const lines =
     found !== null && found.length === 0
       ? [ctx.kit.Text({ dimColor: true, children: ` no page matches “${query}” — try a name, a group or what it does` })]
       : pages.map((ids, i) =>
-          ctx.kit.Box({ flexDirection: 'row', gap: 1, key: `tabs-row-${i}`, children: ids.flatMap(id => (find(id) === undefined ? [] : [tab(find(id) as View)])) }),
+          ctx.kit.Box({ flexDirection: 'row', gap: 1, key: `tabs-row-${i}`, children: ids.flatMap((id, j) => (find(id) === undefined ? [] : [...(j > 0 ? [bar(`nav-page-bar-${i}-${j}`)] : []), tab(find(id) as View)])) }),
         )
   const note = found === null ? [] : [ctx.kit.Text({ dimColor: true, children: ` ${found.length} found for “${query}”${found.length === 1 ? '' : ' — Enter again on one name opens it'}` })]
 
