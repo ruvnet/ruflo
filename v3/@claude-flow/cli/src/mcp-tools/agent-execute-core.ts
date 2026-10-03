@@ -552,6 +552,9 @@ export interface AgentExecuteResult {
   fallbackHistory?: Array<{ modelId: string; error: string }>;
 }
 
+// Tracks overlapping calls in this process; persisted state remains authoritative.
+const activeExecutions = new Map<string, number>();
+
 export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentExecuteResult> {
   const store = loadAgentStore();
   const agent = store.agents[input.agentId];
@@ -598,10 +601,15 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
     `Agent ID: ${input.agentId}. Domain: ${agent.domain ?? 'general'}. ` +
     `Respond directly and stay focused on the task. If you need information you don't have, state that explicitly.`;
 
+  const initialModelId = agent.modelId;
+  const initialModel = agent.model;
   agent.status = 'busy';
   agent.taskCount = (agent.taskCount || 0) + 1;
   saveAgentStore(store);
 
+  const executionKey = JSON.stringify([getAgentPath(), input.agentId, agent.createdAt]);
+  activeExecutions.set(executionKey, (activeExecutions.get(executionKey) || 0) + 1);
+  try {
   const startedAt = Date.now();
 
   // #2042 — delegate to callAnthropicMessages so the v3 provider router
@@ -667,7 +675,6 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
     }
   }
 
-  agent.status = 'idle';
 
   // ADR-149 — close the bandit feedback loop. `recordModelOutcome` updates
   // the Beta(α,β) prior for the agent's tier so the Thompson sampler learns
@@ -756,6 +763,24 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
     // Silent — bandit feedback must never block routing.
   }
 
+  const remaining = (activeExecutions.get(executionKey) || 1) - 1;
+  const persistCompletion = (out?: AgentExecuteResult): void => {
+    // Awaited provider/feedback work may have overlapped registration, updates,
+    // termination or deletion. Never replace that newer registry snapshot.
+    const latest = loadAgentStore();
+    const current = latest.agents[input.agentId];
+    if (!current || current.createdAt !== agent.createdAt) return;
+    if (current.status === 'busy') current.status = remaining > 0 ? 'busy' : 'idle';
+    if (agent.modelId !== initialModelId && current.modelId === initialModelId) {
+      // A fallback may also change its tier. Carry that change with the model
+      // ID, but preserve any selection the user edited during the request.
+      if (agent.model !== initialModel && current.model === initialModel) current.model = agent.model;
+      current.modelId = agent.modelId;
+    }
+    if (out) current.lastResult = out as unknown as Record<string, unknown>;
+    saveAgentStore(latest);
+  };
+
   if (result.success) {
     const out: AgentExecuteResult = {
       success: true,
@@ -768,12 +793,11 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
       durationMs: result.durationMs ?? Date.now() - startedAt,
       ...(fallbackHistory.length > 0 ? { fallbackHistory } : {}),
     };
-    agent.lastResult = out as unknown as Record<string, unknown>;
-    saveAgentStore(store);
+    persistCompletion(out);
     return out;
   }
 
-  saveAgentStore(store);
+  persistCompletion();
   // No-provider-configured error → surface the same actionable message
   // the router built, with a #2042-aware remediation pointer.
   const noProvider = (result.error || '').includes('No LLM provider configured');
@@ -790,5 +814,9 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
         'Or set RUFLO_PROVIDER=openrouter|ollama to force a specific provider.',
     }),
   };
+  } finally {
+    const pending = (activeExecutions.get(executionKey) || 1) - 1;
+    if (pending > 0) activeExecutions.set(executionKey, pending);
+    else activeExecutions.delete(executionKey);
+  }
 }
-

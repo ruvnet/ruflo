@@ -318,7 +318,6 @@ export const agentTools: MCPTool[] = [
         return { success: false, error: `Input validation failed: ${validation.errors.join('; ')}` };
       }
 
-      const store = loadAgentStore();
       const agentId = (input.agentId as string) || `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const agentType = input.agentType as string;
       const config = (input.config as Record<string, unknown>) || {};
@@ -367,6 +366,7 @@ export const agentTools: MCPTool[] = [
         ...(routingResult.openrouterModel ? { openrouterModel: routingResult.openrouterModel } : {}),
       };
 
+      const store = loadAgentStore();
       store.agents[agentId] = agent;
       saveAgentStore(store);
 
@@ -422,8 +422,13 @@ export const agentTools: MCPTool[] = [
             memoryBranch = br.branchPath;
             agent.memoryBranch = br.branchPath;
             agent.memoryBase = br.basePath;
-            store.agents[agentId] = agent;
-            saveAgentStore(store);
+            const latest = loadAgentStore();
+            const current = latest.agents[agentId];
+            if (current && current.status !== 'terminated') {
+              current.memoryBranch = br.branchPath;
+              current.memoryBase = br.basePath;
+              saveAgentStore(latest);
+            }
           }
           // else: degraded (agenticow missing / kill-switched) — agent stands
           // without an isolated branch; callers see no memoryBranch field.
