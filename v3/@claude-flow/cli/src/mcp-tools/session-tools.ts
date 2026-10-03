@@ -359,9 +359,9 @@ export const sessionTools: MCPTool[] = [
       properties: {
         name: { type: 'string', description: 'Session name' },
         description: { type: 'string', description: 'Session description' },
-        includeMemory: { type: 'boolean', description: 'Include memory in session' },
-        includeTasks: { type: 'boolean', description: 'Include tasks in session' },
-        includeAgents: { type: 'boolean', description: 'Include agents in session' },
+        includeMemory: { type: 'boolean', default: true, description: 'Include memory in session' },
+        includeTasks: { type: 'boolean', default: true, description: 'Include tasks in session' },
+        includeAgents: { type: 'boolean', default: true, description: 'Include agents in session' },
       },
       required: ['name'],
     },
@@ -378,9 +378,9 @@ export const sessionTools: MCPTool[] = [
 
       // Load related data based on options
       const { data, memoryCapture } = await loadRelatedStores({
-        includeMemory: input.includeMemory as boolean,
-        includeTasks: input.includeTasks as boolean,
-        includeAgents: input.includeAgents as boolean,
+        includeMemory: input.includeMemory !== false,
+        includeTasks: input.includeTasks !== false,
+        includeAgents: input.includeAgents !== false,
       });
 
       // Calculate stats
