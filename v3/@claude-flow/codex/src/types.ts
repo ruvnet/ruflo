@@ -169,6 +169,8 @@ export interface CodexInitOptions {
   skills?: string[];
   force?: boolean;
   dual?: boolean;  // Generate both Claude Code and Codex configs
+  /** Merge a SubagentStop → `ruflo team hook-stop --host codex` hook into .codex/hooks.json (default true) */
+  teamHooks?: boolean;
   migrateFrom?: 'claude.md' | 'CLAUDE.md';
 }
 
@@ -252,7 +254,8 @@ export type BuiltInSkill =
   | 'sparc-methodology'
   | 'security-audit'
   | 'performance-analysis'
-  | 'github-automation';
+  | 'github-automation'
+  | 'agent-teams';
 
 /**
  * Codex undocumented features (from binary analysis)
