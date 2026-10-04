@@ -1642,17 +1642,25 @@ export const memoryTools: MCPTool[] = [
           if (keyError) throw new Error(`${keyError}: ${JSON.stringify(e.key)}`);
         }
       }
-      let imported = 0; let skipped = 0;
+      let imported = 0; let skipped = 0; let failed = 0;
+      const errors: string[] = [];
       for (const e of entries) {
         if (!e || typeof e.key !== 'string') { skipped++; continue; }
         const value = typeof e.value === 'string' ? e.value : JSON.stringify(e.value ?? null);
         try {
           const result = await storeEntry({ key: e.key, value, namespace: nsOverride ?? e.namespace ?? 'default', upsert: input.merge !== false, dbPath });
-          if (result.success) { imported++; if (result.embedding) vectors++; }
-          else skipped++;
-        } catch { skipped++; }
+          if (!result.success) throw new Error(result.error || 'Memory write was rejected');
+          imported++;
+          if (result.embedding) vectors++;
+        } catch (error) {
+          failed++;
+          if (errors.length < 10) errors.push(`${e.key}: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
       return {
+        success: failed === 0,
+        error: failed > 0 ? `${failed} memory write(s) failed: ${errors.join('; ')}` : undefined,
+        failed,
         inputPath,
         imported: { entries: imported, vectors, patterns: 0 },
         skipped,
