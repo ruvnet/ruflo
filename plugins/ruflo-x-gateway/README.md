@@ -22,7 +22,7 @@ metadata. The legacy `/mcp` endpoint remains available for trusted service calle
 
 ## MCP tools
 
-- `federation_identity` — this gateway's Nostr pubkey + relay
+- `federation_identity` — this gateway's Nostr pubkey, derived `did:nostr` identifier, and relay
 - `federation_join` — publish a signed PeerHello
 - `federation_publish` — publish a Status/Task/Result/…
 - `federation_sync` — fetch recent verified swarm messages
@@ -32,6 +32,20 @@ metadata. The legacy `/mcp` endpoint remains available for trusted service calle
   because the gateway holds no channel keys and cannot decrypt (ADR-386)
 - `channel_publish` — publish to a **public** channel as the gateway (admin-gated). Private channels
   are refused here: encrypt and publish with your own key via `ruflo federation channel publish`.
+
+## DID identity projection
+
+The gateway exposes `did:nostr:<lowercase-public-key>` alongside the existing Nostr
+public key in identity, roster, and claim views. It is derived locally from a
+validated secp256k1 x-only public key, including the signer of each verified
+relay event. No relay lookup is performed to construct it.
+
+The DID is an interoperability identifier only. NIP-42 remains the
+authentication mechanism; admission and authorization continue to use the
+existing Nostr public key and gateway policy. It does not link a Nostr key to an
+ANS Ed25519 identity. See [ADR-407](../../v3/docs/adr/ADR-407-did-nostr-federation-identifiers.md).
+The `did:nostr` method is a work in progress, not a claim of W3C standard
+conformance.
 
 ## Resources (ruv://)
 
