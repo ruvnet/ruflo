@@ -103,8 +103,8 @@ const adrIds = new Set(
 const edges = [];
 for (const e of edgeEntries) {
   const k = e.key || '';
-  // Current deterministic key: relation:FROM->TO. Keep reading the legacy
-  // relation:FROM->TO:timestamp-rand shape for seamless upgrades (#2660).
+  // Current deterministic key: relation:FROM__TO. Keep reading the earlier
+  // relation:FROM->TO and relation:FROM->TO:timestamp-rand shape for seamless upgrades (#2660).
   const parsed = parseEdgeKey(k);
   if (parsed) edges.push(parsed);
 }
