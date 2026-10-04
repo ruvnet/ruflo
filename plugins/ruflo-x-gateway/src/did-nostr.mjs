@@ -39,6 +39,6 @@ export function nostrDidFromPubkey(pubkey) {
 export function pubkeyFromNostrDid(did) {
   if (typeof did !== 'string' || !did.startsWith('did:nostr:')) throw new TypeError('DID must use the did:nostr method');
   const pubkey = did.slice('did:nostr:'.length);
-  if (!isNostrPublicKey(pubkey)) throw new TypeError('DID must contain a valid secp256k1 x-only public key');
-  return pubkey.toLowerCase();
+  if (pubkey !== pubkey.toLowerCase() || !isNostrPublicKey(pubkey)) throw new TypeError('DID must contain a canonical valid secp256k1 x-only public key');
+  return pubkey;
 }
