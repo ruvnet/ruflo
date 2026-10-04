@@ -79,6 +79,24 @@ function saveWorkflowStore(store: WorkflowStore): void {
   writeFileSync(getWorkflowPath(), JSON.stringify(store, null, 2), 'utf-8');
 }
 
+// A paused in-flight step still owns its executor. Resume joins that execution
+// instead of dispatching the same side effect again (within this process).
+const workflowExecutions = new Map<string, Promise<unknown>>();
+const workflowExecutionKey = (workflowId: unknown): string =>
+  JSON.stringify([getWorkflowPath(), workflowId]);
+
+function withWorkflowExecution<T>(workflowId: unknown, execute: () => Promise<T>) {
+  const key = workflowExecutionKey(workflowId);
+  if (workflowExecutions.has(key)) {
+    return Promise.resolve({ workflowId, error: 'Workflow already executing' });
+  }
+  const execution = execute();
+  workflowExecutions.set(key, execution);
+  return execution.finally(() => {
+    if (workflowExecutions.get(key) === execution) workflowExecutions.delete(key);
+  });
+}
+
 export const workflowTools: MCPTool[] = [
   {
     name: 'workflow_run',
@@ -273,7 +291,7 @@ export const workflowTools: MCPTool[] = [
       },
       required: ['workflowId'],
     },
-    handler: async (input) => {
+    handler: async (input) => withWorkflowExecution(input.workflowId, async () => {
       // Validate user-provided input (#1425)
       const vId = validateIdentifier(input.workflowId, 'workflowId');
       if (!vId.valid) return { success: false, error: vId.error };
@@ -444,7 +462,7 @@ export const workflowTools: MCPTool[] = [
         completedAt: workflow.completedAt,
         durationMs: Date.now() - startedAt,
       };
-    },
+    }),
   },
   {
     name: 'workflow_status',
@@ -621,27 +639,16 @@ export const workflowTools: MCPTool[] = [
         return { workflowId, error: 'Workflow not paused' };
       }
 
-      workflow.status = 'running';
-      saveWorkflowStore(store);
+      const active = workflowExecutions.get(workflowExecutionKey(workflowId));
+      if (active) {
+        workflow.status = 'running';
+        saveWorkflowStore(store);
+        return { ...((await active) as Record<string, unknown>), resumed: true };
+      }
 
-      // Report current step states — do not auto-complete them
-      const stepStates = workflow.steps.map(step => ({
-        stepId: step.stepId,
-        name: step.name,
-        status: step.status,
-      }));
-
-      const remainingSteps = workflow.steps.length - workflow.currentStep;
-
-      return {
-        workflowId,
-        status: workflow.status,
-        resumed: true,
-        currentStep: workflow.currentStep,
-        remainingSteps,
-        steps: stepStates,
-        _note: 'Workflow resumed. Steps remain in their current state and must be executed via task tools.',
-      };
+      const execute = workflowTools.find(tool => tool.name === 'workflow_execute')!;
+      const result = await execute.handler({ workflowId, startFromStep: workflow.currentStep });
+      return { ...(result as Record<string, unknown>), resumed: true };
     },
   },
   {
