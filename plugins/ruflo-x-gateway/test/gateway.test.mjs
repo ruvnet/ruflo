@@ -71,11 +71,11 @@ test('server: routes, admin gating, oversize body, unknown ws path', async () =>
   const port = await gw.listen(0); const base = `http://127.0.0.1:${port}`;
   assert.equal(await (await fetch(base + '/health')).text(), 'ok');
   const info = await (await fetch(base + '/')).json(); assert.equal(info.gatewayPubkey, gw.pubkey); assert.equal(info.gatewayDid, nostrDidFromPubkey(gw.pubkey)); assert.ok(info.resources.includes('ruv://claims/board'));
+  const rpc = (m) => fetch(base + '/mcp', { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' }, body: JSON.stringify(m) }).then((r) => r.text());
   const identity = await rpc({ jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'federation_identity', arguments: {} } });
   assert.ok(identity.includes(info.gatewayDid), 'federation_identity returns the gateway DID');
   const registry = await rpc({ jsonrpc: '2.0', id: 6, method: 'resources/read', params: { uri: 'ruv://federation/registry' } });
   assert.ok(registry.includes(info.gatewayDid), 'federation registry returns the gateway DID');
-  const rpc = (m) => fetch(base + '/mcp', { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' }, body: JSON.stringify(m) }).then((r) => r.text());
   const list = await rpc({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} });
   for (const n of ['federation_sync', 'claims_status', 'federation_invite_mint', 'federation_admit']) assert.ok(list.includes(`"name":"${n}"`), n);
   const noTok = await rpc({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'claims_issue', arguments: { resourceId: 'x' } } });
