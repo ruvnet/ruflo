@@ -115,3 +115,31 @@ export async function screenText(state: State, host: Host, raw: string): Promise
 
 export const blocksGuidance = (screen: Screen | null): boolean => screen !== null && (screen.status === 'unsafe' || screen.status === 'pii')
 export const blocksCreate = (screen: Screen | null): boolean => screen?.status === 'unsafe'
+
+/** Deep research (ADR-439): what the person chooses, and the one command the console prepares from it. The console never fetches. */
+export const RESEARCH_DEPTHS = ['quick', 'standard', 'deep'] as const
+export type ResearchDepth = (typeof RESEARCH_DEPTHS)[number]
+export const RESEARCH_DEFAULT_CAP = '2'
+
+/** The spend cap, decimal dollars only like the budget (no flags, exponents or currency marks), from 0.10 to 50. */
+export function capUsd(text: string): number | null {
+  const value = text.trim()
+  const amount = Number(value)
+
+  return /^(?:\d+(?:\.\d+)?|\.\d+)$/.test(value) && Number.isFinite(amount) && amount >= 0.1 && amount <= 50 ? amount : null
+}
+
+/** Why a research start is refused before anything is screened or asked; null when the input is usable. */
+export function researchWhy(question: string, cap: number | null): string | null {
+  if (question === '') return 'type the research question first'
+  if (question.startsWith('-')) return 'the question may not start with -'
+
+  return cap === null ? 'the cap must be a number of dollars from 0.10 to 50' : null
+}
+
+/** The slash-command arguments, the contract with the ruflo-goals skill: `--depth <d> --cap-usd <usd> <question>`. */
+export const researchArgs = (question: string, depth: ResearchDepth, cap: number): string => `--depth ${depth} --cap-usd ${cap} ${question}`
+
+/** The confirm text, in words: what pressing yes starts, what it allows, what is untrusted, and when anything is stored. */
+export const researchConfirm = (depth: ResearchDepth, cap: number, screen: Screen): string =>
+  `Starts a billed Claude Code turn. Allows web search and fetch up to $${cap} (${depth} depth). Web content is untrusted. Nothing is stored until you accept the report.${screen.status === 'unavailable' ? ' AIDefence could not screen the question.' : ''}`

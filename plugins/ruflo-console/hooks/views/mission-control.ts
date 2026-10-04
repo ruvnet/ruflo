@@ -9,6 +9,7 @@ import { ago, button, clip, col, confirmHere, isBbs, row, rule, section, text, T
 import { GOALS_PLUGIN, isAvailable, MISSION_SKILLS, slashOf } from '../mission-skills'
 import { observationRows } from './missions'
 import { capabilityRows, launchRows } from './mission-launch'
+import { researchStartRows } from './research-start'
 
 const GLYPH: Record<Derived, string> = { done: '●', running: '◐', ready: '○', waiting: '·', failed: '✖', cancelled: '⊘' }
 const COLOR = (status: Derived): string => (status === 'done' ? THEME.ok : status === 'running' ? THEME.warn : status === 'failed' ? THEME.bad : status === 'ready' ? THEME.head : THEME.info)
@@ -224,7 +225,7 @@ export function missionControlView(ctx: Ctx): RenderElement {
   rows.push(...box(ctx, 'mc-goal', '✎ goal', mc.goal === '' ? 'what should get done? e.g. add a dark mode toggle to settings (Enter plans it)' : `planned: ${clip(mc.goal, 60)} — type another goal to re-plan`, 'plan', value => ctx.act.mission.goal(value)))
 
   if (mc.goal !== '') rows.push(row(ctx, [text(ctx, ` goal: ${clip(mc.goal, Math.max(20, ctx.columns - 24))} `, { bold: true }), button(ctx, 'mc-edit-goal', '✎ edit', () => ctx.act.editField('mc-goal', mc.goal))], 'mc-goal-line'))
-  rows.push(...launchRows(ctx))
+  rows.push(...launchRows(ctx), ...researchStartRows(ctx))
 
   if (mc.missions.size > 1) rows.push(row(ctx, [...mc.missions.values()].slice(-6).map(candidate => chip(ctx, `mc-pick-${candidate.id}`, candidate.id.slice(4, 10), candidate.id === mc.active, () => ctx.act.mission.select(candidate.id))), 'mc-picker'))
 

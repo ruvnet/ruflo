@@ -34,6 +34,7 @@ export function missionPalette(state: State): PaletteEntry[] {
     { id: 'mission-aside', group: 'missions', label: 'mission-aside <question>: /btw beside the running task', run: text('mission-aside', value => local('ask aside', () => wired?.actions.aside(value))) },
     { id: 'mission-guide', group: 'missions', label: 'mission-guide <instruction>: a visible instruction to Claude (screened, asks first)', run: text('mission-guide', value => local('guide Claude', () => wired?.actions.guide(value))) },
     { id: 'mission-auto', group: 'missions', label: 'mission-auto on|off: hand over each next ready task without asking', run: text('mission-auto', value => local('auto-run', () => wired?.actions.auto(value.trim() === 'on'))) },
+    { id: 'mission-research', group: 'missions', label: 'research the question typed in Missions: screened, then confirm (a billed turn with web access up to the cap)', run: spec(() => local('start the research', () => wired?.research())) },
     { id: 'mission-open', group: 'missions', label: 'open Mission Control', run: { kind: 'view', view: 'missions' } },
   ].map(entry => ({ ...entry, label: mcOf(state) === undefined ? entry.label : entry.label })) as PaletteEntry[]
 }

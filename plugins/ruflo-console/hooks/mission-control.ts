@@ -13,7 +13,7 @@ import type { Host } from './host'
 import { plain, type TaskRecord } from './data/parse'
 import { isAvailable, MISSION_SKILLS, slashOf, GOALS_PLUGIN } from './mission-skills'
 import { offerGuidance } from './mission-guidance'
-import { blocksCreate, blocksGuidance, isCapability, screenText } from './mission-options'
+import { blocksCreate, blocksGuidance, capUsd, isCapability, RESEARCH_DEFAULT_CAP, researchArgs, researchConfirm, researchWhy, screenText, type ResearchDepth } from './mission-options'
 import type { Runner } from './runner'
 import { CLI_PREFIXES, type State } from './state'
 import type { Derived, LedgerEvent, LedgerTask, McState, McTab, MissionActions, MissionRecord } from './mission-types'
@@ -149,9 +149,26 @@ export async function loadLedger(state: State, host: Host): Promise<void> {
 const MAX_TEXT = 500
 
 
-const wired = new WeakMap<State, { host: Host; actions: MissionActions }>()
+/** The research start's inputs as typed (ADR-439): the question, the depth and the cap in dollars (text, validated when started). */
+export type ResearchDraft = { question: string; depth: ResearchDepth; cap: string }
+const drafts = new WeakMap<State, ResearchDraft>()
 
-/** The host and actions Mission Control was wired with, for the palette and the headless commands. */
+export function researchOf(state: State): ResearchDraft {
+  let found = drafts.get(state)
+
+  if (found === undefined) {
+    found = { question: '', depth: 'standard', cap: RESEARCH_DEFAULT_CAP }
+    drafts.set(state, found)
+  }
+
+  return found
+}
+
+export const setResearch = (state: State, patch: Partial<ResearchDraft>): void => void Object.assign(researchOf(state), patch)
+
+const wired = new WeakMap<State, { host: Host; actions: MissionActions; research: () => void }>()
+
+/** The host, actions and research start Mission Control was wired with, for the palette and the headless commands. */
 export const missionWired = (state: State) => wired.get(state)
 
 export function missionActions(state: State, host: Host, runner: Runner): MissionActions {
@@ -163,13 +180,14 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
   const tasksNow = (): readonly TaskRecord[] => state.snapshot?.tasks ?? []
 
   /** Runs a slash command on the goal (or the active mission's objective) in the main UI: now when idle, prepared in the prompt box mid-turn. */
-  const launch = (slash: string, label: string) => {
+  const launch = (slash: string, label: string, custom?: { args: string; note: string }) => {
     const objective = activeMission(state)?.objective ?? mc.goal
 
-    if (objective.trim() === '') return say(label, false, 'type a goal first: it works on the goal')
-    if (blocksGuidance(mc.screen)) return say(`${label} blocked`, false, `AIDefence: ${mc.screen?.detail ?? ''}. Change the goal.`)
+    // A research start brings its own, already screened arguments; every other launch works on the goal.
+    if (custom === undefined && objective.trim() === '') return say(label, false, 'type a goal first: it works on the goal')
+    if (custom === undefined && blocksGuidance(mc.screen)) return say(`${label} blocked`, false, `AIDefence: ${mc.screen?.detail ?? ''}. Change the goal.`)
 
-    const args = plain(objective, MAX_TEXT)
+    const args = custom?.args ?? plain(objective, MAX_TEXT)
 
     // It starts a model turn: asked first, with the exact command.
     runner.ask(
@@ -177,9 +195,9 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
         label: `run /${slash} on the goal in the main Claude UI`,
         scope: 'controls',
         args: [],
-        shows: `/${slash} ${plain(args, 100)}`,
+        shows: `/${slash} ${plain(args, custom === undefined ? 100 : 200)}`,
         expect: 'the command in the main conversation',
-        note: 'Starts a Claude Code turn (billed as any turn is); mid-turn it is only prepared in the prompt box.',
+        note: custom?.note ?? 'Starts a Claude Code turn (billed as any turn is); mid-turn it is only prepared in the prompt box.',
         run: async () => {
           if (state.turnActive) {
             void host.fillPrompt(`/${slash} ${args}`).then(
@@ -198,6 +216,28 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
       },
       'type a goal first',
     )
+  }
+
+  /** Research start: validate, screen the question (always: it reaches the web), refuse when unsafe, then ask with the confirm in words. */
+  const research = () => {
+    const draft = { ...researchOf(state) }
+    const question = plain(draft.question, MAX_TEXT).trim()
+    const cap = capUsd(draft.cap)
+    const refused = researchWhy(question, cap)
+    const skill = MISSION_SKILLS.find(candidate => candidate.id === 'deep-research')
+
+    if (refused !== null || cap === null || skill === undefined) return say('research', false, refused ?? 'deep-research is not a ruflo-goals skill')
+    if (!isAvailable(state, skill)) return say(`${slashOf(skill)} is not available`, false, `install the ${GOALS_PLUGIN} plugin (Plugin Catalog) and /reload-plugins`)
+
+    void screenText(state, host, question).then(screen => {
+      const now = researchOf(state)
+
+      // The inputs moved while AIDefence looked: that verdict is about another question.
+      if (now.question !== draft.question || now.depth !== draft.depth || now.cap !== draft.cap) return
+      if (blocksGuidance(screen)) return say('AIDefence blocked the question', false, `${screen.detail}. Change the question.`)
+
+      launch(slashOf(skill), 'deep research', { args: researchArgs(question, draft.depth, cap), note: researchConfirm(draft.depth, cap, screen) })
+    })
   }
 
   const actions: MissionActions = {
@@ -323,7 +363,7 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
 
   }
 
-  wired.set(state, { host, actions })
+  wired.set(state, { host, actions, research })
 
   return actions
 }

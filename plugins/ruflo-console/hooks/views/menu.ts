@@ -45,13 +45,13 @@ export const GROUPS: readonly { title: string; sections: readonly { name: string
   {
     title: 'NETWORK & EXTEND',
     sections: [
-      { name: 'network', items: [{ label: 'Federation', go: 'federation' }, { label: 'x.ruv.io Board', go: 'xruv' }] },
-      { name: 'plugins', items: [{ label: 'Plugins & Mods', go: 'plugins' }, { label: 'Skills', go: 'skills' }, { label: 'Plugin Catalog', go: 'market' }] },
+      { name: 'network', items: [{ label: 'Federation', go: 'federation' }, { label: 'x.ruv.io Board', go: 'xruv' }, { label: 'Sandbox', go: 'sandbox' }] },
+      { name: 'extend', items: [{ label: 'Skills', go: 'skills' }, { label: 'Plugin Catalog', go: 'market' }] },
     ],
   },
   {
     title: 'TOOLS',
-    sections: [{ name: 'tools', items: [{ label: 'AI Terminal', go: 'terminal' }, { label: 'Automation', go: 'automate' }, { label: 'Dev Tools', go: 'devtools' }, { label: 'Settings', go: 'settings' }, { label: 'Command Palette', go: 'palette' }, { label: 'Help', go: 'help' }, { label: 'Log Off', go: 'close' }] }],
+    sections: [{ name: 'tools', items: [{ label: 'AI Terminal', go: 'terminal' }, { label: 'Automation', go: 'automate' }, { label: 'Dev Tools', go: 'devtools' }, { label: 'Plugins & Mods', go: 'plugins' }, { label: 'Settings', go: 'settings' }, { label: 'Command Palette', go: 'palette' }, { label: 'Help', go: 'help' }, { label: 'Log Off', go: 'close' }] }],
   },
 ]
 

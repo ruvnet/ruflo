@@ -51,7 +51,7 @@ export const PLUGIN_MAP: Readonly<Record<string, PluginHome>> = {
   'ruflo-ruos': home('swarm'),
   'ruflo-ruvector': home('vector'),
   'ruflo-ruvllm': home('neural'),
-  'ruflo-rvf': home('vector'),
+  'ruflo-rvf': home('sandbox'),
   'ruflo-security-audit': home('secure'),
   'ruflo-sparc': home('missions'),
   'ruflo-swarm': home('swarm'),

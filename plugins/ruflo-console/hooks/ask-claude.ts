@@ -44,6 +44,7 @@ export const VIEW_ASK: Record<ViewId, ViewAsk> = {
   vector: { default: 'How should I use these vector stores and queries for this project?', slash: 'ruflo-ruvector:vector' },
   evolve: { default: 'Is this self-evolution loop safe and making progress? What should be promoted or rejected?', slash: 'ruflo-intelligence:intelligence' },
   devtools: { default: 'Which of these tools should I use for the change I am making?', slash: 'ruflo-jujutsu:jujutsu' },
+  sandbox: { default: 'Which sandbox fits what I want to try, and is anything running here I should end?', slash: 'ruflo-rvf:rvf' },
   market: { default: 'Which of these plugins would help most for what I am doing?' },
   settings: { default: 'Which of these settings should I change for how I work?' },
   agent: { default: 'What is this agent doing, and is anything wrong with it?' },

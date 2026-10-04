@@ -4,6 +4,7 @@ import { cachedFile, type Read } from '../files'
 import { redraw, under, type ModState } from '../state'
 import { dangerousCommandVerdict } from './dangerous-command'
 import { parseProjection, policyOpinion, PROJECTION_PATH, type Projection } from './policy'
+import { researchCheck } from './research'
 import { stricter, type Verdict } from './verdict'
 
 /** What `tool.check` answers when ruflo's own check could not run. */
@@ -49,6 +50,7 @@ export function opinionOf(
  */
 export function registerGuard(on: On, state: ModState) {
   const projection = cachedFile(() => under(state, PROJECTION_PATH), parseProjection)
+  const research = researchCheck(state)
 
   on('tool.check', async ($, e, next) => {
     const chain = await next(e)
@@ -63,7 +65,8 @@ export function registerGuard(on: On, state: ModState) {
         // a refused log never turns an observation into a failure
       }
     }
-    const merged = stricter(chain, verdict)
+    // The research guard (ADR-440) sees what ruflo's own opinion left standing.
+    const merged = await research({ stat: path => $.fs.stat(path), read: path => $.fs.read(path) }, tool, stricter(chain, verdict))
     if (merged !== chain) {
       state.tightened++
       redraw(state)

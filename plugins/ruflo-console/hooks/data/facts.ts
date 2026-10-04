@@ -156,7 +156,7 @@ export function parseHelpers(text: string | null): { version: string; files: str
   return { version: stringOf(manifest.version, 20) ?? 'unknown', files, isSigned: typeof value.signature === 'string' && value.signature.length > 20, ...(algorithm !== undefined && { algorithm }) }
 }
 
-export type Installed = { id: string; name: string; marketplace: string; version: string; scope: string; updatedMs?: number }
+export type Installed = { id: string; name: string; marketplace: string; version: string; scope: string; updatedMs?: number; installPath?: string }
 
 /** `~/.claude/plugins/installed_plugins.json` (version 2): every installed plugin, `name@marketplace`. */
 export function parseInstalled(text: string | null): Installed[] | null {
@@ -178,8 +178,9 @@ export function parseInstalled(text: string | null): Installed[] | null {
       }
 
       const updatedMs = msOf(entry.lastUpdated)
+      const installPath = typeof entry.installPath === 'string' && entry.installPath.length <= 300 ? entry.installPath : undefined
 
-      return [{ id: `${name}@${marketplace}`, name, marketplace, version: stringOf(entry.version, 30) ?? '?', scope: stringOf(entry.scope, 12) ?? '?', ...(updatedMs !== undefined && { updatedMs }) }]
+      return [{ id: `${name}@${marketplace}`, name, marketplace, version: stringOf(entry.version, 30) ?? '?', scope: stringOf(entry.scope, 12) ?? '?', ...(updatedMs !== undefined && { updatedMs }), ...(installPath !== undefined && { installPath }) }]
     })
 }
 

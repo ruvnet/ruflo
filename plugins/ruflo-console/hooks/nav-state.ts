@@ -11,8 +11,8 @@ export const NAV_GROUPS: readonly { title: string; icon: string; rows: readonly 
   { title: 'SWARM', icon: '🐝', rows: [['missions', 'overview', 'swarm', 'hive', 'claims', 'approvals']] },
   { title: 'MIND', icon: '🧠', rows: [['learning', 'neural', 'metaharness', 'evolve', 'memory', 'vector']] },
   { title: 'SAFETY', icon: '🛡️', rows: [['secure', 'cost', 'perf', 'timeline', 'events']] },
-  { title: 'NETWORK', icon: '🌐', rows: [['federation', 'xruv', 'plugins', 'skills', 'market']] },
-  { title: 'TOOLS', icon: '🛠️', rows: [['terminal', 'automate', 'devtools', 'settings']] },
+  { title: 'NETWORK', icon: '🌐', rows: [['federation', 'xruv', 'sandbox', 'skills', 'market']] },
+  { title: 'TOOLS', icon: '🛠️', rows: [['terminal', 'automate', 'devtools', 'plugins', 'settings']] },
 ]
 
 export const groupOf = (view: ViewId): string | null => NAV_GROUPS.find(group => group.rows.some(row => row.includes(view)))?.title ?? null

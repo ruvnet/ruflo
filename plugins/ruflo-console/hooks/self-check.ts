@@ -22,14 +22,17 @@ export const AREA_VIEW: Record<string, ViewId> = {
   Missions: 'missions', Overview: 'overview', Swarm: 'swarm', 'Hive-Mind': 'hive', Claims: 'claims', Approvals: 'approvals', Automation: 'automate',
   Learning: 'learning', Neural: 'neural', 'Vector Lab': 'vector', 'Memory Lab': 'memory', MetaHarness: 'metaharness', 'Self-Evolution': 'evolve',
   Security: 'secure', Federation: 'federation', 'x.ruv.io': 'xruv', 'Plugins & Mods': 'plugins', Skills: 'skills', 'Plugin Catalog': 'market',
-  'Dev Tools': 'devtools', 'Cost & Budget': 'cost', Timeline: 'timeline', Events: 'events', Performance: 'perf', 'AI Terminal': 'terminal', Settings: 'settings',
+  'Dev Tools': 'devtools', Sandbox: 'sandbox', 'Cost & Budget': 'cost', Timeline: 'timeline', Events: 'events', Performance: 'perf', 'AI Terminal': 'terminal', Settings: 'settings',
 }
+
+/** Pages with no hotkey on purpose (every letter is taken): reached from the menu, the nav, the palette or by name. */
+const NAMED_ONLY: ReadonlySet<string> = new Set(['sandbox'])
 
 export type Registries = { secure: readonly SecEntry[]; secureText: readonly SecText[]; perf: readonly PerfEntry[]; dev: readonly DevEntry[]; lab: readonly LabEntry[] }
 export const REGISTRIES: Registries = { secure: SECURE, secureText: SECURE_TEXT, perf: PERF, dev: DEV, lab: LAB }
 
 /** One value per field that its rule accepts, so every runnable Dev Tools row has an input that runs. */
-export const SAMPLE_FIELDS: DevFields = { ref: 'HEAD~1', path: 'memory/sample.rvf', label: 'ckpt-1', url: 'https://example.com', target: '@e1', query: 'auth', task: 'review my pull request', cmd: 'ls', id: 'agent-1', note: 'hello' }
+export const SAMPLE_FIELDS: DevFields = { ref: 'HEAD~1', path: 'memory/sample.rvf', label: 'ckpt-1', url: 'https://example.com', target: '@e1', query: 'auth', task: 'review my pull request', cmd: 'ls', id: 'agent-1', note: 'hello', session: 'demo', send: 'ls -la' }
 
 /** Free text, then an action type (policy-eval takes one): a text verb passes when any of these builds its command. */
 const SAMPLE_TEXTS = ['hello world', 'deploy']
@@ -68,18 +71,20 @@ function checkDev(entries: readonly DevEntry[], problems: string[]): number {
       continue
     }
 
-    if (entry.args === undefined) {
+    const build = entry.exec ?? entry.args
+
+    if (build === undefined) {
       problems.push(`${entry.id}: it is neither runnable nor marked n/a`)
 
       continue
     }
 
-    const bare = entry.args(emptyFields())
+    const bare = build(emptyFields())
 
     // With no field needed, an empty page must already run; with one, an empty field may be refused, but the sample must run.
     if (bare === null && entry.input === undefined) problems.push(`${entry.id}: it names no input field, yet cannot run on an empty page`)
 
-    const sampled = entry.args(SAMPLE_FIELDS)
+    const sampled = build(SAMPLE_FIELDS)
 
     if (!isArgv(sampled)) problems.push(`${entry.id}: no input is accepted, so its button can never run`)
   }
@@ -127,7 +132,7 @@ export function selfCheck(registries: Registries = REGISTRIES, views: readonly {
     if (view === undefined) problems.push(`${name}: no page is named for this area`)
     else {
       if (!views.some(entry => entry.id === view)) problems.push(`${name}: its page "${view}" does not exist`)
-      if (!views.some(entry => entry.id === view && entry.key !== '')) problems.push(`${name}: its page has no key`)
+      if (!views.some(entry => entry.id === view && (entry.key !== '' || NAMED_ONLY.has(entry.id)))) problems.push(`${name}: its page has no key`)
       if (ask[view] === undefined) problems.push(`${name}: its page has no Ask Claude row`)
     }
 

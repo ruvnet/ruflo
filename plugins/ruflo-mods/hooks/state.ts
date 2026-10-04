@@ -23,6 +23,8 @@ export type ModState = {
   edits: EditRecord[]
   editCount: number
   policy: 'none' | 'legacy' | 'observe' | 'enforce' | 'unreadable'
+  /** The research run (marker startedAt) whose first web call was already put to the person. */
+  researchAsked?: string
   budget: { level: BudgetLevel; usd?: number; limit?: number }
   /** Other mods' status segments, by id (`$.ruflo.segment`). */
   segments: Map<string, string>

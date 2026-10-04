@@ -11,6 +11,7 @@
 import type { ActionSpec } from './actions'
 import { plain } from './data/parse'
 import { RUFLO_MARKET } from './data/snapshot'
+import { DEFAULT_LOOP, LOOP_INTERVALS, type LoopPrefs, WRITER_CAPS } from './goap'
 import type { Host } from './host'
 import type { Runner } from './runner'
 import type { State } from './state'
@@ -44,8 +45,24 @@ export const CORE: readonly CoreKey[] = [
 export const CLAUDE_MODELS = ['default', 'haiku', 'sonnet', 'opus'] as const
 export const AI_BUDGETS = [0.25, 0.5, 1, 2] as const
 /** `autoAccept`: claude, codex and swarm turns go straight out with no confirm (they stay read-only, in plan mode, under the budget); ruflo commands still ask. */
-export type AiPrefs = { claudeModel: (typeof CLAUDE_MODELS)[number]; budgetUsd: (typeof AI_BUDGETS)[number]; autoAccept: boolean; /** Claude writes guidance after a mission goal is entered. */ guidance: boolean }
-export const DEFAULT_AI: AiPrefs = { claudeModel: 'default', budgetUsd: 1, autoAccept: false, guidance: true }
+export type AiPrefs = { claudeModel: (typeof CLAUDE_MODELS)[number]; budgetUsd: (typeof AI_BUDGETS)[number]; autoAccept: boolean; /** Claude writes guidance after a mission goal is entered. */ guidance: boolean } & LoopPrefs
+export const DEFAULT_AI: AiPrefs = { claudeModel: 'default', budgetUsd: 1, autoAccept: false, guidance: true, ...DEFAULT_LOOP }
+
+const ON_OFF = ['on', 'off'] as const
+const onOff = (value: boolean) => (value ? 'on' : 'off')
+
+/**
+ * The loop-centric mission rows (ADR-441), stored with the AI preferences: the Settings page maps over this list and calls
+ * `ctx.act.settings.ai(row.patch(value))`, so a row is one entry here, not new storage.
+ */
+export const LOOP_ROWS: readonly { id: string; title: string; description: string; extra: string; options: readonly string[]; current: (p: LoopPrefs) => string; isChanged: (p: LoopPrefs) => boolean; patch: (value: string) => Partial<LoopPrefs> }[] = [
+  { id: 'loop-interval', title: 'Mission loop interval', description: 'how often a mission’s /loop ticks: each tick checks progress, fixes failures and runs the gates (default 5m)', extra: 'loop tick cadence minutes', options: LOOP_INTERVALS, current: p => p.loopInterval, isChanged: p => p.loopInterval !== DEFAULT_LOOP.loopInterval, patch: value => ({ loopInterval: LOOP_INTERVALS.find(item => item === value) ?? DEFAULT_LOOP.loopInterval }) },
+  { id: 'loop-worktrees', title: 'Worktree per writer', description: 'each writing agent works in its own git worktree, on disjoint files, so concurrent writers never collide (default on)', extra: 'loop git worktree isolation writers', options: ON_OFF, current: p => onOff(p.loopWorktrees), isChanged: p => !p.loopWorktrees, patch: value => ({ loopWorktrees: value === 'on' }) },
+  { id: 'loop-commit', title: 'Loop may commit', description: 'the loop may commit to the mission branch, and nowhere else (default on)', extra: 'loop commit branch', options: ON_OFF, current: p => onOff(p.loopCommit), isChanged: p => !p.loopCommit, patch: value => ({ loopCommit: value === 'on' }) },
+  { id: 'loop-push', title: 'Loop may push', description: 'the loop may push the mission branch to its remote (default off: it stops at the branch and says so)', extra: 'loop push remote github', options: ON_OFF, current: p => onOff(p.loopPush), isChanged: p => p.loopPush, patch: value => ({ loopPush: value === 'on' }) },
+  { id: 'loop-publish', title: 'Loop may publish', description: 'the loop may publish releases or packages the mission names (default off: nothing is published without your word)', extra: 'loop publish release npm deploy', options: ON_OFF, current: p => onOff(p.loopPublish), isChanged: p => p.loopPublish, patch: value => ({ loopPublish: value === 'on' }) },
+  { id: 'loop-writers', title: 'Max concurrent writers', description: 'the most writing agents a mission loop runs at once (default 6)', extra: 'loop concurrent parallel agents', options: WRITER_CAPS.map(String), current: p => String(p.loopWriters), isChanged: p => p.loopWriters !== DEFAULT_LOOP.loopWriters, patch: value => ({ loopWriters: WRITER_CAPS.find(item => String(item) === value) ?? DEFAULT_LOOP.loopWriters }) },
+]
 export const AI_KEY = 'ai-prefs'
 
 export type SettingsState = {
@@ -258,7 +275,21 @@ export async function loadAiPrefs(state: State, host: Host): Promise<void> {
   const model = CLAUDE_MODELS.find(candidate => candidate === stored?.claudeModel)
   const budget = AI_BUDGETS.find(candidate => candidate === stored?.budgetUsd)
 
-  settingsOf(state).ai = { claudeModel: model ?? DEFAULT_AI.claudeModel, budgetUsd: budget ?? DEFAULT_AI.budgetUsd, autoAccept: stored?.autoAccept === true, guidance: stored?.guidance !== false }
+  const flag = (key: keyof LoopPrefs, fallback: boolean) => (typeof stored?.[key] === 'boolean' ? (stored[key] as boolean) : fallback)
+
+  settingsOf(state).ai = {
+    claudeModel: model ?? DEFAULT_AI.claudeModel,
+    budgetUsd: budget ?? DEFAULT_AI.budgetUsd,
+    autoAccept: stored?.autoAccept === true,
+    guidance: stored?.guidance !== false,
+    loopInterval: LOOP_INTERVALS.find(item => item === stored?.loopInterval) ?? DEFAULT_LOOP.loopInterval,
+    loopWorktrees: flag('loopWorktrees', DEFAULT_LOOP.loopWorktrees),
+    loopCommit: flag('loopCommit', DEFAULT_LOOP.loopCommit),
+    // Leaving the branch is opt-in: only an explicit stored true turns these on.
+    loopPush: stored?.loopPush === true,
+    loopPublish: stored?.loopPublish === true,
+    loopWriters: WRITER_CAPS.find(item => item === stored?.loopWriters) ?? DEFAULT_LOOP.loopWriters,
+  }
 }
 
 export function saveAiPrefs(state: State, host: Host, patch: Partial<AiPrefs>): void {

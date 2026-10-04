@@ -57,7 +57,7 @@ export function guidancePrompt(state: State, mc: McState, plan: Plan): string {
     `Kind: ${plan.profile}. Rigor: ${plan.rigor}. Lifecycle: ${lifecycleOf(plan).map(entry => entry.stage).join(' → ')}.`,
     '',
     'THE PLAN THE PLANNER MADE:',
-    planText(plan, mc.goal),
+    planText(plan, mc.goal, ai),
     '',
     'THIS INSTALLATION:',
     `- ruflo plugins loaded in the session: ${plugins.length === 0 ? 'none reported' : plugins.join(', ')}`,
@@ -65,10 +65,13 @@ export function guidancePrompt(state: State, mc: McState, plan: Plan): string {
     `- AI settings: claude model ${ai.claudeModel}, turn budget $${ai.budgetUsd}, ${ai.autoAccept ? 'always accept' : 'asks before AI turns'}`,
     `- Settings level: ${settingsOf(state).level}`,
     '',
+    'The mission runs as a loop (the LOOP lines above are the user\u2019s settings; keep to them, ask nothing mid-loop, and never go beyond what they allow).',
+    '',
     'Write detailed guidance, in markdown with one short heading per lifecycle stage that the plan has (Research, Create (ADRs and the SOP), Build, Test, Validate, Secure, Benchmark, Learn).',
     'Under each heading: what to do for THIS goal, the acceptance evidence, and which ruflo capabilities to bring in (name the exact agents, plugins, skills, MCP tools or ruflo commands that fit, and why), preferring what is installed here and saying plainly what is not.',
+    'Then add a "Loop" heading: the exact `/loop` line, what each tick checks, fixes and runs (name the gates), the finish condition, the defaults taken, and the stop rule, in your own words for THIS goal. Where a stage has parallel writers, say who owns which files, each in its own worktree.',
     'Then add: "Suggestions" (other ruflo capabilities worth integrating that the plan does not use, such as swarm or hive-mind for parallel work, memory and pattern search for prior art, AIDefence, MetaHarness audits, the flywheel for self-optimization), and "Risks" (what could go wrong and how the plan guards against it).',
-    'Keep it under 700 words. No preamble.',
+    'Keep it under 800 words. No preamble.',
   ].join('\n')
 }
 

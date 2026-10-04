@@ -67,6 +67,18 @@ This plugin uses six AgentDB namespaces. They predate the namespace convention f
 
 Reserved namespaces (`pattern`, `claude-memories`, `default`) MUST NOT be shadowed.
 
+## Deep research: cap, screening, record (ADR-438)
+
+`/ruflo-goals:deep-research "<topic>" --cap-usd 2 --depth standard` (or the `deep-researcher` agent):
+
+- **Cap and depth.** `--cap-usd` (default 2) is a per-run limit on top of the shared cost-tracker budget; `--depth` is `quick|standard|deep`. At the cap the run stops and the record says `truncated`.
+- **Screened.** Fetched text goes through AIDefence (`aidefence_scan`) before it is stored or quoted.
+- **Run marker.** `.claude-flow/research-active.json` exists only while a run is active (stale after 2 hours); the `ruflo-mods` guard reads it.
+- **Consent.** The record is written to namespace `research` (`research-<slug>-<yyyymmddhhmm>`) only after you accept the report.
+- **Listing.** `node scripts/research-list.mjs --limit 10` prints `{version:1,records:[...]}`; test: `node scripts/test-research-list.mjs`.
+
+Works with no console installed. Contract: [ADR-438](../../v3/docs/adr/ADR-438-research-integration-contract.md).
+
 ## Dossier-investigator (ADR-099)
 
 The `dossier-investigator` agent + `dossier-collect` skill implement [ADR-099](../../v3/docs/adr/ADR-099-dossier-investigator-recursive-parallel-research.md) — recursive parallel multi-source investigation that fans out across web, memory, knowledge-graph, codebase, and ADR index, building a graph-structured dossier with budget caps, de-duplication, and provenance per claim.
@@ -81,7 +93,7 @@ Key invariants per ADR-099:
 
 ```bash
 bash plugins/ruflo-goals/scripts/smoke.sh
-# Expected: "10 passed, 0 failed"
+# Expected: "12 passed, 0 failed"
 ```
 
 ## Architecture Decisions

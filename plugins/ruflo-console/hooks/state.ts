@@ -21,7 +21,7 @@ export type NavStyle = 'auto' | 'icons' | 'brief' | 'full'
 export const NAV_STYLES: readonly NavStyle[] = ['auto', 'icons', 'brief', 'full']
 export const NAV_KEY = 'nav-style'
 
-export type ViewId = 'menu' | 'overview' | 'swarm' | 'hive' | 'claims' | 'federation' | 'plugins' | 'learning' | 'metaharness' | 'memory' | 'cost' | 'timeline' | 'approvals' | 'events' | 'missions' | 'xruv' | 'terminal' | 'skills' | 'agent' | 'secure' | 'perf' | 'automate' | 'neural' | 'vector' | 'evolve' | 'devtools' | 'market' | 'settings'
+export type ViewId = 'menu' | 'overview' | 'swarm' | 'hive' | 'claims' | 'federation' | 'plugins' | 'learning' | 'metaharness' | 'memory' | 'cost' | 'timeline' | 'approvals' | 'events' | 'missions' | 'xruv' | 'terminal' | 'skills' | 'agent' | 'secure' | 'perf' | 'automate' | 'neural' | 'vector' | 'evolve' | 'devtools' | 'sandbox' | 'market' | 'settings'
 
 /**
  * The views in tab order, each with its hotkey and the inline height it asks for. Digits are the first nine; the three
@@ -46,7 +46,7 @@ export const VIEWS: readonly { id: ViewId; key: string; label: string; short: st
   { id: 'learning', key: '7', label: 'Learning', short: 'Lrn', icon: '🧠', blurb: 'router picks and outcomes, and the RETRIEVE → JUDGE → DISTILL → CONSOLIDATE pipeline', rows: 30 },
   { id: 'metaharness', key: '8', label: 'MetaHarness', short: 'MH', icon: '🔬', blurb: 'harness readiness, the flywheel, the audit trend, and a lab that runs every MetaHarness verb', rows: 40 },
   { id: 'memory', key: '9', label: 'Memory', short: 'Mem', icon: '💾', blurb: 'the Memory Lab: browse, search, store and delete entries; AgentDB, embeddings and upkeep, each a button', rows: 60 },
-  { id: 'cost', key: 'c', label: 'Cost', short: 'Cst', icon: '💰', blurb: 'set a budget, see where spend is reported, and project its burn', rows: 40 },
+  { id: 'cost', key: 'c', label: 'Cost', short: 'Cst', icon: '💰', blurb: 'set a budget, see spend across Claude Code and Codex, and how to cut it', rows: 40 },
   { id: 'timeline', key: 'g', label: 'Timeline', short: 'Gnt', icon: '🕒', blurb: 'each agent busy or idle over the last minutes, beside Claude Code tool calls', rows: 24 },
   { id: 'approvals', key: 'q', label: 'Approvals', short: 'Apv', icon: '✅', blurb: 'decisions waiting for a person: votes, stealable claims, refused mods, budget', rows: 24 },
   { id: 'events', key: 'e', label: 'Events', short: 'Evt', icon: '📡', blurb: 'every swarm, claim, memory and mod event as it happens (f filters them)', rows: 26 },
@@ -60,6 +60,7 @@ export const VIEWS: readonly { id: ViewId; key: string; label: string; short: st
   { id: 'vector', key: 'v', label: 'Vector Lab', short: 'Vec', icon: '🧲', blurb: 'ruvector: the shared brain, RVF stores, rvlite queries, decompile, workers, edge, hooks intel and your pi identity', rows: 44 },
   { id: 'evolve', key: 't', label: 'Self-Evolution', short: 'Evo', icon: '🧬', blurb: 'the governed loop: flywheel receipts, ledger, lineage, the policy gate, the witness; Autogenous and rGi', rows: 44 },
   { id: 'devtools', key: 'd', label: 'Dev Tools', short: 'Dev', icon: '🔧', blurb: 'the integration surface: GitHub, diff analysis, agenticow, WASM, browser, terminal, providers, maintenance', rows: 40 },
+  { id: 'sandbox', key: '', label: 'Sandbox', short: 'Sbx', icon: '🧫', blurb: 'isolated places to try things: tmux sessions, RVF copy-on-write branches, RVM', rows: 40 },
   { id: 'market', key: 'm', label: 'Plugin Catalog', short: 'Cat', icon: '📦', blurb: 'every ruflo plugin, mod and skill: what it ships, install, enable, disable, update, view and use', rows: 50 },
   { id: 'settings', key: 's', label: 'Settings', short: 'Set', icon: '⚙️', blurb: 'simple to advanced settings: plugin options, ruflo config, updates, and the AI terminal’s model and budget, each edited in place', rows: 50 },
 ]
@@ -284,7 +285,7 @@ export type State = {
   /** The Self-Evolution view: the flywheel files as last read, and what its checks answered. */
   evolve: EvolveState
   /** The Dev Tools view: what is typed in its fields (its runs share the lab result panel, ids dt-*). */
-  devtools: { fields: DevFields }
+  devtools: { fields: DevFields; /** Whether tmux is on this machine, from a probe when the Sandbox page opens. */ tmux: 'unknown' | 'present' | 'missing' }
   timers: Map<string, Timer>
   stats: { renders: number[]; refreshes: number[]; frames: number[] }
 }
@@ -350,7 +351,7 @@ export function newState(raw: PluginOptions | undefined): State {
     auto: emptyAuto(),
     vector: emptyVector(),
     evolve: emptyEvolve(),
-    devtools: { fields: emptyFields() },
+    devtools: { fields: emptyFields(), tmux: 'unknown' },
     timers: new Map(),
     stats: { renders: [], refreshes: [], frames: [] },
   }

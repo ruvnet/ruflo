@@ -4,6 +4,7 @@ import type { DevField } from '../data/devtools'
 import { DEV, DEV_GROUPS, devSpec, type DevCost, type DevEntry, type DevGroup } from '../devtools'
 import { slot } from './attention'
 import { ago, button, clip, col, type Ctx, row, section, tagChip, text, THEME } from './common'
+import { SANDBOX_GROUPS } from '../sandbox'
 import { spinAt } from '../spinner'
 import { sendResultRow } from './secure'
 
@@ -38,11 +39,15 @@ const FIELDS: Partial<Record<DevGroup, readonly { field: DevField; label: string
     { field: 'id', label: 'id', placeholder: 'a session / agent id (terminal, DAA, managed agents)' },
   ],
   plugins: [{ field: 'query', label: 'search', placeholder: 'words to search the plugin registry (IPFS: asks first)', submit: 'search' }],
+  tmux: [
+    { field: 'session', label: 'name', placeholder: 'a sandbox name: letters, digits _ - (the console adds ruflo-sb-)', submit: 'capture' },
+    { field: 'send', label: 'type', placeholder: 'one command line to type into that session: Enter shows it, then asks before it runs', submit: 'send' },
+  ],
   daa: [{ field: 'note', label: 'note', placeholder: 'feedback or knowledge to send (also a managed-agent prompt)' }],
 }
 
 /** One dotted-leader row: the cost tag, the name, what it does, and its ▸ button; an n/a row says why instead. */
-function entryRow(ctx: Ctx, entry: DevEntry, lead: number): RenderElement {
+export function entryRow(ctx: Ctx, entry: DevEntry, lead: number): RenderElement {
   const tag = TAG[entry.cost]
   const isNa = entry.na !== undefined
   const isBlocked = !isNa && devSpec(entry, ctx.state.devtools.fields) === null
@@ -61,7 +66,7 @@ function entryRow(ctx: Ctx, entry: DevEntry, lead: number): RenderElement {
   )
 }
 
-function fieldRows(ctx: Ctx, group: DevGroup): RenderElement[] {
+export function fieldRows(ctx: Ctx, group: DevGroup): RenderElement[] {
   const fields = FIELDS[group] ?? []
 
   const Input = ctx.kit.Input
@@ -83,7 +88,7 @@ function fieldRows(ctx: Ctx, group: DevGroup): RenderElement[] {
 }
 
 /** The Result section's header: a running run with its seconds and spinner, the last exit, or that nothing ran yet. */
-function resultRight(ctx: Ctx): string {
+export function resultRight(ctx: Ctx): string {
   const { state, nowMs } = ctx
   const running = state.lab.running?.id.startsWith('dt-') === true ? state.lab.running : null
   const result = state.lab.result?.id.startsWith('dt-') === true ? state.lab.result : null
@@ -140,7 +145,8 @@ export function devtoolsView(ctx: Ctx): RenderElement {
   const hasRun = state.lab.running?.id.startsWith('dt-') === true || state.lab.result?.id.startsWith('dt-') === true || state.pending !== null
   const rows: RenderElement[] = [text(ctx, ' $0 local read, runs at once · cpu/wr local work or a write · net the network · $$ may spend · del deletes: each of these asks first', { dimColor: true })]
 
-  DEV_GROUPS.forEach((group, i) => {
+  // The sandbox groups (tmux, RVM) are drawn on the Sandbox page, not here.
+  DEV_GROUPS.filter(group => !SANDBOX_GROUPS.some(sandbox => sandbox.id === group.id)).forEach((group, i) => {
     const entries = DEV.filter(candidate => candidate.group === group.id)
 
     // The first group, and every group with a text field, opens: a field folded away could not be typed into, so its runs would refuse.

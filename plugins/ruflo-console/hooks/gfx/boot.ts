@@ -50,6 +50,7 @@ export const BOOT_MODULES: readonly { name: string; note: string }[] = [
   { name: 'Skills', note: 'find, add, manage' },
   { name: 'Plugin Catalog', note: 'every plugin, mod and skill' },
   { name: 'Dev Tools', note: 'ADRs, SPARC, tests, git, docs' },
+  { name: 'Sandbox', note: 'tmux, RVF branches, RVM' },
   { name: 'Cost & Budget', note: 'spend, burn, limits' },
   { name: 'Timeline', note: 'who was busy, and when' },
   { name: 'Events', note: 'what changed, live' },

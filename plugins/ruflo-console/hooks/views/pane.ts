@@ -26,6 +26,7 @@ import { evolveResult, evolveView } from './evolve'
 import { catalogView } from './plugin-catalog'
 import { settingsView } from './settings'
 import { devtoolsResult, devtoolsView } from './devtools'
+import { sandboxView } from './sandbox'
 import { federationView } from './federation'
 import { hiveView } from './hive'
 import { learningView } from './learning'
@@ -85,6 +86,7 @@ const BODIES: Record<ViewId, (ctx: Ctx) => RenderElement> = {
   vector: vectorView,
   evolve: evolveView,
   devtools: devtoolsView,
+  sandbox: sandboxView,
   market: catalogView,
   settings: settingsView,
   agent: agentView,
@@ -289,6 +291,7 @@ const RESULT_OF: Partial<Record<ViewId, (ctx: Ctx) => RenderElement[]>> = {
   overview: optimizerResult,
   metaharness: labResult,
   devtools: devtoolsResult,
+  sandbox: devtoolsResult,
   vector: vectorResult,
   evolve: evolveResult,
   secure: secureResult,

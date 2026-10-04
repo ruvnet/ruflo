@@ -34,7 +34,7 @@ export const GROUP_BLURB: Record<HelpGroup, string> = {
   Work: 'missions, swarms, claims, automation',
   Learn: 'learning, memory, vectors, harness',
   Safety: 'security, budget, performance',
-  Network: 'federation and x.ruv.io',
+  Network: 'federation, x.ruv.io, sandboxes',
   Tools: 'plugins, skills, dev tools',
   Console: 'settings, updates, commands, fixes',
 }
@@ -64,6 +64,7 @@ export const VIEW_TOPIC: Partial<Record<ViewId, string>> = {
   xruv: 'xruv',
   skills: 'skills',
   devtools: 'devtools',
+  sandbox: 'sandbox',
   settings: 'settings',
   timeline: 'watch',
   events: 'watch',
@@ -85,6 +86,7 @@ const SAME: readonly (readonly string[])[] = [
   ['federation', 'peers', 'peer', 'network', 'share', 'x.ruv.io', 'xruv'],
   ['mcp', 'connect', 'codex', 'chatgpt', 'grok', 'desktop', 'client', 'register'],
   ['skill', 'skills', 'playbook'],
+  ['sandbox', 'sandboxes', 'isolated', 'isolate', 'tmux', 'experiment'],
   ['task', 'tasks', 'claim', 'claims', 'owner', 'board'],
   ['schedule', 'scheduled', 'loop', 'sentry', 'sentries', 'cron', 'automate', 'automation', 'workflow', 'worker', 'workers'],
 ]

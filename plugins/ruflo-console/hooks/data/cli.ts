@@ -5,8 +5,9 @@
  * fetches a manifest from GitHub).
  */
 import { idOf, msOf, numberOf, plain, recordOf, stringOf, valuesOf } from './parse'
+import { researchProbe } from './research'
 
-import { CLI_PREFIXES, type CliChoice, type ViewId } from '../state'
+import { CLI_PREFIXES, type CliChoice, type State, type ViewId } from '../state'
 
 export type { ViewId }
 
@@ -15,6 +16,8 @@ export type Probe<T> = {
   args: readonly string[]
   /** A local executable for a capability check, or an offline-only ruflo read. */
   argv?: readonly string[]
+  /** An argv that depends on what is installed; null while it cannot be built, and the probe then does not run. */
+  argvOf?: (state: State) => readonly string[] | null
   isOffline?: boolean
   /** The views that draw it: a probe runs only while one of them is in front (the overview's run with the bar too). */
   views: readonly ViewId[]
@@ -49,7 +52,10 @@ const objectOf = (stdout: string) => recordOf(jsonAfter(stdout))
 const exec = (tool: string, params: Record<string, unknown>) => ['mcp', 'exec', '-t', tool, '-p', JSON.stringify(params)] as const
 
 /** Offline probes never let the download-enabled CLI choice reach the registry. */
-export const probeArgv = (probe: Pick<Probe<unknown>, 'args' | 'argv' | 'isOffline'>, cli: CliChoice): readonly string[] => probe.argv ?? [...CLI_PREFIXES[probe.isOffline && cli === 'npx' ? 'npx-offline' : cli], ...probe.args]
+export const probeArgv = (probe: Pick<Probe<unknown>, 'args' | 'argv' | 'argvOf' | 'isOffline'>, cli: CliChoice, state?: State): readonly string[] => (state === undefined ? undefined : probe.argvOf?.(state)) ?? probe.argv ?? [...CLI_PREFIXES[probe.isOffline && cli === 'npx' ? 'npx-offline' : cli], ...probe.args]
+
+/** A probe with an install-dependent argv runs only while that argv can be built; every other probe is always ready. */
+export const probeReady = (probe: Pick<Probe<unknown>, 'argvOf'>, state: State): boolean => probe.argvOf === undefined || probe.argvOf(state) !== null
 
 /** Help only: older Claude builds must not get a guessed configuration command. */
 export const budgetConfigProbe: Probe<boolean> = {
@@ -469,7 +475,7 @@ export const registryProbe: Probe<Registry> = {
   },
 }
 
-export const PROBES = [versionProbe, memoryProbe, namespacesProbe, scoreProbe, flywheelProbe, auditProbe, intelligenceProbe, peersProbe, channelsProbe, rosterProbe, registryProbe, budgetConfigProbe, modelStatsProbe] as const
+export const PROBES = [versionProbe, memoryProbe, namespacesProbe, scoreProbe, flywheelProbe, auditProbe, intelligenceProbe, peersProbe, channelsProbe, rosterProbe, registryProbe, budgetConfigProbe, modelStatsProbe, researchProbe] as const
 
 export type ProbeId = (typeof PROBES)[number]['id']
 

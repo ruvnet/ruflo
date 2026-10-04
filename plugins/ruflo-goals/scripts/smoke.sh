@@ -7,9 +7,9 @@ step() { printf "→ %s ... " "$1"; }
 ok()   { printf "PASS\n"; PASS=$((PASS+1)); }
 bad()  { printf "FAIL: %s\n" "$1"; FAIL=$((FAIL+1)); }
 
-step "1. plugin.json declares 0.2.1 with new keywords"
+step "1. plugin.json declares 0.3.0 with new keywords"
 v=$(grep -E '"version"' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.2.1" ]]; then bad "expected 0.2.1, got '$v'"; else
+if [[ "$v" != "0.3.0" ]]; then bad "expected 0.3.0, got '$v'"; else
   miss=""
   for k in mcp evidence-grading legacy-namespaces; do
     grep -q "\"$k\"" "$ROOT/.claude-plugin/plugin.json" || miss="$miss $k"
@@ -82,6 +82,21 @@ for f in "$ROOT"/skills/*/SKILL.md; do
   grep -q '^allowed-tools:[[:space:]]*\*' "$f" && bad_skills="$bad_skills $(basename $(dirname "$f"))"
 done
 [[ -z "$bad_skills" ]] && ok || bad "wildcard:$bad_skills"
+
+step "11. deep-research: cap, depth, AIDefence, marker, accept-before-store (ADR-438)"
+miss=""
+for f in "$ROOT/skills/deep-research/SKILL.md" "$ROOT/agents/deep-researcher.md"; do
+  b=$(basename "$f")
+  for t in aidefence_scan '--cap-usd' 'quick|standard|deep' 'research-active.json' truncated 'research-<slug>-<yyyymmddhhmm>' 'accept'; do
+    grep -qF -- "$t" "$f" || miss="$miss $b-no-$t"
+  done
+done
+grep -q 'aidefence_scan' "$ROOT/skills/deep-research/SKILL.md" && grep -E '^allowed-tools:' "$ROOT/skills/deep-research/SKILL.md" | grep -q aidefence_scan || miss="$miss skill-allowed-tools-no-aidefence"
+grep -E '^  - .*aidefence_scan' "$ROOT/agents/deep-researcher.md" >/dev/null || miss="$miss agent-tools-no-aidefence"
+[[ -z "$miss" ]] && ok || bad "$miss"
+
+step "12. research-list.mjs runtime test passes"
+out=$(node "$ROOT/scripts/test-research-list.mjs" 2>&1) && ok || bad "$out"
 
 printf "\n%s passed, %s failed\n" "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]] || exit 1
