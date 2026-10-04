@@ -1,4 +1,6 @@
 const SECP256K1_FIELD = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2fn;
+const VALIDITY_CACHE_LIMIT = 4096;
+const validityCache = new Map();
 
 function modPow(base, exponent, modulus) {
   let result = 1n;
@@ -14,10 +16,17 @@ function modPow(base, exponent, modulus) {
 /** True when a canonical Nostr x-only public key is a secp256k1 curve point. */
 export function isNostrPublicKey(pubkey) {
   if (typeof pubkey !== 'string' || !/^[0-9a-f]{64}$/i.test(pubkey)) return false;
-  const x = BigInt(`0x${pubkey}`);
-  if (x >= SECP256K1_FIELD) return false;
-  const ySquared = (x * x % SECP256K1_FIELD * x + 7n) % SECP256K1_FIELD;
-  return ySquared === 0n || modPow(ySquared, (SECP256K1_FIELD - 1n) / 2n, SECP256K1_FIELD) === 1n;
+  const canonical = pubkey.toLowerCase();
+  if (validityCache.has(canonical)) return validityCache.get(canonical);
+  const x = BigInt(`0x${canonical}`);
+  let valid = x < SECP256K1_FIELD;
+  if (valid) {
+    const ySquared = (x * x % SECP256K1_FIELD * x + 7n) % SECP256K1_FIELD;
+    valid = ySquared === 0n || modPow(ySquared, (SECP256K1_FIELD - 1n) / 2n, SECP256K1_FIELD) === 1n;
+  }
+  if (validityCache.size >= VALIDITY_CACHE_LIMIT) validityCache.delete(validityCache.keys().next().value);
+  validityCache.set(canonical, valid);
+  return valid;
 }
 
 /** Format a valid Nostr x-only public key as its did:nostr identifier. */
