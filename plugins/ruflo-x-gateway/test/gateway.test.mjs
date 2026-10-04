@@ -6,6 +6,7 @@ import { checkAdmin, rateLimited, readBody, MAX_BODY } from '../src/security.mjs
 import { connectAuthed } from '../src/nostr-federation.mjs';
 import { readFileSync } from 'node:fs';
 import { createGateway, VERSION } from '../src/server.mjs';
+import { nostrDidFromPubkey } from '../src/did-nostr.mjs';
 import { generateSecretKey, getPublicKey, verifyEvent, finalizeEvent } from 'nostr-tools/pure';
 
 const ev = (type, pubkey, resourceId, t, extra = {}) => ({ type, pubkey, resourceId, created_at: t, ...extra });
@@ -69,7 +70,11 @@ test('server: routes, admin gating, oversize body, unknown ws path', async () =>
   const gw = createGateway({ relay: 'ws://127.0.0.1:1', keyFile: '/tmp/x-gw-test-' + Date.now() + '.key', port: 0 });
   const port = await gw.listen(0); const base = `http://127.0.0.1:${port}`;
   assert.equal(await (await fetch(base + '/health')).text(), 'ok');
-  const info = await (await fetch(base + '/')).json(); assert.equal(info.gatewayPubkey, gw.pubkey); assert.ok(info.resources.includes('ruv://claims/board'));
+  const info = await (await fetch(base + '/')).json(); assert.equal(info.gatewayPubkey, gw.pubkey); assert.equal(info.gatewayDid, nostrDidFromPubkey(gw.pubkey)); assert.ok(info.resources.includes('ruv://claims/board'));
+  const identity = await rpc({ jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'federation_identity', arguments: {} } });
+  assert.ok(identity.includes(info.gatewayDid), 'federation_identity returns the gateway DID');
+  const registry = await rpc({ jsonrpc: '2.0', id: 6, method: 'resources/read', params: { uri: 'ruv://federation/registry' } });
+  assert.ok(registry.includes(info.gatewayDid), 'federation registry returns the gateway DID');
   const rpc = (m) => fetch(base + '/mcp', { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' }, body: JSON.stringify(m) }).then((r) => r.text());
   const list = await rpc({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} });
   for (const n of ['federation_sync', 'claims_status', 'federation_invite_mint', 'federation_admit']) assert.ok(list.includes(`"name":"${n}"`), n);
@@ -155,7 +160,7 @@ test('security: verified pubkey/id/created_at cannot be overridden by spoofed co
   // Signed legitimately under the attacker's OWN key, but the JSON content
   // claims to be a ClaimReleased from the victim — this is exactly what
   // reduceClaims would need to see to let the attacker forge a release/handoff.
-  const spoofContent = JSON.stringify({ type: 'ClaimReleased', pubkey: victimPk, id: 'f'.repeat(64), created_at: 1, resourceId: 'r1' });
+  const spoofContent = JSON.stringify({ type: 'ClaimReleased', pubkey: victimPk, did: nostrDidFromPubkey(victimPk), id: 'f'.repeat(64), created_at: 1, resourceId: 'r1' });
 
   // fetchRecent
   let wss = new WebSocketServer({ port: 0 });
@@ -174,6 +179,8 @@ test('security: verified pubkey/id/created_at cannot be overridden by spoofed co
   assert.equal(out.length, 1);
   assert.equal(out[0].pubkey, attackerPk, 'fetchRecent: verified pubkey must win over spoofed content.pubkey');
   assert.notEqual(out[0].pubkey, victimPk);
+  assert.equal(out[0].did, nostrDidFromPubkey(attackerPk), 'fetchRecent: DID must be derived from verified event pubkey');
+  assert.notEqual(out[0].did, nostrDidFromPubkey(victimPk), 'fetchRecent: content cannot spoof another DID');
   assert.equal(out[0].created_at, 1000, 'fetchRecent: verified created_at must win over spoofed content.created_at');
 
   // fetchManyOn (per-filter 'qN' REQ ids)
@@ -192,6 +199,7 @@ test('security: verified pubkey/id/created_at cannot be overridden by spoofed co
   wss.close();
   assert.equal(many.length, 1);
   assert.equal(many[0].pubkey, attackerPk, 'fetchManyOn: verified pubkey must win over spoofed content.pubkey');
+  assert.equal(many[0].did, nostrDidFromPubkey(attackerPk), 'fetchManyOn: DID follows verified event pubkey');
 
   // fetchChannel (plaintext branch)
   wss = new WebSocketServer({ port: 0 });
@@ -209,6 +217,7 @@ test('security: verified pubkey/id/created_at cannot be overridden by spoofed co
   wss.close();
   assert.equal(chan.length, 1);
   assert.equal(chan[0].pubkey, attackerPk, 'fetchChannel: verified pubkey must win over spoofed content.pubkey');
+  assert.equal(chan[0].did, nostrDidFromPubkey(attackerPk), 'fetchChannel: DID follows verified event pubkey');
 });
 
 // ---- ADR-386 channels ----
