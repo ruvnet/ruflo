@@ -7,6 +7,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { readRecordStore } from './record-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText, validateAgentSpawn } from './validate-input.js';
 import { executeAgentTask } from './agent-execute-core.js';
@@ -74,16 +75,7 @@ function ensureAgentDir(): void {
 }
 
 function loadAgentStore(): AgentStore {
-  try {
-    const path = getAgentPath();
-    if (existsSync(path)) {
-      const data = readFileSync(path, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch {
-    // Return empty store on error
-  }
-  return { agents: {}, version: '3.0.0' };
+  return readRecordStore(getAgentPath(), 'agents', () => ({ agents: {}, version: '3.0.0' }));
 }
 
 function saveAgentStore(store: AgentStore): void {
