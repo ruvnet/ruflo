@@ -627,7 +627,8 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
   // the next-cheapest candidate that clears the quality bar. Budget is
   // bounded by CLAUDE_FLOW_ROUTER_FALLBACK_MAX_RETRIES (default 1) so
   // upstream outages don't cause retry storms.
-  const fallbackBudget = Math.max(0, parseInt(process.env.CLAUDE_FLOW_ROUTER_FALLBACK_MAX_RETRIES ?? '1', 10) || 1);
+  const configuredFallbackBudget = parseInt(process.env.CLAUDE_FLOW_ROUTER_FALLBACK_MAX_RETRIES ?? '1', 10);
+  const fallbackBudget = Number.isNaN(configuredFallbackBudget) ? 1 : Math.max(0, configuredFallbackBudget);
   const fallbackHistory: Array<{ modelId: string; error: string }> = [];
   if (!result.success && agent.modelId && fallbackBudget > 0) {
     const isRetryable = /\b(429|500|502|503|504|timeout|ECONNRESET|ETIMEDOUT)\b/i.test(result.error ?? '');
