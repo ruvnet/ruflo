@@ -7,6 +7,14 @@ const WRITERS = new Set(['memory_store', 'agentdb_pattern-store', 'agentdb_hiera
 // Covers the package's own names too: execute_trade, execute_multi_asset_trade, place_prediction_order_tool. Paper and simulated tools are not orders.
 const ORDER = /^(?!.*(?:paper|simulat|dry))(?:execute|place|submit)(?:[_-][a-z]+)*[_-]?(?:trade|order|bet)s?(?:[_-]tool)?$|^live[_-]?(?:trade|order|execute)|^(?:close|cancel)[_-]?all/i
 
+/** This plugin's namespaces (trading-strategies, trading-risk, ...). A `memory_store` outside them is another plugin's write, and ruflo-agentdb (the catch-all) screens it. */
+const OWN_NS = /^(?:trading|neural-trader|trader)/i
+const ownNamespace = (input: unknown): boolean => {
+  const top = typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {}
+  const inner = typeof top.input === 'object' && top.input !== null ? (top.input as Record<string, unknown>) : {}
+  return [top.namespace, inner.namespace].some(ns => typeof ns === 'string' && OWN_NS.test(ns))
+}
+
 const toolOf = (name: string) => (name.startsWith('mcp__') ? name.slice(name.lastIndexOf('__') + 2) : name)
 const serverOf = (name: string) => (name.startsWith('mcp__') ? name.slice(5, name.lastIndexOf('__')) : '')
 const isTrader = (name: string) => /neural[-_]?trader/i.test(serverOf(name))
@@ -25,7 +33,8 @@ function confirmed(input: unknown): boolean {
  */
 export function verdict(tool: string, input: unknown, opts: ModOptions, stats: Stats): string | undefined {
   const trader = isTrader(tool)
-  if (!trader && !WRITERS.has(toolOf(tool))) return undefined
+  const memory = WRITERS.has(toolOf(tool)) && (toolOf(tool) !== 'memory_store' || ownNamespace(input))
+  if (!trader && !memory) return undefined
   stats.checked++
   const found = textsOf(input).flatMap(secretsIn)
   if (found.length > 0) {

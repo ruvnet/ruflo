@@ -5,6 +5,14 @@ import type { Stats } from './status'
 const WRITERS = new Set(['memory_store', 'agentdb_pattern-store', 'agentdb_hierarchical-store'])
 const OWN = new Set(['create_production', 'separate_stems', 'master', 'extract_midi'])
 
+/** This plugin's namespaces (music-productions, music-briefs). A `memory_store` outside them is another plugin's write, and ruflo-agentdb (the catch-all) screens it. */
+const OWN_NS = /^music/i
+const ownNamespace = (input: unknown): boolean => {
+  const top = typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {}
+  const inner = typeof top.input === 'object' && top.input !== null ? (top.input as Record<string, unknown>) : {}
+  return [top.namespace, inner.namespace].some(ns => typeof ns === 'string' && OWN_NS.test(ns))
+}
+
 const toolOf = (name: string) => (name.startsWith('mcp__') ? name.slice(name.lastIndexOf('__') + 2) : name)
 const serverOf = (name: string) => (name.startsWith('mcp__') ? name.slice(5, name.lastIndexOf('__')) : '')
 /** The cogmusic server, however the plugin names it (`cogmusic` or `plugin_ruflo-music_cogmusic`). */
@@ -16,7 +24,8 @@ const isCogmusic = (name: string) => serverOf(name).includes('cogmusic') && OWN.
  */
 export function verdict(tool: string, input: unknown, _opts: ModOptions, stats: Stats): string | undefined {
   const sends = isCogmusic(tool)
-  if (!sends && !WRITERS.has(toolOf(tool))) return undefined
+  const memory = WRITERS.has(toolOf(tool)) && (toolOf(tool) !== 'memory_store' || ownNamespace(input))
+  if (!sends && !memory) return undefined
   stats.checked++
   const found = textsOf(input).flatMap(secretsIn)
   if (found.length === 0) {

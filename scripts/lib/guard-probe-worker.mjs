@@ -29,7 +29,7 @@ const call = (tool, input) => {
 const refused = r => r.err === undefined && r.v !== undefined && r.v !== null && r.v !== 'pass' && r.v !== false
 
 const FIELDS = ['value', 'content', 'text', 'message', 'command', 'script', 'args', 'data', 'description', 'query', 'prompt', 'body', 'url', 'title']
-const NAMESPACES = [undefined, 'adr', 'docs', 'document', 'federation', 'patterns', 'pattern', 'market-data', 'learning', 'agent', 'goals', 'trading', 'cost-tracking', 'observability', 'migrations', 'rvf', 'sparc', 'tests', 'security', 'knowledge-graph', 'workflows', 'iot-devices', 'ddd-model', 'music']
+const NAMESPACES = [undefined, 'adr', 'docs', 'document', 'federation', 'patterns', 'pattern', 'market-data', 'learning', 'agent', 'goals', 'trading', 'cost-tracking', 'observability', 'migrations', 'rvf', 'sparc', 'tests', 'security', 'knowledge-graph', 'workflows', 'iot-devices', 'ddd-model', 'music', 'vector-patterns']
 const base = ns => ({ action: 'create', ...(ns === undefined ? {} : { namespace: ns, key: ns }) })
 const superInput = (ns, p) => ({ ...base(ns), ...Object.fromEntries(FIELDS.map(f => [f, p])), input: Object.fromEntries(FIELDS.map(f => [f, p])) })
 const carriers = ns => [
