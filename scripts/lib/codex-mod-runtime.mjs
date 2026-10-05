@@ -92,7 +92,11 @@ export async function runCodexHook(plugin) {
     catch { process.stderr.write(`${plugin.name}: courtesy status unavailable\n`); }
     return; // No extra instructions or model turn.
   }
-  if (mode !== 'PreToolUse' || typeof event.tool_name !== 'string' || !plain(event.tool_input)) throw new Error('Invalid native tool event');
+  if (mode !== 'PreToolUse' || typeof event.tool_name !== 'string' || !Object.hasOwn(event, 'tool_input')) throw new Error('Invalid native tool event');
+  // Native freeform tools carry arbitrary JSON (including strings), not just objects.
+  // A malformed memory writer cannot bypass scope checks by hiding namespace/key fields.
+  const shortName = event.tool_name.startsWith('mcp__') ? event.tool_name.slice(event.tool_name.lastIndexOf('__') + 2) : event.tool_name;
+  if (plugin.writers.includes(shortName) && !plain(event.tool_input)) throw new Error('Invalid guarded writer input');
   const reason = plugin.verdict(event.tool_name, event.tool_input);
   try { updateStatus(plugin, event, (stats) => plugin.count(stats, event.tool_name, event.tool_input, reason)); }
   catch { process.stderr.write(`${plugin.name}: courtesy status unavailable\n`); }

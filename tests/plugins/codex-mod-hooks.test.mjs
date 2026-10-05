@@ -53,6 +53,20 @@ for (const [name, fixture] of Object.entries(fixtures)) {
     const wrongTool = run(name, 'PreToolUse', { tool_name: 'mcp__ruflo__memory_search', tool_input: fixture.input });
     assert.equal(wrongTool.status, 0); assert.equal(wrongTool.stdout, '');
   });
+  test(`${name}: native arbitrary-JSON inputs pass for unrelated tools, malformed memory writers fail closed`, () => {
+    for (const input of ['*** Begin Patch\n*** End Patch', ['raw', 'arguments'], 7, true, null]) {
+      for (const tool of ['apply_patch', 'mcp__other__unrelated_tool']) {
+        const out = run(name, 'PreToolUse', { tool_name: tool, tool_input: input });
+        assert.equal(out.status, 0, out.stderr); assert.equal(out.stdout, '');
+      }
+      const guarded = run(name, 'PreToolUse', { tool_name: `mcp__ruflo__${fixture.tool}`, tool_input: input });
+      assert.equal(guarded.status, 2); assert.equal(guarded.stdout, '');
+      assert.equal(guarded.stderr, `ruflo-${name}: native hook input or adapter failed\n`);
+    }
+    const missing = run(name, 'PreToolUse', { tool_name: 'apply_patch' }); assert.equal(missing.status, 2);
+    const secret = run(name, 'PreToolUse', event(fixture));
+    assert.equal(JSON.parse(secret.stdout).hookSpecificOutput.permissionDecision, 'deny');
+  });
   test(`${name}: session counters persist across processes, initialize courtesy view, never retain tool input`, () => {
     const started = run(name, 'SessionStart', {}); assert.equal(started.status, 0); assert.equal(started.stdout, '');
     const denied = run(name, 'PreToolUse', event(fixture)); assert.equal(denied.status, 0);

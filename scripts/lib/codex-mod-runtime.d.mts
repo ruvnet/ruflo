@@ -1,5 +1,6 @@
 export type NativePlugin<Stats extends object> = {
   name: string;
+  writers: readonly string[];
   verdict(tool: string, input: unknown): string | undefined;
   newStats(): Stats;
   statusPath: string;

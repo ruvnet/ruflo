@@ -133,3 +133,11 @@ The adapters need Node.js and contain no runtime SDK dependency.
 This source change requires a released upstream package or an explicitly owned
 source projection to reach installations. It does not patch foreign cache entries,
 pin upstream updates, disable plugins, or claim an already published repair.
+
+Release both host manifests with the same patch version. Codex 0.160's published
+remote-bundle sync skips downloading a release whose version equals the installed
+version; merging same-version source does not establish automatic cache refresh.
+Its explicit native plugin install replaces the cached root atomically even at the
+same version. An owned projection must therefore refresh its upstream source
+generation and explicitly reinstall it; refreshing a marketplace catalog alone
+is not installation proof. No foreign cache entry should be edited in place.
