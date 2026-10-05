@@ -60,4 +60,4 @@ AGNTCY also ships as a function-hook mod (ADR-445 pattern; hooks in `hooks/`, lo
 - **`/agntcy-mod`**: answered locally. `/agntcy-mod status`, `/agntcy-mod config`.
 - **Status file**: `.claude-flow/agntcy-mod/status.json` (`version`, `updatedMs`, counters), written at session start; the console reads it.
 
-Test: `claude plugin validate plugins/ruflo-agntcy`, `claude plugin test plugins/ruflo-agntcy` (this plugin also holds vitest files that `claude plugin test` cannot load; run it on a copy holding only `.claude-plugin`, `hooks` and `tests/mod.test.ts`), and `bash plugins/ruflo-agntcy/scripts/smoke.sh`.
+Test: `claude plugin validate plugins/ruflo-agntcy`, `claude plugin test plugins/ruflo-agntcy` (its vitest suites are `*.spec.ts`, so the kit collects only `tests/mod.test.ts`), and `bash plugins/ruflo-agntcy/scripts/smoke.sh`.
