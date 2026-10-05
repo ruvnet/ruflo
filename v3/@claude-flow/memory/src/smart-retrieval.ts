@@ -303,26 +303,31 @@ function mmrRerank(scored: Scored[], lambda: number, limit: number): Scored[] {
 
   const selected: Scored[] = [];
   const remaining = [...scored];
-  const selectedEmbeddings: Array<number[] | undefined> = [];
 
   // Seed with the top-scored candidate.
   const first = remaining.shift()!;
   selected.push(first);
-  selectedEmbeddings.push(first.candidate.embedding);
+
+  // Running "max similarity to the selected set so far" per remaining
+  // candidate (Dream Cycle 2026-10-05). The max over an ever-growing
+  // selected set only needs the newest member folded in each round — the
+  // max over everything selected before that round is already captured in
+  // the cached value — so this avoids re-scanning the whole selected set
+  // for every remaining candidate on every outer pass (was O(limit^2 x N)
+  // pairSimilarity calls in the worst case; now O(limit x N)). Floored at
+  // 0 on both the seed and the update step to match the original loop's
+  // `let maxOverlap = 0` initialization exactly (cosine can be negative).
+  const maxSim = remaining.map((cand) => {
+    const sim = pairSimilarity(cand.candidate.embedding, first.candidate.embedding, cand, first, getTokens);
+    return sim > 0 ? sim : 0;
+  });
 
   while (selected.length < limit && remaining.length > 0) {
     let bestIdx = -1;
     let bestMmr = -Infinity;
 
     for (let i = 0; i < remaining.length; i++) {
-      const cand = remaining[i];
-      const candEmbedding = cand.candidate.embedding;
-      let maxOverlap = 0;
-      for (let j = 0; j < selected.length; j++) {
-        const sim = pairSimilarity(candEmbedding, selectedEmbeddings[j], cand, selected[j], getTokens);
-        if (sim > maxOverlap) maxOverlap = sim;
-      }
-      const mmr = lambda * cand.score - (1 - lambda) * maxOverlap;
+      const mmr = lambda * remaining[i].score - (1 - lambda) * maxSim[i];
       if (mmr > bestMmr) {
         bestMmr = mmr;
         bestIdx = i;
@@ -331,8 +336,19 @@ function mmrRerank(scored: Scored[], lambda: number, limit: number): Scored[] {
 
     if (bestIdx < 0) break;
     const [chosen] = remaining.splice(bestIdx, 1);
+    maxSim.splice(bestIdx, 1);
     selected.push(chosen);
-    selectedEmbeddings.push(chosen.candidate.embedding);
+
+    for (let i = 0; i < remaining.length; i++) {
+      const sim = pairSimilarity(
+        remaining[i].candidate.embedding,
+        chosen.candidate.embedding,
+        remaining[i],
+        chosen,
+        getTokens
+      );
+      if (sim > maxSim[i]) maxSim[i] = sim;
+    }
   }
 
   return selected;
@@ -371,7 +387,13 @@ function isWellFormedEmbedding(emb: number[] | undefined): emb is number[] {
   );
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
+/**
+ * Exported (same rationale as `tokenize` below, Dream Cycle 2026-09-10) so
+ * the mmrRerank similarity-call-count regression test can spy on it. Pure
+ * and side-effect-free, so widening its visibility carries no behavioral
+ * risk (Dream Cycle 2026-10-05).
+ */
+export function cosineSimilarity(a: number[], b: number[]): number {
   let dot = 0;
   let normA = 0;
   let normB = 0;
