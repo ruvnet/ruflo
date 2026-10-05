@@ -139,8 +139,17 @@ describe('mmrRerank incremental running-max cache — correctness parity', () =>
 });
 
 describe('mmrRerank incremental running-max cache — measured wall-clock scaling', () => {
+  // The baseline algorithm here is the deliberately-slow O(limit^2 x N)
+  // recompute-from-scratch form (that is the whole point of these tests),
+  // so a handful of warmup+timed runs at N=300 can take several seconds on
+  // slower/loaded hardware -- comfortably past vitest's 5000ms default
+  // test timeout (discovered the hard way: this exact timeout fired in
+  // CI's monorepo-wide run, surfaced as an opaque "STACK_TRACE_ERROR" in
+  // the ci-test-ratchet summary). Explicit generous timeouts below; 2
+  // warmup + 3 timed runs (down from 3+5) keeps real wall-clock cost
+  // bounded while preserving the same measured-ratio methodology.
   function meanMs(fn: () => void, runs: number): number {
-    for (let i = 0; i < 3; i++) fn(); // warmup
+    for (let i = 0; i < 2; i++) fn(); // warmup
     let total = 0;
     for (let i = 0; i < runs; i++) {
       const t0 = performance.now();
@@ -153,39 +162,47 @@ describe('mmrRerank incremental running-max cache — measured wall-clock scalin
   function speedupAt(n: number, limit: number): number {
     const cands = corpus(n);
     const scored = cands.map((c) => ({ candidate: c, score: c.score }));
-    const baselineMean = meanMs(() => baselineMmrRerank(scored.map((s) => ({ ...s })), 0.7, limit), 5);
-    const candidateMean = meanMs(() => applyMMR(scored.map((s) => ({ ...s })), 0.7, limit), 5);
+    const baselineMean = meanMs(() => baselineMmrRerank(scored.map((s) => ({ ...s })), 0.7, limit), 3);
+    const candidateMean = meanMs(() => applyMMR(scored.map((s) => ({ ...s })), 0.7, limit), 3);
     return baselineMean / candidateMean;
   }
 
-  it('speedup ratio grows with corpus size — demonstrates O(limit^2 x N) vs O(limit x N), not a flat constant-factor win', () => {
-    const small = speedupAt(40, 25);
-    const large = speedupAt(300, 150);
+  it(
+    'speedup ratio grows with corpus size — demonstrates O(limit^2 x N) vs O(limit x N), not a flat constant-factor win',
+    () => {
+      const small = speedupAt(40, 25);
+      const large = speedupAt(300, 150);
 
-    // eslint-disable-next-line no-console
-    console.log(`[mmr-rerank-complexity] speedup N=40/limit=25: ${small.toFixed(2)}x, N=300/limit=150: ${large.toFixed(2)}x`);
+      // eslint-disable-next-line no-console
+      console.log(`[mmr-rerank-complexity] speedup N=40/limit=25: ${small.toFixed(2)}x, N=300/limit=150: ${large.toFixed(2)}x`);
 
-    expect(small).toBeGreaterThan(1); // candidate is faster even at small N
-    expect(large).toBeGreaterThan(small * 2); // and the gap widens substantially as N/limit grow
-  });
+      expect(small).toBeGreaterThan(1); // candidate is faster even at small N
+      expect(large).toBeGreaterThan(small * 2); // and the gap widens substantially as N/limit grow
+    },
+    30000
+  );
 
-  it('absolute latency at a realistic corpus size (N=200, limit=100, 384-dim embeddings)', () => {
-    const baselineMean = (() => {
-      const cands = corpus(200);
-      const scored = cands.map((c) => ({ candidate: c, score: c.score }));
-      return meanMs(() => baselineMmrRerank(scored.map((s) => ({ ...s })), 0.7, 100), 5);
-    })();
-    const candidateMean = (() => {
-      const cands = corpus(200);
-      const scored = cands.map((c) => ({ candidate: c, score: c.score }));
-      return meanMs(() => applyMMR(scored.map((s) => ({ ...s })), 0.7, 100), 5);
-    })();
+  it(
+    'absolute latency at a realistic corpus size (N=200, limit=100, 384-dim embeddings)',
+    () => {
+      const baselineMean = (() => {
+        const cands = corpus(200);
+        const scored = cands.map((c) => ({ candidate: c, score: c.score }));
+        return meanMs(() => baselineMmrRerank(scored.map((s) => ({ ...s })), 0.7, 100), 3);
+      })();
+      const candidateMean = (() => {
+        const cands = corpus(200);
+        const scored = cands.map((c) => ({ candidate: c, score: c.score }));
+        return meanMs(() => applyMMR(scored.map((s) => ({ ...s })), 0.7, 100), 3);
+      })();
 
-    // eslint-disable-next-line no-console
-    console.log(
-      `[mmr-rerank-complexity] N=200,limit=100: baseline=${baselineMean.toFixed(3)}ms candidate=${candidateMean.toFixed(3)}ms speedup=${(baselineMean / candidateMean).toFixed(2)}x`
-    );
+      // eslint-disable-next-line no-console
+      console.log(
+        `[mmr-rerank-complexity] N=200,limit=100: baseline=${baselineMean.toFixed(3)}ms candidate=${candidateMean.toFixed(3)}ms speedup=${(baselineMean / candidateMean).toFixed(2)}x`
+      );
 
-    expect(candidateMean).toBeLessThan(baselineMean / 5);
-  });
+      expect(candidateMean).toBeLessThan(baselineMean / 5);
+    },
+    30000
+  );
 });
