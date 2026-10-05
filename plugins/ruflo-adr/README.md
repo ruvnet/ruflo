@@ -104,3 +104,32 @@ ADR also ships as a function-hook mod (ADR-445 pattern; hooks in `hooks/`, loade
 - **Options** (`userConfig`): `guard` (`on` by default).
 
 Test: `claude plugin validate plugins/ruflo-adr`, `claude plugin test plugins/ruflo-adr`, and `bash plugins/ruflo-adr/scripts/smoke.sh`.
+
+## Native Codex hooks
+
+The separate `.codex-plugin/plugin.json` selects `hooks/codex-hooks.json`, replacing
+the Claude-only module entry for Codex. Claude's manifest and `register.ts` remain
+unchanged. The synchronous native `PreToolUse` adapter bundles the existing pure
+guard and shared secret screen; it preserves their tool/namespace scope and emits
+the native permission-denial envelope before a guarded write. `SessionStart` and
+guarded calls maintain private per-session counters in `PLUGIN_DATA`; the existing
+version-1 project status file remains a best-effort courtesy view. Status failure
+does not permit a denied write. Guarding is enabled for the native adapter.
+
+Existing skills and command files remain available. Claude's dynamic
+`$.command.register` / `command.run` mod interception has no native command-hook
+equivalent: Codex does **not** get that interception. The same deterministic local
+command helpers are available explicitly via
+`node <plugin-root>/hooks/codex-hook.cjs --command status` (and the helper's existing
+subcommands). This is guard/status compatibility, not full SDK-mod parity.
+
+Maintainers rebuild the committed standalone bundles with
+`ESBUILD=<esbuild executable> node scripts/build-codex-mod-hooks.mjs`, then run
+`node --test tests/plugins/codex-mod-hooks.test.mjs`. Set `ESBUILD` in that test run
+to check byte reproducibility using the same installed builder. Run
+`scripts/sync-mod-screen.mjs --check` before bundling when the shared screen changes.
+The adapters need Node.js and contain no runtime SDK dependency.
+
+This source change requires a released upstream package or an explicitly owned
+source projection to reach installations. It does not patch foreign cache entries,
+pin upstream updates, disable plugins, or claim an already published repair.
