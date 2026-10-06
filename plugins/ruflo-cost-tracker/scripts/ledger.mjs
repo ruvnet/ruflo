@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// cost-ledger — one cost view across Claude Code and Codex logs on this machine.
+// cost-ledger — one cost view across Claude Code, Codex and Grok logs on this machine.
 //
-//   node ledger.mjs [--since 7d|24h|all] [--provider claude|codex|all] [--format json|markdown] [--advise]
+//   node ledger.mjs [--since 7d|24h|all] [--provider claude|codex|grok|all] [--format json|markdown] [--advise]
 //   --advise adds the optimisation findings (advise.mjs) from the same single pass over the logs.
 //   --from <ISO> --to <ISO> --project </abs/path> narrow the rows to a time window (inclusive) and to one project
 //   (row.project is the path or inside it); JSON then carries `window`. A bad ISO time or a relative path exits 2.
