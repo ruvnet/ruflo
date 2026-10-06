@@ -10,6 +10,7 @@ import { dirname, join, resolve } from 'path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText, validatePath } from './validate-input.js';
 import { checkCommandLoop, recordCommandOutcome } from './tool-loop-guardrail.js';
+import { scanSettingsForRisk, formatRiskFindingsAsWarnings } from '../init/settings-risk-scanner.js';
 import {
   buildLearnedRoutingPatterns,
   type LearnedRoutingOutcome,
@@ -2814,6 +2815,46 @@ export const hooksSessionRestore: MCPTool = {
     const taskEntries = Object.keys(store.entries).filter(k => k.includes('task')).length;
     const agentEntries = Object.keys(store.entries).filter(k => k.includes('agent')).length;
 
+    const warnings: string[] = [];
+    if (restoreTasks && taskEntries > 0) {
+      warnings.push(`${Math.min(taskEntries, 2)} tasks were in progress and may need review`);
+    }
+
+    // Re-run the same advisory settings.json risk scan `ruflo init`/`--upgrade`
+    // already runs (settings-risk-scanner.ts) for an explicit `ruflo hooks
+    // session-restore` call or an MCP client calling `hooks_session-restore`
+    // directly — previously only `init`/`--upgrade` ever called it. SCOPE,
+    // disclosed: this does NOT cover the automatic SessionStart hook Claude
+    // Code itself fires for every real session (settings-generator.ts wires
+    // that to `hook-handler.cjs session-restore` -> `session.cjs`, a separate,
+    // signed/parity-checked helper template this scan is not wired into —
+    // extending there is a larger, separate-night change). Advisory only: no
+    // enforcement, no change to which hooks actually run.
+    let settingsRaw: string | undefined;
+    try {
+      const settingsPath = join(getProjectCwd(), '.claude', 'settings.json');
+      if (existsSync(settingsPath)) settingsRaw = readFileSync(settingsPath, 'utf-8');
+    } catch {
+      // Unreadable settings.json is surfaced elsewhere (e.g. Claude Code's
+      // own settings load path); this advisory scan stays best-effort.
+    }
+    if (settingsRaw !== undefined) {
+      try {
+        const settings = JSON.parse(settingsRaw);
+        warnings.push(
+          ...formatRiskFindingsAsWarnings(
+            scanSettingsForRisk({ hooks: settings.hooks, permissions: settings.permissions } as Record<string, unknown>)
+          )
+        );
+      } catch (err) {
+        if (err instanceof SyntaxError) {
+          // Malformed JSON — not this scan's concern, never block on it.
+        } else {
+          throw err; // a real bug in the scanner itself should surface, not be swallowed
+        }
+      }
+    }
+
     return {
       sessionId: newSessionId,
       originalSessionId,
@@ -2822,7 +2863,7 @@ export const hooksSessionRestore: MCPTool = {
         agentsRestored: restoreAgents ? Math.min(agentEntries, 5) : 0,
         memoryRestored: memoryEntryCount,
       },
-      warnings: restoreTasks && taskEntries > 0 ? [`${Math.min(taskEntries, 2)} tasks were in progress and may need review`] : undefined,
+      warnings: warnings.length > 0 ? warnings : undefined,
       dataSource: 'memory-store',
     };
   },
