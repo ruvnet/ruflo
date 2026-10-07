@@ -26,6 +26,7 @@ vi.mock('../src/mcp-server.js', () => ({
   getMCPServerStatus: vi.fn(async () => ({ running: false })),
   filterAdvertisedMcpTools: (tools: unknown[]) => tools,
   parseMcpToolSelection: () => 'all',
+  resolveMcpHttpAuthToken: () => undefined,
 }));
 
 vi.mock('../src/mcp-client.js', () => ({

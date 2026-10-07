@@ -36,7 +36,7 @@ describe('configurable rate limits (#3157)', () => {
     vi.clearAllMocks();
   });
 
-  it('keeps 120 per window and echoes the id on 429', async () => {
+  it('keeps 120 per window by default', async () => {
     transport = new HttpTransport(logger, { host: '127.0.0.1', port: 0, corsEnabled: false });
     transport.onRequest(async (request) => ({ jsonrpc: '2.0', id: request.id, result: {} }));
     await transport.start();
@@ -49,7 +49,7 @@ describe('configurable rate limits (#3157)', () => {
     expect(rejected.status).toBe(429);
     expect(await rejected.json()).toEqual({
       jsonrpc: '2.0',
-      id: 121,
+      id: null,
       error: { code: -32000, message: 'Rate limit exceeded' },
     });
   });
@@ -94,6 +94,6 @@ describe('configurable rate limits (#3157)', () => {
     }
     const rejected = await post(port, 4);
     expect(rejected.status).toBe(429);
-    expect(await rejected.json()).toMatchObject({ id: 4, error: { code: -32000 } });
+    expect(await rejected.json()).toMatchObject({ error: { code: -32000 } });
   });
 });

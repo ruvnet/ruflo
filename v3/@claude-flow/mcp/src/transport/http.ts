@@ -225,12 +225,10 @@ export class HttpTransport extends EventEmitter implements ITransport {
       limit: this.config.rateLimit?.limit ?? 120,
       standardHeaders: 'draft-7',
       legacyHeaders: false,
-      handler: (req, res, _next, options) => {
-        res.status(options.statusCode).json({
-          jsonrpc: '2.0',
-          id: req.body?.id ?? null,
-          error: { code: -32000, message: 'Rate limit exceeded' },
-        });
+      message: {
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32000, message: 'Rate limit exceeded' },
       },
     }));
 
