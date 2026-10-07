@@ -451,6 +451,10 @@ export class SONAManager {
 
     this.learningCycles++;
 
+    // Consolidate EWC importance from the live LoRA weights now that this
+    // cycle's learning has run (previously dead code — see consolidateEWC()).
+    this.consolidateEWC();
+
     this.emitEvent({
       type: 'learning_completed',
       improvementDelta,
@@ -561,17 +565,68 @@ export class SONAManager {
   }
 
   /**
-   * Consolidate EWC after learning a new task
+   * Read-only access to EWC state, for callers/tests that need to observe
+   * Fisher/means progress without reaching into private state.
    */
-  consolidateEWC(): void {
+  getEWCState(): EWCState | null {
+    return this.ewcState;
+  }
+
+  /**
+   * Consolidate EWC after learning a new task.
+   *
+   * Dream Cycle 2026-10-02 finding: this method previously had zero callers
+   * anywhere in the repo (triggerLearning() never invoked it), and even when
+   * invoked directly, `ewcState.fisher`/`means` were never populated from
+   * anywhere — every mode's `computeEWCPenalty()` therefore always read an
+   * empty map and returned exactly 0, regardless of `ewcLambda`. EWC guarded
+   * a data structure nothing ever wrote to, decoupled from the LoRA adapter
+   * weights that actually represent what SONA has learned. This now blends a
+   * fresh importance signal from the live LoRA weights before decaying, using
+   * the same squared-magnitude heuristic already disclosed in
+   * memory/ewc-consolidation.ts (no true parameter gradients are available at
+   * this layer either). Still out of scope here (disclosed, not silently
+   * assumed away): no mode implementation's `learn()` currently writes its
+   * computed gradient back into `loraWeights.A`/`.B`, so the adapter weights
+   * this protects are not yet being actively trained themselves.
+   */
+  consolidateEWC(domain: string = 'default'): void {
     if (!this.ewcState) return;
 
     const config = this.getEWCConfig();
 
-    // Update Fisher information with decay
-    for (const [key, fisher] of this.ewcState.fisher) {
+    // Decay existing Fisher importance (online EWC++ forgetting of stale
+    // importance) before blending in anything new this round.
+    for (const [, fisher] of this.ewcState.fisher) {
       for (let i = 0; i < fisher.length; i++) {
         fisher[i] *= config.decay;
+      }
+    }
+
+    // Blend in fresh importance + parameter means from the live LoRA
+    // weights for this domain, so the NEXT learning cycle's
+    // computeEWCPenalty() has real data instead of a permanently empty map.
+    const weights = this.loraWeights.get(domain);
+    if (weights) {
+      for (const [module, A] of weights.A) {
+        const key = `${domain}:${module}`;
+
+        let fisher = this.ewcState.fisher.get(key);
+        if (!fisher || fisher.length !== A.length) {
+          fisher = new Float32Array(A.length);
+          this.ewcState.fisher.set(key, fisher);
+        }
+
+        let means = this.ewcState.means.get(key);
+        if (!means || means.length !== A.length) {
+          means = new Float32Array(A.length);
+          this.ewcState.means.set(key, means);
+        }
+
+        for (let i = 0; i < A.length; i++) {
+          fisher[i] += A[i] * A[i] * (1 - config.decay);
+          means[i] = A[i];
+        }
       }
     }
 

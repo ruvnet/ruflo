@@ -108,6 +108,18 @@ jobs:
           rm -rf node_modules/@claude-flow/cli-core/dist
           cp -r v3/@claude-flow/cli-core/dist node_modules/@claude-flow/cli-core/dist
 
+      - name: Build @claude-flow/neural (dist/ imported directly by a test)
+        # dream-cycle 2026-10-02: __tests__/sona-ewc-consolidation.test.ts
+        # imports ../dist/sona-manager.js by relative path (not through root
+        # node_modules, so no overlay step is needed like cli-core's above) —
+        # importing src/sona-manager.ts directly under vitest's SSR transform
+        # crashes with "Class extends value undefined" on this package's
+        # modes/ circular-ish import graph (confirmed pre-existing,
+        # test-tooling-only; __tests__/persistence.test.ts documents the same
+        # issue). `npm ci` never builds workspace packages, only links them,
+        # so dist/ doesn't exist yet at this point in the job.
+        run: npm run build --prefix v3/@claude-flow/neural
+
       - name: Run all tests
         # #3030: the historical suite has known debt, but new failing files
         # are release-blocking. The committed file-level baseline may only
