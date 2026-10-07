@@ -66,3 +66,15 @@ bash plugins/ruflo-ruvllm/scripts/smoke.sh
 - `ruflo-agentdb` — owns HNSW WASM router; namespace convention owner
 - `ruflo-ruvector` — sibling substrate plugin (pinned `ruvector@0.2.25`)
 - `ruflo-rag-memory` — consumes RAG context routing
+
+## As a mod
+
+Function-hook mod (ADR-445, pattern of `ruflo-agentdb`). It loads from `hooks/hooks.json` → `hooks/register.ts`.
+
+A guard for local inference learning: `ruvllm_sona_adapt`, `ruvllm_microlora_adapt` and `ruvllm_hnsw_add` refuse secrets, so credentials are never trained into an adapter or indexed as a routing pattern.
+
+- **Command**: `/ruvllm-mod` answers locally with no model call. Verbs: `status`, `scan <text>`, `tools` (which ruvllm tools are connected).
+- **Status file**: `.claude-flow/ruvllm-mod/status.json` (`{version, updatedMs, ...counters}`), written at session start and as counters change.
+- **Safety**: no network, no process spawning; it only uses tools already connected.
+- **Option** `guard` (`on` by default, `off` to disable): a tighten-only `tool.call` guard. A call to one of the tools above whose input holds a key, token, private key or password is denied. The reason never repeats the secret.
+- **Test**: `claude plugin validate plugins/ruflo-ruvllm`, `claude plugin test plugins/ruflo-ruvllm`, `bash plugins/ruflo-ruvllm/scripts/smoke.sh`.

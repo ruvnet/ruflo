@@ -129,3 +129,15 @@ The spike requires `agent-browser` (or `npx --yes agent-browser`), `ruvector@0.2
 ## License
 
 MIT
+
+## As a mod
+
+Function hooks (ADR-445 pattern, `hooks/register.ts`) that need no model call, no network and no process:
+
+- **Tool guard** (default on, tighten-only: it can only deny). Refuses browser_open to file/javascript/data/chrome URLs, URLs with embedded credentials or cloud-metadata hosts, and Chrome launch flags that drop page isolation or open a debug port; refuses browser_eval scripts that read cookies/storage and can also send them off the page. A refusal never echoes the offending value.
+- **`/browser-mod`** answers locally: `status`, `scan <js>` and `url <url>` (would the guard refuse this?). (A distinct name from the plugin's own commands/skills, which no hook can answer.)
+- **Status file** `.claude-flow/browser-mod/status.json` (`version`, `updatedMs`, `checked`, `blocked`, `byRule`) is written at session start and after each refusal; the console reads it.
+
+Options (`userConfig`): `guard` (on/off, default on), `strictUrls` (default off: also refuse plain http outside localhost).
+
+Test: `claude plugin validate plugins/ruflo-browser && claude plugin test plugins/ruflo-browser && bash plugins/ruflo-browser/scripts/smoke.sh`.

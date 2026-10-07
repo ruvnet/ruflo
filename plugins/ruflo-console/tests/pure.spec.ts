@@ -12,6 +12,7 @@ import { idOf, parseAgents, parseClaims, parseHive, parseSwarmStore, plain } fro
 import { readSnapshot } from '../hooks/data/snapshot'
 import { toBase64 } from '../hooks/gfx/raster'
 import { newState } from '../hooks/state'
+import { CARD_COLUMNS } from '../hooks/views/card'
 import { picturesOf } from '../hooks/views/frames'
 import { ladder } from '../hooks/views/cost'
 import { CLI_OUT, HIVE_TOKEN, RUFLO_FILES } from './fixtures/ruflo-run'
@@ -25,6 +26,11 @@ const memoryFs = (files: Record<string, string>) => ({
 })
 
 describe('readers', () => {
+  it('plain() drops whole ANSI colour sequences, not just the ESC byte', () => {
+    expect(plain('\u001b[1mLogs for agent-1\u001b[0m')).toBe('Logs for agent-1')
+    expect(plain('\u001b[2m11:24:13 AM\u001b[0m [INFO] created')).toBe('11:24:13 AM [INFO] created')
+  })
+
   it('read the captured run: one swarm, two agents, two claims (one stealable), a queen and a proposal, no token', () => {
     expect(parseSwarmStore(at('.claude-flow/swarm/swarm-state.json'))).toMatchObject({ id: 'swarm-1790903031804-y9rnjr', topology: 'hierarchical', status: 'running', strategy: 'specialized', maxAgents: 6 })
     expect(parseAgents(at('.claude-flow/agents/store.json')).map(agent => `${agent.type}:${agent.status}`)).toEqual(['coder:idle', 'tester:idle'])
@@ -53,7 +59,7 @@ describe('readers', () => {
   })
 
   it('plain strips control and bidi characters; idOf admits only id-shaped strings', () => {
-    expect(plain('a\u001b[31m‮b\u0000c')).toBe('a [31m b c')
+    expect(plain('a\u001b[31m‮b\u0000c')).toBe('ab c')
     expect(plain('x'.repeat(50), 10)).toHaveLength(10)
     expect(idOf('agent-1790903032181-97m25s')).toBe('agent-1790903032181-97m25s')
     for (const bad of ['bad id!', '-rf', '', 'a'.repeat(200), '../etc', 42]) expect(idOf(bad)).toBeNull()
@@ -109,10 +115,15 @@ describe('CLI JSON', () => {
     expect(jsonAfter('Transformers.js loaded: x\n{\n "a": 1\n}\n')).toEqual({ a: 1 })
     expect(jsonAfter('[INFO] Executing tool\nResult:\n{\n "b": [1]\n}')).toEqual({ b: [1] })
     expect(jsonAfter('no json here')).toBeNull()
+    // a trailing log line with a stray bracket is not part of the JSON (#3789)
+    expect(jsonAfter('{"available":true,"totalDecisions":5}\n[info] see https://x/guide]')).toEqual({ available: true, totalDecisions: 5 })
+    expect(jsonAfter('{"backend":"sqlite","entries":{"total":10}}\nDone (lexical-degraded}')).toEqual({ backend: 'sqlite', entries: { total: 10 } })
+    expect(jsonAfter('{"s":"a } and ] in a string","n":1}\ntrailing ]')).toEqual({ s: 'a } and ] in a string', n: 1 })
+    expect(jsonAfter('{"cut":')).toBeNull()
   })
 
-  it('no probe reaches the network but the opt-in roster; plugins list and verify are never run', () => {
-    expect(PROBES.filter(probe => probe.isNetwork === true).map(probe => probe.id)).toEqual(['roster'])
+  it('no probe reaches the network but the opt-in roster and registry; plugins list and verify are never run', () => {
+    expect(PROBES.filter(probe => probe.isNetwork === true).map(probe => probe.id)).toEqual(['roster', 'registry'])
 
     for (const probe of PROBES) {
       expect(probe.args.slice(0, 2).join(' ')).not.toBe('plugins list')
@@ -141,9 +152,35 @@ describe('graphics', () => {
     const state = newState({})
 
     state.view = 'learning'
-    expect([...picturesOf(state, 90, 0, 5).keys()]).toEqual(['header', 'curve', 'pipeline', 'patterns'])
+    expect([...picturesOf(state, 90, 0, 5).keys()]).toEqual(['title', 'curve', 'pipeline', 'patterns'])
     state.view = 'memory'
-    expect([...picturesOf(state, 90, 0, 5).keys()]).toEqual(['header'])
+    expect([...picturesOf(state, 90, 0, 5).keys()]).toEqual(['title'])
+    // The RUFLO banner is the main menu's alone; every other page leads with `RUFLO | PAGE`.
+    state.view = 'menu'
+    expect([...picturesOf(state, 90, 0, 5).keys()]).toEqual(['header', 'palette', 'title'])
+  })
+
+  it('the menu\'s palette strip moves with the clock, is still at fps 0, and is the BBS look\'s alone', () => {
+    const cells = (state: ReturnType<typeof newState>, t: number) => Array.from((picturesOf(state, 90, 0, t).get('palette') as { cells: Uint32Array }).cells)
+    const bbs = newState({})
+
+    bbs.view = 'menu'
+    expect(cells(bbs, 0)).not.toEqual(cells(bbs, 1_512))
+    // As wide as the menu's own rows: the pane less the card's border and padding, less the two columns of margin.
+    expect(cells(bbs, 0).length / 3).toBe(90 - CARD_COLUMNS - 2)
+
+    bbs.options.fps = 0
+    expect(cells(bbs, 987_654)).toEqual(cells(bbs, 0))
+
+    const plain = newState({ look: 'plain' } as never)
+
+    plain.view = 'menu'
+    expect([...picturesOf(plain, 90, 0, 5).keys()]).toEqual(['header'])
+
+    const other = newState({})
+
+    other.view = 'swarm'
+    expect(picturesOf(other, 90, 0, 5).has('palette')).toBe(false)
   })
 
   it('the budget ladder marks 50/75/90/100% and fills to the spend', () => {

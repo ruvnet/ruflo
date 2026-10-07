@@ -1,7 +1,7 @@
 import type { RenderElement } from 'claude-code'
 
 import type { ClaimRecord } from '../data/parse'
-import { button, clip, col, picture, row, rule, text, THEME, type Ctx } from './common'
+import { button, clip, col, picture, row, rule, startField, starts, text, THEME, type Ctx } from './common'
 import { selection } from './select'
 
 const who = (claim: ClaimRecord): string => (claim.claimant.kind === 'agent' ? `${claim.claimant.agentType ?? 'agent'} ${claim.claimant.id}` : `human ${claim.claimant.name ?? claim.claimant.id}`)
@@ -46,6 +46,10 @@ export function claimsView(ctx: Ctx): RenderElement {
 
     if (claims.length > 10) rows.push(text(ctx, `+${claims.length - 10} more`, { dimColor: true }))
   }
+
+  // Nothing to claim, or nobody to claim it: say so with the button that fixes it.
+  if (pick.agent === null) rows.push(starts(ctx, 'No agents to claim for.', ['swarm', 'spawn-coder', 'spawn-tester']))
+  if (pick.task === null) rows.push(startField(ctx, 'task', 'a task to put on the board, e.g. add OAuth login to the API'))
 
   rows.push(rule(ctx, 'Act', ctx.state.isActing ? 'running…' : ''))
   rows.push(text(ctx, `picked claim ${pick.claim?.issueId ?? 'n/a'} · agent ${pick.agent !== null ? `${pick.agent.name ?? pick.agent.type} (${pick.agent.id})` : 'n/a — no agents on disk'}`, { dimColor: true }))

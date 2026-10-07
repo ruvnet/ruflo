@@ -22,6 +22,13 @@ const STOP_WORDS = new Set([
   'who', 'whom', 'this', 'that', 'these', 'those', 'it', 'its',
 ])
 
+/** An entry as shown: no control or bidi characters, one line (the same cleaning the research guard applies to text it shows). */
+const plainText = (s: string): string =>
+  s
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
 const ALPHA = 0.6
 const MIN_THRESHOLD = 0.05
 const TOP_K = 5
@@ -103,7 +110,7 @@ export function rankedContext(prompt: string, entries: readonly PreparedEntry[])
   scored.sort((a, b) => b.score - a.score)
   const lines = ['[INTELLIGENCE] Relevant patterns for this task:']
   scored.slice(0, TOP_K).forEach((e, i) => {
-    const display = String(e.summary || e.content || '').slice(0, 80)
+    const display = plainText(String(e.summary || e.content || '')).slice(0, 80)
     lines.push(`  * (${e.score.toFixed(2)}) ${display} [rank #${i + 1}, ${e.accessCount || 0}x accessed]`)
   })
   return lines.join('\n')

@@ -15,4 +15,11 @@ check('four commands',readdirSync(new URL('commands/',root)).filter((name)=>name
 const server=read('src/server.mjs');
 check('fourteen MCP tools',(server.match(/mcp\.tool\('/g)||[]).length+(server.match(/mcp\.registerTool\('/g)||[]).length===14);
 check('explicit annotation factories',server.includes('readOnlyHint: true')&&server.includes('readOnlyHint: false')&&server.includes('destructiveHint: false')&&server.includes('idempotentHint:')&&server.includes('openWorldHint: false'));
+// mod (ADR-445 pattern)
+const hooksJson=JSON.parse(read('hooks/hooks.json'));
+check('mod: hooks.json names register.ts',hooksJson.modules?.includes('./register.ts'));
+for(const name of ['options','screen','guard','command','status','register']){check(`mod: hooks/${name}.ts present and <=500 lines`,existsSync(new URL(`hooks/${name}.ts`,root))&&read(`hooks/${name}.ts`).split('\n').length<=501)}
+check('mod: guard defaults on',manifest.userConfig?.guard?.default==='on');
+check('mod: no network or process in hooks',!['screen','guard','command','status','register','options'].some((name)=>/\$\.(http|process)\.|child_process|fetch\(/.test(read(`hooks/${name}.ts`))));
+check('mod: /ai-team-mod collides with no command or skill',read('hooks/register.ts').includes("name: 'ai-team-mod'")&&!existsSync(new URL('commands/ai-team-mod.md',root))&&!existsSync(new URL('skills/ai-team-mod',root)));
 console.log(`smoke ok: ${checks.length} checks`);

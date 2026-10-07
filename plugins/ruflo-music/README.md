@@ -113,3 +113,19 @@ bash plugins/ruflo-music/scripts/smoke.sh
 ## License
 
 MIT
+
+## As a mod
+
+Function-hook mod (ADR-445 pattern, `hooks/register.ts`). It adds, with no network, no process spawning and no model call:
+
+- **Guard** (tighten-only, default on): refuses a `cogmusic` call (create_production, separate_stems, master, extract_midi) or memory write whose prompt/lyrics/payload holds a secret (prompts leave the machine for music.cognitum.one). The deny reason names the rule, never the value.
+- **`/music-mod`**: local `status` and `scan <text>` (secret check, same rules as the guard); the status file also counts productions started.
+- **Status file** `.claude-flow/music-mod/status.json` (`{version:1, updatedMs, guard, checked, blocked, ...}`), written at session start and when counters change.
+
+Per-prompt context is deliberately not added: this plugin has nothing worth attaching to every prompt.
+
+| Option | Default | Effect |
+|---|---|---|
+| `guard` | `on` | refuse the calls above |
+
+Test: `claude plugin validate plugins/ruflo-music`, `claude plugin test plugins/ruflo-music`, `bash plugins/ruflo-music/scripts/smoke.sh`.

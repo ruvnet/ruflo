@@ -2,6 +2,7 @@ import type { On, RenderElement, RenderInput, RenderNode, SessionStartInput } fr
 import type { Plugin } from 'claude-code/testing'
 
 import { CLI_OUT } from './ruflo-run'
+import { CONFIGURE_HELP, MODEL_STATS } from './cost'
 
 export const PLUGIN = 'ruflo-console'
 export const CWD = '/work'
@@ -32,6 +33,17 @@ export type Answer = { exitCode: number; stdout: string; stderr: string } | { de
 export type World = {
   files: Map<string, string>
   runs: string[][]
+  /** Every path the mod asked fs.read for, refused or not. */
+  reads: string[]
+  /** Every path the mod asked fs.stat for, including cached and refused reads. */
+  stats: string[]
+  inputs: string[]
+  /** The lines the console drew with `$.ui.toast` (ADR-477: after the shared policy). */
+  toasts: string[]
+  /** Prompts the mod submitted to the primary session (`$.prompt.submit`). */
+  prompts: string[]
+  /** Text the mod put in the prompt box (`$.prompt.fill`). */
+  fills: string[]
   blits: string[]
   opened: string[]
   commands: string[]
@@ -48,6 +60,9 @@ export function cliAnswer(argv: readonly string[]): Answer {
   const line = argv.join(' ')
   const out = (name: string): Answer => ({ exitCode: 0, stdout: CLI_OUT[name] ?? '', stderr: '' })
 
+  if (line === 'claude plugin configure --help') return { exitCode: 0, stdout: CONFIGURE_HELP, stderr: '' }
+  if (line.includes('hooks model-stats')) return { exitCode: 0, stdout: MODEL_STATS, stderr: '' }
+
   if (line.endsWith('--version')) return out('version')
   if (line.includes('memory stats')) return out('memory-stats')
   if (line.includes('memory list')) return out('memory-list')
@@ -56,6 +71,12 @@ export function cliAnswer(argv: readonly string[]): Answer {
   if (line.includes('hooks_intelligence_stats')) return out('intel')
   if (line.includes('federation_bbs_peers')) return out('bbs-peers')
   if (line.includes('x_federation_channel_list')) return out('channels')
+  if (line.includes('metaharness audit-list')) return out('mh-audit-list')
+  if (line.includes('metaharness mcp-scan')) return out('mh-mcp-scan')
+  if (line.includes('metaharness threat-model')) return out('mh-threat')
+  if (line.includes('metaharness redblue run --mock-judge')) return out('mh-redblue-mock')
+  if (line.includes('metaharness gepa --op render')) return out('mh-gepa-render')
+  if (line.includes('doctor --component metaharness')) return out('mh-doctor')
 
   return { exitCode: 0, stdout: '{"success": true}', stderr: '' }
 }
@@ -64,13 +85,19 @@ export function cliAnswer(argv: readonly string[]): Answer {
  * Seats an in-memory world beneath the plugin: files under CWD and HOME, a process table, the store, the panes, and
  * records of what the mod asked for. `refuseAll` refuses every one of those affordances, as an administrator may.
  */
-export function worldOf(on: On, files: Readonly<Record<string, string>>, options: { refuseAll?: boolean; home?: Readonly<Record<string, string>> } = {}): World {
+export function worldOf(on: On, files: Readonly<Record<string, string>>, options: { refuseAll?: boolean; commands?: readonly string[]; home?: Readonly<Record<string, string>>; env?: Readonly<Record<string, string>> } = {}): World {
   let tick = 1_000
   const all = new Map<string, string>([...Object.entries(files).map(([path, text]) => [`${CWD}/${path}`, text] as const), ...Object.entries(options.home ?? {}).map(([path, text]) => [`${HOME}/${path}`, text] as const)])
   const mtimes = new Map<string, number>([...all.keys()].map(path => [path, tick]))
   const world: World = {
     files: all,
     runs: [],
+    reads: [],
+    stats: [],
+    inputs: [],
+    toasts: [],
+    prompts: [],
+    fills: [],
     blits: [],
     opened: [],
     commands: [],
@@ -87,28 +114,37 @@ export function worldOf(on: On, files: Readonly<Record<string, string>>, options
   const refuse = options.refuseAll === true
 
   on('session.start', ($, e) => ({ cwd: e.cwd }))
-  on('fs.read', ($, e) => (refuse || !all.has(e.path) ? { deny: `ENOENT: ${e.path}` } : { value: all.get(e.path) as string }))
+  on('fs.read', ($, e) => (world.reads.push(e.path), refuse || !all.has(e.path) ? { deny: `ENOENT: ${e.path}` } : { value: all.get(e.path) as string }))
   on('fs.stat', ($, e) => {
+    world.stats.push(e.path)
     const text = all.get(e.path)
 
     return refuse || text === undefined ? { deny: `ENOENT: ${e.path}` } : { value: { kind: 'file' as const, size: text.length, mtimeMs: mtimes.get(e.path) ?? 0, isLink: false } }
   })
   on('fs.list', ($, e) => {
     const prefix = `${e.path ?? CWD}/`
-    const names = [...all.keys()].filter(path => path.startsWith(prefix) && !path.slice(prefix.length).includes('/')).map(path => path.slice(prefix.length))
+    const below = [...all.keys()].filter(path => path.startsWith(prefix)).map(path => path.slice(prefix.length))
+    const files = below.filter(name => !name.includes('/'))
+    // A folder holding a file shows as a directory entry of its own, as a real listing does.
+    const dirs = [...new Set(below.filter(name => name.includes('/')).map(name => name.split('/')[0] as string))]
+    const entries = [...files.map(name => ({ name, kind: 'file' as const })), ...dirs.map(name => ({ name, kind: 'dir' as const }))]
 
-    return refuse || names.length === 0 ? { deny: 'ENOENT' } : { value: names.map(name => ({ name, kind: 'file' as const, size: 1, mtimeMs: 1, isLink: false })) }
+    return refuse || entries.length === 0 ? { deny: 'ENOENT' } : { value: entries.map(entry => ({ ...entry, size: 1, mtimeMs: 1, isLink: false })) }
   })
+  on('prompt.submit', ($, e) => (world.prompts.push(e.text), { text: e.text }))
+  on('prompt.fill', ($, e) => (world.fills.push(e.text), { isFilled: true }))
+  on('command.list', () => ({ value: (options.commands ?? []).map(name => ({ name, description: '', source: 'plugin' as const })) as never }))
   on('process.run', ($, e) => {
     if (refuse) return { deny: 'process.run withheld' }
 
     world.runs.push([...e.argv])
+    if (e.init?.stdin !== undefined) world.inputs.push(e.init.stdin)
 
     const answer = world.respond(e.argv)
 
     return 'deny' in answer ? { deny: answer.deny } : { value: { ...answer, isStdoutTruncated: false, isStderrTruncated: false } }
   })
-  on('env.get', ($, e) => (refuse ? { deny: 'env withheld' } : { value: e.name === 'HOME' ? HOME : undefined }))
+  on('env.get', ($, e) => (refuse ? { deny: 'env withheld' } : { value: e.name === 'HOME' ? HOME : options.env?.[e.name] }))
   on('settings.read', () => (refuse ? { deny: 'settings withheld' } : { value: { enabledPlugins: { 'ruflo-core@ruflo': true } } as never }))
   on('session.usage', () => (refuse ? { deny: 'usage withheld' } : { value: { context: { tokens: 50_000, window: 200_000, percent: 25 }, rateLimits: [], cost: { usd: 0.4213 } } as never }))
   on('tool.list', () => (refuse ? { deny: 'tools withheld' } : { value: [{ name: 'mcp__plugin_ruflo-core_ruflo__swarm_init' }, { name: 'mcp__plugin_ruflo-core_ruflo__claims_board' }, { name: 'Read' }] as never }))
@@ -147,7 +183,7 @@ export function worldOf(on: On, files: Readonly<Record<string, string>>, options
 
     return { value: {} }
   })
-  on('ui.toast', () => ({ value: undefined }))
+  on('ui.toast', ($, e) => (world.toasts.push(e.text), { value: undefined }))
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', ($, e) => ({ text: e.answer }))
 
@@ -198,5 +234,8 @@ export function elementsOf(node: RenderNode | RenderElement | null | undefined, 
 
   return [...(node.type === type ? [node as RenderElement] : []), ...children.flatMap(child => elementsOf(child, type))]
 }
+
+/** The keys of a page's own text fields: the nav's search field is on every page, so it is left out. */
+export const inputKeys = (tree: Parameters<typeof elementsOf>[0]): string[] => elementsOf(tree, 'Input').map(keyOf).filter(key => key !== 'nav-find')
 
 export const keyOf = (element: RenderElement): string => String((element as { key?: unknown }).key ?? (element as { props?: { key?: unknown } }).props?.key ?? '')

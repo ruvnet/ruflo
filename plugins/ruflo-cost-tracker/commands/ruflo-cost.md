@@ -160,3 +160,15 @@ Cost tracking commands:
 2. Show daily/weekly totals with trend direction
 3. Highlight days with unusual spending (>2x average)
 4. Display: date, total cost, top agent, top model, budget status
+
+**`cost ledger [--since 7d] [--provider claude|codex|all]`** -- Multi-provider spend from local logs (no network).
+1. Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs --since 7d`
+2. Report totals per provider/model, cache hit ratio, and any UNPRICED models (never counted as $0). USD and Codex credits are reported separately.
+
+**`cost advise [--since 7d]`** -- Optimisation findings with evidence and what-if savings.
+1. Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/advise.mjs --since 7d`
+2. Present each finding and its action; do not change settings. Savings are same-token repricings, not quality predictions.
+
+**`cost openrouter key|generation <id>|credits`** -- OpenRouter's own billed figures. Ask the user first; run `node ${CLAUDE_PLUGIN_ROOT}/scripts/openrouter.mjs <cmd> --yes`. The key comes from the environment only.
+
+**`cost local --tok-per-s <n> [--compare <model>]`** -- Local-hardware cost per 1M tokens and break-even utilisation: `node ${CLAUDE_PLUGIN_ROOT}/scripts/local-cost.mjs ...`

@@ -226,3 +226,15 @@ bash plugins/ruflo-rag-memory/scripts/smoke.sh
 ## License
 
 MIT
+
+## As a mod
+
+Function-hook mod (ADR-445, pattern of `ruflo-agentdb`). It loads from `hooks/hooks.json` → `hooks/register.ts`.
+
+A write guard for memory: `memory_store`, `agentdb_hierarchical-store` and `agentdb_pattern-store` refuse secrets, so credentials never land in the vector store.
+
+- **Command**: `/rag-mod` answers locally with no model call. Verbs: `status`, `scan <text>` (would the guard refuse this?), `tools` (which memory tools are connected).
+- **Status file**: `.claude-flow/rag-mod/status.json` (`{version, updatedMs, ...counters}`), written at session start and as counters change.
+- **Safety**: no network, no process spawning; it only uses tools already connected.
+- **Option** `guard` (`on` by default, `off` to disable): a tighten-only `tool.call` guard. A call to one of the tools above whose input holds a key, token, private key or password is denied. The reason never repeats the secret.
+- **Test**: `claude plugin validate plugins/ruflo-rag-memory`, `claude plugin test plugins/ruflo-rag-memory`, `bash plugins/ruflo-rag-memory/scripts/smoke.sh`.

@@ -58,6 +58,27 @@ export interface ProbeInputs {
   fs?: ReadFs;
 }
 
+const LEGACY_EVENTS = { route: 'UserPromptSubmit', 'post-edit': 'PostToolUse' } as const;
+
+/** Which of route/post-edit the settings run through the CLI's own `hooks` command, in any of the files. */
+export function legacyCliHooks(files: readonly string[]): Array<keyof typeof LEGACY_EVENTS> {
+  const commands = (event: string) => files.flatMap((f) => {
+    let groups: unknown;
+    try {
+      groups = get(readSettingsFile(f), 'hooks', event);
+    } catch {
+      return [];
+    }
+    return Array.isArray(groups)
+      ? groups.flatMap((g) => (Array.isArray((g as { hooks?: unknown })?.hooks) ? (g as { hooks: Array<{ command?: unknown }> }).hooks.map((h) => h?.command).filter((c): c is string => typeof c === 'string') : []))
+      : [];
+  });
+  return (Object.keys(LEGACY_EVENTS) as Array<keyof typeof LEGACY_EVENTS>).filter((sub) => {
+    const word = new RegExp(`(?:^|[\\s/"'])(?:@claude-flow/cli|claude-flow|ruflo)(?:@[\\w.-]+)?["']?\\s+hooks\\s+${sub}(?![\\w-])`);
+    return commands(LEGACY_EVENTS[sub]).some((c) => word.test(c));
+  });
+}
+
 export function probeMods(inputs: ProbeInputs): Finding[] {
   const root = resolve(inputs.projectRoot);
   const home = inputs.home ?? homedir();
@@ -131,6 +152,15 @@ export function probeMods(inputs: ProbeInputs): Finding[] {
     ? { name: 'managed policy', status: 'warn', message: 'allowManagedModsOnly is set: Claude Code refuses user mods; classic hooks stay in charge' }
     : { name: 'managed policy', status: 'pass', message: managed === undefined ? 'no managed settings' : 'user mods allowed (allowManagedModsOnly not set)' });
 
+  // 4a. Settings that still run the CLI's own `hooks route|post-edit` (what init
+  // wrote before hook-handler.cjs). That command never reads the handshake, so
+  // the mod stands down for those events (plugins/ruflo-mods/hooks/ownership.ts,
+  // legacyCliConfigured: keep the two patterns in step).
+  const legacy = legacyCliHooks(files);
+  if (legacy.length) {
+    findings.push({ name: 'legacy CLI hooks', status: 'warn', message: `settings run the CLI's own \`hooks ${legacy.join('` and `hooks ')}\`: the mod stands down for ${legacy.join(' and ')}, which that command keeps`, fix: 'ruflo init upgrade --settings (regenerate the settings hooks)' });
+  }
+
   // 4. Every classic helper a hook could run honours the handshake (the mod's
   // own rule, plugins/ruflo-mods/hooks/session.ts); else the mod stands down.
   const helpers = [...new Set([join(root, '.claude', 'helpers', 'hook-handler.cjs'), join(home, '.claude', 'helpers', 'hook-handler.cjs')])].filter(existsSync);
@@ -142,7 +172,7 @@ export function probeMods(inputs: ProbeInputs): Finding[] {
     }
   });
   findings.push(helpers.length === 0
-    ? { name: 'classic handshake', status: 'pass', message: 'no hook-handler.cjs: the mod owns route and post-edit outright' }
+    ? { name: 'classic handshake', status: 'pass', message: legacy.length ? 'no hook-handler.cjs (see legacy CLI hooks)' : 'no hook-handler.cjs: the mod owns route and post-edit outright' }
     : stale.length === 0
       ? { name: 'classic handshake', status: 'pass', message: `${helpers.join(', ')} hand route and post-edit to the mod while it runs` }
       : { name: 'classic handshake', status: 'warn', message: `${stale.join(', ')} predate${stale.length === 1 ? 's' : ''} the handshake: the mod stands down and classic hooks keep route/post-edit`, fix: 'ruflo init --upgrade (refresh helpers in the project and in ~/.claude)' });

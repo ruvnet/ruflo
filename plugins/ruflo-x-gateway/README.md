@@ -176,3 +176,14 @@ exercise the Firestore transaction adapter through a serialized test database;
 they are not proof of production IAM, ingress topology, TTL or emulator behavior.
 The CLI suite is `x-federation-join.test.ts`. A production activation must add a
 staging Firestore and live relay check before opening registration.
+
+## As a mod
+
+This plugin also loads as a function-hook mod (ADR-445 pattern, `hooks/hooks.json` → `register.ts`). No network, no process spawn, no model call.
+
+- **Guard (default on, tighten-only).** It refuses a `x_federation_publish` or `x_federation_channel_publish` whose content holds a secret (the swarm is shared and signed messages are permanent). The refusal never repeats the secret.
+- **Status file.** `.claude-flow/xgw-mod/status.json` (`{version: 1, updatedMs, guard, checked, blocked, seen}`), written at session start and when a counter changes.
+- **`/xgw-mod`** answers locally: `status`, `scan <text>`, `tools`. (The plugin's own commands are prompt commands, which a hook cannot answer, so the mod has its own name.)
+- **Option.** `guard` (`on` | `off`, default `on`) in the plugin's `userConfig`.
+
+Test it: `claude plugin validate plugins/ruflo-x-gateway`, `claude plugin test plugins/ruflo-x-gateway`, `bash plugins/ruflo-x-gateway/scripts/smoke.sh`.

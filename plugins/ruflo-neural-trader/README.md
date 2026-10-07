@@ -326,3 +326,19 @@ bash plugins/ruflo-neural-trader/scripts/smoke.sh
 ## License
 
 MIT
+
+## As a mod
+
+Function-hook mod (ADR-445 pattern, `hooks/register.ts`). It adds, with no network, no process spawning and no model call:
+
+- **Guard** (tighten-only, default on): refuses a trader-server call or memory write that holds a secret (broker keys), and a live order call (`execute_trade`, `place_order`, `live_*`, `close_all`) that lacks `confirm: true` (or `paper: true` / `dryRun: true`). The deny reason names the rule, never the value.
+- **`/trader-mod`**: local `status` and `scan <text>` (secret check, same rules as the guard); `status` also shows live orders refused.
+- **Status file** `.claude-flow/trader-mod/status.json` (`{version:1, updatedMs, guard, checked, blocked, ...}`), written at session start and when counters change.
+
+Per-prompt context is deliberately not added: this plugin has nothing worth attaching to every prompt.
+
+| Option | Default | Effect |
+|---|---|---|
+| `guard` | `on` | refuse the calls above | | `liveGuard` | `on` | refuse an unconfirmed live order |
+
+Test: `claude plugin validate plugins/ruflo-neural-trader`, `claude plugin test plugins/ruflo-neural-trader`, `bash plugins/ruflo-neural-trader/scripts/smoke.sh`.

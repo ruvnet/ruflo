@@ -162,6 +162,10 @@ export const agentdbPatternStore: MCPTool = {
 
       const bridge = await getBridge();
       const result = await bridge.bridgeStorePattern({ pattern, type, confidence });
+      if (result && result.success === false) {
+        // #3691: the write was refused/not persisted — never acknowledge it.
+        return { success: false, error: `Pattern store failed: ${result.error ?? 'write not persisted'}`, controller: result.controller };
+      }
       if (result) {
         // #3288: `controller: 'reasoningBank'` is the ONLY label that means
         // the healthy path ran. Every other label bridgeStorePattern can
@@ -188,12 +192,20 @@ export const agentdbPatternStore: MCPTool = {
         const { storeEntry } = await import('../memory/memory-initializer.js');
         const patternId = `pattern-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const value = JSON.stringify({ pattern, type, confidence, _fallback: 'reasoningBank-unavailable' });
-        await storeEntry({
+        const stored = await storeEntry({
           key: patternId,
           value,
           namespace: 'pattern',
           tags: [type, 'reasoning-pattern', 'fallback'],
         });
+        // #3691: storeEntry reports failure as {success:false}, not a throw.
+        if (!stored || stored.success !== true) {
+          return {
+            success: false,
+            error: `Pattern store failed: memory_store fallback did not persist (${stored?.error ?? 'no result'})`,
+            recommendation: 'Run agentdb_health to inspect controller registration and check that .swarm/memory.db is writable.',
+          };
+        }
         return {
           success: true,
           // #3288: a caller must not have to already know to distrust a

@@ -6,6 +6,7 @@
 
 import { existsSync, readFileSync, readdirSync, unlinkSync, statSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { gunzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import {
@@ -745,7 +746,11 @@ export const sessionTools: MCPTool[] = [
         const inputPath = String(input.inputPath ?? '');
         if (!inputPath) return { error: 'Provide inputPath (a session JSON file) or data (a session record)' };
         if (!existsSync(inputPath)) return { error: `File not found: ${inputPath}` };
-        try { parsed = JSON.parse(readFileSync(inputPath, 'utf-8')); }
+        try {
+          const bytes = readFileSync(inputPath);
+          const content = bytes[0] === 0x1f && bytes[1] === 0x8b ? gunzipSync(bytes) : bytes;
+          parsed = JSON.parse(content.toString('utf-8'));
+        }
         catch (e) { return { error: `Invalid session JSON: ${(e as Error).message}` }; }
       }
       if (!isSessionRecordLike(parsed)) {

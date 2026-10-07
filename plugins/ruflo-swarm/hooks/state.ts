@@ -5,7 +5,6 @@ import type { Activity } from './model/members'
 import { routeFromStore, type RoutePick } from './reader/parse'
 import type { Snapshot } from './reader/snapshot'
 
-export const PLUGIN_NAME = 'ruflo-swarm'
 export const PANE_ID = 'ruflo-swarm'
 
 /**

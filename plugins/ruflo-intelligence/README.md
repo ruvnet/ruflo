@@ -127,6 +127,23 @@ Configure once via `mcp tool call hooks_intelligence -- '{"mode": "moe", "enable
 - `intelligence-route` — Route tasks using learned patterns; produces a `hooks_explain` rationale
 - `intelligence-transfer` — Publish/fetch patterns via IPFS (`hooks_transfer`)
 
+## As a mod (0.4.2)
+
+A function-hook mod ships beside the skills (ADR-445 pattern). Needs a Claude Code with mods (2.1.287+); older builds ignore it. No network, no process spawning: it only tightens calls to this plugin's own tools and reads through tools already connected.
+
+| Piece | Default | What it does |
+|---|---|---|
+| **Write guard** | on | Refuses a secret in a learned pattern, trajectory step/end, `neural_train` or `hooks_transfer` call, or a `memory_store` into a pattern namespace. A transfer also refuses an email address (IPFS is public). |
+| **Reset confirm** | on | Refuses `hooks_intelligence-reset` unless the call carries `confirm: true`. |
+| **`/intelligence-mod`** | — | `status`, `scan <text>`, `stats` (calls `hooks_intelligence_stats` through the connected tool); answered locally, no model call. |
+| **Status file** | — | `.claude-flow/intelligence-mod/status.json` (`version`, `updatedMs`, mode flags and counters); written at session start and when a counter changes. |
+
+Options (`userConfig`): `guard` on\|off, `confirmReset` on\|off. Refusals never echo the value they matched.
+
+```bash
+claude plugin test plugins/ruflo-intelligence   # 11 tests
+```
+
 ## Architecture Decisions
 
 - [`ADR-0001` — Optimize ruflo-intelligence (surface completeness, 4-step pipeline, IPFS transfer, namespace coordination)](./docs/adrs/0001-intelligence-surface-completeness.md)

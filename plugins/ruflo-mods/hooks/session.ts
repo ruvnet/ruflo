@@ -1,8 +1,26 @@
 import type { EngineInterface, On } from 'claude-code'
+import type { GuidanceHooks } from './guidance'
 
+import { versionText } from './probe'
 import { HANDSHAKE_MARKER, ownedEvents } from './ownership'
 import type { ModOptions } from './options'
+import { MAX_BYTES, PROTECTOR_STATUS, protectorLine } from './protector'
 import { redraw, report, under, type ModState } from './state'
+import { bindToasts } from './toast'
+
+/** `/ruflo-mods` plus the protector row when `.claude-flow/protector-mod/status.json` is present and readable (bounded, regular file only). */
+async function reportWithProtector($: EngineInterface, s: ModState): Promise<string> {
+  const base = report(s)
+  try {
+    const path = under(s, PROTECTOR_STATUS)
+    const st = await $.fs.stat(path)
+    if (st.kind !== 'file' || st.size > MAX_BYTES) return base
+    const row = protectorLine(await $.fs.read(path))
+    return row ? `${base}\n${row}` : base
+  } catch {
+    return base
+  }
+}
 
 const HELPER = '.claude/helpers/hook-handler.cjs'
 
@@ -22,7 +40,9 @@ export const HEARTBEAT_PATH = '.claude-flow/mods/session.json'
 async function helperHonours($: EngineInterface): Promise<boolean> {
   const root = await $.session.root().catch(() => undefined)
   const home = await $.env.get('HOME').catch(() => undefined)
-  for (const base of new Set([root, home])) {
+  // The generated Windows command falls back to %USERPROFILE%\.claude\helpers when the project has no copy.
+  const profile = await $.env.get('USERPROFILE').catch(() => undefined)
+  for (const base of new Set([root, home, profile])) {
     if (!base) continue
     const path = `${base}/${HELPER}`
     if (!(await $.fs.exists(path).catch(() => true))) continue
@@ -43,19 +63,35 @@ function hasClassicStatusLine(settings: unknown): boolean {
  * hooks through the process environment; register `/ruflo-mods`. Any failure
  * leaves the mod owning nothing, so every classic hook keeps running.
  */
-export function registerSession(on: On, state: ModState, options: ModOptions) {
+export function registerSession(on: On, state: ModState, options: ModOptions, guidance?: GuidanceHooks) {
   on('session.start', async ($, e, next) => {
     state.root = await $.session.root()
+    bindToasts(state, {
+      now: () => $.clock.now(),
+      show: (line, options) => $.ui.toast(line, options),
+      after: (ms, fn) => $.clock.after(ms, fn),
+      read: path => $.fs.read(`${state.root}/${path}`),
+      write: (path, text) => $.fs.write(`${state.root}/${path}`, text),
+      exists: path => $.fs.exists(`${state.root}/${path}`),
+    })
+    // A user-scoped install loads in every project. Existing Ruflo state is
+    // the opt-in boundary: a missing, unreadable or non-directory path must
+    // neither own project events nor be created by the display heartbeat.
+    const project = await $.fs.stat(under(state, '.claude-flow')).then(stat => stat.kind === 'dir').catch(() => false)
     const settings = await $.settings.read()
-    state.owned = new Set(ownedEvents(settings, await helperHonours($)))
+    state.owned = new Set(project ? ownedEvents(settings, await helperHonours($)) : [])
     await $.env.set('RUFLO_MODS_OWNS', state.owned.size ? [...state.owned].join(',') : undefined)
     state.statusLine = options.statusLine && !hasClassicStatusLine(settings)
+    if (state.probe.enabled) state.probe.version = versionText(await $.session.version().catch(() => undefined))
+    guidance?.start()
     redraw(state)
     await $.command
       .register({ name: 'ruflo-mods', description: 'Same as /ruflo mods: what this session routed, recorded and tightened' })
       .catch(() => undefined)
-    const heartbeat = { startedAt: new Date().toISOString(), owned: [...state.owned], statusLine: state.statusLine }
-    await $.fs.write(under(state, HEARTBEAT_PATH), `${JSON.stringify(heartbeat, null, 2)}\n`).catch(() => undefined)
+    if (project) {
+      const heartbeat = { startedAt: new Date().toISOString(), owned: [...state.owned], statusLine: state.statusLine, ...(state.probe.enabled ? { engine: state.probe.version ?? null, events: [...state.probe.registered].sort() } : {}) }
+      await $.fs.write(under(state, HEARTBEAT_PATH), `${JSON.stringify(heartbeat, null, 2)}\n`).catch(() => undefined)
+    }
     return next(e)
   }).catch(async ($, e, next) => {
     state.owned = new Set()
@@ -72,13 +108,13 @@ export function registerSession(on: On, state: ModState, options: ModOptions) {
     return next(e)
   })
 
-  on('command.run', { command: 'ruflo-mods' }, () => ({ text: report(state) }))
+  on('command.run', { command: 'ruflo-mods' }, async $ => ({ text: await reportWithProtector($, state) }))
 
   // `/ruflo` is ruflo-console's one command for every ruflo mod; its `mods` subcommand is this report. The console
   // registers `/ruflo`; this hook answers `mods` wherever it sits in the chain and passes every other word on.
   // `/ruflo-mods` above stays registered as its alias: ADR-406 removes, renames or reassigns no command.
   // `/ruflo-console` is the same command as `/ruflo` (kept by ADR-406), so its `mods` is answered too.
   for (const command of ['ruflo', 'ruflo-console'] as const) {
-    on('command.run', { command }, ($, e, next) => (e.args.trim().split(/\s+/)[0]?.toLowerCase() === 'mods' ? { text: report(state) } : next(e)))
+    on('command.run', { command }, async ($, e, next) => (e.args.trim().split(/\s+/)[0]?.toLowerCase() === 'mods' ? { text: await reportWithProtector($, state) } : next(e)))
   }
 }

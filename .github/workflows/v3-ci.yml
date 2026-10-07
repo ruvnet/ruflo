@@ -11,6 +11,10 @@ on:
       - 'plugins/ruflo-core/scripts/witness/**'
       - 'plugins/ruflo-core/scripts/test-hooks.mjs'
       - 'plugins/ruflo-cost-tracker/scripts/test-hooks.mjs'
+      # #3558 — installed-CLI resolution for cost-tracker's memory/hooks calls
+      - 'plugins/ruflo-cost-tracker/scripts/_npx.mjs'
+      - 'plugins/ruflo-cost-tracker/scripts/_ruflo-cli.mjs'
+      - 'plugins/ruflo-cost-tracker/scripts/test-cli-resolution-3558.mjs'
       - 'verification/**'
       # scripts/*.mjs audits (tool-descriptions, plugin-packages, hook-commands)
       - 'scripts/**'
@@ -163,6 +167,10 @@ on:
       - 'plugins/ruflo-core/scripts/witness/**'
       - 'plugins/ruflo-core/scripts/test-hooks.mjs'
       - 'plugins/ruflo-cost-tracker/scripts/test-hooks.mjs'
+      # #3558 — installed-CLI resolution for cost-tracker's memory/hooks calls
+      - 'plugins/ruflo-cost-tracker/scripts/_npx.mjs'
+      - 'plugins/ruflo-cost-tracker/scripts/_ruflo-cli.mjs'
+      - 'plugins/ruflo-cost-tracker/scripts/test-cli-resolution-3558.mjs'
       - 'scripts/**'
       - '**/hooks/hooks.json'
       - '**/scripts/ruflo-hook.cjs'
@@ -658,6 +666,11 @@ jobs:
         shell: bash
         run: |
           node plugins/ruflo-cost-tracker/scripts/test-hooks.mjs
+
+      - name: cost-tracker prefers the installed ruflo CLI over npx @latest (#3558)
+        shell: bash
+        run: |
+          node plugins/ruflo-cost-tracker/scripts/test-cli-resolution-3558.mjs
 
   browser-rvf-create-flags-smoke:
     # Regression guard for ruvnet/ruflo#2015 — the ruflo-browser

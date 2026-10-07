@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Structural smoke test for ruflo-intelligence v0.3.1.
+# Structural smoke test for ruflo-intelligence v0.4.2.
 # Per ADR-0001 §6 Verification: 13 contract checks + 3 doc invariants.
 # Offline-safe; no live MCP calls.
 set -u
@@ -27,10 +27,10 @@ grep -qE "IPFS.+pattern|pattern.+IPFS|Pinata" "$ROOT/README.md" \
   && ok || bad "README missing IPFS / Pinata transfer docs"
 
 # 1. plugin.json bump + new keywords
-step "1. plugin.json declares 0.3.1 with new keywords"
+step "1. plugin.json declares 0.4.2 with new keywords"
 v=$(grep -E '"version"[[:space:]]*:' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.3.1" ]]; then
-  bad "expected 0.3.1, got '$v'"
+if [[ "$v" != "0.4.2" ]]; then
+  bad "expected 0.4.2, got '$v'"
 else
   miss=""
   for k in microlora ewc attention moe pattern-transfer model-routing; do
@@ -147,6 +147,27 @@ if grep -qE "@claude-flow/cli.*v3\.6|v3\.6.*claude-flow/cli" "$ROOT/README.md"; 
 else
   bad "Compatibility pin to v3.6 missing"
 fi
+
+
+# M1. The mod (ADR-445 pattern): hooks module registered, files within the 500-line rule
+step "M1. mod: hooks.json names register.ts, every hook file is present and under 500 lines"
+mod_ok=1
+grep -q '"./register.ts"' "$ROOT/hooks/hooks.json" || mod_ok=0
+for f in options screen tools guard command status register; do
+  [[ -f "$ROOT/hooks/$f.ts" ]] || mod_ok=0
+  [[ $(wc -l < "$ROOT/hooks/$f.ts" 2>/dev/null || echo 9999) -le 500 ]] || mod_ok=0
+done
+[[ $mod_ok -eq 1 ]] && ok || bad "mod hooks incomplete or too long"
+
+step "M2. mod: userConfig defaults are the safe ones (guard confirmReset all on)"
+node -e '
+const c = require(process.argv[1]).userConfig || {}
+const need = process.argv.slice(2)
+process.exit(need.every(k => c[k] && c[k].default === "on") ? 0 : 1)
+' "$ROOT/.claude-plugin/plugin.json" guard confirmReset && ok || bad "userConfig defaults wrong"
+
+step "M3. mod: hooks never touch the network or spawn a process"
+if grep -nE '\$\.(http|process)\.|child_process|fetch\(' "$ROOT"/hooks/*.ts >/dev/null; then bad "network or process call in hooks"; else ok; fi
 
 printf "\n%s passed, %s failed\n" "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]] || exit 1

@@ -5,11 +5,19 @@
  * where it is not.
  */
 import { Braille, COLOR, Grid, mix, ramp, sparkline } from './raster'
+import { bigText } from './font'
+import { hash } from './boot-cyber'
+import { getBuild } from '../build'
+import { CONSOLE_VERSION } from '../version'
+
+export { bootPicture, BOOT_ROWS } from './boot'
 
 export type TopoNode = { id: string; label: string; status: string; isLeader: boolean; /** When the console last saw an event about it. */ pulseAtMs?: number }
 export type TopoModel = { topology: string; nodes: TopoNode[] }
 
 export const PULSE_MS = 1_400
+/** How long a work-in-flight dot takes from the leader to a busy agent. */
+export const FLIGHT_MS = 1400
 const isBusy = (status: string) => /busy|active|running|working/i.test(status)
 const isDown = (status: string) => /stop|terminat|offline|dead|error|fail/i.test(status)
 
@@ -101,6 +109,21 @@ export function topologyPicture(model: TopoModel, columns: number, rows: number,
     if (p !== undefined && q !== undefined) canvas.line(p.x, p.y, q.x, q.y, COLOR.line)
   }
 
+  // Work in flight: while ruflo has an agent busy, a dim amber dot keeps travelling down its edge from the leader.
+  // It runs only for as long as the status says busy, so it is data, not decoration; each agent has its own phase.
+  model.nodes.forEach((node, i) => {
+    const q = points[i]
+
+    if (i === 0 || leader === undefined || q === undefined || !isBusy(node.status)) return
+
+    const k = (((t / FLIGHT_MS + i * 0.37) % 1) + 1) % 1
+    const x = leader.x + (q.x - leader.x) * k
+    const y = leader.y + (q.y - leader.y) * k
+
+    canvas.dot(x, y, COLOR.warn)
+    canvas.dot(x + 1, y, COLOR.warn)
+  })
+
   model.nodes.forEach((node, i) => {
     const q = points[i]
     const k = node.pulseAtMs === undefined ? -1 : (t - node.pulseAtMs) / PULSE_MS
@@ -128,9 +151,11 @@ export function topologyPicture(model: TopoModel, columns: number, rows: number,
     const cy = Math.floor(point.y / 4)
     const heartbeat = node.isLeader ? Math.max(0, Math.sin(t / 260)) ** 6 : 0
     const flash = node.pulseAtMs !== undefined && t - node.pulseAtMs >= 0 && t - node.pulseAtMs < PULSE_MS + 600
-    const color = flash ? 0xffffff : node.isLeader ? mix(COLOR.accent, 0xffffff, heartbeat) : nodeColor(node)
+    // A busy agent breathes (brighter and back, about once every 2 s) so it reads as working, not just coloured.
+    const breath = !node.isLeader && isBusy(node.status) ? 0.45 * Math.sin(t / 330 + i) ** 2 : 0
+    const color = flash ? 0xffffff : node.isLeader ? mix(COLOR.accent, 0xffffff, heartbeat) : mix(nodeColor(node), 0xffffff, breath)
 
-    grid.set(cx, cy, node.isLeader ? '★' : '●', color)
+    grid.set(cx, cy, node.isLeader ? '★' : isBusy(node.status) ? '◉' : '●', color)
 
     if (room >= 5 || node.isLeader) {
       const label = node.label.slice(0, Math.max(3, room - 1))
@@ -212,6 +237,195 @@ export function markPicture(isWorking: boolean, t: number): Grid {
 }
 
 /** The pane's title strip: a highlight sweeps across it every few seconds while the pane is focused. Decoration only. */
+/** RUFLO in a two-row half-block font, the way a BBS splash spelled its name. */
+const LOGO = ['█▀█ █ █ █▀▀ █   █▀█', '█▀▄ █▄█ █▀  █▄▄ █▄█'] as const
+const NEON_MAGENTA = 0xff2a6d
+const NEON_CYAN = 0x05d9e8
+
+/** A header strikes in over this long when its page is switched to, and when the menu enters. */
+export const TITLE_ENTRY_MS = 1_200
+const GLITCH = '#%&@/\\|<>=+*'
+
+/**
+ * The strike-in shared by the page titles and the menu banner: from `from`, the letters appear left to right, a bright edge leading
+ * and block noise ahead of it; behind the edge a few settled cells flip for a frame to an ASCII character (pink or cyan, fading to none),
+ * and now and then a row slips one cell sideways. Hash-driven, so a frame is reproducible; nothing once `age` reaches TITLE_ENTRY_MS.
+ */
+function strikeIn(grid: Grid, from: number, age: number, t = 0): void {
+  if (age >= TITLE_ENTRY_MS) return occasionalGlitch(grid, from, t)
+
+  let last = from
+
+  for (let i = 0; i < grid.columns * grid.rows; i++) if (grid.cells[i * 3] !== 0x20) last = Math.max(last, i % grid.columns)
+
+  const span = last - from + 1
+  const lead = from + (age / TITLE_ENTRY_MS) * (span + 1)
+
+  for (let y = 0; y < grid.rows; y++) {
+    for (let x = from; x <= last; x++) {
+      if (grid.glyph(x, y) === 0x20) continue
+
+      if (x > lead + 1) grid.set(x, y, '░▒▓█'[hash(x * 7 + y + Math.floor(age / 60)) % 4] as string, mix(0x3a0f2e, NEON_CYAN, 0.35))
+      else if (x > lead - 1.5) grid.set(x, y, grid.glyph(x, y), 0xffffff)
+      else if (hash(x * 13 + y * 7 + Math.floor(age / 50)) % 100 < 4 * (1 - age / TITLE_ENTRY_MS)) grid.set(x, y, GLITCH[hash(x + y + Math.floor(age / 50)) % GLITCH.length] as string, hash(x + Math.floor(age / 50)) % 2 === 0 ? 0xff2a6d : 0x05d9e8)
+    }
+
+    const slip = hash(y * 5 + Math.floor(age / 80))
+
+    if (slip % 16 === 0 && age < TITLE_ENTRY_MS - 150) {
+      const by = (slip >>> 4) % 2 === 0 ? 1 : -1
+      const row = grid.cells.slice(y * grid.columns * 3, (y + 1) * grid.columns * 3)
+
+      for (let x = from; x <= last; x++) grid.cells.set(row.slice(Math.max(0, x - by) * 3, Math.max(0, x - by) * 3 + 3), (y * grid.columns + x) * 3)
+    }
+  }
+}
+
+/** One burst every BURST_EVERY_MS at a hash-chosen moment in its slot, lasting BURST_MS. */
+const BURST_EVERY_MS = 8_000
+const BURST_MS = 260
+
+/**
+ * After the entry, a header glitches now and then: for a quarter second, every eight seconds or so, a few of its cells flip to an ASCII
+ * character and a row may slip a cell. Quieter than the entry, and a function of the animation clock `t` alone, so a still frame (t = 0,
+ * fps 0) is never glitched.
+ */
+function occasionalGlitch(grid: Grid, from: number, t: number): void {
+  if (t <= 0) return
+
+  const slot = Math.floor(t / BURST_EVERY_MS)
+  const at = t - (slot * BURST_EVERY_MS + (hash(slot + 977) % (BURST_EVERY_MS - 1_000)))
+
+  if (at < 0 || at >= BURST_MS) return
+
+  const frame = Math.floor(at / 45)
+
+  for (let y = 0; y < grid.rows; y++) {
+    for (let x = from; x < grid.columns; x++) {
+      if (grid.glyph(x, y) === 0x20) continue
+      if (hash(x * 11 + y * 5 + frame * 31 + slot) % 100 < 3) grid.set(x, y, GLITCH[hash(x + y + frame) % GLITCH.length] as string, hash(x + frame) % 2 === 0 ? 0xff2a6d : 0x05d9e8)
+    }
+
+    if (hash(y * 3 + frame + slot) % 5 === 0) {
+      const row = grid.cells.slice(y * grid.columns * 3, (y + 1) * grid.columns * 3)
+
+      for (let x = from; x < grid.columns; x++) grid.cells.set(row.slice(Math.max(0, x - 1) * 3, Math.max(0, x - 1) * 3 + 3), (y * grid.columns + x) * 3)
+    }
+  }
+}
+
+/**
+ * The BBS banner: the logo in a magenta-to-cyan gradient with a scanline sweeping across it (decoration), a tag line,
+ * the project, and a blinking block cursor. Two rows.
+ */
+export function bannerPicture(project: string, columns: number, t: number, age = Infinity): Grid {
+  const grid = new Grid(columns, 2)
+  const width = LOGO[0].length
+  const sweep = ((t / 28) % (columns + 40)) - 20
+
+  LOGO.forEach((line, y) => {
+    ;[...line].forEach((ch, x) => {
+      if (ch === ' ' || x >= columns) return
+
+      const base = mix(NEON_MAGENTA, NEON_CYAN, x / Math.max(1, width - 1))
+      const glow = Math.max(0, 1 - Math.abs(x - sweep) / 4)
+
+      grid.set(x, y, ch, mix(base, 0xffffff, glow * 0.7))
+    })
+  })
+
+  const x0 = width + 2
+
+  if (columns > x0 + 4) {
+    // The version, and the git revision when the session knows it: the revision changes with every commit, so it shows which build is loaded.
+    // The title, with the version and build when they fit beside the logo; when they do not, the title whole rather than cut mid-word.
+    const title = '░▒▓ AGENT SWARM CONSOLE'
+    const full = `${title} v${CONSOLE_VERSION}${getBuild() === '' ? '' : ` · ${getBuild()}`}`
+    // The longest that fits, never cut mid-word: version and build, the title, a shorter title, the shortest.
+    const room = columns - x0
+    const shown = [full, title, '░▒▓ SWARM CONSOLE', '░▒▓ CONSOLE'].find(text => text.length <= room) ?? '░▒▓ CONSOLE'
+
+    grid.text(x0, 0, shown.slice(0, room), NEON_MAGENTA)
+
+    const line = `▸ npx ruflo · ${project}`
+    const node = line.length <= room - 2 ? line : `${line.slice(0, Math.max(1, room - 3))}…`
+
+    grid.text(x0, 1, node, NEON_CYAN)
+    if (Math.floor(t / 530) % 2 === 0 && x0 + node.length + 1 < columns) grid.set(x0 + node.length + 1, 1, '█', NEON_CYAN)
+  }
+
+  strikeIn(grid, 0, age, t)
+
+  return grid
+}
+
+const NEON_CORAL = 0xff7a59
+
+/**
+ * A view's BBS title: its name in the two-row half-block font, magenta to coral like the ANSI art boards, framed by
+ * dithered ░▒▓ ramps, with a slow shimmer down the letters (decoration). Two rows.
+ */
+export function titlePicture(name: string, columns: number, t: number, age = Infinity): Grid {
+  const grid = new Grid(columns, 2)
+  const [top, bottom] = bigText(name)
+  const edge = '░▒▓'
+  const x0 = edge.length + 1
+  const width = Math.max(top.length, bottom.length)
+  const shimmer = ((t / 40) % (width + 30)) - 15
+  // `RUFLO | PAGE`: the RUFLO letters move like the banner on the menu (a white glow sweeping a magenta to cyan ramp); the page's name keeps its slower coral shimmer.
+  const logo = name.toLowerCase().startsWith('ruflo |') ? bigText('ruflo')[0].length : 0
+  const sweep = ((t / 28) % (logo + 40)) - 20
+
+  for (let y = 0; y < 2; y++) {
+    ;[...edge].forEach((ch, i) => grid.set(i, y, ch, mix(0x3a0f2e, NEON_MAGENTA, (i + 1) / edge.length)))
+    ;[...(y === 0 ? top : bottom)].forEach((ch, i) => {
+      if (ch === ' ' || x0 + i >= columns) return
+
+      if (i < logo) {
+        const lit = Math.max(0, 1 - Math.abs(i - sweep) / 4)
+
+        grid.set(x0 + i, y, ch, mix(mix(NEON_MAGENTA, NEON_CYAN, i / Math.max(1, logo - 1)), 0xffffff, lit * 0.7))
+
+        return
+      }
+
+      const glow = Math.max(0, 1 - Math.abs(i - shimmer) / 3)
+
+      grid.set(x0 + i, y, ch, mix(mix(NEON_MAGENTA, NEON_CORAL, i / Math.max(1, width - 1)), 0xffffff, glow * 0.6))
+    })
+    // The line closes on the ramp the other way round, ░▒▓, mirroring how the dark ▓▒░ edge opened it.
+    ;[...'░▒▓'].forEach((ch, i) => {
+      const x = x0 + width + 1 + i
+
+      if (x < columns) grid.set(x, y, ch, mix(0x3a0f2e, NEON_MAGENTA, (i + 1) / edge.length))
+    })
+  }
+
+  strikeIn(grid, x0, age, t)
+
+  return grid
+}
+
+/**
+ * The menu's palette strip: one block of each colour across the width, and a band of light that sweeps along it and starts again,
+ * brightening the cells it passes (about 28 cells a second: three cells a frame at the default 8 fps, so it reads as motion, not a
+ * jump). At `t` = 0 the light is off the strip and the cells are exactly the colours, so a still frame (fps 0) is the plain strip.
+ * Decoration, like the boot's sign: it carries no data. A pure function of its size and the clock, as every picture here.
+ */
+export function palettePicture(columns: number, t: number, colors: readonly number[]): Grid {
+  const grid = new Grid(columns, 1)
+  const at = ((t / 36) % (columns + 24)) - 12
+
+  for (let x = 0; x < columns; x++) {
+    const base = colors[Math.min(colors.length - 1, Math.floor((x * colors.length) / columns))] ?? 0xffffff
+    const glow = Math.max(0, 1 - Math.abs(x - at) / 7)
+
+    grid.set(x, 0, '▀', mix(base, 0xffffff, glow * 0.8))
+  }
+
+  return grid
+}
+
 export function headerPicture(title: string, columns: number, t: number): Grid {
   const grid = new Grid(columns, 1)
   const at = ((t / 22) % (columns + 60)) - 20

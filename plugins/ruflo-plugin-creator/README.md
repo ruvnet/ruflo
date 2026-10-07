@@ -74,3 +74,13 @@ bash plugins/ruflo-plugin-creator/scripts/smoke.sh
 - `ruflo-agentdb` — namespace convention owner; `agentdb_controllers` runtime is the canonical controller list
 - `ruflo-cost-tracker`, `ruflo-market-data`, `ruflo-migrations`, `ruflo-observability` — each fixed namespace-routing bugs the scaffolder now warns about
 - `ruflo-knowledge-graph`, `ruflo-market-data` — each fixed `embeddings_embed` references the scaffolder now warns about
+
+## As a mod
+
+Function-hook mod (ADR-445, pattern of `ruflo-agentdb`), loaded from `hooks/hooks.json` → `hooks/register.ts`. This plugin's own tools only search the plugin store, so there is no guard and no `userConfig`: the mod is a local command and a status file.
+
+- **Command**: `/creator-mod` answers locally with no model call, read-only. Verbs: `status`; `reserved <plugin-dir>` lists the command and skill names a plugin already uses (a mod command must not reuse one); `check <plugin-dir>` summarises its manifest, `hooks.json` modules and `userConfig` options. Paths with `..` are refused.
+- **Status file**: `.claude-flow/creator-mod/status.json` (`{version, updatedMs, checked, reserved, lastTarget}`).
+- **Safety**: no network, no process spawning.
+- **Scaffold status contract** (0.4.1): `/create-mod` scaffolds `hooks/status.ts`, which writes `.claude-flow/<name>-mod/status.json` with the fields the console's Mods section reads: `version: 1`, `summary`, `modVersion`, `guard`, `calls` (a number), `blocked`, `lastDenied` (only once the mod has refused something), plus `updatedMs`/`startedMs`. The scaffold's `tests/status.test.ts` asserts that shape; the steps are in `skills/create-mod/SKILL.md`.
+- **Test**: `claude plugin validate plugins/ruflo-plugin-creator`, `claude plugin test plugins/ruflo-plugin-creator`, `bash plugins/ruflo-plugin-creator/scripts/smoke.sh`. The runner sweeps in `templates/mod/tests` (the scaffold's own test, which only passes against the scaffold: `claude plugin test plugins/ruflo-plugin-creator/templates/mod`), so expect that one file to fail from the plugin root.

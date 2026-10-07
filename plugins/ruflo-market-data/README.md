@@ -96,3 +96,15 @@ bash plugins/ruflo-market-data/scripts/smoke.sh
 ## License
 
 MIT
+
+## As a mod
+
+This plugin ships a function-hook mod (ADR-445, `hooks/register.ts`). It makes no network call, spawns no process and makes no model call.
+
+- **Guard** (tighten-only, on by default): Refuses writes to a `market*` namespace (`memory_store`, `agentdb_pattern-store`, `agentdb_hierarchical-store`, `ruvllm_hnsw_add`) that hold a key or token, or a feed URL with a credential in its query string or as `user:pass@host`. Other namespaces are untouched. A refusal never echoes the secret.
+- **`/market-mod`**: `status`, `recent`, `tools` (which of this plugin's tools are connected) and `scan <text>` (would the guard refuse it). Answered locally.
+- **Status file**: `.claude-flow/market-mod/status.json` (`{version: 1, updatedMs, guard, calls, total, blocked, recent}`, counters only, never tool input), written at session start and after every call to this plugin's tools.
+
+Options (`userConfig`): `guard` (on).
+
+Test it: `claude plugin validate plugins/ruflo-market-data`, `claude plugin test plugins/ruflo-market-data`, `bash plugins/ruflo-market-data/scripts/smoke.sh`.

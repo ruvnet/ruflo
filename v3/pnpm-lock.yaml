@@ -121,19 +121,19 @@ importers:
         specifier: 3.0.3
         version: link:../codex
       '@claude-flow/mcp':
-        specifier: 3.0.0
+        specifier: 3.1.0
         version: link:../mcp
       '@claude-flow/neural':
         specifier: 3.0.0
         version: link:../neural
       '@claude-flow/plugin-agent-federation':
-        specifier: 1.0.0
+        specifier: 1.0.1
         version: link:../plugin-agent-federation
       '@claude-flow/security':
-        specifier: 3.0.1
+        specifier: 3.0.2
         version: link:../security
       '@claude-flow/shared':
-        specifier: 3.0.0
+        specifier: 3.0.2
         version: link:../shared
       '@iarna/toml':
         specifier: ^2.2.5
@@ -209,7 +209,7 @@ importers:
         specifier: 2.0.0-alpha.5
         version: 2.0.0-alpha.5
       '@claude-flow/memory':
-        specifier: 3.0.0
+        specifier: 3.0.1
         version: link:../memory
       '@metaharness/darwin':
         specifier: ~0.10.2

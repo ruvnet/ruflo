@@ -93,3 +93,14 @@ bash plugins/ruflo-adr/scripts/smoke.sh
 ## License
 
 MIT
+
+## As a mod
+
+ADR also ships as a function-hook mod (ADR-445 pattern; hooks in `hooks/`, loaded with the plugin). No network, no process, no model call.
+
+- **Guard (default on)**: refuses an ADR write (`agentdb_hierarchical-store`, `agentdb_causal-edge` or `memory_store` into an `adr*` namespace) that holds a key, token or password. It only tightens: it never allows anything the session would deny, and the refusal never repeats the secret. Turn it off with the `guard` option.
+- **`/adr-mod`**: answered locally. `/adr-mod status`, `/adr-mod scan <text>`, `/adr-mod format`.
+- **Status file**: `.claude-flow/adr-mod/status.json` (`version`, `updatedMs`, counters), written at session start and whenever a call is refused; the console reads it.
+- **Options** (`userConfig`): `guard` (`on` by default).
+
+Test: `claude plugin validate plugins/ruflo-adr`, `claude plugin test plugins/ruflo-adr`, and `bash plugins/ruflo-adr/scripts/smoke.sh`.

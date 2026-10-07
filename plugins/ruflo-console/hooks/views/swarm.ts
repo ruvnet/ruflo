@@ -1,6 +1,7 @@
 import type { RenderElement } from 'claude-code'
 
-import { button, clip, col, kv, picture, row, rule, text, THEME, type Ctx } from './common'
+import { agentLabels, shortId } from '../data/parse'
+import { button, clip, col, kv, picture, row, rule, starts, text, THEME, type Ctx } from './common'
 import { selection } from './select'
 
 const STATUS_COLOR = (status: string): string | undefined =>
@@ -21,15 +22,18 @@ export function swarmView(ctx: Ctx): RenderElement {
   if (snap === null) return text(ctx, 'reading ruflo state…', { dimColor: true })
 
   if (swarm === null && hive === null && agents.length === 0) {
-    rows.push(text(ctx, 'No swarm on disk here. `npx ruflo swarm init --topology hierarchical` starts one (or p → "start a swarm").', { dimColor: true }))
+    rows.push(starts(ctx, 'No swarm here yet: start a hierarchical one, then spawn agents into it.', ['swarm', 'spawn-coder', 'spawn-tester', 'spawn-reviewer']))
 
     return col(ctx, rows, 'swarm')
   }
 
   rows.push(kv(ctx, 'topology', swarm === null ? `${hive?.topology ?? 'n/a'} (hive-mind)` : `${swarm.topology}${swarm.strategy !== undefined ? ` · ${swarm.strategy}` : ''} · ${swarm.status}${swarm.maxAgents !== undefined ? ` · max ${swarm.maxAgents}` : ''}`))
   rows.push(picture(ctx, 'topology', `graph needs a terminal: ${agents.length} agents`))
-  rows.push(text(ctx, '★ leader (its heartbeat is decoration) · ● idle / busy / stopped as ruflo wrote them · a white pulse = an event about that agent', { dimColor: true }))
+  rows.push(text(ctx, '★ leader · ◉ busy (a dot runs to it while it works) · ● idle · grey stopped · a white flash = an event about that agent', { dimColor: true }))
   rows.push(rule(ctx, 'Agents', `${agents.length} · j/k pick · d open · x actions`))
+  const labels = agentLabels(agents)
+  // The type column only earns its room when some agent has a name that is not its type.
+  const hasTypes = agents.some(agent => agent.name !== undefined && agent.name !== agent.type)
 
   for (const agent of agents.slice(0, 10)) {
     const isPicked = picked?.id === agent.id
@@ -41,7 +45,8 @@ export function swarmView(ctx: Ctx): RenderElement {
         ctx.kit.Text({
           wrap: 'truncate-end',
           ...(isPicked && { bold: true }),
-          children: clip(`${(agent.name ?? agent.type).padEnd(14)} ${agent.type.padEnd(12)} ${agent.status.padEnd(9)} tasks ${agent.taskCount ?? 'n/a'} · health ${agent.health === undefined ? 'n/a' : `${Math.round(agent.health * 100)}%`} · ${agent.id}`, ctx.columns - 3),
+          // One label (name, else type, with a short id only where two read the same); the type only when it differs.
+          children: clip(`${(labels.get(agent.id) ?? agent.type).padEnd(16)} ${agent.status.padEnd(8)} ${hasTypes ? `${(agent.name !== undefined && agent.name !== agent.type ? agent.type : '').padEnd(12)} ` : ''}tasks ${agent.taskCount ?? 'n/a'} · health ${agent.health === undefined ? 'n/a' : `${Math.round(agent.health * 100)}%`} · #${shortId(agent.id)}`, ctx.columns - 3),
         }),
       ]),
     )
@@ -55,14 +60,17 @@ export function swarmView(ctx: Ctx): RenderElement {
 
   rows.push(rule(ctx, 'Hive-mind', hive === null ? 'not initialised' : `${hive.strategy ?? 'consensus'}${hive.queen !== undefined ? ` · queen ${hive.queen}` : ''}`))
 
+  // A short summary: the Hive-Mind view (👑) holds the queen, quorum, proposals, voting and broadcasts.
   if (hive === null) {
-    rows.push(text(ctx, 'n/a — `npx ruflo hive-mind init` for queen-led consensus', { dimColor: true }))
+    rows.push(starts(ctx, 'No hive-mind yet: queen-led consensus for the swarm.', ['hive'], 'swarm-'))
   } else {
-    for (const proposal of hive.pending.slice(-3)) rows.push(text(ctx, `◇ ${proposal.type} (${proposal.strategy}) ${proposal.status} · for ${proposal.votesFor} · against ${proposal.votesAgainst} · ${proposal.id}`, { color: THEME.warn }))
-    for (const decision of hive.history.slice(-2)) rows.push(text(ctx, `◆ ${decision.type} → ${decision.result} · for ${decision.votesFor} · against ${decision.votesAgainst}`, { dimColor: true }))
-    if (hive.pending.length === 0 && hive.history.length === 0) rows.push(text(ctx, 'no proposals yet', { dimColor: true }))
-    if (hive.pending.length > 0) rows.push(text(ctx, 'vote from Approvals (q) or the palette (p → vote)', { dimColor: true }))
+    const newest = hive.pending.at(-1)
+
+    rows.push(text(ctx, `${hive.workers.length} workers · ${hive.pending.length} open · ${hive.history.length} decided · ${hive.broadcasts.length} broadcasts`, { dimColor: true }))
+    if (newest !== undefined) rows.push(text(ctx, `◇ ${newest.type} (${newest.strategy}) ${newest.status} · for ${newest.votesFor} · against ${newest.votesAgainst} · ${newest.id}`, { color: THEME.warn }))
   }
+
+  if (ctx.columns >= 44) rows.push(row(ctx, [button(ctx, 'open-hive', '▸ open hive', () => ctx.act.view('hive'))]))
 
   return col(ctx, rows, 'swarm')
 }

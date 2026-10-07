@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.55.0] - 2026-10-07
+
+Minor release. Contains a security behaviour change: `ruflo mcp start -t http` on a non-loopback host now refuses to start without a token (see Security and Breaking changes).
+
+### Security
+
+- **MCP HTTP transport: refuse unauthenticated non-loopback binds, optional bearer-token auth (#3598, #3599)** — `ruflo mcp start -t http --host 0.0.0.0` (or any non-loopback host) now exits 1 unless a token is set (`RUFLO_MCP_HTTP_TOKEN`, `--auth-token-file`, `--auth-token`) or the operator opts out with `RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP=1`. With a token, `/rpc`, `/mcp` and `/info` need `Authorization: Bearer <token>` (constant-time compare); `/health` stays public and minimal. Also fixes a fail-open in `@claude-flow/mcp` where auth enabled with an empty token list accepted any bearer value. **Not closed:** loopback with no token is still unauthenticated (any local process can call every tool, and DNS rebinding is not blocked because there is no `Host` allow-list); set a token whenever the HTTP transport is used. A valid token grants every tool (no per-tool authorization).
+- **Hive-mind gating that keeps local users working (ADR-476, #3338, #3339)** — `hive-mind_init` no longer returns `hiveToken`, and `spawn`, `consensus` `propose`, `broadcast`, `shutdown`, `memory` `set`/`delete` and `optimize-memory` (plus the existing `join`/`leave`/`vote`) now require an operator credential from **remote** callers (HTTP/WebSocket MCP). Local stdio MCP, `ruflo mcp exec`, the `hive-mind` CLI and in-process callers need no credential and no extra step. Remote clients set `RUFLO_HIVE_BOOTSTRAP_SECRET` (or read `.claude-flow/hive-mind/bootstrap.secret`, created 0600 by the first local `hive-mind init`) and send it as `bootstrapSecret`; `RUFLO_HIVE_REQUIRE_AUTH=1` applies the same rule to stdio on bridged servers. `state.json` is now written 0600 atomically and the hive directory 0700. Migration: clients that read `hiveToken` from the `init` response must drop that (it is `undefined`); over stdio they omit it everywhere. This is a speed bump, not a boundary, against a local prompt-injected agent that can read the files.
+- **Policy ledger anchor can no longer be deleted and silently re-established (#3602, #3886, ADR-475)** — `policy verify` no longer trusts an anchor stored only in `state.json`. A second, hash-chained anchor log plus a mirror under `~/.config/ruflo/policy-trust/` now detect truncation, and `policy verify --establish-anchor` (interactive TTY only) is the logged repair path. Limit: this does not defend against an attacker who can rewrite both the project directory and `~/.config/ruflo`; stronger evidence needs an external witness. A pre-#3568 ledger with receipts and no anchor now fails policy transactions with `policy-ledger-anchor-missing` until repaired. Ships in `@claude-flow/security` 3.0.2.
+
+### Fixed
+
+- **Resilience batch (#3885; fixes #3676 #3674 #3668 #3670 #3682 #3672 #3593 #3592; thanks @rudycelekli)** — `@claude-flow/shared` 3.0.2: event-store pagination, bulkhead sync-throw handling, retry timeout cleanup, connection-pool reservation (also in `@claude-flow/mcp`); cli: production retry on non-Error rejections, worker-queue terminal outcomes and cancelled head, bounded worker pool with an already-aborted input.
+- **`@claude-flow/memory` 3.0.1 — `mmrRerank()` caches embedding-cosine max-similarity across rounds (#3516, #3517)**.
+- **`@claude-flow/swarm` 3.0.1** — Byzantine quorums now intersect for every cluster size (#3560, #3587, @rudycelekli); `spawnAgent()` auto-domain branch registers the agent in its pool (#3538, #3539); `MessageBus` is event-driven instead of a 10 ms unconditional poll (#3563).
+- **`@claude-flow/plugin-agent-federation` 1.0.1** — outbound sends are authorized with the peer's current trust, not a stale snapshot (#3561, #3588, @rudycelekli).
+- **CLI string options keep their declared value (#3594, #3601)**, **config cache is isolated per project directory (#3590, #3591)**, **nested config defaults are cloned (#3595, #3600)** — all @rudycelekli.
+- **Hive consensus commands fail when the hive rejects the operation (#3609, #3654, @rudycelekli)**.
+- **`daemon start --workers` selection reaches the WorkerDaemon (#3547, #3875)**.
+- **Plugins run the installed ruflo CLI before `npx @claude-flow/cli@latest` (#3558, #3559, @HF-teamdev)** — ruflo-cost-tracker 0.27.2, ruflo-adr 0.5.4, ruflo-metaharness 0.2.4, ruflo-goals 0.4.3.
+- **ruflo-adr edge keys use a separator the memory validator accepts (#3633, #3636, @drakeo338)**.
+- ruflo-console 0.36.1: Settings lists Claude control and spending first (#3887).
+
+### Breaking changes
+
+- Binding the MCP HTTP transport off loopback (for example Docker with `--host 0.0.0.0`) now requires `RUFLO_MCP_HTTP_TOKEN` (and clients must send the header) or `RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP=1`; otherwise `mcp start` exits with an error. Loopback users are unaffected.
+- `hive-mind_init` no longer returns `hiveToken` (ADR-476).
+
+### Leaf packages published with this release
+
+`@claude-flow/shared` 3.0.2, `@claude-flow/memory` 3.0.1, `@claude-flow/swarm` 3.0.1, `@claude-flow/security` 3.0.2, `@claude-flow/mcp` 3.1.0, `@claude-flow/plugin-agent-federation` 1.0.1.
+
 ## [3.34.0] - 2026-07-31
 
 ### Added

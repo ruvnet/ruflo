@@ -109,3 +109,14 @@ bash plugins/ruflo-sparc/scripts/smoke.sh
 ## License
 
 MIT
+
+## As a mod
+
+This plugin also loads as a function-hook mod (ADR-445 pattern, `hooks/hooks.json` → `register.ts`). No network, no process spawn, no model call.
+
+- **Guard (default on, tighten-only).** It refuses to store a spec or phase artifact that holds a secret in a `sparc*` memory namespace. The refusal never repeats the secret.
+- **Status file.** `.claude-flow/sparc-mod/status.json` (`{version: 1, updatedMs, guard, checked, blocked, seen}`), written at session start and when a counter changes.
+- **`/sparc-mod`** answers locally: `status`, `scan <text>`, `phases`. (The plugin's own commands are prompt commands, which a hook cannot answer, so the mod has its own name.)
+- **Option.** `guard` (`on` | `off`, default `on`) in the plugin's `userConfig`.
+
+Test it: `claude plugin validate plugins/ruflo-sparc`, `claude plugin test plugins/ruflo-sparc`, `bash plugins/ruflo-sparc/scripts/smoke.sh`.

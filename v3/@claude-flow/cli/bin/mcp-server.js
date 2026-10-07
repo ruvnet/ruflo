@@ -190,7 +190,7 @@ async function handleMessage(message) {
         }
 
         try {
-          const result = await callMCPTool(toolName, toolParams, { sessionId });
+          const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio' });
           return {
             jsonrpc: '2.0',
             id: message.id,

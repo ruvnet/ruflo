@@ -77,6 +77,11 @@
       "description": "AI safety scanning, PII detection, prompt injection defense, and adaptive threat learning"
     },
     {
+      "name": "ruflo-protector",
+      "source": "./plugins/ruflo-protector",
+      "description": "Project Anatole: an optional, learning watchdog for unattended agents (OWASP-mapped rules, a per-project baseline, learn / notify / enforce modes). Default off."
+    },
+    {
       "name": "ruflo-browser",
       "source": "./plugins/ruflo-browser",
       "description": "Agentic browser automation with Playwright for testing, scraping, and UI interaction"

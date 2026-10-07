@@ -147,6 +147,28 @@ export function noteResult(activity: Activity, agentId: string | undefined, tool
   activity.recent.set(id, [...(activity.recent.get(id) ?? []), { tool, subject, isError, atMs: nowMs }].slice(-RECENT))
 }
 
+/** How many failures in a row of one call make a loop stuck (ADR-477). */
+export const STUCK_AFTER = 3
+
+/** What a loop is called to the person, as its tile says it (a loop known only from its tool calls is said to be a subagent). */
+export function loopLabel(activity: Activity, id: string): string {
+  const loop = activity.loops.get(id)
+
+  if (id === LEAD) return 'claude (main)'
+
+  return loop === undefined ? `subagent …${id.slice(-4)}` : (loop.name ?? (loop.role === 'agent' ? `subagent …${id.slice(-4)}` : loop.role))
+}
+
+/** The call a loop has just failed STUCK_AFTER times running with the same subject (nothing in between), else null: the sign of a loop going round in circles. */
+export function stuckCall(activity: Activity, agentId: string | undefined): { tool: string; subject: string } | null {
+  const last = (activity.recent.get(agentId ?? LEAD) ?? []).slice(-STUCK_AFTER)
+  const [first] = last
+
+  if (first === undefined || last.length < STUCK_AFTER) return null
+
+  return last.every(call => call.isError && call.tool === first.tool && call.subject === first.subject) ? { tool: first.tool, subject: first.subject } : null
+}
+
 /** A loop's own `turn.complete`: a subagent's answer is in. */
 export function noteDone(activity: Activity, agentId: string, reason: string, nowMs: number): void {
   const loop = loopFor(activity, agentId, nowMs)

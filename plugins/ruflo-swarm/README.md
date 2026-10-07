@@ -91,7 +91,7 @@ commands, skills and agents above behave as they always have.
   `/ruflo-swarm-pane`, `/ruflo-swarm-status`, `/ruflo-swarm-topology`, `/ruflo-swarm-claims` and
   `/ruflo-swarm-consensus` stay registered as aliases (ADR-406: no command is removed or renamed). `/ruflo-swarm:watch` also opens the pane.
 - **Options** (`/config`): `panel` (command, the default since ruflo-console's cockpit is the pane that opens by
-  itself | auto | off), `cli` (`npx-offline`, the default, never touches the
+  itself | auto | off: `/ruflo swarm pane` refuses and `/ruflo-swarm:watch` does not open it), `cli` (`npx-offline`, the default, never touches the
   network), `routeThreshold`, `injectSpawnContext` (off by default: appends a one-line swarm note to spawned subagents'
   prompts) and `audit` (off by default: event names, tool names and agent ids into ruflo memory, never content).
 - The mod does not register `prompt.submit` or `tool.check` hooks, and its `tool.call` hook only observes.
@@ -103,6 +103,12 @@ commands, skills and agents above behave as they always have.
 Tests run on the engine's own kit: `claude plugin test plugins/ruflo-swarm` (run `scripts/fetch-mod-types.sh` once
 first if you want `tsc -p plugins/ruflo-swarm` to typecheck). The pure readers also run under vitest:
 `npx vitest run --root plugins/ruflo-swarm tests/parse.spec.ts`.
+
+## Toasts (ADR-477)
+
+ruflo-swarm draws its toasts through the shared toast policy (one copy of `hooks/toast-policy.ts`, kept identical across the ruflo mods by `scripts/sync-toast-policy.mjs`): a level prefix (`›` info, `✓` ok, `⚠` warn, `✗` error), one clean line of at most 120 characters with secrets masked, an identical toast not repeated for a minute, and at most four a minute per source (errors are held and counted, never dropped). `Next: …` (when the prompt box cannot be filled) is `info`; a subagent whose turn ends in anything but an answer or an abort is an `error`; a loop that fails the same call three times running is a `warn` ("keeps failing …").
+
+The person's choice is the console's **Settings → Interface and updates → Toasts**: `all`, `important` (warnings and errors) or `off`, and a mute chip per source. Every toast, drawn or not, is kept as a digest the console shows on its Events page, flagged with what became of it; without the console nothing is written and the defaults apply.
 
 ## Verification
 

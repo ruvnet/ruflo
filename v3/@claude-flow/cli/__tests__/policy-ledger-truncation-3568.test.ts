@@ -92,14 +92,14 @@ describe('policy verify detects a truncated decision ledger (#3568)', () => {
     expect((await verifyPolicyLedger(root)).error).toBe('policy-ledger-truncated');
   });
 
-  it('anchors a ledger written before the anchor existed and reports it once', async () => {
+  it('restores a deleted primary anchor from the intact second anchor, and still catches truncation (#3602)', async () => {
     const root = await ledgerWith(5);
     const state = readState(root);
     delete state.ledgerHead;
     delete state.ledgerLength;
     writeState(root, state);
 
-    expect(await verifyPolicyLedger(root)).toEqual({ valid: true, length: 5, anchor: 'established-now' });
+    expect(await verifyPolicyLedger(root)).toEqual({ valid: true, length: 5, secondaryAnchor: 'restored-primary' });
     expect(readState(root).ledgerLength).toBe(5);
     expect(await verifyPolicyLedger(root)).toEqual({ valid: true, length: 5 });
 

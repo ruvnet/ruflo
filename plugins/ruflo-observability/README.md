@@ -98,3 +98,19 @@ bash plugins/ruflo-observability/scripts/smoke.sh
 ## License
 
 MIT
+
+## As a mod
+
+Function-hook mod (ADR-445 pattern, `hooks/register.ts`). It adds, with no network, no process spawning and no model call:
+
+- **Guard** (tighten-only, default on): refuses a memory write of telemetry (spans, logs, labels) that holds a secret, a US SSN or a spaced payment-card number (13-digit epoch timestamps are fine). The deny reason names the rule, never the value.
+- **`/observe-mod`**: local `status` and `scan <text>` (secret check, same rules as the guard).
+- **Status file** `.claude-flow/observe-mod/status.json` (`{version:1, updatedMs, guard, checked, blocked, ...}`), written at session start and when counters change.
+
+Per-prompt context is deliberately not added: this plugin has nothing worth attaching to every prompt.
+
+| Option | Default | Effect |
+|---|---|---|
+| `guard` | `on` | refuse the calls above |
+
+Test: `claude plugin validate plugins/ruflo-observability`, `claude plugin test plugins/ruflo-observability`, `bash plugins/ruflo-observability/scripts/smoke.sh`.

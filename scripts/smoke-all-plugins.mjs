@@ -8,6 +8,11 @@
 //   node scripts/smoke-all-plugins.mjs --format json      # machine-readable
 //   node scripts/smoke-all-plugins.mjs --only ruflo-agent,ruflo-cost-tracker
 //   node scripts/smoke-all-plugins.mjs --skip ruflo-iot-cognitum
+//   node scripts/smoke-all-plugins.mjs --skip-guard-probe # omit the final guard-probe step
+//
+// After the per-plugin smokes, `scripts/probe-mod-guards.mjs --fast` runs every hooks/guard.ts through the adversarial corpus. It
+// fails only on holes NOT listed in scripts/probe-mod-guards.known-holes.json, so a regression (or a new guard copied from a
+// capped template) fails the run while the recorded backlog does not.
 //
 // CI integration:
 //   - name: All-plugin smoke contracts
@@ -20,7 +25,7 @@
 //   3  no smoke scripts found (likely repo-layout drift — fail closed)
 
 import { readdirSync, existsSync, statSync } from 'node:fs';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,6 +41,7 @@ const ARGS = (() => {
     skip: new Set(),
     timeoutSec: 120,  // per-plugin hard cap — prevents a hung smoke from deadlocking the run
     failFast: false,  // if true, kill remaining smokes on first failure
+    guardProbe: true, // final step: fast adversarial probe of every hooks/guard.ts
   };
   for (let i = 2; i < process.argv.length; i++) {
     const v = process.argv[i];
@@ -43,6 +49,7 @@ const ARGS = (() => {
     else if (v === '--format') a.format = process.argv[++i];
     else if (v === '--timeout') a.timeoutSec = parseFloat(process.argv[++i]);
     else if (v === '--fail-fast') a.failFast = true;
+    else if (v === '--skip-guard-probe') a.guardProbe = false;
     else if (v === '--only') {
       a.only = new Set((process.argv[++i] || '').split(',').map((s) => s.trim()).filter(Boolean));
     } else if (v === '--skip') {
@@ -155,6 +162,27 @@ function runSmoke(plugin, abortSignal) {
   });
 }
 
+/** The guard probe as one more smoke row: ok unless a guard has a hole that is not in the known-holes baseline. */
+function runGuardProbe() {
+  const probe = join(SCRIPTS_DIR, 'probe-mod-guards.mjs');
+  const baseline = join(SCRIPTS_DIR, 'probe-mod-guards.known-holes.json');
+  const args = [probe, '--fast', '--format', 'json', '--known-holes', baseline];
+  if (ARGS.only) args.push('--only', [...ARGS.only].join(','));
+  const t0 = Date.now();
+  const r = spawnSync(process.execPath, args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, timeout: 10 * 60 * 1000 });
+  const row = { name: 'guard-probe (fast)', exitCode: r.status ?? 1, ok: r.status === 0, timedOut: r.error?.code === 'ETIMEDOUT', aborted: false, terminationReason: null, passed: null, failed: null, durationMs: Date.now() - t0, failingSteps: [], stderrTail: (r.stderr || '').slice(-400) };
+  try {
+    const out = JSON.parse(r.stdout);
+    row.passed = out.rows.reduce((n, x) => n + x.results.filter((y) => y.status === 'pass').length, 0);
+    row.failed = out.newHoles.length + out.fatal.length;
+    row.failingSteps = [...out.newHoles, ...out.fatal.map((f) => `${f.plugin}: ${f.error}`)].slice(0, 6).map((step) => ({ step }));
+  } catch {
+    if (r.status === 3) { row.ok = true; row.terminationReason = 'no guards found'; } // nothing to probe is not a failure here
+    else if (!row.ok) row.terminationReason = 'probe produced no JSON';
+  }
+  return row;
+}
+
 async function main() {
   const plugins = discoverPlugins();
   if (plugins.length === 0) {
@@ -194,6 +222,8 @@ async function main() {
     }));
     results = await Promise.all(pending);
   }
+
+  if (ARGS.guardProbe && !abortController?.signal.aborted) results.push(runGuardProbe());
 
   const okCount = results.filter((r) => r.ok).length;
   const failCount = results.length - okCount;

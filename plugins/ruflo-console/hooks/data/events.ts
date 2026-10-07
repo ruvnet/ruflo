@@ -5,7 +5,7 @@
  */
 import type { Snapshot } from './snapshot'
 
-export type EventKind = 'swarm' | 'claims' | 'federation' | 'learning' | 'tools' | 'mods' | 'missions'
+export type EventKind = 'swarm' | 'claims' | 'federation' | 'learning' | 'tools' | 'mods' | 'missions' | 'workflows' | 'autopilot' | 'anatole' | 'notices' | 'other'
 
 export type ConsoleEvent = {
   atMs: number
@@ -13,9 +13,29 @@ export type ConsoleEvent = {
   text: string
   /** The ruflo agent the event concerns, when one does: the topology pulses along that agent's edge. */
   agentId?: string
+  /** What the event is about, as `agent:<id>`, `claim:<id>`, `run:<id>`, `task:<id>`, `mission:<id>` or `step:<id>`; derived by `refOf` when absent. */
+  ref?: string
+  /** Which part of the console saw it, when not the diff of two reads: `autopilot`, `workflows`, `anatole`, `notices`, `session`. */
+  src?: string
 }
 
-export const EVENT_KINDS: readonly EventKind[] = ['swarm', 'claims', 'federation', 'learning', 'tools', 'mods', 'missions']
+export const EVENT_KINDS: readonly EventKind[] = ['swarm', 'claims', 'federation', 'learning', 'tools', 'mods', 'missions', 'workflows', 'autopilot', 'anatole', 'notices', 'other']
+
+export const isEventKind = (value: unknown): value is EventKind => typeof value === 'string' && (EVENT_KINDS as readonly string[]).includes(value)
+
+/** What an event is about: its own `ref`, else the agent it names, else the first issue or mission id in the words of a claims or missions event. */
+export function refOf(event: ConsoleEvent): string | undefined {
+  if (event.ref !== undefined) return event.ref
+  if (event.agentId !== undefined) return `agent:${event.agentId}`
+
+  const word = /^(?:task |mission |proposal )?([A-Za-z0-9][\w.:-]{2,60})/.exec(event.text)?.[1]
+
+  if (word === undefined) return undefined
+  if (event.kind === 'claims') return `${event.text.startsWith('task ') ? 'task' : 'claim'}:${word}`
+  if (event.kind === 'missions') return `mission:${word}`
+
+  return undefined
+}
 export const MAX_EVENTS = 300
 
 const ev = (atMs: number, kind: EventKind, text: string, agentId?: string): ConsoleEvent => ({ atMs, kind, text, ...(agentId !== undefined && { agentId }) })
@@ -79,6 +99,23 @@ export function diffEvents(prev: Snapshot | null, next: Snapshot, atMs: number):
   for (const decision of next.hive?.history ?? []) {
     if (!decided.has(decision.id)) out.push(ev(atMs, 'swarm', `proposal ${decision.type} decided: ${decision.result} (${decision.votesFor}/${decision.votesAgainst})`, next.hive?.queen))
   }
+
+  // Each ballot new since the last read, tagged with its voter: the hive's honeycomb pulses that worker's cell.
+  const ballotsBefore = new Map(prev.hive?.pending.map(entry => [entry.id, new Set(entry.ballots.map(ballot => ballot.voter))]) ?? [])
+
+  for (const proposal of next.hive?.pending ?? []) {
+    const seen = ballotsBefore.get(proposal.id) ?? new Set<string>()
+
+    for (const ballot of proposal.ballots) {
+      if (!seen.has(ballot.voter)) out.push(ev(atMs, 'swarm', `${ballot.voter} voted ${ballot.isFor ? 'for' : 'against'} ${proposal.type} (${proposal.id})`, ballot.voter))
+    }
+  }
+
+  const workersBefore = new Set(prev.hive?.workers ?? [])
+  const workersAfter = new Set(next.hive?.workers ?? [])
+
+  for (const worker of workersAfter) if (!workersBefore.has(worker)) out.push(ev(atMs, 'swarm', `${worker} joined the hive`, worker))
+  for (const worker of workersBefore) if (!workersAfter.has(worker)) out.push(ev(atMs, 'swarm', `${worker} left the hive`, worker))
 
   const patterns = (next.neural?.patterns ?? 0) - (prev.neural?.patterns ?? 0)
 

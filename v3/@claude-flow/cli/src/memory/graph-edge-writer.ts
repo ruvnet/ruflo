@@ -35,6 +35,7 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { getMemoryRoot } from './memory-initializer.js';
 import { encodeEmbedding } from './embedding-quantization.js';
+import { loadBetterSqlite3 } from './shared-sqlite.js';
 
 // ============================================================================
 // Lazy-cached better-sqlite3 db handle
@@ -143,8 +144,8 @@ export async function getBridgeDb(customDbPath?: string, opts?: { createIfMissin
     // the try/catch below.
     let BetterSqlite3: any;
     try {
-      const mod: string = 'better-sqlite3';
-      BetterSqlite3 = (await import(mod)).default;
+      // #3693: share AgentDB's better-sqlite3 so the idle close cannot detach its handle.
+      BetterSqlite3 = await loadBetterSqlite3();
     } catch {
       return null;
     }

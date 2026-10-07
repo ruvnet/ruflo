@@ -8,7 +8,7 @@ Decision owner: Ruflo maintainers
 
 Scope: Ruflo mission control, durable mission lifecycle, command discovery, slash command compatibility, optional mod interfaces, budgets, execution evidence, client recovery, packaging, and migration validation
 
-Extends: ADR 404, Ruflo as a Claude Code Mod. Complements ADR 405, ruOS desktops as swarm hosts. Preserves the policy and release authority boundaries in ADR 150, ADR 174, ADR 322A, and ADR 324/325 as referenced by the repository agent guide.
+Extends: ADR 404, Ruflo as a Claude Code Mod. Complements ADR 405, ruOS desktops as swarm hosts. Its cockpit interface is ADR 407. Preserves the policy and release authority boundaries in ADR 150, ADR 174, ADR 322A, and ADR 324/325 as referenced by the repository agent guide.
 
 ## 1. Decision
 
@@ -155,6 +155,8 @@ Proposed interface settings are `legacy`, `auto`, and `mods`. These are separate
 Existing users are not opted in by package update. Use the existing installer record pattern, local settings by default, a dry run, and an expected content check before writes. Never change managed policy or rollout flags to force compatibility.
 
 The doctor reports actual executable path, engine version, plugin artifact version and digest, generated type compatibility, registration success, session heartbeat freshness, denied affordances, command collisions, and fallback reasons. A version string, environment variable, or cached heartbeat alone is insufficient to declare a mod active.
+
+The `mods` interface's own cockpit — `ruflo-console`'s frame, look, boot screen, main menu, band, AI terminal, x.ruv.io board, Skills, Hive-Mind and MetaHarness lab, and the safety contract every view keeps — is specified in ADR 407.
 
 External doctor checks cannot prove all live session behavior. Label their observations accordingly. Read only the configuration fields required for diagnosis; do not dump host credential or account configuration.
 

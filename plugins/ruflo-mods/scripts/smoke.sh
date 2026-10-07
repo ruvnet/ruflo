@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Structural + security smoke for ruflo-mods v0.1.0 (ADR-404).
+# Structural + security smoke for ruflo-mods v0.3.16 (ADR-404, ADR-447).
 # Static only: CI has no Claude Code, so the hooks module's behaviour is held
 # by v3/@claude-flow/cli/__tests__/mods/*.test.ts and, where function hooks are
 # on, by `claude plugin test plugins/ruflo-mods`.
@@ -12,9 +12,9 @@ ok()   { printf "PASS\n"; PASS=$((PASS+1)); }
 bad()  { printf "FAIL: %s\n" "$1"; FAIL=$((FAIL+1)); }
 HOOKS="$ROOT/hooks"
 
-step "1. plugin.json declares ruflo-mods 0.1.0"
+step "1. plugin.json declares ruflo-mods 0.3.16"
 grep -q '"name": "ruflo-mods"' "$ROOT/.claude-plugin/plugin.json" \
-  && grep -q '"version": "0.1.0"' "$ROOT/.claude-plugin/plugin.json" && ok || bad "name/version"
+  && grep -q '"version": "0.3.16"' "$ROOT/.claude-plugin/plugin.json" && ok || bad "name/version"
 
 step "2. hooks.json names exactly one module and no classic hook commands"
 grep -q '"modules": \["./register.ts"\]' "$HOOKS/hooks.json" && ! grep -q '"command"' "$HOOKS/hooks.json" \
@@ -32,7 +32,7 @@ hits=$(grep -rnE '\$\.(http|process|model|mcp)\.' "$HOOKS" || true)
 
 step "5. only the documented events are hooked"
 events=$(grep -rhoE "on\('[a-z.*]+'" "$HOOKS" | sort -u | tr '\n' ' ')
-expected="on('agent.spawn' on('command.run' on('engine.create' on('plugin.register' on('prompt.submit' on('session.end' on('session.measure' on('session.start' on('tool.call' on('tool.check' on('turn.complete' "
+expected="on('*' on('agent.offer' on('agent.spawn' on('command.run' on('engine.create' on('plugin.register' on('prompt.submit' on('session.compact' on('session.end' on('session.measure' on('session.receive' on('session.send' on('session.start' on('tool.call' on('tool.check' on('tool.describe' on('turn.complete' "
 [[ "$events" == "$expected" ]] && ok || bad "got: $events"
 
 step "6. tool.check merges with stricter() (tighten-only)"
@@ -55,6 +55,30 @@ step "10. the \$.ruflo contract is declared and flat (one input per method)"
 grep -q '"types": "./types/index.d.ts"' "$ROOT/.claude-plugin/plugin.json" \
   && grep -q "ruflo: Ruflo" "$ROOT/types/index.d.ts" \
   && ! grep -qE "^\s+[a-z]+: \{" "$ROOT/types/index.d.ts" && ok || bad "types/index.d.ts must declare a flat Ruflo noun"
+
+step "11. guidance observations cannot train or promote"
+hits=$(grep -rnE '(hooks_post-task|outcomeAccepted|applyPromotions|runCycle|optimize\(|events\.ndjson)' "$HOOKS/guidance" || true)
+[[ -z "$hits" ]] && grep -q 'learningEligible: false' "$HOOKS/guidance/observations.ts" && ok || bad "guidance must remain candidate-only"
+
+step "12. the capability probe is observability only and lists every event hooked"
+missing=""
+for ev in $(grep -rhoE "on\('[a-z.]+'" "$HOOKS" | sed -E "s/on\('(.*)'/\1/" | sort -u); do
+  grep -q "'$ev'" "$HOOKS/probe/index.ts" || missing="$missing $ev"
+done
+[[ -z "$missing" ]] && ! grep -nE "decision|deny|consumed|isDelivered|\\$\.(fs|env|ui)\." "$HOOKS/probe/index.ts" >/dev/null \
+  && ok || bad "probe event list missing:$missing, or the probe answers/writes"
+
+step "13. every userConfig option key has a README row"
+missing=""
+for key in $(grep -oE "^    \"[A-Za-z]+\": \\{" "$ROOT/.claude-plugin/plugin.json" | sed -nE "s/^ *\"([A-Za-z]+)\".*/\\1/p"); do
+  [[ "$(grep -c "^| \`$key\` |" "$ROOT/README.md")" == "1" ]] || missing="$missing $key"
+done
+[[ -z "$missing" ]] && ok || bad "README option row missing or duplicated:$missing"
+
+step "14. every plugin's toast policy copy is byte-identical to the canonical hooks/toast/policy.ts (ADR-477)"
+if [[ -f "$ROOT/../../scripts/sync-toast-policy.mjs" ]] && command -v node >/dev/null 2>&1; then
+  out=$(node "$ROOT/../../scripts/sync-toast-policy.mjs" --check 2>&1) && ok || bad "$out"
+else printf "SKIP (no node or no repo scripts/)\n"; fi
 
 printf "\n%d passed, %d failed\n" "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]]

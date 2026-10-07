@@ -1710,6 +1710,8 @@ npx ruflo hive-mind memory                  # Collective memory stats
 npx ruflo hive-mind sessions                # List active sessions
 ```
 
+**Access control (ADR-476).** Local use needs nothing extra: `hive-mind init`, the stdio MCP server, `ruflo mcp exec` and the CLI subcommands manage their own hive. `init` writes `.claude-flow/hive-mind/bootstrap.secret` (0600) and never prints or returns the hive token. Clients that reach the MCP server over **HTTP/WebSocket** are refused for `init`, `spawn`, `consensus` propose/vote, `broadcast`, `shutdown`, `join`, `leave`, `memory` set/delete and `optimize-memory` unless the operator hands them the secret: set `RUFLO_HIVE_BOOTSTRAP_SECRET` (16+ chars) on the server, then send it as `bootstrapSecret` in each call. If you bridge a stdio server onto a network, set `RUFLO_HIVE_REQUIRE_AUTH=1`. Against a local agent that can read the project directory this is a speed bump, not a boundary.
+
 **Performance:** Fast batch spawning with parallel agent coordination
 
 </details>
@@ -3629,7 +3631,11 @@ npx ruflo@latest memory export --include-embeddings --output ./full-export.json
 npx ruflo@latest config export --scope project --output ./agent-configs.json
 
 # Export session state
-npx ruflo@latest session export --session-id "my-session" --output ./session.json
+npx ruflo@latest session export "my-session" --format json --output ./session.json
+
+# Compress a JSON backup and import it later (gzip is detected from the file bytes)
+npx ruflo@latest session export "my-session" --format json --compress --output ./session.json.gz
+npx ruflo@latest session import ./session.json.gz
 ```
 
 ### Import Commands

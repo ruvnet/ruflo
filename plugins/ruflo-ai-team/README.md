@@ -59,3 +59,14 @@ The plugin owns the `ruflo-ai-team-*` namespace. Tenant data is never separated 
 - [ADR-0002: Approval and external-action boundary](docs/adrs/0002-approval-and-external-action-boundary.md)
 - [ADR-0003: Tenant-scoped RuVector memory](docs/adrs/0003-tenant-scoped-ruvector-memory.md)
 - [ADR-0004: Metered unit budget](docs/adrs/0004-metered-unit-budget.md)
+
+## As a mod
+
+AI Team also ships as a function-hook mod (ADR-445 pattern; hooks in `hooks/`, loaded with the plugin). No network, no process, no model call.
+
+- **Guard (default on)**: refuses a team write (`memory_remember`, `task_create`, `task_update`, `run_create` on the ruflo-ai-team server) that holds a key, token or password. It only tightens: it never allows anything the session would deny, and the refusal never repeats the secret. Turn it off with the `guard` option.
+- **`/ai-team-mod`**: answered locally. `/ai-team-mod status`, `/ai-team-mod scan <text>`.
+- **Status file**: `.claude-flow/ai-team-mod/status.json` (`version`, `updatedMs`, counters), written at session start and whenever a call is refused; the console reads it.
+- **Options** (`userConfig`): `guard` (`on` by default).
+
+Test: `claude plugin validate plugins/ruflo-ai-team`, `claude plugin test plugins/ruflo-ai-team`, and `bash plugins/ruflo-ai-team/scripts/smoke.sh`.

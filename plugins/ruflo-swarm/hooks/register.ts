@@ -4,10 +4,11 @@ import { paneActionsOf, type Controller } from './actions/controller'
 import { AUDIT_FLUSH_MS, auditRow, noteAudit, takeFlush } from './audit'
 import { claimsText, COMMANDS, consensusText, isSwarmSub, spawnNote, statusText, SWARM_SUBS, topologyText, type SwarmSub } from './commands'
 import type { Host, OpenResult } from './host'
-import { isAnimating, LEAD, newActivity, noteCall, noteDone, noteListed, noteResult, noteSpawn } from './model/members'
+import { isAnimating, LEAD, loopLabel, newActivity, noteCall, noteDone, noteListed, noteResult, noteSpawn, stuckCall } from './model/members'
 import { parseRoute, plain } from './reader/parse'
 import { readSnapshot, type ReadCache } from './reader/snapshot'
 import { CLI_PREFIXES, newState, PANE_ID, persistedOf, restore, storeKeyOf, type State } from './state'
+import { createToastKit } from './toast-policy'
 import { paneModelOf } from './views/model'
 import { paneView } from './views/pane'
 
@@ -34,6 +35,14 @@ function hostOf($: EngineInterface, cwd: string): Host {
     }
   }
 
+  const toaster = createToastKit({
+    source: 'swarm',
+    now: () => $.clock.now(),
+    show: (line, options) => $.ui.toast(line, options),
+    after: (ms, fn) => $.clock.after(ms, fn),
+    io: { read: path => $.fs.read(rooted(path)), write: (path, text) => $.fs.write(rooted(path), text), exists: path => $.fs.exists(rooted(path)) },
+  })
+
   return {
     fs: { read: path => $.fs.read(rooted(path)), stat: path => $.fs.stat(rooted(path)) },
     now: () => $.clock.now(),
@@ -42,7 +51,7 @@ function hostOf($: EngineInterface, cwd: string): Host {
     storeGet: key => $.store.get(key),
     storeSet: (key, value) => $.store.set(key, value),
     invalidate: () => quietly(() => $.ui.invalidate('ui.render')),
-    toast: (text, timeoutMs) => quietly(() => $.ui.toast(text, timeoutMs !== undefined ? { timeoutMs } : undefined)),
+    toast: input => quietly(() => void toaster.toast(input)),
     log: text => quietly(() => $.ui.log(text)),
     openPane: pane => $.ui.open(pane) as Promise<OpenResult>,
     closePane: id => $.ui.close({ id }),
@@ -322,6 +331,10 @@ export function register(on: On, raw: PluginOptions) {
           return { text: 'Swarm pane hidden' }
         }
 
+        if (state.options.panel === 'off') {
+          return { text: 'The swarm pane is off (panel option); set panel to command or auto in /config to open it' }
+        }
+
         const opened = await openPane()
 
         return { text: opened.isPlaced ? 'Swarm pane shown' : `The swarm pane could not be shown: ${opened.reason}` }
@@ -389,6 +402,9 @@ export function register(on: On, raw: PluginOptions) {
   on('turn.complete', ($, e, next) => {
     if (e.agentId !== undefined) {
       noteDone(state.activity, e.agentId, e.reason, Date.now())
+
+      // An answer is a success and an abort is the person's own; anything else is a loop that ended badly.
+      if (e.reason !== 'answer' && e.reason !== 'aborted') host?.toast({ level: 'error', text: `swarm: ${loopLabel(state.activity, e.agentId)} failed (${plain(String(e.reason), 40)})` })
     } else {
       state.activity.isWorking = false
       scheduleRefresh()
@@ -433,6 +449,11 @@ export function register(on: On, raw: PluginOptions) {
     const isError = result.deny !== undefined || result.isError === true
 
     noteResult(state.activity, e.agentId, e.tool, subject, isError, Date.now())
+
+    // A loop that fails the same call three times running is going round in circles (ADR-477). The policy says it once a minute at most.
+    const stuck = isError ? stuckCall(state.activity, e.agentId) : null
+
+    if (stuck !== null) host?.toast({ level: 'warn', text: `swarm: ${loopLabel(state.activity, e.agentId ?? LEAD)} keeps failing ${stuck.tool}${stuck.subject === '' ? '' : ` ${stuck.subject}`}` })
 
     if (!isError) {
       const text = typeof result.text === 'string' ? result.text : ''

@@ -93,3 +93,15 @@ bash plugins/ruflo-loop-workers/scripts/smoke.sh
 - `ruflo-autopilot` — owns the 270s cache-aware /loop heartbeat contract
 - `ruflo-docs`, `ruflo-security-audit`, `ruflo-testgen`, `ruflo-knowledge-graph`, etc. — worker-trigger consumers per the table above
 - `ruflo-agentdb` — namespace convention owner; backing store for worker-history
+
+## As a mod
+
+This plugin ships a function-hook mod (ADR-445, `hooks/register.ts`). It makes no network call, spawns no process and makes no model call.
+
+- **Guard** (tighten-only, on by default): Refuses `hooks_worker-dispatch` whose context holds a key, token or password (workers log their context), and any dispatch past the per-session cap, which catches a stuck loop that keeps dispatching. A refusal never echoes the secret.
+- **`/loop-mod`**: `status`, `recent`, `tools` (which of this plugin's tools are connected) and `scan <text>` (would the guard refuse it). Answered locally.
+- **Status file**: `.claude-flow/loop-mod/status.json` (`{version: 1, updatedMs, guard, calls, total, blocked, recent}`, counters only, never tool input), written at session start and after every call to this plugin's tools.
+
+Options (`userConfig`): `guard` (on), `maxDispatch` (100, range 1 to 1000).
+
+Test it: `claude plugin validate plugins/ruflo-loop-workers`, `claude plugin test plugins/ruflo-loop-workers`, `bash plugins/ruflo-loop-workers/scripts/smoke.sh`.

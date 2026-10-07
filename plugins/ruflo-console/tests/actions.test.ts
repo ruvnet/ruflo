@@ -4,6 +4,7 @@ import { RUFLO_FILES } from './fixtures/ruflo-run'
 import { command, SESSION, worldOf } from './fixtures/world'
 
 /** Every palette action that changes something: the selection it needs, and the head of the argv it must run. */
+// Hive votes are covered in palette.test.ts and hive.spec.ts: they need a world with registered workers.
 const CASES: { id: string; setup?: string[]; text?: string; head: string[] }[] = [
   { id: 'task-claim', head: ['mcp', 'exec', '-t', 'claims_claim'] },
   { id: 'claim-release', head: ['mcp', 'exec', '-t', 'claims_release'] },
@@ -14,8 +15,13 @@ const CASES: { id: string; setup?: string[]; text?: string; head: string[] }[] =
   { id: 'spawn-tester', head: ['agent', 'spawn', '--type', 'tester'] },
   { id: 'swarm-init', head: ['swarm', 'init', '--topology', 'hierarchical', '--max-agents', '8', '--strategy', 'specialized'] },
   { id: 'swarm-stop', head: ['swarm', 'stop'] },
-  { id: 'vote-no-proposal-1790903321981-23aov7', head: ['hive-mind', 'consensus', '--action', 'vote', '--proposal-id', 'proposal-1790903321981-23aov7', '--vote', 'no'] },
-  { id: 'mh-audit', head: ['metaharness', 'oia-audit'] },
+  { id: 'mh-audit', head: ['metaharness', 'oia-audit', '--format', 'json'] },
+  { id: 'mh-bench-create', head: ['metaharness', 'bench', '--op', 'create', '--repo', '.'] },
+  { id: 'mh-redblue-init', head: ['metaharness', 'redblue', 'init'] },
+  { id: 'mh-redblue-real', head: ['metaharness', 'redblue', 'run', '--tests', '10', '--max-cost-usd', '3'] },
+  { id: 'mh-evolve', head: ['metaharness', 'evolve', '--repo', '.', '--confirm'] },
+  { id: 'mh-security-bench', head: ['mcp', 'exec', '-t', 'metaharness_security_bench', '-p', '{}'] },
+  { id: 'mh-flywheel-run', head: ['metaharness', 'flywheel', 'run', '--proposer', 'local'] },
   { id: 'worker-optimize', head: ['hooks', 'worker', 'dispatch', '--trigger', 'optimize'] },
   { id: 'store', text: 'remember the login fix', head: ['memory', 'store', '--key'] },
 ]

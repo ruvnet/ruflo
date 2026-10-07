@@ -70,3 +70,14 @@ bash plugins/ruflo-docs/scripts/smoke.sh
 - `ruflo-loop-workers` — defines the `document` background worker
 - `ruflo-adr` — ADRs trigger doc generation when status changes
 - `ruflo-sparc` — Documenter mode (Phase 5 Refinement) consumes this plugin
+
+## As a mod
+
+Since this version the plugin is also a function-hook mod (ADR-445 pattern; needs Claude Code 2.1.287 or later). It never calls the network or spawns a process, and it only tightens: it can refuse a call, never allow one.
+
+- **Guard** (default on): refuses `doc-*` memory writes and the `document` worker dispatch that hold a key, token or password. The reason names the kind of secret, never the value.
+- **`/docs-mod`**: answered locally, no model turn: `status`, `scan <text>` (would the guard refuse this?), and `docs` (markdown files in `docs/`).
+- **Status file**: `.claude-flow/docs-mod/status.json` (`{version, updatedMs, guard, blocked}`), written at session start and when a call is blocked.
+- **Option**: `guard` (`on` | `off`, default `on`) in the plugin's `userConfig`.
+
+Test it: `claude plugin test plugins/ruflo-docs` and `bash plugins/ruflo-docs/scripts/smoke.sh`.
