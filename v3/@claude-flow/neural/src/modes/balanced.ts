@@ -42,6 +42,17 @@ export class BalancedMode extends BaseModeImplementation {
   private learnIterations = 0;
   private qualityImprovements: number[] = [];
 
+  // Dream Cycle 2026-10-07: observability for computeEWCPenalty()'s
+  // per-key lookup against this.gradientAccumulator (keyed 'positive'/
+  // 'negative') vs ewcState.fisher/means (keyed by the LoRA-weight-space
+  // scheme a pending consolidateEWC() wiring fix would use, e.g.
+  // '<domain>:<module>'). The two key spaces never intersect today, so
+  // this counter is expected to stay at hits=0 — see ewc-penalty-dead-path
+  // test. Exposed via getStats() rather than silently discarded, so this
+  // stops being an invisible always-zero no-op.
+  private ewcPenaltyLookupHits = 0;
+  private ewcPenaltyLookupMisses = 0;
+
   async initialize(): Promise<void> {
     await super.initialize();
     this.patternCache.clear();
@@ -223,6 +234,8 @@ export class BalancedMode extends BaseModeImplementation {
       avgImprovement,
       patternCacheSize: this.patternCache.size,
       learnIterations: this.learnIterations,
+      ewcPenaltyLookupHits: this.ewcPenaltyLookupHits,
+      ewcPenaltyLookupMisses: this.ewcPenaltyLookupMisses,
     };
   }
 
@@ -287,10 +300,13 @@ export class BalancedMode extends BaseModeImplementation {
       const current = this.gradientAccumulator.get(key);
 
       if (means && current) {
+        this.ewcPenaltyLookupHits++;
         for (let i = 0; i < Math.min(fisher.length, means.length, current.length); i++) {
           const diff = current[i] - means[i];
           penalty += fisher[i] * diff * diff;
         }
+      } else {
+        this.ewcPenaltyLookupMisses++;
       }
     }
 

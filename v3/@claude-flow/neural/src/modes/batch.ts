@@ -42,6 +42,18 @@ export class BatchMode extends BaseModeImplementation {
   private accumulatedGradients: Map<string, Float32Array> = new Map();
   private gradientSteps = 0;
 
+  // Dream Cycle 2026-10-07: observability for applyAccumulatedGradients()'s
+  // per-domain lookup against this.accumulatedGradients (keyed by plain
+  // trajectory.domain, dimensioned to the state-embedding space) vs
+  // ewcState.fisher/means (keyed by the LoRA-weight-space scheme a pending
+  // consolidateEWC() wiring fix would use, e.g. '<domain>:<module>', and
+  // dimensioned to the LoRA rank, not the state-embedding space). The two
+  // key spaces never intersect today, so this is expected to stay at
+  // hits=0 — see ewc-penalty-dead-path test. Exposed via getStats()
+  // instead of being a silent always-zero no-op.
+  private ewcPenaltyLookupHits = 0;
+  private ewcPenaltyLookupMisses = 0;
+
   // Batch processing state
   private isBatchProcessing = false;
   private batchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -153,6 +165,8 @@ export class BatchMode extends BaseModeImplementation {
       pendingTrajectories: this.learningQueue.length,
       accumulatedGradientSteps: this.gradientSteps,
       learnIterations: this.learnIterations,
+      ewcPenaltyLookupHits: this.ewcPenaltyLookupHits,
+      ewcPenaltyLookupMisses: this.ewcPenaltyLookupMisses,
     };
   }
 
@@ -387,10 +401,23 @@ export class BatchMode extends BaseModeImplementation {
       const means = ewcState.means.get(key);
 
       if (fisher && means) {
+        this.ewcPenaltyLookupHits++;
+        // NOTE (Dream Cycle 2026-10-07, disclosed not fixed): even on a
+        // hit, this loop has no Math.min(...) bound against fisher.length/
+        // means.length like balanced.ts/research.ts use — a shorter
+        // LoRA-weight-space array than gradient.length would read
+        // out-of-bounds (undefined) and inject NaN into every remaining
+        // gradient component. Not reachable today only because no hit
+        // ever occurs; flagged as a latent landmine for whoever aligns
+        // the key spaces next, not fixed here (gradient is fully
+        // discarded via fill(0) below regardless, so there is no
+        // observable effect to regress against yet).
         for (let i = 0; i < gradient.length; i++) {
           const penalty = ewcLambda * fisher[i] * (gradient[i] - means[i]);
           gradient[i] -= penalty;
         }
+      } else {
+        this.ewcPenaltyLookupMisses++;
       }
 
       // Clear gradient for next accumulation
