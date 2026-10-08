@@ -28,6 +28,11 @@ export const SECTION_CADENCE_S: Record<SectionName, number> = {
 export const SECTION_TTL_S: Record<SectionName, number> = Object.fromEntries(SECTION_NAMES.map(n => [n, Math.min(3600, Math.max(30, SECTION_CADENCE_S[n] * 3))])) as Record<SectionName, number>;
 /** Supported schema version per section (announced in `hello.sections`). Additive changes bump it. */
 export const SECTION_VERSIONS: Record<SectionName, number> = Object.fromEntries(SECTION_NAMES.map(n => [n, 1])) as Record<SectionName, number>;
+/**
+ * The server silently drops a section frame that arrives sooner than this after the previous one of the same section (server/devices/sections.ts:
+ * 2 s, 1 s for capability_runs). A connector must not count such a frame as delivered, so it keeps this gap itself (plus a margin) and retries.
+ */
+export const SECTION_MIN_SEND_GAP_MS = (n: SectionName): number => (n === 'capability_runs' ? 1_100 : 2_100);
 /** Cadence multiplier for sections no browser is watching. */
 export const UNWATCHED_CADENCE_FACTOR = 4;
 export const MAX_WATCH = 40;

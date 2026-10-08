@@ -1,6 +1,6 @@
 /** Decides when each section is collected and sent: cadences, watch hints, hash-diff publishing with heartbeat, bounded concurrency. */
 import {
-  buildSectionFrame, SECTION_CADENCE_S, SECTION_NAMES, SECTION_TTL_S, sectionHash, UNWATCHED_CADENCE_FACTOR,
+  buildSectionFrame, SECTION_CADENCE_S, SECTION_MIN_SEND_GAP_MS, SECTION_NAMES, SECTION_TTL_S, sectionHash, UNWATCHED_CADENCE_FACTOR,
   type SectionFrame, type SectionName,
 } from './protocol/index.js';
 import { control, health, isObj, memory, meta, mission_events, missions, settings, swarm, tasks, type CollectCtx, type Collector } from './collect-core.js';
@@ -107,6 +107,9 @@ export class SectionScheduler {
 
   /** Send when content changed, or when half the ttl has elapsed (heartbeat), or when forced. */
   private frameIfNeeded(name: SectionName, body: Record<string, unknown>, force: boolean, t: number): SectionFrame | null {
+    // The server drops a frame that follows the previous one of this section too closely, without telling us. Do not mark it sent: it is retried on a later pass.
+    const lastAt = this.lastSent.get(name);
+    if (!force && lastAt !== undefined && t - lastAt < SECTION_MIN_SEND_GAP_MS(name)) return null;
     const frame0 = buildSectionFrame(name, body as never, { rev: 0, at: t });
     const hash = sectionHash(stable(name, frame0.body));
     const heartbeat = t - (this.lastSent.get(name) ?? 0) >= (SECTION_TTL_S[name] * 1000) / 2;
@@ -137,6 +140,10 @@ export class SectionScheduler {
     for (let i = 0; opts.immediate && this.running.has(name) && i < 100; i++) await new Promise(r => setTimeout(r, 20));
     if (!this.names.includes(name)) return { sent: false };
     if (DERIVED_AFTER.has(name) === false && this.running.has(name)) return { sent: false };
+    if (opts.immediate) { // wait out the server's per-section gap instead of losing the publish
+      const wait = (this.lastSent.get(name) ?? -Infinity) + SECTION_MIN_SEND_GAP_MS(name) - this.now();
+      if (wait > 0 && wait < 5000) await new Promise(r => setTimeout(r, wait));
+    }
     return { sent: await this.collectOne(name, true) };
   }
 
