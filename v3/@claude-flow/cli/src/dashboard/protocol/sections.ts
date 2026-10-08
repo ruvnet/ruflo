@@ -4,7 +4,9 @@ import { canonicalize } from './canonical.js';
 import { sha256b64u } from './crypto.js';
 import { sanitize, type Digest } from './digest.js';
 
-export const SECTION_NAMES = ['meta', 'health', 'alerts', 'control', 'missions', 'mission_events', 'tasks', 'swarm', 'approvals', 'memory', 'cost', 'events', 'notices', 'adrs', 'whatsnew', 'settings'] as const;
+export const SECTION_NAMES = ['meta', 'health', 'alerts', 'control', 'missions', 'mission_events', 'tasks', 'swarm', 'approvals', 'memory', 'cost', 'events', 'notices', 'adrs', 'whatsnew', 'settings',
+  // P1 parity tier
+  'plugins', 'capabilities', 'capability_runs', 'claims', 'hive', 'workflows', 'learning', 'metaharness', 'security', 'perf', 'automation'] as const;
 export type SectionName = (typeof SECTION_NAMES)[number];
 export const isSectionName = (n: unknown): n is SectionName => typeof n === 'string' && (SECTION_NAMES as readonly string[]).includes(n);
 
@@ -14,10 +16,13 @@ const KiB = 1024;
 export const SECTION_BUDGET_BYTES: Record<SectionName, number> = {
   meta: 2 * KiB, health: 6 * KiB, alerts: 8 * KiB, control: 1 * KiB, missions: 64 * KiB, mission_events: 24 * KiB, tasks: 16 * KiB, swarm: 24 * KiB,
   approvals: 8 * KiB, memory: 8 * KiB, cost: 16 * KiB, events: 40 * KiB, notices: 8 * KiB, adrs: 48 * KiB, whatsnew: 48 * KiB, settings: 8 * KiB,
+  plugins: 16 * KiB, capabilities: 64 * KiB, capability_runs: 40 * KiB, claims: 24 * KiB, hive: 16 * KiB, workflows: 24 * KiB, learning: 12 * KiB, metaharness: 12 * KiB,
+  security: 12 * KiB, perf: 4 * KiB, automation: 16 * KiB,
 };
 /** Default collection cadence in seconds (missions is 5 s while a mission is running; the connector decides). */
 export const SECTION_CADENCE_S: Record<SectionName, number> = {
   meta: 60, health: 10, alerts: 10, control: 30, missions: 10, mission_events: 10, tasks: 10, swarm: 10, approvals: 10, memory: 60, cost: 300, events: 10, notices: 10, adrs: 120, whatsnew: 600, settings: 120,
+  plugins: 120, capabilities: 300, capability_runs: 10, claims: 10, hive: 10, workflows: 15, learning: 30, metaharness: 120, security: 60, perf: 30, automation: 30,
 };
 /** Heartbeat lifetime: a section is re-sent at half its ttl even if unchanged. */
 export const SECTION_TTL_S: Record<SectionName, number> = Object.fromEntries(SECTION_NAMES.map(n => [n, Math.min(3600, Math.max(30, SECTION_CADENCE_S[n] * 3))])) as Record<SectionName, number>;
@@ -31,6 +36,10 @@ export const MAX_WATCH = 40;
 export const READ_TOOLS: ReadonlySet<string> = new Set([
   'system_info', 'system_health', 'mission_get', 'mission_events', 'task_summary', 'task_list', 'swarm_status', 'swarm_health', 'agent_list',
   'memory_stats', 'memory_detailed-stats', 'memory_list', 'config_get', 'config_list', 'hooks_model-stats', 'policy_status', 'progress_summary',
+  // P1 (each run in a temp project against ruflo 3.55.0; see docs/threat-model.md "P1 collection"). Deliberately NOT here: aidefence_stats (auto-installs a
+  // package), neural_status / hooks_intelligence_unified-stats (load an ONNX model), claims_status / workflow_status (need an id), federation_* (network).
+  'claims_list', 'claims_board', 'claims_stealable', 'claims_load', 'hive-mind_status', 'workflow_list', 'hooks_intelligence_stats', 'metaharness_score',
+  'metaharness_genome', 'metaharness_audit_list', 'hooks_worker-list', 'hooks_worker-status', 'session_list', 'performance_metrics', 'agentdb_health', 'agentdb_controllers',
 ]);
 
 const S = (n: number) => z.string().max(n);
@@ -40,6 +49,21 @@ const int = z.number().int().safe();
 /** 2100-01-01 in ms: no honest frame is dated beyond it. */
 export const MAX_FRAME_AT_MS = 4_102_444_800_000;
 export const MAX_FRAME_REV = 1_000_000_000_000;
+
+/** name@marketplace, exactly as `claude plugin enable` takes it. */
+export const PLUGIN_ID = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}@[a-z0-9][a-z0-9-]{0,63}$/);
+/** <plugin>/<kind>/<name>@<version>+<fileSha12> (docs/parity-capability-design.md section 4). */
+export const CAPABILITY_ID = z.string().regex(/^[a-z0-9-]{1,64}\/(command|skill|tool|view)\/[A-Za-z0-9._-]{1,80}@\d+\.\d+\.\d+[-.\w]*\+[0-9a-f]{12}$/);
+/** Why a capability is not runnable: a closed list (docs/parity-capability-design.md section 7). */
+export const REFUSE_CODES = ['no-binding', 'no-schema', 'foreign-marketplace', 'risk-network', 'risk-install', 'risk-spend', 'risk-delete', 'free-shell', 'free-text-to-agent', 'path-outside-root', 'secret-option', 'loosens-gate', 'would-raise-cap', 'script-changed', 'project-shadow'] as const;
+export type RefuseCode = (typeof REFUSE_CODES)[number];
+const WHY = z.enum(REFUSE_CODES);
+const CAP_KIND = z.enum(['command', 'skill', 'tool', 'view']);
+export const CAPABILITY_RISKS = ['read', 'write', 'network', 'install', 'spend', 'delete'] as const;
+export type CapabilityRisk = (typeof CAPABILITY_RISKS)[number];
+const CAP_RISK = z.enum(CAPABILITY_RISKS);
+const RUN_ID = z.string().regex(/^run_[A-Za-z0-9_-]{8,48}$/);
+const CAP_ARG = z.object({ name: S(32), type: z.enum(['string', 'int', 'bool', 'enum', 'path']), max: nat.optional(), min: int.optional(), enum: z.array(S(40)).max(24).optional() }).strict();
 const level = z.enum(['info', 'warn', 'error']);
 const lvl5 = z.enum(['off', 'read', 'write', 'manage', 'full']);
 
@@ -76,6 +100,75 @@ export const SectionSchemas = {
     items: z.array(z.object({ id: S(40), title: S(160), status: S(24), date: S(24).optional(), supersedes: S(40).optional(), supersededBy: S(40).optional() }).strict()).max(200), lint: z.array(S(200)).max(40) }).strict(),
   whatsnew: z.object({ plugins: z.array(z.object({ name: S(60), entries: z.array(z.object({ version: S(24), date: S(24).optional(), changes: z.array(S(160)).max(6) }).strict()).max(3) }).strict()).max(10), breaking: z.array(S(160)).max(10) }).strict(),
   settings: z.object({ options: z.array(z.object({ key: S(60), value: S(160) }).strict()).max(60) }).strict(),
+  // ---- P1 parity tier -------------------------------------------------------------------------------------------------------------------
+  /** Installed plugins: names, versions, enabled. Never an install path. */
+  plugins: z.object({ plugins: z.array(z.object({ id: PLUGIN_ID, name: S(64), marketplace: S(64), version: S(40), enabled: z.boolean(), mod: z.boolean(), foreign: z.boolean(), manifestSha: S(12) }).strict()).max(120) }).strict(),
+  /** Locally built capability catalog (docs/parity-capability-design.md section 3). */
+  capabilities: z.object({
+    v: z.literal(1), generated: z.object({ treeSha: S(12), plugins: nat }).strict(),
+    plugins: z.array(z.object({
+      id: PLUGIN_ID, version: S(40), manifestSha: S(12), enabled: z.boolean(), mod: z.boolean(),
+      counts: z.object({ commands: nat, skills: nat, agents: nat, options: nat, mcp: nat }).strict(),
+      caps: z.array(z.object({
+        cid: CAPABILITY_ID, kind: CAP_KIND, name: S(80), risk: CAP_RISK, level: z.enum(['read', 'write', 'manage']).nullable(), mode: z.enum(['run', 'view', 'refused']),
+        why: WHY.optional(), args: z.array(CAP_ARG).max(12).optional(),
+      }).strict()).max(400),
+      options: z.array(z.object({ key: S(48), type: S(16), default: z.union([z.boolean(), z.number().safe(), S(64)]).optional(), choices: z.array(S(64)).max(12).optional(), settable: z.boolean(), why: WHY.optional() }).strict()).max(60),
+    }).strict()).max(120),
+    refused: z.object({ total: nat, byCode: z.record(WHY, nat).refine(r => Object.keys(r).length <= 24, 'too many codes') }).strict(),
+  }).strict(),
+  /** capability.run / mod.option.set / plugin.* history: the last runs, newest first, never an argument value that looked secret. */
+  capability_runs: z.object({
+    active: z.object({ runId: RUN_ID, capabilityId: S(200), startedAt: int, tail: S(8192) }).strict().nullable(),
+    history: z.array(z.object({
+      runId: RUN_ID, capabilityId: S(200), command: S(24), level: S(12), risk: S(12), by: S(80), startedAt: int, endedAt: int, exit: int.nullable(), bytes: nat, truncated: z.boolean(),
+      outcome: z.enum(['succeeded', 'failed', 'denied', 'refused', 'expired', 'changed']), reason: S(60).optional(), tail: S(8192).optional(),
+    }).strict()).max(40),
+  }).strict(),
+  claims: z.object({
+    summary: z.object({ total: nat, active: nat, blocked: nat, stealable: nat, humanClaims: nat, agentClaims: nat }).strict(),
+    claims: z.array(z.object({ issue: S(80), claimant: S(80), kind: z.enum(['human', 'agent', 'unknown']), status: S(24), progress: nat.optional(), claimedAt: int.optional(), stealable: z.boolean(), note: S(160).optional() }).strict()).max(100),
+    loads: z.array(z.object({ agent: S(80), claims: nat, utilization: z.number().min(0).max(10).optional() }).strict()).max(40),
+  }).strict(),
+  hive: z.object({
+    hive: z.object({ id: S(80), status: S(24), topology: S(24).optional(), consensus: S(24).optional(), queen: z.object({ id: S(80), status: S(24), load: z.number().min(0).max(1000).optional(), tasksQueued: nat.optional() }).strict().nullable(),
+      health: z.record(S(24), S(24)).refine(r => Object.keys(r).length <= 12, 'too many health keys').optional(),
+      metrics: z.object({ totalTasks: nat, completedTasks: nat, activeTasks: nat, pendingTasks: nat, failedTasks: nat, consensusRounds: nat, sharedMemoryKeys: nat.optional(), uptimeS: nat.optional() }).strict(),
+    }).strict().nullable(),
+    workers: z.array(z.object({ id: S(80), role: S(24), status: S(24) }).strict()).max(60),
+    proposals: z.array(z.object({ id: S(60), type: S(40), status: S(24), strategy: S(24).optional(), votesFor: nat, votesAgainst: nat }).strict()).max(30),
+  }).strict(),
+  workflows: z.object({ total: nat, workflows: z.array(z.object({ id: S(80), name: S(120), status: S(24), steps: nat, doneSteps: nat.optional(), updatedAt: int.optional() }).strict()).max(60) }).strict(),
+  learning: z.object({
+    router: z.object({ totalDecisions: nat, avgConfidence: z.number().min(0).max(1).optional(), circuitBreakerTrips: nat.optional(), distribution: z.array(z.object({ model: S(24), count: nat }).strict()).max(8), routedBy: z.array(z.object({ via: S(40), count: nat }).strict()).max(12) }).strict().nullable(),
+    sona: z.object({ trajectories: nat, successful: nat.optional(), patternsLearned: nat, successRate: z.number().min(0).max(1).optional() }).strict().nullable(),
+    moe: z.object({ experts: nat, active: nat, decisions: nat, usage: z.array(z.object({ expert: S(24), count: nat }).strict()).max(16) }).strict().nullable(),
+    ewc: z.object({ consolidations: nat, patterns: nat }).strict().nullable(),
+    patterns: z.array(S(60)).max(20),
+  }).strict(),
+  metaharness: z.object({
+    available: z.boolean(), reason: S(160).optional(),
+    score: z.object({ harnessFit: nat, compileConfidence: nat, taskCoverage: nat, toolSafety: nat, memoryUsefulness: nat, estCostPerRunUsd: z.number().min(0).max(1e6).optional(), scaffoldReady: z.boolean().optional(), recommendedMode: S(40).optional(), archetype: S(60).optional() }).strict().nullable(),
+    genome: z.object({ repoType: S(40), topology: z.array(S(40)).max(10), riskScore: z.number().min(0).max(1).optional(), mcpSurface: S(40).optional(), testConfidence: z.number().min(0).max(1).optional(), publishReadiness: z.number().min(0).max(1).optional(), verdict: S(24).optional() }).strict().nullable(),
+    audits: z.array(z.object({ key: S(80), at: int.optional(), worst: S(24).optional() }).strict()).max(20),
+    auditCount: nat,
+  }).strict(),
+  security: z.object({
+    policy: z.object({ mode: S(24), rules: nat, budgets: nat, approvals: nat, receipts: nat, ledgerValid: z.boolean(), ledgerLength: nat }).strict().nullable(),
+    findings: z.array(z.object({ level, text: S(200) }).strict()).max(20),
+    note: S(200).optional(),
+  }).strict(),
+  perf: z.object({
+    cpu: z.object({ percent: z.number().min(0).max(100), cores: nat, loadAverage: z.array(z.number().min(0).max(1e6)).max(3), model: S(80).optional() }).strict().nullable(),
+    memory: z.object({ usedMb: nat, totalMb: nat, heapMb: nat.optional() }).strict().nullable(),
+    note: S(160).optional(),
+  }).strict(),
+  automation: z.object({
+    workers: z.array(z.object({ trigger: S(40), priority: S(12), description: S(120), estimatedDuration: S(16).optional() }).strict()).max(24),
+    running: z.object({ total: nat, running: nat, completed: nat, failed: nat }).strict(),
+    sessions: z.object({ total: nat, recent: z.array(z.object({ id: S(80), name: S(80).optional(), at: int.optional() }).strict()).max(10) }).strict(),
+    daemon: z.object({ running: z.boolean(), startedAt: int.optional() }).strict().nullable(),
+  }).strict(),
 } as const satisfies Record<SectionName, z.ZodTypeAny>;
 export type SectionBody<N extends SectionName> = z.infer<(typeof SectionSchemas)[N]>;
 
@@ -89,15 +182,40 @@ export type SectionFrame = z.infer<typeof SectionFrameSchema>;
 const TRIM: Record<SectionName, string[]> = {
   meta: [], health: ['areas', 'notes'], alerts: ['alerts'], control: [], missions: ['missions'], mission_events: ['events'], tasks: ['items'], swarm: ['agents'], approvals: ['items'],
   memory: ['namespaces'], cost: ['byModel', 'perMission', 'advice'], events: ['events'], notices: ['notices'], adrs: ['items', 'lint'], whatsnew: ['plugins'], settings: ['options'],
+  plugins: ['plugins'], capabilities: ['plugins'], capability_runs: ['history'], claims: ['claims', 'loads'], hive: ['workers', 'proposals'], workflows: ['workflows'], learning: ['patterns'],
+  metaharness: ['audits'], security: ['findings'], perf: [], automation: ['workers', 'sessions'],
 };
 const size = (v: unknown) => Buffer.byteLength(JSON.stringify(v));
 const budgetOf = (n: SectionName) => Math.min(SECTION_BUDGET_BYTES[n], MAX_SECTION_BODY_BYTES);
+
+
+type CapsBody = { plugins: Array<{ caps: Array<{ mode: string; why?: string; args?: unknown }> }> };
+type RunsBody = { history: Array<{ tail?: string }> };
+/** Design section 3 order: refused entries lose why/args, then the refused entries go (byCode counts stay), then args summaries; the generic tail drop is the last resort. */
+function trimCapabilities(b: CapsBody, cap: number): boolean {
+  const steps: Array<() => void> = [
+    () => { for (const p of b.plugins) for (const c of p.caps) if (c.mode === 'refused') { delete c.why; delete c.args; } },
+    () => { for (const p of b.plugins) p.caps = p.caps.filter(c => c.mode !== 'refused'); },
+    () => { for (const p of b.plugins) for (const c of p.caps) delete c.args; },
+  ];
+  let cut = false;
+  for (const f of steps) { if (size(b) <= cap) break; f(); cut = true; }
+  return cut;
+}
+/** Output tails go first (oldest runs first), so the record of what ran survives longer than its text. */
+function trimRuns(b: RunsBody, cap: number): boolean {
+  let cut = false;
+  for (let i = b.history.length - 1; i >= 0 && size(b) > cap; i--) if (b.history[i]!.tail !== undefined) { delete b.history[i]!.tail; cut = true; }
+  return cut;
+}
 
 /** Drop tail items until the body fits its budget. Returns the (possibly cut) body and whether anything was dropped. Never splits across frames. */
 export function fitToBudget<N extends SectionName>(name: N, body: SectionBody<N>): { body: SectionBody<N>; truncated: boolean } {
   const cap = budgetOf(name);
   const out = JSON.parse(JSON.stringify(body)) as Record<string, unknown>;
   let truncated = false;
+  if (name === 'capabilities' && size(out) > cap) truncated = trimCapabilities(out as CapsBody, cap);
+  if (name === 'capability_runs' && size(out) > cap) truncated = trimRuns(out as RunsBody, cap);
   for (const key of TRIM[name]) {
     const arr = out[key];
     if (!Array.isArray(arr)) continue;

@@ -1,12 +1,13 @@
 /** Transport-independent device end of the signed channel: emits signed frames, verifies and executes server frames. */
 import { arch, platform } from 'node:os';
 import {
-  authorize, CommandBodySchema, fingerprint, MAX_ENVELOPE_BYTES, parseCommand, ReplayGuard, sanitize, signEnvelope, verifyEnvelope, COMMANDS,
+  authorize, authorizeCapability, CommandBodySchema, fingerprint, MAX_ENVELOPE_BYTES, parseCommand, ReplayGuard, sanitize, signEnvelope, verifyEnvelope, COMMANDS,
   parseWatch, SECTION_VERSIONS, type CommandName, type Envelope, type SectionFrame, type SectionName,
 } from './protocol/index.js';
 import { hasLongText, printable, type Approver } from './approver.js';
 import { EXECUTORS } from './executors.js';
 import type { Ruflo } from './exec.js';
+import { CAP_COMMANDS, type CapabilityService, type CapCommand, type Prepared } from './capabilities/service.js';
 import { saveServerSeq, wipeState, type AuditLog, type Config, type DeviceSeq } from './state.js';
 
 export const MAX_COMMAND_LIFETIME_MS = 15 * 60_000;
@@ -18,11 +19,13 @@ export interface ChannelDeps {
   cfg: Config; privateKey: string; home: string; seq: DeviceSeq; guard: ReplayGuard; audit: AuditLog;
   ruflo: Ruflo; approver: Approver; send: (frame: string) => void; sections: SectionPort;
   rufloVersion?: string; now?: () => number; onRevoke?: () => void;
+  /** Plugin/capability commands; without it they are refused. */
+  caps?: CapabilityService;
 }
 /** What the channel needs from the section scheduler (kept narrow so tests can stub it). */
 export interface SectionPort {
   tick(): Promise<{ collected: SectionName[]; sent: SectionName[] }>;
-  refresh(name: SectionName): Promise<{ sent: boolean; rateLimited?: boolean }>;
+  refresh(name: SectionName, opts?: { immediate?: boolean }): Promise<{ sent: boolean; rateLimited?: boolean }>;
   refreshAll(): Promise<{ sent: SectionName[]; rateLimited?: boolean }>;
   setWatch(list: readonly SectionName[]): void;
   notice(level: 'info' | 'warn' | 'error', text: string, key: string): void;
@@ -106,21 +109,39 @@ export class Channel {
     if (b.data.expiresAt > env.ts + MAX_COMMAND_LIFETIME_MS) return deny('denied', 'expiry_too_far');
     const p = parseCommand(cmd, b.data.args);
     if (!p.ok) return deny('denied', p.reason);
-    const auth = authorize(p.cmd, this.d.cfg.level, this.d.cfg.autoApprove);
+    // plugin.* / capability.run / mod.option.set: resolved against the LOCAL catalog first; the level and the card come from what was found, not from the request.
+    let prep: Prepared | null = null;
+    if (CAP_COMMANDS.has(p.cmd)) {
+      if (!this.d.caps) return deny('denied', 'capabilities_unavailable');
+      const r = await this.d.caps.prepare(p.cmd as CapCommand, p.args, base.by);
+      if (!r.ok) { this.d.caps.recordNever(p.cmd, p.cmd === 'capability.run' ? String(p.args.capabilityId ?? '') : String(p.args.pluginId ?? p.args.modId ?? p.cmd), p.level, 'read', base.by, 'refused', r.code); this.d.sections.refresh('capability_runs', { immediate: true }).catch(() => undefined); return deny('denied', r.code); }
+      prep = r;
+    }
+    const capAuth = prep && p.cmd === 'capability.run' ? authorizeCapability(prep.level, this.d.cfg.level) : null;
+    const auth = capAuth ?? authorize(p.cmd, this.d.cfg.level, this.d.cfg.autoApprove);
     if (!auth.allowed) return deny('denied', auth.reason ?? 'not_allowed');
-    const needsApproval = auth.needsApproval || (COMMANDS[p.cmd].level !== 'read' && !AUTO_APPROVABLE.includes(p.cmd));
+    // Above read, a capability ALWAYS shows the card: autoApprove is never consulted for it (docs/parity-capability-design.md section 5).
+    const needsApproval = prep ? prep.level !== 'read' : auth.needsApproval || (COMMANDS[p.cmd].level !== 'read' && !AUTO_APPROVABLE.includes(p.cmd));
     if (needsApproval) {
       this.report(cid, 'awaiting_approval'); this.waiting.set(cid, { cid, cmd: p.cmd, since: this.now() });
-      this.d.audit.write('command', { ...base, decision: 'awaiting_approval', args: p.args });
+      const shownArgs = prep ? prep.card : p.args;
+      this.d.audit.write('command', { ...base, decision: 'awaiting_approval', args: shownArgs });
       let ok = false;
-      try { ok = await this.d.approver({ cid, cmd: p.cmd, summary: COMMANDS[p.cmd].summary, level: p.level, args: p.args, by: base.by, baseUrl: this.d.cfg.baseUrl, serverFingerprint: fingerprint(this.d.cfg.serverPublicKey), long: hasLongText(p.args) }); } catch { ok = false; }
+      try { ok = await this.d.approver({ cid, cmd: p.cmd, summary: COMMANDS[p.cmd].summary, level: prep ? prep.level : p.level, args: shownArgs, by: base.by, baseUrl: this.d.cfg.baseUrl, serverFingerprint: fingerprint(this.d.cfg.serverPublicKey), long: hasLongText(shownArgs), ...(prep?.typed ? { typed: prep.typed } : {}) }); } catch { ok = false; }
       this.waiting.delete(cid);
-      if (!ok) return deny('denied', 'approval_denied');
-      if (this.now() > b.data.expiresAt) return deny('expired', 'command_expired_during_approval');
+      if (!ok) { prep && this.d.caps?.recordNever(p.cmd, prep.capabilityId, prep.level, prep.risk, base.by, 'denied', 'approval_denied'); return deny('denied', 'approval_denied'); }
+      if (this.now() > b.data.expiresAt) { prep && this.d.caps?.recordNever(p.cmd, prep.capabilityId, prep.level, prep.risk, base.by, 'expired', 'command_expired_during_approval'); return deny('expired', 'command_expired_during_approval'); }
     }
     this.report(cid, 'running');
     this.d.audit.write('command', { ...base, decision: needsApproval ? 'approved' : 'auto', args: p.args });
     try {
+      if (prep) {
+        const r = await this.d.caps!.execute(prep);
+        this.d.audit.write('command_result', { cid, ok: r.ok });
+        this.d.sections.notice(r.ok ? 'info' : 'warn', `${base.cmd} ${r.ok ? 'succeeded' : `failed: ${r.error}`}`, `cmd:${cid}`);
+        if (r.ok) this.report(cid, 'succeeded', { result: r.result }); else this.report(cid, 'failed', { error: r.error });
+        return;
+      }
       const r = await EXECUTORS[p.cmd as CommandName](p.args, { ruflo: this.d.ruflo, cid, refreshAll: () => this.d.sections.refreshAll(), refreshSection: n => this.d.sections.refresh(n) });
       this.d.audit.write('command_result', { cid, ok: r.ok });
       this.d.sections.notice(r.ok ? 'info' : 'warn', `${base.cmd} ${r.ok ? 'succeeded' : `failed: ${r.error}`}`, `cmd:${cid}`);

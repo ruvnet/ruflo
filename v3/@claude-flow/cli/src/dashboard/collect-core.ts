@@ -21,6 +21,8 @@ export interface CollectCtx {
   home?: string;
   /** Explicit ledger script path chosen by the USER in config.json (never derived from the project). */
   ledgerPath?: string;
+  /** Local capability catalog + run history (plugins, capabilities, capability_runs sections). */
+  caps?: import('./capabilities/service.js').CapabilityService;
 }
 export type Collector = (c: CollectCtx) => Promise<Obj>;
 

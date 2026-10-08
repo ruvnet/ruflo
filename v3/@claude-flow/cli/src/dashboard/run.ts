@@ -1,12 +1,14 @@
 /** Outbound-only wss session loop: hello, periodic digests, server frames, jittered reconnect, clean shutdown. */
-import { resolve as resolvePath } from 'node:path';
+import { join, resolve as resolvePath } from 'node:path';
 import WebSocket from 'ws';
 import { READ_TOOLS, ReplayGuard } from './protocol/index.js';
 import { ttyApprover, type Approver } from './approver.js';
 import { Channel } from './channel.js';
 import { COMMAND_TOOLS } from './executors.js';
 import { SectionScheduler } from './scheduler.js';
-import { guard as limitTools, MAX_CONCURRENT_SPAWNS, resolveRufloCommand, RufloClient, runArgv, Semaphore, type Ruflo, type RunResult } from './exec.js';
+import { CapabilityService } from './capabilities/service.js';
+import { CAPABILITY_TOOLS } from './capabilities/bindings.js';
+import { guard as limitTools, MAX_CONCURRENT_SPAWNS, resolveOnPath, resolveRufloCommand, RufloClient, runArgv, Semaphore, type Ruflo, type RunResult } from './exec.js';
 import { AuditLog, DeviceSeq, loadConfig, loadKey, loadServerSeq, normalizeBaseUrl, StateError, type Config } from './state.js';
 
 export const BACKOFF_MIN_MS = 1000;
@@ -35,7 +37,11 @@ export function validateConnectUrl(connectUrl: string, baseUrl: string): string 
 export interface RunOptions {
   home: string; projectDir?: string; ruflo?: Ruflo; approver?: Approver; intervalMs?: number; signal?: AbortSignal;
   /** Fixed-argv child runner (the cost ledger); injectable for tests. */
-  runCmd?: (argv: string[], timeoutMs: number) => Promise<RunResult>; homeDir?: string;
+  runCmd?: (argv: string[], timeoutMs: number, stdin?: string) => Promise<RunResult>; homeDir?: string;
+  /** Where Claude Code keeps its config (default $CLAUDE_CONFIG_DIR, else <homeDir>/.claude) and its plugin cache (default <claudeConfigDir>/plugins/cache). */
+  claudeConfigDir?: string; pluginCacheDir?: string;
+  /** Test hooks for the capability channel: the `claude` binary (null = none) and the fixed-argv runner it uses. */
+  claudePath?: string | null; capRun?: (argv: string[], o: { cwd: string; timeoutMs: number; stdin?: string }) => Promise<RunResult>;
   log?: (line: string) => void; random?: () => number; now?: () => number; sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
 }
 export type RunEnd = 'stopped' | 'revoked';
@@ -65,6 +71,16 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
   const ruflo = limitTools(raw, COMMAND_TOOLS, sem);
   const approver = o.approver ?? ttyApprover();
   const audit = new AuditLog(o.home, o.now);
+  const userHome = o.homeDir ?? process.env.HOME ?? '';
+  const configDir = o.claudeConfigDir ?? process.env.CLAUDE_CONFIG_DIR ?? join(userHome, '.claude');
+  const claudeRoots = { configDir, cacheDir: o.pluginCacheDir ?? join(configDir, 'plugins', 'cache') };
+  const caps = new CapabilityService({
+    home: userHome, roots: claudeRoots, projectDir, ruflo: limitTools(raw, CAPABILITY_TOOLS, sem), audit, now: o.now,
+    rufloBase: (() => { try { return resolveRufloCommand(cfg.rufloCommand); } catch { return null; } })(), claude: o.claudePath !== undefined ? o.claudePath : o.runCmd ? 'claude' : resolveOnPath('claude'),
+    // Every child process of the capability channel goes through one runner; tests inject it (runCmd or capRun) and never touch the real ~/.claude.
+    run: (argv, x) => sem.run(() => (o.capRun ?? (o.runCmd ? (a: string[], y: { cwd: string; timeoutMs: number; stdin?: string }) => o.runCmd!(a, y.timeoutMs, y.stdin) : runArgv))(argv, x)),
+    onChange: names => { for (const n of names) void sched.refresh(n, { immediate: true }).catch(() => undefined); },
+  });
   const seq = new DeviceSeq(o.home);
   const guard = new ReplayGuard();
   guard.setLastSeq(cfg.deviceId, loadServerSeq(o.home));
@@ -74,7 +90,7 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
   const sched = new SectionScheduler({
     emit: f => current?.emitSection(f), now: o.now,
     ctx: { ruflo: reader, projectDir, level: cfg.level, autoApprove: cfg.autoApprove, cliChoice: cfg.rufloCommand ? 'config' : 'path', pending: () => current?.pending() ?? [], home: o.homeDir ?? process.env.HOME, ledgerPath: cfg.ledgerPath,
-      run: o.runCmd ?? ((argv, t) => sem.run(() => runArgv(argv, { cwd: projectDir, timeoutMs: t }))), now: o.now ?? Date.now },
+      run: o.runCmd ?? ((argv, t) => sem.run(() => runArgv(argv, { cwd: projectDir, timeoutMs: t }))), now: o.now ?? Date.now, caps },
   });
   audit.write('run_start', { deviceId: cfg.deviceId, level: cfg.level, autoApprove: cfg.autoApprove });
 
@@ -100,7 +116,7 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
       const onAbort = () => { try { ws.close(1001, 'shutdown'); } catch { /* closed */ } setTimeout(() => settle('closed'), 1500).unref(); };
       const ch = new Channel({
         cfg, privateKey, home: o.home, seq, guard, audit, ruflo, approver, now: o.now,
-        send: f => { if (ws.readyState === WebSocket.OPEN) ws.send(f); }, sections: sched,
+        send: f => { if (ws.readyState === WebSocket.OPEN) ws.send(f); }, sections: sched, caps,
         onRevoke: () => { revoked = true; },
       });
       current = ch; sched.resetSent(); sched.notice('info', 'connected to the dashboard', 'connector:connected');

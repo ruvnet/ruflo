@@ -129,10 +129,10 @@ export function findLedger(projectDir: string, home: string | undefined, explici
   vers.sort((a, b) => b.v[0]! - a.v[0]! || b.v[1]! - a.v[1]! || b.v[2]! - a.v[2]!);
   return vers[0]?.p ?? null;
 }
-function safeReal(p: string): string { try { return realpathSync(p); } catch { return resolve(p); } }
+export function safeReal(p: string): string { try { return realpathSync(p); } catch { return resolve(p); } }
 const inside = (child: string, root: string): boolean => child === root || child.startsWith(root.endsWith(sep) ? root : root + sep);
 /** Regular file, real path outside the project, owned by us, and neither it nor any directory up to `trustRoot` writable by group/others. */
-function trustedScript(p: string, projectRoot: string, trustRoot: string): boolean {
+export function trustedScript(p: string, projectRoot: string, trustRoot: string): boolean {
   try {
     const real = realpathSync(p);
     if (inside(real, projectRoot)) return false;

@@ -7,6 +7,8 @@ export interface ApprovalRequest {
   baseUrl?: string; serverFingerprint?: string;
   /** True when any text argument exceeds LONG_TEXT: the approver must show ALL of it before accepting. */
   long?: boolean;
+  /** When set, the person must type exactly this (a guard plugin's name) before the command runs. */
+  typed?: string;
 }
 export type Approver = (req: ApprovalRequest) => Promise<boolean>;
 
@@ -51,6 +53,10 @@ export function ttyApprover(input: NodeJS.ReadableStream & { isTTY?: boolean } =
       for (let i = 0; i < lines.length; i += PAGE_LINES) {
         output.write(lines.slice(i, i + PAGE_LINES).join('\n') + '\n');
         if (i + PAGE_LINES < lines.length) { const a = await ask('-- more (Enter to continue, q to deny) -- '); if (a === null || /^q/i.test(a.trim())) return false; }
+      }
+      if (req.typed) {
+        output.write(`  This changes a guard. Type its name (${printable(req.typed, 64)}) to confirm.\n`);
+        return (await ask('Name: '))?.trim() === req.typed;
       }
       if (long) {
         output.write(`  NOTE: this command carries a text argument longer than ${LONG_TEXT} characters; it was shown in full above.\n`);

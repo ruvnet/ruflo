@@ -6,11 +6,13 @@ import {
 import { control, health, isObj, memory, meta, mission_events, missions, settings, swarm, tasks, type CollectCtx, type Collector } from './collect-core.js';
 import { adrs, cost, events, whatsnew } from './collect-files.js';
 import { alerts, approvals, notices } from './derive.js';
+import * as P1 from './collect-p1.js';
 
-export const COLLECTORS: Record<SectionName, Collector> = { meta, health, alerts, control, missions, mission_events, tasks, swarm, approvals, memory, cost, events, notices, adrs, whatsnew, settings };
+export const COLLECTORS: Record<SectionName, Collector> = { meta, health, alerts, control, missions, mission_events, tasks, swarm, approvals, memory, cost, events, notices, adrs, whatsnew, settings, claims: P1.claims, hive: P1.hive, workflows: P1.workflows, learning: P1.learning, metaharness: P1.metaharness, security: P1.security, perf: P1.perf, automation: P1.automation, ...P1.P1_PLUGIN_COLLECTORS };
 /** Stages run in order; sections inside a stage run in parallel. Later stages read the cache filled by earlier ones. */
 const STAGES: SectionName[][] = [
   ['meta', 'control', 'missions', 'tasks', 'swarm', 'memory', 'settings', 'cost', 'adrs', 'whatsnew'],
+  ['plugins', 'capabilities', 'capability_runs', 'claims', 'hive', 'workflows', 'learning', 'metaharness', 'security', 'perf', 'automation'],
   ['mission_events'], ['events', 'health', 'approvals'], ['alerts'], ['notices'],
 ];
 const DERIVED_AFTER = new Set<SectionName>(['events', 'health', 'approvals', 'alerts', 'notices']);
@@ -126,10 +128,12 @@ export class SectionScheduler {
   }
 
   /** Force one section out now (rate-limited per section). */
-  async refresh(name: SectionName): Promise<{ sent: boolean; rateLimited?: boolean }> {
+  async refresh(name: SectionName, opts: { immediate?: boolean } = {}): Promise<{ sent: boolean; rateLimited?: boolean }> {
     const now = this.now(); const last = this.lastForced.get(name);
-    if (last !== undefined && now - last < FORCED_MIN_INTERVAL_MS) return { sent: false, rateLimited: true };
-    this.lastForced.set(name, now);
+    // `immediate` is for the connector's own publishes (a run just started or ended), never for a browser's request.
+    if (!opts.immediate && last !== undefined && now - last < FORCED_MIN_INTERVAL_MS) return { sent: false, rateLimited: true };
+    if (!opts.immediate) this.lastForced.set(name, now);
+    if (opts.immediate && this.running.has(name)) return { sent: false };
     if (!this.names.includes(name)) return { sent: false };
     if (DERIVED_AFTER.has(name) === false && this.running.has(name)) return { sent: false };
     return { sent: await this.collectOne(name, true) };

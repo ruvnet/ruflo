@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SECTION_NAMES } from './sections.js';
+import { CAPABILITY_ID, PLUGIN_ID, SECTION_NAMES } from './sections.js';
 
 /** Control levels mirror the ruflo console: off < read < write < manage < full. */
 export const LEVELS = ['off', 'read', 'write', 'manage', 'full'] as const;
@@ -15,6 +15,11 @@ export interface CommandSpec { level: Level; summary: string; args: z.ZodType<Re
 /** Optional optimistic-concurrency guard: the revision the human saw; the connector refuses (never acts) when the live revision differs. */
 const expectedRevision = z.number().int().safe().min(1).optional();
 const empty = z.object({}).strict();
+/** Capability arguments: bounded plain values only. The capability's OWN schema (connector-side, built from the installed plugin) validates them a second time. */
+export const CAPABILITY_ARG_MAX_TEXT = 8000;
+export const CAPABILITY_ARG_MAX_COUNT = 12;
+const capabilityArgs = z.record(z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{0,31}$/), z.union([z.string().max(CAPABILITY_ARG_MAX_TEXT), z.number().safe(), z.boolean()])).refine(o => Object.keys(o).length <= CAPABILITY_ARG_MAX_COUNT, 'too many arguments');
+const optionKey = z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,47}$/);
 
 /** The ONLY commands the hosted dashboard may ask a local ruflo to run. Anything else is refused on both ends. */
 export const COMMANDS = {
@@ -28,6 +33,13 @@ export const COMMANDS = {
   'mission.resume': { level: 'write', summary: 'Resume a paused mission', args: z.object({ missionId, expectedRevision }).strict() },
   'mission.stop': { level: 'manage', summary: 'Stop a mission', args: z.object({ missionId, expectedRevision }).strict() },
   'swarm.init': { level: 'manage', summary: 'Initialise a hierarchical swarm (max 6 agents)', args: z.object({ topology: z.enum(['hierarchical', 'mesh']).default('hierarchical'), maxAgents: z.number().int().min(1).max(MAX_SWARM_AGENTS).default(6) }).strict() },
+  'plugin.list': { level: 'read', summary: 'Re-publish the installed-plugin list and capability catalog now', args: empty },
+  'plugin.enable': { level: 'manage', summary: 'Enable an installed plugin (claude plugin enable <name>@<marketplace> --scope user)', args: z.object({ pluginId: PLUGIN_ID }).strict() },
+  'plugin.disable': { level: 'manage', summary: 'Disable an installed plugin (claude plugin disable <name>@<marketplace> --scope user)', args: z.object({ pluginId: PLUGIN_ID }).strict() },
+  // The level here is only the floor for the device. The connector replaces it with the level of the capability it finds in its OWN catalog,
+  // and anything above read always shows the local approval card, whatever autoApprove says (docs/parity-capability-design.md section 5).
+  'capability.run': { level: 'read', summary: 'Run one capability from the locally built catalog (level and approval come from the capability)', args: z.object({ pluginId: PLUGIN_ID, capabilityId: CAPABILITY_ID, args: capabilityArgs }).strict() },
+  'mod.option.set': { level: 'write', summary: 'Change one option of an installed plugin (booleans, numbers and enums; spend caps may only be lowered)', args: z.object({ modId: PLUGIN_ID, key: optionKey, value: z.union([z.boolean(), z.number().safe(), z.string().max(64)]) }).strict() },
   'agent.spawn': { level: 'manage', summary: 'Spawn one agent within the swarm cap', args: z.object({ type: z.enum(AGENT_TYPES), name: z.string().regex(/^[A-Za-z0-9._-]{1,48}$/).optional() }).strict() },
 } as const satisfies Record<string, CommandSpec>;
 export type CommandName = keyof typeof COMMANDS;
@@ -53,6 +65,15 @@ export function parseCommand(name: unknown, args: unknown): ParsedCommand {
 }
 
 /** Whether a command may run given the device's local control level; write+ also needs a local approval unless auto. */
+/** Commands whose real level comes from a locally resolved target; the connector must never auto-approve these above read. */
+export const DYNAMIC_LEVEL_COMMANDS: readonly CommandName[] = ['capability.run'];
+/** capability.run: the level is the capability's, anything above read ALWAYS needs the local card (autoApprove is ignored). */
+export function authorizeCapability(capLevel: 'read' | 'write' | 'manage' | null, deviceLevel: Level): { allowed: boolean; needsApproval: boolean; reason?: string } {
+  if (capLevel === null) return { allowed: false, needsApproval: false, reason: 'capability_refused' };
+  if (levelRank(deviceLevel) < levelRank(capLevel)) return { allowed: false, needsApproval: false, reason: `level_${deviceLevel}_below_${capLevel}` };
+  return { allowed: true, needsApproval: capLevel !== 'read' };
+}
+
 export function authorize(cmd: CommandName, deviceLevel: Level, autoApprove: boolean): { allowed: boolean; needsApproval: boolean; reason?: string } {
   const need = (COMMANDS[cmd] as CommandSpec).level;
   if (levelRank(deviceLevel) < levelRank(need)) return { allowed: false, needsApproval: false, reason: `level_${deviceLevel}_below_${need}` };

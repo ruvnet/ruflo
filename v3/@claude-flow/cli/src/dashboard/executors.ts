@@ -69,6 +69,12 @@ export const EXECUTORS: Record<CommandName, Executor> = {
     return done({ swarmId: r.swarmId, topology: r.topology, maxAgents: r.maxAgents });
   },
 
+  async 'plugin.list'() { return fail('capabilities_unavailable'); },
+  async 'plugin.enable'() { return fail('capabilities_unavailable'); },
+  async 'plugin.disable'() { return fail('capabilities_unavailable'); },
+  async 'capability.run'() { return fail('capabilities_unavailable'); },
+  async 'mod.option.set'() { return fail('capabilities_unavailable'); },
+
   async 'agent.spawn'(a, ctx) {
     const sw = data(await ctx.ruflo.mcp('swarm_status', {}));
     if (sw.status === 'no_swarm' || typeof sw.swarmId !== 'string') return fail('no_active_swarm');

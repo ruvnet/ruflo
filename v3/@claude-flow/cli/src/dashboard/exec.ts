@@ -1,7 +1,10 @@
 /** Safe subprocess access to the local ruflo CLI: fixed argv arrays, no shell, hard timeout, output cap, scrubbed env. */
 import { spawn } from 'node:child_process';
-import { delimiter, isAbsolute } from 'node:path';
+import { accessSync, constants, statSync } from 'node:fs';
+import { delimiter, isAbsolute, join } from 'node:path';
 
+/** Used by the integration test only (its own temp dir); never a runtime fallback. */
+export const PINNED_NPX = ['npx', '--yes', '@claude-flow/cli@3.55.0'] as const;
 export const DEFAULT_TIMEOUT_MS = 10_000;
 export const MAX_OUTPUT_BYTES = 1024 * 1024;
 const ENV_ALLOW = ['PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TMPDIR', 'SHELL', 'SYSTEMROOT', 'USERPROFILE', 'APPDATA', 'XDG_CACHE_HOME', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME'];
@@ -16,14 +19,15 @@ export function scrubEnv(src: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEn
 }
 
 export interface RunResult { code: number | null; stdout: string; stderr: string; timedOut: boolean; truncated: boolean }
-export interface RunOpts { cwd: string; timeoutMs?: number; maxBytes?: number; env?: NodeJS.ProcessEnv }
+export interface RunOpts { cwd: string; timeoutMs?: number; maxBytes?: number; env?: NodeJS.ProcessEnv; /** Written to the child's stdin then closed (a value that must not appear in argv). */ stdin?: string }
 
 /** argv[0] is the program, the rest are literal arguments. Never interpreted by a shell. */
 export function runArgv(argv: readonly string[], o: RunOpts): Promise<RunResult> {
   return new Promise((resolve, reject) => {
     if (argv.length === 0 || argv.some(a => typeof a !== 'string' || a.includes('\0'))) return reject(new Error('invalid argv'));
     const max = o.maxBytes ?? MAX_OUTPUT_BYTES;
-    const child = spawn(argv[0]!, argv.slice(1), { cwd: o.cwd, env: o.env ?? scrubEnv(), shell: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    const child = spawn(argv[0]!, argv.slice(1), { cwd: o.cwd, env: o.env ?? scrubEnv(), shell: false, stdio: [o.stdin === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'], windowsHide: true });
+    if (o.stdin !== undefined) { child.stdin?.on('error', () => undefined); child.stdin?.end(o.stdin); }
     let out = '', err = '', bytes = 0, truncated = false, timedOut = false, done = false;
     const kill = () => { try { child.kill('SIGKILL'); } catch { /* already gone */ } };
     const timer = setTimeout(() => { timedOut = true; kill(); }, o.timeoutMs ?? DEFAULT_TIMEOUT_MS);
@@ -33,7 +37,7 @@ export function runArgv(argv: readonly string[], o: RunOpts): Promise<RunResult>
       if (bytes > max) { truncated = true; kill(); return; }
       if (which === 'o') out += b.toString('utf8'); else err += b.toString('utf8');
     };
-    child.stdout.on('data', take('o')); child.stderr.on('data', take('e'));
+    child.stdout!.on('data', take('o')); child.stderr!.on('data', take('e'));
     child.on('error', e => { if (done) return; done = true; clearTimeout(timer); reject(e); });
     child.on('close', code => { if (done) return; done = true; clearTimeout(timer); resolve({ code, stdout: out, stderr: err, timedOut, truncated }); });
   });
@@ -53,10 +57,28 @@ export function parseMcpOutput(stdout: string): unknown {
   try { return JSON.parse(rest); } catch { throw new RufloError('bad_json', 'ruflo result is not valid JSON'); }
 }
 
-/** The launcher is this very ruflo process (same node, same CLI entry) unless config overrides it - no PATH or npx lookup. */
-export function resolveRufloCommand(configured?: string[]): string[] {
+/**
+ * Resolve the ruflo launcher: explicit config, else `ruflo`/`claude-flow` on PATH. There is deliberately NO npx fallback: npx would
+ * fetch code from a registry chosen by the project's own .npmrc (cwd = project dir) with no integrity pin.
+ */
+export function resolveRufloCommand(configured?: string[], pathEnv: string | undefined = process.env.PATH): string[] {
   if (configured && configured.length > 0) return configured;
-  return [process.execPath, process.argv[1] ?? 'ruflo'];
+  for (const bin of ['ruflo', 'claude-flow']) {
+    for (const dir of (pathEnv ?? '').split(delimiter)) {
+      if (!dir || !isAbsolute(dir)) continue; // relative entries resolve against the (untrusted) project directory
+      try { const p = join(dir, bin); if (statSync(p).isFile()) { accessSync(p, constants.X_OK); return [p]; } } catch { /* next */ }
+    }
+  }
+  throw new RufloError('ruflo_not_found', 'ruflo is not on PATH; install it (npm i -g ruflo) or set "rufloCommand" in config.json');
+}
+
+/** First executable named `bin` in an ABSOLUTE PATH directory (relative entries would resolve inside the untrusted project). */
+export function resolveOnPath(bin: string, pathEnv: string | undefined = process.env.PATH): string | null {
+  for (const dir of (pathEnv ?? '').split(delimiter)) {
+    if (!dir || !isAbsolute(dir)) continue;
+    try { const p = join(dir, bin); if (statSync(p).isFile()) { accessSync(p, constants.X_OK); return p; } } catch { /* next */ }
+  }
+  return null;
 }
 
 export class RufloClient implements Ruflo {
