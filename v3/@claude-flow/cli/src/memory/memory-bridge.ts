@@ -3107,11 +3107,21 @@ export async function bridgeSessionEnd(options: {
     if (controller === 'none') controller = 'bridge-store';
     persisted = true;
 
-    // Phase 3: Trigger NightlyLearner consolidation if available
+    // Phase 3: Trigger NightlyLearner consolidation if available.
+    //
+    // Dream Cycle 2026-10-08: `nightlyLearner` never had a `.consolidate()`
+    // method on either backend — not the legacy `agentdb` `NightlyLearner`
+    // class (`run()`, `discover()`, `consolidateEpisodes()`, no bare
+    // `consolidate`), and not the ADR-125 Phase 4 `MemoryConsolidator`
+    // wrapper from `controller-registry.ts` (`run`/`runAll`/`sweepExpired`/
+    // `dedup`/`compactHnsw`, also no `consolidate`). So this guard was false
+    // unconditionally, and session-end consolidation has been silent dead
+    // code since its introduction, on both backends. `run()` is the real,
+    // shared entry point on both — it takes no arguments.
     const nightlyLearner = registry.get('nightlyLearner');
-    if (nightlyLearner && typeof nightlyLearner.consolidate === 'function') {
+    if (nightlyLearner && typeof nightlyLearner.run === 'function') {
       try {
-        await nightlyLearner.consolidate({ sessionId: options.sessionId });
+        await nightlyLearner.run();
         controller += '+nightlyLearner';
       } catch { /* non-fatal */ }
     }
