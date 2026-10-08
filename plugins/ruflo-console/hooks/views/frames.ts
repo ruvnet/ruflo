@@ -16,7 +16,7 @@ import type { Channels, Peers, Roster } from '../data/cli'
 import { pipelinePicture, radarPicture, samplesPicture, trendPicture, gaugePicture, type Stage } from '../gfx/charts'
 import { loopPicture, loopStagesOf } from '../gfx/evolve'
 import { flowModelOf, flowPicture, flowRows } from '../gfx/flow'
-import { federationPicture, ganttPicture, heatmapPicture, type FedNode, type HealthRow, type Lane } from '../gfx/maps'
+import { federationPicture, heatmapPicture, type FedNode, type HealthRow, type Lane } from '../gfx/maps'
 import { activityPicture, bannerPicture, bootPicture, titlePicture, curvePicture, headerPicture, palettePicture, PULSE_MS, topologyPicture, type TopoModel } from '../gfx/pictures'
 import type { Grid } from '../gfx/raster'
 import { PROBES, severityOf } from '../data/cli'
@@ -31,6 +31,10 @@ import { openTasks } from './select'
 
 export const MAX_NODES = 100
 export const HEALTH_CHECKS = ['installed', 'enabled', 'clone', 'mod'] as const
+import { chartOf, eventsModel } from '../events-ui'
+import { linesPicture, stackedPicture } from '../gfx/ev-charts'
+import { timelineModel } from '../timeline-ui'
+import { linesFor } from './timeline-lines'
 import { watchOf } from '../watch'
 /** The radar's axis words: the score's own dimension names, shortened to fit at a spoke's end. */
 const AXIS: Record<string, string> = { harnessFit: 'fit', compileConfidence: 'compile', taskCoverage: 'coverage', toolSafety: 'safety', memoryUsefulness: 'memory' }
@@ -258,9 +262,16 @@ export function picturesOf(state: State, columns: number, nowMs: number, t: numb
       pictures.set('evolve-loop', loopPicture(loopStagesOf(state.evolve), width, t))
       break
     case 'timeline': {
-      const lanes = lanesOf(state, nowMs)
+      const model = timelineModel(state, nowMs, Math.max(8, width - 10))
 
-      if (lanes.length > 0) pictures.set('gantt', ganttPicture(lanes, width, nowMs - watchOf(state).rangeMs, nowMs))
+      if (model.lanes.length > 0) pictures.set('tl-picture', linesPicture(linesFor(state, model, width), width))
+      break
+    }
+    case 'events': {
+      const events = eventsModel(state, nowMs)
+      const { data, colors } = chartOf(state, events, nowMs, width)
+
+      if (events.shown.length > 0) pictures.set('ev-chart', stackedPicture(data, colors, width, 5))
       break
     }
     default:

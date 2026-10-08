@@ -18,6 +18,8 @@
  */
 
 import { liveMemoryRowSql } from './live-memory-row.js';
+import { resolveAgentdbBetterSqlite3 } from './shared-sqlite.js';
+import { encodeEmbeddingQ8, MAX_LIST_EMBEDDINGS } from './embedding-q8.js';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { realpathSync } from 'node:fs';
@@ -431,7 +433,8 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
                   try {
                     const attestationFile = path.join(adbDir, 'dist/src/security/AttestationLog.js');
                     if (fs.existsSync(attestationFile)) {
-                      const Database = (cjsRequire('better-sqlite3') as unknown) as new (p: string) => unknown;
+                      // #3693: same better-sqlite3 copy AgentDB uses, so closing this handle cannot disturb its WAL.
+                      const Database = ((resolveAgentdbBetterSqlite3() ?? cjsRequire('better-sqlite3')) as unknown) as new (p: string) => unknown;
                       const swarmDir = path.resolve(process.cwd(), '.swarm');
                       if (!fs.existsSync(swarmDir)) fs.mkdirSync(swarmDir, { recursive: true });
                       const dbPath = path.join(swarmDir, 'attestation.db');
@@ -1495,6 +1498,8 @@ export async function bridgeListEntries(options: {
   includeContent?: boolean;
   /** ADR-323: restrict rows to these provenance types. */
   provenanceFilter?: string[];
+  /** ADR-472: include each entry's embedding as int8+scale (`embeddingQ8`); at most MAX_LIST_EMBEDDINGS rows. */
+  includeEmbedding?: boolean;
 }): Promise<{
   success: boolean;
   entries: {
@@ -1509,6 +1514,7 @@ export async function bridgeListEntries(options: {
     /** #2073: Present when `includeContent: true` was requested. */
     content?: string;
     provenanceType?: string;
+    embeddingQ8?: { dims: number; scale: number; b64: string };
   }[];
   total: number;
   error?: string;
@@ -1568,7 +1574,7 @@ export async function bridgeListEntries(options: {
         ORDER BY updated_at DESC
         LIMIT ? OFFSET ?
       `);
-      const rows = stmt.all(...filterParams, limit, offset);
+      const rows = stmt.all(...filterParams, options.includeEmbedding ? Math.min(limit, MAX_LIST_EMBEDDINGS) : limit, offset);
       for (const row of rows) {
         const entry: Record<string, unknown> = {
           // #2073: don't truncate id when content is requested — callers
@@ -1585,6 +1591,10 @@ export async function bridgeListEntries(options: {
         };
         if (options.includeContent) {
           entry.content = row.content || '';
+        }
+        if (options.includeEmbedding) {
+          const q8 = encodeEmbeddingQ8(row.embedding);
+          if (q8) entry.embeddingQ8 = q8;
         }
         entries.push(entry);
       }
@@ -2295,7 +2305,7 @@ export async function bridgeStorePattern(options: {
   confidence: number;
   metadata?: Record<string, unknown>;
   dbPath?: string;
-}): Promise<{ success: boolean; patternId: string; controller: string; hasEmbedding?: boolean; embeddingError?: string } | null> {
+}): Promise<{ success: boolean; patternId: string; controller: string; hasEmbedding?: boolean; embeddingError?: string; error?: string } | null> {
   if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeStorePattern(options));
   const registry = await getRegistry(options.dbPath);
   if (!registry) return null;
@@ -2345,6 +2355,18 @@ export async function bridgeStorePattern(options: {
     });
 
     if (!result) return null;
+
+    // #3691: bridgeStoreEntry reports data-level failures (MutationGuard
+    // rejection, nothing written) as a truthy {success:false}. Do not turn
+    // that into a success receipt — refuse at this boundary.
+    if (!result.success) {
+      return {
+        success: false,
+        patternId: '',
+        controller: 'bridge-fallback',
+        error: result.error ?? 'pattern write was not persisted',
+      };
+    }
 
     // Add to HNSW index for fast semantic search (bridgeStoreEntry stores SQL only)
     if (result.rawEmbedding) {

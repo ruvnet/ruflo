@@ -173,7 +173,7 @@ export function catalogActions(state: State, host: Host, runner: Runner, load: (
       host.invalidate()
     },
     filter: text => {
-      catalog.filter = plain(text, 80)
+      catalog.filter = plain(text, Number.MAX_SAFE_INTEGER)
       catalog.page = 0
       host.invalidate()
     },

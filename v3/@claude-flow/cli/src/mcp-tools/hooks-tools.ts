@@ -3642,7 +3642,7 @@ export const hooksPatternStore: MCPTool = {
 
     // Fallback: persist using memory-initializer store
     let storeResult: { success: boolean; id?: string; embedding?: { dimensions: number; model: string }; error?: string } = { success: false };
-    if (!reasoningResult) {
+    if (!reasoningResult?.success) {
       const storeFn = await getRealStoreFunction();
       if (storeFn) {
         try {

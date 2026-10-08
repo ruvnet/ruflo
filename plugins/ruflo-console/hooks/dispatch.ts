@@ -8,6 +8,7 @@ import { CATALOG_PATH, commandsText, FALLBACK, parseCatalog, type Catalog } from
 import type { Controller } from './controller'
 import { plain } from './data/parse'
 import { loadEvolve } from './evolve'
+import { refreshWorkflows } from './wf-live'
 import { labAnswer } from './mh-lab'
 import { skillsAnswer } from './skills-lab'
 import { VIEWS, type State } from './state'
@@ -15,6 +16,9 @@ import { missionAnswer } from './mission-text'
 import { xruvAnswer } from './xruv'
 import { barText } from './views/bar'
 import { viewText } from './views/pane'
+import { autopilotCommand } from './views/ap-panel'
+import { hostOf } from './ap-live'
+import { watchCommand } from './watch-command'
 import { bandReply, noticesReply, quietReply, median, p95 } from './notices'
 
 /** The engine's words when a registered command reaches it with no hook answering (Claude Code 2.1.287). */
@@ -65,6 +69,7 @@ async function dumpOf(control: Controller, state: State, view: State['view']): P
     await Promise.race([control.probe(true), new Promise(resolve => setTimeout(resolve, DUMP_WAIT_MS))])
     // Self-Evolution draws from its own file read, which opening the view starts: a dump waits for it too.
     if (view === 'evolve') await loadEvolve(state, control.host)
+    if (view === 'workflows') await refreshWorkflows(state, control.host, true)
 
     return viewText({ state, nowMs: Date.now(), columns: 100, act: control.actions }, view)
   } finally {
@@ -183,8 +188,16 @@ export async function dispatch(control: Controller, state: State, args: string, 
       control.host.invalidate()
 
       return { text: quietReply(state, Date.now(), intent.arg) }
+    case 'autopilot': {
+      const apHost = hostOf(state)
+
+      return { text: apHost === undefined ? 'autopilot is not wired into this console yet' : await autopilotCommand(state, apHost, intent.arg) }
+    }
     case 'commands':
       return { text: commandsText(await loadCatalog(control), intent.query) }
+    case 'events':
+    case 'timeline':
+      return watchCommand(control, state, intent)
     case 'unknown':
       return { text: `Unknown: "${plain(intent.word, 30)}". /ruflo help lists the views (${VIEWS.map(view => view.id).join(', ')}) and commands.` }
   }

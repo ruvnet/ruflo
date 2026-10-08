@@ -113,7 +113,7 @@ const SKILL_NAME = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/
 const NEW_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/
 const OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/
 
-export const MAX_QUERY = 64
+export const MAX_QUERY = 512
 export const MAX_NAME = 64
 
 /** Text the person typed, trimmed, or null: empty, too long, a character outside [A-Za-z0-9@/._ -], or a leading -. */

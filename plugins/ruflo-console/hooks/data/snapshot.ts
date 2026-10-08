@@ -4,6 +4,7 @@
  * draw that as n/a, missing or too large, never as zero.
  */
 import { readAnatole, type AnatoleFacts } from './anatole'
+import { readRecall, type RecallFacts } from './recall'
 import {
   enabledOf,
   parseActivity,
@@ -85,13 +86,15 @@ export type Snapshot = {
   agentdbMod: AgentdbMod | null
   /** Project Anatole's reported files (ADR-453): unauthenticated, bounded, shape-checked. */
   anatole?: AnatoleFacts
+  /** What the intelligence hook recalls from and what the neural verbs act on (ADR-456): bounded reads, never a prompt the hook did not keep. */
+  recall?: RecallFacts
   /** Every `.claude-flow/<short>-mod/status.json` the per-plugin mods wrote (ADR-446), bounded and shape-checked. */
   mods: ModsFacts
   changed: number
   readAtMs: number
 }
 
-export type ReadStatus = 'ok' | 'missing' | 'too-large' | 'refused'
+export type ReadStatus = 'ok' | 'missing' | 'too-large' | 'refused' | 'not-regular'
 
 const statusOf = (read: Read): ReadStatus => (read.text !== null ? 'ok' : read.reason)
 
@@ -139,6 +142,7 @@ export async function readSnapshot(fs: ReaderFs, cache: ReadCache, cwd: string, 
     agentdbMod: parseAgentdbMod(text('agentdbMod')),
     mods: await readMods(fs, cache, cwd),
     anatole: await readAnatole(fs, cache, cwd),
+    recall: await readRecall(fs, cache, cwd),
     changed: disk.changed,
     readAtMs: nowMs,
   }

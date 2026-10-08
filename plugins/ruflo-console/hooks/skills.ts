@@ -57,6 +57,9 @@ async function listOnce(state: State, host: Host): Promise<void> {
 
 /** Reads both installed lists; a list already running is joined, unless `isFresh` asks for one that starts after it. */
 export function listSkills(state: State, host: Host, isFresh = false): Promise<void> {
+  // `npx skills ls` is a network fetch and a package download: Claude opening the page does not start it, only the person's own press does (#3815).
+  if (state.control.viaModel) return Promise.resolve()
+
   const held = listing.get(state)
 
   if (held !== undefined && !isFresh) return held

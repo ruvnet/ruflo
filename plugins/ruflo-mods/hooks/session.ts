@@ -6,6 +6,7 @@ import { HANDSHAKE_MARKER, ownedEvents } from './ownership'
 import type { ModOptions } from './options'
 import { MAX_BYTES, PROTECTOR_STATUS, protectorLine } from './protector'
 import { redraw, report, under, type ModState } from './state'
+import { bindToasts } from './toast'
 
 /** `/ruflo-mods` plus the protector row when `.claude-flow/protector-mod/status.json` is present and readable (bounded, regular file only). */
 async function reportWithProtector($: EngineInterface, s: ModState): Promise<string> {
@@ -39,7 +40,9 @@ export const HEARTBEAT_PATH = '.claude-flow/mods/session.json'
 async function helperHonours($: EngineInterface): Promise<boolean> {
   const root = await $.session.root().catch(() => undefined)
   const home = await $.env.get('HOME').catch(() => undefined)
-  for (const base of new Set([root, home])) {
+  // The generated Windows command falls back to %USERPROFILE%\.claude\helpers when the project has no copy.
+  const profile = await $.env.get('USERPROFILE').catch(() => undefined)
+  for (const base of new Set([root, home, profile])) {
     if (!base) continue
     const path = `${base}/${HELPER}`
     if (!(await $.fs.exists(path).catch(() => true))) continue
@@ -63,6 +66,14 @@ function hasClassicStatusLine(settings: unknown): boolean {
 export function registerSession(on: On, state: ModState, options: ModOptions, guidance?: GuidanceHooks) {
   on('session.start', async ($, e, next) => {
     state.root = await $.session.root()
+    bindToasts(state, {
+      now: () => $.clock.now(),
+      show: (line, options) => $.ui.toast(line, options),
+      after: (ms, fn) => $.clock.after(ms, fn),
+      read: path => $.fs.read(`${state.root}/${path}`),
+      write: (path, text) => $.fs.write(`${state.root}/${path}`, text),
+      exists: path => $.fs.exists(`${state.root}/${path}`),
+    })
     // A user-scoped install loads in every project. Existing Ruflo state is
     // the opt-in boundary: a missing, unreadable or non-directory path must
     // neither own project events nor be created by the display heartbeat.

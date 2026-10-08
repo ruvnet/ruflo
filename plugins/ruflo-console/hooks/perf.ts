@@ -47,6 +47,14 @@ export function sparkline(values: readonly number[], width = 32): string {
   return shown.map(value => BARS[span === 0 ? 3 : Math.round(((value - lo) / span) * (BARS.length - 1))] ?? '▁').join('')
 }
 
+/** Any value as one cleaned cell: numbers must be finite and sane (a hostile 1e300 is "n/a", not a display value), text goes through plain(). */
+function show(value: unknown, max = 24): string {
+  if (typeof value === 'number') return Number.isFinite(value) && Math.abs(value) <= 1e12 ? String(value) : 'n/a'
+  if (value === undefined || value === null) return 'n/a'
+
+  return plain(typeof value === 'string' ? value : typeof value === 'boolean' ? String(value) : '', max) || 'n/a'
+}
+
 const ms = (value: unknown, digits = 3): string => (typeof value === 'number' && Number.isFinite(value) ? `${value.toFixed(digits)}ms` : 'n/a')
 const mb = (bytes: unknown): string => (typeof bytes === 'number' && Number.isFinite(bytes) ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : 'n/a')
 
@@ -72,7 +80,7 @@ export const metricsReader: Reader = (stdout, stderr, state) => {
   return [
     `event-loop latency ${ms(avg)} · heap ${mb(memory.heapUsed)} of ${mb(memory.heapTotal)} · rss ${mb(memory.rss)}`,
     `system memory ${typeof memory.systemPercent === 'number' ? `${memory.systemPercent}%` : 'n/a'} · load ${load}`,
-    `embedding cache ~${String(cache.entries ?? 'n/a')} entries · HNSW ${String(cache.hnswEntries ?? 'n/a')} entries`,
+    `embedding cache ~${show(cache.entries)} entries · HNSW ${show(cache.hnswEntries)} entries`,
     'measured in the CLI process at the moment it ran: one sample per run',
   ]
 }
@@ -85,8 +93,8 @@ export const benchReader: Reader = (stdout, stderr) => {
   if (record === null || results === undefined) return textLines(stdout, stderr)
 
   return [
-    `suite ${plain(String(record.suite ?? 'n/a'), 12)} · ${String(record.iterations ?? 'n/a')} iterations · ${plain(String(record.totalTime ?? 'n/a'), 12)}`,
-    ...results.map(row => `${plain(String(row.operation ?? ''), 24).padEnd(24)} mean ${plain(String(row.mean ?? ''), 12)} · p95 ${plain(String(row.p95 ?? ''), 12)} · p99 ${plain(String(row.p99 ?? ''), 12)} · ${plain(String(row.improvement ?? ''), 24)}`),
+    `suite ${show(record.suite, 12)} · ${show(record.iterations)} iterations · ${show(record.totalTime, 12)}`,
+    ...results.map(row => `${show(row.operation, 24).padEnd(24)} mean ${show(row.mean, 12)} · p95 ${show(row.p95, 12)} · p99 ${show(row.p99, 12)} · ${show(row.improvement, 24)}`),
   ]
 }
 
@@ -111,7 +119,7 @@ export const reportReader: Reader = (stdout, stderr, state) => {
   memo.atMs = Date.now()
 
   return [
-    `cpu ${typeof cpu.usage === 'number' ? `${cpu.usage.toFixed(1)}%` : 'n/a'} of ${String(cpu.cores ?? 'n/a')} cores · memory ${String(memory.used ?? 'n/a')} of ${String(memory.total ?? 'n/a')} MB · heap ${String(memory.heap ?? 'n/a')} MB`,
+    `cpu ${typeof cpu.usage === 'number' ? `${cpu.usage.toFixed(1)}%` : 'n/a'} of ${show(cpu.cores)} cores · memory ${show(memory.used)} of ${show(memory.total)} MB · heap ${show(memory.heap)} MB`,
     `latency avg ${ms(latency.avg)} · p50 ${ms(latency.p50)} · p95 ${ms(latency.p95)} · p99 ${ms(latency.p99)}`,
     `history: ${history.length} stored sample${history.length === 1 ? '' : 's'} in .claude-flow/performance/metrics.json`,
     ...labLines('performance_report', JSON.stringify({ trends: result.trends, recommendations: result.recommendations })).slice(0, 12),

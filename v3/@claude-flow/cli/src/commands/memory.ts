@@ -11,6 +11,7 @@ import { distillCommand } from './memory-distill.js';
 import { backupCommand } from './memory-backup.js';
 import { countSiblingStoreRows } from '../memory/sibling-store.js';
 import { resolveDbPath } from '../memory/memory-initializer.js';
+import { MAX_LIST_EMBEDDINGS } from '../memory/embedding-q8.js';
 import { existsSync } from 'node:fs';
 import { siblingAgentDbPath } from '../memory/memory-bridge.js';
 import { validateIdentifier } from '../mcp-tools/validate-input.js';
@@ -828,17 +829,24 @@ const listCommand: Command = {
       type: 'number',
       default: 20
     },
+    {
+      name: 'embeddings',
+      description: `ADR-472: with --format json, add each entry's stored embedding as int8+scale (embeddingQ8: {dims, scale, b64}); read-only, at most ${MAX_LIST_EMBEDDINGS} entries per call`,
+      type: 'boolean',
+      default: false
+    },
     DB_PATH_OPTION
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const namespace = ctx.flags.namespace as string;
     const limit = ctx.flags.limit as number;
+    const includeEmbedding = ctx.flags.embeddings === true && ctx.flags.format === 'json';
 
     // Use sql.js directly for consistent data access
     try {
       const { listEntries, resolveDbPath: _rdbList } = await import('../memory/memory-initializer.js');
       const dbPathList = _rdbList(ctx.flags.path as string | undefined);
-      const listResult = await listEntries({ namespace, limit, offset: 0, dbPath: dbPathList });
+      const listResult = await listEntries({ namespace, limit, offset: 0, dbPath: dbPathList, ...(includeEmbedding && { includeEmbedding: true }) });
 
       if (!listResult.success) {
         output.printError(`Failed to list: ${listResult.error}`);

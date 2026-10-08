@@ -10,6 +10,7 @@ import { activeMission, progressOf } from './mission-control'
 import { alertsOf, approvalsOf } from './data/alerts'
 import { secMemo } from './secure'
 import type { State, ViewId } from './state'
+import { hasUnseen } from './whatsnew'
 import { money } from './views/bar'
 
 export { ACCENT, chip, LOUD, MUTED, PALETTE } from './menu-colors'
@@ -44,6 +45,7 @@ export function badgesOf(state: State, nowMs: number): Partial<Record<ViewId, Ba
   if (findings !== null && serious > 0) out.secure = { text: `🔒 ${serious}`, tone: findings.counts.critical > 0 ? 'attention' : 'plain' }
   if (state.usage?.costUsd !== undefined && state.usage.costUsd >= 0.01) out.cost = { text: money(state.usage.costUsd), tone: 'plain' }
   if (state.terminal.runs.size > 0) out.terminal = { text: '●', tone: 'plain' }
+  if (hasUnseen(state)) out.whatsnew = { text: 'new', tone: 'attention' }
   if (state.updateAvailable !== '') out.settings = { text: `⬆ ${state.updateAvailable}`, tone: 'attention' }
 
   return out

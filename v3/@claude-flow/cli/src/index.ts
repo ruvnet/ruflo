@@ -22,6 +22,7 @@ import { OutputFormatter, output } from './output.js';
 import { commands, commandsByCategory, getCommandsByCategory, commandRegistry, getCommand, getCommandAsync, getCommandNames, getLazyCommandNames, hasCommand } from './commands/index.js';
 import { suggestCommand } from './suggest.js';
 import { runStartupUpdateCheck } from './update/index.js';
+import { ensureBlockingStdio } from './blocking-stdio.js';
 
 // Read version from package.json at runtime
 function getPackageVersion(): string {
@@ -82,6 +83,8 @@ export class CLI {
    * Run the CLI with given arguments
    */
   async run(args: string[] = process.argv.slice(2)): Promise<void> {
+    // #3851: keep piped output intact across the process.exit() calls below
+    ensureBlockingStdio();
     try {
       // #1791.2 — If the user invoked a lazy command (e.g. `hive-mind task`),
       // pre-load it BEFORE parsing so the parser can build scoped flag

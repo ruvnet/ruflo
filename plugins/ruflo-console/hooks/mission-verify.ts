@@ -161,5 +161,5 @@ export const GATES_ROW = {
   maxLength: MAX_GATES * (MAX_GATE_CHARS + 1),
   current: (p: { loopGates?: string }): string => p.loopGates ?? '',
   isChanged: (p: { loopGates?: string }): boolean => (p.loopGates ?? '') !== '',
-  patch: (value: string): { loopGates: string } => ({ loopGates: value.replace(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/g, ' ').slice(0, MAX_GATES * (MAX_GATE_CHARS + 1)).trim() }),
+  patch: (value: string): { loopGates: string } => ({ loopGates: value.replace(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/g, ' ').trim() }),
 } as const

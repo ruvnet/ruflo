@@ -11,9 +11,9 @@ step() { printf "→ %s ... " "$1"; }
 ok()   { printf "PASS\n"; PASS=$((PASS+1)); }
 bad()  { printf "FAIL: %s\n" "$1"; FAIL=$((FAIL+1)); }
 
-step "1. plugin.json declares ruflo-console 0.33.23"
+step "1. plugin.json declares ruflo-console 0.40.1"
 grep -q '"name": "ruflo-console"' "$ROOT/.claude-plugin/plugin.json" \
-  && grep -q '"version": "0.33.23"' "$ROOT/.claude-plugin/plugin.json" && ok || bad "name/version"
+  && grep -q '"version": "0.40.1"' "$ROOT/.claude-plugin/plugin.json" && ok || bad "name/version"
 
 step "2. hooks.json names exactly one module and no classic hook commands"
 grep -q '"modules": \["./register.ts"\]' "$HOOKS/hooks.json" && ! grep -q '"command"' "$HOOKS/hooks.json" \
@@ -27,15 +27,16 @@ step "4. no import reaches outside the plugin folder"
 deep=$(grep -rnE "from ['\"](\.\./){3,}" "$HOOKS" || true)
 [[ -z "$deep" ]] && ok || bad "$deep"
 
-step "5. the module's one network call is the update check's GET (\$.http in register.ts fetchText, used by update-flow.ts alone), and \$ is touched in register.ts only"
+step "5. the module's network calls are two: the update check's GET (\$.http in register.ts fetchText, used by update-flow.ts alone) and the conversation bridge's send (ADR-465: host.httpSend, used by data/wf-send.ts and wf-convo-live.ts alone, behind a confirm card), and \$ is touched in register.ts only"
 # Code lines only: comments may name the calls they explain.
 http=$(grep -rnE '\$\.http\.' "$HOOKS" | grep -vE '^[^:]+:[0-9]+:\s*(\*|//|/\*)' || true)
 # Exactly one is allowed (ADR-429): it goes through the engine, so an administrator's policy can refuse it, and nothing but update-flow.ts calls fetchText.
-extra=$(printf '%s\n' "$http" | grep . | grep -vE '/register\.ts:[0-9]+: *const response = await \$\.http\.fetch\(url\)$' || true)
+extra=$(printf '%s\n' "$http" | grep . | grep -vE '/register\.ts:[0-9]+: *const response = await \$\.http\.fetch\(url(, init)?\)$' || true)
 count=$(printf '%s\n' "$http" | grep -c . || true)
+sends=$(grep -rlE '\bhttpSend\b' "$HOOKS" | grep -vE '/(host|register|data/wf-send|wf-convo-live)\.ts$' || true)
 users=$(grep -rlE '\bfetchText\b' "$HOOKS" | grep -vE '/(host|register|update-flow)\.ts$' || true)
 outside=$(grep -rnE '\$\.(fs|process|ui|clock|store|env|ruflo|tool|session|settings|command)\.' "$HOOKS" | grep -vE '^[^:]+:[0-9]+:\s*(\*|//|/\*)' | grep -v '/register.ts:' || true)
-[[ -z "$extra" && "$count" == "1" && -z "$users" && -z "$outside" ]] && ok || bad "http: $http fetchText used by: $users outside: $outside"
+[[ -z "$extra" && "$count" == "2" && -z "$users" && -z "$sends" && -z "$outside" ]] && ok || bad "http: $http fetchText used by: $users httpSend used by: $sends outside: $outside"
 
 step "6. never runs plugins list or verify (network); roster, registry, claims and sync are the network probes, all behind the federationNetwork option"
 cmds=$(grep -nE "args: \['(plugins|verify)'" "$HOOKS/data/cli.ts" || true)
@@ -105,6 +106,19 @@ if [[ -x "$ROOT/scripts/e2e-smoke.sh" ]] && bash "$ROOT/scripts/e2e-smoke.sh" 2>
 
 step "16. every view has a matrix entry and an ask entry"
 if [[ "$(grep -c "{ id: '[a-z]*', key: '[0-9a-z]*'" "$ROOT/hooks/state.ts")" -eq "$(grep -cE "^  [a-z]+: \{ default:" "$ROOT/hooks/ask-claude.ts" | awk '{print $1 - 1}')" ]]; then ok; else bad "VIEW_ASK does not cover VIEWS"; fi
+
+step "17. the toast policy copy is byte-identical to the canonical one (ADR-477)"
+if [[ ! -f "$ROOT/../ruflo-mods/hooks/toast/policy.ts" ]]; then printf "SKIP (ruflo-mods is not beside this plugin)\n"
+elif cmp -s "$ROOT/../ruflo-mods/hooks/toast/policy.ts" "$HOOKS/toast-policy.ts"; then ok
+else bad "differs from ruflo-mods/hooks/toast/policy.ts: node scripts/sync-toast-policy.mjs"; fi
+
+step "18. CHANGELOG.md has an entry for the manifest version, and the What's new page makes no request of its own (ADR-478)"
+version=$(sed -n 's/^  "version": "\([0-9.]*\)".*/\1/p' "$ROOT/.claude-plugin/plugin.json" | head -1)
+if grep -qE "^## ${version//./\\.} [—–-] [0-9]{4}-[0-9]{2}-[0-9]{2}\s*$" "$ROOT/CHANGELOG.md" 2>/dev/null \
+  && ! grep -qE "fetchText|httpSend|\\.run\(|spawn" "$HOOKS/whatsnew.ts" "$HOOKS/views/whatsnew.ts" "$HOOKS/data/changelog.ts"; then ok; else bad "CHANGELOG.md lacks ## $version, or whatsnew code reaches the network"; fi
+
+step "19. the ADR code reads and writes only the project's files: no network, no shell, no ruflo-repo path (ADR-480)"
+if ! grep -qE "fetchText|httpSend|spawn\(|v3/docs/adr|check-adr-links|\bsh -c|bash -c" "$HOOKS/adr.ts" "$HOOKS/adr-palette.ts" "$HOOKS/views/adr.ts" "$HOOKS/data/adr.ts" "$HOOKS/data/adr-write.ts" "$HOOKS/data/adr-scope.ts"; then ok; else bad "an ADR module reaches the network, a shell or a ruflo path"; fi
 
 printf "\n%d passed, %d failed\n" "$PASS" "$FAIL"
 [[ $FAIL -eq 0 ]]

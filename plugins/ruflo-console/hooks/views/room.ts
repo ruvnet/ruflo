@@ -1,5 +1,7 @@
+import { fullRows } from './full-rows'
 import type { RenderElement } from 'claude-code'
 
+import { isoOf } from '../data/safe'
 import { isBlocked, pendingBanner, roomFeed, SAY_IDS, SAY_LABEL, VIEW_OF_KIND, type RoomItem, type RoomSource } from '../data/room'
 import { PENDING_TTL_MS } from '../runner'
 import { ROOM_PAGE, roomOf } from '../room'
@@ -63,9 +65,10 @@ export function roomView(ctx: Ctx): RenderElement {
 
   const Input = ctx.kit.Input
 
-  rows.push(row(ctx, [...(Input === undefined ? [] : [ctx.kit.Box({ key: 'room-say-box', borderStyle: 'round', borderColor: THEME.info, paddingX: 1, children: [Input({ key: 'room-say', label: '💬', placeholder: room.draft === '' ? 'a message for the hive or for Claude (Enter keeps it)' : room.draft, submitLabel: 'keep', onSubmit: (value: string) => ctx.act.room.draft(value) })] })])], 'room-say-row'))
+  rows.push(row(ctx, [...(Input === undefined ? [] : [ctx.kit.Box({ key: 'room-say-box', borderStyle: 'round', borderColor: THEME.info, paddingX: 1, children: [Input({ key: 'room-say', label: '💬', placeholder: room.draft === '' ? 'a message for the hive or for Claude (Enter keeps it)' : 'a draft is kept below — type to replace it (Enter keeps it)', submitLabel: 'keep', onSubmit: (value: string) => ctx.act.room.draft(value) })] })])], 'room-say-row'))
   // Nothing to send yet: no buttons that would do nothing, just the way to get one.
-  rows.push(row(ctx, room.draft === '' ? [text(ctx, ' type a message above and press Enter; then choose where it goes', { dimColor: true })] : [text(ctx, ` "${clip(room.draft, Math.max(16, ctx.columns - 36))}" →`, { dimColor: true }), ...SAY_IDS.map(id => button(ctx, `room-send-${id}`, SAY_LABEL[id], () => ctx.act.room.say(id)))], 'room-send-row'))
+  if (room.draft === '') rows.push(row(ctx, [text(ctx, ' type a message above and press Enter; then choose where it goes', { dimColor: true })], 'room-send-row'))
+  else rows.push(...fullRows(ctx, ' draft: ', room.draft, { key: 'room-draft' }), row(ctx, [text(ctx, ' send it →', { dimColor: true }), ...SAY_IDS.map(id => button(ctx, `room-send-${id}`, SAY_LABEL[id], () => ctx.act.room.say(id)))], 'room-send-row'))
 
   rows.push(rule(ctx, 'The feed', `${shown.length} shown${room.pausedAtMs === null ? '' : ' · paused'}${room.query === '' ? '' : ` · "${room.query}"`}`))
   rows.push(
@@ -103,7 +106,7 @@ export function roomView(ctx: Ctx): RenderElement {
       const target = item.kind === undefined ? undefined : VIEW_OF_KIND[item.kind]
       const view = target === undefined ? undefined : VIEWS.find(entry => entry.id === target)
 
-      rows.push(text(ctx, `     ${item.text}  ·  ${new Date(item.atMs).toISOString()}`, { dimColor: true }))
+      rows.push(text(ctx, `     ${item.text}  ·  ${isoOf(item.atMs)}`, { dimColor: true }))
       rows.push(row(ctx, [text(ctx, `     ${item.source === 'event' ? `event: ${item.kind ?? 'unknown'}` : item.source === 'claude' ? 'a console action by Claude' : 'what you said'}${isBlocked(item) ? ' · refused or failed' : ''}`, { dimColor: true }), ...(view === undefined ? [] : [button(ctx, `room-jump-${item.id}`, `jump to ${view.label}`, () => ctx.act.view(view.id as ViewId))])], `room-detail-${item.id}`))
     }
   }

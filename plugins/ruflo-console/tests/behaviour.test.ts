@@ -227,7 +227,7 @@ describe('behaviour', () => {
 
     const swarm = textOf(await $.ui.render(paneAt(110)))
 
-    expect(swarm).toContain('c1 EVIL')  // the whole colour sequence is gone, not just its ESC byte
+    expect(swarm).toContain('c1EVIL')  // the whole colour sequence, the bidi override and the NUL are removed outright (not spaced), so no credential can hide behind an invisible split
     expect(swarm).not.toContain('[31m')
     expect(swarm).not.toMatch(/[\u0000-\u001f‪-‮](?<!\n)/)
     await $.command.run(command('claims'))

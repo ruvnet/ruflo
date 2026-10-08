@@ -1,4 +1,6 @@
 import type { PluginOptions, Timer } from 'claude-code'
+import { guardOptionsOf, type GuardOptions } from './data/wf-alerts'
+import { convoOptionsOf, type ConvoOptions } from './data/wf-targets'
 
 import { emptyAuto, type AutoState } from './data/automate'
 import type { ProbeResult } from './data/cli'
@@ -8,11 +10,14 @@ import type { ReadCache } from './data/files'
 import { emptyEvolve, type EvolveState } from './data/evolve'
 import { emptySkills, type SkillsState } from './data/skills'
 import type { UpdatesMode } from './updates'
+import type { Digest, ToastPrefs } from './toast-policy'
+import { newWhatsNew, type WhatsNewState } from './whatsnew'
 import { emptyMemoryLab, type MemoryLabState } from './memory-lab'
 import { emptyVector, type VectorState } from './data/vector'
 import type { Snapshot } from './data/snapshot'
 import type { RufloRoute, RufloSnapshot } from '../types'
 import type { Notice } from './notices'
+import { emptyWf, type WfState } from './wf-state'
 
 export const PLUGIN_NAME = 'ruflo-console'
 export const PANE_ID = 'ruflo-console'
@@ -22,7 +27,7 @@ export type NavStyle = 'auto' | 'icons' | 'brief' | 'full'
 export const NAV_STYLES: readonly NavStyle[] = ['auto', 'icons', 'brief', 'full']
 export const NAV_KEY = 'nav-style'
 
-export type ViewId = 'menu' | 'overview' | 'swarm' | 'hive' | 'claims' | 'federation' | 'plugins' | 'learning' | 'metaharness' | 'memory' | 'cost' | 'timeline' | 'approvals' | 'events' | 'room' | 'missions' | 'xruv' | 'terminal' | 'skills' | 'agent' | 'secure' | 'perf' | 'automate' | 'neural' | 'vector' | 'evolve' | 'devtools' | 'sandbox' | 'market' | 'settings'
+export type ViewId = 'menu' | 'overview' | 'swarm' | 'workflows' | 'hive' | 'claims' | 'federation' | 'plugins' | 'learning' | 'metaharness' | 'memory' | 'cost' | 'timeline' | 'approvals' | 'events' | 'room' | 'missions' | 'xruv' | 'terminal' | 'skills' | 'agent' | 'secure' | 'perf' | 'automate' | 'neural' | 'vector' | 'evolve' | 'devtools' | 'sandbox' | 'market' | 'settings' | 'whatsnew' | 'adrs'
 
 /**
  * The views in tab order, each with its hotkey and the inline height it asks for. Digits are the first nine; the three
@@ -42,6 +47,7 @@ export const VIEWS: readonly { id: ViewId; key: string; label: string; short: st
   { id: 'swarm', key: '3', label: 'Swarm', short: 'Swm', icon: '🐝', blurb: 'the swarm as ruflo wrote it: topology, agents at work, and the hive-mind votes', rows: 30 },
   { id: 'hive', key: 'b', label: 'Hive-Mind', short: 'Hiv', icon: '👑', blurb: 'the queen, her workers and their votes: quorum, fault tolerance, proposals and broadcasts', rows: 40 },
   { id: 'claims', key: '4', label: 'Claims', short: 'Clm', icon: '📌', blurb: 'who holds which task: claim, release, hand off or steal, each after a y/n confirm', rows: 30 },
+  { id: 'workflows', key: '', label: 'Workflows', short: 'Wfl', icon: '🔀', blurb: 'Claude Code workflow runs and the ruflo swarm side by side: phases, agents, tokens, and what each is doing', rows: 34 },
   { id: 'federation', key: '5', label: 'Federation', short: 'Fed', icon: '🌐', blurb: 'this node, its peers, keys and channels, placed by how far each is trusted', rows: 26 },
   { id: 'plugins', key: '6', label: 'Plugins', short: 'Plg', icon: '🧩', blurb: 'ruflo plugins: installed, enabled, in the marketplace clone, and loaded as mods', rows: 30 },
   { id: 'learning', key: '7', label: 'Learning', short: 'Lrn', icon: '🧠', blurb: 'router picks and outcomes, and the RETRIEVE → JUDGE → DISTILL → CONSOLIDATE pipeline', rows: 30 },
@@ -64,6 +70,8 @@ export const VIEWS: readonly { id: ViewId; key: string; label: string; short: st
   { id: 'devtools', key: 'd', label: 'Dev Tools', short: 'Dev', icon: '🔧', blurb: 'the integration surface: GitHub, diff analysis, agenticow, WASM, browser, terminal, providers, maintenance', rows: 40 },
   { id: 'sandbox', key: '', label: 'Sandbox', short: 'Sbx', icon: '🧫', blurb: 'isolated places to try things: tmux sessions, RVF copy-on-write branches, RVM', rows: 40 },
   { id: 'market', key: 'm', label: 'Plugin Catalog', short: 'Cat', icon: '📦', blurb: 'every ruflo plugin, mod and skill: what it ships, install, enable, disable, update, view and use', rows: 50 },
+  { id: 'adrs', key: '', label: 'ADRs', short: 'ADR', icon: '📐', blurb: 'your project’s Architecture Decision Records: find, propose, accept and supersede them, attach them to a mission so Claude and the swarm follow what was decided', rows: 44 },
+  { id: 'whatsnew', key: '', label: 'What’s new', short: 'New', icon: '🆕', blurb: 'what changed in your ruflo plugins, newest first: from each plugin’s own CHANGELOG, breaking changes pinned until you dismiss them', rows: 40 },
   { id: 'settings', key: 's', label: 'Settings', short: 'Set', icon: '⚙️', blurb: 'simple to advanced settings: plugin options, ruflo config, updates, and the AI terminal’s model and budget, each edited in place', rows: 50 },
 ]
 
@@ -94,7 +102,7 @@ export const CLI_PREFIXES = {
 
 export type CliChoice = keyof typeof CLI_PREFIXES
 
-export type Options = {
+export type Options = GuardOptions & ConvoOptions & {
   cli: CliChoice
   /** How often the disk is re-read while the pane or band shows (seconds, 2-60). */
   refreshSeconds: number
@@ -110,6 +118,8 @@ export type Options = {
   look: 'bbs' | 'plain'
   /** With the bbs look, a short dial-up boot screen when the cockpit opens. */
   boot: boolean
+  /** ADR-474: keep the Events and Timeline history in `.claude-flow/console/` (events.jsonl, lanes.jsonl). On by default; masked text only. */
+  eventsPersist: boolean
 }
 
 const num = (value: unknown, fallback: number, lo: number, hi: number): number => {
@@ -123,7 +133,7 @@ export function optionsOf(raw: PluginOptions | undefined): Options {
   const value = (raw ?? {}) as Record<string, unknown>
 
   return {
-    cli: typeof value.cli === 'string' && value.cli in CLI_PREFIXES ? (value.cli as CliChoice) : 'npx-offline',
+    cli: typeof value.cli === 'string' && Object.hasOwn(CLI_PREFIXES, value.cli) ? (value.cli as CliChoice) : 'npx-offline',
     refreshSeconds: num(value.refreshSeconds, 3, 2, 60),
     fps: num(value.fps, 8, 0, 12),
     bar: value.bar === 'on' || value.bar === 'off' ? value.bar : 'auto',
@@ -131,6 +141,9 @@ export function optionsOf(raw: PluginOptions | undefined): Options {
     federationNetwork: value.federationNetwork === true,
     look: value.look === 'plain' ? 'plain' : 'bbs',
     boot: value.boot !== false,
+    eventsPersist: value.eventsPersist !== false && value.eventsPersist !== 'false',
+    ...guardOptionsOf(raw),
+    ...convoOptionsOf(raw),
   }
 }
 
@@ -219,6 +232,12 @@ export type State = {
   nav: NavStyle
   /** Whether to check for a newer published ruflo-console: ask first (the default), update without asking, or never check. Kept in the plugin's store. */
   updates: UpdatesMode
+  /** The Toasts setting (ADR-477): which levels draw and which sources are muted. Kept in the plugin's store and mirrored to a file the other plugins read. */
+  toastPrefs: ToastPrefs
+  /** The console's own toasts, drawn or not, until the Events pass takes them in (bounded). */
+  toastLog: Digest[]
+  /** What's new (ADR-478): the record of what was looked at, the changelogs read when the page opens. */
+  whatsnew: WhatsNewState
   /** What the last update check found, in a line, for Settings; empty until one has run. */
   updateNote: string
   /** A published version the person has not taken ("Not now"), shown on the band as a link to Settings; empty when there is none. */
@@ -304,6 +323,8 @@ export type State = {
   devtools: { fields: DevFields; /** Whether tmux is on this machine, from a probe when the Sandbox page opens. */ tmux: 'unknown' | 'present' | 'missing' }
   timers: Map<string, Timer>
   stats: { renders: number[]; refreshes: number[]; frames: number[] }
+  /** The Workflows page: the last read of Claude Code's run folders, the cursor, the inspector tab (wf-state.ts). */
+  wf: WfState
   /** Claude's control of the console (ADR-444): paused by the person, the call counts, and the log the dashboard shows. */
   control: { paused: boolean; calls: number; turnCalls: number; /** Model-driven actions this session, by class (ADR-450 T8 budget). */ used: Record<string, number>; log: ControlEntry[]; /** Until when Claude counts as driving (a tool call extends it): the console does not spend a second Claude turn on guidance meanwhile. */ drivingUntilMs: number; /** True while one of Claude's tool calls is running: a person's "always allow" answer must not let Claude's call skip the level and confirm checks (ADR-444). */ viaModel: boolean }
 }
@@ -341,6 +362,9 @@ export function newState(raw: PluginOptions | undefined): State {
     dockColumns: 0,
     nav: 'auto',
     updates: 'ask',
+    toastPrefs: { mode: 'all', muted: [] },
+    toastLog: [],
+    whatsnew: newWhatsNew(),
     updateNote: '',
     updateAvailable: '',
     navPick: null,
@@ -379,6 +403,7 @@ export function newState(raw: PluginOptions | undefined): State {
     devtools: { fields: emptyFields(), tmux: 'unknown' },
     timers: new Map(),
     stats: { renders: [], refreshes: [], frames: [] },
+    wf: emptyWf(),
     control: { paused: false, calls: 0, turnCalls: 0, used: {}, log: [], drivingUntilMs: 0, viaModel: false },
   }
 }

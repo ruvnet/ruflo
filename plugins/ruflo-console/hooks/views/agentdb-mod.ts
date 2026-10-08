@@ -15,7 +15,15 @@ export function agentdbModRows(ctx: Ctx): RenderElement[] {
   const snap = ctx.state.snapshot
   const mod = snap?.agentdbMod ?? null
   const installed = snap?.plugins.installed?.find(plugin => plugin.name === PLUGIN)
-  const rows: RenderElement[] = [rule(ctx, 'AgentDB mod', mod === null ? (installed === undefined ? 'not installed' : 'no session yet') : mod.recall ? 'recall on' : 'recall off')]
+  // A status file that is a link or not a regular file is refused, and the section says so rather than "no session yet" (#3817).
+  const refused = mod === null && snap !== null && snap !== undefined && (snap.reads.agentdbMod === 'not-regular' || snap.reads.agentdbMod === 'refused')
+  const rows: RenderElement[] = [rule(ctx, 'AgentDB mod', mod === null ? (refused ? 'status file refused' : installed === undefined ? 'not installed' : 'no session yet') : mod.recall ? 'recall on' : 'recall off')]
+
+  if (refused) {
+    rows.push(text(ctx, ' The mod status file (.claude-flow/agentdb-mod/status.json) is a link or not a regular file, or could not be read: it is not shown. Replace it with a plain file.', { dimColor: true }))
+
+    return rows
+  }
 
   if (mod === null) {
     rows.push(

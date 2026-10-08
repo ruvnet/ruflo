@@ -1615,6 +1615,7 @@ data/
 logs/
 sessions/
 neural/
+console/
 *.log
 *.tmp
 `;

@@ -1,4 +1,5 @@
 import { jsonObject, plain, recordOf } from './parse'
+import { countOf } from './safe'
 
 /** What the ruflo-agentdb mod last wrote to `.claude-flow/agentdb-mod/status.json` (ADR-445): its settings, counters and the last items it attached. */
 export type AgentdbMod = {
@@ -18,7 +19,7 @@ export type AgentdbMod = {
   recent: { source: string; score: number | null; snippet: string }[]
 }
 
-const whole = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0)
+const whole = (v: unknown): number => countOf(v) ?? 0
 
 /** Parses the status file; anything that is not version 1 of its shape is null (the console never guesses at a shape it does not know). */
 export function parseAgentdbMod(text: string | null): AgentdbMod | null {

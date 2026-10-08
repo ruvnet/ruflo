@@ -60,7 +60,7 @@ describe('argv and validation', () => {
     expect(findArgv('--owner x')).toBeNull()
     expect(findArgv('react; rm -rf ~')).toBeNull()
     expect(findArgv('$(whoami)')).toBeNull()
-    expect(findArgv('a'.repeat(65))).toBeNull()
+    expect(findArgv('a'.repeat(513))).toBeNull()
     expect(findArgv('owner:-x react')).toBeNull()
     expect(findArgv('owner:a owner:b react')).toBeNull()
     expect(findArgv('owner:vercel-labs')).toBeNull()

@@ -93,6 +93,14 @@ export function missionPart(state: State): BarPart | null {
   return { text: `🎯 ${done}/${total}${mission.paused ? ' paused' : running !== undefined ? ` · ${running.id} ${clip(running.title, 28)}` : ''} (1)`, tone: running !== undefined ? 'live' : 'plain', go: 'missions' }
 }
 
+/**
+ * A module's own band parts (the autopilot's segment, views/ap-band.ts): registered once at import, drawn on the first row after the
+ * mission. A source returns nothing when it has nothing to say, and one that throws is skipped, so it can never blank the band.
+ */
+const sources: ((state: State, nowMs: number) => BarPart[])[] = []
+
+export const registerBarSource = (source: (state: State, nowMs: number) => BarPart[]): void => void (sources.includes(source) || sources.push(source))
+
 export function barParts(state: State, nowMs: number = Date.now()): BarPart[] {
   const snap = state.snapshot
   const parts: BarPart[] = []
@@ -108,6 +116,14 @@ export function barParts(state: State, nowMs: number = Date.now()): BarPart[] {
   const missing = missionPart(state)
 
   if (missing !== null) parts.push(missing)
+
+  for (const source of sources) {
+    try {
+      parts.push(...source(state, nowMs))
+    } catch {
+      // A source that fails draws nothing.
+    }
+  }
 
   // What is happening now: how long Claude has been on this turn, agents at work, the AI terminal's runs, and the newest event while it is fresh.
   if (state.turnActive && state.turnStartedMs !== null) parts.push({ text: `▶ Claude working${since(state.turnStartedMs, nowMs)}`, tone: 'live', go: 'events' })

@@ -8,6 +8,10 @@ import type { OptimizerActions } from '../optimizer'
 import { askedBy } from '../data/room'
 import type { RoomActions } from '../room'
 import type { WatchActions } from '../watch'
+import type { WhatsNewActions } from '../whatsnew'
+import type { AdrActions } from '../adr-actions'
+import type { EventsActions } from '../events-ui'
+import type { TimelineActions } from '../timeline-ui'
 import type { Attention } from './attention'
 import { HEADS, mark as marked } from './marks'
 import type { LoopActions } from '../loops'
@@ -29,9 +33,11 @@ import { START_LABEL, type StartId } from '../starts'
 import type { MoreSkillActions } from '../skills-lab'
 import { VIEWS, type HarnessId, type NavStyle, type State, type ViewId } from '../state'
 import type { UpdatesMode } from '../updates'
+import type { ToastMode } from '../toast-policy'
 import { chip, COST_CHIP } from '../menu-colors'
 import { accentOfView } from '../nav-state'
 import type { VectorActions } from '../vector'
+import type { WorkflowsActions } from '../wf-actions'
 
 export type Kit = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'> & { Raster?: Elements['terminal']['Raster']; Input?: Elements['terminal']['Input'] }
 
@@ -90,6 +96,10 @@ export type Actions = {
   optimizer: OptimizerActions
   /** The Timeline and Events pages: look-back range, kind filter, search, pause, paging, an event's detail, and asking about one. */
   watch: WatchActions
+  /** The Events page (ADR-474): query, level, window, follow, mutes, pins, saved searches, alert rules, export. */
+  events: EventsActions
+  /** The Timeline page (ADR-474): window, zoom, pan, lane groups, sort, lane detail, cross-links, export. */
+  timeline: TimelineActions
   /** The Room (ADR-448): the draft, what to send through, the feed's source filter, search, pause and paging. */
   room: RoomActions
   /** Ask Claude about this section (a visible prompt or a /btw aside) or run the plugin command that fits it: each asks first. */
@@ -118,8 +128,16 @@ export type Actions = {
   updates: (mode: UpdatesMode) => void
   /** Checks now, whatever the daily gate or an off setting says (it still asks before installing, and skips a development checkout). */
   checkUpdates: () => void
+  /** The Toasts setting (ADR-477): which levels draw (all, important, off), and muting or unmuting one source's toasts (saved; every toast is still recorded). */
+  toasts: { mode: (mode: ToastMode) => void; mute: (source: string) => void }
+  /** What's new (ADR-478): dismiss a pinned breaking change (or all of them), toggle the toast for a new version. */
+  whatsnew: WhatsNewActions
+  /** ADR-480: the ADRs page: filter, select, initialise, propose, change a status, attach to a mission, check scope. */
+  adrs: AdrActions
   /** Opens or closes a collapsible section (`<view>/<id>`). */
   toggle: (key: string) => void
+  /** The Workflows page: cursor keys, the inspector's tab, the confirm-gated ruflo agent verbs, and naming a transcript's path. */
+  workflows: WorkflowsActions
   /** Settings: the level, a plugin, an option or ruflo config change (each asks first), AI preferences, and ▸ ask claude/codex. */
   settings: SettingsActions
 }
@@ -202,14 +220,16 @@ export function ago(atMs: number | null | undefined, nowMs: number): string {
 
 /** A count as people read it (12.3k), or n/a for a value nobody measured. */
 export function count(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return 'n/a'
+  // A count is whole and not negative; a hostile 1e300 is "1T+", never a display value (#3817).
+  if (value === null || value === undefined || !Number.isFinite(value) || value < 0) return 'n/a'
+  if (value >= 1e12) return '1T+'
   if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
   if (Math.abs(value) >= 10_000) return `${(value / 1000).toFixed(1)}k`
 
   return String(Math.round(value * 100) / 100)
 }
 
-export const pct = (value: number | null | undefined): string => (value === null || value === undefined || !Number.isFinite(value) ? 'n/a' : `${Math.round(value * 100)}%`)
+export const pct = (value: number | null | undefined): string => (value === null || value === undefined || !Number.isFinite(value) ? 'n/a' : `${Math.round(Math.min(1, Math.max(0, value)) * 100)}%`)
 
 export function text(ctx: Ctx, children: string, props: { color?: string; bold?: boolean; dimColor?: boolean; italic?: boolean } = {}): RenderElement {
   return ctx.kit.Text({ wrap: 'truncate-end', ...props, children: clip(children, Math.max(4, ctx.columns)) })
@@ -261,18 +281,22 @@ export function section(ctx: Ctx, id: string, title: string, right: string, chil
 export function rule(ctx: Ctx, title: string, right = ''): RenderElement {
   if (look === 'bbs') {
     // BBS section header: ▓▒░ SWARM ░▒▓══════════ right
-    const head = `▓▒░ ${title.toUpperCase()} ░▒▓`
-    const fill = Math.max(1, ctx.columns - head.length - right.length - 2)
+    const head = `▓▒░ ${clip(title, Math.max(4, ctx.columns - 12)).toUpperCase()} ░▒▓`
+    const room = Math.max(0, ctx.columns - head.length - 3)
+    const tail = clip(right, room)
+    const fill = Math.max(1, ctx.columns - head.length - tail.length - 2)
 
-    const line = row(ctx, [ctx.kit.Text({ bold: true, color: accentOf(ctx), children: head }), ctx.kit.Text({ color: accentOf(ctx), dimColor: true, children: `${'═'.repeat(fill)} ` }), ctx.kit.Text({ color: accentOf(ctx), children: right })])
+    const line = row(ctx, [ctx.kit.Text({ bold: true, color: accentOf(ctx), wrap: 'truncate-end', children: head }), ctx.kit.Text({ color: accentOf(ctx), dimColor: true, children: `${'═'.repeat(fill)} ` }), ctx.kit.Text({ color: accentOf(ctx), wrap: 'truncate-end', children: tail })])
 
     // In a card the header is the card's first row; otherwise a blank line above each section, so the board breathes instead of packing every block together.
     return ctx.cards === true ? marked(HEADS, line) : marked(HEADS, col(ctx, [ctx.kit.Text({ children: ' ' }), line]))
   }
 
-  const fill = Math.max(1, ctx.columns - title.length - right.length - 3)
+  const name = clip(title, Math.max(4, ctx.columns - 4))
+  const tail = clip(right, Math.max(0, ctx.columns - name.length - 4))
+  const fill = Math.max(1, ctx.columns - name.length - tail.length - 3)
 
-  return marked(HEADS, row(ctx, [ctx.kit.Text({ bold: true, color: THEME.head, children: title }), ctx.kit.Text({ dimColor: true, children: ` ${'─'.repeat(fill)} ` }), ctx.kit.Text({ dimColor: true, children: right })]))
+  return marked(HEADS, row(ctx, [ctx.kit.Text({ bold: true, color: THEME.head, wrap: 'truncate-end', children: name }), ctx.kit.Text({ dimColor: true, children: ` ${'─'.repeat(fill)} ` }), ctx.kit.Text({ dimColor: true, wrap: 'truncate-end', children: tail })]))
 }
 
 /** A label and its value; the value dims when it is n/a. */

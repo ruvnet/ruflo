@@ -6,6 +6,7 @@
  * panel (`spec.lab`), each verb with its own reader; what a reader learns beyond lines (the severity counts, the doctor's
  * checks, the text in the field) is kept per State in this module. Pure: entries, validators and parsers, no `$`.
  */
+import { ARGV_TEXT_MAX, countOf } from './full-text'
 import { exec, type ActionSpec } from './actions'
 import { jsonAfter } from './data/cli'
 import { plain, recordOf } from './data/parse'
@@ -63,11 +64,12 @@ const levelOf = (value: unknown): Severity | null => {
   return word === 'critical' || word === 'high' || word === 'medium' || word === 'low' ? word : word === 'med' ? 'medium' : null
 }
 
-/** The field's text as one argv value: 1-2000 printable characters, not starting with `-` (the CLI would read a flag). */
+/** The field's text as one argv value: 1-8000 printable characters, not starting with `-` (the CLI would read a flag). */
 export function pastedOf(text: string): string | null {
   const value = text.trim()
 
-  return value.length >= 1 && value.length <= 2_000 && !value.startsWith('-') && !/[\u0000-\u001f\u007f]/.test(value) ? value : null
+  // Line breaks and tabs are text (argv and JSON carry them); other controls are refused. Over ARGV_TEXT_MAX: null, and the runner says by how much.
+  return value.length >= 1 && countOf(value) <= ARGV_TEXT_MAX && !value.startsWith('-') && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value) ? value : null
 }
 
 /** A policy action type (`deploy`, `tool:Bash`, `network.fetch`): 1-64 of letters, digits, `_ . : / -`, not starting with `-`. */
@@ -235,7 +237,7 @@ const asInput = (tool: string) => (text: string) => {
 
   return input === null ? null : exec(tool, { input })
 }
-const PASTE_RULE = '1-2000 printable characters, not starting with -'
+const PASTE_RULE = '1-8000 printable characters, not starting with -'
 
 export const SECURE_TEXT: readonly SecText[] = [
   { id: 'aid-check', name: 'CHECK', about: 'prompt injection, jailbreak and PII, built-in engine', label: 'aid-check <text>: injection and PII check, local', cost: 'read', argv: text => (pastedOf(text) === null ? null : ['security', 'defend', '--input', pastedOf(text) ?? '', '--output', 'json']), read: verdictReader('defend'), note: LOCAL, rule: PASTE_RULE },

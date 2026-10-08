@@ -7,9 +7,11 @@ import { actionsOf } from './bindings'
 import type { Catalog } from './data/catalog'
 import { PROBES, probeArgv, probeError, probeReady, type ProbeResult } from './data/cli'
 import { ALL_COST_PROBES as COST_PROBES } from './data/cost-probes'
+import { memmapProbe } from './data/memmap'
+import { memoryHealthProbe } from './data/memory-health'
 import { X_PROBES } from './data/xruv'
 import { diffEvents, record } from './data/events'
-import { agentName, announceChanges, factsOf } from './notices'
+import { agentName, announceChanges, factsOf, segmentOf, TOASTED_KEYS } from './notices'
 import { plain } from './data/parse'
 import { readSnapshot } from './data/snapshot'
 import { markPicture } from './gfx/pictures'
@@ -28,12 +30,14 @@ import { BOOT_MIN_MS, CLI_PREFIXES, isBooting, NAV_KEY, NAV_STYLES, PANE_ID, pus
 import type { Actions } from './views/common'
 import { picturesOf } from './views/frames'
 import { pulseDue } from './pulse'
+import { refreshWorkflows } from './wf-live'
+import { syncWhatsNew } from './whatsnew'
+import { syncAdrDigest } from './adr-mission'
 
 const ACTIVITY_BUCKET_MS = 5_000
 const PANE_WATCH_MS = 1_000
 const MAX_PARALLEL_PROBES = 2
-/** The CLI probes and the x.ruv.io board's two network reads, one cadence and one option gate for all. */
-const ALL_PROBES = [...PROBES, ...X_PROBES, ...COST_PROBES]
+const ALL_PROBES = [...PROBES, ...X_PROBES, ...COST_PROBES, memmapProbe, memoryHealthProbe] // CLI probes, the x.ruv.io board's network reads, cost, the memory map's list: one cadence and option gate
 const BAR_FRESH_MS = 10_000
 const IDLE_REFRESH_MS = 30_000
 const TOOLS_RECOUNT_MS = 30_000
@@ -62,14 +66,6 @@ export type Controller = {
   catalog?: Promise<Catalog>
   /** Blits the band's mark while Claude works; the band calls it with its requestId. */
   markFrame: (requestId: string, isWorking: boolean) => void
-}
-
-/** With the band off, the console's words ride ruflo-mods' status line instead: claims and a stale marketplace only. */
-export function segmentOf(state: State): string | null {
-  const claims = state.snapshot?.claims ?? []
-  const parts = [claims.length > 0 ? `${claims.length} claims` : '', state.snapshot?.plugins.missingFromClone.length ? 'marketplace stale' : ''].filter(Boolean)
-
-  return parts.length === 0 ? null : parts.join(' · ')
 }
 
 export function createController(state: State, host: Host): Controller {
@@ -135,9 +131,12 @@ export function createController(state: State, host: Host): Controller {
       const before = previous === null ? null : factsOf(state, now)
 
       state.snapshot = snapshot
+      syncWhatsNew(state, host)
+      void syncAdrDigest(state, host).catch(() => undefined)
       record(state.events, diffEvents(previous, snapshot, now))
 
-      if (before !== null) announceChanges(state, before, now)
+      // A mission that finished or lost a task is said in a toast too: the band's notice row reaches only a person looking at the console.
+      if (before !== null) for (const draft of announceChanges(state, before, now)) if (TOASTED_KEYS.has(draft.key)) host.toast(draft.text.slice(0, 120), 8000, draft.level === 'bad' ? 'error' : draft.level)
 
       if (route !== null && route.agent !== state.ruflo.route?.agent) record(state.events, [{ atMs: now, kind: 'learning', text: `router picked ${route.agent} (${Math.round(route.confidence * 100)}%)` }])
 
@@ -335,6 +334,7 @@ export function createController(state: State, host: Host): Controller {
         lastIdleMs = now
         void refresh().then(() => {
           void probe()
+          void refreshWorkflows(state, host)
           advance(state, host)
         })
       }

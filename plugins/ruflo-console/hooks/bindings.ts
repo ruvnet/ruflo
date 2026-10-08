@@ -2,6 +2,8 @@
  * The closures the pane's buttons and `/ruflo` subcommands call: view switches, selection, the claims buttons, the
  * palette. Each does its work through the runner or the controller functions it is handed; nothing here touches `$`.
  */
+import { MISSION_OBJECTIVE_MAX } from './full-text'
+import { textRefusal } from './ops'
 import { claimTask, handoffClaim, releaseClaim, stealClaim, whyNot } from './actions'
 import { EVENT_KINDS } from './data/events'
 import { evolveActions } from './evolve'
@@ -12,12 +14,17 @@ import { navActions } from './nav-state'
 import { roomActions } from './room'
 import { roomPages } from './views/room'
 import { watchActions } from './watch'
+import { wireActivity } from './activity-live'
+import { eventsActions } from './events-ui'
+import { timelineActions } from './timeline-ui'
+import { workflowsActions } from './wf-actions'
 import { missionActions } from './mission-control'
 import { catalogActions } from './plugin-catalog'
 import { saveAllowed } from './remember'
 import { pluginNames, settingsActions } from './settings'
 import { catalogOf } from './plugin-catalog'
 import { wireAnatole } from './anatole'
+import { wireWorkflows } from './wf-wire'
 import { devtoolsActions } from './devtools'
 import { HARNESSES, harnessSpec, isAutoAccept, isLive, newSession, send, whyNotRun } from './harness'
 import { helpActions } from './help-actions'
@@ -35,6 +42,9 @@ import { CLI_PREFIXES, NAV_KEY, PANE_ID, viewOf, type State } from './state'
 import { runUpdateCheck } from './update-flow'
 import { claudeActions } from './mission-claude'
 import { UPDATES_KEY } from './updates'
+import { setToastMode, toggleToastMute } from './toasts'
+import { whatsnewActions } from './whatsnew'
+import { adrActions } from './adr-actions'
 import { vectorActions } from './vector'
 import type { Actions } from './views/common'
 import { openTasks, selection } from './views/select'
@@ -63,7 +73,13 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
   /** j/k: what moves depends on the view in front. */
   function select(by: number): void {
     const view = state.view
-    const key = view === 'claims' ? 'claim' : view === 'swarm' || view === 'timeline' || view === 'agent' ? 'agent' : 'item'
+
+    // The Workflows page keeps its own cursor (run, phase, agent): /ruflo next and prev move it as j and k do.
+    if (view === 'workflows') return actions.workflows.key(by > 0 ? 'j' : 'k')
+    if (view === 'events') return actions.events.move(by)
+    if (view === 'timeline') return actions.timeline.move(by)
+
+    const key = view === 'claims' ? 'claim' : view === 'swarm' || view === 'agent' ? 'agent' : 'item'
 
     state.select[key] += by
 
@@ -75,6 +91,8 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
   }
 
   wireAnatole(state, host)
+  wireWorkflows(state, host)
+  wireActivity(state, host)
   const actions: Actions = {
     view: setView,
     remember: () => {
@@ -103,6 +121,12 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
       void host.storeSet(UPDATES_KEY, mode).catch(() => undefined)
       host.invalidate()
     },
+    toasts: {
+      mode: mode => setToastMode(state, host, mode),
+      mute: source => toggleToastMute(state, host, source),
+    },
+    whatsnew: whatsnewActions(state, host),
+    adrs: adrActions(state, host, runner),
     checkUpdates: () => {
       state.updateNote = 'checking…'
       host.invalidate()
@@ -191,7 +215,8 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
       host.invalidate()
     },
     paletteQuery: text => {
-      state.palette.query = plain(text, 200)
+      // Never cut as it is typed (ADR-481): a run over a limit is refused with the exact count by the runner.
+      state.palette.query = plain(text, Number.MAX_SAFE_INTEGER)
       state.palette.index = 0
       host.invalidate()
     },
@@ -207,7 +232,7 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
     },
     run: (id, text = '') => runner.runById(id, text),
     costBudgetDraft: text => {
-      state.costBudgetDraft = text.slice(0, 40)
+      state.costBudgetDraft = text
     },
     filter: () => {
       const order = ['all', ...EVENT_KINDS] as const
@@ -218,7 +243,7 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
     },
     focus: key => void host.focus(PANE_ID, key).catch(() => undefined),
     plugin: op => runner.ask(pluginSpec(op), 'that cannot run here'),
-    start: (id, text = '') => runner.ask(startSpec(id, Date.now(), text, present => { state.nostrKeyVerifiedAtMs = present ? Date.now() : null }), id === 'mission' || id === 'task' ? 'type it first (it may not start with -)' : 'that start cannot run here'),
+    start: (id, text = '') => runner.ask(startSpec(id, Date.now(), text, present => { state.nostrKeyVerifiedAtMs = present ? Date.now() : null }), id === 'mission' || id === 'task' ? ((id === 'mission' ? textRefusal(text, 'the objective', MISSION_OBJECTIVE_MAX) : textRefusal(text, 'the description')) ?? 'type it first (it may not start with -)') : 'that start cannot run here'),
     // The main menu's prompt, as a board's: a key (2, w, i), a name (swarm, x.ruv.io), ? for help, O to log off.
     menu: text => {
       const word = text.trim().toLowerCase()
@@ -371,6 +396,8 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
     loops: loopActions(state, host, runner),
     optimizer: optimizerActions(state, () => host.invalidate(), id => void runner.runById(id, ''), question => actions.ask.ask(question, 'overview')),
     watch: watchActions(state, () => host.invalidate(), (question, view) => actions.ask.ask(question, view)),
+    events: eventsActions(state, host, () => host.invalidate(), (spec, why = 'that cannot run here') => runner.ask(spec, why), question => actions.ask.ask(question, 'events')),
+    timeline: timelineActions(state, host, () => host.invalidate(), id => setView(id), (spec, why = 'that cannot run here') => runner.ask(spec, why), question => actions.ask.ask(question, 'timeline')),
     room: roomActions(state, () => host.invalidate(), (id, text) => runner.runById(id, text), () => roomPages(state)),
     navigator: navActions(state, () => host.invalidate(), view => actions.view(view)),
     catalog: catalogActions(state, host, runner, text => actions.term.load('claude', text)),
@@ -380,6 +407,7 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
         host.invalidate()
       },
     },
+    workflows: workflowsActions(state, host, runner),
     devtools: devtoolsActions(state, host, runner.runById, why => runner.ask(null, why)),
   }
 

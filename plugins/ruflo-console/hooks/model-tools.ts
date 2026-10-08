@@ -5,6 +5,7 @@
  * person's Yes or confirms itself is another (`modelConfirm`: ask, auto). A person can take control back at any moment; every call is
  * logged for the dashboard (views/control.ts). This is the only file allowed to answer `tool.call`, and only for its own tool names.
  */
+import { LONG_TEXT_MAX } from './full-text'
 import type { Register } from 'claude-code'
 
 import type { Controller } from './controller'
@@ -17,6 +18,7 @@ import { RESEARCH_DEPTHS } from './mission-options'
 import { filterPalette, paletteEntries } from './palette'
 import { hasSecret } from './screen'
 import { catalogOf } from './plugin-catalog'
+import { hasInvite } from './xruv'
 import { pluginNames, settingsOf } from './settings'
 import type { ControlEntry, Pending, State, ViewId } from './state'
 import { VIEWS } from './state'
@@ -30,7 +32,7 @@ export type ControlConfirm = 'ask' | 'auto'
 export type ActionClass = 'read' | 'write' | 'network' | 'install' | 'spend' | 'delete'
 
 export const MAX_CALLS_PER_TURN = 40
-export const MAX_TEXT = 500
+export const MAX_TEXT = LONG_TEXT_MAX
 /** How long after a tool call Claude still counts as driving the console. */
 export const DRIVING_MS = 60_000
 const SCREEN_MAX = 3500
@@ -136,6 +138,17 @@ function within(work: Promise<void>, ms: number, host: Pick<Controller['host'], 
   })
 }
 
+/** Runs `fn` as Claude's own act: asks it raises on the way are Claude's, not the person's. Only the synchronous start counts; a deferred ask carries its origin itself (`ActionSpec.byModel`). */
+function asModel<T>(state: State, fn: () => T): T {
+  state.control.viaModel = true
+
+  try {
+    return fn()
+  } finally {
+    state.control.viaModel = false
+  }
+}
+
 const say = (state: State, tool: string, summary: string, outcome: ControlEntry['outcome'], detail = ''): void => {
   state.control.log.push({ atMs: Date.now(), tool, summary: plain(summary, 80), outcome, detail: plain(detail, 160) })
   if (state.control.log.length > LOG_MAX) state.control.log.splice(0, state.control.log.length - LOG_MAX)
@@ -148,12 +161,21 @@ const leaksSecret = (raw: unknown, cleaned: string): boolean => (typeof raw === 
 
 const textOf = (value: unknown): string => (typeof value === 'string' ? plain(value, MAX_TEXT).trim() : '')
 
+const WITHHELD = '[line withheld: it looks like a secret]'
+
+/** One line of the screen for the model: cleaned, and withheld whole when it looks like a secret or holds a minted invite code (#3816). */
+const lineFor = (text: unknown, max: number): string => {
+  const cleaned = plain(text, max)
+
+  return hasSecret(typeof text === 'string' ? text : '') || hasSecret(cleaned) || hasInvite(typeof text === 'string' ? text : '') || hasInvite(cleaned) ? WITHHELD : cleaned
+}
+
 /** The console's state for the model: bounded, with control characters stripped. */
 function stateJson(deps: ModelToolDeps, filter: string): string {
   const { state, control } = deps
   const ai = settingsOf(state).ai
   const now = Date.now()
-  const screen = viewText({ state, nowMs: now, columns: 90, act: control.actions }, state.view).split('\n').map(line => plain(line, 160)).join('\n').slice(0, SCREEN_MAX)
+  const screen = viewText({ state, nowMs: now, columns: 90, act: control.actions }, state.view).split('\n').map(line => lineFor(line, 160)).join('\n').slice(0, SCREEN_MAX)
   const words = filter.toLowerCase().split(/\s+/).filter(word => word !== '')
   const all = paletteEntries(state, now).map(entry => ({ id: entry.id, label: plain(entry.label, 90) }))
   const entries = (words.length === 0 ? all : all.filter(entry => words.every(word => `${entry.id} ${entry.label}`.toLowerCase().includes(word)))).slice(0, words.length === 0 ? 60 : 40)
@@ -163,7 +185,7 @@ function stateJson(deps: ModelToolDeps, filter: string): string {
     title: VIEWS.find(view => view.id === state.view)?.label ?? state.view,
     screen,
     waiting: state.pending === null ? null : { ...(askedBy(state.pending) !== '' && { askedBy: askedBy(state.pending).replace(/: $/, '') }), label: plain(state.pending.label, 120), expect: plain(state.pending.expect, 160), note: state.pending.note === undefined ? undefined : plain(state.pending.note, 160) },
-    lastResult: state.outcome === null ? null : { label: plain(state.outcome.label, 100), ok: state.outcome.ok, detail: plain(state.outcome.detail, 200), lines: (state.outcome.lines ?? []).slice(0, 12).map(line => plain(line, 160)) },
+    lastResult: state.outcome === null ? null : { label: plain(state.outcome.label, 100), ok: state.outcome.ok, detail: lineFor(state.outcome.detail, 200), lines: (state.outcome.lines ?? []).slice(0, 12).map(line => lineFor(line, 160)) },
     entries,
     entryCount: all.length,
     entriesNote: entries.length < (words.length === 0 ? all.length : entries.length) || (words.length > 0 && entries.length === 40) ? 'the list is cut: pass filter (words in an id or label) to find other entries' : undefined,
@@ -222,6 +244,13 @@ async function settlePending(deps: ModelToolDeps, tool: string, id: string, aske
 
   if (pending === null) return null
 
+  // A card the person raised while this call ran is theirs: it is never cancelled, confirmed or taken over here (ADR-450 T17).
+  if (pending.source === 'you') {
+    say(state, tool, `${id}: the person's card is waiting`, 'denied', pending.label)
+
+    return { status: 'refused', text: `an action is waiting for the person ("${plain(pending.label, 80)}"), so yours was not queued. Do not run another until they answer. Nothing ran.` }
+  }
+
   const kind = classOf(pending)
 
   // Claude's own ask: the row says who asked and what class it is (ADR-450 T14).
@@ -257,7 +286,7 @@ async function settlePending(deps: ModelToolDeps, tool: string, id: string, aske
   // Mission Control reports its own actions on `last`, the rest on `outcome`: whichever moved is what happened.
   const lastBefore = mcOf(state).last
 
-  await control.runner.confirm()
+  await asModel(state, () => control.runner.confirm())
   await control.runner.settled()
 
   // An action that brings its own run (creating a mission is several CLI calls) is not waited on by confirm: wait here, with a limit.
@@ -302,8 +331,6 @@ export async function callTool(name: string, input: Record<string, unknown>, dep
 
   if (state.control.turnCalls > MAX_CALLS_PER_TURN) return refuse(name, `more than ${MAX_CALLS_PER_TURN} console actions in one turn. Summarise for the person and stop.`)
 
-  state.control.viaModel = true
-
   try {
     if (name === 'console_state') {
       say(state, name, 'read the console', 'ok')
@@ -324,9 +351,9 @@ export async function callTool(name: string, input: Record<string, unknown>, dep
       // The chip is checked against the chips that exist before anything moves, and only the settings page has them.
       if (chip !== '' && (view.id !== 'settings' || picked === undefined)) return refuse(`open ${view.id} chip`, view.id !== 'settings' ? 'chip applies only to the settings page.' : `no such chip "${plain(chip, 40)}". Chips: ${[...chips.keys()].join(', ')}`)
 
-      control.setView(view.id as ViewId)
+      asModel(state, () => control.setView(view.id as ViewId))
       await control.open(false)
-      if (picked !== undefined) control.actions.settings.plugin(picked)
+      if (picked !== undefined) asModel(state, () => control.actions.settings.plugin(picked))
       say(state, name, `open ${view.id}${picked === undefined ? '' : ` ${chip}`}`, 'ok')
 
       return `Opened ${view.label}${picked === undefined ? '' : ` with the ${picked.replace(/^ruflo-/, '')} options selected`}. Call console_state to read it${picked === undefined ? '' : ' (its options may take a moment to be read: call again if they show as reading)'}.`
@@ -341,7 +368,7 @@ export async function callTool(name: string, input: Record<string, unknown>, dep
       if (state.pending !== null) return refuse(`set ${field}`, `an action is already waiting for the person ("${plain(state.pending.label, 80)}"). Do not change fields until they answer.`)
 
       const askedAt = Date.now()
-      const problem = setField(deps, field, value)
+      const problem = asModel(state, () => setField(deps, field, value))
 
       if (problem !== null) return refuse(`set ${field}`, problem)
 
@@ -364,7 +391,7 @@ export async function callTool(name: string, input: Record<string, unknown>, dep
 
     const askedAt = state.outcome?.atMs ?? 0
 
-    if (!control.runner.runById(id, text, { exact: true })) return refuse(`run ${id}`, `no palette entry "${plain(id, 40)}" right now. Call console_state for the entries.`)
+    if (!asModel(state, () => control.runner.runById(id, text, { exact: true }))) return refuse(`run ${id}`, `no palette entry "${plain(id, 40)}" right now. Call console_state for the entries.`)
 
     await control.runner.settled()
 
