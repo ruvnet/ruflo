@@ -12,6 +12,8 @@ export const MAX_SWARM_AGENTS = 6;
 export const AGENT_TYPES = ['coder', 'reviewer', 'tester', 'planner', 'researcher', 'security-auditor', 'performance-engineer'] as const;
 
 export interface CommandSpec { level: Level; summary: string; args: z.ZodType<Record<string, unknown>>; }
+/** Optional optimistic-concurrency guard: the revision the human saw; the connector refuses (never acts) when the live revision differs. */
+const expectedRevision = z.number().int().safe().min(1).optional();
 const empty = z.object({}).strict();
 
 /** The ONLY commands the hosted dashboard may ask a local ruflo to run. Anything else is refused on both ends. */
@@ -22,9 +24,9 @@ export const COMMANDS = {
   'state.refresh': { level: 'read', summary: 'Publish a fresh state digest', args: empty },
   'memory.search': { level: 'read', summary: 'Semantic memory search (read-only)', args: z.object({ query: z.string().min(1).max(200), limit: z.number().int().min(1).max(20).default(5) }).strict() },
   'mission.create': { level: 'write', summary: 'Create a DRAFT mission (executes nothing)', args: z.object({ requestId, objective: z.string().min(3).max(2000) }).strict() },
-  'mission.pause': { level: 'write', summary: 'Pause a mission', args: z.object({ missionId }).strict() },
-  'mission.resume': { level: 'write', summary: 'Resume a paused mission', args: z.object({ missionId }).strict() },
-  'mission.stop': { level: 'manage', summary: 'Stop a mission', args: z.object({ missionId }).strict() },
+  'mission.pause': { level: 'write', summary: 'Pause a mission', args: z.object({ missionId, expectedRevision }).strict() },
+  'mission.resume': { level: 'write', summary: 'Resume a paused mission', args: z.object({ missionId, expectedRevision }).strict() },
+  'mission.stop': { level: 'manage', summary: 'Stop a mission', args: z.object({ missionId, expectedRevision }).strict() },
   'swarm.init': { level: 'manage', summary: 'Initialise a hierarchical swarm (max 6 agents)', args: z.object({ topology: z.enum(['hierarchical', 'mesh']).default('hierarchical'), maxAgents: z.number().int().min(1).max(MAX_SWARM_AGENTS).default(6) }).strict() },
   'agent.spawn': { level: 'manage', summary: 'Spawn one agent within the swarm cap', args: z.object({ type: z.enum(AGENT_TYPES), name: z.string().regex(/^[A-Za-z0-9._-]{1,48}$/).optional() }).strict() },
 } as const satisfies Record<string, CommandSpec>;
@@ -37,7 +39,7 @@ export const CommandBodySchema = z.object({
   args: z.record(z.unknown()),
   /** Cognitum subject hash of the human who issued it, for the local audit log. */
   by: z.string().max(80),
-  expiresAt: z.number().int().positive(),
+  expiresAt: z.number().int().safe().positive(),
 }).strict();
 export type CommandBody = z.infer<typeof CommandBodySchema>;
 

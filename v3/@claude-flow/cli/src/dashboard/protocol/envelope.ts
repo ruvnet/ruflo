@@ -12,9 +12,9 @@ export const EnvelopeSchema = z.object({
   did: z.string().regex(/^dev_[A-Za-z0-9_-]{16,64}$/),
   /** Tenant (Cognitum subject hash) — bound into every signature so a device key cannot be replayed across tenants. */
   tid: z.string().regex(/^tnt_[A-Za-z0-9_-]{16,64}$/),
-  ts: z.number().int().positive(),
+  ts: z.number().int().safe().positive(),
   nonce: z.string().regex(/^[A-Za-z0-9_-]{16,64}$/),
-  seq: z.number().int().nonnegative(),
+  seq: z.number().int().safe().nonnegative(),
   body: z.record(z.unknown()),
   sig: z.string().regex(/^[A-Za-z0-9_-]{80,100}$/),
 }).strict();

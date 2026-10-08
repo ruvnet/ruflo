@@ -2,7 +2,7 @@
 import { arch, platform } from 'node:os';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Level, SectionName } from './protocol/index.js';
+import { maskSecrets, type Level, type SectionName } from './protocol/index.js';
 import type { Ruflo, RunResult } from './exec.js';
 
 type Obj = Record<string, unknown>;
@@ -19,12 +19,15 @@ export interface CollectCtx {
   /** Run a fixed-argv child (the cost ledger). Injectable for tests. */
   run: (argv: string[], timeoutMs: number) => Promise<RunResult>;
   home?: string;
+  /** Explicit ledger script path chosen by the USER in config.json (never derived from the project). */
+  ledgerPath?: string;
 }
 export type Collector = (c: CollectCtx) => Promise<Obj>;
 
 export const isObj = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
-export const str = (v: unknown, n: number): string => (typeof v === 'string' ? v : v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v)).slice(0, n);
-export const nat = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+/** Mask secrets BEFORE truncating: a token cut at the limit would otherwise leave a recognisable prefix. */
+export const str = (v: unknown, n: number): string => maskSecrets(typeof v === 'string' ? v : v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v)).slice(0, n);
+export const nat = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(Math.floor(v), Number.MAX_SAFE_INTEGER) : 0);
 export const ms = (v: unknown): number | undefined => { const t = typeof v === 'number' && v > 0 ? v : typeof v === 'string' ? Date.parse(v) : NaN; return Number.isFinite(t) && t > 0 ? Math.floor(t) : undefined; };
 /** mission_* tools wrap results as {ok, data}. */
 export const unwrap = (v: unknown): Obj => { if (!isObj(v)) throw new Error('unexpected result shape'); if (v.ok === false) throw new Error(`tool refused: ${str(v.code, 40)}`); return isObj(v.data) ? v.data : v; };
@@ -71,19 +74,30 @@ export const missions: Collector = async c => {
   };
 };
 
+/** Per-mission fetch state, keyed on the scheduler's cache object: refetch only when a mission changed (or every 5 min). */
+const EVENTS_RECHECK_MS = 5 * 60_000;
+const fetched = new WeakMap<object, Map<string, { key: string; at: number; rows: Obj[] }>>();
 export const mission_events: Collector = async c => {
-  const m = c.cache.missions as { missions?: { id: string; updatedAt?: number }[] } | undefined;
-  const ids = (m?.missions ?? []).slice(0, 10).map(x => x.id);
+  const m = c.cache.missions as { missions?: { id: string; updatedAt?: number; revision?: number; state?: string }[] } | undefined;
+  const list = (m?.missions ?? []).slice(0, 10);
+  const ids = list.map(x => x.id);
   const rows: Obj[] = [];
-  await Promise.all(ids.map(async id => {
+  const memo = fetched.get(c.cache) ?? new Map(); fetched.set(c.cache, memo);
+  for (const k of [...memo.keys()]) if (!ids.includes(k)) memo.delete(k);
+  await Promise.all(list.map(async mm => {
+    const id = mm.id; const key = `${mm.updatedAt ?? 0}:${mm.revision ?? 0}:${mm.state ?? ''}`; const prev = memo.get(id);
+    if (prev && prev.key === key && c.now() - prev.at < EVENTS_RECHECK_MS) { rows.push(...prev.rows); return; }
+    const mine: Obj[] = [];
     try {
       const d = unwrap(await c.ruflo.mcp('mission_events', { missionId: id, limit: 10 }));
       for (const e of Array.isArray(d.events) ? d.events.filter(isObj) : []) {
         const p = isObj(e.payload) ? e.payload : {};
         const type = str(e.type, 60);
-        rows.push({ missionId: id, seq: nat(e.seq), type, ...(p.state || p.status ? { status: str(p.state ?? p.status, 24) } : {}), at: ms(e.at) ?? c.now(), ...(/evidence/.test(type) && p.kind ? { evidenceKind: str(p.kind, 24) } : {}) });
+        mine.push({ missionId: id, seq: nat(e.seq), type, ...(p.state || p.status ? { status: str(p.state ?? p.status, 24) } : {}), at: ms(e.at) ?? c.now(), ...(/evidence/.test(type) && p.kind ? { evidenceKind: str(p.kind, 24) } : {}) });
       }
-    } catch { /* one mission failing must not drop the rest */ }
+      memo.set(id, { key, at: c.now(), rows: mine });
+    } catch { /* one mission failing must not drop the rest; it is retried next pass */ }
+    rows.push(...mine);
   }));
   return { events: rows.sort((a, b) => (b.at as number) - (a.at as number)).slice(0, 100) };
 };

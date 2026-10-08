@@ -115,7 +115,10 @@ describe('file-backed collectors', () => {
     const d = tmp(); const c = ctx({}, d);
     const none = await cost(c); expect(none).toMatchObject({ available: false }); expect(String(none.reason)).toContain('not found'); expect(none.totals).toBeUndefined(); valid('cost', none);
     mkdirSync(join(d, 'plugins/ruflo-cost-tracker/scripts'), { recursive: true }); writeFileSync(join(d, 'plugins/ruflo-cost-tracker/scripts/ledger.mjs'), '//');
-    expect(findLedger(d, undefined)).toBe(join(require_realpath(d), 'plugins/ruflo-cost-tracker/scripts/ledger.mjs'));
+    expect(findLedger(d, undefined)).toBeNull(); // never from the project (R-SEC-p0-1)
+    const home = tmp(); const sd = join(home, '.claude/plugins/cache/mk/ruflo-cost-tracker/1.2.3/scripts'); mkdirSync(sd, { recursive: true, mode: 0o700 }); writeFileSync(join(sd, 'ledger.mjs'), '//', { mode: 0o600 });
+    expect(findLedger(d, home)).toBe(join(require_realpath(home), '.claude/plugins/cache/mk/ruflo-cost-tracker/1.2.3/scripts/ledger.mjs'));
+    c.home = home;
     const argvs: string[][] = [];
     const out = { totals: { usd: 12.34, credits: 500 }, byModel: { 'claude|opus': { usd: 10 }, 'codex|gpt': { credits: 500 } }, byDay: { [new Date(1_000_000).toISOString().slice(0, 10)]: { usd: 1.5 } }, cache: { claude: { hitRatio: 0.97 } }, unpriced: { 'gpt-x': {} }, tokens: { 'claude|opus': { input: 1, cache_read: 2, cache_write: 3, output: 4 } }, findings: [{ title: 'Sub-agents on top tier', evidence: '5 msgs' }] };
     const ok = await cost({ ...c, run: async a => { argvs.push(a); return { code: 0, stdout: JSON.stringify(out), stderr: '', timedOut: false, truncated: false }; } }) as { available: boolean; totals: { totalMinor: number; todayMinor: number }; creditsTotal: number; byModel: { unit: string; minor: number; tokens?: number }[]; cacheHitRatio: number };

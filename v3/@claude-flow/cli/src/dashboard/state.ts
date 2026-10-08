@@ -45,6 +45,8 @@ export const ConfigSchema = z.object({
   /** Project directory ruflo is run in (collectors + executors). Defaults to the directory `run` is started in. */
   projectDir: z.string().max(1024).optional(),
   /** argv prefix that launches ruflo; default resolves `ruflo` on PATH, else a pinned npx. */
+  /** Absolute path of the cost-tracker ledger script to run (user-chosen; must be owned by you, not group/world-writable, outside the project). */
+  ledgerPath: z.string().max(1024).optional(),
   rufloCommand: z.array(z.string().max(300)).max(8).optional(),
 }).strict();
 export type Config = z.infer<typeof ConfigSchema>;

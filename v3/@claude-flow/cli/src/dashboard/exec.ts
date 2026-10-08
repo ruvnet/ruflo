@@ -1,5 +1,6 @@
 /** Safe subprocess access to the local ruflo CLI: fixed argv arrays, no shell, hard timeout, output cap, scrubbed env. */
 import { spawn } from 'node:child_process';
+import { delimiter, isAbsolute } from 'node:path';
 
 export const DEFAULT_TIMEOUT_MS = 10_000;
 export const MAX_OUTPUT_BYTES = 1024 * 1024;
@@ -9,6 +10,8 @@ const ENV_ALLOW = ['PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TMPDIR'
 export function scrubEnv(src: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { NO_COLOR: '1', FORCE_COLOR: '0' };
   for (const k of ENV_ALLOW) if (src[k] !== undefined) env[k] = src[k];
+  // A relative PATH entry ("", ".", "bin", "node_modules/.bin") would resolve against the project dir the child runs in.
+  if (env.PATH !== undefined) env.PATH = env.PATH.split(delimiter).filter(d => d !== '' && isAbsolute(d)).join(delimiter);
   return env;
 }
 
@@ -78,7 +81,8 @@ export class Semaphore {
   private waiting: Array<() => void> = []; private active = 0;
   constructor(readonly max: number) {}
   async run<T>(f: () => Promise<T>): Promise<T> {
-    if (this.active >= this.max) await new Promise<void>(r => this.waiting.push(r));
+    // Loop: a woken waiter re-checks, because a caller that arrived in between may already have taken the slot.
+    while (this.active >= this.max) await new Promise<void>(r => this.waiting.push(r));
     this.active++;
     try { return await f(); } finally { this.active--; this.waiting.shift()?.(); }
   }

@@ -34,7 +34,12 @@ export const READ_TOOLS: ReadonlySet<string> = new Set([
 ]);
 
 const S = (n: number) => z.string().max(n);
-const nat = z.number().int().nonnegative();
+/** Safe integers only: 1e308 is an integer to zod but not a value any counter can hold. */
+const nat = z.number().int().safe().nonnegative();
+const int = z.number().int().safe();
+/** 2100-01-01 in ms: no honest frame is dated beyond it. */
+export const MAX_FRAME_AT_MS = 4_102_444_800_000;
+export const MAX_FRAME_REV = 1_000_000_000_000;
 const level = z.enum(['info', 'warn', 'error']);
 const lvl5 = z.enum(['off', 'read', 'write', 'manage', 'full']);
 
@@ -52,11 +57,11 @@ export const SectionSchemas = {
   alerts: z.object({ alerts: z.array(z.object({ level, key: S(60), text: S(200), go: S(60).optional() }).strict()).max(30) }).strict(),
   control: z.object({ level: lvl5, autoApprove: z.boolean(), modelControl: S(24).optional(), modelConfirm: S(24).optional(),
     classBudgets: z.array(z.object({ class: S(24), limit: nat }).strict()).max(10).optional() }).strict(),
-  missions: z.object({ missions: z.array(z.object({ id: S(40), source: S(24), objective: S(300), state: S(24), revision: nat, executionMode: S(24).optional(), updatedAt: z.number().int().optional(), detail: detail.optional() }).strict()).max(100) }).strict(),
-  mission_events: z.object({ events: z.array(z.object({ missionId: S(40), seq: nat, type: S(60), status: S(24).optional(), at: z.number().int(), evidenceKind: S(24).optional() }).strict()).max(100) }).strict(),
+  missions: z.object({ missions: z.array(z.object({ id: S(40), source: S(24), objective: S(300), state: S(24), revision: nat, executionMode: S(24).optional(), updatedAt: int.optional(), detail: detail.optional() }).strict()).max(100) }).strict(),
+  mission_events: z.object({ events: z.array(z.object({ missionId: S(40), seq: nat, type: S(60), status: S(24).optional(), at: int, evidenceKind: S(24).optional() }).strict()).max(100) }).strict(),
   tasks: z.object({ total: nat, pending: nat, running: nat, done: nat, failed: nat, items: z.array(z.object({ id: S(60), title: S(120), status: S(24), agent: S(60).optional() }).strict()).max(50) }).strict(),
   swarm: z.object({ swarm: z.object({ id: S(80), topology: S(32).optional(), maxAgents: nat.optional(), health: S(24).optional(), status: S(24).optional() }).strict().nullable(),
-    agents: z.array(z.object({ id: S(80), type: S(40), state: S(24), task: S(120).optional(), lastActiveAt: z.number().int().optional() }).strict()).max(100) }).strict(),
+    agents: z.array(z.object({ id: S(80), type: S(40), state: S(24), task: S(120).optional(), lastActiveAt: int.optional() }).strict()).max(100) }).strict(),
   approvals: z.object({ items: z.array(z.object({ kind: S(40), text: S(200), ageS: nat }).strict()).max(30) }).strict(),
   memory: z.object({ entries: nat, namespaceCount: nat.optional(), namespaces: z.array(z.object({ name: S(60), count: nat }).strict()).max(50), backend: S(60).optional(), vectors: nat.optional(), flags: z.array(S(60)).max(10) }).strict(),
   cost: z.object({ available: z.boolean(), reason: S(160).optional(), windowDays: nat.optional(),
@@ -65,8 +70,8 @@ export const SectionSchemas = {
     creditsTotal: nat.optional(), unpriced: z.array(S(60)).max(20).optional(),
     cacheHitRatio: z.number().min(0).max(1).optional(), budget: z.object({ currency: S(8), limitMinor: nat, spentMinor: nat }).strict().optional(),
     advice: z.array(S(200)).max(10), perMission: z.array(z.object({ missionId: S(40), minor: nat }).strict()).max(20) }).strict(),
-  events: z.object({ events: z.array(z.object({ at: z.number().int(), kind: S(40), level: S(12), src: S(40), text: S(200) }).strict()).max(100) }).strict(),
-  notices: z.object({ notices: z.array(z.object({ at: z.number().int(), level: S(12), text: S(200), key: S(60) }).strict()).max(30), toastMode: S(24).optional() }).strict(),
+  events: z.object({ events: z.array(z.object({ at: int, kind: S(40), level: S(12), src: S(40), text: S(200) }).strict()).max(100) }).strict(),
+  notices: z.object({ notices: z.array(z.object({ at: int, level: S(12), text: S(200), key: S(60) }).strict()).max(30), toastMode: S(24).optional() }).strict(),
   adrs: z.object({ folder: S(100), convention: S(40).optional(), counts: z.record(S(24), nat).refine(r => Object.keys(r).length <= 16, 'too many statuses'),
     items: z.array(z.object({ id: S(40), title: S(160), status: S(24), date: S(24).optional(), supersedes: S(40).optional(), supersededBy: S(40).optional() }).strict()).max(200), lint: z.array(S(200)).max(40) }).strict(),
   whatsnew: z.object({ plugins: z.array(z.object({ name: S(60), entries: z.array(z.object({ version: S(24), date: S(24).optional(), changes: z.array(S(160)).max(6) }).strict()).max(3) }).strict()).max(10), breaking: z.array(S(160)).max(10) }).strict(),
@@ -75,8 +80,8 @@ export const SectionSchemas = {
 export type SectionBody<N extends SectionName> = z.infer<(typeof SectionSchemas)[N]>;
 
 export const SectionFrameSchema = z.object({
-  v: z.literal(2), section: z.enum(SECTION_NAMES), rev: nat, sv: z.number().int().min(1), at: z.number().int().positive(),
-  ttlS: z.number().int().min(5).max(3600), truncated: z.boolean(), body: z.record(z.unknown()),
+  v: z.literal(2), section: z.enum(SECTION_NAMES), rev: nat.max(MAX_FRAME_REV), sv: int.min(1).max(1000), at: int.positive().max(MAX_FRAME_AT_MS),
+  ttlS: int.min(5).max(3600), truncated: z.boolean(), body: z.record(z.unknown()),
 }).strict();
 export type SectionFrame = z.infer<typeof SectionFrameSchema>;
 
@@ -143,13 +148,20 @@ export function parseWatch(body: unknown): SectionName[] {
 
 /** Map a legacy v1 Digest (bare or {digest}) onto section bodies so old connectors keep working. */
 export function legacyDigestToSections(d: Digest): Array<{ section: SectionName; body: Record<string, unknown> }> {
-  const counts: Record<string, number> = {};
-  for (const a of d.adrs) counts[a.status] = (counts[a.status] ?? 0) + 1;
+  return legacyRaw(d).flatMap(x => {
+    const r = SectionSchemas[x.section].safeParse(sanitize(x.body));
+    return r.success && size(r.data) <= budgetOf(x.section) ? [{ section: x.section, body: r.data as Record<string, unknown> }] : [];
+  });
+}
+function legacyRaw(d: Digest): Array<{ section: SectionName; body: Record<string, unknown> }> {
+  const tally = new Map<string, number>();
+  for (const a of d.adrs) tally.set(a.status, (tally.get(a.status) ?? 0) + 1);
+  const counts = Object.fromEntries([...tally].sort((x, y) => y[1] - x[1]).slice(0, 16));
   const out: Array<{ section: SectionName; body: Record<string, unknown> }> = [
     { section: 'meta', body: { ruflo: d.ruflo, project: true, cli: 'legacy', connector: '1' } },
     { section: 'health', body: { ok: d.health.ok, notes: d.health.notes, areas: [] } },
     { section: 'missions', body: { missions: d.missions.map(m => ({ id: m.id, source: 'ruflo', objective: m.objective, state: m.state, revision: m.revision, ...(m.updatedAt ? { updatedAt: m.updatedAt } : {}) })) } },
-    { section: 'adrs', body: { folder: 'docs/adr', counts, items: d.adrs.map(a => ({ id: a.id, title: a.title, status: a.status })), lint: [] } },
+    { section: 'adrs', body: { folder: 'docs/adr', counts, items: d.adrs.slice(0, 200).map(a => ({ id: a.id.slice(0, 40), title: a.title.slice(0, 160), status: a.status.slice(0, 24) })), lint: [] } },
     { section: 'events', body: { events: d.events.map(e => ({ at: e.at, kind: e.kind, level: 'info', src: 'mission', text: e.text })) } },
   ];
   if (d.tasks) out.push({ section: 'tasks', body: { ...d.tasks, failed: 0, items: [] } });

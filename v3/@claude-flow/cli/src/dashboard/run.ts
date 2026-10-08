@@ -73,7 +73,7 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
   let current: Channel | null = null;
   const sched = new SectionScheduler({
     emit: f => current?.emitSection(f), now: o.now,
-    ctx: { ruflo: reader, projectDir, level: cfg.level, autoApprove: cfg.autoApprove, cliChoice: cfg.rufloCommand ? 'config' : 'path', pending: () => current?.pending() ?? [], home: o.homeDir ?? process.env.HOME,
+    ctx: { ruflo: reader, projectDir, level: cfg.level, autoApprove: cfg.autoApprove, cliChoice: cfg.rufloCommand ? 'config' : 'path', pending: () => current?.pending() ?? [], home: o.homeDir ?? process.env.HOME, ledgerPath: cfg.ledgerPath,
       run: o.runCmd ?? ((argv, t) => sem.run(() => runArgv(argv, { cwd: projectDir, timeoutMs: t }))), now: o.now ?? Date.now },
   });
   audit.write('run_start', { deviceId: cfg.deviceId, level: cfg.level, autoApprove: cfg.autoApprove });

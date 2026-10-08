@@ -88,6 +88,8 @@ async function missionAction(name: keyof typeof MISSION_ACTION, a: Obj, ctx: Exe
   const rec = isObj(g.record) ? g.record : null;
   const revision = rec ? Number(rec.revision) : NaN;
   if (!Number.isInteger(revision)) return fail('mission_not_found');
+  // The revision the human looked at (when the dashboard sent one) must still be the live one; otherwise act on nothing.
+  if (a.expectedRevision !== undefined && a.expectedRevision !== revision) return fail('revision_changed');
   const r = data(await ctx.ruflo.mcp('mission_request_action', { missionId, action: MISSION_ACTION[name], expectedRevision: revision, requestId: ctx.cid, reason: 'requested from ruflo dashboard' }));
   // Report exactly what ruflo answered. A refusal (e.g. executor-unavailable for resume) throws above and is shown as a failure.
   return done({ missionId: r.missionId, requested: MISSION_ACTION[name], state: r.state, revision: r.revision });

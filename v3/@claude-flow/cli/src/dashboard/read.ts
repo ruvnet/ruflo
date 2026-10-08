@@ -20,7 +20,9 @@ export function readRegular(root: string, rel: string, maxBytes: number, tail = 
   if (!p) return null;
   let fd: number | undefined;
   try {
-    fd = openSync(p, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+    // lstat BEFORE open: opening a FIFO/device for read can block forever. O_NONBLOCK covers a swap between lstat and open.
+    if (!lstatSync(p).isFile()) return null;
+    fd = openSync(p, constants.O_RDONLY | (constants.O_NONBLOCK ?? 0) | (constants.O_NOFOLLOW ?? 0));
     const st = fstatSync(fd);
     if (!st.isFile()) return null;
     const n = Math.min(st.size, maxBytes);
