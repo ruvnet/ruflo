@@ -247,9 +247,9 @@ const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
 
 /**
  * Rate limit options that are looser than the @claude-flow/mcp defaults. A
- * shorter window counts as looser. Exported for tests.
+ * shorter window counts as looser.
  */
-export function raisedRateLimits(options: Pick<MCPServerOptions, RateLimitOption>): RateLimitOption[] {
+function raisedRateLimits(options: Pick<MCPServerOptions, RateLimitOption>): RateLimitOption[] {
   const raised = (Object.keys(DEFAULT_RATE_LIMITS) as (keyof typeof DEFAULT_RATE_LIMITS)[])
     .filter((name) => (options[name] ?? 0) > DEFAULT_RATE_LIMITS[name]) as RateLimitOption[];
   if ((options.rateLimitWindowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS) < DEFAULT_RATE_LIMIT_WINDOW_MS) {
