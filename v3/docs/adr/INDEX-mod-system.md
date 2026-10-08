@@ -64,8 +64,18 @@ Two files carry the number 430 (the menu's accents, and the menu-design amendmen
 | 443 | Missions Claude knows about; verified evidence; spend | Accepted | 10-04 | 406, 437, 441 | — | #3695 | console 0.29.0, cost-tracker 0.27.1 | `mission-context`, `mission-cost`, `mission-loop` |
 | 444 | Claude controls the console | Accepted | 10-04 | 406, 443 | — | #3696 | console 0.30.0 (autopilot default 0.32.0) | `model-tools`, `e2e-control.sh` |
 | 448 | The Room: a shared live feed | Accepted | 10-04 | 407, 416, 444 | — | #3704 (doc), #3705 (page) | console 0.33.0 (expiry event 0.32.2) | `room`, `nav`, `runner`, `watch` |
+| 477 | Mods: one toast system, with levels, de-duplication, a record and a setting | Accepted | 10-07 | 404, 453, 474, 466 | — | #3889 | console 0.37.0, swarm 0.3.4, protector 0.1.1, mods 0.3.16 | `toast-policy.spec`, `toasts.spec`, `toasts.test`, `toast.test` |
+| 478 | Console What's new page, plugin changelogs | Accepted | 10-07 | 428, 477 | — | — | [ADR-478](ADR-478-console-whats-new.md) | — |
+| 480 | Console ADRs page: your project's ADRs, and missions, loops and swarms that follow them | Accepted | 10-07 | 407, 443, 444, 450, 474, 477, 478 | — | this PR | console 0.39.0, swarm 0.3.5, workflows 0.6.4 | `adr.spec`, `adr-write.spec`, `adr-integration.spec`, `adr-page.spec`, `adr-mutation.spec`, `adr-digest.spec` |
+| 483 | Console advisor checkpoints for mission loops (plan, repeated failure, before done) | Accepted | 10-08 | 441, 443, 444, 477, 480, 481 | — | this PR | console 0.40.0 | `mission-advisor.spec`, `mission-advisor-mutation.spec` |
 
 Other ADRs outside 404-451 that the mod ADRs lean on: 150 (removable integrations), 174 (failures as a learning signal), 322 and 322A/B/C (flywheel, evaluation and promotion, receipts), 324 and 325 (policy engine, claims plane), 103 (witness). The console's Mods section (`hooks/data/mods.ts`, console 0.33.1, PR #3707) reads the status files ADR 446 defines.
+
+## MCP server
+
+| ADR | Title | Status | Date | Builds on / extends | Superseded by | PR | Shipped in | Tests |
+|---|---|---|---|---|---|---|---|---|
+| 479 | MCP HTTP transport: bearer token, and refusal to serve a network without one | Accepted | 10-07 | related 012, 476 | — | #3599 (#3598) | cli 3.55.0, mcp 3.1.0 | `mcp-http-nonloopback-auth-gate.test.ts`, `http-transport-auth.test.ts` |
 
 ## Notes
 
@@ -74,3 +84,4 @@ Other ADRs outside 404-451 that the mod ADRs lean on: 150 (removable integration
 - **Forward links.** 449, 450 and 451 are on `main`. 447 names all three as followers. They do not yet cite each other: 449 cites 404, 446, 447 but not 450 or 451; 450 cites 444 to 448 but not 449 or 451; 451 cites 445 to 447 but not 449 or 450; 452 cites 450 and 451. As of this update 450 and 451 name 449 and 452 and each other in a `Related`/`Builds on` line; 449 still does not name 450 or 451 (not edited here).
 - **ADR files whose own Status line differs from this index:** none for 450 and 451, whose Status lines now carry the same implementation summary (section 9 of 450, section 8 of 451 hold the tables). 405, 406 and 449 are "Proposed" in both.
 - **ADRs with no stated parent:** 434, 436, 437, 438, 439, 440, 441 carry no `Builds on` or `Extends` line.
+- **2026-10-07 additions.** Rows for 477, 478 and 479 were added. 478's link is to a file added by the change that builds that page. 479 is not a mod ADR; it is listed because 476 (hive-mind gating) and the toasts sit on the same MCP and console surfaces. ADRs 454 to 476 are not in these tables.

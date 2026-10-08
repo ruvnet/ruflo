@@ -251,10 +251,14 @@ describe('views', () => {
 
   test('timeline, approvals and events draw from what was seen; the drill-down opens an agent', { options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
-    mock.clock(on)
+    const clock = mock.clock(on)
     await $.session.start(SESSION)
 
-    expect((await drawn($, 'timeline')).rasters).toEqual(['title', 'gantt'])
+    // The lanes come from a status read taken on the 1.5 s activity tick (ADR-474): with the agents read, the lane picture is drawn.
+    await $.command.run(command('status'))
+    await clock.advance(2000)
+    await clock.advance(2000)
+    expect((await drawn($, 'timeline')).rasters).toEqual(['title', 'tl-picture'])
 
     const approvals = await drawn($, 'approvals')
 

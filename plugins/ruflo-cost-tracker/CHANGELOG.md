@@ -1,0 +1,44 @@
+# Changelog: ruflo-cost-tracker
+
+Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-cost-tracker`.
+
+## 0.27.2 — 2026-10-07
+- fix: run the installed ruflo CLI before `npx @claude-flow/cli@latest` in cost-tracker, adr and metaharness
+- chore: 3.55.0 versions, leaf pins, lockfiles, plugin bumps, changelog
+
+## 0.27.1 — 2026-10-04
+- feat: missions Claude knows about, gate evidence, mission spend and a loop manager (ADR-443)
+- feat: mission spend (ledger --from/--to/--project, mission-cost module and rows)
+- fix: replace every | in the model label (CodeQL js/incomplete-sanitization)
+
+## 0.27.0 — 2026-10-04
+- feat: multi-provider cost ledger, price book, advisor and Cost page (ADR-437)
+
+## 0.26.3 — 2026-07-29
+- fix: Codex hooks.json schema + PreToolUse verdict compat
+- fix: re-anchor #1862 marker + refresh manifests after #2721
+- fix: make ruflo-core/ruflo-cost-tracker hooks Windows-native
+
+## 0.26.2 — 2026-07-16
+- fix: harden hooks, statusline, security, and plugin MCP integration
+- fix: preserve memory JSON across Windows npx
+- chore: confirm npx installs in fixtures
+- chore: prepare stable Ruflo 3.32.1
+
+## 0.26.1 — 2026-07-16
+- fix: ship stable Windows-safe Ruflo integration
+- fix: add Windows shim ruflo-hook.cjs (#1902/#1903/#1904, #2132)
+- chore: darwin-plugins iter 3 — ruflo-cost-tracker: fix subcommand count heading (20→23)
+- chore: darwin-plugins iter 2 — ruflo-cost-tracker: dedupe 'budget' keyword in plugin.json
+
+## 0.26.0 — 2026-06-16
+- feat: wire codemod benchmark into cost-trend (ADR-143 follow-up)
+- feat: split cli into cli-core (lite) + cli (umbrella) — alpha.5
+- fix: spawnSync npx ENOENT on Windows
+- fix: resolve from anywhere + free HEALTH_PORT (#1930)
+- fix: ruflo-cost-tracker encodeProjectPath handles Windows backslash + drive colon
+- chore: v3.11.0 — router ADR-148/149 + cost-tracker observability + fleet audits
+- chore: bulk-update plugin contract ADR statuses (sweep)
+
+## 0.16.1 — 2026-05-05
+- chore: consistency audit — agent + README mention all 13 skills (v0.16.1)

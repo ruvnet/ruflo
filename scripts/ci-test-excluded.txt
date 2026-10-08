@@ -50,6 +50,7 @@ plugins/ruflo-mods/tests/describe.test.ts
 plugins/ruflo-mods/tests/probe.test.ts
 plugins/ruflo-mods/tests/ranked-context.test.ts
 plugins/ruflo-mods/tests/rollup.test.ts
+plugins/ruflo-mods/tests/toast.test.ts
 plugins/ruflo-music/tests/music-mod.test.ts
 plugins/ruflo-neural-trader/tests/trader-mod.test.ts
 plugins/ruflo-observability/tests/observe-mod.test.ts
@@ -78,7 +79,12 @@ scripts/__tests__/mod-capability-matrix.test.mjs
 tests/check-guard-tool-names.test.mjs
 tests/check-status-forwarding.test.mjs
 plugins/ruflo-console/tests/result-display.test.ts
+plugins/ruflo-console/tests/toasts.test.ts
+plugins/ruflo-console/tests/full-text.test.ts
+plugins/ruflo-console/tests/whatsnew.test.ts
+plugins/ruflo-console/tests/adrs.test.ts
 plugins/ruflo-protector/tests/corpus.test.ts
 plugins/ruflo-protector/tests/mod.test.ts
 plugins/ruflo-protector/tests/rules.test.ts
+plugins/ruflo-swarm/tests/toast.test.ts
 plugins/ruflo-mods/tests/protector.test.ts

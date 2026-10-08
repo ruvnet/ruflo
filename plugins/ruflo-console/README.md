@@ -35,6 +35,20 @@ CONSOLE_DRIVE_INSTALL="$PWD:ruflo-mods@ruflo" RUFLO_E2E_LIVE=1 bash plugins/rufl
   --expect 'Hide unused agent types' "$PWD/plugins/ruflo-console" read "Open view settings with chip mods, then console_state, and quote the ruflo-mods option rows."
 ```
 
+## Your project's ADRs (ADR-480)
+
+**TOOLS → ADRs** manages the Architecture Decision Records of the project you run Claude Code in (not ruflo's own).
+
+- **Finding them.** The console looks for `docs/adr`, `docs/adrs`, `doc/adr`, `adr`, `docs/architecture/decisions`, `docs/decisions` and `architecture/decisions`, or the folder in *Settings → ADR folder*. A folder that is a link is never read. With none, **initialise ADRs here** asks first, then creates the folder and `0001-record-architecture-decisions.md`; nothing is overwritten.
+- **Reading them.** MADR front matter, Nygard / adr-tools `## Status` sections (`Superseded by [5. …](0005-….md)`), ruflo-style `Status:` lines, log4brains and plain markdown with no status all parse; a file that does not parse still lists. Filter by status, words and scope; the detail shows links both ways, the decision, and the missions it is attached to; the health strip is the lint.
+- **Writing them.** *propose* takes the next number and the style your ADRs already use (override in Settings: ADR style, ADR file name pattern). Accept, reject, deprecate or supersede from a record's detail. Each shows the exact file and the diff, writes only that on your Yes, and leaves a file that changed since alone.
+- **Missions, loops, swarms.** Attach ADRs to the active mission (the page suggests some from the goal's words; you decide). Claude's mission context, each task's instruction and spawned swarm agents (ruflo-swarm 0.3.5) are told the accepted decisions, masked and capped. At *verify*, changed files are compared with the paths the attached accepted ADRs name: a warning in the mission record. **That compares paths only. It does not prove a change follows or breaks a decision, and it never blocks.** When a mission is done, *draft an ADR from this mission* prepares a proposed record from its goal and tasks; the decision is yours to write.
+- **For Claude.** `/ruflo run adr-propose <title>`, `adr-accept <n>`, `adr-supersede <old> <new>`, `adr-attach <n>` and the rest are palette entries, so Claude reaches them through `console_run` at the *write* control level (reading the page is *read*); a change still waits for your Yes on the diff.
+
+## Toasts (ADR-477)
+
+Settings → Interface and updates → **Toasts** sets what the ruflo plugins may show over the transcript: `all`, `important` (warnings and errors) or `off`, with a mute chip each for `console`, `swarm`, `protector` and `mods`. It is kept in the console's store and mirrored to `.claude-flow/console/toast-prefs.json`, which the other plugins read. Every toast, drawn or not, becomes an event on the Events page (`toast <source> <glyph> <text> [off|muted|deduped|…]`); the other plugins' digests are read from `.claude-flow/console/toasts/<source>.jsonl`, masked and capped. The console itself also toasts a mission that finishes (`ok`) or loses a task (`error`), and its update notes by level. Design and contract: [ADR-477](../../v3/docs/adr/ADR-477-mod-toasts.md).
+
 ## Room and Mods
 
 Open it with `/ruflo room` (menu: Safety → The Room).

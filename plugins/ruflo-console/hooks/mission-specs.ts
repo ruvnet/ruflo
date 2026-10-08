@@ -2,7 +2,10 @@
 import type { ActionSpec } from './actions'
 import { plain, type TaskRecord } from './data/parse'
 import { stageOf, toMissionPlan, type Profile } from './goap'
+import { checkLimit, MISSION_OBJECTIVE_MAX } from './full-text'
 import type { Host } from './host'
+import { adrBlockFor } from './adr-mission'
+import { EVENT_RESUMED, stoppedByAdvisor } from './mission-advisor'
 import { activeMission, instructionOf, mcOf, nextTask, record, rufloTaskOf, saveLedger } from './mission-control'
 import type { LedgerTask, MissionRecord } from './mission-types'
 import { CLI_PREFIXES, type State } from './state'
@@ -31,11 +34,22 @@ export function resultOf(stdout: string): Record<string, unknown> | null {
 
 const taskType = (profile: Profile) => (profile === 'bugfix' ? 'bugfix' : profile === 'refactor' ? 'refactor' : profile === 'research' ? 'research' : 'feature')
 
+/**
+ * Why the mission cannot be created from this goal, or null: the ruflo mission record takes an objective of at most MISSION_OBJECTIVE_MAX
+ * characters (mission_create's input schema), and the goal is never cut to fit (ADR-481). Checked before the ask, with the exact count.
+ */
+export function createWhy(state: State): string | null {
+  const goal = mcOf(state).goal
+  const fit = checkLimit(goal, MISSION_OBJECTIVE_MAX, 'the goal', 'the ruflo mission record takes at most that many; planning, guidance and the skills use the whole goal', 'No mission was created; ✎ edit the goal to fit.')
+
+  return fit.ok ? null : fit.message
+}
+
 /** Create the mission: `mission_create`, `mission_plan`, then a ruflo task per plan node. One confirm for the chain. */
 export function createSpec(state: State, host: Host, onDone: () => void): ActionSpec | null {
   const mc = mcOf(state)
 
-  if (mc.planned === null || mc.goal === '') return null
+  if (mc.planned === null || mc.goal === '' || createWhy(state) !== null) return null
 
   const planned = mc.planned
   const goal = mc.goal
@@ -147,7 +161,7 @@ export const isInflight = (task: LedgerTask): boolean => inflight.has(task)
 
 /** `isReady` replaces the one-at-a-time check for a caller that has its own bound (autopilot's `startable`); without it the mission's own `nextTask` rule applies. */
 export function dispatchSpec(state: State, host: Host, mission: MissionRecord, task: LedgerTask, send: (text: string) => Promise<void>, isReady?: (mission: MissionRecord, tasks: readonly TaskRecord[], task: LedgerTask) => boolean): ActionSpec {
-  const text = instructionOf(mission, task)
+  const text = instructionOf(mission, task, adrBlockFor(state, mission))
 
   return {
     label: `hand task ${task.id} to Claude: ${task.title}`,
@@ -216,6 +230,8 @@ export function setPaused(state: State, host: Host, paused: boolean): void {
   // The person resuming has seen why it stopped: each task gets its hand-outs again.
   if (!paused) for (const task of mission.tasks) task.handouts = 0
   record(mission, { type: paused ? 'mission.paused' : 'mission.resumed', status: paused ? 'paused' : 'running' })
+  // ADR-483: resuming after an advisor stop-the-line gives the failing check a fresh run of tries.
+  if (!paused && stoppedByAdvisor(mission)) record(mission, { type: EVENT_RESUMED })
   mcOf(state).last = { label: paused ? 'paused: no more tasks are handed out' : 'resumed', ok: true, detail: paused ? 'a task already handed to Claude finishes first' : 'Run next hands out the next ready task' }
   saveLedger(state, host)
   host.invalidate()

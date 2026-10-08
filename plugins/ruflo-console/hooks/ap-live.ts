@@ -204,7 +204,7 @@ function say(state: State, host: Host, draft: NoticeDraft): void {
   store.notices.splice(0, Math.max(0, store.notices.length - 10))
 
   try {
-    host.toast(cleanText(draft.text).slice(0, 120), 8000)
+    host.toast(cleanText(draft.text).slice(0, 120), 8000, draft.level === 'bad' ? 'error' : draft.level)
   } catch {
     // A toast is a courtesy.
   }

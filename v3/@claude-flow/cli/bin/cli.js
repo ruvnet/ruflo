@@ -301,7 +301,7 @@ if (isMCPMode) {
         }
 
         try {
-          const result = await callMCPTool(toolName, toolParams, { sessionId });
+          const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio' });
           // Failed task outcomes are data; an explicit handler error is a tool failure.
           const isError = result !== null && typeof result === 'object'
             && typeof result.error === 'string' && result.error.trim().length > 0;

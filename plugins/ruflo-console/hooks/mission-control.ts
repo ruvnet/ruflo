@@ -12,6 +12,8 @@ import { PHASE_NAME, plan as planOf, stageOf, type Plan, type Profile, profileOf
 import { capGate, capOf, refreshCost } from './mission-guard'
 import type { Host } from './host'
 import { plain, type TaskRecord } from './data/parse'
+import { keepText } from './field-keep'
+import { checkLimit, keepLines, LONG_TEXT_MAX, withBreaks } from './full-text'
 import { isAvailable, MISSION_SKILLS, slashOf, GOALS_PLUGIN } from './mission-skills'
 import { offerGuidance } from './mission-guidance'
 import { blocksCreate, blocksGuidance, capUsd, isCapability, RESEARCH_DEFAULT_CAP, researchArgs, researchConfirm, researchWhy, screenText, type ResearchDepth } from './mission-options'
@@ -19,9 +21,10 @@ import type { Runner } from './runner'
 import { CLI_PREFIXES, type State } from './state'
 import type { Derived, LedgerEvent, LedgerTask, McState, McTab, MissionActions, MissionRecord } from './mission-types'
 
-import { cancelSpec, createSpec, dispatchSpec, isInflight, MAX_HANDOUTS, resultOf, setPaused } from './mission-specs'
+import { checkpointPlan } from './mission-advisor-live'
+import { cancelSpec, createSpec, createWhy, dispatchSpec, isInflight, MAX_HANDOUTS, resultOf, setPaused } from './mission-specs'
 
-export { cancelSpec, createSpec, dispatchSpec, resultOf, setPaused }
+export { cancelSpec, createSpec, createWhy, dispatchSpec, resultOf, setPaused }
 export type { Derived, LedgerEvent, LedgerTask, McState, McTab, MissionActions, MissionRecord } from './mission-types'
 
 const states = new WeakMap<State, McState>()
@@ -48,7 +51,8 @@ export const activeMission = (state: State): MissionRecord | null => {
 export function setGoal(state: State, goal: string): void {
   const mc = mcOf(state)
 
-  mc.goal = plain(goal, 500).trim()
+  // Line breaks the person made (a pasted block, or a typed \n) stay in the goal; a destination that is one line (a slash command's arguments) joins them with spaces.
+  mc.goal = keepLines(withBreaks(goal))
   mc.screen = null
   if (!mc.isProfilePicked) mc.profile = profileOf(mc.goal)
   mc.planned = mc.goal === '' ? null : planOf(mc.profile, mc.rigor)
@@ -113,8 +117,11 @@ export const progressOf = (mission: MissionRecord, tasks: readonly TaskRecord[])
   return { done: [...status.values()].filter(value => value === 'done').length, total: mission.tasks.length }
 }
 
+/** How many of the mission's tasks the ruflo task store shows as failed. */
+export const failedOf = (mission: MissionRecord, tasks: readonly TaskRecord[]): number => [...derive(mission, tasks).values()].filter(value => value === 'failed').length
+
 /** The instruction handed to the primary session for one task: what, as whom, what it must show, and how to record it. */
-export function instructionOf(mission: MissionRecord, task: LedgerTask): string {
+export function instructionOf(mission: MissionRecord, task: LedgerTask, adrBlock = ''): string {
   const criteria = mission.acceptance.slice(0, 8).map(criterion => `- ${criterion.check}`).join('\n')
   const deps = task.dependsOn.length === 0 ? 'none' : task.dependsOn.map(id => `${id} (${mission.tasks.find(candidate => candidate.id === id)?.title ?? ''})`).join(', ')
 
@@ -124,6 +131,7 @@ export function instructionOf(mission: MissionRecord, task: LedgerTask): string 
     `Act as: ${task.agent}. It is done when: ${task.requirement}`,
     `Already done: ${deps}.`,
     `The mission's acceptance criteria, for context:\n${criteria}`,
+    ...(adrBlock === '' ? [] : [adrBlock]),
     `When this task is finished, record it: call the ruflo MCP tool task_complete with taskId "${task.rufloTaskId ?? ''}" and a result object {summary, evidence} (evidence = files changed, commands run, test output). If you cannot finish it, call task_update with the same taskId, status "failed" and a result {reason}. Do not complete it unless "it is done when" is true. Keep this transcript to decisions and verified results.`,
   ].join('\n')
 }
@@ -154,7 +162,7 @@ export async function loadLedger(state: State, host: Host): Promise<void> {
     const isShaped = Array.isArray(m?.tasks) && m.tasks.every(task => typeof task?.id === 'string' && Array.isArray(task.dependsOn)) && Array.isArray(m.events)
 
     // Auto-run never survives a restart: a new session starts by asking.
-    if (typeof m?.id === 'string' && /^msn_[a-f0-9]{24}$/.test(m.id) && isShaped) mc.missions.set(m.id, { ...m, auto: false })
+    if (typeof m?.id === 'string' && /^msn_[a-f0-9]{24}$/.test(m.id) && isShaped) mc.missions.set(m.id, { ...m, auto: false, ...(Array.isArray(m.adrs) && { adrs: m.adrs.filter(file => typeof file === 'string' && /^[A-Za-z0-9][A-Za-z0-9._ -]{0,119}\.md$/.test(file)).slice(0, 8) }) })
   }
 
   const active = (saved as { active?: unknown }).active
@@ -162,8 +170,31 @@ export async function loadLedger(state: State, host: Host): Promise<void> {
   if (typeof active === 'string' && mc.missions.has(active)) mc.active = active
 }
 
-/** `ruflo mcp exec -t <tool> -p <json>` as an argv on the configured CLI prefix. */
-const MAX_TEXT = 500
+/**
+ * The longest text a person's goal, question, aside or instruction may be (ADR-481). These reach Claude as a prompt or a slash command's
+ * arguments through the session (no argv, no stdin of ours), and the AIDefence screen and guidance turn take the same text, so one bound serves.
+ * Over it the action is refused with the exact count before anything is sent, and the field keeps the text.
+ */
+const MAX_TEXT = LONG_TEXT_MAX
+
+/** The refusal for text over MAX_TEXT (the exact count), or null when it fits. Line breaks count as the spaces they become. */
+export const longRefusal = (raw: string, what: string): string | null => {
+  const fit = checkLimit(raw.replace(/\s+/g, ' ').trim(), MAX_TEXT, what, 'sent to Claude as one prompt')
+
+  return fit.ok ? null : fit.message
+}
+
+/** The Enter that was refused: says why in the result line and puts the text back in its field. Returns true when it refused. */
+function refusedLong(state: State, say: (label: string, ok: boolean, detail: string) => void, label: string, what: string, raw: string): boolean {
+  const refusal = longRefusal(raw, what)
+
+  if (refusal === null) return false
+
+  keepText(state, raw)
+  say(label, false, refusal)
+
+  return true
+}
 
 
 /** The research start's inputs as typed (ADR-439): the question, the depth and the cap in dollars (text, validated when started). */
@@ -204,6 +235,7 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
     if (custom === undefined && objective.trim() === '') return say(label, false, 'type a goal first: it works on the goal')
     if (custom === undefined && blocksGuidance(mc.screen)) return say(`${label} blocked`, false, `AIDefence: ${mc.screen?.detail ?? ''}. Change the goal.`)
 
+    // The whole goal: the arguments of a slash command are one line of the same prompt, so line breaks become spaces (the goal is one line).
     const args = custom?.args ?? plain(objective, MAX_TEXT)
 
     // It starts a model turn: asked first, with the exact command.
@@ -213,7 +245,7 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
         ...(custom?.byModel === true && { byModel: true }),
         scope: 'controls',
         args: [],
-        shows: `/${slash} ${plain(args, custom === undefined ? 100 : 200)}`,
+        shows: `/${slash} ${args}`,
         expect: 'the command in the main conversation',
         note: custom?.note ?? 'Starts a Claude Code turn (billed as any turn is); mid-turn it is only prepared in the prompt box.',
         run: async () => {
@@ -241,6 +273,8 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
     const byModel = state.control.viaModel
     const draft = { ...researchOf(state) }
     const question = plain(draft.question, MAX_TEXT).trim()
+
+    if (refusedLong(state, say, 'research', 'the question', draft.question)) return
     const cap = capUsd(draft.cap)
     const refused = researchWhy(question, cap)
     const skill = MISSION_SKILLS.find(candidate => candidate.id === 'deep-research')
@@ -261,6 +295,8 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
 
   const actions: MissionActions = {
     goal: text => {
+      if (refusedLong(state, say, 'goal not planned', 'the goal', text)) return
+
       setGoal(state, text)
       mc.tab = 'plan'
       mc.screen = null
@@ -301,7 +337,7 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
       mc.tab = tab
       host.invalidate()
     },
-    create: () => runner.ask(blocksCreate(mc.screen) ? null : createSpec(state, host, () => undefined), blocksCreate(mc.screen) ? 'AIDefence flagged the goal: change it first' : 'type a goal first: the plan is made from it'),
+    create: () => runner.ask(blocksCreate(mc.screen) ? null : createSpec(state, host, () => { const made = activeMission(state); if (made !== null) checkpointPlan(state, host, made) }), blocksCreate(mc.screen) ? 'AIDefence flagged the goal: change it first' : (createWhy(state) ?? 'type a goal first: the plan is made from it')),
     select: id => {
       if (mc.missions.has(id)) mc.active = id
       saveLedger(state, host)
@@ -336,6 +372,8 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
       host.invalidate()
     },
     aside: question => {
+      if (refusedLong(state, say, 'ask aside', 'the question', question)) return
+
       const q = plain(question, MAX_TEXT).trim()
 
       if (q === '') return say('ask aside', false, 'type a question first')
@@ -363,7 +401,10 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
       launch(slashOf(skill), skill.title)
     },
     guide: text => {
-      const t = plain(text, MAX_TEXT).trim()
+      // A prompt to the session keeps the person's own line breaks.
+      if (refusedLong(state, say, 'send Claude', 'the instruction', text)) return
+
+      const t = keepLines(withBreaks(text))
 
       if (t !== '') mc.lastGuide = t
 

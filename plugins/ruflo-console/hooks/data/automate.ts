@@ -6,6 +6,7 @@
  *
  * Config values are masked as they are parsed, so a secret never reaches the state, the result panel or a log line.
  */
+import { ARGV_TEXT_MAX } from '../full-text'
 import { closeOf } from './json-span'
 import { idOf, msOf, numberOf, plain, recordOf, stringOf } from './parse'
 import { countOf, ratioOf } from './safe'
@@ -62,7 +63,7 @@ export const WORKER_ABOUT: Record<WorkerName, string> = {
 const TYPED = /^[\p{L}\p{N}\p{M}\p{P}\p{S} ]+$/u
 
 /** Free text from a field as one argv element or JSON string: cleaned, 1..max characters, not starting with -. */
-export function freeText(value: string, max = 200): string | null {
+export function freeText(value: string, max = ARGV_TEXT_MAX): string | null {
   const text = plain(value, max + 1)
 
   return text === '' || text.length > max || text.startsWith('-') || !TYPED.test(text) ? null : text
@@ -106,7 +107,7 @@ export function configValueOf(value: string): string | number | boolean | null {
   if (text === 'true' || text === 'false') return text === 'true'
   if (/^-?\d{1,15}(\.\d{1,6})?$/.test(text)) return Number(text)
 
-  return freeText(text, 200)
+  return freeText(text, ARGV_TEXT_MAX)
 }
 
 /** `key value` from one field: the key, then the rest as the value. */

@@ -367,9 +367,9 @@ export class WorkerQueue extends EventEmitter {
     // Check queues in priority order
     for (const workerType of workerTypes) {
       const queueName = this.getQueueName(workerType);
-      const taskId = this.store.popFromQueue(queueName);
-
-      if (taskId) {
+      let taskId: string | null;
+      // Cancelled or otherwise stale entries do not exhaust this worker type.
+      while ((taskId = this.store.popFromQueue(queueName)) !== null) {
         const task = this.store.getTask(taskId);
         if (task && task.status === 'pending') {
           task.status = 'processing';
@@ -397,6 +397,11 @@ export class WorkerQueue extends EventEmitter {
       return;
     }
 
+    // Late or duplicate outcomes must not rewrite a settled task.
+    if (['completed', 'failed', 'timeout', 'cancelled'].includes(task.status)) {
+      return;
+    }
+
     task.status = 'completed';
     task.completedAt = new Date();
     task.result = result;
@@ -416,6 +421,11 @@ export class WorkerQueue extends EventEmitter {
     const task = this.store.getTask(taskId);
     if (!task) {
       this.emit('warning', { message: `Task ${taskId} not found for failure` });
+      return;
+    }
+
+    // Late or duplicate outcomes must not rewrite a settled task.
+    if (['completed', 'failed', 'timeout', 'cancelled'].includes(task.status)) {
       return;
     }
 

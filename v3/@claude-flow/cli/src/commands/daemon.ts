@@ -13,6 +13,12 @@ import { dirname, join, resolve, isAbsolute } from 'path';
 import { homedir } from 'os';
 import * as fs from 'fs';
 
+// #1968 / #3547: shared validator for `--workers <list>`, used both when
+// reading the flag into DaemonConfig (below) and when forwarding it to the
+// forked background child's argv (startBackgroundDaemon). One pattern, one
+// place, so the two paths can't drift out of sync on what they accept.
+const WORKERS_RE = /^[a-z][a-z0-9_-]*(,[a-z][a-z0-9_-]*)*$/;
+
 // Start daemon subcommand
 const startCommand: Command = {
   name: 'start',
@@ -122,6 +128,22 @@ const startCommand: Command = {
         config.ttlMs = parseInt(rawTtl, 10) * 1000;
       } else if (!quiet) {
         output.printWarning(`Ignoring invalid --ttl value: ${sanitize(rawTtl)}`);
+      }
+    }
+
+    // #3547 (#1968 follow-up): `--workers` was forwarded to the forked
+    // background child's argv (below, in startBackgroundDaemon) but never
+    // read into DaemonConfig here, so WorkerDaemon always fell back to
+    // DEFAULT_WORKERS (7 enabled) regardless of what was requested — in
+    // both foreground mode (this same action, run directly) and background
+    // mode (this same action, re-run in the forked child with --foreground
+    // and the forwarded --workers flag).
+    const rawWorkers = ctx.flags.workers as string | undefined;
+    if (typeof rawWorkers === 'string' && rawWorkers.length > 0) {
+      if (WORKERS_RE.test(rawWorkers)) {
+        config.enabledWorkers = rawWorkers.split(',');
+      } else if (!quiet) {
+        output.printWarning(`Ignoring invalid --workers value: ${sanitize(rawWorkers)}`);
       }
     }
 
@@ -532,7 +554,6 @@ async function startBackgroundDaemon(projectRoot: string, quiet: boolean, forwar
   // through — argv goes straight to a forked process so reject anything
   // that doesn't look like a comma-separated worker-name list or one of
   // the allowed sandbox modes.
-  const WORKERS_RE = /^[a-z][a-z0-9_-]*(,[a-z][a-z0-9_-]*)*$/;
   if (typeof workers === 'string' && workers.length > 0 && WORKERS_RE.test(workers)) {
     forkArgs.push('--workers', workers);
   }

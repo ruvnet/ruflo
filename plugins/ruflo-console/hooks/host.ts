@@ -1,6 +1,7 @@
 import type { CommandSpec, HookStream, PaneOpenArgs, ProcessRunResult, ProcessSpawnChunk, ProcessSpawnResult, Timer, UiBlitArgs } from 'claude-code'
 
 import type { ReaderFs } from './data/files'
+import type { ToastLevel } from './toast-policy'
 import type { RufloRoute, RufloSnapshot } from '../types'
 
 /** What `$.ui.open` answers: drawn, or held back with the reason. A build that answers nothing has drawn it. */
@@ -22,7 +23,7 @@ export type Host = {
   /** The engine's own choice dialog: the label chosen. Rejects when dismissed, and when nobody can be asked (a -p run). */
   askChoice: (question: string, options: readonly string[]) => Promise<string>
   /** A short note over the transcript's corner; it leaves the transcript and the model untouched. */
-  toast: (text: string, timeoutMs?: number) => void
+  toast: (text: string, timeoutMs?: number, level?: ToastLevel) => void
   invalidate: () => void
   /** Scrolls the pane back to its first row: a page that was switched to (or opened over this one) starts at its top, not where the last one was left. */
   scrollTop: () => void

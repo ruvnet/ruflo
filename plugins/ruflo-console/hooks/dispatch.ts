@@ -18,6 +18,7 @@ import { barText } from './views/bar'
 import { viewText } from './views/pane'
 import { autopilotCommand } from './views/ap-panel'
 import { hostOf } from './ap-live'
+import { watchCommand } from './watch-command'
 import { bandReply, noticesReply, quietReply, median, p95 } from './notices'
 
 /** The engine's words when a registered command reaches it with no hook answering (Claude Code 2.1.287). */
@@ -194,6 +195,9 @@ export async function dispatch(control: Controller, state: State, args: string, 
     }
     case 'commands':
       return { text: commandsText(await loadCatalog(control), intent.query) }
+    case 'events':
+    case 'timeline':
+      return watchCommand(control, state, intent)
     case 'unknown':
       return { text: `Unknown: "${plain(intent.word, 30)}". /ruflo help lists the views (${VIEWS.map(view => view.id).join(', ')}) and commands.` }
   }

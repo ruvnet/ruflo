@@ -5,6 +5,7 @@
  * each asks first. `neural train` prints no per-epoch lines when it is not on a TTY, so the loss sparkline is one point
  * per training run, read from the table it prints at the end (Final Loss, else Avg Loss). Pure: specs only.
  */
+import { ARGV_TEXT_MAX } from './full-text'
 import type { ActionSpec } from './actions'
 import { autoSpec, tool, type AutoEntry } from './automate'
 import { recallEntries } from './recall'
@@ -68,31 +69,31 @@ function routeRead(stdout: string, stderr: string): string[] {
 }
 
 export function routeSpec(text: string): ActionSpec | null {
-  const task = freeText(text, 300)
+  const task = freeText(text, ARGV_TEXT_MAX)
 
   return task === null ? null : autoSpec('nn-route', `which agent for "${task.slice(0, 40)}"`, 'read', ['hooks', 'route', '--task', task, '--format', 'json'], { read: routeRead })
 }
 
 export function patternSearchSpec(text: string): ActionSpec | null {
-  const query = freeText(text, 300)
+  const query = freeText(text, ARGV_TEXT_MAX)
 
   return query === null ? null : autoSpec('nn-pattern-search', `search patterns for "${query.slice(0, 40)}"`, 'read', tool('hooks_intelligence_pattern-search', { query, topK: 5 }))
 }
 
 export function patternStoreSpec(text: string): ActionSpec | null {
-  const pattern = freeText(text, 300)
+  const pattern = freeText(text, ARGV_TEXT_MAX)
 
   return pattern === null ? null : autoSpec('nn-pattern-store', `store the pattern "${pattern.slice(0, 40)}"`, 'local', tool('hooks_intelligence_pattern-store', { pattern, type: 'general' }), { note: 'local; adds one pattern to the ReasoningBank (HNSW-indexed) the router and recall read' })
 }
 
 export function explainSpec(text: string): ActionSpec | null {
-  const task = freeText(text, 300)
+  const task = freeText(text, ARGV_TEXT_MAX)
 
   return task === null ? null : autoSpec('nn-explain', `explain the routing of "${task.slice(0, 40)}"`, 'read', ['hooks', 'explain', '--task', task])
 }
 
 export function predictSpec(text: string): ActionSpec | null {
-  const input = freeText(text, 300)
+  const input = freeText(text, ARGV_TEXT_MAX)
 
   return input === null ? null : autoSpec('nn-predict', `predict for "${input.slice(0, 40)}"`, 'read', ['neural', 'predict', '--input', input, '--format', 'json'])
 }

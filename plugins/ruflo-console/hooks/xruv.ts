@@ -6,6 +6,7 @@
  * `~/.ruflo/nostr.key` when it is missing, so a channel read asks first until that key exists. Text from an Input is
  * parsed and validated here, and the one JSON argument is `JSON.stringify`'s. Pure: entries and parsers only, no `$`.
  */
+import { ARGV_TEXT_MAX, countOf } from './full-text'
 import type { ActionSpec } from './actions'
 import { jsonAfter, registryProbe, rosterProbe, channelsProbe, type Channels, type Registry, type Roster } from './data/cli'
 import { plain, recordOf, stringOf } from './data/parse'
@@ -31,9 +32,10 @@ export function channelIdOf(word: string): string | null {
   return CHANNEL_ID_RE.test(value) ? value : CHANNEL_NAME_RE.test(value) ? `pub:${value}` : null
 }
 
-const MAX_PAYLOAD = 2_000
+// One argv element (ADR-481): the console's own bound is the most an argument carries; the relay answers for its own limit.
+const MAX_PAYLOAD = ARGV_TEXT_MAX
 
-/** A message body: a JSON object as typed, else `{ text }`; at most 2,000 characters as JSON, null when empty or not an object. */
+/** A message body: a JSON object as typed, else `{ text }`; at most ARGV_TEXT_MAX (8,000) characters as JSON, null when empty or not an object. */
 export function payloadOf(raw: string): Record<string, unknown> | null {
   const value = raw.trim()
 
@@ -53,9 +55,9 @@ export function payloadOf(raw: string): Record<string, unknown> | null {
     return record === null || Array.isArray(parsed) || JSON.stringify(record).length > MAX_PAYLOAD ? null : record
   }
 
-  const text = plain(value, 500)
+  const text = plain(value, Number.MAX_SAFE_INTEGER)
 
-  return text === '' ? null : { text }
+  return text === '' || countOf(text) > MAX_PAYLOAD ? null : { text }
 }
 
 /** `Type: text` as a message type and its body; text with no type is a Status. */

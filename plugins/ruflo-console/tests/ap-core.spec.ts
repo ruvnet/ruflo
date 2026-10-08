@@ -3,6 +3,11 @@
  * crash-resume properties, run over a seeded random walk), the adaptation gate and the guards. Pure and fast. Run with
  *   npx vitest run plugins/ruflo-console/tests/ap-core.spec.ts --testTimeout=30000
  */
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { applyChange, clampToEnvelope, DEFAULTS, evaluate, lastHash, outcomesOf, promote, propose, reviewTrials, tunablesFrom, verifyReceipts, type Tunables } from '../hooks/data/ap-adapt'
@@ -118,7 +123,33 @@ describe('journal', () => {
   })
 
   it('appends with a fixed argv, the path as one element', () => {
-    expect(appendArgv('/p/j; rm -rf /.jsonl')).toEqual(['dd', 'of=/p/j; rm -rf /.jsonl', 'oflag=append', 'conv=notrunc', 'status=none'])
+    expect(appendArgv('/p/j; rm -rf /.jsonl')).toEqual(['dd', 'of=/p/j; rm -rf /.jsonl', 'oflag=append', 'conv=notrunc', 'bs=1M', 'iflag=fullblock', 'status=none'])
+  })
+
+  it.skipIf(process.platform !== 'linux')('with the real GNU dd, eight writers of whole journal batches never tear a line (ADR-466)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ap-dd-'))
+
+    try {
+      const batch = (c: string): string => Array.from({ length: 60 }, (_, i) => `{"w":"${c}","n":${i},"pad":"${c.repeat(900)}"}\n`).join('')
+      const file = join(dir, 'journal.jsonl')
+      const argv = (appendArgv(file) as string[]).map(arg => `'${arg}'`).join(' ')
+      const script = Array.from({ length: 8 }, (_, w) => {
+        const src = join(dir, `b${w}.txt`)
+
+        writeFileSync(src, batch(w % 2 === 0 ? 'A' : 'B'))
+
+        return `( for k in 1 2 3 4 5; do cat '${src}' | ${argv}; done ) &`
+      }).join('\n')
+
+      expect(spawnSync('bash', ['-c', `${script}\nwait`]).status).toBe(0)
+
+      const lines = readFileSync(file, 'utf8').split('\n').filter(Boolean)
+
+      expect(lines).toHaveLength(8 * 5 * 60)
+      expect(lines.filter(line => !/^\{"w":"(A+|B+)","n":\d+,"pad":"(A+|B+)"\}$/.test(line) || line.length < 900)).toHaveLength(0)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })
 

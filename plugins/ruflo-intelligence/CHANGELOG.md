@@ -1,0 +1,29 @@
+# Changelog: ruflo-intelligence
+
+Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
+
+## 0.4.2 — 2026-10-05
+- fix: shared textsOf reports truncation and every guard fails closed on it
+
+## 0.4.1 — 2026-10-04
+- feat: vendor the flag option parser from one origin with the screen sync and drift check (review #2)
+- fix: one iterative textsOf in the shared screen — depth, sibling, size caps, object keys and the invisible-character set fixed at the root (ADR-…
+- fix: secret screen — a 20+ char value under a secret-named key is a secret even all-letter or UUID-shaped, unless a clear reference (ADR-445)
+- fix: secret screen judges values, not names — fewer false positives, vendor keys, URL credentials, env assignments, 200 KB scan (ADR-445)
+- chore: one source for the secret screen — sync-mod-screen.mjs regenerates the shared region of 37 screen.ts copies, --check in all-plugins-smoke (…
+
+## 0.4.0 — 2026-10-04
+- feat: goals, graph-intelligence, intelligence, iot-cognitum as mods
+
+## 0.3.1 — 2026-07-16
+- fix: harden hooks, statusline, security, and plugin MCP integration
+- chore: darwin-plugins iter 3 — ruflo-intelligence: align plugin.json tool-count breakdown with README inventory
+- chore: darwin-plugins iter 1 — ruflo-intelligence: correct Tier 1 to deterministic codemod (ADR-143)
+
+## 0.3.0 — 2026-05-04
+- feat: v0.3.0 — surface completeness, 4-step pipeline, IPFS transfer, namespace coordination
+- feat: ADR-098 Part 4 — standardize neural-learning hook
+- feat: add 10 new ruflo plugins, optimize all 32, add READMEs and user guide
+
+## 0.1.0 — 2026-04-27
+- feat: add 19 Claude Code native plugins with 64 skills, 25 commands, 21 agents

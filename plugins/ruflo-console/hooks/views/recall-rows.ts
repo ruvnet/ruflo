@@ -1,5 +1,7 @@
 import type { RenderElement } from 'claude-code'
 
+import { plain } from '../data/parse'
+import { fullRows } from './full-rows'
 import { compositeRank, digestOf, explainPrompt, LOGGED_SHOWN, lifecycleOrder, logWindowMs, recallOf, shown, surfacedCounts, wouldPrune, type LoggedRecall, type RecallFacts, type SessionRecall } from '../data/recall'
 import { ago, button, clip, kv, row, text, THEME, type Ctx } from './common'
 
@@ -11,7 +13,8 @@ const BAR = 10
 let picked: string | null = null
 
 export const pickPrompt = (value: string | null): void => {
-  picked = value === null || shown(value, 300) === '' ? null : shown(value, 300)
+  // The whole prompt is scored and digested as typed (control characters out); only what is drawn masks a credential-shaped word (ADR-481).
+  picked = value === null || plain(value, Number.MAX_SAFE_INTEGER) === '' ? null : plain(value, Number.MAX_SAFE_INTEGER)
 }
 
 export const pickedPrompt = (): string | null => picked
@@ -127,7 +130,7 @@ export function recallRows(ctx: Ctx): RenderElement[] {
 
   const recorded = logged ? facts.log.find(recall => recall.digest === digestOf(prompt)) : undefined
 
-  rows.push(text(ctx, ` "${clip(prompt, Math.max(20, ctx.columns - 8))}"`, { bold: true }))
+  rows.push(...fullRows(ctx, ' prompt: ', shown(prompt, Number.MAX_SAFE_INTEGER), { key: 'recall-prompt', bold: true, hint: 'press clear and paste a shorter prompt' }))
 
   if (recorded !== undefined) {
     rows.push(text(ctx, ` recorded ${ago(recorded.atMs, nowMs)} (digest ${recorded.digest.slice(0, 8)}): what the hook surfaced then, with its scores; not recomputed`, { color: THEME.ok }))

@@ -11,7 +11,7 @@ import { memmapProbe } from './data/memmap'
 import { memoryHealthProbe } from './data/memory-health'
 import { X_PROBES } from './data/xruv'
 import { diffEvents, record } from './data/events'
-import { agentName, announceChanges, factsOf, segmentOf } from './notices'
+import { agentName, announceChanges, factsOf, segmentOf, TOASTED_KEYS } from './notices'
 import { plain } from './data/parse'
 import { readSnapshot } from './data/snapshot'
 import { markPicture } from './gfx/pictures'
@@ -31,6 +31,8 @@ import type { Actions } from './views/common'
 import { picturesOf } from './views/frames'
 import { pulseDue } from './pulse'
 import { refreshWorkflows } from './wf-live'
+import { syncWhatsNew } from './whatsnew'
+import { syncAdrDigest } from './adr-mission'
 
 const ACTIVITY_BUCKET_MS = 5_000
 const PANE_WATCH_MS = 1_000
@@ -129,9 +131,12 @@ export function createController(state: State, host: Host): Controller {
       const before = previous === null ? null : factsOf(state, now)
 
       state.snapshot = snapshot
+      syncWhatsNew(state, host)
+      void syncAdrDigest(state, host).catch(() => undefined)
       record(state.events, diffEvents(previous, snapshot, now))
 
-      if (before !== null) announceChanges(state, before, now)
+      // A mission that finished or lost a task is said in a toast too: the band's notice row reaches only a person looking at the console.
+      if (before !== null) for (const draft of announceChanges(state, before, now)) if (TOASTED_KEYS.has(draft.key)) host.toast(draft.text.slice(0, 120), 8000, draft.level === 'bad' ? 'error' : draft.level)
 
       if (route !== null && route.agent !== state.ruflo.route?.agent) record(state.events, [{ atMs: now, kind: 'learning', text: `router picked ${route.agent} (${Math.round(route.confidence * 100)}%)` }])
 

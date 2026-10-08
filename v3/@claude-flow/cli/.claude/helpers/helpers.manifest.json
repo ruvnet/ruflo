@@ -1,14 +1,14 @@
 {
   "manifest": {
-    "version": "3.54.0",
+    "version": "3.55.0",
     "files": {
       "auto-memory-hook.mjs": "c8d218526a3c34034c2a69de23f507f0eb0f70d59c16426a8edc849e6ac22529",
-      "hook-handler.cjs": "c3f9e7d2f5b33fd396d43de24fc77cb2b33eaf962114dcb9ee92a8075746b0fe",
+      "hook-handler.cjs": "34d2aacfb59a73ff94b1467bb57ab9d9c4af89c0e470aadf3bd0d74a503a658d",
       "intelligence.cjs": "ac5033a77bcea9796856629d5d319bde9ab6b7edf0dcd0d4af187ce30af90836",
       "statusline.cjs": "4a48353b4f1566fa4379b00fd0321b6676a22b6cc91fbbd8380ac5183d619468",
       "router.cjs": "16648b3c0d73b6681ac2d8d13def6a68286c57f5a11004de5b19a0fa088c833d"
     }
   },
-  "signature": "670XlbndW0uatGNpiwtcNsZqZBQdr5vao9SQbLOBW7bXpMc198/7Qr59o2/AlT3vs/nQkQe+vUcngqY2IQZwBQ==",
+  "signature": "FT6oLMAU2RXu8iAdlOFTNGcjYZ52pkhrGFgn3/oKJdtVab0etCzO24Nr2ut1Hr9kn3tRAqb6D8MZwKfcoSqlCQ==",
   "algorithm": "ed25519"
 }

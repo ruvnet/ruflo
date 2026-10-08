@@ -178,7 +178,9 @@ export interface PolicyState {
    * written in the same state write as every receipt append. A prefix of a
    * valid hash chain is itself a valid chain, so without this anchor a
    * truncated or fully erased ledger verified as `valid: true`. Absent on
-   * states written before the anchor existed; established on first use.
+   * states written before the anchor existed (or with the fields deleted): such a
+   * ledger verifies as `anchor-missing` until an explicit, logged establish
+   * action (#3602).
    */
   ledgerHead?: string | null;
   ledgerLength?: number;
@@ -188,7 +190,7 @@ export interface LedgerVerification {
   valid: boolean;
   length: number;
   error?: string;
-  /** Receipts existed but no anchor did: the anchor was created from the current chain. */
+  /** An explicit establish action anchored receipts that had no anchor (#3602). */
   anchor?: 'established-now';
   /** No receipts and no anchor claiming any: distinct from "receipts intact". */
   state?: 'empty';

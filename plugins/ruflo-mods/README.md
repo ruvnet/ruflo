@@ -70,6 +70,12 @@ The classic `hook-handler.cjs` hooks stay installed and remain the fallback. The
 
 At user scope, an unrelated project receives no routing context, edit-learning writes or `.claude-flow/mods/session.json` heartbeat. The mod does not initialize projects itself. Tool guards, trust checks and explicitly configured budgets remain active there.
 
+## Toasts (ADR-477)
+
+ruflo-mods draws its toasts through the shared toast policy (one copy of `hooks/toast-policy.ts`, kept identical across the ruflo mods by `scripts/sync-toast-policy.mjs`): a level prefix (`›` info, `✓` ok, `⚠` warn, `✗` error), one clean line of at most 120 characters with secrets masked, an identical toast not repeated for a minute, and at most four a minute per source (errors are held and counted, never dropped). The budget ladder is `info`, `warn`, `error`, `error` (INFO, WARNING, CRITICAL, HARD_STOP); a dropped or held-back delivery is an `error`; `agentTrim`'s one-time note is `info`.
+
+The person's choice is the console's **Settings → Interface and updates → Toasts**: `all`, `important` (warnings and errors) or `off`, and a mute chip per source. Every toast, drawn or not, is kept as a digest the console shows on its Events page, flagged with what became of it; without the console nothing is written and the defaults apply.
+
 ## Options
 
 Claude Code reads a plugin's options from `pluginConfigs["ruflo-mods@ruflo"].options` in user settings, `--settings` or managed settings. Project settings are not read for this. Every option has a default:

@@ -11,6 +11,7 @@ import { observationRows } from './missions'
 import { loopTabRows } from './mission-claude'
 import { capabilityRows, launchRows } from './mission-launch'
 import { researchStartRows } from './research-start'
+import { fullRows } from './full-rows'
 
 const GLYPH: Record<Derived, string> = { done: '●', running: '◐', ready: '○', waiting: '·', failed: '✖', cancelled: '⊘' }
 const COLOR = (status: Derived): string => (status === 'done' ? THEME.ok : status === 'running' ? THEME.warn : status === 'failed' ? THEME.bad : status === 'ready' ? THEME.head : THEME.info)
@@ -189,7 +190,9 @@ function controlRows(ctx: Ctx, mission: MissionRecord): RenderElement[] {
   const { done, total } = progressOf(mission, tasks)
   const state = mission.cancelled ? 'cancelled' : mission.paused ? 'paused' : done === total ? 'complete' : 'running'
   const rows: RenderElement[] = [
-    text(ctx, ` ${mission.id} · ${clip(mission.objective, 60)} · ${state} · ${bar(done, total)} ${done}/${total}`, { bold: true, color: state === 'complete' ? THEME.ok : state === 'paused' ? THEME.info : state === 'cancelled' ? THEME.bad : THEME.head }),
+    // The status on one line; the objective under it in full (the ruflo record holds it whole).
+    text(ctx, ` ${mission.id} · ${state} · ${bar(done, total)} ${done}/${total}`, { bold: true, color: state === 'complete' ? THEME.ok : state === 'paused' ? THEME.info : state === 'cancelled' ? THEME.bad : THEME.head }),
+    ...fullRows(ctx, ' objective: ', mission.objective, { key: 'mc-objective', dimColor: true, maxLines: 12, hint: 'the ruflo mission record holds all of it' }),
     row(
       ctx,
       [
@@ -202,7 +205,7 @@ function controlRows(ctx: Ctx, mission: MissionRecord): RenderElement[] {
     ),
     ...box(ctx, 'mc-aside', '? ask aside', 'a question about the current work: /btw answers beside the task, outside the conversation (Enter)', 'ask', value => m.aside(value)),
     ...box(ctx, 'mc-guide', '✎ guide Claude', 'a visible instruction to the Claude session: it asks first (Enter)', 'send', value => m.guide(value)),
-    ...(mcOf(ctx.state).lastGuide === '' ? [] : [row(ctx, [text(ctx, ` last: ${clip(mcOf(ctx.state).lastGuide, Math.max(20, ctx.columns - 24))} `, { dimColor: true }), button(ctx, 'mc-edit-guide', '✎ edit', () => ctx.act.editField('mc-guide', mcOf(ctx.state).lastGuide))], 'mc-guide-line')]),
+    ...(mcOf(ctx.state).lastGuide === '' ? [] : fullRows(ctx, ' last: ', mcOf(ctx.state).lastGuide, { key: 'mc-guide-line', dimColor: true, after: button(ctx, 'mc-edit-guide', '✎ edit', () => ctx.act.editField('mc-guide', mcOf(ctx.state).lastGuide)) })),
     ...confirmHere(ctx, 'guide'),
   ]
 
@@ -224,16 +227,16 @@ export function missionControlView(ctx: Ctx): RenderElement {
   const mission = activeMission(ctx.state)
   const rows: RenderElement[] = [rule(ctx, 'Mission Control', mission === null ? 'goal → SPARC plan → tasks → Claude' : `${mission.id.slice(0, 12)}…`)]
 
-  rows.push(...box(ctx, 'mc-goal', '✎ goal', mc.goal === '' ? 'what should get done? e.g. add a dark mode toggle to settings (Enter plans it)' : `planned: ${clip(mc.goal, 60)} — type another goal to re-plan`, 'plan', value => ctx.act.mission.goal(value)))
+  rows.push(...box(ctx, 'mc-goal', '✎ goal', mc.goal === '' ? 'what should get done? e.g. add a dark mode toggle to settings (Enter plans it)' : 'a planned goal is below — type another goal to re-plan', 'plan', value => ctx.act.mission.goal(value)))
 
-  if (mc.goal !== '') rows.push(row(ctx, [text(ctx, ` goal: ${clip(mc.goal, Math.max(20, ctx.columns - 24))} `, { bold: true }), button(ctx, 'mc-edit-goal', '✎ edit', () => ctx.act.editField('mc-goal', mc.goal))], 'mc-goal-line'))
+  if (mc.goal !== '') rows.push(...fullRows(ctx, ' goal: ', mc.goal, { key: 'mc-goal-line', bold: true, after: button(ctx, 'mc-edit-goal', '✎ edit', () => ctx.act.editField('mc-goal', mc.goal)) }))
   rows.push(...launchRows(ctx), ...researchStartRows(ctx))
 
   if (mc.missions.size > 1) rows.push(row(ctx, [...mc.missions.values()].slice(-6).map(candidate => chip(ctx, `mc-pick-${candidate.id}`, candidate.id.slice(4, 10), candidate.id === mc.active, () => ctx.act.mission.select(candidate.id))), 'mc-picker'))
 
   if (mission !== null) rows.push(...controlRows(ctx, mission))
 
-  if (mc.last !== null) rows.push(text(ctx, ` ${mc.last.ok ? '✓' : '✗'} ${mc.last.label}${mc.last.detail === '' ? '' : ` — ${mc.last.detail}`}`, { color: mc.last.ok ? THEME.ok : THEME.bad }))
+  if (mc.last !== null) rows.push(...fullRows(ctx, ` ${mc.last.ok ? '✓' : '✗'} `, `${mc.last.label}${mc.last.detail === '' ? '' : ` — ${mc.last.detail}`}`, { key: 'mc-last', color: mc.last.ok ? THEME.ok : THEME.bad, maxLines: 12, hint: 'your text is still in its field' }))
 
   rows.push(row(ctx, TABS.filter(tab => mission !== null || tab.id === 'plan' || tab.id === 'record').map(tab => chip(ctx, `mc-tab-${tab.id}`, tab.label, mc.tab === tab.id, () => ctx.act.mission.tab(tab.id))), 'mc-tabs'))
 

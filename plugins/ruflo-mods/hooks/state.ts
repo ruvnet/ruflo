@@ -1,4 +1,5 @@
 import type { BudgetLevel } from './cost/budget'
+import type { ToastInput } from './toast/policy'
 import type { EditRecord } from './learn/insights'
 import { guidanceState, type GuidanceState } from './guidance/observations'
 import type { Ownable } from './ownership'
@@ -50,6 +51,8 @@ export type ModState = {
    * beneath; a refused `ui.status` is swallowed, never failing a hook.
    */
   draw: (text: string | undefined) => void
+  /** Says a toast through the shared policy (ADR-477). Installed by `engine.create`; never rejects; a no-op until then. */
+  say: (input: ToastInput) => Promise<void>
 }
 
 export function createState(): ModState {
@@ -73,6 +76,7 @@ export function createState(): ModState {
     rollup: rollupState(),
     segments: new Map(),
     draw: () => undefined,
+    say: async () => undefined,
   }
 }
 

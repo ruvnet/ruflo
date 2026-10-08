@@ -5,6 +5,7 @@
  * person's Yes or confirms itself is another (`modelConfirm`: ask, auto). A person can take control back at any moment; every call is
  * logged for the dashboard (views/control.ts). This is the only file allowed to answer `tool.call`, and only for its own tool names.
  */
+import { LONG_TEXT_MAX } from './full-text'
 import type { Register } from 'claude-code'
 
 import type { Controller } from './controller'
@@ -31,7 +32,7 @@ export type ControlConfirm = 'ask' | 'auto'
 export type ActionClass = 'read' | 'write' | 'network' | 'install' | 'spend' | 'delete'
 
 export const MAX_CALLS_PER_TURN = 40
-export const MAX_TEXT = 500
+export const MAX_TEXT = LONG_TEXT_MAX
 /** How long after a tool call Claude still counts as driving the console. */
 export const DRIVING_MS = 60_000
 const SCREEN_MAX = 3500

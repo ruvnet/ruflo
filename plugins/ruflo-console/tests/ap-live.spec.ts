@@ -290,7 +290,7 @@ describe('writes', () => {
 
     const dd = r.runs.find(a => a[0] === 'dd')
 
-    expect(dd).toEqual(['dd', `of=${J}`, 'oflag=append', 'conv=notrunc', 'status=none'])
+    expect(dd).toEqual(['dd', `of=${J}`, 'oflag=append', 'conv=notrunc', 'bs=1M', 'iflag=fullblock', 'status=none'])
 
     const linked = rig()
 

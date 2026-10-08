@@ -3,6 +3,8 @@
  * `/ruflo yes`) and then runs one fixed argv through the ruflo CLI, after which the disk is re-read to say whether it
  * took; a read runs at once and shows what it printed. Nothing reaches `$` but through the Host.
  */
+import { LONG_TEXT_MAX } from './full-text'
+import { textRefusal } from './ops'
 import type { ActionSpec } from './actions'
 import { rememberKey } from './remember'
 import { record } from './data/events'
@@ -11,7 +13,8 @@ import type { Host } from './host'
 import { labLines } from './mh-lab'
 import { outputLines } from './ops'
 import { filterPalette, paletteEntries, textOfQuery, type PaletteEntry } from './palette'
-import { CLI_PREFIXES, type State } from './state'
+import { COLD_TIMEOUT_MS, explainFailure, FIRST_RUN_LABEL, forgetLauncher, resolveLauncher } from './launcher'
+import type { State } from './state'
 import { prettyLines } from './result-lines'
 
 export const PENDING_TTL_MS = 30_000
@@ -63,12 +66,24 @@ export function createRunner(state: State, host: Host, deps: RunnerDeps): Runner
     // The x.ruv.io board keeps its own result panel, so its runs never show in the MetaHarness lab.
     const panel = spec.board === 'xruv' ? state.xruv : state.lab
 
+    let lastArgv: readonly string[] = spec.argv ?? []
+
     state.isActing = true
     if (spec.lab !== undefined) panel.running = { id: spec.lab, label: spec.label, startedAtMs: Date.now() }
     host.invalidate()
 
     try {
-      const result = await host.run(spec.argv ?? [...CLI_PREFIXES[state.options.cli], ...spec.args], spec.timeoutMs ?? 90_000, spec.stdin)
+      // A CLI action picks its launcher once per session; a cold npx download gets a long limit and says it is a first run.
+      const launcher = spec.argv === undefined ? await resolveLauncher(host, state) : null
+      const argv = spec.argv ?? [...(launcher?.prefix ?? []), ...spec.args]
+      const isCold = launcher?.kind === 'cold'
+
+      lastArgv = argv
+
+      if (isCold) say(spec.label, true, FIRST_RUN_LABEL)
+      const result = await host.run(argv, isCold ? Math.max(spec.timeoutMs ?? 0, COLD_TIMEOUT_MS) : spec.timeoutMs ?? 90_000, spec.stdin)
+
+      if (result.exitCode !== 0) forgetLauncher(state)
       const answer = /"success"\s*:\s*(true|false)/.exec(result.stdout)?.[1]
       const error = /"error"\s*:\s*"([^"]{0,160})"/.exec(result.stdout)?.[1] ?? /\[ERROR\]\s*(.{0,160})/.exec(result.stdout)?.[1]
       // `mcp exec` wraps a tool's failure as `"isError": true` with its message escaped inside: that is a failure too.
@@ -83,7 +98,7 @@ export function createRunner(state: State, host: Host, deps: RunnerDeps): Runner
       if (result.exitCode === 0) spec.onOutput?.(result.stdout)
 
       if (spec.isReadOnly === true) {
-        say(spec.label, ok, ok ? 'the ruflo CLI answered:' : plain(error ?? result.stderr, 160) || `exit ${result.exitCode}`, spec.lab === undefined ? outputLines(result.stdout) : undefined)
+        say(spec.label, ok, ok ? 'the ruflo CLI answered:' : explainFailure(argv, result) ?? (plain(error ?? result.stderr, 160) || `exit ${result.exitCode}`), spec.lab === undefined ? outputLines(result.stdout) : undefined)
 
         return
       }
@@ -98,11 +113,13 @@ export function createRunner(state: State, host: Host, deps: RunnerDeps): Runner
         label: spec.label,
         ok: ok && verified !== 'no',
         verified,
-        detail: ok ? `${spec.argv === undefined ? 'ruflo' : 'the command'} answered ok; expected ${spec.expect}` : plain(error ?? result.stderr, 160) || `exit ${result.exitCode}`,
+        detail: ok ? `${spec.argv === undefined ? 'ruflo' : 'the command'} answered ok; expected ${spec.expect}` : explainFailure(argv, result) ?? (plain(error ?? result.stderr, 160) || `exit ${result.exitCode}`),
         atMs: Date.now(),
       }
     } catch (error) {
-      const why = plain(error instanceof Error ? error.message : String(error), 160) || 'refused'
+      forgetLauncher(state)
+
+      const why = explainFailure(lastArgv, { error }) ?? (plain(error instanceof Error ? error.message : String(error), 160) || 'refused')
 
       if (spec.lab !== undefined) panel.result = { id: spec.lab, label: spec.label, ok: false, exitCode: null, ...(spec.note !== undefined && { note: spec.note }), lines: [why], atMs: Date.now() }
       say(spec.label, false, why)
@@ -197,9 +214,23 @@ export function createRunner(state: State, host: Host, deps: RunnerDeps): Runner
       case 'spec':
         ask(entry.run.spec, entry.run.why)
         break
-      case 'text':
-        ask(entry.run.make(text), entry.run.why?.(text) ?? `type "${entry.run.keyword} <text>"; text may not start with -`)
+      case 'text': {
+        // Over every limit: refused with the exact count, before anything runs; the palette keeps the text (ADR-481).
+        const tooLong = textRefusal(text, 'the text', LONG_TEXT_MAX)
+
+        if (tooLong !== null) {
+          state.palette.isOpen = true
+          say('text too long', false, tooLong)
+          break
+        }
+
+        const spec = entry.run.make(text)
+        // A command argument carries less than a prompt: when the entry refused only for that, say by how much.
+        const argvWhy = spec === null ? textRefusal(text) : null
+
+        ask(spec, argvWhy ?? entry.run.why?.(text) ?? `type "${entry.run.keyword} <text>"; text may not start with -`)
         break
+      }
       case 'view':
         deps.setView(entry.run.view)
         break

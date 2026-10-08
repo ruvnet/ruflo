@@ -1,11 +1,12 @@
 /** The shapes Mission Control keeps: the ledger (missions, tasks, events), the view state, and the actions the views call. */
+import type { ConsultKind } from './mission-advisor'
 import type { Guidance } from './mission-guidance'
 import type { Screen } from './mission-options'
 import type { Plan, Profile, Rigor } from './goap'
 import type { LoopActions } from './views/mission-loop'
 
 export type LedgerTask = { id: string; title: string; phase: string; stage?: string; agent: string; requirement: string; dependsOn: string[]; rufloTaskId?: string; dispatchedAtMs?: number; /** How many times it was handed to Claude (counted per attempt, failed hand-outs included): auto-run stops at MAX_HANDOUTS. */ handouts?: number }
-export type LedgerEvent = { seq: number; atMs: number; type: string; taskId?: string; status?: string; evidenceRef?: string; note?: string }
+export type LedgerEvent = { seq: number; atMs: number; type: string; taskId?: string; status?: string; evidenceRef?: string; note?: string; /** ADR-483: the model an advisor consult ran on, and the cost claude reported for it. */ model?: string; costUsd?: number }
 export type MissionRecord = {
   id: string
   objective: string
@@ -21,6 +22,8 @@ export type MissionRecord = {
   createdAtMs: number
   /** The mission's loop manager state (ADR-443), validated by parseLoop where it is read. */
   loop?: unknown
+  /** ADR-480: the file names of the project's ADRs attached to this mission (validated where read). */
+  adrs?: string[]
 }
 export type McTab = 'plan' | 'tasks' | 'agents' | 'evidence' | 'record' | 'loop'
 export type Derived = 'done' | 'running' | 'ready' | 'waiting' | 'failed' | 'cancelled'
@@ -75,4 +78,6 @@ export type MissionActions = {
   verify: () => void
   /** The loop manager (ADR-443): prepares the /loop text, a stop request or a re-arm in the prompt box. */
   loop: LoopActions
+  /** ADR-483: asks for one advisor consult of a kind now (asks first; refused with a reason when the setting is off or the spend cap forbids it). */
+  advisor: (kind: ConsultKind) => void
 }

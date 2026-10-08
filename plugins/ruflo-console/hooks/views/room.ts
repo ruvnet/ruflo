@@ -1,3 +1,4 @@
+import { fullRows } from './full-rows'
 import type { RenderElement } from 'claude-code'
 
 import { isoOf } from '../data/safe'
@@ -64,9 +65,10 @@ export function roomView(ctx: Ctx): RenderElement {
 
   const Input = ctx.kit.Input
 
-  rows.push(row(ctx, [...(Input === undefined ? [] : [ctx.kit.Box({ key: 'room-say-box', borderStyle: 'round', borderColor: THEME.info, paddingX: 1, children: [Input({ key: 'room-say', label: '💬', placeholder: room.draft === '' ? 'a message for the hive or for Claude (Enter keeps it)' : room.draft, submitLabel: 'keep', onSubmit: (value: string) => ctx.act.room.draft(value) })] })])], 'room-say-row'))
+  rows.push(row(ctx, [...(Input === undefined ? [] : [ctx.kit.Box({ key: 'room-say-box', borderStyle: 'round', borderColor: THEME.info, paddingX: 1, children: [Input({ key: 'room-say', label: '💬', placeholder: room.draft === '' ? 'a message for the hive or for Claude (Enter keeps it)' : 'a draft is kept below — type to replace it (Enter keeps it)', submitLabel: 'keep', onSubmit: (value: string) => ctx.act.room.draft(value) })] })])], 'room-say-row'))
   // Nothing to send yet: no buttons that would do nothing, just the way to get one.
-  rows.push(row(ctx, room.draft === '' ? [text(ctx, ' type a message above and press Enter; then choose where it goes', { dimColor: true })] : [text(ctx, ` "${clip(room.draft, Math.max(16, ctx.columns - 36))}" →`, { dimColor: true }), ...SAY_IDS.map(id => button(ctx, `room-send-${id}`, SAY_LABEL[id], () => ctx.act.room.say(id)))], 'room-send-row'))
+  if (room.draft === '') rows.push(row(ctx, [text(ctx, ' type a message above and press Enter; then choose where it goes', { dimColor: true })], 'room-send-row'))
+  else rows.push(...fullRows(ctx, ' draft: ', room.draft, { key: 'room-draft' }), row(ctx, [text(ctx, ' send it →', { dimColor: true }), ...SAY_IDS.map(id => button(ctx, `room-send-${id}`, SAY_LABEL[id], () => ctx.act.room.say(id)))], 'room-send-row'))
 
   rows.push(rule(ctx, 'The feed', `${shown.length} shown${room.pausedAtMs === null ? '' : ' · paused'}${room.query === '' ? '' : ` · "${room.query}"`}`))
   rows.push(

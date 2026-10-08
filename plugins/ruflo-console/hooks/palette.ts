@@ -11,6 +11,7 @@ import { claimTask, handoffClaim, releaseClaim, stealClaim, type ActionSpec } fr
 import { MEM_KEYWORDS, MEM_LAB, memSpecOf, memWhy } from './memory-lab'
 import { EVOLVE, evolveSpec, evolveWhy } from './evolve'
 import { askPalette } from './ask-palette'
+import { adrPalette } from './adr-palette'
 import { missionPalette } from './mission-palette'
 import { catalogPalette } from './plugin-catalog'
 import { settingsPalette } from './settings-palette'
@@ -179,6 +180,7 @@ export function paletteEntries(state: State, nowMs: number): PaletteEntry[] {
   out.push(...catalogPalette(state))
   out.push(...anatolePalette(state))
   out.push(...missionPalette(state))
+  out.push(...adrPalette(state))
   out.push(...askPalette(state))
   out.push(...settingsPalette(state))
 

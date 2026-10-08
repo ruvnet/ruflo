@@ -8,6 +8,10 @@ import type { OptimizerActions } from '../optimizer'
 import { askedBy } from '../data/room'
 import type { RoomActions } from '../room'
 import type { WatchActions } from '../watch'
+import type { WhatsNewActions } from '../whatsnew'
+import type { AdrActions } from '../adr-actions'
+import type { EventsActions } from '../events-ui'
+import type { TimelineActions } from '../timeline-ui'
 import type { Attention } from './attention'
 import { HEADS, mark as marked } from './marks'
 import type { LoopActions } from '../loops'
@@ -29,6 +33,7 @@ import { START_LABEL, type StartId } from '../starts'
 import type { MoreSkillActions } from '../skills-lab'
 import { VIEWS, type HarnessId, type NavStyle, type State, type ViewId } from '../state'
 import type { UpdatesMode } from '../updates'
+import type { ToastMode } from '../toast-policy'
 import { chip, COST_CHIP } from '../menu-colors'
 import { accentOfView } from '../nav-state'
 import type { VectorActions } from '../vector'
@@ -91,6 +96,10 @@ export type Actions = {
   optimizer: OptimizerActions
   /** The Timeline and Events pages: look-back range, kind filter, search, pause, paging, an event's detail, and asking about one. */
   watch: WatchActions
+  /** The Events page (ADR-474): query, level, window, follow, mutes, pins, saved searches, alert rules, export. */
+  events: EventsActions
+  /** The Timeline page (ADR-474): window, zoom, pan, lane groups, sort, lane detail, cross-links, export. */
+  timeline: TimelineActions
   /** The Room (ADR-448): the draft, what to send through, the feed's source filter, search, pause and paging. */
   room: RoomActions
   /** Ask Claude about this section (a visible prompt or a /btw aside) or run the plugin command that fits it: each asks first. */
@@ -119,6 +128,12 @@ export type Actions = {
   updates: (mode: UpdatesMode) => void
   /** Checks now, whatever the daily gate or an off setting says (it still asks before installing, and skips a development checkout). */
   checkUpdates: () => void
+  /** The Toasts setting (ADR-477): which levels draw (all, important, off), and muting or unmuting one source's toasts (saved; every toast is still recorded). */
+  toasts: { mode: (mode: ToastMode) => void; mute: (source: string) => void }
+  /** What's new (ADR-478): dismiss a pinned breaking change (or all of them), toggle the toast for a new version. */
+  whatsnew: WhatsNewActions
+  /** ADR-480: the ADRs page: filter, select, initialise, propose, change a status, attach to a mission, check scope. */
+  adrs: AdrActions
   /** Opens or closes a collapsible section (`<view>/<id>`). */
   toggle: (key: string) => void
   /** The Workflows page: cursor keys, the inspector's tab, the confirm-gated ruflo agent verbs, and naming a transcript's path. */

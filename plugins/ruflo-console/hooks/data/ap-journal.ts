@@ -8,6 +8,7 @@
 import { ESCAPES, HIDDEN, INVISIBLE } from './parse'
 import { maskSecrets } from './workflows'
 import { AUTOPILOT_DIR } from './ap-envelope'
+import { appendArgv } from './append-argv'
 
 export const JOURNAL_FILE = `${AUTOPILOT_DIR}/journal.jsonl`
 /** A journal over this is read no further (the cap is drawn): the loop then compacts by checkpoint (data/ap-loop.ts `compactState`). */
@@ -171,8 +172,8 @@ export function parseJournal(text: string | null): ParsedJournal {
   return { events, bad: lines.length - events.length, isCapped: false }
 }
 
-/** Fixed argv that appends stdin to the journal: GNU dd with O_APPEND; no shell, the path is one element. */
-export const appendArgv = (path: string): readonly string[] => ['dd', `of=${path}`, 'oflag=append', 'conv=notrunc', 'status=none']
+/** Fixed argv that appends stdin to the journal: the shared GNU dd append (data/append-argv.ts), one O_APPEND block per batch. */
+export { appendArgv }
 
 /** Fixed argv that creates a flag file (the kill switch) and its folder: GNU install -D from an empty stdin. */
 export const touchArgv = (path: string): readonly string[] => ['install', '-D', '-m', '600', '/dev/null', path]
