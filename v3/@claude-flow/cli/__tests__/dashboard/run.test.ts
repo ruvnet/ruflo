@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DigestSchema, fingerprint, generateKeyPair, randomToken } from '../../src/dashboard/protocol/index.js';
+import { fingerprint, generateKeyPair, parseSectionFrame, randomToken, SECTION_VERSIONS } from '../../src/dashboard/protocol/index.js';
 import { backoffDelay, BACKOFF_MAX_MS, BACKOFF_MIN_MS, loadRunnable, validateConnectUrl } from '../../src/dashboard/run.js';
 import { AUDIT_FILE, CONFIG_FILE, KEY_FILE, loadServerSeq } from '../../src/dashboard/state.js';
 import { unlink } from '../../src/dashboard/unlink.js';
@@ -12,32 +12,41 @@ afterEach(async () => { await rig?.cleanup(); rig = undefined; });
 const audit = (r: Rig) => readFileSync(join(r.home, AUDIT_FILE), 'utf8').trim().split('\n').map(l => JSON.parse(l) as Record<string, unknown>);
 const results = (r: Rig, cid: string) => r.srv.received.filter(e => (e.typ === 'ack' || e.typ === 'result') && e.body.cid === cid).map(e => e.typ === 'ack' ? e.body.status : e.body.ok ? 'succeeded' : /expired/.test(String(e.body.error)) ? 'expired' : 'failed');
 const cmdBody = (frame: string) => (JSON.parse(frame) as { body: { cid: string } }).body.cid;
+const frames = (r: Rig) => r.srv.byTyp('digest').map(e => parseSectionFrame(e.body));
+const section = (r: Rig, n: string) => r.srv.byTyp('digest').find(e => e.body.section === n);
+
 const HOSTILE = 'rm -' + 'rf /';
 
 describe('hello + digest publication', () => {
-  it('sends a signed hello then a schema-valid, masked digest, with increasing seq', async () => {
+  it('sends a signed hello (with section versions) then schema-valid, masked section frames, with increasing seq', async () => {
     rig = await Rig.create();
     const run = rig.start(undefined, 100);
     const hello = await rig.srv.waitFor(() => rig!.srv.byTyp('hello')[0]);
-    expect(hello.body).toMatchObject({ connector: '1', level: 'read', name: 'test box' });
-    const dig = await rig.srv.waitFor(() => rig!.srv.byTyp('digest')[1]); // second digest => periodic timer works
-    expect(DigestSchema.safeParse(dig.body).success).toBe(true);
-    const d = dig.body as { ruflo: { version: string }; missions: { objective: string }[]; tasks: { done: number }; swarm: { agents: unknown[] }; memory: { entries: number }; health: { ok: boolean } };
-    expect(d.ruflo.version).toBe('3.55.0');
-    expect(d.missions[0]!.objective).toContain('[masked]');
-    expect(JSON.stringify(dig)).not.toContain('sk-abcdefghijklmnopqrstuv');
-    expect(d.tasks.done).toBe(1); expect(d.swarm.agents).toHaveLength(1); expect(d.memory.entries).toBe(12); expect(d.health.ok).toBe(true);
+    expect(hello.body).toMatchObject({ connector: '1', level: 'read', name: 'test box', sections: SECTION_VERSIONS });
+    await rig.srv.waitFor(() => section(rig!, 'alerts') && section(rig!, 'notices') && section(rig!, 'events'));
+    const all = frames(rig);
+    expect(all.every(f => f.ok)).toBe(true);
+    const names = new Set<string>(all.map(f => (f.ok ? f.frame.section : '')));
+    for (const n of ['meta', 'health', 'control', 'missions', 'mission_events', 'tasks', 'swarm', 'approvals', 'memory', 'cost', 'events', 'notices', 'adrs', 'whatsnew', 'settings', 'alerts']) expect(names.has(n)).toBe(true);
+    const m = section(rig, 'missions')!.body as { body: { missions: { objective: string }[] } };
+    expect(m.body.missions[0]!.objective).toContain('[masked]');
+    expect(JSON.stringify(rig.srv.received)).not.toContain('sk-abcdefghijklmnopqrstuv');
+    expect(JSON.stringify(rig.srv.byTyp('digest').find(e => e.body.section === 'settings'))).not.toContain('secretsecret');
+    expect((section(rig, 'meta')!.body as { body: { ruflo: { version: string } } }).body.ruflo.version).toBe('3.55.0');
+    expect((section(rig, 'cost')!.body as { body: { available: boolean } }).body.available).toBe(false);
     const seqs = rig.srv.received.map(e => e.seq);
-    expect(seqs).toEqual([...seqs].sort((a, b) => a - b));
-    expect(new Set(seqs).size).toBe(seqs.length);
+    expect(seqs).toEqual([...seqs].sort((a, b) => a - b)); expect(new Set(seqs).size).toBe(seqs.length);
     expect(rig.srv.rejected).toEqual([]);
+    const n = rig.srv.byTyp('digest').length;
+    await new Promise(r => setTimeout(r, 400));
+    expect(rig.srv.byTyp('digest').length).toBe(n); // unchanged content is not re-sent between heartbeats
     run.stop(); expect(await run.done).toBe('stopped');
-    expect(audit(rig).some(a => a.kind === 'publish')).toBe(true);
+    expect(audit(rig).some(a => a.kind === 'publish' && a.section === 'missions')).toBe(true);
   });
 
   it('keeps seq strictly increasing across a restart', async () => {
     rig = await Rig.create();
-    let run = rig.start(); await rig.srv.waitFor(() => rig!.srv.byTyp('digest')[0]); run.stop(); await run.done;
+    let run = rig.start(); await rig.srv.waitFor(() => section(rig!, 'meta')); run.stop(); await run.done;
     const before = Math.max(...rig.srv.received.map(e => e.seq));
     run = rig.start(); await rig.srv.waitFor(() => rig!.srv.byTyp('hello')[1]); run.stop(); await run.done;
     const second = rig.srv.byTyp('hello')[1]!;
@@ -45,12 +54,22 @@ describe('hello + digest publication', () => {
     expect(rig.srv.rejected).toEqual([]);
   });
 
-  it('a failing collector becomes a health note, not a crash', async () => {
+  it('a failing collector becomes a health note and an alert, not a crash', async () => {
     rig = await Rig.create(); rig.ruflo.fail.add('memory_stats');
     const run = rig.start();
-    const dig = await rig.srv.waitFor(() => rig!.srv.byTyp('digest')[0]);
-    const d = dig.body as { health: { ok: boolean; notes: string[] }; memory?: unknown };
-    expect(d.memory).toBeUndefined(); expect(d.health.ok).toBe(false); expect(d.health.notes.join()).toContain('memory_stats');
+    await rig.srv.waitFor(() => section(rig!, 'alerts') && section(rig!, 'health'));
+    const h = section(rig, 'health')!.body.body as { ok: boolean; notes: string[] };
+    expect(section(rig, 'memory')).toBeUndefined(); expect(h.ok).toBe(false); expect(h.notes.join()).toContain('memory');
+    expect(JSON.stringify(section(rig, 'alerts')!.body)).toContain('collect:memory');
+    run.stop(); await run.done;
+  });
+
+  it('a signed ping with a watch hint is accepted and does not break the stream', async () => {
+    rig = await Rig.create(); const run = rig.start(undefined, 100);
+    await rig.srv.waitFor(() => rig!.srv.byTyp('hello')[0]);
+    rig.srv.broadcast(rig.srv.frame('ping', { watch: ['missions', 'swarm', 'bogus'] }));
+    await new Promise(r => setTimeout(r, 300));
+    expect(rig.srv.rejected).toEqual([]); expect(rig.logs.join()).not.toContain('error');
     run.stop(); await run.done;
   });
 });
@@ -186,7 +205,7 @@ describe('server commands', () => {
 
   it('state.refresh publishes a fresh digest on demand', async () => {
     rig = await Rig.create(); const run = rig.start();
-    await rig.srv.waitFor(() => rig!.srv.byTyp('digest')[0]);
+    await rig.srv.waitFor(() => section(rig!, 'alerts'));
     const n = rig.srv.byTyp('digest').length;
     rig.srv.broadcast(rig.srv.command('state.refresh'));
     await rig.srv.waitFor(() => rig!.srv.byTyp('digest').length > n);

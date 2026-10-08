@@ -19,7 +19,7 @@ export async function unlink(home: string, timeoutMs = 5000): Promise<UnlinkResu
         const t = setTimeout(() => { ws.terminate(); resolve(false); }, timeoutMs);
         ws.on('open', () => {
           try {
-            const ch = new Channel({ cfg, privateKey: key, home, seq: new DeviceSeq(home), guard: new ReplayGuard(), audit, ruflo: { mcp: async () => ({}) }, approver: async () => false, send: f => ws.send(f), collect: async () => { throw new Error('unused'); } });
+            const ch = new Channel({ cfg, privateKey: key, home, seq: new DeviceSeq(home), guard: new ReplayGuard(), audit, ruflo: { mcp: async () => ({}) }, approver: async () => false, send: f => ws.send(f), sections: { tick: async () => ({ collected: [], sent: [] }), refresh: async () => ({ sent: false }), refreshAll: async () => ({ sent: [] }), setWatch: () => undefined, notice: () => undefined } });
             ch.hello();
             ch.emit('revoke', { reason: 'unlink' });
             ws.close(1000, 'unlinked');

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { EXECUTORS } from '../../src/dashboard/executors.js';
-import { parseMcpOutput, RufloClient, RufloError, runArgv, scrubEnv } from '../../src/dashboard/exec.js';
+import { parseMcpOutput, resolveRufloCommand, RufloClient, RufloError, runArgv, scrubEnv } from '../../src/dashboard/exec.js';
 
 const dirs: string[] = [];
 const tmp = () => { const d = mkdtempSync(join(tmpdir(), 'rfexec-')); dirs.push(d); return d; };
@@ -79,7 +79,7 @@ describe('parseMcpOutput', () => {
 });
 
 describe('executor mapping', () => {
-  const ctx = (mcp: (t: string, p?: Record<string, unknown>) => Promise<unknown>) => ({ ruflo: { mcp }, cid: 'cmd_abcdefghijklmnop', publishNow: async () => undefined });
+  const ctx = (mcp: (t: string, p?: Record<string, unknown>) => Promise<unknown>) => ({ ruflo: { mcp }, cid: 'cmd_abcdefghijklmnop', refreshAll: async () => ({ sent: [] }), refreshSection: async () => ({ sent: false }) });
   it('clamps swarm size to 6 even if called with more', async () => {
     const seen: unknown[] = [];
     await EXECUTORS['swarm.init']({ topology: 'hierarchical', maxAgents: 99 }, ctx(async (_t, p) => { seen.push(p); return { swarmId: 's', topology: 'hierarchical', maxAgents: 6 }; }));
@@ -99,5 +99,12 @@ describe('executor mapping', () => {
     expect(r.ok).toBe(true);
     expect(JSON.stringify(r)).not.toContain('supersecretvalue123');
     expect(JSON.stringify(r).length).toBeLessThan(4200);
+  });
+});
+
+describe('launcher resolution', () => {
+  it('uses this very ruflo process unless config overrides it (no PATH or npx lookup)', () => {
+    expect(resolveRufloCommand(['/opt/ruflo', '--x'])).toEqual(['/opt/ruflo', '--x']);
+    expect(resolveRufloCommand()[0]).toBe(process.execPath);
   });
 });

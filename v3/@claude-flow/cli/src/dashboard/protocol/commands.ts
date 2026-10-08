@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SECTION_NAMES } from './sections.js';
 
 /** Control levels mirror the ruflo console: off < read < write < manage < full. */
 export const LEVELS = ['off', 'read', 'write', 'manage', 'full'] as const;
@@ -15,6 +16,9 @@ const empty = z.object({}).strict();
 
 /** The ONLY commands the hosted dashboard may ask a local ruflo to run. Anything else is refused on both ends. */
 export const COMMANDS = {
+  'section.refresh': { level: 'read', summary: 'Re-collect and publish one section now', args: z.object({ section: z.enum(SECTION_NAMES) }).strict() },
+  'memory.list': { level: 'read', summary: 'List memory keys in a namespace (keys only, no values)', args: z.object({ namespace: z.string().regex(/^[A-Za-z0-9._:-]{1,64}$/), limit: z.number().int().min(1).max(100).default(20) }).strict() },
+  'swarm.stop': { level: 'manage', summary: 'Shut down the running swarm', args: empty },
   'state.refresh': { level: 'read', summary: 'Publish a fresh state digest', args: empty },
   'memory.search': { level: 'read', summary: 'Semantic memory search (read-only)', args: z.object({ query: z.string().min(1).max(200), limit: z.number().int().min(1).max(20).default(5) }).strict() },
   'mission.create': { level: 'write', summary: 'Create a DRAFT mission (executes nothing)', args: z.object({ requestId, objective: z.string().min(3).max(2000) }).strict() },

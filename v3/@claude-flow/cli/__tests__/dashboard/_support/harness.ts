@@ -34,6 +34,11 @@ export function stubRuflo(): StubRuflo {
         case 'mission_request_action': return { ok: true, data: { missionId: params.missionId, revision: 2, state: 'paused' } };
         case 'swarm_init': return { success: true, swarmId: 'swarm-2', topology: params.topology, maxAgents: params.maxAgents };
         case 'agent_spawn': return { success: true, agentId: String(params.agentId ?? 'agent-new'), agentType: params.agentType, status: 'registered' };
+        case 'swarm_health': return { status: 'running', healthy: true, checks: [] };
+        case 'config_list': return { configs: [{ key: 'logging.level', value: 'info', source: 'stored' }, { key: 'api.token', value: 'sk-secretsecretsecret1234', source: 'stored' }] };
+        case 'memory_list': return { entries: [{ key: 'k1', namespace: String(params.namespace), size: 5, storedAt: 1 }], total: 1, limit: params.limit, offset: 0 };
+        case 'task_list': return { tasks: [{ taskId: 'task-1', type: 'implementation', description: 'probe', status: 'pending', assignedTo: ['agent-1'] }], total: 1 };
+        case 'swarm_shutdown': return { success: true, swarmId: params.swarmId, terminated: true, agentsTerminated: 1 };
         default: throw new Error(`unexpected tool ${tool}`);
       }
     },
@@ -57,7 +62,7 @@ export class Rig {
   setConfig(patch: Partial<Config>): void { this.cfg = { ...loadConfig(this.home)!, ...patch }; saveConfig(this.home, this.cfg); }
   start(approver?: Approver, intervalMs = 60_000): { done: Promise<RunEnd>; stop: () => void } {
     const ac = new AbortController();
-    const done = runConnector({ home: this.home, projectDir: this.project, ruflo: this.ruflo, approver, intervalMs, signal: ac.signal, log: l => this.logs.push(l), sleep: ms => new Promise(r => setTimeout(r, Math.min(ms, 30))) });
+    const done = runConnector({ home: this.home, projectDir: this.project, ruflo: this.ruflo, approver, homeDir: this.root, runCmd: async () => ({ code: 1, stdout: '', stderr: '', timedOut: false, truncated: false }), intervalMs, signal: ac.signal, log: l => this.logs.push(l), sleep: ms => new Promise(r => setTimeout(r, Math.min(ms, 30))) });
     return { done, stop: () => ac.abort() };
   }
   async cleanup(): Promise<void> { await this.srv.stop(); rmSync(this.root, { recursive: true, force: true }); }

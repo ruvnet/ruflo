@@ -72,3 +72,26 @@ export class RufloClient implements Ruflo {
     return parseMcpOutput(r.stdout);
   }
 }
+
+/** Counting semaphore: bounds how many ruflo/node child processes run at once. */
+export class Semaphore {
+  private waiting: Array<() => void> = []; private active = 0;
+  constructor(readonly max: number) {}
+  async run<T>(f: () => Promise<T>): Promise<T> {
+    if (this.active >= this.max) await new Promise<void>(r => this.waiting.push(r));
+    this.active++;
+    try { return await f(); } finally { this.active--; this.waiting.shift()?.(); }
+  }
+  get inFlight(): number { return this.active; }
+}
+export const MAX_CONCURRENT_SPAWNS = 3;
+
+/** Wrap a Ruflo so only `allow`ed tools can be called, and at most `sem.max` calls run concurrently. */
+export function guard(inner: Ruflo, allow: ReadonlySet<string>, sem: Semaphore): Ruflo {
+  return {
+    mcp: async (tool, params) => {
+      if (!allow.has(tool)) throw new RufloError('tool_not_allowed', `ruflo tool "${tool.slice(0, 40)}" is not allowed here`);
+      return sem.run(() => inner.mcp(tool, params));
+    },
+  };
+}

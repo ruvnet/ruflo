@@ -32,13 +32,10 @@ id and tenant id, +-120 s clock window, a 128-bit nonce and a strictly increasin
 the last accepted server `seq` is persisted, so a restart cannot reuse or be replayed to. Frames over 256 KiB are refused. Reconnect uses
 jittered exponential backoff (1 s to 60 s).
 
-**Publishing.** Every 10 s (and on `state.refresh`) the device sends a `digest` (the Digest object is the frame body), collected read-only through `ruflo mcp exec` (system_info,
-system_health, mission_get, mission_events, task_summary, swarm_status, agent_list, memory_stats) plus ADR markdown headers from
-`docs/adr`. Strings are control-stripped and secret-masked before signing and again server-side; the digest is schema-validated (strict).
-A collector that fails becomes a health note. Cost is omitted because ruflo has no cost read tool.
+**Publishing.** State is published as sections (envelope typ `digest`, body = `SectionFrame` v2): meta, health, alerts, control, missions, mission_events, tasks, swarm, approvals, memory, cost, events, notices, adrs, whatsnew, settings. Each section has a strict schema, a byte budget (at most 64 KiB), a cadence (5 s to 10 min) and a ttl. A section is sent only when its content hash changes or at half its ttl (heartbeat); a signed server `ping {watch:[...]}` makes watched sections keep their cadence and the rest run 4x slower. Collection is read-only through an allowlist of ruflo MCP tools (`READ_TOOLS`, enforced by the client) plus bounded regular-file reads confined to the project root (events log, ADR folders, changelogs) and the cost-tracker ledger script (fixed argv). At most 3 child processes run at once. `alerts`, `approvals` and `notices` are derived locally and read-only. Strings are control-stripped and secret-masked before signing and again server-side. A collector that fails becomes a health note and an alert; `cost` reports `available:false` with a reason when no ledger exists, never zeros.
 
-**Commands.** Only the allowlist in the shared protocol exists (`state.refresh`, `memory.search`, `mission.create` as DRAFT only,
-`mission.pause|resume|stop`, `swarm.init` max 6, `agent.spawn` from a type allowlist within the cap). The device verifies the signature
+**Commands.** Only the allowlist in the shared protocol exists (`state.refresh`, `section.refresh`, `memory.search`, `memory.list`, `mission.create` as DRAFT only,
+`mission.pause|resume|stop`, `swarm.init` max 6, `swarm.stop`, `agent.spawn` from a type allowlist within the cap). The device verifies the signature
 with the pinned server key, checks expiry (and a 15 minute maximum lifetime), re-validates arguments against the allowlist schema, applies
 its own level (`off < read < write < manage < full`), and requires a local approval for anything above `read`: an interactive TTY `y/N`
 (no TTY = deny; an `Approver` can be injected so the console can supply its own confirm). The prompt names the dashboard URL and the pinned server-key fingerprint and shows every argument in full, paged; a text argument over 500 characters requires typing `yes` after viewing all of it. `autoApprove` skips the prompt only for `mission.pause` and `mission.resume`: never `mission.create` (its text can steer a later agent), `manage` or `full`.
@@ -61,5 +58,4 @@ summary (secrets masked, no keys).
 
 ## 4. Not done
 
-No console UI, MCP tool, or auto-start; no Windows file-mode enforcement (the 0600 check is POSIX only); `cost` is not published until a
-read surface exists.
+No console UI, MCP tool, or auto-start; no Windows file-mode enforcement (the 0600 check is POSIX only); cost comes only from the cost-tracker ledger script when it is installed.

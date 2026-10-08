@@ -1,16 +1,18 @@
 /** Outbound-only wss session loop: hello, periodic digests, server frames, jittered reconnect, clean shutdown. */
 import { resolve as resolvePath } from 'node:path';
 import WebSocket from 'ws';
-import { ReplayGuard } from './protocol/index.js';
+import { READ_TOOLS, ReplayGuard } from './protocol/index.js';
 import { ttyApprover, type Approver } from './approver.js';
 import { Channel } from './channel.js';
-import { collectDigest } from './collectors.js';
-import { resolveRufloCommand, RufloClient, type Ruflo } from './exec.js';
+import { COMMAND_TOOLS } from './executors.js';
+import { SectionScheduler } from './scheduler.js';
+import { guard as limitTools, MAX_CONCURRENT_SPAWNS, resolveRufloCommand, RufloClient, runArgv, Semaphore, type Ruflo, type RunResult } from './exec.js';
 import { AuditLog, DeviceSeq, loadConfig, loadKey, loadServerSeq, normalizeBaseUrl, StateError, type Config } from './state.js';
 
 export const BACKOFF_MIN_MS = 1000;
 export const BACKOFF_MAX_MS = 60_000;
-export const DIGEST_INTERVAL_MS = 10_000;
+/** Scheduler tick period; each section has its own cadence (protocol SECTION_CADENCE_S). */
+export const DIGEST_INTERVAL_MS = 1000;
 export const STABLE_AFTER_MS = 30_000;
 
 /** Exponential 1s..60s with up-to-25% positive jitter (never below 1s, never above 60s). */
@@ -32,6 +34,8 @@ export function validateConnectUrl(connectUrl: string, baseUrl: string): string 
 
 export interface RunOptions {
   home: string; projectDir?: string; ruflo?: Ruflo; approver?: Approver; intervalMs?: number; signal?: AbortSignal;
+  /** Fixed-argv child runner (the cost ledger); injectable for tests. */
+  runCmd?: (argv: string[], timeoutMs: number) => Promise<RunResult>; homeDir?: string;
   log?: (line: string) => void; random?: () => number; now?: () => number; sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
 }
 export type RunEnd = 'stopped' | 'revoked';
@@ -55,7 +59,10 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
   const { cfg, privateKey } = loadRunnable(o.home);
   const url = validateConnectUrl(cfg.connectUrl, cfg.baseUrl);
   const projectDir = resolvePath(o.projectDir ?? cfg.projectDir ?? process.cwd());
-  const ruflo = o.ruflo ?? new RufloClient(resolveRufloCommand(cfg.rufloCommand), projectDir);
+  const raw = o.ruflo ?? new RufloClient(resolveRufloCommand(cfg.rufloCommand), projectDir);
+  const sem = new Semaphore(MAX_CONCURRENT_SPAWNS);
+  const reader = limitTools(raw, READ_TOOLS, sem);
+  const ruflo = limitTools(raw, COMMAND_TOOLS, sem);
   const approver = o.approver ?? ttyApprover();
   const audit = new AuditLog(o.home, o.now);
   const seq = new DeviceSeq(o.home);
@@ -63,6 +70,12 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
   guard.setLastSeq(cfg.deviceId, loadServerSeq(o.home));
   const sleep = o.sleep ?? defaultSleep;
   let attempt = 0;
+  let current: Channel | null = null;
+  const sched = new SectionScheduler({
+    emit: f => current?.emitSection(f), now: o.now,
+    ctx: { ruflo: reader, projectDir, level: cfg.level, autoApprove: cfg.autoApprove, cliChoice: cfg.rufloCommand ? 'config' : 'path', pending: () => current?.pending() ?? [], home: o.homeDir ?? process.env.HOME,
+      run: o.runCmd ?? ((argv, t) => sem.run(() => runArgv(argv, { cwd: projectDir, timeoutMs: t }))), now: o.now ?? Date.now },
+  });
   audit.write('run_start', { deviceId: cfg.deviceId, level: cfg.level, autoApprove: cfg.autoApprove });
 
   while (!o.signal?.aborted) {
@@ -83,14 +96,14 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
     return new Promise(resolve => {
       const ws = new WebSocket(url, { handshakeTimeout: 15_000, maxPayload: 512 * 1024, followRedirects: false });
       let timer: NodeJS.Timeout | undefined, alive = true, revoked = false, settled = false;
-      const settle = (r: RunEnd | 'closed') => { if (settled) return; settled = true; clearInterval(timer); o.signal?.removeEventListener('abort', onAbort); try { ws.terminate(); } catch { /* closed */ } resolve(r); };
+      const settle = (r: RunEnd | 'closed') => { if (settled) return; settled = true; if (current === ch) current = null; clearInterval(timer); o.signal?.removeEventListener('abort', onAbort); try { ws.terminate(); } catch { /* closed */ } resolve(r); };
       const onAbort = () => { try { ws.close(1001, 'shutdown'); } catch { /* closed */ } setTimeout(() => settle('closed'), 1500).unref(); };
       const ch = new Channel({
         cfg, privateKey, home: o.home, seq, guard, audit, ruflo, approver, now: o.now,
-        send: f => { if (ws.readyState === WebSocket.OPEN) ws.send(f); },
-        collect: () => collectDigest({ ruflo, projectDir, level: cfg.level, now: o.now }),
+        send: f => { if (ws.readyState === WebSocket.OPEN) ws.send(f); }, sections: sched,
         onRevoke: () => { revoked = true; },
       });
+      current = ch; sched.resetSent(); sched.notice('info', 'connected to the dashboard', 'connector:connected');
       o.signal?.addEventListener('abort', onAbort, { once: true });
       ws.on('open', () => {
         log('connected');
