@@ -236,6 +236,28 @@ export function shouldRefuseUnauthenticatedHttp(
   return !isLoopbackHost(host) && !authenticated && !isUnauthenticatedHttpAllowed(env);
 }
 
+/** The limits @claude-flow/mcp applies when a rate limit option is unset. */
+const DEFAULT_RATE_LIMITS = {
+  rateLimitPerIp: 120,
+  rateLimitPerSession: 50,
+  rateLimitGlobalRps: 100,
+  rateLimitGlobalBurst: 200,
+} as const;
+const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
+
+/**
+ * Rate limit options that are looser than the @claude-flow/mcp defaults. A
+ * shorter window counts as looser. Exported for tests.
+ */
+export function raisedRateLimits(options: Pick<MCPServerOptions, RateLimitOption>): RateLimitOption[] {
+  const raised = (Object.keys(DEFAULT_RATE_LIMITS) as (keyof typeof DEFAULT_RATE_LIMITS)[])
+    .filter((name) => (options[name] ?? 0) > DEFAULT_RATE_LIMITS[name]) as RateLimitOption[];
+  if ((options.rateLimitWindowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS) < DEFAULT_RATE_LIMIT_WINDOW_MS) {
+    raised.push('rateLimitWindowMs');
+  }
+  return raised;
+}
+
 /** Printable ASCII without space (RFC 6750 token-ish), 16-512 chars. */
 const AUTH_TOKEN_PATTERN = /^[\x21-\x7e]{16,512}$/;
 
@@ -1040,6 +1062,17 @@ export class MCPServerManager extends EventEmitter {
           'to require a bearer token, bind to a loopback host (127.0.0.1, ::1, or localhost), or set ' +
           'RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP=1 to acknowledge the risk and proceed ' +
           '(e.g. when a trusted reverse proxy or network boundary already enforces auth).'
+      );
+    }
+    const raised = raisedRateLimits(this.options);
+    if (raised.length > 0 && !isLoopbackHost(this.options.host) && !authToken) {
+      // RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP=1 lets an open server start, but
+      // anyone who can reach it should not also get more than the default
+      // request budget.
+      throw new Error(
+        `Refusing to raise MCP rate limits (${raised.join(', ')}) above the defaults on non-loopback ` +
+          `host "${this.options.host}" without a bearer token. Set RUFLO_MCP_HTTP_TOKEN (or ` +
+          '--auth-token-file), or bind to a loopback host (127.0.0.1, ::1, or localhost).'
       );
     }
     // Dynamically import the MCP server package

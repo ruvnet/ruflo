@@ -128,4 +128,39 @@ describe('MCPServerManager rate limit mapping (#3157)', () => {
     expect(config.rateLimit).toBeUndefined();
     expect(config.sessionRateLimit).toBeUndefined();
   });
+
+  describe('on a non-loopback host', () => {
+    const token = 'a'.repeat(32);
+
+    beforeEach(() => {
+      vi.stubEnv('RUFLO_MCP_ALLOW_UNAUTHENTICATED_HTTP', '1');
+    });
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it.each([
+      [{ rateLimitPerIp: 121 }],
+      [{ rateLimitWindowMs: 59_999 }],
+      [{ rateLimitPerSession: 51 }],
+      [{ rateLimitGlobalRps: 101 }],
+      [{ rateLimitGlobalBurst: 201 }],
+    ])('refuses %o above the defaults without a token', async (limits) => {
+      await expect(startHttp({ host: '0.0.0.0', ...limits })).rejects.toThrow(/Refusing to raise MCP rate limits/);
+      expect(h.createMCPServer).not.toHaveBeenCalled();
+    });
+
+    it('accepts limits at or below the defaults without a token', async () => {
+      const config = await startHttp({ host: '0.0.0.0', rateLimitPerIp: 120, rateLimitWindowMs: 120_000, rateLimitPerSession: 10 });
+
+      expect(config.rateLimit).toStrictEqual({ windowMs: 120_000, limit: 120 });
+    });
+
+    it('accepts raised limits with a token', async () => {
+      const config = await startHttp({ host: '0.0.0.0', authToken: token, rateLimitPerIp: 600, rateLimitGlobalBurst: 1000 });
+
+      expect(config.rateLimit).toStrictEqual({ limit: 600 });
+      expect(config.sessionRateLimit).toStrictEqual({ burstSize: 1000 });
+    });
+  });
 });
