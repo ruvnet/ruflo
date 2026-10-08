@@ -34,9 +34,9 @@ export interface CatalogCap {
   /** Not sent: the binding that makes it runnable, and the file hash it was pinned on. */
   binding?: Binding; fileSha12: string;
 }
-export interface CatalogOption { key: string; type: string; default?: boolean | number | string; choices?: string[]; settable: boolean; why?: RefuseCode; rule?: 'bool' | 'number' | 'enum'; cap?: boolean; min?: number; max?: number }
+export interface CatalogOption { key: string; type: string; default?: boolean | number | string; choices?: string[]; settable: boolean; why?: RefuseCode; rule?: 'bool' | 'enum' | 'toward' | 'range' | 'cap'; toward?: import('./options.js').AnyRule; cap?: boolean; min?: number; max?: number }
 export interface CatalogPlugin {
-  id: string; name: string; marketplace: string; version: string; manifestSha: string; enabled: boolean; mod: boolean; foreign: boolean;
+  id: string; name: string; marketplace: string; version: string; manifestSha: string; enabled: boolean; mod: boolean; foreign: boolean; why?: RefuseCode;
   counts: { commands: number; skills: number; agents: number; options: number; mcp: number };
   caps: CatalogCap[]; options: CatalogOption[];
   /** Absolute install dir, never sent. */

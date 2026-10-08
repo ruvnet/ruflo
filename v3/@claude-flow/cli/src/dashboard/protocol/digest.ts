@@ -43,7 +43,7 @@ export function maskSecrets(s: string): string {
 /** Strip control characters (keep \n\t), mask secrets, recursively. Applied both locally before send and server-side on receipt. */
 export function sanitize<T>(v: T, depth = 0): T {
   if (depth > 12) return undefined as T;
-  if (typeof v === 'string') return maskSecrets(v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')) as T;
+  if (typeof v === 'string') return maskSecrets(v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g, '')) as T;
   if (Array.isArray(v)) return v.map(x => sanitize(x, depth + 1)) as T;
   if (v && typeof v === 'object') {
     const o: Record<string, unknown> = {};

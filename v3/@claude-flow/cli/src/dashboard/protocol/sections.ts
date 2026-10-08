@@ -60,15 +60,27 @@ export const PLUGIN_ID = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}@[a-z0-9][a-z
 /** <plugin>/<kind>/<name>@<version>+<fileSha12> (docs/parity-capability-design.md section 4). */
 export const CAPABILITY_ID = z.string().regex(/^[a-z0-9-]{1,64}\/(command|skill|tool|view)\/[A-Za-z0-9._-]{1,80}@\d+\.\d+\.\d+[-.\w]*\+[0-9a-f]{12}$/);
 /** Why a capability is not runnable: a closed list (docs/parity-capability-design.md section 7). */
-export const REFUSE_CODES = ['no-binding', 'no-schema', 'foreign-marketplace', 'risk-network', 'risk-install', 'risk-spend', 'risk-delete', 'free-shell', 'free-text-to-agent', 'path-outside-root', 'secret-option', 'loosens-gate', 'would-raise-cap', 'script-changed', 'project-shadow'] as const;
+export const REFUSE_CODES = ['no-binding', 'no-schema', 'foreign-marketplace', 'risk-network', 'risk-install', 'risk-spend', 'risk-delete', 'free-shell', 'free-text-to-agent', 'path-outside-root', 'secret-option', 'loosens-gate', 'would-raise-cap', 'script-changed', 'project-shadow', 'not-settable', 'unreadable'] as const;
 export type RefuseCode = (typeof REFUSE_CODES)[number];
 const WHY = z.enum(REFUSE_CODES);
+/** One plugin in the `plugins` section. `why: 'unreadable'` lists a plugin the connector could not read, instead of dropping it. */
+export const PLUGIN_ENTRY = z.object({ id: PLUGIN_ID, name: S(64), marketplace: S(64), version: S(40), enabled: z.boolean(), mod: z.boolean(), foreign: z.boolean(), manifestSha: S(12), why: WHY.optional() }).strict();
 const CAP_KIND = z.enum(['command', 'skill', 'tool', 'view']);
 export const CAPABILITY_RISKS = ['read', 'write', 'network', 'install', 'spend', 'delete'] as const;
 export type CapabilityRisk = (typeof CAPABILITY_RISKS)[number];
 const CAP_RISK = z.enum(CAPABILITY_RISKS);
 const RUN_ID = z.string().regex(/^run_[A-Za-z0-9_-]{8,48}$/);
 const CAP_ARG = z.object({ name: S(32), type: z.enum(['string', 'int', 'bool', 'enum', 'path']), max: nat.optional(), min: int.optional(), enum: z.array(S(40)).max(24).optional() }).strict();
+/** One plugin in the `capabilities` section; validated on its own by the connector so one bad plugin cannot reject the whole frame. */
+export const CAPS_ENTRY = z.object({
+  id: PLUGIN_ID, version: S(40), manifestSha: S(12), enabled: z.boolean(), mod: z.boolean(), why: WHY.optional(),
+  counts: z.object({ commands: nat, skills: nat, agents: nat, options: nat, mcp: nat }).strict(),
+  caps: z.array(z.object({
+    cid: CAPABILITY_ID, kind: CAP_KIND, name: S(80), risk: CAP_RISK, level: z.enum(['read', 'write', 'manage']).nullable(), mode: z.enum(['run', 'view', 'refused']),
+    why: WHY.optional(), args: z.array(CAP_ARG).max(12).optional(),
+  }).strict()).max(400),
+  options: z.array(z.object({ key: S(48), type: S(16), default: z.union([z.boolean(), z.number().safe(), S(64)]).optional(), choices: z.array(S(64)).max(12).optional(), settable: z.boolean(), why: WHY.optional() }).strict()).max(60),
+}).strict();
 const level = z.enum(['info', 'warn', 'error']);
 const lvl5 = z.enum(['off', 'read', 'write', 'manage', 'full']);
 
@@ -81,7 +93,7 @@ const detail = z.object({
 
 export const SectionSchemas = {
   meta: z.object({ ruflo: z.object({ version: S(40), node: S(40).optional(), os: S(40).optional() }).strict(), consoleVersion: S(40).optional(), pluginVersion: S(40).optional(),
-    project: z.boolean(), cli: S(40).optional(), updateAvailable: S(40).optional(), connector: S(10).optional() }).strict(),
+    project: z.boolean(), cli: S(40).optional(), updateAvailable: S(40).optional(), connector: S(10).optional(), notes: z.array(S(200)).max(5).optional() }).strict(),
   health: z.object({ ok: z.boolean(), notes: z.array(S(200)).max(20), areas: z.array(z.object({ name: S(40), status: S(24) }).strict()).max(40) }).strict(),
   alerts: z.object({ alerts: z.array(z.object({ level, key: S(60), text: S(200), go: S(60).optional() }).strict()).max(30) }).strict(),
   control: z.object({ level: lvl5, autoApprove: z.boolean(), modelControl: S(24).optional(), modelConfirm: S(24).optional(),
@@ -107,26 +119,18 @@ export const SectionSchemas = {
   settings: z.object({ options: z.array(z.object({ key: S(60), value: S(160) }).strict()).max(60) }).strict(),
   // ---- P1 parity tier -------------------------------------------------------------------------------------------------------------------
   /** Installed plugins: names, versions, enabled. Never an install path. */
-  plugins: z.object({ plugins: z.array(z.object({ id: PLUGIN_ID, name: S(64), marketplace: S(64), version: S(40), enabled: z.boolean(), mod: z.boolean(), foreign: z.boolean(), manifestSha: S(12) }).strict()).max(120) }).strict(),
+  plugins: z.object({ plugins: z.array(PLUGIN_ENTRY).max(120) }).strict(),
   /** Locally built capability catalog (docs/parity-capability-design.md section 3). */
   capabilities: z.object({
     v: z.literal(1), generated: z.object({ treeSha: S(12), plugins: nat }).strict(),
-    plugins: z.array(z.object({
-      id: PLUGIN_ID, version: S(40), manifestSha: S(12), enabled: z.boolean(), mod: z.boolean(),
-      counts: z.object({ commands: nat, skills: nat, agents: nat, options: nat, mcp: nat }).strict(),
-      caps: z.array(z.object({
-        cid: CAPABILITY_ID, kind: CAP_KIND, name: S(80), risk: CAP_RISK, level: z.enum(['read', 'write', 'manage']).nullable(), mode: z.enum(['run', 'view', 'refused']),
-        why: WHY.optional(), args: z.array(CAP_ARG).max(12).optional(),
-      }).strict()).max(400),
-      options: z.array(z.object({ key: S(48), type: S(16), default: z.union([z.boolean(), z.number().safe(), S(64)]).optional(), choices: z.array(S(64)).max(12).optional(), settable: z.boolean(), why: WHY.optional() }).strict()).max(60),
-    }).strict()).max(120),
+    plugins: z.array(CAPS_ENTRY).max(120),
     refused: z.object({ total: nat, byCode: z.record(WHY, nat).refine(r => Object.keys(r).length <= 24, 'too many codes') }).strict(),
   }).strict(),
   /** capability.run / mod.option.set / plugin.* history: the last runs, newest first, never an argument value that looked secret. */
   capability_runs: z.object({
     active: z.object({ runId: RUN_ID, capabilityId: S(200), startedAt: int, tail: S(8192) }).strict().nullable(),
     history: z.array(z.object({
-      runId: RUN_ID, capabilityId: S(200), command: S(24), level: S(12), risk: S(12), by: S(80), startedAt: int, endedAt: int, exit: int.nullable(), bytes: nat, truncated: z.boolean(),
+      runId: RUN_ID, capabilityId: S(200), plugin: PLUGIN_ID.optional(), command: S(24), level: S(12), risk: S(12), by: S(80), startedAt: int, endedAt: int, exit: int.nullable(), bytes: nat, truncated: z.boolean(),
       outcome: z.enum(['succeeded', 'failed', 'denied', 'refused', 'expired', 'changed']), reason: S(60).optional(), tail: S(8192).optional(),
     }).strict()).max(40),
   }).strict(),

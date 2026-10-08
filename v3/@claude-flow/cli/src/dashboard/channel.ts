@@ -28,6 +28,7 @@ export interface SectionPort {
   refresh(name: SectionName, opts?: { immediate?: boolean }): Promise<{ sent: boolean; rateLimited?: boolean }>;
   refreshAll(): Promise<{ sent: SectionName[]; rateLimited?: boolean }>;
   setWatch(list: readonly SectionName[]): void;
+  markDirty?(name: SectionName): void;
   notice(level: 'info' | 'warn' | 'error', text: string, key: string): void;
 }
 export type FrameOutcome = 'ok' | 'rejected' | 'revoked' | 'ignored';

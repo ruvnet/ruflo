@@ -32,6 +32,22 @@ export function readRegular(root: string, rel: string, maxBytes: number, tail = 
   } catch { return null; } finally { if (fd !== undefined) try { closeSync(fd); } catch { /* closed */ } }
 }
 
+/** Like readRegular but returns the raw bytes and the stat signature (ino,size,mtime,ctime) the bytes were read under. */
+export function readRegularBytes(root: string, rel: string, maxBytes: number): { buf: Buffer; size: number; sig: string } | null {
+  const p = confine(root, rel);
+  if (!p) return null;
+  let fd: number | undefined;
+  try {
+    if (!lstatSync(p).isFile()) return null;
+    fd = openSync(p, constants.O_RDONLY | (constants.O_NONBLOCK ?? 0) | (constants.O_NOFOLLOW ?? 0));
+    const st = fstatSync(fd);
+    if (!st.isFile() || st.size > maxBytes) return st.isFile() ? { buf: Buffer.alloc(0), size: st.size, sig: '' } : null;
+    const buf = Buffer.alloc(st.size);
+    readSync(fd, buf, 0, st.size, 0);
+    return { buf, size: st.size, sig: `${st.ino}:${st.size}:${st.mtimeMs}:${st.ctimeMs}` };
+  } catch { return null; } finally { if (fd !== undefined) try { closeSync(fd); } catch { /* closed */ } }
+}
+
 /** Names of regular entries in a confined directory (never follows symlinks), at most `max`. */
 export function listDir(root: string, rel: string, max = 1000): { name: string; isDir: boolean }[] {
   const p = confine(root, rel);

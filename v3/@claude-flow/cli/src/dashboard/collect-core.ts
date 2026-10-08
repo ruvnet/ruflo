@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { maskSecrets, type Level, type SectionName } from './protocol/index.js';
 import type { Ruflo, RunResult } from './exec.js';
+import { projectStoreRedirects } from './capabilities/store.js';
 
 type Obj = Record<string, unknown>;
 export interface CollectCtx {
@@ -38,7 +39,9 @@ export const isRufloProject = (dir: string): boolean => ['.claude-flow', '.swarm
 export const meta: Collector = async c => {
   const info = await c.ruflo.mcp('system_info');
   if (!isObj(info)) throw new Error('unexpected result shape');
-  return { ruflo: { version: str(info.version, 40) || 'unknown', ...(info.nodeVersion ? { node: str(info.nodeVersion, 40) } : {}), os: `${platform()}-${arch()}` }, project: isRufloProject(c.projectDir), cli: c.cliChoice, connector: '1' };
+  const redirects = projectStoreRedirects(c.projectDir);
+  const notes = redirects.length ? [`claude-flow.config.json moves ruflo's data outside this project (${redirects.join(', ')}); write-class capabilities are refused. Only link a project you trust.`] : [];
+  return { ruflo: { version: str(info.version, 40) || 'unknown', ...(info.nodeVersion ? { node: str(info.nodeVersion, 40) } : {}), os: `${platform()}-${arch()}` }, project: isRufloProject(c.projectDir), cli: c.cliChoice, connector: '1', ...(notes.length ? { notes } : {}) };
 };
 
 export const health: Collector = async c => {

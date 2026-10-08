@@ -56,6 +56,8 @@ export class SectionScheduler {
 
   /** After a reconnect the server may have lost its copy: forget what was sent so everything is re-sent once. */
   resetSent(): void { this.hashes.clear(); this.lastSent.clear(); this.lastRun.clear(); }
+  /** Collect this section on the next pass whatever its cadence (request-driven republish: no immediate path, no extra quota use). */
+  markDirty(name: SectionName): void { this.lastRun.delete(name); }
   setWatch(list: readonly SectionName[]): void { this.watch = new Set(list); }
   notice(level: 'info' | 'warn' | 'error', text: string, key: string): void {
     this.ring.unshift({ at: this.now(), level, text: text.slice(0, 200), key: key.slice(0, 60) }); this.ring.length = Math.min(this.ring.length, NOTICE_RING);
@@ -109,7 +111,7 @@ export class SectionScheduler {
   private frameIfNeeded(name: SectionName, body: Record<string, unknown>, force: boolean, t: number): SectionFrame | null {
     // The server drops a frame that follows the previous one of this section too closely, without telling us. Do not mark it sent: it is retried on a later pass.
     const lastAt = this.lastSent.get(name);
-    if (!force && lastAt !== undefined && t - lastAt < SECTION_MIN_SEND_GAP_MS(name)) return null;
+    if (!force && lastAt !== undefined && t - lastAt < SECTION_MIN_SEND_GAP_MS(name)) { this.lastRun.delete(name); return null; } // retried on the next pass
     const frame0 = buildSectionFrame(name, body as never, { rev: 0, at: t });
     const hash = sectionHash(stable(name, frame0.body));
     const heartbeat = t - (this.lastSent.get(name) ?? 0) >= (SECTION_TTL_S[name] * 1000) / 2;

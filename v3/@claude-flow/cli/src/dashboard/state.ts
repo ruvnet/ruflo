@@ -47,6 +47,8 @@ export const ConfigSchema = z.object({
   /** argv prefix that launches ruflo; default resolves `ruflo` on PATH, else a pinned npx. */
   /** Absolute path of the cost-tracker ledger script to run (user-chosen; must be owned by you, not group/world-writable, outside the project). */
   ledgerPath: z.string().max(1024).optional(),
+  /** Sources a marketplace named `ruflo` may have, as "github:owner/repo" or "directory:/abs/path" (default github:ruvnet/ruflo). Checked against known_marketplaces.json when Claude Code records one. */
+  marketplaceSources: z.array(z.string().max(300)).max(10).optional(),
   rufloCommand: z.array(z.string().max(300)).max(8).optional(),
 }).strict();
 export type Config = z.infer<typeof ConfigSchema>;

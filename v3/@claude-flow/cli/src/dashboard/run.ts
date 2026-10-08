@@ -65,7 +65,7 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
   const { cfg, privateKey } = loadRunnable(o.home);
   const url = validateConnectUrl(cfg.connectUrl, cfg.baseUrl);
   const projectDir = resolvePath(o.projectDir ?? cfg.projectDir ?? process.cwd());
-  const raw = o.ruflo ?? new RufloClient(resolveRufloCommand(cfg.rufloCommand), projectDir);
+  const raw = o.ruflo ?? new RufloClient(resolveRufloCommand(cfg.rufloCommand, undefined, projectDir), projectDir);
   const sem = new Semaphore(MAX_CONCURRENT_SPAWNS);
   const reader = limitTools(raw, READ_TOOLS, sem);
   const ruflo = limitTools(raw, COMMAND_TOOLS, sem);
@@ -75,11 +75,11 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
   const configDir = o.claudeConfigDir ?? process.env.CLAUDE_CONFIG_DIR ?? join(userHome, '.claude');
   const claudeRoots = { configDir, cacheDir: o.pluginCacheDir ?? join(configDir, 'plugins', 'cache') };
   const caps = new CapabilityService({
-    home: userHome, roots: claudeRoots, projectDir, ruflo: limitTools(raw, CAPABILITY_TOOLS, sem), audit, now: o.now,
-    rufloBase: (() => { try { return resolveRufloCommand(cfg.rufloCommand); } catch { return null; } })(), claude: o.claudePath !== undefined ? o.claudePath : o.runCmd ? 'claude' : resolveOnPath('claude'),
+    home: userHome, roots: claudeRoots, projectDir, marketplaceSources: cfg.marketplaceSources, ruflo: limitTools(raw, CAPABILITY_TOOLS, sem), audit, now: o.now,
+    rufloBase: (() => { try { return resolveRufloCommand(cfg.rufloCommand, undefined, projectDir); } catch { return null; } })(), claude: o.claudePath !== undefined ? o.claudePath : o.runCmd ? 'claude' : resolveOnPath('claude', undefined, projectDir),
     // Every child process of the capability channel goes through one runner; tests inject it (runCmd or capRun) and never touch the real ~/.claude.
     run: (argv, x) => sem.run(() => (o.capRun ?? (o.runCmd ? (a: string[], y: { cwd: string; timeoutMs: number; stdin?: string }) => o.runCmd!(a, y.timeoutMs, y.stdin) : runArgv))(argv, x)),
-    onChange: names => { for (const n of names) void sched.refresh(n, { immediate: true }).catch(() => undefined); },
+    onChange: (names, o) => { for (const n of names) { if (o?.immediate) void sched.refresh(n, { immediate: true }).catch(() => undefined); else sched.markDirty(n); } },
   });
   const seq = new DeviceSeq(o.home);
   const guard = new ReplayGuard();

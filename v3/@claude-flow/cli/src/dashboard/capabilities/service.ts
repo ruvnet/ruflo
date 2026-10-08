@@ -11,7 +11,8 @@ import { trustedScript } from '../collect-files.js';
 import { confine } from '../read.js';
 import { runArgv, type Ruflo, type RunResult } from '../exec.js';
 import type { AuditLog } from '../state.js';
-import { buildCatalog, catalogBody, pluginCacheRoot, pluginsBody, readPinned, rootsFor, type Roots } from './catalog.js';
+import { buildCatalog, buildCatalogAsync, catalogBody, pluginCacheRoot, pluginsBody, readPinned, rootsFor, type Roots } from './catalog.js';
+import { projectStoreRedirects } from './store.js';
 import { DEFAULT_BINDINGS, type BindingTable } from './bindings.js';
 import { sha256Hex } from './hash.js';
 import { checkOptionValue } from './options.js';
@@ -22,6 +23,9 @@ type Obj = Record<string, unknown>;
 export type CapCommand = Extract<CommandName, 'plugin.list' | 'plugin.enable' | 'plugin.disable' | 'capability.run' | 'mod.option.set'>;
 export const CAP_COMMANDS: ReadonlySet<string> = new Set<CapCommand>(['plugin.list', 'plugin.enable', 'plugin.disable', 'capability.run', 'mod.option.set']);
 export const HISTORY_MAX = 40;
+/** plugin.list rebuilds the catalog: at most one per device per 5 s. */
+export const LIST_MIN_INTERVAL_MS = 5000;
+export const MAX_MCP_TIMEOUT_MS = 300_000;
 export const RUNS_PER_MINUTE = 6;
 export const READ_TIMEOUT_MS = 30_000;
 export const WRITE_TIMEOUT_MS = 120_000;
@@ -30,7 +34,7 @@ const TAIL_KEEP_FULL = 3;
 const GUARD_PLUGINS = new Set(['ruflo-protector', 'ruflo-mods']);
 
 export type Outcome = 'succeeded' | 'failed' | 'denied' | 'refused' | 'expired' | 'changed';
-export interface RunRecord { runId: string; capabilityId: string; command: string; level: string; risk: string; by: string; startedAt: number; endedAt: number; exit: number | null; bytes: number; truncated: boolean; outcome: Outcome; reason?: string; tail?: string }
+export interface RunRecord { runId: string; capabilityId: string; plugin?: string; /** audit only, never published */ argvSha?: string; approved?: boolean; command: string; level: string; risk: string; by: string; startedAt: number; endedAt: number; exit: number | null; bytes: number; truncated: boolean; outcome: Outcome; reason?: string; tail?: string }
 export interface Pin { pluginId: string; manifestSha: string; capabilityId?: string; fileSha12?: string; argvSha: string }
 export interface Prepared {
   ok: true; command: CapCommand; level: CapLevel; risk: string; summary: string; by: string;
@@ -48,11 +52,14 @@ export interface ServiceDeps {
   home: string; /** CLAUDE_CONFIG_DIR and a relocated plugin cache; default <home>/.claude */ roots?: Roots; projectDir: string; ruflo: Ruflo; rufloBase: string[] | null; claude: string | null; audit: AuditLog;
   run?: (argv: string[], o: { cwd: string; timeoutMs: number; stdin?: string }) => Promise<RunResult>;
   table?: BindingTable; now?: () => number;
-  /** Ask the scheduler to re-publish these sections right away. */
-  onChange?: (sections: Array<'plugins' | 'capabilities' | 'capability_runs'>) => void;
+  /** Allowed recorded sources for the `ruflo` marketplace (config.json `marketplaceSources`). */
+  marketplaceSources?: readonly string[];
+  /** Ask the scheduler to re-publish these sections: next pass by default, `immediate` only for the run's own start/end. */
+  onChange?: (sections: Array<'plugins' | 'capabilities' | 'capability_runs'>, o?: { immediate?: boolean }) => void;
 }
 
 export class CapabilityService {
+  private lastList: number | undefined;
   private history: RunRecord[] = [];
   private active: { runId: string; capabilityId: string; startedAt: number; tail: string } | null = null;
   private starts: number[] = [];
@@ -60,13 +67,22 @@ export class CapabilityService {
   constructor(private d: ServiceDeps) { this.table = d.table ?? DEFAULT_BINDINGS; this.now = d.now ?? Date.now; }
 
   private get roots(): Roots { return this.d.roots ?? rootsFor(this.d.home); }
-  catalog(only?: string) { return buildCatalog(this.roots, only, this.table); }
-  pluginsBody() { return pluginsBody(this.catalog()); }
-  capabilitiesBody() { return catalogBody(this.catalog()); }
+  /** Uncached, synchronous: used to resolve and re-verify a single plugin. */
+  catalog(only?: string) { return buildCatalog(this.roots, only, this.table, this.d.marketplaceSources); }
+  private shared: { at: number; p: Promise<ReturnType<typeof buildCatalog>> } | null = null;
+  /** One cached, yielding build shared by the plugins and capabilities collectors of a pass (stale after 2 s or when something changed). */
+  private listing() {
+    const t = this.now();
+    if (!this.shared || t - this.shared.at > 2000) this.shared = { at: t, p: buildCatalogAsync(this.roots, { table: this.table, marketplaceSources: this.d.marketplaceSources }) };
+    return this.shared.p;
+  }
+  private invalidate(): void { this.shared = null; }
+  async pluginsBody() { return pluginsBody(await this.listing()); }
+  async capabilitiesBody() { return catalogBody(await this.listing()); }
   runsBody(): Obj {
     return {
       active: this.active ? { ...this.active } : null,
-      history: this.history.map((h, i) => ({ ...h, ...(h.tail !== undefined && i >= TAIL_KEEP_FULL ? { tail: h.tail.slice(0, 512) } : {}) })),
+      history: this.history.map((h, i) => { const { argvSha: _a, approved: _p, ...pub } = h; return { ...pub, ...(h.tail !== undefined && i >= TAIL_KEEP_FULL ? { tail: h.tail.slice(0, 512) } : {}) }; }),
     };
   }
   /** Section sequencing helpers for the scheduler. */
@@ -76,18 +92,21 @@ export class CapabilityService {
   async prepare(cmd: CapCommand, args: Obj, by: string): Promise<Prepared | Refusal> {
     const r = await this.prepare1(cmd, args, by);
     // A stale id (a file changed, a plugin updated) means the dashboard's copy of the catalog is old: publish the new one.
-    if (!r.ok && r.code === 'unknown_capability') this.d.onChange?.(['plugins', 'capabilities']);
+    if (!r.ok && r.code === 'unknown_capability') this.invalidate(); this.d.onChange?.(['plugins', 'capabilities']);
     return r.ok ? { ...r, request: { ...args } } : r;
   }
   private async prepare1(cmd: CapCommand, args: Obj, by: string): Promise<Prepared | Refusal> {
     try {
       switch (cmd) {
-        case 'plugin.list': return this.card(cmd, 'read', 'read', 'plugin.list', by, { plugin: 'all installed plugins' }, { pluginId: '', manifestSha: '', argvSha: sha256Hex('plugin.list') }, { t: 'list' });
+        case 'plugin.list': {
+          const t = this.now(); if (this.lastList !== undefined && t - this.lastList < LIST_MIN_INTERVAL_MS) return { ok: false, code: 'rate_limited' }; this.lastList = t;
+          return this.card(cmd, 'read', 'read', 'plugin.list', by, { plugin: 'all installed plugins' }, { pluginId: '', manifestSha: '', argvSha: sha256Hex('plugin.list') }, { t: 'list' });
+        }
         case 'plugin.enable': case 'plugin.disable': return await this.prepareToggle(cmd, String(args.pluginId), by);
         case 'capability.run': return this.prepareRun(String(args.pluginId), String(args.capabilityId), (args.args ?? {}) as Obj, by);
         case 'mod.option.set': return await this.prepareOption(String(args.modId), String(args.key), args.value, by);
       }
-    } catch (e) { return { ok: false, code: `prepare_failed:${printable(String((e as Error).message), 80)}` }; }
+    } catch { return { ok: false, code: 'prepare_failed' }; }
   }
 
   private card(command: CapCommand, level: CapLevel, risk: string, capabilityId: string, by: string, card: Prepared['card'], pin: Pin, plan: Plan, typed?: string): Prepared {
@@ -100,6 +119,7 @@ export class CapabilityService {
     if (!plugin || !cap || !capabilityId.startsWith(`${plugin.name}/`)) return { ok: false, code: 'unknown_capability' };
     if (cap.mode !== 'run' || !cap.binding || cap.level === null) return { ok: false, code: cap.why ?? 'no-binding' };
     const b = cap.binding;
+    if (b.level !== 'read' && projectStoreRedirects(this.d.projectDir).length > 0) return { ok: false, code: 'path-outside-root' }; // the project moved ruflo's store elsewhere
     const v = validateArgs(b.args, rawArgs, this.d.projectDir);
     if (!v.ok) return { ok: false, code: v.code };
     const plan = this.planFor(b, v.values, plugin);
@@ -125,7 +145,7 @@ export class CapabilityService {
     if (!this.d.claude) return { ok: false, code: 'claude_not_found' };
     if (enable && plugin.mod) {
       const cfg = await this.configure('ruflo-mods@ruflo');
-      if (cfg?.inputs.modTrust === 'refuse-risky' && !(cfg.inputs.modTrustAllow ?? '').split(/[,\s]+/).includes(plugin.name)) return { ok: false, code: 'loosens-gate' };
+      if (cfg?.inputs.modTrust === 'refuse-risky' && !(cfg.inputs.modTrustAllow ?? '').split(/[,\s]+/).includes(plugin.id)) return { ok: false, code: 'loosens-gate' };
     }
     const argv = [this.d.claude, 'plugin', enable ? 'enable' : 'disable', pluginId, '--scope', 'user'];
     const shown = argv.join(' ');
@@ -151,7 +171,7 @@ export class CapabilityService {
     const argv = [this.d.claude, 'plugin', 'configure', modId, '--values-stdin'];
     const shown = `${argv.join(' ')} < ${stdin}`;
     const card = { plugin: plugin.id, version: plugin.version, manifestSha: plugin.manifestSha, option: `${plugin.name}.${key}: ${current ?? '(unset)'} -> ${String(chk.value)}`, run: shown };
-    return this.card('mod.option.set', 'write', 'write', `mod.option.set:${key}`, by, card, { pluginId: modId, manifestSha: plugin.manifestSha, argvSha: sha256Hex(shown + String(current))}, { t: 'argv', argv, stdin, timeoutMs: READ_TIMEOUT_MS });
+    return this.card('mod.option.set', 'write', 'write', `mod.option.set:${key}`, by, card, { pluginId: modId, manifestSha: plugin.manifestSha, argvSha: sha256Hex(shown + String(current))}, { t: 'argv', argv, stdin, timeoutMs: READ_TIMEOUT_MS }, GUARD_PLUGINS.has(plugin.name) && opt.rule !== 'bool' && opt.rule !== 'enum' && opt.rule !== 'range' ? plugin.name : undefined);
   }
 
   /** `claude plugin configure <id> --json`: the current inputs, parsed defensively. */
@@ -169,15 +189,15 @@ export class CapabilityService {
 
   // ---------------------------------------------------------------------------------------------------------------- execute
   /** Record a command that never reached execution (refused, denied, expired). */
-  recordNever(command: string, capabilityId: string, level: string, risk: string, by: string, outcome: Outcome, reason: string): void {
+  recordNever(command: string, capabilityId: string, level: string, risk: string, by: string, outcome: Outcome, reason: string, extra: { plugin?: string; argvSha?: string } = {}): void {
     const t = this.now();
-    this.push({ runId: this.newId(), capabilityId: capabilityId.slice(0, 200), command, level, risk, by, startedAt: t, endedAt: t, exit: null, bytes: 0, truncated: false, outcome, reason: reason.slice(0, 60) });
+    this.push({ runId: this.newId(), capabilityId: capabilityId.slice(0, 200), ...(extra.plugin ? { plugin: extra.plugin } : {}), argvSha: extra.argvSha ?? sha256Hex(`${command}:${capabilityId}`), approved: false, command, level, risk, by, startedAt: t, endedAt: t, exit: null, bytes: 0, truncated: false, outcome, reason: reason.slice(0, 60) });
   }
 
   /** Re-verify the pin on disk, then run. Any difference voids the approval. */
   async execute(p: Prepared): Promise<{ ok: true; result: Obj } | { ok: false; error: string }> {
-    const fail = (outcome: Outcome, error: string) => { this.recordNever(p.command, p.capabilityId, p.level, p.risk, p.by, outcome, error); this.d.onChange?.(['plugins', 'capabilities', 'capability_runs']); return { ok: false as const, error }; };
-    if (p.plan.t === 'list') { this.d.onChange?.(['plugins', 'capabilities']); return { ok: true, result: { published: ['plugins', 'capabilities'] } }; }
+    const fail = (outcome: Outcome, error: string) => { this.recordNever(p.command, p.capabilityId, p.level, p.risk, p.by, outcome, error, { plugin: p.pin.pluginId, argvSha: p.pin.argvSha }); this.invalidate(); this.d.onChange?.(['plugins', 'capabilities']); this.d.onChange?.(['capability_runs'], { immediate: true }); return { ok: false as const, error }; };
+    if (p.plan.t === 'list') { this.invalidate(); this.d.onChange?.(['plugins', 'capabilities']); return { ok: true, result: { published: ['plugins', 'capabilities'] } }; }
     const again = await this.prepare(p.command, p.request, p.by);
     if (!again.ok || again.pin.manifestSha !== p.pin.manifestSha || again.pin.argvSha !== p.pin.argvSha || again.pin.fileSha12 !== p.pin.fileSha12 || again.pin.capabilityId !== p.pin.capabilityId) return fail('changed', 'capability_changed');
     if (this.active) return fail('refused', 'busy');
@@ -187,24 +207,30 @@ export class CapabilityService {
     const plan = again.plan;
     const runId = this.newId();
     this.active = { runId, capabilityId: p.capabilityId, startedAt: t, tail: '' };
-    this.d.onChange?.(['capability_runs']);
+    this.d.onChange?.(['capability_runs'], { immediate: true });
     let exit: number | null = null; let out = ''; let truncated = false; let outcome: Outcome = 'succeeded'; let reason: string | undefined;
     try {
       if (plan.t === 'mcp') {
         if (plan.shadowCheck && projectShadowsMetaharness(this.d.projectDir)) throw new RefuseError('project-shadow');
-        out = JSON.stringify(await this.d.ruflo.mcp(plan.tool, plan.params)); exit = 0;
+        out = JSON.stringify(await this.d.ruflo.mcp(plan.tool, plan.params, { timeoutMs: Math.min(plan.timeoutMs, MAX_MCP_TIMEOUT_MS) })); exit = 0;
       } else if (plan.t === 'argv') {
         if (plan.script && !this.scriptTrusted(plan.script)) throw new RefuseError('script-changed');
-        const r = await this.runner(plan.argv, { cwd: this.d.projectDir, timeoutMs: plan.timeoutMs, ...(plan.stdin !== undefined ? { stdin: plan.stdin } : {}) });
+        const r = await this.runner(plan.argv, { cwd: plan.script ? plan.script.dir : this.d.projectDir, timeoutMs: plan.timeoutMs, ...(plan.stdin !== undefined ? { stdin: plan.stdin } : {}) });
         out = r.stdout + (r.stderr ? `\n${r.stderr}` : ''); exit = r.code; truncated = r.truncated;
-        if (r.timedOut) { outcome = 'failed'; reason = 'timeout'; } else if (r.code !== 0) { outcome = 'failed'; reason = `exit_${r.code}`; }
+        if (r.timedOut) { outcome = 'failed'; reason = p.level === 'read' ? 'timeout' : 'timeout_outcome_unknown'; } else if (r.code !== 0) { outcome = 'failed'; reason = `exit_${r.code}`; }
       }
-    } catch (e) { outcome = e instanceof RefuseError ? 'refused' : 'failed'; reason = e instanceof RefuseError ? e.code : printable(String((e as Error).message), 60); out = out || reason; }
+    } catch (e) {
+      outcome = e instanceof RefuseError ? 'refused' : 'failed';
+      const msg = printable(String((e as Error).message), 60);
+      // A write that timed out may have partly landed: say so instead of "failed".
+      reason = e instanceof RefuseError ? e.code : /timed out/.test(msg) ? (p.level === 'read' ? 'timeout' : 'timeout_outcome_unknown') : msg; out = out || reason;
+    }
     const bytes = Buffer.byteLength(out);
     const tail = printable(maskSecrets(out), 8192);
-    const rec: RunRecord = { runId, capabilityId: p.capabilityId, command: p.command, level: p.level, risk: p.risk, by: p.by, startedAt: t, endedAt: this.now(), exit, bytes, truncated: truncated || bytes > 65536, outcome, ...(reason ? { reason } : {}), tail };
+    const rec: RunRecord = { runId, capabilityId: p.capabilityId, plugin: p.pin.pluginId || undefined, argvSha: p.pin.argvSha, approved: p.level !== 'read', command: p.command, level: p.level, risk: p.risk, by: p.by, startedAt: t, endedAt: this.now(), exit, bytes, truncated: truncated || bytes > 65536, outcome, ...(reason ? { reason } : {}), tail };
     this.active = null; this.push(rec);
-    this.d.onChange?.(p.command === 'capability.run' ? ['capability_runs'] : ['plugins', 'capabilities', 'capability_runs']);
+    if (p.command !== 'capability.run') { this.invalidate(); this.d.onChange?.(['plugins', 'capabilities']); }
+    this.d.onChange?.(['capability_runs'], { immediate: true });
     if (outcome !== 'succeeded') return { ok: false, error: reason ?? 'failed' };
     return { ok: true, result: sanitize({ runId, exit, bytes, truncated: rec.truncated, output: tail.slice(0, 2000) }) as Obj };
   }
@@ -218,14 +244,14 @@ export class CapabilityService {
 
   private push(r: RunRecord): void { this.history.unshift(r); this.history.length = Math.min(this.history.length, HISTORY_MAX); this.audit(r); }
   private audit(r: RunRecord): void {
-    this.d.audit.write('capability_run', { runId: r.runId, capabilityId: r.capabilityId, command: r.command, argvSha: undefined, level: r.level, risk: r.risk, by: r.by, approvedBy: 'local', startedAt: r.startedAt, endedAt: r.endedAt, exit: r.exit, bytes: r.bytes, truncated: r.truncated, outcome: r.outcome, reason: r.reason });
+    this.d.audit.write('capability_run', { runId: r.runId, capabilityId: r.capabilityId, command: r.command, plugin: r.plugin, argvSha: r.argvSha, level: r.level, risk: r.risk, by: r.by, approvedBy: r.approved ? 'local' : 'none', startedAt: r.startedAt, endedAt: r.endedAt, exit: r.exit, bytes: r.bytes, truncated: r.truncated, outcome: r.outcome, reason: r.reason });
   }
   private newId(): string { return `run_${randomBytes(9).toString('base64url')}`; }
 }
 class RefuseError extends Error { constructor(public code: RefuseCode) { super(code); } }
 
 // -------------------------------------------------------------------------------------------------------------------- arguments
-const CONTROL = /[\u0000-\u001F\u007F-\u009F]/;
+const CONTROL = /[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/;
 /** Validate request arguments against the capability's own schema. Unknown names, wrong types, option-like strings and paths outside the project are refused. */
 export function validateArgs(spec: readonly ArgSpec[], given: Obj, projectDir: string): { ok: true; values: ArgValues } | { ok: false; code: string } {
   const values: ArgValues = {};

@@ -17,9 +17,11 @@ export const PAGE_LINES = 20;
 const WRAP = 100;
 
 /** Printable ASCII/Unicode only: strips ESC and other control characters so a hostile arg cannot rewrite the prompt. */
-export const printable = (s: string, n = 300): string => s.replace(/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/g, ' ').slice(0, n);
+/** Control, bidi, zero-width and format characters become spaces: a hostile string cannot reorder or hide what the person reads. */
+const FORMAT = '\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF';
+export const printable = (s: string, n = 300): string => s.replace(new RegExp(`[\\u0000-\\u001F\\u007F-\\u009F\\u2028\\u2029${FORMAT}]`, 'g'), ' ').slice(0, n);
 /** Like printable but lossless in length and visible: newlines/tabs get glyphs, other controls become '?'. Never masks content. */
-export const visible = (s: string): string => s.replace(/\n/g, '↵').replace(/\t/g, '→').replace(/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/g, '?');
+export const visible = (s: string): string => s.replace(/\n/g, '↵').replace(/\t/g, '→').replace(new RegExp(`[\\u0000-\\u001F\\u007F-\\u009F\\u2028\\u2029${FORMAT}]`, 'g'), '?');
 
 export const denyAll: Approver = async () => false;
 
