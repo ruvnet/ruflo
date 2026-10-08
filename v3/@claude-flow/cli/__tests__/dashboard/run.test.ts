@@ -10,7 +10,7 @@ import { Rig } from './_support/harness.js';
 let rig: Rig | undefined;
 afterEach(async () => { await rig?.cleanup(); rig = undefined; });
 const audit = (r: Rig) => readFileSync(join(r.home, AUDIT_FILE), 'utf8').trim().split('\n').map(l => JSON.parse(l) as Record<string, unknown>);
-const results = (r: Rig, cid: string) => r.srv.received.filter(e => (e.typ === 'ack' || e.typ === 'result') && e.body.cid === cid).map(e => e.body.status);
+const results = (r: Rig, cid: string) => r.srv.received.filter(e => (e.typ === 'ack' || e.typ === 'result') && e.body.cid === cid).map(e => e.typ === 'ack' ? e.body.status : e.body.ok ? 'succeeded' : /expired/.test(String(e.body.error)) ? 'expired' : 'failed');
 const cmdBody = (frame: string) => (JSON.parse(frame) as { body: { cid: string } }).body.cid;
 const HOSTILE = 'rm -' + 'rf /';
 
@@ -21,8 +21,8 @@ describe('hello + digest publication', () => {
     const hello = await rig.srv.waitFor(() => rig!.srv.byTyp('hello')[0]);
     expect(hello.body).toMatchObject({ connector: '1', level: 'read', name: 'test box' });
     const dig = await rig.srv.waitFor(() => rig!.srv.byTyp('digest')[1]); // second digest => periodic timer works
-    expect(DigestSchema.safeParse(dig.body.digest).success).toBe(true);
-    const d = dig.body.digest as { ruflo: { version: string }; missions: { objective: string }[]; tasks: { done: number }; swarm: { agents: unknown[] }; memory: { entries: number }; health: { ok: boolean } };
+    expect(DigestSchema.safeParse(dig.body).success).toBe(true);
+    const d = dig.body as { ruflo: { version: string }; missions: { objective: string }[]; tasks: { done: number }; swarm: { agents: unknown[] }; memory: { entries: number }; health: { ok: boolean } };
     expect(d.ruflo.version).toBe('3.55.0');
     expect(d.missions[0]!.objective).toContain('[masked]');
     expect(JSON.stringify(dig)).not.toContain('sk-abcdefghijklmnopqrstuv');
@@ -49,7 +49,7 @@ describe('hello + digest publication', () => {
     rig = await Rig.create(); rig.ruflo.fail.add('memory_stats');
     const run = rig.start();
     const dig = await rig.srv.waitFor(() => rig!.srv.byTyp('digest')[0]);
-    const d = dig.body.digest as { health: { ok: boolean; notes: string[] }; memory?: unknown };
+    const d = dig.body as { health: { ok: boolean; notes: string[] }; memory?: unknown };
     expect(d.memory).toBeUndefined(); expect(d.health.ok).toBe(false); expect(d.health.notes.join()).toContain('memory_stats');
     run.stop(); await run.done;
   });
@@ -111,7 +111,7 @@ describe('server commands', () => {
     const f = rig.srv.command('mission.stop', { missionId: 'msn_' + 'a'.repeat(24) }); rig.srv.broadcast(f);
     await rig.srv.waitFor(() => results(rig!, cmdBody(f)).length);
     expect(results(rig, cmdBody(f))).toEqual(['denied']);
-    expect(rig.srv.byTyp('result').at(-1)!.body.error).toBe('level_read_below_manage');
+    expect(rig.srv.byTyp('ack').at(-1)!.body.error).toBe('level_read_below_manage');
     expect(rig.ruflo.calls.some(c => c.tool === 'mission_request_action')).toBe(false);
     run.stop(); await run.done;
   });

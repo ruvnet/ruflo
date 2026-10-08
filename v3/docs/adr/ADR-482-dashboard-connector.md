@@ -32,7 +32,7 @@ id and tenant id, +-120 s clock window, a 128-bit nonce and a strictly increasin
 the last accepted server `seq` is persisted, so a restart cannot reuse or be replayed to. Frames over 256 KiB are refused. Reconnect uses
 jittered exponential backoff (1 s to 60 s).
 
-**Publishing.** Every 10 s (and on `state.refresh`) the device sends a `digest`, collected read-only through `ruflo mcp exec` (system_info,
+**Publishing.** Every 10 s (and on `state.refresh`) the device sends a `digest` (the Digest object is the frame body), collected read-only through `ruflo mcp exec` (system_info,
 system_health, mission_get, mission_events, task_summary, swarm_status, agent_list, memory_stats) plus ADR markdown headers from
 `docs/adr`. Strings are control-stripped and secret-masked before signing and again server-side; the digest is schema-validated (strict).
 A collector that fails becomes a health note. Cost is omitted because ruflo has no cost read tool.

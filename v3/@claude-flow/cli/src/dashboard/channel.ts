@@ -45,7 +45,7 @@ export class Channel {
     this.publishing ??= (async () => {
       try {
         const digest = await this.d.collect();
-        const env = this.emit('digest', { digest });
+        const env = this.emit('digest', digest as unknown as Record<string, unknown>);
         this.d.audit.write('publish', { typ: 'digest', seq: env.seq, missions: digest.missions.length, adrs: digest.adrs.length, agents: digest.swarm?.agents.length ?? 0, healthOk: digest.health.ok, notes: digest.health.notes.length });
       } finally { this.publishing = null; }
     })();
@@ -73,9 +73,10 @@ export class Channel {
   /** Resolves when all queued commands have finished (tests, shutdown). */
   idle(): Promise<unknown> { return this.queue; }
 
+  /** Wire shapes follow the server: ack {cid,status: awaiting_approval|running|denied}, result {cid, ok, result?, error?}. */
   private report(cid: string, status: Status, extra: Record<string, unknown> = {}): void {
-    const terminal = status === 'succeeded' || status === 'failed' || status === 'denied' || status === 'expired';
-    this.emit(terminal ? 'result' : 'ack', { cid, status, ...extra });
+    if (status === 'awaiting_approval' || status === 'running' || status === 'denied') this.emit('ack', { cid, status, ...extra });
+    else this.emit('result', { cid, ok: status === 'succeeded', ...extra });
   }
 
   private async runCommand(env: Envelope): Promise<void> {
