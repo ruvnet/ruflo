@@ -75,6 +75,8 @@ export class CapabilityService {
   // ---------------------------------------------------------------------------------------------------------------- prepare
   async prepare(cmd: CapCommand, args: Obj, by: string): Promise<Prepared | Refusal> {
     const r = await this.prepare1(cmd, args, by);
+    // A stale id (a file changed, a plugin updated) means the dashboard's copy of the catalog is old: publish the new one.
+    if (!r.ok && r.code === 'unknown_capability') this.d.onChange?.(['plugins', 'capabilities']);
     return r.ok ? { ...r, request: { ...args } } : r;
   }
   private async prepare1(cmd: CapCommand, args: Obj, by: string): Promise<Prepared | Refusal> {
@@ -96,7 +98,7 @@ export class CapabilityService {
     const plugin = this.catalog(pluginId).plugins.find(p => p.id === pluginId);
     const cap = plugin?.caps.find(c => c.cid === capabilityId);
     if (!plugin || !cap || !capabilityId.startsWith(`${plugin.name}/`)) return { ok: false, code: 'unknown_capability' };
-    if (cap.mode === 'refused' || !cap.binding || cap.level === null) return { ok: false, code: cap.why ?? 'no-binding' };
+    if (cap.mode !== 'run' || !cap.binding || cap.level === null) return { ok: false, code: cap.why ?? 'no-binding' };
     const b = cap.binding;
     const v = validateArgs(b.args, rawArgs, this.d.projectDir);
     if (!v.ok) return { ok: false, code: v.code };
@@ -174,7 +176,7 @@ export class CapabilityService {
 
   /** Re-verify the pin on disk, then run. Any difference voids the approval. */
   async execute(p: Prepared): Promise<{ ok: true; result: Obj } | { ok: false; error: string }> {
-    const fail = (outcome: Outcome, error: string) => { this.recordNever(p.command, p.capabilityId, p.level, p.risk, p.by, outcome, error); this.d.onChange?.(['capabilities', 'capability_runs']); return { ok: false as const, error }; };
+    const fail = (outcome: Outcome, error: string) => { this.recordNever(p.command, p.capabilityId, p.level, p.risk, p.by, outcome, error); this.d.onChange?.(['plugins', 'capabilities', 'capability_runs']); return { ok: false as const, error }; };
     if (p.plan.t === 'list') { this.d.onChange?.(['plugins', 'capabilities']); return { ok: true, result: { published: ['plugins', 'capabilities'] } }; }
     const again = await this.prepare(p.command, p.request, p.by);
     if (!again.ok || again.pin.manifestSha !== p.pin.manifestSha || again.pin.argvSha !== p.pin.argvSha || again.pin.fileSha12 !== p.pin.fileSha12 || again.pin.capabilityId !== p.pin.capabilityId) return fail('changed', 'capability_changed');

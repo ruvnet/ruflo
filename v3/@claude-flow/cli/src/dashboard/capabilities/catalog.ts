@@ -11,7 +11,8 @@ import { classifyOption } from './options.js';
 import type { Catalog, CatalogCap, CatalogPlugin, CapKind } from './types.js';
 
 export const MAX_DOC_BYTES = 120_000;
-const NAME = /^[A-Za-z0-9._-]{1,80}$/;
+/** Plain words only: no leading '.', '-' or '_' and no '..' anywhere. */
+const NAME = /^(?!.*\.\.)[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 const PLUGIN = /^([a-z0-9][a-z0-9-]{0,63})@([a-z0-9][a-z0-9-]{0,63})$/;
 const VERSION = /^\d+\.\d+\.\d+[-.\w]*$/;
 const OPTION_KEY = /^[A-Za-z][A-Za-z0-9]{0,47}$/;
@@ -78,7 +79,7 @@ function buildPlugin(id: string, dir: string, entryVersion: string, enabled: boo
     const cid = `${name}/${kind}/${capName}@${version}+${pin.sha12}`;
     const b = foreign ? undefined : table.find(name, kind, capName);
     if (b) {
-      caps.push({ cid, kind, name: capName, risk: b.risk, level: b.level, mode: kind === 'view' ? 'view' : 'run', binding: b, fileSha12: pin.sha12,
+      caps.push({ cid, kind, name: capName, risk: b.risk, level: b.level, mode: 'run', binding: b, fileSha12: pin.sha12,
         ...(b.args.length ? { args: b.args.map(a => ({ name: a.name, type: a.type, ...(a.max !== undefined ? { max: a.max } : {}), ...(a.min !== undefined ? { min: a.min } : {}), ...(a.enum ? { enum: [...a.enum] } : {}) })) } : {}) });
       return;
     }

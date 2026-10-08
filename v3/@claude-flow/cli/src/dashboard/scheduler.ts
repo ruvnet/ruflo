@@ -133,7 +133,8 @@ export class SectionScheduler {
     // `immediate` is for the connector's own publishes (a run just started or ended), never for a browser's request.
     if (!opts.immediate && last !== undefined && now - last < FORCED_MIN_INTERVAL_MS) return { sent: false, rateLimited: true };
     if (!opts.immediate) this.lastForced.set(name, now);
-    if (opts.immediate && this.running.has(name)) return { sent: false };
+    // The connector's own publish must not be lost to a pass that is already collecting this section (its data may predate the change): wait for it.
+    for (let i = 0; opts.immediate && this.running.has(name) && i < 100; i++) await new Promise(r => setTimeout(r, 20));
     if (!this.names.includes(name)) return { sent: false };
     if (DERIVED_AFTER.has(name) === false && this.running.has(name)) return { sent: false };
     return { sent: await this.collectOne(name, true) };
