@@ -1,9 +1,9 @@
-import { chmodSync, symlinkSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, symlinkSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { generateKeyPair } from '../../src/dashboard/protocol/index.js';
-import { AUDIT_FILE, AuditLog, DeviceSeq, KEY_FILE, loadKey, normalizeBaseUrl, saveKey, SEQ_BLOCK, stateDir, wipeState } from '../../src/dashboard/state.js';
+import { AUDIT_FILE, AUDIT_KEEP, AUDIT_MAX_BYTES, AuditLog, DeviceSeq, KEY_FILE, loadKey, normalizeBaseUrl, saveKey, SEQ_BLOCK, stateDir, wipeState } from '../../src/dashboard/state.js';
 
 const dirs: string[] = [];
 const mk = () => { const d = join(mkdtempSync(join(tmpdir(), 'rfstate-')), 'h'); dirs.push(d); return d; };
@@ -76,5 +76,18 @@ describe('audit log', () => {
     const lines = readFileSync(p, 'utf8').trim().split('\n');
     expect(lines).toHaveLength(2);
     expect(lines[0]).toContain('[masked]'); expect(lines[0]).not.toContain('sk-abcdefghijklmnopqrstuvwx');
+  });
+});
+
+describe('audit rotation (L11)', () => {
+  it('rotates at the size cap, keeps a bounded number of 0600 files and loses nothing newest', () => {
+    const h = mk(); const a = new AuditLog(h); const p = join(h, AUDIT_FILE); mkdirSync(h, { recursive: true });
+    writeFileSync(p, 'x'.repeat(AUDIT_MAX_BYTES), { mode: 0o600 });
+    a.write('after-1');
+    expect(statSync(p + '.1').size).toBe(AUDIT_MAX_BYTES); expect(readFileSync(p, 'utf8')).toContain('after-1');
+    for (let i = 0; i < AUDIT_KEEP + 2; i++) { writeFileSync(p, 'y'.repeat(AUDIT_MAX_BYTES), { mode: 0o600 }); a.write('n' + i); }
+    for (let i = 1; i <= AUDIT_KEEP; i++) expect(existsSync(`${p}.${i}`)).toBe(true);
+    expect(existsSync(`${p}.${AUDIT_KEEP + 1}`)).toBe(false);
+    expect(statSync(p + '.1').mode & 0o777).toBe(0o600);
   });
 });

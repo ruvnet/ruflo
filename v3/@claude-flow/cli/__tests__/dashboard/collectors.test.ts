@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DigestSchema } from '../../src/dashboard/protocol/index.js';
-import { ttyApprover, printable } from '../../src/dashboard/approver.js';
+import { ttyApprover, printable, renderApproval, visible, LONG_TEXT } from '../../src/dashboard/approver.js';
 import { collectAdrs, collectDigest } from '../../src/dashboard/collectors.js';
 import { stubRuflo } from './_support/harness.js';
 import { PassThrough } from 'node:stream';
@@ -76,7 +76,7 @@ describe('approver', () => {
       const p = ttyApprover(input, output, 2000)({ cid: 'c', cmd: 'mission.create', summary: 's', level: 'write', args: { objective: 'evil\u001b[2J\u001b]0;x\u0007 token=abcdefgh12345' }, by: 'u' });
       setTimeout(() => input.write(answer), 20);
       expect(await p).toBe(expected);
-      expect(shown).not.toContain('\u001b'); expect(shown).not.toContain('abcdefgh12345');
+      expect(shown).not.toContain('\u001b'); expect(shown).toContain('token=abcdefgh12345'); // nothing is masked or hidden in the approval view
     }
   });
   it('times out to deny', async () => {
@@ -84,4 +84,36 @@ describe('approver', () => {
     expect(await ttyApprover(input, new PassThrough(), 80)({ cid: 'c', cmd: 'x', summary: 's', level: 'write', args: {}, by: 'u' })).toBe(false);
   });
   it('printable strips control characters', () => { expect(printable('a\u001bb\nc\u0085d')).toBe('a b c d'); });
+});
+
+describe('approval prompt shows everything (M6)', () => {
+  const base = { cid: 'c', cmd: 'mission.create', summary: 's', level: 'write', by: 'u', baseUrl: 'https://flo.example.com', serverFingerprint: 'abcd1234abcd1234abcd1234abcd1234' };
+  const tty = () => Object.assign(new PassThrough(), { isTTY: true });
+  async function drive(args: Record<string, unknown>, answers: string[], timeout = 3000) {
+    const input = tty(); const output = new PassThrough(); let shown = '';
+    output.on('data', c => { shown += c; });
+    const p = ttyApprover(input, output, timeout)({ ...base, args });
+    for (const a of answers) await new Promise<void>(r => setTimeout(() => { input.write(a); r(); }, 30));
+    return { ok: await p, shown };
+  }
+  it('header carries the dashboard URL and server-key fingerprint', () => {
+    const text = renderApproval({ ...base, args: { objective: 'x' } }).join('\n');
+    expect(text).toContain('https://flo.example.com'); expect(text).toContain('abcd1234abcd1234abcd1234abcd1234');
+  });
+  it('renders a 2000 character objective in full, wrapped, with newlines made visible', () => {
+    const obj = 'A'.repeat(900) + '\nSECRET-TAIL-INSTRUCTION ' + 'B'.repeat(1000);
+    const text = renderApproval({ ...base, args: { objective: obj } }).join('\n');
+    expect(text).toContain('SECRET-TAIL-INSTRUCTION'); expect(text.match(/A/g)!.length).toBeGreaterThanOrEqual(900); expect(text.match(/B/g)!.length).toBeGreaterThanOrEqual(1000);
+    expect(text).toContain(visible('\n')); expect(text).toContain('(1925 chars)');
+  });
+  it('long text: must page through everything, then type exactly yes; a plain y denies', async () => {
+    const args = { objective: 'x'.repeat(2000) };
+    const paged = await drive(args, ['\n', 'yes\n']);
+    expect(paged.ok).toBe(true); expect(paged.shown).toContain('-- more'); expect(paged.shown).toContain('shown in full');
+    expect((await drive(args, ['\n', 'y\n'])).ok).toBe(false);
+    expect((await drive(args, ['q\n'])).ok).toBe(false);
+  });
+  it('short arguments keep the simple y/N prompt', async () => {
+    expect((await drive({ objective: 'short' }, ['y\n'])).ok).toBe(true);
+  });
 });

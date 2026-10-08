@@ -1,16 +1,18 @@
 /** Transport-independent device end of the signed channel: emits signed frames, verifies and executes server frames. */
 import { arch, platform } from 'node:os';
 import {
-  authorize, CommandBodySchema, MAX_ENVELOPE_BYTES, parseCommand, ReplayGuard, sanitize, signEnvelope, verifyEnvelope, COMMANDS,
+  authorize, CommandBodySchema, fingerprint, MAX_ENVELOPE_BYTES, parseCommand, ReplayGuard, sanitize, signEnvelope, verifyEnvelope, COMMANDS,
   type CommandName, type Digest, type Envelope,
 } from './protocol/index.js';
-import { printable, type Approver } from './approver.js';
+import { hasLongText, printable, type Approver } from './approver.js';
 import { EXECUTORS } from './executors.js';
 import type { Ruflo } from './exec.js';
 import { saveServerSeq, wipeState, type AuditLog, type Config, type DeviceSeq } from './state.js';
 
 export const MAX_COMMAND_LIFETIME_MS = 15 * 60_000;
 export const CONNECTOR_VERSION = '1';
+/** Only these write-level commands may skip the local prompt under autoApprove. mission.create never may: its text can steer a later agent. */
+export const AUTO_APPROVABLE: readonly CommandName[] = ['mission.pause', 'mission.resume'];
 
 export interface ChannelDeps {
   cfg: Config; privateKey: string; home: string; seq: DeviceSeq; guard: ReplayGuard; audit: AuditLog;
@@ -91,16 +93,17 @@ export class Channel {
     if (!p.ok) return deny('denied', p.reason);
     const auth = authorize(p.cmd, this.d.cfg.level, this.d.cfg.autoApprove);
     if (!auth.allowed) return deny('denied', auth.reason ?? 'not_allowed');
-    if (auth.needsApproval) {
+    const needsApproval = auth.needsApproval || (COMMANDS[p.cmd].level !== 'read' && !AUTO_APPROVABLE.includes(p.cmd));
+    if (needsApproval) {
       this.report(cid, 'awaiting_approval');
       this.d.audit.write('command', { ...base, decision: 'awaiting_approval', args: p.args });
       let ok = false;
-      try { ok = await this.d.approver({ cid, cmd: p.cmd, summary: COMMANDS[p.cmd].summary, level: p.level, args: p.args, by: base.by }); } catch { ok = false; }
+      try { ok = await this.d.approver({ cid, cmd: p.cmd, summary: COMMANDS[p.cmd].summary, level: p.level, args: p.args, by: base.by, baseUrl: this.d.cfg.baseUrl, serverFingerprint: fingerprint(this.d.cfg.serverPublicKey), long: hasLongText(p.args) }); } catch { ok = false; }
       if (!ok) return deny('denied', 'approval_denied');
       if (this.now() > b.data.expiresAt) return deny('expired', 'command_expired_during_approval');
     }
     this.report(cid, 'running');
-    this.d.audit.write('command', { ...base, decision: auth.needsApproval ? 'approved' : 'auto', args: p.args });
+    this.d.audit.write('command', { ...base, decision: needsApproval ? 'approved' : 'auto', args: p.args });
     try {
       const r = await EXECUTORS[p.cmd as CommandName](p.args, { ruflo: this.d.ruflo, cid, publishNow: () => this.publish() });
       this.d.audit.write('command_result', { cid, ok: r.ok });

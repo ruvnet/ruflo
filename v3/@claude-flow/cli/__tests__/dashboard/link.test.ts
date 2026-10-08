@@ -25,6 +25,7 @@ describe('link', () => {
     expect(cfg.autoApprove).toBe(false);
     expect(lines.join('\n')).toMatch(/ABCD2345/);
     expect(lines.join('\n')).toContain(`${s.baseUrl}/link`);
+    expect(lines.join('\n')).toMatch(/mission objectives.*ADR titles/);
     const key = loadKey(home);
     expect(lines.join('\n')).not.toContain(key);
     expect(readFileSync(join(home, CONFIG_FILE), 'utf8')).not.toContain(key);

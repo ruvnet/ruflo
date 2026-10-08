@@ -41,12 +41,12 @@ A collector that fails becomes a health note. Cost is omitted because ruflo has 
 `mission.pause|resume|stop`, `swarm.init` max 6, `agent.spawn` from a type allowlist within the cap). The device verifies the signature
 with the pinned server key, checks expiry (and a 15 minute maximum lifetime), re-validates arguments against the allowlist schema, applies
 its own level (`off < read < write < manage < full`), and requires a local approval for anything above `read`: an interactive TTY `y/N`
-(no TTY = deny; an `Approver` can be injected so the console can supply its own confirm). `autoApprove` never covers `manage` or `full`.
+(no TTY = deny; an `Approver` can be injected so the console can supply its own confirm). The prompt names the dashboard URL and the pinned server-key fingerprint and shows every argument in full, paged; a text argument over 500 characters requires typing `yes` after viewing all of it. `autoApprove` skips the prompt only for `mission.pause` and `mission.resume`: never `mission.create` (its text can steer a later agent), `manage` or `full`.
 Each command maps to fixed `ruflo mcp exec` tool calls; ruflo is started with `spawn(argv, {shell:false})`, a 10 s timeout, a 1 MiB output
 cap and an allowlisted environment. User text is only a JSON value inside one argument.
 
 **Revocation.** A server `revoke` frame signed with the pinned key wipes the key and config and exits (code 3). `unlink` sends a signed
-`revoke` best-effort, then wipes locally regardless. An append-only, 0600 `audit.jsonl` records every command, decision and publication
+`revoke` best-effort, then wipes locally regardless. An append-only, 0600 `audit.jsonl` (rotated at 5 MiB) records every command, decision and publication
 summary (secrets masked, no keys).
 
 ## 3. Consequences

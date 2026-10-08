@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DigestSchema, generateKeyPair, randomToken } from '../../src/dashboard/protocol/index.js';
+import { DigestSchema, fingerprint, generateKeyPair, randomToken } from '../../src/dashboard/protocol/index.js';
 import { backoffDelay, BACKOFF_MAX_MS, BACKOFF_MIN_MS, loadRunnable, validateConnectUrl } from '../../src/dashboard/run.js';
 import { AUDIT_FILE, CONFIG_FILE, KEY_FILE, loadServerSeq } from '../../src/dashboard/state.js';
 import { unlink } from '../../src/dashboard/unlink.js';
@@ -138,17 +138,33 @@ describe('server commands', () => {
     run.stop(); await run.done;
   });
 
-  it('autoApprove covers write but never manage/full', async () => {
+  it('autoApprove skips the prompt only for pause/resume; never mission.create, manage or full', async () => {
     rig = await Rig.create({}, 'full'); rig.setConfig({ autoApprove: true });
     const asked: string[] = [];
     const run = rig.start(async r => { asked.push(r.cmd); return false; });
     await rig.srv.waitFor(() => rig!.srv.byTyp('hello')[0]);
+    const mid = 'msn_' + 'a'.repeat(24);
+    rig.ruflo.overrides.mission_get = { ok: true, data: { record: { missionId: mid, revision: 3 } } };
+    const p = rig.srv.command('mission.pause', { missionId: mid }); rig.srv.broadcast(p);
+    await rig.srv.waitFor(() => results(rig!, cmdBody(p)).includes('succeeded'));
+    expect(asked).toEqual([]);
     const w = rig.srv.command('mission.create', { requestId: 'req-0000002', objective: 'auto one' }); rig.srv.broadcast(w);
-    await rig.srv.waitFor(() => results(rig!, cmdBody(w)).includes('succeeded'));
+    await rig.srv.waitFor(() => results(rig!, cmdBody(w)).includes('denied'));
     const m = rig.srv.command('swarm.init', { maxAgents: 6 }); rig.srv.broadcast(m);
     await rig.srv.waitFor(() => results(rig!, cmdBody(m)).includes('denied'));
-    expect(asked).toEqual(['swarm.init']);
-    expect(rig.ruflo.calls.some(c => c.tool === 'swarm_init')).toBe(false);
+    expect(asked).toEqual(['mission.create', 'swarm.init']);
+    expect(rig.ruflo.calls.some(c => c.tool === 'swarm_init' || c.tool === 'mission_create')).toBe(false);
+    run.stop(); await run.done;
+  });
+
+  it('the approver sees the dashboard URL, server-key fingerprint and a long flag', async () => {
+    rig = await Rig.create({}, 'write'); let seen: Parameters<import('../../src/dashboard/approver.js').Approver>[0] | undefined;
+    const run = rig.start(async r => { seen = r; return false; });
+    await rig.srv.waitFor(() => rig!.srv.byTyp('hello')[0]);
+    rig.srv.broadcast(rig.srv.command('mission.create', { requestId: 'req-0000009', objective: 'z'.repeat(1500) }));
+    await rig.srv.waitFor(() => seen);
+    expect(seen!.baseUrl).toBe(rig.srv.baseUrl); expect(seen!.serverFingerprint).toBe(fingerprint(rig.srv.serverKeys.publicKey)); expect(seen!.long).toBe(true);
+    expect(seen!.args.objective).toBe('z'.repeat(1500));
     run.stop(); await run.done;
   });
 

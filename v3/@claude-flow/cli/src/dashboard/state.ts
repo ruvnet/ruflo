@@ -1,5 +1,5 @@
 /** Local connector state: ~/.ruflo/dashboard (0700), key file (0600), config, persisted sequence counters, audit log. */
-import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, writeFileSync, constants } from 'node:fs';
+import { appendFileSync, statSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, writeFileSync, constants } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -10,6 +10,9 @@ export const CONFIG_FILE = 'config.json';
 export const DEVICE_SEQ_FILE = 'device-seq.json';
 export const SERVER_SEQ_FILE = 'server-seq.json';
 export const AUDIT_FILE = 'audit.jsonl';
+/** Rotate at 5 MiB, keeping audit.jsonl.1 .. .3 (oldest dropped). */
+export const AUDIT_MAX_BYTES = 5 * 1024 * 1024;
+export const AUDIT_KEEP = 3;
 /** Sequence numbers are reserved in blocks so a crash can never reuse one (we resume from the reserved high-water mark). */
 export const SEQ_BLOCK = 100;
 
@@ -120,8 +123,15 @@ export class AuditLog {
     ensureDir(this.home);
     const line = JSON.stringify(sanitize({ at: this.now(), kind, ...fields }));
     const p = join(this.home, AUDIT_FILE);
+    this.rotate(p);
     const fresh = !existsSync(p);
     appendFileSync(p, (line.length > 4000 ? JSON.stringify({ at: this.now(), kind, truncated: true }) : line) + '\n', { mode: 0o600 });
     if (fresh && isPosix) chmodSync(p, 0o600);
+  }
+  private rotate(p: string): void {
+    try { if (statSync(p).size < AUDIT_MAX_BYTES) return; } catch { return; }
+    rmSync(`${p}.${AUDIT_KEEP}`, { force: true });
+    for (let i = AUDIT_KEEP - 1; i >= 1; i--) if (existsSync(`${p}.${i}`)) renameSync(`${p}.${i}`, `${p}.${i + 1}`);
+    renameSync(p, `${p}.1`);
   }
 }

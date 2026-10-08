@@ -51,6 +51,7 @@ export async function link(o: LinkOptions): Promise<Config> {
   out(`  1. Open   ${verify.toString()}`);
   out(`  2. Sign in and enter the code   ${sanitize(userCode).replace(/[^\w-]/g, '')}`);
   out(`  3. Approve "${name}" (key fingerprint ${fingerprint(keys.publicKey)})`);
+  out(`Once linked, \`ruflo dashboard run\` publishes to ${new URL(base).host} (every ~10 s): mission objectives and states, task counts, swarm/agent names, memory counts, ADR titles and statuses, health. Secrets are masked, but objectives and titles are shown as written. Nothing is sent until you run it; level read never executes anything.`);
   out(`Waiting for approval (expires in ${Math.round(expiresIn / 60)} min, Ctrl-C to cancel)...`);
 
   const deadline = now() + expiresIn * 1000;
