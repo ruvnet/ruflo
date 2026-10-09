@@ -34,13 +34,17 @@ const SAMPLES: Record<SectionName, Record<string, unknown>> = {
   security: { policy: { mode: 'legacy', rules: 0, budgets: 0, approvals: 0, receipts: 16, ledgerValid: true, ledgerLength: 16 }, findings: [] },
   perf: { cpu: { percent: 10, cores: 32, loadAverage: [1, 1, 1] }, memory: { usedMb: 100, totalMb: 1000, heapMb: 25 } },
   automation: { workers: [{ trigger: 'audit', priority: 'critical', description: 'Security analysis' }], running: { total: 0, running: 0, completed: 0, failed: 0 }, sessions: { total: 0, recent: [] }, daemon: null },
+  agents: { summary: { total: 1, healthy: 1, degraded: 0, unhealthy: 0 }, agents: [{ id: 'a1', type: 'coder', health: 'healthy', tasksActive: 0, tasksQueued: 0, tasksCompleted: 1, tasksFailed: 0, uptimeS: 3 }] },
+  autopilot: { present: true, killed: false, phase: 'running', envelope: { revision: 2, hash: 'abcdef012345' }, steps: { started: 2, done: 1, failed: 0, verified: 1, parked: 0 }, lastEvent: 'step.done', lastAt: 5, journalLines: 4, badLines: 0, unauthenticated: true },
+  skills: { total: 1, skills: [{ name: 'my-skill', source: 'project', manifest: true }] },
+  timeline: { endAt: 1000, bucketS: 300, buckets: 24, lanes: [{ lane: 'console', total: 1, counts: [0, 1] }] },
 };
 
 describe('sections', () => {
-  it('has the 16 P0 + 11 P1 sections with budget, cadence, ttl and version for each', () => {
-    expect(SECTION_NAMES).toHaveLength(27);
-    for (const n of SECTION_NAMES) { expect(SECTION_BUDGET_BYTES[n]).toBeGreaterThan(0); expect(SECTION_CADENCE_S[n]).toBeGreaterThan(0); expect(SECTION_TTL_S[n]).toBeGreaterThanOrEqual(30); expect(SECTION_VERSIONS[n]).toBe(1); }
-    expect(isSectionName('missions')).toBe(true); expect(isSectionName('timeline')).toBe(false);
+  it('has the 16 P0 + 15 P1 sections with budget, cadence, ttl and version for each', () => {
+    expect(SECTION_NAMES).toHaveLength(31);
+    for (const n of SECTION_NAMES) { expect(SECTION_BUDGET_BYTES[n]).toBeGreaterThan(0); expect(SECTION_CADENCE_S[n]).toBeGreaterThan(0); expect(SECTION_TTL_S[n]).toBeGreaterThanOrEqual(30); expect(SECTION_VERSIONS[n]).toBe(n === 'cost' ? 2 : 1); }
+    expect(isSectionName('missions')).toBe(true); expect(isSectionName('bogus')).toBe(false);
   });
   it.each(SECTION_NAMES)('%s: sample is valid, unknown field is rejected (strict)', n => {
     expect(SectionSchemas[n].safeParse(SAMPLES[n]).success).toBe(true);
@@ -48,13 +52,13 @@ describe('sections', () => {
   });
   it.each(SECTION_NAMES)('%s: builds a frame that round-trips through parseSectionFrame', n => {
     const f = buildSectionFrame(n, SAMPLES[n] as never, { rev: 2, at: Date.now() });
-    expect(f).toMatchObject({ v: 2, section: n, rev: 2, sv: 1, truncated: false });
+    expect(f).toMatchObject({ v: 2, section: n, rev: 2, sv: SECTION_VERSIONS[n], truncated: false });
     const r = parseSectionFrame(JSON.parse(JSON.stringify(f)));
     expect(r.ok).toBe(true);
   });
   it('rejects unknown sections, extra frame fields, wrong version and bad ttl', () => {
     const f = buildSectionFrame('meta', SAMPLES.meta as never, { rev: 0, at: 1 });
-    expect(parseSectionFrame({ ...f, section: 'timeline' })).toEqual({ ok: false, reason: 'unknown_section' });
+    expect(parseSectionFrame({ ...f, section: 'bogus' })).toEqual({ ok: false, reason: 'unknown_section' });
     expect(parseSectionFrame({ ...f, extra: 1 })).toEqual({ ok: false, reason: 'malformed' });
     expect(parseSectionFrame({ ...f, v: 1 })).toEqual({ ok: false, reason: 'malformed' });
     expect(parseSectionFrame({ ...f, ttlS: 1 })).toEqual({ ok: false, reason: 'malformed' });

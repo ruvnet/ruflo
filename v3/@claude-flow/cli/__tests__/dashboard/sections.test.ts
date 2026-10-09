@@ -121,10 +121,12 @@ describe('file-backed collectors', () => {
     c.home = home;
     const argvs: string[][] = [];
     const out = { totals: { usd: 12.34, credits: 500 }, byModel: { 'claude|opus': { usd: 10 }, 'codex|gpt': { credits: 500 } }, byDay: { [new Date(1_000_000).toISOString().slice(0, 10)]: { usd: 1.5 } }, cache: { claude: { hitRatio: 0.97 } }, unpriced: { 'gpt-x': {} }, tokens: { 'claude|opus': { input: 1, cache_read: 2, cache_write: 3, output: 4 } }, findings: [{ title: 'Sub-agents on top tier', evidence: '5 msgs' }] };
+    c.costDetail = 'full';
     const ok = await cost({ ...c, run: async a => { argvs.push(a); return { code: 0, stdout: JSON.stringify(out), stderr: '', timedOut: false, truncated: false }; } }) as { available: boolean; totals: { totalMinor: number; todayMinor: number }; creditsTotal: number; byModel: { unit: string; minor: number; tokens?: number }[]; cacheHitRatio: number };
     valid('cost', ok); expect(ok).toMatchObject({ available: true, totals: { totalMinor: 1234, todayMinor: 150 }, creditsTotal: 500, cacheHitRatio: 0.97 });
     expect(ok.byModel[0]).toMatchObject({ unit: 'usd', minor: 1000, tokens: 10 });
     expect(argvs[0]!.slice(2)).toEqual(['--since', '7d', '--format', 'json', '--advise']);
+    expect(ok).toMatchObject({ detail: 'full' });
     for (const bad of [{ code: 1, stdout: '' }, { code: 0, stdout: 'nope' }, { code: null, stdout: '', timedOut: true }]) {
       const r = await cost({ ...c, run: async () => ({ stderr: '', timedOut: false, truncated: false, ...bad }) }); expect(r.available).toBe(false); valid('cost', r);
     }
@@ -228,8 +230,8 @@ describe('spawn budget and tool allowlist', () => {
     expect(stub.calls).toHaveLength(0);
   });
   it('the command allowlist is the read tools plus a fixed set of writes; no free terminals', () => {
-    for (const t of ['terminal_execute', 'memory_store', 'memory_delete', 'task_create', 'config_set', 'hooks_worker-dispatch', 'agent_terminate']) expect(COMMAND_TOOLS.has(t)).toBe(false);
-    for (const t of ['mission_create', 'swarm_shutdown', 'agent_spawn']) expect(COMMAND_TOOLS.has(t)).toBe(true);
+    for (const t of ['terminal_execute', 'memory_delete', 'config_set', 'hooks_worker-dispatch', 'hive-mind_consensus', 'claims_steal', 'claims_handoff', 'workflow_execute', 'metaharness_flywheel']) expect(COMMAND_TOOLS.has(t)).toBe(false);
+    for (const t of ['mission_create', 'swarm_shutdown', 'agent_spawn', 'agent_terminate', 'task_create', 'memory_store', 'claims_release', 'claims_status', 'agent_logs']) expect(COMMAND_TOOLS.has(t)).toBe(true);
   });
   it('never runs more than N calls at once', async () => {
     let active = 0, peak = 0;
@@ -244,7 +246,7 @@ describe('new commands', () => {
   const ex = (calls: [string, unknown][], map: Record<string, unknown> = {}) => ({ ruflo: { mcp: async (t: string, p?: Record<string, unknown>) => { calls.push([t, p]); return map[t] ?? {}; } }, cid: 'cmd_abcdefghijklmnop', refreshAll: async () => ({ sent: ['a'] }), refreshSection: async (s: string) => ({ sent: s === 'tasks' }) });
   it('strict argument schemas and levels', () => {
     expect(parseCommand('section.refresh', { section: 'cost' })).toMatchObject({ ok: true, level: 'read' });
-    expect(parseCommand('section.refresh', { section: 'timeline' })).toEqual({ ok: false, reason: 'invalid_arguments' });
+    expect(parseCommand('section.refresh', { section: 'bogus' })).toEqual({ ok: false, reason: 'invalid_arguments' });
     expect(parseCommand('memory.list', { namespace: 'dashboard', limit: 50 })).toMatchObject({ ok: true, level: 'read' });
     for (const bad of [{ namespace: 'a b' }, { namespace: '../x' }, { namespace: 'x', limit: 101 }, { namespace: 'x', extra: 1 }, {}]) expect(parseCommand('memory.list', bad).ok).toBe(false);
     expect(parseCommand('swarm.stop', {})).toMatchObject({ ok: true, level: 'manage' }); expect(parseCommand('swarm.stop', { force: true }).ok).toBe(false);

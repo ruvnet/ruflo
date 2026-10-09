@@ -62,7 +62,7 @@ describe('R-SEC-p1 collection', () => {
   it('R-SEC-p1-07 READ_TOOLS carry the probed read tools and none of the tools that install, load models, need an id, or write', () => {
     for (const t of ['claims_list', 'claims_board', 'claims_stealable', 'claims_load', 'hive-mind_status', 'workflow_list', 'hooks_intelligence_stats', 'metaharness_score', 'metaharness_audit_list', 'hooks_worker-list', 'session_list', 'performance_metrics', 'agentdb_health']) expect(READ_TOOLS.has(t), t).toBe(true);
     for (const t of ['aidefence_stats', 'aidefence_scan', 'neural_status', 'neural_train', 'hooks_intelligence_unified-stats', 'claims_claim', 'claims_release', 'claims_steal', 'claims_handoff', 'hive-mind_init', 'hive-mind_spawn', 'hive-mind_consensus', 'hive-mind_shutdown',
-      'workflow_execute', 'workflow_create', 'workflow_delete', 'workflow_run', 'hooks_worker-dispatch', 'hooks_worker-cancel', 'session_save', 'session_delete', 'session_restore', 'metaharness_evolve', 'metaharness_learn', 'metaharness_flywheel', 'metaharness_redblue', 'metaharness_oia_audit',
+      'workflow_execute', 'workflow_create', 'workflow_delete', 'workflow_run', 'hooks_worker-dispatch', 'hooks_worker-cancel', 'session_save', 'session_delete', 'session_restore', 'metaharness_evolve', 'metaharness_learn', 'metaharness_redblue', 'metaharness_oia_audit',
       'performance_benchmark', 'performance_optimize', 'agentdb_consolidate', 'agentdb_batch', 'federation_bbs_publish', 'http_fetch', 'terminal_execute', 'autopilot_enable']) expect(READ_TOOLS.has(t), t).toBe(false);
   });
 });

@@ -27,6 +27,8 @@ export function stubRuflo(): StubRuflo {
         case 'mission_events': return { ok: true, data: { events: [{ seq: 1, type: 'mission.created', at: '2026-10-08T03:11:19.776Z' }] } };
         case 'task_summary': return { total: 3, pending: 1, running: 1, completed: 1, failed: 0 };
         case 'swarm_status': return { swarmId: 'swarm-1', status: 'running', topology: 'hierarchical', maxAgents: 6, agentCount: 1 };
+        case 'agent_health': return { agents: [{ id: 'agent-1', type: 'coder', health: 'healthy', uptime: 3305, tasks: { active: 0, queued: 0, completed: 1, failed: 0 } }], overall: { healthy: 1, degraded: 0, unhealthy: 0 }, total: 1, healthyCount: 1, unhealthyCount: 0 };
+        case 'metaharness_flywheel': return { success: true, data: { state: { servingEpoch: 0, activeChampionRef: null, receiptStates: {} }, ledger: { valid: true, commits: 0 } } };
         case 'agent_list': return { agents: [{ agentId: 'agent-1', agentType: 'coder', status: 'idle' }], total: 1 };
         case 'memory_stats': return { totalEntries: 12, namespaces: { a: 1, b: 2 }, backend: 'sqlite (bridge)' };
         case 'memory_search': return { query: String(params.query), results: [{ key: 'k1', namespace: 'n', similarity: 0.9 }], total: 1 };
@@ -58,6 +60,12 @@ export function stubRuflo(): StubRuflo {
         case 'performance_metrics': return { metrics: { cpu: { current: 12, cores: 8, loadAverage: [1, 2, 3], model: 'cpu', _real: true }, memory: { current: 4096, total: 16384, heap: 25, _real: true }, latency: { current: 45 }, throughput: { current: 1250 } } };
         case 'agentdb_health': case 'agentdb_controllers': return { available: true, controllers: [] };
         case 'workflow_pause': case 'workflow_resume': case 'agentdb_consolidate': return { success: true };
+        case 'agent_terminate': return { success: true, agentId: params.agentId, terminated: true };
+        case 'agent_logs': return { agentId: params.agentId, entries: [{ timestamp: '2026-10-09T00:59:05.694Z', level: 'info', message: 'agent created (type=coder, status=idle)' }], total: 1, note: 'per-agent activity logging is not yet wired; entries are synthetic (ruvnet/ruflo#1916)' };
+        case 'task_create': return { taskId: 'task-1-abc', type: params.type, description: params.description, status: 'pending' };
+        case 'memory_store': return { success: true, key: params.key, namespace: params.namespace, stored: true };
+        case 'claims_release': return { success: true, message: 'released' };
+        case 'claims_status': return { success: true, claim: { issueId: params.issueId, status: params.status } };
         default: throw new Error(`unexpected tool ${tool}`);
       }
     },
