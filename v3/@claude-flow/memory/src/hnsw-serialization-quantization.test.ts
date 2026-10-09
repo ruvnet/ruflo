@@ -154,6 +154,62 @@ describe('HNSWIndex serialize/deserialize — quantization round-trip (Dream Cyc
     expect(results.map((r) => r.id).sort()).toEqual(['a', 'b']);
   });
 
+  it('importCodebooks() rejects malformed shape and leaves the quantizer untrained (ruvnet review, #3650)', () => {
+    const index = new HNSWIndex({
+      dimensions: DIM,
+      metric: 'euclidean',
+      quantization: { type: 'product', subquantizers: 8, codebookSize: 256 },
+    }) as unknown as {
+      quantizer: { importCodebooks(c: unknown): boolean; isPQTrained: boolean };
+    };
+
+    // Wrong subquantizer count (7 instead of 8).
+    expect(index.quantizer.importCodebooks(new Array(7).fill(null))).toBe(false);
+    expect(index.quantizer.isPQTrained).toBe(false);
+
+    // Right shape, but a non-finite value buried in one centroid — must not
+    // be silently accepted (would otherwise poison every distance computed
+    // against that centroid with NaN).
+    const subvectorSize = Math.ceil(DIM / 8);
+    const malformed = Array.from({ length: 8 }, () =>
+      Array.from({ length: 256 }, () => new Array(subvectorSize).fill(0))
+    );
+    malformed[3][5][2] = NaN;
+    expect(index.quantizer.importCodebooks(malformed)).toBe(false);
+    expect(index.quantizer.isPQTrained).toBe(false);
+
+    // Correctly-shaped, all-finite codebooks are accepted.
+    const valid = Array.from({ length: 8 }, () =>
+      Array.from({ length: 256 }, () => new Array(subvectorSize).fill(0.5))
+    );
+    expect(index.quantizer.importCodebooks(valid)).toBe(true);
+    expect(index.quantizer.isPQTrained).toBe(true);
+  });
+
+  it('a corrupted codebooks JSON section in a v2 buffer leaves the quantizer untrained, not NaN-poisoned', async () => {
+    const corpus = buildClusteredCorpus(300, DIM, NUM_CLUSTERS, 11);
+    const index = new HNSWIndex({
+      dimensions: DIM,
+      metric: 'euclidean',
+      quantization: { type: 'product', subquantizers: 8, codebookSize: 256 },
+    });
+    for (let i = 0; i < corpus.length; i++) await index.addPoint(`v-${i}`, corpus[i]);
+
+    const buf = index.serialize();
+    // Corrupt the JSON-encoded codebooks payload in place: flip one byte
+    // inside the string region so JSON.parse() throws.
+    const corrupted = Buffer.from(buf);
+    const needle = corrupted.indexOf(Buffer.from('[[[')); // start of the codebooks JSON array
+    expect(needle).toBeGreaterThan(0);
+    corrupted[needle] = '{'.charCodeAt(0); // "[[[" -> "{[["  breaks JSON.parse
+
+    const restored = HNSWIndex.deserialize(corrupted) as unknown as {
+      quantizer: { isPQTrained: boolean } | null;
+    };
+    expect(restored.quantizer).not.toBeNull();
+    expect(restored.quantizer!.isPQTrained).toBe(false); // corrupt payload rejected, not crashed, not NaN-poisoned
+  });
+
   it('v1-format buffers (no quantization section) still deserialize, with no quantizer (backward compatibility)', async () => {
     // Hand-build a v1-format buffer for a tiny 2-node, non-quantized,
     // cosine-metric index — the exact wire format serialize() produced

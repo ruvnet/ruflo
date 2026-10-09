@@ -709,7 +709,7 @@ export class HNSWIndex extends EventEmitter {
     // Quantization section (v2 only — absent/skipped for v1 buffers, which
     // restore with no quantizer, matching their pre-existing behavior).
     let quantization: QuantizationConfig | undefined;
-    let restoredCodebooks: number[][][] | null = null;
+    let restoredCodebooks: unknown = null;
     if (isV2) {
       const hasQuantization = buf[offset]; offset += 1;
       if (hasQuantization) {
@@ -729,7 +729,11 @@ export class HNSWIndex extends EventEmitter {
         if (hasCodebooks) {
           const cbRead = readLengthPrefixedString(buf, offset);
           offset = cbRead.offset;
-          restoredCodebooks = JSON.parse(cbRead.value) as number[][][];
+          try {
+            restoredCodebooks = JSON.parse(cbRead.value);
+          } catch {
+            restoredCodebooks = null; // corrupt JSON -> leave quantizer untrained, don't throw
+          }
         }
       }
     }
@@ -1268,10 +1272,41 @@ class Quantizer {
     return this.pqTrained ? this.codebooks : null;
   }
 
-  /** Restore previously-trained PQ codebooks after deserialization. */
-  importCodebooks(codebooks: number[][][]): void {
-    this.codebooks = codebooks;
+  /**
+   * Restore previously-trained PQ codebooks after deserialization.
+   *
+   * `codebooks` comes from `JSON.parse()` on persisted (possibly corrupted)
+   * data, so it is untyped input, not a trusted `number[][][]`. Validates
+   * shape (`numSubquantizers` sub-arrays, each `numCentroids` centroids of
+   * the expected per-subvector length) and that every value is a finite
+   * number before accepting it. On any mismatch, leaves the quantizer
+   * untrained (same as the pre-training bootstrap state) rather than
+   * adopting data that could produce NaN/garbage distances. Returns
+   * whether the codebooks were accepted.
+   */
+  importCodebooks(codebooks: unknown): boolean {
+    const numSubquantizers = this.config.subquantizers || 8;
+    const numCentroids = this.config.codebookSize || 256;
+    const subvectorSize = Math.ceil(this.dimensions / numSubquantizers);
+
+    if (!Array.isArray(codebooks) || codebooks.length !== numSubquantizers) return false;
+
+    for (let m = 0; m < numSubquantizers; m++) {
+      const start = m * subvectorSize;
+      const expectedLen = Math.min(subvectorSize, this.dimensions - start);
+      const sub = codebooks[m];
+      if (!Array.isArray(sub) || sub.length !== numCentroids) return false;
+      for (const centroid of sub) {
+        if (!Array.isArray(centroid) || centroid.length !== expectedLen) return false;
+        for (const value of centroid) {
+          if (typeof value !== 'number' || !Number.isFinite(value)) return false;
+        }
+      }
+    }
+
+    this.codebooks = codebooks as number[][][];
     this.pqTrained = true;
+    return true;
   }
 
   /**
