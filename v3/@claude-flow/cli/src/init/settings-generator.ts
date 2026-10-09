@@ -59,9 +59,9 @@ export function generateSettings(options: InitOptions): object {
     };
   }
 
-  // Note: Claude Code expects 'model' to be a string, not an object
-  // Additional ruflo-specific model preferences live in claudeFlow.modelPreferences below
-  settings.model = 'claude-sonnet-5';
+  // #3527: deliberately no settings.model. Project settings outrank the user's
+  // own settings, so a pin here would silently override the model the user chose.
+  // Ruflo's own routing preferences live in claudeFlow.modelPreferences below.
 
   // Add Agent Teams configuration (experimental feature)
   settings.env = {

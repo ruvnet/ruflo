@@ -130,7 +130,7 @@ importers:
         specifier: 1.0.1
         version: link:../plugin-agent-federation
       '@claude-flow/security':
-        specifier: 3.0.2
+        specifier: 3.0.3
         version: link:../security
       '@claude-flow/shared':
         specifier: 3.0.2
@@ -209,7 +209,7 @@ importers:
         specifier: 2.0.0-alpha.5
         version: 2.0.0-alpha.5
       '@claude-flow/memory':
-        specifier: 3.0.1
+        specifier: 3.0.2
         version: link:../memory
       '@metaharness/darwin':
         specifier: ~0.10.2
@@ -8398,7 +8398,7 @@ packages:
     hasBin: true
     dependencies:
       conventional-commits-filter: 5.0.0
-      handlebars: 4.7.9
+      handlebars: 4.7.10
       meow: 13.2.0
       semver: 7.7.3
 
@@ -9573,8 +9573,8 @@ packages:
       - bufferutil
       - utf-8-validate
 
-  /handlebars@4.7.9:
-    resolution: {integrity: sha512-4E71E0rpOaQuJR2A3xDZ+GM1HyWYv1clR58tC8emQNeQe3RH7MAzSbat+V0wG78LQBo6m6bzSG/L4pBuCsgnUQ==}
+  /handlebars@4.7.10:
+    resolution: {integrity: sha512-P5VJMVM7qgBn6vjXMw8WG9uVI+ncf2pi72j4de4yz5ZULLj2RGqLYaKOYGsgyrViQ0tePOVlN1tDCCXXtFqXKg==}
     engines: {node: '>=0.4.7'}
     hasBin: true
     dependencies:

@@ -1337,6 +1337,51 @@ export const hooksRoute: MCPTool = {
       } catch {
         // AgentDB router not available — fall through to local routing
       }
+
+      // Trajectory learning persists SONA outcomes separately from the local
+      // semantic index. Only consume an eligible learned pattern here; native,
+      // Q-learning and keyword suggestions retain their existing routing paths.
+      try {
+        const sonaStart = performance.now();
+        const sona = await getSONAOptimizer();
+        const suggestion = await sona?.getRoutingSuggestion(task);
+        const { isSupportedSonaAgent } = await import('../memory/sona-optimizer.js');
+        if (suggestion?.source === 'sona-pattern'
+          && Number.isFinite(suggestion.confidence)
+          && suggestion.confidence >= 0.6 && suggestion.confidence <= 1
+          && isSupportedSonaAgent(suggestion.agent)) {
+          const confidence = Math.round(suggestion.confidence * 100) / 100;
+          const complexity = task.length > 200 ? 'high' : task.length < 50 ? 'low' : 'medium';
+          return {
+            task,
+            routing: { method: 'sona-pattern', backend: 'SONA persisted keyword patterns', latencyMs: performance.now() - sonaStart, throughput: 'N/A' },
+            matched: true,
+            matchedPattern: 'sona-pattern',
+            semanticMatches: [],
+            primaryAgent: {
+              type: suggestion.agent,
+              confidence,
+              reason: `Persisted SONA outcome pattern (${Math.round(suggestion.confidence * 100)}% confidence)`,
+            },
+            alternativeAgents: suggestion.alternatives
+              .filter(alternative => isSupportedSonaAgent(alternative.agent) && Number.isFinite(alternative.score))
+              .map(alternative => ({
+                type: alternative.agent,
+                confidence: Math.round(alternative.score * 100) / 100,
+                reason: 'Alternative from persisted SONA patterns',
+              })),
+            estimatedMetrics: {
+              successProbability: confidence,
+              estimatedDuration: complexity === 'high' ? '2-4 hours' : complexity === 'medium' ? '30-60 min' : '10-30 min',
+              complexity,
+            },
+            swarmRecommendation: null,
+            learning: { source: suggestion.source, matchedKeywords: suggestion.matchedKeywords },
+          };
+        }
+      } catch {
+        // Optional SONA state unavailable — preserve the existing local route.
+      }
     }
 
     return routeTaskLocal(task, context, useSemanticRouter);
@@ -1345,8 +1390,8 @@ export const hooksRoute: MCPTool = {
 
 /**
  * hooks_route's local routing (semantic index + keyword fallback), run after the
- * AgentDB pre-route. Shared with {@link routeTaskForBench} so the benchmark
- * measures exactly the path hooks_route takes. (Body kept at its original
+ * AgentDB and eligible SONA pre-routes. Shared with {@link routeTaskForBench}
+ * so the benchmark measures this local path. (Body kept at its original
  * indentation to keep this refactor's diff small.)
  */
 async function routeTaskLocal(

@@ -148,7 +148,7 @@ export function optionsOf(raw: PluginOptions | undefined): Options {
 }
 
 /** A mutating action waiting for the person's second press; `shows` is the command line when it is not a ruflo one. */
-export type Pending = { label: string; args: readonly string[]; expect: string; askedAtMs: number; shows?: string; note?: string; /** The kind of action, when it may be remembered (see remember.ts). */ rememberKey?: string; /** Where in its view the ask came from. */ scope?: string; /** The page that raised it: the ask shows in full there, and as a pointer on every other page. */ view?: string; /** Who raised it: Claude's tool call or the person's own action (ADR-450 T14). */ source?: 'claude' | 'you'; /** The class the entry declares for itself; the gate takes the stricter of this and the class read from its words. */ declared?: 'write' | 'network' | 'install' | 'spend' | 'delete'; /** The class of action, set only on Claude's asks. */ kind?: 'write' | 'network' | 'install' | 'spend' | 'delete' }
+export type Pending = { /** Which ask this is (runner.ts hands out ids in order): a Yes names the card it answers, so another card that took its place is never the one run. */ id?: number; label: string; args: readonly string[]; expect: string; askedAtMs: number; shows?: string; note?: string; /** The kind of action, when it may be remembered (see remember.ts). */ rememberKey?: string; /** Where in its view the ask came from. */ scope?: string; /** The page that raised it: the ask shows in full there, and as a pointer on every other page. */ view?: string; /** Who raised it: Claude's tool call or the person's own action (ADR-450 T14). */ source?: 'claude' | 'you'; /** The class the entry declares for itself; the gate takes the stricter of this and the class read from its words. */ declared?: 'write' | 'network' | 'install' | 'spend' | 'delete'; /** The class of action, set only on Claude's asks. */ kind?: 'write' | 'network' | 'install' | 'spend' | 'delete' }
 
 /** The MetaHarness lab's last run: what it was, how it exited, its cost note, and its output as lines to scroll. */
 export type LabResult = { id: string; label: string; ok: boolean; exitCode: number | null; note?: string; lines: string[]; atMs: number }
@@ -326,7 +326,7 @@ export type State = {
   /** The Workflows page: the last read of Claude Code's run folders, the cursor, the inspector tab (wf-state.ts). */
   wf: WfState
   /** Claude's control of the console (ADR-444): paused by the person, the call counts, and the log the dashboard shows. */
-  control: { paused: boolean; calls: number; turnCalls: number; /** Model-driven actions this session, by class (ADR-450 T8 budget). */ used: Record<string, number>; log: ControlEntry[]; /** Until when Claude counts as driving (a tool call extends it): the console does not spend a second Claude turn on guidance meanwhile. */ drivingUntilMs: number; /** True while one of Claude's tool calls is running: a person's "always allow" answer must not let Claude's call skip the level and confirm checks (ADR-444). */ viaModel: boolean }
+  control: { paused: boolean; calls: number; turnCalls: number; /** Model-driven actions this session, by class (ADR-450 T8 budget). */ used: Record<string, number>; log: ControlEntry[]; /** Until when Claude counts as driving (a tool call extends it): the console does not spend a second Claude turn on guidance meanwhile. */ drivingUntilMs: number; /** Claude's console_run / console_set calls running now: an ask that lands while one runs is settled (gated) by that call; one that lands with none running (console_open and console_state settle nothing) is checked by the runner. */ activeCalls: number; /** True while one of Claude's tool calls is running: a person's "always allow" answer must not let Claude's call skip the level and confirm checks (ADR-444). */ viaModel: boolean }
 }
 
 export function newState(raw: PluginOptions | undefined): State {
@@ -404,7 +404,7 @@ export function newState(raw: PluginOptions | undefined): State {
     timers: new Map(),
     stats: { renders: [], refreshes: [], frames: [] },
     wf: emptyWf(),
-    control: { paused: false, calls: 0, turnCalls: 0, used: {}, log: [], drivingUntilMs: 0, viaModel: false },
+    control: { paused: false, calls: 0, turnCalls: 0, used: {}, log: [], drivingUntilMs: 0, activeCalls: 0, viaModel: false },
   }
 }
 

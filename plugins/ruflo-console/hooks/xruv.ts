@@ -99,11 +99,14 @@ export function admitArg(raw: string): { pubkey: string; role: 'member' | 'admin
   return isPubkey(pubkey) && (role === 'member' || role === 'admin') && extra.length === 0 ? { pubkey: pubkey.toLowerCase(), role } : null
 }
 
+/** A version (v2.1.0-beta.3) has the invite's characters but not its shape: the terminal masks every line, and a version stays readable. */
+const VERSION = /^v2\.\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.-]+)?$/
+
 /** An invite code in any text, masked: it is a bearer secret, so no line the console writes ever carries one. */
-export const maskInvites = (line: string): string => line.replace(INVITE_ANYWHERE, 'v2.•••• (invite code, masked)')
+export const maskInvites = (line: string): string => line.replace(INVITE_ANYWHERE, code => (VERSION.test(code) ? code : 'v2.•••• (invite code, masked)'))
 
 /** True when the text holds an invite code (a bearer secret the person minted: it never goes to a model). */
-export const hasInvite = (text: string): boolean => new RegExp(INVITE_ANYWHERE.source).test(text)
+export const hasInvite = (text: string): boolean => maskInvites(text) !== text
 
 const exec = (tool: string, params: Record<string, unknown>) => ['mcp', 'exec', '-t', tool, '-p', JSON.stringify(params)] as const
 

@@ -7,6 +7,7 @@ import { TOAST_MODES, type ToastMode } from '../toast-policy'
 import { MUTABLE_SOURCES, summaryOf } from '../toasts'
 import { UPDATES_MODES, type UpdatesMode } from '../updates'
 import { button, clip, col, row, rule, section, text, THEME, type Ctx } from './common'
+import { own } from '../data/safe'
 
 /** One setting, whatever it belongs to, so a search, a level and "changed only" filter one list. */
 type Item = { id: string; source: string; title: string; haystack: string; level: Level; changed: boolean; rows: () => RenderElement[] }
@@ -76,7 +77,7 @@ function settingRows(ctx: Ctx, o: RowSpec): RenderElement[] {
   return rows
 }
 
-const simpleKeys = (config: PluginConfig): readonly string[] => SIMPLE[config.name] ?? Object.keys(config.schema).slice(0, 4)
+const simpleKeys = (config: PluginConfig): readonly string[] => own(SIMPLE, config.name) ?? Object.keys(config.schema).slice(0, 4)
 
 function pluginItems(ctx: Ctx, config: PluginConfig): Item[] {
   return Object.entries(config.schema).map(([key, entry]) => {
@@ -96,7 +97,7 @@ function pluginItems(ctx: Ctx, config: PluginConfig): Item[] {
         settingRows(ctx, {
           key: id,
           title: entry.title,
-          description: OPTION_NOTES[config.name]?.[key] ?? entry.description,
+          description: own(own(OPTION_NOTES, config.name) ?? {}, key) ?? entry.description,
           current,
           isChanged,
           isSecret: entry.isSecret,

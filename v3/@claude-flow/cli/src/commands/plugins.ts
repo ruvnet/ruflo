@@ -108,7 +108,18 @@ const listCommand: Command = {
         return { success: false, exitCode: 1 };
       }
 
-      spinner.succeed(`Registry discovered: ${result.registry.totalPlugins} plugins available`);
+      if (result.demo) {
+        // The signed registry was unavailable or failed verification (see ruvnet/ruflo#3211):
+        // say so instead of reporting a successful discovery over the built-in list.
+        spinner.stop(
+          output.warning(
+            `Signed plugin registry unavailable or unverified; showing the built-in list ` +
+              `(${result.registry.totalPlugins} plugins)`,
+          ),
+        );
+      } else {
+        spinner.succeed(`Registry discovered: ${result.registry.totalPlugins} plugins available`);
+      }
 
       output.writeln();
 
@@ -193,6 +204,14 @@ const listCommand: Command = {
         output.writeln(output.dim('(ratings: cached — cloud unavailable)'));
       }
       output.writeln(output.dim(`Source: ${result.source}${result.fromCache ? ' (cached)' : ''}`));
+      if (result.demo) {
+        output.writeln(
+          output.warning(
+            'Not from the signed registry: download counts, ratings and trust labels are the ' +
+              "CLI's built-in defaults, not verified registry data.",
+          ),
+        );
+      }
       if (result.cid) {
         output.writeln(output.dim(`Registry CID: ${result.cid.slice(0, 30)}...`));
       }

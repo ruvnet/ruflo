@@ -77,6 +77,11 @@ jobs:
         # longer exists, so it silently stops guarding. Fails loud if zero
         # names are extracted or the registry is empty.
 
+      - name: Native Codex hooks for adr, ddd and sparc (bundles match their sources)
+        run: |
+          node scripts/build-codex-mod-hooks.mjs --check
+          node --test tests/plugins/codex-mod-hooks.test.mjs
+
       - name: No mod forwards another mod's status file into model context (ADR-450 T7)
         run: |
           node --test tests/check-status-forwarding.test.mjs

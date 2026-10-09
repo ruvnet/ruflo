@@ -95,7 +95,14 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
   wireActivity(state, host)
   const actions: Actions = {
     view: setView,
-    remember: () => {
+    remember: seen => {
+      // "Always allow" is the person's answer to the card they read: on a card that was replaced it remembers nothing (as a stale Yes runs nothing).
+      if (seen !== undefined && state.pending?.id !== seen) {
+        void runner.confirm(seen)
+
+        return
+      }
+
       const key = state.pending?.rememberKey
 
       if (key !== undefined && state.pending !== null) {
@@ -103,7 +110,7 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
         saveAllowed(state, host)
       }
 
-      void runner.confirm()
+      void runner.confirm(seen)
     },
     forget: key => {
       if (key === '') state.allowed.clear()
@@ -172,7 +179,7 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
     },
     close: () => void close(),
     back: () => setView(state.view === 'agent' ? state.back : state.options.look === 'bbs' ? 'menu' : 'overview'),
-    confirm: () => void runner.confirm(),
+    confirm: seen => void runner.confirm(seen),
     cancel: runner.cancel,
     select,
     agentNext: () => {

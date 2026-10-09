@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.3.4 — 2026-10-08
+- feat: native Codex hooks (`.codex-plugin`, `hooks/codex-hooks.json`, generated `codex-hook.cjs`) reusing the existing guard, screen and status functions
+- fix: allow native freeform tool inputs in the Codex adapter and version the Codex hook repair
+
 ## 0.3.3 — 2026-10-05
 - fix: shared textsOf reports truncation and every guard fails closed on it
 

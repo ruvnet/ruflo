@@ -2,6 +2,14 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.40.2 — 2026-10-08
+- fix: a Yes runs only the card it was pressed on: every confirm card has an id and the Yes, Always allow and Always accept buttons carry it, so a card that took the first one's place (the person's own ask) is never answered by a Yes meant for the old one; the stale Yes runs nothing and says so (ADR-450 T17)
+- fix: an ask of Claude's that was screened first and landed after its tool call returned is checked against the level and Stop as they are when it lands; a level lowered meanwhile wins
+- fix: everything handed to the model goes through one sanitiser (modelLine: escape sequences, then control and invisible characters removed so they cannot split a credential, then invite codes masked, then the cut, then the line withheld if it holds a secret shape): failed-run details, the "already waiting" refusal, the "waiting for the person" and "started" answers, refusals that echo the model's own input, palette entry ids and thrown errors no longer quote a token or an x.ruv.io invite code; a version such as v2.1.0-beta.3 is no longer masked as an invite
+- fix: escape stripping is linear: a megabyte of unterminated OSC introducers took seconds, now milliseconds; an unterminated OSC ends at the next introducer or the end of the text
+- fix: a mission state, task status, hive role, audit severity or plugin named toString, constructor or __proto__ draws as unknown instead of as native code, and no longer throws in Settings
+- fix: Approvals and a mission's objective wrap at narrow widths (80 columns in tmux) instead of being cut with "…" (#3899)
+
 ## 0.40.1 — 2026-10-08
 - fix: a settings write (or any confirmed ruflo CLI action) no longer aborts with "still running after 90000ms" when the CLI is not in the npm cache (#3914): with the ruflo CLI option on npx it now uses ruflo on PATH, a project-local bin, or the cached npx copy first, and only then a cold download, which gets a 5 minute limit and says "first run downloads the ruflo CLI"
 - fix: a timeout or an uncached npx now ends as an error that names the fix (npm i -g ruflo, or npx -y @claude-flow/cli@latest --version once), and a retry after the cache is warm runs at once

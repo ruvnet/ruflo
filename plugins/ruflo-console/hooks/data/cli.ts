@@ -6,6 +6,7 @@
  */
 import { closeOf } from './json-span'
 import { idOf, msOf, numberOf, plain, recordOf, stringOf, valuesOf } from './parse'
+import { own } from './safe'
 import { researchProbe } from './research'
 
 import { CLI_PREFIXES, type CliChoice, type State, type ViewId } from '../state'
@@ -283,7 +284,7 @@ export const auditProbe: Probe<AuditTrend> = {
 }
 
 /** A severity word as a 0-4 level, for the trend line; unknown words are null. */
-export const severityOf = (word: string | undefined): number | null => (word === undefined ? null : (SEVERITY[word.toLowerCase()] ?? null))
+export const severityOf = (word: string | undefined): number | null => (word === undefined ? null : (own(SEVERITY, word.toLowerCase()) ?? null))
 
 export type Intelligence = { trajectories?: number; patterns?: number; successRate?: number; moeDecisions?: number; ewcConsolidations?: number; routerDecisions?: number; routerConfidence?: number; neuralRouter?: string }
 

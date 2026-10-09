@@ -16,6 +16,7 @@
  *
  * @module v3/cli/memory-bridge
  */
+import { AppendConditionFailed, assertAppendConditions, validateAppendConditions, type AppendCondition } from './append-conditions.js';
 
 import { liveMemoryRowSql } from './live-memory-row.js';
 import { resolveAgentdbBetterSqlite3 } from './shared-sqlite.js';
@@ -1037,6 +1038,9 @@ export async function bridgeStoreEntry(options: {
   ttl?: number;
   dbPath?: string;
   upsert?: boolean;
+  requireNative?: boolean;
+  appendOnly?: boolean;
+  appendConditions?: AppendCondition[];
   /** ADR-323: defaults to 'unknown' when omitted. */
   provenanceType?: string;
 }): Promise<{
@@ -1078,13 +1082,25 @@ export async function bridgeStoreEntry(options: {
   const ctx = getDb(registry);
   if (!ctx) return null;
 
+  if (options.appendOnly && !options.requireNative) {
+    return { success: false, id: '', error: 'Immutable append requires a native writer' };
+  }
+  if (options.appendConditions && (!options.requireNative || !options.appendOnly)) {
+    return { success: false, id: "", error: "Conditional append requires native append-only storage" };
+  }
+  if (options.requireNative && (ctx.agentdb?.isWasm === true || typeof ctx.db.inTransaction !== 'boolean'
+    || typeof ctx.db.transaction !== 'function' || ctx.db.memory !== false || typeof ctx.db.name !== 'string'
+    || !ctx.db.name || canonicalDbPath(ctx.db.name) !== canonicalDbPath(options.dbPath))) {
+    return { success: false, id: '', error: 'Native memory writer required; refusing non-native bridge driver' };
+  }
+
   try {
     const { key, value, namespace = 'default', tags = [], ttl } = options;
     let provenanceType = options.provenanceType ?? 'unknown';
     // An omitted type on an upsert means "update the value", not "erase the
     // existing trust label". New rows still receive the backward-compatible
     // unknown default.
-    if (options.upsert && options.provenanceType === undefined) {
+    if (options.upsert && !options.appendOnly && options.provenanceType === undefined) {
       try {
         const existing = ctx.db.prepare(
           'SELECT provenance_type FROM memory_entries WHERE namespace = ? AND key = ? LIMIT 1'
@@ -1146,7 +1162,12 @@ export async function bridgeStoreEntry(options: {
     //                                       below → typed "already exists"
     //                                       error, NEVER a null demotion).
     // Upsert path (INSERT OR REPLACE) is unchanged.
-    const insertSql = options.upsert
+    const immutableInsertSql = `INSERT INTO memory_entries (
+          id, key, namespace, content, type,
+          embedding, embedding_dimensions, embedding_model,
+          tags, metadata, provenance_type, created_at, updated_at, expires_at, status
+        ) VALUES (?, ?, ?, ?, 'semantic', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`;
+    const insertSql = options.appendOnly ? immutableInsertSql : options.upsert
       ? `INSERT OR REPLACE INTO memory_entries (
           id, key, namespace, content, type,
           embedding, embedding_dimensions, embedding_model,
@@ -1184,7 +1205,7 @@ export async function bridgeStoreEntry(options: {
     } catch { /* vector_indexes may not exist on legacy DBs — fall through */ }
 
     const stmt = ctx.db.prepare(insertSql);
-    const runResult = stmt.run(
+    const insert = () => stmt.run(
       id, key, namespace, value,
       embeddingJson, dimensions || null, model,
       tags.length > 0 ? JSON.stringify(tags) : null,
@@ -1193,6 +1214,26 @@ export async function bridgeStoreEntry(options: {
       now, now,
       ttl ? now + (ttl * 1000) : null
     );
+
+    let runResult;
+    try {
+      runResult = options.appendOnly
+        ? ctx.db.transaction(() => {
+            // Legacy native tables may predate UNIQUE(namespace,key). Serialize the exact
+            // logical-slot check with INSERT, including tombstones, instead of trusting DDL.
+            if (ctx.db.prepare('SELECT key FROM memory_entries WHERE namespace = ? AND key = ?').all(namespace, key).length) {
+              throw new AppendConditionFailed('immutable append rejected: logical key already exists');
+            }
+            if (options.appendConditions) assertAppendConditions(ctx.db, validateAppendConditions(options.appendConditions));
+            return insert();
+          }).immediate()
+        : insert();
+    } catch (error) {
+      if (error instanceof AppendConditionFailed || error instanceof TypeError) {
+        return { success: false, id: '', error: error.message };
+      }
+      throw error;
+    }
 
     // A completed native write proves the bridge is currently healthy. Do not
     // retain a diagnostic from an earlier transient failure and append it to a
@@ -1212,9 +1253,11 @@ export async function bridgeStoreEntry(options: {
       };
     }
 
+    // A non-vector immutable INSERT cannot change the vector count, even with concurrent
+    // writers. Unlike historical strict mode, it never resurrects a vector tombstone.
     // #2558: keep `vector_indexes.total_vectors` accurate so status/tooling
     // stop reporting "HNSW index: 0 vectors" while embedded entries exist.
-    try {
+    if (!(options.appendOnly && embeddingJson === null)) try {
       ctx.db
         .prepare(
           `UPDATE vector_indexes SET

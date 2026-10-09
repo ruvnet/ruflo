@@ -161,7 +161,7 @@ Cost tracking commands:
 3. Highlight days with unusual spending (>2x average)
 4. Display: date, total cost, top agent, top model, budget status
 
-**`cost ledger [--since 7d] [--provider claude|codex|all]`** -- Multi-provider spend from local logs (no network).
+**`cost ledger [--since 7d] [--provider claude|codex|grok|all]`** -- Multi-provider spend from local logs (no network).
 1. Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/ledger.mjs --since 7d`
 2. Report totals per provider/model, cache hit ratio, and any UNPRICED models (never counted as $0). USD and Codex credits are reported separately.
 

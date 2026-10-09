@@ -13,6 +13,7 @@ import { adrDirText, patternOf } from './data/adr-write'
 import type { ActionSpec } from './actions'
 import { budgetAmount } from './cost'
 import { plain } from './data/parse'
+import { own } from './data/safe'
 import { RUFLO_MARKET } from './data/snapshot'
 import { DEFAULT_LOOP, LOOP_INTERVALS, type LoopPrefs, WRITER_CAPS } from './goap'
 import type { Host } from './host'
@@ -177,7 +178,7 @@ export function shownKeys(config: PluginConfig, level: Level): string[] {
 
   if (level === 'advanced') return keys
 
-  const simple = SIMPLE[config.name]
+  const simple = own(SIMPLE, config.name)
 
   return simple === undefined ? keys.slice(0, 4) : keys.filter(key => simple.includes(key))
 }
@@ -419,7 +420,7 @@ export type SettingsActions = {
   core: (key: string, value: string) => void
   ai: (patch: Partial<AiPrefs>) => void
   /** The confirm row's "always accept": saves the preference and runs the ask that is pending. */
-  alwaysAccept: () => void
+  alwaysAccept: (seen?: number) => void
   /** Sends an explaining prompt to the AI terminal (claude or codex) now: the reply streams in, no second click. */
   ask: (agent: 'claude' | 'codex', title: string, description: string, current: string, where: string) => void
 }
@@ -456,11 +457,18 @@ export function settingsActions(state: State, host: Host, runner: Runner, load: 
     option: (name, key, value) => runner.ask(setOption(state, name, key, value, reloadPlugin), checkLimit(value.trim(), OPTION_MAX, `the ${key} value`).ok ? `“${plain(value, 40)}” is not a value ${key} accepts` : (checkLimit(value.trim(), OPTION_MAX, `the ${key} value`) as { message: string }).message),
     core: (key, value) => runner.ask(setCore(state, key, value, reloadCore), `“${plain(value, 40)}” is not a value ${key} accepts`),
     ai: patch => saveAiPrefs(state, host, patch),
-    alwaysAccept: () => {
+    alwaysAccept: seen => {
+      // On a card that was replaced it changes nothing: no preference saved, the draft kept, and the Yes runs nothing.
+      if (seen !== undefined && state.pending?.id !== seen) {
+        void runner.confirm(seen)
+
+        return
+      }
+
       saveAiPrefs(state, host, { autoAccept: true })
       state.terminal.asked = null
       state.terminal.draft = ''
-      void runner.confirm()
+      void runner.confirm(seen)
     },
     ask: (agent, title, description, current, where) => load(agent, askPrompt(title, description, current, where)),
   }

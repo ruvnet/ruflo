@@ -15,6 +15,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { readFileMaybeEncrypted } from '../fs-secure.js';
+import { loadBetterSqlite3 } from '../memory/shared-sqlite.js';
+import { resolveMemoryRoot } from '../memory/memory-root.js';
 
 export interface BackupOptions {
   /** Source DB (default: <cwd>/.swarm/memory.db). */
@@ -41,6 +43,39 @@ export interface BackupResult {
 
 export function defaultMemoryDbPath(cwd: string = process.cwd()): string {
   return path.join(cwd, '.swarm', 'memory.db');
+}
+
+export interface ProjectBackupResult extends BackupResult {
+  backups: Array<BackupResult & { dbPath: string }>;
+}
+
+/** Back up the active project stores; an explicit full-file override stays single-store. */
+export async function backupProjectMemoryDbs(
+  cwd: string,
+  opts: Omit<BackupOptions, 'dbPath'> = {},
+): Promise<ProjectBackupResult> {
+  const override = process.env.CLAUDE_FLOW_DB_PATH;
+  let sources: string[];
+  if (override && override.trim().length > 0) {
+    sources = [path.resolve(cwd, override)];
+  } else {
+    const root = resolveMemoryRoot(cwd);
+    sources = [path.join(root, 'memory.db'), path.join(root, 'agentdb-memory.db')];
+  }
+  const backups: ProjectBackupResult['backups'] = [];
+  for (const dbPath of sources) {
+    backups.push({ ...await backupMemoryDb({ ...opts, dbPath }), dbPath });
+  }
+  const successful = backups.filter(result => result.backedUp);
+  const failed = backups.find(result => !result.backedUp && result.skipped !== 'no-db');
+  return {
+    ...successful[0],
+    backedUp: successful.length > 0 && !failed,
+    sizeBytes: successful.reduce((sum, result) => sum + (result.sizeBytes ?? 0), 0),
+    rotatedAway: successful.flatMap(result => result.rotatedAway ?? []),
+    skipped: failed?.skipped ?? (successful.length === 0 ? 'no-db' : undefined),
+    backups,
+  };
 }
 
 /** ISO timestamp safe for filenames (no ':' or '.'). */
@@ -245,8 +280,7 @@ export async function restoreMemoryDbFromBackup(
   // encrypted snapshots and provides the same checks on WASM-only hosts.
   let Database: any = null;
   try {
-    const mod: string = 'better-sqlite3';
-    Database = (await import(mod)).default;
+    Database = await loadBetterSqlite3();
   } catch {
     /* use the sql.js verifier */
   }

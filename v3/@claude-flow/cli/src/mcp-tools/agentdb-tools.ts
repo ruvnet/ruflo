@@ -78,6 +78,26 @@ async function getGraphEdgeWriter() {
   if (!graphEdgeWriterMod) graphEdgeWriterMod = await import('../memory/graph-edge-writer.js');
   return graphEdgeWriterMod;
 }
+
+// #2889 — a null graph_edges DB handle can mean several unrelated things
+// (missing native module, permissions, genuine corruption, or an RFE1
+// encrypted-at-rest store). Recommending `memory init` for the encrypted
+// case is actively harmful — it creates a fresh EMPTY store instead of
+// using the existing encrypted data — so distinguish it before choosing
+// a hint.
+async function bridgeUnavailableResult(): Promise<{ error: string; hint: string }> {
+  const { isBridgeDbEncryptedAtRest } = await getGraphEdgeWriter();
+  if (isBridgeDbEncryptedAtRest()) {
+    return {
+      error: 'graph_edges DB is encrypted at rest (RFE1) — the native bridge cannot open it directly.',
+      hint: 'Your existing data is intact; this is a known limitation, not corruption. Do NOT run `memory init` — see https://github.com/ruvnet/ruflo/issues/2889.',
+    };
+  }
+  return {
+    error: 'graph_edges DB unavailable (sql.js could not load)',
+    hint: 'Check Node version + try `ruflo memory init` to initialize manually.',
+  };
+}
 let memInitMod: typeof import('../memory/memory-initializer.js') | null = null;
 async function getMemInit() {
   if (!memInitMod) memInitMod = await import('../memory/memory-initializer.js');
@@ -1132,7 +1152,7 @@ export const agentdbGraphQuery: MCPTool = {
           // #2246 fix: lazy-create memory.db on first pathfinder call so
           // fresh environments work without a pre-existing memory init.
           const db = await getBridgeDb(undefined, { createIfMissing: true });
-          if (!db) return { success: false, error: 'graph_edges DB unavailable (sql.js could not load)', hint: 'Check Node version + try `ruflo memory init` to initialize manually.', mode, nodeId };
+          if (!db) return { success: false, ...(await bridgeUnavailableResult()), mode, nodeId };
 
           // Load all rows with embedding_ref and score by cosine.
           // better-sqlite3 API — `db.exec(sql, params)` (sql.js) silently
@@ -1176,7 +1196,7 @@ export const agentdbGraphQuery: MCPTool = {
           // #2246 fix: lazy-create memory.db on first pathfinder call so
           // fresh environments work without a pre-existing memory init.
           const db = await getBridgeDb(undefined, { createIfMissing: true });
-          if (!db) return { success: false, error: 'graph_edges DB unavailable (sql.js could not load)', hint: 'Check Node version + try `ruflo memory init` to initialize manually.', mode, nodeId };
+          if (!db) return { success: false, ...(await bridgeUnavailableResult()), mode, nodeId };
 
           // better-sqlite3 API — see semantic-mode comment above.
           const edges = db.prepare(
@@ -1379,7 +1399,7 @@ export const agentdbGraphPathfinder: MCPTool = {
       const { getBridgeDb } = await getGraphEdgeWriter();
       // #2246 fix: lazy-create memory.db on first pathfinder call.
       const db = await getBridgeDb(undefined, { createIfMissing: true });
-      if (!db) return { success: false, error: 'graph_edges DB unavailable (sql.js could not load)', hint: 'Check Node version + try `ruflo memory init` to initialize manually.', seedNodeId };
+      if (!db) return { success: false, ...(await bridgeUnavailableResult()), seedNodeId };
 
       const colsSql = algorithm === 'witness-chain-divergence'
         ? 'source_id, target_id, weight, last_reinforced, witness_id'

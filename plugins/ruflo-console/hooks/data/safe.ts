@@ -19,3 +19,6 @@ export const countOf = (value: unknown): number | undefined => (typeof value ===
 
 /** A ratio clamped to 0..1, else undefined. */
 export const ratioOf = (value: unknown): number | undefined => (typeof value === 'number' && Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : undefined)
+
+/** A value keyed by a name a file or the CLI supplied: an OWN key only, so `toString`, `constructor` or `__proto__` read as absent, never as a function. */
+export const own = <T>(record: Readonly<Record<string, T>>, key: unknown): T | undefined => (typeof key === 'string' && Object.hasOwn(record, key) ? record[key] : undefined)

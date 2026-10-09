@@ -281,3 +281,21 @@ one), was aborted at 90 s and showed the raw "still running after 90000ms". Now 
 - A timeout, or `ENOTCACHED` from `npx --offline`, ends the action as an error naming the fix: `npm i -g ruflo`, or
   `npx -y @claude-flow/cli@latest --version` once. Read probes keep their own limits and the existing "ruflo CLI not cached" hint.
 - Reads and other callers that build `[...CLI_PREFIXES[cli], ...]` themselves (drill logs, the terminal harness, mission specs) are unchanged.
+
+## Update 2026-10-08: a Yes names its card (0.40.2)
+
+§8's confirm step ran whatever was pending when the Yes arrived. A second ask that replaced the first card (the person's own ask can still replace a
+waiting card) made a Yes pressed on the first card run the second: a `memory store` argv ran from a Yes meant for something else. Now
+(`hooks/runner.ts`):
+
+- Every ask the runner queues gets an id (`Pending.id`, a counter that only rises). The confirm row's Yes, "Always allow" and "Always accept
+  AI turns" buttons carry the id of the card they were drawn for, and `runner.confirm(seen)` runs only when `seen` is the id of the card now
+  waiting. Otherwise it runs nothing, leaves the new card in place, answers "the card changed before your Yes", and records an event.
+  "Always allow" and "Always accept" on a replaced card also remember nothing and keep the draft.
+- A Yes without an id (`/ruflo yes`, the terminal's Enter on the asked line) still answers the card that is waiting; those read the card on
+  screen in the same step. A second Yes on a card that already ran finds nothing waiting and is a quiet no-op, so it cannot overwrite the answer.
+- An ask of Claude's that was screened first and so landed after its tool call returned is checked against the level and Stop as they are
+  when it lands (`landingRefusal`, model-tools.ts); a level lowered while the screen looked wins.
+
+Regression tests: `tests/deferred-asks.spec.ts`. The same release wraps Approvals and a mission's objective at narrow widths instead of
+cutting them with "…" (#3899, `paragraph` in `views/common.ts`, `tests/narrow-width.spec.ts`).

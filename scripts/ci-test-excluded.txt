@@ -74,6 +74,7 @@ plugins/ruflo-workflows/tests/textsof.test.ts
 plugins/ruflo-x-gateway/tests/mod.test.ts
 plugins/ruflo-x-gateway/tests/textsof.test.ts
 scripts/check-adr-links.test.mjs
+tests/plugins/codex-mod-hooks.test.mjs
 scripts/__tests__/guard-label.test.mjs
 scripts/__tests__/mod-capability-matrix.test.mjs
 tests/check-guard-tool-names.test.mjs
