@@ -3150,13 +3150,40 @@ export async function bridgeSessionEnd(options: {
     if (controller === 'none') controller = 'bridge-store';
     persisted = true;
 
-    // Phase 3: Trigger NightlyLearner consolidation if available
-    const nightlyLearner = registry.get('nightlyLearner');
-    if (nightlyLearner && typeof nightlyLearner.consolidate === 'function') {
-      try {
-        await nightlyLearner.consolidate({ sessionId: options.sessionId });
-        controller += '+nightlyLearner';
-      } catch { /* non-fatal */ }
+    // Phase 3: Trigger NightlyLearner consolidation if available.
+    //
+    // Dream Cycle 2026-10-08: `nightlyLearner` never had a `.consolidate()`
+    // method on either backend — not the legacy `agentdb` `NightlyLearner`
+    // class (`run()`, `discover()`, `consolidateEpisodes()`, no bare
+    // `consolidate`), and not the ADR-125 Phase 4 `MemoryConsolidator`
+    // wrapper from `controller-registry.ts` (`run`/`runAll`/`sweepExpired`/
+    // `dedup`/`compactHnsw`, also no `consolidate`). So this guard was false
+    // unconditionally, and session-end consolidation has been silent dead
+    // code since its introduction, on both backends. `run()` is the real,
+    // shared entry point on both — it takes no arguments.
+    //
+    // 2026-10-09 review (PR #3909): fixing the guard alone turns a dead
+    // path into one that fires on EVERY session end with real, unbounded
+    // cost — the memory-consolidator backend's `run()` is `runAll()`
+    // (sweep+dedup+compactHnsw over the WHOLE store, and `dedup()` is the
+    // same path this PR's own probe shows can intermittently collapse
+    // recall), and the agentdb backend's `run()` embeds every episode and
+    // runs causal discovery + edge deletion. Gated behind an explicit
+    // opt-in (default off, matching this file's `RUFLO_REQUIRE_REAL_EMBEDDINGS`
+    // convention) and bounded by a timeout so a slow run can never hang
+    // session end even when enabled.
+    if (/^(1|true|yes|on)$/i.test(process.env.RUFLO_SESSION_END_CONSOLIDATE ?? '')) {
+      const nightlyLearner = registry.get('nightlyLearner');
+      if (nightlyLearner && typeof nightlyLearner.run === 'function') {
+        try {
+          const timeoutMs = Number(process.env.RUFLO_SESSION_END_CONSOLIDATE_TIMEOUT_MS) || 5000;
+          await Promise.race([
+            nightlyLearner.run(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('nightlyLearner.run() timed out')), timeoutMs)),
+          ]);
+          controller += '+nightlyLearner';
+        } catch { /* non-fatal */ }
+      }
     }
 
     return { success: true, controller, persisted };
