@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import type { Approver } from '../../../src/dashboard/approver.js';
 import type { Ruflo } from '../../../src/dashboard/exec.js';
 import { link } from '../../../src/dashboard/link.js';
-import { runConnector, type RunEnd } from '../../../src/dashboard/run.js';
+import { runConnector, type RunEnd, type RunOptions } from '../../../src/dashboard/run.js';
 import { loadConfig, saveConfig, type Config } from '../../../src/dashboard/state.js';
 import { FakeDashboard, type FakeServerOpts } from './fake-server.js';
 import type { Level } from '../../../src/dashboard/protocol/index.js';
@@ -39,6 +39,25 @@ export function stubRuflo(): StubRuflo {
         case 'memory_list': return { entries: [{ key: 'k1', namespace: String(params.namespace), size: 5, storedAt: 1 }], total: 1, limit: params.limit, offset: 0 };
         case 'task_list': return { tasks: [{ taskId: 'task-1', type: 'implementation', description: 'probe', status: 'pending', assignedTo: ['agent-1'] }], total: 1 };
         case 'swarm_shutdown': return { success: true, swarmId: params.swarmId, terminated: true, agentsTerminated: 1 };
+        // P1 tools, shaped like the real ruflo 3.55.0 output (see the probe notes in docs/threat-model.md)
+        case 'claims_list': return { success: true, claims: [{ issueId: 'ISSUE-1', claimant: 'human:u1:Ana', status: 'active', progress: 40, claimedAt: '2026-10-08T03:11:19.776Z' }, { issueId: 'ISSUE-2', claimant: 'agent:a1:coder', status: 'blocked', blockReason: 'waiting for review', claimedAt: '2026-10-08T03:12:00.000Z' }], count: 2, stealableCount: 0 };
+        case 'claims_board': return { success: true, board: {}, summary: { total: 2, active: 1, blocked: 1, stealable: 0, humanClaims: 1, agentClaims: 1 } };
+        case 'claims_stealable': return { success: true, stealable: [{ issueId: 'ISSUE-2' }], count: 1 };
+        case 'claims_load': return { success: true, loads: [{ agentId: 'a1', claims: 1, utilization: 0.5 }], totalAgents: 1, totalClaims: 2, avgUtilization: 0.5 };
+        case 'hive-mind_status': return { hiveId: 'hive-1', status: 'active', topology: 'mesh', consensus: 'raft', queen: { id: 'queen-1', status: 'active', load: 0.2, tasksQueued: 1 }, workers: ['w1', 'w2'], metrics: { totalTasks: 4, completedTasks: 1, activeTasks: 2, pendingTasks: 1, failedTasks: 0, consensusRounds: 3 }, health: { overall: 'healthy', queen: 'healthy' }, initialized: true, workerCount: 2, pendingConsensus: 0, sharedMemoryKeys: 5, uptime: 120000 };
+        case 'workflow_list': return { workflows: [{ workflowId: 'workflow-1', name: 'release', status: 'ready', stepCount: 3, steps: [{ status: 'completed' }, { status: 'pending' }, { status: 'pending' }] }], total: 1, filters: {} };
+        case 'hooks_intelligence_stats': return { sona: { trajectoriesTotal: 4, trajectoriesSuccessful: 3, patternsLearned: 2, patternCategories: { learned: 2 }, successRate: 0.75 }, moe: { expertsTotal: 8, expertsActive: 2, routingDecisions: 9, loadBalance: { expertUsage: { coder: 5, tester: 4 } } }, ewc: { consolidations: 1, totalPatterns: 2 } };
+        case 'hooks_model-stats': return { available: true, totalDecisions: 7, modelDistribution: { haiku: 5, sonnet: 2, opus: 0, inherit: 0 }, avgConfidence: 0.8, circuitBreakerTrips: 0, routedByCounts: { heuristic: 7 } };
+        case 'metaharness_score': return { success: true, data: { harnessFit: 37, compileConfidence: 12, taskCoverage: 49, toolSafety: 100, memoryUsefulness: 4, estCostPerRunUsd: 0.048, recommendedMode: 'CLI + MCP', archetype: 'ai-agent-framework-harness', scaffoldReady: false }, degraded: false, exitCode: 0 };
+        case 'metaharness_genome': return { success: true, data: { repo_type: 'unknown', agent_topology: ['maintainer'], risk_score: 0.72, mcp_surface: 'local_default_deny', test_confidence: 0, publish_readiness: 0.05, verdict: 'blocked' }, degraded: false, exitCode: 0 };
+        case 'metaharness_audit_list': return { success: true, data: { totalInNamespace: 1, returned: 1, records: [{ key: 'audit-1', generatedAt: '2026-10-08T03:11:19.776Z', worst: 'low' }] }, degraded: false, exitCode: 0 };
+        case 'policy_status': return { version: 1, mode: 'legacy', counts: { rules: 0, budgets: 0, approvals: 0, receipts: 16 }, ledger: { valid: true, length: 16 } };
+        case 'hooks_worker-list': return { workers: [{ trigger: 'audit', description: 'Security analysis', priority: 'critical', estimatedDuration: '45s' }] };
+        case 'hooks_worker-status': return { success: true, workers: [], summary: { total: 0, running: 0, completed: 0, failed: 0 } };
+        case 'session_list': return { sessions: [{ sessionId: 's1', name: 'work', savedAt: '2026-10-08T03:11:19.776Z' }], total: 1, limit: 10 };
+        case 'performance_metrics': return { metrics: { cpu: { current: 12, cores: 8, loadAverage: [1, 2, 3], model: 'cpu', _real: true }, memory: { current: 4096, total: 16384, heap: 25, _real: true }, latency: { current: 45 }, throughput: { current: 1250 } } };
+        case 'agentdb_health': case 'agentdb_controllers': return { available: true, controllers: [] };
+        case 'workflow_pause': case 'workflow_resume': case 'agentdb_consolidate': return { success: true };
         default: throw new Error(`unexpected tool ${tool}`);
       }
     },
@@ -60,9 +79,9 @@ export class Rig {
     return r;
   }
   setConfig(patch: Partial<Config>): void { this.cfg = { ...loadConfig(this.home)!, ...patch }; saveConfig(this.home, this.cfg); }
-  start(approver?: Approver, intervalMs = 60_000): { done: Promise<RunEnd>; stop: () => void } {
+  start(approver?: Approver, intervalMs = 60_000, extra: Partial<RunOptions> = {}): { done: Promise<RunEnd>; stop: () => void } {
     const ac = new AbortController();
-    const done = runConnector({ home: this.home, projectDir: this.project, ruflo: this.ruflo, approver, homeDir: this.root, runCmd: async () => ({ code: 1, stdout: '', stderr: '', timedOut: false, truncated: false }), intervalMs, signal: ac.signal, log: l => this.logs.push(l), sleep: ms => new Promise(r => setTimeout(r, Math.min(ms, 30))) });
+    const done = runConnector({ home: this.home, projectDir: this.project, ruflo: this.ruflo, approver, homeDir: this.root, runCmd: async () => ({ code: 1, stdout: '', stderr: '', timedOut: false, truncated: false }), intervalMs, signal: ac.signal, log: l => this.logs.push(l), ...extra, sleep: ms => new Promise(r => setTimeout(r, Math.min(ms, 30))) });
     return { done, stop: () => ac.abort() };
   }
   async cleanup(): Promise<void> { await this.srv.stop(); rmSync(this.root, { recursive: true, force: true }); }

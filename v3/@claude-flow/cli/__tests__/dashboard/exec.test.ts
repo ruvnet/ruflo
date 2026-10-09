@@ -102,9 +102,11 @@ describe('executor mapping', () => {
   });
 });
 
-describe('launcher resolution', () => {
-  it('uses this very ruflo process unless config overrides it (no PATH or npx lookup)', () => {
+describe('launcher resolution (L11)', () => {
+  it('has no npx fallback: missing ruflo is a clear error; config and PATH win', () => {
+    expect(() => resolveRufloCommand(undefined, '/nonexistent-dir')).toThrowError(/not on PATH/);
     expect(resolveRufloCommand(['/opt/ruflo', '--x'])).toEqual(['/opt/ruflo', '--x']);
-    expect(resolveRufloCommand()[0]).toBe(process.execPath);
+    const d = tmp(); const bin = join(d, 'ruflo'); writeFileSync(bin, '#!/bin/sh\n', { mode: 0o755 });
+    expect(resolveRufloCommand(undefined, d)).toEqual([bin]); // absolute path, so the child never searches PATH
   });
 });

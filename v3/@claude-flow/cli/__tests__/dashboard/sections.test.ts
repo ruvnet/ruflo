@@ -216,7 +216,7 @@ describe('scheduler', () => {
     expect(JSON.stringify(sent.filter(f => f.section === 'notices').at(-1))).toContain('draft -> cancelled');
     const n = sent.length; s.resetSent(); clock.t += 1; await s.tick(); expect(sent.length).toBeGreaterThan(n);
   });
-  it('every section has a collector and the stub-based pass emits valid frames for all 16', async () => {
+  it('every section has a collector and the stub-based pass emits valid frames for all 27', async () => {
     expect(Object.keys(COLLECTORS).sort()).toEqual([...SECTION_NAMES].sort());
   });
 });

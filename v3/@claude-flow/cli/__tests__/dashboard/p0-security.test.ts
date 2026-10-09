@@ -8,7 +8,7 @@ import { maskSecrets, parseCommand } from '../../src/dashboard/protocol/index.js
 import { isObj, mission_events, nat, str, type CollectCtx } from '../../src/dashboard/collect-core.js';
 import { adrs, cost, events, findLedger } from '../../src/dashboard/collect-files.js';
 import { EXECUTORS } from '../../src/dashboard/executors.js';
-import { runArgv, scrubEnv, Semaphore } from '../../src/dashboard/exec.js';
+import { resolveRufloCommand, runArgv, scrubEnv, Semaphore } from '../../src/dashboard/exec.js';
 import { SectionScheduler } from '../../src/dashboard/scheduler.js';
 import { stubRuflo } from './_support/harness.js';
 
@@ -119,6 +119,15 @@ describe('R-SEC-p0-4 masking: URL credentials, env-style names, live keys, bare 
 });
 
 describe('R-SEC-p0-6 relative PATH entries never resolve against the project', () => {
+  it('resolveRufloCommand ignores relative entries and returns an absolute path for absolute ones', () => {
+    const proj = tmp(); mkdirSync(join(proj, 'bin')); writeFileSync(join(proj, 'bin/ruflo'), '#!/bin/sh\ntouch marker\n', { mode: 0o755 });
+    const cwd = process.cwd(); process.chdir(proj);
+    try { expect(() => resolveRufloCommand(undefined, 'bin')).toThrowError(/not on PATH/); expect(() => resolveRufloCommand(undefined, `.:${join(proj, 'nope')}`)).toThrowError(/not on PATH/); } finally { process.chdir(cwd); }
+    // R-SEC-p1-q6: an absolute PATH entry INSIDE the project is project code too (direnv, `npm run`): never resolved there
+    expect(() => resolveRufloCommand(undefined, `bin:${join(proj, 'bin')}`, proj)).toThrowError(/not on PATH/);
+    const other = tmp(); writeFileSync(join(other, 'ruflo'), '#!/bin/sh\n', { mode: 0o755 });
+    expect(resolveRufloCommand(undefined, `${join(proj, 'bin')}:${other}`, proj)).toEqual([join(other, 'ruflo')]);
+  });
   it('a child spawned with cwd=project and PATH=bin:... does not run the project-local bin/ruflo', async () => {
     const proj = tmp(); mkdirSync(join(proj, 'bin')); writeFileSync(join(proj, 'bin/ruflo'), '#!/bin/sh\ntouch marker\n', { mode: 0o755 });
     const env = scrubEnv({ PATH: 'bin:./node_modules/.bin::/nonexistent-dir', HOME: '/h' });

@@ -21,11 +21,24 @@ const SAMPLES: Record<SectionName, Record<string, unknown>> = {
   adrs: { folder: 'docs/adr', counts: { accepted: 1 }, items: [{ id: 'ADR-1', title: 'T', status: 'accepted', date: '2026-10-08' }], lint: [] },
   whatsnew: { plugins: [{ name: 'p', entries: [{ version: '1.0.0', changes: ['a'] }] }], breaking: [] },
   settings: { options: [{ key: 'k', value: 'v' }] },
+  plugins: { plugins: [{ id: 'ruflo-adr@ruflo', name: 'ruflo-adr', marketplace: 'ruflo', version: '0.5.3', enabled: true, mod: false, foreign: false, manifestSha: '1a2b3c4d5e6f' }] },
+  capabilities: { v: 1, generated: { treeSha: '1a2b3c4d5e6f', plugins: 1 }, plugins: [{ id: 'ruflo-adr@ruflo', version: '0.5.3', manifestSha: '1a2b3c4d5e6f', enabled: true, mod: false, counts: { commands: 1, skills: 1, agents: 0, options: 1, mcp: 0 },
+    caps: [{ cid: 'ruflo-adr/skill/adr-verify@0.5.3+1a2b3c4d5e6f', kind: 'skill', name: 'adr-verify', risk: 'read', level: 'read', mode: 'run', args: [{ name: 'mode', type: 'enum', enum: ['all'] }] }, { cid: 'ruflo-adr/skill/adr-review@0.5.3+1a2b3c4d5e6f', kind: 'skill', name: 'adr-review', risk: 'write', level: null, mode: 'refused', why: 'no-binding' }],
+    options: [{ key: 'guard', type: 'string', settable: false, why: 'loosens-gate' }] }], refused: { total: 1, byCode: { 'no-binding': 1 } } },
+  capability_runs: { active: null, history: [{ runId: 'run_abcdefgh12', capabilityId: 'ruflo-adr/skill/adr-verify@0.5.3+1a2b3c4d5e6f', command: 'capability.run', level: 'read', risk: 'read', by: 'u', startedAt: 1, endedAt: 2, exit: 0, bytes: 3, truncated: false, outcome: 'succeeded', tail: 'ok' }] },
+  claims: { summary: { total: 1, active: 1, blocked: 0, stealable: 0, humanClaims: 1, agentClaims: 0 }, claims: [{ issue: 'ISSUE-1', claimant: 'human:u1:Ana', kind: 'human', status: 'active', stealable: false }], loads: [] },
+  hive: { hive: { id: 'hive-1', status: 'active', topology: 'mesh', queen: { id: 'q', status: 'active' }, metrics: { totalTasks: 1, completedTasks: 0, activeTasks: 1, pendingTasks: 0, failedTasks: 0, consensusRounds: 0 } }, workers: [{ id: 'w1', role: 'worker', status: 'idle' }], proposals: [] },
+  workflows: { total: 1, workflows: [{ id: 'workflow-1', name: 'wf', status: 'ready', steps: 3 }] },
+  learning: { router: { totalDecisions: 2, distribution: [{ model: 'haiku', count: 2 }], routedBy: [{ via: 'heuristic', count: 2 }] }, sona: { trajectories: 0, patternsLearned: 0 }, moe: null, ewc: null, patterns: [] },
+  metaharness: { available: true, score: { harnessFit: 37, compileConfidence: 12, taskCoverage: 49, toolSafety: 100, memoryUsefulness: 4, estCostPerRunUsd: 0.048, scaffoldReady: false }, genome: null, audits: [], auditCount: 0 },
+  security: { policy: { mode: 'legacy', rules: 0, budgets: 0, approvals: 0, receipts: 16, ledgerValid: true, ledgerLength: 16 }, findings: [] },
+  perf: { cpu: { percent: 10, cores: 32, loadAverage: [1, 1, 1] }, memory: { usedMb: 100, totalMb: 1000, heapMb: 25 } },
+  automation: { workers: [{ trigger: 'audit', priority: 'critical', description: 'Security analysis' }], running: { total: 0, running: 0, completed: 0, failed: 0 }, sessions: { total: 0, recent: [] }, daemon: null },
 };
 
 describe('sections', () => {
-  it('has the 16 P0 sections with budget, cadence, ttl and version for each', () => {
-    expect(SECTION_NAMES).toHaveLength(16);
+  it('has the 16 P0 + 11 P1 sections with budget, cadence, ttl and version for each', () => {
+    expect(SECTION_NAMES).toHaveLength(27);
     for (const n of SECTION_NAMES) { expect(SECTION_BUDGET_BYTES[n]).toBeGreaterThan(0); expect(SECTION_CADENCE_S[n]).toBeGreaterThan(0); expect(SECTION_TTL_S[n]).toBeGreaterThanOrEqual(30); expect(SECTION_VERSIONS[n]).toBe(1); }
     expect(isSectionName('missions')).toBe(true); expect(isSectionName('timeline')).toBe(false);
   });
