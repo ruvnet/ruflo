@@ -34,7 +34,7 @@ const TAIL_KEEP_FULL = 3;
 const GUARD_PLUGINS = new Set(['ruflo-protector', 'ruflo-mods']);
 
 export type Outcome = 'succeeded' | 'failed' | 'denied' | 'refused' | 'expired' | 'changed';
-export interface RunRecord { runId: string; capabilityId: string; plugin?: string; /** audit only, never published */ argvSha?: string; approved?: boolean; command: string; level: string; risk: string; by: string; startedAt: number; endedAt: number; exit: number | null; bytes: number; truncated: boolean; outcome: Outcome; reason?: string; tail?: string }
+export interface RunRecord { runId: string; capabilityId: string; plugin?: string; /** audit only, never published */ argvSha?: string; approved?: boolean; command: string; level: string; risk: string; by: string; startedAt: number; endedAt: number; exit: number | null; bytes: number; truncated: boolean; outcome: Outcome; reason?: string; tail?: string; /** Which binding ran: `mcp:<tool>`, `cli:<program> <subcommand>` or `script:<file>` (P-550). Never an argument value. */ binding?: string }
 export interface Pin { pluginId: string; manifestSha: string; capabilityId?: string; fileSha12?: string; argvSha: string }
 export interface Prepared {
   ok: true; command: CapCommand; level: CapLevel; risk: string; summary: string; by: string;
@@ -227,7 +227,7 @@ export class CapabilityService {
     }
     const bytes = Buffer.byteLength(out);
     const tail = printable(maskSecrets(out), 8192);
-    const rec: RunRecord = { runId, capabilityId: p.capabilityId, plugin: p.pin.pluginId || undefined, argvSha: p.pin.argvSha, approved: p.level !== 'read', command: p.command, level: p.level, risk: p.risk, by: p.by, startedAt: t, endedAt: this.now(), exit, bytes, truncated: truncated || bytes > 65536, outcome, ...(reason ? { reason } : {}), tail };
+    const rec: RunRecord = { runId, capabilityId: p.capabilityId, plugin: p.pin.pluginId || undefined, argvSha: p.pin.argvSha, approved: p.level !== 'read', command: p.command, level: p.level, risk: p.risk, by: p.by, startedAt: t, endedAt: this.now(), exit, bytes, truncated: truncated || bytes > 65536, outcome, ...(reason ? { reason } : {}), binding: bindingLabel(plan), tail };
     this.active = null; this.push(rec);
     if (p.command !== 'capability.run') { this.invalidate(); this.d.onChange?.(['plugins', 'capabilities']); }
     this.d.onChange?.(['capability_runs'], { immediate: true });
@@ -247,6 +247,13 @@ export class CapabilityService {
     this.d.audit.write('capability_run', { runId: r.runId, capabilityId: r.capabilityId, command: r.command, plugin: r.plugin, argvSha: r.argvSha, level: r.level, risk: r.risk, by: r.by, approvedBy: r.approved ? 'local' : 'none', startedAt: r.startedAt, endedAt: r.endedAt, exit: r.exit, bytes: r.bytes, truncated: r.truncated, outcome: r.outcome, reason: r.reason });
   }
   private newId(): string { return `run_${randomBytes(9).toString('base64url')}`; }
+}
+/** What ran, in a few safe words: the tool name, the program and its first subcommand, or the pinned script file. */
+export function bindingLabel(plan: Plan): string | undefined {
+  const clean = (t: string) => t.replace(/[^A-Za-z0-9_./ -]/g, '').slice(0, 60);
+  if (plan.t === 'mcp') return `mcp:${clean(plan.tool)}`.slice(0, 80);
+  if (plan.t === 'argv') return (plan.script ? `script:${clean(plan.script.file)}` : `cli:${clean((plan.argv[0] ?? '').split('/').pop() ?? '')} ${clean(plan.argv[1] ?? '')}`.trim()).slice(0, 80);
+  return undefined;
 }
 class RefuseError extends Error { constructor(public code: RefuseCode) { super(code); } }
 

@@ -159,6 +159,7 @@ export const SectionSchemas = {
     history: z.array(z.object({
       runId: RUN_ID, capabilityId: S(200), plugin: PLUGIN_ID.optional(), command: S(24), level: S(12), risk: S(12), by: S(80), startedAt: int, endedAt: int, exit: int.nullable(), bytes: nat, truncated: z.boolean(),
       outcome: z.enum(['succeeded', 'failed', 'denied', 'refused', 'expired', 'changed']), reason: S(60).optional(), tail: S(8192).optional(),
+      /** Which binding ran: mcp:<tool>, cli:<program> <subcommand> or script:<file>. */ binding: S(80).optional(),
     }).strict()).max(40),
   }).strict(),
   claims: z.object({

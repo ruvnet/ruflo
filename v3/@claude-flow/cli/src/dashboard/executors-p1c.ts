@@ -1,10 +1,10 @@
 /** P1-complete command executors. Each maps one allowlisted command to fixed ruflo tool calls (JSON params, never argv text) or, for autopilot.stop, one exclusive file create. */
 import { closeSync, constants, lstatSync, openSync, writeSync } from 'node:fs';
-import { basename } from 'node:path';
+import { join } from 'node:path';
 import { maskSecrets, type CommandName } from './protocol/index.js';
 import type { ExecContext, ExecResult } from './executors.js';
 import { claimantText } from './collect-p1.js';
-import { AUTOPILOT_DIR, KILL_REL } from './collect-p1c.js';
+import { AUTOPILOT_DIR } from './collect-p1c.js';
 import { confine } from './read.js';
 import { projectStoreRedirects } from './capabilities/store.js';
 
@@ -95,15 +95,17 @@ export const EXECUTORS_P1C: Partial<Record<CommandName, Exec>> = {
     if (!ctx.projectDir) return fail('no_project');
     const dir = confine(ctx.projectDir, AUTOPILOT_DIR);
     try { if (!dir || !lstatSync(dir).isDirectory()) return fail('no_autopilot'); } catch { return fail('no_autopilot'); }
-    const target = confine(ctx.projectDir, KILL_REL);
-    if (!target || basename(target) !== 'KILL') return fail('no_autopilot');
+    const target = join(dir, 'KILL');
     let fd: number | undefined;
     try {
       fd = openSync(target, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0), 0o600);
       writeSync(fd, 'stopped from the ruflo dashboard\n');
       return ok({ killed: true, alreadyStopped: false });
     } catch (e) {
-      if ((e as NodeJS.ErrnoException).code === 'EEXIST') return ok({ killed: true, alreadyStopped: true });
+      if ((e as NodeJS.ErrnoException).code === 'EEXIST') {
+        // Only a regular file counts as "already stopped"; a symlink or anything else sitting there is not the console's stop contract.
+        try { return lstatSync(target).isFile() ? ok({ killed: true, alreadyStopped: true }) : fail('kill_path_not_a_file'); } catch { return fail('kill_file_not_written'); }
+      }
       return fail('kill_file_not_written');
     } finally { if (fd !== undefined) try { closeSync(fd); } catch { /* closed */ } }
   },
