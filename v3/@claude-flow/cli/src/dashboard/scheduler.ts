@@ -7,15 +7,16 @@ import { control, health, isObj, memory, meta, mission_events, missions, setting
 import { adrs, cost, events, whatsnew } from './collect-files.js';
 import { alerts, approvals, notices } from './derive.js';
 import * as P1 from './collect-p1.js';
+import * as P1C from './collect-p1c.js';
 
-export const COLLECTORS: Record<SectionName, Collector> = { meta, health, alerts, control, missions, mission_events, tasks, swarm, approvals, memory, cost, events, notices, adrs, whatsnew, settings, claims: P1.claims, hive: P1.hive, workflows: P1.workflows, learning: P1.learning, metaharness: P1.metaharness, security: P1.security, perf: P1.perf, automation: P1.automation, ...P1.P1_PLUGIN_COLLECTORS };
+export const COLLECTORS: Record<SectionName, Collector> = { meta, health, alerts, control, missions, mission_events, tasks, swarm, approvals, memory, cost, events, notices, adrs, whatsnew, settings, claims: P1.claims, hive: P1.hive, workflows: P1.workflows, learning: P1.learning, metaharness: P1.metaharness, security: P1.security, perf: P1.perf, automation: P1.automation, agents: P1C.agents, autopilot: P1C.autopilot, skills: P1C.skills, timeline: P1C.timeline, ...P1.P1_PLUGIN_COLLECTORS };
 /** Stages run in order; sections inside a stage run in parallel. Later stages read the cache filled by earlier ones. */
 const STAGES: SectionName[][] = [
   ['meta', 'control', 'missions', 'tasks', 'swarm', 'memory', 'settings', 'cost', 'adrs', 'whatsnew'],
-  ['plugins', 'capabilities', 'capability_runs', 'claims', 'hive', 'workflows', 'learning', 'metaharness', 'security', 'perf', 'automation'],
-  ['mission_events'], ['events', 'health', 'approvals'], ['alerts'], ['notices'],
+  ['plugins', 'capabilities', 'capability_runs', 'claims', 'hive', 'workflows', 'learning', 'metaharness', 'security', 'perf', 'automation', 'agents', 'autopilot', 'skills'],
+  ['mission_events'], ['events', 'health', 'approvals'], ['alerts', 'timeline'], ['notices'],
 ];
-const DERIVED_AFTER = new Set<SectionName>(['events', 'health', 'approvals', 'alerts', 'notices']);
+const DERIVED_AFTER = new Set<SectionName>(['events', 'health', 'approvals', 'alerts', 'notices', 'timeline']);
 export const FORCED_MIN_INTERVAL_MS = 5000;
 const NOTICE_RING = 30;
 

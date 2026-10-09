@@ -1,11 +1,14 @@
 /** Maps each allowlisted command to fixed ruflo MCP tool calls. Arguments are passed as JSON values, never interpolated into argv text. */
 import { MAX_SWARM_AGENTS, sanitize, type CommandName, type SectionName } from './protocol/index.js';
 import type { Ruflo } from './exec.js';
+import { EXECUTORS_P1C } from './executors-p1c.js';
 
 export type ExecResult = { ok: true; result: Record<string, unknown> } | { ok: false; error: string };
-export interface ExecContext { ruflo: Ruflo; cid: string; refreshAll: () => Promise<{ sent: string[]; rateLimited?: boolean }>; refreshSection: (s: SectionName) => Promise<{ sent: boolean; rateLimited?: boolean }> }
+export interface ExecContext { ruflo: Ruflo; cid: string; projectDir?: string; refreshAll: () => Promise<{ sent: string[]; rateLimited?: boolean }>; refreshSection: (s: SectionName) => Promise<{ sent: boolean; rateLimited?: boolean }> }
 /** Tools the command executors may call (collection uses the stricter READ_TOOLS). Fixed list; anything else is refused. */
-export const COMMAND_TOOLS: ReadonlySet<string> = new Set(['memory_search', 'memory_list', 'mission_get', 'mission_create', 'mission_request_action', 'swarm_status', 'swarm_init', 'swarm_shutdown', 'agent_list', 'agent_spawn']);
+export const COMMAND_TOOLS: ReadonlySet<string> = new Set(['memory_search', 'memory_list', 'mission_get', 'mission_create', 'mission_request_action', 'swarm_status', 'swarm_init', 'swarm_shutdown', 'agent_list', 'agent_spawn',
+  // P1-complete (each verified against ruflo 3.55.0 in a temp project; see docs/p1-connector-decisions.md)
+  'agent_terminate', 'agent_logs', 'task_create', 'claims_list', 'claims_release', 'claims_status', 'memory_store']);
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
 const RESULT_CAP = 4000;
@@ -28,8 +31,9 @@ function data(v: unknown): Obj {
 const MISSION_ACTION = { 'mission.pause': 'pause', 'mission.resume': 'resume', 'mission.stop': 'cancel' } as const;
 
 export type Executor = (args: Obj, ctx: ExecContext) => Promise<ExecResult>;
+type ExtraCommands = 'agent.logs' | 'agent.stop' | 'task.create' | 'claims.release' | 'claims.pause' | 'claims.resume' | 'memory.store' | 'autopilot.stop';
 
-export const EXECUTORS: Record<CommandName, Executor> = {
+const BASE: Omit<Record<CommandName, Executor>, ExtraCommands> = {
   async 'state.refresh'(_a, ctx) { const r = await ctx.refreshAll(); return done({ published: r.sent.length, rateLimited: r.rateLimited === true }); },
 
   async 'section.refresh'(a, ctx) { const r = await ctx.refreshSection(a.section as SectionName); return done({ section: a.section, sent: r.sent, rateLimited: r.rateLimited === true }); },
@@ -87,6 +91,8 @@ export const EXECUTORS: Record<CommandName, Executor> = {
     return done({ agentId: r.agentId, agentType: r.agentType, status: r.status });
   },
 };
+
+export const EXECUTORS = { ...BASE, ...EXECUTORS_P1C } as Record<CommandName, Executor>;
 
 async function missionAction(name: keyof typeof MISSION_ACTION, a: Obj, ctx: ExecContext): Promise<ExecResult> {
   const missionId = String(a.missionId);

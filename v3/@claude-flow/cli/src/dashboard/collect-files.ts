@@ -2,7 +2,7 @@
 import { lstatSync, realpathSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { readRegular, listDir, confine } from './read.js';
-import { maskSecrets } from './protocol/index.js';
+import { costBucket, maskSecrets } from './protocol/index.js';
 import { isObj, ms, nat, str, type CollectCtx, type Collector } from './collect-core.js';
 
 type Obj = Record<string, unknown>;
@@ -144,16 +144,20 @@ export function trustedScript(p: string, projectRoot: string, trustRoot: string)
     return true;
   } catch { return false; }
 }
-const unavailable = (reason: string): Obj => ({ available: false, reason: reason.slice(0, 160), byModel: [], advice: [], perMission: [] });
+const unavailable = (reason: string, detail: 'coarse' | 'full' = 'coarse'): Obj => ({ available: false, detail, reason: reason.slice(0, 160), byModel: [], advice: [], perMission: [] });
 
 export const cost: Collector = async c => {
+  const detailMode = c.costDetail === 'full' ? 'full' : 'coarse';
   const script = findLedger(c.projectDir, c.home, c.ledgerPath);
-  if (!script) return unavailable('cost-tracker ledger not found in a trusted location (project scripts are never run; install ruflo-cost-tracker in your plugin cache or set ledgerPath)');
+  if (!script) return unavailable('cost-tracker ledger not found in a trusted location (project scripts are never run; install ruflo-cost-tracker in your plugin cache or set ledgerPath)', detailMode);
   let r;
-  try { r = await c.run([process.execPath, script, '--since', '7d', '--format', 'json', '--advise'], 60_000); } catch (e) { return unavailable(`ledger could not run: ${(e as Error).message}`); }
-  if (r.timedOut || r.truncated || r.code !== 0) return unavailable(`ledger ${r.timedOut ? 'timed out' : r.truncated ? 'output too large' : `exited ${r.code}`}`);
-  let d: Obj; try { d = JSON.parse(r.stdout) as Obj; } catch { return unavailable('ledger output is not JSON'); }
-  const totals = isObj(d.totals) ? d.totals : {}; const by = isObj(d.byModel) ? d.byModel : {}; const tok = isObj(d.tokens) ? d.tokens : {};
+  try { r = await c.run([process.execPath, script, '--since', '7d', '--format', 'json', '--advise'], 60_000); } catch (e) { return unavailable(`ledger could not run: ${(e as Error).message}`, detailMode); }
+  if (r.timedOut || r.truncated || r.code !== 0) return unavailable(`ledger ${r.timedOut ? 'timed out' : r.truncated ? 'output too large' : `exited ${r.code}`}`, detailMode);
+  let d: Obj; try { d = JSON.parse(r.stdout) as Obj; } catch { return unavailable('ledger output is not JSON', detailMode); }
+  const totals = isObj(d.totals) ? d.totals : {};
+  // Coarse (the default): an order-of-magnitude bucket and nothing else. The detail below is built only when the person set cost.detail=full locally.
+  if (detailMode === 'coarse') return { available: true, detail: 'coarse', bucket: costBucket(typeof totals.usd === 'number' ? totals.usd : 0), windowDays: 7, byModel: [], advice: [], perMission: [] };
+  const by = isObj(d.byModel) ? d.byModel : {}; const tok = isObj(d.tokens) ? d.tokens : {};
   const today = new Date(c.now()).toISOString().slice(0, 10);
   const day = isObj(d.byDay) && isObj((d.byDay as Obj)[today]) ? ((d.byDay as Obj)[today] as Obj) : {};
   const byModel = Object.entries(by).filter(([, v]) => isObj(v)).map(([k, v]) => {
@@ -163,7 +167,7 @@ export const cost: Collector = async c => {
   const cache = isObj(d.cache) ? d.cache : {}; const cc = (isObj(cache.claude) ? cache.claude : Object.values(cache).find(isObj)) as Obj | undefined;
   const findings = (Array.isArray(d.findings) ? d.findings.filter(isObj) : []).slice(0, 10).map(f => `${str(f.title, 80)}: ${str(f.evidence, 120)}`.slice(0, 200));
   return {
-    available: true, windowDays: 7,
+    available: true, detail: 'full', windowDays: 7,
     ...(typeof totals.usd === 'number' ? { totals: { currency: 'USD', totalMinor: Math.round(totals.usd * 100), ...(typeof day.usd === 'number' ? { todayMinor: Math.round(day.usd * 100) } : {}) } } : {}),
     ...(typeof totals.credits === 'number' ? { creditsTotal: Math.round(totals.credits) } : {}),
     byModel, ...(cc && typeof cc.hitRatio === 'number' ? { cacheHitRatio: Math.min(1, Math.max(0, cc.hitRatio)) } : {}),

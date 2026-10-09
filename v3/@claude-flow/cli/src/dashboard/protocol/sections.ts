@@ -6,7 +6,9 @@ import { sanitize, type Digest } from './digest.js';
 
 export const SECTION_NAMES = ['meta', 'health', 'alerts', 'control', 'missions', 'mission_events', 'tasks', 'swarm', 'approvals', 'memory', 'cost', 'events', 'notices', 'adrs', 'whatsnew', 'settings',
   // P1 parity tier
-  'plugins', 'capabilities', 'capability_runs', 'claims', 'hive', 'workflows', 'learning', 'metaharness', 'security', 'perf', 'automation'] as const;
+  'plugins', 'capabilities', 'capability_runs', 'claims', 'hive', 'workflows', 'learning', 'metaharness', 'security', 'perf', 'automation',
+  // P1-complete tier
+  'agents', 'autopilot', 'skills', 'timeline'] as const;
 export type SectionName = (typeof SECTION_NAMES)[number];
 export const isSectionName = (n: unknown): n is SectionName => typeof n === 'string' && (SECTION_NAMES as readonly string[]).includes(n);
 
@@ -17,17 +19,19 @@ export const SECTION_BUDGET_BYTES: Record<SectionName, number> = {
   meta: 2 * KiB, health: 6 * KiB, alerts: 8 * KiB, control: 1 * KiB, missions: 64 * KiB, mission_events: 24 * KiB, tasks: 16 * KiB, swarm: 24 * KiB,
   approvals: 8 * KiB, memory: 8 * KiB, cost: 16 * KiB, events: 40 * KiB, notices: 8 * KiB, adrs: 48 * KiB, whatsnew: 48 * KiB, settings: 8 * KiB,
   plugins: 16 * KiB, capabilities: 64 * KiB, capability_runs: 40 * KiB, claims: 24 * KiB, hive: 16 * KiB, workflows: 24 * KiB, learning: 12 * KiB, metaharness: 12 * KiB,
-  security: 12 * KiB, perf: 4 * KiB, automation: 16 * KiB,
+  security: 12 * KiB, perf: 4 * KiB, automation: 16 * KiB, agents: 24 * KiB, autopilot: 4 * KiB, skills: 12 * KiB, timeline: 8 * KiB,
 };
 /** Default collection cadence in seconds (missions is 5 s while a mission is running; the connector decides). */
 export const SECTION_CADENCE_S: Record<SectionName, number> = {
   meta: 60, health: 10, alerts: 10, control: 30, missions: 10, mission_events: 10, tasks: 10, swarm: 10, approvals: 10, memory: 60, cost: 300, events: 10, notices: 10, adrs: 120, whatsnew: 600, settings: 120,
-  plugins: 120, capabilities: 300, capability_runs: 10, claims: 10, hive: 10, workflows: 15, learning: 30, metaharness: 120, security: 60, perf: 30, automation: 30,
+  plugins: 120, capabilities: 300, capability_runs: 10, claims: 10, hive: 10, workflows: 15, learning: 30, metaharness: 120, security: 60, perf: 30, automation: 30, agents: 15, autopilot: 15, skills: 300, timeline: 30,
 };
 /** Heartbeat lifetime: a section is re-sent at half its ttl even if unchanged. */
 export const SECTION_TTL_S: Record<SectionName, number> = Object.fromEntries(SECTION_NAMES.map(n => [n, Math.min(3600, Math.max(30, SECTION_CADENCE_S[n] * 3))])) as Record<SectionName, number>;
 /** Supported schema version per section (announced in `hello.sections`). Additive changes bump it. */
-export const SECTION_VERSIONS: Record<SectionName, number> = Object.fromEntries(SECTION_NAMES.map(n => [n, 1])) as Record<SectionName, number>;
+export const SECTION_VERSIONS: Record<SectionName, number> = { ...(Object.fromEntries(SECTION_NAMES.map(n => [n, 1])) as Record<SectionName, number>),
+  /** v2: carries `detail` ('coarse' by default: a spend bucket and nothing else). A v1 reader would show a coarse body as "no spend". */
+  cost: 2 };
 /**
  * The server silently drops a section frame that arrives sooner than this after the previous one of the same section (server/devices/sections.ts:
  * 2 s, 1 s for capability_runs). A connector must not count such a frame as delivered, so it keeps this gap itself (plus a margin) and retries.
@@ -45,8 +49,26 @@ export const READ_TOOLS: ReadonlySet<string> = new Set([
   // package), neural_status / hooks_intelligence_unified-stats (load an ONNX model), claims_status / workflow_status (need an id), federation_* (network).
   'claims_list', 'claims_board', 'claims_stealable', 'claims_load', 'hive-mind_status', 'workflow_list', 'hooks_intelligence_stats', 'metaharness_score',
   'metaharness_genome', 'metaharness_audit_list', 'hooks_worker-list', 'hooks_worker-status', 'session_list', 'performance_metrics', 'agentdb_health', 'agentdb_controllers',
+  // P1-complete: agent_health lists every agent in one call (agent_status needs an id). metaharness_flywheel is a read ONLY with {op:'status'} (it also promotes):
+  // READ_TOOL_ARG_RULES below pins its parameters, and the guard enforces them.
+  'agent_health', 'metaharness_flywheel',
 ]);
+/** Parameter rules for READ_TOOLS entries that are only a read with certain parameters. A tool without a rule takes any parameters. */
+export const READ_TOOL_ARG_RULES: Readonly<Record<string, (params: Record<string, unknown>) => boolean>> = {
+  metaharness_flywheel: p => Object.keys(p).length === 1 && p.op === 'status',
+};
+export function readToolArgsAllowed(tool: string, params: Record<string, unknown> | undefined): boolean {
+  const rule = Object.prototype.hasOwnProperty.call(READ_TOOL_ARG_RULES, tool) ? READ_TOOL_ARG_RULES[tool] : undefined;
+  return rule ? rule(params ?? {}) : true;
+}
 
+/** Order-of-magnitude spend over the window (USD). The bucket edges are fixed here so a connector cannot invent finer ones. */
+export const COST_BUCKETS = ['none', 'under-1', '1-10', '10-100', '100-1000', 'over-1000'] as const;
+export type CostBucket = (typeof COST_BUCKETS)[number];
+export function costBucket(usd: number): CostBucket {
+  if (!Number.isFinite(usd) || usd <= 0) return 'none';
+  return usd < 1 ? 'under-1' : usd < 10 ? '1-10' : usd < 100 ? '10-100' : usd < 1000 ? '100-1000' : 'over-1000';
+}
 const S = (n: number) => z.string().max(n);
 /** Safe integers only: 1e308 is an integer to zod but not a value any counter can hold. */
 const nat = z.number().int().safe().nonnegative();
@@ -105,12 +127,17 @@ export const SectionSchemas = {
     agents: z.array(z.object({ id: S(80), type: S(40), state: S(24), task: S(120).optional(), lastActiveAt: int.optional() }).strict()).max(100) }).strict(),
   approvals: z.object({ items: z.array(z.object({ kind: S(40), text: S(200), ageS: nat }).strict()).max(30) }).strict(),
   memory: z.object({ entries: nat, namespaceCount: nat.optional(), namespaces: z.array(z.object({ name: S(60), count: nat }).strict()).max(50), backend: S(60).optional(), vectors: nat.optional(), flags: z.array(S(60)).max(10) }).strict(),
-  cost: z.object({ available: z.boolean(), reason: S(160).optional(), windowDays: nat.optional(),
+  /**
+   * `detail` is 'coarse' unless the person set cost.detail=full in the connector's OWN config.json (never settable from the dashboard, ruflo or a plugin option).
+   * A coarse body carries `bucket` and nothing else: no totals, no per-model rows, no token counts, no cache ratio, no advice, no per-mission figures.
+   */
+  cost: z.object({ available: z.boolean(), detail: z.enum(['coarse', 'full']).optional(), bucket: z.enum(COST_BUCKETS).optional(), reason: S(160).optional(), windowDays: nat.optional(),
     totals: z.object({ currency: S(8), totalMinor: nat, todayMinor: nat.optional() }).strict().optional(),
     byModel: z.array(z.object({ provider: S(24), model: S(60), minor: nat, unit: z.enum(['usd', 'credits']).optional(), tokens: nat.optional() }).strict()).max(20),
     creditsTotal: nat.optional(), unpriced: z.array(S(60)).max(20).optional(),
     cacheHitRatio: z.number().min(0).max(1).optional(), budget: z.object({ currency: S(8), limitMinor: nat, spentMinor: nat }).strict().optional(),
-    advice: z.array(S(200)).max(10), perMission: z.array(z.object({ missionId: S(40), minor: nat }).strict()).max(20) }).strict(),
+    advice: z.array(S(200)).max(10), perMission: z.array(z.object({ missionId: S(40), minor: nat }).strict()).max(20) }).strict()
+    .refine(b => b.detail !== 'coarse' || (!b.totals && b.byModel.length === 0 && b.advice.length === 0 && b.perMission.length === 0 && b.creditsTotal === undefined && b.cacheHitRatio === undefined && !b.budget && !b.unpriced?.length), 'a coarse cost body carries a bucket only'),
   events: z.object({ events: z.array(z.object({ at: int, kind: S(40), level: S(12), src: S(40), text: S(200) }).strict()).max(100) }).strict(),
   notices: z.object({ notices: z.array(z.object({ at: int, level: S(12), text: S(200), key: S(60) }).strict()).max(30), toastMode: S(24).optional() }).strict(),
   adrs: z.object({ folder: S(100), convention: S(40).optional(), counts: z.record(S(24), nat).refine(r => Object.keys(r).length <= 16, 'too many statuses'),
@@ -145,6 +172,8 @@ export const SectionSchemas = {
       metrics: z.object({ totalTasks: nat, completedTasks: nat, activeTasks: nat, pendingTasks: nat, failedTasks: nat, consensusRounds: nat, sharedMemoryKeys: nat.optional(), uptimeS: nat.optional() }).strict(),
     }).strict().nullable(),
     workers: z.array(z.object({ id: S(80), role: S(24), status: S(24) }).strict()).max(60),
+    /** Proposals still open according to ruflo's own count, whether or not the state file listed them. */
+    pendingConsensus: nat.optional(),
     proposals: z.array(z.object({ id: S(60), type: S(40), status: S(24), strategy: S(24).optional(), votesFor: nat, votesAgainst: nat }).strict()).max(30),
   }).strict(),
   workflows: z.object({ total: nat, workflows: z.array(z.object({ id: S(80), name: S(120), status: S(24), steps: nat, doneSteps: nat.optional(), updatedAt: int.optional() }).strict()).max(60) }).strict(),
@@ -161,11 +190,15 @@ export const SectionSchemas = {
     genome: z.object({ repoType: S(40), topology: z.array(S(40)).max(10), riskScore: z.number().min(0).max(1).optional(), mcpSurface: S(40).optional(), testConfidence: z.number().min(0).max(1).optional(), publishReadiness: z.number().min(0).max(1).optional(), verdict: S(24).optional() }).strict().nullable(),
     audits: z.array(z.object({ key: S(80), at: int.optional(), worst: S(24).optional() }).strict()).max(20),
     auditCount: nat,
+    /** metaharness_flywheel {op:'status'}: the evaluation ledger. Promotion is never reachable from here. */
+    flywheel: z.object({ ledgerValid: z.boolean(), commits: nat, servingEpoch: nat, champion: S(80).nullable(), receipts: nat }).strict().nullable().optional(),
   }).strict(),
   security: z.object({
     policy: z.object({ mode: S(24), rules: nat, budgets: nat, approvals: nat, receipts: nat, ledgerValid: z.boolean(), ledgerLength: nat }).strict().nullable(),
     findings: z.array(z.object({ level, text: S(200) }).strict()).max(20),
     note: S(200).optional(),
+    /** Project Anatole's status file, AS REPORTED by the mod: any process can write it, so it is labelled unauthenticated and never a basis for a command. */
+    anatole: z.object({ present: z.boolean(), mode: S(12).nullable(), calls: nat, blocked: nat, open: z.object({ critical: nat, high: nat, medium: nat, low: nat, total: nat }).strict(), degraded: S(80).nullable(), updatedAt: int.optional(), unauthenticated: z.literal(true) }).strict().nullable().optional(),
   }).strict(),
   perf: z.object({
     cpu: z.object({ percent: z.number().min(0).max(100), cores: nat, loadAverage: z.array(z.number().min(0).max(1e6)).max(3), model: S(80).optional() }).strict().nullable(),
@@ -177,6 +210,31 @@ export const SectionSchemas = {
     running: z.object({ total: nat, running: nat, completed: nat, failed: nat }).strict(),
     sessions: z.object({ total: nat, recent: z.array(z.object({ id: S(80), name: S(80).optional(), at: int.optional() }).strict()).max(10) }).strict(),
     daemon: z.object({ running: z.boolean(), startedAt: int.optional() }).strict().nullable(),
+  }).strict(),
+  // ---- P1-complete tier ----------------------------------------------------------------------------------------------------------------
+  /** Per-agent detail from agent_health (one call, all agents). Logs are NOT here: they are free text and come on demand through the agent.logs command. */
+  agents: z.object({
+    summary: z.object({ total: nat, healthy: nat, degraded: nat, unhealthy: nat }).strict(),
+    agents: z.array(z.object({ id: S(80), type: S(40), health: S(24), tasksActive: nat, tasksQueued: nat, tasksCompleted: nat, tasksFailed: nat, uptimeS: nat.optional() }).strict()).max(100),
+    note: S(160).optional(),
+  }).strict(),
+  /** The console's autopilot (ADR-466/470) as its files report it. Read-only; the only control is autopilot.stop (the KILL file). Not ruflo's autopilot_* MCP loops. */
+  autopilot: z.object({
+    present: z.boolean(), killed: z.boolean(), phase: z.enum(['none', 'idle', 'running', 'paused', 'stopped']),
+    envelope: z.object({ revision: nat.optional(), hash: S(16).optional() }).strict().nullable(),
+    steps: z.object({ started: nat, done: nat, failed: nat, verified: nat, parked: nat }).strict(),
+    lastEvent: S(24).optional(), lastAt: int.optional(), journalLines: nat, badLines: nat, unauthenticated: z.literal(true),
+  }).strict(),
+  /** Installed skill NAMES from .claude/skills, .agents/skills and the user's ~/.claude/skills. No bodies, no paths, no network (npx skills is never run). */
+  skills: z.object({
+    total: nat,
+    skills: z.array(z.object({ name: S(64), source: z.enum(['project', 'agents', 'user']), manifest: z.boolean() }).strict()).max(200),
+  }).strict(),
+  /** Activity per lane (console event source) in equal buckets ending at `endAt`. It is event activity, NOT agent busy/idle: lanes.jsonl is not read. */
+  timeline: z.object({
+    endAt: int, bucketS: nat, buckets: nat,
+    lanes: z.array(z.object({ lane: S(40), total: nat, counts: z.array(nat).max(24) }).strict()).max(16),
+    note: S(160).optional(),
   }).strict(),
 } as const satisfies Record<SectionName, z.ZodTypeAny>;
 export type SectionBody<N extends SectionName> = z.infer<(typeof SectionSchemas)[N]>;
@@ -193,6 +251,7 @@ const TRIM: Record<SectionName, string[]> = {
   memory: ['namespaces'], cost: ['byModel', 'perMission', 'advice'], events: ['events'], notices: ['notices'], adrs: ['items', 'lint'], whatsnew: ['plugins'], settings: ['options'],
   plugins: ['plugins'], capabilities: ['plugins'], capability_runs: ['history'], claims: ['claims', 'loads'], hive: ['workers', 'proposals'], workflows: ['workflows'], learning: ['patterns'],
   metaharness: ['audits'], security: ['findings'], perf: [], automation: ['workers', 'sessions'],
+  agents: ['agents'], autopilot: [], skills: ['skills'], timeline: ['lanes'],
 };
 const size = (v: unknown) => Buffer.byteLength(JSON.stringify(v));
 const budgetOf = (n: SectionName) => Math.min(SECTION_BUDGET_BYTES[n], MAX_SECTION_BODY_BYTES);

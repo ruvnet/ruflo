@@ -1,7 +1,7 @@
 /** Outbound-only wss session loop: hello, periodic digests, server frames, jittered reconnect, clean shutdown. */
 import { join, resolve as resolvePath } from 'node:path';
 import WebSocket from 'ws';
-import { READ_TOOLS, ReplayGuard } from './protocol/index.js';
+import { READ_TOOLS, readToolArgsAllowed, ReplayGuard } from './protocol/index.js';
 import { ttyApprover, type Approver } from './approver.js';
 import { Channel } from './channel.js';
 import { COMMAND_TOOLS } from './executors.js';
@@ -67,7 +67,7 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
   const projectDir = resolvePath(o.projectDir ?? cfg.projectDir ?? process.cwd());
   const raw = o.ruflo ?? new RufloClient(resolveRufloCommand(cfg.rufloCommand, undefined, projectDir), projectDir);
   const sem = new Semaphore(MAX_CONCURRENT_SPAWNS);
-  const reader = limitTools(raw, READ_TOOLS, sem);
+  const reader = limitTools(raw, READ_TOOLS, sem, readToolArgsAllowed);
   const ruflo = limitTools(raw, COMMAND_TOOLS, sem);
   const approver = o.approver ?? ttyApprover();
   const audit = new AuditLog(o.home, o.now);
@@ -89,7 +89,7 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
   let current: Channel | null = null;
   const sched = new SectionScheduler({
     emit: f => current?.emitSection(f), now: o.now,
-    ctx: { ruflo: reader, projectDir, level: cfg.level, autoApprove: cfg.autoApprove, cliChoice: cfg.rufloCommand ? 'config' : 'path', pending: () => current?.pending() ?? [], home: o.homeDir ?? process.env.HOME, ledgerPath: cfg.ledgerPath,
+    ctx: { ruflo: reader, projectDir, level: cfg.level, autoApprove: cfg.autoApprove, cliChoice: cfg.rufloCommand ? 'config' : 'path', pending: () => current?.pending() ?? [], home: o.homeDir ?? process.env.HOME, ledgerPath: cfg.ledgerPath, costDetail: cfg.cost?.detail ?? 'coarse',
       run: o.runCmd ?? ((argv, t) => sem.run(() => runArgv(argv, { cwd: projectDir, timeoutMs: t }))), now: o.now ?? Date.now, caps },
   });
   audit.write('run_start', { deviceId: cfg.deviceId, level: cfg.level, autoApprove: cfg.autoApprove });
@@ -116,7 +116,7 @@ export async function runConnector(o: RunOptions): Promise<RunEnd> {
       const onAbort = () => { try { ws.close(1001, 'shutdown'); } catch { /* closed */ } setTimeout(() => settle('closed'), 1500).unref(); };
       const ch = new Channel({
         cfg, privateKey, home: o.home, seq, guard, audit, ruflo, approver, now: o.now,
-        send: f => { if (ws.readyState === WebSocket.OPEN) ws.send(f); }, sections: sched, caps,
+        send: f => { if (ws.readyState === WebSocket.OPEN) ws.send(f); }, sections: sched, caps, projectDir,
         onRevoke: () => { revoked = true; },
       });
       current = ch; sched.resetSent(); sched.notice('info', 'connected to the dashboard', 'connector:connected');

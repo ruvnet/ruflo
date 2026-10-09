@@ -18,7 +18,7 @@ export const AUTO_APPROVABLE: readonly CommandName[] = ['mission.pause', 'missio
 export interface ChannelDeps {
   cfg: Config; privateKey: string; home: string; seq: DeviceSeq; guard: ReplayGuard; audit: AuditLog;
   ruflo: Ruflo; approver: Approver; send: (frame: string) => void; sections: SectionPort;
-  rufloVersion?: string; now?: () => number; onRevoke?: () => void;
+  rufloVersion?: string; now?: () => number; onRevoke?: () => void; projectDir?: string;
   /** Plugin/capability commands; without it they are refused. */
   caps?: CapabilityService;
 }
@@ -143,7 +143,7 @@ export class Channel {
         if (r.ok) this.report(cid, 'succeeded', { result: r.result }); else this.report(cid, 'failed', { error: r.error });
         return;
       }
-      const r = await EXECUTORS[p.cmd as CommandName](p.args, { ruflo: this.d.ruflo, cid, refreshAll: () => this.d.sections.refreshAll(), refreshSection: n => this.d.sections.refresh(n) });
+      const r = await EXECUTORS[p.cmd as CommandName](p.args, { ruflo: this.d.ruflo, cid, projectDir: this.d.projectDir, refreshAll: () => this.d.sections.refreshAll(), refreshSection: n => this.d.sections.refresh(n) });
       this.d.audit.write('command_result', { cid, ok: r.ok });
       this.d.sections.notice(r.ok ? 'info' : 'warn', `${base.cmd} ${r.ok ? 'succeeded' : `failed: ${r.error}`}`, `cmd:${cid}`);
       if (r.ok) this.report(cid, 'succeeded', { result: r.result }); else this.report(cid, 'failed', { error: r.error });

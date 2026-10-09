@@ -19,6 +19,11 @@ const empty = z.object({}).strict();
 export const CAPABILITY_ARG_MAX_TEXT = 8000;
 export const CAPABILITY_ARG_MAX_COUNT = 12;
 const capabilityArgs = z.record(z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{0,31}$/), z.union([z.string().max(CAPABILITY_ARG_MAX_TEXT), z.number().safe(), z.boolean()])).refine(o => Object.keys(o).length <= CAPABILITY_ARG_MAX_COUNT, 'too many arguments');
+export const AGENT_ID = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$/);
+export const ISSUE_ID = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:#/@-]{0,79}$/);
+/** The claimant exactly as the claims section shows it ("agent:<id>:<type>" or "human:<id>:<name>"): printable ASCII, no control characters. */
+export const CLAIMANT_TEXT = z.string().regex(/^(agent|human):[\x20-\x7e]{1,72}$/);
+export const TASK_TYPES = ['feature', 'bugfix', 'refactor', 'test', 'research', 'docs'] as const;
 const optionKey = z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,47}$/);
 
 /** The ONLY commands the hosted dashboard may ask a local ruflo to run. Anything else is refused on both ends. */
@@ -40,6 +45,15 @@ export const COMMANDS = {
   // and anything above read always shows the local approval card, whatever autoApprove says (docs/parity-capability-design.md section 5).
   'capability.run': { level: 'read', summary: 'Run one capability from the locally built catalog (level and approval come from the capability)', args: z.object({ pluginId: PLUGIN_ID, capabilityId: CAPABILITY_ID, args: capabilityArgs }).strict() },
   'mod.option.set': { level: 'write', summary: 'Change one option of an installed plugin (booleans, numbers and enums; spend caps may only be lowered)', args: z.object({ modId: PLUGIN_ID, key: optionKey, value: z.union([z.boolean(), z.number().safe(), z.string().max(64)]) }).strict() },
+  // ---- P1-complete safe commands (docs/p1-connector-decisions.md). Every one is exact-argv, regex-bounded, and approval-gated above read. ----
+  'agent.logs': { level: 'read', summary: 'Tail one agent\'s log (masked, at most 100 lines; ruflo\'s entries are synthetic today, ruvnet/ruflo#1916)', args: z.object({ agentId: AGENT_ID, lines: z.number().int().min(1).max(100).default(50) }).strict() },
+  'agent.stop': { level: 'manage', summary: 'Terminate one agent', args: z.object({ agentId: AGENT_ID }).strict() },
+  'task.create': { level: 'manage', summary: 'Put a task on the board (agents may pick it up: manage, always approved)', args: z.object({ type: z.enum(TASK_TYPES), description: z.string().min(3).max(500) }).strict() },
+  'claims.release': { level: 'manage', summary: 'Release a claim (only if it is still held by the claimant you saw)', args: z.object({ issue: ISSUE_ID, claimant: CLAIMANT_TEXT }).strict() },
+  'claims.pause': { level: 'manage', summary: 'Mark a claim paused', args: z.object({ issue: ISSUE_ID }).strict() },
+  'claims.resume': { level: 'manage', summary: 'Mark a paused claim active again', args: z.object({ issue: ISSUE_ID }).strict() },
+  'memory.store': { level: 'write', summary: 'Store a short note in the fixed "dashboard" namespace', args: z.object({ key: z.string().regex(/^[A-Za-z0-9._:-]{1,64}$/), value: z.string().min(1).max(2048) }).strict() },
+  'autopilot.stop': { level: 'manage', summary: 'Stop the console autopilot by creating its KILL file (narrows authority only; never deleted by the dashboard)', args: empty },
   'agent.spawn': { level: 'manage', summary: 'Spawn one agent within the swarm cap', args: z.object({ type: z.enum(AGENT_TYPES), name: z.string().regex(/^[A-Za-z0-9._-]{1,48}$/).optional() }).strict() },
 } as const satisfies Record<string, CommandSpec>;
 export type CommandName = keyof typeof COMMANDS;

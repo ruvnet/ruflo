@@ -3,6 +3,7 @@ import { lstatSync } from 'node:fs';
 import { join } from 'node:path';
 import { isObj, nat, str, ms, type Collector } from './collect-core.js';
 import { readRegular } from './read.js';
+import { anatole, flywheel, hiveProposalsFromFile } from './collect-p1c.js';
 
 type Obj = Record<string, unknown>;
 const arr = (v: unknown): Obj[] => (Array.isArray(v) ? v.filter(isObj) : []);
@@ -14,7 +15,7 @@ const payload = (v: unknown): Obj => {
   return isObj(v.data) ? v.data : v;
 };
 /** "human:u1:Ana" or {type:'agent', agentId, agentType}: both come out as short text plus a kind. */
-function claimant(v: unknown): { text: string; kind: 'human' | 'agent' | 'unknown' } {
+export function claimantText(v: unknown): { text: string; kind: 'human' | 'agent' | 'unknown' } {
   if (typeof v === 'string') return { text: str(v, 80), kind: v.startsWith('human:') ? 'human' : v.startsWith('agent:') ? 'agent' : 'unknown' };
   if (isObj(v)) return v.type === 'human' ? { text: str(`human:${v.userId ?? ''}:${v.name ?? ''}`, 80), kind: 'human' } : { text: str(`agent:${v.agentId ?? ''}:${v.agentType ?? ''}`, 80), kind: v.type === 'agent' ? 'agent' : 'unknown' };
   return { text: '', kind: 'unknown' };
@@ -27,7 +28,7 @@ export const claims: Collector = async c => {
   return {
     summary: { total: nat(sm.total), active: nat(sm.active), blocked: nat(sm.blocked), stealable: Math.max(nat(sm.stealable), stealable.size), humanClaims: nat(sm.humanClaims), agentClaims: nat(sm.agentClaims) },
     claims: arr(l.claims).slice(0, 100).map(x => {
-      const cl = claimant(x.claimant); const at = ms(x.claimedAt); const id = str(x.issueId, 80);
+      const cl = claimantText(x.claimant); const at = ms(x.claimedAt); const id = str(x.issueId, 80);
       return { issue: id, claimant: cl.text, kind: cl.kind, status: str(x.status ?? 'active', 24), ...(typeof x.progress === 'number' ? { progress: nat(x.progress) } : {}), ...(at ? { claimedAt: at } : {}), stealable: stealable.has(id) || x.status === 'stealable', ...(x.blockReason ? { note: str(x.blockReason, 160) } : {}) };
     }),
     loads: arr(isObj(load) ? load.loads : []).slice(0, 40).map(x => ({ agent: str(x.agentId ?? x.agent, 80), claims: nat(x.claims ?? x.claimCount ?? x.activeClaims), ...(typeof x.utilization === 'number' ? { utilization: Math.min(10, Math.max(0, x.utilization)) } : {}) })),
@@ -44,6 +45,7 @@ export const hive: Collector = async c => {
     const votes = isObj(p.votes) ? Object.values(p.votes) : [];
     return { id: str(p.proposalId ?? p.id, 60), type: str(p.type, 40), status: str(p.status ?? 'pending', 24), ...(p.strategy ? { strategy: str(p.strategy, 24) } : {}), votesFor: votes.filter(v => v === true).length, votesAgainst: votes.filter(v => v === false).length };
   });
+  const proposals = pend.length ? pend : hiveProposalsFromFile(c);
   return {
     hive: {
       id: str(h.hiveId ?? h.id, 80), status: str(h.status, 24), ...(h.topology ? { topology: str(h.topology, 24) } : {}), ...(h.consensus ? { consensus: str(h.consensus, 24) } : {}),
@@ -51,7 +53,7 @@ export const hive: Collector = async c => {
       health: Object.fromEntries(Object.entries(health).slice(0, 12).map(([k, v]) => [str(k, 24), str(v, 24)])),
       metrics: { totalTasks: nat(m.totalTasks), completedTasks: nat(m.completedTasks), activeTasks: nat(m.activeTasks), pendingTasks: nat(m.pendingTasks), failedTasks: nat(m.failedTasks), consensusRounds: nat(m.consensusRounds), sharedMemoryKeys: nat(h.sharedMemoryKeys), uptimeS: Math.floor(nat(h.uptime) / 1000) },
     },
-    workers, proposals: pend,
+    workers, pendingConsensus: nat(h.pendingConsensus), proposals,
   };
 };
 
@@ -109,6 +111,7 @@ export const metaharness: Collector = async c => {
     genome: g ? { repoType: str(g.repo_type, 40), topology: (Array.isArray(g.agent_topology) ? g.agent_topology : []).slice(0, 10).map(x => str(x, 40)), ...(ratio(g.risk_score) !== undefined ? { riskScore: ratio(g.risk_score) } : {}), ...(g.mcp_surface ? { mcpSurface: str(g.mcp_surface, 40) } : {}), ...(ratio(g.test_confidence) !== undefined ? { testConfidence: ratio(g.test_confidence) } : {}), ...(ratio(g.publish_readiness) !== undefined ? { publishReadiness: ratio(g.publish_readiness) } : {}), ...(g.verdict ? { verdict: str(g.verdict, 24) } : {}) } : null,
     audits: arr(a?.records).slice(0, 20).map(r => ({ key: str(r.key ?? r.id, 80), ...(ms(r.at ?? r.generatedAt) ? { at: ms(r.at ?? r.generatedAt) } : {}), ...(r.worst ? { worst: str(r.worst, 24) } : {}) })),
     auditCount: nat(a?.totalInNamespace),
+    flywheel: await flywheel(c),
   };
 };
 
@@ -121,7 +124,7 @@ export const security: Collector = async c => {
   if (p.mode === 'legacy') findings.push({ level: 'info', text: 'policy runs in legacy mode (no rules or budgets enforced)' });
   return {
     policy: { mode: str(p.mode, 24), rules: nat(counts.rules), budgets: nat(counts.budgets), approvals: nat(counts.approvals), receipts: nat(counts.receipts), ledgerValid: led.valid !== false, ledgerLength: nat(led.length) },
-    findings, note: 'AIDefence statistics are not collected: reading them makes ruflo install a package.',
+    findings, anatole: anatole(c), note: 'AIDefence statistics are not collected: reading them makes ruflo install a package.',
   };
 };
 

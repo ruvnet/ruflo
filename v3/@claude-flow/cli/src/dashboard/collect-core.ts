@@ -22,6 +22,8 @@ export interface CollectCtx {
   home?: string;
   /** Explicit ledger script path chosen by the USER in config.json (never derived from the project). */
   ledgerPath?: string;
+  /** From the connector's own config.json only. Default 'coarse'. */
+  costDetail?: 'coarse' | 'full';
   /** Local capability catalog + run history (plugins, capabilities, capability_runs sections). */
   caps?: import('./capabilities/service.js').CapabilityService;
 }

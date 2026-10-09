@@ -119,10 +119,12 @@ export class Semaphore {
 export const MAX_CONCURRENT_SPAWNS = 3;
 
 /** Wrap a Ruflo so only `allow`ed tools can be called, and at most `sem.max` calls run concurrently. */
-export function guard(inner: Ruflo, allow: ReadonlySet<string>, sem: Semaphore): Ruflo {
+export function guard(inner: Ruflo, allow: ReadonlySet<string>, sem: Semaphore, argRules?: (tool: string, params: Record<string, unknown> | undefined) => boolean): Ruflo {
   return {
     mcp: async (tool, params, opts) => {
       if (!allow.has(tool)) throw new RufloError('tool_not_allowed', `ruflo tool "${tool.slice(0, 40)}" is not allowed here`);
+      // A tool that is only a read with certain parameters (metaharness_flywheel {op:'status'}) is pinned to them.
+      if (argRules && !argRules(tool, params)) throw new RufloError('params_not_allowed', `ruflo tool "${tool.slice(0, 40)}" is not allowed with these parameters`);
       return sem.run(() => inner.mcp(tool, params, opts));
     },
   };
