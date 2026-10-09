@@ -7,6 +7,7 @@ import { TOAST_MODES, type ToastMode } from '../toast-policy'
 import { MUTABLE_SOURCES, summaryOf } from '../toasts'
 import { UPDATES_MODES, type UpdatesMode } from '../updates'
 import { button, clip, col, row, rule, section, text, THEME, type Ctx } from './common'
+import { own } from '../data/safe'
 
 /** One setting, whatever it belongs to, so a search, a level and "changed only" filter one list. */
 type Item = { id: string; source: string; title: string; haystack: string; level: Level; changed: boolean; rows: () => RenderElement[] }
@@ -76,7 +77,7 @@ function settingRows(ctx: Ctx, o: RowSpec): RenderElement[] {
   return rows
 }
 
-const simpleKeys = (config: PluginConfig): readonly string[] => SIMPLE[config.name] ?? Object.keys(config.schema).slice(0, 4)
+const simpleKeys = (config: PluginConfig): readonly string[] => own(SIMPLE, config.name) ?? Object.keys(config.schema).slice(0, 4)
 
 function pluginItems(ctx: Ctx, config: PluginConfig): Item[] {
   return Object.entries(config.schema).map(([key, entry]) => {
@@ -96,7 +97,7 @@ function pluginItems(ctx: Ctx, config: PluginConfig): Item[] {
         settingRows(ctx, {
           key: id,
           title: entry.title,
-          description: OPTION_NOTES[config.name]?.[key] ?? entry.description,
+          description: own(own(OPTION_NOTES, config.name) ?? {}, key) ?? entry.description,
           current,
           isChanged,
           isSecret: entry.isSecret,
@@ -165,6 +166,9 @@ function aiItems(ctx: Ctx): Item[] {
     one('mission-cap', 'Mission spend cap (USD)', 'auto-run pauses when one mission’s spend reaches this (list-price estimate; empty means no cap)', ai.missionCapUsd, [], ai.missionCapUsd !== '', value => ctx.act.settings.ai({ missionCapUsd: value.trim() }), 'mission cap budget spend cost'),
     one('model', 'Claude model', 'the model claude -p uses for AI terminal turns (the CLI’s default when unset)', ai.claudeModel, CLAUDE_MODELS, ai.claudeModel !== DEFAULT_AI.claudeModel, value => ctx.act.settings.ai({ claudeModel: value as (typeof CLAUDE_MODELS)[number] }), 'model haiku sonnet opus'),
     one('guidance', 'Mission guidance', 'after a mission goal is entered, claude -p writes detailed guidance by lifecycle stage and suggests ruflo capabilities to bring in (it asks first unless always accept)', ai.guidance ? 'on' : 'off', ['on', 'off'], !ai.guidance, value => ctx.act.settings.ai({ guidance: value === 'on' }), 'mission goal guidance advice suggestions'),
+    one('advisor', 'Advisor checkpoints', 'off by default. On: a mission asks for a read-only second opinion (a separate claude -p turn, asked first, under the turn budget and the mission spend cap) before its plan locks, when the same check fails twice in a row (a third failure pauses the mission), and before it is declared done. This is not Claude Code’s in-session advisor tool, which a mod cannot call', ai.advisor ? 'on' : 'off', ['off', 'on'], ai.advisor, value => ctx.act.settings.ai({ advisor: value === 'on' }), 'advisor checkpoint consult second opinion root cause stop the line'),
+    one('advisor-model', 'Advisor model', 'the model passed to claude -p --model for an advisor consult (default leaves it to the claude CLI); the consult card always names the model that will be used', ai.advisorModel, CLAUDE_MODELS, ai.advisorModel !== DEFAULT_AI.advisorModel, value => ctx.act.settings.ai({ advisorModel: value as (typeof CLAUDE_MODELS)[number] }), 'advisor model haiku sonnet opus'),
+    one('subagent-summaries', 'Subagents return summaries only', 'adds a line to a mission’s /loop prompt asking subagents for a structured summary (findings, file paths, a verdict), not raw files or logs; an instruction to Claude, not enforced by the console', ai.subagentSummaries ? 'on' : 'off', ['off', 'on'], ai.subagentSummaries, value => ctx.act.settings.ai({ subagentSummaries: value === 'on' }), 'subagent summary structured scope discovery'),
     ...LOOP_ROWS.map(row => one(row.id, row.title, row.description, row.current(ai), row.options, row.isChanged(ai), value => ctx.act.settings.ai(row.patch(value)), row.extra)),
     one('ctx-mission', 'Mission context in Claude’s prompt', 'the active mission and task ride in Claude’s system prompt, and change only when the task does (a changed prompt makes Claude re-read the chat)', ai.missionContext ? 'on' : 'off', ['on', 'off'], !ai.missionContext, value => ctx.act.settings.ai({ missionContext: value === 'on' }), 'mission context prompt cache claude'),
     one('loop-gates', 'Mission gates', 'your own commands a mission may run to verify a task, one per line; each asks first and shows its exact argv; no shell characters', ai.loopGates, [], ai.loopGates !== '', value => ctx.act.settings.ai({ loopGates: value }), 'gates verify tests smoke evidence'),

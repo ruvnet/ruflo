@@ -632,6 +632,14 @@ export class CommandParser {
         errors.push(`Required option missing: --${opt.name}`);
       }
 
+      // A value-taking option given with nothing after it (`--task`, `--key` at the end, or
+      // followed by another flag) is parsed as boolean `true`. Commands then treat `true` as
+      // the value: `hooks route --task` crashed with "task.trim is not a function" and
+      // `memory retrieve --key` looked up the key "true". Report it instead.
+      if ((opt.type === 'string' || opt.type === 'number') && flags[key] === true) {
+        errors.push(`Option --${opt.name} needs a value`);
+      }
+
       // Check choices
       if (opt.choices && flags[key] !== undefined) {
         const value = String(flags[key]);

@@ -21,6 +21,7 @@ import type { Runner } from './runner'
 import { CLI_PREFIXES, type State } from './state'
 import type { Derived, LedgerEvent, LedgerTask, McState, McTab, MissionActions, MissionRecord } from './mission-types'
 
+import { checkpointPlan } from './mission-advisor-live'
 import { cancelSpec, createSpec, createWhy, dispatchSpec, isInflight, MAX_HANDOUTS, resultOf, setPaused } from './mission-specs'
 
 export { cancelSpec, createSpec, createWhy, dispatchSpec, resultOf, setPaused }
@@ -336,7 +337,7 @@ export function missionActions(state: State, host: Host, runner: Runner): Missio
       mc.tab = tab
       host.invalidate()
     },
-    create: () => runner.ask(blocksCreate(mc.screen) ? null : createSpec(state, host, () => undefined), blocksCreate(mc.screen) ? 'AIDefence flagged the goal: change it first' : (createWhy(state) ?? 'type a goal first: the plan is made from it')),
+    create: () => runner.ask(blocksCreate(mc.screen) ? null : createSpec(state, host, () => { const made = activeMission(state); if (made !== null) checkpointPlan(state, host, made) }), blocksCreate(mc.screen) ? 'AIDefence flagged the goal: change it first' : (createWhy(state) ?? 'type a goal first: the plan is made from it')),
     select: id => {
       if (mc.missions.has(id)) mc.active = id
       saveLedger(state, host)

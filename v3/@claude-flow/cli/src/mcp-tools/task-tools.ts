@@ -6,6 +6,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { readRecordStore } from './record-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 
@@ -50,16 +51,7 @@ function ensureTaskDir(): void {
 }
 
 function loadTaskStore(): TaskStore {
-  try {
-    const path = getTaskPath();
-    if (existsSync(path)) {
-      const data = readFileSync(path, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch {
-    // Return empty store on error
-  }
-  return { tasks: {}, version: '3.0.0' };
+  return readRecordStore(getTaskPath(), 'tasks', () => ({ tasks: {}, version: '3.0.0' }));
 }
 
 function saveTaskStore(store: TaskStore): void {
@@ -422,6 +414,11 @@ export const taskTools: MCPTool[] = [
 
       const previouslyAssigned = [...task.assignedTo];
 
+      // Load agent store to sync worker state
+      const agentStorePath = join(getProjectCwd(), STORAGE_DIR, 'agents', 'store.json');
+      readRecordStore<{ agents: Record<string, Record<string, unknown>> }>(
+        agentStorePath, 'agents', () => ({ agents: {} }),
+      );
       if (input.unassign) {
         // Revert previously assigned agents to idle
         releaseAgents(previouslyAssigned, taskId);

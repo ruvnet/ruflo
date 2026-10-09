@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-cost-tracker`.
 
+## 0.28.0 — 2026-10-08
+- feat: read Grok CLI sessions (usage.json) into the cost ledger (`--provider grok`)
+- fix: Grok prices are list prices and are flagged approximate in the ledger output (subscription billing may differ)
+
 ## 0.27.2 — 2026-10-07
 - fix: run the installed ruflo CLI before `npx @claude-flow/cli@latest` in cost-tracker, adr and metaharness
 - chore: 3.55.0 versions, leaf pins, lockfiles, plugin bumps, changelog

@@ -6,7 +6,7 @@ import type { RenderElement } from 'claude-code'
 
 import { approvalsOf } from '../data/alerts'
 import type { Lane } from '../gfx/maps'
-import { button, col, row, rule, text, THEME, type Ctx } from './common'
+import { button, col, paragraph, row, rule, text, THEME, type Ctx } from './common'
 
 /** Busy time as a share of the time this lane was observed in the window, and its tool calls. */
 export function statsOf(lane: Lane, fromMs: number, nowMs: number): { observedMs: number; busyMs: number; calls: number } {
@@ -22,14 +22,14 @@ export function approvalsView(ctx: Ctx): RenderElement {
   const rows: RenderElement[] = [rule(ctx, 'Approvals', items.length === 0 ? 'nothing waiting' : `${items.length} waiting · j/k pick`)]
 
   if (items.length === 0) {
-    rows.push(text(ctx, 'No hive-mind proposals, stealable claims, refused mods, permission denies or budget alerts waiting.', { dimColor: true }))
+    rows.push(...paragraph(ctx, 'No hive-mind proposals, stealable claims, refused mods, permission denies or budget alerts waiting.', { dimColor: true }))
   }
 
   items.slice(0, 12).forEach((item, i) => {
     const isPicked = i === picked
 
-    rows.push(text(ctx, `${isPicked ? '▸' : ' '} [${item.kind}] ${item.text}`, isPicked ? { bold: true, color: THEME.head } : { color: item.kind === 'policy-deny' || item.kind === 'mod-trust' ? THEME.bad : THEME.warn }))
-    rows.push(text(ctx, `    ${item.detail}`, { dimColor: true }))
+    rows.push(...paragraph(ctx, `${isPicked ? '▸' : ' '} [${item.kind}] ${item.text}`, isPicked ? { bold: true, color: THEME.head } : { color: item.kind === 'policy-deny' || item.kind === 'mod-trust' ? THEME.bad : THEME.warn }, '    '))
+    rows.push(...paragraph(ctx, `    ${item.detail}`, { dimColor: true }, '    '))
 
     if (isPicked && item.actions.length > 0 && ctx.columns >= 44) {
       rows.push(row(ctx, item.actions.map((action, a) => button(ctx, `approve-${a}`, action.label, () => void ctx.act.run(action.paletteId), a < 2 ? { hotkey: a === 0 ? 'v' : 'w' } : {}))))
@@ -38,7 +38,7 @@ export function approvalsView(ctx: Ctx): RenderElement {
 
   if (ctx.columns >= 44 && items.length > 1) rows.push(row(ctx, [button(ctx, 'item-prev', 'prev', () => ctx.act.select(-1), { hotkey: 'k' }), button(ctx, 'item-next', 'next', () => ctx.act.select(1), { hotkey: 'j' })]))
 
-  rows.push(text(ctx, 'each action asks y/n before it runs; a permission deny is shown, never loosened from here', { dimColor: true }))
+  rows.push(...paragraph(ctx, 'each action asks y/n before it runs; a permission deny is shown, never loosened from here', { dimColor: true }))
 
   return col(ctx, rows, 'approvals')
 }

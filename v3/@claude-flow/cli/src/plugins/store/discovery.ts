@@ -112,6 +112,12 @@ export interface PluginDiscoveryResult {
   source?: string;
   fromCache?: boolean;
   error?: string;
+  /**
+   * True when the signed registry could not be fetched or verified and the CLI fell back to
+   * its built-in plugin list. That list is safe to use (fixed, first-party npm names), but it
+   * is NOT the verified registry, and callers must say so rather than report a discovery.
+   */
+  demo?: boolean;
 }
 
 /**
@@ -119,7 +125,7 @@ export interface PluginDiscoveryResult {
  */
 export class PluginDiscoveryService {
   private config: PluginStoreConfig;
-  private cache: Map<string, { registry: PluginRegistry; timestamp: number }> = new Map();
+  private cache: Map<string, { registry: PluginRegistry; timestamp: number; demo?: boolean }> = new Map();
 
   constructor(config: Partial<PluginStoreConfig> = {}) {
     this.config = { ...DEFAULT_PLUGIN_STORE_CONFIG, ...config };
@@ -149,7 +155,9 @@ export class PluginDiscoveryService {
         success: true,
         registry: cached.registry,
         fromCache: true,
-        source: registry.name,
+        // A cached fallback is still the fallback: never relabel it as the real registry.
+        source: cached.demo ? `${registry.name} (demo)` : registry.name,
+        ...(cached.demo ? { demo: true } : {}),
       };
     }
 
@@ -267,14 +275,17 @@ export class PluginDiscoveryService {
     this.cache.set(registry.ipnsName, {
       registry: demoRegistry,
       timestamp: Date.now(),
+      demo: true,
     });
 
     return {
       success: true,
       registry: demoRegistry,
-      cid: `bafybeiplugin${crypto.randomBytes(16).toString('hex')}`,
+      // No CID: the built-in list was not fetched from IPFS. (This used to be a random
+      // `bafybeiplugin…` string, printed as "Registry CID" as if it were a real address.)
       source: `${registry.name} (demo)`,
       fromCache: false,
+      demo: true,
     };
   }
 

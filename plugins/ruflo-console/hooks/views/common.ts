@@ -50,7 +50,8 @@ export type Actions = {
   help: () => void
   close: () => void
   back: () => void
-  confirm: () => void
+  /** Runs the pending ask; `seen` is the id of the card the Yes came from, so a card that took its place meanwhile is not the one run. */
+  confirm: (seen?: number) => void
   cancel: () => void
   /** j/k: moves the selection of the view in front. */
   select: (by: number) => void
@@ -117,7 +118,7 @@ export type Actions = {
   /** Empties an entry field after its Enter. */
   clearField: (key: string) => void
   /** The confirm row's "always allow this kind of action": remembers the kind (Settings forgets it) and runs the pending ask. */
-  remember: () => void
+  remember: (seen?: number) => void
   /** Forgets one remembered kind of action, or all of them (an empty key). */
   forget: (key: string) => void
   /** The nav card: show a group's pages, search the pages, clear the search. */
@@ -233,6 +234,20 @@ export const pct = (value: number | null | undefined): string => (value === null
 
 export function text(ctx: Ctx, children: string, props: { color?: string; bold?: boolean; dimColor?: boolean; italic?: boolean } = {}): RenderElement {
   return ctx.kit.Text({ wrap: 'truncate-end', ...props, children: clip(children, Math.max(4, ctx.columns)) })
+}
+
+/**
+ * Prose a person needs to read in full (an approval's text, a mission's objective): wrapped on word breaks into as many rows as it takes, each
+ * continuation row indented by `indent`, so a narrow terminal (80 columns in tmux) shows all of it instead of cutting it at the edge with "…".
+ */
+export function paragraph(ctx: Ctx, line: string, props: { color?: string; bold?: boolean; dimColor?: boolean; italic?: boolean } = {}, indent = ''): RenderElement[] {
+  const lead = line.match(/^ */)?.[0] ?? ''
+  const width = Math.max(16, ctx.columns - Math.max(lead.length, indent.length))
+  // A word longer than the row (an id, a path) is cut into row-sized pieces, so no character of it is lost to the edge.
+  const words = line.trimStart().split(' ').flatMap(word => (word.length <= width ? [word] : (word.match(new RegExp(`.{1,${width}}`, 'gu')) ?? [word])))
+  const parts = wrap(words.join(' '), width)
+
+  return (parts.length === 0 ? [''] : parts).map((part, i) => text(ctx, `${i === 0 ? lead : indent}${part}`, props))
 }
 
 export function row(ctx: Ctx, parts: readonly RenderChildren[], key?: string): RenderElement {
@@ -414,12 +429,12 @@ export function confirmRow(ctx: Ctx): RenderElement | null {
         flexDirection: 'row',
         marginTop: 1,
         children: [
-          button(ctx, 'confirm', 'Yes, run it (y)', ctx.act.confirm, { hotkey: 'y', primary: true }),
+          button(ctx, 'confirm', 'Yes, run it (y)', () => ctx.act.confirm(pending.id), { hotkey: 'y', primary: true }),
           button(ctx, 'cancel', 'Cancel (n)', ctx.act.cancel, { hotkey: 'n' }),
           // A low-risk ruflo action may be remembered: it is not asked again (Settings lists and forgets it).
-          ...(pending.rememberKey !== undefined ? [button(ctx, 'remember', `Always allow “${pending.rememberKey}”`, () => ctx.act.remember())] : []),
+          ...(pending.rememberKey !== undefined ? [button(ctx, 'remember', `Always allow “${pending.rememberKey}”`, () => ctx.act.remember(pending.id))] : []),
           // An AI terminal turn (claude -p in plan mode, codex read-only, the budget cap) may be always accepted: Settings resets it.
-          ...(ctx.state.terminal.asked !== null && pending.label === ctx.state.terminal.asked.label && ctx.state.terminal.harness !== 'ruflo' ? [button(ctx, 'always', 'Always accept AI turns', () => ctx.act.settings.alwaysAccept())] : []),
+          ...(ctx.state.terminal.asked !== null && pending.label === ctx.state.terminal.asked.label && ctx.state.terminal.harness !== 'ruflo' ? [button(ctx, 'always', 'Always accept AI turns', () => ctx.act.settings.alwaysAccept(pending.id))] : []),
         ],
       }),
     ],

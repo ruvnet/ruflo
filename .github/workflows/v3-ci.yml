@@ -483,6 +483,11 @@ jobs:
         working-directory: v3
         run: pnpm build
 
+      - name: Windows MetaHarness doctor regression (#3186)
+        if: matrix.os == 'windows-2022'
+        working-directory: v3/@claude-flow/cli
+        run: pnpm exec vitest run __tests__/doctor-metaharness-windows-3186.test.ts
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:

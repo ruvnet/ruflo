@@ -1564,7 +1564,20 @@ export const memoryTools: MCPTool[] = [
       // entry body. Without this, `value` is always null because listEntries
       // strips content by default (callers pay for the JSON parse only when
       // they need it).
-      const all = await listEntries({ limit: 100000, namespace, includeContent: true });
+      // A successful export must cover the whole reported store. Read all
+      // pages before touching an existing snapshot, including on read failure.
+      const entries: Awaited<ReturnType<typeof listEntries>>['entries'] = [];
+      let total: number | undefined;
+      do {
+        const page = await listEntries({ limit: 10000, offset: entries.length, namespace, includeContent: true });
+        if (!page.success) return { error: page.error || 'Could not read memory for export' };
+        total ??= page.total;
+        if (page.entries.length === 0 && entries.length < total) {
+          return { error: `Incomplete memory export: read ${entries.length} of ${total} entries` };
+        }
+        entries.push(...page.entries);
+      } while (entries.length < total);
+      const all = { entries };
       const payload = {
         schema: 'ruflo-memory-export/v1',
         exportedAt: new Date().toISOString(),
@@ -1642,17 +1655,25 @@ export const memoryTools: MCPTool[] = [
           if (keyError) throw new Error(`${keyError}: ${JSON.stringify(e.key)}`);
         }
       }
-      let imported = 0; let skipped = 0;
+      let imported = 0; let skipped = 0; let failed = 0;
+      const errors: string[] = [];
       for (const e of entries) {
         if (!e || typeof e.key !== 'string') { skipped++; continue; }
         const value = typeof e.value === 'string' ? e.value : JSON.stringify(e.value ?? null);
         try {
           const result = await storeEntry({ key: e.key, value, namespace: nsOverride ?? e.namespace ?? 'default', upsert: input.merge !== false, dbPath });
-          if (result.success) { imported++; if (result.embedding) vectors++; }
-          else skipped++;
-        } catch { skipped++; }
+          if (!result.success) throw new Error(result.error || 'Memory write was rejected');
+          imported++;
+          if (result.embedding) vectors++;
+        } catch (error) {
+          failed++;
+          if (errors.length < 10) errors.push(`${e.key}: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
       return {
+        success: failed === 0,
+        error: failed > 0 ? `${failed} memory write(s) failed: ${errors.join('; ')}` : undefined,
+        failed,
         inputPath,
         imported: { entries: imported, vectors, patterns: 0 },
         skipped,

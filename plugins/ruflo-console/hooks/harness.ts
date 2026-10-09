@@ -14,6 +14,7 @@ import { ESCAPES, HIDDEN, INVISIBLE } from './data/parse'
 import type { Host } from './host'
 import { CLI_PREFIXES, PANE_ID, push, termStoreKeyOf, type AgentId, type HarnessId, type State, type TermLine } from './state'
 import { claudeParser, codexEvent, eventOf, type Sink } from './stream'
+import { maskInvites } from './xruv'
 
 export const TERM_MAX_LINES = 600
 /** The engine ends a spawned child only when its loop ends: the console ends a run at ten minutes. */
@@ -63,12 +64,14 @@ export function argvOf(state: State, agent: AgentId, text: string): readonly str
 }
 
 /**
- * One line of an agent's output as the scrollback keeps it: ANSI sequences, control and bidirectional characters
- * gone, tabs as two spaces, indentation kept. `trim` false keeps a trailing space (a token typed mid-sentence).
+ * One line of an agent's output as the scrollback keeps it: escape sequences, control, bidirectional and other invisible
+ * characters gone (the set plain() strips), tabs as two spaces, indentation kept, and any x.ruv.io invite code masked:
+ * it is a bearer secret, so neither the terminal page nor console_state ever carries one. `trim` false keeps a trailing
+ * space (a token typed mid-sentence).
  */
 export function termText(line: string, max = 400, trim = true): string {
   // The same strip set as plain() (data/parse.ts), so a character one drops cannot get through the other (#3816).
-  const cleaned = line.replace(/\t/g, '  ').replace(ESCAPES, '').replace(INVISIBLE, '').replace(HIDDEN, '')
+  const cleaned = maskInvites(line.replace(/\t/g, '  ').replace(ESCAPES, '').replace(INVISIBLE, '').replace(HIDDEN, ''))
   const out = trim ? cleaned.trimEnd() : cleaned
 
   return out.length <= max ? out : `${out.slice(0, max - 1)}…`

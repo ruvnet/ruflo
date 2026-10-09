@@ -265,3 +265,37 @@ levels (simple or advanced), "changed only", "read again" and the search box are
 With search text the page is a flat list grouped by source (`── UI`, `── ruflo-console`, and so on), not sections, so the order above does
 not apply and any setting is found in either level. `hooks/settings-palette.ts` lists headless commands (`settings-set` and the like), not
 sections; it needs no change and has none.
+
+## Update 2026-10-08: how a confirmed action reaches the ruflo CLI (0.40.1, #3914)
+
+§8 says every change runs as one fixed argv. The prefix of that argv comes from the ruflo CLI option (`CLI_PREFIXES`: `npx-offline` (default),
+`npx`, `ruflo`, `claude-flow`), and the runner's limit for an action without its own `timeoutMs` is 90 s. With `npx` in a project whose
+npm cache lacked `@claude-flow/cli`, a settings write started a cold download (about 2.5 GB; 36 s on a fast link, longer on a slow or loaded
+one), was aborted at 90 s and showed the raw "still running after 90000ms". Now (`hooks/launcher.ts`, used by `hooks/runner.ts`):
+
+- The explicit choices `npx-offline`, `ruflo` and `claude-flow` run exactly as chosen. Only `npx` (the person allowed the network) resolves a
+  launcher once per session, cheapest first: `ruflo` on PATH, `node_modules/.bin/ruflo`, `node_modules/.bin/claude-flow`, the cached
+  `npx --offline` copy (each probed with `--version`), and last the online `npx`, called a cold run.
+- A cold run gets a 300 s limit and the outcome line reads "first run downloads the ruflo CLI: this can take a few minutes". It is not kept:
+  the next write re-resolves, finds the warmed cache and runs at the ordinary limit.
+- A timeout, or `ENOTCACHED` from `npx --offline`, ends the action as an error naming the fix: `npm i -g ruflo`, or
+  `npx -y @claude-flow/cli@latest --version` once. Read probes keep their own limits and the existing "ruflo CLI not cached" hint.
+- Reads and other callers that build `[...CLI_PREFIXES[cli], ...]` themselves (drill logs, the terminal harness, mission specs) are unchanged.
+
+## Update 2026-10-08: a Yes names its card (0.40.2)
+
+§8's confirm step ran whatever was pending when the Yes arrived. A second ask that replaced the first card (the person's own ask can still replace a
+waiting card) made a Yes pressed on the first card run the second: a `memory store` argv ran from a Yes meant for something else. Now
+(`hooks/runner.ts`):
+
+- Every ask the runner queues gets an id (`Pending.id`, a counter that only rises). The confirm row's Yes, "Always allow" and "Always accept
+  AI turns" buttons carry the id of the card they were drawn for, and `runner.confirm(seen)` runs only when `seen` is the id of the card now
+  waiting. Otherwise it runs nothing, leaves the new card in place, answers "the card changed before your Yes", and records an event.
+  "Always allow" and "Always accept" on a replaced card also remember nothing and keep the draft.
+- A Yes without an id (`/ruflo yes`, the terminal's Enter on the asked line) still answers the card that is waiting; those read the card on
+  screen in the same step. A second Yes on a card that already ran finds nothing waiting and is a quiet no-op, so it cannot overwrite the answer.
+- An ask of Claude's that was screened first and so landed after its tool call returned is checked against the level and Stop as they are
+  when it lands (`landingRefusal`, model-tools.ts); a level lowered while the screen looked wins.
+
+Regression tests: `tests/deferred-asks.spec.ts`. The same release wraps Approvals and a mission's objective at narrow widths instead of
+cutting them with "…" (#3899, `paragraph` in `views/common.ts`, `tests/narrow-width.spec.ts`).

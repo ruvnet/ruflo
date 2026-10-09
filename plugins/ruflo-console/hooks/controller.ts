@@ -17,6 +17,7 @@ import { readSnapshot } from './data/snapshot'
 import { markPicture } from './gfx/pictures'
 import type { Host } from './host'
 import { agentLogs } from './ops'
+import { landingRefusal } from './model-tools'
 import { createRunner, type Runner } from './runner'
 import { advance, loadLedger, mcOf } from './mission-control'
 import { hasLiveWork } from './mission-list'
@@ -460,10 +461,9 @@ export function createController(state: State, host: Host): Controller {
   }
 
   const runner = createRunner(state, host, {
-    freshRead,
-    setView,
-    drill,
+    freshRead, setView, drill,
     command: name => (name === 'refresh' ? actions.refresh() : name === 'help' ? actions.help() : actions.close()),
+    landingRefusal: pending => landingRefusal(state, pending),
   })
   const actions: Actions = actionsOf(state, host, runner, { freshRead, probe, setView, drill, close, animate })
 

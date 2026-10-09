@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.56.0] - 2026-10-08
+
+Minor release: a hardening and correctness batch from @rudycelekli, @nicholas-ruest, @martinvlad, @HF-teamdev, @drakeo338 and @stuinfla. Several fixes change behaviour on purpose (see Behaviour changes). Integrated by merging each PR head, so authorship is preserved.
+
+### Behaviour changes
+
+- **Unknown ids and value-less options are now errors (#3911, @martinvlad)** — `agent status` / `task status` with an unknown id print `not found` and exit 1; a declared string/number option with no value (`hooks route --task`) now reports `Option --task needs a value` instead of silently becoming `true`. Applies to every command.
+- **`session_save` captures the persisted task/agent/memory stores by default, and `session_import` rejects malformed stores (#3489, #3490)**; explicit `false` still excludes a store.
+- **Default project memory backup snapshots both `memory.db` and `agentdb-memory.db` (#3903)**; explicit `--db` and a non-blank `CLAUDE_FLOW_DB_PATH` still select one file.
+- **Agent pool scale-to-zero is honored and invalid targets fail before writing (#3488)**; a zero fallback retry budget is honored (#3496).
+- **Project path validators block sensitive directory names anywhere under the project root, not only at the leaf (#3504, `@claude-flow/security` 3.0.3)**.
+- **The OAuth callback server retains an early callback and ignores unrelated requests (#3507, `@claude-flow/security` 3.0.3)**.
+- **Provider selection honors an explicit execution provider (#3493) and Anthropic gateway credentials/endpoint (`ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`; #3494, fixes #3100)**; provider timeouts now cover reading the response body (#3495).
+- **`hooks_route` consults persisted SONA outcome patterns before local routing (#3904)** — only a supported agent at confidence >= 0.6 is used; `useSemanticRouter: false` keeps keyword routing. **With the opt-in neural router, selection uses calibrated quality predictions (#3498)** so calibration can move the pick across the quality bar.
+- **The WAL-sidecar safety gate is liveness-based (#3894, fixes #3161)** — leftover `-wal`/`-shm` files from a closed connection no longer block `memory store`/`list`; a genuinely open holder is still refused.
+- **`ruflo init` no longer pins a Claude model in generated `.claude/settings.json` (#3528, fixes #3527)**.
+- **The `ruflo` wrapper pins the matching `@claude-flow/cli` and warns when the resolved CLI version differs (#3438, fixes #3306)**; it warns and continues, it does not refuse.
+- **Claims are stored in one lossless format shared by CLI and MCP; unreadable stores are refused rather than replaced (#3502)**.
+- **Native immutable conditional append for `memory store` (`--append-only`, `--append-conditions`, `--require-native`, `--no-embedding`; #3750, @stuinfla)** — additive, CLI only.
+
+### Fixed
+
+- Shipped `.claude/settings.json` had unescaped quotes in hook commands and did not parse (#3895, fixes #3888, @nicholas-ruest); a new test checks that every shipped settings/plugin JSON parses.
+- Remaining `better-sqlite3` opens go through the shared loader (#3896, fixes #3883's sites, @nicholas-ruest); an RFE1-encrypted store is reported as encrypted, not broken (#3906, fixes #2889, @nicholas-ruest); the demo-registry fallback is labelled as unverified (#3897, @martinvlad).
+- `analyze` preserves machine-readable JSON (#3910); `doctor` rejects unsupported component selections (#3907) and loads MetaHarness modules via file URLs on Windows (#3523, fixes #3186); `daemon start` honors explicit scheduled workers (#3586).
+- Unreadable task/agent records are preserved, not overwritten (#3484); async agent-registry updates do not revive retired agents (#3492); fallback learning is attributed to each attempted model (#3497).
+- Workflow step boundaries are validated (#3491), persisted workflows resume without duplicate executors (#3500) and keep control signals and sibling state across awaits (#3505).
+- Memory JSON import reports rejected writes accurately (#3499); export reads all pages only after successful reads (#3501); concurrent rotating-token refreshes coalesce (#3506).
+- Test fixtures no longer break under pnpm's `NODE_PATH` (#3543, fixes #3529) and the vitest runner is resolved via `package.json`.
+- `@claude-flow/memory` 3.0.2: cache admission accounts for replacement sizes (#3679, fixes #3678) and invalidation matches each key independently (#3687, fixes #3686).
+- Removed an empty `.claude/agents/tmp.json` that shipped in the CLI tarball.
+
+### Not included
+
+#3503 (fail-closed policy envelope: it would deny MCP dispatch for any envelope with a ceiling because dispatch does not supply the metering), #3892, #3831, #3879, #3835, #3751, #3694, #3909 and the draft security PRs: see each PR for the status.
+
+### Leaf packages published with this release
+
+`@claude-flow/memory` 3.0.2, `@claude-flow/security` 3.0.3.
+
 ## [3.55.0] - 2026-10-07
 
 Minor release. Contains a security behaviour change: `ruflo mcp start -t http` on a non-loopback host now refuses to start without a token (see Security and Breaking changes).

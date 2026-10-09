@@ -2,6 +2,7 @@
  * V3 CLI Memory Command
  * Memory operations for AgentDB integration
  */
+import { validateAppendConditions } from '../memory/append-conditions.js';
 
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
@@ -118,6 +119,10 @@ const storeCommand: Command = {
       type: 'boolean',
       default: false
     },
+    { name: 'embedding', type: 'boolean', description: 'Generate an embedding (default true; --no-embedding stores structured data only)' },
+    { name: 'append-conditions', type: 'string', description: 'JSON predicates checked atomically with a native append-only write' },
+    { name: 'require-native', type: 'boolean', description: 'Refuse whole-image and in-memory fallback memory writers' },
+    { name: 'append-only', type: 'boolean', description: 'Immutable insert; never update or resurrect an existing key' },
     {
       name: 'upsert',
       short: 'u',
@@ -250,7 +255,7 @@ const storeCommand: Command = {
 
     output.printInfo(`Storing in ${namespace}/${key}...`);
 
-    // Use direct sql.js storage with automatic embedding generation
+    // Use the canonical provider; embedding and native immutable append controls are explicit.
     try {
       const { storeEntry, resolveDbPath: _rdbStore } = await import('../memory/memory-initializer.js');
       const dbPath = _rdbStore(ctx.flags.path as string | undefined);
@@ -263,7 +268,10 @@ const storeCommand: Command = {
         key,
         value,
         namespace,
-        generateEmbeddingFlag: true, // Always generate embeddings for semantic search
+        generateEmbeddingFlag: ctx.flags.embedding !== false,
+        requireNative: ctx.flags.requireNative === true,
+        appendOnly: ctx.flags.appendOnly === true,
+        ...(typeof ctx.flags.appendConditions === 'string' ? { appendConditions: validateAppendConditions(JSON.parse(ctx.flags.appendConditions)) } : {}),
         tags,
         ttl,
         upsert,

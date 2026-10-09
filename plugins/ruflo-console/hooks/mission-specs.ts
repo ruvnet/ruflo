@@ -5,6 +5,7 @@ import { stageOf, toMissionPlan, type Profile } from './goap'
 import { checkLimit, MISSION_OBJECTIVE_MAX } from './full-text'
 import type { Host } from './host'
 import { adrBlockFor } from './adr-mission'
+import { EVENT_RESUMED, stoppedByAdvisor } from './mission-advisor'
 import { activeMission, instructionOf, mcOf, nextTask, record, rufloTaskOf, saveLedger } from './mission-control'
 import type { LedgerTask, MissionRecord } from './mission-types'
 import { CLI_PREFIXES, type State } from './state'
@@ -229,6 +230,8 @@ export function setPaused(state: State, host: Host, paused: boolean): void {
   // The person resuming has seen why it stopped: each task gets its hand-outs again.
   if (!paused) for (const task of mission.tasks) task.handouts = 0
   record(mission, { type: paused ? 'mission.paused' : 'mission.resumed', status: paused ? 'paused' : 'running' })
+  // ADR-483: resuming after an advisor stop-the-line gives the failing check a fresh run of tries.
+  if (!paused && stoppedByAdvisor(mission)) record(mission, { type: EVENT_RESUMED })
   mcOf(state).last = { label: paused ? 'paused: no more tasks are handed out' : 'resumed', ok: true, detail: paused ? 'a task already handed to Claude finishes first' : 'Run next hands out the next ready task' }
   saveLedger(state, host)
   host.invalidate()

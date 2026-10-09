@@ -5,7 +5,7 @@
 
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
-import { WorkerDaemon, getDaemon, startDaemon, stopDaemon, type WorkerType, type DaemonConfig } from '../services/worker-daemon.js';
+import { WorkerDaemon, getDaemon, startDaemon, stopDaemon, type WorkerType, type DaemonConfig, parseEnabledWorkers } from '../services/worker-daemon.js';
 import { resolveDaemonProjectRoot } from '../services/daemon-autostart.js';
 import { spawn, execFile, fork } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -13,10 +13,8 @@ import { dirname, join, resolve, isAbsolute } from 'path';
 import { homedir } from 'os';
 import * as fs from 'fs';
 
-// #1968 / #3547: shared validator for `--workers <list>`, used both when
-// reading the flag into DaemonConfig (below) and when forwarding it to the
-// forked background child's argv (startBackgroundDaemon). One pattern, one
-// place, so the two paths can't drift out of sync on what they accept.
+// Syntax guard for worker-name flags forwarded to a background child.
+// The start action validates the names against the daemon's supported workers.
 const WORKERS_RE = /^[a-z][a-z0-9_-]*(,[a-z][a-z0-9_-]*)*$/;
 
 // Start daemon subcommand
@@ -24,7 +22,7 @@ const startCommand: Command = {
   name: 'start',
   description: 'Start the worker daemon with all enabled background workers',
   options: [
-    { name: 'workers', short: 'w', type: 'string', description: 'Comma-separated list of workers to enable (default: map,audit,optimize,consolidate,testgaps)' },
+    { name: 'workers', short: 'w', type: 'string', description: 'Comma-separated list of workers to enable (default: saved selection or map,audit,optimize,consolidate,testgaps,backup,harness)' },
     // ADR-174 M3: consolidate now runs a real memory-distillation pass
     // (memory_entries -> episodes/reasoning_patterns/causal_edges) instead of
     // a no-op stub. This opt-out skips just that pass for the life of this
@@ -131,19 +129,12 @@ const startCommand: Command = {
       }
     }
 
-    // #3547 (#1968 follow-up): `--workers` was forwarded to the forked
-    // background child's argv (below, in startBackgroundDaemon) but never
-    // read into DaemonConfig here, so WorkerDaemon always fell back to
-    // DEFAULT_WORKERS (7 enabled) regardless of what was requested — in
-    // both foreground mode (this same action, run directly) and background
-    // mode (this same action, re-run in the forked child with --foreground
-    // and the forwarded --workers flag).
-    const rawWorkers = ctx.flags.workers as string | undefined;
-    if (typeof rawWorkers === 'string' && rawWorkers.length > 0) {
-      if (WORKERS_RE.test(rawWorkers)) {
-        config.enabledWorkers = rawWorkers.split(',');
-      } else if (!quiet) {
-        output.printWarning(`Ignoring invalid --workers value: ${sanitize(rawWorkers)}`);
+    if (ctx.flags.workers !== undefined) {
+      try {
+        config.enabledWorkers = parseEnabledWorkers(ctx.flags.workers as string);
+      } catch (error) {
+        if (!quiet) output.printError((error as Error).message);
+        return { success: false, exitCode: 1 };
       }
     }
 

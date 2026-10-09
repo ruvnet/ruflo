@@ -67,6 +67,7 @@ Two files carry the number 430 (the menu's accents, and the menu-design amendmen
 | 477 | Mods: one toast system, with levels, de-duplication, a record and a setting | Accepted | 10-07 | 404, 453, 474, 466 | — | #3889 | console 0.37.0, swarm 0.3.4, protector 0.1.1, mods 0.3.16 | `toast-policy.spec`, `toasts.spec`, `toasts.test`, `toast.test` |
 | 478 | Console What's new page, plugin changelogs | Accepted | 10-07 | 428, 477 | — | — | [ADR-478](ADR-478-console-whats-new.md) | — |
 | 480 | Console ADRs page: your project's ADRs, and missions, loops and swarms that follow them | Accepted | 10-07 | 407, 443, 444, 450, 474, 477, 478 | — | this PR | console 0.39.0, swarm 0.3.5, workflows 0.6.4 | `adr.spec`, `adr-write.spec`, `adr-integration.spec`, `adr-page.spec`, `adr-mutation.spec`, `adr-digest.spec` |
+| 483 | Console advisor checkpoints for mission loops (plan, repeated failure, before done) | Accepted | 10-08 | 441, 443, 444, 477, 480, 481 | — | this PR | console 0.40.0 | `mission-advisor.spec`, `mission-advisor-mutation.spec` |
 
 Other ADRs outside 404-451 that the mod ADRs lean on: 150 (removable integrations), 174 (failures as a learning signal), 322 and 322A/B/C (flywheel, evaluation and promotion, receipts), 324 and 325 (policy engine, claims plane), 103 (witness). The console's Mods section (`hooks/data/mods.ts`, console 0.33.1, PR #3707) reads the status files ADR 446 defines.
 
