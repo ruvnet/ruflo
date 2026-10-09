@@ -84,10 +84,14 @@ export function checkOptionValue(opt: CatalogOption, value: unknown, current: un
   if (opt.rule === 'range' || opt.rule === 'cap') {
     if (typeof value !== 'number' || !Number.isFinite(value) || value < (opt.min ?? 0) || value > (opt.max ?? 0)) return { ok: false, code: 'bad_value' };
     if (opt.rule === 'cap') {
-      const cur = typeof effective === 'number' ? effective : typeof effective === 'string' && effective.trim() !== '' ? Number(effective) : effective === undefined ? 0 : NaN;
-      if (!Number.isFinite(cur)) return { ok: false, code: 'config_unreadable' }; // a garbled stored value is never read as "no cap"
+      // Unset (undefined, or the real CLI's empty string) means "no cap yet": a first finite positive cap is a tightening from unlimited.
+      // A non-empty value that is not a number is garbled and never read as "no cap".
+      const unset = effective === undefined || effective === null || (typeof effective === 'string' && effective.trim() === '');
+      const cur = unset ? 0 : typeof effective === 'number' ? effective : typeof effective === 'string' ? Number(effective) : NaN;
+      if (!Number.isFinite(cur)) return { ok: false, code: 'config_unreadable' };
+      if (unset) { if (!(value > 0)) return { ok: false, code: 'would-raise-cap' }; }
       // For caps whose minimum is 0, 0 is "no cap": going to 0, or above a cap that is set, loosens it.
-      if ((opt.min ?? 0) === 0) { if (value === 0 && cur !== 0) return { ok: false, code: 'would-raise-cap' }; if (cur > 0 && value > cur) return { ok: false, code: 'would-raise-cap' }; }
+      else if ((opt.min ?? 0) === 0) { if (value === 0 && cur !== 0) return { ok: false, code: 'would-raise-cap' }; if (cur > 0 && value > cur) return { ok: false, code: 'would-raise-cap' }; }
       else if (value > cur) return { ok: false, code: 'would-raise-cap' };
     }
     return { ok: true, value };
