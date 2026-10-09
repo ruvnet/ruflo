@@ -103,6 +103,22 @@ describe('hooks session-restore re-scans .claude/settings.json for risk (#dream-
     expect(result.warnings ?? []).toEqual([]);
   });
 
+  it('does not throw and adds no risk warnings when settings.json is the valid-JSON literal null', async () => {
+    writeSettings(null);
+
+    const result = (await hooksSessionRestore.handler({ sessionId: 'latest' })) as { warnings?: string[] };
+
+    expect(result.warnings ?? []).toEqual([]);
+  });
+
+  it('does not throw and adds no risk warnings when settings.json is a top-level JSON array', async () => {
+    writeSettings([]);
+
+    const result = (await hooksSessionRestore.handler({ sessionId: 'latest' })) as { warnings?: string[] };
+
+    expect(result.warnings ?? []).toEqual([]);
+  });
+
   it('combines a real in-progress-task warning with a settings.json risk warning', async () => {
     const memDir = join(workdir, '.claude-flow', 'memory');
     mkdirSync(memDir, { recursive: true });

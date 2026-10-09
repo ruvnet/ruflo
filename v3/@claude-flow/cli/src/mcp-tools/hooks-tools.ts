@@ -2841,11 +2841,14 @@ export const hooksSessionRestore: MCPTool = {
     if (settingsRaw !== undefined) {
       try {
         const settings = JSON.parse(settingsRaw);
-        warnings.push(
-          ...formatRiskFindingsAsWarnings(
-            scanSettingsForRisk({ hooks: settings.hooks, permissions: settings.permissions } as Record<string, unknown>)
-          )
-        );
+        if (settings !== null && typeof settings === 'object' && !Array.isArray(settings)) {
+          warnings.push(
+            ...formatRiskFindingsAsWarnings(
+              scanSettingsForRisk({ hooks: settings.hooks, permissions: settings.permissions } as Record<string, unknown>)
+            )
+          );
+        }
+        // else: valid JSON but not a settings object (null/array/scalar) — not this scan's concern.
       } catch (err) {
         if (err instanceof SyntaxError) {
           // Malformed JSON — not this scan's concern, never block on it.
