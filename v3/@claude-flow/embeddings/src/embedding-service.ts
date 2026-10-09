@@ -670,26 +670,18 @@ export class AgenticFlowEmbeddingService extends BaseEmbeddingService {
     // Try proper package exports first (preferred)
     possiblePaths.push('agentic-flow/embeddings');
 
-    // Try node_modules resolution from different locations (for file:// imports)
+    // File fallback: resolve from this package's own location, never from
+    // the cwd or a fixed path — the module found here is imported.
     try {
-      const path = await import('path');
+      const { createRequire } = await import('module');
       const { existsSync } = await import('fs');
-      const cwd = process.cwd();
-
-      // Prioritize absolute paths that exist (for file:// import fallback)
-      const absolutePaths = [
-        path.join(cwd, 'node_modules/agentic-flow/dist/embeddings/optimized-embedder.js'),
-        path.join(cwd, '../node_modules/agentic-flow/dist/embeddings/optimized-embedder.js'),
-        '/workspaces/claude-flow/node_modules/agentic-flow/dist/embeddings/optimized-embedder.js',
-      ];
-
-      for (const p of absolutePaths) {
-        if (existsSync(p)) {
-          possiblePaths.push(p);
-        }
-      }
+      const path = await import('path');
+      const require = createRequire(import.meta.url);
+      const pkgDir = path.dirname(require.resolve('agentic-flow/package.json'));
+      const embedder = path.join(pkgDir, 'dist/embeddings/optimized-embedder.js');
+      if (existsSync(embedder)) possiblePaths.push(embedder);
     } catch {
-      // fs/path module not available
+      // agentic-flow not resolvable from this package
     }
 
     // Try each path
