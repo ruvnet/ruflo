@@ -3,6 +3,7 @@
 // message is a signed Nostr event, so authorship is cryptographically verifiable
 // and participation is open to anyone the relay admits as a member.
 import WebSocket from 'ws';
+import { nostrDidFromPubkey } from './did-nostr.mjs';
 import { generateSecretKey, getPublicKey, finalizeEvent, verifyEvent } from 'nostr-tools/pure';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -92,7 +93,7 @@ export async function fetchRecent(relayUrl, sk, { sinceSeconds = 3600, limit = 1
         // overwriting id/pubkey/created_at, is the only order a publisher can't
         // use to impersonate another member's identity downstream (reduceClaims
         // trusts .pubkey for release/handoff authorization).
-        out.push({ ...body, id: m[2].id, pubkey: m[2].pubkey, created_at: m[2].created_at });
+        out.push({ ...body, id: m[2].id, pubkey: m[2].pubkey, did: nostrDidFromPubkey(m[2].pubkey), created_at: m[2].created_at });
       } else if (m[0] === 'EOSE') { clearTimeout(timer); try { ws.close(); } catch {} resolve(out); }
     });
     ws.send(JSON.stringify(['REQ', 'ruflo-sync', filter]));
@@ -110,7 +111,7 @@ export async function fetchManyOn(relayUrl, sk, filters) {
     ws.on('message', (data) => {
       const m = JSON.parse(data.toString());
       const idx = typeof m[1] === 'string' && m[1].startsWith('q') ? Number(m[1].slice(1)) : -1;
-      if (m[0] === 'EVENT' && idx >= 0 && verifyEvent(m[2])) { let body; try { body = JSON.parse(m[2].content); } catch { body = { raw: m[2].content }; } results[idx].push({ ...body, id: m[2].id, pubkey: m[2].pubkey, created_at: m[2].created_at }); }
+      if (m[0] === 'EVENT' && idx >= 0 && verifyEvent(m[2])) { let body; try { body = JSON.parse(m[2].content); } catch { body = { raw: m[2].content }; } results[idx].push({ ...body, id: m[2].id, pubkey: m[2].pubkey, did: nostrDidFromPubkey(m[2].pubkey), created_at: m[2].created_at }); }
       else if (m[0] === 'EOSE' && idx >= 0) { ws.send(JSON.stringify(['CLOSE', m[1]])); if (--open === 0) { clearTimeout(timer); finish(); } }
     });
     filters.forEach((f, i) => ws.send(JSON.stringify(['REQ', 'q' + i, { kinds: [SWARM_KIND], '#t': [SWARM_TAG], since: Math.floor(Date.now() / 1000) - (f.sinceSeconds ?? 3600), limit: f.limit ?? 100, ...(f.type ? { '#k': [String(f.type)] } : {}) }])));
@@ -161,7 +162,7 @@ export async function fetchChannel(relayUrl, sk, { channelId, sinceSeconds = 360
         const e = m[2];
         const h = e.tags.find((t) => t[0] === 'c')?.[1];
         const k = e.tags.find((t) => t[0] === 'k')?.[1];
-        const rec = { id: e.id, pubkey: e.pubkey, created_at: e.created_at, channel: h, k };
+        const rec = { id: e.id, pubkey: e.pubkey, did: nostrDidFromPubkey(e.pubkey), created_at: e.created_at, channel: h, k };
         if (k === 'enc') out.push({ ...rec, encrypted: true, content: e.content });
         // Same override hazard as fetchRecent/fetchManyOn: rec's verified id/pubkey/
         // created_at must be applied AFTER body, not before.
