@@ -44,6 +44,16 @@ New deterministic test (`hnsw-serialization-quantization.test.ts`): a trained pr
 
 **evaluated: accepted.** Real evaluator: Vitest 4.1.8, deterministic, $0, zero LLM calls. Baseline-fails/candidate-passes via `git stash` isolation on `hnsw-index.ts` alone: pre-serialize recall@10 = 0.270 (matches 2026-08-25's measured PQ floor); post-deserialize recall@10 collapses to **0.010** on baseline, recovers to ~0.270 on the candidate (within 0.05 of pre-serialize, asserted). Full `@claude-flow/memory` suite: 557/558 both ways (1 pre-existing unrelated failure — a root-user/read-only-file permission test in `auto-memory-bridge.test.ts`, confirmed byte-identical via stash isolation). `tsc --noEmit`: clean, no errors.
 
+## Post-Review Hardening (ruvnet, 2026-10-09)
+
+Rebased onto main (`5f709e367`); dropped the PR's `package.json`/`pnpm-lock.yaml`/CLI-pin version-bump commit per review — version bumps for unbundled leaves belong to the release integrator, not this PR (main's `@claude-flow/memory` had independently moved to `3.0.2` by review time; this fix ships with "the next standalone `@claude-flow/memory` publish after 3.0.2, plus the CLI pin bump," per the reviewer). Three further findings addressed in the same pass:
+
+1. **Input validation**: `Quantizer.importCodebooks()` took `JSON.parse()` output straight into `this.codebooks` with no shape/finiteness check. Now validates `numSubquantizers × numCentroids × expectedSubvectorLength` of finite numbers before accepting; rejects (leaving the quantizer untrained, not NaN-poisoned) otherwise. `deserialize()` also guards the `JSON.parse()` call itself so corrupt JSON degrades the same way instead of throwing. 2 new discriminating tests, both stash-verified to fail pre-fix.
+2. **Disclosed limitation (no code change)**: a v2-format snapshot cannot be read by older `@claude-flow/memory` versions (the magic-byte check throws on downgrade) — a one-way format bump, consistent with how the v1→v2 transition was designed (old buffers stay readable going forward, not the reverse). Separately, any *existing* v1 snapshot that came from a quantized index was never saveable with its quantizer config in the first place (the bug this PR fixes) — such snapshots stay un-quantized after upgrading too and need a rebuild to actually gain this fix's benefit; upgrading alone doesn't retroactively recover them.
+3. **Release note**: per the reviewer, `@claude-flow/memory` being an unbundled leaf means this PR's merge alone does not ship the fix to consumers — it needs a standalone `@claude-flow/memory` publish plus a CLI pin bump in a subsequent release, handled by the integrator.
+
+Full suite re-verified post-hardening: 559/560 (1 pre-existing unrelated failure, unchanged), `tsc --noEmit` clean.
+
 ## Darwin Results
 
 Skipped: this is a correctness/persistence fix (quantizer state either round-trips or it doesn't) — not a continuous parameter with a fitness gradient. Same skip class as prior binary-correctness-fix nights (#3110, #3160, #3184, #3221, #3243, #3266, #3302, #3330, #3378, #3385, #3395).
@@ -59,7 +69,7 @@ Skipped: this is a correctness/persistence fix (quantizer state either round-tri
 | Field | Value |
 |---|---|
 | Session commit | `52d7a9d247c210a725e25bac9af2559ecc79a697` |
-| Candidate commit | `7eb7ceba8c9327023d448d01fefac2f2eca7f247` |
+| Candidate commit | `21adc01ad1c136c6e34abd5fe0a0ad8c0f382c4a` (post-rebase + ruvnet-review fixes; original pre-rebase commit was `7eb7ceba8c9327023d448d01fefac2f2eca7f247`) |
 | Gist SHA-256 | `b9969030fa3927b5e979aee6201eb4b9a251bc6e44a9d88dcc5f996eeb8c368a` |
 | Witness stamp | `98d206b036e3d7d4e8e27c469288792085f3e1b402a24811a040fe45767d3507` |
 
