@@ -615,7 +615,9 @@ export function generateHookHandler(): string {
     'function spawnFunnelRefresh() {',
     '  try {',
     "    var cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';",
-    "    var args = ['--prefer-offline', '@claude-flow/cli', 'hooks', 'refresh-funnel', '--quiet'];",
+    // --prefix: resolve the package from this helper's install root, never
+    // from the cwd (the opened project); the CLI still runs in the project.
+    "    var args = ['--prefer-offline', '--prefix', path.resolve(helpersDir, '..', '..'), '@claude-flow/cli', 'hooks', 'refresh-funnel', '--quiet'];",
     '    var child = spawn(cmd, args, {',
     "      detached: true, stdio: 'ignore', env: Object.assign({}, process.env),",
     '    });',
@@ -1637,6 +1639,9 @@ function resolveCommandPath(command, env = process.env, platform = process.platf
     ? (envValue(env, 'PATHEXT') || '.COM;.EXE;.BAT;.CMD').split(';')
     : [''];
   for (const dir of dirs) {
+    // A relative or empty PATH entry resolves against the cwd, i.e. the
+    // opened project; never resolve the CLI from there.
+    if (!hasSeparator && !(platform === 'win32' ? path.win32 : path.posix).isAbsolute(dir)) continue;
     for (const ext of extensions) {
       const base = path.resolve(dir || '.', command);
       const candidates = ext
@@ -1789,7 +1794,9 @@ function main() {
   // exists but cannot be resolved to an entrypoint still runs, via layer 2.
   if (resolveCommandPath('ruflo')) { invokeHook('ruflo', [], hookArgs, stdinData); done(); }
   if (resolveCommandPath('claude-flow')) { invokeHook('claude-flow', [], hookArgs, stdinData); done(); }
-  invokeHook('npx', ['--prefer-offline', '--yes', 'ruflo@latest'], hookArgs, stdinData);
+  // --prefix: npx resolves ruflo from this helper's install root, never from
+  // the cwd (the opened project); the CLI still runs in the project.
+  invokeHook('npx', ['--prefer-offline', '--yes', '--prefix', path.resolve(__dirname, '..', '..'), 'ruflo@latest'], hookArgs, stdinData);
   done();
 }
 
