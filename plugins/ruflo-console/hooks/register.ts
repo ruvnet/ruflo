@@ -8,6 +8,7 @@ import { record } from './data/events'
 import { plain } from './data/parse'
 import { dispatch } from './dispatch'
 import { markPicture } from './gfx/pictures'
+import { toChatMsgs } from './chat-msg'
 import type { Host } from './host'
 import { ownerLine, ownerOf } from './tool-owner'
 import { newState, PANE_ID, restore, restoreSessions, storeKeyOf, termStoreKeyOf } from './state'
@@ -39,7 +40,7 @@ const RUFLO_TOOL = /^mcp__(claude-flow|ruflo|plugin_ruflo[\w-]*)__/
 /** True while the console itself scrolls the pane to its top, so the terminal's own wheel handling does not take that for the person's wheel. */
 let isResettingScroll = false
 
-function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPrefs; record: (digest: Digest) => void }): Host {
+export function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPrefs; record: (digest: Digest) => void }): Host {
   const rooted = (path: string) => (path.startsWith('/') ? path : `${cwd.replace(/\/+$/, '')}/${path}`)
   const quietly = (fn: () => unknown) => {
     try {
@@ -103,6 +104,7 @@ function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPre
 
       return { ...(usage.cost?.usd !== undefined && { costUsd: usage.cost.usd }), ...(usage.context?.percent !== undefined && { contextPercent: usage.context.percent }) }
     },
+    session: { messages: async () => toChatMsgs(await $.session.messages()), id: async () => $.session.id() },
     rufloTools: async () => {
       const names = (await $.tool.list()).flatMap(tool => RUFLO_TOOL.exec(tool.name)?.slice(1, 2) ?? [])
 

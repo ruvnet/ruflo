@@ -1,6 +1,7 @@
 import type { CommandSpec, HookStream, PaneOpenArgs, ProcessRunResult, ProcessSpawnChunk, ProcessSpawnResult, Timer, UiBlitArgs } from 'claude-code'
 
 import type { ReaderFs } from './data/files'
+import type { ChatMsg } from './chat-msg'
 import type { ToastLevel } from './toast-policy'
 import type { RufloRoute, RufloSnapshot } from '../types'
 
@@ -39,6 +40,8 @@ export type Host = {
   /** Starts a command and streams what it writes; `input` goes to its stdin, which is then closed. */
   spawn: (argv: readonly string[], input?: string) => HookStream<ProcessSpawnChunk, ProcessSpawnResult>
   usage: () => Promise<{ costUsd?: number; contextPercent?: number }>
+  /** The live conversation of the main session (never a subagent's): the newest turns as ChatMsg (tool names only, no tool results), and the session id. */
+  session: { messages: () => Promise<ChatMsg[]>; id: () => Promise<string> }
   /** The ruflo / claude-flow MCP tools the model can call now, and the servers they come from. */
   rufloTools: () => Promise<{ tools: number; servers: string[] }>
   settings: () => Promise<unknown>
