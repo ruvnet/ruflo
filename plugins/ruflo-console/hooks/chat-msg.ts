@@ -8,5 +8,5 @@ export type ChatMsg = { role: 'user' | 'assistant'; text: string; tools: string[
 
 /** Maps engine rows to ChatMsg: role and text kept, `toolUses` reduced to names, `toolResults` and every other field dropped. */
 export function toChatMsgs(rows: readonly SessionMessage[]): ChatMsg[] {
-  return rows.map(row => ({ role: row.role, text: row.text, tools: row.toolUses.map(use => use.tool) }))
+  return rows.map(row => ({ role: row.role, text: row.text, tools: (row.toolUses ?? []).map(use => use.tool) }))
 }

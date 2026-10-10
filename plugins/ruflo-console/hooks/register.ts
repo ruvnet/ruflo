@@ -9,6 +9,7 @@ import { plain } from './data/parse'
 import { dispatch } from './dispatch'
 import { markPicture } from './gfx/pictures'
 import { toChatMsgs } from './chat-msg'
+import { appendPartial, chatStep, endChatTurn, startChatTurn } from './chat'
 import type { Host } from './host'
 import { ownerLine, ownerOf } from './tool-owner'
 import { newState, PANE_ID, restore, restoreSessions, storeKeyOf, termStoreKeyOf } from './state'
@@ -403,6 +404,13 @@ export const register: Register = (on, raw: PluginOptions) => {
     // A new turn: the per-turn cap on Claude's console actions starts over.
     state.control.turnCalls = 0
     if (e.agentId === undefined) state.turnStartedMs = Date.now()
+    if (e.agentId === undefined) {
+      try {
+        startChatTurn(state)
+      } catch {
+        // The chat mirror never changes the turn.
+      }
+    }
 
     try {
       $.ui.invalidate('ui.render')
@@ -428,9 +436,16 @@ export const register: Register = (on, raw: PluginOptions) => {
       } catch {
         // A note that could not be recorded never changes the turn.
       }
+      // The chat mirror re-reads the settled turns, then drops the streamed text; never awaited, never thrown out of the turn.
+      void endChatTurn(host, state).catch(() => undefined)
     }
 
     return next(e)
+  })
+
+  // The chat mirror watches the main answer stream in (text chunks only); every chunk passes on unchanged, and so does the result.
+  on('turn.step', async function* ($, e, next) {
+    return yield* chatStep(e, next, text => appendPartial(state, text))
   })
 
   // The mission Claude is working on rides in the system prompt (ADR-443); the text changes only when the task does.
