@@ -31,13 +31,17 @@ export type Intent =
   | { kind: 'timeline'; args: string[] }
   | { kind: 'unknown'; word: string }
 
+/** Every first word parseRuflo's switch answers itself. */
+export const VERBS = ['open', 'help', '?', 'close', 'status', 'mods', 'swarm', 'palette', 'p', 'ask', 'plan', 'mission', 'run', 'act', 'yes', 'y', 'no', 'n', 'agent', 'back', 'next', 'j', 'prev', 'k', 'band', 'notices', 'quiet', 'autopilot', 'commands', 'catalog', 'dump', 'text', 'events', 'timeline', 'filter'] as const
+
 export function parseRuflo(args: string): Intent {
   const words = args.trim().split(/\s+/).filter(Boolean)
   const [head = '', second = ''] = words.map(word => word.toLowerCase())
   const rest = args.trim().slice(words[0]?.length ?? 0).trim()
 
-  // A page's full name first ("learning lab" is the Neural Lab, "learning" is Learning): before the verbs, which read only the first word.
-  const named = words.length > 1 ? viewOf(words.join(' ')) : null
+  // A page's full name ("learning lab" is the Neural Lab, "learning" is Learning), but only where the first word is not a verb of this command:
+  // `swarm topology` and `agent timeline` are the verbs' own arguments (tests/commands-verbs.spec.ts keeps VERBS equal to the cases below).
+  const named = words.length > 1 && !(VERBS as readonly string[]).includes(head) ? viewOf(words.join(' ')) : null
 
   if (named !== null) return { kind: 'open', view: named }
 
