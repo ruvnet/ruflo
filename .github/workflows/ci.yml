@@ -108,6 +108,21 @@ jobs:
           rm -rf node_modules/@claude-flow/cli-core/dist
           cp -r v3/@claude-flow/cli-core/dist node_modules/@claude-flow/cli-core/dist
 
+      - name: Build local @claude-flow/neural
+        # dream-cycle 2026-10-07: v3/@claude-flow/neural/__tests__/ewc-penalty-dead-path.test.ts
+        # imports mode classes (BalancedMode/ResearchMode/BatchMode) from
+        # this package's own dist/modes/*.js, by relative path within the
+        # package itself (no node_modules resolution involved, so unlike
+        # @claude-flow/cli-core above this needs no overlay/copy step) —
+        # a pre-existing vitest/vite-node SSR-transform crash
+        # ("Class extends value undefined") when importing modes/*.ts
+        # directly means the test can't just import src/ instead. dist/
+        # is gitignored and nothing else in this job builds it, so without
+        # this step the test fails CI with "Cannot find module
+        # '../dist/modes/balanced.js'" while passing locally for anyone
+        # who happened to build it already.
+        run: npm run build --prefix v3/@claude-flow/neural
+
       - name: Run all tests
         # #3030: the historical suite has known debt, but new failing files
         # are release-blocking. The committed file-level baseline may only

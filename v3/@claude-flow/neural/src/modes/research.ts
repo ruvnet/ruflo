@@ -39,6 +39,16 @@ export class ResearchMode extends BaseModeImplementation {
   private adamV: Map<string, Float32Array> = new Map();
   private adamStep = 0;
 
+  // Dream Cycle 2026-10-07: observability for computeEWCLoss()'s per-key
+  // lookup against this.adamM (keyed 'step_<i>', state-embedding-space)
+  // vs ewcState.fisher/means (keyed by the LoRA-weight-space scheme a
+  // pending consolidateEWC() wiring fix would use). The two key spaces
+  // never intersect today, so this is expected to stay at hits=0 — see
+  // ewc-penalty-dead-path test. Exposed via getStats() instead of being
+  // a silent always-zero no-op.
+  private ewcPenaltyLookupHits = 0;
+  private ewcPenaltyLookupMisses = 0;
+
   // Stats
   private totalPatternMatches = 0;
   private totalPatternTime = 0;
@@ -242,6 +252,8 @@ export class ResearchMode extends BaseModeImplementation {
       checkpointCount: this.checkpoints.length,
       adamStep: this.adamStep,
       learnIterations: this.learnIterations,
+      ewcPenaltyLookupHits: this.ewcPenaltyLookupHits,
+      ewcPenaltyLookupMisses: this.ewcPenaltyLookupMisses,
     };
   }
 
@@ -474,10 +486,13 @@ export class ResearchMode extends BaseModeImplementation {
       const current = this.adamM.get(key);
 
       if (means && current) {
+        this.ewcPenaltyLookupHits++;
         for (let i = 0; i < Math.min(fisher.length, means.length, current.length); i++) {
           const diff = current[i] - means[i];
           loss += fisher[i] * diff * diff;
         }
+      } else {
+        this.ewcPenaltyLookupMisses++;
       }
     }
 
