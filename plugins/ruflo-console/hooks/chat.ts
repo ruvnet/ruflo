@@ -9,7 +9,10 @@
  */
 import type { HookStream, TurnStepChunk, TurnStepInput, TurnStepResult } from 'claude-code'
 import type { ChatMsg } from './chat-msg'
+import { checkLimit, LONG_TEXT_MAX } from './full-text'
 import type { Host } from './host'
+import { mcOf } from './mission-control'
+import { blocksGuidance, screenText } from './mission-options'
 import type { State } from './state'
 
 /** How many settled messages the store keeps (the newest). */
@@ -107,4 +110,66 @@ export async function* chatStep(e: StepEvent, next: StepNext, observe: (text: st
   }
 
   return await stream.result
+}
+
+/** What the person sees when a send did not go. Fixed text: a refusal or an engine error could quote the message, so neither is shown. */
+const NOT_SENT = {
+  unsafe: 'not sent: AIDefence flagged the message as unsafe',
+  pii: 'not sent: AIDefence found personal or secret data in the message',
+  long: 'not sent: the message is too long to be screened whole; shorten it',
+  rejected: 'not sent: Claude did not take the message',
+} as const
+
+/**
+ * Types to Claude from the console: the message goes in directly, as a normal user turn (`submitPrompt`), never drafted into the prompt box.
+ *
+ * - The message is trimmed (that is all that is done to it); an empty one is ignored.
+ * - While `pending` is not `idle` another Enter is ignored: `pending` is set before anything is awaited, so a repeated Enter during the
+ *   screen or the submit adds nothing. Mid-turn it reads `queued` (the engine runs a submit made during a turn as a turn of its own once the
+ *   session is idle) and the submit is still made, once.
+ * - It is screened by the same AIDefence screen as a typed question to Claude (`screenText`, unless the person switched the screen off): a
+ *   secret-shaped or unsafe message is refused and nothing is submitted. A message over the screen's limit could not be screened whole, so it
+ *   is refused too.
+ * - `pending` returns to `idle` when the submit settles. That is the one signal tied to this very message, it is the same for success and
+ *   failure, and it needs no hook of its own. A rejection leaves a fixed `error` (never the message, never the engine's reason).
+ * - The text is kept nowhere: not in the store, an event, the last outcome or an error. Never throws.
+ */
+export async function sendChat(host: Host, state: State, text: string): Promise<void> {
+  const chat = chatOf(state)
+  const message = typeof text === 'string' ? text.trim() : ''
+
+  if (message === '' || chat.pending !== 'idle') return
+
+  const redraw = () => {
+    try {
+      host.invalidate()
+    } catch {
+      // A refused redraw changes nothing about the send.
+    }
+  }
+  const refuse = (why: string) => {
+    chat.pending = 'idle'
+    chat.error = why
+    redraw()
+  }
+
+  chat.pending = state.turnActive ? 'queued' : 'sending'
+  delete chat.error
+  redraw()
+
+  try {
+    if (!checkLimit(message, LONG_TEXT_MAX, 'the message').ok) return refuse(NOT_SENT.long)
+
+    if (mcOf(state).isScreenOn) {
+      const screen = await screenText(state, host, message)
+
+      if (blocksGuidance(screen)) return refuse(screen.status === 'pii' ? NOT_SENT.pii : NOT_SENT.unsafe)
+    }
+
+    await host.submitPrompt(message)
+    chat.pending = 'idle'
+    redraw()
+  } catch {
+    refuse(NOT_SENT.rejected)
+  }
 }
