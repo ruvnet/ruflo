@@ -21,6 +21,9 @@ import { prettyLines } from './result-lines'
 
 export const PENDING_TTL_MS = 30_000
 
+/** How long a start that ran ok but is not yet on disk waits before its one re-check. */
+const VERIFY_RETRY_MS = 1_000
+
 export type RunnerDeps = {
   /** A read of the disk that starts after this call. */
   freshRead: () => Promise<void>
@@ -143,9 +146,15 @@ export function createRunner(state: State, host: Host, deps: RunnerDeps): Runner
 
       await deps.freshRead()
 
-      const verified = spec.verifyLocal !== undefined
-        ? ok && await spec.verifyLocal(host) ? 'yes' : 'no'
-        : spec.verify === undefined || state.snapshot === null ? 'n/a' : spec.verify(state.snapshot) ? 'yes' : 'no'
+      const verifiedOnce = () => (spec.verify === undefined || state.snapshot === null ? 'n/a' : spec.verify(state.snapshot) ? 'yes' : 'no')
+      let verified = spec.verifyLocal !== undefined ? (ok && (await spec.verifyLocal(host)) ? 'yes' : 'no') : verifiedOnce()
+
+      // The CLI can return before its state file lands: when the run succeeded but the file is not there yet, look once more a second later.
+      if (verified === 'no' && ok && spec.verifyLocal === undefined) {
+        await new Promise<void>(resolve => void host.after(VERIFY_RETRY_MS, resolve))
+        await deps.freshRead()
+        verified = verifiedOnce()
+      }
 
       state.outcome = {
         label: spec.label,
