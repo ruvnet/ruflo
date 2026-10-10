@@ -64,3 +64,18 @@ export function below(root: string, path: string): string[] | null {
 
   return r !== '' && path.startsWith(`${r}/`) ? path.slice(r.length + 1).split('/') : null
 }
+
+/** The user's home directory: HOME (preferred), else USERPROFILE, else HOMEDRIVE+HOMEPATH, else null. Empty values are treated as unset. */
+export function homeOf(get: (k: string) => string | undefined): string | null {
+  const home = get('HOME')
+  if (home) return home
+
+  const userProfile = get('USERPROFILE')
+  if (userProfile) return userProfile
+
+  const drive = get('HOMEDRIVE')
+  const path = get('HOMEPATH')
+  if (drive && path) return drive + path
+
+  return null
+}

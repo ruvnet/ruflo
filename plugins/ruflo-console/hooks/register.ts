@@ -6,7 +6,7 @@ import { createController, type Controller } from './controller'
 import { startSessions } from './sessions'
 import { record } from './data/events'
 import { plain } from './data/parse'
-import { isAbsolutePath, joinPath } from './data/paths'
+import { homeOf, isAbsolutePath, joinPath } from './data/paths'
 import { dispatch } from './dispatch'
 import { markPicture } from './gfx/pictures'
 import type { Host } from './host'
@@ -110,7 +110,13 @@ function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPre
       return { tools: names.length, servers: [...new Set(names)].sort() }
     },
     settings: async () => $.settings.read(),
-    home: async () => $.env.get('HOME'),
+    home: async () => {
+      const envVars: { [key: string]: string | undefined } = {}
+      for (const key of ['HOME', 'USERPROFILE', 'HOMEDRIVE', 'HOMEPATH']) {
+        envVars[key] = await $.env.get(key)
+      }
+      return homeOf(k => envVars[k])
+    },
     configDir: async () => $.env.get('CLAUDE_CONFIG_DIR'),
     pluginRoot: $.plugin.root,
     // `$.ruflo` exists only where ruflo-mods is seated; validate refuses feature-detecting a noun, so these are
