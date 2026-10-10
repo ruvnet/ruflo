@@ -1,5 +1,6 @@
 import type { RenderElement } from 'claude-code'
 
+import { keyLabel } from '../state'
 import { ago, button, col, kv, row, rule, text, THEME, type Ctx } from './common'
 
 /**
@@ -14,7 +15,7 @@ export function agentView(ctx: Ctx): RenderElement {
   const rows: RenderElement[] = [rule(ctx, 'Agent', id ?? '')]
 
   if (agent === null) {
-    rows.push(text(ctx, id === null ? 'No agent picked: choose one on Swarm (2) with j/k and press d.' : `Agent ${id} is no longer in .claude-flow/agents/store.json.`, { dimColor: true }))
+    rows.push(text(ctx, id === null ? `No agent picked: choose one on ${keyLabel('swarm')} with j/k and press d.` : `Agent ${id} is no longer in .claude-flow/agents/store.json.`, { dimColor: true }))
     rows.push(row(ctx, [button(ctx, 'back', 'Back', ctx.act.back, { hotkey: 'b' })]))
 
     return col(ctx, rows, 'agent')
@@ -30,7 +31,7 @@ export function agentView(ctx: Ctx): RenderElement {
   rows.push(kv(ctx, 'created', agent.createdAtMs === undefined ? 'n/a' : ago(agent.createdAtMs, nowMs)))
   rows.push(kv(ctx, 'current task', tasks.length === 0 ? 'none assigned in tasks/store.json' : tasks.map(task => `${task.id} (${task.status}) ${task.description}`).join(' · ')))
   rows.push(kv(ctx, 'claims', claims.length === 0 ? 'none' : claims.map(claim => `${claim.issueId} ${claim.status}${claim.handoffTo === agent.id ? ' (handoff to it)' : ''}`).join(' · ')))
-  rows.push(kv(ctx, 'tokens / cost', "n/a — ruflo records no per-agent usage; Claude Code's spend is on Cost (9)"))
+  rows.push(kv(ctx, 'tokens / cost', `n/a — ruflo records no per-agent usage; Claude Code's spend is on ${keyLabel('cost')}`))
 
   rows.push(rule(ctx, 'Timeline', 'status changes seen since the console loaded'))
   rows.push(text(ctx, log.length === 0 ? 'no change seen yet' : log.slice(-6).map(entry => `${ago(entry.atMs, nowMs)} ${entry.status}`).join('  →  '), { dimColor: log.length === 0 }))

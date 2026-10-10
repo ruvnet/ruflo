@@ -4,7 +4,7 @@
  * guesses: an agent is "stalled" only when ruflo marks it busy and the console has seen nothing of it for a while.
  */
 import { getBootChecks } from '../boot-checks'
-import type { State } from '../state'
+import { keyLabel, type State } from '../state'
 import type { ClaimRecord } from './parse'
 import { RUFLO_MARKET } from './snapshot'
 
@@ -63,7 +63,7 @@ export function alertsOf(state: State, nowMs: number, loadedAtMs: number): Alert
   const budget = state.ruflo.snapshot?.budget
 
   if (budget !== undefined && budget.level !== 'OK') {
-    out.push({ id: 'budget', level: budget.level === 'INFO' ? 'info' : budget.level === 'WARNING' ? 'warn' : 'bad', text: `budget ${budget.level}: $${(budget.usd ?? state.usage?.costUsd ?? 0).toFixed(2)} of $${budget.limit.toFixed(2)}`, fix: 'see Cost (9); raise costBudgetUsd in /config ruflo-mods' })
+    out.push({ id: 'budget', level: budget.level === 'INFO' ? 'info' : budget.level === 'WARNING' ? 'warn' : 'bad', text: `budget ${budget.level}: $${(budget.usd ?? state.usage?.costUsd ?? 0).toFixed(2)} of $${budget.limit.toFixed(2)}`, fix: `see ${keyLabel('cost')}; raise costBudgetUsd in /config ruflo-mods` })
   }
 
   if (snap.plugins.missingFromClone.length > 0) {

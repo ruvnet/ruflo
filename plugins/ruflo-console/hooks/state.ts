@@ -76,6 +76,15 @@ export const VIEWS: readonly { id: ViewId; key: string; label: string; short: st
   { id: 'settings', key: 's', label: 'Settings', short: 'Set', icon: '⚙️', blurb: 'simple to advanced settings: plugin options, ruflo config, updates, and the AI terminal’s model and budget, each edited in place', rows: 50 },
 ]
 
+/** A page named with its key, "Cost (c)", for a hint; a page with no key is named by its label alone. The one table every such hint reads. */
+export const keyLabel = (id: ViewId): string => {
+  const view = VIEWS.find(entry => entry.id === id)
+
+  if (view === undefined) return id
+
+  return view.key === '' ? view.label : `${view.label} (${view.key})`
+}
+
 export const AGENT_VIEW = { id: 'agent' as const, rows: 28 }
 
 export const rowsOf = (view: ViewId): number => (view === 'agent' ? AGENT_VIEW.rows : (VIEWS.find(entry => entry.id === view)?.rows ?? 24))

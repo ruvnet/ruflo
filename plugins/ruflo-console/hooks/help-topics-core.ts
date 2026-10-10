@@ -75,7 +75,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
       { text: '0 main menu · 1 missions · 2 overview · 3 swarm · 4 claims · 5 federation · 6 plugins · 7 learning · 8 metaharness · 9 memory.' },
       { text: 'Letters reach the rest: b hive · c cost · g timeline · q approvals · e events · w x.ruv.io · i terminal · z skills · u security · f performance · a automation · l learning lab · v vector lab · t self-evolution · d dev tools · m plugin catalog · s settings.' },
       { text: 'p palette · x actions for the selection · r refresh and replay the intro · h help · y / n confirm or cancel.' },
-      { text: 'j / k move the selection · d drill into an agent · b back · f filters the events page.' },
+      { text: 'j / k move the selection · d drill into an agent · b goes back from the agent page (there is no global back key: use the ◂ Back button in the breadcrumb) · f filters the events page.' },
       { text: 'On the main menu, type a key or a name in the prompt and press Enter. o logs off. Sandbox has no key: type sandbox, or find it under NETWORK in the nav.' },
     ],
     tips: ['In a text field, your keys type into the field.'],
