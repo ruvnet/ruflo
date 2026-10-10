@@ -5,7 +5,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'security',
     title: 'Scan for security problems',
-    group: 'Safety',
+    group: 'SAFETY',
     summary: 'find weak spots, check text for injection and PII, and watch on a schedule',
     steps: [
       { text: 'Run a quick scan of the code. It is local and read-only.', go: { run: 'sec-scan-quick' } },
@@ -22,7 +22,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'cost',
     title: 'Set a budget and watch spend',
-    group: 'Safety',
+    group: 'SAFETY',
     summary: 'know what a session costs, and cap it',
     steps: [
       { text: 'Open Cost (key c) to see where spend is reported and its burn rate.', go: { view: 'cost' } },
@@ -37,7 +37,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'research',
     title: 'Research a question, capped',
-    group: 'Safety',
+    group: 'SWARM',
     summary: 'start a web research run with a depth and a dollar cap, after a confirm',
     steps: [
       { text: 'Open Missions. Type the question, choose quick, standard or deep, and set the cap in dollars (default $2, from 0.10 to 50).', go: { view: 'missions' }, label: 'Open Missions' },
@@ -51,7 +51,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'control',
     title: 'Let Claude drive the console',
-    group: 'Work',
+    group: 'Console',
     summary: 'Claude opens pages, fills fields and runs actions for you, as far as you allow',
     steps: [
       { text: 'Choose how far in Settings → Claude control: read (look and open pages), write (also fill fields and run local actions), manage (also network), full (also spend, deploy, delete). It is off until you turn it on.', go: { view: 'settings' }, label: 'Open Settings' },
@@ -69,7 +69,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'agentdb-mod',
     title: 'Memory in every prompt, without secrets',
-    group: 'Learn',
+    group: 'MIND',
     summary: 'the AgentDB mod: safe recall into prompts and a guard that keeps secrets out of memory',
     steps: [
       { text: 'Install the ruflo-agentdb plugin (0.4 or newer), then start a new Claude Code session. Open Memory (key 9): the AgentDB mod section shows what it is set to and what it has done.', go: { view: 'memory' }, label: 'Open Memory' },
@@ -84,11 +84,11 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   },
   {
     id: 'room',
-    title: 'The Room: what everyone is doing, and the one thing waiting for you',
-    group: 'Work',
+    title: 'Room: what everyone is doing, and the one thing waiting for you',
+    group: 'SAFETY',
     summary: 'one live feed of events, Claude’s console actions and what you said',
     steps: [
-      { text: 'Open The Room from the menu (Safety → The Room). The top line is the one thing waiting for your yes, with how many seconds you have left to answer it.', go: { view: 'room' }, label: 'Open The Room' },
+      { text: 'Open Room from the menu (SAFETY → Room). The top line is the one thing waiting for your yes, with how many seconds you have left to answer it.', go: { view: 'room' }, label: 'Open the Room page' },
       { text: 'The feed below merges what changed in ruflo, what Claude did through the console tools (with its outcome), and what you sent. Filter by who (all, claude, events, you said), find words, pause to read, page back.' },
       { text: 'Press ⛔ blocked to see only what was refused or failed: Claude’s denied or failed actions and events that say denied. Press a line to open it; an event from a page of its own (swarm, claims, learning, plugins, missions) gets a jump button.' },
       { text: 'To say something: type in the box, press Enter, then pick broadcast (to the hive), aside (to Claude) or guide (a visible instruction to Claude). Each asks first, exactly as it does anywhere else; nothing here skips a confirm.' },
@@ -102,7 +102,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'perf',
     title: 'Find and fix slowness',
-    group: 'Safety',
+    group: 'SAFETY',
     summary: 'metrics, a profile, and the biggest bottleneck',
     steps: [
       { text: 'Read the current metrics.', go: { run: 'perf-metrics' } },
@@ -115,7 +115,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'federation',
     title: 'Join the federation',
-    group: 'Network',
+    group: 'NETWORK',
     summary: 'connect your ruflo to others, with your own key',
     steps: [
       { text: 'Join. It makes your own key at ~/.ruflo/nostr.key (readable only by you) and registers on x.ruv.io. It uses the network, so it asks first. With an invite code: npx ruflo federation join --code <code>.', go: { start: 'federation-join' } },
@@ -130,7 +130,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'xruv',
     title: 'Use the x.ruv.io board',
-    group: 'Network',
+    group: 'NETWORK',
     summary: 'the open agent swarm: who is on, what they offer, shared channels',
     steps: [
       { text: 'Open x.ruv.io (key w).', go: { view: 'xruv' } },
@@ -144,7 +144,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'plugins',
     title: 'Get and manage plugins',
-    group: 'Tools',
+    group: 'TOOLS',
     summary: 'the ruflo plugins add skills, agents and commands to Claude Code',
     steps: [
       { text: 'Add the ruflo marketplace so Claude Code can install its plugins. It asks first.', go: { start: 'marketplace' } },
@@ -159,7 +159,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'skills',
     title: 'Skills',
-    group: 'Tools',
+    group: 'NETWORK',
     summary: 'small how-to packs that teach agents a job',
     steps: [
       { text: 'Open Skills (key z). See what is installed.', go: { view: 'skills' } },
@@ -173,7 +173,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'devtools',
     title: 'Dev Tools',
-    group: 'Tools',
+    group: 'TOOLS',
     summary: 'the tools around the code: GitHub, diffs, WASM, the browser',
     steps: [
       { text: 'Open Dev Tools (key d). Each section has its own field and rows.', go: { view: 'devtools' } },
@@ -188,7 +188,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'sandbox',
     title: 'Sandboxes: tmux, RVF and RVM',
-    group: 'Network',
+    group: 'NETWORK',
     summary: 'isolated places to try things, and what each really isolates',
     steps: [
       { text: 'Open Sandbox (NETWORK in the nav, or type sandbox at the menu). It has no key.', go: { view: 'sandbox' } },
@@ -204,7 +204,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'settings',
     title: 'Settings',
-    group: 'Console',
+    group: 'TOOLS',
     summary: 'change how the console looks and behaves, in place',
     steps: [
       { text: 'Open Settings (key s). Each row is edited right there.', go: { view: 'settings' } },
@@ -235,7 +235,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'adrs',
     title: 'Your project’s ADRs',
-    group: 'Console',
+    group: 'TOOLS',
     summary: 'find, propose and change the decisions your project wrote down',
     steps: [
       { text: 'Open ADRs (TOOLS group, or /ruflo adrs). The console finds your project’s ADR folder (docs/adr, docs/adrs, doc/adr, adr, docs/architecture/decisions, docs/decisions ...) or the one named in Settings.', go: { view: 'adrs' } },
@@ -249,7 +249,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'whatsnew',
     title: 'What’s new in your plugins',
-    group: 'Console',
+    group: 'TOOLS',
     summary: 'the changes in each installed ruflo plugin, newest first',
     steps: [
       { text: 'Open What’s new (TOOLS group, or /ruflo whatsnew). Each plugin’s own CHANGELOG.md is read from disk; nothing is fetched.', go: { view: 'whatsnew' } },

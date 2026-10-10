@@ -3,6 +3,7 @@
  * and the pictures computed for this frame. They call nothing on the engine; buttons call the closures in `ctx.act`.
  * Text colours are theme names only, so nothing fades on a light background.
  */
+import { originOf } from '../history'
 import type { AskActions } from '../ask-claude'
 import type { OptimizerActions } from '../optimizer'
 import { askedBy } from '../data/room'
@@ -46,8 +47,8 @@ export type Kit = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'> & { Rast
 export type Actions = {
   view: (id: ViewId) => void
   refresh: () => void
-  /** Refresh and replay the intro boot screen: the footer button and the r key. */
-  restart: () => void
+  /** Settings -> Replay boot: plays the intro again (and re-reads). Refresh is `refresh`, which never hides the page. */
+  replayBoot: () => void
   help: () => void
   close: () => void
   back: () => void
@@ -265,7 +266,7 @@ export function col(ctx: Ctx, parts: readonly RenderChildren[], key?: string): R
 
 /** The colour a BBS page's section headers wear: the accent of its nav group (the menu's colours), else the theme's. Plain look: the theme's. */
 function accentOf(ctx: Ctx): string {
-  return look === 'bbs' ? (accentOfView(ctx.state.view === 'agent' ? ctx.state.back : ctx.state.view) ?? THEME.info) : THEME.info
+  return look === 'bbs' ? (accentOfView(ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view) ?? THEME.info) : THEME.info
 }
 
 /**
@@ -444,6 +445,27 @@ export function confirmRow(ctx: Ctx): RenderElement | null {
       }),
     ],
   })
+}
+
+/**
+ * While an ask is pending, y and n belong to its Yes and Cancel buttons. The engine gives a hotkey to the later of two buttons that share it, and
+ * the card is drawn above the page, so a page's own y or n (Timeline's n = "later") would take the key from the question. The page keeps its button
+ * and its click, and everything else about it (key, label, focus order, layout); only the hotkey is dropped, and only while the ask shows.
+ */
+export function withoutAnswerKeys(kit: Ctx['kit']): Ctx['kit'] {
+  const Button: Ctx['kit']['Button'] = props => {
+    const { hotkey, key } = props as { hotkey?: string; key?: string }
+
+    if ((hotkey === 'y' || hotkey === 'n') && key !== 'confirm' && key !== 'cancel') {
+      const { hotkey: _dropped, ...rest } = props as Record<string, unknown>
+
+      return kit.Button(rest as never)
+    }
+
+    return kit.Button(props)
+  }
+
+  return { ...kit, Button }
 }
 
 /** Views that draw the confirm themselves, under the field it came from (the pane then does not draw it above the body). */

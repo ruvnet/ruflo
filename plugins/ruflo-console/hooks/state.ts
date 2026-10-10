@@ -53,7 +53,7 @@ export const VIEWS: readonly { id: ViewId; key: string; label: string; short: st
   { id: 'plugins', key: '6', label: 'Plugins', short: 'Plg', icon: '🧩', blurb: 'ruflo plugins: installed, enabled, in the marketplace clone, and loaded as mods', rows: 30 },
   { id: 'learning', key: '7', label: 'Learning', short: 'Lrn', icon: '🧠', blurb: 'router picks and outcomes, and the RETRIEVE → JUDGE → DISTILL → CONSOLIDATE pipeline', rows: 30 },
   { id: 'metaharness', key: '8', label: 'MetaHarness', short: 'MH', icon: '🔬', blurb: 'harness readiness, the flywheel, the audit trend, and a lab that runs every MetaHarness verb', rows: 40 },
-  { id: 'memory', key: '9', label: 'Memory', short: 'Mem', icon: '💾', blurb: 'the Memory Lab: browse, search, store and delete entries; AgentDB, embeddings and upkeep, each a button', rows: 60 },
+  { id: 'memory', key: '9', label: 'Memory', short: 'Mem', icon: '💾', blurb: 'your memory: browse, search, store and delete entries; AgentDB, embeddings and upkeep, each a button', rows: 60 },
   { id: 'cost', key: 'c', label: 'Cost', short: 'Cst', icon: '💰', blurb: 'set a budget, see spend across Claude Code and Codex, and how to cut it', rows: 40 },
   { id: 'timeline', key: 'g', label: 'Timeline', short: 'Gnt', icon: '🕒', blurb: 'each agent busy or idle over the last minutes, beside Claude Code tool calls', rows: 24 },
   { id: 'approvals', key: 'q', label: 'Approvals', short: 'Apv', icon: '✅', blurb: 'decisions waiting for a person: votes, stealable claims, refused mods, budget', rows: 24 },
@@ -65,7 +65,7 @@ export const VIEWS: readonly { id: ViewId; key: string; label: string; short: st
   { id: 'secure', key: 'u', label: 'Security & Doctor', short: 'Sec', icon: '🔒',blurb: 'security scans, a paste field where AIDefence checks text for injection and PII, policy, sentries that scan on a schedule or on change, and every doctor check', rows: 40 },
   { id: 'perf', key: 'f', label: 'Performance', short: 'Prf', icon: '📈', blurb: 'metrics, profile, benchmarks, bottlenecks and a latency sparkline from each run', rows: 30 },
   { id: 'automate', key: 'a', label: 'Automation', short: 'Aut', icon: '🤖', blurb: 'workflows, the twelve background workers and their daemon, loops, autopilot, sessions, config and a task kanban', rows: 44 },
-  { id: 'neural', key: 'l', label: 'Learning Lab', short: 'Lab', icon: '🧪', blurb: 'train neural patterns and watch the loss, ask the router which agent fits a task, and why', rows: 36 },
+  { id: 'neural', key: 'l', label: 'Neural Lab', short: 'Nrl', icon: '🧪', blurb: 'train neural patterns and watch the loss, ask the router which agent fits a task, and why', rows: 36 },
   { id: 'vector', key: 'v', label: 'Vector Lab', short: 'Vec', icon: '🧲', blurb: 'ruvector: the shared brain, RVF stores, rvlite queries, decompile, workers, edge, hooks intel and your pi identity', rows: 44 },
   { id: 'evolve', key: 't', label: 'Self-Evolution', short: 'Evo', icon: '🧬', blurb: 'the governed loop: flywheel receipts, ledger, lineage, the policy gate, the witness; Autogenous and rGi', rows: 44 },
   { id: 'devtools', key: 'd', label: 'Dev Tools', short: 'Dev', icon: '🔧', blurb: 'the integration surface: GitHub, diff analysis, agenticow, WASM, browser, terminal, providers, maintenance', rows: 40 },
@@ -76,15 +76,102 @@ export const VIEWS: readonly { id: ViewId; key: string; label: string; short: st
   { id: 'settings', key: 's', label: 'Settings', short: 'Set', icon: '⚙️', blurb: 'simple to advanced settings: plugin options, ruflo config, updates, and the AI terminal’s model and budget, each edited in place', rows: 50 },
 ]
 
+/** A page named with its key, "Cost (c)", for a hint; a page with no key is named by its label alone. The one table every such hint reads. */
+export const keyLabel = (id: ViewId): string => {
+  const view = VIEWS.find(entry => entry.id === id)
+
+  if (view === undefined) return id
+
+  return view.key === '' ? view.label : `${view.label} (${view.key})`
+}
+
 export const AGENT_VIEW = { id: 'agent' as const, rows: 28 }
 
 export const rowsOf = (view: ViewId): number => (view === 'agent' ? AGENT_VIEW.rows : (VIEWS.find(entry => entry.id === view)?.rows ?? 24))
 
-/** A view by id, digit, label, or a prefix of three letters or more. */
-export const viewOf = (word: string): ViewId | null => {
-  const lower = word.trim().toLowerCase()
+/** Names a page used to go by (the menu's longer forms and the old Learning Lab): still understood when typed, never shown. */
+export const RETIRED_NAMES: Readonly<Record<string, ViewId>> = {
+  'learning lab': 'neural',
+  'memory lab': 'memory',
+  'claims board': 'claims',
+  'plugins & mods': 'plugins',
+  'plugins and mods': 'plugins',
+  'swarm topology': 'swarm',
+  'agent timeline': 'timeline',
+  'event stream': 'events',
+  'cost & budget': 'cost',
+  'cost and budget': 'cost',
+  'the room': 'room',
+  'ai terminal': 'terminal',
+  'x.ruv.io board': 'xruv',
+}
 
-  return VIEWS.find(view => view.id === lower || (view.key !== '' && view.key === lower) || view.label.toLowerCase() === lower || (lower.length >= 3 && view.id.startsWith(lower)))?.id ?? null
+const normalise = (word: string): string => word.trim().toLowerCase().replace(/\s+/g, ' ')
+
+/** The words of a name: "What’s new" is what, s, new; "Security & Doctor" is security, doctor. */
+const wordsOf = (name: string): string[] => name.toLowerCase().split(/[^a-z0-9]+/).filter(part => part !== '')
+
+/** Every name a page answers to besides its id and label: its retired names. */
+const aliasesOf = (id: ViewId): string[] => Object.entries(RETIRED_NAMES).filter(([, target]) => target === id).map(([name]) => name)
+
+/** Every word any name of a page has: its id, its label and its retired names. */
+const nameWordsOf = (view: (typeof VIEWS)[number]): string[] => [view.id, view.label, ...aliasesOf(view.id)].flatMap(wordsOf)
+
+/**
+ * The pages a typed name could mean, by the first of these rules that finds any (a lower rule never adds to a higher one):
+ *   1. exact: the id, the key (a single letter or digit is ONLY ever this, never a prefix) or the label, whole;
+ *   2. alias: a retired name, whole ("learning lab" is the Neural Lab);
+ *   3. id prefix, three letters or more ("plug" is Plugins);
+ *   4. label prefix ("security" is Security & Doctor);
+ *   5. all words: every typed word (two letters or more) starts some word of the id, the label or a retired name, in any order
+ *      ("catalog" is the Plugin Catalog, "learn lab" the Neural Lab).
+ * One page is the answer; two or more at the same rule is ambiguous: `viewMatches` returns them all and `viewOf` says null.
+ */
+export const viewMatches = (word: string): ViewId[] => {
+  const lower = normalise(word)
+
+  if (lower === '') return []
+
+  const exact = VIEWS.filter(view => view.id === lower || (view.key !== '' && view.key === lower) || view.label.toLowerCase() === lower)
+
+  if (exact.length > 0) return exact.map(view => view.id)
+
+  const alias = RETIRED_NAMES[lower]
+
+  if (alias !== undefined) return [alias]
+  if (lower.length < 3) return []
+
+  const byIdPrefix = VIEWS.filter(view => view.id.startsWith(lower))
+
+  if (byIdPrefix.length > 0) return byIdPrefix.map(view => view.id)
+
+  const byLabelPrefix = VIEWS.filter(view => view.label.toLowerCase().startsWith(lower))
+
+  if (byLabelPrefix.length > 0) return byLabelPrefix.map(view => view.id)
+
+  const typed = lower.split(' ')
+
+  if (typed.some(part => part.length < 2)) return []
+
+  return VIEWS.filter(view => {
+    const names = nameWordsOf(view)
+
+    return typed.every(part => names.some(name => name.startsWith(part)))
+  }).map(view => view.id)
+}
+
+/** A view by id, key, label, retired name, prefix or words (see {@link viewMatches}); null when nothing matches or the name is ambiguous. */
+export const viewOf = (word: string): ViewId | null => {
+  const found = viewMatches(word)
+
+  return found.length === 1 ? (found[0] ?? null) : null
+}
+
+/** The pages worth offering for a name that opened nothing: any page with a word that starts like, or contains (three letters or more), a typed word. */
+export const pagesLike = (word: string): ViewId[] => {
+  const typed = wordsOf(normalise(word)).filter(part => part.length >= 2)
+
+  return typed.length === 0 ? [] : VIEWS.filter(view => nameWordsOf(view).some(name => typed.some(part => name.startsWith(part) || (part.length >= 3 && name.includes(part))))).map(view => view.id)
 }
 
 /**
@@ -200,8 +287,8 @@ export type State = {
   /** When this module loaded: "since the console loaded" series and stall times count from here. */
   loadedAtMs: number
   view: ViewId
-  /** The view to go back to from the drill-down. */
-  back: ViewId
+  /** The pages left behind, oldest first (at most 20): what Back walks. The page a drill-down was opened from is the last entry. */
+  trail: Array<{ view: ViewId; agentId?: string }>
   isHelp: boolean
   /** ruHelp: the question typed, and the guide open (null: the index). */
   help: { query: string; topic: string | null }
@@ -341,7 +428,7 @@ export function newState(raw: PluginOptions | undefined): State {
     isInteractive: true,
     loadedAtMs: Date.now(),
     view: 'overview',
-    back: 'overview',
+    trail: [],
     isHelp: false,
     help: { query: '', topic: null },
     snapshot: null,

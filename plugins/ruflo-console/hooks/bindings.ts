@@ -2,6 +2,7 @@
  * The closures the pane's buttons and `/ruflo` subcommands call: view switches, selection, the claims buttons, the
  * palette. Each does its work through the runner or the controller functions it is handed; nothing here touches `$`.
  */
+import { originOf, popBack } from './history'
 import { MISSION_OBJECTIVE_MAX } from './full-text'
 import { textRefusal } from './ops'
 import { claimTask, handoffClaim, releaseClaim, stealClaim, whyNot } from './actions'
@@ -54,8 +55,8 @@ export type Steps = {
   freshRead: () => Promise<void>
   animate: () => void
   probe: (force?: boolean) => Promise<void>
-  setView: (view: State['view']) => void
-  drill: (agentId: string) => void
+  setView: (view: State['view'], opts?: { replace?: boolean }) => void
+  drill: (agentId: string, opts?: { replace?: boolean }) => void
   close: () => Promise<void>
 }
 
@@ -160,8 +161,9 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
       if (state.view === 'skills') actions.skills.list()
       if (state.view === 'evolve') actions.evolve.reread()
     },
-    restart: () => {
-      // The intro plays again from now (BBS look and the boot option on); the pane redraws at once, and the read starts over beneath it.
+    replayBoot: () => {
+      // Settings -> Replay boot: the intro plays again from now (BBS look and the boot option on); the pane redraws at once, and the read starts over beneath it.
+      // Refresh itself never comes here: it re-reads and probes while the page stays on screen.
       state.pane.bootAtMs = Date.now()
       state.pane.menuAtMs = 0
       host.invalidate()
@@ -174,12 +176,18 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
       if (state.isHelp) {
         host.scrollTop()
         state.help.query = ''
-        state.help.topic = VIEW_TOPIC[state.view === 'agent' ? state.back : state.view] ?? null
+        state.help.topic = VIEW_TOPIC[state.view === 'agent' ? originOf(state) : state.view] ?? null
       }
       host.invalidate()
     },
     close: () => void close(),
-    back: () => setView(state.view === 'agent' ? state.back : state.options.look === 'bbs' ? 'menu' : 'overview'),
+    back: () => {
+      const target = popBack(state)
+
+      // Back to a drill-down reopens the agent that was open then, through the normal drill (logs and all).
+      if (target.view === 'agent' && target.agentId !== undefined) drill(target.agentId, { replace: true })
+      else setView(target.view, { replace: true })
+    },
     confirm: seen => void runner.confirm(seen),
     cancel: runner.cancel,
     select,
@@ -260,7 +268,7 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
       if (word === '') return
       if (word === '?' || word === 'h' || word === 'help') actions.help()
       else if (word === 'p') actions.palette('all')
-      else if (word === 'r') actions.restart()
+      else if (word === 'r') actions.refresh()
       else if (word === 'o' || word === 'bye' || word === 'logoff') actions.close()
       else if (view !== null) setView(view)
       else runner.ask(null, `no area "${plain(word, 24)}": type a key from the menu, or ? for help`)

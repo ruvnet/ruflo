@@ -37,12 +37,12 @@ describe('the nav groups', () => {
     for (const group of NAV_GROUPS) for (const row of group.rows) expect(row.length).toBeLessThanOrEqual(6)
   })
 
-  it('draws the same grouping on the main menu: Plugins & Mods on the TOOLS card, Sandbox on NETWORK & EXTEND', () => {
+  it('draws the same grouping on the main menu: Plugins on the TOOLS card, Sandbox on NETWORK', () => {
     const goes = (title: string) => GROUPS.find(group => group.title === title)!.sections.flatMap(section => section.items.map(item => item.go))
 
     expect(goes('TOOLS')).toContain('plugins')
-    expect(goes('NETWORK & EXTEND')).not.toContain('plugins')
-    expect(goes('NETWORK & EXTEND')).toContain('sandbox')
+    expect(goes('NETWORK')).not.toContain('plugins')
+    expect(goes('NETWORK')).toContain('sandbox')
   })
 
   it('gives Sandbox no key, since every letter is a page key or reserved', () => {
@@ -223,7 +223,7 @@ describe('the guide', () => {
     const views = new Set<string>(VIEWS.map(view => view.id))
 
     expect(VIEW_TOPIC.sandbox).toBe('sandbox')
-    expect(topic.group).toBe('Network')
+    expect(topic.group).toBe('NETWORK')
     expect(topic.related).toContain('devtools')
 
     for (const step of topic.steps) if (step.go !== undefined && 'view' in step.go) expect(views.has(step.go.view)).toBe(true)

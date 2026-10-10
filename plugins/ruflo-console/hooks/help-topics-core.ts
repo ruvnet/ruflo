@@ -1,4 +1,4 @@
-/** The guides for getting started and for the work itself (Start, Work, Learn). Brief on purpose: what it is for, then the steps. Checked by tests/help-docs.spec.ts. */
+/** The guides for getting started and for the work itself (Start, SWARM, MIND, and the TOOLS pages Automation and Terminal). Brief on purpose: what it is for, then the steps. Checked by tests/help-docs.spec.ts. */
 import type { HelpTopic } from './help-docs'
 
 export const CORE_TOPICS: readonly HelpTopic[] = [
@@ -73,9 +73,9 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
     summary: 'every key that works on every page',
     steps: [
       { text: '0 main menu · 1 missions · 2 overview · 3 swarm · 4 claims · 5 federation · 6 plugins · 7 learning · 8 metaharness · 9 memory.' },
-      { text: 'Letters reach the rest: b hive · c cost · g timeline · q approvals · e events · w x.ruv.io · i terminal · z skills · u security · f performance · a automation · l learning lab · v vector lab · t self-evolution · d dev tools · m plugin catalog · s settings.' },
-      { text: 'p palette · x actions for the selection · r refresh and replay the intro · h help · y / n confirm or cancel.' },
-      { text: 'j / k move the selection · d drill into an agent · b back · f filters the events page.' },
+      { text: 'Letters reach the rest: b hive · c cost · g timeline · q approvals · e events · w x.ruv.io · i terminal · z skills · u security · f performance · a automation · l neural lab · v vector lab · t self-evolution · d dev tools · m plugin catalog · s settings.' },
+      { text: 'p palette · x actions for the selection · r refresh (Settings has Replay boot for the intro) · h help · y / n confirm or cancel.' },
+      { text: 'j / k move the selection · d drill into an agent · b goes back from the agent page (there is no global back key: use the ◂ Back button in the breadcrumb) · f filters the events page.' },
       { text: 'On the main menu, type a key or a name in the prompt and press Enter. o logs off. Sandbox has no key: type sandbox, or find it under NETWORK in the nav.' },
     ],
     tips: ['In a text field, your keys type into the field.'],
@@ -85,7 +85,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'setup',
     title: 'Set ruflo up in a project',
-    group: 'Start',
+    group: 'SWARM',
     summary: 'three steps from nothing to a working swarm',
     steps: [
       { text: 'Initialise ruflo here. This creates .claude-flow and the mods. It asks first.', go: { start: 'init' } },
@@ -100,7 +100,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'mission',
     title: 'Run a mission',
-    group: 'Work',
+    group: 'SWARM',
     summary: 'give a goal; ruflo plans it, makes tasks, and Claude carries them out',
     steps: [
       { text: 'Type your goal in one sentence in the goal field (on the main menu or Missions) and press Enter.', go: { view: 'missions' }, label: 'Open Missions' },
@@ -116,7 +116,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'mission-loop',
     title: 'Drive a mission with a loop',
-    group: 'Work',
+    group: 'SWARM',
     summary: 'a bounded /loop that checks, fixes and runs the gates until done',
     steps: [
       { text: 'Set the loop in Settings: the interval (5m by default), a worktree per writer, whether it may commit, push or publish (push and publish are off), and the most concurrent writers (6).', go: { view: 'settings' }, label: 'Open Settings' },
@@ -134,7 +134,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'swarm',
     title: 'Start a swarm and spawn agents',
-    group: 'Work',
+    group: 'SWARM',
     summary: 'a team of agents with roles, working together',
     steps: [
       { text: 'Start a swarm (needs ruflo initialised).', go: { start: 'swarm' } },
@@ -150,7 +150,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'hive',
     title: 'Hive-mind: decisions by vote',
-    group: 'Work',
+    group: 'SWARM',
     summary: 'a queen and workers who vote, so no single agent decides alone',
     steps: [
       { text: 'Start a hive-mind: a queen with raft consensus.', go: { start: 'hive' } },
@@ -165,7 +165,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'claims',
     title: 'Tasks and claims',
-    group: 'Work',
+    group: 'SWARM',
     summary: 'one owner per task, so agents never do the same work twice',
     steps: [
       { text: 'Open Claims (key 4). Create a task: one line saying what must be done.', go: { view: 'claims' } },
@@ -179,7 +179,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'approvals',
     title: 'Answer pending decisions',
-    group: 'Work',
+    group: 'SWARM',
     summary: 'votes, stealable claims, refused mods and budget asks in one place',
     steps: [
       { text: 'Open Approvals (key q). Each row is a decision waiting for you.', go: { view: 'approvals' } },
@@ -193,7 +193,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'automation',
     title: 'Automate with workflows and workers',
-    group: 'Work',
+    group: 'TOOLS',
     summary: 'run work on a schedule or in the background, hands off',
     steps: [
       { text: 'Check the daemon is running: it hosts the 12 background workers.', go: { run: 'auto-daemon-status' } },
@@ -209,13 +209,13 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'terminal',
     title: 'The AI terminal',
-    group: 'Work',
+    group: 'TOOLS',
     summary: 'talk to claude -p or codex without leaving the console',
     steps: [
       { text: 'Open the Terminal (key i). The field takes your keys.', go: { view: 'terminal' } },
       { text: 'Type a message. The first one asks first, then Enter sends.' },
       { text: 'Switch with /claude, /codex or /swarm. /new starts over.' },
-      { text: 'Sessions remember the conversation per project. Tab to s stops, o opens a new one, z clears.' },
+      { text: 'Sessions remember the conversation per project. The Stop, New session and Clear buttons have no keys: click them.' },
     ],
     related: ['settings', 'cost'],
     keywords: ['claude', 'codex', 'chat', 'prompt', 'session'],
@@ -223,7 +223,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'watch',
     title: 'Watch what is happening',
-    group: 'Work',
+    group: 'SAFETY',
     summary: 'who is busy, what changed, and when',
     steps: [
       { text: 'Timeline (key g) shows each agent busy or idle over the last minutes.', go: { view: 'timeline' } },
@@ -237,12 +237,12 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'learning',
     title: 'Teach ruflo your repo',
-    group: 'Learn',
+    group: 'MIND',
     summary: 'ruflo learns which agent fits which job, from your own work',
     steps: [
       { text: 'Pretrain on this repo. It is local and shallow.', go: { start: 'pretrain' } },
       { text: 'Open Learning (key 7) to see the router’s picks and how they turned out.', go: { view: 'learning' } },
-      { text: 'Open the Learning Lab (key l) to train patterns, watch the loss, and ask which agent fits a task.', go: { view: 'neural' } },
+      { text: 'Open the Neural Lab (key l) to train patterns, watch the loss, and ask which agent fits a task.', go: { view: 'neural' } },
       { text: 'It improves as outcomes are recorded: what worked and what did not.' },
     ],
     tips: ['The pipeline is RETRIEVE, JUDGE, DISTILL, CONSOLIDATE. EWC++ stops it forgetting old lessons.'],
@@ -252,12 +252,12 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'memory',
     title: 'Use memory',
-    group: 'Learn',
+    group: 'MIND',
     summary: 'store things once, find them by meaning later',
     steps: [
       { text: 'See what is stored: entries, size, oldest and newest.', go: { run: 'mem-stats' } },
       { text: 'Check AgentDB is healthy and which controllers are on.', go: { run: 'mem-health' } },
-      { text: 'Open the Memory Lab (key 9). Search by meaning, not exact words.', go: { view: 'memory' } },
+      { text: 'Open Memory (key 9). Search by meaning, not exact words.', go: { view: 'memory' } },
       { text: 'Store a note with a key; delete it any time. Deletes ask first.' },
     ],
     tips: ['Search matches by meaning, so it finds related entries even when the words differ.'],
@@ -267,7 +267,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'vector',
     title: 'Vector Lab',
-    group: 'Learn',
+    group: 'MIND',
     summary: 'work with ruvector directly: stores, queries, the shared brain',
     steps: [
       { text: 'Open the Vector Lab (key v).', go: { view: 'vector' } },
@@ -281,7 +281,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'metaharness',
     title: 'Check your harness',
-    group: 'Learn',
+    group: 'MIND',
     summary: 'how ready the project is for agents, and what to fix first',
     steps: [
       { text: 'Score the harness: five readiness axes and the cost per run.', go: { run: 'mh-score' } },
@@ -295,7 +295,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
   {
     id: 'evolve',
     title: 'Self-evolution (governed)',
-    group: 'Learn',
+    group: 'MIND',
     summary: 'ruflo proposes improvements; you decide what is kept',
     steps: [
       { text: 'Open Self-Evolution (key t).', go: { view: 'evolve' } },

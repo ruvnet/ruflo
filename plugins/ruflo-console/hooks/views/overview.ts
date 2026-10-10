@@ -90,7 +90,7 @@ export function overviewView(ctx: Ctx): RenderElement {
 
   rows.push(kv(ctx, 'mods reporting', modsSeen.length === 0 ? 'none yet' : `${modsSeen.length}${modsBlocked > 0 ? ` · ${modsBlocked} blocked something` : ''}`, modsBlocked > 0 ? THEME.warn : undefined))
   rows.push(...attentionOverviewRows(ctx))
-  rows.push(row(ctx, [button(ctx, 'overview-mods', 'The Room: Mods', () => ctx.act.view('room'))], 'overview-mods-row'))
+  rows.push(row(ctx, [button(ctx, 'overview-mods', 'Room: Mods', () => ctx.act.view('room'))], 'overview-mods-row'))
   // The swarm's own count, never the agent store's: the store holds every agent ever spawned, so a 0-agent swarm once read "259 agents".
   const facts = swarm === null ? null : swarmFacts(swarm, nowMs, snap?.agents ?? [])
   const stored = uniqueAgents(snap?.agents ?? []).length

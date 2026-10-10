@@ -2,6 +2,16 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.43.0 — 2026-10-10
+- feat: Back returns through the pages you visited (agent pages included), and the breadcrumb has a "◂ Back to <page>" button that names where it goes; only the agent page names a key for going back
+- feat: `/ruflo go <page>` opens a page by name, and the palette and the menu prompt find pages by name too (a retired name still works)
+- feat: one set of page groups and names across the menu, the tabs and the help (Neural Lab, Claims, Plugins, Room), with the old names still accepted
+- feat: narrow panes keep their shortcuts: the digit page keys, the core tab keys and p / r / h stay armed below 44 columns
+- fix: y and n always answer the confirm card
+- fix: every "(key)" hint names the real key; the Terminal help no longer teaches keys the Stop, New session and Clear buttons do not have
+- fix: refresh no longer replays the boot screen (Settings → Replay boot plays it)
+- fix: `/ruflo dump <page>` reads the whole page name (`/ruflo dump learning lab` dumps the Neural Lab)
+
 ## 0.42.1 — 2026-10-10
 - fix: Mission Control create retries only a real policy-state lock timeout (and a silent failure or a wait that ran out), reads the CLI's own Result: line rather than the Parameters object, undoes every open task of the mission when it must abort, asks the mission record to cancel, and reads the stores back so the result says what they show, not what was asked (#3945)
 - fix: a run that reports for itself (mission create, the ADR page writes) now becomes the console's outcome when it ends, so console_state.lastResult carries how it ended however long it took (#3945)

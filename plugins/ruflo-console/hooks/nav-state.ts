@@ -4,10 +4,17 @@
  * without a screen.
  */
 import { NAV_ACCENT } from './menu-colors'
+import { originOf } from './history'
 import { VIEWS, type State, type ViewId } from './state'
 
-/** The nav's groups, the main menu's own, each in rows short enough to spell their names: every view but the menu is in exactly one. */
-export const NAV_GROUPS: readonly { title: string; icon: string; rows: readonly (readonly ViewId[])[] }[] = [
+/** The names of the page groups: the one set of group names, shared by the nav, the main menu and the Help index. */
+export type NavTitle = 'SWARM' | 'MIND' | 'SAFETY' | 'NETWORK' | 'TOOLS'
+
+/**
+ * The page groups: the single source of the grouping. The main menu's boxes (views/menu.ts) and the Help index's sections (help-docs.ts) are built from
+ * these, in this order, under these names; each holds its pages in rows short enough to spell their names, and every view but the menu is in exactly one.
+ */
+export const NAV_GROUPS: readonly { title: NavTitle; icon: string; rows: readonly (readonly ViewId[])[] }[] = [
   { title: 'SWARM', icon: '🐝', rows: [['missions', 'overview', 'swarm', 'workflows'], ['hive', 'claims', 'approvals']] },
   { title: 'MIND', icon: '🧠', rows: [['learning', 'neural', 'metaharness', 'evolve', 'memory', 'vector']] },
   { title: 'SAFETY', icon: '🛡️', rows: [['secure', 'cost', 'perf', 'timeline', 'events', 'room']] },
@@ -22,7 +29,7 @@ export const accentOfView = (view: ViewId): string | null => NAV_ACCENT[groupOf(
 
 /** The group whose pages the nav shows: the one the person picked while on this page, else the open page's own. */
 export function shownGroup(state: State): string {
-  const open = state.view === 'agent' ? state.back : state.view
+  const open = state.view === 'agent' ? originOf(state) : state.view
 
   if (state.navPick !== null && state.navPick.view === state.view) return state.navPick.group
 

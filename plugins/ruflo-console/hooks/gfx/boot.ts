@@ -28,7 +28,7 @@ const SIGN_ON_MS = 400
 const LOG_FROM_MS = 1500
 const LOG_MS_PER = 120
 
-/** Every area of the console, in menu order: what the boot log brings online. */
+/** Every area of the console, in menu order: what the boot log brings online. Each is named by its page's one label (tests/group-scheme.spec.ts). */
 export const BOOT_MODULES: readonly { name: string; note: string }[] = [
   { name: 'Missions', note: 'goal → SPARC plan → tasks' },
   { name: 'Overview', note: 'subsystems, health, Optimizer' },
@@ -39,30 +39,30 @@ export const BOOT_MODULES: readonly { name: string; note: string }[] = [
   { name: 'Approvals', note: 'votes and asks in one place' },
   { name: 'Automation', note: 'workflows, workers, autopilot' },
   { name: 'Learning', note: 'SONA, MoE, EWC++ pulse' },
-  { name: 'Neural', note: 'pretrain, patterns, routing' },
+  { name: 'Neural Lab', note: 'pretrain, patterns, routing' },
   { name: 'Vector Lab', note: 'HNSW, RaBitQ, RVF' },
-  { name: 'Memory Lab', note: 'AgentDB, embeddings' },
+  { name: 'Memory', note: 'AgentDB, embeddings' },
   { name: 'MetaHarness', note: 'readiness, flywheel, lab' },
   { name: 'Self-Evolution', note: 'governed receipts, lineage' },
-  { name: 'Security', note: 'scans, AIDefence, doctor' },
+  { name: 'Security & Doctor', note: 'scans, AIDefence, doctor' },
   { name: 'Federation', note: 'peers, trust, relay' },
   { name: 'x.ruv.io', note: 'swarm board, AgentBBS rooms' },
-  { name: 'Plugins & Mods', note: 'every ruflo plugin mapped' },
+  { name: 'Plugins', note: 'every ruflo plugin mapped' },
   { name: 'Skills', note: 'find, add, manage' },
   { name: 'Plugin Catalog', note: 'every plugin, mod and skill' },
   { name: 'Dev Tools', note: 'ADRs, SPARC, tests, git, docs' },
   { name: 'Sandbox', note: 'tmux, RVF branches, RVM' },
-  { name: 'Cost & Budget', note: 'spend, burn, limits' },
+  { name: 'Cost', note: 'spend, burn, limits' },
   { name: 'Timeline', note: 'who was busy, and when' },
   { name: 'Events', note: 'what changed, live' },
-  { name: 'The Room', note: 'who says and does what, and what waits for a yes' },
+  { name: 'Room', note: 'who says and does what, and what waits for a yes' },
   { name: 'Performance', note: 'metrics and bottlenecks' },
-  { name: 'AI Terminal', note: 'ruflo, codex, claude' },
+  { name: 'Terminal', note: 'ruflo, codex, claude' },
   { name: 'ADRs', note: 'decisions your project made' },
   { name: 'What’s new', note: 'changes in your plugins' },
   { name: 'Settings', note: 'every option a button' },
 ]
-const NAME_WIDTH = 15
+const NAME_WIDTH = 17
 
 /** The blue behind the white leading cell, and how many cells of it, while the border strikes: white, then blue, then pink. */
 const BLUE = 0x3a7bff

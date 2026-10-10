@@ -37,7 +37,7 @@ export const VIEW_ASK: Record<ViewId, ViewAsk> = {
   timeline: { default: 'What do these agent timelines show: idle time, bottlenecks, overlap?', slash: 'ruflo-observability:observe' },
   approvals: { default: 'For each pending decision, what do you recommend and why?' },
   events: { default: 'What patterns or problems do you see in these events?', slash: 'ruflo-observability:observe' },
-  room: { default: 'Read The Room feed in my ruflo console: what are the people and agents doing, what is waiting for my yes, and what should I do next?', slash: 'ruflo-observability:observe' },
+  room: { default: 'Read the Room feed in my ruflo console: what are the people and agents doing, what is waiting for my yes, and what should I do next?', slash: 'ruflo-observability:observe' },
   xruv: { default: 'How do I get the most out of x.ruv.io, and is anything here a risk?', slash: 'ruflo-federation:federation' },
   terminal: { default: 'Help me use this AI terminal well.' },
   skills: { default: 'Which of these skills fit what I am doing, and which should I add?' },

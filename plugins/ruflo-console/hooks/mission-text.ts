@@ -58,7 +58,7 @@ export function planText(p: Plan, goal: string, loop?: LoopPrefs): string {
 export function statusText(state: State): string {
   const mission = activeMission(state)
 
-  if (mission === null) return 'No active mission. /ruflo plan <goal> shows a SPARC plan; the Missions view creates the mission from it.'
+  if (mission === null) return 'No active mission. /ruflo plan <goal> shows a SPARC plan; the Missions view creates the mission from it (/ruflo go missions opens it).'
 
   const tasks = state.snapshot?.tasks ?? []
   const status = derive(mission, tasks)
@@ -69,6 +69,8 @@ export function statusText(state: State): string {
   for (const task of mission.tasks) lines.push(`  ${task.id} ${status.get(task.id) ?? '?'} — ${task.title} (${task.agent})`)
 
   lines.push(next === null ? 'next: nothing to hand out now' : `next: ${next.id} ${next.title} (/ruflo run mission-next hands it to Claude)`)
+
+  lines.push('the Missions page: /ruflo go missions')
 
   return lines.join('\n')
 }

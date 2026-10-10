@@ -209,6 +209,24 @@ function uiItems(ctx: Ctx): Item[] {
         }),
     },
     {
+      id: 'ui-boot',
+      source: 'UI',
+      title: 'Replay boot',
+      haystack: 'replay boot intro screen startup splash bbs play again',
+      level: 'simple',
+      changed: false,
+      rows: () => [
+        row(
+          ctx,
+          [
+            button(ctx, 'st-replay-boot', '▶ replay the boot screen', () => ctx.act.replayBoot(), { primary: true }),
+            text(ctx, ' Refresh (r) only re-reads and never hides the page; this plays the intro again (BBS look, with the boot screen option on)', { dimColor: true }),
+          ],
+          'st-replay-boot-row',
+        ),
+      ],
+    },
+    {
       id: 'ui-updates',
       source: 'UI',
       title: 'Updates',

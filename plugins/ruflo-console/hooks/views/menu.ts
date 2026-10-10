@@ -4,6 +4,7 @@ import { scramble } from '../gfx/boot-cyber'
 import type { RenderElement } from 'claude-code'
 
 import { ACCENT, badgesOf, chip, LOUD, MUTED, PALETTE } from '../menu-style'
+import { NAV_GROUPS } from '../nav-state'
 import { VIEWS, type ViewId } from '../state'
 import { barParts } from './bar'
 import { button, clip, col, isBbs, picture, row, text, THEME, type Ctx } from './common'
@@ -15,46 +16,55 @@ type Item = { label: string; go: string }
 const COMMAND_KEYS: Record<string, string> = { palette: 'p', help: 'h', close: 'O' }
 const keyOf = (item: Item): string => COMMAND_KEYS[item.go] ?? VIEWS.find(view => view.id === item.go)?.key ?? '·'
 
+/** The entries that are not pages: they close the last group, after its pages. */
+const COMMAND_ITEMS: readonly Item[] = [{ label: 'Command Palette', go: 'palette' }, { label: 'Help', go: 'help' }, { label: 'Log Off', go: 'close' }]
+
 /**
- * The board's menus: five groups, each split into a few sub-sections where the split says something (SWARM: start here, coordinate,
- * observe), the way the old BBS main menus grouped their commands. A group with one section draws no rule: its name would only repeat the group's. Keys are the pane's own hotkeys; an area without one (`·`) is reached by its name at the prompt. An
- * entry for a view this build does not have is left out.
+ * How a group's pages are split into sub-sections, where the split says something (SWARM: start here, coordinate, observe), the way the
+ * old BBS main menus grouped their commands. Only the split lives here: which groups there are, their names and order, and which pages
+ * each holds come from the nav (nav-state.ts NAV_GROUPS), and a page is named by its one label (state.ts VIEWS). A page this lists that
+ * is not in the group is left out; a page of the group that this leaves out is added to its last section, so the menu can never hide one
+ * (tests/group-scheme.spec.ts holds both).
  */
-export const GROUPS: readonly { title: string; sections: readonly { name: string; items: readonly Item[] }[] }[] = [
-  {
-    title: 'SWARM',
-    sections: [
-      { name: 'start here', items: [{ label: 'Missions', go: 'missions' }, { label: 'Overview', go: 'overview' }] },
-      { name: 'coordinate', items: [{ label: 'Hive-Mind', go: 'hive' }, { label: 'Claims Board', go: 'claims' }, { label: 'Approvals', go: 'approvals' }] },
-      { name: 'observe', items: [{ label: 'Swarm Topology', go: 'swarm' }, { label: 'Workflows', go: 'workflows' }] },
-    ],
-  },
-  {
-    title: 'INTELLIGENCE',
-    sections: [
-      { name: 'learn', items: [{ label: 'Learning', go: 'learning' }, { label: 'Neural', go: 'neural' }, { label: 'MetaHarness', go: 'metaharness' }, { label: 'Self-Evolution', go: 'evolve' }] },
-      { name: 'remember', items: [{ label: 'Memory Lab', go: 'memory' }, { label: 'Vector Lab', go: 'vector' }] },
-    ],
-  },
-  {
-    title: 'SAFETY & OPS',
-    sections: [
-      { name: 'protect', items: [{ label: 'Security & Doctor', go: 'secure' }, { label: 'Cost & Budget', go: 'cost' }] },
-      { name: 'observe', items: [{ label: 'Performance', go: 'perf' }, { label: 'Agent Timeline', go: 'timeline' }, { label: 'Event Stream', go: 'events' }, { label: 'The Room', go: 'room' }] },
-    ],
-  },
-  {
-    title: 'NETWORK & EXTEND',
-    sections: [
-      { name: 'network', items: [{ label: 'Federation', go: 'federation' }, { label: 'x.ruv.io Board', go: 'xruv' }, { label: 'Sandbox', go: 'sandbox' }] },
-      { name: 'extend', items: [{ label: 'Skills', go: 'skills' }, { label: 'Plugin Catalog', go: 'market' }] },
-    ],
-  },
-  {
-    title: 'TOOLS',
-    sections: [{ name: 'tools', items: [{ label: 'AI Terminal', go: 'terminal' }, { label: 'Automation', go: 'automate' }, { label: 'Dev Tools', go: 'devtools' }, { label: 'Plugins & Mods', go: 'plugins' }, { label: 'ADRs', go: 'adrs' }, { label: 'What’s new', go: 'whatsnew' }, { label: 'Settings', go: 'settings' }, { label: 'Command Palette', go: 'palette' }, { label: 'Help', go: 'help' }, { label: 'Log Off', go: 'close' }] }],
-  },
-]
+export const MENU_SECTIONS: Readonly<Record<string, readonly { name: string; ids: readonly ViewId[] }[]>> = {
+  SWARM: [
+    { name: 'start here', ids: ['missions', 'overview'] },
+    { name: 'coordinate', ids: ['hive', 'claims', 'approvals'] },
+    { name: 'observe', ids: ['swarm', 'workflows'] },
+  ],
+  MIND: [
+    { name: 'learn', ids: ['learning', 'neural', 'metaharness', 'evolve'] },
+    { name: 'remember', ids: ['memory', 'vector'] },
+  ],
+  SAFETY: [
+    { name: 'protect', ids: ['secure', 'cost'] },
+    { name: 'observe', ids: ['perf', 'timeline', 'events', 'room'] },
+  ],
+  NETWORK: [
+    { name: 'network', ids: ['federation', 'xruv', 'sandbox'] },
+    { name: 'extend', ids: ['skills', 'market'] },
+  ],
+  TOOLS: [{ name: 'tools', ids: ['terminal', 'automate', 'devtools', 'plugins', 'adrs', 'whatsnew', 'settings'] }],
+}
+
+const itemOf = (id: ViewId): Item => ({ label: VIEWS.find(view => view.id === id)?.label ?? id, go: id })
+
+/**
+ * The board's menus: one box per nav group, in the nav's order and under its name, each split into the sub-sections of MENU_SECTIONS (a
+ * group with one section draws no rule: its name would only repeat the group's). Keys are the pane's own hotkeys; an area without one
+ * (`·`) is reached by its name at the prompt. An entry for a view this build does not have is left out.
+ */
+export const GROUPS: readonly { title: string; sections: readonly { name: string; items: readonly Item[] }[] }[] = NAV_GROUPS.map(group => {
+  const pages = group.rows.flat()
+  const sections = (MENU_SECTIONS[group.title] ?? []).map(section => ({ name: section.name, items: section.ids.filter(id => pages.includes(id)).map(itemOf) }))
+  const listed = new Set(sections.flatMap(section => section.items.map(item => item.go)))
+  const rest = pages.filter(id => !listed.has(id)).map(itemOf)
+  const filled = sections.length === 0 ? [{ name: group.title.toLowerCase(), items: rest }] : sections.map((section, i) => (i === sections.length - 1 ? { ...section, items: [...section.items, ...rest] } : section))
+  // The commands (palette, help, log off) close the last group.
+  const closing = group === NAV_GROUPS[NAV_GROUPS.length - 1] ? filled.map((section, i) => (i === filled.length - 1 ? { ...section, items: [...section.items, ...COMMAND_ITEMS] } : section)) : filled
+
+  return { title: group.title, sections: closing }
+})
 
 const COMMANDS = new Set(['palette', 'help', 'close'])
 

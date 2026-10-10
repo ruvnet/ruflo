@@ -257,7 +257,7 @@ describe('the Mods section on the pages', () => {
 
     expect(await draw('room', [])).toContain('No mod has written a status file')
     expect(overview).toMatch(/mods reporting\s+1 · 1 blocked something/)
-    expect(overview).toContain('The Room: Mods')
+    expect(overview).toContain('Room: Mods')
   })
 })
 

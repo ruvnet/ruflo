@@ -28,7 +28,7 @@ describe('self-check: the real console', () => {
   it('looks at the commands of the four areas that own a registry, not only their pages', () => {
     const results = selfCheck()
 
-    expect(area(results, 'Security')?.checked).toBeGreaterThan(10)
+    expect(area(results, 'Security & Doctor')?.checked).toBeGreaterThan(10)
     expect(area(results, 'Performance')?.checked).toBe(REGISTRIES.perf.length + 1)
     expect(area(results, 'Dev Tools')?.checked).toBe(REGISTRIES.dev.length + 1)
     expect(area(results, 'MetaHarness')?.checked).toBe(REGISTRIES.lab.length + 1)
@@ -48,12 +48,12 @@ describe('self-check: seen in every look, not only on the boot screen', () => {
 
     expect(state.snapshot).toBeNull()
 
-    setBootChecks([{ area: 'Missions', ok: true, problems: [] }, { area: 'Security', ok: false, problems: ['aid-check: an empty field must be refused'] }])
+    setBootChecks([{ area: 'Missions', ok: true, problems: [] }, { area: 'Security & Doctor', ok: false, problems: ['aid-check: an empty field must be refused'] }])
 
     const alert = alertsOf(state, 0, 0).find(entry => entry.id === 'self-check')
 
     expect(alert?.level).toBe('bad')
-    expect(alert?.text).toContain('Security failed')
+    expect(alert?.text).toContain('Security & Doctor failed')
     expect(alert?.text).toContain('aid-check: an empty field must be refused')
     expect(alert?.text).not.toContain('Missions')
   })
@@ -74,19 +74,19 @@ describe('self-check: it fails on what is broken', () => {
   it('a text verb that builds a command from an empty field', () => {
     const results = broken(r => ({ ...r, secureText: [{ ...r.secureText[0], id: 'aid-bad', argv: () => ['security', 'defend'] } as never, ...r.secureText.slice(1)] }))
 
-    expect(area(results, 'Security')?.problems.join(' ')).toContain('aid-bad: an empty field must be refused')
+    expect(area(results, 'Security & Doctor')?.problems.join(' ')).toContain('aid-bad: an empty field must be refused')
   })
 
   it('a text verb that lets text starting with - through, where it could be read as a flag', () => {
     const results = broken(r => ({ ...r, secureText: [{ ...r.secureText[0], id: 'aid-flag', argv: (text: string) => ['security', text] } as never, ...r.secureText.slice(1)] }))
 
-    expect(area(results, 'Security')?.problems.join(' ')).toContain('aid-flag: text starting with - must be refused')
+    expect(area(results, 'Security & Doctor')?.problems.join(' ')).toContain('aid-flag: text starting with - must be refused')
   })
 
   it('a text verb that refuses every input, so its button could never run', () => {
     const results = broken(r => ({ ...r, secureText: [{ ...r.secureText[0], id: 'aid-never', argv: () => null } as never, ...r.secureText.slice(1)] }))
 
-    expect(area(results, 'Security')?.problems.join(' ')).toContain('aid-never: no sample input')
+    expect(area(results, 'Security & Doctor')?.problems.join(' ')).toContain('aid-never: no sample input')
   })
 
   it('a command with an empty part, and one with no reader', () => {
@@ -122,7 +122,7 @@ describe('self-check: it fails on what is broken', () => {
   it('two entries sharing an id (a palette keyword), which fails each registry-owning area', () => {
     const results = broken(r => ({ ...r, perf: [{ ...r.perf[0], id: r.secure[0]?.id } as never, ...r.perf.slice(1)] }))
 
-    expect(area(results, 'Security')?.problems.join(' ')).toContain(`${REGISTRIES.secure[0]?.id}: used by two entries`)
+    expect(area(results, 'Security & Doctor')?.problems.join(' ')).toContain(`${REGISTRIES.secure[0]?.id}: used by two entries`)
     expect(area(results, 'Performance')?.ok).toBe(false)
     expect(area(results, 'Missions')?.ok).toBe(true)
   })

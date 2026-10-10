@@ -40,7 +40,7 @@ describe('the compact nav', () => {
     const mind = await pane.drawn()
 
     expect(textOf(mind)).toContain('[MIND ▾]')
-    expect(textOf(mind)).toContain('Learning Lab')
+    expect(textOf(mind)).toContain('Neural Lab')
     expect(textOf(mind)).not.toContain('Approvals')
     await pane.press({ key: 'tab-learning' })
     expect(textOf(await pane.drawn())).toContain('[7: ')

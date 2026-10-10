@@ -20,9 +20,9 @@ export type CheckResult = { area: string; ok: boolean; checked: number; problems
 /** Each boot area and the page it opens: every area must name a real page, and the spec fails on an area with no row here. */
 export const AREA_VIEW: Record<string, ViewId> = {
   Missions: 'missions', Overview: 'overview', Swarm: 'swarm', Workflows: 'workflows', 'Hive-Mind': 'hive', Claims: 'claims', Approvals: 'approvals', Automation: 'automate',
-  Learning: 'learning', Neural: 'neural', 'Vector Lab': 'vector', 'Memory Lab': 'memory', MetaHarness: 'metaharness', 'Self-Evolution': 'evolve',
-  Security: 'secure', Federation: 'federation', 'x.ruv.io': 'xruv', 'Plugins & Mods': 'plugins', Skills: 'skills', 'Plugin Catalog': 'market',
-  'Dev Tools': 'devtools', Sandbox: 'sandbox', 'Cost & Budget': 'cost', Timeline: 'timeline', Events: 'events', 'The Room': 'room', Performance: 'perf', 'AI Terminal': 'terminal', 'What’s new': 'whatsnew', ADRs: 'adrs', Settings: 'settings',
+  Learning: 'learning', 'Neural Lab': 'neural', 'Vector Lab': 'vector', Memory: 'memory', MetaHarness: 'metaharness', 'Self-Evolution': 'evolve',
+  'Security & Doctor': 'secure', Federation: 'federation', 'x.ruv.io': 'xruv', Plugins: 'plugins', Skills: 'skills', 'Plugin Catalog': 'market',
+  'Dev Tools': 'devtools', Sandbox: 'sandbox', Cost: 'cost', Timeline: 'timeline', Events: 'events', Room: 'room', Performance: 'perf', Terminal: 'terminal', 'What’s new': 'whatsnew', ADRs: 'adrs', Settings: 'settings',
 }
 
 /** Pages with no hotkey on purpose (every letter is taken): reached from the menu, the nav, the palette or by name. */
@@ -136,12 +136,12 @@ export function selfCheck(registries: Registries = REGISTRIES, views: readonly {
       if (ask[view] === undefined) problems.push(`${name}: its page has no Ask Claude row`)
     }
 
-    if (name === 'Security') checked += checkSecure(registries.secure, registries.secureText, [], problems)
+    if (name === 'Security & Doctor') checked += checkSecure(registries.secure, registries.secureText, [], problems)
     if (name === 'Performance') checked += checkSecure([], [], registries.perf, problems)
     if (name === 'Dev Tools') checked += checkDev(registries.dev, problems)
     if (name === 'MetaHarness') checked += checkLab(registries.lab, state, problems)
     // Ids are palette keywords shared by all four registries, so a duplicate fails each area that owns one of them.
-    if (['Security', 'Performance', 'Dev Tools', 'MetaHarness'].includes(name)) problems.push(...shared)
+    if (['Security & Doctor', 'Performance', 'Dev Tools', 'MetaHarness'].includes(name)) problems.push(...shared)
 
     return { area: name, ok: problems.length === 0, checked, problems }
   })

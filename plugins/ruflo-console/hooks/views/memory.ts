@@ -2,6 +2,7 @@ import type { RenderElement } from 'claude-code'
 
 import type { MemoryEntry, MemoryStats, Namespaces } from '../data/cli'
 import { gauge, recency, sparkline } from '../memory-lines'
+import { keyLabel } from '../state'
 import { agentdbModRows } from './agentdb-mod'
 import { ago, button, clip, col, count, kv, live, row, rule, sourceLine, text, THEME, type Ctx } from './common'
 import { memmapRows } from './memmap'
@@ -142,5 +143,5 @@ export function memoryView(ctx: Ctx): RenderElement {
   const spaces = live<Namespaces>(ctx.state.probes.get('namespaces'))
   const entries = spaces?.entries ?? []
 
-  return col(ctx, [...storeRows(ctx, memory, spaces), ...agentdbModRows(ctx), ...namespaceRows(ctx, spaces), ...memmapRows(ctx), ...timelineRows(ctx, entries), ...browseRows(ctx, entries), ...areaPanel(ctx, 'browse'), ...memoryLabRows(ctx), text(ctx, 'spend, budget gauge and burn: Cost (9)', { dimColor: true })], 'memory')
+  return col(ctx, [...storeRows(ctx, memory, spaces), ...agentdbModRows(ctx), ...namespaceRows(ctx, spaces), ...memmapRows(ctx), ...timelineRows(ctx, entries), ...browseRows(ctx, entries), ...areaPanel(ctx, 'browse'), ...memoryLabRows(ctx), text(ctx, `spend, budget gauge and burn: ${keyLabel('cost')}`, { dimColor: true })], 'memory')
 }

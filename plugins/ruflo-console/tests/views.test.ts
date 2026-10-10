@@ -323,7 +323,7 @@ describe('views', () => {
     expect(elementsOf(menu, 'Raster').map(keyOf)).toEqual(['header', 'palette'])
     expect(textOf(menu)).toContain('▓▒░ SWARM ░▒▓')
     expect(textOf(menu)).toContain('── start here')
-    expect(textOf(menu)).toContain('Swarm Topology')
+    expect(textOf(menu)).toContain('Swarm')
     expect(textOf(menu)).toContain('ANSI-BBS')
     expect(inputKeys(menu)).toEqual(['menu-goal', 'menu-prompt'])
 

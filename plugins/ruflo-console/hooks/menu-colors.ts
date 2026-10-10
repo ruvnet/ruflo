@@ -14,12 +14,12 @@ export const chip = (ground: string) => ({ color: ground, inverse: true, bold: t
 export const MUTED = '#8a8a8a'
 export const LOUD = '#ffaf00'
 
-/** One accent per menu group, by the group's title. */
+/** One accent per page group, by the group's title (the nav's: nav-state.ts NAV_GROUPS). The menu's boxes, the nav's chips and the pages' cards all wear it. */
 export const ACCENT: Readonly<Record<string, string>> = {
   SWARM: '#ffaf00',
-  INTELLIGENCE: '#5fd7ff',
-  'SAFETY & OPS': '#ff5f5f',
-  'NETWORK & EXTEND': '#5fd75f',
+  MIND: '#5fd7ff',
+  SAFETY: '#ff5f5f',
+  NETWORK: '#5fd75f',
   TOOLS: '#d787ff',
 }
 
@@ -29,18 +29,8 @@ export const PALETTE: readonly string[] = ['#ffaf00', '#5fd7ff', '#ff5f5f', '#5f
 /** `#rrggbb` as the 0xRRGGBB number a Grid takes. */
 export const rgb = (hex: string): number => Number.parseInt(hex.slice(1), 16)
 
-/**
- * The accent of a page's nav group. The menu names its groups one way (INTELLIGENCE, SAFETY & OPS) and the nav another (MIND, SAFETY),
- * so this maps the nav's names to the same five colours: a page's cards and section rules wear the accent of the group the menu
- * lists it under.
- */
-export const NAV_ACCENT: Readonly<Record<string, string>> = {
-  SWARM: ACCENT.SWARM as string,
-  MIND: ACCENT.INTELLIGENCE as string,
-  SAFETY: ACCENT['SAFETY & OPS'] as string,
-  NETWORK: ACCENT['NETWORK & EXTEND'] as string,
-  TOOLS: ACCENT.TOOLS as string,
-}
+/** The accent of a page's group: the very table the menu's boxes use, so a page wears the colour of the box the menu lists it in. */
+export const NAV_ACCENT: Readonly<Record<string, string>> = ACCENT
 
 /** The colour of a mission's status line, by tone: running and done green, ready amber, paused cyan, waiting dim. */
 export const TONE = { live: '#5fd75f', ready: '#ffaf00', wait: '#8a8a8a', done: '#5fd75f', paused: '#5fd7ff' } as const

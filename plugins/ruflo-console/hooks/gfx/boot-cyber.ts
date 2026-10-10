@@ -26,7 +26,7 @@ export const EGG_FROM_MS = 2400
 export const EGG_TO_MS = 3800
 
 /** The scan grid's names, shortened where the full one would not fit its cell (the checks are still keyed by the full name). */
-export const SCAN_NAMES: Readonly<Record<string, string>> = { MetaHarness: 'Harness', 'Self-Evolution': 'Evolution', 'Plugins & Mods': 'Plugins', 'Plugin Catalog': 'Catalog', 'Cost & Budget': 'Cost', Performance: 'Perf', 'AI Terminal': 'Terminal' }
+export const SCAN_NAMES: Readonly<Record<string, string>> = { MetaHarness: 'Harness', 'Self-Evolution': 'Evolution', 'Plugin Catalog': 'Catalog', 'Security & Doctor': 'Security', Performance: 'Perf' }
 /** How many characters of a name its cell holds. */
 export const SCAN_NAME_CELLS = 10
 

@@ -29,12 +29,22 @@ export type Intent =
   | { kind: 'autopilot'; arg: string }
   | { kind: 'events'; args: string[] }
   | { kind: 'timeline'; args: string[] }
+  | { kind: 'nopage'; query: string }
   | { kind: 'unknown'; word: string }
+
+/** Every first word parseRuflo's switch answers itself. */
+export const VERBS = ['open', 'help', '?', 'close', 'status', 'mods', 'swarm', 'palette', 'p', 'ask', 'plan', 'mission', 'run', 'act', 'yes', 'y', 'no', 'n', 'agent', 'back', 'next', 'j', 'prev', 'k', 'band', 'notices', 'quiet', 'autopilot', 'commands', 'catalog', 'dump', 'text', 'events', 'timeline', 'filter', 'go'] as const
 
 export function parseRuflo(args: string): Intent {
   const words = args.trim().split(/\s+/).filter(Boolean)
   const [head = '', second = ''] = words.map(word => word.toLowerCase())
   const rest = args.trim().slice(words[0]?.length ?? 0).trim()
+
+  // A page's full name ("learning lab" is the Neural Lab, "learning" is Learning), but only where the first word is not a verb of this command:
+  // `swarm topology` and `agent timeline` are the verbs' own arguments (tests/commands-verbs.spec.ts keeps VERBS equal to the cases below).
+  const named = words.length > 1 && !(VERBS as readonly string[]).includes(head) ? viewOf(words.join(' ')) : null
+
+  if (named !== null) return { kind: 'open', view: named }
 
   switch (head) {
     case '':
@@ -92,9 +102,17 @@ export function parseRuflo(args: string): Intent {
     case 'commands':
     case 'catalog':
       return { kind: 'commands', query: rest }
+    // `/ruflo go <page>` always opens a page, found by id, key, label, a prefix or its words (viewOf); "no page called …" when nothing, or two pages, match.
+    case 'go': {
+      if (rest === '') return { kind: 'open', view: null }
+
+      const view = viewOf(rest)
+
+      return view !== null ? { kind: 'open', view } : { kind: 'nopage', query: rest }
+    }
     case 'dump':
     case 'text':
-      return { kind: 'dump', view: second === '' ? null : viewOf(second) }
+      return { kind: 'dump', view: rest === '' ? null : viewOf(rest) }
     // `/ruflo events [kind|level|since:15m|"query"|window <w>|clear|forget|export <path>|follow <ref>|pin|rule]` and `/ruflo timeline [5m|…|session|zoom in|out|follow <ref>|export <path>]` (ADR-474); bare, each just opens its page.
     case 'events':
       return words.length === 1 ? { kind: 'open', view: 'events' } : { kind: 'events', args: words.slice(1) }
@@ -117,6 +135,7 @@ export const HELP = [
   `  /ruflo                     open the cockpit (also opens by itself where it can dock, panel=auto)`,
   `  /ruflo <view>              ${VIEWS.map(view => (view.key === '' ? view.id : `${view.id} (${view.key})`)).join(', ')}`,
   '  /ruflo agent <id|name>     drill into one agent: role, task, claims, activity, logs, timeline',
+  '  /ruflo go <page>           open any page by name: its label, a part of it or a word of it (go catalog, go learn lab, go time); close matches are listed when none fits',
   '  /ruflo back | close | status',
   '  /ruflo dump <view>         a view as plain text, without the pane (for claude -p and scripts)',
   '  /ruflo commands [word]     browse the ruflo command catalog (ADR-406): every command, who owns it, how it runs',
@@ -142,9 +161,9 @@ export const HELP = [
   '',
   'Pane keys (while it holds the keyboard: /ruflo opens it with the keys, or click it; ctrl+x tab reaches the band, not the pane)',
   '  0 main menu · 1-9 views · g timeline · q approvals · e events · m plugin catalog · w x.ruv.io · i terminal · p palette · x actions for the selection',
-  '  terminal: the field takes the keys; /codex /claude /swarm /ruflo switch harness, /new starts over · sessions remember the conversation per project; the first message asks, then Enter sends · Tab to s stop, o new, z clear',
+  '  terminal: the field takes the keys; /codex /claude /swarm /ruflo switch harness, /new starts over · sessions remember the conversation per project; the first message asks, then Enter sends · the Stop, New session and Clear buttons have no keys: click them',
   '  workflows (no key; nav SWARM, menu, or /ruflo workflows): j/k move · b/l phases or agents column · u/i switch run · d inspect · /ruflo next|prev = j/k',
-  '  j/k select · d drill in · b back · r refresh · h help · f event filter · y/n confirm',
+  '  j/k select · d drill in · b back (the agent page only; elsewhere use the ◂ Back button in the breadcrumb) · r refresh · h help · f event filter · y/n confirm',
   '  Esc: a pane /ruflo opened closes; one that opened by itself (panel=auto) only hands the keys back. ✕ or /ruflo close closes either',
   '  (? and Enter cannot be pane hotkeys in this Claude Code build: use h, and d to drill in)',
 ].join('\n')

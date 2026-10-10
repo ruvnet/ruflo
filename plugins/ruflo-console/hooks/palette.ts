@@ -24,7 +24,7 @@ import { skillPaletteEntries } from './skills-lab'
 import { automateEntries } from './automate'
 import { neuralEntries } from './neural'
 import { AGENT_TYPES, agentLogs, dispatchWorker, memorySearch, memoryStore, reroute, setClaimStatus, spawnAgent, stopAgent, swarmInit, swarmStop, vote, WORKERS } from './ops'
-import { VIEWS, type State, type ViewId } from './state'
+import { viewMatches, VIEWS, type State, type ViewId } from './state'
 import { XRUV } from './xruv'
 import { VEC, vecSpec, vecWhy } from './vector'
 import { selection } from './views/select'
@@ -199,6 +199,10 @@ export function paletteEntries(state: State, nowMs: number): PaletteEntry[] {
   return out
 }
 
+/** What a page earns in the ranking: its label starts with the query (most), or the query names it by viewOf's rules. */
+const PAGE_LEAD = 100
+const PAGE_NAMED = 50
+
 /** The entries matching `query`, best first; a text entry matches when the query starts with its keyword. */
 export function filterPalette(entries: readonly PaletteEntry[], query: string, context: 'all' | 'selection'): PaletteEntry[] {
   const words = query.trim()
@@ -209,11 +213,18 @@ export function filterPalette(entries: readonly PaletteEntry[], query: string, c
     return scoped.filter(entry => entry.run.kind === 'text' && entry.run.keyword === keyword)
   }
 
+  // A page is listed (the `view-<id>` entries) when its name, a part of it or its words fit what is typed, whether or not the entry's own text
+  // does (viewOf's rules), and a page whose label starts with the query comes first: "time" lists the Timeline page ahead of every row that merely has those letters.
+  const named = new Set<string>(viewMatches(words))
+
   return scoped
     .flatMap(entry => {
-      const score = fuzzy(words, entry.label)
+      const view = entry.run.kind === 'view' && entry.id.startsWith('view-') ? entry.run.view : null
+      const label = view === null ? undefined : VIEWS.find(candidate => candidate.id === view)?.label.toLowerCase()
+      const lead = label !== undefined && words !== '' && label.startsWith(words.toLowerCase()) ? PAGE_LEAD : 0
+      const score = fuzzy(words, entry.label) ?? (view !== null && named.has(view) ? 0 : null)
 
-      return score === null ? [] : [{ entry, score }]
+      return score === null ? [] : [{ entry, score: score + lead + (view !== null && named.has(view) ? PAGE_NAMED : 0) }]
     })
     // What can run comes first, so the best match, which Enter runs, is something that runs; each half keeps its own order.
     .sort((a, b) => Number(isUnavailable(a.entry)) - Number(isUnavailable(b.entry)) || b.score - a.score)
