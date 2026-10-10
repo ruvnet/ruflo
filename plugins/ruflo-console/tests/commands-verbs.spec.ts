@@ -37,7 +37,7 @@ describe('verbs win over page names', () => {
       if (!(VERBS as readonly string[]).includes(verb!)) continue
       const intent = parseRuflo(arg === undefined ? verb! : `${verb} ${arg}`)
 
-      expect(intent.kind === 'open' && verb !== 'open' && verb !== 'agent' && verb !== 'swarm' && verb !== 'events' && verb !== 'timeline', `${verb} ${arg ?? ''}`).toBe(false)
+      expect(intent.kind === 'open' && verb !== 'open' && verb !== 'go' && verb !== 'agent' && verb !== 'swarm' && verb !== 'events' && verb !== 'timeline', `${verb} ${arg ?? ''}`).toBe(false)
     }
   })
 })

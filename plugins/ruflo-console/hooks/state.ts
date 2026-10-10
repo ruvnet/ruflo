@@ -106,11 +106,72 @@ export const RETIRED_NAMES: Readonly<Record<string, ViewId>> = {
   'x.ruv.io board': 'xruv',
 }
 
-/** A view by id, digit, label, a prefix of three letters or more, or (last) a retired name. */
-export const viewOf = (word: string): ViewId | null => {
-  const lower = word.trim().toLowerCase().replace(/\s+/g, ' ')
+const normalise = (word: string): string => word.trim().toLowerCase().replace(/\s+/g, ' ')
 
-  return VIEWS.find(view => view.id === lower || (view.key !== '' && view.key === lower) || view.label.toLowerCase() === lower || (lower.length >= 3 && view.id.startsWith(lower)))?.id ?? RETIRED_NAMES[lower] ?? null
+/** The words of a name: "What’s new" is what, s, new; "Security & Doctor" is security, doctor. */
+const wordsOf = (name: string): string[] => name.toLowerCase().split(/[^a-z0-9]+/).filter(part => part !== '')
+
+/** Every name a page answers to besides its id and label: its retired names. */
+const aliasesOf = (id: ViewId): string[] => Object.entries(RETIRED_NAMES).filter(([, target]) => target === id).map(([name]) => name)
+
+/** Every word any name of a page has: its id, its label and its retired names. */
+const nameWordsOf = (view: (typeof VIEWS)[number]): string[] => [view.id, view.label, ...aliasesOf(view.id)].flatMap(wordsOf)
+
+/**
+ * The pages a typed name could mean, by the first of these rules that finds any (a lower rule never adds to a higher one):
+ *   1. exact: the id, the key (a single letter or digit is ONLY ever this, never a prefix) or the label, whole;
+ *   2. alias: a retired name, whole ("learning lab" is the Neural Lab);
+ *   3. id prefix, three letters or more ("plug" is Plugins);
+ *   4. label prefix ("security" is Security & Doctor);
+ *   5. all words: every typed word (two letters or more) starts some word of the id, the label or a retired name, in any order
+ *      ("catalog" is the Plugin Catalog, "learn lab" the Neural Lab).
+ * One page is the answer; two or more at the same rule is ambiguous: `viewMatches` returns them all and `viewOf` says null.
+ */
+export const viewMatches = (word: string): ViewId[] => {
+  const lower = normalise(word)
+
+  if (lower === '') return []
+
+  const exact = VIEWS.filter(view => view.id === lower || (view.key !== '' && view.key === lower) || view.label.toLowerCase() === lower)
+
+  if (exact.length > 0) return exact.map(view => view.id)
+
+  const alias = RETIRED_NAMES[lower]
+
+  if (alias !== undefined) return [alias]
+  if (lower.length < 3) return []
+
+  const byIdPrefix = VIEWS.filter(view => view.id.startsWith(lower))
+
+  if (byIdPrefix.length > 0) return byIdPrefix.map(view => view.id)
+
+  const byLabelPrefix = VIEWS.filter(view => view.label.toLowerCase().startsWith(lower))
+
+  if (byLabelPrefix.length > 0) return byLabelPrefix.map(view => view.id)
+
+  const typed = lower.split(' ')
+
+  if (typed.some(part => part.length < 2)) return []
+
+  return VIEWS.filter(view => {
+    const names = nameWordsOf(view)
+
+    return typed.every(part => names.some(name => name.startsWith(part)))
+  }).map(view => view.id)
+}
+
+/** A view by id, key, label, retired name, prefix or words (see {@link viewMatches}); null when nothing matches or the name is ambiguous. */
+export const viewOf = (word: string): ViewId | null => {
+  const found = viewMatches(word)
+
+  return found.length === 1 ? (found[0] ?? null) : null
+}
+
+/** The pages worth offering for a name that opened nothing: any page with a word that starts like, or contains (three letters or more), a typed word. */
+export const pagesLike = (word: string): ViewId[] => {
+  const typed = wordsOf(normalise(word)).filter(part => part.length >= 2)
+
+  return typed.length === 0 ? [] : VIEWS.filter(view => nameWordsOf(view).some(name => typed.some(part => name.startsWith(part) || (part.length >= 3 && name.includes(part))))).map(view => view.id)
 }
 
 /**

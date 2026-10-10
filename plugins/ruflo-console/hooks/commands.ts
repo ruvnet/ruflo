@@ -29,10 +29,11 @@ export type Intent =
   | { kind: 'autopilot'; arg: string }
   | { kind: 'events'; args: string[] }
   | { kind: 'timeline'; args: string[] }
+  | { kind: 'nopage'; query: string }
   | { kind: 'unknown'; word: string }
 
 /** Every first word parseRuflo's switch answers itself. */
-export const VERBS = ['open', 'help', '?', 'close', 'status', 'mods', 'swarm', 'palette', 'p', 'ask', 'plan', 'mission', 'run', 'act', 'yes', 'y', 'no', 'n', 'agent', 'back', 'next', 'j', 'prev', 'k', 'band', 'notices', 'quiet', 'autopilot', 'commands', 'catalog', 'dump', 'text', 'events', 'timeline', 'filter'] as const
+export const VERBS = ['open', 'help', '?', 'close', 'status', 'mods', 'swarm', 'palette', 'p', 'ask', 'plan', 'mission', 'run', 'act', 'yes', 'y', 'no', 'n', 'agent', 'back', 'next', 'j', 'prev', 'k', 'band', 'notices', 'quiet', 'autopilot', 'commands', 'catalog', 'dump', 'text', 'events', 'timeline', 'filter', 'go'] as const
 
 export function parseRuflo(args: string): Intent {
   const words = args.trim().split(/\s+/).filter(Boolean)
@@ -101,6 +102,14 @@ export function parseRuflo(args: string): Intent {
     case 'commands':
     case 'catalog':
       return { kind: 'commands', query: rest }
+    // `/ruflo go <page>` always opens a page, found by id, key, label, a prefix or its words (viewOf); "no page called …" when nothing, or two pages, match.
+    case 'go': {
+      if (rest === '') return { kind: 'open', view: null }
+
+      const view = viewOf(rest)
+
+      return view !== null ? { kind: 'open', view } : { kind: 'nopage', query: rest }
+    }
     case 'dump':
     case 'text':
       return { kind: 'dump', view: second === '' ? null : viewOf(second) }
@@ -126,6 +135,7 @@ export const HELP = [
   `  /ruflo                     open the cockpit (also opens by itself where it can dock, panel=auto)`,
   `  /ruflo <view>              ${VIEWS.map(view => (view.key === '' ? view.id : `${view.id} (${view.key})`)).join(', ')}`,
   '  /ruflo agent <id|name>     drill into one agent: role, task, claims, activity, logs, timeline',
+  '  /ruflo go <page>           open any page by name: its label, a part of it or a word of it (go catalog, go learn lab, go time); close matches are listed when none fits',
   '  /ruflo back | close | status',
   '  /ruflo dump <view>         a view as plain text, without the pane (for claude -p and scripts)',
   '  /ruflo commands [word]     browse the ruflo command catalog (ADR-406): every command, who owns it, how it runs',

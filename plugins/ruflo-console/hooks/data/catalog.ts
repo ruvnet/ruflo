@@ -73,5 +73,5 @@ export function commandsText(catalog: Catalog, query: string, max = 40): string 
       ? `${hits.length} of ${catalog.entries.length} commands in the ruflo command catalog${catalog.sourceCommit !== undefined ? ` (ADR-406, source ${catalog.sourceCommit.slice(0, 9)})` : ''}`
       : `${hits.length} ruflo mod commands (the command catalog is not readable here, so this is the built-in list)`
 
-  return [head, 'view: runs here · delegate: a prompt workflow you type yourself (never submitted for you) · legacy: documentation', '', ...lines, ...(hits.length > max ? [`+${hits.length - max} more: /ruflo commands <word>`] : [])].join('\n')
+  return [head, 'view: runs here · delegate: a prompt workflow you type yourself (never submitted for you) · legacy: documentation', '', ...lines, ...(hits.length > max ? [`+${hits.length - max} more: /ruflo commands <word>`] : []), '', 'The Plugin Catalog page (install, enable, update) opens with /ruflo go catalog'].join('\n')
 }

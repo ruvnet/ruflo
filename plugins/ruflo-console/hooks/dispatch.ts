@@ -11,7 +11,7 @@ import { loadEvolve } from './evolve'
 import { refreshWorkflows } from './wf-live'
 import { labAnswer } from './mh-lab'
 import { skillsAnswer } from './skills-lab'
-import { VIEWS, type State } from './state'
+import { pagesLike, VIEWS, type State } from './state'
 import { missionAnswer } from './mission-text'
 import { xruvAnswer } from './xruv'
 import { barText } from './views/bar'
@@ -198,6 +198,11 @@ export async function dispatch(control: Controller, state: State, args: string, 
     case 'events':
     case 'timeline':
       return watchCommand(control, state, intent)
+    case 'nopage': {
+      const close = pagesLike(intent.query).slice(0, 6).map(id => VIEWS.find(view => view.id === id)?.label ?? id)
+
+      return { text: `There is no page called "${plain(intent.query, 30)}".${close.length === 0 ? ' /ruflo help lists the pages.' : ` Close: ${close.join(', ')}. Say one of them: /ruflo go ${close[0]?.toLowerCase() ?? ''}`}` }
+    }
     case 'unknown':
       return { text: `Unknown: "${plain(intent.word, 30)}". /ruflo help lists the views (${VIEWS.map(view => view.id).join(', ')}) and commands.` }
   }
