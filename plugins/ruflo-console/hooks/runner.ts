@@ -57,7 +57,7 @@ export type Runner = {
   /** `exact` (the model path, ADR-450 T13) resolves the id as written and never falls back to fuzzy matching. */
   runById: (id: string, text: string, options?: { exact?: boolean; direct?: boolean }) => boolean
   /** A Yes typed with no card id (`/ruflo yes`): refused while the card is too new or just replaced one, else it answers the card waiting now. */
-  confirmUnbound: () => Promise<void>
+  confirmUnbound: (card?: number) => Promise<void>
   /** Resolves when the read started last has finished: `/ruflo run` waits on it to answer with what it printed. */
   settled: () => Promise<void>
   /** Resolves when the last action that brought its own `run` (and is not awaited by `confirm`) has finished: the model tools wait on it, with a limit. */
@@ -307,7 +307,9 @@ export function createRunner(state: State, host: Host, deps: RunnerDeps): Runner
 
     // Only an ask raised inside Claude's own console_run call (not one that landed later after a screen, nor a mission follow-up) is Claude's to withdraw.
     const isDirect = isDirectRun && state.control.viaModel && spec.byModel !== true
-    const pending: Pending = { id: asks, view: state.view, ...(isDirect && { origin: 'console_run' as const }), ...(kind !== null && { rememberKey: kind }), ...(spec.scope !== undefined && { scope: spec.scope }), label: spec.label, args: spec.args, expect: spec.expect, askedAtMs: Date.now(), source: byModel ? 'claude' : 'you', ...(spec.shows !== undefined && { shows: spec.shows }), ...(spec.note !== undefined && { note: spec.note }), ...(spec.declared !== undefined && { declared: spec.declared }) }
+    // The Claude call that started this ask: named by the spec when the ask landed later, else the call whose synchronous start is running now.
+    const byCall = byModel ? (spec.byCall ?? (state.control.viaModel ? (state.control.callTag ?? undefined) : undefined)) : undefined
+    const pending: Pending = { id: asks, view: state.view, ...(isDirect && { origin: 'console_run' as const }), ...(byCall !== undefined && { byCall }), ...(kind !== null && { rememberKey: kind }), ...(spec.scope !== undefined && { scope: spec.scope }), label: spec.label, args: spec.args, expect: spec.expect, askedAtMs: Date.now(), source: byModel ? 'claude' : 'you', ...(spec.shows !== undefined && { shows: spec.shows }), ...(spec.note !== undefined && { note: spec.note }), ...(spec.declared !== undefined && { declared: spec.declared }) }
 
     // Claude's ask that was screened first lands after every tool call of Claude's returned, so no call is left to gate it: the level and Stop are
     // checked now, not as they were when it was raised, and a refused ask is not queued (nothing waits for a Yes the settings no longer allow).
@@ -378,19 +380,31 @@ export function createRunner(state: State, host: Host, deps: RunnerDeps): Runner
     await execute(spec)
   }
 
-  async function confirmUnbound(): Promise<void> {
+  async function confirmUnbound(card?: number): Promise<void> {
     const pending = state.pending
     const nowMs = Date.now()
 
-    if (pending === null) return confirm()
+    if (pending === null) return confirm(card)
 
-    // A Yes typed with no card id could be meant for the card that was there a moment ago: a card Claude has only just raised, or one that took the
-    // place of a card that left unanswered, is answered on the card itself (its button or y), which names the card it answers.
+    // `/ruflo yes <id>` names its card: it answers that card or nothing (confirm refuses when another card took its place).
+    if (card !== undefined) return confirm(card)
+
+    // A bare Yes names no card, so it answers only the card the person was shown: drawn in a pane they can see, or named in the answer to their
+    // own typed ask. Any other card is a stranger to them, however it got there (Claude's ask, or one that replaced the card they read).
+    if (state.shownCard !== pending.id) {
+      say(pending.label, false, `not run: card ${pending.id ?? '?'} ("${plain(pending.label, 60)}") was not put in front of you, so a bare yes may be meant for another. Read it in the console and press Yes on it, or type /ruflo yes ${pending.id ?? '<id>'}`)
+      record(state.events, [{ atMs: nowMs, kind: 'tools', text: `a typed yes did not run "${plain(pending.label, 60)}": the card had not been shown to the person` }])
+
+      return
+    }
+
+    // A card Claude has only just raised, or one that took the place of a card that left unanswered, is answered on the card itself (its button
+    // or y), or by its id.
     const isNewClaude = pending.source === 'claude' && nowMs - pending.askedAtMs < UNBOUND_FRESH_MS
     const isReplacement = nowMs - goneUnansweredAtMs < UNBOUND_REPLACED_MS
 
     if (isNewClaude || isReplacement) {
-      say(pending.label, false, `not run: ${isNewClaude ? 'Claude raised this card a moment ago' : 'this card replaced one that left unanswered a moment ago'}, so a typed yes may be meant for another. Read it and press Yes on the card itself`)
+      say(pending.label, false, `not run: ${isNewClaude ? 'Claude raised this card a moment ago' : 'this card replaced one that left unanswered a moment ago'}, so a typed yes may be meant for another. Read it and press Yes on the card itself, or type /ruflo yes ${pending.id ?? '<id>'}`)
       record(state.events, [{ atMs: nowMs, kind: 'tools', text: `a typed yes did not run "${plain(pending.label, 60)}": the card was new or had just replaced another` }])
 
       return

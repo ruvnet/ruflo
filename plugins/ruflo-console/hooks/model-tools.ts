@@ -153,13 +153,15 @@ function within(work: Promise<void>, ms: number, host: Pick<Controller['host'], 
 }
 
 /** Runs `fn` as Claude's own act: asks it raises on the way are Claude's, not the person's. Only the synchronous start counts; a deferred ask carries its origin itself (`ActionSpec.byModel`). */
-function asModel<T>(state: State, fn: () => T): T {
+function asModel<T>(state: State, fn: () => T, tag: number | null = null): T {
   state.control.viaModel = true
+  state.control.callTag = tag
 
   try {
     return fn()
   } finally {
     state.control.viaModel = false
+    state.control.callTag = null
   }
 }
 
@@ -266,7 +268,7 @@ function setField(deps: ModelToolDeps, field: string, value: string): string | n
  * An action the console queued (a palette entry, or the follow-up a field raised) is held to the same rules: above the level it is
  * cancelled and nothing runs; in ask mode it waits for the person; in auto mode it confirms and reports. Null when nothing is pending.
  */
-async function settlePending(deps: ModelToolDeps, tool: string, id: string, askedAt: number): Promise<{ status: 'refused' | 'waiting' | 'done'; text: string } | null> {
+async function settlePending(deps: ModelToolDeps, tool: string, id: string, askedAt: number, own?: { call: number; card: number | null }): Promise<{ status: 'refused' | 'waiting' | 'done'; text: string } | null> {
   const { state, control } = deps
   const ai = settingsOf(state).ai
   const level = levelOf(ai.modelControl)
@@ -280,6 +282,11 @@ async function settlePending(deps: ModelToolDeps, tool: string, id: string, aske
 
     return { status: 'refused', text: `an action is waiting for the person ("${modelLine(pending.label, 80)}"), so yours was not queued. Do not run another until they answer. Nothing ran.` }
   }
+
+  // Only a card this call started is settled here: the one it raised as it started (its id, taken then), or a deferred one that carries this call's
+  // number. A card that landed meanwhile from anything else (a screened ask of another call, a write queued earlier) is neither confirmed nor
+  // cancelled under this call's settlement (#3983): it waits for its own call, the person, or its window.
+  if (own !== undefined && pending.byCall !== own.call && !(pending.byCall === undefined && (pending.id ?? null) === own.card)) return null
 
   const kind = classOf(pending)
 
@@ -420,14 +427,15 @@ async function answer(name: string, input: Record<string, unknown>, deps: ModelT
       if (state.pending !== null) return refuse(`set ${field}`, `an action is already waiting for the person ("${modelLine(state.pending.label, 80)}"). Do not change fields until they answer${withdrawHint(state)}.`)
 
       const askedAt = Date.now()
-      const problem = asModel(state, () => setField(deps, field, value))
+      const call = ++state.control.callSeq
+      const problem = asModel(state, () => setField(deps, field, value), call)
 
       if (problem !== null) return refuse(`set ${field}`, problem)
 
       say(state, name, `set ${field}`, 'ok', value)
 
       // Some fields raise a follow-up themselves (a goal is planned, then guidance is offered): it is held to the same rules.
-      const queued = await settlePending(deps, name, `after set ${field}`, askedAt)
+      const queued = await settlePending(deps, name, `after set ${field}`, askedAt, { call, card: state.pending?.id ?? null })
 
       return `Set ${field}.${queued === null ? ' It is only filled in: run a console entry to act on it.' : ` The console then queued a follow-up. ${queued.text}`}`
     }
@@ -445,21 +453,25 @@ async function answer(name: string, input: Record<string, unknown>, deps: ModelT
 
     const askedAt = state.outcome?.atMs ?? 0
 
-    if (!asModel(state, () => control.runner.runById(id, text, { exact: true, direct: true }))) return refuse(`run ${id}`, `no palette entry "${modelLine(id, 40)}" right now. Call console_state for the entries.`)
+    const call = ++state.control.callSeq
+
+    if (!asModel(state, () => control.runner.runById(id, text, { exact: true, direct: true }), call)) return refuse(`run ${id}`, `no palette entry "${modelLine(id, 40)}" right now. Call console_state for the entries.`)
+
+    // The card this call raised, by id, taken before anything is awaited: a read still running below may be followed by a card that landed on its own.
+    const raisedCard = state.pending?.id ?? null
 
     await control.runner.settled()
 
-    if (state.pending === null) {
-      const done = state.outcome !== null && state.outcome.atMs > askedAt ? state.outcome : null
+    // Only a card this call started is settled by it (settlePending): the one it raised, or a deferred one carrying its number.
+    const settled = state.pending === null ? null : await settlePending(deps, name, `run ${id}`, askedAt, { call, card: raisedCard })
 
-      say(state, name, `run ${id}`, done === null || done.ok ? 'ok' : 'error', done?.detail ?? '')
+    if (settled !== null) return settled.status === 'refused' ? `Refused: ${settled.text}` : settled.text
 
-      return done === null ? `Ran ${id}.` : `${done.ok ? 'Done' : 'Failed'}: ${modelLine(done.label, 100)}. ${modelLine(done.detail, 200)}${(done.lines ?? []).length > 0 ? `\n${(done.lines ?? []).slice(0, 12).map(line => modelLine(line, 160)).join('\n')}` : ''}`
-    }
+    const done = state.outcome !== null && state.outcome.atMs > askedAt ? state.outcome : null
 
-    const settled = await settlePending(deps, name, `run ${id}`, askedAt)
+    say(state, name, `run ${id}`, done === null || done.ok ? 'ok' : 'error', done?.detail ?? '')
 
-    return settled === null ? `Ran ${id}.` : settled.status === 'refused' ? `Refused: ${settled.text}` : settled.text
+    return done === null ? `Ran ${id}.` : `${done.ok ? 'Done' : 'Failed'}: ${modelLine(done.label, 100)}. ${modelLine(done.detail, 200)}${(done.lines ?? []).length > 0 ? `\n${(done.lines ?? []).slice(0, 12).map(line => modelLine(line, 160)).join('\n')}` : ''}`
   } catch (error) {
     say(state, name, name, 'error', error instanceof Error ? error.message : 'failed')
 

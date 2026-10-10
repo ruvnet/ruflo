@@ -130,7 +130,10 @@ export async function dispatch(control: Controller, state: State, args: string, 
       if (state.pending !== null) {
         const pending = state.pending
 
-        return { text: [`Asked: ${pending.label}. Confirm with /ruflo yes (or y in the pane), cancel with /ruflo no.`, ...(pending.shows === undefined ? [] : [`runs: ${pending.shows}`, pending.note ?? ''])].filter(Boolean).join('\n') }
+        // The answer puts this card in front of the person, so a bare /ruflo yes may answer it (and only it).
+        state.shownCard = pending.id ?? null
+
+        return { text: [`Asked: ${pending.label}. Confirm with /ruflo yes (or y in the pane; /ruflo yes ${pending.id ?? '<id>'} names this card), cancel with /ruflo no.`, ...(pending.shows === undefined ? [] : [`runs: ${pending.shows}`, pending.note ?? ''])].filter(Boolean).join('\n') }
       }
 
       return { text: (missionAnswer(state, intent.paletteId) ?? xruvAnswer(state, intent.paletteId, askedAtMs) ?? labAnswer(state, intent.paletteId, askedAtMs) ?? skillsAnswer(state, intent.paletteId, askedAtMs)) ?? (state.outcome !== null && !state.outcome.ok ? `${state.outcome.label}: ${state.outcome.detail}` : (state.outcome?.label ?? 'done')) }
@@ -147,7 +150,7 @@ export async function dispatch(control: Controller, state: State, args: string, 
       const confirmedAtMs = Date.now()
 
       // A typed yes names no card: the runner refuses it while the card is too new or just replaced one (press the card's own Yes then).
-      await control.runner.confirmUnbound()
+      await control.runner.confirmUnbound(intent.card)
 
       return { text: xruvAnswer(state, null, confirmedAtMs) ?? labAnswer(state, null, confirmedAtMs) ?? (state.outcome === null ? 'Ran.' : `${state.outcome.ok ? '✓' : '✗'} ${state.outcome.label}: ${state.outcome.detail}${state.outcome.verified === 'yes' ? ' (on disk)' : state.outcome.verified === 'no' ? ' (not on disk yet)' : ''}`) }
     case 'agent': {
