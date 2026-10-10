@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.42.3 — 2026-10-10
+- feat: an external plugin the ruflo marketplace lists by a git source (the first is `agentic-qe-fleet`, Agentic QE) shows in the Plugin Catalog with an EXT badge and where it is installed from; its skills, agents, commands, MCP config and mod are read from its install path in `installed_plugins.json`, since the ruflo clone holds none. Its commands launch from Dev Tools, and the plugin-coverage test now also requires a section for every external marketplace entry
+
 ## 0.42.2 — 2026-10-10
 - fix: numbers read from CLI JSON are bounded at the reader (a count of 1e999 no longer draws Infinity on the band); an unreadable count stays visible as unknown rather than a measured 0, and a listed finding is never hidden by an under-reporting summary (#3822)
 - fix: a mission resume made by Claude keeps each task's hand-out count, so resuming cannot buy more billed hand-outs after the limit paused the mission (#3823)
