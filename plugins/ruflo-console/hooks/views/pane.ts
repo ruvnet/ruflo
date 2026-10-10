@@ -18,7 +18,7 @@ import { fitFooter, type FooterItem } from '../footer-layout'
 import { chip } from '../menu-colors'
 import { originOf, peekBack } from '../history'
 import { accentOfView } from '../nav-state'
-import { isBooting, isCompactPane, NAV_STYLES, VIEWS, type ViewId } from '../state'
+import { isBooting, isCompactPane, VIEWS, type ViewId } from '../state'
 import { agentView } from './agent'
 import { automateResult, automateView } from './automate'
 import { claimsView } from './claims'
@@ -64,8 +64,6 @@ const CORE_TABS = new Set<ViewId>(['hive', 'skills', 'cost', 'timeline', 'approv
 
 /** The networks the Wildcat strip names, each with the view a click on it opens. */
 const NETWORKS: readonly (readonly [string, ViewId])[] = [['x.ruv.io', 'xruv'], ['relay.ruv.io', 'xruv'], ['agentbbs', 'federation'], ['mcp', 'plugins'], ['claude code', 'terminal']]
-/** Width from which every tab spells its name beside its emoji (the 1-9 row is about 128 columns with names). */
-const WIDE_TABS = 140
 
 const BODIES: Record<ViewId, (ctx: Ctx) => RenderElement> = {
   menu: menuView,
@@ -102,69 +100,29 @@ const BODIES: Record<ViewId, (ctx: Ctx) => RenderElement> = {
   agent: agentView,
 }
 
+/** The pages whose key works from any page: the digit-keyed ones, the core pages that have a key, and the open one. */
+const isTab = (ctx: Ctx, view: (typeof VIEWS)[number]): boolean => /^[0-9]$/.test(view.key) || CORE_TABS.has(view.id) || view.id === ctx.state.view || (ctx.state.view === 'agent' && view.id === originOf(ctx.state))
+
 function tabs(ctx: Ctx): RenderElement {
-  if (ctx.columns < NARROW) {
-    const index = VIEWS.findIndex(view => view.id === ctx.state.view)
-    const label = index < 0 ? 'Agent' : (VIEWS[index]?.label ?? '')
+  // The grouped nav card (views/nav.ts); the pages that are not showing stay in it as hidden buttons.
+  if (ctx.columns >= NARROW) return groupedTabs(ctx, view => isTab(ctx, view))
 
-    const where = `${index < 0 ? '·' : `${index + 1}/${VIEWS.length}`} ${label}`
+  const index = VIEWS.findIndex(view => view.id === ctx.state.view)
+  const label = index < 0 ? 'Agent' : (VIEWS[index]?.label ?? '')
 
-    // Even this narrow, the BBS look keeps its colours: the page is a solid chip in its group's accent, with the way to help beside it.
-    return isBbs()
-      ? row(ctx, [ctx.kit.Text({ ...chip(accentOfView(ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view) ?? '#05d9e8'), bold: true, children: ` ${where} ` }), ctx.kit.Text({ dimColor: true, children: ' /ruflo help' })])
-      : text(ctx, `${where} · /ruflo help`, { bold: true, color: THEME.head })
-  }
+  const where = `${index < 0 ? '·' : `${index + 1}/${VIEWS.length}`} ${label}`
 
-  // Two rows: the nine data views (1-9), then the management views and the two boards (g q e m, w x.ruv.io, i terminal). Each tab is its emoji; the
-  // current one is highlighted, and from WIDE_TABS columns every tab also spells its name. The line under the bar
-  // always names the current view and says what it is for. The dock width is the engine's (it keeps where the
-  // divider was left), so the narrow form must fit about 60 columns.
-  const style = ctx.state.nav
-  const withNames = style === 'auto' && ctx.columns >= WIDE_TABS
-  const tab = (view: (typeof VIEWS)[number]): RenderElement => {
-    const isCurrent = view.id === ctx.state.view || (ctx.state.view === 'agent' && view.id === originOf(ctx.state))
-    const words = style === 'icons' ? view.icon : style === 'brief' ? `${view.icon} ${view.short}` : style === 'full' || withNames ? `${view.icon} ${view.label}` : view.icon
+  // Even this narrow, the BBS look keeps its colours: the page is a solid chip in its group's accent, with the way to help beside it.
+  const here = isBbs()
+    ? row(ctx, [ctx.kit.Text({ ...chip(accentOfView(ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view) ?? '#05d9e8'), bold: true, children: ` ${where} ` }), ctx.kit.Text({ dimColor: true, children: ' /ruflo help' })])
+    : text(ctx, `${where} · /ruflo help`, { bold: true, color: THEME.head })
+  // There is no room for tab buttons, but every page's key still works: the pages are in the pane as hidden buttons, as in the nav card.
+  // An ask on screen owns y and n, so these keep their buttons and lose only those two keys.
+  const kit = ctx.state.pending === null ? ctx.kit : withoutAnswerKeys(ctx.kit)
+  const open = ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view
+  const keyed = VIEWS.filter(view => view.key !== '' && view.id !== open && isTab(ctx, view))
 
-    // A Button cannot be styled, so the current tab is Text: its key is not needed, the view is already open
-    // (from a drill-down, b goes back).
-    // The current tab always names itself, whatever the width: [3: 📌 CLAIMS], [📟 MAIN MENU]. The others are their emoji (or
-    // emoji and name from WIDE_TABS columns), since a name on every tab does not fit a dock.
-    // Every view has a hotkey, so the prefix is always shown: [8: 🔬 METAHARNESS], [z: 🧰 SKILLS].
-    const prefix = view.key === '' ? '' : `${view.key}: `
-    const current = isBbs() ? `[${prefix}${view.icon} ${view.label.toUpperCase()}]` : `${prefix}${view.icon} ${view.label}`
-
-    if (isCurrent) return ctx.kit.Box({ key: `tab-${view.id}`, children: [ctx.kit.Text({ bold: true, color: THEME.head, wrap: 'truncate-end', children: current })] })
-
-    return ctx.kit.Button({ key: `tab-${view.id}`, label: words, ...(view.key !== '' && { hotkey: view.key }), plain: true, dimColor: true, onPress: () => ctx.act.view(view.id) })
-  }
-  // The tab bar keeps the keyed views and the core keyless ones; the many other views (labs, tools) are tabs only while
-  // open, and are reached from the main menu (0), where each is listed with its group.
-  const isTab = (view: (typeof VIEWS)[number]) => /^[0-9]$/.test(view.key) || CORE_TABS.has(view.id) || view.id === ctx.state.view || (ctx.state.view === 'agent' && view.id === originOf(ctx.state))
-  // A page in cards leads with the grouped nav card (views/nav.ts) instead of the flat tab rows.
-  if (hasCards(ctx.columns, isCompactPane(ctx.state))) return groupedTabs(ctx, isTab)
-
-  const line = (views: readonly (typeof VIEWS)[number][], key: string) => ctx.kit.Box({ flexDirection: 'row', gap: 1, key, children: views.filter(isTab).map(tab) })
-  // The first row runs to the last digit-keyed view, so a keyless view sits where VIEWS puts it (Hive-Mind after Swarm).
-  const split = VIEWS.reduce((last, view, i) => (/^[0-9]$/.test(view.key) ? i + 1 : last), 0)
-
-  // A title row names the bar and offers its styles: auto, icons only, icon and brief title, icon and full title.
-  const titleRow = row(
-    ctx,
-    [
-      ctx.kit.Text({ bold: true, color: THEME.head, children: isBbs() ? '░▒▓ NAV ░▒▓ ' : 'NAV ' }),
-      ctx.kit.Text({ dimColor: true, children: ' style ' }),
-      ...NAV_STYLES.map(option =>
-        ctx.kit.Button({ key: `nav-style-${option}`, label: ` ${option === style ? '●' : '○'} ${option} `, plain: true, ...(option === style ? { variant: 'primary' as const } : { dimColor: true }), onPress: () => ctx.act.nav(option) }),
-      ),
-    ],
-    'tabs-title',
-  )
-
-  return ctx.kit.Box({
-    flexDirection: 'column',
-    key: 'tabs',
-    children: [titleRow, line(VIEWS.slice(0, split), 'tabs-views'), line(VIEWS.slice(split), 'tabs-manage')],
-  })
+  return ctx.kit.Box({ key: 'tabs', flexDirection: 'column', children: [here, kit.Box({ key: 'tabs-keys', display: 'none', children: keyed.map(view => kit.Button({ key: `tab-${view.id}`, label: view.short, hotkey: view.key, plain: true, onPress: () => ctx.act.view(view.id) })) } as never)] })
 }
 
 /** A clickable "◂ Back to <page>" (no hotkey: b keeps its page meanings) when Back has a page to go to; the same action as the `back` command. */
@@ -235,9 +193,7 @@ function footer(ctx: Ctx, isPlaced = false): RenderElement {
   const slash = slashFor(state, state.view)
   // The buttons, most important first. Each has a short form and a priority: a narrow pane shortens the least important, then drops them
   // (a dropped one stays, hidden, so its hotkey still works) instead of running off the edge and cutting the last in half.
-  const items: FooterItem[] = ctx.columns < NARROW
-    ? []
-    : [
+  const items: FooterItem[] = [
         { id: 'palette', full: 'Palette', short: 'p', priority: 1 },
         ...(state.view === 'agent' || state.palette.isOpen ? [] : [{ id: 'actions', full: 'Actions', short: 'x', priority: 5 }]),
         ...(state.palette.isOpen ? [] : [{ id: 'ask-claude', full: '✦ Ask Claude', short: '✦', priority: 2 }]),
@@ -247,8 +203,9 @@ function footer(ctx: Ctx, isPlaced = false): RenderElement {
         { id: 'close', full: 'Close', short: '×', priority: 4 },
       ]
   // Keep the focus state whole: a clipped "keys …" does not tell the person where their typing will go.
-  const fit = fitFooter(items, ctx.columns - 2, isBbs() && state.snapshot !== null ? 23 : 10)
-  const press: Record<string, () => void> = { palette: () => ctx.act.palette('all'), actions: () => ctx.act.palette('selection'), 'ask-claude': () => ctx.act.ask.ask(), 'ask-slash': () => ctx.act.ask.slash(), refresh: ctx.act.restart, help: ctx.act.help, close: ctx.act.close }
+  // Below NARROW no button fits, but every one stays as a hidden button: p, x, r and h still work.
+  const fit = ctx.columns < NARROW ? { shown: [], hidden: items.map(item => item.id), used: 0 } : fitFooter(items, ctx.columns - 2, isBbs() && state.snapshot !== null ? 23 : 10)
+  const press: Record<string, () => void> = { palette: () => ctx.act.palette('all'), actions: () => ctx.act.palette('selection'), 'ask-claude': () => ctx.act.ask.ask(), 'ask-slash': () => ctx.act.ask.slash(), refresh: ctx.act.refresh, help: ctx.act.help, close: ctx.act.close }
   const hotkey: Record<string, string> = { palette: 'p', actions: 'x', refresh: 'r', help: 'h' }
   const full = new Map(items.map(item => [item.id, item.full]))
   const statusRoom = Math.max(10, ctx.columns - fit.used - 3)
@@ -346,8 +303,8 @@ export function iconRow(ctx: Ctx): RenderElement {
     palette: { isCurrent: state.palette.isOpen, run: () => ctx.act.palette('all') },
     help: { isCurrent: state.isHelp, run: ctx.act.help },
     settings: { isCurrent: state.view === 'settings' && !state.isHelp && !state.palette.isOpen, run: () => ctx.act.view('settings') },
-    // Refresh re-reads everything and replays the intro, as the footer's Refresh and the r key do; it is an action, never the page you are on.
-    refresh: { isCurrent: false, run: ctx.act.restart },
+    // Refresh re-reads everything and probes again, as the footer's Refresh and the r key do (no boot screen); it is an action, never the page you are on.
+    refresh: { isCurrent: false, run: ctx.act.refresh },
   }
 
   return ctx.kit.Box({

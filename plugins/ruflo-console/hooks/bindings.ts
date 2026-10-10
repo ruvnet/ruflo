@@ -161,8 +161,9 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
       if (state.view === 'skills') actions.skills.list()
       if (state.view === 'evolve') actions.evolve.reread()
     },
-    restart: () => {
-      // The intro plays again from now (BBS look and the boot option on); the pane redraws at once, and the read starts over beneath it.
+    replayBoot: () => {
+      // Settings -> Replay boot: the intro plays again from now (BBS look and the boot option on); the pane redraws at once, and the read starts over beneath it.
+      // Refresh itself never comes here: it re-reads and probes while the page stays on screen.
       state.pane.bootAtMs = Date.now()
       state.pane.menuAtMs = 0
       host.invalidate()
@@ -267,7 +268,7 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
       if (word === '') return
       if (word === '?' || word === 'h' || word === 'help') actions.help()
       else if (word === 'p') actions.palette('all')
-      else if (word === 'r') actions.restart()
+      else if (word === 'r') actions.refresh()
       else if (word === 'o' || word === 'bye' || word === 'logoff') actions.close()
       else if (view !== null) setView(view)
       else runner.ask(null, `no area "${plain(word, 24)}": type a key from the menu, or ? for help`)

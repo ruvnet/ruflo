@@ -118,7 +118,7 @@ describe('the icon row', () => {
 
     for (const name of NAMES) (key(tree, name)?.props.onPress as () => void)()
 
-    expect(calls).toEqual(['view(menu)', 'palette(all)', 'help()', 'view(settings)', 'restart()'])
+    expect(calls).toEqual(['view(menu)', 'palette(all)', 'help()', 'view(settings)', 'refresh()'])
   })
 
   it.each([140, 90])('lights the icon of the page you are on in colour, in exactly the width of a button, at %i columns, so nothing jumps', columns => {
