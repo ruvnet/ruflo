@@ -120,11 +120,12 @@ export function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => T
     rufloSnapshot: async () => $.ruflo.snapshot(),
     rufloRoute: async () => $.ruflo.lastRoute(),
     rufloSegment: async text => $.ruflo.segment({ id: 'console', text }),
-    // Both wait on the turn, so neither may be called from inside a command.run hook (`/ruflo yes` is one): they run from a clock
-    // tick, a later event of their own.
+    // `$.prompt.submit` queues the prompt and resolves as its own turn starts (not when that turn ends; reference.md, "Work that outlives a
+    // dispatch"). It is still never made from inside a command.run hook (`/ruflo yes` is one): it runs from a clock tick, a later event of
+    // its own. A hook's refusal (`{ drop: reason }`) resolves `{ isDropped: true }`; the reason is not passed on (it could quote the text).
     submitPrompt: (text, opts) =>
-      new Promise<void>((resolve, reject) => {
-        $.clock.after(1, () => void (opts?.asUser === true ? $.prompt.submit({ text, asUser: true }) : $.prompt.submit({ text })).then(() => resolve(), reject))
+      new Promise<void | { isDropped: true }>((resolve, reject) => {
+        $.clock.after(1, () => void (opts?.asUser === true ? $.prompt.submit({ text, asUser: true }) : $.prompt.submit({ text })).then(result => resolve(typeof result?.drop === 'string' ? { isDropped: true } : undefined), reject))
       }),
     fillPrompt: async text => (await $.prompt.fill({ text, mode: 'replace' })).isFilled,
     runSlash: (command, args) =>

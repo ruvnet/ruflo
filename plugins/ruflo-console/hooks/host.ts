@@ -54,7 +54,8 @@ export type Host = {
   rufloSegment: (text: string | null) => Promise<void>
   /** Submits a prompt to the primary Claude session as a visible turn of its own (once idle). */
   /** `asUser` submits the text as the person's own words (the model reads it bare, not framed as a plugin message); only the chat passes it. */
-  submitPrompt: (text: string, opts?: { asUser?: boolean }) => Promise<void>
+  /** Resolves `{ isDropped: true }` when a hook declined the prompt (`{ drop }`); the hook's reason is never carried. */
+  submitPrompt: (text: string, opts?: { asUser?: boolean }) => Promise<void | { isDropped: true }>
   /** Puts text in the prompt box as the draft (the person presses Enter); false where there is no box. */
   fillPrompt: (text: string) => Promise<boolean>
   /** The names of the slash commands the session offers now (built-in, plugin and MCP alike). */
