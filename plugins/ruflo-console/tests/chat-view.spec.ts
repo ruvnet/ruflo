@@ -8,7 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { askPrompt, VIEW_ASK } from '../hooks/ask-claude'
-import { appendPartial, chatOf, CUT_MARK, keepChat, MAX_TEXT, redrawChat } from '../hooks/chat'
+import { appendPartial, chatOf, CUT_MARK, draftOf, keepChat, MAX_TEXT, redrawChat, setDraft } from '../hooks/chat'
 import { openLoaders } from '../hooks/view-open'
 import type { Host } from '../hooks/host'
 import { groupOf, NAV_GROUPS } from '../hooks/nav-state'
@@ -32,7 +32,7 @@ const kit = (): never => {
 function setup(messages: { role: 'user' | 'assistant'; text: string; tools?: string[] }[] = []) {
   const state = newState({})
   const sent: string[] = []
-  const act = new Proxy({ chat: { send: (text: string) => void sent.push(text) } } as unknown as Actions, { get: (target, key) => (key in target ? (target as never)[key] : () => undefined) })
+  const act = new Proxy({ chat: { send: (text: string) => void sent.push(text), draft: (text: string) => setDraft(state, text) } } as unknown as Actions, { get: (target, key) => (key in target ? (target as never)[key] : () => undefined) })
 
   state.view = 'chat'
   chatOf(state).msgs = messages.map(msg => ({ role: msg.role, text: msg.text, tools: msg.tools ?? [] }))
@@ -135,8 +135,74 @@ describe('the field', () => {
     chatOf(state).pending = 'queued'
     expect(drawn().lines.join('\n')).toContain('queued — sends when Claude is free')
     chatOf(state).pending = 'idle'
-    chatOf(state).error = 'not sent: Claude did not take the message'
+    chatOf(state).sendError = 'not sent: Claude did not take the message'
     expect(drawn().lines.join('\n')).toContain('not sent: Claude did not take the message')
+  })
+
+  it('a refusal shows with messages on screen and without, beside a read error', () => {
+    const { state, drawn } = setup([{ role: 'user', text: 'hi' }])
+
+    chatOf(state).sendError = 'not sent: AIDefence flagged the message as unsafe'
+    chatOf(state).error = 'could not read the conversation'
+
+    const out = drawn().lines.join('\n')
+
+    expect(out).toContain('not sent: AIDefence flagged the message as unsafe')
+    expect(out).toContain('could not read the conversation')
+    expect(setup().drawn().lines.join('\n')).not.toContain('not sent')
+  })
+
+  it('is controlled by the draft: it shows the draft, and typing updates it (final review 4)', () => {
+    const { state, drawn } = setup()
+
+    setDraft(state, 'half a thought')
+
+    const input = find(drawn().tree, node => node.type === 'Input')
+
+    expect(input?.props.value).toBe('half a thought')
+    ;(input?.props.onInput as (value: string) => void)('half a thought, finished')
+    expect(draftOf(state)).toBe('half a thought, finished')
+    expect(find(drawn().tree, node => node.type === 'Input')?.props.value).toBe('half a thought, finished')
+  })
+
+  it('shows the fixed "already sending" note', () => {
+    const { state, drawn } = setup()
+
+    chatOf(state).pending = 'sending'
+    chatOf(state).notice = 'already sending — wait for it'
+    expect(drawn().lines.join('\n')).toContain('already sending — wait for it')
+  })
+})
+
+describe('what the page draws is cleaned (final review 3)', () => {
+  const ESC = '\u001b[31mRED\u001b[0m'
+  const BIDI = 'left‮right'
+  const INVITE = 'join with v2.eyAiY29kZSI6ICJ4In0.AbCdEf123456'
+
+  it('a message drops escape sequences and bidi overrides, and masks an x.ruv.io invite code', () => {
+    const { drawn } = setup([
+      { role: 'user', text: `${ESC} ${BIDI}` },
+      { role: 'assistant', text: `here: ${INVITE}` },
+    ])
+    const out = drawn().lines.join('\n')
+
+    expect(out).toContain('RED')
+    expect(out).not.toContain('\u001b')
+    expect(out).not.toContain('‮')
+    expect(out).not.toContain('eyAiY29kZSI6ICJ4In0')
+  })
+
+  it('the streaming answer is cleaned the same way', () => {
+    const { state, drawn } = setup()
+
+    appendPartial(state, `${ESC}\n${BIDI}\n${INVITE}`)
+
+    const out = drawn().lines.join('\n')
+
+    expect(out).toContain('Claude is writing…')
+    expect(out).not.toContain('\u001b')
+    expect(out).not.toContain('‮')
+    expect(out).not.toContain('eyAiY29kZSI6ICJ4In0')
   })
 })
 
@@ -337,5 +403,27 @@ describe('state shape', () => {
 
     state.view = 'chat'
     expect(() => viewText({ state, nowMs: 0, columns: 80, act: {} as Actions }, 'chat')).not.toThrow()
+  })
+})
+
+describe('a tool loop draws no empty frames (final review 2)', () => {
+  it('only the person’s words get a "you" frame, and tool-only answers read "… used"', async () => {
+    const { toChatMsgs } = await import('../hooks/chat-msg')
+    const rows = [
+      { role: 'user', text: 'fix it', toolUses: [] },
+      { role: 'assistant', text: '', toolUses: [{ tool_use_id: 'a', tool: 'Read', input: {} }] },
+      { role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: 'a', text: 'BODY', isError: false }] },
+      { role: 'assistant', text: 'done', toolUses: [] },
+    ]
+    const { state, drawn } = setup()
+
+    chatOf(state).msgs = keepChat(toChatMsgs(rows as never))
+
+    // The conversation is everything above the field's own rule ("… as you").
+    const out = drawn().lines.join('\n').split('Say something')[0] ?? ''
+
+    expect(out.match(/you/g)).toHaveLength(1)
+    expect(out).toContain('… used Read')
+    expect(out).not.toContain('BODY')
   })
 })

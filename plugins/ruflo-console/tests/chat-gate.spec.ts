@@ -30,7 +30,8 @@ function setup(mode: 'live' | 'preview-off' | 'closed' | 'other-page') {
 const turn = async (host: Host, state: State, fire: () => void) => {
   onChatTurnStart(host, state)
   for (let i = 0; i < 10; i++) onChatChunk(host, state, 'chunk ')
-  expect(chatOf(state).partial).toBe('chunk '.repeat(10))
+  // With the preview off the streamed answer is not held at all (final review 6); otherwise it is kept for when Chat is shown.
+  expect(chatOf(state).partial).toBe(state.options.sessionPreview ? 'chunk '.repeat(10) : '')
   fire()
   await endChatTurn(host, state)
   fire()

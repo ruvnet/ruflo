@@ -180,3 +180,94 @@ describe('toChatMsgs', () => {
     expect(toChatMsgs(rows)).toEqual([{ role: 'user', text: 'hi', tools: [] }])
   })
 })
+
+describe('turn.step: steps, early close and errors (final review 7b, 7d)', () => {
+  const step = chatStep as unknown as (...args: unknown[]) => AsyncGenerator<unknown, unknown>
+
+  /** A `next` whose generator yields `chunks`, then throws `fail` if given, and records whether its finally ran. */
+  function upstream(chunks: unknown[], fail?: Error) {
+    const seen = { finally: false }
+    const next = () => {
+      const gen = (async function* () {
+        try {
+          for (const chunk of chunks) yield chunk
+          if (fail !== undefined) throw fail
+
+          return STEP_RESULT
+        } finally {
+          seen.finally = true
+        }
+      })()
+
+      return Object.assign(gen, { result: Promise.resolve(STEP_RESULT) })
+    }
+
+    return { next, seen }
+  }
+
+  it('a later step of the same turn starts on a new line in the streaming answer', async () => {
+    const texts: string[] = []
+    const first = step(MAIN, upstream([{ kind: 'text', index: 0, text: 'Let me look.' }]).next, (text: string) => texts.push(text))
+
+    for await (const _ of first) void _
+
+    const second = step({ ...MAIN, index: 1 }, upstream([{ kind: 'tool', index: 0, tool: 'Read' }, { kind: 'text', index: 1, text: 'Found it.' }, { kind: 'text', index: 1, text: ' Done.' }]).next, (text: string) => texts.push(text))
+
+    for await (const _ of second) void _
+    expect(texts.join('')).toBe('Let me look.\nFound it. Done.')
+  })
+
+  it('a step with no text adds no line break', async () => {
+    const texts: string[] = []
+    const gen = step({ ...MAIN, index: 2 }, upstream([{ kind: 'tool', index: 0, tool: 'Read' }]).next, (text: string) => texts.push(text))
+
+    for await (const _ of gen) void _
+    expect(texts).toEqual([])
+  })
+
+  it('a consumer that closes early (gen.return()) reaches the upstream generator’s finally', async () => {
+    const { next, seen } = upstream(CHUNKS)
+    const gen = step(MAIN, next, () => undefined)
+
+    await gen.next()
+    await gen.return(undefined)
+    expect(seen.finally).toBe(true)
+  })
+
+  it('a subagent step closed early reaches the upstream finally too', async () => {
+    const { next, seen } = upstream(CHUNKS)
+    const gen = step({ ...MAIN, agentId: 'a1' }, next, () => undefined)
+
+    await gen.next()
+    await gen.return(undefined)
+    expect(seen.finally).toBe(true)
+  })
+
+  it('an upstream throw propagates through chatStep unchanged', async () => {
+    const boom = new Error('provider failed')
+    const gen = step(MAIN, upstream([{ kind: 'text', index: 0, text: 'Hel' }], boom).next, () => undefined)
+
+    await expect(
+      (async () => {
+        for await (const _ of gen) void _
+      })(),
+    ).rejects.toBe(boom)
+  })
+})
+
+describe('Session preview off holds nothing (final review 6)', () => {
+  it('appendPartial keeps no streamed text while the preview setting is off', () => {
+    const state = newState({ sessionPreview: false } as never)
+
+    expect(state.options.sessionPreview).toBe(false)
+    appendPartial(state, 'PRIVATE-STREAM')
+    expect(chatOf(state).partial).toBe('')
+  })
+
+  it('and keeps it again once the preview is on', () => {
+    const state = newState(undefined)
+
+    appendPartial(state, 'visible')
+    expect(chatOf(state).partial).toBe('visible')
+  })
+})

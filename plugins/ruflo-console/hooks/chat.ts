@@ -25,9 +25,24 @@ export const CUT_MARK = '… cut'
 type StepEvent = Readonly<TurnStepInput>
 type StepNext = (e: StepEvent) => HookStream<TurnStepChunk, TurnStepResult>
 
-export type Chat = { msgs: ChatMsg[]; partial: string; pending: 'idle' | 'sending' | 'queued'; error?: string }
+/**
+ * `error` is the last READ's failure (a good read clears it); `sendError` is the last SEND's refusal, kept until the next send starts so a
+ * read that lands right after a refusal cannot wipe it; `notice` is a fixed note for an Enter pressed while a send is still pending.
+ */
+export type Chat = { msgs: ChatMsg[]; partial: string; pending: 'idle' | 'sending' | 'queued'; error?: string; sendError?: string; notice?: string }
 
 const chats = new WeakMap<State, Chat>()
+/**
+ * What the person has typed in the Chat field, beside the store (never in the snapshot, the Chat object or console_state): the field is
+ * drawn from it, an accepted send empties it, and a refused one leaves it for the person to edit.
+ */
+const drafts = new WeakMap<State, string>()
+
+export const draftOf = (state: State): string => drafts.get(state) ?? ''
+
+export function setDraft(state: State, text: string): void {
+  drafts.set(state, typeof text === 'string' ? text : '')
+}
 /** Which main-session turn the store is on: a refresh that lands after the next turn began leaves that turn's partial alone. */
 const turns = new WeakMap<State, number>()
 
@@ -53,7 +68,7 @@ export function keepChat(msgs: readonly ChatMsg[]): ChatMsg[] {
   return msgs.slice(-KEEP_MSGS).map(msg => ({ role: msg.role, text: cutText(msg.text), tools: Array.isArray(msg.tools) ? [...msg.tools] : [] }))
 }
 
-/** Re-reads the main conversation into the store. Never throws: a failed read keeps the last messages and says so in `error`. */
+/** Re-reads the main conversation into the store. Never throws: a failed read keeps the last messages and says so in `error` (a send's refusal, `sendError`, is not the read's to clear). */
 export async function refreshChat(host: Host, state: State): Promise<void> {
   const chat = chatOf(state)
 
@@ -122,8 +137,12 @@ export async function refreshChatAndDraw(host: Host, state: State): Promise<void
   redrawChat(host, state)
 }
 
-/** Appends a streamed piece of the main answer, up to MAX_TEXT (then marks the cut once). O(piece), never O(answer). */
+/**
+ * Appends a streamed piece of the main answer, up to MAX_TEXT (then marks the cut once). O(piece), never O(answer). With the Session
+ * preview setting off nothing is held: the console reads nothing of the conversation then, the streamed answer included.
+ */
 export function appendPartial(state: State, text: string): void {
+  if (!state.options.sessionPreview) return
   const chat = chatOf(state)
 
   if (chat.partial.length > MAX_TEXT) return
@@ -150,14 +169,24 @@ export async function endChatTurn(host: Host, state: State): Promise<void> {
  * The body of the `turn.step` hook (register.ts: `return yield* chatStep(e, next, observe)`): every chunk from beneath is yielded
  * unchanged and in order, and beneath's result is returned. A main-session text chunk is also handed to `observe`; a subagent's step is
  * passed straight through, and an `observe` that throws changes nothing. Per chunk it does one kind check and one call.
+ *
+ * A later step of the same turn (`e.index > 0`: the answer after a tool call) starts on a new line: before its first text chunk `observe`
+ * gets a '\n', so "Let me look." and "Found it." do not run together. A step with no text adds nothing.
+ *
+ * Closing early (the consumer's `return()`) reaches beneath's own `finally` through the `for await`, and a throw from beneath propagates.
  */
 export async function* chatStep(e: StepEvent, next: StepNext, observe: (text: string) => void): AsyncGenerator<TurnStepChunk, TurnStepResult> {
   if (e.agentId !== undefined) return yield* next(e)
   const stream = next(e)
+  let needsBreak = e.index > 0
 
   for await (const chunk of stream) {
     if (chunk.kind === 'text') {
       try {
+        if (needsBreak) {
+          needsBreak = false
+          observe('\n')
+        }
         observe(chunk.text)
       } catch {
         // The console's mirror is a bystander: a failed update never alters the response.
@@ -175,27 +204,43 @@ const NOT_SENT = {
   pii: 'not sent: AIDefence found personal or secret data in the message',
   long: 'not sent: the message is too long to be screened whole; shorten it',
   rejected: 'not sent: Claude did not take the message',
+  dropped: 'not sent: a hook declined it',
 } as const
+
+/** The fixed note for an Enter pressed while a send is still pending. */
+export const ALREADY_SENDING = 'already sending — wait for it'
 
 /**
  * Types to Claude from the console: the message goes in directly, as a normal user turn (`submitPrompt`), never drafted into the prompt box.
  *
  * - The message is trimmed (that is all that is done to it); an empty one is ignored.
- * - While `pending` is not `idle` another Enter is ignored: `pending` is set before anything is awaited, so a repeated Enter during the
- *   screen or the submit adds nothing. Mid-turn it reads `queued` (the engine runs a submit made during a turn as a turn of its own once the
- *   session is idle) and the submit is still made, once.
+ * - While `pending` is not `idle` another Enter submits nothing: `pending` is set before anything is awaited, so a repeated Enter during the
+ *   screen or the submit adds nothing, and says so with a fixed `notice` (ALREADY_SENDING) until the send settles. Mid-turn it reads
+ *   `queued` (the engine runs a submit made during a turn as a turn of its own once the session is idle) and the submit is still made, once.
  * - It is screened by the same AIDefence screen as a typed question to Claude (`screenText`, unless the person switched the screen off): a
  *   secret-shaped or unsafe message is refused and nothing is submitted. A message over the screen's limit could not be screened whole, so it
  *   is refused too.
  * - `pending` returns to `idle` when the submit settles. That is the one signal tied to this very message, it is the same for success and
- *   failure, and it needs no hook of its own. A rejection leaves a fixed `error` (never the message, never the engine's reason).
- * - The text is kept nowhere: not in the store, an event, the last outcome or an error. Never throws.
+ *   failure, and it needs no hook of its own. A refusal, a rejection, or a hook's `{ drop }` leaves a fixed `sendError` (never the message,
+ *   never the engine's or the hook's reason), which stays until the next send starts.
+ * - The text is kept nowhere but the field's own draft (in memory, beside the store): not in the store, an event, the last outcome or an
+ *   error. An accepted send empties the draft (unless the person has typed something else meanwhile); a refused one keeps it. Never throws.
  */
 export async function sendChat(host: Host, state: State, text: string): Promise<void> {
   const chat = chatOf(state)
   const message = typeof text === 'string' ? text.trim() : ''
 
-  if (message === '' || chat.pending !== 'idle') return
+  if (message === '') return
+  if (chat.pending !== 'idle') {
+    chat.notice = ALREADY_SENDING
+    try {
+      host.invalidate()
+    } catch {
+      // A refused redraw changes nothing about the send.
+    }
+
+    return
+  }
 
   const redraw = () => {
     try {
@@ -206,12 +251,16 @@ export async function sendChat(host: Host, state: State, text: string): Promise<
   }
   const refuse = (why: string) => {
     chat.pending = 'idle'
-    chat.error = why
+    chat.sendError = why
+    delete chat.notice
     redraw()
   }
 
   chat.pending = state.turnActive ? 'queued' : 'sending'
-  delete chat.error
+  delete chat.sendError
+  delete chat.notice
+  // The field holds what is being sent (also when no keystroke reached the draft: a paste, a headless submit), so a refusal leaves it there.
+  if (draftOf(state).trim() !== message) setDraft(state, text)
   redraw()
 
   try {
@@ -223,8 +272,12 @@ export async function sendChat(host: Host, state: State, text: string): Promise<
     if (blocksGuidance(screen)) return refuse(screen?.status === 'pii' ? NOT_SENT.pii : NOT_SENT.unsafe)
     if ((screen === null || screen.status === 'unavailable') && hasSecret(message)) return refuse(NOT_SENT.pii)
 
-    await host.submitPrompt(message, { asUser: true })
+    const submitted = await host.submitPrompt(message, { asUser: true })
+
+    if (submitted !== undefined && submitted.isDropped) return refuse(NOT_SENT.dropped)
     chat.pending = 'idle'
+    delete chat.notice
+    if (draftOf(state).trim() === message) setDraft(state, '')
     redraw()
   } catch {
     refuse(NOT_SENT.rejected)
