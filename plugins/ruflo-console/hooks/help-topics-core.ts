@@ -215,7 +215,7 @@ export const CORE_TOPICS: readonly HelpTopic[] = [
       { text: 'Open the Terminal (key i). The field takes your keys.', go: { view: 'terminal' } },
       { text: 'Type a message. The first one asks first, then Enter sends.' },
       { text: 'Switch with /claude, /codex or /swarm. /new starts over.' },
-      { text: 'Sessions remember the conversation per project. Tab to s stops, o opens a new one, z clears.' },
+      { text: 'Sessions remember the conversation per project. The Stop, New session and Clear buttons have no keys: click them.' },
     ],
     related: ['settings', 'cost'],
     keywords: ['claude', 'codex', 'chat', 'prompt', 'session'],

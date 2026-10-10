@@ -78,4 +78,16 @@ describe('terminal messages', () => {
 
     expect(bad).toEqual([])
   })
+
+  it('the help guides do not teach a key for them either ("s stops", "o opens a new one", "z clears")', () => {
+    const bad: string[] = []
+
+    for (const file of ['help-topics-core.ts', 'help-topics-more.ts']) {
+      for (const line of readFileSync(join(HOOKS, file), 'utf8').split(/\r?\n/)) {
+        if (/\bs stops\b|\bo opens a new\b|\bz clears\b|\b(?:press|tab to)\s+(?:s|o|z)\b/i.test(line)) bad.push(`${file}: ${line.trim().slice(0, 120)}`)
+      }
+    }
+
+    expect(bad).toEqual([])
+  })
 })
