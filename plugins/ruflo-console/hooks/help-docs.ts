@@ -4,6 +4,7 @@
  * the real pages, starts and palette in tests/help-docs.spec.ts, so a guide cannot point at something that is gone). ruHelp answers
  * from the guides at once, for nothing; only "ask Claude with these docs" starts a model turn, and it asks first.
  */
+import { NAV_GROUPS, type NavTitle } from './nav-state'
 import type { StartId } from './starts'
 import type { ViewId } from './state'
 
@@ -26,17 +27,21 @@ export type HelpTopic = {
   keywords?: readonly string[]
 }
 
-export const HELP_GROUPS = ['Start', 'Work', 'Learn', 'Safety', 'Network', 'Tools', 'Console'] as const
-export type HelpGroup = (typeof HELP_GROUPS)[number]
+/**
+ * The index's sections: the first steps, then the page groups exactly as the nav and the main menu have them (same names, same order: nav-state.ts
+ * NAV_GROUPS), then the console itself. A guide for a page is filed under that page's group; Start and Console hold the guides that are not about one page.
+ */
+export type HelpGroup = 'Start' | NavTitle | 'Console'
+export const HELP_GROUPS: readonly HelpGroup[] = ['Start', ...NAV_GROUPS.map(group => group.title), 'Console']
 
 export const GROUP_BLURB: Record<HelpGroup, string> = {
   Start: 'first steps and the keys',
-  Work: 'missions, swarms, claims, automation',
-  Learn: 'learning, memory, vectors, harness',
-  Safety: 'security, budget, performance',
-  Network: 'federation, x.ruv.io, sandboxes',
-  Tools: 'plugins, skills, dev tools',
-  Console: 'settings, updates, commands, fixes',
+  SWARM: 'missions, swarms, claims, approvals',
+  MIND: 'learning, memory, vectors, harness',
+  SAFETY: 'security, budget, performance, activity',
+  NETWORK: 'federation, x.ruv.io, sandboxes, skills',
+  TOOLS: 'terminal, automation, plugins, settings',
+  Console: 'updates, headless, checks, fixes',
 }
 
 /** The guide for each page: what opening help from that page shows first. */

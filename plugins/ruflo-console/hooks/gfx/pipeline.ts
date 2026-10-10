@@ -96,7 +96,7 @@ export function routePicture(model: RouteModel, columns: number): Grid {
       ? `a prior, not a calibrated probability · from your route query ${model.asked ?? ''}`
       : model.source === 'mods'
         ? `${model.matched === true ? 'keyword match' : 'no match, default'} · only the winner is stored; runners-up need a route query`
-        : 'run a route query in the Learning Lab to see candidates'
+        : 'run a route query in the Neural Lab to see candidates'
 
   grid.text(0, rows - 1, source.slice(0, columns), COLOR.dim)
 

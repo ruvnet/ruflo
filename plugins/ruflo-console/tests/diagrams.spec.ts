@@ -196,7 +196,7 @@ describe('BBS boot screen', () => {
   it('reports the self-check: [ OK ] only for an area whose check passed, [FAIL] and its problem for one that did not, READY counting what was verified', () => {
     const rows = BOOT_ROWS + 1 + BOOT_MODULES.length + 1
     const passing = BOOT_MODULES.map(entry => ({ area: entry.name, ok: true, problems: [] as string[] }))
-    const withFailure = passing.map(result => (result.area === 'Security' ? { ...result, ok: false, problems: ['aid-check: an empty field must be refused'] } : result))
+    const withFailure = passing.map(result => (result.area === 'Security & Doctor' ? { ...result, ok: false, problems: ['aid-check: an empty field must be refused'] } : result))
     const good = text(bootPicture('demo', 80, 5_400, 10, 10, rows, passing), 80)
     const bad = text(bootPicture('demo', 80, 5_400, 10, 10, rows, withFailure), 80)
 
@@ -212,7 +212,7 @@ describe('BBS boot screen', () => {
     expect(bad).toContain('[FAIL] READY')
 
     // An area still starting shows [ .. ] whatever its verdict: the result appears when the next area begins.
-    const securityAt = 1_500 + 120 * BOOT_MODULES.findIndex(entry => entry.name === 'Security')
+    const securityAt = 1_500 + 120 * BOOT_MODULES.findIndex(entry => entry.name === 'Security & Doctor')
 
     expect(text(bootPicture('demo', 80, securityAt + 10, 10, 10, rows, withFailure), 80)).toContain('[ .. ] Security')
   })

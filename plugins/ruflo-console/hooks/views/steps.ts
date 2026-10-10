@@ -58,7 +58,7 @@ export const STEPS: Partial<Record<ViewId, { title: string; steps: readonly Step
     steps: [
       { label: 'Start the daemon', why: 'its workers do the learning', go: { start: 'daemon' }, done: s => s.daemon?.running === true },
       { label: 'Pretrain on this repo', why: 'seeds the patterns the router uses', go: { start: 'pretrain' }, done: s => (s.neural?.patterns ?? 0) > 0 || (s.sona?.patterns ?? 0) > 0 },
-      { label: 'Open the Learning Lab', why: 'train, predict, search and store patterns', go: { view: 'neural' } },
+      { label: 'Open the Neural Lab', why: 'train, predict, search and store patterns', go: { view: 'neural' } },
     ],
   },
   federation: {

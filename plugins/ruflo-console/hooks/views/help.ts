@@ -91,7 +91,7 @@ function indexRows(ctx: Ctx): RenderElement[] {
         group,
         `${topics.length} · ${GROUP_BLURB[group]}`,
         topics.map(topic => row(ctx, [text(ctx, '  '), button(ctx, `help-topic-${topic.id}`, `${topic.title} `.padEnd(lead, '.'), () => ctx.act.ruhelp.open(topic.id)), text(ctx, ` ${clip(topic.summary, Math.max(10, ctx.columns - lead - 8))}`, { dimColor: true })], `help-topic-row-${topic.id}`)),
-        group === 'Start' || group === 'Work',
+        group === 'Start' || group === 'SWARM',
       ),
     )
   }
