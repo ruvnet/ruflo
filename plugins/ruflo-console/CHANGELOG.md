@@ -92,7 +92,6 @@ Newest first. One `## <version> — <date>` heading per version, then `feat:`, `
 
 ## 0.37.0 — 2026-10-07
 - feat: shared toast system with levels, dedupe, persistence and Settings (ADR-477)
-- feat: shared toast policy and its call sites (ADR-477), work in progress
 - fix: CONSOLE_VERSION follows the manifest (0.36.1)
 
 ## 0.36.1 — 2026-10-07
@@ -102,7 +101,6 @@ Newest first. One `## <version> — <date>` heading per version, then `feat:`, `
 - feat: 0.36.0 integration: eventsPersist option, shared whole-batch append argv, hostile-time hardening, init ignores console/
 - fix: log Claude's refused request when the person's card is waiting; mission-auto why when not wired; document the local-read allowlist
 - fix: session control cap, gate on read-only entries that act, hostile text/data, mission auto-run guards (#3814 #3815 #3816 #3817 #3818)
-- chore: Merge verify/events-0.36 into feat/console-0.36
 
 ## 0.35.0 — 2026-10-06
 - feat: autopilot envelope editor, parallel hand-over, spend windows, band segment, and the first live run (ADR-470)
