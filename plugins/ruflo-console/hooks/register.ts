@@ -118,10 +118,14 @@ function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPre
     },
     settings: async () => $.settings.read(),
     home: async () => {
-      const envVars: { [key: string]: string | undefined } = {}
-      for (const key of ['HOME', 'USERPROFILE', 'HOMEDRIVE', 'HOMEPATH']) {
-        envVars[key] = await $.env.get(key)
-      }
+      const [home, userProfile, homeDrive, homePath] = await Promise.all([
+        $.env.get('HOME'),
+        $.env.get('USERPROFILE'),
+        $.env.get('HOMEDRIVE'),
+        $.env.get('HOMEPATH'),
+      ])
+      const envVars: { [key: string]: string | undefined } = { HOME: home, USERPROFILE: userProfile, HOMEDRIVE: homeDrive, HOMEPATH: homePath }
+
       return homeOf(k => envVars[k])
     },
     configDir: async () => $.env.get('CLAUDE_CONFIG_DIR'),
