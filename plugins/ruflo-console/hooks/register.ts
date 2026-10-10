@@ -9,7 +9,7 @@ import { plain } from './data/parse'
 import { dispatch } from './dispatch'
 import { markPicture } from './gfx/pictures'
 import { toChatMsgs } from './chat-msg'
-import { appendPartial, chatStep, endChatTurn, startChatTurn } from './chat'
+import { appendPartial, chatStep, endChatTurn, redrawChat, refreshChatAndDraw, startChatTurn } from './chat'
 import type { Host } from './host'
 import { ownerLine, ownerOf } from './tool-owner'
 import { newState, PANE_ID, restore, restoreSessions, storeKeyOf, termStoreKeyOf } from './state'
@@ -407,6 +407,8 @@ export const register: Register = (on, raw: PluginOptions) => {
     if (e.agentId === undefined) {
       try {
         startChatTurn(state)
+        // The message that began this turn is in the conversation now: read it, so a sent message shows without waiting for the turn to end.
+        if (host !== null) void refreshChatAndDraw(host, state).catch(() => undefined)
       } catch {
         // The chat mirror never changes the turn.
       }
@@ -437,7 +439,7 @@ export const register: Register = (on, raw: PluginOptions) => {
         // A note that could not be recorded never changes the turn.
       }
       // The chat mirror re-reads the settled turns, then drops the streamed text; never awaited, never thrown out of the turn.
-      void endChatTurn(host, state).catch(() => undefined)
+      void endChatTurn(host, state).then(() => redrawChat(host as Host, state)).catch(() => undefined)
     }
 
     return next(e)
@@ -445,7 +447,10 @@ export const register: Register = (on, raw: PluginOptions) => {
 
   // The chat mirror watches the main answer stream in (text chunks only); every chunk passes on unchanged, and so does the result.
   on('turn.step', async function* ($, e, next) {
-    return yield* chatStep(e, next, text => appendPartial(state, text))
+    return yield* chatStep(e, next, text => {
+      appendPartial(state, text)
+      if (host !== null) redrawChat(host, state)
+    })
   })
 
   // The mission Claude is working on rides in the system prompt (ADR-443); the text changes only when the task does.

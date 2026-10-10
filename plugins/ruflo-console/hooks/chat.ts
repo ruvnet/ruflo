@@ -66,6 +66,44 @@ export async function refreshChat(host: Host, state: State): Promise<void> {
   }
 }
 
+/** The shortest gap between two redraws of the Chat page while an answer streams in (or a re-read lands). */
+export const REDRAW_MS = 200
+
+const redrawing = new WeakMap<State, { cancel: () => void }>()
+
+/**
+ * Asks for a redraw of the Chat page, at most once per REDRAW_MS however many chunks arrive: the first call arms one timer and the rest
+ * ride on it. It does nothing unless the console is open on the Chat page (a streamed answer costs every other page no redraw), and a
+ * host that refuses the redraw changes nothing. O(1) per call.
+ */
+export function redrawChat(host: Host, state: State): void {
+  if (state.view !== 'chat' || !state.pane.isOpen || redrawing.has(state)) return
+
+  try {
+    redrawing.set(
+      state,
+      host.after(REDRAW_MS, () => {
+        redrawing.delete(state)
+        if (state.view !== 'chat' || !state.pane.isOpen) return
+
+        try {
+          host.invalidate()
+        } catch {
+          // A refused redraw leaves the page as it was until the next one.
+        }
+      }),
+    )
+  } catch {
+    // No timer: the next chunk or re-read asks again.
+  }
+}
+
+/** Re-reads the conversation, then redraws the Chat page if it is the one shown. Never throws. */
+export async function refreshChatAndDraw(host: Host, state: State): Promise<void> {
+  await refreshChat(host, state)
+  redrawChat(host, state)
+}
+
 /** Appends a streamed piece of the main answer, up to MAX_TEXT (then marks the cut once). O(piece), never O(answer). */
 export function appendPartial(state: State, text: string): void {
   const chat = chatOf(state)
