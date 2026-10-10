@@ -4,7 +4,7 @@
  * hash does not match its body is treated as tampered and the loop refuses to run on it. Hard denies are not part of the envelope: they
  * are a constant of this file, and an envelope that names one as allowed is rejected, never trimmed.
  */
-import { hasParentSegment, isAbsolutePath } from './paths'
+import { hasParentSegment, isAbsolutePath, isWindowsPath } from './paths'
 
 /** Classes of action an envelope can allow. Each task is classified (data/ap-guard.ts) into exactly one, or is parked. */
 export const TOOL_CLASSES = ['read', 'edit', 'test', 'git-local', 'git-branch', 'network', 'spawn', 'mcp'] as const
@@ -28,7 +28,8 @@ export const DENY_PATTERNS: readonly [HardDeny, RegExp][] = [
 /** Folders the autopilot's own steps may never be pointed at: its envelope, journal and kill flag, and Project Anatole's status. A task or envelope that names one is refused, not trimmed. */
 export const PROTECTED_DIRS = ['.claude-flow/console', '.claude-flow/protector-mod'] as const
 export const isProtectedPath = (path: string): boolean => {
-  const flat = path.replace(/\/+/g, '/').replace(/\/\.\//g, '/')
+  // Windows file systems ignore case, so a drive-lettered path is compared lower-cased; a POSIX path stays exact.
+  const flat = (isWindowsPath(path) ? path.toLowerCase() : path).replace(/\/+/g, '/').replace(/\/\.\//g, '/')
 
   return PROTECTED_DIRS.some(dir => flat.includes(dir)) || flat.endsWith('/.claude-flow') || flat.endsWith('/.claude-flow/')
 }
