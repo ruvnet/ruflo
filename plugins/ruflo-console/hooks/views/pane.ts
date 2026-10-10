@@ -167,9 +167,22 @@ function tabs(ctx: Ctx): RenderElement {
   })
 }
 
+/** A clickable "◂ Back to <page>" (no hotkey: b keeps its page meanings) when Back has a page to go to; the same action as the `back` command. */
+function backButton(ctx: Ctx): RenderElement | null {
+  const target = peekBack(ctx.state)
+
+  if (target === null) return null
+
+  const label = target.view === 'agent' ? 'Agent' : (VIEWS.find(entry => entry.id === target.view)?.label ?? 'previous page')
+
+  return button(ctx, 'crumb-back', `◂ Back to ${label}`, ctx.act.back)
+}
+
 /** One line under the tabs saying what the current view is for. */
 function blurb(ctx: Ctx): RenderElement | null {
-  if (ctx.columns < NARROW) return null
+  const back = backButton(ctx)
+
+  if (ctx.columns < NARROW) return back === null ? null : row(ctx, [back], 'about')
 
   const view = VIEWS.find(entry => entry.id === (ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view))
 
@@ -184,6 +197,7 @@ function blurb(ctx: Ctx): RenderElement | null {
   if (isBbs()) {
     // A sysop prompt: >> 🐝 SWARM :: what it is for
     return row(ctx, [
+      ...(back === null ? [] : [back]),
       ctx.kit.Text({ bold: true, color: THEME.ok, children: '>> ' }),
       ctx.kit.Text({ bold: true, color: THEME.head, children: `${view.icon} ${name.toUpperCase()}` }),
       ctx.kit.Text({ color: THEME.info, wrap: 'truncate-end', children: clip(` :: ${about}`, Math.max(4, ctx.columns - name.length - 6)) }),
@@ -191,6 +205,7 @@ function blurb(ctx: Ctx): RenderElement | null {
   }
 
   return row(ctx, [
+    ...(back === null ? [] : [back]),
     ctx.kit.Text({ bold: true, color: THEME.head, children: `${view.icon} ${name}` }),
     ctx.kit.Text({ dimColor: true, italic: true, wrap: 'truncate-end', children: clip(` — ${about}`, Math.max(4, ctx.columns - name.length - 2)) }),
   ], 'about')
