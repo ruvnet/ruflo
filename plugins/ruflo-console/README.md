@@ -49,6 +49,17 @@ CONSOLE_DRIVE_INSTALL="$PWD:ruflo-mods@ruflo" RUFLO_E2E_LIVE=1 bash plugins/rufl
 
 Settings → Interface and updates → **Toasts** sets what the ruflo plugins may show over the transcript: `all`, `important` (warnings and errors) or `off`, with a mute chip each for `console`, `swarm`, `protector` and `mods`. It is kept in the console's store and mirrored to `.claude-flow/console/toast-prefs.json`, which the other plugins read. Every toast, drawn or not, becomes an event on the Events page (`toast <source> <glyph> <text> [off|muted|deduped|…]`); the other plugins' digests are read from `.claude-flow/console/toasts/<source>.jsonl`, masked and capped. The console itself also toasts a mission that finishes (`ok`) or loses a task (`error`), and its update notes by level. Design and contract: [ADR-477](../../v3/docs/adr/ADR-477-mod-toasts.md).
 
+## Chat with Claude
+
+Open it with `/ruflo chat` (menu: SWARM → start here; also the page tabs, the palette entry `view-chat` and the *Chat* link in the band).
+
+- **What it shows.** The newest messages of *this* session, yours and Claude's. A reply that only used tools reads `… used <tools>`; long text is cut with `… cut`. At most 50 messages and 400 rows are drawn; the store behind it keeps 200.
+- **Live.** Claude's reply streams into the page as it is written, redrawn at most every 200 ms, while the page is open.
+- **Sending.** Enter in the *Say something* field submits your text as a normal user turn, so the model reads it as your own words. While Claude is busy the status reads `queued — sends when Claude is free`, and pressing Enter again does not send twice.
+- **Secrets.** Secret-shaped text is refused and nothing is sent: by the AIDefence screen when it is on, by a local secret check when the screen is off or unavailable.
+- **Every send is a normal, billed turn.** The console adds no model call of its own.
+- **Privacy.** The conversation is read only while *Session preview* is on and the Chat page is open in the pane (plus one read when you open it). Nothing of it is written to disk, put into `console_state` text answers (they give counts only), sent to a model by the console, or shared by *Ask Claude about this view*. With *Session preview* off the page shows only a hint and reads nothing. The footer *Ask Claude* button is unchanged.
+
 ## Room and Mods
 
 Open it with `/ruflo room` (menu: Safety → The Room).

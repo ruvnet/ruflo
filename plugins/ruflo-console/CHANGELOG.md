@@ -2,6 +2,12 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.44.0 — 2026-10-10
+- feat: a "Chat with Claude" page (menu: SWARM, start here; the page tabs; the palette entry `view-chat`; `/ruflo chat`; a "Chat" link in the band) shows the newest messages of this session, yours and Claude's, a tool-only reply as "… used <tools>"; a long message is cut with "… cut", at most 50 messages and 400 rows are drawn and the store keeps 200
+- feat: Claude's reply streams into the page while it is open, redrawn at most every 200 ms
+- feat: the page's Send field sends your text as a normal user turn that the model reads as your own words; while Claude is busy the status reads "queued — sends when Claude is free" and a repeated Enter does not send twice; secret-shaped text is refused and nothing is sent (the AIDefence screen when it is on, a local secret check when the screen is off or unavailable); every send is an ordinary, billed turn
+- feat: privacy gates: the conversation is read only while Session preview is on and the Chat page is open in the pane (plus one read when you open it); nothing of it is written to disk, put into `console_state` text answers (they give counts only), sent to a model by the console, or shared by "Ask Claude about this view"; with Session preview off the page shows only a hint and reads nothing. The footer "Ask Claude" button is unchanged
+
 ## 0.42.1 — 2026-10-10
 - fix: Mission Control create retries only a real policy-state lock timeout (and a silent failure or a wait that ran out), reads the CLI's own Result: line rather than the Parameters object, undoes every open task of the mission when it must abort, asks the mission record to cancel, and reads the stores back so the result says what they show, not what was asked (#3945)
 - fix: a run that reports for itself (mission create, the ADR page writes) now becomes the console's outcome when it ends, so console_state.lastResult carries how it ended however long it took (#3945)
