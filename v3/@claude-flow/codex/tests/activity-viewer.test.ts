@@ -73,6 +73,25 @@ describe('agent picker', () => {
     expect(viewer.activity).toBeNull();
     expect(viewer.render(100, 100)).not.toContain('npm test');
   });
+  it.each([[25, 12], [40, 10], [80, 8]])('keeps the selected picker row visible at %ix%i', async (width, height) => {
+    for (const id of ['aaa', 'bbb', 'ccc']) {
+      const header = meta(id);
+      header.payload.agent_path = `/root/${id}-${'long-name-'.repeat(10)}`;
+      await writeFile(path.join(files.nested, `${id}.jsonl`), jsonl([header]));
+    }
+    const viewer = new ActivityViewer(files.directory, files.parent);
+    await viewer.refresh();
+    viewer.selected = 'ccc';
+    for (const partial of [false, true]) {
+      viewer.list.partial = partial;
+      const output = viewer.render(width, height);
+      expect(output).toContain('> /root/ccc-');
+      expect(output.split('\n').length).toBeLessThanOrEqual(height);
+      expect(output.split('\n').every(line => line.length < width)).toBe(true);
+    }
+    viewer.key('up');
+    expect(viewer.render(width, height)).toContain('> /root/bbb-');
+  });
   it('supports narrow windows, scroll, follow-latest and top navigation', async () => {
     const viewer = new ActivityViewer(files.directory, files.parent);
     await viewer.refresh(); viewer.key('return'); await viewer.refresh();

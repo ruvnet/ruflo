@@ -54,6 +54,7 @@ export class ActivityViewer {
   }
 
   render(width = 100, height = 30, now = Date.now()): string {
+    const columns = Math.max(10, Math.min(240, width - 1));
     const lines: string[] = ['CODEX AGENT ACTIVITY', 'Read-only | state comes from local records', ''];
     if (this.list.error) lines.push(this.list.error);
     else {
@@ -66,15 +67,18 @@ export class ActivityViewer {
         const count = Math.max(1, height - 10);
         const start = Math.max(0, selected - count + 1);
         for (const helper of this.list.helpers.slice(start, start + count)) {
-          lines.push(`${helper.id === this.selected ? '>' : ' '} ${helper.path}${helper.name ? ` (${helper.name})` : ''}`);
+          const label = `${helper.id === this.selected ? '>' : ' '} ${helper.path}${helper.name ? ` (${helper.name})` : ''}`;
+          lines.push(wrap(label, columns).length > 1 ? `${wrap(label, columns - 3)[0]}...` : label);
         }
         if (this.list.helpers.length > count) lines.push(`Showing ${start + 1}-${Math.min(start + count, this.list.helpers.length)} of ${this.list.helpers.length}`);
       } else this.detailLines(lines, now);
     }
-    const wrapped = lines.flatMap(line => wrap(line, Math.max(10, Math.min(240, width - 1))));
+    const wrapped = lines.flatMap(line => wrap(line, columns));
     const room = Math.max(1, height - 2);
     const maximum = Math.max(0, wrapped.length - room);
-    this.offset = this.detail ? (this.follow ? maximum : Math.min(this.offset, maximum)) : 0;
+    // Wrapped headings can fill a short terminal too. Keep the selected row visible.
+    const pickerOffset = Math.max(0, wrapped.findIndex(line => line.startsWith('> ')) - room + 1);
+    this.offset = this.detail ? (this.follow ? maximum : Math.min(this.offset, maximum)) : pickerOffset;
     const footer = this.detail ? 'b back | j/k scroll | Space page | g top | G latest | q quit'
       : 'j/k or arrows select | Enter details | q quit';
     return [...wrapped.slice(this.offset, this.offset + room), '', ...wrap(footer, Math.max(10, width - 1)).slice(0, 1)].join('\n');
