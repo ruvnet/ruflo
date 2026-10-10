@@ -13,6 +13,7 @@
  * The one write, `git -C <main> worktree remove <path>` with no --force, lives in views/wf-worktrees.ts behind the confirm card.
  */
 import { plain } from './parse'
+import { flavorOfPlatform } from './write-flavor'
 import { hasParentSegment, isAbsolutePath } from './paths'
 import { cleanText } from './wf-clean'
 import type { WfRun } from './workflows'
@@ -222,7 +223,10 @@ export async function readWorktrees(io: WtIo, input: { cwd: string; nowMs: numbe
 }
 
 /** The process check for these paths; never throws: a probe that fails is a blind check. */
-export async function checkProcs(io: WtIo, paths: readonly string[], nowMs: number): Promise<ProcCheck> {
+export async function checkProcs(io: WtIo, paths: readonly string[], nowMs: number, platform?: unknown): Promise<ProcCheck> {
+  // /proc is Linux-only: on Windows (no find, no /proc) the answer is "not available" and nothing is spawned. macOS got "did not answer" from the failed spawn; it now gets this.
+  if ((platform === undefined ? flavorOfPlatform() : flavorOfPlatform(platform)) !== 'gnu') return { atMs: nowMs, ok: false, seen: 0, counts: new Map(), paths: new Set(paths), why: 'the live-process check is not available on this system' }
+
   const result = await io.run(PROCS_ARGV, 30_000).catch(() => null)
 
   if (result === null || result.stdout === '') return { atMs: nowMs, ok: false, seen: 0, counts: new Map(), paths: new Set(paths), why: 'the process listing did not answer' }
