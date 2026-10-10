@@ -2,6 +2,15 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.42.2 — 2026-10-10
+- fix: the same project on Windows keeps one remembered page and one terminal history whatever the drive-letter case or trailing slash of its folder (`c:\work\app\` and `C:\Work\app` are one workspace)
+- fix: any confirmed action whose on-disk check fails is re-checked once after one second, so a hive started from the console shows at once instead of reading "not verified"
+- fix: no Linux-only process probe off Linux (macOS, Windows), and the probe timers are cleared when the session ends
+- fix: autopilot's kill flag can be cleared on Windows. Starting autopilot on Windows is refused with a plain message until a follow-up: its journal needs atomic appends and its folder fence needs Windows-aware path checks. Stop works as before
+- fix: disk writes (settings, journal, envelope, exports) work on Windows through the host's file API; Linux and macOS keep their exact commands
+- fix: the home folder is found on Windows (USERPROFILE, HOMEDRIVE+HOMEPATH), so sessions, plugin health and What's new read it
+- fix: Windows project folders (`C:\work\app`, `\\server\share\app`) are recognised as project folders for ADRs, export, the catalog and mission cost, and the protected autopilot folders match ignoring case
+
 ## 0.42.1 — 2026-10-10
 - fix: Mission Control create retries only a real policy-state lock timeout (and a silent failure or a wait that ran out), reads the CLI's own Result: line rather than the Parameters object, undoes every open task of the mission when it must abort, asks the mission record to cancel, and reads the stores back so the result says what they show, not what was asked (#3945)
 - fix: a run that reports for itself (mission create, the ADR page writes) now becomes the console's outcome when it ends, so console_state.lastResult carries how it ended however long it took (#3945)
