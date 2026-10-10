@@ -6,6 +6,7 @@ import { createController, type Controller } from './controller'
 import { startSessions } from './sessions'
 import { record } from './data/events'
 import { plain } from './data/parse'
+import { homeOf, isAbsolutePath, joinPath } from './data/paths'
 import { dispatch } from './dispatch'
 import { markPicture } from './gfx/pictures'
 import type { Host } from './host'
@@ -14,7 +15,7 @@ import { newState, PANE_ID, restore, restoreSessions, storeKeyOf, termStoreKeyOf
 import { BAR_KEY, barView } from './views/bar'
 import { addNotice, dismissNotices } from './notices'
 import { setBootChecks } from './boot-checks'
-import { startWriteFlavorDetection } from './data/write-flavor'
+import { startWriteFlavor } from './data/write-flavor'
 import { buildOf, isOurCheckout, setBuild } from './build'
 import { runUpdateCheck } from './update-flow'
 import { announceModelTools, parseControlEnv, serveModelTools } from './model-tools'
@@ -40,7 +41,7 @@ const RUFLO_TOOL = /^mcp__(claude-flow|ruflo|plugin_ruflo[\w-]*)__/
 let isResettingScroll = false
 
 function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPrefs; record: (digest: Digest) => void }): Host {
-  const rooted = (path: string) => (path.startsWith('/') ? path : `${cwd.replace(/\/+$/, '')}/${path}`)
+  const rooted = (path: string) => (isAbsolutePath(path) ? path : joinPath(cwd, path))
   const quietly = (fn: () => unknown) => {
     try {
       const result = fn()
@@ -63,7 +64,14 @@ function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPre
   })
 
   return {
-    fs: { read: async path => $.fs.read(rooted(path)), stat: async path => $.fs.stat(rooted(path)), list: async path => $.fs.list(rooted(path)) },
+    fs: {
+      read: async path => $.fs.read(rooted(path)),
+      stat: async path => $.fs.stat(rooted(path)),
+      list: async path => $.fs.list(rooted(path)),
+      // The Windows write flavor (write-via.ts): the host's own file API, since no dd, sh, install, mkdir or cp is on the engine's PATH there.
+      write: async (path, text) => $.fs.write(rooted(path), text),
+      exists: async path => $.fs.exists(rooted(path)),
+    },
         every: (ms, fn) => $.clock.every(ms, fn),
     after: (ms, fn) => $.clock.after(ms, fn),
     storeGet: async key => $.store.get(key),
@@ -109,7 +117,17 @@ function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPre
       return { tools: names.length, servers: [...new Set(names)].sort() }
     },
     settings: async () => $.settings.read(),
-    home: async () => $.env.get('HOME'),
+    home: async () => {
+      const [home, userProfile, homeDrive, homePath] = await Promise.all([
+        $.env.get('HOME'),
+        $.env.get('USERPROFILE'),
+        $.env.get('HOMEDRIVE'),
+        $.env.get('HOMEPATH'),
+      ])
+      const envVars: { [key: string]: string | undefined } = { HOME: home, USERPROFILE: userProfile, HOMEDRIVE: homeDrive, HOMEPATH: homePath }
+
+      return homeOf(k => envVars[k])
+    },
     configDir: async () => $.env.get('CLAUDE_CONFIG_DIR'),
     pluginRoot: $.plugin.root,
     // `$.ruflo` exists only where ruflo-mods is seated; validate refuses feature-detecting a noun, so these are
@@ -167,10 +185,10 @@ export const register: Register = (on, raw: PluginOptions) => {
   on('session.start', async ($, e, next) => {
     control?.stop()
     host = hostOf($, e.cwd, { prefs: () => state.toastPrefs, record: digest => recordToast(state, digest) })
-    // Which write argv the host takes (GNU dd/install on Linux, the constant sh scripts on macOS/BSD). Started before the controller (whose
-    // timers write) exists; every write awaits it (writeFlavorReady), so none is built with a guessed flavor.
+    // Which write the host takes (GNU dd/install on Linux, the constant sh scripts on macOS/BSD, the host's file API on Windows). Started
+    // before the controller (whose timers write) exists; every write awaits it (writeFlavorReady), so none is built with a guessed flavor.
     const detecting = host
-    void startWriteFlavorDetection((argv, timeoutMs) => detecting.run(argv, timeoutMs))
+    void startWriteFlavor((argv, timeoutMs) => detecting.run(argv, timeoutMs), undefined, e.cwd)
     state.cwd = e.cwd
     state.nostrKeyVerifiedAtMs = null
     state.isInteractive = e.isInteractive !== false

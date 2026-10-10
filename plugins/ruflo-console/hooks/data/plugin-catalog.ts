@@ -5,6 +5,7 @@
  */
 import type { ReaderFs } from './files'
 import { plain } from './parse'
+import { hasParentSegment, isAbsolutePath, joinPath } from './paths'
 
 export type CatalogPlugin = {
   name: string
@@ -71,9 +72,9 @@ async function pluginOf(fs: ReaderFs, location: string, entry: Record<string, un
 
 /** Every plugin the marketplace clone at `location` lists, or null when its manifest cannot be read. */
 export async function readCatalog(fs: ReaderFs, location: string): Promise<CatalogPlugin[] | null> {
-  if (!location.startsWith('/') || location.split('/').includes('..')) return null
+  if (!isAbsolutePath(location) || hasParentSegment(location)) return null
 
-  const raw = await fs.read(`${location}/.claude-plugin/marketplace.json`).catch(() => null)
+  const raw = await fs.read(joinPath(location, '.claude-plugin', 'marketplace.json')).catch(() => null)
   let list: unknown[] = []
 
   try {
