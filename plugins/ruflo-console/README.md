@@ -53,12 +53,12 @@ Settings → Interface and updates → **Toasts** sets what the ruflo plugins ma
 
 Open it with `/ruflo chat` (menu: SWARM → start here; also the page tabs, the palette entry `view-chat` and the *Chat* link in the band).
 
-- **What it shows.** The newest messages of *this* session, yours and Claude's. A reply that only used tools reads `… used <tools>`; long text is cut with `… cut`. At most 50 messages and 400 rows are drawn; the store behind it keeps 200.
+- **What it shows.** The newest messages of *this* session, yours and Claude's. A reply that only used tools reads `… used <tools>`; the rows that only carry tool results are not shown. Long text is cut with `… cut`. At most 50 messages and 400 rows are drawn; the store behind it keeps 200. Every line is cleaned as on the AI terminal page: escape sequences, control, bidirectional and invisible characters are dropped and x.ruv.io invite codes are masked.
 - **Live.** Claude's reply streams into the page as it is written, redrawn at most every 200 ms, while the page is open.
-- **Sending.** Enter in the *Say something* field submits your text as a normal user turn, so the model reads it as your own words. While Claude is busy the status reads `queued — sends when Claude is free`, and pressing Enter again does not send twice.
+- **Sending.** Enter in the *Say something* field submits your text as a normal user turn, so the model reads it as your own words. The field empties once the message is taken. While Claude is busy the status reads `queued — sends when Claude is free`, and pressing Enter again does not send twice (it shows `already sending — wait for it`). A message that is not sent (refused, or declined by a hook) says so with a fixed `not sent: …` line that stays until your next send, and your text stays in the field to edit.
 - **Secrets.** Secret-shaped text is refused and nothing is sent: by the AIDefence screen when it is on, by a local secret check when the screen is off or unavailable.
 - **Every send is a normal, billed turn.** The console adds no model call of its own.
-- **Privacy.** The conversation is read only while *Session preview* is on and the Chat page is open in the pane (plus one read when you open it). Nothing of it is written to disk, put into `console_state` text answers (they give counts only), sent to a model by the console, or shared by *Ask Claude about this view*. With *Session preview* off the page shows only a hint and reads nothing. The footer *Ask Claude* button is unchanged.
+- **Privacy.** The conversation is read only while *Session preview* is on and the Chat page is open in the pane (plus one read when you open it). Nothing of it is written to disk, put into `console_state` text answers (they give counts only), sent to a model by the console, or shared by *Ask Claude about this view*. With *Session preview* off the page shows only a hint and reads nothing, not even the reply as it streams. The footer *Ask Claude* button is unchanged.
 
 ## Room and Mods
 
