@@ -22,7 +22,7 @@ import { isBooting, isCompactPane, NAV_STYLES, VIEWS, type ViewId } from '../sta
 import { agentView } from './agent'
 import { automateResult, automateView } from './automate'
 import { claimsView } from './claims'
-import { ago, button, clip, col, confirmRow, isBbs, row, setLook, text, THEME, type Ctx } from './common'
+import { ago, button, clip, col, confirmRow, isBbs, row, setLook, text, THEME, withoutAnswerKeys, type Ctx } from './common'
 import { costView } from './cost'
 import { evolveResult, evolveView } from './evolve'
 import { catalogView } from './plugin-catalog'
@@ -397,7 +397,9 @@ export function paneView(base: Ctx): RenderElement {
   }
   // A section of a page is a bordered card (views/card.ts): the body is drawn narrower by the border and padding, through a kit that groups its rows.
   const cardsOn = hasCards(base.columns, isCompactPane(base.state))
-  const bodyCtx: Ctx = cardsOn ? { ...ctx, columns: ctx.columns - CARD_COLUMNS, cards: true, kit: withCards(ctx.kit, isBbs() ? (accentOfView(ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view) ?? undefined) : undefined) } : ctx
+  const bodyBase: Ctx = cardsOn ? { ...ctx, columns: ctx.columns - CARD_COLUMNS, cards: true, kit: withCards(ctx.kit, isBbs() ? (accentOfView(ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view) ?? undefined) : undefined) } : ctx
+  // An ask on screen owns y and n: the page below it keeps its buttons, not those two hotkeys.
+  const bodyCtx: Ctx = ctx.state.pending === null ? bodyBase : { ...bodyBase, kit: withoutAnswerKeys(bodyBase.kit) }
   const drawBody = () => (ctx.state.palette.isOpen ? paletteView(bodyCtx) : ctx.state.isHelp ? helpView(bodyCtx) : BODIES[ctx.state.view](bodyCtx))
   // A lab's result block is drawn first into the panel (pass one), then the page is drawn with the panel placed under the clicked row.
   if (ctx.state.origin !== null && (ctx.state.lab.result !== null || ctx.state.lab.running !== null)) {

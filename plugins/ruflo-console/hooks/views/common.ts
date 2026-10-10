@@ -447,6 +447,27 @@ export function confirmRow(ctx: Ctx): RenderElement | null {
   })
 }
 
+/**
+ * While an ask is pending, y and n belong to its Yes and Cancel buttons. The engine gives a hotkey to the later of two buttons that share it, and
+ * the card is drawn above the page, so a page's own y or n (Timeline's n = "later") would take the key from the question. The page keeps its button
+ * and its click, and everything else about it (key, label, focus order, layout); only the hotkey is dropped, and only while the ask shows.
+ */
+export function withoutAnswerKeys(kit: Ctx['kit']): Ctx['kit'] {
+  const Button: Ctx['kit']['Button'] = props => {
+    const { hotkey, key } = props as { hotkey?: string; key?: string }
+
+    if ((hotkey === 'y' || hotkey === 'n') && key !== 'confirm' && key !== 'cancel') {
+      const { hotkey: _dropped, ...rest } = props as Record<string, unknown>
+
+      return kit.Button(rest as never)
+    }
+
+    return kit.Button(props)
+  }
+
+  return { ...kit, Button }
+}
+
 /** Views that draw the confirm themselves, under the field it came from (the pane then does not draw it above the body). */
 export const INLINE_CONFIRM: ReadonlySet<string> = new Set(['missions', 'hive'])
 
