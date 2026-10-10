@@ -6,6 +6,7 @@ import { createController, type Controller } from './controller'
 import { startSessions } from './sessions'
 import { record } from './data/events'
 import { plain } from './data/parse'
+import { isAbsolutePath, joinPath } from './data/paths'
 import { dispatch } from './dispatch'
 import { markPicture } from './gfx/pictures'
 import type { Host } from './host'
@@ -40,7 +41,7 @@ const RUFLO_TOOL = /^mcp__(claude-flow|ruflo|plugin_ruflo[\w-]*)__/
 let isResettingScroll = false
 
 function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPrefs; record: (digest: Digest) => void }): Host {
-  const rooted = (path: string) => (path.startsWith('/') ? path : `${cwd.replace(/\/+$/, '')}/${path}`)
+  const rooted = (path: string) => (isAbsolutePath(path) ? path : joinPath(cwd, path))
   const quietly = (fn: () => unknown) => {
     try {
       const result = fn()

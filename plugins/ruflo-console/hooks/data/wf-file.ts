@@ -10,6 +10,7 @@
  * with no `..`, no link on the way down to it and, for a summary, no file already there to overwrite.
  */
 import type { ReaderFs } from './files'
+import { below, hasParentSegment, isAbsolutePath, isWindowsPath, joinPath, normalizePath, trimTrailing } from './paths'
 import { posixCopyExclusive, posixCreateExclusive, posixCreateExclusiveWithDirs, posixReplace, posixReplaceWithDirs, type WriteFlavor } from './write-flavor'
 
 export type Roots = { cwd: string; /** The session scratchpad, when the host tells the console where it is. */ scratch?: string | null }
@@ -21,7 +22,7 @@ export const EXPORT_DIR = '.claude-flow/console/exports'
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._ -]{0,99}\.md$/
 const MAX_PATH = 300
 
-const trimRoot = (root: string): string => root.replace(/\/+$/, '')
+const trimRoot = trimTrailing
 
 /** The normalised absolute path of a markdown file the person named, or why it cannot be written. Lexical only: see `checkNoLinks` for the disk half. */
 export function resolveExportPath(input: string, roots: Roots): PathCheck {
@@ -32,17 +33,16 @@ export function resolveExportPath(input: string, roots: Roots): PathCheck {
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u001f\u007f-\u009f\\]/.test(raw)) return { ok: false, why: 'a path with control characters or a backslash is refused' }
   if (raw.startsWith('~')) return { ok: false, why: 'write the path out: ~ is not expanded here' }
-  if (raw.split('/').includes('..')) return { ok: false, why: 'a path with .. is refused: name the file inside the project or the scratchpad' }
+  if (hasParentSegment(raw)) return { ok: false, why: 'a path with .. is refused: name the file inside the project or the scratchpad' }
 
   const base = trimRoot(roots.cwd)
 
-  if (base === '' || !base.startsWith('/')) return { ok: false, why: 'no project folder is known, so a relative path cannot be placed' }
+  if (base === '' || !isAbsolutePath(base)) return { ok: false, why: 'no project folder is known, so a relative path cannot be placed' }
 
-  const absolute = raw.startsWith('/') ? raw : `${base}/${raw}`
-  const parts = absolute.split('/').filter(part => part !== '' && part !== '.')
-  const path = `/${parts.join('/')}`
-  const name = parts[parts.length - 1] ?? ''
-  const inside = [roots.cwd, roots.scratch ?? ''].map(trimRoot).filter(root => root.startsWith('/') && root.length > 1).find(root => path.startsWith(`${root}/`))
+  const absolute = raw.startsWith('/') || (isWindowsPath(base) && isAbsolutePath(raw)) ? raw : `${base}/${raw}`
+  const path = normalizePath(absolute)
+  const name = path.split(/[\\/]/).pop() ?? ''
+  const inside = [roots.cwd, roots.scratch ?? ''].map(trimRoot).filter(root => isAbsolutePath(root) && root.length > 1).find(root => below(root, path) !== null)
 
   if (!NAME.test(name)) return { ok: false, why: 'the file name must be letters, digits, dots, dashes, underscores or spaces, and end in .md' }
   if (inside === undefined) return { ok: false, why: `outside the project${roots.scratch === undefined || roots.scratch === null ? '' : ' and the scratchpad'}: only paths under ${trimRoot(roots.cwd)}${roots.scratch === undefined || roots.scratch === null ? '' : ` or ${trimRoot(roots.scratch)}`} are written` }
@@ -55,15 +55,15 @@ export function resolveExportPath(input: string, roots: Roots): PathCheck {
  * no file is already there. A path that does not exist yet is fine; `stat` refusing is "missing".
  */
 export async function checkNoLinks(fs: Pick<ReaderFs, 'stat'>, path: string, roots: Roots, options: { allowExisting?: boolean } = {}): Promise<PathCheck> {
-  const root = [roots.cwd, roots.scratch ?? ''].map(trimRoot).find(entry => entry !== '' && path.startsWith(`${entry}/`))
+  const root = [roots.cwd, roots.scratch ?? ''].map(trimRoot).find(entry => entry !== '' && below(entry, path) !== null)
 
   if (root === undefined) return { ok: false, why: 'outside the allowed folders' }
 
-  const parts = path.slice(root.length + 1).split('/')
+  const parts = below(root, path) ?? []
   let at = root
 
   for (const [index, part] of parts.entries()) {
-    at = `${at}/${part}`
+    at = joinPath(at, part)
 
     const stat = await fs.stat(at).catch(() => undefined)
 

@@ -10,6 +10,7 @@ import { maskLine } from './event-mask'
 import type { ConsoleEvent } from './events'
 import { refOf } from './events'
 import { EXPORT_DIR } from './activity-store'
+import { below, hasParentSegment, isAbsolutePath, isWindowsPath, normalizePath, trimTrailing } from './paths'
 import { checkNoLinks, dirOf, newFileArgv, type PathCheck } from './wf-file'
 import { writeFlavorReady } from './write-flavor'
 import { clockOf, type Concurrency, type LaneView } from './timeline-model'
@@ -27,28 +28,29 @@ export const formatOf = (path: string): Format | null => (/\.md$/.test(path) ? '
 /** The absolute path a name or relative path means (a bare file name goes under the exports folder), or why it is refused. Lexical only; see `checkNoLinks` for the disk half. */
 export function resolveTarget(input: string, cwd: string, allowed: readonly Format[]): PathCheck {
   const raw = input.trim()
-  const root = cwd.replace(/\/+$/, '')
+  const root = trimTrailing(cwd)
 
   if (raw === '') return { ok: false, why: 'give a file name ending in .md, .jsonl or .csv' }
   if (raw.length > 300) return { ok: false, why: 'a path over 300 characters is refused' }
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u001f\u007f-\u009f\\]/.test(raw)) return { ok: false, why: 'a path with control characters or a backslash is refused' }
   if (raw.startsWith('~')) return { ok: false, why: 'write the path out: ~ is not expanded here' }
-  if (raw.split('/').includes('..')) return { ok: false, why: 'a path with .. is refused: name a file inside the project' }
-  if (root === '' || !root.startsWith('/')) return { ok: false, why: 'no project folder is known, so the path cannot be placed' }
+  if (hasParentSegment(raw)) return { ok: false, why: 'a path with .. is refused: name a file inside the project' }
+  if (root === '' || !isAbsolutePath(root)) return { ok: false, why: 'no project folder is known, so the path cannot be placed' }
 
-  const absolute = raw.startsWith('/') ? raw : raw.includes('/') ? `${root}/${raw}` : `${root}/${EXPORT_DIR}/${raw}`
-  const parts = absolute.split('/').filter(part => part !== '' && part !== '.')
-  const path = `/${parts.join('/')}`
-  const name = parts[parts.length - 1] ?? ''
+  const absolute = raw.startsWith('/') || (isWindowsPath(root) && isAbsolutePath(raw)) ? raw : raw.includes('/') ? `${root}/${raw}` : `${root}/${EXPORT_DIR}/${raw}`
+  const path = normalizePath(absolute)
+  const name = path.split(/[\\/]/).pop() ?? ''
   const format = formatOf(name)
 
   if (!NAME.test(name) || format === null) return { ok: false, why: 'the file name must be letters, digits, dots, dashes, underscores or spaces, and end in .md, .jsonl or .csv' }
   if (!allowed.includes(format)) return { ok: false, why: `this export can be ${allowed.map(item => `.${item}`).join(' or ')}, not .${format}` }
-  if (!path.startsWith(`${root}/`)) return { ok: false, why: `outside the project: only paths under ${root} are written` }
+  const inside = below(root, path)
+
+  if (inside === null) return { ok: false, why: `outside the project: only paths under ${root} are written` }
 
   // A markdown file is a command, an agent or a skill when it lands in `.claude/`, and a hook sample in `.git/`: event words are agent output, so those folders are not export targets.
-  const hidden = path.slice(root.length + 1).split('/').slice(0, -1).find(part => part.startsWith('.') && part !== '.claude-flow')
+  const hidden = inside.slice(0, -1).find(part => part.startsWith('.') && part !== '.claude-flow')
 
   if (hidden !== undefined) return { ok: false, why: `${hidden} is a hidden folder: exports go to .claude-flow/console/exports/ or a visible folder in the project` }
 
@@ -126,7 +128,7 @@ export async function exportSpecFor(fs: Pick<ReaderFs, 'stat'>, cwd: string, tar
 
   if (!placed.ok) return placed
 
-  const clear = await checkNoLinks(fs, placed.path, { cwd: cwd.replace(/\/+$/, '') })
+  const clear = await checkNoLinks(fs, placed.path, { cwd: trimTrailing(cwd) })
 
   if (!clear.ok) return clear
 

@@ -4,6 +4,7 @@
  * hash does not match its body is treated as tampered and the loop refuses to run on it. Hard denies are not part of the envelope: they
  * are a constant of this file, and an envelope that names one as allowed is rejected, never trimmed.
  */
+import { hasParentSegment, isAbsolutePath } from './paths'
 
 /** Classes of action an envelope can allow. Each task is classified (data/ap-guard.ts) into exactly one, or is parked. */
 export const TOOL_CLASSES = ['read', 'edit', 'test', 'git-local', 'git-branch', 'network', 'spawn', 'mcp'] as const
@@ -118,7 +119,7 @@ export function validateEnvelope(raw: unknown): Checked {
   if (paths === null || paths.length === 0) errors.push('paths: at least one absolute folder')
 
   for (const path of paths ?? []) {
-    if (!path.startsWith('/') || path === '/' || path.length > 300 || BAD_CHARS.test(path) || path.split('/').includes('..') || path.includes('\\')) errors.push(`paths: "${path.slice(0, 40)}" is not an absolute folder below the root with no ..`)
+    if (!isAbsolutePath(path) || path === '/' || /^[A-Za-z]:\/?$/.test(path) || path.length > 300 || BAD_CHARS.test(path) || hasParentSegment(path) || path.includes('\\')) errors.push(`paths: "${path.slice(0, 40)}" is not an absolute folder below the root with no ..`)
     else if (isProtectedPath(path)) errors.push(`paths: "${path.slice(0, 40)}" is the autopilot's or Project Anatole's own folder: steps are never pointed at it`)
   }
 
