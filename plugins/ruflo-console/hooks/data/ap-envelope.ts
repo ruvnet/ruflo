@@ -346,3 +346,5 @@ export const classAllowed = (envelope: Envelope, toolClass: string): boolean => 
 export const AUTOPILOT_DIR = '.claude-flow/console/autopilot'
 export const ENVELOPE_FILE = `${AUTOPILOT_DIR}/envelope.json`
 export const KILL_FILE = `${AUTOPILOT_DIR}/KILL`
+/** Windows (host-fs) has no delete, so clearing the kill flag there rewrites the file with exactly this; a KILL file with any other content (an empty one included) is a stop. */
+export const KILL_CLEARED = 'cleared'

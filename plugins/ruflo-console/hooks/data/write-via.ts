@@ -13,6 +13,10 @@
  *  - A target that is a link, or exists and is not a regular file (a folder), is refused as the sh scripts refuse it (exit 73).
  *  - An exclusive create or copy refuses a path where anything exists; it says so in the same words the pre-write check uses.
  *  - No file mode is set (Windows has none to set).
+ *  - The host API has no O_EXCL. 'create-excl', 'create-dirs' and 'copy-no-clobber' are check-then-write: a file that appears between the
+ *    `exists` check and the `fs.write` is overwritten (GNU `dd conv=excl` and the POSIX `set -C` fail instead). Callers run `checkNoLinks`
+ *    first, so this takes a second writer creating that exact path inside the window.
+ *  - Windows has no delete here: callers that removed a file (the autopilot KILL flag) rewrite it with a marker instead.
  * Never rejects on host-fs: a refusal is `{ exitCode: <non-zero>, stderr: <the reason> }`, like a command that exited non-zero.
  */
 import { appendArgv } from './append-argv'

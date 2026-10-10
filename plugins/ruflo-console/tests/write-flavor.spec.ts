@@ -13,6 +13,7 @@ import { appendArgv } from '../hooks/data/append-argv'
 import { touchArgv } from '../hooks/data/ap-journal'
 import { copyExclusiveArgv, newFileArgv, removeFileArgv, replaceFileArgv } from '../hooks/data/wf-file'
 import { flavorOfKernel, flavorOfPlatform, setWriteFlavor, startWriteFlavor, writeFlavorReady } from '../hooks/data/write-flavor'
+import { KILL_CLEARED } from '../hooks/data/ap-envelope'
 import { HOST_FS_MAX, writeVia, type WriteHost } from '../hooks/data/write-via'
 
 const P = '/work/proj/a b;$(x).jsonl'
@@ -264,5 +265,73 @@ describe('a confirmed write on host-fs is the host write, not an argv', () => {
     expect(win.write).toEqual({ kind: 'create-dirs', path: 'C:/p/s.md', text: '# run' })
     expect(linux.write).toBeUndefined()
     expect(linux.argv).toEqual(['dd', 'of=/p/s.md', 'conv=excl', 'status=none'])
+  })
+})
+
+describe('the autopilot kill flag on a machine with no delete', () => {
+  async function world() {
+    const { CWD, KILL, envOf, rig, stateWith, T0 } = await import('./fixtures/ap-rig')
+    const { killSeen } = await import('../hooks/data/ap-guard')
+    const live = await import('../hooks/ap-live')
+    const panel = await import('../hooks/views/ap-panel')
+    const r = rig()
+    const state = stateWith([], 'off')
+    const fs = r.host.fs as unknown as Record<string, unknown>
+
+    fs.write = async (p: string, t: string) => void r.files.set(p, t)
+    fs.exists = async (p: string) => r.files.has(p)
+    live.wireAutopilot(state, r.host)
+
+    return { r, state, KILL, CWD, killSeen, live, panel, envOf, T0 }
+  }
+
+  it('host-fs: stop -> flag seen -> start clears it (a marker, not a delete) -> not seen -> stop again -> seen', async () => {
+    setWriteFlavor('host-fs')
+
+    const { r, state, KILL, CWD, killSeen, live, panel, envOf, T0 } = await world()
+
+    await live.stopNow(state, r.host, 'because')
+    expect(r.files.get(KILL)).toBe('')
+    expect(await killSeen(r.host.fs, CWD)).toBe(true)
+
+    panel.editDraft(panel.draftOf(state), { kind: 'anatole' })
+    await panel.startSpec(envOf(state, T0))?.run?.()
+
+    expect(r.files.get(KILL)).toBe(KILL_CLEARED)
+    expect(await killSeen(r.host.fs, CWD)).toBe(false)
+    expect(r.runs.filter(argv => argv[0] === 'rm')).toEqual([])
+    expect(live.storeOf(state).error).toBeFalsy()
+    expect(r.files.has(`${CWD}/.claude-flow/console/autopilot/envelope.json`)).toBe(true)
+
+    await live.stopNow(state, r.host, 'again')
+    expect(r.files.get(KILL)).toBe('')
+    expect(await killSeen(r.host.fs, CWD)).toBe(true)
+  })
+
+  it('only the exact marker clears; a missing file is not a stop; any other content is', async () => {
+    setWriteFlavor('host-fs')
+
+    const { r, KILL, CWD, killSeen } = await world()
+
+    expect(await killSeen(r.host.fs, CWD)).toBe(false)
+    for (const content of ['', 'cleared\n', 'Cleared', 'x']) {
+      r.files.set(KILL, content)
+      expect(await killSeen(r.host.fs, CWD), JSON.stringify(content)).toBe(true)
+    }
+    r.files.set(KILL, KILL_CLEARED)
+    expect(await killSeen(r.host.fs, CWD)).toBe(false)
+  })
+
+  it('gnu: clearKill is still the same rm -f argv, and a present flag is a stop whatever it holds', async () => {
+    setWriteFlavor('gnu')
+
+    const { r, state, KILL, CWD, killSeen, live } = await world()
+
+    r.files.set(KILL, KILL_CLEARED)
+    expect(await killSeen(r.host.fs, CWD)).toBe(true)
+    await live.clearKill(state, r.host)
+    expect(r.runs).toContainEqual(['rm', '-f', '--', KILL])
+    expect(r.files.has(KILL)).toBe(false)
+    expect(await killSeen(r.host.fs, CWD)).toBe(false)
   })
 })

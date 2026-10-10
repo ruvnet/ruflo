@@ -21,7 +21,7 @@ import { tierOf, tunablesFrom } from './data/ap-adapt'
 import { adaptPass, rotate } from './ap-maint'
 import { checkPin, type Pin } from './data/ap-pin'
 import { loadPin, setPin } from './ap-pin-live'
-import { AUTOPILOT_DIR, ENVELOPE_FILE, KILL_FILE, open, type Envelope, type Sealed, type Spend } from './data/ap-envelope'
+import { AUTOPILOT_DIR, ENVELOPE_FILE, KILL_CLEARED, KILL_FILE, open, type Envelope, type Sealed, type Spend } from './data/ap-envelope'
 import { anatoleFact, killSeen, preflightAll, type ToolCheck } from './data/ap-guard'
 import { effectsOf, pickTask, readSpend } from './ap-pick'
 import { encodeLine, JOURNAL_FILE, JOURNAL_MAX_BYTES, REFUSED_WHY, startedCount, type JournalEvent } from './data/ap-journal'
@@ -224,7 +224,9 @@ export async function stopNow(state: State, host: Host, reason = 'stopped by you
   host.invalidate()
 
   const clear = await checkNoLinks(host.fs, flag, { cwd: state.cwd }, { allowExisting: true }).catch(() => ({ ok: false as const, why: 'unchecked' }))
-  const flagged = clear.ok ? await writeVia(await writeFlavorReady(), host, { kind: 'touch', path: flag }).then(result => result.exitCode === 0, () => false) : false
+  const flavor = await writeFlavorReady()
+  // host-fs: a touch would keep a cleared flag's marker, so the flag is rewritten empty (anything but the marker is a stop).
+  const flagged = clear.ok ? await writeVia(flavor, host, flavor === 'host-fs' ? { kind: 'replace', path: flag, text: '', hasDir: true } : { kind: 'touch', path: flag }).then(result => result.exitCode === 0, () => false) : false
   const journaled = await appendEvents(state, host, [{ t: 'stop', at: Date.now(), reason }])
 
   // Neither write landed (a full disk, a read-only folder): the stop is held in memory so a re-read of the files cannot undo it, and it is said.
@@ -246,8 +248,11 @@ export async function answerParked(state: State, host: Host, id: string, answer:
 }
 
 /** Clears the kill flag; part of the confirmed start, never a button of its own. */
-export function clearKill(state: State, host: Host): Promise<unknown> {
+export async function clearKill(state: State, host: Host): Promise<unknown> {
   storeOf(state).heldStop = null
+
+  // host-fs has no delete: the flag is rewritten as cleared (killSeen reads it so); everywhere else it is removed.
+  if ((await writeFlavorReady()) === 'host-fs') return writeVia('host-fs', host, { kind: 'replace', path: pathOf(state, KILL_FILE), text: KILL_CLEARED, hasDir: true }).catch(() => undefined)
 
   return host.run(removeFileArgv(pathOf(state, KILL_FILE)), 10_000).catch(() => undefined)
 }

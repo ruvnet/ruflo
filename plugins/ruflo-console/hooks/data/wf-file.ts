@@ -81,6 +81,8 @@ export async function checkNoLinks(fs: Pick<ReaderFs, 'stat'>, path: string, roo
  * `install -D` (makes the folders) where it is not. POSIX: refuses a link or a non-regular target, then `set -C` makes the shell open the
  * file O_CREAT|O_EXCL, so an existing file fails the write; the folders are made first where they are missing (write-flavor.ts).
  *
+ * Windows (host-fs): the host API has no O_EXCL, so the create is exists-then-write (write-via.ts): a file created between the two is overwritten.
+ *
  * Known gap, GNU only, unchanged here: `install -D` replaces its target. If the folder was missing at the check and both the folder and the
  * file appear before the write runs, that file is replaced. `checkNoLinks` refuses a file that is there at the check, so this takes a second
  * writer creating that exact folder and file inside the window.
