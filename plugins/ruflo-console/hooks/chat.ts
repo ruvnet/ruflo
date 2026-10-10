@@ -13,6 +13,7 @@ import { checkLimit, LONG_TEXT_MAX } from './full-text'
 import type { Host } from './host'
 import { mcOf } from './mission-control'
 import { blocksGuidance, screenText } from './mission-options'
+import { hasSecret } from './screen'
 import type { State } from './state'
 
 /** How many settled messages the store keeps (the newest). */
@@ -160,13 +161,13 @@ export async function sendChat(host: Host, state: State, text: string): Promise<
   try {
     if (!checkLimit(message, LONG_TEXT_MAX, 'the message').ok) return refuse(NOT_SENT.long)
 
-    if (mcOf(state).isScreenOn) {
-      const screen = await screenText(state, host, message)
+    // Screen off, or no detector answering: the dependency-free secret check still stands between a secret and the model.
+    const screen = mcOf(state).isScreenOn ? await screenText(state, host, message) : null
 
-      if (blocksGuidance(screen)) return refuse(screen.status === 'pii' ? NOT_SENT.pii : NOT_SENT.unsafe)
-    }
+    if (blocksGuidance(screen)) return refuse(screen?.status === 'pii' ? NOT_SENT.pii : NOT_SENT.unsafe)
+    if ((screen === null || screen.status === 'unavailable') && hasSecret(message)) return refuse(NOT_SENT.pii)
 
-    await host.submitPrompt(message)
+    await host.submitPrompt(message, { asUser: true })
     chat.pending = 'idle'
     redraw()
   } catch {

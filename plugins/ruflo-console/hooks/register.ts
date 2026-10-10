@@ -122,9 +122,9 @@ export function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => T
     rufloSegment: async text => $.ruflo.segment({ id: 'console', text }),
     // Both wait on the turn, so neither may be called from inside a command.run hook (`/ruflo yes` is one): they run from a clock
     // tick, a later event of their own.
-    submitPrompt: text =>
+    submitPrompt: (text, opts) =>
       new Promise<void>((resolve, reject) => {
-        $.clock.after(1, () => void $.prompt.submit({ text }).then(() => resolve(), reject))
+        $.clock.after(1, () => void (opts?.asUser === true ? $.prompt.submit({ text, asUser: true }) : $.prompt.submit({ text })).then(() => resolve(), reject))
       }),
     fillPrompt: async text => (await $.prompt.fill({ text, mode: 'replace' })).isFilled,
     runSlash: (command, args) =>

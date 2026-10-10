@@ -234,3 +234,63 @@ describe('sendChat: a rejected submit', () => {
     expect(chatOf(state).pending).toBe('idle')
   })
 })
+
+describe('sendChat: as the person, and the fallback secret check', () => {
+  const KEY = 'my key sk-ant-api03-abcdefghijklmnopqrstuvwx1234'
+
+  it('submits with asUser true', async () => {
+    const calls: unknown[][] = []
+    const { state, host } = setup()
+
+    ;(host as { submitPrompt: (...a: unknown[]) => Promise<void> }).submitPrompt = async (...a) => void calls.push(a)
+    await sendChat(host, state, 'hello')
+    expect(calls).toEqual([['hello', { asUser: true }]])
+  })
+
+  it('ask Claude keeps submitting without asUser', async () => {
+    const calls: unknown[][] = []
+    const { state, host } = setup()
+
+    ;(host as { submitPrompt: (...a: unknown[]) => Promise<void> }).submitPrompt = async (...a) => void calls.push(a)
+    const { askActions } = await import('../hooks/ask-claude')
+    const asked: { run?: () => Promise<void> }[] = []
+    const actions = askActions(state, host, { ask: (spec: { run?: () => Promise<void> } | null) => void (spec !== null && asked.push(spec)) } as never, () => ({}) as never)
+
+    actions.ask('what is idle?', 'menu')
+    await tick()
+    await asked[0]?.run?.()
+    expect(calls).toHaveLength(1)
+    expect(calls[0]).toHaveLength(1)
+  })
+
+  it('screen off + secret-shaped text: refused, zero submits, no echo', async () => {
+    const { state, host, submits } = setup()
+
+    mcOf(state).isScreenOn = false
+    await sendChat(host, state, KEY)
+    expect(submits).toEqual([])
+    expect(chatOf(state).error).toMatch(/not sent/i)
+    expect(JSON.stringify(chatOf(state))).not.toContain('abcdefghijkl')
+  })
+
+  it('screen unavailable + secret-shaped text: refused', async () => {
+    const { state, host, submits } = setup(() => 'nothing readable')
+
+    await sendChat(host, state, KEY)
+    expect(submits).toEqual([])
+    expect(chatOf(state).error).toMatch(/not sent/i)
+  })
+
+  it('screen off + ordinary text: submitted', async () => {
+    const { state, host, submits } = setup()
+
+    mcOf(state).isScreenOn = false
+
+    const sent = sendChat(host, state, 'good morning')
+
+    await tick()
+    expect(submits.map(s => s.text)).toEqual(['good morning'])
+    submits[0]?.resolve()
+    await sent
+  })
+})
