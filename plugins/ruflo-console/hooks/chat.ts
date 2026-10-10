@@ -69,6 +69,12 @@ export async function refreshChat(host: Host, state: State): Promise<void> {
 /** The shortest gap between two redraws of the Chat page while an answer streams in (or a re-read lands). */
 export const REDRAW_MS = 200
 
+/**
+ * The one gate for everything the console does on the conversation's behalf: the preview setting is on, the console is open, and Chat is the
+ * page shown. Outside it nothing reads the transcript and nothing redraws for it (opening Chat reads it once, in view-open.ts).
+ */
+export const chatLive = (state: State): boolean => state.options.sessionPreview && state.view === 'chat' && state.pane.isOpen
+
 const redrawing = new WeakMap<State, { cancel: () => void }>()
 
 /**
@@ -77,14 +83,14 @@ const redrawing = new WeakMap<State, { cancel: () => void }>()
  * host that refuses the redraw changes nothing. O(1) per call.
  */
 export function redrawChat(host: Host, state: State): void {
-  if (state.view !== 'chat' || !state.pane.isOpen || redrawing.has(state)) return
+  if (!chatLive(state) || redrawing.has(state)) return
 
   try {
     redrawing.set(
       state,
       host.after(REDRAW_MS, () => {
         redrawing.delete(state)
-        if (state.view !== 'chat' || !state.pane.isOpen) return
+        if (!chatLive(state)) return
 
         try {
           host.invalidate()
@@ -96,6 +102,18 @@ export function redrawChat(host: Host, state: State): void {
   } catch {
     // No timer: the next chunk or re-read asks again.
   }
+}
+
+/** A main-session turn begins: the streaming answer starts empty, and the new message is read if Chat is live. */
+export function onChatTurnStart(host: Host, state: State): void {
+  startChatTurn(state)
+  if (chatLive(state)) void refreshChatAndDraw(host, state).catch(() => undefined)
+}
+
+/** A streamed piece of the main answer: always kept in the store, and a (throttled) redraw is asked for only while Chat is live. */
+export function onChatChunk(host: Host, state: State, text: string): void {
+  appendPartial(state, text)
+  redrawChat(host, state)
 }
 
 /** Re-reads the conversation, then redraws the Chat page if it is the one shown. Never throws. */
@@ -124,7 +142,7 @@ export function startChatTurn(state: State): void {
 export async function endChatTurn(host: Host, state: State): Promise<void> {
   const turn = turns.get(state) ?? 0
 
-  await refreshChat(host, state)
+  if (chatLive(state)) await refreshChat(host, state)
   if ((turns.get(state) ?? 0) === turn) chatOf(state).partial = ''
 }
 

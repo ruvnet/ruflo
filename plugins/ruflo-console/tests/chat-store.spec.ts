@@ -92,6 +92,8 @@ describe('turn.step: the stream passes through untouched', () => {
 describe('the chat store', () => {
   it('partial clears when the main turn completes, after the messages are re-read', async () => {
     const state = newState(undefined)
+    state.view = 'chat'
+    state.pane.isOpen = true
     startChatTurn(state)
     appendPartial(state, 'streaming…')
 
@@ -103,6 +105,8 @@ describe('the chat store', () => {
 
   it('a refresh that lands after the next turn began leaves that turn’s partial alone', async () => {
     const state = newState(undefined)
+    state.view = 'chat'
+    state.pane.isOpen = true
     let release: (rows: ChatMsg[]) => void = () => undefined
     startChatTurn(state)
     const ending = endChatTurn(fakeHost(() => new Promise<ChatMsg[]>(resolve => (release = resolve))), state)
