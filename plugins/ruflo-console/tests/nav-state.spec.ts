@@ -25,7 +25,7 @@ describe('nav groups', () => {
     expect(shownGroup(state)).toBe('SWARM')
     // A drill-down into an agent keeps the group of the page it came from.
     state.view = 'agent'
-    state.back = 'learning'
+    state.trail = ['learning']
     expect(shownGroup(state)).toBe('MIND')
   })
 

@@ -2,6 +2,7 @@
  * The closures the pane's buttons and `/ruflo` subcommands call: view switches, selection, the claims buttons, the
  * palette. Each does its work through the runner or the controller functions it is handed; nothing here touches `$`.
  */
+import { originOf, popBack } from './history'
 import { MISSION_OBJECTIVE_MAX } from './full-text'
 import { textRefusal } from './ops'
 import { claimTask, handoffClaim, releaseClaim, stealClaim, whyNot } from './actions'
@@ -54,7 +55,7 @@ export type Steps = {
   freshRead: () => Promise<void>
   animate: () => void
   probe: (force?: boolean) => Promise<void>
-  setView: (view: State['view']) => void
+  setView: (view: State['view'], opts?: { replace?: boolean }) => void
   drill: (agentId: string) => void
   close: () => Promise<void>
 }
@@ -174,12 +175,12 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
       if (state.isHelp) {
         host.scrollTop()
         state.help.query = ''
-        state.help.topic = VIEW_TOPIC[state.view === 'agent' ? state.back : state.view] ?? null
+        state.help.topic = VIEW_TOPIC[state.view === 'agent' ? originOf(state) : state.view] ?? null
       }
       host.invalidate()
     },
     close: () => void close(),
-    back: () => setView(state.view === 'agent' ? state.back : state.options.look === 'bbs' ? 'menu' : 'overview'),
+    back: () => setView(popBack(state), { replace: true }),
     confirm: seen => void runner.confirm(seen),
     cancel: runner.cancel,
     select,

@@ -9,6 +9,7 @@
 import type { RenderElement } from 'claude-code'
 
 import { chip, NAV_ACCENT } from '../menu-colors'
+import { originOf } from '../history'
 import { badgesOf } from '../menu-style'
 import { accentOfView, findPages, groupOf, NAV_GROUPS, shownGroup } from '../nav-state'
 import { VIEWS, type ViewId } from '../state'
@@ -22,7 +23,7 @@ const PER_ROW = 6
 export function groupedTabs(ctx: Ctx, hasHotkey: (view: View) => boolean): RenderElement {
   const { state } = ctx
   const inner = ctx.columns - CARD_COLUMNS
-  const open = state.view === 'agent' ? state.back : state.view
+  const open = state.view === 'agent' ? originOf(state) : state.view
   const shown = shownGroup(state)
   const query = state.navQuery
   const find = (id: ViewId) => VIEWS.find(entry => entry.id === id)

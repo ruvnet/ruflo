@@ -16,6 +16,7 @@ import { stepsRows } from './steps'
 import { optimizerResult } from './optimizer'
 import { fitFooter, type FooterItem } from '../footer-layout'
 import { chip } from '../menu-colors'
+import { originOf, peekBack } from '../history'
 import { accentOfView } from '../nav-state'
 import { isBooting, isCompactPane, NAV_STYLES, VIEWS, type ViewId } from '../state'
 import { agentView } from './agent'
@@ -110,7 +111,7 @@ function tabs(ctx: Ctx): RenderElement {
 
     // Even this narrow, the BBS look keeps its colours: the page is a solid chip in its group's accent, with the way to help beside it.
     return isBbs()
-      ? row(ctx, [ctx.kit.Text({ ...chip(accentOfView(ctx.state.view === 'agent' ? ctx.state.back : ctx.state.view) ?? '#05d9e8'), bold: true, children: ` ${where} ` }), ctx.kit.Text({ dimColor: true, children: ' /ruflo help' })])
+      ? row(ctx, [ctx.kit.Text({ ...chip(accentOfView(ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view) ?? '#05d9e8'), bold: true, children: ` ${where} ` }), ctx.kit.Text({ dimColor: true, children: ' /ruflo help' })])
       : text(ctx, `${where} · /ruflo help`, { bold: true, color: THEME.head })
   }
 
@@ -121,7 +122,7 @@ function tabs(ctx: Ctx): RenderElement {
   const style = ctx.state.nav
   const withNames = style === 'auto' && ctx.columns >= WIDE_TABS
   const tab = (view: (typeof VIEWS)[number]): RenderElement => {
-    const isCurrent = view.id === ctx.state.view || (ctx.state.view === 'agent' && view.id === ctx.state.back)
+    const isCurrent = view.id === ctx.state.view || (ctx.state.view === 'agent' && view.id === originOf(ctx.state))
     const words = style === 'icons' ? view.icon : style === 'brief' ? `${view.icon} ${view.short}` : style === 'full' || withNames ? `${view.icon} ${view.label}` : view.icon
 
     // A Button cannot be styled, so the current tab is Text: its key is not needed, the view is already open
@@ -138,7 +139,7 @@ function tabs(ctx: Ctx): RenderElement {
   }
   // The tab bar keeps the keyed views and the core keyless ones; the many other views (labs, tools) are tabs only while
   // open, and are reached from the main menu (0), where each is listed with its group.
-  const isTab = (view: (typeof VIEWS)[number]) => /^[0-9]$/.test(view.key) || CORE_TABS.has(view.id) || view.id === ctx.state.view || (ctx.state.view === 'agent' && view.id === ctx.state.back)
+  const isTab = (view: (typeof VIEWS)[number]) => /^[0-9]$/.test(view.key) || CORE_TABS.has(view.id) || view.id === ctx.state.view || (ctx.state.view === 'agent' && view.id === originOf(ctx.state))
   // A page in cards leads with the grouped nav card (views/nav.ts) instead of the flat tab rows.
   if (hasCards(ctx.columns, isCompactPane(ctx.state))) return groupedTabs(ctx, isTab)
 
@@ -170,12 +171,15 @@ function tabs(ctx: Ctx): RenderElement {
 function blurb(ctx: Ctx): RenderElement | null {
   if (ctx.columns < NARROW) return null
 
-  const view = VIEWS.find(entry => entry.id === (ctx.state.view === 'agent' ? ctx.state.back : ctx.state.view))
+  const view = VIEWS.find(entry => entry.id === (ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view))
 
   if (view === undefined) return null
 
   const name = ctx.state.view === 'agent' ? 'Agent' : view.label
-  const about = ctx.state.view === 'agent' ? `one agent's role, task, claims, activity and logs · b goes back to ${view.label}` : view.blurb
+  // Back goes to the page before this one: say which, whenever there is one (on a drill-down, always the page it was opened from).
+  const previous = VIEWS.find(entry => entry.id === peekBack(ctx.state))
+  const backTo = previous === undefined ? '' : ` · b <- ${previous.label}`
+  const about = ctx.state.view === 'agent' ? `one agent's role, task, claims, activity and logs · b goes back to ${(previous ?? view).label}` : `${view.blurb}${backTo}`
 
   if (isBbs()) {
     // A sysop prompt: >> 🐝 SWARM :: what it is for
@@ -378,7 +382,7 @@ export function paneView(base: Ctx): RenderElement {
   }
   // A section of a page is a bordered card (views/card.ts): the body is drawn narrower by the border and padding, through a kit that groups its rows.
   const cardsOn = hasCards(base.columns, isCompactPane(base.state))
-  const bodyCtx: Ctx = cardsOn ? { ...ctx, columns: ctx.columns - CARD_COLUMNS, cards: true, kit: withCards(ctx.kit, isBbs() ? (accentOfView(ctx.state.view === 'agent' ? ctx.state.back : ctx.state.view) ?? undefined) : undefined) } : ctx
+  const bodyCtx: Ctx = cardsOn ? { ...ctx, columns: ctx.columns - CARD_COLUMNS, cards: true, kit: withCards(ctx.kit, isBbs() ? (accentOfView(ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view) ?? undefined) : undefined) } : ctx
   const drawBody = () => (ctx.state.palette.isOpen ? paletteView(bodyCtx) : ctx.state.isHelp ? helpView(bodyCtx) : BODIES[ctx.state.view](bodyCtx))
   // A lab's result block is drawn first into the panel (pass one), then the page is drawn with the panel placed under the clicked row.
   if (ctx.state.origin !== null && (ctx.state.lab.result !== null || ctx.state.lab.running !== null)) {

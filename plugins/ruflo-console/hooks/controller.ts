@@ -28,6 +28,7 @@ import { openLoaders } from './view-open'
 import { listSkills } from './skills'
 import { readDrillLogs } from './drill-logs'
 import { entryAge } from './menu-entry'
+import { originOf, rememberView } from './history'
 import { BOOT_MIN_MS, CLI_PREFIXES, isBooting, NAV_KEY, NAV_STYLES, PANE_ID, push, rowsOf, storeKeyOf, type State } from './state'
 import type { Actions } from './views/common'
 import { picturesOf } from './views/frames'
@@ -57,7 +58,7 @@ export type Controller = {
   /** The person closed the pane (Esc, its mark): auto-open stands down until /ruflo opens it again. */
   closedByPerson: () => void
   close: () => Promise<void>
-  setView: (view: State['view']) => void
+  setView: (view: State['view'], opts?: { replace?: boolean }) => void
   drill: (agentId: string) => void
   animate: () => void
   noteToolCall: (agentId: string | undefined, tool: string) => void
@@ -80,7 +81,7 @@ export function createController(state: State, host: Host): Controller {
   let inflight: Promise<void> | null = null
   const lastAttempt = new Map<string, number>()
 
-  const persist = () => void host.storeSet(storeKeyOf(state.cwd), { view: state.view === 'agent' ? state.back : state.view, isClosedByPerson: state.pane.isClosedByPerson }).catch(() => undefined)
+  const persist = () => void host.storeSet(storeKeyOf(state.cwd), { view: state.view === 'agent' ? originOf(state) : state.view, isClosedByPerson: state.pane.isClosedByPerson }).catch(() => undefined)
   const isVisible = () => state.pane.isOpen && state.pane.isShown
 
   function refresh(): Promise<void> {
@@ -405,12 +406,13 @@ export function createController(state: State, host: Host): Controller {
     await host.closePane(PANE_ID).catch(() => undefined)
   }
 
-  function setView(view: State['view']): void {
+  function setView(view: State['view'], opts: { replace?: boolean } = {}): void {
     state.isHelp = false
     state.palette.isOpen = false
 
     if (view !== state.view) {
-      if (view === 'agent' || state.view !== 'agent') state.back = state.view === 'agent' ? state.back : state.view
+      // Leaving a page remembers it for Back, unless this move replaces the page (Back itself) rather than adds a step.
+      if (opts.replace !== true) rememberView(state, state.view)
       state.view = view
       // A group picked on one page (the menu's pages row) does not follow you to the next, or back to this one.
       state.navPick = null

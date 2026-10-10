@@ -3,6 +3,7 @@
  * and the pictures computed for this frame. They call nothing on the engine; buttons call the closures in `ctx.act`.
  * Text colours are theme names only, so nothing fades on a light background.
  */
+import { originOf } from '../history'
 import type { AskActions } from '../ask-claude'
 import type { OptimizerActions } from '../optimizer'
 import { askedBy } from '../data/room'
@@ -265,7 +266,7 @@ export function col(ctx: Ctx, parts: readonly RenderChildren[], key?: string): R
 
 /** The colour a BBS page's section headers wear: the accent of its nav group (the menu's colours), else the theme's. Plain look: the theme's. */
 function accentOf(ctx: Ctx): string {
-  return look === 'bbs' ? (accentOfView(ctx.state.view === 'agent' ? ctx.state.back : ctx.state.view) ?? THEME.info) : THEME.info
+  return look === 'bbs' ? (accentOfView(ctx.state.view === 'agent' ? originOf(ctx.state) : ctx.state.view) ?? THEME.info) : THEME.info
 }
 
 /**

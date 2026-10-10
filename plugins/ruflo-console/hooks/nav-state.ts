@@ -4,6 +4,7 @@
  * without a screen.
  */
 import { NAV_ACCENT } from './menu-colors'
+import { originOf } from './history'
 import { VIEWS, type State, type ViewId } from './state'
 
 /** The nav's groups, the main menu's own, each in rows short enough to spell their names: every view but the menu is in exactly one. */
@@ -22,7 +23,7 @@ export const accentOfView = (view: ViewId): string | null => NAV_ACCENT[groupOf(
 
 /** The group whose pages the nav shows: the one the person picked while on this page, else the open page's own. */
 export function shownGroup(state: State): string {
-  const open = state.view === 'agent' ? state.back : state.view
+  const open = state.view === 'agent' ? originOf(state) : state.view
 
   if (state.navPick !== null && state.navPick.view === state.view) return state.navPick.group
 

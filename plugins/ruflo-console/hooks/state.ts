@@ -200,8 +200,8 @@ export type State = {
   /** When this module loaded: "since the console loaded" series and stall times count from here. */
   loadedAtMs: number
   view: ViewId
-  /** The view to go back to from the drill-down. */
-  back: ViewId
+  /** The pages left behind, oldest first (at most 20): what Back walks. The page a drill-down was opened from is the last entry. */
+  trail: ViewId[]
   isHelp: boolean
   /** ruHelp: the question typed, and the guide open (null: the index). */
   help: { query: string; topic: string | null }
@@ -341,7 +341,7 @@ export function newState(raw: PluginOptions | undefined): State {
     isInteractive: true,
     loadedAtMs: Date.now(),
     view: 'overview',
-    back: 'overview',
+    trail: [],
     isHelp: false,
     help: { query: '', topic: null },
     snapshot: null,
