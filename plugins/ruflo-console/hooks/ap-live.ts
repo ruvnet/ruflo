@@ -13,8 +13,9 @@ import { activeMission, dispatchSpec, startable, type LedgerTask, type MissionRe
 import type { Host } from './host'
 import type { State } from './state'
 import { readBounded, under } from './data/files'
-import { checkNoLinks, dirOf, removeFileArgv, replaceFileArgv } from './data/wf-file'
+import { checkNoLinks, dirOf, removeFileArgv } from './data/wf-file'
 import { writeFlavorReady } from './data/write-flavor'
+import { writeVia } from './data/write-via'
 import { cleanText } from './data/wf-clean'
 import { tierOf, tunablesFrom } from './data/ap-adapt'
 import { adaptPass, rotate } from './ap-maint'
@@ -23,7 +24,7 @@ import { loadPin, setPin } from './ap-pin-live'
 import { AUTOPILOT_DIR, ENVELOPE_FILE, KILL_FILE, open, type Envelope, type Sealed, type Spend } from './data/ap-envelope'
 import { anatoleFact, killSeen, preflightAll, type ToolCheck } from './data/ap-guard'
 import { effectsOf, pickTask, readSpend } from './ap-pick'
-import { appendArgv, encodeLine, JOURNAL_FILE, JOURNAL_MAX_BYTES, REFUSED_WHY, startedCount, touchArgv, type JournalEvent } from './data/ap-journal'
+import { encodeLine, JOURNAL_FILE, JOURNAL_MAX_BYTES, REFUSED_WHY, startedCount, type JournalEvent } from './data/ap-journal'
 import { digestText, emptyLoop, foldJournal, replayJournal, skipSet, tick, type EffectFact, type Facts, type LoopState, type TaskFact } from './data/ap-loop'
 import type { Preflight } from './data/ap-loop'
 import type { NoticeDraft } from './notices'
@@ -167,9 +168,9 @@ export function appendEvents(state: State, host: Host, events: readonly JournalE
         return false
       }
 
-      if ((await host.fs.stat(path).catch(() => undefined)) === undefined) await host.run(touchArgv(path, await writeFlavorReady()), 10_000)
+      if ((await host.fs.stat(path).catch(() => undefined)) === undefined) await writeVia(await writeFlavorReady(), host, { kind: 'touch', path })
 
-      const result = await host.run(appendArgv(path, await writeFlavorReady()), 10_000, events.map(encodeLine).join(''))
+      const result = await writeVia(await writeFlavorReady(), host, { kind: 'append', path, text: events.map(encodeLine).join('') })
 
       if (result.exitCode !== 0) {
         store.error = `the journal write exited ${result.exitCode}`
@@ -223,7 +224,7 @@ export async function stopNow(state: State, host: Host, reason = 'stopped by you
   host.invalidate()
 
   const clear = await checkNoLinks(host.fs, flag, { cwd: state.cwd }, { allowExisting: true }).catch(() => ({ ok: false as const, why: 'unchecked' }))
-  const flagged = clear.ok ? await host.run(touchArgv(flag, await writeFlavorReady()), 10_000).then(result => result.exitCode === 0, () => false) : false
+  const flagged = clear.ok ? await writeVia(await writeFlavorReady(), host, { kind: 'touch', path: flag }).then(result => result.exitCode === 0, () => false) : false
   const journaled = await appendEvents(state, host, [{ t: 'stop', at: Date.now(), reason }])
 
   // Neither write landed (a full disk, a read-only folder): the stop is held in memory so a re-read of the files cannot undo it, and it is said.
@@ -263,7 +264,7 @@ export async function writeEnvelope(state: State, host: Host, sealed: Sealed): P
   }
 
   const hasDir = (await host.fs.stat(dirOf(path)).catch(() => undefined)) !== undefined
-  const result = await host.run(replaceFileArgv(path, hasDir, await writeFlavorReady()), 10_000, `${JSON.stringify(sealed, null, 2)}\n`)
+  const result = await writeVia(await writeFlavorReady(), host, { kind: 'replace', path, text: `${JSON.stringify(sealed, null, 2)}\n`, hasDir })
 
   if (result.exitCode === 0) {
     state.cache.delete(path)

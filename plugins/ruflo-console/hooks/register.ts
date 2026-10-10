@@ -15,7 +15,7 @@ import { newState, PANE_ID, restore, restoreSessions, storeKeyOf, termStoreKeyOf
 import { BAR_KEY, barView } from './views/bar'
 import { addNotice, dismissNotices } from './notices'
 import { setBootChecks } from './boot-checks'
-import { startWriteFlavorDetection } from './data/write-flavor'
+import { startWriteFlavor } from './data/write-flavor'
 import { buildOf, isOurCheckout, setBuild } from './build'
 import { runUpdateCheck } from './update-flow'
 import { announceModelTools, parseControlEnv, serveModelTools } from './model-tools'
@@ -64,7 +64,14 @@ function hostOf($: EngineInterface, cwd: string, toasts: { prefs: () => ToastPre
   })
 
   return {
-    fs: { read: async path => $.fs.read(rooted(path)), stat: async path => $.fs.stat(rooted(path)), list: async path => $.fs.list(rooted(path)) },
+    fs: {
+      read: async path => $.fs.read(rooted(path)),
+      stat: async path => $.fs.stat(rooted(path)),
+      list: async path => $.fs.list(rooted(path)),
+      // The Windows write flavor (write-via.ts): the host's own file API, since no dd, sh, install, mkdir or cp is on the engine's PATH there.
+      write: async (path, text) => $.fs.write(rooted(path), text),
+      exists: async path => $.fs.exists(rooted(path)),
+    },
         every: (ms, fn) => $.clock.every(ms, fn),
     after: (ms, fn) => $.clock.after(ms, fn),
     storeGet: async key => $.store.get(key),
@@ -174,10 +181,10 @@ export const register: Register = (on, raw: PluginOptions) => {
   on('session.start', async ($, e, next) => {
     control?.stop()
     host = hostOf($, e.cwd, { prefs: () => state.toastPrefs, record: digest => recordToast(state, digest) })
-    // Which write argv the host takes (GNU dd/install on Linux, the constant sh scripts on macOS/BSD). Started before the controller (whose
-    // timers write) exists; every write awaits it (writeFlavorReady), so none is built with a guessed flavor.
+    // Which write the host takes (GNU dd/install on Linux, the constant sh scripts on macOS/BSD, the host's file API on Windows). Started
+    // before the controller (whose timers write) exists; every write awaits it (writeFlavorReady), so none is built with a guessed flavor.
     const detecting = host
-    void startWriteFlavorDetection((argv, timeoutMs) => detecting.run(argv, timeoutMs))
+    void startWriteFlavor((argv, timeoutMs) => detecting.run(argv, timeoutMs), undefined, e.cwd)
     state.cwd = e.cwd
     state.nostrKeyVerifiedAtMs = null
     state.isInteractive = e.isInteractive !== false

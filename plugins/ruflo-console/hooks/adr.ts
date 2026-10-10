@@ -14,8 +14,9 @@ import { record as recordEvents } from './data/events'
 import { readBounded, type ReadCache } from './data/files'
 import { plain } from './data/parse'
 import { isAbsolutePath, joinPath } from './data/paths'
-import { checkNoLinks, dirOf, newFileArgv, replaceFileArgv } from './data/wf-file'
+import { checkNoLinks, dirOf } from './data/wf-file'
 import { writeFlavorReady } from './data/write-flavor'
+import { writeVia } from './data/write-via'
 import type { Host } from './host'
 import { activeMission, mcOf, record, saveLedger } from './mission-control'
 import type { MissionRecord } from './mission-types'
@@ -206,7 +207,7 @@ async function writeNew(state: State, host: Pick<Host, 'fs' | 'run'>, dir: strin
   if (!safe.ok) return safe.why
 
   const hasDir = (await host.fs.stat(dirOf(path)).catch(() => undefined)) !== undefined
-  const result = await host.run(newFileArgv(path, hasDir, await writeFlavorReady()), 10_000, text).catch((error: unknown) => ({ exitCode: null, stdout: '', stderr: error instanceof Error ? error.message : 'the command could not start' }))
+  const result = await writeVia(await writeFlavorReady(), host, { kind: hasDir ? 'create-excl' : 'create-dirs', path, text }).catch((error: unknown) => ({ exitCode: null, stdout: '', stderr: error instanceof Error ? error.message : 'the command could not start' }))
 
   if (result.exitCode !== 0) return writeFailure(result.exitCode, result.stderr)
 
@@ -371,7 +372,7 @@ export async function statusSpec(state: State, host: Pick<Host, 'fs' | 'run' | '
 
         if (now !== change.before) return failed([...done, `${change.file} changed since the diff was shown: nothing was written to it. Ask again.`])
 
-        const result = await host.run(replaceFileArgv(path, true, await writeFlavorReady()), 10_000, change.after).catch(() => null)
+        const result = await writeVia(await writeFlavorReady(), host, { kind: 'replace', path, text: change.after, hasDir: true }).catch(() => null)
         const back = await host.fs.read(path).catch(() => null)
 
         if (result === null || result.exitCode !== 0 || back !== change.after) return failed([...done, `${change.file} could not be written as shown`])

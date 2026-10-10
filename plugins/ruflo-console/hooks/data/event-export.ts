@@ -133,14 +133,16 @@ export async function exportSpecFor(fs: Pick<ReaderFs, 'stat'>, cwd: string, tar
   if (!clear.ok) return clear
 
   const hasDir = (await fs.stat(dirOf(placed.path)).catch(() => undefined)) !== undefined
+  const flavor = await writeFlavorReady()
 
   return {
     ok: true,
     spec: {
       label: `write ${label}`,
       args: [],
-      argv: newFileArgv(placed.path, hasDir, await writeFlavorReady()),
+      argv: newFileArgv(placed.path, hasDir, flavor),
       stdin: content,
+      ...(flavor === 'host-fs' && { write: { kind: hasDir ? 'create-excl' : 'create-dirs', path: placed.path, text: content } as const }),
       expect: `a new file at ${placed.path}`,
       declared: 'write',
       shows: `write ${placed.path} (${bytes(content)} bytes; never overwrites)`,

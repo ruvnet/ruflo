@@ -11,7 +11,7 @@
  */
 import type { ReaderFs } from './files'
 import { below, hasParentSegment, isAbsolutePath, isWindowsPath, joinPath, normalizePath, trimTrailing } from './paths'
-import { posixCopyExclusive, posixCreateExclusive, posixCreateExclusiveWithDirs, posixReplace, posixReplaceWithDirs, type WriteFlavor } from './write-flavor'
+import { hostFsArgv, posixCopyExclusive, posixCreateExclusive, posixCreateExclusiveWithDirs, posixReplace, posixReplaceWithDirs, type WriteFlavor } from './write-flavor'
 
 export type Roots = { cwd: string; /** The session scratchpad, when the host tells the console where it is. */ scratch?: string | null }
 export type PathCheck = { ok: true; path: string } | { ok: false; why: string }
@@ -86,7 +86,7 @@ export async function checkNoLinks(fs: Pick<ReaderFs, 'stat'>, path: string, roo
  * writer creating that exact folder and file inside the window.
  */
 export const newFileArgv = (path: string, hasDir: boolean, flavor: WriteFlavor): readonly string[] =>
-  flavor === 'gnu' ? (hasDir ? ['dd', `of=${path}`, 'conv=excl', 'status=none'] : INSTALL(path)) : hasDir ? posixCreateExclusive(path) : posixCreateExclusiveWithDirs(path)
+  flavor === 'host-fs' ? hostFsArgv('create', path) : flavor === 'gnu' ? (hasDir ? ['dd', `of=${path}`, 'conv=excl', 'status=none'] : INSTALL(path)) : hasDir ? posixCreateExclusive(path) : posixCreateExclusiveWithDirs(path)
 
 /**
  * The page's own state file, content on stdin: replaced in place where the folder is there, created (with its folders) where it is not. A
@@ -94,14 +94,14 @@ export const newFileArgv = (path: string, hasDir: boolean, flavor: WriteFlavor):
  * write-flavor.ts (a link or a non-regular target is refused; umask 022).
  */
 export const replaceFileArgv = (path: string, hasDir: boolean, flavor: WriteFlavor): readonly string[] =>
-  flavor === 'gnu' ? (hasDir ? ['dd', `of=${path}`, 'status=none'] : INSTALL(path)) : hasDir ? posixReplace(path) : posixReplaceWithDirs(path)
+  flavor === 'host-fs' ? hostFsArgv('replace', path) : flavor === 'gnu' ? (hasDir ? ['dd', `of=${path}`, 'status=none'] : INSTALL(path)) : hasDir ? posixReplace(path) : posixReplaceWithDirs(path)
 
 /**
  * Copies a regular file to a new name, never replacing one (the journal's archive). GNU: `cp --no-clobber`, unchanged. POSIX: BSD cp has no
  * `--no-clobber`, so the guarded copy in write-flavor.ts (an O_EXCL create of the target, the source refused if a link or not regular).
  */
 export const copyExclusiveArgv = (source: string, path: string, flavor: WriteFlavor): readonly string[] =>
-  flavor === 'gnu' ? ['cp', '--no-clobber', '--', source, path] : posixCopyExclusive(source, path)
+  flavor === 'host-fs' ? hostFsArgv('copy', path) : flavor === 'gnu' ? ['cp', '--no-clobber', '--', source, path] : posixCopyExclusive(source, path)
 
 const INSTALL = (path: string): readonly string[] => ['install', '-D', '-m', '0644', '/dev/stdin', '--', path]
 
