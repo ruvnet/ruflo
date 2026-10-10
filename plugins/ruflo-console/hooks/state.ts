@@ -89,11 +89,28 @@ export const AGENT_VIEW = { id: 'agent' as const, rows: 28 }
 
 export const rowsOf = (view: ViewId): number => (view === 'agent' ? AGENT_VIEW.rows : (VIEWS.find(entry => entry.id === view)?.rows ?? 24))
 
-/** A view by id, digit, label, or a prefix of three letters or more. */
-export const viewOf = (word: string): ViewId | null => {
-  const lower = word.trim().toLowerCase()
+/** Names a page used to go by (the menu's longer forms and the old Learning Lab): still understood when typed, never shown. */
+export const RETIRED_NAMES: Readonly<Record<string, ViewId>> = {
+  'learning lab': 'neural',
+  'memory lab': 'memory',
+  'claims board': 'claims',
+  'plugins & mods': 'plugins',
+  'plugins and mods': 'plugins',
+  'swarm topology': 'swarm',
+  'agent timeline': 'timeline',
+  'event stream': 'events',
+  'cost & budget': 'cost',
+  'cost and budget': 'cost',
+  'the room': 'room',
+  'ai terminal': 'terminal',
+  'x.ruv.io board': 'xruv',
+}
 
-  return VIEWS.find(view => view.id === lower || (view.key !== '' && view.key === lower) || view.label.toLowerCase() === lower || (lower.length >= 3 && view.id.startsWith(lower)))?.id ?? null
+/** A view by id, digit, label, a prefix of three letters or more, or (last) a retired name. */
+export const viewOf = (word: string): ViewId | null => {
+  const lower = word.trim().toLowerCase().replace(/\s+/g, ' ')
+
+  return VIEWS.find(view => view.id === lower || (view.key !== '' && view.key === lower) || view.label.toLowerCase() === lower || (lower.length >= 3 && view.id.startsWith(lower)))?.id ?? RETIRED_NAMES[lower] ?? null
 }
 
 /**

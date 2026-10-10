@@ -36,6 +36,11 @@ export function parseRuflo(args: string): Intent {
   const [head = '', second = ''] = words.map(word => word.toLowerCase())
   const rest = args.trim().slice(words[0]?.length ?? 0).trim()
 
+  // A page's full name first ("learning lab" is the Neural Lab, "learning" is Learning): before the verbs, which read only the first word.
+  const named = words.length > 1 ? viewOf(words.join(' ')) : null
+
+  if (named !== null) return { kind: 'open', view: named }
+
   switch (head) {
     case '':
     case 'open':

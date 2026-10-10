@@ -12,7 +12,8 @@ import { GROUP_BLURB, HELP_GROUPS, VIEW_TOPIC } from '../hooks/help-docs'
 import { TOPICS } from '../hooks/help-topics'
 import { ACCENT, NAV_ACCENT } from '../hooks/menu-colors'
 import { groupOf, NAV_GROUPS } from '../hooks/nav-state'
-import { VIEWS } from '../hooks/state'
+import { parseRuflo } from '../hooks/commands'
+import { VIEWS, viewOf } from '../hooks/state'
 import { GROUPS, MENU_SECTIONS } from '../hooks/views/menu'
 
 const navTitles = NAV_GROUPS.map(group => group.title)
@@ -89,17 +90,19 @@ describe('one name per page', () => {
   })
 
   it('never writes a retired page name in what the person reads', () => {
-    const retired = ['Learning Lab', 'Claims Board', 'Plugins & Mods', 'Swarm Topology', 'Agent Timeline', 'Event Stream', 'Cost & Budget', 'x.ruv.io Board', 'Memory Lab']
+    const retired = ['Learning Lab', 'Plugins & Mods', 'Memory Lab', 'Event Stream', 'Cost & Budget']
     const strings: string[] = []
     const walk = (dir: string): void => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         if (entry.isDirectory()) walk(join(dir, entry.name))
-        else if (entry.name.endsWith('.ts')) for (const line of readFileSync(join(dir, entry.name), 'utf8').split(/\r?\n/)) if (!/^\s*(\/\*\*|\*|\/\/)/.test(line)) strings.push(`${entry.name}: ${line.trim()}`)
+        else if (entry.name.endsWith('.ts')) for (const line of readFileSync(join(dir, entry.name), 'utf8').split(/\r?\n/)) if (!/^\s*(\/\*\*|\*|\/\/)/.test(line) && !/^\s*'[^']+': '\w+',?$/.test(line)) strings.push(`${entry.name}: ${line.trim()}`)
       }
     }
 
     walk(join(__dirname, '..', 'hooks'))
-    expect(strings.filter(line => retired.some(name => line.includes(`'${name}`) || line.includes(`${name} (`) || line.includes(`${name}'`) || line.includes(`the ${name}`))).slice(0, 20)).toEqual([])
+    const found = (name: string): RegExp => new RegExp(`(?<![\w-])${name.replace(/[.*+?^${}()|[]\]/g, '\$&')}(?![\w-])`, 'i')
+
+    expect(strings.filter(line => !line.startsWith('menu-aliases') && retired.some(name => found(name).test(line))).slice(0, 20)).toEqual([])
   })
 })
 
@@ -109,5 +112,29 @@ describe('the boot log', () => {
     const labels = new Set(VIEWS.filter(view => view.id !== 'menu').map(view => view.label))
 
     expect(BOOT_MODULES.map(entry => entry.name).filter(name => !labels.has(name))).toEqual([])
+  })
+})
+
+describe('retired page names still reach their page', () => {
+  const ALIASES: Record<string, string> = {
+    'learning lab': 'neural', 'Learning Lab': 'neural', 'memory lab': 'memory', 'claims board': 'claims', 'plugins & mods': 'plugins', 'plugins and mods': 'plugins',
+    'swarm topology': 'swarm', 'agent timeline': 'timeline', 'event stream': 'events', 'cost & budget': 'cost', 'cost and budget': 'cost', 'the room': 'room', 'ai terminal': 'terminal',
+    'x.ruv.io board': 'xruv',
+  }
+
+  it('resolves through viewOf, in any case', () => {
+    for (const [name, id] of Object.entries(ALIASES)) expect(viewOf(name), name).toBe(id)
+  })
+
+  it('opens the page from /ruflo <name> and from the menu prompt', () => {
+    expect(parseRuflo('learning lab')).toEqual({ kind: 'open', view: 'neural' })
+    expect(parseRuflo('claims board')).toEqual({ kind: 'open', view: 'claims' })
+    expect(parseRuflo('learning')).toEqual({ kind: 'open', view: 'learning' })
+  })
+
+  it('does not teach a retired name in the key help (any case)', () => {
+    const text = TOPICS.flatMap(topic => topic.steps.map(step => step.text)).join('\n')
+
+    expect(text).not.toMatch(/\b(learning lab|memory lab|claims board|plugins & mods|swarm topology)\b/i)
   })
 })
