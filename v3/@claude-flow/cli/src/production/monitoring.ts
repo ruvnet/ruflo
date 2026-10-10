@@ -268,14 +268,14 @@ export class MonitoringHooks {
       timestamp: Date.now(),
     };
 
-    return this.healthStatus;
+    return structuredClone(this.healthStatus);
   }
 
   /**
    * Get current health status
    */
   getHealthStatus(): HealthStatus {
-    return this.healthStatus;
+    return structuredClone(this.healthStatus);
   }
 
   // ============================================================================
@@ -324,7 +324,7 @@ export class MonitoringHooks {
     if (level) {
       filtered = filtered.filter(a => a.level === level);
     }
-    return filtered;
+    return filtered.map(alert => ({ ...alert }));
   }
 
   /**
@@ -359,7 +359,7 @@ export class MonitoringHooks {
     if (since) {
       filtered = filtered.filter(m => m.timestamp >= since);
     }
-    return filtered;
+    return filtered.map(metric => ({ ...metric, labels: { ...metric.labels } }));
   }
 
   /**
