@@ -124,3 +124,27 @@ describe('the breadcrumb Back button', () => {
     expect(state.trail).toEqual(trail)
   })
 })
+
+describe('the breadcrumb blurb never names a key for going back', () => {
+  const text = (nodes: El[]): string => nodes.filter(el => el.kind === 'Text').map(el => String(el.props.children ?? '')).join(' ')
+  const drawText = (state: ReturnType<typeof newState>): string => text(flat(paneView({ kit, state, act: {}, columns: 100, nowMs: 100_000, pictures: new Map() } as unknown as Ctx)))
+
+  for (const look of ['plain', 'bbs'] as const) {
+    it(`${look}: off the agent page it has no "b <-" (b is the Hive-Mind key there); the button names the page`, () => {
+      const { state, control, backButton } = setup(look)
+
+      control.setView('swarm')
+      expect(backButton()?.props.label).toBe('◂ Back to Overview')
+      expect(drawText(state)).not.toMatch(/b <-/)
+    })
+  }
+
+  it('on the agent page it still says b goes back to the page it came from', async () => {
+    const { state, control } = setup()
+
+    state.snapshot = await readSnapshot(memoryFs, new Map() as ReadCache, '/work', '/home/dev', {}, 0)
+    control.setView('swarm')
+    control.drill(state.snapshot.agents[0]?.id as string)
+    expect(drawText(state)).toMatch(/b goes back to Swarm/)
+  })
+})
