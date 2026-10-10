@@ -88,7 +88,7 @@ export const MORE_TOPICS: readonly HelpTopic[] = [
     group: 'SAFETY',
     summary: 'one live feed of events, Claude’s console actions and what you said',
     steps: [
-      { text: 'Open Room from the menu (SAFETY → Room). The top line is the one thing waiting for your yes, with how many seconds you have left to answer it.', go: { view: 'room' }, label: 'Open The Room' },
+      { text: 'Open Room from the menu (SAFETY → Room). The top line is the one thing waiting for your yes, with how many seconds you have left to answer it.', go: { view: 'room' }, label: 'Open the Room page' },
       { text: 'The feed below merges what changed in ruflo, what Claude did through the console tools (with its outcome), and what you sent. Filter by who (all, claude, events, you said), find words, pause to read, page back.' },
       { text: 'Press ⛔ blocked to see only what was refused or failed: Claude’s denied or failed actions and events that say denied. Press a line to open it; an event from a page of its own (swarm, claims, learning, plugins, missions) gets a jump button.' },
       { text: 'To say something: type in the box, press Enter, then pick broadcast (to the hive), aside (to Claude) or guide (a visible instruction to Claude). Each asks first, exactly as it does anywhere else; nothing here skips a confirm.' },

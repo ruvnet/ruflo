@@ -19,6 +19,8 @@ import { GROUPS, MENU_SECTIONS } from '../hooks/views/menu'
 const navTitles = NAV_GROUPS.map(group => group.title)
 const navPages = (title: string): string[] => NAV_GROUPS.find(group => group.title === title)!.rows.flat()
 const labelOf = (id: string): string => VIEWS.find(view => view.id === id)!.label
+const escape = (word: string): string => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const found = (name: string, flags = 'i'): RegExp => new RegExp(String.raw`(?<![\w-])${escape(name)}(?![\w-])`, flags)
 
 describe('the main menu is the nav groups', () => {
   it('has the same groups in the same order, under the same names', () => {
@@ -88,9 +90,18 @@ describe('one name per page', () => {
     expect(labelOf('learning')).toBe('Learning')
     expect(labelOf('neural')).toBe('Neural Lab')
   })
+  it('the retired-name matcher catches a planted name and respects word edges', () => {
+    expect(found('Cost & Budget').test("label: 'cost & budget'")).toBe(true)
+    expect(found('Cost & Budget').test("label: 'Cost & Budgeting'")).toBe(false)
+    expect(found('Cost & Budget').test("label: 'x-Cost & Budget'")).toBe(false)
+    expect(found('The Room', '').test("label: 'Open The Room'")).toBe(true)
+    expect(found('The Room', '').test("label: 'Open the Room page'")).toBe(false)
+  })
 
   it('never writes a retired page name in what the person reads', () => {
+    // Retired names, matched in any case; "The Room" is matched capitalised only (the page is Room now), so "the Room page" in running prose stays fine.
     const retired = ['Learning Lab', 'Plugins & Mods', 'Memory Lab', 'Event Stream', 'Cost & Budget']
+    const retiredExact = ['The Room']
     const strings: string[] = []
     const walk = (dir: string): void => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -100,9 +111,8 @@ describe('one name per page', () => {
     }
 
     walk(join(__dirname, '..', 'hooks'))
-    const found = (name: string): RegExp => new RegExp(`(?<![\w-])${name.replace(/[.*+?^${}()|[]\]/g, '\$&')}(?![\w-])`, 'i')
 
-    expect(strings.filter(line => !line.startsWith('menu-aliases') && retired.some(name => found(name).test(line))).slice(0, 20)).toEqual([])
+    expect(strings.filter(line => !line.startsWith('menu-aliases') && (retired.some(name => found(name).test(line)) || retiredExact.some(name => found(name, '').test(line)))).slice(0, 20)).toEqual([])
   })
 })
 

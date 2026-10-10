@@ -51,7 +51,7 @@ Settings → Interface and updates → **Toasts** sets what the ruflo plugins ma
 
 ## Room and Mods
 
-Open it with `/ruflo room` (menu: Safety → The Room).
+Open it with `/ruflo room` (menu: Safety → Room).
 
 - **Waiting for a yes**: the one confirm that is pending, with the seconds left to answer it.
 - **Needs you, Sessions, Preview** (ADR-486): approvals, questions, failures and finished work across Claude Code, Codex and Ruflo sessions, including ones started outside Ruflo; the sessions grouped by repository and worktree; and a preview of the one you pick (latest response, current tool, edited files, test result, cost labelled reported, estimated or unavailable). Discovery is local and read-only: no model call, no process, nothing woken (the one write is a four-count summary ruflo-mods can show). The Sessions list starts folded; jumping to a session from the queue opens it. A finished session leaves the queue only after its preview was drawn; a session whose identity is ambiguous goes to an *unassigned* bucket and raises nothing. Transcript text is never saved, never sent to a model and never included in a text answer. Options `sessionWorkspace` and `sessionPreview` (both on).
