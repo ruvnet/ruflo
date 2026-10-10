@@ -9,7 +9,7 @@ import { spawn, execFileSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync, chmodSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { tmpdir, homedir } from 'node:os'
-import { randomBytes } from 'node:crypto'
+import { randomInt } from 'node:crypto'
 
 const arg = (k, d) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d }
 const REPO = resolve(new URL('..', import.meta.url).pathname)
@@ -17,7 +17,7 @@ const PLUG = `${REPO}/plugins/ruflo-mods`
 const SNOOP = arg('snoop') ? resolve(arg('snoop')) : undefined
 const N = Number(arg('n', '3')), MODEL = arg('model', 'haiku'), BUDGET = arg('budget', '0.25')
 const MODES = arg('modes', 'on,off,malformed').split(',')
-const rand = len => { const a = 'abcdefghjkmnpqrstuvwxyz'; const b = randomBytes(len); return [...b].map(x => a[x % a.length]).join('') }
+const rand = len => { const a = 'abcdefghjkmnpqrstuvwxyz'; return Array.from({ length: len }, () => a[randomInt(a.length)]).join('') }
 
 const HOME = mkdtempSync(join(tmpdir(), 'compact-live-home.'))
 const CFG = join(HOME, '.claude')
