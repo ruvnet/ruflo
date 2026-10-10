@@ -65,3 +65,17 @@ describe('the key help', () => {
     expect(keysTopic).toMatch(/◂ Back/)
   })
 })
+
+describe('terminal messages', () => {
+  it('never tell the person to press a key for Stop, New session or Clear (the buttons have none)', () => {
+    const bad: string[] = []
+
+    for (const file of ['harness.ts', 'views/terminal.ts', 'commands.ts']) {
+      for (const line of readFileSync(join(HOOKS, file), 'utf8').split(/\r?\n/)) {
+        if (/\b(stop|new session|clear)\b[^'`]{0,40}\((s|o|z)\)/i.test(line) || /\((s|o|z)\)[^'`]{0,20}\b(stop|clear)\b/i.test(line)) bad.push(`${file}: ${line.trim().slice(0, 120)}`)
+      }
+    }
+
+    expect(bad).toEqual([])
+  })
+})

@@ -111,7 +111,7 @@ export function whyNotRun(state: State, text: string): string | null {
   const fit = checkLimit(text.trim(), harness.id === 'ruflo' ? ARGV_TEXT_MAX : LONG_TEXT_MAX, 'the question', harness.id === 'ruflo' ? 'a ruflo command is one argument list' : 'sent to the agent as one prompt')
 
   if (!fit.ok) return fit.message
-  if (busy !== undefined) return `${busy} is still answering: wait, or stop it (s)`
+  if (busy !== undefined) return `${busy} is still answering: wait, or press ■ Stop`
   if (harness.id === 'ruflo' && argvOf(state, 'ruflo', text.trim()) === null) return `that is not one ruflo command (1 to 40 words; this is ${text.trim().split(/\s+/).length})`
 
   return null
