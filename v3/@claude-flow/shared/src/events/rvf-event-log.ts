@@ -16,7 +16,7 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, renameSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, renameSync, truncateSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { DomainEvent } from './domain-events.js';
 
@@ -342,6 +342,7 @@ export class RvfEventLog extends EventEmitter {
     }
 
     let offset = MAGIC_LENGTH;
+    let recoverableTail = true;
 
     const MAX_PAYLOAD_SIZE = 100 * 1024 * 1024; // 100MB safety limit
     while (offset + LENGTH_PREFIX_BYTES <= buf.length) {
@@ -349,6 +350,7 @@ export class RvfEventLog extends EventEmitter {
       offset += LENGTH_PREFIX_BYTES;
 
       if (payloadLength > MAX_PAYLOAD_SIZE) {
+        recoverableTail = false;
         if (this.config.verbose) {
           console.warn(`[RvfEventLog] Payload size ${payloadLength} exceeds safety limit`);
         }
@@ -356,13 +358,14 @@ export class RvfEventLog extends EventEmitter {
       }
 
       if (offset + payloadLength > buf.length) {
-        // Truncated record — stop reading (crash recovery).
+        // Remove only the incomplete record before accepting future appends.
         if (this.config.verbose) {
           console.warn(
             `[RvfEventLog] Truncated record at offset ${offset - LENGTH_PREFIX_BYTES} — ` +
               `expected ${payloadLength} bytes, have ${buf.length - offset}`
           );
         }
+        offset -= LENGTH_PREFIX_BYTES;
         break;
       }
 
@@ -377,6 +380,10 @@ export class RvfEventLog extends EventEmitter {
           console.warn(`[RvfEventLog] Corrupt JSON record skipped`);
         }
       }
+    }
+
+    if (recoverableTail && offset < buf.length) {
+      truncateSync(filePath, offset);
     }
   }
 
