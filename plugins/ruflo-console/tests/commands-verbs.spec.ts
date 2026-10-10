@@ -21,6 +21,13 @@ describe('verbs win over page names', () => {
     expect(parseRuflo('learning')).toEqual({ kind: 'open', view: 'learning' })
   })
 
+  it('/ruflo dump reads the whole rest of the line as the page, like go and open', () => {
+    expect(parseRuflo('dump learning lab')).toEqual({ kind: 'dump', view: 'neural' })
+    expect(parseRuflo('dump claims board')).toEqual({ kind: 'dump', view: 'claims' })
+    expect(parseRuflo('text swarm')).toEqual({ kind: 'dump', view: 'swarm' })
+    expect(parseRuflo('dump')).toEqual({ kind: 'dump', view: null })
+  })
+
   it('VERBS is exactly the cases of the switch', () => {
     const source = readFileSync(join(__dirname, '..', 'hooks', 'commands.ts'), 'utf8')
     const body = source.slice(source.indexOf('switch (head)'), source.indexOf('export const HELP'))

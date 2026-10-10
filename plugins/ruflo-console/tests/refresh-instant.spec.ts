@@ -1,7 +1,7 @@
 /**
  * Refresh is instant and narrow panes keep their keys. Refresh (the r key, the footer button, the icon, the menu prompt's r) re-reads and
  * probes but never replays the boot screen (that is Settings -> Replay boot). Below 44 columns the pane has no tab buttons and no footer
- * buttons, yet every page key and p / x / r / h is still armed (hidden buttons), and y / n still answer an ask. Run with
+ * buttons, yet the digit page keys, the keyed pages of the core tab strip (CORE_TABS) and p / r / h are still armed (hidden buttons), and y / n still answer an ask. Run with
  *   npx vitest run tests/refresh-instant.spec.ts
  */
 import { afterEach, describe, expect, it } from 'vitest'
@@ -10,7 +10,7 @@ import { createController } from '../hooks/controller'
 import type { Host } from '../hooks/host'
 import { isBooting, newState, VIEWS } from '../hooks/state'
 import { setLook, type Ctx } from '../hooks/views/common'
-import { paneView } from '../hooks/views/pane'
+import { CORE_TABS, paneView } from '../hooks/views/pane'
 import { settingsView } from '../hooks/views/settings'
 
 type El = { kind: string; props: Record<string, unknown> }
@@ -111,6 +111,12 @@ describe('a narrow pane (40 columns) keeps every shortcut', () => {
     const { byHotkey } = setup()
 
     for (const view of VIEWS.filter(entry => /^[0-9]$/.test(entry.key) && entry.id !== 'overview')) expect(byHotkey(40, view.key), `key ${view.key}`).toHaveLength(1)
+  })
+
+  it('every keyed page of the core tab strip is armed too (b, c, ...), not only the digits', () => {
+    const { byHotkey } = setup()
+
+    for (const view of VIEWS.filter(entry => CORE_TABS.has(entry.id) && entry.key !== '')) expect(byHotkey(40, view.key), `key ${view.key} (${view.label})`).toHaveLength(1)
   })
 
   it('3 opens Swarm', () => {

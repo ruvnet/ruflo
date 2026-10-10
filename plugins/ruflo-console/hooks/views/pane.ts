@@ -60,7 +60,7 @@ import { xruvView } from './xruv'
 
 export const NARROW = 44
 /** The keyless views that keep a tab of their own (the rest are reached from the main menu). */
-const CORE_TABS = new Set<ViewId>(['hive', 'skills', 'cost', 'timeline', 'approvals', 'events', 'room', 'xruv', 'terminal'])
+export const CORE_TABS = new Set<ViewId>(['hive', 'skills', 'cost', 'timeline', 'approvals', 'events', 'room', 'xruv', 'terminal'])
 
 /** The networks the Wildcat strip names, each with the view a click on it opens. */
 const NETWORKS: readonly (readonly [string, ViewId])[] = [['x.ruv.io', 'xruv'], ['relay.ruv.io', 'xruv'], ['agentbbs', 'federation'], ['mcp', 'plugins'], ['claude code', 'terminal']]

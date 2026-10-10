@@ -112,7 +112,7 @@ export function parseRuflo(args: string): Intent {
     }
     case 'dump':
     case 'text':
-      return { kind: 'dump', view: second === '' ? null : viewOf(second) }
+      return { kind: 'dump', view: rest === '' ? null : viewOf(rest) }
     // `/ruflo events [kind|level|since:15m|"query"|window <w>|clear|forget|export <path>|follow <ref>|pin|rule]` and `/ruflo timeline [5m|…|session|zoom in|out|follow <ref>|export <path>]` (ADR-474); bare, each just opens its page.
     case 'events':
       return words.length === 1 ? { kind: 'open', view: 'events' } : { kind: 'events', args: words.slice(1) }
