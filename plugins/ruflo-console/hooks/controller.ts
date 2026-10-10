@@ -59,7 +59,7 @@ export type Controller = {
   closedByPerson: () => void
   close: () => Promise<void>
   setView: (view: State['view'], opts?: { replace?: boolean }) => void
-  drill: (agentId: string) => void
+  drill: (agentId: string, opts?: { replace?: boolean }) => void
   animate: () => void
   noteToolCall: (agentId: string | undefined, tool: string) => void
   actions: Actions
@@ -451,11 +451,11 @@ export function createController(state: State, host: Host): Controller {
     else void open(true, false).then(result => result.isPlaced && toField())
   }
 
-  function drill(agentId: string): void {
+  function drill(agentId: string, opts: { replace?: boolean } = {}): void {
     const agent = state.snapshot?.agents.find(entry => entry.id === agentId)
 
     state.drill = { agentId, logs: null, logsAtMs: 0 }
-    setView('agent')
+    setView('agent', opts)
 
     const spec = agent === undefined ? null : agentLogs(agent)
 

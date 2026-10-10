@@ -177,7 +177,7 @@ function blurb(ctx: Ctx): RenderElement | null {
 
   const name = ctx.state.view === 'agent' ? 'Agent' : view.label
   // Back goes to the page before this one: say which, whenever there is one (on a drill-down, always the page it was opened from).
-  const previous = VIEWS.find(entry => entry.id === peekBack(ctx.state))
+  const previous = VIEWS.find(entry => entry.id === peekBack(ctx.state)?.view)
   const backTo = previous === undefined ? '' : ` · b <- ${previous.label}`
   const about = ctx.state.view === 'agent' ? `one agent's role, task, claims, activity and logs · b goes back to ${(previous ?? view).label}` : `${view.blurb}${backTo}`
 

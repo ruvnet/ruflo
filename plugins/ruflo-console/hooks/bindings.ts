@@ -56,7 +56,7 @@ export type Steps = {
   animate: () => void
   probe: (force?: boolean) => Promise<void>
   setView: (view: State['view'], opts?: { replace?: boolean }) => void
-  drill: (agentId: string) => void
+  drill: (agentId: string, opts?: { replace?: boolean }) => void
   close: () => Promise<void>
 }
 
@@ -180,7 +180,13 @@ export function actionsOf(state: State, host: Host, runner: Runner, steps: Steps
       host.invalidate()
     },
     close: () => void close(),
-    back: () => setView(popBack(state), { replace: true }),
+    back: () => {
+      const target = popBack(state)
+
+      // Back to a drill-down reopens the agent that was open then, through the normal drill (logs and all).
+      if (target.view === 'agent' && target.agentId !== undefined) drill(target.agentId, { replace: true })
+      else setView(target.view, { replace: true })
+    },
     confirm: seen => void runner.confirm(seen),
     cancel: runner.cancel,
     select,

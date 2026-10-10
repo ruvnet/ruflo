@@ -73,7 +73,7 @@ describe('real back', () => {
     const { state, control } = setup()
 
     state.view = 'swarm'
-    state.trail = ['claims', 'nope-gone' as ViewId, 'agent', 'memory']
+    state.trail = [{ view: 'claims' }, { view: 'nope-gone' as ViewId }, { view: 'agent', agentId: 'gone' }, { view: 'memory' }]
     state.snapshot = agentsOf()
     control.actions.back()
     expect(state.view).toBe('memory')
@@ -88,11 +88,52 @@ describe('real back', () => {
     const { state, control } = setup()
 
     state.snapshot = agentsOf('a1')
-    state.select.agent = 0
     state.view = 'swarm'
-    state.trail = ['agent']
+    state.trail = [{ view: 'agent', agentId: 'a1' }]
     control.actions.back()
     expect(state.view).toBe('agent')
+  })
+
+  it('goes back to the agent that was open, not the one drilled last', () => {
+    const { state, control } = setup()
+
+    state.snapshot = agentsOf('A', 'B')
+    control.setView('swarm')
+    control.drill('A')
+    control.setView('claims')
+    control.setView('swarm')
+    control.drill('B')
+    expect(state.drill.agentId).toBe('B')
+    control.actions.back()
+    expect(state.view).toBe('swarm')
+    control.actions.back()
+    expect(state.view).toBe('claims')
+    control.actions.back()
+    expect(state.view).toBe('agent')
+    expect(state.drill.agentId).toBe('A')
+  })
+
+  it('skips an agent entry whose agent has vanished, by id', () => {
+    const { state, control } = setup()
+
+    state.snapshot = agentsOf('B')
+    state.select.agent = 0
+    state.view = 'swarm'
+    state.trail = [{ view: 'claims' }, { view: 'agent', agentId: 'A' }]
+    control.actions.back()
+    expect(state.view).toBe('claims')
+  })
+
+  it('does not skip a live drilled agent because the claims cursor is past the list', () => {
+    const { state, control } = setup()
+
+    state.snapshot = agentsOf('A')
+    state.select.agent = 5
+    state.view = 'swarm'
+    state.trail = [{ view: 'agent', agentId: 'A' }]
+    control.actions.back()
+    expect(state.view).toBe('agent')
+    expect(state.drill.agentId).toBe('A')
   })
 
   it('keeps at most 20 entries, dropping the oldest', () => {
@@ -102,19 +143,19 @@ describe('real back', () => {
     for (let i = 0; i < 60; i += 1) control.setView(pages[i % 2] as ViewId)
     expect(HISTORY_MAX).toBe(20)
     expect(state.trail.length).toBe(20)
-    expect(state.trail[0]).not.toBe(state.trail[1])
+    expect(state.trail[0]?.view).not.toBe(state.trail[1]?.view)
   })
 
   it('replace does not push, and the same page twice does not push', () => {
     const { state, control } = setup()
 
     control.setView('swarm')
-    expect(state.trail).toEqual(['overview'])
+    expect(state.trail).toEqual([{ view: 'overview' }])
     control.setView('swarm')
-    expect(state.trail).toEqual(['overview'])
+    expect(state.trail).toEqual([{ view: 'overview' }])
     control.setView('claims', { replace: true })
     expect(state.view).toBe('claims')
-    expect(state.trail).toEqual(['overview'])
+    expect(state.trail).toEqual([{ view: 'overview' }])
   })
 
   it('does not push the page Back is leaving', () => {
@@ -124,6 +165,6 @@ describe('real back', () => {
     control.setView('claims')
     control.actions.back()
     expect(state.view).toBe('swarm')
-    expect(state.trail).toEqual(['overview'])
+    expect(state.trail).toEqual([{ view: 'overview' }])
   })
 })

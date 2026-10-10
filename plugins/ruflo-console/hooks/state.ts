@@ -201,7 +201,7 @@ export type State = {
   loadedAtMs: number
   view: ViewId
   /** The pages left behind, oldest first (at most 20): what Back walks. The page a drill-down was opened from is the last entry. */
-  trail: ViewId[]
+  trail: Array<{ view: ViewId; agentId?: string }>
   isHelp: boolean
   /** ruHelp: the question typed, and the guide open (null: the index). */
   help: { query: string; topic: string | null }
