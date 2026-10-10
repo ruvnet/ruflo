@@ -11,10 +11,8 @@ import type { Register } from 'claude-code'
 import type { Controller } from './controller'
 import { ESCAPES, INVISIBLE, plain } from './data/parse'
 import { askedBy } from './data/room'
-import { DEV_FIELDS } from './data/devtools'
-import { PROFILES, RIGORS } from './goap'
-import { mcOf, setResearch } from './mission-control'
-import { RESEARCH_DEPTHS } from './mission-options'
+import { mcOf } from './mission-control'
+import { setField as setFieldOf } from './model-fields'
 import { filterPalette, paletteEntries, WITHDRAW_ID, withdrawHint } from './palette'
 import { isStale } from './runner'
 import { hasSecret } from './screen'
@@ -231,39 +229,6 @@ function optionChips(state: State): Map<string, string> {
   return new Map(pluginNames(state, (catalogOf(state).plugins ?? []).filter(plugin => plugin.options.length > 0).map(plugin => plugin.name)).map(name => [name.replace(/^ruflo-/, ''), name]))
 }
 
-const SET_FIELDS = ['goal', 'profile', 'rigor', 'research.question', 'research.depth', 'research.cap', 'cost.budget'] as const
-
-function setField(deps: ModelToolDeps, field: string, value: string): string | null {
-  const { state, control } = deps
-  const { mission } = control.actions
-
-  if (field === 'goal') mission.goal(value)
-  else if (field === 'profile') {
-    const found = PROFILES.find(profile => profile.id === value)
-
-    if (found === undefined) return `profile must be one of ${PROFILES.map(profile => profile.id).join(', ')}`
-    mission.profile(found.id)
-  } else if (field === 'rigor') {
-    const found = RIGORS.find(rigor => rigor === value)
-
-    if (found === undefined) return `rigor must be one of ${RIGORS.join(', ')}`
-    mission.rigor(found)
-  } else if (field === 'research.question') setResearch(state, { question: value })
-  else if (field === 'research.depth') {
-    const found = RESEARCH_DEPTHS.find(depth => depth === value)
-
-    if (found === undefined) return `research.depth must be one of ${RESEARCH_DEPTHS.join(', ')}`
-    setResearch(state, { depth: found })
-  } else if (field === 'research.cap') setResearch(state, { cap: value })
-  else if (field === 'cost.budget') control.actions.costBudgetDraft(value)
-  else if (field.startsWith('dev.') && DEV_FIELDS.includes(field.slice(4) as never)) control.actions.devtools.draft(field.slice(4) as never, value)
-  else return `unknown field "${modelLine(field, 40)}". Fields: ${[...SET_FIELDS, 'dev.<field>'].join(', ')}`
-
-  control.host.invalidate()
-
-  return null
-}
-
 /**
  * An action the console queued (a palette entry, or the follow-up a field raised) is held to the same rules: above the level it is
  * cancelled and nothing runs; in ask mode it waits for the person; in auto mode it confirms and reports. Null when nothing is pending.
@@ -428,14 +393,14 @@ async function answer(name: string, input: Record<string, unknown>, deps: ModelT
 
       const askedAt = Date.now()
       const call = ++state.control.callSeq
-      const problem = asModel(state, () => setField(deps, field, value), call)
+      const problem = asModel(state, () => setFieldOf(deps, field, value, modelLine), call)
 
       if (problem !== null) return refuse(`set ${field}`, problem)
 
       say(state, name, `set ${field}`, 'ok', value)
 
       // Some fields raise a follow-up themselves (a goal is planned, then guidance is offered): it is held to the same rules.
-      const queued = await settlePending(deps, name, `after set ${field}`, askedAt, { call, card: state.pending?.id ?? null })
+      const queued = await settlePending(deps, name, `after set ${field}`, askedAt, { call, card: (state as { pending: Pending | null }).pending?.id ?? null })
 
       return `Set ${field}.${queued === null ? ' It is only filled in: run a console entry to act on it.' : ` The console then queued a follow-up. ${queued.text}`}`
     }
