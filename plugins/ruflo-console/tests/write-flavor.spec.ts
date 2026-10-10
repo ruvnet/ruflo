@@ -285,7 +285,7 @@ describe('the autopilot kill flag on a machine with no delete', () => {
     return { r, state, KILL, CWD, killSeen, live, panel, envOf, T0 }
   }
 
-  it('host-fs: stop -> flag seen -> start clears it (a marker, not a delete) -> not seen -> stop again -> seen', async () => {
+  it('host-fs: stop -> flag seen -> a start is refused (autopilot is not yet available there) and leaves it -> clearKill writes the marker (not a delete) -> not seen -> stop again -> seen', async () => {
     setWriteFlavor('host-fs')
 
     const { r, state, KILL, CWD, killSeen, live, panel, envOf, T0 } = await world()
@@ -297,11 +297,14 @@ describe('the autopilot kill flag on a machine with no delete', () => {
     panel.editDraft(panel.draftOf(state), { kind: 'anatole' })
     await panel.startSpec(envOf(state, T0))?.run?.()
 
+    expect(live.storeOf(state).error).toBe('Autopilot is not yet available on Windows: its journal and path fence need atomic appends and Windows-aware path checks (follow-up).')
+    expect(r.files.has(`${CWD}/.claude-flow/console/autopilot/envelope.json`)).toBe(false)
+    expect(await killSeen(r.host.fs, CWD)).toBe(true)
+
+    await live.clearKill(state, r.host)
     expect(r.files.get(KILL)).toBe(KILL_CLEARED)
     expect(await killSeen(r.host.fs, CWD)).toBe(false)
     expect(r.runs.filter(argv => argv[0] === 'rm')).toEqual([])
-    expect(live.storeOf(state).error).toBeFalsy()
-    expect(r.files.has(`${CWD}/.claude-flow/console/autopilot/envelope.json`)).toBe(true)
 
     await live.stopNow(state, r.host, 'again')
     expect(r.files.get(KILL)).toBe('')

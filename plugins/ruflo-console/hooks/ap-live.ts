@@ -90,6 +90,9 @@ export const hostOf = (state: State): Host | undefined => hosts.get(state)
 
 const pathOf = (state: State, rel: string): string => `${state.cwd.replace(/\/+$/, '')}/${rel}`
 
+/** What a start says where the write flavor is host-fs (Windows): see the gate in views/ap-panel.ts. */
+export const AUTOPILOT_WINDOWS_REFUSAL = 'Autopilot is not yet available on Windows: its journal and path fence need atomic appends and Windows-aware path checks (follow-up).'
+
 /** Wires the host and, when the engine offers one, its permission check (`$.tool.check`); starts the tick timer once. */
 export function wireAutopilot(state: State, host: Host, deps: { toolCheck?: ToolCheck } = {}): void {
   hosts.set(state, host)
