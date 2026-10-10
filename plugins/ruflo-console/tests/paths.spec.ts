@@ -60,4 +60,22 @@ describe('paths', () => {
     expect(trimTrailing('C:\\a\\\\')).toBe('C:\\a')
     expect(trimTrailing('/a//')).toBe('/a')
   })
+  it('Windows containment: a sibling that shares a prefix is not inside, another drive is not inside, either separator and any case is', () => {
+    expect(below('C:\\proj', 'C:\\project\\x')).toBeNull()
+    expect(below('C:\\proj', 'C:\\proj\\x')).toEqual(['x'])
+    expect(below('C:\\proj', 'c:/PROJ/x')).toEqual(['x'])
+    expect(below('C:\\proj', 'D:\\proj\\x')).toBeNull()
+    expect(below('\\\\srv\\share\\a', '\\\\srv\\share\\a\\b')).toEqual(['b'])
+    expect(below('\\\\srv\\share\\a', '\\\\srv\\share\\ab')).toBeNull()
+  })
+  it('Windows parent segments are seen with either separator, in a drive path and in a share path', () => {
+    expect(hasParentSegment('C:/a\\..\\b')).toBe(true)
+    expect(hasParentSegment('\\\\srv\\share\\..\\x')).toBe(true)
+    expect(hasParentSegment('C:\\a\\b..c\\d')).toBe(false)
+  })
+  it('samePath rule: if either side is a Windows path, both compare ignoring case, separator style and trailing separators (a UNC share equals its // form)', () => {
+    expect(samePath('\\\\srv\\share\\x', '//srv/share/x')).toBe(true)
+    expect(samePath('\\\\srv\\share\\x', '\\\\SRV\\share\\x\\')).toBe(true)
+    expect(samePath('\\\\srv\\share\\x', '\\\\srv\\share\\y')).toBe(false)
+  })
 })
