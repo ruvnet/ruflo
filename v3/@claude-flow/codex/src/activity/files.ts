@@ -36,6 +36,7 @@ export async function readIdentity(root: string, file: string): Promise<SessionI
     const buffer = Buffer.alloc(MAX_LINE);
     const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
     const newline = buffer.subarray(0, bytesRead).indexOf(10);
+    // A valid JSON prefix is not enough: require the complete metadata line.
     if (newline < 0) return null;
     const record = object(JSON.parse(buffer.subarray(0, newline).toString('utf8')));
     const meta = object(record.payload);

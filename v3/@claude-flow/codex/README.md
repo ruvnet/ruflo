@@ -1077,8 +1077,10 @@ content before sharing a screenshot.
 State is the last **recorded** state, not a heartbeat. Discovery stops after 4,000
 entries or eight directory levels; ancestry is limited to 64 links. Each detail
 refresh reads at most 1 MiB, lines are limited to 64 KiB, previews to 2,400 characters,
-and history to 80 events. The screen labels incomplete scans, omitted records and
-logs that are still being read. Missing data stays unavailable.
+and history to 80 events. The metadata header must include its terminating newline
+within the first 64 KiB; an oversized or incomplete header excludes that file.
+The screen labels incomplete scans, omitted records and logs that are still being
+read. Missing data stays unavailable.
 
 ### Check the viewer locally
 
@@ -1089,13 +1091,17 @@ cd ../../..
 node scripts/smoke-codex-activity.mjs
 ```
 
-The smoke check runs the built CLI against synthetic files. For the interactive
-PTY check and screenshot capture on macOS/Linux, install `pyte==0.8.2` and
-`Pillow==11.3.0` in a Python virtual environment, then run
-`python scripts/capture-codex-activity.py`. Use `--out <directory>` to keep new
-captures outside the checkout and `--font <path>` if the default monospace font
-is unavailable. The capture script checks live updates, navigation, resize,
-read-only access and terminal cleanup when quitting.
+The Node smoke check runs the built CLI against synthetic files and checks the
+picker, detail output, history isolation, invalid input and read-only access.
+The screenshots above were captured from the interactive viewer using synthetic
+records; screenshot generation is not part of CI.
+
+### Release integration
+
+Ship the viewer in `@claude-flow/codex` with the next coordinated Ruflo release.
+At release, bump the package version and exported `VERSION` together, update the
+bundled dependency pins and lockfile, and include the built package in the release
+train.
 
 ## Related Packages
 

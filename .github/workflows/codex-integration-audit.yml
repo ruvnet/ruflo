@@ -19,8 +19,6 @@ on:
       - 'ruflo/src/ruvocal/mcp-bridge/**'
       - '.claude/agents/dual-mode/**'
       - 'scripts/audit-codex-integration.mjs'
-      - 'scripts/smoke-codex-activity.mjs'
-      - 'scripts/capture-codex-activity.py'
       - '.github/workflows/codex-integration-audit.yml'
   pull_request:
     paths:
@@ -29,8 +27,6 @@ on:
       - 'ruflo/src/ruvocal/mcp-bridge/**'
       - '.claude/agents/dual-mode/**'
       - 'scripts/audit-codex-integration.mjs'
-      - 'scripts/smoke-codex-activity.mjs'
-      - 'scripts/capture-codex-activity.py'
       - '.github/workflows/codex-integration-audit.yml'
 
 jobs:
@@ -43,32 +39,3 @@ jobs:
         with:
           node-version: '20'
       - run: node scripts/audit-codex-integration.mjs
-
-  activity:
-    name: Codex activity (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install Codex package dependencies
-        run: npm install --prefix v3/@claude-flow/codex --workspaces=false --ignore-scripts --legacy-peer-deps --package-lock=false --no-audit --no-fund
-      - run: npm run build --prefix v3/@claude-flow/codex
-      - name: Test activity reader and viewer
-        working-directory: v3/@claude-flow/codex
-        run: npm test -- --run tests/activity-files.test.ts tests/activity-parser.test.ts tests/activity-viewer.test.ts
-      - run: node scripts/smoke-codex-activity.mjs
-      - uses: actions/setup-python@v5
-        if: runner.os == 'Linux'
-        with:
-          python-version: '3.12'
-      - name: Check interactive terminal and cleanup
-        if: runner.os == 'Linux'
-        run: |
-          python -m pip install pyte==0.8.2 Pillow==11.3.0
-          python scripts/capture-codex-activity.py --out /tmp/activity-captures

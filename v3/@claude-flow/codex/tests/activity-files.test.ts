@@ -10,6 +10,37 @@ beforeEach(async () => { files = await fixture(); });
 afterEach(async () => { await rm(files.directory, { recursive: true, force: true }); });
 
 describe('session discovery', () => {
+  it('accepts a complete metadata line ending at the prefix boundary', async () => {
+    const header = JSON.stringify(meta()).padEnd(MAX_LINE - 1, ' ');
+    await writeFile(files.helper, header + '\n');
+    expect(await readIdentity(files.directory, files.helper)).toMatchObject({ id: 'helper' });
+  });
+  it.each([MAX_LINE, MAX_LINE + 1])('rejects a %i-byte metadata line even with a valid JSON prefix', async (size) => {
+    const header = JSON.stringify(meta('HEADER_SENTINEL')).padEnd(size, ' ');
+    expect(() => JSON.parse(header.slice(0, MAX_LINE))).not.toThrow();
+    await writeFile(files.helper, header + '\n' + jsonl([own(), message('ACTIVITY_SENTINEL')]));
+    expect(await readIdentity(files.directory, files.helper)).toBeNull();
+    const listed = await listSessions(files.directory, files.parent);
+    expect(listed.helpers).toEqual([]);
+    expect(JSON.stringify(listed)).not.toMatch(/HEADER_SENTINEL|ACTIVITY_SENTINEL/);
+  });
+  it('rejects oversized JSON metadata without exposing a truncated string', async () => {
+    const header = JSON.stringify(record('session_meta', {
+      id: 'root', source: 'cli', agent_nickname: 'HEADER_SENTINEL', padding: '界'.repeat(MAX_LINE),
+    }));
+    await writeFile(files.parent, header + '\n' + jsonl([message('ACTIVITY_SENTINEL')]));
+    expect(await readIdentity(files.directory, files.parent)).toBeNull();
+    const listed = await listSessions(files.directory, files.parent);
+    expect(listed.root).toBeNull();
+    expect(listed.helpers).toEqual([]);
+    expect(JSON.stringify(listed)).not.toMatch(/HEADER_SENTINEL|ACTIVITY_SENTINEL/);
+  });
+  it('waits for the metadata newline before discovering a helper', async () => {
+    await writeFile(files.helper, JSON.stringify(meta()));
+    expect(await readIdentity(files.directory, files.helper)).toBeNull();
+    await appendFile(files.helper, '\n');
+    expect(await readIdentity(files.directory, files.helper)).toMatchObject({ id: 'helper' });
+  });
   it('includes nested descendants across date folders and excludes unrelated/guardian logs', async () => {
     await writeFile(path.join(files.nested, 'nested.jsonl'), jsonl([meta('nested', 'helper')]));
     await writeFile(path.join(files.directory, 'other.jsonl'), jsonl([meta('other', 'unrelated')]));
@@ -65,6 +96,22 @@ async function reader(budget?: number) {
 }
 
 describe('incremental activity reader', () => {
+  it('exposes no activity when a discovered header becomes oversized', async () => {
+    const view = await reader(MAX_LINE);
+    expect((await view.read()).events.length).toBeGreaterThan(0);
+    await writeFile(files.helper, JSON.stringify(meta()).padEnd(MAX_LINE + 1, ' ') + '\n' +
+      jsonl([meta(), own(), message('ACTIVITY_SENTINEL', 'user'), message('ACTIVITY_SENTINEL')]));
+    const prefix = await view.read();
+    expect(prefix.partial).toBe(true);
+    expect(prefix.available).toBe(false);
+    expect(prefix.events).toEqual([]);
+    const complete = await view.read();
+    expect(complete.limited).toBe(true);
+    expect(complete.available).toBe(false);
+    expect(complete.assignment).toBe('');
+    expect(complete.events).toEqual([]);
+    expect(JSON.stringify(complete)).not.toContain('ACTIVITY_SENTINEL');
+  });
   it('reads bounded chunks and joins split UTF-8 and JSON without showing partial records', async () => {
     await writeFile(files.helper, jsonl([meta(), own(), message('Hello 世界')]).trimEnd());
     const view = await reader(13);

@@ -49,7 +49,14 @@ try {
   assert.match(nonTTY.stderr, /Use --once/);
   assert.deepEqual(await readFile(parent), originals[0]);
   assert.deepEqual(await readFile(child), originals[1]);
-  console.log('Codex activity smoke passed: picker, detail, isolation, invalid input, non-TTY, read-only files.');
+  const oversized = row('session_meta', { id: 'HEADER_SENTINEL', source: 'cli' })
+    .padEnd(64 * 1024 + 1, ' ') + '\n';
+  await writeFile(parent, oversized);
+  const rejected = run(['--once']);
+  assert.equal(rejected.status, 1);
+  assert.doesNotMatch(rejected.stdout + rejected.stderr, /HEADER_SENTINEL|SYNTHETIC_TEST_PASS/);
+  assert.equal(await readFile(parent, 'utf8'), oversized);
+  console.log('Codex activity smoke passed: picker, detail, isolation, invalid input, non-TTY, read-only files, oversized metadata.');
 } finally {
   await rm(directory, { recursive: true, force: true });
 }
