@@ -62,6 +62,28 @@ function mirrorPath(projectRoot: string): string {
   return join(policyTrustRoot(), id, MIRROR_FILE);
 }
 
+/** #3164: `state.receipts` is only the hot tail once pruning is in play — the
+ * anchor log always speaks in terms of the full historical ledger length. */
+function fullLength(state: PolicyState): number {
+  return (state.retainedFrom ?? 0) + state.receipts.length;
+}
+
+/**
+ * Hash of the receipt at absolute (historical) 1-based length
+ * `absoluteLength`, or `undefined` if it is neither in the hot tail nor
+ * exactly the boundary receipt this transaction just pruned (#3164).
+ * `recordAnchor` runs every transaction, so the anchor it reads here is
+ * always at most one transaction behind the current state — never further
+ * back than the just-pruned boundary.
+ */
+function receiptHashAt(state: PolicyState, absoluteLength: number): string | undefined {
+  const retainedFrom = state.retainedFrom ?? 0;
+  const index = absoluteLength - 1;
+  if (index === retainedFrom - 1) return state.prunedHead ?? undefined;
+  if (index >= retainedFrom) return state.receipts[index - retainedFrom]?.hash;
+  return undefined;
+}
+
 function entryHash(entry: Omit<AnchorEntry, 'hash'>): string {
   return createHash('sha256').update(JSON.stringify([
     entry.seq, entry.length, entry.headHash, entry.prevAnchorHash, entry.ts, entry.event, entry.by ?? null,
@@ -131,8 +153,8 @@ export function assessAnchors(projectRoot: string, state: PolicyState, rebuild =
   if (entries.length === 0) {
     if (!mirror) return { kind: 'absent' };
     if (!rebuild) return { kind: 'fail', error: 'policy-anchor-log-missing' };
-    if (state.receipts.length < mirror.length) return { kind: 'fail', error: 'policy-ledger-truncated' };
-    if (mirror.length > 0 && state.receipts[mirror.length - 1]!.hash !== mirror.headHash) {
+    if (fullLength(state) < mirror.length) return { kind: 'fail', error: 'policy-ledger-truncated' };
+    if (mirror.length > 0 && receiptHashAt(state, mirror.length) !== mirror.headHash) {
       return { kind: 'fail', error: 'policy-ledger-anchor-mismatch' };
     }
     return { kind: 'absent' };
@@ -142,12 +164,12 @@ export function assessAnchors(projectRoot: string, state: PolicyState, rebuild =
   }
   const last = entries[entries.length - 1]!;
   for (const anchor of mirror ? [last, mirror] : [last]) {
-    if (state.receipts.length < anchor.length) return { kind: 'fail', error: 'policy-ledger-truncated' };
-    if (anchor.length > 0 && state.receipts[anchor.length - 1]!.hash !== anchor.headHash) {
+    if (fullLength(state) < anchor.length) return { kind: 'fail', error: 'policy-ledger-truncated' };
+    if (anchor.length > 0 && receiptHashAt(state, anchor.length) !== anchor.headHash) {
       return { kind: 'fail', error: 'policy-ledger-anchor-mismatch' };
     }
   }
-  return { kind: 'ok', last, behind: state.receipts.length > last.length };
+  return { kind: 'ok', last, behind: fullLength(state) > last.length };
 }
 
 /**
@@ -162,13 +184,14 @@ export async function recordAnchor(
   event: AnchorEvent = 'append',
   by?: string,
 ): Promise<void> {
-  if (state.receipts.length === 0) return;
+  const length = fullLength(state);
+  if (length === 0) return;
   const loaded = readLog(projectRoot);
   const entries = loaded === 'corrupt' ? [] : loaded;
   if (loaded === 'corrupt' && event !== 'establish-anchor') throw new Error('policy-anchor-log-corrupt');
   const last = entries[entries.length - 1];
-  const length = state.receipts.length;
-  const headHash = state.receipts[length - 1]!.hash;
+  const headHash = receiptHashAt(state, length);
+  if (headHash === undefined) throw new Error('policy-ledger-anchor-head-unresolvable');
   let tip = last;
   if (!last || last.length !== length || last.headHash !== headHash) {
     const base = {

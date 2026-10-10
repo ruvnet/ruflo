@@ -10,6 +10,7 @@ import {
   type PolicyApproval,
   type PolicyDecision,
   type PolicyEvidence,
+  type PolicyReceipt,
   type PolicyRequest,
   type PolicyRule,
   type PolicyState,
@@ -17,6 +18,7 @@ import {
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import {
+  appendFileSync,
   closeSync,
   constants as fsConstants,
   existsSync,
@@ -41,8 +43,20 @@ import { assessAnchors, policyTrustRoot, recordAnchor, type AnchorEvent } from '
 const POLICY_DIR = join('.claude-flow', 'policy');
 const POLICY_FILE = 'state.json';
 const LOCK_FILE = 'state.lock';
+const RECEIPT_ARCHIVE_FILE = 'receipts.ledger.jsonl';
 const LOCK_STALE_MS = 30_000;
 const LOCK_WAIT_MS = 5_000;
+// #3164: without a bound, `state.receipts` grows forever and every
+// transaction's verify/clone/serialize cost is O(all receipts ever issued) —
+// eventually exceeding LOCK_WAIT_MS and timing out every MCP tool call.
+// Pruned receipts are archived to RECEIPT_ARCHIVE_FILE, never discarded.
+const DEFAULT_LEDGER_RETENTION = 2_000;
+function ledgerRetention(): number {
+  const raw = process.env.CLAUDE_FLOW_POLICY_LEDGER_RETENTION;
+  if (!raw) return DEFAULT_LEDGER_RETENTION;
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : DEFAULT_LEDGER_RETENTION;
+}
 // A lock is ~170 bytes plus the hostname (at most 255 bytes).
 const LOCK_MAX_BYTES = 1_024;
 // Linux PID namespace of this process, e.g. `pid:[4026531836]`; undefined on
@@ -59,10 +73,10 @@ const BOOT_ID = (() => {
   try { return readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim(); } catch { return undefined; }
 })();
 
-function paths(projectRoot: string): { dir: string; state: string; lock: string } {
+function paths(projectRoot: string): { dir: string; state: string; lock: string; archive: string } {
   const root = resolve(projectRoot);
   const dir = join(root, POLICY_DIR);
-  return { dir, state: join(dir, POLICY_FILE), lock: join(dir, LOCK_FILE) };
+  return { dir, state: join(dir, POLICY_FILE), lock: join(dir, LOCK_FILE), archive: join(dir, RECEIPT_ARCHIVE_FILE) };
 }
 
 function sleep(ms: number): Promise<void> {
@@ -401,6 +415,22 @@ export async function withPolicyTransaction<T>(
     }
     const result = await operation(engine);
     if (!engine.verifyLedger().valid) throw new Error('policy-ledger-verification-failed');
+    const pruned = engine.pruneReceipts(ledgerRetention());
+    // #3164: archive BEFORE writing the shrunk state. If the process crashes
+    // between the two writes, the archive append already landed but
+    // `retainedFrom` on disk still reflects the pre-prune length, so the next
+    // prune recomputes and re-appends the SAME receipts — a harmless,
+    // detectable duplicate (same sequence, identical content), deduped by
+    // `verifyPolicyLedger({ full: true })`. The reverse order (state first)
+    // would instead risk a permanent gap if the process died in between,
+    // which is strictly worse for an audit ledger — never reorder this.
+    if (pruned.length > 0) {
+      appendFileSync(
+        target.archive,
+        `${pruned.map((receipt) => JSON.stringify(receipt)).join('\n')}\n`,
+        { mode: 0o600 },
+      );
+    }
     const nextState = engine.exportState();
     await writePolicyState(projectRoot, target.state, nextState, gate.event);
     return result;
@@ -491,7 +521,9 @@ function reconcileLedger(
   options: { establishAnchor?: boolean },
 ): Reconciled {
   const state = engine.exportState();
-  const length = state.receipts.length;
+  // #3164: the historical length includes anything pruned out of the hot
+  // array — `length` here must keep meaning "total receipts ever issued".
+  const length = (state.retainedFrom ?? 0) + state.receipts.length;
   const primary = typeof state.ledgerLength === 'number';
   const base = engine.verifyLedger();
   const fail = (error: string): Reconciled => ({ result: { valid: false, length, error }, persist: false });
@@ -525,6 +557,52 @@ function reconcileLedger(
   return fail('anchor-missing');
 }
 
+function readArchiveReceipts(archivePath: string): PolicyReceipt[] {
+  if (!existsSync(archivePath)) return [];
+  return readFileSync(archivePath, 'utf8')
+    .split('\n')
+    .filter((line) => line.trim().length > 0)
+    .map((line) => JSON.parse(line) as PolicyReceipt);
+}
+
+/** Dedupes crash-duplicate archive lines (#3164); same sequence + differing hash is tampering. */
+function dedupeArchiveReceipts(receipts: PolicyReceipt[]): { receipts: PolicyReceipt[]; error?: string } {
+  const bySequence = new Map<number, PolicyReceipt>();
+  for (const receipt of receipts) {
+    const sequence = receipt.payload.sequence;
+    const existing = bySequence.get(sequence);
+    if (existing && existing.hash !== receipt.hash) return { receipts: [], error: 'policy-ledger-archive-conflict' };
+    bySequence.set(sequence, receipt);
+  }
+  const sequences = [...bySequence.keys()].sort((a, b) => a - b);
+  for (let i = 0; i < sequences.length; i++) {
+    if (sequences[i] !== i) return { receipts: [], error: 'policy-ledger-archive-gap' };
+  }
+  return { receipts: sequences.map((sequence) => bySequence.get(sequence)!) };
+}
+
+/**
+ * Opt-in O(total history) replay of the archive, for an explicit
+ * administrator/CI `--full` verify (#3164). Reconstructs the complete chain
+ * (archived prefix + hot tail) and re-verifies it with the engine's ordinary
+ * hash/signature/anchor checks — never on the hot MCP-call path.
+ */
+function verifyFullPolicyLedger(
+  archivePath: string,
+  state: PolicyState,
+  engineOptions: { signingKey?: string; keyId?: string },
+): PolicyLedgerVerification {
+  const retainedFrom = state.retainedFrom ?? 0;
+  const totalLength = retainedFrom + state.receipts.length;
+  if (retainedFrom === 0) return { valid: true, length: totalLength };
+  const { receipts: archived, error } = dedupeArchiveReceipts(readArchiveReceipts(archivePath));
+  if (error) return { valid: false, length: totalLength, error };
+  if (archived.length < retainedFrom) return { valid: false, length: totalLength, error: 'policy-ledger-archive-gap' };
+  const fullReceipts = [...archived.slice(0, retainedFrom), ...state.receipts];
+  const fullEngine = AgenticPolicyEngine.fromState({ ...state, receipts: fullReceipts, retainedFrom: 0, prunedHead: null }, engineOptions);
+  return fullEngine.verifyLedger();
+}
+
 /**
  * Verification (#3568, #3602). It must not run inside `withPolicyTransaction`,
  * whose own post-operation check throws a generic
@@ -533,22 +611,25 @@ function reconcileLedger(
  */
 export async function verifyPolicyLedger(
   projectRoot = process.cwd(),
-  options: { establishAnchor?: boolean } = {},
+  options: { establishAnchor?: boolean; full?: boolean } = {},
 ): Promise<PolicyLedgerVerification> {
   const target = paths(projectRoot);
   mkdirSync(target.dir, { recursive: true, mode: 0o700 });
   const release = await acquireLock(target.lock);
   try {
-    const engine = AgenticPolicyEngine.fromState(loadPolicyState(projectRoot), {
+    const engineOptions = {
       signingKey: process.env.CLAUDE_FLOW_POLICY_SIGNING_KEY,
       keyId: process.env.CLAUDE_FLOW_POLICY_KEY_ID,
-    });
+    };
+    const engine = AgenticPolicyEngine.fromState(loadPolicyState(projectRoot), engineOptions);
     const outcome = reconcileLedger(projectRoot, engine, options);
     if (outcome.persist) {
       const by = outcome.event === 'establish-anchor' ? userInfo().username : undefined;
       await writePolicyState(projectRoot, target.state, engine.exportState(), outcome.event, by);
     }
-    return outcome.result;
+    if (!options.full || !outcome.result.valid) return outcome.result;
+    const full = verifyFullPolicyLedger(target.archive, engine.exportState(), engineOptions);
+    return { ...full, secondaryAnchor: outcome.result.secondaryAnchor };
   } finally {
     release();
   }
