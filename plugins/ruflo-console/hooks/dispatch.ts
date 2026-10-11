@@ -146,7 +146,8 @@ export async function dispatch(control: Controller, state: State, args: string, 
 
       const confirmedAtMs = Date.now()
 
-      await control.runner.confirm()
+      // A typed yes names no card: the runner refuses it while the card is too new or just replaced one (press the card's own Yes then).
+      await control.runner.confirmUnbound()
 
       return { text: xruvAnswer(state, null, confirmedAtMs) ?? labAnswer(state, null, confirmedAtMs) ?? (state.outcome === null ? 'Ran.' : `${state.outcome.ok ? '✓' : '✗'} ${state.outcome.label}: ${state.outcome.detail}${state.outcome.verified === 'yes' ? ' (on disk)' : state.outcome.verified === 'no' ? ' (not on disk yet)' : ''}`) }
     case 'agent': {
