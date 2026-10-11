@@ -13,7 +13,6 @@ Newest first. One `## <version> — <date>` heading per version, then `feat:`, `
 
 ## 0.3.16 — 2026-10-07
 - feat: shared toast system with levels, dedupe, persistence and Settings (ADR-477)
-- feat: shared toast policy and its call sites (ADR-477), work in progress
 - fix: a toast needs no engine.create (bind at session.start too), a throwing clock falls back to the wall clock; update the cost ladder expectati…
 
 ## 0.3.15 — 2026-10-07

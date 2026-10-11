@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.42.6 — 2026-10-10
+- fix: the Plugin Catalog says "mod synced here, plugin not installed" (and marks the row ◇) for a mod Claude Code loaded by sync, such as ruflo-arena@synced, instead of a flat "not installed" that contradicted the Plugins page; the install button stays (#3979)
+- chore: work-in-progress and merge lines are dropped from the console and mods changelogs shown on What's new (#3979)
+
 ## 0.42.5 — 2026-10-10
 - fix: every confirm route answers the card the person saw. A typed /ruflo yes answers only a card that was put in front of you (drawn in the open pane, or named in the answer to your own /ruflo run) and /ruflo yes <id> names its card; otherwise it runs nothing and says the card's id (#3983)
 - fix: Enter again in the terminal, skills and automation fields answers the card that field raised, by its id, not a later card that merely reads the same; an auto-confirmed Claude call settles only the card it started, so an unrelated write that lands while a read is still running is left to the person (#3983)
@@ -92,7 +96,6 @@ Newest first. One `## <version> — <date>` heading per version, then `feat:`, `
 
 ## 0.37.0 — 2026-10-07
 - feat: shared toast system with levels, dedupe, persistence and Settings (ADR-477)
-- feat: shared toast policy and its call sites (ADR-477), work in progress
 - fix: CONSOLE_VERSION follows the manifest (0.36.1)
 
 ## 0.36.1 — 2026-10-07
@@ -102,7 +105,6 @@ Newest first. One `## <version> — <date>` heading per version, then `feat:`, `
 - feat: 0.36.0 integration: eventsPersist option, shared whole-batch append argv, hostile-time hardening, init ignores console/
 - fix: log Claude's refused request when the person's card is waiting; mission-auto why when not wired; document the local-read allowlist
 - fix: session control cap, gate on read-only entries that act, hostile text/data, mission auto-run guards (#3814 #3815 #3816 #3817 #3818)
-- chore: Merge verify/events-0.36 into feat/console-0.36
 
 ## 0.35.0 — 2026-10-06
 - feat: autopilot envelope editor, parallel hand-over, spend windows, band segment, and the first live run (ADR-470)
