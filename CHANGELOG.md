@@ -24,6 +24,7 @@ Patch release: security hardening of the plugin-trust and helper paths, MCP/task
 
 - Node 24: `better-sqlite3` is routed to a build that does not abort at exit (#3955).
 - Importing the `agentic-flow` root entry no longer runs its CLI (#3958).
+- MCP resource cache: stale writes are fenced after invalidation (#4019). `security scan` code patterns no longer report the false positives seen on a real tree (#3999).
 - MCP, task and CLI fixes: #3975, #3974, #3970, #3969, #3968, #3980, #3947; graph path search ~94x faster at n=3200 (#3977).
 
 ## [3.56.3] - 2026-10-09
