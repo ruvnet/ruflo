@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.42.3 — 2026-10-10
+- fix: the session workspace keeps other projects' folders, working directories and git branches out of text answers (what console_state and ask-claude read): the group headings, the cwd and branch line and the unassigned titles name a session by harness and position, never by a recorded path; an adversarial test draws every view with canaries in every transcript field and a failed listing and finds none (#3981, ADR-486 section 3)
+- fix: Needs you raises a failure only after the 30 s quiet period (ADR-486 2.3), not for a permission refusal, an Esc or a Codex interrupted turn, and a failure already seen stays seen when only cost or title lines are appended; a time in the future can no longer silence a session; one 12 MB read budget per pass is shared by every adapter and enforced before each read; attention.json is refreshed at least every 5 minutes and a failed write backs off; the Room's Who is here lists only agents with recent activity, keeps your main session first and counts what it leaves out (#3981)
+
 ## 0.42.2 — 2026-10-10
 - fix: numbers read from CLI JSON are bounded at the reader (a count of 1e999 no longer draws Infinity on the band); an unreadable count stays visible as unknown rather than a measured 0, and a listed finding is never hidden by an under-reporting summary (#3822)
 - fix: a mission resume made by Claude keeps each task's hand-out count, so resuming cannot buy more billed hand-outs after the limit paused the mission (#3823)

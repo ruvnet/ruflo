@@ -126,6 +126,8 @@ export function roomView(ctx: Ctx): RenderElement {
     rows.push(row(ctx, [ctx.kit.Text({ bold: true, color: THEME.head, children: ` ${clip(lane.label, 20).padEnd(20)}` }), ctx.kit.Text({ color: share === null ? THEME.info : share >= 60 ? THEME.ok : share >= 20 ? THEME.warn : THEME.info, children: ` ${share === null ? 'no status seen' : `busy ${share}%`}` }), ctx.kit.Text({ dimColor: true, children: ` · ${stats.calls} tool call${stats.calls === 1 ? '' : 's'}` })], `room-lane-${i}`))
   }
 
+  if (lanes.length > 8) rows.push(text(ctx, ` +${lanes.length - 8} more`, { dimColor: true }))
+
   rows.push(...modsRows(ctx))
 
   return col(ctx, rows, 'room')
