@@ -15,7 +15,8 @@ import { DEV_FIELDS } from './data/devtools'
 import { PROFILES, RIGORS } from './goap'
 import { mcOf, setResearch } from './mission-control'
 import { RESEARCH_DEPTHS } from './mission-options'
-import { filterPalette, paletteEntries } from './palette'
+import { filterPalette, paletteEntries, WITHDRAW_ID, withdrawHint } from './palette'
+import { isStale } from './runner'
 import { hasSecret } from './screen'
 import { catalogOf } from './plugin-catalog'
 import { pluginNames, settingsOf } from './settings'
@@ -380,6 +381,9 @@ async function answer(name: string, input: Record<string, unknown>, deps: ModelT
   if (state.control.turnCalls > MAX_CALLS_PER_TURN) return refuse(name, `more than ${MAX_CALLS_PER_TURN} console actions in one turn. Summarise for the person and stop.`)
 
   try {
+    // A card past its window never blocks or reads as waiting: it is cleared first, with one event and "expired: ask again" as the last result.
+    if (state.pending !== null && isStale(state.pending)) control.runner.expireStale()
+
     if (name === 'console_state') {
       say(state, name, 'read the console', 'ok')
       control.host.invalidate()
@@ -413,7 +417,7 @@ async function answer(name: string, input: Record<string, unknown>, deps: ModelT
 
       if (leaksSecret(input.value, value)) return refuse(`set ${field}`, SECRET_REFUSAL)
 
-      if (state.pending !== null) return refuse(`set ${field}`, `an action is already waiting for the person ("${modelLine(state.pending.label, 80)}"). Do not change fields until they answer.`)
+      if (state.pending !== null) return refuse(`set ${field}`, `an action is already waiting for the person ("${modelLine(state.pending.label, 80)}"). Do not change fields until they answer${withdrawHint(state)}.`)
 
       const askedAt = Date.now()
       const problem = asModel(state, () => setField(deps, field, value))
@@ -434,12 +438,14 @@ async function answer(name: string, input: Record<string, unknown>, deps: ModelT
 
     if (leaksSecret(input.text, text)) return refuse(`run ${id}`, SECRET_REFUSAL)
 
-    // The person's own waiting action is theirs to answer: never replaced, never cleared.
-    if (state.pending !== null) return refuse(`run ${id}`, `an action is already waiting for the person ("${modelLine(state.pending.label, 80)}"). Do not run another until they answer.`)
+    // The person's own waiting action is theirs to answer: never replaced, never cleared. Claude may take back only its own direct ask (the runner decides).
+    const blocked = id === WITHDRAW_ID ? asModel(state, () => control.runner.withdrawRefusal()) : state.pending === null ? null : `an action is already waiting for the person ("${modelLine(state.pending.label, 80)}"). Do not run another until they answer${withdrawHint(state)}.`
+
+    if (blocked !== null) return refuse(`run ${id}`, id === WITHDRAW_ID ? `not withdrawn: ${modelLine(blocked, 160)}. Nothing changed.` : blocked)
 
     const askedAt = state.outcome?.atMs ?? 0
 
-    if (!asModel(state, () => control.runner.runById(id, text, { exact: true }))) return refuse(`run ${id}`, `no palette entry "${modelLine(id, 40)}" right now. Call console_state for the entries.`)
+    if (!asModel(state, () => control.runner.runById(id, text, { exact: true, direct: true }))) return refuse(`run ${id}`, `no palette entry "${modelLine(id, 40)}" right now. Call console_state for the entries.`)
 
     await control.runner.settled()
 
