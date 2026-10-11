@@ -11,10 +11,8 @@ import type { Register } from 'claude-code'
 import type { Controller } from './controller'
 import { ESCAPES, INVISIBLE, plain } from './data/parse'
 import { askedBy } from './data/room'
-import { DEV_FIELDS } from './data/devtools'
-import { PROFILES, RIGORS } from './goap'
-import { mcOf, setResearch } from './mission-control'
-import { RESEARCH_DEPTHS } from './mission-options'
+import { mcOf } from './mission-control'
+import { setField as setFieldOf } from './model-fields'
 import { filterPalette, paletteEntries, WITHDRAW_ID, withdrawHint } from './palette'
 import { isStale } from './runner'
 import { hasSecret } from './screen'
@@ -153,13 +151,15 @@ function within(work: Promise<void>, ms: number, host: Pick<Controller['host'], 
 }
 
 /** Runs `fn` as Claude's own act: asks it raises on the way are Claude's, not the person's. Only the synchronous start counts; a deferred ask carries its origin itself (`ActionSpec.byModel`). */
-function asModel<T>(state: State, fn: () => T): T {
+function asModel<T>(state: State, fn: () => T, tag: number | null = null): T {
   state.control.viaModel = true
+  state.control.callTag = tag
 
   try {
     return fn()
   } finally {
     state.control.viaModel = false
+    state.control.callTag = null
   }
 }
 
@@ -229,44 +229,11 @@ function optionChips(state: State): Map<string, string> {
   return new Map(pluginNames(state, (catalogOf(state).plugins ?? []).filter(plugin => plugin.options.length > 0).map(plugin => plugin.name)).map(name => [name.replace(/^ruflo-/, ''), name]))
 }
 
-const SET_FIELDS = ['goal', 'profile', 'rigor', 'research.question', 'research.depth', 'research.cap', 'cost.budget'] as const
-
-function setField(deps: ModelToolDeps, field: string, value: string): string | null {
-  const { state, control } = deps
-  const { mission } = control.actions
-
-  if (field === 'goal') mission.goal(value)
-  else if (field === 'profile') {
-    const found = PROFILES.find(profile => profile.id === value)
-
-    if (found === undefined) return `profile must be one of ${PROFILES.map(profile => profile.id).join(', ')}`
-    mission.profile(found.id)
-  } else if (field === 'rigor') {
-    const found = RIGORS.find(rigor => rigor === value)
-
-    if (found === undefined) return `rigor must be one of ${RIGORS.join(', ')}`
-    mission.rigor(found)
-  } else if (field === 'research.question') setResearch(state, { question: value })
-  else if (field === 'research.depth') {
-    const found = RESEARCH_DEPTHS.find(depth => depth === value)
-
-    if (found === undefined) return `research.depth must be one of ${RESEARCH_DEPTHS.join(', ')}`
-    setResearch(state, { depth: found })
-  } else if (field === 'research.cap') setResearch(state, { cap: value })
-  else if (field === 'cost.budget') control.actions.costBudgetDraft(value)
-  else if (field.startsWith('dev.') && DEV_FIELDS.includes(field.slice(4) as never)) control.actions.devtools.draft(field.slice(4) as never, value)
-  else return `unknown field "${modelLine(field, 40)}". Fields: ${[...SET_FIELDS, 'dev.<field>'].join(', ')}`
-
-  control.host.invalidate()
-
-  return null
-}
-
 /**
  * An action the console queued (a palette entry, or the follow-up a field raised) is held to the same rules: above the level it is
  * cancelled and nothing runs; in ask mode it waits for the person; in auto mode it confirms and reports. Null when nothing is pending.
  */
-async function settlePending(deps: ModelToolDeps, tool: string, id: string, askedAt: number): Promise<{ status: 'refused' | 'waiting' | 'done'; text: string } | null> {
+async function settlePending(deps: ModelToolDeps, tool: string, id: string, askedAt: number, own?: { call: number; card: number | null }): Promise<{ status: 'refused' | 'waiting' | 'done'; text: string } | null> {
   const { state, control } = deps
   const ai = settingsOf(state).ai
   const level = levelOf(ai.modelControl)
@@ -280,6 +247,11 @@ async function settlePending(deps: ModelToolDeps, tool: string, id: string, aske
 
     return { status: 'refused', text: `an action is waiting for the person ("${modelLine(pending.label, 80)}"), so yours was not queued. Do not run another until they answer. Nothing ran.` }
   }
+
+  // Only a card this call started is settled here: the one it raised as it started (its id, taken then), or a deferred one that carries this call's
+  // number. A card that landed meanwhile from anything else (a screened ask of another call, a write queued earlier) is neither confirmed nor
+  // cancelled under this call's settlement (#3983): it waits for its own call, the person, or its window.
+  if (own !== undefined && pending.byCall !== own.call && !(pending.byCall === undefined && (pending.id ?? null) === own.card)) return null
 
   const kind = classOf(pending)
 
@@ -420,14 +392,15 @@ async function answer(name: string, input: Record<string, unknown>, deps: ModelT
       if (state.pending !== null) return refuse(`set ${field}`, `an action is already waiting for the person ("${modelLine(state.pending.label, 80)}"). Do not change fields until they answer${withdrawHint(state)}.`)
 
       const askedAt = Date.now()
-      const problem = asModel(state, () => setField(deps, field, value))
+      const call = ++state.control.callSeq
+      const problem = asModel(state, () => setFieldOf(deps, field, value, modelLine), call)
 
       if (problem !== null) return refuse(`set ${field}`, problem)
 
       say(state, name, `set ${field}`, 'ok', value)
 
       // Some fields raise a follow-up themselves (a goal is planned, then guidance is offered): it is held to the same rules.
-      const queued = await settlePending(deps, name, `after set ${field}`, askedAt)
+      const queued = await settlePending(deps, name, `after set ${field}`, askedAt, { call, card: (state as { pending: Pending | null }).pending?.id ?? null })
 
       return `Set ${field}.${queued === null ? ' It is only filled in: run a console entry to act on it.' : ` The console then queued a follow-up. ${queued.text}`}`
     }
@@ -445,21 +418,25 @@ async function answer(name: string, input: Record<string, unknown>, deps: ModelT
 
     const askedAt = state.outcome?.atMs ?? 0
 
-    if (!asModel(state, () => control.runner.runById(id, text, { exact: true, direct: true }))) return refuse(`run ${id}`, `no palette entry "${modelLine(id, 40)}" right now. Call console_state for the entries.`)
+    const call = ++state.control.callSeq
+
+    if (!asModel(state, () => control.runner.runById(id, text, { exact: true, direct: true }), call)) return refuse(`run ${id}`, `no palette entry "${modelLine(id, 40)}" right now. Call console_state for the entries.`)
+
+    // The card this call raised, by id, taken before anything is awaited: a read still running below may be followed by a card that landed on its own.
+    const raisedCard = state.pending?.id ?? null
 
     await control.runner.settled()
 
-    if (state.pending === null) {
-      const done = state.outcome !== null && state.outcome.atMs > askedAt ? state.outcome : null
+    // Only a card this call started is settled by it (settlePending): the one it raised, or a deferred one carrying its number.
+    const settled = state.pending === null ? null : await settlePending(deps, name, `run ${id}`, askedAt, { call, card: raisedCard })
 
-      say(state, name, `run ${id}`, done === null || done.ok ? 'ok' : 'error', done?.detail ?? '')
+    if (settled !== null) return settled.status === 'refused' ? `Refused: ${settled.text}` : settled.text
 
-      return done === null ? `Ran ${id}.` : `${done.ok ? 'Done' : 'Failed'}: ${modelLine(done.label, 100)}. ${modelLine(done.detail, 200)}${(done.lines ?? []).length > 0 ? `\n${(done.lines ?? []).slice(0, 12).map(line => modelLine(line, 160)).join('\n')}` : ''}`
-    }
+    const done = state.outcome !== null && state.outcome.atMs > askedAt ? state.outcome : null
 
-    const settled = await settlePending(deps, name, `run ${id}`, askedAt)
+    say(state, name, `run ${id}`, done === null || done.ok ? 'ok' : 'error', done?.detail ?? '')
 
-    return settled === null ? `Ran ${id}.` : settled.status === 'refused' ? `Refused: ${settled.text}` : settled.text
+    return done === null ? `Ran ${id}.` : `${done.ok ? 'Done' : 'Failed'}: ${modelLine(done.label, 100)}. ${modelLine(done.detail, 200)}${(done.lines ?? []).length > 0 ? `\n${(done.lines ?? []).slice(0, 12).map(line => modelLine(line, 160)).join('\n')}` : ''}`
   } catch (error) {
     say(state, name, name, 'error', error instanceof Error ? error.message : 'failed')
 

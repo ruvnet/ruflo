@@ -372,6 +372,8 @@ describe('a typed /ruflo yes is bound to no card', () => {
     const { state, control, ran, spec } = console$()
 
     control.runner.ask(spec('store a note'), 'x')
+    // The card is on the person's screen: a bare typed yes answers it.
+    state.shownCard = state.pending?.id ?? null
     await yes(control, state)
     expect(ran).toEqual(['store a note'])
   })
@@ -382,6 +384,7 @@ describe('a typed /ruflo yes is bound to no card', () => {
     const { state, control, ran, spec } = console$()
 
     control.runner.ask(spec('store a note', { byModel: true }), 'x')
+    state.shownCard = state.pending?.id ?? null
     vi.advanceTimersByTime(2_000)
     expect((await yes(control, state)).text).toMatch(/press Yes on the card itself/)
     expect(ran).toEqual([])
@@ -400,6 +403,7 @@ describe('a typed /ruflo yes is bound to no card', () => {
     vi.advanceTimersByTime(PENDING_TTL_MS + 500)
     expect(state.pending).toBeNull()
     control.runner.ask(spec('the new card'), 'x')
+    state.shownCard = state.pending?.id ?? null
     vi.advanceTimersByTime(4_000)
     expect((await yes(control, state)).text).toMatch(/replaced one that left unanswered/)
     expect(ran).toEqual([])

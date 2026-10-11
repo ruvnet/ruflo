@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.42.5 — 2026-10-10
+- fix: every confirm route answers the card the person saw. A typed /ruflo yes answers only a card that was put in front of you (drawn in the open pane, or named in the answer to your own /ruflo run) and /ruflo yes <id> names its card; otherwise it runs nothing and says the card's id (#3983)
+- fix: Enter again in the terminal, skills and automation fields answers the card that field raised, by its id, not a later card that merely reads the same; an auto-confirmed Claude call settles only the card it started, so an unrelated write that lands while a read is still running is left to the person (#3983)
+
 ## 0.42.4 — 2026-10-10
 - fix: a confirm card nobody answers is cleared unrun at 30 s on the console's own clock, with one event and "expired: ask again" as the last result, so it no longer blocks every later Claude action; a Yes after the window still runs nothing, and the Room stops counting past 30 s (#3984)
 - feat: Claude can withdraw its own waiting write ask (console_run ask-withdraw), never the person's card and never a spend, install, network or delete card; at most 3 a minute, with a cooldown on re-asking the same thing (#3984)
