@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.56.5] - 2026-10-11
+
+Patch release: one fix in `@claude-flow/cli`. No leaf package changed since 3.56.4 (`git diff v3.56.4..HEAD -- v3/@claude-flow` touches only `cli`; the `integration` change drops `publishConfig.tag` and has no runtime effect).
+
+### Fixed
+
+- The graph-edge-writer encryption-header sniff no longer closes the raw DB file descriptor, which dropped live SQLite POSIX locks; the header is read in a bounded child process (#4044, fixes #4040).
+
 ## [3.56.4] - 2026-10-10
 
 Patch release: security hardening of the plugin-trust and helper paths, MCP/task fixes, and the Node 24 sqlite fix. Standalone leaves published first: `@claude-flow/memory` 3.0.4, `@claude-flow/integration` 3.0.1, `@claude-flow/plugins` 3.0.2, `@claude-flow/mcp` 3.1.1 (bundled; republished standalone), `@claude-flow/security` 3.0.4 (bundled; republished standalone). Then `@claude-flow/cli`, `claude-flow`, `ruflo` 3.56.4.
