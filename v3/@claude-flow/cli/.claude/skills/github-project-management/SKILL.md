@@ -93,10 +93,10 @@ mcp__github__create_issue {
 }
 
 // Set up automated tracking
-mcp__claude-flow__task_orchestrate {
-  task: "Monitor and coordinate issue progress with automated updates",
-  strategy: "adaptive",
-  priority: "medium"
+mcp__claude-flow__task_create {
+  type: "coordination",
+  description: "Monitor and coordinate issue progress with automated updates",
+  priority: "normal"
 }
 ```
 

@@ -1,14 +1,7 @@
 {
   "_comment": "Monotone-decreasing baseline of shipped SKILL.md files that reference a ruflo MCP tool not registered by mcp-client.ts (entries are <skill path>::<tool>). Fix one, then re-run with --update-baseline to lower the floor. NEVER add entries to hide a new reference.",
-  "danglingCount": 46,
+  "danglingCount": 39,
   "knownDangling": [
-    "v3/@claude-flow/cli/.claude/skills/github-multi-repo/SKILL.md::memory_usage",
-    "v3/@claude-flow/cli/.claude/skills/github-multi-repo/SKILL.md::task_orchestrate",
-    "v3/@claude-flow/cli/.claude/skills/github-project-management/SKILL.md::task_orchestrate",
-    "v3/@claude-flow/cli/.claude/skills/github-release-management/SKILL.md::memory_usage",
-    "v3/@claude-flow/cli/.claude/skills/github-release-management/SKILL.md::swarm_monitor",
-    "v3/@claude-flow/cli/.claude/skills/github-release-management/SKILL.md::task_orchestrate",
-    "v3/@claude-flow/cli/.claude/skills/github-workflow-automation/SKILL.md::task_orchestrate",
     "v3/@claude-flow/cli/.claude/skills/sparc-methodology/SKILL.md::bottleneck_analyze",
     "v3/@claude-flow/cli/.claude/skills/sparc-methodology/SKILL.md::context_restore",
     "v3/@claude-flow/cli/.claude/skills/sparc-methodology/SKILL.md::memory_persist",
@@ -49,5 +42,5 @@
     "v3/@claude-flow/cli/.claude/skills/swarm-advanced/SKILL.md::trigger_setup",
     "v3/@claude-flow/cli/.claude/skills/swarm-advanced/SKILL.md::usage_stats"
   ],
-  "updatedAt": "2026-10-27T17:39:40.188Z"
+  "updatedAt": "2026-10-28T07:22:57.866Z"
 }
