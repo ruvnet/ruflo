@@ -5,6 +5,21 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.63.7] - 2026-10-28
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.7.
+
+### Fixed
+
+- `agent_spawn` accepts `type` as an alias for `agentType`, so projects set up with older agent and command docs can spawn agents again. `agentType` wins when both are sent. A call with neither now says `agentType is required` instead of `type: Required`. 443 `agent_spawn` calls in the shipped agent, command and skill docs now pass `agentType` (#4542, #4543, #4564).
+- `coordination_sync` `trigger` refuses instead of waiting 50 ms and reporting a sync that never happened. The tool's description now says so (#4557, #4559, #4564).
+- `agent_pool` `fill` is implemented instead of returning "Unknown action" (#4555, #4561).
+- `hooks_build-agents` writes under the project, validates `outputDir`, and no longer reports invented stats (#4558, #4562).
+- `performance_metrics` reports recorded latency and throughput instead of fixed figures (#4554, #4556).
+- The daemon's local audit worker no longer reports a clean scan it did not run (#4563).
+- `session_info` and `session_current` read the session records that hooks write (#4548).
+- The GitHub skills use registered MCP tools (#4141, #4541). A new check fails when a shipped skill runs a CLI command that does not exist (#4552, #4553).
+
 ## [3.63.6] - 2026-10-27
 
 Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.6.
@@ -12,6 +27,7 @@ Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.6.
 ### Fixed
 
 - ruflo-console 0.49.7: Claude can clear Project Anatole alerts through the console again. Before, `console_run anatole-ack-<id>` failed with "command.run: called from a tool.call hook, it would wait on the turn this hook is holding", so every alert stayed open. The console now sends `/protector` without waiting inside Claude's tool call, and Claude's reply says the action is queued. The ack is applied when the turn ends (#4545).
+- `claims_rebalance` no longer overfills one agent (#4547).
 - `@claude-flow/aidefence` is declared as an optional dependency of the CLI (#4445).
 - The hooks-automation skill uses the `hooks` command and the real MCP tool names (#4538, #4540).
 
