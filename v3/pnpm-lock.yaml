@@ -218,7 +218,7 @@ importers:
         specifier: 3.0.2
         version: link:../aidefence
       '@claude-flow/memory':
-        specifier: 3.0.9
+        specifier: 3.1.0
         version: link:../memory
       '@metaharness/darwin':
         specifier: ~0.12.0
@@ -13755,3 +13755,4 @@ packages:
 
   /zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+    dev: false
