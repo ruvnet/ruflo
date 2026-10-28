@@ -2569,6 +2569,39 @@ export async function bridgeStorePattern(options: {
       };
     }
 
+    // The intelligence module's LocalReasoningBank (registered when agentdb's
+    // own ReasoningBank is unavailable) has store()/findSimilar() but no
+    // storePattern(). bridgeSearchPatterns reads it through findSimilar(), so
+    // the write must land there too, with an embedding from the same
+    // generateEmbedding() the search uses. Otherwise store and search split
+    // across two backends and a stored pattern is never found.
+    if (reasoningBank && typeof reasoningBank.store === 'function' && typeof reasoningBank.findSimilar === 'function') {
+      let embedding: number[] = [];
+      try {
+        const { generateEmbedding } = await import('./memory-initializer.js');
+        const emb = await generateEmbedding(options.pattern);
+        if (emb && Array.isArray(emb.embedding)) embedding = emb.embedding;
+      } catch { /* no embedder — findSimilar misses it, the getAll() substring scan still finds it */ }
+      // store() returns false when it merges into an existing pattern with the
+      // same content; that is still a successful write.
+      reasoningBank.store({
+        id: patternId,
+        type: options.type,
+        content: options.pattern,
+        confidence: options.confidence,
+        embedding,
+        metadata: options.metadata,
+      });
+      // Saves are debounced; a short-lived CLI process can exit first.
+      if (typeof reasoningBank.flushToDisk === 'function') reasoningBank.flushToDisk();
+      return {
+        success: true,
+        patternId,
+        controller: 'reasoningBank',
+        hasEmbedding: embedding.length > 0,
+      };
+    }
+
     // Fallback: store via bridge SQL
     const patternValue = JSON.stringify({ pattern: options.pattern, type: options.type, confidence: options.confidence, metadata: options.metadata });
     const result = await bridgeStoreEntry({
@@ -2708,7 +2741,10 @@ export async function bridgeSearchPatterns(options: {
           .map((p: any) => ({ id: p.id ?? '', content: p.content ?? '', score: p.confidence ?? 0 }));
       }
 
-      return { results: mapped, controller: 'reasoningBank' };
+      // Nothing in the bank: patterns written by the SQL fallback path (before
+      // the bank was registered, or by a process without it) live in the
+      // `pattern` namespace, so search that instead of returning empty.
+      if (mapped.length > 0) return { results: mapped, controller: 'reasoningBank' };
     }
 
     // Fallback: search via bridge
