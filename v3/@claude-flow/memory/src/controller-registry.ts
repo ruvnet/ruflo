@@ -446,8 +446,19 @@ export class ControllerRegistry extends EventEmitter {
    * branch and `logAttestation()` was a permanent no-op. Same shape as the
    * already-fixed #3327 Finding A (`reasoningBank.store` never existed, so
    * its own `typeof ... === 'function'` guard was dead too).
+   *
+   * Dispatches #2432's `closePriorIfAny(name)` for whatever entry `name`
+   * currently holds *before* overwriting the map, same as `initController()`
+   * does, so a `set()` that replaces a resource-holding instance (one
+   * constructed via the normal `initialize()` path, or a prior `set()`
+   * call) doesn't silently orphan it. Intentionally not awaited — like
+   * every other post-init activation call site, `set()` stays synchronous
+   * so `get(name)` reflects the new instance immediately; the old
+   * instance's `close()`/`dispose()` (best-effort, errors swallowed) runs
+   * in the background.
    */
   set<T>(name: ControllerName, instance: T): void {
+    void this.closePriorIfAny(name);
     this.controllers.set(name, {
       name,
       instance,

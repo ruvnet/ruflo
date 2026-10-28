@@ -545,6 +545,33 @@ describe('ControllerRegistry', () => {
 
       expect(registry.get('semanticRouter')).toBe(second);
     });
+
+    // Adversarial-critique follow-up (same Dream Cycle session): set() must
+    // not orphan a resource-holding prior instance the way #2432 originally
+    // fixed for initController()'s own replacement path. The new instance
+    // must still be visible via get() synchronously, with the old one's
+    // close() dispatched in the background.
+    it('closes a replaced instance\'s resources without delaying visibility of the new one (#2432 class)', async () => {
+      await registry.initialize({ backend: mockBackend });
+      let closeResolve!: () => void;
+      const closed = new Promise<void>((resolve) => { closeResolve = resolve; });
+      const oldInstance = { close: vi.fn(() => closed) };
+      const newInstance = { id: 'new' };
+
+      registry.set('semanticRouter', oldInstance);
+      registry.set('semanticRouter', newInstance);
+
+      // New instance is visible immediately, even though oldInstance.close()
+      // is still an unresolved promise in the background.
+      expect(registry.get('semanticRouter')).toBe(newInstance);
+      expect(oldInstance.close).toHaveBeenCalledOnce();
+
+      closeResolve();
+      await closed;
+      // Replacing again after close resolves must not have reverted or
+      // dropped the second registration.
+      expect(registry.get('semanticRouter')).toBe(newInstance);
+    });
   });
 
   // ----- Health Check -----
