@@ -5,6 +5,15 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.63.8] - 2026-10-28
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.8, plus standalone `@claude-flow/memory` 3.1.0.
+
+### Fixed
+
+- `@claude-flow/memory` 3.1.0 adds `ControllerRegistry.set()`. The CLI's memory bridge already called it to register controllers it builds itself, but the method did not exist, so those registrations were silently dropped. `set()` closes any instance it replaces. The agentdb the CLI installs (3.0.0-alpha.20) does not ship the MutationGuard, AttestationLog or GuardedVectorBackend files, so those stay off. What does change: when agentdb's own ReasoningBank is unavailable, the intelligence module's local ReasoningBank is now really registered (#4549, #4550).
+- `agentdb_pattern-store` and `agentdb_pattern-search` use the same backend when that local ReasoningBank is registered. Before, the store wrote to the SQL `pattern` namespace while search read the local bank, so a stored pattern could not be found once the bank held other patterns. Search also falls back to the SQL namespace when the bank has no match (#4567).
+
 ## [3.63.7] - 2026-10-28
 
 Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.7.
