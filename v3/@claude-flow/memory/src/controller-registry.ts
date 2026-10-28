@@ -432,6 +432,32 @@ export class ControllerRegistry extends EventEmitter {
   }
 
   /**
+   * Register an already-constructed controller instance directly, outside
+   * the level-based `initialize()` path.
+   *
+   * Dream Cycle 2026-10-28: this method did not exist until now, even though
+   * `memory-bridge.ts`'s post-init wiring (reasoningBank/learningSystem/
+   * skills/semanticRouter/gnnService/rvfOptimizer/mutationGuard/
+   * attestationLog/guardedVectorBackend) has called `typeof reg.set ===
+   * 'function'` and fallen through to a dead `reg._controllers` property —
+   * never read anywhere — on every call since that wiring was added. As a
+   * result `get('mutationGuard')`/`get('attestationLog')` always returned
+   * null, so `guardValidate()` always took its "no guard installed = allow"
+   * branch and `logAttestation()` was a permanent no-op. Same shape as the
+   * already-fixed #3327 Finding A (`reasoningBank.store` never existed, so
+   * its own `typeof ... === 'function'` guard was dead too).
+   */
+  set<T>(name: ControllerName, instance: T): void {
+    this.controllers.set(name, {
+      name,
+      instance,
+      level: -1, // externally registered — not part of level-based init
+      initTimeMs: 0,
+      enabled: true,
+    });
+  }
+
+  /**
    * Aggregate health check across all controllers.
    */
   async healthCheck(): Promise<RegistryHealthReport> {
