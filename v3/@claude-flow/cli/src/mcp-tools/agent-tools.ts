@@ -288,7 +288,7 @@ export const agentTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        agentType: { type: 'string', description: 'Type of agent to spawn' },
+        agentType: { type: 'string', description: 'Type of agent to spawn (a legacy `type` key is accepted as an alias)' },
         agentId: { type: 'string', description: 'Optional custom agent ID' },
         name: { type: 'string', description: 'Optional display name for the agent (shown by agent_list, agent_status and ruflo-console)' },
         // #2085 — accept swarmId so spawned agents register in the
@@ -308,7 +308,19 @@ export const agentTools: MCPTool[] = [
       },
       required: ['agentType'],
     },
-    handler: async (input) => {
+    handler: async (rawInput) => {
+      // #4542: agent and command docs that `init` installed before 3.63.7 call
+      // agent_spawn with `type`. Accept it as an alias for `agentType`, and
+      // name the missing key ourselves: validateAgentSpawn maps agentType onto
+      // the security schema's `type` field and would report "type: Required".
+      let input = rawInput;
+      if (input.agentType === undefined && typeof input.type === 'string') {
+        const { type, ...rest } = input;
+        input = { ...rest, agentType: type };
+      }
+      if (typeof input.agentType !== 'string' || input.agentType === '') {
+        return { success: false, error: 'Input validation failed: agentType is required and must be a non-empty string (for example agentType: "coder")' };
+      }
       // Validate user-provided input (#1425: wire security validators to runtime)
       const validation = await validateAgentSpawn(input);
       if (!validation.valid) {

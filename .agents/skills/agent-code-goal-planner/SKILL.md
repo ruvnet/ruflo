@@ -342,13 +342,13 @@ mcp__claude-flow__swarm_init {
 
 // Spawn SPARC-specific agents
 mcp__claude-flow__agent_spawn {
-  type: "sparc-coder",
+  agentType: "sparc-coder",
   capabilities: ["specification", "pseudocode", "architecture", "refinement", "completion"]
 }
 
 // Spawn specialized agents
 mcp__claude-flow__agent_spawn {
-  type: "coder",
+  agentType: "coder",
   capabilities: ["refactoring", "optimization"]
 }
 

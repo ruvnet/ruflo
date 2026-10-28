@@ -296,8 +296,8 @@ export const coordinationTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        action: { type: 'string', enum: ['status', 'trigger', 'resolve'], description: 'Action to perform' },
-        force: { type: 'boolean', description: 'Force synchronization' },
+        action: { type: 'string', enum: ['status', 'trigger', 'resolve'], description: 'Action to perform. `trigger` is unavailable: nodes are local records with no sync backend, so it is refused (#4557)' },
+        force: { type: 'boolean', description: 'Unused: `trigger` is refused regardless (#4557)' },
         conflictResolution: { type: 'string', enum: ['latest', 'merge', 'manual'], description: 'Conflict resolution strategy' },
       },
     },

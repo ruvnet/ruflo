@@ -522,10 +522,10 @@ npx ruv-swarm github issue-init 567 \
 ```bash
 # Initialize issue-specific swarm with optimal topology
 mcp__claude-flow__swarm_init { topology: "hierarchical", maxAgents: 8 }
-mcp__claude-flow__agent_spawn { type: "coordinator", name: "Issue Coordinator" }
-mcp__claude-flow__agent_spawn { type: "analyst", name: "Issue Analyzer" }
-mcp__claude-flow__agent_spawn { type: "coder", name: "Solution Developer" }
-mcp__claude-flow__agent_spawn { type: "tester", name: "Validation Engineer" }
+mcp__claude-flow__agent_spawn { agentType: "coordinator", name: "Issue Coordinator" }
+mcp__claude-flow__agent_spawn { agentType: "analyst", name: "Issue Analyzer" }
+mcp__claude-flow__agent_spawn { agentType: "coder", name: "Solution Developer" }
+mcp__claude-flow__agent_spawn { agentType: "tester", name: "Validation Engineer" }
 
 # Store issue context in swarm memory
 mcp__claude-flow__memory_usage {

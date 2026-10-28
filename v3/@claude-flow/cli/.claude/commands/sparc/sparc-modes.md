@@ -51,7 +51,7 @@ mcp__claude-flow__swarm_init {
 
 // Spawn specialized agents
 mcp__claude-flow__agent_spawn {
-  type: "<agent-type>",
+  agentType: "<agent-type>",
   capabilities: ["<capability1>", "<capability2>"]
 }
 
