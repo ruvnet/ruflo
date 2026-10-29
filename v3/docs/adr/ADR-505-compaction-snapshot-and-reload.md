@@ -1,6 +1,6 @@
 # ADR 505: pre-compaction snapshot and post-compaction reload
 
-Status: Accepted (implemented in PR #PENDING, 2026-10-29)
+Status: Accepted (implemented in PR #4591, 2026-10-29)
 
 Issue: #4581 follow-up 3. Builds on: ADR-451 item 7 (`compactCarry`), ADR-502 (lessons), ADR-404.
 
