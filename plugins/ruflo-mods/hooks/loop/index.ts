@@ -62,11 +62,13 @@ export function registerLoop(on: On, state: ModState) {
     // Main loop only: a subagent's calls are its own work, reported back as the Agent call's result.
     if (!t || e.agentId !== undefined || (result as { deny?: unknown } | undefined)?.deny !== undefined) return result
 
-    const verifier = e.tool === 'Bash' ? classify((e as { command?: unknown }).command) : null
-    // ADR-503 §2.1: an edit's file decides the edited-tests / edited-verifier-config taints (only the class is kept).
+    const command = e.tool === 'Bash' ? (e as { command?: unknown }).command : undefined
+    const verifier = e.tool === 'Bash' ? classify(command) : null
+    // ADR-503 §2.1: an edit's file, or a Bash command that writes/deletes files, decides the edited-tests /
+    // edited-verifier-config taints (only the class is kept).
     const args = e as { file_path?: unknown; notebook_path?: unknown }
     const target = typeof args.file_path === 'string' ? args.file_path : typeof args.notebook_path === 'string' ? args.notebook_path : undefined
-    step(t, e.tool, (result as { isError?: unknown }).isError !== true, verifier, verifier ? verdict(result) : null, target === undefined ? undefined : relativePath(state.root, target))
+    step(t, e.tool, (result as { isError?: unknown }).isError !== true, verifier, verifier ? verdict(result) : null, target === undefined ? undefined : relativePath(state.root, target), command)
     return result
   })
 

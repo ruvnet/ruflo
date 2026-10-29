@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { register } from '../../../../../plugins/ruflo-mods/hooks/register';
-import { isTestPath, isVerifierConfig, narrows, relativePath } from '../../../../../plugins/ruflo-mods/hooks/loop/taint';
+import { isTestPath, isVerifierConfig, narrows, relativePath, shellTouches } from '../../../../../plugins/ruflo-mods/hooks/loop/taint';
 import { classify } from '../../../../../plugins/ruflo-mods/hooks/loop/verifier';
 import { buildLessons, ingestVerifiedOutcomes, lessonId, parseRecord, type SonaLike } from '../../src/memory/verified-outcomes.js';
 import { DEFAULT_LOOP_CONFIG, holdReason, parseLoopConfig, type LoopConfig } from '../../src/memory/verified-guards.js';
@@ -95,6 +95,39 @@ describe('taints in the mod (§2.1)', () => {
     await mod.dispatch('tool.call', { tool: 'Bash', command: 'npm test' }, () => ({ result: { interrupted: false } }));
     await mod.dispatch('turn.complete', { answer: 'ok', durationMs: 1, isAborted: false, turnId: 'u' }, () => ({ text: 'ok' }));
     expect(records(world)[0].taint).toEqual([]);
+  });
+
+  it('a Bash command that weakens, deletes or rewrites a test or verifier config taints like an Edit of it', async () => {
+    const world = memoryWorld();
+    const mod = await boot(world);
+    /** Edit src/a.ts, run `shell` (exit 0, not a verifier), then a full `npm test` that passes. */
+    const shellTurn = async (shell: string) => {
+      await mod.dispatch('prompt.submit', { text: 'fix the parser', wait: false, origin: { kind: 'composer' } }, (e) => e);
+      await mod.dispatch('tool.call', { tool: 'Edit', file_path: 'src/a.ts' }, () => ({ result: 'ok' }));
+      await mod.dispatch('tool.call', { tool: 'Bash', command: shell }, () => ({ result: { stdout: '', stderr: '', interrupted: false } }));
+      await mod.dispatch('tool.call', { tool: 'Bash', command: 'npm test' }, () => ({ result: { stdout: '', stderr: '', interrupted: false } }));
+      await mod.dispatch('turn.complete', { answer: 'done', durationMs: 1, isAborted: false, turnId: 'u' }, () => ({ text: 'done' }));
+    };
+    await shellTurn("sed -i 's/it(/it.skip(/' src/a.test.ts"); // the reviewer's probe: was verified-success with taint []
+    await shellTurn('rm src/__tests__/parser.test.ts');
+    await shellTurn('git checkout -- tests/');
+    await shellTurn("cat > tests/a.test.ts <<'EOF'\nit('x', () => {})\nEOF");
+    await shellTurn('echo \'{"scripts":{"test":"true"}}\' > package.json');
+    await shellTurn('cat src/a.test.ts && grep -rn parser tests/'); // negative control: reads only
+    const r = records(world);
+    expect(r.map((x) => x.outcome)).toEqual(Array(6).fill('verified-success'));
+    expect(r.map((x) => x.taint)).toEqual([['edited-tests'], ['edited-tests'], ['edited-tests'], ['edited-tests'], ['edited-verifier-config'], []]);
+  });
+
+  it('shellTouches: write verbs and redirections on test/config paths, never reads or plain test runs', () => {
+    const tests = ["sed -i 's/a/b/' src/a.test.ts", 'sed -i.bak s/a/b/ tests/x.ts', "perl -pi -e 's/a/b/' a.spec.js", 'rm -f src/a.test.ts', 'git rm tests/a.py', 'git restore --source=HEAD~1 __tests__',
+      'mv lexer_test.go /tmp/', 'echo x >> tests/fixture.json', 'echo x >tests/a.test.ts', 'printf x | tee src/a.test.ts', 'sudo rm -rf tests', 'truncate -s0 test_parse.py'];
+    for (const c of tests) expect(shellTouches(c), c).toEqual({ tests: true, config: false });
+    for (const c of ["sed -i 's/vitest run/true/' package.json", 'cp /tmp/v.ts vitest.config.ts', 'git checkout HEAD~3 -- Cargo.toml']) expect(shellTouches(c), c).toEqual({ tests: false, config: true });
+    for (const c of ['cat src/a.test.ts', 'grep -rn foo tests/', 'npx vitest run src/a.test.ts', 'npm test 2>&1', "sed -n '1,5p' src/a.test.ts", 'rm src/a.ts', 'echo hi > out.txt', 'git status tests/', 'ls __tests__']) {
+      expect(shellTouches(c), c).toEqual({ tests: false, config: false });
+    }
+    expect(shellTouches(undefined)).toEqual({ tests: false, config: false });
   });
 
   it('writes one session token per mod process', async () => {

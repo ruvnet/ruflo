@@ -8,7 +8,7 @@
  */
 
 import { scan } from '../guidance/screen'
-import { isTestPath, isVerifierConfig, type Taint } from './taint'
+import { isTestPath, isVerifierConfig, shellTouches, type Taint } from './taint'
 import type { Verifier, VerifierKind } from './verifier'
 
 export const VERIFIED_PATH = '.claude-flow/data/verified-trajectories.jsonl'
@@ -84,11 +84,18 @@ export function start(id: string, prompt: string, agent: string, now: number, se
 
 /**
  * Records one finished tool call; `verifier` and `passed` only for a verifier run with a status, `path` only for an
- * edit (project-relative; only its class is kept, never the path).
+ * edit (project-relative; only its class is kept, never the path), `command` only for Bash: a command that writes,
+ * moves or deletes a test file or verifier config taints like an Edit of it, whether or not it succeeded and whether
+ * or not it is also a verifier (a taint can only stop a record from training).
  */
-export function step(t: Trajectory, tool: string, ok: boolean, verifier: Verifier | null, passed: boolean | null, path?: string): void {
+export function step(t: Trajectory, tool: string, ok: boolean, verifier: Verifier | null, passed: boolean | null, path?: string, command?: unknown): void {
   t.seq++
   if (t.steps.length < MAX_STEPS && TOOL.test(tool)) t.steps.push({ tool, ok })
+  if (tool === 'Bash') {
+    const touched = shellTouches(command)
+    if (touched.tests) t.editedTests = true
+    if (touched.config) t.editedConfig = true
+  }
   if (EDIT_TOOLS.has(tool) && ok) {
     t.lastEdit = t.seq
     t.edits++

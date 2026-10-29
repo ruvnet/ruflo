@@ -62,3 +62,54 @@ export function narrows(segment: string, kind: string): boolean {
   if (tokens.some(t => SELECT.test(t))) return true
   return tokens.some(t => !t.startsWith('-') && (t.includes('::') || isTestPath(t.split('::')[0]!)))
 }
+
+/** Programs that write, move or delete the files they name. */
+const WRITERS = new Set(['rm', 'unlink', 'shred', 'mv', 'cp', 'tee', 'truncate', 'patch', 'dd', 'ln', 'install', 'rsync', 'touch'])
+/** `git` subcommands that rewrite or delete working-tree files. */
+const GIT_WRITERS = new Set(['rm', 'mv', 'checkout', 'restore', 'apply', 'am', 'reset', 'stash', 'clean'])
+/** Wrappers and assignments in front of the program. */
+const WRAPPERS = new Set(['sudo', 'env', 'command', 'xargs', 'time', 'nice', 'nohup'])
+/** An in-place flag of `sed`/`perl` (`-i`, `-i.bak`, `-pi`, `--in-place`). */
+const IN_PLACE = /^(?:-[A-Za-z]*i|--in-place)/
+/** An output redirection (`>`, `>>`, `1>`, `>file`), not a descriptor copy (`2>&1`). */
+const REDIRECT = /(?:^|[^<>&])\d*>>?(?!&)/
+
+/** Whether one shell segment writes, moves or deletes the files it names. */
+function writes(tokens: readonly string[]): boolean {
+  if (tokens.some(t => REDIRECT.test(t))) return true
+  let i = 0
+  while (i < tokens.length && (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[i]!) || WRAPPERS.has(tokens[i]!))) i++
+  const prog = tokens[i]?.split('/').at(-1)
+  if (prog === undefined) return false
+  if (WRITERS.has(prog)) return true
+  if (prog === 'sed' || prog === 'perl') return tokens.slice(i + 1).some(t => IN_PLACE.test(t))
+  if (prog === 'git') return tokens.slice(i + 1).some(t => GIT_WRITERS.has(t))
+  return false
+}
+
+/** A token names test code: a test file, or a path through a test directory (`tests/`, `src/__tests__`). */
+const namesTests = (token: string) => isTestPath(token) || parts(token).some(d => TEST_DIRS.has(d))
+
+/**
+ * Which taint classes a Bash command earns by changing test files or verifier config through the shell
+ * (`rm`, `sed -i`, `cat > file`, `git checkout -- tests/`, ...), as an Edit of the same file would (ADR-503 §2.1).
+ * Conservative by design, since a taint can only stop a success from training: a write verb or redirection
+ * anywhere in a segment that also names a test path or a verifier config is enough. A segment without one
+ * (`cat`, `grep`, a test run) earns nothing here; a narrowed test run is `narrows`' job. Code that writes from
+ * inside an interpreter (`node -e`, `python -c`) is not seen.
+ */
+export function shellTouches(command: unknown): { tests: boolean; config: boolean } {
+  const out = { tests: false, config: false }
+  if (typeof command !== 'string' || command.length > 16_384) return out
+  for (const segment of command.split(/&&|\|\||[;|\n]/)) {
+    const tokens = segment.split(/\s+/).map(unquote).filter(Boolean)
+    if (tokens.length === 0 || !writes(tokens)) continue
+    for (const raw of tokens) {
+      const token = raw.replace(/^\d*>>?/, '')
+      if (!token || token.startsWith('-')) continue
+      if (namesTests(token)) out.tests = true
+      if (isVerifierConfig(token)) out.config = true
+    }
+  }
+  return out
+}
