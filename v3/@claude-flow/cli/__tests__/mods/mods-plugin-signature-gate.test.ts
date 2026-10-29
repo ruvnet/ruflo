@@ -67,6 +67,39 @@ describe('ADR-509 signature gate in the mod trust hook', () => {
     expect((await loadMod(register, matching, { modTrust: 'refuse-risky' }).dispatch('plugin.register', quiet('ruflo-swarm@ruflo'), admit)).refuse).toBeDefined();
   });
 
+  it('Windows: USERPROFILE locates the status file and the key matches the CLI spelling (negative control: HOME-only lookup missed it)', async () => {
+    // What the CLI writes on Windows: os.homedir() = USERPROFILE, key normalized from C:\Users\u\.claude.
+    const world = memoryWorld();
+    world.env.set('USERPROFILE', 'C:\\Users\\u');
+    world.env.set('HOME', '/c/Users/u'); // Git Bash sets an MSYS HOME; the CLI never used it
+    (world.files as Map<string, { text: string; mtimeMs: number }>).set('C:\\Users\\u/.claude-flow/mods/plugin-verify.json', { text: status('c:/users/u/.claude', { 'ruflo-swarm': 'modified' }), mtimeMs: 1 });
+    const mod = loadMod(register, world, { modTrust: 'refuse-risky' });
+    expect((await mod.dispatch('plugin.register', quiet('ruflo-swarm@ruflo'), admit)).refuse).toMatch(/is modified/);
+    // HOME unset entirely, as on a plain Windows shell.
+    world.env.delete('HOME');
+    expect((await loadMod(register, world, { modTrust: 'refuse-risky' }).dispatch('plugin.register', quiet('ruflo-swarm@ruflo'), admit)).refuse).toMatch(/is modified/);
+  });
+
+  it('the copy being loaded decides: a tampered install cache is refused even when the clone verified', async () => {
+    const text = JSON.stringify({ version: 1, byConfigDir: { [`${HOME}/.claude`]: { writtenAt: 'x', clone: '/c', plugins: { 'ruflo-swarm': 'modified' }, paths: { '/c/plugins/ruflo-swarm': 'verified', [`${HOME}/.claude/plugins/cache/ruflo/ruflo-swarm/1.0.0`]: 'modified' } } } });
+    const world = worldWith(null);
+    (world.files as Map<string, { text: string; mtimeMs: number }>).set(STATUS, { text, mtimeMs: 1 });
+    const mod = loadMod(register, world, { modTrust: 'refuse-risky' });
+    const fromCache = { ...quiet('ruflo-swarm@ruflo'), root: `${HOME}/.claude/plugins/cache/ruflo/ruflo-swarm/1.0.0/` };
+    expect((await mod.dispatch('plugin.register', fromCache, admit)).refuse).toMatch(/copy at .*cache.* is modified/);
+    // Loaded from the clean clone: that copy verified, so it loads.
+    expect(await mod.dispatch('plugin.register', { ...quiet('ruflo-swarm@ruflo'), root: '/c/plugins/ruflo-swarm' }, admit)).toEqual({ allow: true });
+    // A directory the file does not know falls back to the worst of every copy.
+    expect((await mod.dispatch('plugin.register', { ...quiet('ruflo-swarm@ruflo'), root: '/elsewhere' }, admit)).refuse).toMatch(/clone is modified/);
+  });
+
+  it('normalizeTrustPath is byte-identical in the CLI and the mod', async () => {
+    const { normalizeTrustPath: cli } = await import('../../src/plugins/marketplace-trust/verify-status');
+    const { normalizeTrustPath: mod } = await import('../../../../../plugins/ruflo-mods/hooks/trust');
+    for (const p of ['C:\\Users\\U\\.claude\\', 'c:/users/u/.claude', '/home/u//.claude/', '/', 'C:', 'rel\\dir']) expect(mod(p)).toBe(cli(p));
+    expect(cli('C:\\Users\\U\\.claude\\')).toBe('c:/users/u/.claude');
+  });
+
   it('marketplaceRefusal is pure and total', () => {
     const text = status('/c', { a: 'modified' });
     expect(marketplaceRefusal(quiet('a@ruflo') as never, text, '/c')).toMatch(/modified/);

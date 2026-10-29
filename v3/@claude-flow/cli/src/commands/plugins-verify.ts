@@ -47,9 +47,11 @@ export const verifyCommand: Command = {
       return { success: false, exitCode: 1 };
     }
     const noCache = ctx.flags.noCache === true || ctx.flags['no-cache'] === true || ctx.flags.cache === false;
-    const cache = explicit || noCache ? [] : verifyInstallCache(configDir, 'ruflo', names);
-    // Only the clone Claude Code loads from feeds the mod's trust gate.
-    const statusPath = explicit ? undefined : writeVerifyStatus(configDir, clone, results);
+    // The install cache is what Claude Code loads an installed plugin from, so the status the mod's
+    // trust gate reads always includes it (--no-cache only hides it here); an explicit --clone writes nothing.
+    const loadedCache = explicit ? [] : verifyInstallCache(configDir, 'ruflo', names);
+    const cache = noCache ? [] : loadedCache;
+    const statusPath = explicit ? undefined : writeVerifyStatus(configDir, clone, results, undefined, loadedCache);
     const all = [...results, ...cache];
     const strict = ctx.flags.strict === true;
     const failed = all.filter((r) => isUntrusted(r.result) || (strict && r.result === 'unsigned'));

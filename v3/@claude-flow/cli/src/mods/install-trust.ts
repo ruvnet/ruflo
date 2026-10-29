@@ -2,7 +2,8 @@
  * ADR-509 on the `ruflo mods install` / `ruflo init` (mods) path: scan each
  * plugin in the refreshed marketplace clone before `claude plugin install`
  * (§2.2), and after the install verify the clone against its signatures and
- * write the status file the ruflo-mods trust gate reads (§2.1).
+ * write the status file the ruflo-mods trust gate reads (§2.1): per plugin the
+ * worst of its clone and install-cache copies, and each copy by its directory.
  */
 import { homedir } from 'node:os';
 import { dirname } from 'node:path';
@@ -69,13 +70,17 @@ export function scanBeforeInstall(
 export function verifyAndRecord(configDir: string, clone: string | null, names: readonly string[], home: string = homedir()): PluginVerification[] {
   if (!clone) return [];
   let results: PluginVerification[];
+  let cache: PluginVerification[];
   try {
     results = verifyClone(clone, names);
-    writeVerifyStatus(configDir, clone, results, home);
+    // The install cache is what Claude Code loads an installed plugin from: it is recorded too (worst of both).
+    cache = verifyInstallCache(configDir, 'ruflo', names);
+    writeVerifyStatus(configDir, clone, results, home, cache);
   } catch (error) {
     output.printWarning(`plugin signature check skipped: ${(error as Error).message}`);
     return [];
   }
+  for (const r of cache) if (r.result === 'modified' || r.result === 'bad-signature') output.writeln(`${output.error('✗')} signature (install cache) ${describeVerification(r)}`);
   for (const r of results) {
     if (r.result === 'verified') output.writeln(`${output.success('✓')} signature ${r.plugin}: verified`);
     else if (r.result !== 'unsigned') output.writeln(`${output.error('✗')} signature ${describeVerification(r)}`);
@@ -105,7 +110,7 @@ export function signatureFindings(configDir: string, clone: string | null, names
   try {
     results = verifyClone(clone, names);
     cache = verifyInstallCache(configDir, 'ruflo', names);
-    writeVerifyStatus(configDir, clone, results, home);
+    writeVerifyStatus(configDir, clone, results, home, cache);
   } catch (error) {
     return [{ name: 'plugin signatures', status: 'warn', message: `could not check: ${(error as Error).message}` }];
   }

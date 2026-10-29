@@ -21,13 +21,37 @@ export const VERIFY_STATUS_RELATIVE = join('.claude-flow', 'mods', 'plugin-verif
 export interface VerifyStatusEntry {
   writtenAt: string;
   clone: string;
-  /** Plugin name → its clone's result. Only the result is kept: the mod needs nothing more. */
+  /**
+   * Plugin name → the WORST result across its clone copy and every install-cache
+   * copy: Claude Code loads an installed plugin from the cache, so a clean clone
+   * next to a tampered cache must not read as verified.
+   */
   plugins: Record<string, VerifyResult>;
+  /** Plugin directory (normalized, see normalizeTrustPath) → that copy's own result: the mod looks up the dir it is loading. */
+  paths?: Record<string, VerifyResult>;
 }
 export interface VerifyStatusFile {
   version: 1;
   byConfigDir: Record<string, VerifyStatusEntry>;
 }
+
+/**
+ * The one spelling of a path both sides key on (the CLI writing, the mod
+ * reading): forward slashes, no repeated or trailing slash, and a Windows
+ * drive path lower-cased (Windows paths are case-insensitive, and HOME /
+ * USERPROFILE / os.homedir() disagree on separators). Kept byte-identical to
+ * plugins/ruflo-mods/hooks/trust.ts normalizeTrustPath.
+ */
+export function normalizeTrustPath(p: string): string {
+  let out = p.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+  if (out.length > 1) out = out.replace(/\/+$/, '');
+  return /^[A-Za-z]:(\/|$)/.test(out) ? out.toLowerCase() : out;
+}
+
+const RANK: Record<VerifyResult, number> = { verified: 0, unsigned: 1, modified: 2, 'bad-signature': 3 };
+
+/** The worse of two results (bad-signature > modified > unsigned > verified). */
+export const worseResult = (a: VerifyResult | undefined, b: VerifyResult): VerifyResult => (a === undefined || RANK[b] > RANK[a] ? b : a);
 
 export const verifyStatusPath = (home: string = homedir()) => join(home, VERIFY_STATUS_RELATIVE);
 
@@ -41,13 +65,29 @@ export function readVerifyStatus(home: string = homedir()): VerifyStatusFile {
   return { version: 1, byConfigDir: {} };
 }
 
-export function writeVerifyStatus(configDir: string, clone: string, results: readonly PluginVerification[], home: string = homedir()): string {
+/**
+ * Record the clone's results and the install-cache copies' (`cache`): per plugin
+ * the worst of all its copies, and per copy its own result keyed by directory.
+ */
+export function writeVerifyStatus(
+  configDir: string,
+  clone: string,
+  results: readonly PluginVerification[],
+  home: string = homedir(),
+  cache: readonly PluginVerification[] = [],
+): string {
   const file = readVerifyStatus(home);
-  file.byConfigDir[configDir] = {
-    writtenAt: new Date().toISOString(),
-    clone,
-    plugins: Object.fromEntries(results.map((r) => [r.plugin, r.result])),
-  };
+  const plugins: Record<string, VerifyResult> = {};
+  const paths: Record<string, VerifyResult> = {};
+  for (const r of [...results, ...cache]) {
+    plugins[r.plugin] = worseResult(plugins[r.plugin], r.result);
+    const key = normalizeTrustPath(r.dir);
+    paths[key] = worseResult(paths[key], r.result);
+  }
+  const key = normalizeTrustPath(configDir);
+  // An entry an older writer keyed with another spelling of the same dir is replaced, not left beside it.
+  for (const k of Object.keys(file.byConfigDir)) if (k !== key && normalizeTrustPath(k) === key) delete file.byConfigDir[k];
+  file.byConfigDir[key] = { writtenAt: new Date().toISOString(), clone, plugins, paths };
   const path = verifyStatusPath(home);
   mkdirSync(dirname(path), { recursive: true });
   const tmp = `${path}.${process.pid}.tmp`;

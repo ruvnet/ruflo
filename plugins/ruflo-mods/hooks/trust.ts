@@ -20,6 +20,8 @@ export type ModuleScan = {
   readonly name: string
   readonly tier: string
   readonly provenance: string
+  /** The plugin's directory (the one holding plugin.json), as the engine loads it. */
+  readonly root?: string
   readonly uses: { readonly events?: readonly string[]; readonly calls?: readonly string[]; readonly env?: unknown }
 }
 
@@ -147,24 +149,60 @@ export const trustLine = (scan: ModuleScan, d: TrustDecision) =>
   `ruflo mod trust: ${scan.name} (${scan.provenance}) ${d.refuse ? 'REFUSED' : 'loaded'}${d.risk.length ? `; ${d.risk.join('; ')}` : '; no risky calls or hooks'}`
 
 /**
- * ADR-509: the ruflo marketplace verification `ruflo mods doctor` / `ruflo plugins verify` wrote
- * (~/.claude-flow/mods/plugin-verify.json, keyed by Claude Code config dir). Returns the refusal for a
- * user-tier `<name>@ruflo` module whose clone is `modified` or `bad-signature`; undefined otherwise
- * (no file, no entry, unreadable, or verified/unsigned: unknown is not enforced). Pure: the reads
- * happen in the hook below, where `$` is spelled.
+ * One spelling of a path for the status-file keys: forward slashes, no repeated
+ * or trailing slash, a Windows drive path lower-cased. Byte-identical to the
+ * CLI's normalizeTrustPath (v3/@claude-flow/cli/src/plugins/marketplace-trust/verify-status.ts).
+ */
+export function normalizeTrustPath(p: string): string {
+  let out = p.replace(/\\/g, '/').replace(/\/{2,}/g, '/')
+  if (out.length > 1) out = out.replace(/\/+$/, '')
+  return /^[A-Za-z]:(\/|$)/.test(out) ? out.toLowerCase() : out
+}
+
+/**
+ * The home the CLI's os.homedir() used when it wrote the status file: on Windows that is
+ * USERPROFILE (HOME, when set at all, may be an MSYS /c/... path), elsewhere HOME.
+ */
+export function trustHome(home: string | undefined, userProfile: string | undefined): string | undefined {
+  if (userProfile && /^[A-Za-z]:[\\/]/.test(userProfile)) return userProfile
+  return home || userProfile || undefined
+}
+
+type StatusEntry = { plugins?: Record<string, unknown>; paths?: Record<string, unknown> }
+
+/**
+ * ADR-509: the ruflo marketplace verification `ruflo mods doctor` / `ruflo plugins verify` /
+ * `ruflo mods install` wrote (~/.claude-flow/mods/plugin-verify.json). Returns the refusal for a
+ * user-tier `<name>@ruflo` module whose copy is `modified` or `bad-signature`; undefined otherwise
+ * (no file, no entry, unreadable, or verified/unsigned: unknown is not enforced). The copy is found
+ * by the directory the engine is loading (`scan.root`, keyed per copy, clone or install cache);
+ * when that directory is not in the file, the config dir's entry (the worst of every copy) decides.
+ * Pure: the reads happen in the hook below, where `$` is spelled.
  */
 export function marketplaceRefusal(scan: ModuleScan, statusText: string | undefined, configDir: string): string | undefined {
   const at = scan.provenance.lastIndexOf('@')
   if (scan.tier !== 'user' || at <= 0 || scan.provenance.slice(at + 1) !== 'ruflo' || !statusText) return undefined
   const name = scan.provenance.slice(0, at)
-  let result: unknown
+  let entries: Array<[string, StatusEntry]>
   try {
-    result = (JSON.parse(statusText) as { byConfigDir?: Record<string, { plugins?: Record<string, unknown> }> })?.byConfigDir?.[configDir]?.plugins?.[name]
+    const by = (JSON.parse(statusText) as { byConfigDir?: Record<string, StatusEntry> })?.byConfigDir
+    entries = by && typeof by === 'object' ? Object.entries(by).filter(([, e]) => e && typeof e === 'object') : []
   } catch {
     return undefined
   }
+  let result: unknown
+  let where = 'marketplace clone'
+  const root = scan.root ? normalizeTrustPath(scan.root) : undefined
+  const byPath = root ? entries.map(([, e]) => e.paths?.[root]).find((r) => typeof r === 'string') : undefined
+  if (byPath !== undefined) {
+    result = byPath
+    where = `copy at ${scan.root}`
+  } else {
+    const key = normalizeTrustPath(configDir)
+    result = entries.find(([k]) => normalizeTrustPath(k) === key)?.[1].plugins?.[name]
+  }
   return result === 'modified' || result === 'bad-signature'
-    ? `ruflo mod trust (modTrust=refuse-risky): ${name}@ruflo marketplace clone is ${result} (ADR-509 signature check); run: ruflo plugins verify ${name}, then claude plugin marketplace update ruflo`
+    ? `ruflo mod trust (modTrust=refuse-risky): ${name}@ruflo ${where} is ${result} (ADR-509 signature check); run: ruflo plugins verify ${name}, then claude plugin marketplace update ruflo`
     : undefined
 }
 
@@ -175,7 +213,7 @@ export function registerTrust(on: On, policy: TrustPolicy, allow: ReadonlySet<st
   on('plugin.register', async ($, e, next) => {
     if (policy === 'refuse-risky' && e.tier === 'user' && e.provenance.endsWith('@ruflo')) {
       // The allow-list names provenance, which a tampered clone shares, so it does not exempt this check.
-      const home = await $.env.get('HOME').catch(() => undefined)
+      const home = trustHome(await $.env.get('HOME').catch(() => undefined), await $.env.get('USERPROFILE').catch(() => undefined))
       const configDir = (await $.env.get('CLAUDE_CONFIG_DIR').catch(() => undefined)) || (home ? `${home}/.claude` : undefined)
       const status = home ? await $.fs.read(`${home}/.claude-flow/mods/plugin-verify.json`).catch(() => undefined) : undefined
       const refuse = configDir ? marketplaceRefusal(e, status, configDir) : undefined

@@ -166,4 +166,42 @@ describe('ADR-509 verify status file', () => {
       rmSync(home, { recursive: true, force: true });
     }
   });
+
+  it('records the worst of clone and install cache per plugin, each copy by directory, under a normalized key', () => {
+    const home = mkdtempSync(join(tmpdir(), 'adr509-home-'));
+    try {
+      const clone = [{ plugin: 'alpha', dir: '/c/plugins/alpha', result: 'verified' as const, changed: [], missing: [], extra: [] }];
+      const cache = [{ plugin: 'alpha', dir: '/cfg/plugins/cache/ruflo/alpha/1.2.3/', result: 'modified' as const, changed: ['x'], missing: [], extra: [] }];
+      writeVerifyStatus('C:\\Users\\U\\.claude\\', '/c', clone, home, cache);
+      const entry = readVerifyStatus(home).byConfigDir['c:/users/u/.claude'];
+      expect(entry.plugins).toEqual({ alpha: 'modified' });
+      expect(entry.paths).toEqual({ '/c/plugins/alpha': 'verified', '/cfg/plugins/cache/ruflo/alpha/1.2.3': 'modified' });
+      // An older, unnormalized spelling of the same config dir is replaced, not kept beside it.
+      writeVerifyStatus('c:/users/u/.claude', '/c', clone, home);
+      expect(Object.keys(readVerifyStatus(home).byConfigDir)).toEqual(['c:/users/u/.claude']);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('verifyAndRecord (the mods install path) records a tampered install cache next to a clean clone (negative control: clone only)', async () => {
+    const { verifyAndRecord } = await import('../src/mods/install-trust.js');
+    const home = mkdtempSync(join(tmpdir(), 'adr509-home-'));
+    const cfg = mkdtempSync(join(tmpdir(), 'adr509-cfg-'));
+    try {
+      // The clone's alpha is unsigned; its install-cache copy carries a signature that does not verify.
+      const cacheDir = join(cfg, 'plugins', 'cache', 'ruflo', 'alpha', '1.2.3');
+      mkdirSync(join(cacheDir, '.claude-plugin'), { recursive: true });
+      writeFileSync(join(cacheDir, '.claude-plugin', 'plugin.json'), '{"name":"alpha"}');
+      writeFileSync(join(cacheDir, SIGNATURE_RELATIVE), '{"manifest":{"plugin":"alpha","files":[]},"signature":"AAAA","algorithm":"ed25519"}');
+      writeFileSync(join(cfg, 'plugins', 'installed_plugins.json'), JSON.stringify({ version: 2, plugins: { 'alpha@ruflo': [{ installPath: cacheDir }] } }));
+      verifyAndRecord(cfg, root, ['alpha'], home);
+      const entry = readVerifyStatus(home).byConfigDir[cfg];
+      expect(entry.plugins.alpha).toBe('bad-signature');
+      expect(entry.paths?.[cacheDir]).toBe('bad-signature');
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+      rmSync(cfg, { recursive: true, force: true });
+    }
+  });
 });
