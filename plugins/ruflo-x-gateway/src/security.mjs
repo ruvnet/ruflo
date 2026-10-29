@@ -1,5 +1,4 @@
 import { timingSafeEqual } from 'node:crypto';
-import { readSecret } from './_secret.mjs';
 export const MAX_BODY = 256 * 1024;
 const buckets = new Map(); // ip -> {tokens, ts}
 const MAX_BUCKETS = 10_000, IDLE_MS = 10 * 60_000;
@@ -32,9 +31,7 @@ export function readBody(req, max = MAX_BODY) {
   });
 }
 // Constant-time admin token check. Returns false when no token is configured (fail closed).
-// The token is the plugin option `adminToken` (sensitive, ADR-506) or RUFLO_ADMIN_TOKEN, read at call time.
-export const adminToken = () => readSecret('adminToken', ['RUFLO_ADMIN_TOKEN']);
-export function checkAdmin(token, expected = adminToken()) {
+export function checkAdmin(token, expected = process.env.RUFLO_ADMIN_TOKEN) {
   if (!expected || typeof token !== 'string') return false;
   const a = Buffer.from(token), b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);

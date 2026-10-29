@@ -4,11 +4,20 @@
 //   A. A `userConfig` key whose name looks like a credential (/(key|token|secret|password|jwt)/i)
 //      must be declared "sensitive": true, so Claude Code keeps it in the credential store and
 //      masks it, instead of writing it in plain text under `pluginConfigs` in settings.
-//   B. No `.claude-plugin/plugin.json` or `hooks/hooks.json` may carry a literal value shaped like
-//      a secret. The shapes are the mods' secret screen (COMMON_SECRETS in
-//      plugins/ruflo-agentdb/hooks/screen.ts), parsed from that file so there is one list.
+//   B. No `.claude-plugin/plugin.json`, `hooks/hooks.json`, `.mcp.json` or `.lsp.json` may carry a
+//      literal value shaped like a secret. The shapes are the mods' secret screen (COMMON_SECRETS in
+//      plugins/ruflo-agentdb/hooks/screen.ts, parsed from that file so there is one list) plus
+//      LOCAL_SECRETS below (OpenRouter keys, which the screen has no shape for).
+//   C. Under an `env` or `headers` object, a credential-named entry (key, token, secret, password,
+//      jwt, authorization, cookie, credential) must not hold a literal of 16+ characters: it must
+//      reference `${VAR}` or `${user_config.KEY}`. This catches admin, gateway and other tokens that
+//      no shape knows.
+//   D. `${user_config.` must never appear in a hook or server `command`, `headersHelper` or `args`
+//      entry: a substituted secret in argv is visible in `ps` (ADR-506 section 2.3). The server's
+//      `env` block, or the hook's CLAUDE_PLUGIN_OPTION_<KEY> variable, is the place for it.
 //
-// Findings name the plugin, file and JSON path, and the rule; a matched value is never printed.
+// Findings name the plugin, file and JSON path, and the rule. A matched value is never printed, and an
+// object key that is itself shaped like a secret is shown as <redacted-key> in every path.
 //
 //   node scripts/audit-plugin-secrets.mjs                   # audits plugins/
 //   node scripts/audit-plugin-secrets.mjs --root <dir>      # audits <dir>/*/ (tests use fixtures)
@@ -21,6 +30,16 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const CREDENTIAL_NAME = /(key|token|secret|password|jwt)/i
 export const DEFAULT_SCREEN = join(REPO, 'plugins', 'ruflo-agentdb', 'hooks', 'screen.ts')
+/** Shapes the mods' screen does not know, kept here because that screen is shared by every mod. */
+export const LOCAL_SECRETS = [
+  ['openrouter key', /\bsk-or-v1-[A-Za-z0-9]{32,}/],
+]
+export const SCANNED_FILES = ['.claude-plugin/plugin.json', 'hooks/hooks.json', '.mcp.json', '.lsp.json']
+export const REDACTED_KEY = '<redacted-key>'
+const CREDENTIAL_ENTRY = /(key|token|secret|password|jwt|authorization|cookie|credential)/i
+const SECRET_CONTAINERS = new Set(['env', 'headers'])
+const ARGV_KEYS = new Set(['command', 'headersHelper'])
+const MIN_LITERAL = 16
 
 /** The COMMON_SECRETS rules of the mods' screen, as [name, RegExp] pairs. Throws when none parse. */
 export function loadSecretRules(screenPath = DEFAULT_SCREEN) {
@@ -37,12 +56,18 @@ export function loadSecretRules(screenPath = DEFAULT_SCREEN) {
   return rules
 }
 
-function* strings(value, path) {
-  if (typeof value === 'string') yield [path, value]
-  else if (Array.isArray(value)) for (let i = 0; i < value.length; i++) yield* strings(value[i], `${path}[${i}]`)
+/**
+ * Every string in a JSON value, object keys included. `keys` is the chain of object keys above the
+ * string (array indices skipped) and `inArray` says whether its nearest container is an array.
+ * `segment` renders a key for a path, so a key shaped like a secret never reaches a printed path.
+ */
+function* strings(value, path, segment, keys = [], inArray = false) {
+  if (typeof value === 'string') yield { path, text: value, keys, inArray, isKey: false }
+  else if (Array.isArray(value)) for (let i = 0; i < value.length; i++) yield* strings(value[i], `${path}[${i}]`, segment, keys, true)
   else if (value && typeof value === 'object') for (const [k, v] of Object.entries(value)) {
-    yield [`${path}.${k}#key`, k]
-    yield* strings(v, `${path}.${k}`)
+    const seg = segment(k)
+    yield { path: `${path}.${seg}#key`, text: k, keys, inArray: false, isKey: true }
+    yield* strings(v, `${path}.${seg}`, segment, [...keys, k], false)
   }
 }
 
@@ -50,7 +75,9 @@ function* strings(value, path) {
 export function auditPlugin(dir, rules) {
   const findings = []
   const plugin = dir.split(/[\\/]/).filter(Boolean).pop()
-  for (const rel of ['.claude-plugin/plugin.json', 'hooks/hooks.json']) {
+  const shapes = [...rules, ...LOCAL_SECRETS]
+  const segment = (k) => (shapes.some(([, re]) => re.test(k)) ? REDACTED_KEY : k)
+  for (const rel of SCANNED_FILES) {
     const file = join(dir, rel)
     if (!existsSync(file)) continue
     let json
@@ -58,12 +85,21 @@ export function auditPlugin(dir, rules) {
     if (rel.endsWith('plugin.json')) {
       for (const [key, option] of Object.entries(json.userConfig ?? {})) {
         if (CREDENTIAL_NAME.test(key) && option?.sensitive !== true) {
-          findings.push({ plugin, file: rel, path: `$.userConfig.${key}`, rule: 'credential-named option without "sensitive": true' })
+          findings.push({ plugin, file: rel, path: `$.userConfig.${segment(key)}`, rule: 'credential-named option without "sensitive": true' })
         }
       }
     }
-    for (const [path, text] of strings(json, '$')) {
-      for (const [name, re] of rules) if (re.test(text)) findings.push({ plugin, file: rel, path, rule: `literal ${name}` })
+    for (const { path, text, keys, inArray, isKey } of strings(json, '$', segment)) {
+      for (const [name, re] of shapes) if (re.test(text)) findings.push({ plugin, file: rel, path, rule: `literal ${name}` })
+      if (isKey) continue
+      const own = keys[keys.length - 1]
+      const container = keys[keys.length - 2]
+      if (!inArray && SECRET_CONTAINERS.has(container) && CREDENTIAL_ENTRY.test(own) && !text.includes('${') && text.length >= MIN_LITERAL) {
+        findings.push({ plugin, file: rel, path, rule: `literal credential under ${container} (reference \${VAR} or \${user_config.KEY})` })
+      }
+      if (text.includes('${user_config.') && ((!inArray && ARGV_KEYS.has(own)) || (inArray && own === 'args'))) {
+        findings.push({ plugin, file: rel, path, rule: '${user_config.*} in a command line (use the env block or CLAUDE_PLUGIN_OPTION_<KEY>)' })
+      }
     }
   }
   return findings
@@ -83,10 +119,10 @@ function main(argv) {
   if (checked === 0) { console.error(`audit-plugin-secrets: no plugin manifests under ${root}; a check that inspects nothing must not pass`); return 1 }
   for (const f of findings) console.error(`FAIL ${f.plugin}/${f.file} ${f.path}: ${f.rule}`)
   if (findings.length) {
-    console.error(`audit-plugin-secrets: ${findings.length} finding(s). Declare credential options with "sensitive": true and keep secrets out of manifests (ADR-506).`)
+    console.error(`audit-plugin-secrets: ${findings.length} finding(s). Declare credential options with "sensitive": true and keep secrets out of manifests and command lines (ADR-506).`)
     return 1
   }
-  console.log(`audit-plugin-secrets: ${checked} plugin manifest(s), ${rules.length} secret shapes, clean`)
+  console.log(`audit-plugin-secrets: ${checked} plugin manifest(s), ${rules.length + LOCAL_SECRETS.length} secret shapes, clean`)
   return 0
 }
 
