@@ -24,7 +24,7 @@ An opt-in mod option, `learningLoop` (default off), and a CLI ingest step, split
 
 ruflo-mods may not run processes or call MCP tools, models or the network (smoke step 4). The loop therefore cannot run a verifier. It observes the verifiers the model runs:
 
-- **`prompt.submit`**: opens a trajectory for the main loop's turn (task text cut to 300 characters and stored as `[redacted]` if it carries a secret shape; agent = the turn's route). It skips slash commands and projects without `.claude-flow/`.
+- **`prompt.submit`**: opens a trajectory for the main loop's turn (task text cut to 300 characters, e-mail addresses replaced, and stored as `[redacted]` if it carries a secret shape; agent = the turn's route). It skips slash commands and projects without `.claude-flow/`.
 - **`tool.call`**, after `next`, main loop only: records one step per finished call (tool name and success flag). A Bash command recognised as a verifier records its verdict:
   - Recognised commands include `npm|pnpm|yarn|bun test/build/typecheck/lint`, `vitest`, `jest`, `tsc`, `eslint`, `cargo test|build|check|clippy`, `go test|build|vet`, `pytest`, `dotnet`, `make test`, `mvn`/`gradle`.
   - The verdict is `passed` when Claude Code reported no error, i.e. the shell's exit status was 0.
@@ -32,7 +32,7 @@ ruflo-mods may not run processes or call MCP tools, models or the network (smoke
 - **`turn.complete`**, main loop only: decides the outcome.
   - `verified-success` when every verifier run after the turn's last edit passed.
   - `verified-failure` when any of them failed.
-  - `unknown` when none ran after the last edit, or the turn was aborted.
+  - `unknown` when none ran after the last edit, the turn was aborted, or the turn edited nothing. A verifier verifies a change; "ran the tests and they passed" with no edit is not a task outcome, so it never trains.
   - The record is appended to `.claude-flow/data/verified-trajectories.jsonl`, capped at 500 lines. An unreadable file is never overwritten.
 
 It never denies, rewrites or delays a call, and it adds no text to an answer.
@@ -92,6 +92,8 @@ The injection point is `prompt.submit` context, the same place the route block u
   - 3 lessons per prompt;
   - a 2 MiB file read limit in the CLI.
 - Local only; nothing is shared.
+
+**Privacy limit.** The jsonl keeps the prompt's first 300 characters. Before writing, the mod replaces e-mail addresses with `[email]` and stores a prompt that carries a secret shape as `[redacted]`. The CLI's broader PII redaction (`detectPII`/`redactPII`) runs at ingest, before SONA sees the text, not before the mod writes the file. The issue asked for a PII scan before persisting; the mod cannot call `aidefence_has_pii` (an MCP tool), so other PII in a prompt can sit in that local file until the 500-line cap drops it.
 
 ## 5. Verification
 

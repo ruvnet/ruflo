@@ -43,11 +43,17 @@ export const EDIT_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']
 const TOOL = /^[A-Za-z0-9_.:-]{1,80}$/
 
 /**
- * A task as stored: control characters gone, cut to 300 characters; a task
- * carrying a secret shape is stored as `[redacted]` (it then teaches nothing).
+ * A task as stored: control characters gone, e-mail addresses replaced, cut
+ * to 300 characters; a task carrying a secret shape is stored as
+ * `[redacted]` (it then teaches nothing). The CLI redacts PII again at ingest.
  */
 export function taskText(prompt: string): string {
-  const flat = prompt.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, MAX_TASK)
+  const flat = prompt
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ')
+    .replace(/[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}/g, '[email]')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_TASK)
   return scan(flat).secrets.length > 0 ? '[redacted]' : flat
 }
 
@@ -66,9 +72,12 @@ export function step(t: Trajectory, tool: string, ok: boolean, verifier: Verifie
   if (verifier && passed !== null) t.runs.push({ kind: verifier.kind, command: verifier.command, passed, seq: t.seq })
 }
 
-/** The outcome and the run that decided it: the first failing run after the last edit, else the last passing one. */
+/**
+ * The outcome and the run that decided it: the first failing run after the last edit, else the last passing one.
+ * A turn that changed nothing is unknown: a verifier verifies a change, and "ran the tests" is not a task outcome.
+ */
 export function decide(t: Trajectory, aborted: boolean): { outcome: Outcome; run: Run | null } {
-  if (aborted) return { outcome: 'unknown', run: null }
+  if (aborted || t.edits === 0) return { outcome: 'unknown', run: null }
   const after = t.runs.filter(r => r.seq > t.lastEdit)
   if (after.length === 0) return { outcome: 'unknown', run: null }
   const failed = after.find(r => !r.passed)

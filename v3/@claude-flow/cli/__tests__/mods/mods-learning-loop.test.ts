@@ -73,9 +73,10 @@ describe('verifier classification (pure)', () => {
     expect(verdict({ deny: 'no' })).toBeNull();
   });
 
-  it('decides on the runs after the last edit; a run before an edit verifies nothing', () => {
+  it('decides on the runs after the last edit; a run before an edit, or with no edit at all, verifies nothing', () => {
     const t = open('vt-a', 'fix the parser', 'coder', 1);
     step(t, 'Bash', true, { kind: 'test', command: 'npm test' }, true);
+    expect(decide(t, false).outcome).toBe('unknown'); // nothing changed
     step(t, 'Edit', true, null, null);
     expect(decide(t, false).outcome).toBe('unknown');
     step(t, 'Bash', true, { kind: 'build', command: 'npm run build' }, true);
@@ -89,6 +90,7 @@ describe('verifier classification (pure)', () => {
 
   it('stores a task that carries a secret shape as [redacted]', () => {
     expect(open('vt-b', 'use key AKIAIOSFODNN7EXAMPLE to deploy', 'coder', 1).task).toBe('[redacted]');
+    expect(open('vt-c', 'email jane.doe@example.com the parser fix', 'coder', 1).task).toBe('email [email] the parser fix');
   });
 });
 

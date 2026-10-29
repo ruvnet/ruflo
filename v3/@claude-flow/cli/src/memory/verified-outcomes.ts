@@ -306,7 +306,8 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
       continue;
     }
     if (options.dryRun) {
-      record.outcome === 'verified-success' ? ingested.verifiedSuccess++ : ingested.verifiedFailure++;
+      if (record.outcome === 'verified-success') ingested.verifiedSuccess++;
+      else ingested.verifiedFailure++;
       continue;
     }
     const success = record.outcome === 'verified-success';
@@ -320,7 +321,8 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
       feedback: `verified by ${record.verifier!.kind}: ${record.verifier!.command}`,
     });
     if (result.learned && result.patternKey) ledger.patterns[result.patternKey] = { evidence: record.verifier!.command, at: now };
-    success ? ingested.verifiedSuccess++ : ingested.verifiedFailure++;
+    if (success) ingested.verifiedSuccess++;
+    else ingested.verifiedFailure++;
   }
 
   if (options.dryRun) return done(null, !!sona);
