@@ -1,6 +1,6 @@
 # ADR 503: hardening the verified-outcome learning loop against gamed signals
 
-Status: Accepted (implemented in PR pending; see section 6)
+Status: Accepted (implemented in PR #4590; see section 6)
 
 Issue: #4581 follow-up 6. Builds on: ADR-502 (the loop, on by default since 3.64.0).
 
