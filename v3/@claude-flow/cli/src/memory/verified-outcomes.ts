@@ -19,11 +19,20 @@
  * verified outcomes produced, those at or above the SONA routing gate as
  * lessons, and repeated verified failures as cautions. The mod reads that
  * file and adds at most three cited lessons to a prompt.
+ *
+ * ADR-503 hardens it against gamed signals (verified-guards.ts,
+ * verified-reverify.ts): a tainted success does not train unless the project
+ * allows its taint class, an opt-in re-verify can downgrade a success before
+ * it trains, and an anomaly gate holds suspicious patterns back from the
+ * prompt. Every one of these can only downgrade.
  */
 
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+
+import { addOutcome, blockedTaints, emptyStats, holdReason, parseStats, parseTaint, readLoopConfig, type HoldReason, type LoopConfig, type PatternStats, type Taint } from './verified-guards.js';
+import { gitWorktreeRunner, ReverifySession, type ReverifyRunner } from './verified-reverify.js';
 
 export const VERIFIED_PATH = join('.claude-flow', 'data', 'verified-trajectories.jsonl');
 export const LEDGER_PATH = join('.claude-flow', 'data', 'verified-ingest.json');
@@ -50,6 +59,10 @@ export interface VerifiedRecord {
   readonly verifier: { readonly kind: VerifierKind; readonly command: string; readonly passed: boolean } | null;
   readonly steps: ReadonlyArray<{ readonly tool: string; readonly ok: boolean }>;
   readonly edits: number;
+  /** ADR-503 §2.1: what the turn did to its own check; only a `verified-success` carries any. */
+  readonly taint: readonly Taint[];
+  /** The mod process that recorded it, when the mod wrote one (ADR-503 §2.4). */
+  readonly session: string | null;
   readonly startedAt: number;
   readonly endedAt: number;
 }
@@ -59,10 +72,25 @@ export interface IngestLedger {
   ids: string[];
   /** mtime of the jsonl at the last ingest, so a caller can skip an unchanged file cheaply. */
   lastMtimeMs: number;
-  totals: { verifiedSuccess: number; verifiedFailure: number; unknown: number; rejected: number };
-  /** Pattern keys verified outcomes trained, with the last verifier command that decided them (the lesson's evidence). */
-  patterns: Record<string, { evidence: string; at: number }>;
+  totals: { verifiedSuccess: number; verifiedFailure: number; unknown: number; rejected: number; tainted: number };
+  /**
+   * Pattern keys verified outcomes trained, with the last verifier command that decided them (the lesson's evidence)
+   * and what the anomaly gate needs (ADR-503 §2.4).
+   */
+  patterns: Record<string, { evidence: string; at: number; stats: PatternStats }>;
+  /** ADR-503 §2.3: the rotation cursor and the latest re-verifications (which commit, which check, what happened). */
+  reverify: { cursor: number; log: ReverifyLogEntry[] };
 }
+
+export interface ReverifyLogEntry {
+  readonly id: string;
+  readonly check: string | null;
+  readonly commit: string | null;
+  readonly status: 'pass' | 'fail' | 'timeout' | 'error';
+  readonly at: number;
+}
+
+export const MAX_REVERIFY_LOG = 50;
 
 export interface Lesson {
   readonly id: string;
@@ -82,15 +110,24 @@ export interface LessonsFile {
   lessons: Lesson[];
   /** Verified patterns still below the gate, for the cold-start progress line. */
   belowGate: number;
+  /** Patterns at or above the gate that the anomaly gate kept out of the prompt (ADR-503 §2.4). */
+  held: Array<{ id: string; reason: HoldReason }>;
 }
 
 export interface IngestResult {
-  ingested: { verifiedSuccess: number; verifiedFailure: number; unknown: number; rejected: number };
+  /** `tainted`: successes whose taint the project did not allow, counted and never trained (ADR-503 §2.2). */
+  ingested: { verifiedSuccess: number; verifiedFailure: number; unknown: number; rejected: number; tainted: number };
   trained: number;
   skipped: 'no-file' | 'unchanged' | 'too-large' | null;
   lessons: number;
   cautions: number;
   belowGate: number;
+  held: LessonsFile['held'];
+  /**
+   * ADR-503 §2.3: checks run, successes that passed or were downgraded to unknown, and successes left for an explicit
+   * ingest because this caller may not run project code.
+   */
+  reverify: { enabled: boolean; ran: number; passed: number; downgraded: number; deferred: number };
   totals: IngestLedger['totals'];
   sonaAvailable: boolean;
 }
@@ -154,11 +191,14 @@ export function parseRecord(line: string): VerifiedRecord | null {
         .map(s => ({ tool: s.tool, ok: s.ok === true }))
     : [];
 
-  return { id: r.id, task, agent, outcome, verifier, steps, edits: num(r.edits, 10_000), startedAt: num(r.startedAt), endedAt: num(r.endedAt) };
+  const taint = outcome === 'verified-success' ? parseTaint(r.taint) : [];
+  const session = typeof r.session === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(r.session) ? r.session : null;
+
+  return { id: r.id, task, agent, outcome, verifier, steps, edits: num(r.edits, 10_000), taint, session, startedAt: num(r.startedAt), endedAt: num(r.endedAt) };
 }
 
 export function emptyLedger(): IngestLedger {
-  return { version: 1, ids: [], lastMtimeMs: 0, totals: { verifiedSuccess: 0, verifiedFailure: 0, unknown: 0, rejected: 0 }, patterns: {} };
+  return { version: 1, ids: [], lastMtimeMs: 0, totals: { verifiedSuccess: 0, verifiedFailure: 0, unknown: 0, rejected: 0, tainted: 0 }, patterns: {}, reverify: { cursor: 0, log: [] } };
 }
 
 /** A ledger file read back; a corrupt or hostile one starts over (re-ingest is bounded by the mod's 500-line cap). */
@@ -171,14 +211,21 @@ export function readLedger(raw: string | null): IngestLedger {
     const patterns: IngestLedger['patterns'] = {};
     for (const [k, v] of Object.entries(j.patterns && typeof j.patterns === 'object' ? j.patterns : {})) {
       if (k === '__proto__' || typeof k !== 'string' || k.length > 400 || !v || typeof v !== 'object') continue;
-      patterns[k] = { evidence: text((v as { evidence?: unknown }).evidence, 80), at: num((v as { at?: unknown }).at) };
+      patterns[k] = { evidence: text((v as { evidence?: unknown }).evidence, 80), at: num((v as { at?: unknown }).at), stats: parseStats((v as { stats?: unknown }).stats) };
     }
+    const rv = (j.reverify && typeof j.reverify === 'object' ? j.reverify : {}) as { cursor?: unknown; log?: unknown };
+    const STATUS = ['pass', 'fail', 'timeout', 'error'];
+    const log: ReverifyLogEntry[] = (Array.isArray(rv.log) ? rv.log : [])
+      .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object' && typeof (e as { id?: unknown }).id === 'string' && ID.test((e as { id: string }).id) && STATUS.includes((e as { status?: unknown }).status as string))
+      .slice(-MAX_REVERIFY_LOG)
+      .map(e => ({ id: e.id as string, check: typeof e.check === 'string' ? text(e.check, 40) : null, commit: typeof e.commit === 'string' && /^[0-9a-f]{40,64}$/.test(e.commit) ? e.commit : null, status: e.status as ReverifyLogEntry['status'], at: num(e.at) }));
     return {
       version: 1,
       ids: j.ids.filter((id): id is string => typeof id === 'string' && ID.test(id)).slice(-MAX_LEDGER_IDS),
       lastMtimeMs: num(j.lastMtimeMs),
-      totals: { verifiedSuccess: num(t.verifiedSuccess), verifiedFailure: num(t.verifiedFailure), unknown: num(t.unknown), rejected: num(t.rejected) },
+      totals: { verifiedSuccess: num(t.verifiedSuccess), verifiedFailure: num(t.verifiedFailure), unknown: num(t.unknown), rejected: num(t.rejected), tainted: num(t.tainted) },
       patterns,
+      reverify: { cursor: num(rv.cursor, 1_000_000_000), log },
     };
   } catch {
     return emptyLedger();
@@ -201,9 +248,13 @@ const SAFE_KEYWORD = /^[a-z0-9][a-z0-9 _./-]{0,40}$/;
 /** A lesson's citation: a short hash of the SONA pattern key, so the key's own text never reaches a prompt. */
 export const lessonId = (patternKey: string) => `L-${createHash('sha256').update(patternKey).digest('hex').slice(0, 10)}`;
 
-/** Builds the lessons file from SONA's patterns, keeping only the ones verified outcomes trained. */
-export function buildLessons(patterns: ReturnType<SonaLike['exportPatterns']>, verified: IngestLedger['patterns'], now: number): LessonsFile {
+/**
+ * Builds the lessons file from SONA's patterns, keeping only the ones verified outcomes trained. A would-be lesson the
+ * anomaly gate holds (ADR-503 §2.4) is listed under `held` instead: it stays in SONA, never in a prompt.
+ */
+export function buildLessons(patterns: ReturnType<SonaLike['exportPatterns']>, verified: Record<string, { evidence: string; at: number; stats?: PatternStats }>, now: number): LessonsFile {
   const lessons: Lesson[] = [];
+  const held: LessonsFile['held'] = [];
   let belowGate = 0;
   for (const [id, p] of Object.entries(patterns)) {
     const v = verified[id];
@@ -212,11 +263,15 @@ export function buildLessons(patterns: ReturnType<SonaLike['exportPatterns']>, v
     if (keywords.length === 0 || !AGENT.test(p.agent)) continue;
     const base = { id: lessonId(id), agent: p.agent, keywords, confidence: Math.round(p.confidence * 1000) / 1000, successes: p.successCount, failures: p.failureCount, evidence: v.evidence };
     if (p.failureCount >= CAUTION_MIN_FAILURES && p.failureCount > p.successCount) lessons.push({ ...base, kind: 'caution' });
-    else if (p.confidence >= LESSON_GATE) lessons.push({ ...base, kind: 'lesson' });
-    else belowGate++;
+    else if (p.confidence >= LESSON_GATE) {
+      const reason = holdReason(v.stats ?? emptyStats(), p.successCount);
+      if (reason) held.push({ id: base.id, reason });
+      else lessons.push({ ...base, kind: 'lesson' });
+    } else belowGate++;
   }
   lessons.sort((a, b) => b.confidence - a.confidence || b.successes + b.failures - (a.successes + a.failures));
-  return { version: 1, gate: LESSON_GATE, generatedAt: now, lessons: lessons.slice(0, MAX_LESSONS), belowGate };
+  held.sort((a, b) => a.id.localeCompare(b.id));
+  return { version: 1, gate: LESSON_GATE, generatedAt: now, lessons: lessons.slice(0, MAX_LESSONS), belowGate, held: held.slice(0, MAX_LESSONS) };
 }
 
 function writeAtomic(path: string, body: string): void {
@@ -236,6 +291,15 @@ export interface IngestOptions {
   /** SONA to train; defaults to the process's optimizer. Null means unavailable. */
   sona?: SonaLike | null;
   now?: number;
+  /** `learningLoop` settings; defaults to `.claude-flow/config.json` under `root` (ADR-503). */
+  config?: LoopConfig;
+  /**
+   * Whether this caller may run project code to re-verify (ADR-503 §2.3). Only an explicit ingest passes true; a hot
+   * caller (hooks_route) leaves successes un-ingested when re-verify is on, instead of blocking for the timeout.
+   */
+  allowReverify?: boolean;
+  /** Re-verify runner; defaults to the detached-git-worktree runner. Tests inject one. */
+  reverifier?: ReverifyRunner;
 }
 
 /**
@@ -249,11 +313,13 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
   const root = options.root ?? process.cwd();
   const now = options.now ?? Date.now();
   const file = join(root, VERIFIED_PATH);
+  const config = options.config ?? readLoopConfig(root);
+  const reverify = { enabled: config.reverify, ran: 0, passed: 0, downgraded: 0, deferred: 0 };
   if (!options.force && !options.dryRun && options.sona !== null) {
     try {
       const memo = lastIngested.get(root);
       if (memo && memo.mtimeMs === statSync(file).mtimeMs) {
-        return { ingested: { verifiedSuccess: 0, verifiedFailure: 0, unknown: 0, rejected: 0 }, trained: 0, skipped: 'unchanged', lessons: 0, cautions: 0, belowGate: 0, totals: { ...memo.totals }, sonaAvailable: true };
+        return { ingested: { verifiedSuccess: 0, verifiedFailure: 0, unknown: 0, rejected: 0, tainted: 0 }, trained: 0, skipped: 'unchanged', lessons: 0, cautions: 0, belowGate: 0, held: [], reverify, totals: { ...memo.totals }, sonaAvailable: true };
       }
     } catch {
       // no file: the full path below reports it
@@ -261,7 +327,7 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
   }
   const ledgerPath = join(root, LEDGER_PATH);
   const ledger = readLedger(existsSync(ledgerPath) ? readFileSync(ledgerPath, 'utf8') : null);
-  const ingested = { verifiedSuccess: 0, verifiedFailure: 0, unknown: 0, rejected: 0 };
+  const ingested = { verifiedSuccess: 0, verifiedFailure: 0, unknown: 0, rejected: 0, tainted: 0 };
   const done = (skipped: IngestResult['skipped'], sonaAvailable: boolean, lessons?: LessonsFile): IngestResult => ({
     ingested,
     trained: ingested.verifiedSuccess + ingested.verifiedFailure,
@@ -269,6 +335,8 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
     lessons: lessons?.lessons.filter(l => l.kind === 'lesson').length ?? 0,
     cautions: lessons?.lessons.filter(l => l.kind === 'caution').length ?? 0,
     belowGate: lessons?.belowGate ?? 0,
+    held: lessons?.held ?? [],
+    reverify,
     totals: ledger.totals,
     sonaAvailable,
   });
@@ -288,6 +356,10 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
     }
   }
 
+  // ADR-503 §2.3: one re-verify session per ingest; the cursor advances once, so checks rotate across ingests.
+  const runReverify = config.reverify && !options.dryRun && options.allowReverify === true;
+  const session = runReverify ? new ReverifySession(root, ledger.reverify.cursor, config.reverifyTimeoutMs, options.reverifier ?? gitWorktreeRunner) : null;
+
   const seen = new Set(ledger.ids);
   for (const line of readFileSync(file, 'utf8').split('\n')) {
     if (!line.trim()) continue;
@@ -299,18 +371,40 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
     if (seen.has(record.id)) continue;
     // Without SONA nothing verified can train yet: leave it un-ingested for the next call.
     if (record.outcome !== 'unknown' && !sona) continue;
+    const success = record.outcome === 'verified-success';
+    // ADR-503 §2.2: a success with a taint its project did not allow is counted and never trains.
+    const tainted = success && blockedTaints(record.taint, config).length > 0;
+    // ADR-503 §2.3: with re-verify on, a caller that may not run project code leaves a trainable success for later.
+    if (success && !tainted && config.reverify && !options.dryRun && !runReverify) {
+      reverify.deferred++;
+      continue;
+    }
     seen.add(record.id);
     ledger.ids.push(record.id);
     if (record.outcome === 'unknown') {
       ingested.unknown++;
       continue;
     }
+    if (tainted) {
+      ingested.tainted++;
+      continue;
+    }
     if (options.dryRun) {
-      if (record.outcome === 'verified-success') ingested.verifiedSuccess++;
+      if (success) ingested.verifiedSuccess++;
       else ingested.verifiedFailure++;
       continue;
     }
-    const success = record.outcome === 'verified-success';
+    if (success && session) {
+      // Only the record's verifier KIND is used, to pick a different allowlisted check; its text never runs.
+      const { check, outcome } = await session.verify(record.verifier!.kind);
+      ledger.reverify.log.push({ id: record.id, check, commit: outcome.commit, status: outcome.status, at: now });
+      if (outcome.status !== 'pass') {
+        reverify.downgraded++;
+        ingested.unknown++;
+        continue;
+      }
+      reverify.passed++;
+    }
     const result = sona!.processTrajectoryOutcome({
       trajectoryId: record.id,
       task: await redact(record.task),
@@ -320,20 +414,32 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
       duration: record.endedAt > record.startedAt ? record.endedAt - record.startedAt : 0,
       feedback: `verified by ${record.verifier!.kind}: ${record.verifier!.command}`,
     });
-    if (result.learned && result.patternKey) ledger.patterns[result.patternKey] = { evidence: record.verifier!.command, at: now };
+    if (result.learned && result.patternKey) {
+      const entry = ledger.patterns[result.patternKey] ?? { evidence: '', at: now, stats: emptyStats() };
+      entry.evidence = record.verifier!.command;
+      entry.at = now;
+      addOutcome(entry.stats, success, record.taint, record.session);
+      ledger.patterns[result.patternKey] = entry;
+    }
     if (success) ingested.verifiedSuccess++;
     else ingested.verifiedFailure++;
   }
 
   if (options.dryRun) return done(null, !!sona);
 
+  if (session) {
+    reverify.ran = session.ran;
+    if (session.ran > 0) ledger.reverify.cursor = (ledger.reverify.cursor + 1) % 1_000_000_000;
+    ledger.reverify.log = ledger.reverify.log.slice(-MAX_REVERIFY_LOG);
+  }
   ledger.ids = ledger.ids.slice(-MAX_LEDGER_IDS);
-  // Without SONA, verified records stayed un-ingested: keep the mtime stale so the next call retries them.
-  if (sona) {
+  for (const k of Object.keys(ingested) as Array<keyof typeof ingested>) ledger.totals[k] += ingested[k];
+  // Without SONA, or with successes deferred for re-verify, records stayed un-ingested: keep the mtime stale so the
+  // next call retries them.
+  if (sona && reverify.deferred === 0) {
     ledger.lastMtimeMs = st.mtimeMs;
     lastIngested.set(root, { mtimeMs: st.mtimeMs, totals: { ...ledger.totals } });
   }
-  for (const k of Object.keys(ingested) as Array<keyof typeof ingested>) ledger.totals[k] += ingested[k];
   // Keep the verified-pattern map bounded to what SONA still holds.
   const patterns = sona ? sona.exportPatterns() : {};
   if (sona) for (const k of Object.keys(ledger.patterns)) if (!patterns[k]) delete ledger.patterns[k];
@@ -363,7 +469,7 @@ export function learningLoopHealth(root = process.cwd()): { status: 'pass' | 'wa
   const records = lines.map(parseRecord).filter((r): r is VerifiedRecord => r !== null);
   const waiting = records.filter(r => !seen.has(r.id) && r.outcome !== 'unknown').length;
   const verified = records.filter(r => r.outcome !== 'unknown').length;
-  const summary = `${records.length} turn(s) recorded, ${verified} verified; trained so far ${ledger.totals.verifiedSuccess} success / ${ledger.totals.verifiedFailure} failure, ${ledger.totals.unknown} unknown (never trained)`;
+  const summary = `${records.length} turn(s) recorded, ${verified} verified; trained so far ${ledger.totals.verifiedSuccess} success / ${ledger.totals.verifiedFailure} failure, ${ledger.totals.unknown} unknown, ${ledger.totals.tainted} tainted (never trained)`;
   if (waiting > 0) {
     return { status: 'warn', message: `${summary}; ${waiting} verified outcome(s) not yet ingested`, fix: 'ruflo hooks verified-ingest (or any hooks_route / hooks_session-end call ingests them)' };
   }

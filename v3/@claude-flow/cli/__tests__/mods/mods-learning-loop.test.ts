@@ -264,14 +264,15 @@ describe('CLI ingest (#4581): only verified records train', () => {
   };
 
   it('trains verified records once, counts unknown, rejects malformed and inconsistent ones', async () => {
-    seed([rec('vt-1', 'verified-success'), rec('vt-2', 'verified-failure'), rec('vt-3', 'unknown'), 'nope', rec('vt-4', 'verified-success', { verifier: null }), rec('vt-5', 'verified-success', { verifier: { kind: 'test', command: 'npm test', passed: false } }), rec('vt-6', 'verified-success', { extra: 'x', v: 2 })]);
+    // Two sessions, so the ADR-503 one-session hold does not apply to the lesson below.
+    seed([rec('vt-1', 'verified-success', { session: 's-a' }), rec('vt-2', 'verified-failure'), rec('vt-3', 'unknown'), 'nope', rec('vt-4', 'verified-success', { verifier: null }), rec('vt-5', 'verified-success', { verifier: { kind: 'test', command: 'npm test', passed: false } }), rec('vt-6', 'verified-success', { extra: 'x', v: 2 }), rec('vt-7', 'verified-success', { session: 's-b' })]);
     const { sona, calls } = fakeSona();
     const first = await ingestVerifiedOutcomes({ root: dir, sona, force: true });
-    expect(first.ingested).toEqual({ verifiedSuccess: 1, verifiedFailure: 1, unknown: 1, rejected: 4 });
-    expect(calls.map((c) => [c.success, c.agent])).toEqual([[true, 'coder'], [false, 'coder']]); // backend-dev is not a SONA role
+    expect(first.ingested).toEqual({ verifiedSuccess: 2, verifiedFailure: 1, unknown: 1, rejected: 4, tainted: 0 });
+    expect(calls.map((c) => [c.success, c.agent])).toEqual([[true, 'coder'], [false, 'coder'], [true, 'coder']]); // backend-dev is not a SONA role
     const again = await ingestVerifiedOutcomes({ root: dir, sona, force: true });
     expect(again.trained).toBe(0);
-    expect(calls).toHaveLength(2);
+    expect(calls).toHaveLength(3);
     const lessons = JSON.parse(readFileSync(join(dir, '.claude-flow/data/learned-lessons.json'), 'utf8'));
     expect(lessons.lessons).toEqual([expect.objectContaining({ id: lessonId('coder:k'), kind: 'lesson', evidence: 'npm test' })]);
     expect(learningLoopHealth(dir).status).toBe('pass');
@@ -310,7 +311,8 @@ describe('CLI ingest (#4581): only verified records train', () => {
       'coder:c': { keywords: ['c'], agent: 'coder', confidence: 0.55, successCount: 1, failureCount: 0 },
       'coder:unverified': { keywords: ['u'], agent: 'coder', confidence: 0.95, successCount: 9, failureCount: 0 },
     };
-    const v = { 'coder:a': { evidence: 'npm test', at: 1 }, 'coder:b': { evidence: 'cargo test', at: 1 }, 'coder:c': { evidence: 'npm test', at: 1 } };
+    const stats = (successes: number, failures: number) => ({ successes, failures, tainted: 0, narrowed: 0, sessions: ['s-a', 's-b'] });
+    const v = { 'coder:a': { evidence: 'npm test', at: 1, stats: stats(3, 0) }, 'coder:b': { evidence: 'cargo test', at: 1, stats: stats(0, 3) }, 'coder:c': { evidence: 'npm test', at: 1, stats: stats(1, 0) } };
     const out = buildLessons(patterns, v, 1);
     expect(out.lessons.map((l) => [l.id, l.kind])).toEqual([[lessonId('coder:a'), 'lesson'], [lessonId('coder:b'), 'caution']]);
     expect(out.belowGate).toBe(1);
@@ -321,12 +323,14 @@ describe('end to end: mod record → CLI ingest with real SONA → lesson in the
   let dir: string;
   afterEach(() => dir && rmSync(dir, { recursive: true, force: true }));
 
-  it('three verified passes on the same kind of task cross the 0.6 gate and come back as a cited lesson', async () => {
+  it('three verified passes on the same kind of task, over two sessions, cross the 0.6 gate and come back as a cited lesson', async () => {
     dir = mkdtempSync(join(tmpdir(), 'vo-e2e-4581-'));
     mkdirSync(join(dir, '.claude-flow', 'data'), { recursive: true });
     const world = realWorld(dir);
-    const mod = await boot(world);
+    let mod = await boot(world);
     for (const text of ['implement the tokenizer parser module', 'implement the tokenizer parser module tests', 'implement the tokenizer parser module again']) {
+      // ADR-503 §2.4: successes from one session only are held back, so the last pass comes from a second session.
+      if (text.endsWith('again')) mod = await boot(world);
       await ask(mod, text);
       await mod.dispatch('tool.call', { tool: 'Edit', file_path: 'src/a.ts' }, () => ({ result: 'ok' }));
       await mod.dispatch('tool.call', { tool: 'Bash', command: 'npm test' }, () => ({ result: { stdout: 'ok', stderr: '', interrupted: false } }));

@@ -8,6 +8,7 @@
  */
 
 import { scan } from '../guidance/screen'
+import { isTestPath, isVerifierConfig, type Taint } from './taint'
 import type { Verifier, VerifierKind } from './verifier'
 
 export const VERIFIED_PATH = '.claude-flow/data/verified-trajectories.jsonl'
@@ -22,19 +23,24 @@ export const MAX_PENDING = 50
 
 export type Outcome = 'verified-success' | 'verified-failure' | 'unknown'
 
-export type Run = { readonly kind: VerifierKind; readonly command: string; readonly passed: boolean; readonly seq: number }
+export type Run = { readonly kind: VerifierKind; readonly command: string; readonly passed: boolean; readonly seq: number; readonly narrowed: boolean }
 
 export type Trajectory = {
   readonly id: string
   readonly task: string
   readonly agent: string
   readonly startedAt: number
+  /** The mod process that recorded it (ADR-503 §2.4: a lesson needs successes from more than one session). */
+  readonly session: string
   steps: { tool: string; ok: boolean }[]
   /** Sequence number of the last edit that ran (0: none). */
   lastEdit: number
   edits: number
   runs: Run[]
   seq: number
+  /** Whether a successful edit in the turn touched a test file / a file that changes what a verifier checks (ADR-503 §2.1). */
+  editedTests: boolean
+  editedConfig: boolean
 }
 
 /** Tools whose successful call changes the project. */
@@ -57,19 +63,41 @@ export function taskText(prompt: string): string {
   return scan(flat).secrets.length > 0 ? '[redacted]' : flat
 }
 
-export function start(id: string, prompt: string, agent: string, now: number): Trajectory {
-  return { id, task: taskText(prompt), agent: /^[a-z][a-z0-9-]{0,40}$/.test(agent) ? agent : 'coder', startedAt: now, steps: [], lastEdit: 0, edits: 0, runs: [], seq: 0 }
+const SESSION = /^[A-Za-z0-9_-]{1,40}$/
+
+export function start(id: string, prompt: string, agent: string, now: number, session = ''): Trajectory {
+  return {
+    id,
+    task: taskText(prompt),
+    agent: /^[a-z][a-z0-9-]{0,40}$/.test(agent) ? agent : 'coder',
+    startedAt: now,
+    session: SESSION.test(session) ? session : '',
+    steps: [],
+    lastEdit: 0,
+    edits: 0,
+    runs: [],
+    seq: 0,
+    editedTests: false,
+    editedConfig: false,
+  }
 }
 
-/** Records one finished tool call; `verifier` and `passed` only for a verifier run with a status. */
-export function step(t: Trajectory, tool: string, ok: boolean, verifier: Verifier | null, passed: boolean | null): void {
+/**
+ * Records one finished tool call; `verifier` and `passed` only for a verifier run with a status, `path` only for an
+ * edit (project-relative; only its class is kept, never the path).
+ */
+export function step(t: Trajectory, tool: string, ok: boolean, verifier: Verifier | null, passed: boolean | null, path?: string): void {
   t.seq++
   if (t.steps.length < MAX_STEPS && TOOL.test(tool)) t.steps.push({ tool, ok })
   if (EDIT_TOOLS.has(tool) && ok) {
     t.lastEdit = t.seq
     t.edits++
+    if (typeof path === 'string' && path.length > 0 && path.length <= 4096) {
+      if (isTestPath(path)) t.editedTests = true
+      if (isVerifierConfig(path)) t.editedConfig = true
+    }
   }
-  if (verifier && passed !== null) t.runs.push({ kind: verifier.kind, command: verifier.command, passed, seq: t.seq })
+  if (verifier && passed !== null) t.runs.push({ kind: verifier.kind, command: verifier.command, passed, seq: t.seq, narrowed: verifier.narrowed === true })
 }
 
 /**
@@ -84,6 +112,19 @@ export function decide(t: Trajectory, aborted: boolean): { outcome: Outcome; run
   return failed ? { outcome: 'verified-failure', run: failed } : { outcome: 'verified-success', run: after[after.length - 1]! }
 }
 
+/**
+ * The taints a `verified-success` carries (ADR-503 §2.1): what the turn did to its own check. Any other outcome
+ * carries none, and a taint never changes the outcome.
+ */
+export function taints(t: Trajectory, outcome: Outcome, run: Run | null): Taint[] {
+  if (outcome !== 'verified-success') return []
+  const out: Taint[] = []
+  if (t.editedTests) out.push('edited-tests')
+  if (t.editedConfig) out.push('edited-verifier-config')
+  if (run?.narrowed) out.push('narrowed-verifier')
+  return out
+}
+
 /** The JSONL line the CLI ingest reads (`parseRecord` in cli/src/memory/verified-outcomes.ts). */
 export function line(t: Trajectory, aborted: boolean, now: number): string {
   const { outcome, run } = decide(t, aborted)
@@ -96,6 +137,8 @@ export function line(t: Trajectory, aborted: boolean, now: number): string {
     verifier: run ? { kind: run.kind, command: run.command, passed: run.passed } : null,
     steps: t.steps,
     edits: t.edits,
+    taint: taints(t, outcome, run),
+    ...(t.session ? { session: t.session } : {}),
     startedAt: t.startedAt,
     endedAt: now,
   })

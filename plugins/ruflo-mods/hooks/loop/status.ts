@@ -17,9 +17,11 @@ export type LoopState = {
   /** Records dropped because the file could not be written and the queue was full. */
   dropped: number
   counter: number
+  /** This mod process's token, written on every record (ADR-503 §2.4 counts a lesson's independent sessions). */
+  session: string
 }
 
-export const loopState = (): LoopState => ({ enabled: false, pending: [], recorded: { success: 0, failure: 0, unknown: 0 }, lessonsShown: 0, belowGate: 0, dropped: 0, counter: 0 })
+export const loopState = (): LoopState => ({ enabled: false, pending: [], recorded: { success: 0, failure: 0, unknown: 0 }, lessonsShown: 0, belowGate: 0, dropped: 0, counter: 0, session: `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}` })
 
 /** The status-line part: verified passes, failures, unverified turns. */
 export function loopSegment(s: LoopState): string | undefined {
