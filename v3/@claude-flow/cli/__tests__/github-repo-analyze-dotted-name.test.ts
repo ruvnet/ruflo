@@ -69,3 +69,17 @@ describe('github_repo_analyze owner/repo from the origin remote', () => {
     expect(r.repository).toBe('acme/widgets');
   });
 });
+
+describe('github_repo_analyze never echoes credentials from the origin remote', () => {
+  it.each([
+    ['https://x-access-token:ghp_SECRET@github.com/ruvnet/ruflo.git', 'https://github.com/ruvnet/ruflo.git'],
+    ['https://oauth2:p@ss@gitlab.com/acme/next.js.git', 'https://gitlab.com/acme/next.js.git'],
+    ['ssh://git@github.com/ruvnet/ruflo.git', 'ssh://github.com/ruvnet/ruflo.git'],
+    ['git@github.com:ruvnet/ruflo.git', 'git@github.com:ruvnet/ruflo.git'],
+  ])('%s is reported as %s', async (remoteUrl, expected) => {
+    gitWithRemote(remoteUrl);
+    const r = await analyze();
+    expect(r.remoteUrl).toBe(expected);
+    expect(JSON.stringify(r)).not.toMatch(/SECRET|p@ss/);
+  });
+});

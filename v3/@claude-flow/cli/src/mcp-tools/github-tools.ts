@@ -142,6 +142,15 @@ function sanitizeLabels(value: unknown): string[] | null {
   return out;
 }
 
+/**
+ * Drop userinfo from a URL-form remote (`https://user:token@host/o/r`) so a
+ * credential embedded in the origin URL never reaches tool output. scp-form
+ * remotes (`git@host:o/r`) carry no secret and are returned unchanged.
+ */
+export function redactRemoteUrl(url: string): string {
+  return url.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^/]*@/i, '$1');
+}
+
 /** Check if gh CLI is available */
 function hasGhCli(): boolean {
   return run('gh --version') !== null;
@@ -219,7 +228,7 @@ export const githubTools: MCPTool[] = [
           repository: repoKey,
           branch: repoInfo.branch,
           metrics: repoInfo.metrics,
-          remoteUrl: remoteUrl || null,
+          remoteUrl: remoteUrl ? redactRemoteUrl(remoteUrl) : null,
           lastAnalyzed: repoInfo.lastAnalyzed,
         };
       }
