@@ -26,6 +26,8 @@ export function scanBeforeInstall(
   plugins: readonly ModPlugin[],
   acceptRisk: ReadonlySet<string>,
   fs: ReadFs = nodeReadFs,
+  /** Lines already printed / overrides already recorded by an earlier scan in the same run (scanned before enabling, then again after the clone refresh). */
+  seen: Set<string> = new Set(),
 ): { blocked: Map<string, string> } {
   const blocked = new Map<string, string>();
   if (!clone) return { blocked };
@@ -41,6 +43,8 @@ export function scanBeforeInstall(
   const gate = gateScan(findings, accept);
   for (const f of findings) {
     const line = formatScanFinding(f);
+    if (seen.has(line)) continue;
+    seen.add(line);
     if (f.severity === 'high') output.writeln(`${output.error('✗')} scan ${line}`);
     else output.writeln(output.dim(`  scan ${line}`));
   }
@@ -50,12 +54,14 @@ export function scanBeforeInstall(
     blocked.set(id, `not installed: high scan finding in ${first.file} (${first.rule}); review it, then re-run with --accept-risk ${name}`);
   }
   const at = new Date().toISOString();
-  recordAcceptedRisk(root, gate.accepted.map((plugin) => ({
+  const accepted = gate.accepted.filter((plugin) => !seen.has(`accepted:${plugin}`));
+  for (const plugin of accepted) seen.add(`accepted:${plugin}`);
+  recordAcceptedRisk(root, accepted.map((plugin) => ({
     plugin,
     at,
     findings: gate.findings.filter((f) => f.plugin === plugin && f.severity === 'high').map(formatScanFinding),
   })));
-  for (const plugin of gate.accepted) output.printWarning(`--accept-risk ${plugin}: installing past its high scan finding(s); recorded in .claude-flow/mods/install.json`);
+  for (const plugin of accepted) output.printWarning(`--accept-risk ${plugin}: installing past its high scan finding(s); recorded in .claude-flow/mods/install.json`);
   return { blocked };
 }
 

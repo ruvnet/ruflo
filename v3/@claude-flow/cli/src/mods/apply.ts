@@ -10,11 +10,15 @@ import { homedir } from 'node:os';
 
 import { output } from '../output.js';
 import {
+  disableBlockedPlugins,
   installMod,
   MARKETPLACE_NAME,
   MARKETPLACE_SOURCE,
+  MOD_PLUGIN_IDS,
   MOD_PLUGINS,
   readRecord,
+  readSettingsFile,
+  settingsFileFor,
   recordClaudeInstalled,
   scopeOfSettingsFile,
   uninstallMod,
@@ -114,14 +118,37 @@ function noteRewrite(file: string, before: string | undefined): void {
   }
 }
 
+/** The marketplace the settings file already declares, else the requested one. */
+function declaredMarketplace(root: string, scope: Scope, requested: MarketplaceEntry): MarketplaceEntry {
+  try {
+    const markets = readSettingsFile(settingsFileFor(root, scope)).extraKnownMarketplaces as Record<string, MarketplaceEntry> | undefined;
+    return markets?.[MARKETPLACE_NAME] ?? requested;
+  } catch {
+    return requested;
+  }
+}
+
 export async function applyMods(root: string, opts: ApplyOptions): Promise<ApplyResult> {
-  const install = installMod(root, opts.scope, opts.dryRun === true, undefined, opts.marketplace ?? MARKETPLACE_SOURCE);
   const configDir = claudeConfigDir(process.env, homedir());
+  const acceptRisk = new Set(opts.acceptRisk ?? []);
+  const seen = new Set<string>();
+  const blocked = new Map<string, string>();
+  // ADR-509 §2.2: Claude Code loads an enabled plugin straight from the
+  // marketplace clone, install or not. So where a clone already exists, scan it
+  // BEFORE enabling anything from it, and never enable what the scan blocks.
+  const preClone = opts.dryRun ? null : marketplaceState(configDir).location;
+  const scannable = declaredMarketplace(root, opts.scope, opts.marketplace ?? MARKETPLACE_SOURCE).source.source !== 'directory';
+  if (preClone && scannable) {
+    for (const [id, why] of scanBeforeInstall(root, preClone, MOD_PLUGINS, acceptRisk, undefined, seen).blocked) blocked.set(id, why);
+  }
+  const install = installMod(root, opts.scope, opts.dryRun === true, MOD_PLUGIN_IDS.filter((id) => !blocked.has(id)), opts.marketplace ?? MARKETPLACE_SOURCE);
+  // A blocked plugin enabled by an earlier run (or by hand) is turned off too.
+  turnOff(root, install, blocked);
   const lines = describeAdded(install.added);
   // Only what is enabled in the file: `claude plugin install` would flip a
   // plugin someone set to false back to true.
   const enabled = (install.next.enabledPlugins ?? {}) as Record<string, unknown>;
-  const plugins: ModPlugin[] = MOD_PLUGINS.filter((p) => enabled[p.id] === true);
+  const plugins: ModPlugin[] = MOD_PLUGINS.filter((p) => enabled[p.id] === true && !blocked.has(p.id));
   // The marketplace the file declares wins: a person's own declaration is kept and used.
   const declared = (install.next.extraKnownMarketplaces as Record<string, MarketplaceEntry> | undefined)?.[MARKETPLACE_NAME] ?? MARKETPLACE_SOURCE;
   const market = marketplaceState(configDir);
@@ -155,15 +182,24 @@ export async function applyMods(root: string, opts: ApplyOptions): Promise<Apply
     output.writeln('Run these to make the plugins loadable:');
     for (const line of repairCommands(root, opts.scope, k, plugins, declared)) output.writeln(`  ${line}`);
   };
-  if (opts.pluginInstall === false) return { install, resolvable: true, skipped: '--no-plugin-install' };
+  // The `claude` step may not run below: say what is enabled without a scan.
+  const unscanned = () => {
+    if (!preClone && scannable && plugins.length) output.printWarning(`No ruflo marketplace clone yet, so nothing was scanned (ADR-509): ${plugins.map((p) => p.id).join(', ')} enabled unscanned; Claude Code clones it on the first trusted start. Run ruflo mods install again after that to scan it.`);
+  };
+  if (opts.pluginInstall === false) {
+    unscanned();
+    return { install, resolvable: blocked.size === 0, skipped: '--no-plugin-install' };
+  }
   if (opts.skipInTestEnv && (process.env.VITEST || process.env.CI)) {
     output.writeln(output.dim(`claude plugin step skipped (${process.env.VITEST ? 'VITEST' : 'CI'} set).`));
+    unscanned();
     manual();
     return { install, resolvable: false, skipped: 'test or CI environment' };
   }
   const claude = findClaudeBinary(process.env, homedir());
   if (!claude) {
     output.printWarning('No runnable claude binary on PATH: the plugins are enabled in settings, not installed.');
+    unscanned();
     manual();
     return { install, resolvable: false, skipped: 'no claude on PATH' };
   }
@@ -174,13 +210,18 @@ export async function applyMods(root: string, opts: ApplyOptions): Promise<Apply
   // Never claim (and so never uninstall) a plugin that was installed before, or one ruflo did not enable.
   const before = new Set(plugins.filter((p) => installedState(root, configDir, p.id).installed).map((p) => p.id));
   const textBefore = readText(install.settingsFile);
-  const acceptRisk = new Set(opts.acceptRisk ?? []);
   const repair = await repairPluginInstall({
     projectRoot: root, scope: opts.scope, configDir, claude, plugins, marketplace: declared, exec: opts.exec,
     // ADR-509 §2.2: scan the refreshed clone before any install (a directory marketplace has no install step to gate).
-    beforeInstall: (clone) => scanBeforeInstall(root, clone, plugins, acceptRisk),
+    beforeInstall: (clone) => {
+      const gate = scanBeforeInstall(root, clone, plugins, acceptRisk, undefined, seen);
+      for (const [id, why] of gate.blocked) blocked.set(id, why);
+      return gate;
+    },
   });
   printSteps(repair.steps);
+  // The refresh may have brought a finding the first scan did not see: that plugin is turned off as well.
+  turnOff(root, install, blocked);
   // ADR-509 §2.1: verify what Claude Code will load and leave the result for the mod's trust gate.
   verifyAndRecord(configDir, marketplaceState(configDir).location, plugins.map((p) => p.id.split('@')[0]!));
   if (declared.source.source === 'directory' && repair.ok) output.writeln(output.dim(`Directory marketplace: plugins load live from ${declared.source.path} (no clone, no install).`));
@@ -192,12 +233,21 @@ export async function applyMods(root: string, opts: ApplyOptions): Promise<Apply
   recordClaudeInstalled(root, install.settingsFile, ours);
   noteRewrite(install.settingsFile, textBefore);
 
-  const failed = resolveFindings(root, opts.scope, configDir, undefined, plugins.map((p) => p.id), declared).filter((f) => f.status === 'fail');
-  if (repair.ok && failed.length === 0) return { install, resolvable: true };
+  const failed = resolveFindings(root, opts.scope, configDir, undefined, plugins.filter((p) => !blocked.has(p.id)).map((p) => p.id), declared).filter((f) => f.status === 'fail');
+  if (repair.ok && failed.length === 0 && blocked.size === 0) return { install, resolvable: true };
   for (const f of failed) output.writeln(`${output.error('✗')} ${f.name}: ${f.message}`);
   const now = marketplaceState(configDir);
   manual(now.known && sameSource(now.source, declared.source));
   return { install, resolvable: false };
+}
+
+/** ADR-509 §2.2: turn off (enabledPlugins + install record) each blocked plugin, and say so. */
+function turnOff(root: string, install: InstallResult, blocked: ReadonlyMap<string, string>): void {
+  if (install.dryRun || blocked.size === 0) return;
+  const off = disableBlockedPlugins(root, install.settingsFile, [...blocked.keys()]);
+  for (const [id, why] of blocked) {
+    output.writeln(`${output.error('✗')} ${id}: ${off.includes(id) ? `enabledPlugins["${id}"] removed from ${install.settingsFile}` : 'not enabled'}; ${why}`);
+  }
 }
 
 /**

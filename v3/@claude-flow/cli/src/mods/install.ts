@@ -250,6 +250,31 @@ export function recordClaudeInstalled(projectRoot: string, settingsFile: string,
   writeJson(join(resolve(projectRoot), INSTALL_RECORD), record);
 }
 
+/**
+ * ADR-509 §2.2: a plugin whose scan blocked it must not stay enabled — Claude
+ * Code loads an enabled plugin straight from the marketplace clone, with or
+ * without an install. Removes `enabledPlugins[id]` (only when it is `true`: a
+ * `false` someone set is already off) and drops the id from what the record
+ * says ruflo added. Returns the ids it turned off.
+ */
+export function disableBlockedPlugins(projectRoot: string, settingsFile: string, ids: readonly string[]): string[] {
+  if (ids.length === 0 || !existsSync(settingsFile)) return [];
+  const settings = readSettingsFile(settingsFile);
+  const enabled = isRecord(settings.enabledPlugins) ? { ...settings.enabledPlugins } : {};
+  const off = ids.filter((id) => enabled[id] === true);
+  if (off.length) {
+    for (const id of off) delete enabled[id];
+    writeJson(settingsFile, { ...settings, enabledPlugins: enabled });
+  }
+  const record = readRecord(projectRoot);
+  const entry = record?.files[settingsFile];
+  if (record && entry && entry.plugins.some((p) => ids.includes(p))) {
+    entry.plugins = entry.plugins.filter((p) => !ids.includes(p));
+    writeJson(join(resolve(projectRoot), INSTALL_RECORD), record);
+  }
+  return off;
+}
+
 /** The scope a recorded settings file was written at. */
 export function scopeOfSettingsFile(file: string): Scope {
   return file.endsWith('settings.local.json') ? 'local' : 'project';
