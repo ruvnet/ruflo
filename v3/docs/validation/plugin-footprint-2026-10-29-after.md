@@ -1,6 +1,6 @@
 # Plugin footprint (after), 2026-10-29
 
-Measured by `node scripts/measure-plugin-footprint.mjs` (ADR-507 §2.1) at `125e35233`.
+Measured by `node scripts/measure-plugin-footprint.mjs` (ADR-507 §2.1) at `921a9ca33`.
 
 The listing is what Claude Code keeps in context on every turn: the name and description of each skill, command and agent the model can invoke. A skill or command with `disable-model-invocation: true` stays runnable as `/<name>` but leaves that listing, so it is not counted. Tokens are estimated as characters ÷ 4.
 

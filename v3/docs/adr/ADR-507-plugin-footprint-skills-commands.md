@@ -91,7 +91,7 @@ Kept model-invoked on purpose:
 
 Three places that told the model to use a skill on this list were updated:
 - `ruflo-ruvector/commands/vector.md` now asks the user to run `/ruflo-ruvector:vector-setup`.
-- The `cost-analyst` agent runs the `/ruflo-cost` script when the user asked for a report.
+- The `cost-analyst` agent now points the user at the matching `/ruflo-cost` subcommand.
 - The `metaharness-architect` agent names the `/ruflo-metaharness:<skill>` to run.
 
 Each plugin README has a "User-invoked skills (ADR-507)" table. The choosing rule is in `plugins/README.md`. Commands were left alone: no command was moved to user-invoked.

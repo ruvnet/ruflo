@@ -44,7 +44,7 @@ Model pricing per 1M tokens (Haiku/Sonnet/Opus × Input/Output/Cache-Write/Cache
 | `cost-booster-edit` | Apply a Tier 1 transform via `agent-booster.apply()` | When a transform is already classified as Tier 1 |
 | `cost-compact-context` | Wrap `getTokenOptimizer().getCompactContext()` | Retrieval-augmented prompt compression |
 
-The report skills (`cost-report`, `cost-conversation`, `cost-summary`, `cost-trend`, `cost-projection`, `cost-counterfactual`, `cost-burn`, `cost-anomaly`, `cost-health`, `cost-diff`, `cost-session`, `cost-export`, `cost-federation`, `cost-benchmark`) are user-invoked (ADR-507): the Skill tool refuses them. When the user has asked for one of these reports, run the script its `/ruflo-cost` subcommand lists (for example `node plugins/ruflo-cost-tracker/scripts/anomaly.mjs` for `cost anomaly`); otherwise tell the user which `/ruflo-cost` subcommand gives it.
+The report skills (`cost-report`, `cost-conversation`, `cost-summary`, `cost-trend`, `cost-projection`, `cost-counterfactual`, `cost-burn`, `cost-anomaly`, `cost-health`, `cost-diff`, `cost-session`, `cost-export`, `cost-federation`, `cost-benchmark`) are user-invoked (ADR-507): the Skill tool refuses them. Tell the user which `/ruflo-cost` subcommand gives the report (for example `/ruflo-cost anomaly`) rather than producing it yourself.
 
 `cost track` populates the namespace; everything else consumes it. Run `cost-track` first or other skills will operate on empty data.
 
