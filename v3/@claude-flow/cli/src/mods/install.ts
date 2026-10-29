@@ -61,11 +61,21 @@ export interface Added {
   claudeInstalled?: string[];
 }
 
+/** ADR-509 §2.2: an install that went ahead past a high scan finding because of --accept-risk <plugin>. */
+export interface AcceptedRisk {
+  plugin: string;
+  at: string;
+  /** The high findings accepted, as printed (`[high] plugin: file (rule) detail`). */
+  findings: string[];
+}
+
 export interface InstallRecord {
   version: 2;
   installedAt: string;
   /** What install added, per settings file it wrote. */
   files: Record<string, Added>;
+  /** ADR-509 §2.2: every --accept-risk override, newest last. */
+  acceptedRisk?: AcceptedRisk[];
 }
 
 type Settings = Record<string, unknown> & {
@@ -208,7 +218,10 @@ export function readRecord(projectRoot: string): InstallRecord | null {
         const strings = (v: unknown) => (Array.isArray(v) ? v.filter((p): p is string => typeof p === 'string') : []);
         files[file] = { plugins: strings(a.plugins), marketplace: a.marketplace === true, env: a.env === true, claudeInstalled: strings(a.claudeInstalled) };
       }
-      return { version: 2, installedAt: String(parsed.installedAt ?? ''), files };
+      const accepted = Array.isArray(parsed.acceptedRisk)
+        ? parsed.acceptedRisk.filter(isRecord).map((r) => ({ plugin: String(r.plugin ?? ''), at: String(r.at ?? ''), findings: Array.isArray(r.findings) ? r.findings.map(String) : [] }))
+        : undefined;
+      return { version: 2, installedAt: String(parsed.installedAt ?? ''), files, ...(accepted?.length ? { acceptedRisk: accepted } : {}) };
     }
     if (parsed.version === 1 && typeof parsed.settingsFile === 'string' && isRecord(parsed.added)) {
       const a = parsed.added;
@@ -218,6 +231,14 @@ export function readRecord(projectRoot: string): InstallRecord | null {
   } catch {
     return null;
   }
+}
+
+/** ADR-509 §2.2: record an --accept-risk override in .claude-flow/mods/install.json. */
+export function recordAcceptedRisk(projectRoot: string, entries: readonly AcceptedRisk[]): void {
+  if (entries.length === 0) return;
+  const record = readRecord(projectRoot) ?? { version: 2 as const, installedAt: new Date().toISOString(), files: {} };
+  record.acceptedRisk = [...(record.acceptedRisk ?? []), ...entries];
+  writeJson(join(resolve(projectRoot), INSTALL_RECORD), record);
 }
 
 /** Note plugins ruflo installed with `claude plugin install` for one settings file. */

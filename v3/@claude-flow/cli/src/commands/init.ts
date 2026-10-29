@@ -25,6 +25,38 @@ import {
   shouldOfferEnrollment,
 } from '../funnel/enrollment.js';
 import { commandExists } from '../services/harness-hosts.js';
+import { riskyModeFromFlags } from '../init/risky-settings-gate.js';
+
+const RISKY_FLAG_OPTIONS = [
+  {
+    // ADR-509 §2.3
+    name: 'keep-risky-settings',
+    description: 'Carry forward project auto-approve keys found in .claude/settings.json (enableAllProjectMcpServers, enabledMcpjsonServers, bypassPermissions, blanket Bash allows, non-ruflo hooks) instead of stopping',
+    type: 'boolean' as const,
+    default: false,
+  },
+  {
+    name: 'drop-risky-settings',
+    description: 'Write the merged .claude/settings.json without those auto-approve keys instead of stopping',
+    type: 'boolean' as const,
+    default: false,
+  },
+];
+
+/** ADR-509 §2.3 — print the keys init stopped on (or kept/dropped). Returns the exit result when it stopped. */
+function reportRiskySettings(result: { riskySettings?: string[]; stoppedOnRiskySettings?: boolean }, mode: string): CommandResult | null {
+  if (!result.riskySettings?.length) return null;
+  const head = result.stoppedOnRiskySettings
+    ? 'Stopped: .claude/settings.json carries project auto-approve keys that would be carried forward:'
+    : mode === 'drop'
+      ? 'Dropped these project auto-approve keys from .claude/settings.json:'
+      : 'Kept these project auto-approve keys in .claude/settings.json (--keep-risky-settings):';
+  (result.stoppedOnRiskySettings ? output.printError : output.printWarning).call(output, head);
+  for (const line of result.riskySettings) output.printInfo(`  • ${line}`);
+  if (!result.stoppedOnRiskySettings) return null;
+  output.printInfo('Nothing was written. Re-run with --drop-risky-settings to write the merged settings without these keys, or --keep-risky-settings to keep them.');
+  return { success: false, exitCode: 1, message: 'Stopped on risky project settings', data: { riskySettings: result.riskySettings } };
+}
 
 /**
  * ADR-302 post-init capability enrollment. One-time, interactive-TTY-only,
@@ -773,6 +805,13 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     options.skipGlobalClaudeMd = true;
   }
 
+  const riskyMode = riskyModeFromFlags(ctx.flags);
+  if (typeof riskyMode === 'object') {
+    output.printError(riskyMode.error);
+    return { success: false, exitCode: 1 };
+  }
+  options.riskySettings = riskyMode;
+
   // Create spinner
   const spinner = output.createSpinner({ text: 'Initializing...' });
   spinner.start();
@@ -781,6 +820,10 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     // Execute initialization
     const result = await executeInit(options);
 
+    if (result.stoppedOnRiskySettings) {
+      spinner.fail('Initialization stopped');
+      return reportRiskySettings(result, riskyMode)!;
+    }
     if (!result.success) {
       spinner.fail('Initialization failed');
       for (const error of result.errors) {
@@ -790,6 +833,7 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     }
 
     spinner.succeed('RuFlo V3 initialized successfully!');
+    reportRiskySettings(result, riskyMode);
     output.writeln();
 
     // Display summary
@@ -1287,8 +1331,14 @@ const wizardCommand: Command = {
       const spinner = output.createSpinner({ text: 'Initializing...' });
       spinner.start();
 
+      const wizardRisky = riskyModeFromFlags(ctx.flags);
+      options.riskySettings = typeof wizardRisky === 'object' ? 'stop' : wizardRisky;
       const result = await executeInit(options);
 
+      if (result.stoppedOnRiskySettings) {
+        spinner.fail('Setup stopped');
+        return reportRiskySettings(result, options.riskySettings)!;
+      }
       if (!result.success) {
         spinner.fail('Initialization failed');
         for (const error of result.errors) {
@@ -1509,6 +1559,7 @@ const hooksCommand: Command = {
   description: 'Initialize only hooks configuration',
   options: [
     { name: 'all', description: 'Enable all hooks', type: 'boolean', default: true },
+    ...RISKY_FLAG_OPTIONS,
     { name: 'minimal', description: 'Enable only essential hooks', type: 'boolean', default: false },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
@@ -1552,10 +1603,20 @@ const hooksCommand: Command = {
         : DEFAULT_INIT_OPTIONS.hooks,
     };
 
+    const hooksRisky = riskyModeFromFlags(ctx.flags);
+    if (typeof hooksRisky === 'object') {
+      output.printError(hooksRisky.error);
+      return { success: false, exitCode: 1 };
+    }
+    options.riskySettings = hooksRisky;
     const spinner = output.createSpinner({ text: 'Creating hooks configuration...' });
     spinner.start();
 
     const result = await executeInit(options);
+    if (result.stoppedOnRiskySettings) {
+      spinner.fail('Hooks configuration stopped');
+      return reportRiskySettings(result, hooksRisky)!;
+    }
 
     if (result.success) {
       spinner.succeed(`Created settings.json with ${result.summary.hooksEnabled} hooks enabled`);
@@ -1617,8 +1678,14 @@ const upgradeCommand: Command = {
       type: 'boolean',
       default: true,
     },
+    ...RISKY_FLAG_OPTIONS,
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
+    const upgradeRisky = riskyModeFromFlags(ctx.flags);
+    if (typeof upgradeRisky === 'object') {
+      output.printError(upgradeRisky.error);
+      return { success: false, exitCode: 1 };
+    }
     const addMissing = (ctx.flags['add-missing'] || ctx.flags.addMissing) as boolean;
     const upgradeSettings = (ctx.flags.settings) as boolean;
     const upgradeMods = ctx.flags.mods === true || (ctx.flags.mods !== false && (addMissing || upgradeSettings));
@@ -1644,9 +1711,14 @@ const upgradeCommand: Command = {
 
     try {
       const result = addMissing
-        ? await executeUpgradeWithMissing(ctx.cwd, upgradeSettings)
-        : await executeUpgrade(ctx.cwd, upgradeSettings);
+        ? await executeUpgradeWithMissing(ctx.cwd, upgradeSettings, upgradeRisky)
+        : await executeUpgrade(ctx.cwd, upgradeSettings, upgradeRisky);
 
+      if (result.stoppedOnRiskySettings) {
+        spinner.fail('Upgrade stopped');
+        return reportRiskySettings(result, upgradeRisky)!;
+      }
+      reportRiskySettings(result, upgradeRisky);
       if (!result.success) {
         spinner.fail('Upgrade failed');
         for (const error of result.errors) {
@@ -1781,6 +1853,7 @@ export const initCommand: Command = {
   description: 'Initialize RuFlo in the current directory',
   subcommands: [wizardCommand, checkCommand, skillsCommand, hooksCommand, upgradeCommand],
   options: [
+    ...RISKY_FLAG_OPTIONS,
     {
       name: 'force',
       short: 'f',
@@ -1935,6 +2008,7 @@ export const initCommand: Command = {
     { command: 'claude-flow init --minimal', description: 'Initialize with minimal configuration' },
     { command: 'claude-flow init --full', description: 'Initialize with all components' },
     { command: 'claude-flow init --force', description: 'Reinitialize and overwrite existing config' },
+    { command: 'claude-flow init --drop-risky-settings', description: 'Merge into an existing settings.json without its auto-approve keys (init stops on them otherwise)' },
     { command: 'claude-flow init --only-claude', description: 'Only create Claude Code integration' },
     { command: 'claude-flow init --skip-claude', description: 'Only create V3 runtime' },
     { command: 'claude-flow init wizard', description: 'Interactive setup wizard' },

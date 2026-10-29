@@ -68,6 +68,12 @@ export interface RepairOptions {
   exec?: Exec;
   env?: NodeJS.ProcessEnv;
   fs?: ReadFs;
+  /**
+   * ADR-509 §2.2: called once the marketplace step has refreshed the clone and
+   * before any `claude plugin install`; a plugin id it returns is not installed
+   * (its step is a failure naming the reason).
+   */
+  beforeInstall?: (clone: string | null) => { blocked: ReadonlyMap<string, string> };
 }
 
 /**
@@ -125,9 +131,16 @@ export async function repairPluginInstall(opts: RepairOptions): Promise<{ ok: bo
     for (const p of missing) steps.push({ argv: installArgv(p.id, opts.scope), state: 'failed', output: `${p.id} is not in ${wanted.source.path}` });
     return { ok: missing.length === 0, steps };
   }
+  const gate = opts.beforeInstall?.(market.location);
   let ok = true;
   for (const plugin of plugins) {
     const argv = installArgv(plugin.id, opts.scope);
+    const blocked = gate?.blocked.get(plugin.id);
+    if (blocked) {
+      steps.push({ argv, state: 'failed', output: blocked });
+      ok = false;
+      continue;
+    }
     if (!cloneHas(market, plugin.id, fs)) {
       steps.push({ argv, state: plugin.required ? 'failed' : 'pending', output: `${plugin.id} is not in the ruflo marketplace${plugin.required ? ' even after the update' : ' yet (pending)'}` });
       ok &&= !plugin.required;

@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import { createHash } from 'crypto';
 import { ownInstallAncestors } from '../plugins/own-install.js';
 import { checkNativeAddonHeaders } from './doctor-native-addon.js';
+import { checkProjectAutoApproveSettings } from './doctor-auto-approve.js';
 import { execSync, exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { decodeKey, isEncryptionEnabled } from '../encryption/vault.js';
@@ -2683,6 +2684,7 @@ export const doctorCommand: Command = {
       'browser': checkAgentBrowserVersion,
       'config': checkConfigFile,
       'stale-settings': checkStaleSettingsNpx, // #2448
+      'auto-approve': () => checkProjectAutoApproveSettings(), // ADR-509
       'helpers': helperCheck, // #3565
       'daemon': checkDaemonStatus,
       get memory() { return [
@@ -2818,6 +2820,7 @@ export const doctorCommand: Command = {
       checkGitRepo,
       checkConfigFile,
       checkStaleSettingsNpx, // #2448/#2677 — runaway `npx @latest` in settings
+      () => checkProjectAutoApproveSettings(), // ADR-509 — project auto-approve keys
       helperCheck, // #3565 — installed signed helpers vs manifest
       checkDaemonStatus,
       checkMemoryDatabase,
@@ -2859,7 +2862,7 @@ export const doctorCommand: Command = {
       [checkNpmVersion, 'npm'], [checkClaudeCode, 'claude'],
       [checkAgentBrowserVersion, 'browser'], [checkGit, 'git'],
       [checkGitRepo, 'git-repo'], [checkConfigFile, 'config'],
-      [checkStaleSettingsNpx, 'stale-settings'], [helperCheck, 'helpers'],
+      [checkStaleSettingsNpx, 'stale-settings'], [() => checkProjectAutoApproveSettings(), 'auto-approve'], [helperCheck, 'helpers'],
       [checkDaemonStatus, 'daemon'], [checkMemoryDatabase, 'memory-presence'],
       [checkMemoryStructuralIntegrity, 'memory-structural'],
       [checkMemoryIntegrity, 'memory-integrity'],

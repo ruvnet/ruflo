@@ -146,11 +146,48 @@ export function judge(scan: ModuleScan, policy: TrustPolicy, allow: ReadonlySet<
 export const trustLine = (scan: ModuleScan, d: TrustDecision) =>
   `ruflo mod trust: ${scan.name} (${scan.provenance}) ${d.refuse ? 'REFUSED' : 'loaded'}${d.risk.length ? `; ${d.risk.join('; ')}` : '; no risky calls or hooks'}`
 
+/**
+ * ADR-509: the ruflo marketplace verification `ruflo mods doctor` / `ruflo plugins verify` wrote
+ * (~/.claude-flow/mods/plugin-verify.json, keyed by Claude Code config dir). Returns the refusal for a
+ * user-tier `<name>@ruflo` module whose clone is `modified` or `bad-signature`; undefined otherwise
+ * (no file, no entry, unreadable, or verified/unsigned: unknown is not enforced). Pure: the reads
+ * happen in the hook below, where `$` is spelled.
+ */
+export function marketplaceRefusal(scan: ModuleScan, statusText: string | undefined, configDir: string): string | undefined {
+  const at = scan.provenance.lastIndexOf('@')
+  if (scan.tier !== 'user' || at <= 0 || scan.provenance.slice(at + 1) !== 'ruflo' || !statusText) return undefined
+  const name = scan.provenance.slice(0, at)
+  let result: unknown
+  try {
+    result = (JSON.parse(statusText) as { byConfigDir?: Record<string, { plugins?: Record<string, unknown> }> })?.byConfigDir?.[configDir]?.plugins?.[name]
+  } catch {
+    return undefined
+  }
+  return result === 'modified' || result === 'bad-signature'
+    ? `ruflo mod trust (modTrust=refuse-risky): ${name}@ruflo marketplace clone is ${result} (ADR-509 signature check); run: ruflo plugins verify ${name}, then claude plugin marketplace update ruflo`
+    : undefined
+}
+
 export function registerTrust(on: On, policy: TrustPolicy, allow: ReadonlySet<string>) {
   if (policy === 'off') return
   const told = new Set<string>()
 
   on('plugin.register', async ($, e, next) => {
+    if (policy === 'refuse-risky' && e.tier === 'user' && e.provenance.endsWith('@ruflo')) {
+      // The allow-list names provenance, which a tampered clone shares, so it does not exempt this check.
+      const home = await $.env.get('HOME').catch(() => undefined)
+      const configDir = (await $.env.get('CLAUDE_CONFIG_DIR').catch(() => undefined)) || (home ? `${home}/.claude` : undefined)
+      const status = home ? await $.fs.read(`${home}/.claude-flow/mods/plugin-verify.json`).catch(() => undefined) : undefined
+      const refuse = configDir ? marketplaceRefusal(e, status, configDir) : undefined
+      if (refuse) {
+        try {
+          $.ui.log(refuse)
+        } catch {
+          // a withheld ui.log never decides admission
+        }
+        return { refuse }
+      }
+    }
     const decision = judge(e, policy, allow)
     if (!decision.judged) return next(e)
     // Keyed on what the module can do: a reload that gains a risky call or hook is named again.

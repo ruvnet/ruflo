@@ -85,7 +85,11 @@ describe('doctor #2677 — stale npx detection covers every subcommand', () => {
       },
     });
 
-    const upgraded = await executeUpgrade(workdir, true);
+    // `node custom-notification.cjs` is a non-ruflo hook: since ADR-509 the upgrade stops on it by default.
+    const stopped = await executeUpgrade(workdir, true);
+    expect(stopped.stoppedOnRiskySettings).toBe(true);
+    expect(stopped.riskySettings).toEqual([expect.stringContaining('node custom-notification.cjs')]); // the old npx hooks are ruflo's own
+    const upgraded = await executeUpgrade(workdir, true, 'keep');
     expect(upgraded.success).toBe(true);
     const settings = JSON.parse(readFileSync(join(workdir, '.claude', 'settings.json'), 'utf8'));
     expect(settings.statusLine.command).toContain('.claude/helpers/statusline.cjs');

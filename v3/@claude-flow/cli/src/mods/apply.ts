@@ -26,6 +26,7 @@ import {
 } from './install.js';
 import { findClaudeBinary, installArgv, marketplaceArgv, repairPluginInstall, uninstallArgv, uninstallPlugins, type Exec, type RepairStep } from './plugin-repair.js';
 import { claudeConfigDir, describeSource, installedState, marketplaceState, repairCommands, resolveFindings, sameSource } from './plugin-resolve.js';
+import { scanBeforeInstall, verifyAndRecord } from './install-trust.js';
 
 export interface ApplyOptions {
   scope: Scope;
@@ -39,6 +40,8 @@ export interface ApplyOptions {
   skipInTestEnv?: boolean;
   /** The marketplace to declare when the settings have none (default github ruvnet/ruflo). */
   marketplace?: MarketplaceEntry;
+  /** ADR-509 §2.2: plugins (name or id) to install past a high scan finding; each override is recorded. */
+  acceptRisk?: readonly string[];
   /** Injectable for tests. */
   exec?: Exec;
 }
@@ -171,8 +174,15 @@ export async function applyMods(root: string, opts: ApplyOptions): Promise<Apply
   // Never claim (and so never uninstall) a plugin that was installed before, or one ruflo did not enable.
   const before = new Set(plugins.filter((p) => installedState(root, configDir, p.id).installed).map((p) => p.id));
   const textBefore = readText(install.settingsFile);
-  const repair = await repairPluginInstall({ projectRoot: root, scope: opts.scope, configDir, claude, plugins, marketplace: declared, exec: opts.exec });
+  const acceptRisk = new Set(opts.acceptRisk ?? []);
+  const repair = await repairPluginInstall({
+    projectRoot: root, scope: opts.scope, configDir, claude, plugins, marketplace: declared, exec: opts.exec,
+    // ADR-509 §2.2: scan the refreshed clone before any install (a directory marketplace has no install step to gate).
+    beforeInstall: (clone) => scanBeforeInstall(root, clone, plugins, acceptRisk),
+  });
   printSteps(repair.steps);
+  // ADR-509 §2.1: verify what Claude Code will load and leave the result for the mod's trust gate.
+  verifyAndRecord(configDir, marketplaceState(configDir).location, plugins.map((p) => p.id.split('@')[0]!));
   if (declared.source.source === 'directory' && repair.ok) output.writeln(output.dim(`Directory marketplace: plugins load live from ${declared.source.path} (no clone, no install).`));
   const enabledByRuflo = new Set(readRecord(root)?.files[install.settingsFile]?.plugins ?? []);
   const ours = repair.steps

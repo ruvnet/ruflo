@@ -32,7 +32,8 @@ import { getInstalledCliVersion, HELPERS_STAMP_FILE } from './helper-refresh.js'
 import { generateClaudeMd } from './claudemd-generator.js';
 import { recordMemoryPackagePath } from './memory-package-resolver.js';
 import { COMMONJS_COMPANION_HELPERS, ensureCommonJsCompanions } from './helper-companions.js';
-import { scanSettingsForRisk, formatRiskFindingsAsWarnings } from './settings-risk-scanner.js';
+import { scanSettingsForRisk, formatRiskFindingsAsWarnings, RISKY_SETTINGS_HINT, type RiskySettingsMode } from './settings-risk-scanner.js';
+import { applyRiskyMode, checkRiskySettings } from './risky-settings-gate.js';
 import { AUTO_MEMORY_HOOK_TIMEOUT_S, helperHookCommand, helperScopeFor, helperStatusLineCommand, pinToUserHelpers } from './helper-commands.js';
 
 /**
@@ -196,6 +197,22 @@ export async function executeInit(options: InitOptions): Promise<InitResult> {
 
   const targetDir = options.targetDir;
 
+  // ADR-509 §2.3 — stop before anything is written when the settings.json this
+  // init would merge carries project auto-approve keys (--force overwrites it,
+  // so nothing is carried forward then).
+  if (options.components.settings && !options.force) {
+    const gate = checkRiskySettings(path.join(targetDir, '.claude', 'settings.json'), options.riskySettings ?? 'stop');
+    if (gate) {
+      result.riskySettings = gate.lines;
+      if (gate.stop) {
+        result.success = false;
+        result.stoppedOnRiskySettings = true;
+        result.errors.push(`.claude/settings.json carries ${gate.findings.length} auto-approve key(s) init would carry forward. ${RISKY_SETTINGS_HINT}`);
+        return result;
+      }
+    }
+  }
+
   try {
     // Create directory structure
     await createDirectories(targetDir, options, result);
@@ -330,6 +347,10 @@ export interface UpgradeResult {
    * the upgrade — surfaced so a user can review before trusting it.
    */
   warnings?: string[];
+  /** ADR-509 §2.3 — auto-approve keys found in the existing settings.json. */
+  riskySettings?: string[];
+  /** ADR-509 §2.3 — the upgrade stopped before writing anything because of riskySettings. */
+  stoppedOnRiskySettings?: boolean;
 }
 
 /**
@@ -553,7 +574,7 @@ export function mergeSettingsForUpgrade(
  * @param targetDir - Target directory
  * @param upgradeSettings - If true, merge new settings into existing settings.json
  */
-export async function executeUpgrade(targetDir: string, upgradeSettings = false): Promise<UpgradeResult> {
+export async function executeUpgrade(targetDir: string, upgradeSettings = false, riskySettings: RiskySettingsMode = 'stop'): Promise<UpgradeResult> {
   const result: UpgradeResult = {
     success: true,
     updated: [],
@@ -562,6 +583,21 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
     errors: [],
     settingsUpdated: [],
   };
+
+  // ADR-509 §2.3 — `--settings` carries the existing settings.json forward:
+  // stop before anything is written when it holds project auto-approve keys.
+  if (upgradeSettings) {
+    const gate = checkRiskySettings(path.join(targetDir, '.claude', 'settings.json'), riskySettings);
+    if (gate) {
+      result.riskySettings = gate.lines;
+      if (gate.stop) {
+        result.success = false;
+        result.stoppedOnRiskySettings = true;
+        result.errors.push(`.claude/settings.json carries ${gate.findings.length} auto-approve key(s) the upgrade would carry forward. ${RISKY_SETTINGS_HINT}`);
+        return result;
+      }
+    }
+  }
 
   try {
     // Ensure required directories exist
@@ -742,7 +778,7 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
       const settingsPath = path.join(targetDir, '.claude', 'settings.json');
       if (fs.existsSync(settingsPath)) {
         try {
-          const existingSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+          const existingSettings = applyRiskyMode(JSON.parse(fs.readFileSync(settingsPath, 'utf-8')), riskySettings).settings;
           const { merged: mergedSettings, warnings: settingsRiskWarnings } = mergeSettingsForUpgrade(existingSettings, targetDir);
           fs.writeFileSync(settingsPath, JSON.stringify(mergedSettings, null, 2), 'utf-8');
           result.updated.push('.claude/settings.json');
@@ -784,9 +820,9 @@ export async function executeUpgrade(targetDir: string, upgradeSettings = false)
  * @param targetDir - Target directory
  * @param upgradeSettings - If true, merge new settings into existing settings.json
  */
-export async function executeUpgradeWithMissing(targetDir: string, upgradeSettings = false): Promise<UpgradeResult> {
+export async function executeUpgradeWithMissing(targetDir: string, upgradeSettings = false, riskySettings: RiskySettingsMode = 'stop'): Promise<UpgradeResult> {
   // First do the normal upgrade (pass through upgradeSettings)
-  const result = await executeUpgrade(targetDir, upgradeSettings);
+  const result = await executeUpgrade(targetDir, upgradeSettings, riskySettings);
 
   if (!result.success) {
     return result;
@@ -924,7 +960,8 @@ async function writeSettings(
   if (fs.existsSync(settingsPath) && !options.force) {
     // Merge hooks/env/permissions into existing settings instead of skipping
     try {
-      const existing = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+      const dropped = applyRiskyMode(JSON.parse(fs.readFileSync(settingsPath, 'utf-8')), options.riskySettings);
+      const existing = dropped.settings as Record<string, any>;
 
       // Scan the pre-existing hooks/permissions BEFORE any merge decision
       // below — same untrusted, disk-sourced content mergeSettingsForUpgrade()
@@ -936,7 +973,8 @@ async function writeSettings(
         result.warnings = [...(result.warnings ?? []), ...riskWarnings];
       }
 
-      let merged = false;
+      // ADR-509: --drop-risky-settings removed keys; the file must be rewritten even if nothing else merges.
+      let merged = dropped.dropped > 0;
 
       // Merge hooks (the critical missing piece — #1484)
       if (generated.hooks && !existing.hooks) {

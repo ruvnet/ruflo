@@ -193,3 +193,104 @@ export function scanSettingsForRisk(settings: Record<string, unknown>): Settings
 export function formatRiskFindingsAsWarnings(findings: SettingsRiskFinding[]): string[] {
   return findings.map((f) => `${f.location}: ${f.reason} — "${f.snippet}"`);
 }
+
+// ─── ADR-509 §2.3: project-level auto-approve keys ──────────────────────────
+//
+// Unlike the advisory scan above, these keys make `ruflo init` / `init upgrade`
+// STOP when they would be carried forward (CVE-2025-59536: a repository's
+// `enableAllProjectMcpServers: true` started an MCP server before the person
+// could read the trust dialog). `--keep-risky-settings` keeps them;
+// `--drop-risky-settings` writes the merged file without them.
+
+/** What a finding points at, precisely enough for dropAutoApproveKeys to remove only that. */
+export type AutoApproveTarget =
+  | { kind: 'enableAllProjectMcpServers' }
+  | { kind: 'enabledMcpjsonServers' }
+  | { kind: 'defaultMode' }
+  | { kind: 'allow'; index: number }
+  | { kind: 'hook'; event: string; group: number; hook: number };
+
+export interface AutoApproveFinding extends SettingsRiskFinding {
+  target: AutoApproveTarget;
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+/** A bare `Bash`, `Bash(*)`, `Bash(*:*)` or a `*` wildcard pre-approves every command. */
+function isBlanketAllow(rule: string): boolean {
+  const t = rule.trim();
+  return t === '*' || /^Bash$/i.test(t) || /^Bash\(\s*\*\s*(:\s*\*\s*)?\)$/i.test(t) || /^\*\s*\(.*\)$/.test(t);
+}
+
+/**
+ * The auto-approve keys of a PROJECT settings file (`.claude/settings.json` or
+ * `.claude/settings.local.json`). `isRufloHook` decides which hook commands are
+ * ruflo's own helpers (injected so this module stays dependency-free).
+ */
+export function scanProjectAutoApproveKeys(settings: Record<string, unknown>, isRufloHook: (command: string) => boolean): AutoApproveFinding[] {
+  const out: AutoApproveFinding[] = [];
+  if (settings.enableAllProjectMcpServers === true) {
+    out.push({ target: { kind: 'enableAllProjectMcpServers' }, location: 'enableAllProjectMcpServers', snippet: 'true', reason: 'starts every .mcp.json server in the project without asking' });
+  }
+  const enabled = settings.enabledMcpjsonServers;
+  if (Array.isArray(enabled) && enabled.length > 0) {
+    out.push({ target: { kind: 'enabledMcpjsonServers' }, location: 'enabledMcpjsonServers', snippet: buildSnippet(enabled.map(String).join(', ')), reason: 'pre-approves .mcp.json servers before the trust dialog' });
+  }
+  const permissions = isRecord(settings.permissions) ? settings.permissions : undefined;
+  if (permissions?.defaultMode === 'bypassPermissions') {
+    out.push({ target: { kind: 'defaultMode' }, location: 'permissions.defaultMode', snippet: 'bypassPermissions', reason: 'turns off every permission prompt' });
+  }
+  if (Array.isArray(permissions?.allow)) {
+    (permissions!.allow as unknown[]).forEach((rule, index) => {
+      if (typeof rule === 'string' && isBlanketAllow(rule)) {
+        out.push({ target: { kind: 'allow', index }, location: `permissions.allow[${index}]`, snippet: buildSnippet(rule), reason: 'pre-approves every command (bare Bash or * wildcard)' });
+      }
+    });
+  }
+  const hooks = isRecord(settings.hooks) ? settings.hooks : undefined;
+  for (const [event, groups] of Object.entries(hooks ?? {})) {
+    if (!Array.isArray(groups)) continue;
+    groups.forEach((g, group) => {
+      const list = isRecord(g) && Array.isArray(g.hooks) ? g.hooks : [];
+      list.forEach((h, hook) => {
+        if (!isRecord(h) || typeof h.command !== 'string' || isRufloHook(h.command)) return;
+        out.push({ target: { kind: 'hook', event, group, hook }, location: `hooks.${event}[${group}].hooks[${hook}]`, snippet: buildSnippet(h.command), reason: 'runs a command that is not a ruflo helper' });
+      });
+    });
+  }
+  return out;
+}
+
+/** A deep copy of `settings` without the keys/entries the findings point at. Never mutates its input. */
+export function dropAutoApproveKeys(settings: Record<string, unknown>, findings: readonly AutoApproveFinding[]): Record<string, unknown> {
+  const next = JSON.parse(JSON.stringify(settings)) as Record<string, unknown>;
+  const perms = isRecord(next.permissions) ? next.permissions : undefined;
+  const allowDrop = new Set<number>();
+  const hookDrop = new Set<string>();
+  for (const { target: t } of findings) {
+    if (t.kind === 'enableAllProjectMcpServers') delete next.enableAllProjectMcpServers;
+    else if (t.kind === 'enabledMcpjsonServers') delete next.enabledMcpjsonServers;
+    else if (t.kind === 'defaultMode' && perms) delete perms.defaultMode;
+    else if (t.kind === 'allow') allowDrop.add(t.index);
+    else if (t.kind === 'hook') hookDrop.add(`${t.event}\u0000${t.group}\u0000${t.hook}`);
+  }
+  if (perms && Array.isArray(perms.allow)) perms.allow = (perms.allow as unknown[]).filter((_, i) => !allowDrop.has(i));
+  if (isRecord(next.hooks) && hookDrop.size) {
+    for (const [event, groups] of Object.entries(next.hooks)) {
+      if (!Array.isArray(groups)) continue;
+      const kept = groups
+        .map((g, gi) => (isRecord(g) && Array.isArray(g.hooks) ? { ...g, hooks: g.hooks.filter((_, hi) => !hookDrop.has(`${event}\u0000${gi}\u0000${hi}`)) } : g))
+        .filter((g) => !(isRecord(g) && Array.isArray(g.hooks) && g.hooks.length === 0));
+      if (kept.length) (next.hooks as Record<string, unknown>)[event] = kept;
+      else delete (next.hooks as Record<string, unknown>)[event];
+    }
+    // No hooks left: drop the key, so init writes its own hooks as it does for a file without any.
+    if (Object.keys(next.hooks).length === 0) delete next.hooks;
+  }
+  return next;
+}
+
+/** What `init` does when the existing settings carry auto-approve keys. */
+export type RiskySettingsMode = 'stop' | 'keep' | 'drop';
+
+export const RISKY_SETTINGS_HINT = 'Re-run with --drop-risky-settings to write the merged settings without these keys, or --keep-risky-settings to keep them.';

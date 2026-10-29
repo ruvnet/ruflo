@@ -348,6 +348,14 @@ export interface InitOptions {
    * GitHub contributor graph. Pass `--attribution` to opt in.
    */
   attribution?: boolean;
+  /**
+   * ADR-509 §2.3 — what to do when the existing project settings.json carries
+   * auto-approve keys (enableAllProjectMcpServers, enabledMcpjsonServers,
+   * bypassPermissions, blanket Bash allows, non-ruflo hooks): `stop`
+   * (default — nothing is written), `keep` (--keep-risky-settings) or `drop`
+   * (--drop-risky-settings).
+   */
+  riskySettings?: 'stop' | 'keep' | 'drop';
 }
 
 /**
@@ -612,4 +620,8 @@ export interface InitResult {
    * init — surfaced so a user can review before trusting it.
    */
   warnings?: string[];
+  /** ADR-509 §2.3 — auto-approve keys found in the existing project settings.json. */
+  riskySettings?: string[];
+  /** ADR-509 §2.3 — init stopped before writing anything because of riskySettings. */
+  stoppedOnRiskySettings?: boolean;
 }

@@ -166,3 +166,23 @@ export function pinToUserHelpers(command: string, windows = IS_WINDOWS): string 
   if (helper === 'statusline.cjs' && args === '') return helperStatusLineCommand('user', windows);
   return helperHookCommand(script, args.trim(), 'user', windows);
 }
+
+const USER_SH_FORM = /^sh -c 'exec node "\$\{HOME\}\/\.claude\/helpers\/([\w.-]+)"((?: [\w:.=-]+)*)'$/;
+
+/**
+ * ADR-509: whether a settings hook command is one of ruflo's own helper
+ * launches, in a form ruflo generates (project probe, relative path, git
+ * rev-parse, Windows, or the pinned user-level form) with nothing chained onto
+ * it. Anything else is a hook ruflo did not write.
+ */
+export function isRufloHelperCommand(command: string): boolean {
+  if (pinToUserHelpers(command, false) !== null || pinToUserHelpers(command, true) !== null) return true;
+  // Older ruflo-generated CLI hooks (`npx @claude-flow/cli@latest hooks pre-bash`, ...) that init upgrade migrates.
+  if (/^npx (?:-y |--yes )?(?:@claude-flow\/cli|claude-flow|ruflo)(?:@[\w.-]+)? (?:hooks|memory) [\w:.= -]*$/.test(command)) return true;
+  const user = USER_SH_FORM.exec(command);
+  if (user) return RUFLO_HELPERS.includes(user[1]);
+  if (command === helperStatusLineCommand('user', true) || command === helperStatusLineCommand('user', false)) return true;
+  // The Windows user-level form: exactly what ruflo generates for that helper and argv.
+  const win = /'\.claude\/helpers\/([\w.-]+)((?: [\w:.=-]+)*)'/.exec(command);
+  return !!win && RUFLO_HELPERS.includes(win[1]) && command === helperHookCommand(`.claude/helpers/${win[1]}`, win[2].trim(), 'user', true);
+}

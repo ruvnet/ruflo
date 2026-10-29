@@ -22,6 +22,8 @@ import {
 import { getPluginManager, type InstalledPlugin } from '../plugins/manager.js';
 import { DEFAULT_PLUGIN_PERMISSIONS, isStrictPluginMode } from '../plugins/trust-policy.js';
 import { getBulkRatings } from '../services/registry-api.js';
+import { scanLocalPluginBeforeInstall, verifyCommand } from './plugins-verify.js';
+import { acceptRiskFrom } from '../plugins/marketplace-trust/scan.js';
 
 // List subcommand - Now uses IPFS-based registry
 const listCommand: Command = {
@@ -260,6 +262,7 @@ const installCommand: Command = {
       default: true,
     },
     { name: 'trust', type: 'boolean', description: 'Register hooks and commands even if the plugin is untrusted or declares elevated permissions', default: false },
+    { name: 'accept-risk', type: 'string', description: 'Install a local plugin (its directory name) even though the pre-install scan found a high-severity issue in its .mcp.json, hooks/hooks.json or hook modules (ADR-509)' },
     {
       name: 'allow-unverified',
       type: 'boolean',
@@ -321,6 +324,12 @@ const installCommand: Command = {
       const registryWarnings: string[] = [];
 
       if (isLocalPath) {
+        // ADR-509 §2.2: static scan before anything is registered; a high finding stops the install.
+        const blocked = scanLocalPluginBeforeInstall(name, acceptRiskFrom(ctx.flags));
+        if (blocked) {
+          spinner.fail(`Refusing to install ${blocked}`);
+          return { success: false, exitCode: 1 };
+        }
         // Install from local path
         spinner.setText(`Installing from ${name}...`);
         result = await manager.installFromLocal(name, { verify, trust });
@@ -1037,7 +1046,7 @@ const rateCommand: Command = {
 export const pluginsCommand: Command = {
   name: 'plugins',
   description: 'Plugin management with IPFS-based decentralized registry',
-  subcommands: [listCommand, searchCommand, installCommand, uninstallCommand, upgradeCommand, toggleCommand, infoCommand, createCommand, rateCommand],
+  subcommands: [listCommand, searchCommand, installCommand, uninstallCommand, upgradeCommand, toggleCommand, infoCommand, createCommand, rateCommand, verifyCommand],
   examples: [
     { command: 'claude-flow plugins list', description: 'List plugins from IPFS registry' },
     { command: 'claude-flow plugins search -q neural', description: 'Search for plugins' },
@@ -1058,6 +1067,7 @@ export const pluginsCommand: Command = {
       `${output.highlight('upgrade')}   - Upgrade an installed plugin`,
       `${output.highlight('toggle')}    - Enable or disable a plugin`,
       `${output.highlight('info')}      - Show detailed plugin information`,
+      `${output.highlight('verify')}    - Check ruflo marketplace plugins against their release signatures`,
       `${output.highlight('create')}    - Scaffold a new plugin project`,
     ]);
     output.writeln();
