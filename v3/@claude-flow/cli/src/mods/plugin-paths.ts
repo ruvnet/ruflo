@@ -7,21 +7,29 @@
  * is cloned only by an interactive, trusted start. So a worker has to be told
  * where each plugin is. Sources, in order:
  *
- *   1. a `--source local` directory marketplace (a ruflo checkout), declared in
- *      the project's settings (`extraKnownMarketplaces.ruflo`) or known to
- *      Claude Code (`known_marketplaces.json`);
+ *   1. a `--source local` directory marketplace (a ruflo checkout) that Claude
+ *      Code itself records in the user-level `known_marketplaces.json`, i.e.
+ *      one the user added through an interactive, trusted start;
  *   2. the marketplace clone (`<config>/plugins/marketplaces/ruflo/...`);
  *   3. the install cache (`<config>/plugins/cache/ruflo/<name>/<version>`).
  *
  * A folder without `.claude-plugin/plugin.json` is never returned: the plugin
  * is reported missing instead. Read-only; the filesystem is injectable.
+ *
+ * Trust: nothing inside the project decides the path. A repository's own
+ * `.claude/settings.json` / `settings.local.json` (`extraKnownMarketplaces`)
+ * is never read here: interactive Claude Code gates a project-declared
+ * marketplace behind workspace trust, but `--plugin-dir` loads with no prompt
+ * and replaces the user's installed copy of the same name. Letting a cloned
+ * repo point the headless worker at its own folder would run repo-supplied
+ * function hooks in every daemon worker, in place of the user's guard.
  */
 
 import { existsSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 
-import { MARKETPLACE_NAME, settingsFileFor } from './install.js';
+import { MARKETPLACE_NAME } from './install.js';
 import { claudeConfigDir, marketplaceState, nodeReadFs, pluginManifestIn, type ReadFs } from './plugin-resolve.js';
 
 export type PluginSource = 'local' | 'clone' | 'cache';
@@ -60,6 +68,10 @@ export const nodePluginFs: PluginFs = {
 };
 
 export interface ResolveOptions {
+  /**
+   * Accepted for callers' convenience but deliberately not consulted: the
+   * project's own settings never choose a headless plugin folder (see "Trust").
+   */
   projectRoot?: string;
   env?: NodeJS.ProcessEnv;
   home?: string;
@@ -80,21 +92,18 @@ function readJson(fs: ReadFs, path: string): unknown {
 
 const isRecord = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 
-/** The directory a `--source local` install declared for the ruflo marketplace, if any. */
-function localMarketplaceDir(projectRoot: string, configDir: string, fs: ReadFs): string | null {
-  for (const file of [settingsFileFor(projectRoot, 'local'), settingsFileFor(projectRoot, 'project')]) {
-    const settings = readJson(fs, file);
-    const entry = isRecord(settings) && isRecord(settings.extraKnownMarketplaces) ? settings.extraKnownMarketplaces[MARKETPLACE_NAME] : undefined;
-    const source = isRecord(entry) && isRecord(entry.source) ? entry.source : undefined;
-    if (source?.source === 'directory' && typeof source.path === 'string') {
-      return isAbsolute(source.path) ? source.path : resolve(projectRoot, source.path);
-    }
-  }
+/**
+ * The directory marketplace Claude Code knows as `ruflo`, from the user-level
+ * `known_marketplaces.json` only (see "Trust" above). A relative path is
+ * rejected: Claude Code records absolute ones, and a relative path would
+ * resolve against whatever directory the worker happens to start in.
+ */
+function localMarketplaceDir(configDir: string, fs: ReadFs): string | null {
   const market = marketplaceState(configDir, fs);
-  if (market.source?.source === 'directory') {
-    return market.location ?? (typeof market.source.path === 'string' ? market.source.path : null);
-  }
-  return null;
+  if (market.source?.source !== 'directory') return null;
+  const declared = typeof market.source.path === 'string' ? market.source.path : null;
+  const dir = market.location ?? declared;
+  return dir && isAbsolute(dir) && (!declared || isAbsolute(declared)) ? dir : null;
 }
 
 /** Numeric-aware version compare ("0.10.0" > "0.9.3"); non-numeric parts compare as text. */
@@ -135,9 +144,8 @@ function pluginDirIn(root: string, name: string, fs: ReadFs): string | null {
 export function resolvePluginPaths(names: readonly string[], opts: ResolveOptions = {}): PluginPaths {
   const env = opts.env ?? process.env;
   const fs = opts.fs ?? nodePluginFs;
-  const projectRoot = resolve(opts.projectRoot ?? process.cwd());
   const configDir = claudeConfigDir(env, opts.home ?? homedir());
-  const local = localMarketplaceDir(projectRoot, configDir, fs);
+  const local = localMarketplaceDir(configDir, fs);
   const market = marketplaceState(configDir, fs);
   const clone = market.source?.source === 'directory' ? null : market.location;
 

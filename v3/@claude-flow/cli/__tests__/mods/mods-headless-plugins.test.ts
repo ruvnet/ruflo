@@ -2,7 +2,8 @@
  * ADR-510 — loading ruflo plugins in headless `claude -p` workers.
  *
  *  - resolvePluginPaths: each source in order (local checkout, clone, cache),
- *    a missing manifest, and a CLAUDE_CONFIG_DIR override.
+ *    a missing manifest, a CLAUDE_CONFIG_DIR override, and that the project's
+ *    own settings (or a relative path) never choose the folder.
  *  - withHeadlessPlugins: adds --plugin-dir + CLAUDE_CODE_ENABLE_FUNCTION_HOOKS,
  *    never duplicates a caller's own flag, keeps a caller's env value, logs a
  *    missing plugin once and reports it.
@@ -43,24 +44,45 @@ function fakeFs(files: Record<string, unknown>, dirs: string[] = []): PluginFs {
   };
 }
 
-const localSettings = { [join(ROOT, '.claude', 'settings.local.json')]: { extraKnownMarketplaces: { ruflo: { source: { source: 'directory', path: CHECKOUT } } } } };
+const knownLocal = { [join(CFG, 'plugins', 'known_marketplaces.json')]: { ruflo: { source: { source: 'directory', path: CHECKOUT }, installLocation: CHECKOUT } } };
 const inCheckout = { [manifestIn(join(CHECKOUT, 'plugins', 'ruflo-mods'))]: '{}' };
 const inClone = { [manifestIn(join(CLONE, 'plugins', 'ruflo-mods'))]: '{}' };
 const opts = (fs: PluginFs, env: NodeJS.ProcessEnv = {}) => ({ projectRoot: ROOT, env, home: HOME, fs });
 
 describe('ADR-510 resolvePluginPaths', () => {
-  it('prefers a --source local checkout over the clone and the cache', () => {
-    const fs = fakeFs({ ...localSettings, ...inCheckout, ...inClone, [manifestIn(cacheDir(CFG, '0.8.0'))]: '{}' });
+  it('prefers a directory marketplace Claude Code knows (user-level) over the clone and the cache', () => {
+    const fs = fakeFs({ ...knownLocal, ...inCheckout, ...inClone, [manifestIn(cacheDir(CFG, '0.8.0'))]: '{}' }, [CHECKOUT]);
     expect(resolvePluginPaths(['ruflo-mods'], opts(fs))).toEqual({
       resolved: [{ name: 'ruflo-mods', path: join(CHECKOUT, 'plugins', 'ruflo-mods'), source: 'local' }],
       missing: [],
     });
   });
 
-  it('a directory marketplace known to Claude Code counts as local too', () => {
-    const known = { [join(CFG, 'plugins', 'known_marketplaces.json')]: { ruflo: { source: { source: 'directory', path: CHECKOUT }, installLocation: CHECKOUT } } };
-    const fs = fakeFs({ ...known, ...inCheckout }, [CHECKOUT]);
-    expect(resolvePluginPaths(['ruflo-mods'], opts(fs)).resolved[0]).toMatchObject({ source: 'local', path: join(CHECKOUT, 'plugins', 'ruflo-mods') });
+  it("never lets the project's own settings choose the folder (committed settings.json or settings.local.json)", () => {
+    const EVIL = join(ROOT, 'x');
+    const inRepo = { [manifestIn(join(EVIL, 'plugins', 'ruflo-mods'))]: '{}' };
+    for (const declared of [EVIL, './x']) {
+      const entry = { extraKnownMarketplaces: { ruflo: { source: { source: 'directory', path: declared } } } };
+      for (const file of ['settings.json', 'settings.local.json']) {
+        const settings = { [join(ROOT, '.claude', file)]: entry };
+        // With a clone present: the clone wins, never the repo.
+        const withClone = resolvePluginPaths(['ruflo-mods'], opts(fakeFs({ ...settings, ...inRepo, ...inClone }, [CLONE])));
+        expect(withClone.resolved).toEqual([{ name: 'ruflo-mods', path: join(CLONE, 'plugins', 'ruflo-mods'), source: 'clone' }]);
+        // With only the cache: the cache wins.
+        const withCache = resolvePluginPaths(['ruflo-mods'], opts(fakeFs({ ...settings, ...inRepo, [manifestIn(cacheDir(CFG, '0.8.0'))]: '{}' })));
+        expect(withCache.resolved[0]).toMatchObject({ source: 'cache', path: cacheDir(CFG, '0.8.0') });
+        // With nothing installed: missing, and the repo folder is not even mentioned.
+        const nothing = resolvePluginPaths(['ruflo-mods'], opts(fakeFs({ ...settings, ...inRepo })));
+        expect(nothing.resolved).toEqual([]);
+        expect(nothing.missing[0]!.reason).not.toContain(ROOT);
+      }
+    }
+  });
+
+  it('a relative directory path, even in known_marketplaces.json, is rejected', () => {
+    const rel = { [join(CFG, 'plugins', 'known_marketplaces.json')]: { ruflo: { source: { source: 'directory', path: './x' } } } };
+    const fs = fakeFs({ ...rel, [manifestIn(join(ROOT, 'x', 'plugins', 'ruflo-mods'))]: '{}', [manifestIn(join('x', 'plugins', 'ruflo-mods'))]: '{}', [manifestIn(cacheDir(CFG, '0.8.0'))]: '{}' });
+    expect(resolvePluginPaths(['ruflo-mods'], opts(fs)).resolved[0]).toMatchObject({ source: 'cache' });
   });
 
   it('falls back to the marketplace clone, honouring marketplace.json source', () => {
@@ -82,7 +104,7 @@ describe('ADR-510 resolvePluginPaths', () => {
   });
 
   it('a folder without .claude-plugin/plugin.json is reported missing, never returned', () => {
-    const fs = fakeFs({ ...localSettings, [join(CHECKOUT, 'plugins', 'ruflo-mods', 'README.md')]: '', [join(CLONE, 'plugins', 'ruflo-mods', 'hooks', 'index.ts')]: '' }, [CLONE]);
+    const fs = fakeFs({ ...knownLocal, [join(CHECKOUT, 'plugins', 'ruflo-mods', 'README.md')]: '', [join(CLONE, 'plugins', 'ruflo-mods', 'hooks', 'index.ts')]: '' }, [CHECKOUT]);
     const r = resolvePluginPaths(['ruflo-mods'], opts(fs));
     expect(r.resolved).toEqual([]);
     expect(r.missing).toHaveLength(1);
