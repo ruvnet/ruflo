@@ -1,7 +1,7 @@
 {
   "name": "ruflo-mods",
   "description": "ruflo as a Claude Code mod (function hooks, ADR-404): in-process prompt routing, edit learning signals, tighten-only tool checks from ruflo policy, the cost-tracker budget ladder, a mod trust gate for newly installed mods, and the $.ruflo noun other mods compose their status with. Opt-in and removable: the classic hook-handler hooks stay the default and take every event back whenever the mod is not loaded.",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "author": {
     "name": "ruvnet",
     "url": "https://github.com/ruvnet"
@@ -86,6 +86,13 @@
       "type": "boolean",
       "title": "Offer ruRE for binaries the model reads",
       "description": "When the model reads or writes an executable, library, Electron .asar or CUDA file (.exe .dll .so .dylib .node .asar .cubin .fatbin .ptx .evm .bytecode) inside the project, add one line beneath that answer saying ruRE can look inside it without running it, and how. Offer only: it never runs ruRE, never denies or changes a tool call, and names at most three files a turn and twelve a session, each once. The line holds only validated project-relative paths and fixed words, never file contents. Does nothing when the session has no ruRE tool or the answer is a subagent's. Off by default.",
+      "required": false,
+      "default": false
+    },
+    "learningLoop": {
+      "type": "boolean",
+      "title": "Verified-outcome learning loop",
+      "description": "Record each main-loop turn (the tools it called, in order) and decide its outcome only from a test, build, typecheck or lint command's exit status after the turn's last edit; with no such run the turn is unverified. Turns go to .claude-flow/data/verified-trajectories.jsonl; ruflo hooks verified-ingest (also run by hooks_route and hooks_session-end) trains SONA on verified turns only. Adds at most three cited lessons it learned, at or above the 0.6 routing gate, to a prompt they match. Never denies, rewrites or delays a tool call, runs no process and calls no model. Only in a ruflo project (.claude-flow/). Off by default.",
       "required": false,
       "default": false
     },

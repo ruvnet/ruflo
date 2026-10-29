@@ -7,6 +7,7 @@ import { rollupState, type RollupState } from './rollup'
 import { ledgerLines } from './rollup/record'
 import { groundingLine, groundingState, type GroundingState } from './grounding'
 import { probeLine, probeState, type ProbeState } from './probe'
+import { loopLine, loopSegment, loopState, type LoopState } from './loop/status'
 import type { RouteResult } from './route/route-task'
 
 /**
@@ -49,6 +50,8 @@ export type ModState = {
   grounding: GroundingState
   /** Session rollup (ADR-451 item 6): counters for the `$.store` ledger written at session end. */
   rollup: RollupState
+  /** The verified-outcome learning loop (#4581, ADR-502): off unless the learningLoop option is on. */
+  loop: LoopState
   /** Other mods' status segments, by id (`$.ruflo.segment`). */
   segments: Map<string, string>
   /**
@@ -81,6 +84,7 @@ export function createState(): ModState {
     probe: probeState(),
     grounding: groundingState(),
     rollup: rollupState(),
+    loop: loopState(),
     segments: new Map(),
     draw: () => undefined,
     say: async () => undefined,
@@ -139,6 +143,8 @@ export function statusText(s: ModState): string | undefined {
     if (s.policy !== 'none') parts.push(`policy ${s.policy}`)
     if (s.tightened) parts.push(`${s.tightened} tightened`)
     if (s.budget.limit !== undefined && s.budget.level !== 'OK') parts.push(`budget ${s.budget.level}`)
+    const loop = loopSegment(s.loop)
+    if (loop) parts.push(loop)
   }
   for (const [, text] of sortedSegments(s)) parts.push(text)
   return parts.length ? ['ruflo', ...parts].join(' · ') : undefined
@@ -175,6 +181,7 @@ export function report(s: ModState): string {
     `  probe:       ${probeLine(s.probe)}`,
     `  grounding:   ${groundingLine(s.grounding)}`,
     `  sessions:    ${s.rollup.enabled ? ledgerLines(s.rollup.recent).join('\n               ') : 'off (set the sessionRollup option)'}`,
+    `  loop:        ${loopLine(s.loop)}`,
     `  segments:    ${segments.join(', ') || 'none'}`,
     `  guidance:    ${s.guidance.status}; ${s.guidance.saved} unverified observation(s), ${s.guidance.pending.length} pending, ${s.guidance.dropped} dropped`,
   ]

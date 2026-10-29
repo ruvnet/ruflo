@@ -1366,6 +1366,9 @@ export const hooksRoute: MCPTool = {
       // Q-learning and keyword suggestions retain their existing routing paths.
       try {
         const sonaStart = performance.now();
+        // #4581: fold in any verified outcomes the ruflo-mods learning loop
+        // recorded since the last call (one stat when nothing changed).
+        await ingestVerifiedQuietly();
         const sona = await getSONAOptimizer();
         const suggestion = await sona?.getRoutingSuggestion(task);
         const { isSupportedSonaAgent } = await import('../memory/sona-optimizer.js');
@@ -2844,9 +2847,12 @@ export const hooksSessionEnd: MCPTool = {
       }
     }
 
+    const verifiedOutcomes = await ingestVerifiedQuietly();
+
     return {
       sessionId,
       duration,
+      verifiedOutcomes,
       statePath: saveState ? `.claude/sessions/${sessionId}.json` : undefined,
       daemon: { stopped: daemonStopped },
       sessionPersistence: sessionPersistence || { controller: 'none', persisted: false },
@@ -5743,6 +5749,38 @@ export const hooksIntelligenceUnifiedStats: MCPTool = {
   },
 };
 
+/**
+ * #4581 / ADR-502: ingest the ruflo-mods learning loop's verified outcomes.
+ * Never throws; null when the module or SONA is unavailable.
+ */
+async function ingestVerifiedQuietly(force = false) {
+  try {
+    const { ingestVerifiedOutcomes } = await import('../memory/verified-outcomes.js');
+    const sona = await getSONAOptimizer();
+    return await ingestVerifiedOutcomes({ force, sona: sona as never });
+  } catch {
+    return null;
+  }
+}
+
+export const hooksVerifiedIngest: MCPTool = {
+  name: 'hooks_intelligence_verified-ingest',
+  description: 'Ingest the ruflo-mods learning loop\'s recorded turns (.claude-flow/data/verified-trajectories.jsonl, #4581): turns a test, build or typecheck process verified train SONA; unverified turns are counted and never train. Writes .claude-flow/data/learned-lessons.json (patterns at or above the 0.6 routing gate, plus repeated verified failures as cautions). hooks_route and hooks_session-end already ingest automatically; call this to see the counts or to force a re-read.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      dryRun: { type: 'boolean', description: 'Count only: train nothing and write nothing' },
+      force: { type: 'boolean', description: 'Re-read the file even if it has not changed since the last ingest' },
+    },
+  },
+  handler: async (params: Record<string, unknown>) => {
+    const { ingestVerifiedOutcomes } = await import('../memory/verified-outcomes.js');
+    const sona = await getSONAOptimizer();
+    const result = await ingestVerifiedOutcomes({ dryRun: params.dryRun === true, force: params.force === true || params.dryRun === true, sona: sona as never });
+    return { success: true, ...result };
+  },
+};
+
 // Export all hooks tools
 export const hooksTools: MCPTool[] = [
   hooksIntelligenceUnifiedStats,
@@ -5772,6 +5810,7 @@ export const hooksTools: MCPTool[] = [
   hooksTrajectoryStart,
   hooksTrajectoryStep,
   hooksTrajectoryEnd,
+  hooksVerifiedIngest,
   hooksPatternStore,
   hooksPatternSearch,
   hooksIntelligenceStats,

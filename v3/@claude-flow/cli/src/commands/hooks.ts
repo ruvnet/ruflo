@@ -5488,6 +5488,46 @@ const refreshAdvisorCommand: Command = {
   }
 };
 
+// #4581 / ADR-502: fold the ruflo-mods learning loop's verified outcomes into SONA.
+const verifiedIngestCommand: Command = {
+  name: 'verified-ingest',
+  description: 'Train SONA from the learning loop\'s verified turns (tests/build exit status); unverified turns never train',
+  options: [
+    { name: 'dry-run', description: 'Count only: train nothing and write nothing', type: 'boolean', default: false },
+    { name: 'force', description: 'Re-read the file even if unchanged since the last ingest', type: 'boolean', default: false },
+  ],
+  examples: [
+    { command: 'ruflo hooks verified-ingest', description: 'Ingest new verified outcomes and refresh learned-lessons.json' },
+    { command: 'ruflo hooks verified-ingest --dry-run', description: 'Show what would be trained' },
+  ],
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    try {
+      const result = await callMCPTool<{
+        ingested: { verifiedSuccess: number; verifiedFailure: number; unknown: number; rejected: number };
+        skipped: string | null; lessons: number; cautions: number; belowGate: number; sonaAvailable: boolean;
+        totals: { verifiedSuccess: number; verifiedFailure: number; unknown: number };
+      }>('hooks_intelligence_verified-ingest', { dryRun: ctx.flags['dry-run'] === true || ctx.flags.dryRun === true, force: ctx.flags.force === true });
+      if (ctx.flags.format === 'json') {
+        output.printJson(result);
+        return { success: true, data: result };
+      }
+      if (result.skipped === 'no-file') {
+        output.printInfo('No recorded turns yet (.claude-flow/data/verified-trajectories.jsonl). Turn on the ruflo-mods learningLoop option.');
+        return { success: true, data: result };
+      }
+      if (!result.sonaAvailable) output.printWarning('SONA unavailable: verified outcomes wait for the next ingest');
+      const i = result.ingested;
+      output.printSuccess(`Ingested ${i.verifiedSuccess} verified success, ${i.verifiedFailure} verified failure; ${i.unknown} unverified (not trained), ${i.rejected} malformed${result.skipped === 'unchanged' ? ' (file unchanged)' : ''}`);
+      output.writeln(`Lessons at or above the 0.6 gate: ${result.lessons}; cautions: ${result.cautions}; verified patterns below the gate: ${result.belowGate}`);
+      output.writeln(output.dim(`All time: ${result.totals.verifiedSuccess} success / ${result.totals.verifiedFailure} failure trained, ${result.totals.unknown} unverified`));
+      return { success: true, data: result };
+    } catch (error) {
+      output.printError(`verified-ingest failed: ${error instanceof Error ? error.message : String(error)}`);
+      return { success: false, exitCode: 1 };
+    }
+  },
+};
+
 // Main hooks command
 export const hooksCommand: Command = {
   name: 'hooks',
@@ -5535,6 +5575,8 @@ export const hooksCommand: Command = {
     refreshFunnelCommand,
     // Advisor co-pilot tip background refresh — ADR-316
     refreshAdvisorCommand,
+    // Verified-outcome learning loop — #4581
+    verifiedIngestCommand,
   ],
   options: [],
   examples: [
