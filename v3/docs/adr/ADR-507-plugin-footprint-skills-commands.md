@@ -1,6 +1,6 @@
 # ADR 507: cutting the plugin suite's per-turn footprint
 
-Status: Accepted (implemented in PR #TBD; §2.4 closed, see Implementation notes)
+Status: Accepted (implemented in PR #4588; §2.4 closed, see Implementation notes)
 
 Issue: #4581 follow-up 4. Builds on: ADR-451 (`agentTrim`).
 
