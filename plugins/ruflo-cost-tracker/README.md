@@ -49,6 +49,27 @@ claude --plugin-dir plugins/ruflo-cost-tracker
 
 Grok prices are xAI list prices, not what a subscription bills; every Grok row is flagged **approximate** in the ledger output.
 
+## User-invoked skills (ADR-507)
+
+These skills carry `disable-model-invocation: true`: Claude does not pick them on its own, and they cost nothing in the per-turn skill listing. Type them to run them. Each is also a `/ruflo-cost` subcommand (for example `/ruflo-cost anomaly`).
+
+| Skill | Run it with |
+|---|---|
+| cost-anomaly | `/ruflo-cost-tracker:cost-anomaly` |
+| cost-benchmark | `/ruflo-cost-tracker:cost-benchmark` |
+| cost-burn | `/ruflo-cost-tracker:cost-burn` |
+| cost-conversation | `/ruflo-cost-tracker:cost-conversation` |
+| cost-counterfactual | `/ruflo-cost-tracker:cost-counterfactual` |
+| cost-diff | `/ruflo-cost-tracker:cost-diff` |
+| cost-export | `/ruflo-cost-tracker:cost-export` |
+| cost-federation | `/ruflo-cost-tracker:cost-federation` |
+| cost-health | `/ruflo-cost-tracker:cost-health` |
+| cost-projection | `/ruflo-cost-tracker:cost-projection` |
+| cost-report | `/ruflo-cost-tracker:cost-report` |
+| cost-session | `/ruflo-cost-tracker:cost-session` |
+| cost-summary | `/ruflo-cost-tracker:cost-summary` |
+| cost-trend | `/ruflo-cost-tracker:cost-trend` |
+
 ## Commands (23 subcommands)
 
 ```bash

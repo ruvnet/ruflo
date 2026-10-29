@@ -17,6 +17,15 @@ Foundation plugin. Registers the `ruflo` MCP server (314 tools), provides three 
 - **Session Management**: Persistent sessions with cross-conversation learning
 - **Hooks**: PreToolUse / PostToolUse / PreCompact / Stop wired to claude-flow's auto-routing + learning loop. Defined at `plugins/ruflo-core/hooks/hooks.json` so the per-plugin loader picks them up on `/plugin install ruflo-core@ruflo` (per-plugin layout — fixes #1748 Issue 1; the marketplace-root copy at `.claude-plugin/hooks/hooks.json` is preserved for `claude --plugin-dir <repo-root>` users).
 
+## User-invoked skills (ADR-507)
+
+These skills carry `disable-model-invocation: true`: Claude does not pick them on its own, and they cost nothing in the per-turn skill listing. Type them to run them. One-shot project setup and a status dashboard.
+
+| Skill | Run it with |
+|---|---|
+| init-project | `/ruflo-core:init-project` |
+| ruflo-status | `/ruflo-core:ruflo-status` |
+
 ## Configuration
 
 The MCP server starts automatically when this plugin is active. Its launcher uses a built `@claude-flow/cli` from the project, an ancestor `node_modules`, or a global npm install reachable from `PATH` before falling back to `npx @latest`. Set `RUFLO_MCP_CLI_OVERRIDE` to a built `@claude-flow/cli/bin/cli.js` for a nonstandard install; an invalid override fails instead of running another version. Set `RUFLO_MCP_SKIP_NPX=1` to refuse the unpinned fallback. Override environment variables in `.mcp.json` as needed.

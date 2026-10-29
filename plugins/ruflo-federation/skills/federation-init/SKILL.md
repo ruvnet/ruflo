@@ -3,6 +3,7 @@ name: federation-init
 description: Initialize federation on this node — generate keypair and configure peers
 allowed-tools: Bash(npx *) mcp__plugin_ruflo-core_ruflo__memory_store mcp__plugin_ruflo-core_ruflo__hooks_post-task Read Write
 argument-hint: "[--compliance hipaa|soc2|gdpr|none]"
+disable-model-invocation: true
 ---
 Initialize this node for federation. Generates an ed25519 keypair, creates the federation config, and optionally sets a compliance mode.
 

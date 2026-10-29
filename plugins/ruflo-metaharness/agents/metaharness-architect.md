@@ -36,6 +36,8 @@ needs its own ADR.
 | `harness-oia-audit` | Composite weekly audit worker (iter 7) | Cron-scheduled; bundles oia+threat+mcp into one timestamped record in `metaharness-audit` namespace |
 | `harness-mint` | Scaffold a custom harness | User wants to fork; ALWAYS dry-run first, never write to project root |
 
+`harness-oia-audit` and `harness-mint` are user-invoked (ADR-507), as are `harness-bench`, `harness-evolve`, `harness-learn` and `harness-security-bench`: the Skill tool refuses them. Tell the user which `/ruflo-metaharness:<skill>` to run rather than running it yourself.
+
 ## Tools (subprocess-only, no library imports)
 
 - All skills shell out to the pinned `metaharness` / `harness` binaries (`metaharness@~0.4.1`, local install or one-time versioned cache — never `@latest`) via the `_harness.mjs` shared helper.

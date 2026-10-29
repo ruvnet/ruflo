@@ -29,6 +29,19 @@ MetaHarness integration plugin for ruflo. Surfaces the upstream `metaharness` / 
 | `harness-learn` | `/harness-learn --host <h> --model <m> --slice <manifest> [--repo <checkout>] [--run]` | metaharness@0.3.0 / upstream ADR-235 — GEPA learning run; $0 dry-run default, `--run` to spend; needs a metaharness repo checkout |
 | `harness-gepa` | `/harness-gepa --op genome\|validate\|render\|analyze [--path <genome.json>]` | darwin@0.8.0 GEPA library surface — genome load/validate/render + transcript failure analysis; `gepaOptimize` stays library-only |
 
+## User-invoked skills (ADR-507)
+
+These skills carry `disable-model-invocation: true`: Claude does not pick them on its own, and they cost nothing in the per-turn skill listing. Type them to run them. They run benchmarks, spend-gated learning or evolution runs, scheduled audits, or a one-shot scaffold.
+
+| Skill | Run it with |
+|---|---|
+| harness-bench | `/ruflo-metaharness:harness-bench` |
+| harness-evolve | `/ruflo-metaharness:harness-evolve` |
+| harness-learn | `/ruflo-metaharness:harness-learn` |
+| harness-mint | `/ruflo-metaharness:harness-mint` |
+| harness-oia-audit | `/ruflo-metaharness:harness-oia-audit` |
+| harness-security-bench | `/ruflo-metaharness:harness-security-bench` |
+
 ## Phase-0 baseline (ruflo itself, 2026-06-16)
 
 ```json

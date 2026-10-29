@@ -21,6 +21,12 @@
 //   4. `allowed-tools:` field present (security — no implicit "all tools").
 //   5. `allowed-tools:` is NOT a wildcard (`*`).
 //   6. `name:` value matches the directory name (drift guard).
+//   7. `description:` is at most 300 characters (ADR-507 §2.3). Also checked
+//      for every plugins/*/commands/*.md, since commands share the per-turn
+//      listing. Multi-line (`>`, `|`) descriptions are measured unfolded.
+//   8. A skill with `disable-model-invocation: true` is named in a
+//      "User-invoked" section of its plugin README (ADR-507 §3), so a person
+//      can find the `/<skill>` the model no longer discovers on its own.
 //
 // EXIT CODES
 //   0  no violations
@@ -30,6 +36,32 @@
 import { readdirSync, statSync, readFileSync } from 'node:fs';
 import { dirname, join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseFrontmatter as parseFullFrontmatter, isUserInvokedOnly, DESCRIPTION_CEILING } from './measure-plugin-footprint.mjs';
+
+// ADR-507 §3: the text of the README section(s) whose heading says "user-invoked".
+export function userInvokedSection(readme) {
+  const lines = String(readme || '').split(/\r?\n/);
+  const out = [];
+  let level = 0;
+  for (const line of lines) {
+    const h = /^(#{1,6})\s+(.*)$/.exec(line);
+    if (h) {
+      if (/user[- ]invoked/i.test(h[2])) { level = h[1].length; continue; }
+      if (level && h[1].length <= level) level = 0;
+    }
+    if (level) out.push(line);
+  }
+  return out.join('\n');
+}
+
+export function isListedAsUserInvoked(readme, name) {
+  const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^\\w-])${esc}($|[^\\w-])`).test(userInvokedSection(readme));
+}
+
+export function descriptionTooLong(description) {
+  return typeof description === 'string' && description.length > DESCRIPTION_CEILING;
+}
 
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = dirname(SCRIPTS_DIR);
@@ -118,7 +150,55 @@ function auditSkill(skill) {
       detail: `frontmatter name="${fm.name}" but directory is "${skill.skillDir}"`,
     });
   }
+  // ADR-507: measure the unfolded description and the user-invoked flag with
+  // the full parser — the flat one above reads a `>` block as the literal `>`.
+  const full = parseFullFrontmatter(src) || {};
+  if (descriptionTooLong(full.description)) {
+    violations.push({
+      check: 'description length',
+      detail: `${full.description.length} chars > ${DESCRIPTION_CEILING} (ADR-507: one sentence of what it does and when to use it)`,
+    });
+  }
+  if (isUserInvokedOnly(full)) {
+    const name = fm.name || skill.skillDir;
+    let readme = '';
+    try { readme = readFileSync(join(PLUGINS_DIR, skill.plugin, 'README.md'), 'utf-8'); } catch {}
+    if (!isListedAsUserInvoked(readme, name)) {
+      violations.push({
+        check: 'user-invoked skill listed in README',
+        detail: `disable-model-invocation: true but "${name}" is not named under a "User-invoked" heading in plugins/${skill.plugin}/README.md`,
+      });
+    }
+  }
   return violations;
+}
+
+// ADR-507 §2.3: commands share the per-turn listing, so their descriptions get the same ceiling.
+function auditCommands() {
+  const out = [];
+  let plugins;
+  try { plugins = readdirSync(PLUGINS_DIR); } catch { return out; }
+  for (const plugin of plugins) {
+    if (ARGS.only && !ARGS.only.has(plugin)) continue;
+    const dir = join(PLUGINS_DIR, plugin, 'commands');
+    let entries;
+    try { entries = readdirSync(dir); } catch { continue; }
+    for (const e of entries) {
+      if (!e.endsWith('.md')) continue;
+      let src;
+      try { src = readFileSync(join(dir, e), 'utf-8'); } catch { continue; }
+      const fm = parseFullFrontmatter(src);
+      if (fm && descriptionTooLong(fm.description)) {
+        out.push({
+          plugin,
+          skill: `commands/${e}`,
+          file: join(dir, e).replace(REPO_ROOT + '/', ''),
+          violations: [{ check: 'description length', detail: `${fm.description.length} chars > ${DESCRIPTION_CEILING} (ADR-507)` }],
+        });
+      }
+    }
+  }
+  return out;
 }
 
 function main() {
@@ -139,6 +219,7 @@ function main() {
       });
     }
   }
+  findings.push(...auditCommands());
 
   if (ARGS.format === 'json') {
     console.log(JSON.stringify({
@@ -159,6 +240,8 @@ function main() {
       console.log('  - name / description / allowed-tools all present and non-empty');
       console.log('  - no wildcard allowed-tools');
       console.log('  - name matches enclosing directory');
+      console.log(`  - skill and command descriptions within ${DESCRIPTION_CEILING} chars`);
+      console.log('  - every user-invoked (disable-model-invocation) skill named in its plugin README');
     } else {
       console.log(`⚠ Found ${findings.length} skill(s) with frontmatter violations:`);
       console.log('');
@@ -175,4 +258,4 @@ function main() {
   process.exit(findings.length > 0 ? 1 : 0);
 }
 
-main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main();
