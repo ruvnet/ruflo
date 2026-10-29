@@ -127,10 +127,12 @@ describe('ADR-404 budget ladder', () => {
     expect((await spawn()).deny).toContain('halted');
   });
 
-  it('hooks nothing when no budget is set', () => {
-    const mod = loadMod(register, memoryWorld(), {});
+  it('hooks nothing when no budget is set and the cost ledger is off', () => {
+    // costLedger (ADR-508, default on) hooks session.measure and agent.spawn for the budget file and attribution.
+    expect(loadMod(register, memoryWorld(), {}).events()).toEqual(expect.arrayContaining(['session.measure', 'agent.spawn']));
+    const mod = loadMod(register, memoryWorld(), { costLedger: false });
     expect(mod.events()).not.toContain('session.measure');
     expect(mod.events()).not.toContain('agent.spawn');
-    expect(loadMod(register, memoryWorld(), { costBudgetUsd: 5 }).events()).not.toContain('agent.spawn');
+    expect(loadMod(register, memoryWorld(), { costBudgetUsd: 5, costLedger: false }).events()).not.toContain('agent.spawn');
   });
 });

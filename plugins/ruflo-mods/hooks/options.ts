@@ -11,6 +11,7 @@ export type ModOptions = {
   readonly statusLine: boolean
   readonly costBudgetUsd?: number
   readonly costHardStop: boolean
+  readonly costLedger: boolean
   readonly toolHints: boolean
   readonly agentTrim: boolean
   readonly agentTrimKeep: ReadonlySet<string>
@@ -47,6 +48,7 @@ export function readOptions(options: PluginOptions | undefined): ModOptions {
     statusLine: bool(o.statusLine, true),
     costBudgetUsd: budgetOf(o.costBudgetUsd),
     costHardStop: bool(o.costHardStop, false),
+    costLedger: bool(o.costLedger, true),
     toolHints: bool(o.toolHints, false),
     agentTrim: bool(o.agentTrim, false),
     agentTrimKeep: keepNames(o.agentTrimKeep),

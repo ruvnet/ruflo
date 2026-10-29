@@ -164,7 +164,7 @@ export function report(s: ModState): string {
     : 'none yet'
   const budget =
     s.budget.limit === undefined
-      ? 'off (set the costBudgetUsd option)'
+      ? 'off (set the costBudgetUsd option, or .claude-flow/cost/budget.json with costLedger on)'
       : `${s.budget.level}: $${(s.budget.usd ?? 0).toFixed(2)} of $${s.budget.limit.toFixed(2)}`
   const segments = sortedSegments(s).map(([id]) => id)
   return [
