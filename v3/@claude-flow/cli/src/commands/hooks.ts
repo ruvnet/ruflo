@@ -5503,9 +5503,11 @@ const verifiedIngestCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     try {
       const result = await callMCPTool<{
-        ingested: { verifiedSuccess: number; verifiedFailure: number; unknown: number; rejected: number };
+        ingested: { verifiedSuccess: number; verifiedFailure: number; unknown: number; rejected: number; tainted?: number };
         skipped: string | null; lessons: number; cautions: number; belowGate: number; sonaAvailable: boolean;
-        totals: { verifiedSuccess: number; verifiedFailure: number; unknown: number };
+        held?: Array<{ id: string; reason: string }>;
+        reverify?: { enabled: boolean; ran: number; passed: number; downgraded: number; deferred: number };
+        totals: { verifiedSuccess: number; verifiedFailure: number; unknown: number; tainted?: number };
       }>('hooks_intelligence_verified-ingest', { dryRun: ctx.flags['dry-run'] === true || ctx.flags.dryRun === true, force: ctx.flags.force === true });
       if (ctx.flags.format === 'json') {
         output.printJson(result);
@@ -5517,9 +5519,13 @@ const verifiedIngestCommand: Command = {
       }
       if (!result.sonaAvailable) output.printWarning('SONA unavailable: verified outcomes wait for the next ingest');
       const i = result.ingested;
-      output.printSuccess(`Ingested ${i.verifiedSuccess} verified success, ${i.verifiedFailure} verified failure; ${i.unknown} unverified (not trained), ${i.rejected} malformed${result.skipped === 'unchanged' ? ' (file unchanged)' : ''}`);
+      output.printSuccess(`Ingested ${i.verifiedSuccess} verified success, ${i.verifiedFailure} verified failure; ${i.unknown} unverified (not trained), ${i.tainted ?? 0} tainted (not trained), ${i.rejected} malformed${result.skipped === 'unchanged' ? ' (file unchanged)' : ''}`);
       output.writeln(`Lessons at or above the 0.6 gate: ${result.lessons}; cautions: ${result.cautions}; verified patterns below the gate: ${result.belowGate}`);
-      output.writeln(output.dim(`All time: ${result.totals.verifiedSuccess} success / ${result.totals.verifiedFailure} failure trained, ${result.totals.unknown} unverified`));
+      // ADR-503 §2.4: patterns the anomaly gate kept out of the prompt (they stay in SONA).
+      for (const h of result.held ?? []) output.writeln(`held: ${h.id} (${h.reason})`);
+      const rv = result.reverify;
+      if (rv?.enabled) output.writeln(`Re-verify: ${rv.ran} check(s) run, ${rv.passed} passed, ${rv.downgraded} downgraded to unverified${rv.deferred ? `, ${rv.deferred} waiting` : ''}`);
+      output.writeln(output.dim(`All time: ${result.totals.verifiedSuccess} success / ${result.totals.verifiedFailure} failure trained, ${result.totals.unknown} unverified, ${result.totals.tainted ?? 0} tainted`));
       return { success: true, data: result };
     } catch (error) {
       output.printError(`verified-ingest failed: ${error instanceof Error ? error.message : String(error)}`);

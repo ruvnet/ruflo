@@ -15,6 +15,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import { resolveWorkerMcpConfig, currentRufloServer, workCommand } from './hive-mind-worker.js';
 import { join } from 'path';
 import { resolveClaudeLaunchCommand } from '../runtime/claude-command.js';
+import { withHeadlessPlugins } from '../mods/headless-plugins.js';
 import { getHiveTokenForCli } from '../mcp-tools/hive-mind-tools.js';
 
 // Worker type definitions for prompt generation
@@ -189,7 +190,7 @@ async function spawnClaudeCodeInstance(
   objective: string,
   workers: HiveWorker[],
   flags: Record<string, unknown>
-): Promise<{ success: boolean; promptFile?: string; error?: string }> {
+): Promise<{ success: boolean; promptFile?: string; error?: string; missingPlugins?: string[] }> {
   output.writeln();
   output.writeln(output.bold('🚀 Launching Claude Code with Hive Mind Coordination'));
   output.writeln(output.dim('─'.repeat(60)));
@@ -302,6 +303,19 @@ async function spawnClaudeCodeInstance(
         }
       }
 
+      // ADR-510 §2.2: a non-interactive (-p) run is a headless worker and loads
+      // no marketplace plugins on a fresh config, so stage the worker profile
+      // (default ruflo-mods) as --plugin-dir before the prompt. The interactive
+      // path keeps loading plugins the normal, trusted way.
+      let spawnEnv: NodeJS.ProcessEnv | undefined;
+      let missingPlugins: string[] = [];
+      if (isNonInteractive) {
+        const staged = withHeadlessPlugins(claudeArgs, { ...process.env }, { projectRoot: process.cwd() });
+        claudeArgs.splice(0, claudeArgs.length, ...staged.argv);
+        spawnEnv = staged.env;
+        missingPlugins = staged.missing;
+      }
+
       // Add the prompt as the LAST argument
       claudeArgs.push(hiveMindPrompt);
 
@@ -316,6 +330,7 @@ async function spawnClaudeCodeInstance(
       ], {
         stdio: 'inherit',
         shell: false,
+        ...(spawnEnv ? { env: spawnEnv } : {}),
       });
 
       // Set up SIGINT handler for session management
@@ -377,7 +392,7 @@ async function spawnClaudeCodeInstance(
         claudeProcess.on('error', () => resolve(1));
       });
 
-      return { success: claudeExitCode === 0, promptFile };
+      return { success: claudeExitCode === 0, promptFile, ...(missingPlugins.length > 0 ? { missingPlugins } : {}) };
     } else if (dryRun) {
       output.writeln();
       output.printInfo('Dry run - would execute Claude Code with prompt:');

@@ -1731,7 +1731,8 @@ jobs:
     # peer, (B) no bare-stable peer range that can't resolve a 3.x prerelease
     # publish, (C) every main/module/exports path is covered by `files`,
     # (D) after building each plugin, every main/module/exports path exists on
-    # disk (#1904). The build step is what makes check D live.
+    # disk (#1904). The build step is what makes check D live. Also runs the
+    # ADR-506 plugin secrets audit (sensitive userConfig, no literal secrets).
     name: Plugin package install-safety (#1902/#1903/#1904)
     runs-on: ubuntu-latest
 
@@ -1783,6 +1784,12 @@ jobs:
       - name: Run plugin package audit
         shell: bash
         run: node scripts/audit-plugin-packages.mjs
+
+      - name: Run plugin secrets audit (ADR-506)
+        # A credential-named userConfig option must be "sensitive": true (credential store, masked),
+        # and no plugin.json / hooks.json may carry a literal secret (the mods' screen shapes).
+        shell: bash
+        run: node scripts/audit-plugin-secrets.mjs
 
       - name: Run package dep-overlap audit (#1147 / #2018)
         # Static guard for the "Invalid Version: " npm 11.x crash. Any package

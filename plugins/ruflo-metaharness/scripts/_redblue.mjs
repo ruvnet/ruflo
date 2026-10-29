@@ -54,7 +54,9 @@
 //   (no real creds, no live targets, no shell, no eval, no arbitrary network).
 //   This wrapper does NOT relax those — it only forwards argv with shell:false.
 //   `--mock-judge` is the $0 CI path; the real model judge gates on
-//   $OPENROUTER_API_KEY which we never inject.
+//   $OPENROUTER_API_KEY. The wrapper never puts a key in argv. When that
+//   variable is unset but the plugin option `openrouterApiKey` (sensitive,
+//   ADR-506) is, the child gets it as OPENROUTER_API_KEY in its environment.
 
 import { spawnSync } from 'node:child_process';
 import { realpathSync } from 'node:fs';
@@ -67,6 +69,7 @@ import {
   makeDegradedEmitter,
   resolvePackageBin,
 } from './_invoke.mjs';
+import { readSecret } from './_secret.mjs';
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 
@@ -77,6 +80,13 @@ const REDBLUE_PIN_VERSION = '~0.1.4';
 const REDBLUE_PIN = `${REDBLUE_PKG}@${REDBLUE_PIN_VERSION}`;
 
 const REASON_PREFIX = 'metaharness-redblue';
+
+/** The child environment, with OPENROUTER_API_KEY filled from the plugin option when the variable is unset (ADR-506). */
+export function judgeEnv(env) {
+  if (env.OPENROUTER_API_KEY) return env;
+  const key = readSecret('openrouterApiKey', [], env);
+  return key ? { ...env, OPENROUTER_API_KEY: key } : env;
+}
 
 // Cache dir is versioned by the pin so bumping REDBLUE_PIN_VERSION
 // invalidates stale installs (handled inside ensureCachedInstall). The
@@ -133,7 +143,7 @@ export function runRedblue(args, opts = {}) {
     encoding: 'utf-8',
     timeout: timeoutMs,
     cwd: opts.cwd,
-    env: { ...process.env, ...(opts.env || {}) },
+    env: judgeEnv({ ...process.env, ...(opts.env || {}) }),
     shell: false,
   });
   const durationMs = Date.now() - start;
