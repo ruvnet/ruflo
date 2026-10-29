@@ -5,7 +5,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -85,9 +87,73 @@ describe('ADR-507 audit-skill-frontmatter rules', () => {
     expect(descriptionTooLong(undefined)).toBe(false);
   });
 
+  // Run the real CLI against a fixture tree, so the gate's wiring (not just
+  // the helpers) is under test: disabling any check in auditSkill/auditCommands
+  // fails one of these.
+  function fixture(readmeRow: boolean) {
+    const dir = mkdtempSync(join(tmpdir(), 'adr507-audit-'));
+    const put = (rel: string, body: string) => {
+      mkdirSync(dirname(join(dir, rel)), { recursive: true });
+      writeFileSync(join(dir, rel), body);
+    };
+    const longFolded = ('word '.repeat(61)).trim(); // 304 chars once unfolded
+    put('p/skills/long/SKILL.md', `---\nname: long\ndescription: >\n  ${longFolded.slice(0, 149)}\n  ${longFolded.slice(150)}\nallowed-tools: Bash\n---\n`);
+    put('p/skills/hidden/SKILL.md', skill('hidden', 'A report. Use when asked.', 'disable-model-invocation: true\n'));
+    put('p/skills/ok/SKILL.md', skill('ok', 'Fine. Use when fine.'));
+    put('p/commands/big.md', `---\nname: big\ndescription: |\n  ${'z'.repeat(200)}\n  ${'z'.repeat(110)}\n---\n`);
+    put('p/README.md', readmeRow ? '# P\n\n## User-invoked skills\n\n- `hidden`\n' : '# P\n\n## Skills\n\n- hidden\n');
+    return dir;
+  }
+  const audit = (dir: string, script = 'scripts/audit-skill-frontmatter.mjs') =>
+    spawnSync(process.execPath, [script, '--format', 'json', '--plugins-dir', dir], { cwd: REPO, encoding: 'utf8' });
+
+  it('the CLI fails a fixture with a long folded description, an unlisted user-invoked skill and a long command', () => {
+    const dir = fixture(false);
+    try {
+      const out = audit(dir);
+      expect(out.status).toBe(1);
+      const report = JSON.parse(out.stdout);
+      expect(report.skillsScanned).toBe(3);
+      const checks = (name: string) =>
+        report.findings.find((f: { skill: string }) => f.skill === name)?.violations.map((v: { check: string }) => v.check) ?? [];
+      expect(checks('long')).toContain('description length');
+      expect(checks('hidden')).toContain('user-invoked skill listed in README');
+      expect(checks('commands/big.md')).toContain('description length');
+      expect(checks('ok')).toEqual([]);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it('control: the README row clears the user-invoked finding, the length findings stay', () => {
+    const dir = fixture(true);
+    try {
+      const report = JSON.parse(audit(dir).stdout);
+      const flat = report.findings.flatMap((f: { skill: string; violations: { check: string }[] }) => f.violations.map((v) => `${f.skill}:${v.check}`));
+      expect(flat.sort()).toEqual(['commands/big.md:description length', 'long:description length']);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it('still runs the gate when invoked through a symlinked path', () => {
+    const dir = fixture(false);
+    const link = join(tmpdir(), `adr507-link-${process.pid}-${Date.now()}`);
+    try {
+      symlinkSync(REPO, link);
+      for (const script of ['scripts/audit-skill-frontmatter.mjs', 'scripts/measure-plugin-footprint.mjs']) {
+        const args = script.includes('audit') ? ['--format', 'json', '--plugins-dir', dir] : ['--format', 'json'];
+        const out = spawnSync(process.execPath, [join(link, script), ...args], { encoding: 'utf8' });
+        expect(out.stdout.trim().length, script).toBeGreaterThan(0); // main() ran
+        if (script.includes('audit')) expect(out.status).toBe(1);
+        else expect(JSON.parse(out.stdout).totals.skills).toBeGreaterThan(0);
+      }
+    } finally {
+      rmSync(link, { force: true });
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('passes on the repository: no long descriptions, every user-invoked skill documented', async () => {
     const out = spawnSync(process.execPath, ['scripts/audit-skill-frontmatter.mjs', '--format', 'json'], { cwd: REPO, encoding: 'utf8' });
     const report = JSON.parse(out.stdout);
+    expect(report.skillsScanned).toBeGreaterThan(100); // zero checks must not read as zero violations
     expect(report.findings).toEqual([]);
     expect(out.status).toBe(0);
     const { measure } = await load('scripts/measure-plugin-footprint.mjs');

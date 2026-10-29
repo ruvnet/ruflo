@@ -27,7 +27,7 @@
 //   0  measured
 //   2  scan error (no plugins dir, bad args)
 
-import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync, realpathSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -253,4 +253,10 @@ function main() {
   }
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main();
+// Compare realpaths: Node realpaths import.meta.url for the entry module but
+// not argv[1], so a symlinked invocation path would otherwise skip main().
+const isEntry = (() => {
+  if (!process.argv[1]) return false;
+  try { return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); } catch { return false; }
+})();
+if (isEntry) main();

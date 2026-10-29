@@ -13,6 +13,7 @@
 //   node scripts/audit-skill-frontmatter.mjs                  # all skills
 //   node scripts/audit-skill-frontmatter.mjs --format json    # machine-readable
 //   node scripts/audit-skill-frontmatter.mjs --only ruflo-cost-tracker
+//   node scripts/audit-skill-frontmatter.mjs --plugins-dir <dir>  # audit another tree (tests)
 //
 // CHECKS per SKILL.md
 //   1. File has a `---` frontmatter block at the top.
@@ -33,8 +34,8 @@
 //   1  at least one violation found
 //   2  scan error (no plugins dir)
 
-import { readdirSync, statSync, readFileSync } from 'node:fs';
-import { dirname, join, basename } from 'node:path';
+import { readdirSync, statSync, readFileSync, realpathSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFrontmatter as parseFullFrontmatter, isUserInvokedOnly, DESCRIPTION_CEILING } from './measure-plugin-footprint.mjs';
 
@@ -65,19 +66,23 @@ export function descriptionTooLong(description) {
 
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = dirname(SCRIPTS_DIR);
-const PLUGINS_DIR = join(REPO_ROOT, 'plugins');
 
 const ARGS = (() => {
-  const a = { format: 'table', only: null };
+  const a = { format: 'table', only: null, pluginsDir: join(REPO_ROOT, 'plugins') };
   for (let i = 2; i < process.argv.length; i++) {
     const v = process.argv[i];
     if (v === '--format') a.format = process.argv[++i];
     else if (v === '--only') {
       a.only = new Set((process.argv[++i] || '').split(',').map((s) => s.trim()).filter(Boolean));
+    } else if (v === '--plugins-dir') {
+      const d = process.argv[++i];
+      if (!d) { console.error('audit-skill-frontmatter: --plugins-dir needs a directory'); process.exit(2); }
+      a.pluginsDir = resolve(d);
     }
   }
   return a;
 })();
+const PLUGINS_DIR = ARGS.pluginsDir;
 
 function discoverSkills() {
   const out = [];
@@ -258,4 +263,12 @@ function main() {
   process.exit(findings.length > 0 ? 1 : 0);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main();
+// Run main() only when executed, not when imported. Node realpaths
+// import.meta.url for the entry module but leaves argv[1] as typed, so compare
+// realpaths: a symlinked invocation path must still run the gate.
+export function isEntryPoint(metaUrl, argv1 = process.argv[1]) {
+  if (!argv1) return false;
+  try { return realpathSync(argv1) === realpathSync(fileURLToPath(metaUrl)); } catch { return false; }
+}
+
+if (isEntryPoint(import.meta.url)) main();
