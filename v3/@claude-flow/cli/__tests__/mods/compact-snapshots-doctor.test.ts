@@ -6,13 +6,24 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { COMPACTIONS_DIR, compactSnapshotHealth } from '../../src/mods/compact-snapshots.js';
 
 const dirs: string[] = [];
 afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
+// A developer's or CI's global core.excludesFile must not decide whether git ignores the snapshots here.
+let savedGlobal: string | undefined;
+beforeAll(() => {
+  savedGlobal = process.env.GIT_CONFIG_GLOBAL;
+  process.env.GIT_CONFIG_GLOBAL = '/dev/null';
+});
+afterAll(() => {
+  if (savedGlobal === undefined) delete process.env.GIT_CONFIG_GLOBAL;
+  else process.env.GIT_CONFIG_GLOBAL = savedGlobal;
 });
 
 function project(opts: { git: boolean; snapshot: boolean; nestedIgnore?: boolean; rootIgnore?: string }) {
