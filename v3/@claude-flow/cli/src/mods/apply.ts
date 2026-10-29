@@ -133,6 +133,7 @@ export async function applyMods(root: string, opts: ApplyOptions): Promise<Apply
   const acceptRisk = new Set(opts.acceptRisk ?? []);
   const seen = new Set<string>();
   const blocked = new Map<string, string>();
+  const told = new Set<string>();
   // ADR-509 §2.2: Claude Code loads an enabled plugin straight from the
   // marketplace clone, install or not. So where a clone already exists, scan it
   // BEFORE enabling anything from it, and never enable what the scan blocks.
@@ -143,7 +144,7 @@ export async function applyMods(root: string, opts: ApplyOptions): Promise<Apply
   }
   const install = installMod(root, opts.scope, opts.dryRun === true, MOD_PLUGIN_IDS.filter((id) => !blocked.has(id)), opts.marketplace ?? MARKETPLACE_SOURCE);
   // A blocked plugin enabled by an earlier run (or by hand) is turned off too.
-  turnOff(root, install, blocked);
+  turnOff(root, install, blocked, told);
   const lines = describeAdded(install.added);
   // Only what is enabled in the file: `claude plugin install` would flip a
   // plugin someone set to false back to true.
@@ -221,7 +222,7 @@ export async function applyMods(root: string, opts: ApplyOptions): Promise<Apply
   });
   printSteps(repair.steps);
   // The refresh may have brought a finding the first scan did not see: that plugin is turned off as well.
-  turnOff(root, install, blocked);
+  turnOff(root, install, blocked, told);
   // ADR-509 §2.1: verify what Claude Code will load and leave the result for the mod's trust gate.
   verifyAndRecord(configDir, marketplaceState(configDir).location, plugins.map((p) => p.id.split('@')[0]!));
   if (declared.source.source === 'directory' && repair.ok) output.writeln(output.dim(`Directory marketplace: plugins load live from ${declared.source.path} (no clone, no install).`));
@@ -242,10 +243,12 @@ export async function applyMods(root: string, opts: ApplyOptions): Promise<Apply
 }
 
 /** ADR-509 §2.2: turn off (enabledPlugins + install record) each blocked plugin, and say so. */
-function turnOff(root: string, install: InstallResult, blocked: ReadonlyMap<string, string>): void {
+function turnOff(root: string, install: InstallResult, blocked: ReadonlyMap<string, string>, told: Set<string>): void {
   if (install.dryRun || blocked.size === 0) return;
   const off = disableBlockedPlugins(root, install.settingsFile, [...blocked.keys()]);
   for (const [id, why] of blocked) {
+    if (told.has(id) && !off.includes(id)) continue; // already said, and nothing changed since
+    told.add(id);
     output.writeln(`${output.error('✗')} ${id}: ${off.includes(id) ? `enabledPlugins["${id}"] removed from ${install.settingsFile}` : 'not enabled'}; ${why}`);
   }
 }
