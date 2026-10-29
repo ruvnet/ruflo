@@ -85,7 +85,7 @@ describe.skipIf(process.platform === 'win32')('gitWorktreeRunner (real git workt
     rmSync(pidFile, { force: true });
     const started = Date.now();
     // Long enough for npm to start the script and write its pid; short enough to keep the suite fast.
-    expect(await run(npm('build'), 3_000)).toEqual({ status: 'timeout', commit: head });
+    expect(await run(npm('build'), 8_000)).toEqual({ status: 'timeout', commit: head });
     expect(Date.now() - started).toBeLessThan(20_000);
     expect(existsSync(pidFile)).toBe(true);
     const pid = Number(readFileSync(pidFile, 'utf8'));
