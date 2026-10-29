@@ -5,6 +5,7 @@ import { routeTask } from '../route/route-task'
 import { redraw, under, type ModState } from '../state'
 import { lessonBlock, parseLessons, pick } from './lessons'
 import { appendLines, line, LESSONS_PATH, MAX_PENDING, outcomeOf, start, step, VERIFIED_PATH } from './record'
+import { rememberLessons, rememberOutcome } from './status'
 import { classify, verdict } from './verifier'
 
 /**
@@ -49,6 +50,7 @@ export function registerLoop(on: On, state: ModState) {
     if (!block) return next(e)
     loop.lessonsShown += chosen.length
     loop.lastLesson = chosen[0]!.confidence
+    rememberLessons(loop, chosen)
     redraw(state)
     return next({ ...e, context: [...(e.context ?? []), block] })
   }).catch(($, e, next) => next(e)) // a broken loop never blocks a prompt
@@ -75,6 +77,7 @@ export function registerLoop(on: On, state: ModState) {
       const outcome = outcomeOf(json)
       loop.recorded[outcome === 'verified-success' ? 'success' : outcome === 'verified-failure' ? 'failure' : 'unknown']++
       loop.pending.push(json)
+      rememberOutcome(loop, json)
       if (loop.pending.length > MAX_PENDING) loop.dropped += loop.pending.splice(0, loop.pending.length - MAX_PENDING).length
       redraw(state)
     }

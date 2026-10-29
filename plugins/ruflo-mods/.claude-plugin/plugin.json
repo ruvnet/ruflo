@@ -89,6 +89,13 @@
       "required": false,
       "default": false
     },
+    "compactSnapshot": {
+      "type": "boolean",
+      "title": "Snapshot the transcript before compaction, reload ruflo state after",
+      "description": "When the main conversation is compacted, write the transcript about to be summarized to .claude-flow/sessions/compactions/snapshot-<n>.jsonl: each message's role, its text cut to 2,000 characters, and tool call names and ids; never tool inputs or outputs; a line with a secret shape or injection phrase is stored as [redacted]; at most 400 messages and 2 MiB, ten files, the oldest overwritten. The compaction is never blocked, delayed or rewritten. The next prompt then gets one context block of at most 2,000 characters: lessons that matched a prompt this session, the latest loop outcomes, open swarm and claim ids, and the snapshot's path. Only in a ruflo project (.claude-flow/, which ruflo init gitignores). On by default; set false to turn it off.",
+      "required": false,
+      "default": true
+    },
     "learningLoop": {
       "type": "boolean",
       "title": "Verified-outcome learning loop",
