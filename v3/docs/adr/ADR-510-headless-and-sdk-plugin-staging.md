@@ -1,6 +1,6 @@
 # ADR 510: loading ruflo plugins in headless and Agent SDK workers
 
-Status: Accepted (implemented in PR PENDING)
+Status: Accepted (implemented in PR #4586)
 
 Issue: #4581 follow-up 8. Builds on: ADR-404 (mods), the headless worker daemon, and the ADR-502 canary (mods ran under `claude -p --plugin-dir`).
 
