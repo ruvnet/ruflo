@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-cost-tracker`.
 
+## 0.30.0 — 2026-10-29
+- chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
+
 ## 0.29.0 — 2026-10-29
 - feat: `openrouterApiKey` is a `userConfig` option with `sensitive: true` (ADR-506, #4587): entered masked, kept in the platform credential store, read through `readSecret` before the `OPENROUTER_API_KEY` environment fallback; never logged or put on a command line.
 
