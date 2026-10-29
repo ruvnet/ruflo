@@ -11,8 +11,8 @@
  * is printed and the install continues. Static by design: a hook that fetches
  * code at run time is caught only by the network/process rules (ADR-509 §3).
  */
-import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { scanCommandStringForRisk } from '../../init/settings-risk-scanner.js';
 
@@ -38,7 +38,7 @@ const MODULE_ESCAPES: Array<{ re: RegExp; rule: string; detail: string }> = [
   { re: /(?:\brequire\s*\(\s*|\bimport\s*\(\s*|\bfrom\s+|\bimport\s+)['"](?:node:)?child_process['"]/, rule: 'module-child-process', detail: 'imports child_process (runs commands outside the host)' },
   { re: /\beval\s*\(|\bnew\s+Function\s*\(/, rule: 'module-dynamic-code', detail: 'evaluates code built at run time (eval / new Function)' },
 ];
-const MODULE_EXT = /\.(ts|mts|cts|js|mjs|cjs)$/;
+const MODULE_EXT = /\.(ts|mts|cts|tsx|js|mjs|cjs|jsx)$/;
 const MAX_FILE_BYTES = 1024 * 1024;
 
 const record = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -91,6 +91,7 @@ function scanHooksJson(plugin: string, root: string, out: ScanFinding[]): void {
   }
 }
 
+/** Hook-module files under hooks/, for coverage beyond what hooks.json lists (tests, oversize files skipped). */
 function moduleFiles(root: string): string[] {
   const out: string[] = [];
   const walk = (rel: string, depth: number) => {
@@ -113,11 +114,110 @@ function moduleFiles(root: string): string[] {
   return out;
 }
 
+// Static module specifiers: import/export ... from, side-effect import, import(), require().
+const SPECIFIERS = [
+  /\bfrom\s*['"`]([^'"`\n]+)['"`]/g,
+  /\bimport\s*['"`]([^'"`\n]+)['"`]/g,
+  /\bimport\s*\(\s*['"`]([^'"`\n]+)['"`]\s*[,)]/g,
+  /\brequire\s*\(\s*['"`]([^'"`\n]+)['"`]\s*\)/g,
+];
+// import(x) / require(x) with a computed argument: what it loads cannot be read statically.
+const COMPUTED_LOAD = /\b(?:import|require)\s*\(\s*(?![\s'"]|`[^`$]*`)/;
+const MAX_MODULES = 2000;
+
+// `import type … from` / `export type … from` are erased by the TypeScript loader: nothing loads.
+const TYPE_ONLY = /\b(?:import|export)\s+type\s+[^;'"`]{0,2000}?\bfrom\s*['"][^'"\n]+['"]/g;
+
+function relativeSpecifiers(text: string): string[] {
+  const out = new Set<string>();
+  const loaded = text.replace(TYPE_ONLY, '');
+  for (const re of SPECIFIERS) for (const m of loaded.matchAll(re)) if (m[1]!.startsWith('./') || m[1]!.startsWith('../')) out.add(m[1]!);
+  return [...out];
+}
+
+/** Node / TypeScript-style resolution of a relative specifier: exact, + extension, .js→.ts, index.*. */
+function resolveSpecifier(fromDir: string, spec: string): string | null {
+  const base = resolve(fromDir, spec);
+  const exts = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'];
+  const swapped = /\.(c|m)?js$/.test(base) ? [base.replace(/\.js$/, '.ts').replace(/\.mjs$/, '.mts').replace(/\.cjs$/, '.cts')] : [];
+  const candidates = [base, ...swapped, ...exts.map((e) => base + e), ...exts.map((e) => join(base, `index${e}`))];
+  for (const c of candidates) {
+    try {
+      if (statSync(c).isFile()) return c;
+    } catch {
+      // try the next
+    }
+  }
+  return null;
+}
+
+const relTo = (root: string, abs: string) => relative(root, abs).split(sep).join('/');
+
+/**
+ * What the engine actually loads: the hooks.json \`modules\` (resolved against
+ * hooks.json's directory) and every relative import they reach. None of the
+ * walk's skips apply here: a listed or imported file is scanned whatever its
+ * name or size, and one that cannot be read or is too large is itself a high
+ * finding (\`unscannable\`), never silently passed.
+ */
+function scanLoadedModules(plugin: string, root: string, out: ScanFinding[], scanned: Set<string>): void {
+  const hooksJson = join(root, 'hooks', 'hooks.json');
+  if (!existsSync(hooksJson)) return;
+  const parsed = readJson(hooksJson);
+  const listed = record(parsed) && Array.isArray(parsed.modules) ? parsed.modules : [];
+  const queue: Array<{ abs: string; from: string }> = [];
+  for (const m of listed) {
+    if (typeof m !== 'string') continue;
+    const abs = resolveSpecifier(dirname(hooksJson), m) ?? resolve(dirname(hooksJson), m);
+    queue.push({ abs, from: 'hooks/hooks.json' });
+  }
+  const rootAbs = resolve(root);
+  while (queue.length) {
+    const { abs, from } = queue.shift()!;
+    if (scanned.has(abs)) continue;
+    scanned.add(abs);
+    const file = relTo(rootAbs, abs);
+    if (scanned.size > MAX_MODULES) {
+      out.push({ plugin, severity: 'high', file, rule: 'unscannable', detail: `more than ${MAX_MODULES} modules reachable from hooks.json` });
+      return;
+    }
+    if (file.startsWith('../') || isAbsolute(file)) {
+      out.push({ plugin, severity: 'high', file, rule: 'module-outside-plugin', detail: `loaded by ${from} but outside the plugin directory` });
+    }
+    let text: string;
+    try {
+      const st = lstatSync(abs);
+      if (!st.isFile()) throw new Error(st.isSymbolicLink() ? 'a symbolic link' : 'not a regular file');
+      if (st.size > MAX_FILE_BYTES) throw new Error(`${st.size} bytes, over the ${MAX_FILE_BYTES}-byte scan limit`);
+      text = readFileSync(abs, 'utf-8');
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      out.push({ plugin, severity: 'high', file, rule: 'unscannable', detail: `loaded by ${from} but cannot be scanned (${code === 'ENOENT' ? 'missing' : (error as Error).message})` });
+      continue;
+    }
+    scanText(plugin, file, text, out);
+    if (COMPUTED_LOAD.test(text)) out.push({ plugin, severity: 'high', file, rule: 'module-computed-import', detail: 'loads a module whose name is computed at run time (import()/require() of a non-literal)' });
+    for (const spec of relativeSpecifiers(text)) {
+      const next = resolveSpecifier(dirname(abs), spec);
+      if (next) queue.push({ abs: next, from: file });
+      else out.push({ plugin, severity: 'medium', file, rule: 'module-unresolved-import', detail: `imports ${spec}, which does not resolve to a file` });
+    }
+  }
+}
+
+function scanText(plugin: string, file: string, text: string, out: ScanFinding[]): void {
+  for (const r of MODULE_ESCAPES) if (r.re.test(text)) out.push({ plugin, severity: 'high', file, rule: r.rule, detail: r.detail });
+  for (const r of MODULE_CAPABILITIES) if (r.re.test(text)) out.push({ plugin, severity: 'medium', file, rule: r.rule, detail: r.detail });
+}
+
 function scanModules(plugin: string, root: string, out: ScanFinding[]): void {
+  const scanned = new Set<string>();
+  scanLoadedModules(plugin, root, out, scanned);
   for (const file of moduleFiles(root)) {
-    const text = readFileSync(join(root, file), 'utf-8');
-    for (const r of MODULE_ESCAPES) if (r.re.test(text)) out.push({ plugin, severity: 'high', file, rule: r.rule, detail: r.detail });
-    for (const r of MODULE_CAPABILITIES) if (r.re.test(text)) out.push({ plugin, severity: 'medium', file, rule: r.rule, detail: r.detail });
+    const abs = resolve(root, file);
+    if (scanned.has(abs)) continue;
+    scanned.add(abs);
+    scanText(plugin, file, readFileSync(abs, 'utf-8'), out);
   }
 }
 
