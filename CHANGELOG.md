@@ -5,6 +5,24 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.63.9] - 2026-10-29
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.9.
+
+### Security
+
+- `github_repo_analyze` no longer returns credentials embedded in the origin remote. A remote such as `https://x-access-token:<token>@github.com/...` was echoed verbatim in `remoteUrl`, putting the token into tool output. URL userinfo is now stripped; scp-form remotes (`git@host:o/r`) are unchanged (#4577).
+
+### Fixed
+
+- `migrate run --dry-run` and `migrate fix --agents --dry-run` (or `-d`) preview instead of migrating. Both read a flag key the parser never set, so a dry run overwrote `.claude-flow/config.json` and wrote restored agent files (#4568).
+- `github_repo_analyze` reads repository names that contain a dot (`vercel/next.js`, `socketio/socket.io`) from the origin remote instead of filing them all under `local/repo` (#4571).
+- `hooks_worker-detect` with `autoDispatch` marks its worker records and response as `synthetic` with a note, instead of reporting a completed worker when no executor ran (#4576).
+
+### Changed
+
+- The `agentic-qe-fleet` marketplace entry is pinned to Agentic QE v3.15.17 (#4574).
+
 ## [3.63.8] - 2026-10-28
 
 Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.8, plus standalone `@claude-flow/memory` 3.1.0.
