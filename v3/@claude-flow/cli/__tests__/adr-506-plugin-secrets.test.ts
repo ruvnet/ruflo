@@ -236,7 +236,7 @@ describe('ADR-506 SessionStart bridge (_secret-env.cjs)', () => {
     expect(bridgeLines({ openrouterApiKey: 'BAD NAME' }, { CLAUDE_PLUGIN_OPTION_OPENROUTERAPIKEY: PROBE })).toEqual([])
   })
 
-  it('a quoted value round-trips through bash unchanged', () => {
+  it.skipIf(process.platform === 'win32')('a quoted value round-trips through bash unchanged', () => {
     const { bridgeLines } = req(BRIDGES[0])
     const tricky = `p'q"r$HOME\`id\` ;|&`
     const [line] = bridgeLines({ k: 'OUT' }, { CLAUDE_PLUGIN_OPTION_K: tricky })
@@ -256,7 +256,7 @@ describe('ADR-506 SessionStart bridge (_secret-env.cjs)', () => {
     if (process.platform !== 'win32') expect(statSync(file).mode & 0o077).toBe(0)
   })
 
-  it('the SessionStart hook of each plugin runs the bridge, prints nothing, and fills the env file', () => {
+  it.skipIf(process.platform === 'win32')('the SessionStart hook of each plugin runs the bridge, prints nothing, and fills the env file', () => {
     for (const plugin of PLUGINS) {
       const root = join(REPO, 'plugins', plugin)
       const hooks = JSON.parse(readFileSync(join(root, 'hooks', 'hooks.json'), 'utf8'))
