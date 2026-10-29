@@ -2409,6 +2409,75 @@ async function checkTypesafeRouter(): Promise<HealthCheck> {
   }
 }
 
+// #3418 — the MiniLM router embedder (ADR-390, CLAUDE_FLOW_ROUTER_EMBEDDER)
+// had no doctor signal: confirming it's active meant running `hooks route`
+// and grepping the printed `embedder=` marker. `--component minilm` only.
+async function checkMiniLmRouterEmbedder(): Promise<HealthCheck> {
+  const name = 'MiniLM router embedder (ADR-390)';
+  const { resolveRouterEmbedder } = await import('../ruvector/router-embedder.js');
+  const selection = resolveRouterEmbedder();
+  if (selection.kind === 'hash') {
+    return {
+      name,
+      status: 'pass',
+      message: selection.reason ?? `disabled (set CLAUDE_FLOW_ROUTER_EMBEDDER=minilm); hooks_route uses the character-hash embedder`,
+    };
+  }
+  try {
+    const { generateLocalEmbedding } = await import('../memory/memory-initializer.js');
+    const out = await generateLocalEmbedding('doctor probe');
+    if (out.backend !== 'onnx') {
+      return {
+        name,
+        status: 'warn',
+        message: `CLAUDE_FLOW_ROUTER_EMBEDDER=minilm but the local embedder backend is '${out.backend}' (model '${out.model}'), not onnx — hooks_route silently degrades to the hash embedder for every text in a call`,
+        fix: 'install the agentic-flow ONNX backend (all-MiniLM-L6-v2) or unset CLAUDE_FLOW_ROUTER_EMBEDDER',
+      };
+    }
+    if (!out.embedding || out.embedding.length !== 384) {
+      return {
+        name,
+        status: 'warn',
+        message: `local embedder returned ${out.embedding?.length ?? 0}-d vectors; the router index is 384-d, so hooks_route degrades to the hash embedder`,
+      };
+    }
+    return { name, status: 'pass', message: `enabled; onnx backend (model '${out.model}') producing 384-d vectors` };
+  } catch (err) {
+    return {
+      name,
+      status: 'warn',
+      message: `CLAUDE_FLOW_ROUTER_EMBEDDER=minilm but the local embedder failed to load: ${err instanceof Error ? err.message : String(err)} — hooks_route falls back to the hash embedder`,
+      fix: 'install the agentic-flow ONNX backend (all-MiniLM-L6-v2) or unset CLAUDE_FLOW_ROUTER_EMBEDDER',
+    };
+  }
+}
+
+// #3418 — no doctor signal existed for "is MCP tool-governance enforcement
+// actually active", only the audit log (#3417), which only has data once a
+// tool call has happened. `--component mcp-governance` only.
+async function checkMcpGovernance(): Promise<HealthCheck> {
+  const name = 'MCP tool governance (RUFLO_MCP_ENFORCE_POLICY)';
+  const { isPolicyEnforcementEnabled, loadMcpPolicy } = await import('../mcp-tools/policy-enforcer.js');
+  if (!isPolicyEnforcementEnabled()) {
+    return { name, status: 'pass', message: 'disabled (set RUFLO_MCP_ENFORCE_POLICY=1 and add .harness/mcp-policy.json to enable)' };
+  }
+  const policy = loadMcpPolicy();
+  if (!policy) {
+    return {
+      name,
+      status: 'fail',
+      message: 'RUFLO_MCP_ENFORCE_POLICY is set but .harness/mcp-policy.json is missing or invalid — tool calls fail closed',
+      fix: 'create .harness/mcp-policy.json (see @claude-flow/cli/src/mcp-tools/policy-enforcer.ts for the shape)',
+    };
+  }
+  const limit = typeof policy.maxToolCallsPerTurn === 'number' ? `max ${policy.maxToolCallsPerTurn} calls/${(policy.turnWindowMs ?? 60_000) / 1000}s` : 'no per-turn call limit';
+  return {
+    name,
+    status: 'pass',
+    message: `enabled; policy loaded from .harness/mcp-policy.json (${limit}). This only confirms the policy file is loadable — it does not confirm the running stdio entry point actually routes tools/call through the enforcer (#3415).`,
+  };
+}
+
 async function checkClaudeCode(): Promise<HealthCheck> {
   try {
     const version = await runCommand('claude --version');
@@ -2604,7 +2673,7 @@ export const doctorCommand: Command = {
     {
       name: 'component',
       short: 'c',
-      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, browser, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, mods, metaharness)',
+      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, browser, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, minilm, mcp-governance, mods, metaharness)',
       type: 'string'
     },
     {
@@ -2713,6 +2782,8 @@ export const doctorCommand: Command = {
       'proxy': [checkProxySponsoredConsent, checkProxyBinary, checkProxyProcess, checkProxyBindAddress],
       'auth': checkAuth, // ADR-306
       'typesafe': checkTypesafeRouter, // opt-in @ruvector/typesafe task router
+      'minilm': checkMiniLmRouterEmbedder, // ADR-390 — router embedder picker (#3418)
+      'mcp-governance': checkMcpGovernance, // #3418 — RUFLO_MCP_ENFORCE_POLICY
       'mods': checkMods, // ADR-404 — ruflo as a Claude Code mod
     };
 
@@ -2873,6 +2944,7 @@ export const doctorCommand: Command = {
       [checkProxyBinary, 'proxy-binary'], [checkProxyProcess, 'proxy-process'],
       [checkProxyBindAddress, 'proxy-bind'], [checkAuth, 'auth'],
       [checkTypesafeRouter, 'typesafe'], [checkMods, 'mods'],
+      [checkMiniLmRouterEmbedder, 'minilm'], [checkMcpGovernance, 'mcp-governance'],
     ]);
     nativeAgentDbChecks.forEach((check, index) => {
       // The path distinguishes simultaneous authority files; normalize separators.

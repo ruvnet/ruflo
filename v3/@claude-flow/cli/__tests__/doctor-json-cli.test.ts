@@ -48,4 +48,31 @@ describe('doctor JSON through CLI.run', () => {
     expect(child.status, child.stderr).toBe(1);
     expect(JSON.parse(child.stdout).checks[0]).toMatchObject({ id: 'encryption', status: 'fail' });
   });
+
+  // #3418 — doctor had no component for the MiniLM router embedder picker
+  // (ADR-390) or MCP tool-governance enforcement; confirming either was
+  // active meant indirect probes (grepping hooks_route output, or the audit
+  // log which only has data after a call happens).
+  it('minilm: passes and reports disabled when CLAUDE_FLOW_ROUTER_EMBEDDER is unset', () => {
+    const child = run('minilm', [], { CLAUDE_FLOW_ROUTER_EMBEDDER: '' });
+    expect(child.error, child.stderr).toBeUndefined();
+    expect(child.status, child.stderr).toBe(0);
+    expect(JSON.parse(child.stdout).checks[0]).toMatchObject({ id: 'minilm', status: 'pass' });
+    expect(JSON.parse(child.stdout).checks[0].detail).toMatch(/disabled/);
+  });
+
+  it('mcp-governance: passes and reports disabled when RUFLO_MCP_ENFORCE_POLICY is unset', () => {
+    const child = run('mcp-governance', [], { RUFLO_MCP_ENFORCE_POLICY: '' });
+    expect(child.error, child.stderr).toBeUndefined();
+    expect(child.status, child.stderr).toBe(0);
+    expect(JSON.parse(child.stdout).checks[0]).toMatchObject({ id: 'mcp-governance', status: 'pass' });
+    expect(JSON.parse(child.stdout).checks[0].detail).toMatch(/disabled/);
+  });
+
+  it('mcp-governance: fails closed when enforcement is on but .harness/mcp-policy.json is missing', () => {
+    const child = run('mcp-governance', [], { RUFLO_MCP_ENFORCE_POLICY: '1' });
+    expect(child.error, child.stderr).toBeUndefined();
+    expect(child.status, child.stderr).toBe(1);
+    expect(JSON.parse(child.stdout).checks[0]).toMatchObject({ id: 'mcp-governance', status: 'fail' });
+  });
 });
