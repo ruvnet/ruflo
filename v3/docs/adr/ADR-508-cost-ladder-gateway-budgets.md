@@ -79,6 +79,8 @@ What shipped, and where it differs from the sketch above.
 
   The generated virtual key is printed masked unless `--print-key` is given. The `userConfig` sensitive-option source (ADR-506) is not wired yet.
 - **meta-llm.** `--gateway meta-llm` exits 2 with a pointer to this ADR and sends nothing.
+- **Open: the budget file is project-writable.** The model can edit or delete `.claude-flow/cost/budget.json` mid-session, for example with the Edit tool. Doing so lowers the ladder and lifts the file's `hardStop`. `costBudgetUsd` and `costHardStop`, which live in user settings, cannot be changed this way. No ruflo-mods guard protects `.claude-flow/` control files today. Whether to add a tighten-only `tool.check` deny for writes to this file is left to the integration owner.
+- **Default on.** `costLedger` defaults to `true`, by analogy with `learningLoop` (ADR-502). The cost is one `stat` per `session.measure`, one append per session, and the transcript read on error turns. Default-on versus opt-in is left to the integration owner.
 - **Command home.** There was no `ruflo cost` CLI command; the cost-tracker plugin's `/ruflo-cost` is a prompt command over scripts. `cost` is a new top-level CLI command (`v3/@claude-flow/cli/src/commands/cost.ts`, listed in `RUFLO_CLI_COMMANDS`). `plugins/ruflo-cost-tracker/commands/ruflo-cost.md` points to it.
 
 ### Live validation (Claude Code 2.1.289, `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, `--plugin-dir plugins/ruflo-mods`)
