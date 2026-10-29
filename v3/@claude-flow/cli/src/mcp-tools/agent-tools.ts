@@ -388,18 +388,14 @@ export const agentTools: MCPTool[] = [
         ...(routingResult.openrouterModel ? { openrouterModel: routingResult.openrouterModel } : {}),
       };
 
-      const store = loadAgentStore();
-      store.agents[agentId] = agent;
-      saveAgentStore(store);
-
-      // #2085 — also push to the swarm store's agents array so that
-      // swarm_status reports the new agent. Without this, agent_spawn
-      // and swarm_status read/write separate stores and agents added
-      // post-init never show up in swarm_status.agents — confirmed for
-      // all topologies (hierarchical, mesh, etc.).
+      // Resolve the target swarm once, up front, best-effort (same
+      // explicit-swarmId-or-latest logic the roster push below already
+      // used). Resolved here, before any store write, so the maxAgents
+      // check below can refuse the whole call instead of only skipping
+      // the roster push.
+      let resolvedSwarm: { store: any; id: string } | undefined;
       try {
-        const { loadSwarmStore: _loadSwarmStore, saveSwarmStore: _saveSwarmStore } =
-          await import('./swarm-tools.js');
+        const { loadSwarmStore: _loadSwarmStore } = await import('./swarm-tools.js');
         const swarmStore = _loadSwarmStore();
         let targetSwarmId = (input.swarmId as string) || '';
         if (!targetSwarmId) {
@@ -411,12 +407,58 @@ export const agentTools: MCPTool[] = [
           targetSwarmId = latest?.swarmId || '';
         }
         if (targetSwarmId && swarmStore.swarms[targetSwarmId]) {
-          const swarm = swarmStore.swarms[targetSwarmId];
+          resolvedSwarm = { store: swarmStore, id: targetSwarmId };
+        }
+      } catch { /* swarm store unavailable — agent will still be registered globally */ }
+
+      // #4571-swarm — swarm_init's maxAgents (root CLAUDE.md's own anti-drift
+      // cap, e.g. "Keep maxAgents at 6-8 for tight coordination") was never
+      // enforced here: this roster push used to append unconditionally, so a
+      // swarm configured with a small maxAgents got no actual cap. team_spawn
+      // already refuses the analogous case ("Team ... is full (maxAgents=N)",
+      // grok-team-bus.mjs) — mirror that here instead of silently exceeding it.
+      //
+      // KNOWN LIMITATION (disclosed, not fixed here): the load-check-write
+      // sequence below is not atomic. Two concurrent agent_spawn calls can
+      // both load the store, both pass this check against the same
+      // pre-write snapshot, and both push — overshooting maxAgents by more
+      // than one under real concurrency. This file has no existing
+      // file-locking/CAS guarantee for the swarm store either (unlike the
+      // global agent store's own concurrency-safety tests), so this isn't a
+      // regression; going from "never enforced" to "enforced except under
+      // rare concurrent overshoot" is still a strict improvement.
+      if (resolvedSwarm) {
+        const swarm = resolvedSwarm.store.swarms[resolvedSwarm.id];
+        if (
+          Array.isArray(swarm.agents) &&
+          !swarm.agents.includes(agentId) &&
+          swarm.agents.length >= swarm.maxAgents
+        ) {
+          return {
+            success: false,
+            error: `Swarm "${resolvedSwarm.id}" is full (maxAgents=${swarm.maxAgents})`,
+          };
+        }
+      }
+
+      const store = loadAgentStore();
+      store.agents[agentId] = agent;
+      saveAgentStore(store);
+
+      // #2085 — also push to the swarm store's agents array so that
+      // swarm_status reports the new agent. Without this, agent_spawn
+      // and swarm_status read/write separate stores and agents added
+      // post-init never show up in swarm_status.agents — confirmed for
+      // all topologies (hierarchical, mesh, etc.).
+      try {
+        if (resolvedSwarm) {
+          const { saveSwarmStore: _saveSwarmStore } = await import('./swarm-tools.js');
+          const swarm = resolvedSwarm.store.swarms[resolvedSwarm.id];
           if (!Array.isArray(swarm.agents)) swarm.agents = [];
           // Idempotent — don't duplicate if agent_spawn is retried.
           if (!swarm.agents.includes(agentId)) {
             swarm.agents.push(agentId);
-            _saveSwarmStore(swarmStore);
+            _saveSwarmStore(resolvedSwarm.store);
           }
         }
       } catch { /* swarm store unavailable — agent still registered globally */ }
