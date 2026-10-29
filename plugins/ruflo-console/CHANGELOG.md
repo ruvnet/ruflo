@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.49.9 — 2026-11-01
+- fix: Mission Control now offers to create a mission for a new goal when the active mission has one cancelled task and every other task done. 0.49.6 counted a mission as over only when the whole mission was cancelled or every task was done, so a mission with 14 tasks completed and 1 cancelled (for example a research step dropped on purpose) was never over: the NEXT STEP box still showed "Create the mission and its tasks" as done, with the old mission's id and no create button. A mission is now over when every task is done or cancelled (a mission with no tasks still is not). A task that is pending, running or failed keeps it open, a finished mission's own goal is still not offered a second time, and nothing is created unasked.
+
 ## 0.49.8 — 2026-10-31
 - chore: the plugin map gives the two new external marketplace plugins a home section, `agentdb` under Memory and `agentic-flow` under Learning, so their commands launch from the console (ADR-518).
 
