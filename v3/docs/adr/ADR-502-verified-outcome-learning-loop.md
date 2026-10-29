@@ -1,6 +1,6 @@
 # ADR 502: a verified-outcome learning loop as a ruflo mod
 
-Status: Accepted for stages 1–4 (built, tested against the mod harness and a live Claude Code 2.1.289 run; ships in ruflo-mods 0.8.0 and `@claude-flow/cli` 3.64.0, option off by default). Stages 5–7 of #4581 are deferred (section 7).
+Status: Accepted for stages 1–4 (built, tested against the mod harness and a live Claude Code 2.1.289 run; ships in ruflo-mods 0.8.0 and `@claude-flow/cli` 3.64.0, option on by default, by maintainer decision on 2026-10-29; see section 6). Stages 5–7 of #4581 are deferred (section 7).
 
 Date: 2026-10-29
 
@@ -18,7 +18,7 @@ None of these say whether the work actually passed. Neither the autopilot nor th
 
 ## 2. Decision
 
-An opt-in mod option, `learningLoop` (default off), and a CLI ingest step, split by what each side is allowed to do.
+A mod option, `learningLoop` (default on; `false` turns it off), and a CLI ingest step, split by what each side is allowed to do.
 
 ### 2.1 Mod side (`plugins/ruflo-mods/hooks/loop/`): observe and record
 
@@ -81,7 +81,7 @@ The injection point is `prompt.submit` context, the same place the route block u
 
 ## 4. Safety
 
-- Default off.
+- On by default (maintainer decision, section 6); `learningLoop: false` turns it off.
 - Inert outside a ruflo project.
 - Main loop only.
 - Observe-only on tool calls.
@@ -100,7 +100,7 @@ The injection point is `prompt.submit` context, the same place the route block u
 - `v3/@claude-flow/cli/__tests__/mods/mods-learning-loop.test.ts` (19 tests), which CI runs in `mod-guidance.yml`:
   - verifier recognition and refusal of masked statuses;
   - outcome decided on runs after the last edit;
-  - off by default and inert outside a project;
+  - on by default, off when set `false`, and inert outside a project;
   - subagent, aborted and tool-less turns;
   - calls never changed;
   - an unreadable file kept and the 500-line cap;
@@ -112,7 +112,7 @@ The injection point is `prompt.submit` context, the same place the route block u
 
 ## 6. Not yet shown
 
-Issue §7 asks for evidence before this ships on by default: a baseline against loop-enabled runs over 30 or more comparable tasks, measuring verified success rate, routing accuracy, cost per verified success, and pattern hit-rate. That has **not** been run. The option stays default-off until it is.
+Issue §7 asks for evidence before this ships on by default: a baseline against loop-enabled runs over 30 or more comparable tasks, measuring verified success rate, routing accuracy, cost per verified success, and pattern hit-rate. That has **not** been run. The maintainers chose to ship the option on by default anyway (2026-10-29), ahead of that evidence. What on-by-default means in practice: every ruflo project (one with `.claude-flow/`) with ruflo-mods loaded records turns to a local jsonl and receives at most three lessons per matching prompt once verified patterns cross the gate. Until enough verified turns accumulate, no lesson exists, so the prompt is unchanged. The evaluation is still owed; if it shows no gain or a cost regression, the default should go back to off.
 
 ## 7. Deferred (follow-ups on #4581)
 

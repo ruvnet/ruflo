@@ -92,9 +92,9 @@
     "learningLoop": {
       "type": "boolean",
       "title": "Verified-outcome learning loop",
-      "description": "Record each main-loop turn (the tools it called, in order) and decide its outcome only from a test, build, typecheck or lint command's exit status after the turn's last edit; with no such run the turn is unverified. Turns go to .claude-flow/data/verified-trajectories.jsonl; ruflo hooks verified-ingest (also run by hooks_route and hooks_session-end) trains SONA on verified turns only. Adds at most three cited lessons it learned, at or above the 0.6 routing gate, to a prompt they match. Never denies, rewrites or delays a tool call, runs no process and calls no model. Only in a ruflo project (.claude-flow/). Off by default.",
+      "description": "Record each main-loop turn (the tools it called, in order) and decide its outcome only from a test, build, typecheck or lint command's exit status after the turn's last edit; with no such run the turn is unverified. Turns go to .claude-flow/data/verified-trajectories.jsonl; ruflo hooks verified-ingest (also run by hooks_route and hooks_session-end) trains SONA on verified turns only. Adds at most three cited lessons it learned, at or above the 0.6 routing gate, to a prompt they match. Never denies, rewrites or delays a tool call, runs no process and calls no model. Only in a ruflo project (.claude-flow/). On by default; set false to turn it off.",
       "required": false,
-      "default": false
+      "default": true
     },
     "capabilityProbe": {
       "type": "boolean",

@@ -95,9 +95,17 @@ describe('verifier classification (pure)', () => {
 });
 
 describe('learningLoop in the mod', () => {
-  it('is off unless the option is on, and inert outside a ruflo project', async () => {
+  it('is on by default, off when set false, and inert outside a ruflo project', async () => {
+    const on = memoryWorld();
+    const d = await boot(on, {});
+    await ask(d, 'fix the parser');
+    await edit(d);
+    await bash(d, 'npm test', true);
+    await end(d);
+    expect(records(on).map((x) => x.outcome)).toEqual(['verified-success']);
+
     const off = memoryWorld();
-    const a = await boot(off, {});
+    const a = await boot(off, { learningLoop: false });
     await ask(a, 'fix the parser');
     await edit(a);
     await bash(a, 'npm test', true);

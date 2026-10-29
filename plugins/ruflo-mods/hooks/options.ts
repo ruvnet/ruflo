@@ -53,7 +53,7 @@ export function readOptions(options: PluginOptions | undefined): ModOptions {
     deliveryScreen: bool(o.deliveryScreen, false),
     compactCarry: bool(o.compactCarry, false),
     rureOffer: bool(o.rureOffer, false),
-    learningLoop: bool(o.learningLoop, false),
+    learningLoop: bool(o.learningLoop, true),
     capabilityProbe: bool(o.capabilityProbe, false),
     sessionRollup: bool(o.sessionRollup, false),
     sessionAttention: bool(o.sessionAttention, false),

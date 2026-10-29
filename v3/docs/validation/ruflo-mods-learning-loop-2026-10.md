@@ -51,6 +51,6 @@ The next live prompt was about the same bug. Its session transcript contains the
 
 ## 5. What this does not show
 
-- Whether lessons improve task success. Issue #4581 §7 asks for 30 or more comparable tasks, baseline against loop-enabled; that has not been run, so the option stays off by default.
+- Whether lessons improve task success. Issue #4581 §7 asks for 30 or more comparable tasks, baseline against loop-enabled; that has not been run. The option ships on by default by maintainer decision (ADR-502 section 6), ahead of that evidence.
 - Training from many independent verified turns on one task kind. Section 4 used replayed copies of one real outcome.
 - Behaviour on Windows, or with the AgentDB native bridge unavailable. The CLI path uses the SONA JSON store and sql.js, not AgentDB, but it was not run on Windows.
