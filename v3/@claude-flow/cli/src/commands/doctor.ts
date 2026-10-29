@@ -2389,6 +2389,13 @@ async function checkMods(): Promise<HealthCheck> {
     : { name: 'ruflo mods (ADR-404)', status: 'warn', message: warnings.map((f) => `${f.name}: ${f.message}`).join('; '), fix: 'ruflo mods doctor' };
 }
 
+// ADR-510: do ruflo mods run under `claude -p --plugin-dir` here? Spawns a
+// real (cheap) model call, so `--component headless-plugins` only.
+async function checkHeadlessPlugins(): Promise<HealthCheck> {
+  const { checkHeadlessPlugins: run } = await import('../mods/headless-check.js');
+  return run();
+}
+
 // #4581 / ADR-502: ruflo-mods learning loop — is it recording, and do its verified outcomes reach SONA? Warn-only.
 async function checkLearningLoop(): Promise<HealthCheck> {
   const { learningLoopHealth } = await import('../memory/verified-outcomes.js');
@@ -2616,7 +2623,7 @@ export const doctorCommand: Command = {
     {
       name: 'component',
       short: 'c',
-      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, browser, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, mods, metaharness)',
+      description: 'Check specific component (version, node, npm, config, daemon, memory, api, git, mcp, mcp-overhead, claude, browser, disk, typescript, agentic-flow, encryption, federation, funnel, proxy, auth, typesafe, mods, headless-plugins, metaharness)',
       type: 'string'
     },
     {
@@ -2728,6 +2735,7 @@ export const doctorCommand: Command = {
       'mods': checkMods, // ADR-404 — ruflo as a Claude Code mod
       'learning-loop': checkLearningLoop, // #4581 — verified-outcome learning loop
       'compact-snapshots': checkCompactSnapshots, // ADR-505 — snapshots must be gitignored
+      'headless-plugins': checkHeadlessPlugins, // ADR-510 — mods under claude -p (spawns claude; not in bare doctor)
     };
 
     if (component !== undefined && !Object.hasOwn(componentMap, component)) {
@@ -2889,7 +2897,7 @@ export const doctorCommand: Command = {
       [checkProxyBinary, 'proxy-binary'], [checkProxyProcess, 'proxy-process'],
       [checkProxyBindAddress, 'proxy-bind'], [checkAuth, 'auth'],
       [checkTypesafeRouter, 'typesafe'], [checkMods, 'mods'],
-      [checkLearningLoop, 'learning-loop'],
+      [checkLearningLoop, 'learning-loop'], [checkHeadlessPlugins, 'headless-plugins'],
       [checkCompactSnapshots, 'compact-snapshots'],
     ]);
     nativeAgentDbChecks.forEach((check, index) => {

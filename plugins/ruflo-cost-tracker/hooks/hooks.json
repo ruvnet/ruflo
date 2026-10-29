@@ -1,6 +1,16 @@
 {
-  "description": "Stop hook auto-runs cost-track at session end so the cost-tracking namespace stays populated without users remembering to run `/cost-track` manually. TRACK_QUIET=1 suppresses the markdown summary. A track failure never blocks session end — analytics data is best-effort, not load-bearing (see scripts/ruflo-hook.cjs). The command is a `node -e` bootstrap: it resolves scripts/ruflo-hook.cjs from process.env.CLAUDE_PLUGIN_ROOT inside Node (no shell `${VAR}`/`%VAR%` expansion), so the exact same command string runs unchanged on Windows, macOS, and Linux — no bash or /dev/null redirection involved.",
+  "description": "Stop hook auto-runs cost-track at session end so the cost-tracking namespace stays populated without users remembering to run `/cost-track` manually. TRACK_QUIET=1 suppresses the markdown summary. A track failure never blocks session end — analytics data is best-effort, not load-bearing (see scripts/ruflo-hook.cjs). The command is a `node -e` bootstrap: it resolves scripts/ruflo-hook.cjs from process.env.CLAUDE_PLUGIN_ROOT inside Node (no shell `${VAR}`/`%VAR%` expansion), so the exact same command string runs unchanged on Windows, macOS, and Linux — no bash or /dev/null redirection involved. A SessionStart hook hands the sensitive option openrouterApiKey to the Bash tool as OPENROUTER_API_KEY through CLAUDE_ENV_FILE, only when that variable is not already set, so /cost-openrouter can use a key kept in the credential store (scripts/_secret-env.cjs, ADR-506).",
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT,'scripts','_secret-env.cjs')).bridge({openrouterApiKey:'OPENROUTER_API_KEY'})\""
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

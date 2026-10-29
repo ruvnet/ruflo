@@ -1,4 +1,18 @@
 {
-  "description": "MetaHarness as a mod (ADR-445): a tighten-only guard on the metaharness tools (promotion needs an explicit confirm, no secrets in inputs), a status file the console reads, and /metaharness-mod.",
-  "modules": ["./register.ts"]
+  "description": "MetaHarness as a mod (ADR-445): a tighten-only guard on the metaharness tools (promotion needs an explicit confirm, no secrets in inputs), a status file the console reads, and /metaharness-mod. The classic SessionStart hook hands the sensitive option openrouterApiKey to the Bash tool as OPENROUTER_API_KEY through CLAUDE_ENV_FILE, only when that variable is not already set, so a redblue run started from a skill can use a key kept in the credential store (scripts/_secret-env.cjs, ADR-506).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"require(require('path').join(process.env.CLAUDE_PLUGIN_ROOT,'scripts','_secret-env.cjs')).bridge({openrouterApiKey:'OPENROUTER_API_KEY'})\""
+          }
+        ]
+      }
+    ]
+  },
+  "modules": [
+    "./register.ts"
+  ]
 }
