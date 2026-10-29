@@ -1,6 +1,6 @@
 # ADR 506: plugin secrets through `userConfig` with `sensitive: true`
 
-Status: Accepted (implemented in PR TBD, 2026-10-29)
+Status: Accepted (implemented in PR #4587, 2026-10-29)
 
 Issue: #4581 follow-up 1.
 
