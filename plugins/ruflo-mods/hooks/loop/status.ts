@@ -29,9 +29,11 @@ export type LoopState = {
   recentLessons: Lesson[]
   /** The newest turns recorded this session, newest last (at most 5). */
   recentOutcomes: RecentOutcome[]
+  /** This mod process's token, written on every record (ADR-503 §2.4 counts a lesson's independent sessions). */
+  session: string
 }
 
-export const loopState = (): LoopState => ({ enabled: false, pending: [], recorded: { success: 0, failure: 0, unknown: 0 }, lessonsShown: 0, belowGate: 0, dropped: 0, counter: 0, recentLessons: [], recentOutcomes: [] })
+export const loopState = (): LoopState => ({ enabled: false, pending: [], recorded: { success: 0, failure: 0, unknown: 0 }, lessonsShown: 0, belowGate: 0, dropped: 0, counter: 0, recentLessons: [], recentOutcomes: [], session: `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}` })
 
 /** Remembers lessons that reached a prompt: distinct by id, newest last, at most 3. */
 export function rememberLessons(s: LoopState, chosen: readonly Lesson[]): void {

@@ -6,6 +6,7 @@ import { redraw, under, type ModState } from '../state'
 import { lessonBlock, parseLessons, pick } from './lessons'
 import { appendLines, line, LESSONS_PATH, MAX_PENDING, outcomeOf, start, step, VERIFIED_PATH } from './record'
 import { rememberLessons, rememberOutcome } from './status'
+import { relativePath } from './taint'
 import { classify, verdict } from './verifier'
 
 /**
@@ -24,6 +25,8 @@ const ANY = /^[\s\S]*$/
  *   exit status as a verifier run.
  * - `turn.complete` closes the trajectory: `verified-success`/`verified-failure` only from verifier runs after the
  *   last edit, otherwise `unknown`, and appends it to `verified-trajectories.jsonl` for `ruflo hooks verified-ingest`.
+ *   A success carries taints (ADR-503 §2.1) when the turn edited a test or verifier config, or narrowed its check;
+ *   the CLI never trains a tainted record by default.
  *
  * Observe-only: it never denies, rewrites or delays a tool call, never runs a process, and never calls a model or an
  * MCP tool (smoke step 4). Training happens in the CLI, which trains SONA on verified records only.
@@ -40,7 +43,7 @@ export function registerLoop(on: On, state: ModState) {
     loop.project ??= await $.fs.stat(under(state, '.claude-flow')).then(stat => stat.kind === 'dir', () => false)
     if (loop.project !== true || text.trim() === '' || text.trimStart().startsWith('/')) return next(e)
 
-    loop.active = start(`vt-${Date.now().toString(36)}-${(++loop.counter).toString(36)}-${Math.random().toString(36).slice(2, 8)}`, text, (state.lastRoute ?? routeTask(text)).agent, Date.now())
+    loop.active = start(`vt-${Date.now().toString(36)}-${(++loop.counter).toString(36)}-${Math.random().toString(36).slice(2, 8)}`, text, (state.lastRoute ?? routeTask(text)).agent, Date.now(), loop.session)
 
     const read = await lessons({ stat: path => $.fs.stat(path), read: path => $.fs.read(path) })
     if (read.kind !== 'ok') return next(e)
@@ -61,8 +64,13 @@ export function registerLoop(on: On, state: ModState) {
     // Main loop only: a subagent's calls are its own work, reported back as the Agent call's result.
     if (!t || e.agentId !== undefined || (result as { deny?: unknown } | undefined)?.deny !== undefined) return result
 
-    const verifier = e.tool === 'Bash' ? classify((e as { command?: unknown }).command) : null
-    step(t, e.tool, (result as { isError?: unknown }).isError !== true, verifier, verifier ? verdict(result) : null)
+    const command = e.tool === 'Bash' ? (e as { command?: unknown }).command : undefined
+    const verifier = e.tool === 'Bash' ? classify(command) : null
+    // ADR-503 §2.1: an edit's file, or a Bash command that writes/deletes files, decides the edited-tests /
+    // edited-verifier-config taints (only the class is kept).
+    const args = e as { file_path?: unknown; notebook_path?: unknown }
+    const target = typeof args.file_path === 'string' ? args.file_path : typeof args.notebook_path === 'string' ? args.notebook_path : undefined
+    step(t, e.tool, (result as { isError?: unknown }).isError !== true, verifier, verifier ? verdict(result) : null, target === undefined ? undefined : relativePath(state.root, target), command)
     return result
   })
 
