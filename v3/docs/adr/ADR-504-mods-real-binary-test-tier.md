@@ -1,6 +1,6 @@
 # ADR 504: a real-binary test tier for ruflo mods and hooks
 
-Status: Accepted (implemented in PR on branch feat/adr-504-real-binary-tier, 2026-10-29; see section 5)
+Status: Accepted (implemented in PR #4589, 2026-10-29; see section 5)
 
 Issue: #4581 follow-up 5. Builds on: ADR-404 and the mods harness (`v3/@claude-flow/cli/__tests__/mods/harness.ts`).
 
