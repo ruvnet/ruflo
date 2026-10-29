@@ -137,7 +137,7 @@ describe('ADR-509 sign-plugins.mjs → verifyPluginDir', () => {
   });
 
   it('refuses a non-Ed25519 key without echoing it', () => {
-    const rsa = generateKeyPairSync('rsa', { modulusLength: 1024 }).privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
+    const rsa = generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
     writeFileSync(keyFile, rsa);
     let stderr = '';
     try {

@@ -60,11 +60,11 @@ function loadPrivateKey() {
       // stdout captured, stderr captured: never inherited, so no key material can pass through to a log.
       return execFileSync(process.platform === 'win32' ? 'gcloud.cmd' : 'gcloud', args, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
     } catch {
-      fail(`failed to read GCP secret '${secret}'. Is gcloud authed? (gcloud auth login)`);
+      fail('failed to read the GCP secret named by RUFLO_HELPERS_SIGNING_SECRET. Is gcloud authed? (gcloud auth login)');
     }
   }
   const keyPath = process.env.RUFLO_HELPERS_SIGNING_KEY || join(homedir(), '.ruflo', 'helpers-signing.key');
-  if (!existsSync(keyPath)) fail(`no signing key. Set RUFLO_HELPERS_SIGNING_SECRET (GCP) or RUFLO_HELPERS_SIGNING_KEY (PEM path); tried ${keyPath}.`);
+  if (!existsSync(keyPath)) fail('no signing key. Set RUFLO_HELPERS_SIGNING_SECRET (GCP) or RUFLO_HELPERS_SIGNING_KEY (PEM path), or put the key at ~/.ruflo/helpers-signing.key.');
   return readFileSync(keyPath, 'utf-8');
 }
 
