@@ -222,5 +222,6 @@ This plugin also loads as a function-hook mod (ADR-445 pattern, `hooks/hooks.jso
 - **Status file.** `.claude-flow/xgw-mod/status.json` (`{version: 1, updatedMs, guard, checked, blocked, seen}`), written at session start and when a counter changes.
 - **`/xgw-mod`** answers locally: `status`, `scan <text>`, `tools`. (The plugin's own commands are prompt commands, which a hook cannot answer, so the mod has its own name.)
 - **Option.** `guard` (`on` | `off`, default `on`) in the plugin's `userConfig`.
+- **Option.** `adminToken` (sensitive, empty by default): the admin token for a gateway you run yourself. It is kept in the credential store and read as `CLAUDE_PLUGIN_OPTION_ADMINTOKEN`; `RUFLO_ADMIN_TOKEN` still works when it is empty (ADR-506).
 
 Test it: `claude plugin validate plugins/ruflo-x-gateway`, `claude plugin test plugins/ruflo-x-gateway`, `bash plugins/ruflo-x-gateway/scripts/smoke.sh`.

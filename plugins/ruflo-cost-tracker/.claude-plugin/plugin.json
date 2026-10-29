@@ -55,5 +55,14 @@
     "observability",
     "federation",
     "interop"
-  ]
+  ],
+  "userConfig": {
+    "openrouterApiKey": {
+      "type": "string",
+      "title": "OpenRouter API key",
+      "description": "Lets cost-openrouter read your OpenRouter key usage and per-request cost. Kept in the credential store, never in settings; OPENROUTER_API_KEY still works when this is empty.",
+      "required": false,
+      "sensitive": true
+    }
+  }
 }

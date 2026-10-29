@@ -19,7 +19,7 @@ import { z } from 'zod';
 import { loadIdentity, publish, fetchRecent, fetchManyOn, cached, publishTagged, fetchChannel, listChannels } from './nostr-federation.mjs';
 import { publicChannelId, channelTags, isPrivateChannel, CHANNEL_ID_RE, DEFAULT_CHANNELS } from './channels.mjs';
 import { reduceClaims } from './claims.mjs';
-import { clientIp, rateLimited, readBody, securityHeaders, checkAdmin, seraphinaAllowance, ANON_TIERS, SERAPHINA_DAILY_CAP, SERAPHINA_IP_HOURLY_CAP } from './security.mjs';
+import { clientIp, rateLimited, readBody, securityHeaders, checkAdmin, seraphinaAllowance, ANON_TIERS, SERAPHINA_DAILY_CAP, SERAPHINA_IP_HOURLY_CAP, adminToken } from './security.mjs';
 import { mintInvite, admitMember, isMemberBanned } from './relay-admin.mjs';
 import { attachWsProxy } from './ws-proxy.mjs';
 import { onboardingGuide } from './onboarding.mjs';
@@ -561,5 +561,5 @@ export function createGateway({ relay, keyFile, port, registration, github: gith
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const gw = createGateway(); const p = await gw.listen();
-  console.log(`ruflo-x-gateway :${p} | relay ${gw.relay} | pubkey ${gw.pubkey} | admin-token ${process.env.RUFLO_ADMIN_TOKEN ? 'configured' : 'MISSING (writes disabled)'}`);
+  console.log(`ruflo-x-gateway :${p} | relay ${gw.relay} | pubkey ${gw.pubkey} | admin-token ${adminToken() ? 'configured' : 'MISSING (writes disabled)'}`);
 }

@@ -31,6 +31,13 @@
         "on",
         "off"
       ]
+    },
+    "adminToken": {
+      "type": "string",
+      "title": "Gateway admin token",
+      "description": "Admin token for a gateway you run yourself; it enables write and admin routes. Kept in the credential store, never in settings; RUFLO_ADMIN_TOKEN still works when this is empty.",
+      "required": false,
+      "sensitive": true
     }
   }
 }

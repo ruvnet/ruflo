@@ -79,6 +79,6 @@ This plugin ships a function-hook mod (ADR-445, `hooks/register.ts`). It makes n
 - **`/metaharness-mod`**: `status`, `recent`, `tools` (which of this plugin's tools are connected) and `scan <text>` (would the guard refuse it). Answered locally.
 - **Status file**: `.claude-flow/metaharness-mod/status.json` (`{version: 1, updatedMs, guard, calls, total, blocked, recent}`, counters only, never tool input), written at session start and after every call to this plugin's tools.
 
-Options (`userConfig`): `guard` (on).
+Options (`userConfig`): `guard` (on); `openrouterApiKey` (sensitive, empty by default): the key for redblue's real model judge, kept in the credential store and handed to the redblue child only as `OPENROUTER_API_KEY` in its environment, never in argv. `$OPENROUTER_API_KEY` still works when it is empty (ADR-506).
 
 Test it: `claude plugin validate plugins/ruflo-metaharness`, `claude plugin test plugins/ruflo-metaharness`, `bash plugins/ruflo-metaharness/scripts/smoke.sh`.
