@@ -57,8 +57,14 @@ export function messageLine(m: MessageLike, index: number): { line: string; reda
     .filter(u => typeof u.tool === 'string' && TOOL.test(u.tool))
     .map(u => ({ name: u.tool as string, ...(typeof u.tool_use_id === 'string' && TOOL_ID.test(u.tool_use_id) ? { id: u.tool_use_id } : {}) }))
   const line = JSON.stringify({ i: index, role, text, ...(tools.length ? { tools } : {}) })
-  const found = scan(line)
-  if (found.secrets.length || found.injection.length) return { line: JSON.stringify({ i: index, role, text: '[redacted]' }), redacted: true }
+  // Screen the raw text and the tool names, not only the encoded line: JSON escaping puts a backslash before every
+  // quote and turns a newline into `\n`, which breaks the key-assignment rule (`"api_key": "…"`, `password="…"`) and
+  // the line-start role-tag rule (`\nsystem: …`). The encoded line is screened as well.
+  const hit = (s: string) => {
+    const f = scan(s)
+    return f.secrets.length > 0 || f.injection.length > 0
+  }
+  if (hit(text) || hit(tools.map(t => t.name).join('\n')) || hit(line)) return { line: JSON.stringify({ i: index, role, text: '[redacted]' }), redacted: true }
   return { line, redacted: false }
 }
 
