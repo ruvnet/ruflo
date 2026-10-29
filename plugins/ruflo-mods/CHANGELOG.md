@@ -2,6 +2,12 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.10.0 — 2026-10-29
+- feat: option `compactSnapshot` (default on, ADR-505, #4591): before a main-loop compaction, the transcript is saved (role, 2,000-character text cut, tool names; screened; tool inputs and outputs never written) to one of ten rotating slots under `.claude-flow/sessions/compactions/`; after it, the next prompt carries one bounded `[RUFLO_AFTER_COMPACT]` block (recent lessons and loop outcomes, open swarm and claim ids, the snapshot path). Never blocks or rewrites the compaction; set `false` to turn it off.
+
+## 0.9.0 — 2026-10-29
+- feat: the learning loop resists gamed outcomes (ADR-503, #4590). A verified-success turn is tainted when it edited tests (`edited-tests`), a verifier's config (`edited-verifier-config`), or ran a narrowed or weakened check (`narrowed-verifier`); only the taint class is stored, never a path. Each record carries a per-process session token. The CLI never trains a tainted record unless `.claude-flow/config.json` `learningLoop.allowTaint` lists its classes, can re-verify with a rotating allowlisted check in a temporary worktree (`learningLoop.reverify`, off by default), and holds back lessons whose evidence looks gamed (perfect-and-tainted, only-narrowed, one-session).
+
 ## 0.8.0 — 2026-10-29
 - feat: option `learningLoop` (default on, #4581, ADR-502; set `false` to turn it off): the verified-outcome learning loop. Each main-loop turn becomes a trajectory (tool names and success flags); its outcome is `verified-success` or `verified-failure` only when a recognised test/build/typecheck/lint command ran after the turn's last edit and the shell's exit status said so, else `unknown`. A masked status (`|| true`, a pipe, `;`, background, substitution) verifies nothing; subagent calls, aborted turns and slash commands never verify. Records go to `.claude-flow/data/verified-trajectories.jsonl`; the CLI trains SONA on verified records only. At most three cited lessons (`[lesson L-… conf …, n passed / m failed]`) learned at or above the 0.6 gate are added to a prompt they match; a hostile lessons file adds nothing. `/ruflo-mods` gains a `loop:` row and the status line `loop ✓n ✗n ?n`. Observe-only; no process, model or MCP call.
 

@@ -87,3 +87,20 @@ export async function carryBlock(fs: FileHost, root: string, held: Held): Promis
   }
   return undefined
 }
+
+/**
+ * The open swarm and claim ids as `carryBlock` gathers them, one line each (no heading, no session words), for the
+ * post-compaction reload (ADR-505). Validated fields only. Never throws: a failure is no lines.
+ */
+export async function openIdLines(fs: FileHost, root: string): Promise<string[]> {
+  try {
+    const swarm = swarmLine(await readJson(fs, `${root}/${SWARM_PATH}`))
+    const claims = claimItems(await readJson(fs, `${root}/${CLAIMS_PATH}`))
+    const lines: string[] = []
+    if (swarm) lines.push(swarm)
+    if (claims.total) lines.push(`claims: ${claims.total} open${claims.items.length ? `: ${claims.items.slice(0, MAX_CLAIMS).join(', ')}` : ''}`)
+    return lines
+  } catch {
+    return []
+  }
+}

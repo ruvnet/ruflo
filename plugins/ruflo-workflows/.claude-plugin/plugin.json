@@ -1,7 +1,7 @@
 {
   "name": "ruflo-workflows",
   "description": "Persisted workflows, native orchestration and discovery of the optional managed cloud runtime.",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "author": {
     "name": "ruvnet",
     "url": "https://github.com/ruvnet"

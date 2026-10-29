@@ -40,6 +40,7 @@ export interface World {
   /** Per-op failure injection: `fs.read` → error to throw for a path. */
   failRead?: (path: string) => Error | undefined;
   failStat?: (path: string) => Error | undefined;
+  failWrite?: (path: string) => Error | undefined;
   failLog?: boolean;
   /** What `$.tool.list()` returns (default: none). `mcp` marks an MCP server's tool. */
   tools?: { name: string; description: string; mcp: boolean }[];
@@ -86,6 +87,8 @@ function engineOf(world: World) {
         return readFileSync(path, 'utf8');
       },
       async write(path: string, text: string) {
+        const injected = world.failWrite?.(path);
+        if (injected) throw injected;
         if (mem) {
           mem.set(path, { text, mtimeMs: (mem.get(path)?.mtimeMs ?? 0) + 1 });
           return;

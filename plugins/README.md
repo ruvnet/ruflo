@@ -152,6 +152,24 @@ node scripts/audit-tool-descriptions.mjs
 
 Combined with [`verification/`](../verification/) (Ed25519-signed witness manifest, 103+ documented fixes attested), the plugin surface is regression-protected at three layers: install smoke (`npm i`), behavioral smoke (paired-tool round-trips), and presence attestation (every load-bearing line of every documented fix). See [`verification/README.md`](../verification/README.md) for the full stack.
 
+## Per-turn footprint: user-invoked skills and short descriptions
+
+Claude Code keeps the name and description of every skill, command and agent the model can invoke in context on every turn, used or not ([ADR-507](../v3/docs/adr/ADR-507-plugin-footprint-skills-commands.md)). Measure it with `node scripts/measure-plugin-footprint.mjs` (`--write` saves a report under `v3/docs/validation/`).
+
+**Which skills are user-invoked.** A skill gets `disable-model-invocation: true` in its frontmatter when its job is something a person asks for by name, not something the model should reach for by itself. It still runs as `/<plugin>:<skill>`; it just leaves the model's listing. The kinds that qualify:
+
+- release, publish and submission flows;
+- dashboards, status pages and reports;
+- benchmark runners and spend-gated learning or evolution runs;
+- one-shot setup and install skills;
+- sub-reports that a plugin command already reaches (for example the cost-tracker reports under `/ruflo-cost`).
+
+A skill stays model-invoked when the model must find it on its own: memory search, swarm init guidance, safety scans, a gate another agent calls before it starts work (such as `cost-budget-check`), or anything an agent, command or hook in this repository tells the model to invoke. Before marking a skill, grep `plugins/*/agents`, `plugins/*/commands`, `plugins/*/skills` and `plugins/*/hooks` for its name: a model blocked by `disable-model-invocation` is told not to do the skill's work any other way.
+
+Every user-invoked skill is listed under a "User-invoked skills" heading in its plugin README.
+
+**Description ceiling.** A skill or command description is at most 300 characters: one sentence of what it does and one of when to use it ("Use when …"). `node scripts/audit-skill-frontmatter.mjs` (CI: all-plugins-smoke) enforces both rules.
+
 ## License
 
 MIT

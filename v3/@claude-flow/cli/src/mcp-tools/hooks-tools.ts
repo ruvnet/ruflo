@@ -5776,7 +5776,8 @@ export const hooksVerifiedIngest: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const { ingestVerifiedOutcomes } = await import('../memory/verified-outcomes.js');
     const sona = await getSONAOptimizer();
-    const result = await ingestVerifiedOutcomes({ dryRun: params.dryRun === true, force: params.force === true || params.dryRun === true, sona: sona as never });
+    // ADR-503 §2.3: only this explicit ingest may re-verify (run project code), and only when learningLoop.reverify is on.
+    const result = await ingestVerifiedOutcomes({ dryRun: params.dryRun === true, force: params.force === true || params.dryRun === true, sona: sona as never, allowReverify: true });
     return { success: true, ...result };
   },
 };

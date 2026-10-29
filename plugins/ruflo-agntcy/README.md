@@ -28,6 +28,14 @@ The remaining honest gaps: AGNTCY Identity has no JS/TS SDK (genuinely Go-only, 
 | **IOC Layer 9 coordination events** | §4 | Optional semantic coordination events (Semantic Information Exchange, Cognition and Interoperability, Semantic Alignment Broadcast, Team Formation via Polling) layered on top of — never replacing — Ruflo's own `hive-mind_broadcast` / `hive-mind_consensus` / `coordination_consensus` orchestration. |
 | **AGNTCY identity/observability** | §5 | OTel span attributes (`agent.identity`, `agent.capability`, `agent.intent`, `agent.parent`, `coordination.episode`, `authorization.decision`, `model.route`, `memory.provenance`, `evaluation.score`, `receipt.hash`) wired through the existing `ruflo-observability` plugin rather than a second tracing pipeline. Ruflo owns the two runtime-only attributes (`coordination.episode`, `authorization.decision`); the rest are emitted build-time by companion metaharness ADR-240. |
 
+## User-invoked skills (ADR-507)
+
+These skills carry `disable-model-invocation: true`: Claude does not pick them on its own, and they cost nothing in the per-turn skill listing. Type them to run them. A status dashboard.
+
+| Skill | Run it with |
+|---|---|
+| agntcy-status | `/ruflo-agntcy:agntcy-status` |
+
 ## Companion ADR
 
 This plugin's runtime half is paired with metaharness repo ADR-240 (build-time half — AGNTCY identity generation, OASF export, semantic observability at manifest time). Neither ADR is complete without the other; see [ADR-380's "Companion" note](docs/adrs/ADR-380-agntcy-outshift-runtime-integration.md).

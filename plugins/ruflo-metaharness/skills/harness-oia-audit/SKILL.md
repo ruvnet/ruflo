@@ -3,6 +3,7 @@ name: harness-oia-audit
 description: Composite Phase-2 audit worker (ADR-150). Bundles harness oia-manifest + threat-model + mcp-scan into one timestamped audit record stored in the `metaharness-audit` memory namespace. Designed for cron-scheduled drift detection.
 argument-hint: "[--path .] [--dry-run] [--alert-on-worst clean|low|medium|high] [--format table|json]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 The 13th worker (ADR-150 Phase 2) — runs three MetaHarness static

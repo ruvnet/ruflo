@@ -3,6 +3,7 @@ name: vector-setup
 description: First-run setup for ruvector@0.3.3 — installs ONNX/Brain/SONA add-ons, registers the MCP server, and verifies the install via `doctor`
 argument-hint: "[--full]"
 allowed-tools: Bash Read
+disable-model-invocation: true
 ---
 
 # Vector Setup

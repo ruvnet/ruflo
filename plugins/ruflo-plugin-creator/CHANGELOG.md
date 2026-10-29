@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.4.4 — 2026-10-29
+- chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
+
 ## 0.4.3 — 2026-10-11
 - fix: create-plugin required-fields list now matches `audit-plugin-manifest` (adds `keywords`, name equals directory, bump the version on every change) and the agentdb tool count is 20
 - fix: validate-plugin check 10 now verifies referenced tools exist (`mcp tools`), not only that they carry the right prefix

@@ -56,6 +56,14 @@ Phase 1 enforces at the **send** side. Phase 2 (peer state machine: ACTIVE / SUS
 | `federation-status` | "is federation healthy?", "show peers", "federation status" |
 | `federation-audit` | Query audit logs with compliance / severity / date filters |
 
+## User-invoked skills (ADR-507)
+
+These skills carry `disable-model-invocation: true`: Claude does not pick them on its own, and they cost nothing in the per-turn skill listing. Type them to run them. One-shot setup that generates this node's keypair.
+
+| Skill | Run it with |
+|---|---|
+| federation-init | `/ruflo-federation:federation-init` |
+
 ## Agents
 
 | Agent | Description |
