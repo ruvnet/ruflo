@@ -1,6 +1,6 @@
 # ADR 509: trust for the ruflo plugin marketplace — signing, scan before install, refusing project auto-approve keys
 
-Status: Accepted (implemented in the PR from branch `feat/adr-509-plugin-trust`, 2026-10-29)
+Status: Accepted (implemented in PR #4593, 2026-10-29)
 
 Issue: #4581 follow-up 7. Builds on: the `modTrust` gate (ADR-404), `settings-risk-scanner.ts`, the helpers signing key (`ruflo-helpers-signing-key`), and `metaharness mcp-scan`.
 
