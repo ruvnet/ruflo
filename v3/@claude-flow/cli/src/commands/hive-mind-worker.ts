@@ -16,6 +16,7 @@ import { spawn as childSpawn } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { resolveClaudeLaunchCommand } from '../runtime/claude-command.js';
+import { withHeadlessPlugins } from '../mods/headless-plugins.js';
 
 type ServerMap = Record<string, unknown>;
 
@@ -110,6 +111,8 @@ export interface RunOutcome {
   sessionId?: string;
   costUsd?: number;
   durationMs: number;
+  /** ADR-510 — plugins in the worker profile that could not be found; the run went ahead without them. */
+  missingPlugins?: string[];
 }
 
 export type TaskRunner = (prompt: string, opts: { mcpConfig: string; timeoutMs: number; cwd: string }) => Promise<RunOutcome>;
@@ -125,11 +128,14 @@ export const runWithClaude: TaskRunner = (prompt, opts) =>
     }
     // The prompt goes on stdin, not argv: a task description has no length
     // bound and `--mcp-config` is variadic (#1780).
-    const child = childSpawn(
-      launch.command,
+    // ADR-510: pass the worker profile's plugins (default ruflo-mods) as --plugin-dir.
+    const staged = withHeadlessPlugins(
       [...launch.argsPrefix, '-p', '--output-format', 'json', `--mcp-config=${opts.mcpConfig}`],
-      { cwd: opts.cwd, stdio: ['pipe', 'pipe', 'pipe'] },
+      { ...process.env },
+      { projectRoot: opts.cwd },
     );
+    const missing = staged.missing.length > 0 ? { missingPlugins: staged.missing } : {};
+    const child = childSpawn(launch.command, staged.argv, { cwd: opts.cwd, env: staged.env, stdio: ['pipe', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (d) => (stdout += d));
@@ -137,7 +143,7 @@ export const runWithClaude: TaskRunner = (prompt, opts) =>
     const timer = setTimeout(() => child.kill('SIGTERM'), opts.timeoutMs);
     child.on('error', (e) => {
       clearTimeout(timer);
-      resolve({ ok: false, output: e.message, exitCode: null, durationMs: Date.now() - started });
+      resolve({ ok: false, output: e.message, exitCode: null, durationMs: Date.now() - started, ...missing });
     });
     child.on('close', (code, signal) => {
       clearTimeout(timer);
@@ -151,10 +157,11 @@ export const runWithClaude: TaskRunner = (prompt, opts) =>
           sessionId: r.session_id,
           costUsd: r.total_cost_usd,
           durationMs,
+          ...missing,
         });
       } catch {
         const why = signal === 'SIGTERM' ? `timed out after ${opts.timeoutMs}ms` : (stderr || stdout).trim().slice(-2000);
-        resolve({ ok: false, output: why, exitCode: code, durationMs });
+        resolve({ ok: false, output: why, exitCode: code, durationMs, ...missing });
       }
     });
     child.stdin.end(prompt);
@@ -228,6 +235,7 @@ export async function workOnce(opts: WorkOnceOptions): Promise<WorkOnceResult> {
     durationMs: outcome.durationMs,
     ...(outcome.sessionId ? { sessionId: outcome.sessionId } : {}),
     ...(outcome.costUsd !== undefined ? { costUsd: outcome.costUsd } : {}),
+    ...(outcome.missingPlugins?.length ? { missingPlugins: outcome.missingPlugins } : {}),
   };
   if (outcome.ok) {
     await callMCPTool('task_complete', { taskId, result });

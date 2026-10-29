@@ -50,6 +50,38 @@ Settings alone are not always enough. Claude Code loads these plugins from its l
 - **One marketplace per config dir.** Claude Code keeps one `ruflo` marketplace per config dir, so switching it to a directory applies to every project on that machine. Switch back with `claude plugin marketplace add ruvnet/ruflo`.
 - **Doctor** reports the source type, and warns when a project declares one source but Claude Code knows `ruflo` by another.
 
+## Headless workers and the Agent SDK (ADR-510)
+
+A headless `claude -p` on a fresh config loads no marketplace plugins, so ruflo hands its own workers the plugin folders.
+
+- **ruflo's workers pass `--plugin-dir`.** The background worker daemon and `hive-mind work` add `--plugin-dir <folder>` for each plugin in the worker profile (default: ruflo-mods) and set `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` unless you set it. `RUFLO_HEADLESS_PLUGINS=ruflo-mods,ruflo-swarm` changes the profile; `none` turns it off. A plugin that cannot be found is logged once (`plugin <name> not found; worker runs without it`) and recorded on the worker's result; the worker still runs.
+- **Where the folders come from**, in order: a `--source local` checkout, the marketplace clone, then the install cache (`plugins/cache/ruflo/<name>/<version>`). A folder without `.claude-plugin/plugin.json` is reported missing, never used.
+- **`ruflo plugins paths [--json]`** prints the same resolution, for your own `claude -p` scripts.
+- **`ruflo doctor --component headless-plugins`** runs `claude -p --plugin-dir <ruflo-mods> --output-format stream-json --verbose "reply ok"` (haiku, 60 s) in a throwaway project and reports whether the init event lists ruflo-mods, whether `plugin_errors` is empty, and whether the mod's heartbeat (`.claude-flow/mods/session.json`) was written. It spends one small model call, so a bare `ruflo doctor` does not run it; without any model credential it is skipped.
+
+### Using ruflo plugins from the Agent SDK
+
+The Agent SDK takes plugins only as `{ type: "local", path }`, and skips a path that does not exist without an error. Build the list from `ruflo plugins paths --json`, then check the session's init message:
+
+```ts
+import { execFileSync } from "node:child_process";
+import { query } from "@anthropic-ai/claude-agent-sdk";
+
+const { resolved, missing } = JSON.parse(execFileSync("npx", ["ruflo", "plugins", "paths", "--json"], { encoding: "utf8" }));
+if (missing.length) console.warn("ruflo plugins not found:", missing);
+
+for await (const msg of query({
+  prompt: "reply ok",
+  options: { plugins: resolved.map((p) => ({ type: "local", path: p.path })), env: { ...process.env, CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: "1" } },
+})) {
+  if (msg.type === "system" && msg.subtype === "init") {
+    console.log("plugins:", msg.plugins, "errors:", msg.plugin_errors ?? []);
+  }
+}
+```
+
+**Unverified:** whether function-hook mods (ruflo-mods' guard, routing and learning loop) run under the SDK is not documented, and ruflo has no SDK dependency to test it with. Skills, commands and agents load; check for the heartbeat file above to see whether the hooks ran in your setup.
+
 ## Flags
 
 - `--no-plugin-install` writes settings only and runs no `claude` command.

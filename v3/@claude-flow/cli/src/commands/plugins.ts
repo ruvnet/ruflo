@@ -22,6 +22,7 @@ import {
 import { getPluginManager, type InstalledPlugin } from '../plugins/manager.js';
 import { DEFAULT_PLUGIN_PERMISSIONS, isStrictPluginMode } from '../plugins/trust-policy.js';
 import { getBulkRatings } from '../services/registry-api.js';
+import { pathsCommand } from './plugins-paths.js';
 
 // List subcommand - Now uses IPFS-based registry
 const listCommand: Command = {
@@ -1037,7 +1038,7 @@ const rateCommand: Command = {
 export const pluginsCommand: Command = {
   name: 'plugins',
   description: 'Plugin management with IPFS-based decentralized registry',
-  subcommands: [listCommand, searchCommand, installCommand, uninstallCommand, upgradeCommand, toggleCommand, infoCommand, createCommand, rateCommand],
+  subcommands: [listCommand, searchCommand, installCommand, uninstallCommand, upgradeCommand, toggleCommand, infoCommand, createCommand, rateCommand, pathsCommand],
   examples: [
     { command: 'claude-flow plugins list', description: 'List plugins from IPFS registry' },
     { command: 'claude-flow plugins search -q neural', description: 'Search for plugins' },
@@ -1058,6 +1059,7 @@ export const pluginsCommand: Command = {
       `${output.highlight('upgrade')}   - Upgrade an installed plugin`,
       `${output.highlight('toggle')}    - Enable or disable a plugin`,
       `${output.highlight('info')}      - Show detailed plugin information`,
+      `${output.highlight('paths')}     - Local folders of ruflo plugins (claude -p --plugin-dir, Agent SDK)`,
       `${output.highlight('create')}    - Scaffold a new plugin project`,
     ]);
     output.writeln();
