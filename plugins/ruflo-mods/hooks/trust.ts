@@ -193,7 +193,10 @@ export function marketplaceRefusal(scan: ModuleScan, statusText: string | undefi
   let result: unknown
   let where = 'marketplace clone'
   const root = scan.root ? normalizeTrustPath(scan.root) : undefined
-  const byPath = root ? entries.map(([, e]) => e.paths?.[root]).find((r) => typeof r === 'string') : undefined
+  // Keys are compared normalized on both sides, so a key another writer spelled differently still matches.
+  const byPath = root
+    ? entries.flatMap(([, e]) => Object.entries(e.paths && typeof e.paths === 'object' ? e.paths : {})).find(([k, r]) => typeof r === 'string' && normalizeTrustPath(k) === root)?.[1]
+    : undefined
   if (byPath !== undefined) {
     result = byPath
     where = `copy at ${scan.root}`

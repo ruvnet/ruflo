@@ -89,6 +89,9 @@ describe('ADR-509 signature gate in the mod trust hook', () => {
     expect((await mod.dispatch('plugin.register', fromCache, admit)).refuse).toMatch(/copy at .*cache.* is modified/);
     // Loaded from the clean clone: that copy verified, so it loads.
     expect(await mod.dispatch('plugin.register', { ...quiet('ruflo-swarm@ruflo'), root: '/c/plugins/ruflo-swarm' }, admit)).toEqual({ allow: true });
+    // A key spelled differently (trailing slash, as a hand-written or older file may have it) still matches.
+    const loose = JSON.stringify({ version: 1, byConfigDir: { '/other': { paths: { '/c/plugins/ruflo-docs/': 'bad-signature' } } } });
+    expect(marketplaceRefusal({ ...quiet('ruflo-docs@ruflo'), root: '/c/plugins/ruflo-docs' } as never, loose, `${HOME}/.claude`)).toMatch(/bad-signature/);
     // A directory the file does not know falls back to the worst of every copy.
     expect((await mod.dispatch('plugin.register', { ...quiet('ruflo-swarm@ruflo'), root: '/elsewhere' }, admit)).refuse).toMatch(/clone is modified/);
   });
