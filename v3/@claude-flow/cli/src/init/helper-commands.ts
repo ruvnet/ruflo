@@ -167,22 +167,81 @@ export function pinToUserHelpers(command: string, windows = IS_WINDOWS): string 
   return helperHookCommand(script, args.trim(), 'user', windows);
 }
 
-const USER_SH_FORM = /^sh -c 'exec node "\$\{HOME\}\/\.claude\/helpers\/([\w.-]+)"((?: [\w:.=-]+)*)'$/;
+/**
+ * ADR-059 statusLine command `init upgrade` writes for a project-level
+ * settings file (the git-root `node -e` form). Exported so the upgrade and the
+ * ADR-509 classifier use one string.
+ */
+export const GIT_ROOT_STATUSLINE_CMD =
+  `node -e "var c=require('child_process'),p=require('path'),r;try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}catch(e){r=process.cwd()}var s=p.join(r,'.claude/helpers/statusline.cjs');process.argv.splice(1,0,s);require(s)"`;
+
+/** Subcommands ruflo has written for each helper it launches from a hook. */
+const HELPER_SUBCOMMANDS: Record<string, readonly string[]> = {
+  'hook-handler.cjs': [
+    'pre-bash', 'post-bash', 'pre-edit', 'post-edit', 'pre-task', 'post-task', 'pre-command', 'post-command',
+    'route', 'session-restore', 'session-end', 'session-start', 'notify', 'stats', 'status', 'compact-manual', 'compact-auto',
+  ],
+  'auto-memory-hook.mjs': ['import', 'sync', 'status'],
+};
+
+const GIT_ROOT = "var c=require('child_process'),p=require('path'),r;try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}catch(e){r=process.cwd()}";
+const GIT_ROOT_ESM = "var c=require('child_process'),p=require('path'),u=require('url'),r;try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}catch(e){r=process.cwd()}";
+
+/** Every exact command string ruflo has generated (or generates) to launch `script` with `sub`. */
+function generatedForms(script: string, sub: string): string[] {
+  const arg = sub ? ` ${sub}` : '';
+  const win = script.replace(/\//g, '\\');
+  const forms = [
+    ...(['project', 'user'] as const).flatMap((scope) => [helperHookCommand(script, sub, scope, false), helperHookCommand(script, sub, scope, true)]),
+    `node ${script}${arg}`,
+    `node "$CLAUDE_PROJECT_DIR/${script}"${arg}`,
+    `sh -c 'exec node "\${CLAUDE_PROJECT_DIR:-.}/${script}"${arg}'`,
+    `cmd /c node %CLAUDE_PROJECT_DIR%/${script}${arg}`,
+    `cmd /c "IF EXIST \"%CLAUDE_PROJECT_DIR%\\${win}\" (node \"%CLAUDE_PROJECT_DIR%\\${win}\"${arg}) ELSE (node \"%USERPROFILE%\\${win}\"${arg})"`,
+  ];
+  if (script.endsWith('.mjs')) {
+    forms.push(
+      `node -e "${GIT_ROOT_ESM}var f=p.join(r,'${script}');process.argv.splice(1,0,f);import(u.pathToFileURL(f).href)"${arg}`,
+      `node -e "${GIT_ROOT_ESM}var f=p.join(r,'${script}');import(u.pathToFileURL(f).href)"${arg}`,
+    );
+  } else {
+    forms.push(`node -e "${GIT_ROOT}var s=p.join(r,'${script}');process.argv.splice(1,0,s);require(s)"${arg}`);
+  }
+  return forms;
+}
+
+let knownCommands: Set<string> | undefined;
+
+/** The closed set of hook and statusLine commands ruflo writes, built once. */
+function rufloCommands(): Set<string> {
+  if (knownCommands) return knownCommands;
+  const set = new Set<string>();
+  for (const [helper, subs] of Object.entries(HELPER_SUBCOMMANDS)) {
+    for (const sub of subs) for (const form of generatedForms(`.claude/helpers/${helper}`, sub)) set.add(form);
+  }
+  for (const scope of ['project', 'user'] as const) for (const win of [false, true]) set.add(helperStatusLineCommand(scope, win));
+  for (const form of generatedForms(STATUSLINE_SCRIPT, '')) set.add(form);
+  set.add(GIT_ROOT_STATUSLINE_CMD);
+  knownCommands = set;
+  return set;
+}
+
+// Older ruflo-generated CLI hooks (`npx @claude-flow/cli@latest hooks pre-bash`), which `init upgrade` migrates.
+// Exact shape only: a registry spec with a version or tag (never a bare name a project's node_modules/.bin
+// could answer), one of ruflo's own hook/memory subcommands, and at most ten plain words with no shell
+// syntax (bounded, one alternative: no backtracking blow-up on a crafted settings file).
+const LEGACY_NPX_HOOK =
+  /^npx (?:-y |--yes )?(?:@claude-flow\/cli|claude-flow|ruflo)@(?:latest|alpha|v3alpha|\d+\.\d+\.\d+(?:-[\w.]+)?) (?:hooks (?:pre-bash|post-bash|pre-edit|post-edit|pre-task|post-task|pre-command|post-command|route|session-start|session-end|session-restore|notify|statusline)|memory (?:import|sync|store))(?: [\w.:=-]+){0,10}$/;
 
 /**
- * ADR-509: whether a settings hook command is one of ruflo's own helper
- * launches, in a form ruflo generates (project probe, relative path, git
- * rev-parse, Windows, or the pinned user-level form) with nothing chained onto
- * it. Anything else is a hook ruflo did not write.
+ * ADR-509: whether a settings hook (or statusLine) command is one of ruflo's own
+ * helper launches. Exact string equality against the closed set of commands
+ * ruflo generates or has generated, for each helper, each subcommand it is
+ * launched with, each scope and each platform. No substring or pattern test on
+ * the helper path: a command that merely mentions a helper (in a comment, after
+ * `node -r`, `--import` or a NODE_OPTIONS= prefix, or with code chained on) is
+ * a command ruflo did not write.
  */
 export function isRufloHelperCommand(command: string): boolean {
-  if (pinToUserHelpers(command, false) !== null || pinToUserHelpers(command, true) !== null) return true;
-  // Older ruflo-generated CLI hooks (`npx @claude-flow/cli@latest hooks pre-bash`, ...) that init upgrade migrates.
-  if (/^npx (?:-y |--yes )?(?:@claude-flow\/cli|claude-flow|ruflo)(?:@[\w.-]+)? (?:hooks|memory) [\w:.= -]*$/.test(command)) return true;
-  const user = USER_SH_FORM.exec(command);
-  if (user) return RUFLO_HELPERS.includes(user[1]);
-  if (command === helperStatusLineCommand('user', true) || command === helperStatusLineCommand('user', false)) return true;
-  // The Windows user-level form: exactly what ruflo generates for that helper and argv.
-  const win = /'\.claude\/helpers\/([\w.-]+)((?: [\w:.=-]+)*)'/.exec(command);
-  return !!win && RUFLO_HELPERS.includes(win[1]) && command === helperHookCommand(`.claude/helpers/${win[1]}`, win[2].trim(), 'user', true);
+  return rufloCommands().has(command) || LEGACY_NPX_HOOK.test(command);
 }

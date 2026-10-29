@@ -33,8 +33,8 @@ import { generateClaudeMd } from './claudemd-generator.js';
 import { recordMemoryPackagePath } from './memory-package-resolver.js';
 import { COMMONJS_COMPANION_HELPERS, ensureCommonJsCompanions } from './helper-companions.js';
 import { scanSettingsForRisk, formatRiskFindingsAsWarnings, RISKY_SETTINGS_HINT, type RiskySettingsMode } from './settings-risk-scanner.js';
-import { applyRiskyMode, checkRiskySettings } from './risky-settings-gate.js';
-import { AUTO_MEMORY_HOOK_TIMEOUT_S, helperHookCommand, helperScopeFor, helperStatusLineCommand, pinToUserHelpers } from './helper-commands.js';
+import { applyRiskyMode, checkInitTrust, checkRiskySettings, type RiskySettingsGate } from './risky-settings-gate.js';
+import { AUTO_MEMORY_HOOK_TIMEOUT_S, GIT_ROOT_STATUSLINE_CMD, helperHookCommand, helperScopeFor, helperStatusLineCommand, pinToUserHelpers } from './helper-commands.js';
 
 /**
  * Skills to copy based on configuration
@@ -200,16 +200,20 @@ export async function executeInit(options: InitOptions): Promise<InitResult> {
   // ADR-509 §2.3 — stop before anything is written when the settings.json this
   // init would merge carries project auto-approve keys (--force overwrites it,
   // so nothing is carried forward then).
+  // A project-shipped .claude/helpers/<critical helper> that is not ruflo's
+  // signed copy is part of the same gate: init keeps it, and ruflo's hooks run it.
   if (options.components.settings && !options.force) {
-    const gate = checkRiskySettings(path.join(targetDir, '.claude', 'settings.json'), options.riskySettings ?? 'stop');
+    const sourceHelpers = findSourceHelpersDir(options.sourceBaseDir);
+    const gate = checkInitTrust(targetDir, options.riskySettings ?? 'stop', sourceHelpers);
     if (gate) {
       result.riskySettings = gate.lines;
       if (gate.stop) {
         result.success = false;
         result.stoppedOnRiskySettings = true;
-        result.errors.push(`.claude/settings.json carries ${gate.findings.length} auto-approve key(s) init would carry forward. ${RISKY_SETTINGS_HINT}`);
+        result.errors.push(`.claude/settings.json or .claude/helpers carries ${gate.findings.length} item(s) init would carry forward. ${RISKY_SETTINGS_HINT}`);
         return result;
       }
+      if (gate.mode === 'drop') replaceUntrustedHelpers(targetDir, gate, sourceHelpers, result);
     }
   }
 
@@ -462,8 +466,7 @@ export function mergeSettingsForUpgrade(
   // / jetsam / kernel panic. Preserving the user's existing command (the
   // old behavior here) means anyone who installed pre-#2337 and upgraded
   // never gets the fix. Now we detect the broken form and overwrite.
-  const NEW_STATUSLINE_CMD = scope === 'user' ? helperStatusLineCommand('user') :
-    `node -e "var c=require('child_process'),p=require('path'),r;try{r=c.execSync('git rev-parse --show-toplevel',{encoding:'utf8'}).trim()}catch(e){r=process.cwd()}var s=p.join(r,'.claude/helpers/statusline.cjs');process.argv.splice(1,0,s);require(s)"`;
+  const NEW_STATUSLINE_CMD = scope === 'user' ? helperStatusLineCommand('user') : GIT_ROOT_STATUSLINE_CMD;
   // Matches any invocation of `claude-flow hooks statusline` — either via npx
   // (`npx [--prefer-offline] [@]claude-flow[/cli][@<tag>] hooks statusline …`)
   // or as a bare command (`claude-flow hooks statusline …`). Both forms cold-
@@ -1346,6 +1349,24 @@ async function copyAgents(
       } else {
         result.skipped.push(`.claude/agents/${agentCategory}`);
       }
+    }
+  }
+}
+
+/**
+ * ADR-509 --drop-risky-settings: put ruflo's shipped copy in place of each
+ * project helper the gate flagged (or remove it when this ruflo ships none, so
+ * the hook falls back to the user's own helper).
+ */
+function replaceUntrustedHelpers(targetDir: string, gate: RiskySettingsGate, sourceHelpers: string | null, result: InitResult): void {
+  for (const f of gate.findings) {
+    if (f.target.kind !== 'helper') continue;
+    const dest = path.join(targetDir, '.claude', 'helpers', f.target.name);
+    const src = sourceHelpers ? path.join(sourceHelpers, f.target.name) : null;
+    fs.rmSync(dest, { force: true, recursive: true });
+    if (src && fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+      result.created.files.push(`.claude/helpers/${f.target.name}`);
     }
   }
 }

@@ -208,7 +208,9 @@ export type AutoApproveTarget =
   | { kind: 'enabledMcpjsonServers' }
   | { kind: 'defaultMode' }
   | { kind: 'allow'; index: number }
-  | { kind: 'hook'; event: string; group: number; hook: number };
+  | { kind: 'hook'; event: string; group: number; hook: number }
+  /** A project `.claude/helpers/<name>` that is not ruflo's signed copy (init keeps it without --force). */
+  | { kind: 'helper'; name: string };
 
 export interface AutoApproveFinding extends SettingsRiskFinding {
   target: AutoApproveTarget;
@@ -293,4 +295,4 @@ export function dropAutoApproveKeys(settings: Record<string, unknown>, findings:
 /** What `init` does when the existing settings carry auto-approve keys. */
 export type RiskySettingsMode = 'stop' | 'keep' | 'drop';
 
-export const RISKY_SETTINGS_HINT = 'Re-run with --drop-risky-settings to write the merged settings without these keys, or --keep-risky-settings to keep them.';
+export const RISKY_SETTINGS_HINT = 'Re-run with --drop-risky-settings to write the merged settings without these keys (and replace any flagged helper with ruflo\'s copy), or --keep-risky-settings to keep them.';

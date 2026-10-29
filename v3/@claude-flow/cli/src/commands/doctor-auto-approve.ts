@@ -2,11 +2,14 @@
  * ADR-509 §2.3 — `ruflo doctor` reports project-level auto-approve keys
  * (enableAllProjectMcpServers, enabledMcpjsonServers, bypassPermissions,
  * blanket Bash allows, non-ruflo hooks) in `.claude/settings.json` and
- * `.claude/settings.local.json` as a warning, in any project.
+ * `.claude/settings.local.json`, and project `.claude/helpers` that are not
+ * ruflo's signed copies, as a warning, in any project.
  */
 import { join } from 'node:path';
 
-import { checkRiskySettings } from '../init/risky-settings-gate.js';
+import { findPackageHelpersDir } from '../init/helper-refresh.js';
+import { checkRiskySettings, untrustedProjectHelpers } from '../init/risky-settings-gate.js';
+import { formatRiskFindingsAsWarnings } from '../init/settings-risk-scanner.js';
 
 export interface AutoApproveCheck {
   name: string;
@@ -23,6 +26,8 @@ export async function checkProjectAutoApproveSettings(cwd: string = process.cwd(
     const gate = checkRiskySettings(join(cwd, file), 'keep');
     if (gate) hits.push(...gate.lines.map((l) => `${file}: ${l}`));
   }
+  // A project-shipped helper that is not ruflo's signed copy runs under ruflo's own hook commands.
+  hits.push(...formatRiskFindingsAsWarnings(untrustedProjectHelpers(cwd, findPackageHelpersDir())));
   if (hits.length === 0) return { name: AUTO_APPROVE_CHECK_NAME, status: 'pass', message: 'no auto-approve keys in project settings' };
   const shown = hits.slice(0, 3).join(' | ');
   return {
