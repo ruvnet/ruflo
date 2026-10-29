@@ -5,6 +5,22 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.64.0] - 2026-10-29
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.64.0; ruflo-mods plugin 0.8.0.
+
+### Added
+- **Verified-outcome learning loop** (#4581, #4583, ADR-502), **on by default** (ruflo-mods `learningLoop`; set it to `false` to turn it off).
+  - The mod records each main-loop turn. Its outcome is decided only by the exit status of a test, build, typecheck or lint command run after the turn's last edit.
+  - `|| true`, pipes and `;` verify nothing, and the model's own words are never read.
+  - `ruflo hooks verified-ingest`, the MCP tool `hooks_intelligence_verified-ingest`, and automatic ingest in `hooks_route` and `hooks_session-end` all train SONA on verified turns only. Unverified turns are counted and never trained.
+  - Learned lessons at or above the 0.6 routing gate are written to `.claude-flow/data/learned-lessons.json`. The mod cites at most three of them in a prompt they match.
+  - `ruflo doctor --component learning-loop` reports whether outcomes are reaching SONA.
+
+### Not yet
+- #4581 stages 5–7 (console pane, autonomous `/loop-run`, GEPA self-tuning) are not built.
+- The #4581 §7 evaluation (30+ tasks, baseline vs loop-enabled) has not been run; the default is on by maintainer decision ahead of it (ADR-502 §6).
+
 ## [3.63.9] - 2026-10-29
 
 Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.63.9.
