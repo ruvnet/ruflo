@@ -1,6 +1,6 @@
 # ADR 508: the cost ladder feeds gateway budgets
 
-Status: Accepted (implemented in PR #PR_NUMBER, 2026-10-29)
+Status: Accepted (implemented in PR #4592, 2026-10-29)
 
 Issue: #4581 follow-up 2. Builds on: ADR-404 (the mod's cost ladder), the ruflo-cost-tracker plugin, the meta-llm gateway.
 
