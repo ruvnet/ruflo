@@ -5765,7 +5765,7 @@ async function ingestVerifiedQuietly(force = false) {
 
 export const hooksVerifiedIngest: MCPTool = {
   name: 'hooks_intelligence_verified-ingest',
-  description: 'Ingest the ruflo-mods learning loop\'s recorded turns (.claude-flow/data/verified-trajectories.jsonl, #4581): turns a test, build or typecheck process verified train SONA; unverified turns are counted and never train. Writes .claude-flow/data/learned-lessons.json (patterns at or above the 0.6 routing gate, plus repeated verified failures as cautions). hooks_route and hooks_session-end already ingest automatically; call this to see the counts or to force a re-read.',
+  description: 'Ingest the ruflo-mods learning loop\'s recorded turns (.claude-flow/data/verified-trajectories.jsonl, #4581): turns a test, build or typecheck process verified train SONA; unverified turns are counted and never train. Writes .claude-flow/data/learned-lessons.json (patterns at or above the 0.6 routing gate, plus repeated verified failures as cautions). hooks_route and hooks_session-end already ingest automatically; call this to see the counts or to force a re-read. Use when native Bash hooks (via Claude Code\'s settings.json) are wrong because the outcome must reach Ruflo-side state — SONA pattern persistence and routing — and must be gated on a verifier\'s exit status rather than recorded unconditionally.',
   inputSchema: {
     type: 'object',
     properties: {
