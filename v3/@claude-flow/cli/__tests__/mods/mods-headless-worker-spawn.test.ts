@@ -1,6 +1,7 @@
 /**
- * ADR-510 §2.2 — the two places ruflo builds a `claude -p` command line
- * (HeadlessWorkerExecutor, `hive-mind work`) pass the resolved ruflo-mods
+ * ADR-510 §2.2 — two of the places ruflo builds a `claude -p` command line
+ * (HeadlessWorkerExecutor, `hive-mind work`; `hive-mind spawn -p` is in
+ * mods-hive-mind-spawn-plugins.test.ts) pass the resolved ruflo-mods
  * folder as --plugin-dir and set CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1; a
  * missing plugin does not stop the run and is recorded on its result.
  *
