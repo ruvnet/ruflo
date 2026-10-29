@@ -2,10 +2,17 @@
  * Per-session cost attribution (ADR-508 §2.3). Pure.
  *
  * A gateway sees every request but not which subagent or tool caused it. The
- * mod does: each `session.measure` cost delta is charged to the subagent type
- * (from `agent.spawn`) and the tool that ran just before it. At session end
- * one line goes to `.claude-flow/cost/attribution.jsonl`, which
- * `ruflo cost report` reads.
+ * mod sees more, but not per request: Claude Code measures cost once per
+ * main-thread turn (`session.measure`), and a foreground subagent runs inside
+ * the main loop's Agent tool call, so its tool calls all land before that
+ * turn's one measurement. So each measured delta is split across the tool
+ * calls completed since the last measurement, one equal share per call: a
+ * subagent's calls go to its type (from `agent.spawn`), the main loop's to
+ * `main` (its Agent/Task call that wrapped the subagent counts as one main
+ * share). A delta with no tool call in it (a plain answer) goes to `main` and
+ * `(model)`. This is a split by call count, an estimate, not a per-request
+ * price. At session end one line goes to `.claude-flow/cost/attribution.jsonl`,
+ * which `ruflo cost report` reads.
  */
 
 export const ATTRIBUTION_PATH = '.claude-flow/cost/attribution.jsonl'
@@ -27,8 +34,10 @@ export type Attribution = {
   /** The session's cumulative cost at the last measurement (the base for the next delta). */
   lastUsd: number
   totalUsd: number
-  lastTool: string
-  lastAgent: string
+  /** Tool calls completed since the last charged measurement, counted by agent and by tool. */
+  pendingCalls: number
+  pendingAgent: Map<string, number>
+  pendingTool: Map<string, number>
   byAgent: Map<string, number>
   byTool: Map<string, number>
   /** Spawned subagent id → its type, so a subagent's tool calls are charged to its type. */
@@ -40,8 +49,9 @@ export type Attribution = {
 export const createAttribution = (): Attribution => ({
   lastUsd: 0,
   totalUsd: 0,
-  lastTool: NO_TOOL,
-  lastAgent: MAIN,
+  pendingCalls: 0,
+  pendingAgent: new Map(),
+  pendingTool: new Map(),
   byAgent: new Map(),
   byTool: new Map(),
   agents: new Map(),
@@ -59,21 +69,24 @@ export function noteSpawn(a: Attribution, agentId: unknown, subagentType: unknow
   a.agents.set(agentId, nameOf(subagentType))
 }
 
-/** The tool that just ran, and whose loop it ran in. */
-export function noteTool(a: Attribution, tool: unknown, agentId: unknown): void {
-  a.lastTool = nameOf(tool)
-  a.lastAgent = typeof agentId === 'string' ? a.agents.get(agentId) ?? 'subagent' : MAIN
-}
-
 function charge(map: Map<string, number>, key: string, usd: number) {
   const k = map.has(key) || map.size < MAX_KEYS ? key : 'other'
   map.set(k, (map.get(k) ?? 0) + usd)
 }
 
+/** A tool call that just completed, and whose loop it ran in: one share of the next measured delta. */
+export function noteTool(a: Attribution, tool: unknown, agentId: unknown): void {
+  charge(a.pendingTool, nameOf(tool), 1)
+  charge(a.pendingAgent, typeof agentId === 'string' ? a.agents.get(agentId) ?? 'subagent' : MAIN, 1)
+  a.pendingCalls++
+}
+
 /**
- * Charges the delta since the last measurement to the last tool and agent.
- * A total below the base means the host counted from zero again (a /clear):
- * the new total is the delta. Returns the delta charged.
+ * Splits the delta since the last measurement across the tool calls completed
+ * since then, one equal share per call; with none, it goes to `main` and
+ * `(model)`. A total below the base means the host counted from zero again (a
+ * /clear): the new total is the delta. A measurement with no cost change (a
+ * rate-limit move) keeps the pending calls for the next one. Returns the delta.
  */
 export function noteCost(a: Attribution, usd: number): number {
   if (!Number.isFinite(usd) || usd < 0) return 0
@@ -81,8 +94,16 @@ export function noteCost(a: Attribution, usd: number): number {
   a.lastUsd = usd
   if (delta <= 0) return 0
   a.totalUsd += delta
-  charge(a.byAgent, a.lastAgent, delta)
-  charge(a.byTool, a.lastTool, delta)
+  if (a.pendingCalls === 0) {
+    charge(a.byAgent, MAIN, delta)
+    charge(a.byTool, NO_TOOL, delta)
+  } else {
+    for (const [agent, calls] of a.pendingAgent) charge(a.byAgent, agent, (delta * calls) / a.pendingCalls)
+    for (const [tool, calls] of a.pendingTool) charge(a.byTool, tool, (delta * calls) / a.pendingCalls)
+  }
+  a.pendingCalls = 0
+  a.pendingAgent.clear()
+  a.pendingTool.clear()
   return delta
 }
 

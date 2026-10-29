@@ -66,7 +66,8 @@ const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 /**
  * The `/key/generate` URL for a proxy URL, or the reason it is refused:
  * HTTPS only, except a loopback host (`localhost`, `127.0.0.1`, `[::1]`);
- * no credentials in the URL; no query or fragment.
+ * no credentials in the URL; no query or fragment; no path starting with `//`.
+ * The result always keeps the given scheme and host.
  */
 export function keyGenerateUrl(proxy: unknown): { url?: URL; error?: string } {
   if (typeof proxy !== 'string' || proxy.trim() === '') return { error: '--apply needs --url <proxy base URL>' };
@@ -82,8 +83,15 @@ export function keyGenerateUrl(proxy: unknown): { url?: URL; error?: string } {
   if (u.protocol !== 'https:' && !(u.protocol === 'http:' && loopback)) {
     return { error: `--apply refuses ${u.protocol}//${u.hostname}: use https, or plain http only to a loopback host (localhost, 127.0.0.1, [::1])` };
   }
-  const base = u.pathname.endsWith('/') ? u.pathname : `${u.pathname}/`;
-  return { url: new URL(`${base}key/generate`, `${u.protocol}//${u.host}`) };
+  // A path starting with "//" ("/\" normalises to it) would read as a protocol-relative
+  // URL if resolved as a string, and move the request, bearer key included, to another host.
+  if (u.pathname.startsWith('//')) return { error: '--url path must not start with "//" or "/\\"' };
+  // The path is set on a copy, never resolved from a string, so it cannot change the
+  // scheme or host; the check below holds that anyway.
+  const out = new URL(u.href);
+  out.pathname = `${u.pathname.endsWith('/') ? u.pathname : `${u.pathname}/`}key/generate`;
+  if (out.protocol !== u.protocol || out.host !== u.host) return { error: `--url would send the key to another host (${out.host}); refused` };
+  return { url: out };
 }
 
 /** The master key from the environment variable `--key-env` names (never from argv), or why there is none. */

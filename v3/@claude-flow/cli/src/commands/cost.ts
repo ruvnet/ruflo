@@ -173,7 +173,8 @@ const reportSub: Command = {
     }
     const pct = (v: number) => (report.totalUsd > 0 ? `${((v / report.totalUsd) * 100).toFixed(1)}%` : '-');
     output.writeln(`${report.sessions} session(s), $${report.totalUsd.toFixed(4)} attributed${report.refusals ? `, ${report.refusals} gateway budget refusal(s)` : ''}${report.skipped ? ` (${report.skipped} unreadable line(s) skipped)` : ''}`);
-    for (const [title, rows] of [['By agent', report.byAgent], ['By tool (the tool that ran before the spend)', report.byTool]] as const) {
+    output.writeln('Estimate: each turn\'s cost is split evenly across the tool calls made in it (a turn without tool calls goes to main / (model)).');
+    for (const [title, rows] of [['By agent', report.byAgent], ['By tool', report.byTool]] as const) {
       output.writeln('');
       output.writeln(output.bold(title));
       output.printTable({

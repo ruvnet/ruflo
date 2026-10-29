@@ -127,12 +127,31 @@ describe('--apply guards', () => {
     }
   });
 
+  it('refuses a path that would move the request to another host (protocol-relative "//" or "/\\")', () => {
+    // Each of these resolved to http(s)://<evil>/key/generate before the fix, with the master key as bearer.
+    for (const bad of ['http://localhost//evil.example/', 'http://127.0.0.1/\\\\attacker.example/', 'http://127.0.0.1/\\\\attacker.example:80/', 'https://ok.example//evil.example/', 'http://[::1]:4000//evil.example', 'https://ok.example/\\evil.example/']) {
+      const r = keyGenerateUrl(bad);
+      expect(r.url, bad).toBeUndefined();
+      expect(r.error, bad).toMatch(/must not start with/);
+    }
+  });
+
   it('allows https anywhere and http to loopback, and appends /key/generate to the base path', () => {
-    expect(keyGenerateUrl('https://proxy.example.com').url!.href).toBe('https://proxy.example.com/key/generate');
-    expect(keyGenerateUrl('https://proxy.example.com/litellm/').url!.href).toBe('https://proxy.example.com/litellm/key/generate');
-    expect(keyGenerateUrl('http://localhost:4000').url!.href).toBe('http://localhost:4000/key/generate');
-    expect(keyGenerateUrl('http://127.0.0.1:4000').url!.href).toBe('http://127.0.0.1:4000/key/generate');
-    expect(keyGenerateUrl('http://[::1]:4000').url!.href).toBe('http://[::1]:4000/key/generate');
+    const cases: [string, string][] = [
+      ['https://proxy.example.com', 'https://proxy.example.com/key/generate'],
+      ['https://proxy.example.com/litellm/', 'https://proxy.example.com/litellm/key/generate'],
+      ['https://proxy.example.com/a//b', 'https://proxy.example.com/a//b/key/generate'],
+      ['http://localhost:4000', 'http://localhost:4000/key/generate'],
+      ['http://127.0.0.1:4000', 'http://127.0.0.1:4000/key/generate'],
+      ['http://[::1]:4000', 'http://[::1]:4000/key/generate'],
+    ];
+    for (const [input, href] of cases) {
+      const out = keyGenerateUrl(input).url!;
+      expect(out.href, input).toBe(href);
+      const given = new URL(input);
+      expect(out.protocol, input).toBe(given.protocol);
+      expect(out.host, input).toBe(given.host);
+    }
   });
 
   it('reads the master key only from the named environment variable', () => {
@@ -230,15 +249,21 @@ describe('ruflo cost command', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('--apply to plain http on a non-loopback host is refused before any request', async () => {
+  it('--apply to plain http on a non-loopback host, or a host-escaping path, is refused before any request', async () => {
     mkdirSync(join(cwd, '.claude-flow/cost'), { recursive: true });
     writeFileSync(join(cwd, BUDGET_PATH), JSON.stringify(GOOD[0]));
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('{}', { status: 200 }));
     process.env.RUFLO_TEST_LITELLM_KEY = 'sk-master-test';
     try {
       const r = await sub('budget', 'export').action!(ctx({ gateway: 'litellm', apply: true, url: 'http://proxy.example.com:4000', keyEnv: 'RUFLO_TEST_LITELLM_KEY' }));
       expect(r.success).toBe(false);
       expect(written.join('\n')).toMatch(/refuses http:\/\/proxy\.example\.com/);
+      for (const url of ['http://localhost//evil.example/', 'http://127.0.0.1/\\\\attacker.example/', 'https://ok.example//evil.example/']) {
+        written = [];
+        const escaped = await sub('budget', 'export').action!(ctx({ gateway: 'litellm', apply: true, url, keyEnv: 'RUFLO_TEST_LITELLM_KEY' }));
+        expect(escaped.success, url).toBe(false);
+        expect(written.join('\n'), url).toMatch(/must not start with/);
+      }
       expect(fetchSpy).not.toHaveBeenCalled();
     } finally {
       delete process.env.RUFLO_TEST_LITELLM_KEY;

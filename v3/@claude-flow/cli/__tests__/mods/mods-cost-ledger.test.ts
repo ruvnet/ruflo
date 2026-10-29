@@ -72,7 +72,7 @@ describe('ADR-508 budget file drives the ladder', () => {
 });
 
 describe('ADR-508 attribution', () => {
-  it('charges each delta to the subagent type and the tool before it, and writes one line at session end', async () => {
+  it('charges each delta to the subagent types and tools of the calls in it, and writes one line at session end', async () => {
     const world = memoryWorld();
     const mod = await start(world);
     await measure(mod, 0.1); // a plain answer, no tool yet
@@ -90,6 +90,37 @@ describe('ADR-508 attribution', () => {
     expect(line.byAgent).toEqual({ researcher: 0.7, main: 0.3, subagent: 0.5 });
     expect(line.byTool).toEqual({ WebFetch: 0.7, Bash: 0.5, Read: 0.2, '(model)': 0.1 });
     expect(line.refusals).toBe(0);
+  });
+
+  it('host order: a foreground subagent runs inside the main Agent call, and the turn is measured once, after it', async () => {
+    // Claude Code measures after each main-thread turn only. The main loop's Agent tool.call resolves after
+    // the subagent's own tool calls, so it is the last tool before the measurement. Charging the whole delta
+    // to the last tool (the old behaviour) put everything on main/Agent; the delta is split per tool call.
+    const world = memoryWorld();
+    const mod = await start(world);
+    await tool(mod, 'Read'); // main, before the spawn
+    await spawn(mod, 'researcher', 'agent-7'); // fires inside the main Agent tool call
+    for (const name of ['WebFetch', 'WebFetch', 'Grep']) await tool(mod, name, 'agent-7');
+    await tool(mod, 'Agent'); // the main loop's Agent call completes after its subagent
+    await measure(mod, 1.0); // one measurement for the whole main turn
+    await measure(mod, 1.4); // next turn: a plain answer, no tool calls
+    await end(mod);
+    const line = parseAttributionLine(mem(world).get(LEDGER)!.text.trim())!;
+    expect(line.totalUsd).toBeCloseTo(1.4, 6);
+    expect(line.byAgent).toEqual({ main: 0.8, researcher: 0.6 }); // 2 of 5 calls + the plain answer; 3 of 5
+    expect(line.byTool).toEqual({ '(model)': 0.4, WebFetch: 0.4, Read: 0.2, Grep: 0.2, Agent: 0.2 });
+  });
+
+  it('a measurement with no cost change keeps the calls for the next delta', async () => {
+    const world = memoryWorld();
+    const mod = await start(world);
+    await spawn(mod, 'coder', 'a1');
+    await tool(mod, 'Edit', 'a1');
+    await measure(mod, 0); // a rate-limit move, cost unchanged
+    await tool(mod, 'Agent');
+    await measure(mod, 2);
+    await end(mod);
+    expect(parseAttributionLine(mem(world).get(LEDGER)!.text.trim())!.byAgent).toEqual({ coder: 1, main: 1 });
   });
 
   it('a /clear writes the session and starts the next one from zero', async () => {

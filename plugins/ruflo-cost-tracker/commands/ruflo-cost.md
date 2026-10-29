@@ -40,7 +40,7 @@ Cost tracking commands:
 2. `npx @claude-flow/cli@latest cost budget export --gateway litellm [--format json] [--model <gateway model>]` prints LiteLLM key budget fields as YAML (`--format json`: the `/key/generate` body) (`budget_limits`; with `--model`, `model_max_budget` and `budget_fallbacks`).
 3. `... --apply --url https://<proxy> --key-env LITELLM_MASTER_KEY` posts them to `<proxy>/key/generate`. HTTPS only unless the host is loopback; the master key is read only from the named environment variable.
 4. `--gateway meta-llm` fails on purpose: meta-llm documents no budget API yet, and ruflo does not guess an endpoint.
-5. `npx @claude-flow/cli@latest cost report [--days 30] [--json]` shows spend by subagent type and by the tool that ran before it, from `.claude-flow/cost/attribution.jsonl` (written by the ruflo-mods `costLedger` option, on by default).
+5. `npx @claude-flow/cli@latest cost report [--days 30] [--json]` shows spend by subagent type and by tool (each turn's cost split evenly across its tool calls, an estimate), from `.claude-flow/cost/attribution.jsonl` (written by the ruflo-mods `costLedger` option, on by default).
 
 **`cost optimize`** -- Analyze usage and suggest cost optimizations.
 1. Recall recent usage data from `cost-tracking` namespace

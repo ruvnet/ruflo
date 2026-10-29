@@ -23,8 +23,9 @@ const ANY = /^[\s\S]*$/
  * - when `costBudgetUsd` is off, the ladder takes its limit from the shared
  *   budget file `.claude-flow/cost/budget.json` (its smallest window) and
  *   names that window; the file's `hardStop` acts as `costHardStop`;
- * - each cost delta is charged to the subagent type and the tool that ran
- *   just before it, and one line per session goes to
+ * - each measured cost delta (one per main-thread turn) is split across the
+ *   tool calls completed in it, one share per call, by subagent type and by
+ *   tool (an estimate: see attribution.ts), and one line per session goes to
  *   `.claude-flow/cost/attribution.jsonl` for `ruflo cost report`;
  * - a turn that ends on a gateway's budget refusal is toasted once and counted.
  *   Nothing retries or changes model: that is the gateway's fallback.
