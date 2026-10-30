@@ -16,6 +16,7 @@ export type ModOptions = {
   readonly agentTrimKeep: ReadonlySet<string>
   readonly deliveryScreen: boolean
   readonly compactCarry: boolean
+  readonly compactSnapshot: boolean
   readonly rureOffer: boolean
   readonly learningLoop: boolean
   readonly capabilityProbe: boolean
@@ -52,6 +53,7 @@ export function readOptions(options: PluginOptions | undefined): ModOptions {
     agentTrimKeep: keepNames(o.agentTrimKeep),
     deliveryScreen: bool(o.deliveryScreen, false),
     compactCarry: bool(o.compactCarry, false),
+    compactSnapshot: bool(o.compactSnapshot, true),
     rureOffer: bool(o.rureOffer, false),
     learningLoop: bool(o.learningLoop, true),
     capabilityProbe: bool(o.capabilityProbe, false),

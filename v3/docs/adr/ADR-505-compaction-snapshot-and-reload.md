@@ -1,6 +1,6 @@
 # ADR 505: pre-compaction snapshot and post-compaction reload
 
-Status: Proposed (2026-10-29)
+Status: Accepted (implemented in PR #4591, 2026-10-29)
 
 Issue: #4581 follow-up 3. Builds on: ADR-451 item 7 (`compactCarry`), ADR-502 (lessons), ADR-404.
 
@@ -77,3 +77,19 @@ Harness tests:
 - No block is added when no source has anything to give.
 
 Real-binary tier (ADR-504): `/compact` in a scripted session produces a snapshot.
+
+## 5. Implementation notes
+
+Built as `plugins/ruflo-mods/hooks/compact-snapshot/` (`snapshot.ts` pure line building and bounds, `reload.ts` pure block, `index.ts` hooks), option `compactSnapshot` (default `true`). Deviations from section 2, each forced by the engine:
+
+- **File names and rotation.** `$.fs` has `read`, `write`, `list`, `exists`, `stat` and `ancestors` but no delete, so the mod cannot remove old snapshots. Instead of `<iso-time>.jsonl` files it writes ten fixed slots, `snapshot-0.jsonl` … `snapshot-9.jsonl`: a missing slot first, else the one with the oldest mtime. The newest ten are still the ones kept. The ISO time, trigger and counts go in the first (header) line of each file. This also avoids `:` in file names, which Windows refuses.
+- **Triggers.** Only `manual`, `auto` and `plugin` compactions write. `precompute` installs nothing, and per the engine types the compaction that later uses its result dispatches `session.compact` again (`usage` is "absent when core reused a summary already computed"; inferred from the declarations, not observed live), so snapshotting there would write twice and set the reload flag for a compaction that has not happened. The matcher is `{ trigger: /^(?:manual|auto|plugin)$/ }`, which also keeps the module loadable next to `compactCarry`'s bare `session.compact` registration (#4485).
+- **Reload flag only when the compaction stood.** `next(e)` can resolve `{ skip }` (a vetoing hook or a classic PreCompact block); then nothing was lost and no block is added.
+- **Not blocking or delaying.** The snapshot text is built from `e.messages` before `next(e)`, and the write runs beside the compaction and is awaited after it, so a slow or failing write never holds the compaction up. A failure is logged with `$.ui.log(…, { to: 'debug' })` and counted in `/ruflo-mods`.
+- **Only in a ruflo project.** The module writes nothing unless `.claude-flow/` already exists, because `$.fs.write` creates directories and a default-on option must not create an un-ignored transcript folder in an arbitrary project.
+- **Slash prompts.** The reload block waits for the next prompt that is not a slash command and not empty.
+- **Sources 1 and 2.** The learning loop's state kept only counts, so it now also keeps the newest 3 distinct lessons shown and the newest 5 recorded turns (`loop/status.ts`). With `learningLoop` off those sources are empty and are skipped.
+- **Source 3** reuses `compact/block.ts` through a new `openIdLines()`, the same validated swarm and claim lines `compactCarry` builds, without its heading or session words.
+- **Doctor.** `ruflo doctor` (and `--component compact-snapshots`) runs `git check-ignore` on a snapshot path, so `ruflo init`'s nested `.claude-flow/.gitignore` (`sessions/`) counts as ignored; it warns only when snapshots exist and git would commit them.
+
+Live check (Claude Code 2.1.289, haiku, `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, `--plugin-dir plugins/ruflo-mods`, option left at its default, one `stream-json` session in a scratch project with `.claude-flow/` and a canary swarm): a filler turn, then `/compact` (a `compact_boundary` was emitted), wrote `.claude-flow/sessions/compactions/snapshot-0.jsonl` holding the header and the three transcript messages. Asked afterwards, from context alone, whether a `[RUFLO_AFTER_COMPACT]` block was present, the model repeated the canary swarm line and the snapshot path from it. Three haiku calls, about $0.11.

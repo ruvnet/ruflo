@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Structural smoke test for ruflo-metaharness v0.2.6 (ADR-150 Phase 1).
+# Structural smoke test for ruflo-metaharness v0.4.0 (ADR-150 Phase 1).
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PASS=0
@@ -32,10 +32,10 @@ else
   bad "extraction-regex-rot: EXPECTED_TOOLS=$EXPECTED_TOOLS EXPECTED_SUBS=$EXPECTED_SUBS"
 fi
 
-step "1. plugin.json declares 0.2.6 with adr-150 keywords"
+step "1. plugin.json declares 0.4.0 with adr-150 keywords"
 v=$(grep -E '"version"' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.2.6" ]]; then
-  bad "expected 0.2.6, got '$v'"
+if [[ "$v" != "0.4.0" ]]; then
+  bad "expected 0.4.0, got '$v'"
 else
   miss=""
   for k in ruflo metaharness harness scorecard genome mcp-scan threat-model router adr-150 adr-148 adr-149 optional-dependency graceful-degradation subprocess phase-1-mvp; do
@@ -483,7 +483,7 @@ step "17z74a. plugin helper pins accept the CLI-declared ranges — no tool-time
 miss=""
 # 17z74 compares package.json files with each other; the helpers' own
 # *_PIN_VERSION constants (what findLocalPackageDir accepts) were never
-# compared with them and drifted (~0.3.0 / ~0.8.0 vs declared ^0.4.1 /
+# compared with them and drifted (~0.4.0 / ~0.8.0 vs declared ^0.4.1 /
 # ~0.10.2), so every metaharness_* call npm-installed an older release next
 # to the one ruflo ships. Hermetic runtime gate: stub packages at the declared
 # versions, published layout, npm/npx trap.
@@ -1287,7 +1287,7 @@ miss=""
 DISP="$ROOT/../../v3/@claude-flow/cli/src/commands/metaharness.ts"
 WRAPPER="$ROOT/../../v3/@claude-flow/cli/src/mcp-tools/metaharness-tools.ts"
 # All 13 dispatchable subcommands present (iter-73 had 10; @metaharness/redblue
-# added redblue.mjs; metaharness@0.3.0/darwin@0.8.0 added learn.mjs + gepa.mjs).
+# added redblue.mjs; metaharness@0.4.0/darwin@0.8.0 added learn.mjs + gepa.mjs).
 for sub in score genome mcp-scan threat-model oia-audit audit-list audit-trend similarity drift-from-history mint redblue learn gepa; do
   grep -q "${sub}" "$DISP" 2>/dev/null || miss="$miss subcommand-${sub}-not-listed"
 done
@@ -2199,7 +2199,7 @@ grep -q "result has 'degraded'" "$F" || miss="$miss no-degraded-assertion"
 grep -q "result has 'exitCode'" "$F" || miss="$miss no-exitcode-assertion"
 # All tool names enumerated (similarity iter 36, drift_from_history iter 54,
 # ADR-153 added bench/evolve/security_bench, @metaharness/redblue added redblue,
-# metaharness@0.3.0/darwin@0.8.0 added learn + gepa, ADR-322 added flywheel)
+# metaharness@0.4.0/darwin@0.8.0 added learn + gepa, ADR-322 added flywheel)
 for tool in metaharness_score metaharness_genome metaharness_mcp_scan metaharness_threat_model metaharness_oia_audit metaharness_audit_list metaharness_audit_trend metaharness_similarity metaharness_drift_from_history metaharness_bench metaharness_evolve metaharness_security_bench metaharness_redblue metaharness_learn metaharness_gepa metaharness_flywheel; do
   grep -q "${tool}" "$F" || miss="$miss missing-${tool}"
 done

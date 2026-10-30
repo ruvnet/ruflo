@@ -142,7 +142,7 @@ Usage: /vector <subcommand> [options]
 
 ## Setup helper
 
-For first-run users hitting `ONNX WASM files not bundled`, `Brain commands require @ruvector/pi-brain`, or `SONA not available`, invoke the `vector-setup` skill: `/vector-setup`.
+For first-run users hitting `ONNX WASM files not bundled`, `Brain commands require @ruvector/pi-brain`, or `SONA not available`, ask the user to run `/ruflo-ruvector:vector-setup` (it installs packages, so it is user-invoked: ADR-507).
 
 ## MCP server (91 tools)
 

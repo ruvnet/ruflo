@@ -32,5 +32,46 @@ jobs:
         working-directory: v3/@claude-flow/cli
         run: ../../../node_modules/.bin/vitest run __tests__/mods/ --exclude '**/mods-cli-bin.test.ts'
 
+  mods-real-binary:
+    # ADR-504: the real Claude Code binary, headless, against a scripted mock
+    # Anthropic Messages server (no secret, no paid model). It catches what the
+    # harness can only imitate, such as #4485 (a hooks module the real loader
+    # refuses with no error anywhere). The pin moves only by PR, so an engine
+    # change that breaks a contract is caught on the bump, not in users' sessions.
+    name: Real-binary mod contracts (pinned Claude Code)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLAUDE_CODE_VERSION: '2.1.289'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --legacy-peer-deps
+      - name: Install the pinned Claude Code binary
+        run: npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+      - name: Check the binary starts and is the pinned version
+        run: |
+          set -euo pipefail
+          if ! actual="$(claude --version)"; then
+            echo "::error::claude --version failed: the pinned Claude Code binary did not start"
+            exit 1
+          fi
+          echo "claude --version: ${actual}"
+          if [ "${actual%% *}" != "${CLAUDE_CODE_VERSION}" ]; then
+            echo "::error::expected Claude Code ${CLAUDE_CODE_VERSION}, got ${actual}"
+            exit 1
+          fi
+      - name: Run the real-binary contracts
+        working-directory: v3/@claude-flow/cli
+        env:
+          RUFLO_REAL_BINARY_CLAUDE: claude
+        run: ../../../node_modules/.bin/vitest run --config vitest.real-binary.config.ts
+
 # Claude Code native kit tests require the separately enabled host runtime.
 # Built CLI tests still belong to the normal provisioned build gate.

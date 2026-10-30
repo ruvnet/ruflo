@@ -12,9 +12,12 @@
  * `npm test || true` and `npm test | tail` never verify anything.
  */
 
+import { narrows } from './taint'
+
 export type VerifierKind = 'test' | 'build' | 'typecheck' | 'lint'
 
-export type Verifier = { readonly kind: VerifierKind; readonly command: string }
+/** `narrowed`: a segment weakened or narrowed its check (ADR-503 §2.1), judged on the whole command, not the 80-character evidence. */
+export type Verifier = { readonly kind: VerifierKind; readonly command: string; readonly narrowed?: boolean }
 
 /** The longest command head kept as evidence. */
 export const MAX_EVIDENCE = 80
@@ -77,7 +80,7 @@ export function classify(command: unknown): Verifier | null {
     const bare = segment.replace(ENV_PREFIX, '')
     const kind = kindOf(bare)
     if (kind === null) return null // something else ran: its status is not the verifier's
-    found = { kind: rank(found?.kind, kind), command: bare.replace(/\s+/g, ' ').slice(0, MAX_EVIDENCE) }
+    found = { kind: rank(found?.kind, kind), command: bare.replace(/\s+/g, ' ').slice(0, MAX_EVIDENCE), narrowed: found?.narrowed === true || narrows(bare, kind) }
   }
   return found
 }

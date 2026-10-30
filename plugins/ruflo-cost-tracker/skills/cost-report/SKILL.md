@@ -3,6 +3,7 @@ name: cost-report
 description: Generate a cost report showing token usage and USD costs by agent and model
 argument-hint: "[--period today]"
 allowed-tools: mcp__plugin_ruflo-core_ruflo__memory_search mcp__plugin_ruflo-core_ruflo__memory_list mcp__plugin_ruflo-core_ruflo__memory_retrieve mcp__plugin_ruflo-core_ruflo__agentdb_pattern-search mcp__plugin_ruflo-core_ruflo__agentdb_semantic-route Bash
+disable-model-invocation: true
 ---
 
 # Cost Report

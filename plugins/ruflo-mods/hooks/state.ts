@@ -8,6 +8,7 @@ import { ledgerLines } from './rollup/record'
 import { groundingLine, groundingState, type GroundingState } from './grounding'
 import { probeLine, probeState, type ProbeState } from './probe'
 import { loopLine, loopSegment, loopState, type LoopState } from './loop/status'
+import { snapshotLine, snapshotState, type SnapshotState } from './compact-snapshot/snapshot'
 import type { RouteResult } from './route/route-task'
 
 /**
@@ -44,6 +45,8 @@ export type ModState = {
   rureOffer: { enabled: boolean; available: boolean; pending: string[]; offered: Set<string>; shown: number }
   /** `session.compact` carry (ADR-451 item 7): whether it is on and how many compactions carried a block. */
   compact: { enabled: boolean; carried: number }
+  /** Pre-compaction snapshot and one-shot reload (ADR-505): on unless the compactSnapshot option is false. */
+  snapshot: SnapshotState
   /** Capability probe (ADR-451 item 5): engine version and which registered events fired. */
   probe: ProbeState
   /** Optional ruvnet-brain status (ADR-487): detect-only, off unless the grounding option is on. */
@@ -80,6 +83,7 @@ export function createState(): ModState {
     agentTrim: { enabled: false, hidden: new Set(), prompt: '' },
     delivery: { enabled: false, consumed: 0, blocked: 0 },
     compact: { enabled: false, carried: 0 },
+    snapshot: snapshotState(),
     rureOffer: { enabled: false, available: false, pending: [], offered: new Set(), shown: 0 },
     probe: probeState(),
     grounding: groundingState(),
@@ -178,6 +182,7 @@ export function report(s: ModState): string {
     `  agent trim:  ${s.agentTrim.enabled ? `${s.agentTrim.hidden.size} type(s) hidden` : 'off (set the agentTrim option)'}`,
     `  delivery:    ${s.delivery.enabled ? `${s.delivery.consumed} dropped, ${s.delivery.blocked} refused` : 'off (set the deliveryScreen option)'}`,
     `  compact:     ${s.compact.enabled ? `${s.compact.carried} compaction(s) carried a block` : 'off (set the compactCarry option)'}`,
+    `  snapshot:    ${snapshotLine(s.snapshot)}`,
     `  probe:       ${probeLine(s.probe)}`,
     `  grounding:   ${groundingLine(s.grounding)}`,
     `  sessions:    ${s.rollup.enabled ? ledgerLines(s.rollup.recent).join('\n               ') : 'off (set the sessionRollup option)'}`,

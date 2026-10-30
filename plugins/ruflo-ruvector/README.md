@@ -54,6 +54,14 @@ Key tool categories: hooks routing, AST analysis, diff classification, coverage 
 | `vector-cluster` | `/vector-cluster <files...>` | Spectral/Louvain code-graph clustering via `hooks graph-cluster` |
 | `vector-hyperbolic` | `/vector-hyperbolic <text>` | Standard ONNX embed + Poincare projection in user code |
 
+## User-invoked skills (ADR-507)
+
+These skills carry `disable-model-invocation: true`: Claude does not pick them on its own, and they cost nothing in the per-turn skill listing. Type them to run them. First-run setup installs packages, so it waits for you to ask.
+
+| Skill | Run it with |
+|---|---|
+| vector-setup | `/ruflo-ruvector:vector-setup` |
+
 ## Commands (`/vector` slash command)
 
 The full surface is documented in `commands/vector.md` (80+ subcommands). Quick reference:

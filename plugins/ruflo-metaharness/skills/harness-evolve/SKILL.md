@@ -1,8 +1,9 @@
 ---
 name: harness-evolve
-description: Run `@metaharness/darwin evolve {repo}` to mutate a harness's seven policy surfaces (planner/contextBuilder/reviewer/retryPolicy/toolPolicy/memoryPolicy/scorePolicy), sandbox-score each variant, and promote only measured wins. The model is frozen; the harness evolves. Closes the loop ADR-150 opens (score+genome describe; evolve changes). Degrades gracefully when @metaharness/darwin is absent (ADR-150 + ADR-153 architectural constraints).
+description: "Run `@metaharness/darwin evolve {repo}`: mutate a harness's seven policy surfaces, sandbox-score each variant and promote only measured wins. Use when evolving a harness against its tests or a bench suite. Degrades gracefully without darwin (ADR-150/153)."
 argument-hint: "--repo <path> [--generations 3] [--children 3] [--concurrency 2] [--sandbox real|mock|agent] [--selection pareto|quality-diversity|...] [--mutator deterministic|ruvllm] [--diagnose] [--confirm]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 Surfaces the upstream `metaharness-darwin evolve` CLI as a ruflo skill. The
