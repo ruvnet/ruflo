@@ -8,7 +8,7 @@
  *
  *   node scripts/eval-learning-loop.mjs --tasks <tasks.json>            # plan only, $0
  *   node scripts/eval-learning-loop.mjs --tasks <tasks.json> --run      # spend
- *     [--model haiku] [--budget-usd 0.50 per run] [--timeout-sec 600] [--out <report.json>]
+ *     [--model haiku] [--budget-usd 0.50 per run] [--timeout-sec 600] [--out <report.json>] [--keep]
  *
  * tasks.json (paths relative to the file):
  *   { "version": 1,
@@ -32,6 +32,18 @@
  * (the mod's own pick() rule, re-implemented here); the mod's in-session counter
  * is not readable from outside.
  *
+ * Decision rule: ruflo's flywheel sequential-evidence gate (an anytime-valid
+ * McNemar e-process, flywheel-sequential-evidence.ts). Each eval task is a
+ * paired outcome, baseline = loop off, candidate = loop on, score = 1 for a
+ * verified success. Only discordant tasks (one arm passes) carry evidence, so
+ * before spending, the plan prints the minimum the corpus must produce and
+ * --run refuses an eval split too small to ever reach it. The report carries
+ * the pairedOutcomes and the verdict; a cost verdict on the same tasks is
+ * printed as a secondary sign check and never stands in for success.
+ *
+ * --keep leaves the work directories (fixture copies, .claude-flow/ records and
+ * each run's claude -p JSON result) in place and prints where they are.
+ *
  * The 30-task corpus is not shipped with this script; pass your own tasks file.
  */
 
@@ -39,17 +51,18 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN = join(REPO, 'plugins', 'ruflo-mods');
 const CLI = join(REPO, 'v3', '@claude-flow', 'cli', 'bin', 'cli.js');
 const TRAJ = join('.claude-flow', 'data', 'verified-trajectories.jsonl');
 const LESSONS = join('.claude-flow', 'data', 'learned-lessons.json');
+const GATE = join(REPO, 'v3', '@claude-flow', 'cli', 'dist', 'src', 'services', 'flywheel-sequential-evidence.js');
 const ID = /^[A-Za-z0-9_.-]{1,64}$/;
 
 function args(argv) {
-  const out = { run: false, model: 'haiku', budget: '0.50', timeoutSec: 600, tasks: null, out: null };
+  const out = { run: false, model: 'haiku', budget: '0.50', timeoutSec: 600, tasks: null, out: null, keep: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--run') out.run = true;
@@ -58,6 +71,7 @@ function args(argv) {
     else if (a === '--budget-usd') out.budget = argv[++i];
     else if (a === '--timeout-sec') out.timeoutSec = Number(argv[++i]);
     else if (a === '--out') out.out = argv[++i];
+    else if (a === '--keep') out.keep = true;
     else if (a === '--help' || a === '-h') out.help = true;
     else throw new Error(`unknown argument: ${a}`);
   }
@@ -102,6 +116,7 @@ function claude(dir, prompt, settings, opts) {
     '--setting-sources', 'local', '--max-budget-usd', opts.budget, '--allowedTools', 'Read,Edit,Write,Bash,Grep,Glob'], {
     cwd: dir, encoding: 'utf8', timeout: opts.timeoutSec * 1000, input: '', env: { ...process.env, CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: '1' },
   });
+  writeFileSync(`${dir}.result.json`, r.stdout ?? '');
   let cost = 0;
   try {
     cost = Number(JSON.parse(r.stdout).total_cost_usd) || 0;
@@ -140,16 +155,39 @@ function arm(name, tasks, root, settings, opts, lessonsText) {
   return { arm: name, tasks: rows.length, verifiedSuccessRate: rows.length ? passed / rows.length : 0, costUsd: cost, costPerVerifiedSuccess: passed ? cost / passed : null, unpricedRuns: rows.filter(r => !r.claudeOk).length, rows };
 }
 
-function main() {
+/** The flywheel sequential-evidence gate from the built CLI (`npm run build` in v3/@claude-flow/cli). */
+async function loadGate() {
+  if (!existsSync(GATE)) throw new Error(`build the CLI first: ${GATE} is missing`);
+  return import(pathToFileURL(GATE).href);
+}
+
+/** Task-by-task paired outcomes, baseline = off, candidate = on. */
+function paired(baseline, loop, score) {
+  return baseline.rows.map((b, i) => ({ taskId: b.id, baselineScore: score(b), candidateScore: score(loop.rows[i]) }));
+}
+
+function verdictLine(label, v) {
+  return `${label}: e-value ${v.eValue.toFixed(2)} against ${v.threshold.toFixed(1)} (alpha ${v.alphaAllocated.toFixed(4)}), ${v.informativePairs}/${v.totalPairs} informative pairs: ${v.significant ? 'significant' : 'not significant'}`;
+}
+
+async function main() {
   const opts = args(process.argv.slice(2));
   if (opts.help || !opts.tasks) {
-    console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(2, 37).join('\n').replace(/^ \*\/?/gm, ''));
+    const lines = readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n');
+    console.log(lines.slice(2, lines.indexOf(' */')).join('\n').replace(/^ \*\/?/gm, ''));
     process.exit(opts.help ? 0 : 2);
   }
   const tasks = loadTasks(opts.tasks);
   const runs = tasks.train.length + 2 * tasks.eval.length;
   console.log(`train ${tasks.train.length}, eval ${tasks.eval.length} (ADR-503 asks for 30), claude -p runs: ${runs}, cap $${(runs * Number(opts.budget)).toFixed(2)} at --budget-usd ${opts.budget}`);
   if (tasks.eval.length !== 30) console.log('warning: the eval split is not 30 tasks; the result is not the ADR-503 §3 measurement');
+  const gate = await loadGate();
+  const minPairs = gate.minInformativePairsToClear(1);
+  console.log(`gate: the loop must pass at least ${minPairs} eval tasks the baseline fails, with none the other way round, to clear a first test at family-wise alpha ${gate.DEFAULT_ALPHA_TOTAL}`);
+  if (tasks.eval.length < minPairs) {
+    console.log(`refused: ${tasks.eval.length} eval tasks can never produce ${minPairs} informative pairs`);
+    process.exit(2);
+  }
   if (!opts.run) {
     console.log('plan only: pass --run to spend');
     return;
@@ -177,14 +215,20 @@ function main() {
     loop.lessonHitRate = tasks.eval.length ? tasks.eval.filter(t => lessonHit(lessons, t.prompt)).length / tasks.eval.length : 0;
     loop.lessonsTrained = lessons.filter(l => l.kind === 'lesson').length;
 
-    const report = { generatedAt: new Date().toISOString(), model: opts.model, train: tasks.train.length, eval: tasks.eval.length, arms: [baseline, loop] };
+    const pairedOutcomes = paired(baseline, loop, r => (r.passed ? 1 : 0));
+    const successVerdict = gate.sequentialEvidenceVerdict(pairedOutcomes, 1);
+    const costVerdict = gate.sequentialEvidenceVerdict(paired(baseline, loop, r => -r.cost), 1);
+    const report = { generatedAt: new Date().toISOString(), model: opts.model, train: tasks.train.length, eval: tasks.eval.length, arms: [baseline, loop], pairedOutcomes, gate: { success: successVerdict, cost: costVerdict, minInformativePairs: minPairs } };
     for (const a of report.arms) {
       console.log(`${a.arm.padEnd(4)} verified ${(a.verifiedSuccessRate * 100).toFixed(1)}%  cost $${a.costUsd.toFixed(4)}  per verified success ${a.costPerVerifiedSuccess === null ? 'n/a' : '$' + a.costPerVerifiedSuccess.toFixed(4)}${a.lessonHitRate !== undefined ? `  lesson hit ${(a.lessonHitRate * 100).toFixed(1)}% (approx.)` : ''}${a.unpricedRuns ? `  ${a.unpricedRuns} run(s) without a cost` : ''}`);
     }
+    console.log(verdictLine('success (the decision)', successVerdict));
+    console.log(verdictLine('cost (secondary sign check)', costVerdict));
     if (opts.out) writeFileSync(opts.out, JSON.stringify(report, null, 2));
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    if (opts.keep) console.log(`kept: ${root}`);
+    else rmSync(root, { recursive: true, force: true });
   }
 }
 
-main();
+await main();
