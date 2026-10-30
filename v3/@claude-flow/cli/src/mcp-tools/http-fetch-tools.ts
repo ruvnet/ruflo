@@ -11,7 +11,10 @@
  * AbortController, response truncation, default User-Agent.
  *
  * Architectural constraints (load-bearing):
- *   - DEFAULT-REFUSES private addresses + loopback (CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1 opt-in)
+ *   - DEFAULT-REFUSES private addresses + loopback (CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1 opt-in):
+ *     IP literals by text here, and every resolved address of a hostname at connect time, on the
+ *     connection itself (http-fetch-pinned.ts), so DNS that points at, or rebinds to, a private
+ *     address is refused too
  *   - DEFAULT-REFUSES Authorization / Cookie / X-Auth-* (CLAUDE_FLOW_HTTP_FETCH_ALLOW_AUTH=1 opt-in)
  *   - hard timeout 30s default, 60s ceiling
  *   - response truncated to 256KB default, 1MB ceiling
@@ -21,6 +24,9 @@
  */
 
 import type { MCPTool } from './types.js';
+import { allowPrivateAddresses, isPrivateOrLoopback, pinnedRequest, PrivateAddressError, type PinnedInit } from './http-fetch-pinned.js';
+
+export { isPrivateOrLoopback } from './http-fetch-pinned.js';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_TIMEOUT_MS = 60_000;
@@ -60,70 +66,13 @@ export function validateUrl(rawUrl: string): URL {
     );
   }
   const host = parsed.hostname.toLowerCase();
-  const allowPrivate = process.env.CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE === '1';
-  if (!allowPrivate && isPrivateOrLoopback(host)) {
+  if (!allowPrivateAddresses() && isPrivateOrLoopback(host)) {
     throw new HttpFetchValidationError(
       `host ${host} is loopback/private/link-local; set CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1 to override`,
       'PRIVATE_ADDRESS',
     );
   }
   return parsed;
-}
-
-function isPrivateOrLoopback(host: string): boolean {
-  if (host === 'localhost' || host === 'localhost.localdomain') return true;
-
-  // Node's URL parser keeps brackets in `.hostname` for every IPv6 literal
-  // (e.g. "[::1]", "[fc00::1]", "[::ffff:7f00:1]"). Strip them once so every
-  // check below operates on the bare address — without this, the fc00::/7
-  // and fe80::/10 checks further down never match anything (they test
-  // `startsWith('fc'/'fe80:')` against a string starting with "["), and an
-  // IPv4-mapped-IPv6 literal (`::ffff:a.b.c.d`, which Node normalizes to a
-  // canonical `::ffff:xxxx:yyyy` hex form) sails through both the IPv4 and
-  // IPv6 branches untested — a live SSRF bypass (e.g. `::ffff:127.0.0.1` or
-  // `::ffff:169.254.169.254` reaching loopback / cloud-metadata targets).
-  const bare = host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host;
-
-  if (bare === '::1') return true; // IPv6 loopback
-
-  // IPv4-mapped IPv6 — decode back to dotted-decimal and recurse into the
-  // IPv4 check below so it inherits every existing private/loopback/
-  // link-local/CGNAT rule instead of needing its own copy.
-  const mappedHex = bare.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
-  if (mappedHex) {
-    const hi = parseInt(mappedHex[1], 16);
-    const lo = parseInt(mappedHex[2], 16);
-    const decoded = `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
-    return isPrivateOrLoopback(decoded);
-  }
-  const mappedDecimal = bare.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
-  if (mappedDecimal) return isPrivateOrLoopback(mappedDecimal[1]);
-
-  // IPv4 numeric checks
-  const m = bare.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (m) {
-    const a = Number(m[1]);
-    const b = Number(m[2]);
-    if (a === 0) return true;          // 0.0.0.0/8
-    if (a === 127) return true;        // loopback
-    if (a === 10) return true;         // RFC1918
-    if (a === 172 && b >= 16 && b <= 31) return true; // RFC1918
-    if (a === 192 && b === 168) return true;          // RFC1918
-    if (a === 169 && b === 254) return true;          // link-local
-    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
-    return false;
-  }
-  // IPv6 special forms — be conservative and accept only public-looking
-  // literals. Reject obvious private/local forms.
-  if (bare.startsWith('fc') || bare.startsWith('fd')) return true;  // fc00::/7 ULA
-  if (bare.startsWith('fe80:')) return true;                        // link-local
-  // KNOWN LIMITATION (pre-existing, not introduced by the bracket-stripping /
-  // IPv4-mapped-IPv6 fix above; flagged by an independent adversarial review):
-  // `::` (IPv6 unspecified/"any", the analog of 0.0.0.0, which the IPv4 branch
-  // above does block), IPv6 multicast (ff00::/8), and NAT64 (64:ff9b::/96) are
-  // not covered. Left as a follow-up hardening item rather than scope-creeping
-  // this patch.
-  return false;
 }
 
 export function validateHeaders(headers: Record<string, string>): Record<string, string> {
@@ -178,12 +127,16 @@ export interface HttpFetchResult {
   errorCode?: string;
 }
 
+/** How one request is sent; tests replace it to script responses. The default pins each connection to checked addresses. */
+export type HttpFetchRequest = (url: string, init: PinnedInit) => Promise<Response>;
+
 /**
  * Pure execution path so tests can call it without going through the MCP
  * dispatcher. Returns a result object (does not throw on validation failure
  * — it returns success: false with an errorCode).
  */
-export async function httpFetchExecute(input: Record<string, unknown>): Promise<HttpFetchResult> {
+export async function httpFetchExecute(input: Record<string, unknown>, deps: { request?: HttpFetchRequest } = {}): Promise<HttpFetchResult> {
+  const send = deps.request ?? pinnedRequest;
   const startedAt = Date.now();
   const url = String(input.url ?? '');
   const method = String(input.method ?? 'GET').toUpperCase();
@@ -277,12 +230,13 @@ export async function httpFetchExecute(input: Record<string, unknown>): Promise<
     // protocols after passing the allowlist. Every hop is validated with the
     // same rules; sensitive headers are dropped when the origin changes.
     while (true) {
-      response = await fetch(currentUrl.toString(), {
+      // Never fetch(): it resolves the hostname again on its own, so what it connects to is
+      // not what was checked. `send` connects only to addresses its DNS lookup checked.
+      response = await send(currentUrl.toString(), {
         method: currentMethod,
         headers,
         body: currentMethod === 'GET' || currentMethod === 'HEAD' ? undefined : currentBody,
         signal: controller.signal,
-        redirect: 'manual',
       });
 
       if (!REDIRECT_STATUSES.has(response.status)) break;
@@ -408,6 +362,12 @@ export async function httpFetchExecute(input: Record<string, unknown>): Promise<
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    if (e instanceof PrivateAddressError) {
+      return {
+        success: false, status: 0, statusText: '', headers: {}, body: '', bodyTruncated: false, bytesRead: 0,
+        durationMs: Date.now() - startedAt, url: parsed.toString(), method, error: msg, errorCode: 'PRIVATE_ADDRESS',
+      };
+    }
     const aborted = msg.includes('aborted') || (e as { name?: string } | undefined)?.name === 'AbortError';
     return {
       success: false,
@@ -431,7 +391,7 @@ export async function httpFetchExecute(input: Record<string, unknown>): Promise<
 export const httpFetchTools: MCPTool[] = [
   {
     name: 'http_fetch',
-    description: 'ADR-164 §5.1.8 — HTTP probe primitive for business-pod ops benches (synthetic 200/500 endpoint checks, third-party status pages). Default-secure: blocks file://, ftp://, RFC-1918 / loopback / link-local hosts unless CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1, and rejects Authorization / Cookie / X-Auth-* headers unless CLAUDE_FLOW_HTTP_FETCH_ALLOW_AUTH=1. Hard 30s timeout (60s ceiling), response truncated to 256 KB (1 MB ceiling), default User-Agent ruflo-http-fetch/1.0. Use when a pod or smoke contract needs a guarded HTTP probe — calling Node fetch() directly is wrong because it skips the URL allowlist and header sanitization that ADR-164 mandates for autopilot mode. Pair with the ops-pod bench in plugins/ruflo-business-pods/templates/ops.json (the §4.4 synthetic-endpoint test).',
+    description: 'ADR-164 §5.1.8 — HTTP probe primitive for business-pod ops benches (synthetic 200/500 endpoint checks, third-party status pages). Default-secure: blocks file://, ftp://, and RFC-1918 / loopback / link-local hosts, whether given as an address or as a name that resolves to one (checked on the connection itself, every redirect hop included), unless CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE=1, and rejects Authorization / Cookie / X-Auth-* headers unless CLAUDE_FLOW_HTTP_FETCH_ALLOW_AUTH=1. Hard 30s timeout (60s ceiling), response truncated to 256 KB (1 MB ceiling), default User-Agent ruflo-http-fetch/1.0. Use when a pod or smoke contract needs a guarded HTTP probe — calling Node fetch() directly is wrong because it skips the URL allowlist and header sanitization that ADR-164 mandates for autopilot mode. Pair with the ops-pod bench in plugins/ruflo-business-pods/templates/ops.json (the §4.4 synthetic-endpoint test).',
     category: 'business-pods',
     tags: ['business-pods', 'http', 'fetch', 'adr-164', 'security', 'ops-pod'],
     inputSchema: {
