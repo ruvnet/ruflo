@@ -1,6 +1,6 @@
 # ADR 511: lessons that say where the fix goes, and patterns that learn from reworded tasks
 
-Status: Accepted (implemented in the PR that adds this file; see section 6)
+Status: Accepted (implemented in PR #4603; see section 6)
 
 Issue: #4581 (the §7 evaluation). Builds on: ADR-502 (the loop), ADR-503 (gaming defences), #4134 (neighbour reinforcement).
 
