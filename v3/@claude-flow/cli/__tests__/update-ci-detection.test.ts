@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { isCI, shouldCheckForUpdates } from '../src/update/rate-limiter.js';
 
-const saved = { CI: process.env.CI, CONTINUOUS_INTEGRATION: process.env.CONTINUOUS_INTEGRATION, GITHUB_ACTIONS: process.env.GITHUB_ACTIONS };
+const saved = { CI: process.env.CI, CONTINUOUS_INTEGRATION: process.env.CONTINUOUS_INTEGRATION };
 afterEach(() => {
   for (const [k, v] of Object.entries(saved)) {
     if (v === undefined) delete process.env[k];
@@ -23,15 +23,13 @@ describe('update check: CI detection', () => {
     expect(isCI({ CI: value })).toBe(false);
   });
 
-  it('GITHUB_ACTIONS and CONTINUOUS_INTEGRATION count too; no variable is not CI', () => {
-    expect(isCI({ GITHUB_ACTIONS: 'true' })).toBe(true);
+  it('CONTINUOUS_INTEGRATION counts too; no variable is not CI', () => {
     expect(isCI({ CONTINUOUS_INTEGRATION: '1' })).toBe(true);
     expect(isCI({})).toBe(false);
   });
 
   it('shouldCheckForUpdates skips a CI=1 run', () => {
     delete process.env.CONTINUOUS_INTEGRATION;
-    delete process.env.GITHUB_ACTIONS;
     process.env.CI = '1';
     expect(shouldCheckForUpdates()).toEqual({ allowed: false, reason: 'CI environment detected' });
   });

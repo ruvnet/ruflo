@@ -62,11 +62,11 @@ export function saveState(state: RateLimitState): void {
 
 /**
  * Whether this is a CI run. CI systems set `CI` to `true`, `1` or other values, so any value
- * except empty, `0` or `false` counts. Matching only `true` let CI=1 runs check for updates and
+ * except empty, `0` or `false` counts (GitHub Actions sets CI=true). Matching only `true` let CI=1 runs check for updates and
  * install one (`npm install @claude-flow/cli@<latest>`) into the working directory mid-run.
  */
 export function isCI(env: NodeJS.ProcessEnv = process.env): boolean {
-  return ['CI', 'CONTINUOUS_INTEGRATION', 'GITHUB_ACTIONS'].some((name) => {
+  return ['CI', 'CONTINUOUS_INTEGRATION'].some((name) => {
     const value = env[name];
     return value !== undefined && value.trim() !== '' && !/^(0|false)$/i.test(value.trim());
   });
