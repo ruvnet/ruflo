@@ -39,6 +39,10 @@ function isolated() {
   return { home, cwd, run, done: () => { rmSync(home, { recursive: true, force: true }); rmSync(cwd, { recursive: true, force: true }); } };
 }
 
+// Each test runs the built CLI several times; vitest's 5s default fails a slow CI runner with a bare STACK_TRACE_ERROR
+// (a timeout), so a test may take as long as its children may.
+const TEST_TIMEOUT_MS = 240_000;
+
 describe.skipIf(!CLI_BUILT)('ADR-404 mods through the built CLI', () => {
   it('bare init enables the mod plugins in the committed settings beside the classic hooks; uninstall reverses exactly', () => {
     const t = isolated();
@@ -77,7 +81,7 @@ describe.skipIf(!CLI_BUILT)('ADR-404 mods through the built CLI', () => {
     } finally {
       t.done();
     }
-  });
+  }, TEST_TIMEOUT_MS);
 
   it('init --no-mods writes none of the mod keys', () => {
     const t = isolated();
@@ -92,5 +96,5 @@ describe.skipIf(!CLI_BUILT)('ADR-404 mods through the built CLI', () => {
     } finally {
       t.done();
     }
-  });
+  }, TEST_TIMEOUT_MS);
 });
