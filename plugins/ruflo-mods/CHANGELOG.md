@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.14.0 — 2026-10-30
+- feat: the learning loop reaches projects without the mod (ADR-512). Its record and lesson code is also bundled into `.claude/helpers/learning-loop.cjs` for the classic hooks, which replay the session transcript; with the loop on, the mod adds `learning-loop` to `RUFLO_MODS_OWNS` so the classic hooks record none of the turns it records.
+
 ## 0.13.0 — 2026-10-30
 - feat: learning-loop lessons say where the fix goes (ADR-511). A verified turn records the source files its edits changed (screened: no absolute, `..`, dot-file, secret-shaped, test or verifier-config path); a lesson names the three its passing fixes edited most and leads with them ("look there first"). Lessons are matched with rare words weighted up, and one far below the best match is left out; a lessons file without files renders as before.
 

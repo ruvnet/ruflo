@@ -28,6 +28,8 @@ jobs:
         run: |
           node_modules/.bin/tsc -p v3/@claude-flow/cli/tsconfig.mod-guidance.json
           bash plugins/ruflo-mods/scripts/smoke.sh
+          # ADR-512: the classic-hooks learning loop helper is the mod's loop source, bundled and committed
+          node plugins/ruflo-mods/scripts/build-learning-loop-helper.mjs --check
       - name: Run source mod contracts with the workspace compiler
         working-directory: v3/@claude-flow/cli
         run: ../../../node_modules/.bin/vitest run __tests__/mods/ --exclude '**/mods-cli-bin.test.ts'
