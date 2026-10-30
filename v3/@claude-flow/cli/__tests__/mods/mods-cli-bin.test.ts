@@ -25,7 +25,17 @@ function isolated() {
   writeFileSync(join(bin, 'codex'), '#!/bin/sh\nexit 1\n');
   chmodSync(join(bin, 'codex'), 0o755);
   const env = { ...process.env, HOME: home, USERPROFILE: home, CLAUDE_CONFIG_DIR: join(home, '.claude'), CODEX_HOME: join(home, '.codex'), PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`, CI: '1' };
-  const run = (...args: string[]) => execFileSync(process.execPath, [CLI_BIN, ...args], { cwd, env, encoding: 'utf8', timeout: 120_000 });
+  // execFileSync's error carries Buffers and a child-process handle that vitest cannot serialize: the report then says only
+  // STACK_TRACE_ERROR. Rethrow a plain Error naming the exit status, signal and the child's last output, so a CI failure is readable.
+  const run = (...args: string[]) => {
+    try {
+      return execFileSync(process.execPath, [CLI_BIN, ...args], { cwd, env, encoding: 'utf8', timeout: 120_000 });
+    } catch (error) {
+      const e = error as { status?: number | null; signal?: string | null; stdout?: unknown; stderr?: unknown; message?: string };
+      const tail = (v: unknown) => String(v ?? '').split('\n').slice(-25).join('\n');
+      throw new Error(`ruflo ${args.join(' ')} failed: status=${e.status ?? 'none'} signal=${e.signal ?? 'none'} ${e.message ?? ''}\n--- stdout (tail) ---\n${tail(e.stdout)}\n--- stderr (tail) ---\n${tail(e.stderr)}`);
+    }
+  };
   return { home, cwd, run, done: () => { rmSync(home, { recursive: true, force: true }); rmSync(cwd, { recursive: true, force: true }); } };
 }
 
