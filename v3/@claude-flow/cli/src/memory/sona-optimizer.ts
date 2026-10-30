@@ -37,6 +37,11 @@ export interface TrajectoryOutcome {
   }>;
   feedback?: string;
   duration?: number;
+  /**
+   * ADR-511: files the task's verified fix edited (project-relative). Never keywords: they only decide which pattern a
+   * trajectory reinforces, so two wordings of one task that fixed the same file learn together.
+   */
+  anchors?: string[];
 }
 
 /**
@@ -57,6 +62,8 @@ export interface LearnedPattern {
   lastUsed: number;
   /** Pattern creation time */
   createdAt: number;
+  /** ADR-511: files verified fixes for this pattern edited; absent in patterns saved before it. */
+  anchors?: string[];
 }
 
 /**
@@ -131,6 +138,15 @@ const DECAY_RATE = 0.01; // Per day
 const MAX_PATTERNS = 1000;
 /** #4134: a trajectory reinforces an existing pattern of the same agent whose keyword set overlaps at least this much (Jaccard). */
 const NEIGHBOUR_MIN_JACCARD = 0.6;
+/** ADR-511: files a pattern remembers as anchors, at most. */
+const MAX_ANCHORS = 20;
+/** ADR-511: words too common in task prompts to say two tasks are alike, even when they fixed the same file. */
+const GENERIC_WORDS = new Set(['test', 'tests', 'fix', 'fixes', 'bug', 'bugs', 'run', 'make', 'find', 'check', 'confirm', 'please', 'wrong', 'issue', 'problem', 'error', 'code', 'file', 'files', 'project', 'cause', 'track', 'down', 'need', 'needs', 'some', 'something', 'again', 'npm', 'node']);
+/** ADR-511: non-generic keywords two anchor-sharing tasks must also share to reinforce one pattern. */
+const ANCHOR_MIN_SHARED = 2;
+/** Anchors as stored: lower case, path characters only, at most five per trajectory. */
+const anchorList = (raw: unknown): string[] =>
+  Array.isArray(raw) ? [...new Set(raw.filter((a): a is string => typeof a === 'string' && /^[a-z0-9_][a-z0-9_./-]{0,119}$/i.test(a) && !a.split('/').includes('..')).map(a => a.toLowerCase()))].slice(0, 5) : [];
 /** The routing gate in getRoutingSuggestion: confidence x matchRatio must reach this for a learned pattern to be used. */
 export const SONA_ROUTING_GATE = 0.6;
 
@@ -336,6 +352,7 @@ export class SONAOptimizer {
     routingGate?: { threshold: number; confidence: number; reached: boolean; successesNeeded: number };
   } {
     const { task, agent, success } = outcome;
+    const anchors = anchorList(outcome.anchors);
 
     // Extract keywords from task
     const keywords = this.extractKeywords(task);
@@ -356,7 +373,7 @@ export class SONAOptimizer {
     // the routing gate. Reinforce the closest existing pattern of the same agent instead.
     let reinforcedNeighbour = false;
     if (!this.patterns.has(patternKey)) {
-      const neighbour = this.findNeighbourPattern(keywords, agent);
+      const neighbour = this.findNeighbourPattern(keywords, agent, anchors);
       if (neighbour) {
         patternKey = neighbour;
         reinforcedNeighbour = true;
@@ -395,6 +412,11 @@ export class SONAOptimizer {
     }
 
     pattern.lastUsed = Date.now();
+    if (anchors.length > 0) {
+      const kept = pattern.anchors ?? [];
+      for (const a of anchors) if (!kept.includes(a) && kept.length < MAX_ANCHORS) kept.push(a);
+      pattern.anchors = kept;
+    }
 
     // Store pattern
     this.patterns.set(patternKey, pattern);
@@ -728,17 +750,29 @@ export class SONAOptimizer {
    * `keywords` the most, if that overlap (Jaccard) reaches NEIGHBOUR_MIN_JACCARD.
    * Ties go to the more confident pattern. Linear in the pattern count (<= 1000).
    */
-  private findNeighbourPattern(keywords: string[], agent: string): string | null {
+  private findNeighbourPattern(keywords: string[], agent: string, anchors: string[] = []): string | null {
     const wanted = new Set(keywords);
+    // ADR-511: a keyword with a `/` names a file or directory (`src/slugify`). Two tasks that each name one and share
+    // none are about different code, however alike the rest of their wording: they never reinforce one pattern.
+    const paths = keywords.filter(k => k.includes('/'));
     let bestKey: string | null = null;
     let bestJaccard = 0;
     let bestConfidence = -1;
     for (const [key, pattern] of this.patterns) {
       if (pattern.agent !== agent) continue;
+      if (paths.length > 0 && pattern.keywords.some(k => k.includes('/')) && !paths.some(k => pattern.keywords.includes(k))) continue;
       let shared = 0;
-      for (const k of pattern.keywords) if (wanted.has(k)) shared++;
+      let distinctive = 0;
+      for (const k of pattern.keywords) {
+        if (!wanted.has(k)) continue;
+        shared++;
+        if (!GENERIC_WORDS.has(k)) distinctive++;
+      }
       const union = wanted.size + pattern.keywords.length - shared;
-      const jaccard = union === 0 ? 0 : shared / union;
+      let jaccard = union === 0 ? 0 : shared / union;
+      // ADR-511: a verified fix to the same file, worded differently, is the same task when the wordings also share
+      // what makes them specific (two unrelated tasks that both touched a README are not).
+      if (jaccard < NEIGHBOUR_MIN_JACCARD && distinctive >= ANCHOR_MIN_SHARED && Array.isArray(pattern.anchors) && anchors.some(a => pattern.anchors!.includes(a))) jaccard = NEIGHBOUR_MIN_JACCARD;
       if (jaccard >= NEIGHBOUR_MIN_JACCARD &&
           (jaccard > bestJaccard || (jaccard === bestJaccard && pattern.confidence > bestConfidence))) {
         bestKey = key; bestJaccard = jaccard; bestConfidence = pattern.confidence;

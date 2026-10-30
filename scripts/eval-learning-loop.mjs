@@ -9,6 +9,17 @@
  *   node scripts/eval-learning-loop.mjs --tasks <tasks.json>            # plan only, $0
  *   node scripts/eval-learning-loop.mjs --tasks <tasks.json> --run      # spend
  *     [--model haiku] [--budget-usd 0.50 per run] [--timeout-sec 600] [--out <report.json>] [--keep]
+ *     [--test-index k]        which test this is in the gate's sequence (default 1; each later run uses the next k)
+ *     [--ablate]              ADR-511: a third arm with the same lessons minus their edited files
+ *     [--concurrency n]       claude -p runs at a time within a split or arm (1..8, default 4)
+ *     [--lessons <file>]      skip training and use this learned-lessons.json
+ *     [--save-lessons <file>] keep the trained lessons for a later --lessons run
+ *     [--eval-sample n]       a pilot on n eval tasks spread over the split; its verdict counts for nothing
+ *     [--calibrate n]         the baseline alone on n train tasks, to size a corpus before a real run
+ *     [--max-turns n]         cap the eval arms and calibration (training is never capped); for sizing only:
+ *                             a cap near the model's natural finish makes pass/fail noisy (ADR-511 §5)
+ *
+ * A corpus: node scripts/eval-learning-loop-corpus.mjs --out <dir> (ADR-511 §5).
  *
  * tasks.json (paths relative to the file):
  *   { "version": 1,
@@ -44,10 +55,10 @@
  * --keep leaves the work directories (fixture copies, .claude-flow/ records and
  * each run's claude -p JSON result) in place and prints where they are.
  *
- * The 30-task corpus is not shipped with this script; pass your own tasks file.
+ * scripts/eval-learning-loop-corpus.mjs writes one such tasks file (15 train, 30 eval); any other works too.
  */
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -62,7 +73,7 @@ const GATE = join(REPO, 'v3', '@claude-flow', 'cli', 'dist', 'src', 'services', 
 const ID = /^[A-Za-z0-9_.-]{1,64}$/;
 
 function args(argv) {
-  const out = { run: false, model: 'haiku', budget: '0.50', timeoutSec: 600, tasks: null, out: null, keep: false };
+  const out = { run: false, model: 'haiku', budget: '0.50', timeoutSec: 600, tasks: null, out: null, keep: false, testIndex: 1, ablate: false, concurrency: 4, maxTurns: null, calibrate: 0, lessons: null, saveLessons: null, evalSample: 0 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--run') out.run = true;
@@ -72,9 +83,22 @@ function args(argv) {
     else if (a === '--timeout-sec') out.timeoutSec = Number(argv[++i]);
     else if (a === '--out') out.out = argv[++i];
     else if (a === '--keep') out.keep = true;
+    else if (a === '--test-index') out.testIndex = Number(argv[++i]);
+    else if (a === '--ablate') out.ablate = true;
+    else if (a === '--concurrency') out.concurrency = Number(argv[++i]);
+    else if (a === '--max-turns') out.maxTurns = Number(argv[++i]);
+    else if (a === '--calibrate') out.calibrate = Number(argv[++i]);
+    else if (a === '--lessons') out.lessons = argv[++i];
+    else if (a === '--save-lessons') out.saveLessons = argv[++i];
+    else if (a === '--eval-sample') out.evalSample = Number(argv[++i]);
     else if (a === '--help' || a === '-h') out.help = true;
     else throw new Error(`unknown argument: ${a}`);
   }
+  if (!Number.isInteger(out.testIndex) || out.testIndex < 1) throw new Error('--test-index must be a whole number >= 1');
+  if (!Number.isInteger(out.concurrency) || out.concurrency < 1 || out.concurrency > 8) throw new Error('--concurrency must be 1..8');
+  if (out.maxTurns !== null && (!Number.isInteger(out.maxTurns) || out.maxTurns < 1)) throw new Error('--max-turns must be a whole number >= 1');
+  if (!Number.isInteger(out.calibrate) || out.calibrate < 0) throw new Error('--calibrate must be a whole number');
+  if (!Number.isInteger(out.evalSample) || out.evalSample < 0) throw new Error('--eval-sample must be a whole number');
   return out;
 }
 
@@ -111,19 +135,44 @@ function workdir(root, task, arm) {
   return dir;
 }
 
-function claude(dir, prompt, settings, opts) {
-  const r = spawnSync('claude', ['-p', prompt, '--output-format', 'json', '--model', opts.model, '--plugin-dir', PLUGIN, '--settings', settings,
-    '--setting-sources', 'local', '--max-budget-usd', opts.budget, '--allowedTools', 'Read,Edit,Write,Bash,Grep,Glob'], {
-    cwd: dir, encoding: 'utf8', timeout: opts.timeoutSec * 1000, input: '', env: { ...process.env, CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: '1' },
+/** `opts.maxTurns` limits the evaluation arms and calibration only; training always runs unlimited. */
+function claude(dir, prompt, settings, opts, maxTurns = opts.maxTurns) {
+  const argv = ['-p', prompt, '--output-format', 'json', '--model', opts.model, '--plugin-dir', PLUGIN, '--settings', settings,
+    '--setting-sources', 'local', '--max-budget-usd', opts.budget, '--allowedTools', 'Read,Edit,Write,Bash,Grep,Glob',
+    ...(maxTurns ? ['--max-turns', String(maxTurns)] : [])];
+  return new Promise(done => {
+    const child = spawn('claude', argv, { cwd: dir, stdio: ['ignore', 'pipe', 'ignore'], env: { ...process.env, CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: '1' } });
+    let stdout = '';
+    child.stdout.on('data', d => (stdout += d));
+    const timer = setTimeout(() => child.kill('SIGKILL'), opts.timeoutSec * 1000);
+    child.on('close', status => {
+      clearTimeout(timer);
+      writeFileSync(`${dir}.result.json`, stdout);
+      let cost = 0;
+      let turns = null;
+      try {
+        const j = JSON.parse(stdout);
+        cost = Number(j.total_cost_usd) || 0;
+        turns = Number.isFinite(j.num_turns) ? j.num_turns : null;
+      } catch {
+        // no JSON result (timeout, crash): the cost is unknown, counted as 0 and flagged
+      }
+      done({ cost, turns, ok: status === 0 });
+    });
   });
-  writeFileSync(`${dir}.result.json`, r.stdout ?? '');
-  let cost = 0;
-  try {
-    cost = Number(JSON.parse(r.stdout).total_cost_usd) || 0;
-  } catch {
-    // no JSON result (timeout, crash): the cost is unknown, counted as 0 and flagged
-  }
-  return { cost, ok: r.status === 0 };
+}
+
+/** Runs `work` over `items`, at most `n` at a time, results in input order. */
+async function pool(items, n, work) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await work(items[i], i);
+    }
+  }));
+  return out;
 }
 
 /** The task's own check, run with no shell; exit 0 is a verified success. */
@@ -140,19 +189,18 @@ function lessonHit(lessons, prompt) {
   return lessons.some(l => l.kind === 'lesson' && (l.keywords ?? []).some(k => said.has(k) || (/[ /]/.test(k) && lower.includes(k))));
 }
 
-function arm(name, tasks, root, settings, opts, lessonsText) {
-  const rows = [];
-  for (const task of tasks) {
+async function arm(name, tasks, root, settings, opts, lessonsText) {
+  const rows = await pool(tasks, opts.concurrency, async task => {
     const dir = workdir(root, task, name);
     if (lessonsText) writeFileSync(join(dir, LESSONS), lessonsText);
-    const run = claude(dir, task.prompt, settings, opts);
+    const run = await claude(dir, task.prompt, settings, opts);
     const passed = check(dir, task, opts.timeoutSec);
-    rows.push({ id: task.id, passed, cost: run.cost, claudeOk: run.ok });
-    process.stderr.write(`[${name}] ${task.id}: ${passed ? 'pass' : 'fail'} $${run.cost.toFixed(4)}\n`);
-  }
+    process.stderr.write(`[${name}] ${task.id}: ${passed ? 'pass' : 'fail'} $${run.cost.toFixed(4)}${run.turns === null ? '' : ` ${run.turns} turns`}\n`);
+    return { id: task.id, passed, cost: run.cost, turns: run.turns, claudeOk: run.ok };
+  });
   const passed = rows.filter(r => r.passed).length;
   const cost = rows.reduce((a, r) => a + r.cost, 0);
-  return { arm: name, tasks: rows.length, verifiedSuccessRate: rows.length ? passed / rows.length : 0, costUsd: cost, costPerVerifiedSuccess: passed ? cost / passed : null, unpricedRuns: rows.filter(r => !r.claudeOk).length, rows };
+  return { arm: name, tasks: rows.length, verifiedSuccessRate: rows.length ? passed / rows.length : 0, costUsd: cost, costPerVerifiedSuccess: passed ? cost / passed : null, unpricedRuns: rows.filter(r => r.cost === 0).length, stoppedEarly: rows.filter(r => !r.claudeOk).length, rows };
 }
 
 /** The flywheel sequential-evidence gate from the built CLI (`npm run build` in v3/@claude-flow/cli). */
@@ -170,6 +218,17 @@ function verdictLine(label, v) {
   return `${label}: e-value ${v.eValue.toFixed(2)} against ${v.threshold.toFixed(1)} (alpha ${v.alphaAllocated.toFixed(4)}), ${v.informativePairs}/${v.totalPairs} informative pairs: ${v.significant ? 'significant' : 'not significant'}`;
 }
 
+function printArm(a) {
+  console.log(`${a.arm.padEnd(10)} verified ${(a.verifiedSuccessRate * 100).toFixed(1)}%  cost $${a.costUsd.toFixed(4)}  per verified success ${a.costPerVerifiedSuccess === null ? 'n/a' : '$' + a.costPerVerifiedSuccess.toFixed(4)}${a.lessonHitRate !== undefined ? `  lesson hit ${(a.lessonHitRate * 100).toFixed(1)}% (approx.)` : ''}${a.unpricedRuns ? `  ${a.unpricedRuns} run(s) without a cost` : ''}`);
+}
+
+/** ADR-511 ablation: the same lessons with the edited files removed, so the arm differs from "on" in that alone. */
+function withoutFiles(lessonsText) {
+  const j = JSON.parse(lessonsText);
+  for (const l of j.lessons ?? []) delete l.files;
+  return JSON.stringify(j, null, 2);
+}
+
 async function main() {
   const opts = args(process.argv.slice(2));
   if (opts.help || !opts.tasks) {
@@ -178,13 +237,36 @@ async function main() {
     process.exit(opts.help ? 0 : 2);
   }
   const tasks = loadTasks(opts.tasks);
-  const runs = tasks.train.length + 2 * tasks.eval.length;
-  console.log(`train ${tasks.train.length}, eval ${tasks.eval.length} (ADR-503 asks for 30), claude -p runs: ${runs}, cap $${(runs * Number(opts.budget)).toFixed(2)} at --budget-usd ${opts.budget}`);
+  const spread = (list, n) => Array.from({ length: Math.min(n, list.length) }, (_, i) => list[Math.floor((i * list.length) / Math.min(n, list.length))]);
+  if (opts.evalSample > 0) tasks.eval = spread(tasks.eval, opts.evalSample);
+  if (opts.lessons) tasks.train = [];
+  if (opts.calibrate > 0) {
+    // $: the baseline alone on the first N train tasks, to measure how often it fails before sizing a real run.
+    // Evenly spread over the split, so every feature of a corpus ordered by feature is sampled.
+    const sample = spread(tasks.train, opts.calibrate);
+    console.log(`calibrate: loop off on ${sample.length} train task(s), cap $${(sample.length * Number(opts.budget)).toFixed(2)}`);
+    if (!opts.run) return console.log('plan only: pass --run to spend');
+    const root = mkdtempSync(join(tmpdir(), 'ruflo-eval-cal-'));
+    try {
+      const a = await arm('off', sample, root, settingsFile(root, false), opts, null);
+      printArm(a);
+      if (opts.out) writeFileSync(opts.out, JSON.stringify({ generatedAt: new Date().toISOString(), model: opts.model, maxTurns: opts.maxTurns, calibrate: a }, null, 2));
+    } finally {
+      if (opts.keep) console.log(`kept: ${root}`);
+      else rmSync(root, { recursive: true, force: true });
+    }
+    return;
+  }
+  const arms = opts.ablate ? 3 : 2;
+  const runs = tasks.train.length + arms * tasks.eval.length;
+  console.log(`train ${tasks.train.length}, eval ${tasks.eval.length} (ADR-503 asks for 30), arms ${arms}, claude -p runs: ${runs}, cap $${(runs * Number(opts.budget)).toFixed(2)} at --budget-usd ${opts.budget}`);
   if (tasks.eval.length !== 30) console.log('warning: the eval split is not 30 tasks; the result is not the ADR-503 §3 measurement');
   const gate = await loadGate();
-  const minPairs = gate.minInformativePairsToClear(1);
-  console.log(`gate: the loop must pass at least ${minPairs} eval tasks the baseline fails, with none the other way round, to clear a first test at family-wise alpha ${gate.DEFAULT_ALPHA_TOTAL}`);
-  if (tasks.eval.length < minPairs) {
+  const minPairs = gate.minInformativePairsToClear(opts.testIndex);
+  console.log(`gate: test ${opts.testIndex} in the sequence; the loop must pass at least ${minPairs} eval tasks the baseline fails, with none the other way round, at family-wise alpha ${gate.DEFAULT_ALPHA_TOTAL}`);
+  if (opts.ablate) console.log(`ablation (files vs no files) is test ${opts.testIndex + 1}: at least ${gate.minInformativePairsToClear(opts.testIndex + 1)} informative pairs`);
+  if (opts.evalSample > 0) console.log(`pilot: ${tasks.eval.length} eval task(s) sampled; this run sizes a real one and its verdict counts for nothing`);
+  else if (tasks.eval.length < minPairs) {
     console.log(`refused: ${tasks.eval.length} eval tasks can never produce ${minPairs} informative pairs`);
     process.exit(2);
   }
@@ -198,32 +280,44 @@ async function main() {
     // 1. Training split: record with the loop on, pool the records, ingest once.
     const on = settingsFile(root, true);
     const off = settingsFile(root, false);
-    const pool = join(root, 'train-pool');
-    mkdirSync(join(pool, '.claude-flow', 'data'), { recursive: true });
-    for (const task of tasks.train) {
+    const pooled = join(root, 'train-pool');
+    mkdirSync(join(pooled, '.claude-flow', 'data'), { recursive: true });
+    const trained = await pool(tasks.train, opts.concurrency, async task => {
       const dir = workdir(root, task, 'train');
-      claude(dir, task.prompt, on, opts);
-      if (existsSync(join(dir, TRAJ))) appendFileSync(join(pool, TRAJ), readFileSync(join(dir, TRAJ), 'utf8'));
-    }
-    if (existsSync(join(pool, TRAJ))) execFileSync(process.execPath, [CLI, 'hooks', 'verified-ingest', '--force'], { cwd: pool, stdio: 'inherit' });
-    const lessonsText = existsSync(join(pool, LESSONS)) ? readFileSync(join(pool, LESSONS), 'utf8') : JSON.stringify({ version: 1, gate: 0.6, generatedAt: Date.now(), lessons: [], belowGate: 0, held: [] });
+      const run = await claude(dir, task.prompt, on, opts, null);
+      const passed = check(dir, task, opts.timeoutSec);
+      process.stderr.write(`[train] ${task.id}: ${passed ? 'pass' : 'fail'} $${run.cost.toFixed(4)}\n`);
+      return { id: task.id, dir, passed, cost: run.cost };
+    });
+    for (const t of trained) if (existsSync(join(t.dir, TRAJ))) appendFileSync(join(pooled, TRAJ), readFileSync(join(t.dir, TRAJ), 'utf8'));
+    if (existsSync(join(pooled, TRAJ))) execFileSync(process.execPath, [CLI, 'hooks', 'verified-ingest', '--force'], { cwd: pooled, stdio: 'inherit' });
+    const lessonsText = opts.lessons ? readFileSync(opts.lessons, 'utf8') : existsSync(join(pooled, LESSONS)) ? readFileSync(join(pooled, LESSONS), 'utf8') : JSON.stringify({ version: 1, gate: 0.6, generatedAt: Date.now(), lessons: [], belowGate: 0, held: [] });
     const lessons = JSON.parse(lessonsText).lessons ?? [];
+    if (opts.saveLessons) writeFileSync(opts.saveLessons, lessonsText);
 
-    // 2. Evaluation split, both arms.
-    const baseline = arm('off', tasks.eval, root, off, opts, null);
-    const loop = arm('on', tasks.eval, root, on, opts, lessonsText);
-    loop.lessonHitRate = tasks.eval.length ? tasks.eval.filter(t => lessonHit(lessons, t.prompt)).length / tasks.eval.length : 0;
+    // 2. Evaluation split: the arms run one after another, each task within an arm concurrently.
+    const baseline = await arm('off', tasks.eval, root, off, opts, null);
+    const loop = await arm('on', tasks.eval, root, on, opts, lessonsText);
+    const nofiles = opts.ablate ? await arm('on-nofiles', tasks.eval, root, on, opts, withoutFiles(lessonsText)) : null;
+    for (const a of [loop, nofiles].filter(Boolean)) a.lessonHitRate = tasks.eval.length ? tasks.eval.filter(t => lessonHit(lessons, t.prompt)).length / tasks.eval.length : 0;
     loop.lessonsTrained = lessons.filter(l => l.kind === 'lesson').length;
 
-    const pairedOutcomes = paired(baseline, loop, r => (r.passed ? 1 : 0));
-    const successVerdict = gate.sequentialEvidenceVerdict(pairedOutcomes, 1);
-    const costVerdict = gate.sequentialEvidenceVerdict(paired(baseline, loop, r => -r.cost), 1);
-    const report = { generatedAt: new Date().toISOString(), model: opts.model, train: tasks.train.length, eval: tasks.eval.length, arms: [baseline, loop], pairedOutcomes, gate: { success: successVerdict, cost: costVerdict, minInformativePairs: minPairs } };
-    for (const a of report.arms) {
-      console.log(`${a.arm.padEnd(4)} verified ${(a.verifiedSuccessRate * 100).toFixed(1)}%  cost $${a.costUsd.toFixed(4)}  per verified success ${a.costPerVerifiedSuccess === null ? 'n/a' : '$' + a.costPerVerifiedSuccess.toFixed(4)}${a.lessonHitRate !== undefined ? `  lesson hit ${(a.lessonHitRate * 100).toFixed(1)}% (approx.)` : ''}${a.unpricedRuns ? `  ${a.unpricedRuns} run(s) without a cost` : ''}`);
-    }
-    console.log(verdictLine('success (the decision)', successVerdict));
-    console.log(verdictLine('cost (secondary sign check)', costVerdict));
+    const pass = r => (r.passed ? 1 : 0);
+    const pairedOutcomes = paired(baseline, loop, pass);
+    const successVerdict = gate.sequentialEvidenceVerdict(pairedOutcomes, opts.testIndex);
+    const costVerdict = gate.sequentialEvidenceVerdict(paired(baseline, loop, r => -r.cost), opts.testIndex);
+    const ablation = nofiles ? { pairedOutcomes: paired(nofiles, loop, pass), verdict: gate.sequentialEvidenceVerdict(paired(nofiles, loop, pass), opts.testIndex + 1) } : null;
+    const report = {
+      generatedAt: new Date().toISOString(), model: opts.model, maxTurns: opts.maxTurns, lessonsFrom: opts.lessons ?? 'trained in this run', pilot: opts.evalSample > 0, train: tasks.train.length, eval: tasks.eval.length,
+      training: { passed: trained.filter(t => t.passed).length, costUsd: trained.reduce((a, t) => a + t.cost, 0) },
+      lessons, arms: [baseline, loop, nofiles].filter(Boolean), pairedOutcomes,
+      gate: { testIndex: opts.testIndex, success: successVerdict, cost: costVerdict, minInformativePairs: minPairs, ablation },
+    };
+    console.log(`training: ${report.training.passed}/${trained.length} passed, $${report.training.costUsd.toFixed(4)}; ${loop.lessonsTrained} lesson(s)`);
+    for (const a of report.arms) printArm(a);
+    console.log(verdictLine('success, off vs on (the decision)', successVerdict));
+    console.log(verdictLine('cost, off vs on (secondary sign check)', costVerdict));
+    if (ablation) console.log(verdictLine('success, on-nofiles vs on (ADR-511 ablation)', ablation.verdict));
     if (opts.out) writeFileSync(opts.out, JSON.stringify(report, null, 2));
   } finally {
     if (opts.keep) console.log(`kept: ${root}`);

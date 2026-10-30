@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.13.0 — 2026-10-30
+- feat: learning-loop lessons say where the fix goes (ADR-511). A verified turn records the source files its edits changed (screened: no absolute, `..`, dot-file, secret-shaped, test or verifier-config path); a lesson names the three its passing fixes edited most and leads with them ("look there first"). Lessons are matched with rare words weighted up, and one far below the best match is left out; a lessons file without files renders as before.
+
 ## 0.12.0 — 2026-10-29
 - feat: under `modTrust: refuse-risky`, the trust gate also refuses a ruflo plugin whose files no longer match its signed release (`modified` or `bad-signature` in the status file `ruflo mods doctor` / `ruflo plugins verify` write); `unsigned` and `verified` pass, and each blocked plugin is reported once per run (ADR-509, #4593).
 
