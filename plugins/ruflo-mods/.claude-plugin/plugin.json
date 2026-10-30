@@ -47,6 +47,13 @@
       "required": false,
       "default": false
     },
+    "costLedger": {
+      "type": "boolean",
+      "title": "Cost ledger and budget file",
+      "description": "In a ruflo project: take the session budget from .claude-flow/cost/budget.json when costBudgetUsd is 0, charge each cost delta to the subagent type and tool behind it (.claude-flow/cost/attribution.jsonl, read by ruflo cost report), and toast once when a gateway refuses a request for budget (ADR-508).",
+      "required": false,
+      "default": true
+    },
     "toolHints": {
       "type": "boolean",
       "title": "Usage hints on ruflo tools",

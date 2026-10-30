@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-cost-tracker`.
 
+## 0.31.0 — 2026-10-29
+- docs: `/ruflo-cost` documents the budget file and `ruflo cost budget set|export --gateway litellm [--apply]` and `ruflo cost report` (ADR-508, #4592).
+
 ## 0.30.0 — 2026-10-29
 - chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
 

@@ -44,6 +44,8 @@ export interface World {
   failLog?: boolean;
   /** What `$.tool.list()` returns (default: none). `mcp` marks an MCP server's tool. */
   tools?: { name: string; description: string; mcp: boolean }[];
+  /** What `$.session.messages()` returns (default: none). */
+  messages?: { role: 'user' | 'assistant'; text: string; toolUses: unknown[] }[];
 }
 
 export function memoryWorld(root = '/work', settings: unknown = {}): World {
@@ -120,6 +122,9 @@ function engineOf(world: World) {
     session: {
       async root() {
         return world.root;
+      },
+      async messages() {
+        return world.messages ?? [];
       },
     },
     command: {

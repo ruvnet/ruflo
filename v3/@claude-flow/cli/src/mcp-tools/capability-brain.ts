@@ -123,7 +123,7 @@ export const RUFLO_CLI_COMMANDS = [
   'doctor', 'verify', 'analyze', 'route', 'progress', 'issues', 'update',
   'ruvector', 'benchmark', 'guidance', 'appliance', 'appliance-advanced',
   'transfer-store', 'cleanup', 'autopilot', 'gaia-bench', 'metaharness',
-  'eject', 'funnel', 'settings', 'auth', 'proxy', 'advisor', 'spinner',
+  'eject', 'funnel', 'settings', 'auth', 'proxy', 'advisor', 'spinner', 'cost',
   'announcements', 'tui', 'harness',
 ] as const;
 
