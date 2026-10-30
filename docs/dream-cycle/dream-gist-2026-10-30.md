@@ -55,6 +55,8 @@ Standalone wall-clock probe (multi-head mechanism, 5-trial median, no pre-suppli
 
 Growing speedup with n is the expected signature of removing a quadratic-multiplier term (the O(n²) cosine-similarity/consensus steps themselves are untouched and still scale accordingly — this fix only removes the redundant O(content.length) hash rebuild inside each of those O(n²)/O(8n²) calls).
 
+**Independent adversarial critique**: CONFIRMED-WITH-CAVEATS, no blocking issues. The critic independently reproduced the stash-isolated baseline-fails/candidate-passes result from scratch, ran the full suite and `tsc` on the candidate, and independently reproduced the wall-clock speedup on different hardware (n=20/50/100: ~17x/~22x/~27x — same direction and growth trend, lower absolute magnitude than this session's numbers, expected hardware variance, no sign of a fabricated/cherry-picked result). Repo-wide grep confirmed no production call site outside this file's own new test ever calls this `AttentionCoordinator`. Two caveats, both non-blocking: (1) the identity-keyed `WeakMap` cache would return a stale embedding if a future caller mutated `AgentOutput.content` in place and reused the same object reference across calls — fixed forward with an in-source `KNOWN LIMITATION` doc comment (no current caller does this, verified repo-wide); (2) 2 of the 6 new tests reach into private internals via `(coordinator as any)`, inconsistent with this package's established convention of testing privates through the public API (e.g. `__tests__/byzantine-transport.test.ts:106`) — disclosed, not fixed, since there is no other public surface to assert an identity-caching implementation detail against.
+
 ## Darwin Results
 
 Skipped — binary memoization fix (a cache either exists or doesn't), no continuous/categorical parameter for Darwin's bounded-evolution interface (`npx ruvector harness darwin <config> --execute`, confirmed available via `npx ruvector harness status --json`, 14/15 primitives live) to search over. Same skip class as nearly every ACCEPT in this repo's history that wasn't a routing/topology weight.
@@ -64,11 +66,12 @@ Skipped — binary memoization fix (a cache either exists or doesn't), no contin
 No `.claude-flow/flywheel/` state exists in this repo (confirmed by direct inspection — only `data/`, `logs/`, `metrics/`, `neural/` under `.claude-flow/`). Evidence retained as: the 6 new tests, the stash-isolated comparison (session + independent adversarial critic), the standalone wall-clock probe, issue and PR below, and the witness block below.
 
 ```
-Session commit:   PENDING
-Candidate commit: PENDING
-Gist SHA-256 (pre-witness, witness block stripped to PENDING): PENDING
-Witness stamp:    PENDING
+Session commit:   d000e27e82c783a5a188abb01d89b8ccbc12b271
+Candidate commit: 1e2f71ae07dae83e4a63ffa31eefa2bc4dfac45e
+Gist SHA-256 (pre-witness, witness block stripped to PENDING): 5fcf2c309754283ea8a4f746315e6e9d79b3f212dbd696240792c06230cbdb29
+Witness stamp:    156774194140bdb33cb556da708b61cdd51ceae000faf61cbdbe9ee1a83e2202
 ```
+Verifier: fetch `docs/dream-cycle/dream-gist-2026-10-30.md` from this branch, strip the Witness block's filled-in values back to `PENDING`, SHA-256 the file, concatenate with the Session commit above, SHA-256 again — must equal the Witness stamp.
 
 ## Recommended Next Steps
 

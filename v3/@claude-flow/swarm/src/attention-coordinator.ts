@@ -759,6 +759,12 @@ export class AttentionCoordinator extends EventEmitter {
     return similarity * (conf1 + conf2) / 2;
   }
 
+  // KNOWN LIMITATION (disclosed post-critique, 2026-10-30): the cache below
+  // is keyed by AgentOutput object identity, not content. If a caller ever
+  // mutates `output.content` in place and reuses the same object reference
+  // across coordinateAgents() calls on a long-lived coordinator instance,
+  // the stale embedding would be returned. No current call site in this
+  // repo does this (verified repo-wide); flagged for future callers.
   private getOrCreateEmbedding(output: AgentOutput): Float32Array {
     if (output.embedding) {
       return output.embedding instanceof Float32Array
