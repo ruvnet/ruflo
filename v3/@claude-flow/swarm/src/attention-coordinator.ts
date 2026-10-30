@@ -185,6 +185,9 @@ export class AttentionCoordinator extends EventEmitter {
     flashSpeedup: 0,
     memoryReduction: 0,
   };
+  // Identity-keyed: avoids rebuilding the O(content.length) hash embedding on
+  // every pairwise call in the O(n^2)/O(numHeads*n^2) coordination loops below.
+  private readonly syntheticEmbeddingCache = new WeakMap<AgentOutput, Float32Array>();
 
   constructor(config: Partial<AttentionCoordinatorConfig> = {}) {
     super();
@@ -763,6 +766,11 @@ export class AttentionCoordinator extends EventEmitter {
         : new Float32Array(output.embedding);
     }
 
+    const cached = this.syntheticEmbeddingCache.get(output);
+    if (cached) {
+      return cached;
+    }
+
     // Create hash-based embedding from content
     const content = typeof output.content === 'string'
       ? output.content
@@ -784,6 +792,7 @@ export class AttentionCoordinator extends EventEmitter {
       }
     }
 
+    this.syntheticEmbeddingCache.set(output, embedding);
     return embedding;
   }
 
