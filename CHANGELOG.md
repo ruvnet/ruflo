@@ -5,6 +5,59 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.65.0] - 2026-10-30
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.65.0, plus ruflo-mods plugin 0.12.0. This release ships the eight follow-ups to #4581 on how ruflo integrates with Claude Code mods (ADR-503 to ADR-510, #4585).
+
+### Added
+- **Learning-loop gaming defences** (ADR-503, #4590).
+  - A verified-success turn is tainted when it edited tests (`edited-tests`), edited a verifier's config (`edited-verifier-config`), or ran a narrowed or weakened check (`narrowed-verifier`).
+  - Tainted records never train unless `.claude-flow/config.json` `learningLoop.allowTaint` lists their classes.
+  - An opt-in rotating re-verify step (`learningLoop.reverify`, off by default) re-runs an allowlisted check in a temporary worktree.
+  - An anomaly gate holds back lessons whose evidence looks gamed.
+  - `scripts/eval-learning-loop.mjs` is a manual, paid evaluation harness.
+- **Real-binary test tier** (ADR-504, #4589). This runs the real `claude` binary with ruflo-mods against a scripted mock of the Anthropic Messages API, with no API key needed. The contracts check that:
+  - every mod loads;
+  - the learning loop records outcomes;
+  - lessons reach the model;
+  - the guard denies risky commands;
+  - route context is added.
+  
+  It runs as the CI job `mods-real-binary` and as `npm run test:real-binary`.
+- **`compactSnapshot`** (ruflo-mods option, default on; ADR-505, #4591).
+  - Before compaction, the mod saves a screened transcript to rotating slots under `.claude-flow/sessions/compactions/`.
+  - After compaction, it adds one bounded `[RUFLO_AFTER_COMPACT]` block with recent lessons and outcomes, open swarm and claim ids, and the snapshot path.
+  - `ruflo doctor --component compact-snapshots` warns when snapshots exist but `.claude-flow/` is not gitignored.
+- **Plugin secrets via `userConfig` `sensitive: true`** (ADR-506, #4587).
+  - The cost-tracker, metaharness and x-gateway plugins read their keys through a shared `readSecret` helper. It checks the masked plugin option first and falls back to the environment.
+  - A new `scripts/audit-plugin-secrets.mjs` CI gate fails on secret-named options that are not marked sensitive, and on literal secrets in manifests.
+- **Plugin footprint cut** (ADR-507, #4588).
+  - Operational skills are user-invoked only (`disable-model-invocation: true`).
+  - Long skill and command descriptions are trimmed to one sentence, with a ceiling enforced by an audit.
+  - `scripts/measure-plugin-footprint.mjs` reports the result, with before and after numbers in `v3/docs/validation/`.
+- **Cost budgets that can feed a gateway** (ADR-508, #4592).
+  - `.claude-flow/cost/budget.json` holds the budget windows.
+  - `ruflo cost budget set` writes it.
+  - `ruflo cost budget export --gateway litellm [--apply]` produces LiteLLM `budget_limits` and per-model budget fallbacks. `--apply` requires HTTPS except on loopback, and reads the key from an environment variable only.
+  - `ruflo cost report` breaks spend down by agent and by tool.
+  - New ruflo-mods option `costLedger` (default on).
+  - `--gateway meta-llm` refuses until meta-llm documents a budget API.
+- **Plugin trust** (ADR-509, #4593).
+  - Plugins carry Ed25519 `signature.json` manifests, signed with the existing helpers key.
+  - `ruflo plugins verify` checks a plugin against its manifest and reports verified, modified, unsigned or bad-signature.
+  - A static scan runs before `mods install`, `init` or `plugins install`. A high finding stops the install unless you pass `--accept-risk <plugin>`.
+  - `ruflo init` stops on risky project auto-approve keys (`enableAllProjectMcpServers`, `bypassPermissions`, wildcard Bash and others). `--keep-risky-settings` and `--drop-risky-settings` let you continue.
+  - Under `modTrust: refuse-risky`, a modified ruflo plugin is refused.
+- **Headless plugin staging** (ADR-510, #4586).
+  - `resolvePluginPaths` finds ruflo plugins in a local checkout, the marketplace clone or the install cache.
+  - Headless `claude -p` workers now get `--plugin-dir` for ruflo-mods automatically.
+  - `ruflo plugins paths [--json]` prints the resolved folders for Agent SDK `{ type: "local", path }` callers.
+  - `ruflo doctor --component headless-plugins` checks this setup.
+
+### Not yet
+- Per-skill trimming (`skillTrim`) was not built: Claude Code exposes no hook that hides a skill from the model's list.
+- The 30-task learning-loop evaluation from #4581 §7 has still not been run. The loop stays on by default, as the maintainers decided in ADR-502 §6.
+
 ## [3.64.0] - 2026-10-29
 
 Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.64.0; ruflo-mods plugin 0.8.0.
