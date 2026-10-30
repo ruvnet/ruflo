@@ -1,6 +1,6 @@
 # ADR 512: the learning loop on classic hooks, for every ruflo project
 
-Status: Accepted (implemented in the PR that adds this file)
+Status: Accepted (implemented in PR #4604)
 
 Issue: #4581. Builds on: ADR-502 (the loop), ADR-503 (gaming defences), ADR-511 (actionable lessons), ADR-404 (one owner per event), ADR-504 (real-binary tier).
 
