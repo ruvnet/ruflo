@@ -5,6 +5,16 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.65.1] - 2026-10-30
+
+Security patch: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.65.1. Contains 3.65.0 plus this one fix (#4605).
+
+### Security
+- **`http_fetch` SSRF via DNS** (CWE-918, CWE-350).
+  - Before: the MCP tool refused loopback, RFC-1918 and link-local hosts only by the URL's hostname text, then let `fetch()` resolve the name itself. A hostname that resolves, or rebinds, to `127.0.0.1`, a private address or `169.254.169.254` reached it without `CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE`.
+  - Now: every connection resolves through a lookup hook. The hook refuses the host if any resolved address is private, and the socket connects only to addresses it checked. Every redirect hop is checked the same way.
+  - The address check also covers `::`, IPv4-compatible and NAT64/6to4 IPv6 forms, `fe80::/10`, `fec0::/10`, `ff00::/8`, IPv4 multicast/reserved, `198.18.0.0/15` and `*.localhost`.
+
 ## [3.65.0] - 2026-10-30
 
 Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.65.0, plus ruflo-mods plugin 0.12.0. This release ships the eight follow-ups to #4581 on how ruflo integrates with Claude Code mods (ADR-503 to ADR-510, #4585).
