@@ -351,7 +351,9 @@ export const daaTools: MCPTool[] = [
       const targetIds = input.targetAgentIds as string[];
       const domain = (input.knowledgeDomain as string) || 'general';
 
-      const knowledgeId = `knowledge-${Date.now()}`;
+      // A random suffix keeps two shares in the same millisecond from
+      // overwriting each other in store.knowledge (and in AgentDB).
+      const knowledgeId = `knowledge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const knowledgeEntry = {
         domain,
         content: input.knowledgeContent || {},
