@@ -5,6 +5,28 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.66.0] - 2026-10-31
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.0, plus ruflo-mods plugin 0.14.0. It contains 3.65.1 and the learning-loop follow-ups to #4581.
+
+### Added
+- **The learning loop on classic hooks, for every ruflo project** (ADR-512, #4604).
+  - Until now only projects with the opt-in ruflo-mods plugin recorded verified turns and showed lessons. Every `ruflo init` project now does the same through its classic hooks.
+  - The hooks replay the session transcript through the mod's own record and lesson code, bundled as the signed helper `.claude/helpers/learning-loop.cjs`.
+  - `route` records the finished turns, then prints the lessons that fit the new prompt. `session-end` records the rest and starts a detached `ruflo hooks verified-ingest --quiet`.
+  - Existing projects get the new helper the next time a newer CLI refreshes their helpers; `settings.json` is not rewritten.
+  - When the mod's loop is on, it announces `learning-loop` in `RUFLO_MODS_OWNS`, so no turn is recorded twice.
+  - To opt out, set `.claude-flow/config.json` `learningLoop.enabled` to `false`, or `RUFLO_LEARNING_LOOP=0`.
+- **Lessons say where the fix goes** (ADR-511, #4603).
+  - A verified turn records the source files its edits changed. Absolute, `..`, dot-file, secret-shaped, test and verifier-config paths are screened out.
+  - A lesson names the three files its passing fixes edited most, and leads with them.
+  - Lesson matching weighs rare words up and leaves out matches far below the best one.
+  - Files count per pattern and anchor SONA patterns, so the same task worded differently reinforces one lesson; tasks naming disjoint paths never merge.
+- **The learning-loop eval uses the flywheel sequential-evidence gate** (#4602). `scripts/eval-learning-loop.mjs` prints the minimum informative pairs a run needs and refuses, before any spend, an eval split that can never reach it.
+
+### Fixed
+- **The startup update check now skips CI runs where `CI=1`** (#4608). Before, only `CI=true` was recognised, so a `CI=1` run could `npm install` the newest CLI into the working directory during `ruflo init`. Any `CI` or `CONTINUOUS_INTEGRATION` value other than empty, `0` or `false` now counts as CI.
+
 ## [3.65.1] - 2026-10-30
 
 Security patch: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.65.1. Contains 3.65.0 plus this one fix (#4605).
