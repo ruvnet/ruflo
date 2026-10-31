@@ -507,7 +507,8 @@ export const embeddingsTools: MCPTool[] = [
 
       const query = input.query as string;
       const topK = (input.topK as number) || 5;
-      const threshold = (input.threshold as number) || 0.5;
+      // `??`, not `||`: threshold 0 is a valid request for every match, as in memory_search.
+      const threshold = (input.threshold as number) ?? 0.5;
       const namespace = input.namespace as string;
 
       { const v = validateText(query, 'query'); if (!v.valid) return { success: false, error: v.error }; }
