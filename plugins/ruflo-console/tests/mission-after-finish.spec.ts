@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import type { ActionSpec } from '../hooks/actions'
 import type { TaskRecord } from '../hooks/data/parse'
 import type { Host } from '../hooks/host'
-import { activeMission, createSpec, ledgerKeyOf, mcOf, missionActions, setGoal, type MissionRecord } from '../hooks/mission-control'
+import { activeMission, createSpec, isOver, ledgerKeyOf, mcOf, missionActions, setGoal, type MissionRecord } from '../hooks/mission-control'
 import type { Runner } from '../hooks/runner'
 import { newState, type State } from '../hooks/state'
 import type { Ctx } from '../hooks/views/common'
@@ -126,6 +126,44 @@ describe('the create step after a mission that is over', () => {
       expect(create?.detail).toBe(OLD.slice(0, 16))
       expect(create?.action).toBeUndefined()
     }
+  })
+
+  it('offers create when every task is settled but one was cancelled on its own (14 done + 1 cancelled), mission not cancelled', () => {
+    const tasks = [task('r1', 'cancelled'), task('r2', 'completed'), task('r3', 'completed')]
+    const create = stepOf(stateWith(tasks, NEW_GOAL), 'create')
+
+    expect(create?.state).toBe('next')
+    expect(create?.action?.key).toBe('mc-create')
+    expect(create?.detail).not.toContain(OLD.slice(0, 16))
+  })
+
+  it('offers create when every task was cancelled one by one', () => {
+    const tasks = [task('r1', 'cancelled'), task('r2', 'cancelled'), task('r3', 'cancelled')]
+
+    expect(stepOf(stateWith(tasks, NEW_GOAL), 'create')?.action?.key).toBe('mc-create')
+  })
+
+  it('a cancelled task does not close a mission that still has a pending, running or failed one', () => {
+    for (const rest of ['pending', 'in_progress', 'failed']) {
+      const tasks = [task('r1', 'cancelled'), task('r2', 'completed'), task('r3', rest)]
+
+      expect(stepOf(stateWith(tasks, NEW_GOAL), 'create')?.action).toBeUndefined()
+    }
+  })
+
+  it('the goal of a mission closed by a cancelled task is not offered again (its plan stays on screen after the create)', () => {
+    const tasks = [task('r1', 'cancelled'), task('r2', 'completed'), task('r3', 'completed')]
+
+    expect(stepOf(stateWith(tasks, OLD_GOAL), 'create')?.action).toBeUndefined()
+  })
+
+  it('isOver: done and cancelled tasks only, at least one task, or the mission cancelled', () => {
+    const mission = missionOf(OLD, OLD_GOAL)
+
+    expect(isOver(mission, [task('r1', 'cancelled'), task('r2', 'completed'), task('r3', 'complete')])).toBe(true)
+    expect(isOver(mission, [task('r1', 'cancelled'), task('r2', 'completed'), task('r3', 'pending')])).toBe(false)
+    expect(isOver({ ...mission, tasks: [] }, [])).toBe(false)
+    expect(isOver({ ...mission, cancelled: true }, OPEN)).toBe(true)
   })
 
   it('a paused mission with open tasks is not over', () => {
