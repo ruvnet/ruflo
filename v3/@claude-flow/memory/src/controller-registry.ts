@@ -651,11 +651,17 @@ export class ControllerRegistry extends EventEmitter {
                msg.includes('better-sqlite3') ||
                msg.includes('[AgentDB]');
       };
-      console.log = (...args: unknown[]) => {
+      // agentdb 3.0.0 moved its diagnostics from stdout to stderr (a library
+      // must not write to a stdio MCP server's JSON-RPC stream), so capture the
+      // backend failure reason from either stream.
+      const origError = console.error;
+      const capture = (orig: (...a: unknown[]) => void) => (...args: unknown[]) => {
         const reason = /^\[AgentDB\] Reason: (.+)$/.exec(String(args[0] ?? ''));
         if (reason && backendFailures.length < 4) backendFailures.push(reason[1].slice(0, 300));
-        if (!suppressFilter(args)) origLog.apply(console, args);
+        if (!suppressFilter(args)) orig.apply(console, args);
       };
+      console.log = capture(origLog);
+      console.error = capture(origError);
       try {
         // agentdb >= alpha.20 refuses sql.js saves while a `<db>.agentdb.lock`
         // exists. A lock left by a dead writer is cleared (only when provably
@@ -668,6 +674,7 @@ export class ControllerRegistry extends EventEmitter {
         });
       } finally {
         console.log = origLog;
+        console.error = origError;
       }
       this.emit('agentdb:initialized');
     } catch (error) {

@@ -8,15 +8,16 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 
-const mode = vi.hoisted(() => ({ fail: true }));
+const mode = vi.hoisted(() => ({ fail: true, stderr: false }));
 
 vi.mock('agentdb', () => {
   class FakeAgentDB {
     constructor(_cfg: { dbPath: string }) {}
     async initialize() {
       if (!mode.fail) return;
-      console.log('[AgentDB] RuVector initialization failed, trying RVF backend');
-      console.log('[AgentDB] Reason: Database already open. Cannot acquire lock');
+      const log = mode.stderr ? console.error : console.log;
+      log('[AgentDB] RuVector initialization failed, trying RVF backend');
+      log('[AgentDB] Reason: Database already open. Cannot acquire lock');
       throw new Error('file is not a database\n    at SqlJsRvfBackend.initialize');
     }
     async close() {}
@@ -62,6 +63,16 @@ describe('ControllerRegistry AgentDB init failure (#4622)', () => {
     expect(err).toMatch(/^Database already open\. Cannot acquire lock \(fallback backend then failed: file is not a database\)/);
     expect(unavailable).toHaveLength(1);
     expect(unavailable[0].reason).toBe(err);
+    await reg.shutdown();
+  });
+
+  it('keeps the lock error when AgentDB logs it to stderr (agentdb 3.0.0)', async () => {
+    mode.fail = true;
+    mode.stderr = true;
+    const reg = new ControllerRegistry();
+    await reg.initialize({ dbPath: '/tmp/ruflo-4622-test/agentdb-memory.db', controllers: {} as any });
+    expect(reg.getAgentDBInitError()).toMatch(/^Database already open\. Cannot acquire lock/);
+    mode.stderr = false;
     await reg.shutdown();
   });
 
