@@ -973,6 +973,20 @@ export const memoryTools: MCPTool[] = [
           dbPath,
         });
 
+        // #4622: a failed query is not an empty store. Without this, a
+        // listing that could not read the database came back as a
+        // successful, empty inventory.
+        if (result.success === false) {
+          return {
+            success: false,
+            entries: [],
+            total: 0,
+            limit,
+            offset,
+            error: result.error || 'listEntries reported failure',
+          };
+        }
+
         const entries = result.entries.map(e => ({
           key: e.key,
           namespace: e.namespace,
@@ -993,6 +1007,7 @@ export const memoryTools: MCPTool[] = [
         };
       } catch (error) {
         return {
+          success: false,
           entries: [],
           total: 0,
           limit,

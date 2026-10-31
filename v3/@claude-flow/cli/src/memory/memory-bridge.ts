@@ -242,6 +242,17 @@ export function shouldSuppressInitLog(msg: string): boolean {
  * Lazily initialize the ControllerRegistry singleton.
  * Returns null if @claude-flow/memory is not available.
  */
+/**
+ * Why the registry's AgentDB did not open, or null when it did (#4622).
+ * Read from the registry's own record (@claude-flow/memory >= 3.2.0); an
+ * older registry has none, and nothing changes for it.
+ */
+function agentdbInitFailure(registry: any, resolvedPath: string): string | null {
+  if (typeof registry?.getAgentDBInitError !== 'function') return null;
+  const reason = registry.getAgentDBInitError();
+  return typeof reason === 'string' && reason ? `AgentDB did not open ${resolvedPath}: ${reason}` : null;
+}
+
 async function getRegistry(dbPath?: string): Promise<any | null> {
   if (shouldDisableNativeBridge()) return null;
   if (testRegistryOverride) return testRegistryOverride;
@@ -503,6 +514,11 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
 
         registryInstances.set(resolvedPath, registry);
         bridgeFailureReasons.delete(resolvedPath);
+        // #4622: the registry survives an AgentDB open failure (its other
+        // controllers still work), but every database operation then falls
+        // back to sql.js. Record why, so the fallback's own refusal names it.
+        const agentdbFailure = agentdbInitFailure(registry, resolvedPath);
+        if (agentdbFailure) bridgeFailureReasons.set(resolvedPath, agentdbFailure);
         return registry;
       } catch (err) {
         // initialize() may have opened a native handle before it failed.
@@ -2436,7 +2452,9 @@ export async function bridgeListControllers(
 export async function isBridgeAvailable(dbPath?: string): Promise<boolean> {
   if (!operationContext.getStore()?.active) return withBridgeOperation(() => isBridgeAvailable(dbPath));
   const registry = await getRegistry(dbPath);
-  return registry !== null;
+  if (registry === null) return false;
+  // #4622: a registry whose AgentDB failed to open serves no stored memory.
+  return agentdbInitFailure(registry, canonicalDbPath(dbPath)) === null;
 }
 
 /**

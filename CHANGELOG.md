@@ -5,6 +5,21 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.66.1] - 2026-10-31
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.1, plus standalone `@claude-flow/memory` 3.2.0 and `@claude-flow/plugin-agent-federation` 1.0.4.
+
+### Security
+- **Federation trust thresholds are now enforced** (#4618, #4619). `SecurityPolicy.minTrustLevelForWrite`, `minTrustLevelForMemory` and `minTrustLevelForSpawn` were declared and accepted as overrides but never checked.
+  - Before: `memory-query` and `memory-response` passed at `ATTESTED`, below the default policy's own `TRUSTED` minimum.
+  - Now: `PolicyEngine.evaluateMessage()` checks the configured minimum for write, memory and spawn messages. The check adds to the built-in capability gates; a looser policy cannot bypass them.
+
+### Fixed
+- **A memory store locked by another process now says so** (#4622). Separate stdio MCP servers opening one store contend for its native vector store.
+  - Before: AgentDB fell back to a backend that rejected the locked file as the wrong format, and only that error was reported. The registry was still treated as available, and memory operations then failed with an unrelated sql.js WAL refusal.
+  - Now: `ControllerRegistry.getAgentDBInitError()` (`@claude-flow/memory` 3.2.0) keeps the first backend's failure, such as `Database already open. Cannot acquire lock`. It names the fix: run one owner with `ruflo mcp start --transport http` and point every client at it. The CLI bridge records that reason and adds it to the fallback's refusal. `isBridgeAvailable()` returns false when AgentDB did not open.
+  - `memory_list` reports a failed query as `success: false` with its error, not as an empty inventory.
+
 ## [3.66.0] - 2026-10-31
 
 Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.0, plus ruflo-mods plugin 0.14.0. It contains 3.65.1 and the learning-loop follow-ups to #4581.

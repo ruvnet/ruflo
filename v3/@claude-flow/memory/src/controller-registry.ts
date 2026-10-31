@@ -245,10 +245,35 @@ export const INIT_LEVELS: InitLevel[] = [
  * await registry.shutdown();
  * ```
  */
+/**
+ * Name the first backend failure, not just the last fallback's (#4622).
+ * A native vector store locked by another process makes AgentDB fall back to
+ * a backend that then rejects the same file as the wrong format; reporting
+ * only that error reads like corruption.
+ */
+export function describeAgentdbInitFailure(finalMessage: string, backendFailures: readonly string[]): string {
+  const final = finalMessage.split('\n')[0].slice(0, 300);
+  const first = backendFailures.find((r) => r && r !== final);
+  let text = first ? `${first} (fallback backend then failed: ${final})` : final;
+  const shareHint = ' Run one owner (ruflo mcp start --transport http) and point every client at it.';
+  if (/already open|Cannot acquire lock|database is locked/i.test(first ?? final)) {
+    text += '. Another process holds this memory store open; separate stdio MCP servers cannot share one store.' + shareHint;
+  } else if (!first && /not a database|file is encrypted/i.test(final)) {
+    // Without a logged first failure (AgentDB logs it only when it can try
+    // another native backend), a format rejection is often a fallback reading
+    // a store another backend wrote — and that backend may be held elsewhere.
+    text += '. If another process has this memory store open, its native vector store is locked and the fallback'
+      + ' cannot read it; this does not mean the file is corrupt.' + shareHint;
+  }
+  return text;
+}
+
 export class ControllerRegistry extends EventEmitter {
   private controllers: Map<ControllerName, ControllerEntry> = new Map();
   private agentdb: any = null;
   private dbPath: string | undefined;
+  /** Why AgentDB failed to open on the last initialize(), or null (#4622). */
+  private agentdbInitError: string | null = null;
   private backend: IMemoryBackend | null = null;
   private config: RuntimeConfig = {};
   private initialized = false;
@@ -526,6 +551,17 @@ export class ControllerRegistry extends EventEmitter {
   }
 
   /**
+   * Why AgentDB failed to open on the last initialize(), or null when it
+   * opened (or was never asked to). The message keeps the first backend's
+   * own failure — e.g. a native vector store already locked by another
+   * process — which AgentDB's fallback chain otherwise replaces with the
+   * last fallback's unrelated error (#4622).
+   */
+  getAgentDBInitError(): string | null {
+    return this.agentdbInitError;
+  }
+
+  /**
    * Get the memory backend.
    */
   getBackend(): IMemoryBackend | null {
@@ -575,6 +611,11 @@ export class ControllerRegistry extends EventEmitter {
       return;
     }
 
+    this.agentdbInitError = null;
+    // AgentDB logs why each backend it tried failed, then tries the next one
+    // against the same file. Those lines are suppressed below as noise, but
+    // when every backend fails they hold the original cause (#4622).
+    const backendFailures: string[] = [];
     try {
       // Validate dbPath to prevent path traversal
       const dbPath = config.dbPath || ':memory:';
@@ -584,6 +625,7 @@ export class ControllerRegistry extends EventEmitter {
         const { resolve: resolvePath } = await import('node:path');
         const resolved = resolvePath(dbPath);
         if (resolved.includes('..')) {
+          this.agentdbInitError = 'Invalid dbPath';
           this.emit('agentdb:unavailable', { reason: 'Invalid dbPath' });
           return;
         }
@@ -593,6 +635,7 @@ export class ControllerRegistry extends EventEmitter {
       const AgentDBClass = agentdbModule.AgentDB || agentdbModule.default;
 
       if (!AgentDBClass) {
+        this.agentdbInitError = 'No AgentDB class found';
         this.emit('agentdb:unavailable', { reason: 'No AgentDB class found' });
         return;
       }
@@ -609,6 +652,8 @@ export class ControllerRegistry extends EventEmitter {
                msg.includes('[AgentDB]');
       };
       console.log = (...args: unknown[]) => {
+        const reason = /^\[AgentDB\] Reason: (.+)$/.exec(String(args[0] ?? ''));
+        if (reason && backendFailures.length < 4) backendFailures.push(reason[1].slice(0, 300));
         if (!suppressFilter(args)) origLog.apply(console, args);
       };
       try {
@@ -627,7 +672,8 @@ export class ControllerRegistry extends EventEmitter {
       this.emit('agentdb:initialized');
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      this.emit('agentdb:unavailable', { reason: msg.substring(0, 200) });
+      this.agentdbInitError = describeAgentdbInitFailure(msg, backendFailures);
+      this.emit('agentdb:unavailable', { reason: this.agentdbInitError });
       this.agentdb = null;
     }
   }
