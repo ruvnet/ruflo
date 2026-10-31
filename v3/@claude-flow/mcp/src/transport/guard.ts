@@ -51,3 +51,19 @@ export function assertSafeBind(host: string, authenticated: boolean, allowUnauth
     );
   }
 }
+
+/**
+ * The token in an `Authorization: Bearer <token>` header, or `undefined`.
+ *
+ * Deliberately not `/^Bearer\s+(.+)$/i`: there `\s+` and `.+` both match
+ * whitespace, so a header of many spaces or tabs makes the engine try every
+ * split point — polynomial backtracking on input an unauthenticated caller
+ * controls (CodeQL js/polynomial-redos). A prefix compare, one unquantified
+ * character class and trimStart are all linear.
+ */
+export function bearerToken(header: string | undefined): string | undefined {
+  if (typeof header !== 'string' || header.length > 8192) return undefined;
+  if (header.slice(0, 6).toLowerCase() !== 'bearer' || !/^\s/.test(header.slice(6))) return undefined;
+  const token = header.slice(6).trimStart();
+  return token || undefined;
+}

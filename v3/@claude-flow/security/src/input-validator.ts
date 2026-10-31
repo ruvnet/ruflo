@@ -347,12 +347,17 @@ export const ExecutorConfigSchema = z.object({
  * Sanitizes a string by removing dangerous characters
  */
 export function sanitizeString(input: string): string {
-  return input
+  let out = input
     .replace(/\0/g, '')           // Remove null bytes
-    .replace(/[<>]/g, '')          // Remove HTML brackets
-    .replace(/javascript:/gi, '')  // Remove javascript: protocol
-    .replace(/data:/gi, '')        // Remove data: protocol
-    .trim();
+    .replace(/[<>]/g, '');         // Remove HTML brackets
+  // Strip dangerous protocols until none are left. One pass is not enough:
+  // removing `javascript:` from `javajavascript:script:` leaves `javascript:`.
+  let previous: string;
+  do {
+    previous = out;
+    out = out.replace(/(?:javascript|vbscript|data):/gi, '');
+  } while (out !== previous);
+  return out.trim();
 }
 
 /**

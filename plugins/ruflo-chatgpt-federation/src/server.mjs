@@ -95,7 +95,13 @@ export function createPublisherService({ relay, keyPath, port } = {}) {
    *   denied  — a token that did not verify, or none while OAuth is mandatory.
    */
   async function authContext(req) {
-    const bearer = String(req?.headers?.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+    // Prefix compare + trim, not /^Bearer\s+(.+)$/i: `\s+` and `.+` both match
+    // whitespace, so a header of many tabs backtracks quadratically (CodeQL
+    // js/polynomial-redos) on input an unauthenticated caller controls.
+    const rawAuth = String(req?.headers?.authorization || '');
+    const bearer = rawAuth.length <= 8192 && rawAuth.slice(0, 6).toLowerCase() === 'bearer' && /^\s/.test(rawAuth.slice(6))
+      ? rawAuth.slice(6).trim() || undefined
+      : undefined;
     if (bearer) {
       const v = await verifyAccessToken(bearer, { issuer: OAUTH_ISSUER, jwksUri: OAUTH_JWKS,
         audience: OAUTH_CLIENT_ID || undefined });
