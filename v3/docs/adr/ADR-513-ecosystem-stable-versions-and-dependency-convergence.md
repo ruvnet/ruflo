@@ -1,6 +1,8 @@
 # ADR 513: stable versions only, and one converged dependency tree across the ruvnet ecosystem
 
-Status: Accepted (ruflo 3.67.0; agentdb 3.0.0, agentic-flow 2.2.0, @claude-flow/aidefence 3.0.4)
+Status: Accepted (ruflo 3.67.0; agentdb 3.0.0, agentic-flow 3.0.0, @claude-flow/aidefence 3.1.0, npm aidefence 3.0.1)
+
+Date: 2026-10-31
 
 Issue: #4625. Related: ADR-514 (agentdb 3.0.0), ADR-515 (agentic-flow line), ADR-516 (aidefence recovery). Supersedes the "alpha/v3alpha dist-tags MUST track latest" rule in CLAUDE.md's publishing section.
 
@@ -43,8 +45,8 @@ Two leaves had a registry `latest` that main could not reproduce: `@claude-flow/
 | package | was (in ruflo's tree) | now | ADR |
 |---|---|---|---|
 | `agentdb` | 3.0.0-alpha.20 + 2.0.0-alpha.3.7 + 1.6.1 | **3.0.0** only | 514 |
-| `agentic-flow` | 3.0.0-alpha.2 (March, `@xenova/transformers`) | **2.2.0** (main line) | 515 |
-| `@claude-flow/aidefence` | 3.0.2 | **3.0.4** | 516 |
+| `agentic-flow` | 3.0.0-alpha.2 (March, `@xenova/transformers`) | **3.0.0** (main line, first stable 3.x) | 515 |
+| `@claude-flow/aidefence` | 3.0.2 | **3.1.0** (source-recovered + AIMDS packs) | 516, 517 |
 
 agentdb 3.0.0 is stable, so every existing range admits it: `^3.0.0-alpha.20`, `>=2.0.0-alpha.1`, `^2.0.0 || ^3.0.0-alpha.1`. That removes the extra copies without touching `memory` or `neural`.
 
@@ -65,7 +67,7 @@ Before a standalone publish, compare the registry `latest` with main: `npm view 
 | install | prod advisories (critical/high/moderate) | agentdb copies |
 |---|---|---|
 | `ruflo@3.66.1` | 1 / 17 / 52 (70) | 3 |
-| `ruflo@3.67.0` | *recorded after publish, from a fresh install* | *same* |
+| `ruflo@3.66.2` + agentdb 3.0.0 + agentic-flow 3.0.0 (fresh install, before the 3.67.0 publish) | 0 / 8 / 3 (11) | 1 (3.0.0) |
 
 ## 4. Not done
 

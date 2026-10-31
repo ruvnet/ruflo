@@ -2,6 +2,8 @@
 
 Status: Accepted (implemented in the 3.67.0 ecosystem-convergence PR)
 
+Date: 2026-10-31
+
 Issue: #4625. Builds on: ADR-118 (wider detection from upstream aidefence 2.3.0), #3177 (ReDoS bounds), ADR-513 (stable-only, source-built releases).
 
 ## 1. Context
@@ -25,7 +27,7 @@ Publishing from main would have dropped the ADR-118 detection for every direct c
 
 ## 2. Decision
 
-Port the three ADR-118 additions from the 3.0.3 `dist/` back into `src/domain/services/threat-detection-service.ts` on main, and publish the result as **3.0.4**. It is a superset of both lines.
+Port the three ADR-118 additions from the 3.0.3 `dist/` back into `src/domain/services/threat-detection-service.ts` on main, and publish the result. It is a superset of both lines. (Versioned 3.0.4 on the branch; it shipped as **3.1.0** together with the AIMDS pattern packs, ADR-517.)
 
 - Only `threat-detection-service.js` differed between the 3.0.3 tarball and a main build. Every other `dist` file was byte-identical. The diff was reviewed hunk by hunk, and only the additive hunks were taken. Main's side of every hunk where it is ahead stays as it was.
 - The override window is `\b(ignore|disregard|forget|override)(?:\s+\S+){0,6}\s+(instructions?|prompts?|rules?|context|system\s*-?\s*prompts?)\b`. `\s+` and `\S+` are disjoint, so each repetition has exactly one split point. Matching stays linear, and the new test times 50 KB adversarial inputs to show it.

@@ -189,8 +189,10 @@ describe('ThreatDetectionService regressions (2026-09-04 midstream review)', () 
   it('bounds the bracket and DAN patterns on 100 KB adversarial input', () => {
     // Unbounded `.*?` across alternations and `\bDAN\b.*\bmode\b` were
     // quadratic: 0.65–1.4 s per 100 KB measured upstream. Bounded to one
-    // line / 200 chars, the whole detect() must stay well under 200 ms.
-    const service = createThreatDetectionService();
+    // line / 200 chars, the built-in patterns must stay well under 200 ms.
+    // The AIMDS packs (3.1.0) are timed separately on the same kind of input
+    // in aimds-packs-timing.test.ts; here only the built-ins are measured.
+    const service = createThreatDetectionService({ packs: false });
     const brackets = '[['.repeat(50_000);
     const dan = ('DAN ' + 'x'.repeat(30)).repeat(3_000);
     for (const input of [brackets, dan]) {

@@ -2,6 +2,8 @@
 
 Status: Accepted (ruflo 3.67.0)
 
+Date: 2026-10-31
+
 Builds on: ADR-513 (stable versions), ADR-514 (agentdb 3.0.0). Upstream record: agentic-flow ADR-079.
 
 ## 1. Context

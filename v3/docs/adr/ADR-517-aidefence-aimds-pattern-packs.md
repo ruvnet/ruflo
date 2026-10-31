@@ -2,6 +2,8 @@
 
 Status: Accepted (`@claude-flow/aidefence` 3.1.0, ruflo 3.67.0)
 
+Date: 2026-10-31
+
 Builds on: ADR-516 (aidefence source recovery). Upstream: midstream AIMDS #105 (pattern packs), #102 (Rust `aidefence-core`), ADR 0042 (npm `aidefence` 3.0, side-effect-free entry); the `undoLeet` ReDoS fix is #121 and ships in npm `aidefence` 3.0.1.
 
 ## 1. Context

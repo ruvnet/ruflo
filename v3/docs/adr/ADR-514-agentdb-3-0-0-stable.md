@@ -2,6 +2,8 @@
 
 Status: Accepted (ruflo 3.67.0)
 
+Date: 2026-10-31
+
 Issue: #4625. Builds on: ADR-513 (stable versions, one dependency tree). Related: #3327 Finding A (ReasoningBank embedder), #4622 (lock reason).
 
 ## 1. Context
