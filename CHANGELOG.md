@@ -5,6 +5,29 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.67.0] - 2026-10-31
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.67.0, with standalone `@claude-flow/aidefence` 3.1.0 and `@claude-flow/memory` 3.2.1. It rides on the ecosystem releases agentdb 3.0.0, agentic-flow 3.0.0 and npm `aidefence` 3.0.1 (ADR-513 to ADR-517).
+
+### Security
+- **Prompt-injection detection runs the AIMDS pattern packs** (`@claude-flow/aidefence` 3.1.0, ADR-517). Six packs and 53 patterns now run alongside the built-in regexes, covering tool-invocation, exfiltration-URL, encoded, markup-carrier, multilingual and Slack-forgery injections. On the AIMDS corpus, detection goes from 8/55 to 55/55, with the same 2 known false positives. Turn the packs off with `createAIDefence({ packs: false })`. A quadratic leet normaliser found while vendoring them is fixed here and upstream (npm `aidefence` 3.0.1).
+- **aidefence restored to source** (3.0.4 → 3.1.0, ADR-516). npm `latest` 3.0.3 carried ADR-118 detection that was never committed; it is ported back alongside main's #3177 ReDoS bounds. The CLI had pinned 3.0.2, so ruflo users get both for the first time.
+- **A fresh install's dependency tree converges** (ADR-513). agentdb 3.0.0 is stable, so the optional peer ranges that excluded `3.0.0-alpha.20` now match it. One AgentDB copy is installed instead of three, and agentic-flow 3.0.0 replaces the March 3.0.0-alpha.2, which pulled `protobufjs@6` (critical).
+  - Measured on a fresh install: `npm audit --omit=dev` went from 70 advisories (1 critical, 17 high) on 3.66.1 to 11 (0 critical) with these packages. The remaining high advisory is zod 3.
+- **agentic-flow 3.0.0 defaults** (ADR-515, agentic-flow ADR-079): proxies bind loopback with a per-run token, agents no longer bypass permissions, and a cloned repo's `.env` or router config can no longer redirect API keys. The release also fixes path traversal in its agent tools and code execution through `statusline.sh`.
+- **agentdb 3.0.0** (ADR-514): `agentdb_init` no longer deletes arbitrary files, filter-key SQL injection is closed, and the model cache is private instead of shared `/tmp`.
+
+### Fixed
+- **AgentDB controllers get an embedder** (`@claude-flow/memory` 3.2.1). LearningSystem, NightlyLearner, ExplainableRecall and the graph transformer were built with the database only, so their first call threw. CausalMemoryGraph also gets the shared vector backend.
+- **Memory search through AgentDB returns results.** agentdb 3.0.0's default RuVector backend never awaited its search, so reflexion, skills and causal-graph recall came back empty. LearningSystem also now keeps its feedback.
+- **Autopilot learning works.** `autopilot learn/predict/recall` load the restored AutopilotLearning from agentic-flow 3.0.0 on the real AgentDB. Under the March alpha it always ran on an in-memory fallback. Library timers no longer keep short-lived CLI commands alive.
+- **stdio MCP stays JSON-only.** AgentDB diagnostics go to stderr; the #4622 lock-reason capture reads both streams.
+- `neural-tools` stores embeddings as arrays: agentic-flow returns a `Float32Array`, which `JSON.stringify` wrote as `{"0":…}`.
+
+### Changed
+- The CLI and the `claude-flow` umbrella declare `agentic-flow ^3.0.0`; the update validator requires at least 3.0.0.
+- **No more alpha tags** (ADR-513). Releases go to `latest` only. The `alpha` and `v3alpha` dist-tags stay frozen at 3.66.2, so old `@alpha` installs still resolve. CLAUDE.md documents that `overrides` never reach users.
+
 ## [3.66.2] - 2026-10-31
 
 Security patch: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.2, with the bundled `@claude-flow/mcp` 3.1.5 and `@claude-flow/security` 3.0.6 (also published standalone).
