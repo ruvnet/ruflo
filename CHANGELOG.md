@@ -5,6 +5,16 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.66.2] - 2026-10-31
+
+Security patch: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.2, with the bundled `@claude-flow/mcp` 3.1.5 and `@claude-flow/security` 3.0.6 (also published standalone).
+
+### Security
+- **Bearer tokens are parsed in linear time** (`@claude-flow/mcp`). The HTTP and WebSocket transports matched `Authorization` with `/^Bearer\s+(.+)$/i`. That pattern backtracks quadratically on a long run of whitespace followed by a line break (CodeQL js/polynomial-redos). Node's HTTP parser already rejects line breaks in header values, so this is hardening rather than a reachable denial of service. Both transports now use a prefix compare and `trimStart`, and refuse headers over 8 KB.
+- **Verification codes are uniform** (`@claude-flow/security`). `TokenGenerator.generateVerificationCode()` used `byte % 10`, so digits 0-5 came up 26/256 of the time and 6-9 only 25/256. Each digit now comes from `crypto.randomInt(10)`.
+- **`sanitizeString` cannot be tricked into rebuilding a protocol** (`@claude-flow/security`). One pass turned `javajavascript:script:` into `javascript:`. It now strips `javascript:`, `vbscript:` and `data:` until none remain.
+- `terminal_create` session ids come from `crypto.randomBytes` rather than `Math.random`.
+
 ## [3.66.1] - 2026-10-31
 
 Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.1, plus standalone `@claude-flow/memory` 3.2.0 and `@claude-flow/plugin-agent-federation` 1.0.4.
