@@ -218,7 +218,7 @@ importers:
         specifier: 3.1.0
         version: link:../aidefence
       '@claude-flow/memory':
-        specifier: 3.2.0
+        specifier: 3.2.1
         version: link:../memory
       '@metaharness/darwin':
         specifier: ~0.12.0
