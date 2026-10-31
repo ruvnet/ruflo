@@ -5495,6 +5495,7 @@ const verifiedIngestCommand: Command = {
   options: [
     { name: 'dry-run', description: 'Count only: train nothing and write nothing', type: 'boolean', default: false },
     { name: 'force', description: 'Re-read the file even if unchanged since the last ingest', type: 'boolean', default: false },
+    { name: 'quiet', description: 'Suppress output (used when spawned detached from a hook)', type: 'boolean', default: false },
   ],
   examples: [
     { command: 'ruflo hooks verified-ingest', description: 'Ingest new verified outcomes and refresh learned-lessons.json' },
@@ -5509,12 +5510,13 @@ const verifiedIngestCommand: Command = {
         reverify?: { enabled: boolean; ran: number; passed: number; downgraded: number; deferred: number };
         totals: { verifiedSuccess: number; verifiedFailure: number; unknown: number; tainted?: number };
       }>('hooks_intelligence_verified-ingest', { dryRun: ctx.flags['dry-run'] === true || ctx.flags.dryRun === true, force: ctx.flags.force === true });
+      if (ctx.flags.quiet) return { success: true, data: result };
       if (ctx.flags.format === 'json') {
         output.printJson(result);
         return { success: true, data: result };
       }
       if (result.skipped === 'no-file') {
-        output.printInfo('No recorded turns yet (.claude-flow/data/verified-trajectories.jsonl). Turn on the ruflo-mods learningLoop option.');
+        output.printInfo('No recorded turns yet (.claude-flow/data/verified-trajectories.jsonl). The classic hooks and the ruflo-mods learningLoop option both record them.');
         return { success: true, data: result };
       }
       if (!result.sonaAvailable) output.printWarning('SONA unavailable: verified outcomes wait for the next ingest');

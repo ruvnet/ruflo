@@ -5,6 +5,53 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.66.1] - 2026-10-31
+
+Patch release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.1, plus standalone `@claude-flow/memory` 3.2.0 and `@claude-flow/plugin-agent-federation` 1.0.4.
+
+### Security
+- **Federation trust thresholds are now enforced** (#4618, #4619). `SecurityPolicy.minTrustLevelForWrite`, `minTrustLevelForMemory` and `minTrustLevelForSpawn` were declared and accepted as overrides but never checked.
+  - Before: `memory-query` and `memory-response` passed at `ATTESTED`, below the default policy's own `TRUSTED` minimum.
+  - Now: `PolicyEngine.evaluateMessage()` checks the configured minimum for write, memory and spawn messages. The check adds to the built-in capability gates; a looser policy cannot bypass them.
+
+### Fixed
+- **A memory store locked by another process now says so** (#4622). Separate stdio MCP servers opening one store contend for its native vector store.
+  - Before: AgentDB fell back to a backend that rejected the locked file as the wrong format, and only that error was reported. The registry was still treated as available, and memory operations then failed with an unrelated sql.js WAL refusal.
+  - Now: `ControllerRegistry.getAgentDBInitError()` (`@claude-flow/memory` 3.2.0) keeps the first backend's failure, such as `Database already open. Cannot acquire lock`. It names the fix: run one owner with `ruflo mcp start --transport http` and point every client at it. The CLI bridge records that reason and adds it to the fallback's refusal. `isBridgeAvailable()` returns false when AgentDB did not open.
+  - `memory_list` reports a failed query as `success: false` with its error, not as an empty inventory.
+
+## [3.66.0] - 2026-10-31
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.66.0, plus ruflo-mods plugin 0.14.0. It contains 3.65.1 and the learning-loop follow-ups to #4581.
+
+### Added
+- **The learning loop on classic hooks, for every ruflo project** (ADR-512, #4604).
+  - Until now only projects with the opt-in ruflo-mods plugin recorded verified turns and showed lessons. Every `ruflo init` project now does the same through its classic hooks.
+  - The hooks replay the session transcript through the mod's own record and lesson code, bundled as the signed helper `.claude/helpers/learning-loop.cjs`.
+  - `route` records the finished turns, then prints the lessons that fit the new prompt. `session-end` records the rest and starts a detached `ruflo hooks verified-ingest --quiet`.
+  - Existing projects get the new helper the next time a newer CLI refreshes their helpers; `settings.json` is not rewritten.
+  - When the mod's loop is on, it announces `learning-loop` in `RUFLO_MODS_OWNS`, so no turn is recorded twice.
+  - To opt out, set `.claude-flow/config.json` `learningLoop.enabled` to `false`, or `RUFLO_LEARNING_LOOP=0`.
+- **Lessons say where the fix goes** (ADR-511, #4603).
+  - A verified turn records the source files its edits changed. Absolute, `..`, dot-file, secret-shaped, test and verifier-config paths are screened out.
+  - A lesson names the three files its passing fixes edited most, and leads with them.
+  - Lesson matching weighs rare words up and leaves out matches far below the best one.
+  - Files count per pattern and anchor SONA patterns, so the same task worded differently reinforces one lesson; tasks naming disjoint paths never merge.
+- **The learning-loop eval uses the flywheel sequential-evidence gate** (#4602). `scripts/eval-learning-loop.mjs` prints the minimum informative pairs a run needs and refuses, before any spend, an eval split that can never reach it.
+
+### Fixed
+- **The startup update check now skips CI runs where `CI=1`** (#4608). Before, only `CI=true` was recognised, so a `CI=1` run could `npm install` the newest CLI into the working directory during `ruflo init`. Any `CI` or `CONTINUOUS_INTEGRATION` value other than empty, `0` or `false` now counts as CI.
+
+## [3.65.1] - 2026-10-30
+
+Security patch: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.65.1. Contains 3.65.0 plus this one fix (#4605).
+
+### Security
+- **`http_fetch` SSRF via DNS** (CWE-918, CWE-350).
+  - Before: the MCP tool refused loopback, RFC-1918 and link-local hosts only by the URL's hostname text, then let `fetch()` resolve the name itself. A hostname that resolves, or rebinds, to `127.0.0.1`, a private address or `169.254.169.254` reached it without `CLAUDE_FLOW_HTTP_FETCH_ALLOW_PRIVATE`.
+  - Now: every connection resolves through a lookup hook. The hook refuses the host if any resolved address is private, and the socket connects only to addresses it checked. Every redirect hop is checked the same way.
+  - The address check also covers `::`, IPv4-compatible and NAT64/6to4 IPv6 forms, `fe80::/10`, `fec0::/10`, `ff00::/8`, IPv4 multicast/reserved, `198.18.0.0/15` and `*.localhost`.
+
 ## [3.65.0] - 2026-10-30
 
 Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.65.0, plus ruflo-mods plugin 0.12.0. This release ships the eight follow-ups to #4581 on how ruflo integrates with Claude Code mods (ADR-503 to ADR-510, #4585).

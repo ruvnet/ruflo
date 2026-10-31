@@ -27,26 +27,23 @@
  * prompt. Every one of these can only downgrade.
  */
 
-import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-import { addOutcome, blockedTaints, emptyStats, holdReason, parseStats, parseTaint, readLoopConfig, type HoldReason, type LoopConfig, type PatternStats, type Taint } from './verified-guards.js';
+import { addOutcome, blockedTaints, emptyStats, parseStats, parseTaint, readLoopConfig, type LoopConfig, type PatternStats, type Taint } from './verified-guards.js';
 import { gitWorktreeRunner, ReverifySession, type ReverifyRunner } from './verified-reverify.js';
+import { addFiles, buildLessons, parseFileCounts, recordFiles, type LessonsFile, type PatternExport } from './verified-lessons.js';
+
+export { buildLessons, CAUTION_MIN_FAILURES, LESSON_GATE, lessonFile, lessonId, MAX_LESSONS, type Lesson, type LessonsFile } from './verified-lessons.js';
 
 export const VERIFIED_PATH = join('.claude-flow', 'data', 'verified-trajectories.jsonl');
 export const LEDGER_PATH = join('.claude-flow', 'data', 'verified-ingest.json');
 export const LESSONS_PATH = join('.claude-flow', 'data', 'learned-lessons.json');
 
-/** The SONA routing gate (sona-optimizer.ts `SONA_ROUTING_GATE`); a lesson below it never influences routing. */
-export const LESSON_GATE = 0.6;
 /** Ingested ids remembered; the mod keeps at most 500 lines, so this always covers the whole file. */
 export const MAX_LEDGER_IDS = 2000;
 /** A file past this many bytes is not read (the mod caps its own at far less). */
 export const MAX_FILE_BYTES = 2 * 1024 * 1024;
-export const MAX_LESSONS = 20;
-/** Verified failures (and more failures than successes) before a pattern becomes a caution. */
-export const CAUTION_MIN_FAILURES = 2;
 
 export type Outcome = 'verified-success' | 'verified-failure' | 'unknown';
 export type VerifierKind = 'test' | 'build' | 'typecheck' | 'lint';
@@ -63,6 +60,8 @@ export interface VerifiedRecord {
   readonly taint: readonly Taint[];
   /** The mod process that recorded it, when the mod wrote one (ADR-503 §2.4). */
   readonly session: string | null;
+  /** ADR-511: files a verified turn edited, screened (`lessonFile`); empty for `unknown`. */
+  readonly files: readonly string[];
   readonly startedAt: number;
   readonly endedAt: number;
 }
@@ -77,7 +76,7 @@ export interface IngestLedger {
    * Pattern keys verified outcomes trained, with the last verifier command that decided them (the lesson's evidence)
    * and what the anomaly gate needs (ADR-503 §2.4).
    */
-  patterns: Record<string, { evidence: string; at: number; stats: PatternStats }>;
+  patterns: Record<string, { evidence: string; at: number; stats: PatternStats; files: Record<string, number> }>;
   /** ADR-503 §2.3: the rotation cursor and the latest re-verifications (which commit, which check, what happened). */
   reverify: { cursor: number; log: ReverifyLogEntry[] };
 }
@@ -91,28 +90,6 @@ export interface ReverifyLogEntry {
 }
 
 export const MAX_REVERIFY_LOG = 50;
-
-export interface Lesson {
-  readonly id: string;
-  readonly kind: 'lesson' | 'caution';
-  readonly agent: string;
-  readonly keywords: string[];
-  readonly confidence: number;
-  readonly successes: number;
-  readonly failures: number;
-  readonly evidence: string;
-}
-
-export interface LessonsFile {
-  version: 1;
-  gate: number;
-  generatedAt: number;
-  lessons: Lesson[];
-  /** Verified patterns still below the gate, for the cold-start progress line. */
-  belowGate: number;
-  /** Patterns at or above the gate that the anomaly gate kept out of the prompt (ADR-503 §2.4). */
-  held: Array<{ id: string; reason: HoldReason }>;
-}
 
 export interface IngestResult {
   /** `tainted`: successes whose taint the project did not allow, counted and never trained (ADR-503 §2.2). */
@@ -142,8 +119,10 @@ export interface SonaLike {
     steps?: Array<{ action: string; result: string; quality: number; timestamp: string }>;
     duration?: number;
     feedback?: string;
+    /** ADR-511: the edited files, which decide only which pattern the outcome reinforces. */
+    anchors?: string[];
   }): { learned: boolean; patternKey: string; confidence: number };
-  exportPatterns(): Record<string, { keywords: string[]; agent: string; confidence: number; successCount: number; failureCount: number }>;
+  exportPatterns(): PatternExport;
 }
 
 const OUTCOMES: readonly Outcome[] = ['verified-success', 'verified-failure', 'unknown'];
@@ -194,7 +173,8 @@ export function parseRecord(line: string): VerifiedRecord | null {
   const taint = outcome === 'verified-success' ? parseTaint(r.taint) : [];
   const session = typeof r.session === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(r.session) ? r.session : null;
 
-  return { id: r.id, task, agent, outcome, verifier, steps, edits: num(r.edits, 10_000), taint, session, startedAt: num(r.startedAt), endedAt: num(r.endedAt) };
+  const files = outcome === 'unknown' ? [] : recordFiles(r.files);
+  return { id: r.id, task, agent, outcome, verifier, steps, edits: num(r.edits, 10_000), taint, session, files, startedAt: num(r.startedAt), endedAt: num(r.endedAt) };
 }
 
 export function emptyLedger(): IngestLedger {
@@ -211,7 +191,7 @@ export function readLedger(raw: string | null): IngestLedger {
     const patterns: IngestLedger['patterns'] = {};
     for (const [k, v] of Object.entries(j.patterns && typeof j.patterns === 'object' ? j.patterns : {})) {
       if (k === '__proto__' || typeof k !== 'string' || k.length > 400 || !v || typeof v !== 'object') continue;
-      patterns[k] = { evidence: text((v as { evidence?: unknown }).evidence, 80), at: num((v as { at?: unknown }).at), stats: parseStats((v as { stats?: unknown }).stats) };
+      patterns[k] = { evidence: text((v as { evidence?: unknown }).evidence, 80), at: num((v as { at?: unknown }).at), stats: parseStats((v as { stats?: unknown }).stats), files: parseFileCounts((v as { files?: unknown }).files) };
     }
     const rv = (j.reverify && typeof j.reverify === 'object' ? j.reverify : {}) as { cursor?: unknown; log?: unknown };
     const STATUS = ['pass', 'fail', 'timeout', 'error'];
@@ -240,38 +220,6 @@ async function redact(task: string): Promise<string> {
   } catch {
     return task;
   }
-}
-
-/** Keywords a lesson may show: SONA keeps any non-separator text, the prompt gets only plain words. */
-const SAFE_KEYWORD = /^[a-z0-9][a-z0-9 _./-]{0,40}$/;
-
-/** A lesson's citation: a short hash of the SONA pattern key, so the key's own text never reaches a prompt. */
-export const lessonId = (patternKey: string) => `L-${createHash('sha256').update(patternKey).digest('hex').slice(0, 10)}`;
-
-/**
- * Builds the lessons file from SONA's patterns, keeping only the ones verified outcomes trained. A would-be lesson the
- * anomaly gate holds (ADR-503 §2.4) is listed under `held` instead: it stays in SONA, never in a prompt.
- */
-export function buildLessons(patterns: ReturnType<SonaLike['exportPatterns']>, verified: Record<string, { evidence: string; at: number; stats?: PatternStats }>, now: number): LessonsFile {
-  const lessons: Lesson[] = [];
-  const held: LessonsFile['held'] = [];
-  let belowGate = 0;
-  for (const [id, p] of Object.entries(patterns)) {
-    const v = verified[id];
-    if (!v || !p || !Array.isArray(p.keywords)) continue;
-    const keywords = p.keywords.filter(k => typeof k === 'string' && SAFE_KEYWORD.test(k)).slice(0, 10);
-    if (keywords.length === 0 || !AGENT.test(p.agent)) continue;
-    const base = { id: lessonId(id), agent: p.agent, keywords, confidence: Math.round(p.confidence * 1000) / 1000, successes: p.successCount, failures: p.failureCount, evidence: v.evidence };
-    if (p.failureCount >= CAUTION_MIN_FAILURES && p.failureCount > p.successCount) lessons.push({ ...base, kind: 'caution' });
-    else if (p.confidence >= LESSON_GATE) {
-      const reason = holdReason(v.stats ?? emptyStats(), p.successCount);
-      if (reason) held.push({ id: base.id, reason });
-      else lessons.push({ ...base, kind: 'lesson' });
-    } else belowGate++;
-  }
-  lessons.sort((a, b) => b.confidence - a.confidence || b.successes + b.failures - (a.successes + a.failures));
-  held.sort((a, b) => a.id.localeCompare(b.id));
-  return { version: 1, gate: LESSON_GATE, generatedAt: now, lessons: lessons.slice(0, MAX_LESSONS), belowGate, held: held.slice(0, MAX_LESSONS) };
 }
 
 function writeAtomic(path: string, body: string): void {
@@ -413,12 +361,15 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
       steps: record.steps.map(s => ({ action: s.tool, result: s.ok ? 'ok' : 'error', quality: s.ok ? 1 : 0, timestamp: new Date(record.endedAt || now).toISOString() })),
       duration: record.endedAt > record.startedAt ? record.endedAt - record.startedAt : 0,
       feedback: `verified by ${record.verifier!.kind}: ${record.verifier!.command}`,
+      // ADR-511: a failure anchors too, so a reworded failure lowers the same lesson; only a success names files.
+      anchors: [...record.files],
     });
     if (result.learned && result.patternKey) {
-      const entry = ledger.patterns[result.patternKey] ?? { evidence: '', at: now, stats: emptyStats() };
+      const entry = ledger.patterns[result.patternKey] ?? { evidence: '', at: now, stats: emptyStats(), files: {} };
       entry.evidence = record.verifier!.command;
       entry.at = now;
       addOutcome(entry.stats, success, record.taint, record.session);
+      if (success) addFiles(entry.files, record.files);
       ledger.patterns[result.patternKey] = entry;
     }
     if (success) ingested.verifiedSuccess++;

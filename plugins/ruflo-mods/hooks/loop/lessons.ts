@@ -8,12 +8,15 @@
  */
 
 import { scan } from '../guidance/screen'
+import { lessonFile } from './record'
 
 /** The SONA routing gate; a file cannot lower it. */
 export const GATE = 0.6
 /** Lessons added to one prompt, at most. */
 export const MAX_PER_PROMPT = 3
 const MAX_LESSONS = 50
+/** ADR-511: files one lesson names, at most. */
+export const MAX_FILES_SHOWN = 3
 
 export type Lesson = {
   readonly id: string
@@ -24,6 +27,8 @@ export type Lesson = {
   readonly successes: number
   readonly failures: number
   readonly evidence: string
+  /** ADR-511: files the passing fixes edited, most often first; empty for a caution or an older file. */
+  readonly files: readonly string[]
 }
 
 export type Lessons = { readonly gate: number; readonly lessons: readonly Lesson[]; readonly belowGate: number }
@@ -51,7 +56,9 @@ export function parseLessons(text: string): Lessons {
     // A lesson below the gate never reaches a prompt, whatever the file says.
     if (l.kind === 'lesson' && confidence < gate) continue
     const evidence = typeof l.evidence === 'string' && EVIDENCE.test(l.evidence) ? l.evidence : ''
-    lessons.push({ id: l.id, kind: l.kind, agent: l.agent, keywords, confidence, successes: count(l.successes), failures: count(l.failures), evidence })
+    // ADR-511: the same screen the recorder applies; a path that fails it is dropped, never shown.
+    const files = l.kind === 'lesson' && Array.isArray(l.files) ? l.files.filter((f): f is string => typeof f === 'string' && lessonFile(f)).slice(0, MAX_FILES_SHOWN) : []
+    lessons.push({ id: l.id, kind: l.kind, agent: l.agent, keywords, confidence, successes: count(l.successes), failures: count(l.failures), evidence, files })
   }
   return { gate, lessons, belowGate: count(raw.belowGate) }
 }
@@ -61,17 +68,33 @@ const words = (text: string) => new Set(text.toLowerCase().split(/[\s\-_.,;:!?'"
 /** Whether the prompt says a keyword: as a word, or (for one with a space or slash) as a phrase. */
 const says = (said: Set<string>, lower: string, keyword: string) => said.has(keyword) || (/[ /]/.test(keyword) && lower.includes(keyword))
 
+/** ADR-511: a lesson scoring under this share of the best match is left out (it matched on words every task says). */
+export const MIN_SHARE_OF_BEST = 0.5
+
 /**
- * The lessons that share a keyword with the prompt, best first: overlap
- * share times confidence. At most three.
+ * The lessons that share a keyword with the prompt, best first: the matched
+ * share of the lesson's keywords times its confidence. ADR-511: each keyword
+ * is weighted by how rare it is among the lessons (inverse document
+ * frequency), so words every lesson has ("test", "fix") barely count. At most
+ * three, and none far below the best.
  */
 export function pick(file: Lessons, prompt: string): Lesson[] {
   const said = words(prompt)
   const lower = prompt.toLowerCase()
-  return file.lessons
-    .map(l => ({ l, overlap: l.keywords.filter(k => says(said, lower, k)).length }))
+  const df = new Map<string, number>()
+  for (const l of file.lessons) for (const k of new Set(l.keywords)) df.set(k, (df.get(k) ?? 0) + 1)
+  const weight = (k: string) => Math.log((file.lessons.length + 1) / (df.get(k) ?? 1))
+  const sum = (ks: readonly string[]) => ks.reduce((a, k) => a + weight(k), 0)
+  const scored = file.lessons
+    .map(l => {
+      const matched = l.keywords.filter(k => says(said, lower, k))
+      return { l, overlap: matched.length, score: (sum(matched) / sum(l.keywords)) * l.confidence }
+    })
     .filter(x => x.overlap > 0)
-    .sort((a, b) => (b.overlap / b.l.keywords.length) * b.l.confidence - (a.overlap / a.l.keywords.length) * a.l.confidence)
+    .sort((a, b) => b.score - a.score)
+  const best = scored[0]?.score ?? 0
+  return scored
+    .filter(x => x.score >= best * MIN_SHARE_OF_BEST)
     .slice(0, MAX_PER_PROMPT)
     .map(x => x.l)
 }
@@ -82,9 +105,10 @@ export function lessonBlock(chosen: readonly Lesson[]): string | null {
   const lines = chosen.map(l => {
     const tag = `[${l.kind} ${l.id} conf ${l.confidence.toFixed(2)}, ${l.successes} passed / ${l.failures} failed]`
     const check = l.evidence ? ` \`${l.evidence}\`` : ' verification'
-    return l.kind === 'lesson'
-      ? `- ${tag} tasks about ${l.keywords.join(', ')} went to ${l.agent} and passed${check}`
-      : `- ${tag} tasks about ${l.keywords.join(', ')} failed${check} ${l.failures} times: check that first`
+    if (l.kind === 'caution') return `- ${tag} tasks about ${l.keywords.join(', ')} failed${check} ${l.failures} times: check that first`
+    // ADR-511: a lesson that knows where the passing fixes went leads with it; the model skims a keyword list.
+    if (l.files.length) return `- ${tag} verified fixes for tasks like this (${l.keywords.join(', ')}) edited ${l.files.map(f => `\`${f}\``).join(', ')}: look there first. They passed${check}.`
+    return `- ${tag} tasks about ${l.keywords.join(', ')} went to ${l.agent} and passed${check}`
   })
   const block = ['[RUFLO_LESSONS] From this project\'s own test/build exit status (never a model\'s claim of success). Advisory only:', ...lines].join('\n')
   const found = scan(block)

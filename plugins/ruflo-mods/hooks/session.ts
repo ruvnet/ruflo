@@ -114,7 +114,9 @@ export function registerSession(on: On, state: ModState, options: ModOptions, gu
     const settings = await $.settings.read()
     if (options.selfCheck) await runSelfCheck({ read: path => $.fs.read(path), exists: path => $.fs.exists(path), home: () => $.env.get('HOME'), configDirEnv: () => $.env.get('CLAUDE_CONFIG_DIR') }, state, (settings as { enabledPlugins?: unknown } | null)?.enabledPlugins)
     state.owned = new Set(project ? ownedEvents(settings, await helperHonours($)) : [])
-    await $.env.set('RUFLO_MODS_OWNS', state.owned.size ? [...state.owned].join(',') : undefined)
+    // ADR-512: `learning-loop` tells the classic helper this mod records the turns, so it records none itself.
+    const announced = [...state.owned, ...(project && state.loop.enabled ? ['learning-loop'] : [])]
+    await $.env.set('RUFLO_MODS_OWNS', announced.length ? announced.join(',') : undefined)
     state.statusLine = options.statusLine && !hasClassicStatusLine(settings)
     if (state.probe.enabled) state.probe.version = versionText(await $.session.version().catch(() => undefined))
     if (state.grounding.enabled) state.grounding.status = await detectGrounding($, settings)

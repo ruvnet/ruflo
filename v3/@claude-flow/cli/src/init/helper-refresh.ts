@@ -106,6 +106,10 @@ export const CRITICAL_HELPERS = [
   // ("latest" -> tester). ADR-389 / #3401. It is CommonJS, so it ships as
   // `.cjs`: a `.js` copy cannot load in a `"type":"module"` project (#3555).
   'router.cjs',
+  // learning-loop.cjs is the classic-hooks learning loop hook-handler.cjs loads (ADR-512),
+  // bundled from the ruflo-mods loop source; here so every install records verified turns
+  // and sees lessons on its next `ruflo` command, not only with the mod.
+  'learning-loop.cjs',
 ];
 
 function errorCode(error: unknown): string | undefined {
