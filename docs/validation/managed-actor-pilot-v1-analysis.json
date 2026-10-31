@@ -1,0 +1,52 @@
+{
+  "schema": "ruflo.live-actor-pilot-analysis/v1",
+  "planHash": "c970c211a2cbec8158e1dfac9eac69f7b66c66e9ed6fd233ea6a2edf4503abe4",
+  "selected": "compact",
+  "trainingCalls": 8,
+  "auditCalls": 90,
+  "reportedCostUSD": 0.4848662,
+  "summary": {
+    "baseline": {
+      "passed": 27,
+      "total": 30,
+      "observed": 30,
+      "missing": 0,
+      "reportedCostUSD": 0.1850866,
+      "observedP95Ms": 11530
+    },
+    "random": {
+      "passed": 27,
+      "total": 30,
+      "observed": 30,
+      "missing": 0,
+      "reportedCostUSD": 0.15494,
+      "observedP95Ms": 8374
+    },
+    "learned": {
+      "passed": 27,
+      "total": 30,
+      "observed": 30,
+      "missing": 0,
+      "reportedCostUSD": 0.1156064,
+      "observedP95Ms": 6436
+    }
+  },
+  "observedLearnedCostReduction": 0.3753929241771149,
+  "observedPairedRegressions": [],
+  "observedPerTaskNoRegression": true,
+  "observedAggregateQualityNoRegression": true,
+  "liveModelInferenceExecuted": true,
+  "liveImprovementProven": false,
+  "promotionAuthorized": false,
+  "limitations": [
+    "Descriptive SDK-reported list-cost and host-oracle scores, not invoice audit.",
+    "No separately signed registration/oracle chain and no established independent task families.",
+    "The selected prompt may be a better static default; no separate static-best control executed.",
+    "The v1 prompt omitted the exact VM runtime contract; TextEncoder/URLSearchParams are absent.",
+    "The selector uses float USD; native managed learning uses integer cents and was not this selector.",
+    "Cost-only observations cannot satisfy the preregistered quality-lift proof gate."
+  ],
+  "executedRunnerSha256": "a2ce770a5db3d3f6bfc12e3278b478dae9c9cf9428a74644de581f455bd8f4d3",
+  "artifactSha256": "65844c1dfeee0159644a585773d618d026298e20947622f1e032ebc836b4cdde",
+  "confirmedOracleDefect": "The executed v1 constructs expected cases as JavaScript literals. __proto__ becomes prototype syntax instead of an own expected property, rejecting a correct group-count solution. Preserve frozen results; no posthoc repair is accepted as new proof."
+}

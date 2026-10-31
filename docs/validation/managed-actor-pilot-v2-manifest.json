@@ -1,0 +1,1535 @@
+{
+  "training": [
+    {
+      "id": "fresh-arithmetic-mean",
+      "spec": "solve(values): values is a nonempty array of finite numbers with length <=100 and absolute values <=1000. Return the arithmetic mean as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "values"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            [
+              2,
+              4
+            ]
+          ],
+          3
+        ],
+        [
+          [
+            [
+              -2,
+              0,
+              2
+            ]
+          ],
+          0
+        ],
+        [
+          [
+            [
+              7
+            ]
+          ],
+          7
+        ]
+      ],
+      "referenceCode": "function solve(a){return a.reduce((s,x)=>s+x,0)/a.length}"
+    },
+    {
+      "id": "fresh-clamp",
+      "spec": "solve(value, lower, upper): all arguments are finite Numbers and lower<=upper. Return value clamped to the inclusive interval as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "value",
+        "lower",
+        "upper"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            5,
+            1,
+            3
+          ],
+          3
+        ],
+        [
+          [
+            0,
+            1,
+            3
+          ],
+          1
+        ],
+        [
+          [
+            2,
+            1,
+            3
+          ],
+          2
+        ]
+      ],
+      "referenceCode": "function solve(x,l,h){return Math.min(h,Math.max(l,x))}"
+    },
+    {
+      "id": "fresh-dot-product",
+      "spec": "solve(a,b): equal-length arrays of integers each in -100..100 and length<=100. Return their dot product as a Number; empty arrays return 0. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "a",
+        "b"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              4
+            ]
+          ],
+          11
+        ],
+        [
+          [
+            [],
+            []
+          ],
+          0
+        ],
+        [
+          [
+            [
+              -1,
+              2
+            ],
+            [
+              2,
+              -1
+            ]
+          ],
+          -4
+        ]
+      ],
+      "referenceCode": "function solve(a,b){return a.reduce((s,x,i)=>s+x*b[i],0)}"
+    },
+    {
+      "id": "fresh-collatz-steps",
+      "spec": "solve(n): n is an integer in 1..100. Count Collatz transitions until reaching 1, where even n becomes n/2 and odd n becomes 3*n+1. Return the count as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "n"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            1
+          ],
+          0
+        ],
+        [
+          [
+            3
+          ],
+          7
+        ],
+        [
+          [
+            6
+          ],
+          8
+        ]
+      ],
+      "referenceCode": "function solve(n){let s=0;while(n!==1){n=n%2===0?n/2:3*n+1;s++}return s}"
+    }
+  ],
+  "audit": [
+    {
+      "id": "fresh-factorial",
+      "spec": "solve(n): n is an integer in 0..12. Return n factorial as a Number, with 0 factorial equal to 1. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "n"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            0
+          ],
+          1
+        ],
+        [
+          [
+            5
+          ],
+          120
+        ],
+        [
+          [
+            12
+          ],
+          479001600
+        ]
+      ],
+      "referenceCode": "function solve(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r}"
+    },
+    {
+      "id": "fresh-integer-power",
+      "spec": "solve(base, exponent): base is an integer in -5..5 and exponent is an integer in 0..10. Return base raised to exponent as a Number; use 0^0=1. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "base",
+        "exponent"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            0,
+            0
+          ],
+          1
+        ],
+        [
+          [
+            -2,
+            3
+          ],
+          -8
+        ],
+        [
+          [
+            3,
+            4
+          ],
+          81
+        ]
+      ],
+      "referenceCode": "function solve(b,e){let r=1;while(e-->0)r*=b;return r}"
+    },
+    {
+      "id": "fresh-hamming-distance",
+      "spec": "solve(a,b): a and b are equal-length ASCII strings. Return the number of positions whose characters differ as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "a",
+        "b"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            "karolin",
+            "kathrin"
+          ],
+          3
+        ],
+        [
+          [
+            "",
+            ""
+          ],
+          0
+        ],
+        [
+          [
+            "1010",
+            "0011"
+          ],
+          2
+        ]
+      ],
+      "referenceCode": "function solve(a,b){let r=0;for(let i=0;i<a.length;i++)if(a[i]!==b[i])r++;return r}"
+    },
+    {
+      "id": "fresh-pascal-row",
+      "spec": "solve(n): n is an integer in 0..20. Return row n of Pascal triangle as an array of Numbers, with row 0 equal to [1]. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "n"
+      ],
+      "returnType": "array",
+      "cases": [
+        [
+          [
+            0
+          ],
+          [
+            1
+          ]
+        ],
+        [
+          [
+            4
+          ],
+          [
+            1,
+            4,
+            6,
+            4,
+            1
+          ]
+        ],
+        [
+          [
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      ],
+      "referenceCode": "function solve(n){const r=[1];for(let k=1;k<=n;k++)r.push(r[k-1]*(n-k+1)/k);return r}"
+    },
+    {
+      "id": "fresh-polynomial-value",
+      "spec": "solve(coefficients,x): coefficients is an array of integers ordered from highest degree to constant term, each absolute value <=10; length <=6 and x is integer -3..3. Return the polynomial value as a Number. An empty coefficient array returns 0. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "coefficients",
+        "x"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            [
+              2,
+              3,
+              4
+            ],
+            2
+          ],
+          18
+        ],
+        [
+          [
+            [],
+            3
+          ],
+          0
+        ],
+        [
+          [
+            [
+              1,
+              0,
+              -1
+            ],
+            -2
+          ],
+          3
+        ]
+      ],
+      "referenceCode": "function solve(a,x){return a.reduce((v,c)=>v*x+c,0)}"
+    },
+    {
+      "id": "fresh-popcount-u32",
+      "spec": "solve(n): n is an integer in 0..4294967295. Return the number of set bits in its unsigned 32-bit binary representation as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "n"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            0
+          ],
+          0
+        ],
+        [
+          [
+            4294967295
+          ],
+          32
+        ],
+        [
+          [
+            2147483648
+          ],
+          1
+        ],
+        [
+          [
+            11
+          ],
+          3
+        ]
+      ],
+      "referenceCode": "function solve(n){n=n>>>0;let c=0;while(n){n=(n&(n-1))>>>0;c++}return c}"
+    },
+    {
+      "id": "fresh-rgb-hex",
+      "spec": "solve(rgb): rgb is an array of exactly three integers 0..255. Return a lowercase hexadecimal CSS color string of exactly seven characters, starting with #. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "rgb"
+      ],
+      "returnType": "string",
+      "cases": [
+        [
+          [
+            [
+              0,
+              15,
+              255
+            ]
+          ],
+          "#000fff"
+        ],
+        [
+          [
+            [
+              255,
+              255,
+              255
+            ]
+          ],
+          "#ffffff"
+        ],
+        [
+          [
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "#000000"
+        ]
+      ],
+      "referenceCode": "function solve(a){return '#'+a.map(x=>x.toString(16).padStart(2,'0')).join('')}"
+    },
+    {
+      "id": "fresh-digital-root",
+      "spec": "solve(n): n is an integer in 0..1000000000. Repeatedly sum its decimal digits until one digit remains. Return that digit as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "n"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            0
+          ],
+          0
+        ],
+        [
+          [
+            9875
+          ],
+          2
+        ],
+        [
+          [
+            9
+          ],
+          9
+        ],
+        [
+          [
+            10
+          ],
+          1
+        ]
+      ],
+      "referenceCode": "function solve(n){return n===0?0:1+(n-1)%9}"
+    },
+    {
+      "id": "fresh-spreadsheet-column",
+      "spec": "solve(n): n is an integer in 1..10000. Return its spreadsheet column label, where 1=A, 26=Z, 27=AA, as an uppercase ASCII string. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "n"
+      ],
+      "returnType": "string",
+      "cases": [
+        [
+          [
+            1
+          ],
+          "A"
+        ],
+        [
+          [
+            26
+          ],
+          "Z"
+        ],
+        [
+          [
+            27
+          ],
+          "AA"
+        ],
+        [
+          [
+            702
+          ],
+          "ZZ"
+        ],
+        [
+          [
+            703
+          ],
+          "AAA"
+        ]
+      ],
+      "referenceCode": "function solve(n){let s='';while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s}"
+    },
+    {
+      "id": "fresh-clock-angle",
+      "spec": "solve(hour,minute): hour is an integer 0..23 and minute is an integer 0..59. Return the smaller angle in degrees between analog clock hands as a Number, including fractional hour-hand movement. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "hour",
+        "minute"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            12,
+            0
+          ],
+          0
+        ],
+        [
+          [
+            3,
+            30
+          ],
+          75
+        ],
+        [
+          [
+            23,
+            59
+          ],
+          5.5
+        ]
+      ],
+      "referenceCode": "function solve(h,m){const d=Math.abs((h%12)*30+m*.5-m*6);return Math.min(d,360-d)}"
+    },
+    {
+      "id": "fresh-us-coin-change",
+      "spec": "solve(cents): cents is an integer 0..10000. Using unlimited US coins valued 25,10,5,1 cents, return the minimum number of coins as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "cents"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            0
+          ],
+          0
+        ],
+        [
+          [
+            41
+          ],
+          4
+        ],
+        [
+          [
+            99
+          ],
+          9
+        ]
+      ],
+      "referenceCode": "function solve(n){let c=0;for(const v of [25,10,5,1]){c+=Math.floor(n/v);n%=v}return c}"
+    },
+    {
+      "id": "fresh-josephus-index",
+      "spec": "solve(n,k): n is an integer 1..100, k is an integer 1..100. In a circle labelled 0..n-1, remove every kth person counting from person 0. Return the survivor label as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "n",
+        "k"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            1,
+            3
+          ],
+          0
+        ],
+        [
+          [
+            7,
+            3
+          ],
+          3
+        ],
+        [
+          [
+            5,
+            2
+          ],
+          2
+        ]
+      ],
+      "referenceCode": "function solve(n,k){let r=0;for(let i=2;i<=n;i++)r=(r+k)%i;return r}"
+    },
+    {
+      "id": "fresh-knapsack-value",
+      "spec": "solve(weights,values,capacity): equal-length arrays with length<=12, weights are positive integers <=20, values are nonnegative integers <=100, capacity is integer 0..50. Each item may be selected at most once. Return maximum total value within capacity as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "weights",
+        "values",
+        "capacity"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            [
+              2,
+              3,
+              4
+            ],
+            [
+              3,
+              4,
+              5
+            ],
+            5
+          ],
+          7
+        ],
+        [
+          [
+            [],
+            [],
+            5
+          ],
+          0
+        ],
+        [
+          [
+            [
+              1
+            ],
+            [
+              2
+            ],
+            0
+          ],
+          0
+        ],
+        [
+          [
+            [
+              2
+            ],
+            [
+              5
+            ],
+            4
+          ],
+          5
+        ]
+      ],
+      "referenceCode": "function solve(w,v,c){const d=Array(c+1).fill(0);for(let i=0;i<w.length;i++)for(let j=c;j>=w[i];j--)d[j]=Math.max(d[j],d[j-w[i]]+v[i]);return d[c]}"
+    },
+    {
+      "id": "fresh-lis-length",
+      "spec": "solve(values): values is an array of integers of length<=50. Return the length of its longest strictly increasing subsequence as a Number. Empty input returns 0. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "values"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            [
+              10,
+              9,
+              2,
+              5,
+              3,
+              7,
+              101,
+              18
+            ]
+          ],
+          4
+        ],
+        [
+          [
+            [
+              2,
+              2,
+              2
+            ]
+          ],
+          1
+        ],
+        [
+          [
+            []
+          ],
+          0
+        ]
+      ],
+      "referenceCode": "function solve(a){const d=a.map(()=>1);let r=0;for(let i=0;i<a.length;i++){for(let j=0;j<i;j++)if(a[j]<a[i])d[i]=Math.max(d[i],d[j]+1);r=Math.max(r,d[i])}return r}"
+    },
+    {
+      "id": "fresh-max-subarray-sum",
+      "spec": "solve(values): values is a nonempty array of integers of length<=100 and absolute values<=1000. Return the largest sum of a nonempty contiguous subarray as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "values"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            [
+              -2,
+              1,
+              -3,
+              4,
+              -1,
+              2,
+              1,
+              -5,
+              4
+            ]
+          ],
+          6
+        ],
+        [
+          [
+            [
+              -4,
+              -2,
+              -8
+            ]
+          ],
+          -2
+        ],
+        [
+          [
+            [
+              7
+            ]
+          ],
+          7
+        ]
+      ],
+      "referenceCode": "function solve(a){let best=a[0],cur=a[0];for(let i=1;i<a.length;i++){cur=Math.max(a[i],cur+a[i]);best=Math.max(best,cur)}return best}"
+    },
+    {
+      "id": "fresh-longest-common-prefix",
+      "spec": "solve(strings): strings is an array of ASCII strings. Return their longest common prefix as a string; an empty array returns the empty string. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "strings"
+      ],
+      "returnType": "string",
+      "cases": [
+        [
+          [
+            [
+              "flower",
+              "flow",
+              "flight"
+            ]
+          ],
+          "fl"
+        ],
+        [
+          [
+            []
+          ],
+          ""
+        ],
+        [
+          [
+            [
+              "dog",
+              "racecar"
+            ]
+          ],
+          ""
+        ],
+        [
+          [
+            [
+              "same",
+              "same"
+            ]
+          ],
+          "same"
+        ]
+      ],
+      "referenceCode": "function solve(a){if(!a.length)return '';let p=a[0];for(const s of a)while(!s.startsWith(p))p=p.slice(0,-1);return p}"
+    },
+    {
+      "id": "fresh-rpn-evaluation",
+      "spec": "solve(tokens): tokens is a valid Reverse Polish Notation expression consisting of decimal integer strings and operators +,-,*. All intermediate results are safe integers. Return the expression value as a Number. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "tokens"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            [
+              "2",
+              "1",
+              "+",
+              "3",
+              "*"
+            ]
+          ],
+          9
+        ],
+        [
+          [
+            [
+              "8",
+              "3",
+              "-"
+            ]
+          ],
+          5
+        ],
+        [
+          [
+            [
+              "-4",
+              "2",
+              "*"
+            ]
+          ],
+          -8
+        ]
+      ],
+      "referenceCode": "function solve(a){const s=[];for(const t of a){if(['+','-','*'].includes(t)){const b=s.pop(),x=s.pop();s.push(t==='+'?x+b:t==='-'?x-b:x*b)}else s.push(Number(t))}return s[0]}"
+    },
+    {
+      "id": "fresh-zip-pairs",
+      "spec": "solve(a,b): a,b are arrays of JSON scalar values. Return an array of pairs [a[i],b[i]] for indices less than both lengths; discard unmatched trailing elements. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "a",
+        "b"
+      ],
+      "returnType": "array",
+      "cases": [
+        [
+          [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              "a",
+              "b"
+            ]
+          ],
+          [
+            [
+              1,
+              "a"
+            ],
+            [
+              2,
+              "b"
+            ]
+          ]
+        ],
+        [
+          [
+            [],
+            [
+              1
+            ]
+          ],
+          []
+        ]
+      ],
+      "referenceCode": "function solve(a,b){return a.slice(0,Math.min(a.length,b.length)).map((x,i)=>[x,b[i]])}"
+    },
+    {
+      "id": "fresh-matrix-product",
+      "spec": "solve(a,b): a,b are nonempty rectangular matrices of integers, their dimensions are compatible for multiplication, each dimension <=5. Return their matrix product as an array of arrays of Numbers. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "a",
+        "b"
+      ],
+      "returnType": "array",
+      "cases": [
+        [
+          [
+            [
+              [
+                1,
+                2
+              ],
+              [
+                3,
+                4
+              ]
+            ],
+            [
+              [
+                5,
+                6
+              ],
+              [
+                7,
+                8
+              ]
+            ]
+          ],
+          [
+            [
+              19,
+              22
+            ],
+            [
+              43,
+              50
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              [
+                2,
+                3
+              ]
+            ],
+            [
+              [
+                4
+              ],
+              [
+                5
+              ]
+            ]
+          ],
+          [
+            [
+              23
+            ]
+          ]
+        ]
+      ],
+      "referenceCode": "function solve(a,b){return a.map(r=>b[0].map((_,j)=>r.reduce((s,x,k)=>s+x*b[k][j],0)))}"
+    },
+    {
+      "id": "fresh-spiral-order",
+      "spec": "solve(matrix): matrix is a nonempty rectangular array of JSON scalar values, each dimension <=10. Return its elements in clockwise spiral order starting at the top-left as a flat array. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "matrix"
+      ],
+      "returnType": "array",
+      "cases": [
+        [
+          [
+            [
+              [
+                1,
+                2,
+                3
+              ],
+              [
+                4,
+                5,
+                6
+              ],
+              [
+                7,
+                8,
+                9
+              ]
+            ]
+          ],
+          [
+            1,
+            2,
+            3,
+            6,
+            9,
+            8,
+            7,
+            4,
+            5
+          ]
+        ],
+        [
+          [
+            [
+              [
+                1,
+                2,
+                3
+              ]
+            ]
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        [
+          [
+            [
+              [
+                1
+              ],
+              [
+                2
+              ],
+              [
+                3
+              ]
+            ]
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      ],
+      "referenceCode": "function solve(a){let t=0,b=a.length-1,l=0,r=a[0].length-1,o=[];while(t<=b&&l<=r){for(let j=l;j<=r;j++)o.push(a[t][j]);t++;for(let i=t;i<=b;i++)o.push(a[i][r]);r--;if(t<=b){for(let j=r;j>=l;j--)o.push(a[b][j]);b--}if(l<=r){for(let i=b;i>=t;i--)o.push(a[i][l]);l++}}return o}"
+    },
+    {
+      "id": "fresh-tree-inorder",
+      "spec": "solve(tree): tree is null or an object with exactly keys value,left,right, where value is a Number and children follow the same schema; at most 50 nodes. Return binary tree inorder traversal values as an array of Numbers. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "tree"
+      ],
+      "returnType": "array",
+      "cases": [
+        [
+          [
+            null
+          ],
+          []
+        ],
+        [
+          [
+            {
+              "value": 2,
+              "left": {
+                "value": 1,
+                "left": null,
+                "right": null
+              },
+              "right": {
+                "value": 3,
+                "left": null,
+                "right": null
+              }
+            }
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      ],
+      "referenceCode": "function solve(t){return t===null?[]:[...solve(t.left),t.value,...solve(t.right)]}"
+    },
+    {
+      "id": "fresh-flood-fill",
+      "spec": "solve(grid,row,col,color): grid is a nonempty rectangular integer matrix, row/col valid integer coordinates, color an integer. Return a NEW grid replacing the start cell and every 4-connected cell with the same original color by color. Original grid must remain unchanged. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "grid",
+        "row",
+        "col",
+        "color"
+      ],
+      "returnType": "array",
+      "cases": [
+        [
+          [
+            [
+              [
+                1,
+                1,
+                0
+              ],
+              [
+                1,
+                0,
+                0
+              ]
+            ],
+            0,
+            0,
+            2
+          ],
+          [
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              2,
+              0,
+              0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              [
+                1
+              ]
+            ],
+            0,
+            0,
+            1
+          ],
+          [
+            [
+              1
+            ]
+          ]
+        ]
+      ],
+      "referenceCode": "function solve(g,r,c,v){const a=g.map(x=>x.slice()),old=a[r][c];if(old===v)return a;const q=[[r,c]];a[r][c]=v;while(q.length){const [i,j]=q.pop();for(const [x,y] of [[i-1,j],[i+1,j],[i,j-1],[i,j+1]])if(x>=0&&x<a.length&&y>=0&&y<a[0].length&&a[x][y]===old){a[x][y]=v;q.push([x,y])}}return a}"
+    },
+    {
+      "id": "fresh-connected-components",
+      "spec": "solve(n,edges): n is integer 0..30 and edges is an array of undirected [u,v] pairs with valid node indices 0..n-1; duplicate edges and self loops are allowed. Return the number of connected components as a Number, counting isolated nodes. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "n",
+        "edges"
+      ],
+      "returnType": "number",
+      "cases": [
+        [
+          [
+            5,
+            [
+              [
+                0,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                3,
+                4
+              ]
+            ]
+          ],
+          2
+        ],
+        [
+          [
+            0,
+            []
+          ],
+          0
+        ],
+        [
+          [
+            3,
+            [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                1
+              ]
+            ]
+          ],
+          2
+        ]
+      ],
+      "referenceCode": "function solve(n,e){const p=Array.from({length:n},(_,i)=>i);function f(x){while(p[x]!==x)x=p[x];return x}for(const [a,b] of e)p[f(a)]=f(b);return new Set(p.map((_,i)=>f(i))).size}"
+    },
+    {
+      "id": "fresh-dijkstra-distance",
+      "spec": "solve(n,edges,start,end): n is integer 1..20; edges is array [from,to,weight] for DIRECTED edges, weights nonnegative integers<=100, valid nodes 0..n-1. Return shortest path distance as a Number or null if unreachable. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "n",
+        "edges",
+        "start",
+        "end"
+      ],
+      "returnType": "json",
+      "cases": [
+        [
+          [
+            3,
+            [
+              [
+                0,
+                1,
+                4
+              ],
+              [
+                0,
+                2,
+                10
+              ],
+              [
+                1,
+                2,
+                3
+              ]
+            ],
+            0,
+            2
+          ],
+          7
+        ],
+        [
+          [
+            2,
+            [
+              [
+                0,
+                1,
+                2
+              ]
+            ],
+            1,
+            0
+          ],
+          null
+        ],
+        [
+          [
+            1,
+            [],
+            0,
+            0
+          ],
+          0
+        ]
+      ],
+      "referenceCode": "function solve(n,e,s,t){const d=Array(n).fill(Infinity),u=Array(n).fill(false);d[s]=0;for(let k=0;k<n;k++){let v=-1;for(let i=0;i<n;i++)if(!u[i]&&(v<0||d[i]<d[v]))v=i;if(v<0||!Number.isFinite(d[v]))break;u[v]=true;for(const [a,b,w] of e)if(a===v)d[b]=Math.min(d[b],d[a]+w)}return Number.isFinite(d[t])?d[t]:null}"
+    },
+    {
+      "id": "fresh-glob-match",
+      "spec": "solve(text,pattern): ASCII strings length<=30; pattern contains literal lowercase letters, ? matching exactly one arbitrary character, and * matching any number of arbitrary characters. Return a Boolean for a full-string match. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "text",
+        "pattern"
+      ],
+      "returnType": "boolean",
+      "cases": [
+        [
+          [
+            "adceb",
+            "*a*b"
+          ],
+          true
+        ],
+        [
+          [
+            "acdcb",
+            "a*c?b"
+          ],
+          false
+        ],
+        [
+          [
+            "",
+            "*"
+          ],
+          true
+        ],
+        [
+          [
+            "a",
+            "?"
+          ],
+          true
+        ]
+      ],
+      "referenceCode": "function solve(s,p){const d=Array.from({length:s.length+1},()=>Array(p.length+1).fill(false));d[0][0]=true;for(let j=1;j<=p.length;j++)d[0][j]=d[0][j-1]&&p[j-1]==='*';for(let i=1;i<=s.length;i++)for(let j=1;j<=p.length;j++)d[i][j]=p[j-1]==='*'?(d[i-1][j]||d[i][j-1]):(p[j-1]==='?'||p[j-1]===s[i-1])&&d[i-1][j-1];return d[s.length][p.length]}"
+    },
+    {
+      "id": "fresh-longest-palindrome",
+      "spec": "solve(text): ASCII string length<=50. Return the longest contiguous palindromic substring. If multiple have equal maximum length, return the leftmost. Empty input returns empty string. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "text"
+      ],
+      "returnType": "string",
+      "cases": [
+        [
+          [
+            "babad"
+          ],
+          "bab"
+        ],
+        [
+          [
+            "cbbd"
+          ],
+          "bb"
+        ],
+        [
+          [
+            ""
+          ],
+          ""
+        ],
+        [
+          [
+            "ab"
+          ],
+          "a"
+        ]
+      ],
+      "referenceCode": "function solve(s){let best='';for(let i=0;i<s.length;i++)for(let j=i+1;j<=s.length;j++){const a=s.slice(i,j);if(a.length>best.length&&a===a.split('').reverse().join(''))best=a}return best}"
+    },
+    {
+      "id": "fresh-posix-path",
+      "spec": "solve(path): path is an absolute ASCII POSIX path. Normalize repeated /, components . and .., preventing traversal above root. Return a canonical absolute path string with no trailing slash except root. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "path"
+      ],
+      "returnType": "string",
+      "cases": [
+        [
+          [
+            "/a//b/./c/../"
+          ],
+          "/a/b"
+        ],
+        [
+          [
+            "/../../"
+          ],
+          "/"
+        ],
+        [
+          [
+            "/a/.../b"
+          ],
+          "/a/.../b"
+        ]
+      ],
+      "referenceCode": "function solve(p){const a=[];for(const x of p.split('/')){if(x==='..')a.pop();else if(x!==''&&x!=='.')a.push(x)}return '/'+a.join('/')}"
+    },
+    {
+      "id": "fresh-json-pointer",
+      "spec": "solve(document,pointer): document is a JSON value; pointer is empty or a valid RFC6901 JSON Pointer using ~0 for ~ and ~1 for /. Return the addressed JSON value; return null for missing members. Only OWN object properties and canonical nonnegative integer array indices are addressable; treat __proto__ and constructor as ordinary own property names. Empty pointer returns the entire document. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "document",
+        "pointer"
+      ],
+      "returnType": "json",
+      "cases": [
+        [
+          [
+            {
+              "a/b": {
+                "~key": [
+                  3,
+                  4
+                ]
+              }
+            },
+            "/a~1b/~0key/1"
+          ],
+          4
+        ],
+        [
+          [
+            {},
+            "/missing"
+          ],
+          null
+        ],
+        [
+          [
+            {
+              "__proto__": {
+                "x": 7
+              },
+              "constructor": 4
+            },
+            "/__proto__/x"
+          ],
+          7
+        ],
+        [
+          [
+            {
+              "__proto__": {
+                "x": 7
+              },
+              "constructor": 4
+            },
+            ""
+          ],
+          {
+            "__proto__": {
+              "x": 7
+            },
+            "constructor": 4
+          }
+        ],
+        [
+          [
+            [
+              5
+            ],
+            "/01"
+          ],
+          null
+        ]
+      ],
+      "referenceCode": "function solve(d,p){if(p==='')return d;for(const raw of p.slice(1).split('/')){const k=raw.replace(/~1/g,'/').replace(/~0/g,'~');if(d===null||typeof d!=='object'||!Object.prototype.hasOwnProperty.call(d,k)||(Array.isArray(d)&&!/^(0|[1-9][0-9]*)$/.test(k)))return null;d=d[k]}return d}"
+    },
+    {
+      "id": "fresh-deep-equal",
+      "spec": "solve(a,b): arbitrary acyclic JSON values of depth<=10. Return a Boolean for structural equality, ignoring object key order but preserving array order and distinguishing Number from string. No prototype traversal. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "a",
+        "b"
+      ],
+      "returnType": "boolean",
+      "cases": [
+        [
+          [
+            {
+              "a": 1,
+              "b": [
+                2
+              ]
+            },
+            {
+              "b": [
+                2
+              ],
+              "a": 1
+            }
+          ],
+          true
+        ],
+        [
+          [
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              1
+            ]
+          ],
+          false
+        ],
+        [
+          [
+            1,
+            "1"
+          ],
+          false
+        ],
+        [
+          [
+            {
+              "__proto__": {
+                "x": 7
+              },
+              "constructor": 4
+            },
+            {
+              "constructor": 4,
+              "__proto__": {
+                "x": 7
+              }
+            }
+          ],
+          true
+        ],
+        [
+          [
+            null,
+            {}
+          ],
+          false
+        ]
+      ],
+      "referenceCode": "function solve(a,b){if(a===b)return true;if(a===null||b===null||typeof a!=='object'||typeof b!=='object'||Array.isArray(a)!==Array.isArray(b))return false;const k=Object.keys(a);return k.length===Object.keys(b).length&&k.every(x=>Object.prototype.hasOwnProperty.call(b,x)&&solve(a[x],b[x]))}"
+    },
+    {
+      "id": "fresh-multiset-intersection",
+      "spec": "solve(a,b): arrays of integers. Return their multiset intersection sorted numerically ascending: each value occurs the minimum of its two input counts. Output an array of Numbers. Implement only function solve with the signature stated below. Use core ECMAScript only: no require, process, Buffer, TextEncoder, URL or other Node/browser APIs. Inputs are JSON values meeting the stated domain. Return the exact JSON-safe type specified; never BigInt, undefined, NaN or Infinity. Do not mutate input objects or arrays.",
+      "parameters": [
+        "a",
+        "b"
+      ],
+      "returnType": "array",
+      "cases": [
+        [
+          [
+            [
+              1,
+              2,
+              2,
+              3
+            ],
+            [
+              2,
+              2,
+              2,
+              4
+            ]
+          ],
+          [
+            2,
+            2
+          ]
+        ],
+        [
+          [
+            [],
+            [
+              1
+            ]
+          ],
+          []
+        ],
+        [
+          [
+            [
+              -2,
+              1,
+              -2
+            ],
+            [
+              -2,
+              1
+            ]
+          ],
+          [
+            -2,
+            1
+          ]
+        ]
+      ],
+      "referenceCode": "function solve(a,b){const m=new Map();for(const x of a)m.set(x,(m.get(x)||0)+1);const r=[];for(const x of b)if(m.get(x)>0){r.push(x);m.set(x,m.get(x)-1)}return r.sort((x,y)=>x-y)}"
+    }
+  ]
+}
