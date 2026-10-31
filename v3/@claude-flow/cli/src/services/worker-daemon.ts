@@ -38,6 +38,7 @@ import {
   type StoreDistillResult,
 } from './memory-distillation.js';
 import { backupProjectMemoryDbs } from './memory-backup.js';
+import { dispatchQueueDir } from './dispatch-queue.js';
 import { resolveGitWorkspaceIdentity, type GitWorkspaceIdentity } from './git-workspace-identity.js';
 import { getWorkspaceLeaseRegistry } from './workspace-lease.js';
 import { getRepoSupervisorRegistry, type SupervisorRecord } from './repo-supervisor.js';
@@ -273,6 +274,7 @@ export class WorkerDaemon extends EventEmitter {
   // path, `ruflo daemon trigger -w <worker>` runs before headlessAvailable
   // is set and falls through to the local stub in ~2ms.
   private headlessInitPromise: Promise<void> = Promise.resolve();
+  private processingDispatchQueue = false;
 
   // Preserve the original constructor config so we can detect explicit overrides
   // during state restoration (R1: constructor config takes priority over stale state)
@@ -1072,14 +1074,30 @@ export class WorkerDaemon extends EventEmitter {
 
   /**
    * #1845: ingest queue entries written by mcp__hooks_worker-dispatch.
-   * Each entry is a JSON file at `.claude-flow/daemon-queue/<id>.json`
+   * Each entry is a JSON file `<id>.json` in dispatchQueueDir(projectRoot)
    * with `{ workerId, trigger, context, enqueuedAt }`. We move processed
-   * files to `.claude-flow/daemon-queue/.processed/` so the daemon never
-   * re-runs the same dispatch and operators can inspect history.
+   * files to its `.processed/` so the daemon never re-runs the same
+   * dispatch and operators can inspect history.
    */
   private async processDispatchQueue(): Promise<void> {
     if (!this.running) return;
-    const queueDir = join(this.projectRoot, '.claude-flow', 'daemon-queue');
+    // One pass at a time: an entry moves to .processed/ only after its worker
+    // finishes, so an overlapping poll would run it again.
+    if (this.processingDispatchQueue) return;
+    this.processingDispatchQueue = true;
+    try {
+      await this.drainDispatchQueue();
+    } finally {
+      this.processingDispatchQueue = false;
+    }
+  }
+
+  private async drainDispatchQueue(): Promise<void> {
+    // In the user's state dir, not `.claude-flow/daemon-queue` under the
+    // project: a cloned repository could ship entries there, and in a single
+    // clone this daemon is the repository supervisor, so the gate alone does
+    // not stop them.
+    const queueDir = dispatchQueueDir(this.projectRoot);
     if (!existsSync(queueDir)) return;
 
     let entries: string[];
@@ -1098,6 +1116,8 @@ export class WorkerDaemon extends EventEmitter {
     }
 
     for (const entry of entries) {
+      // stop() cancels running workers; do not start the next entry after it.
+      if (!this.running) break;
       const src = join(queueDir, entry);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let payload: any;
@@ -1110,8 +1130,15 @@ export class WorkerDaemon extends EventEmitter {
       }
       const trigger = payload?.trigger as WorkerType | undefined;
       const workerId = payload?.workerId as string | undefined;
-      if (!trigger || !this.config.workers.some((w) => w.type === trigger)) {
+      const workerConfig = trigger ? this.config.workers.find((w) => w.type === trigger) : undefined;
+      if (!trigger || !workerConfig) {
         try { fs.renameSync(src, join(processedDir, `unknown-${entry}`)); } catch { /* ok */ }
+        continue;
+      }
+      if (!workerConfig.enabled) {
+        // A queue entry may not run a worker the user has switched off.
+        this.log('warn', `Skipped queued ${trigger}: worker is disabled`);
+        try { fs.renameSync(src, join(processedDir, `disabled-${entry}`)); } catch { /* ok */ }
         continue;
       }
       try {

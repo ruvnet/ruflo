@@ -8,6 +8,7 @@ import { mkdirSync, writeFileSync, existsSync, readFileSync, statSync, unlinkSyn
 import * as nodeFs from 'fs';
 import { dirname, join, resolve, sep } from 'path';
 import { type MCPTool, getProjectCwd } from './types.js';
+import { dispatchQueueDir } from '../services/dispatch-queue.js';
 import { validateIdentifier, validateText, validatePath } from './validate-input.js';
 import { commandRecordingDisabled, redactCommandForStorage } from '../services/command-recording.js';
 import { checkCommandLoop, recordCommandOutcome } from './tool-loop-guardrail.js';
@@ -5016,14 +5017,17 @@ export const hooksWorkerDispatch: MCPTool = {
       // 3.7.0-alpha.11 the dispatch only updated a process-local Map that
       // the daemon (separate process) could never see, so `queued` was a
       // lie. The queue file makes it real and inspectable on disk.
-      const queueDir = join(cwd, '.claude-flow', 'daemon-queue');
+      // User state dir, keyed by project: a repository must not be able to ship queue entries.
+      const queueDir = dispatchQueueDir(cwd);
       const queuePath = join(queueDir, `${workerId}.json`);
       let queueWritten = false;
       try {
-        if (!existsSync(queueDir)) mkdirSync(queueDir, { recursive: true });
+        // Private to the user, like the other state under ~/.claude-flow.
+        if (!existsSync(queueDir)) mkdirSync(queueDir, { recursive: true, mode: 0o700 });
         writeFileSync(
           queuePath,
           JSON.stringify({ workerId, trigger, context, priority, enqueuedAt: new Date().toISOString() }, null, 2),
+          { mode: 0o600 },
         );
         queueWritten = true;
       } catch (err) {
@@ -5033,7 +5037,7 @@ export const hooksWorkerDispatch: MCPTool = {
       }
       if (queueWritten) {
         reportedStatus = 'queued';
-        note = `Worker queued for daemon (pid ${daemonPid}) at ${queuePath}. Daemon polls every 5s; processed entries move to .claude-flow/daemon-queue/.processed/. Poll hooks_worker-status until status === "completed".`;
+        note = `Worker queued for daemon (pid ${daemonPid}) at ${queuePath}. Daemon polls every 5s; processed entries move to ${join(queueDir, '.processed')}. Poll hooks_worker-status until status === "completed".`;
       } else {
         reportedStatus = 'mcp-only';
       }
