@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/aidefence",
-  "version": "3.0.2",
+  "version": "3.0.4",
   "description": "AI Manipulation Defense System (AIMDS) with self-learning, prompt injection detection, and vector search integration",
   "type": "module",
   "main": "dist/index.js",
@@ -67,8 +67,7 @@
   },
   "homepage": "https://github.com/ruvnet/claude-flow/tree/main/v3/@claude-flow/aidefence#readme",
   "publishConfig": {
-    "access": "public",
-    "tag": "alpha"
+    "access": "public"
   },
   "engines": {
     "node": ">=18.0.0"

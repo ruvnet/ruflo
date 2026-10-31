@@ -31,10 +31,42 @@ interface ThreatPattern {
 }
 
 /**
- * Prompt injection patterns (50+ patterns from AIMDS)
+ * Prompt injection patterns (originally 50+ patterns from AIMDS).
+ *
+ * Includes the wider-detection pass ported from upstream `aidefence@2.3.0` /
+ * `aimds-*@0.1.1` (ADR-118, #2004). @claude-flow/aidefence 3.0.3 shipped it,
+ * but it was published from an uncommitted tree; ADR-516 restores it to source.
+ *
+ *  - A verb→noun window of 0..6 modifier words catches the
+ *    "ignore all previous instructions" family in its many phrasings
+ *    ("disregard every system prompt above", "forget all of the prior rules").
+ *    The narrow regexes below stay for phrasings the window misses.
+ *  - Role hijack adds `behave (as|like) …`.
+ *  - Jailbreak markers add `god|root|admin|sudo mode`.
  */
+
+/** Verbs that flag a likely override attempt. ADR-118 / #2004. */
+const OVERRIDE_VERBS = ['ignore', 'disregard', 'forget', 'override'].join('|');
+/** Nouns the override targets. `system\s*-?\s*prompts?` matches "system prompt" and "system-prompt". */
+const OVERRIDE_NOUNS = ['instructions?', 'prompts?', 'rules?', 'context', 'system\\s*-?\\s*prompts?'].join('|');
+/**
+ * 0..6 modifier words between verb and noun. ADR-118 specified 0..4; "forget
+ * every single one of the previous prompts" needs 6. `\s+` and `\S+` are
+ * disjoint, so each repetition has exactly one split point and the window
+ * stays linear (timed in threat-detection.test.ts).
+ */
+const OVERRIDE_WINDOW = '(?:\\s+\\S+){0,6}';
+
 const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
-  // Instruction override patterns
+  // ADR-118 window: override verb → target noun across 0..6 modifier words.
+  {
+    pattern: new RegExp(`\\b(${OVERRIDE_VERBS})${OVERRIDE_WINDOW}\\s+(${OVERRIDE_NOUNS})\\b`, 'i'),
+    type: 'instruction_override',
+    severity: 'critical',
+    description: 'Override verb followed by a target noun within 0..6 words (ADR-118)',
+    baseConfidence: 0.96,
+  },
+  // Instruction override patterns (narrow; kept for phrasings the window misses)
   {
     pattern: /ignore\s+(all\s+)?(previous\s+)?instructions/i,
     type: 'instruction_override',
@@ -86,6 +118,14 @@ const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
     description: 'Roleplay instruction that may be legitimate',
     baseConfidence: 0.65,
   },
+  {
+    // ADR-118: `behave as/like a different|new|another|unrestricted …`.
+    pattern: /behave\s+(as|like)\s+(an?\s+)?(different|new|another|unrestricted)/i,
+    type: 'role_switching',
+    severity: 'high',
+    description: 'Behavior-hijack instruction (ADR-118)',
+    baseConfidence: 0.78,
+  },
 
   // Jailbreak patterns
   {
@@ -122,6 +162,14 @@ const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
     severity: 'critical',
     description: 'Attempt to disable safety filters',
     baseConfidence: 0.96,
+  },
+  {
+    // ADR-118: privileged-mode jailbreaks beyond DAN / developer mode.
+    pattern: /\b(god|root|admin|sudo)\s*mode\b/i,
+    type: 'jailbreak',
+    severity: 'critical',
+    description: 'Privileged-mode jailbreak attempt (ADR-118)',
+    baseConfidence: 0.94,
   },
 
   // Context manipulation patterns
