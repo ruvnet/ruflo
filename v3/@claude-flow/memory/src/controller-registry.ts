@@ -1115,7 +1115,7 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const CR = agentdbModule.CausalRecall;
           if (!CR) return null;
-          return new CR(this.agentdb.database);
+          return new CR(this.agentdb.database, this.agentdbEmbedder(), this.agentdb.vectorBackend ?? undefined);
         } catch { return null; }
       }
 
@@ -1125,7 +1125,7 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const LS = agentdbModule.LearningSystem;
           if (!LS) return null;
-          return new LS(this.agentdb.database);
+          return new LS(this.agentdb.database, this.agentdbEmbedder());
         } catch { return null; }
       }
 
@@ -1135,7 +1135,7 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const ER = agentdbModule.ExplainableRecall;
           if (!ER) return null;
-          return new ER(this.agentdb.database);
+          return new ER(this.agentdb.database, this.agentdbEmbedder());
         } catch { return null; }
       }
 
@@ -1164,7 +1164,7 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const NL = agentdbModule.NightlyLearner;
           if (!NL) return null;
-          return new NL(this.agentdb.database);
+          return new NL(this.agentdb.database, this.agentdbEmbedder());
         } catch { return null; }
       }
 
@@ -1174,7 +1174,7 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const GT = agentdbModule.CausalMemoryGraph;
           if (!GT) return null;
-          return new GT(this.agentdb.database);
+          return new GT(this.agentdb.database, undefined, this.agentdbEmbedder(), undefined, this.agentdb.vectorBackend ?? undefined);
         } catch { return null; }
       }
 
@@ -1303,6 +1303,18 @@ export class ControllerRegistry extends EventEmitter {
    *
    * Returns null when there is nothing usable to adapt.
    */
+  /**
+   * The embedder handed to directly constructed AgentDB controllers.
+   * CausalRecall, LearningSystem and NightlyLearner take `(db, embedder, …)`
+   * and call `embedder.embed*` on first use; constructing them with only the
+   * database left every recall/predict/discover call throwing a TypeError
+   * that the registry swallowed (same defect class as #3327 Finding A, which
+   * was fixed for ReasoningBank only). ADR-514.
+   */
+  private agentdbEmbedder(): any {
+    return this.adaptEmbedderForAgentdb(this.agentdb?.embedder) ?? this.createEmbeddingService();
+  }
+
   private adaptEmbedderForAgentdb(embedder: any): any {
     if (!embedder || typeof embedder.embed !== 'function') return null;
     if (typeof embedder.embedQuery === 'function' && typeof embedder.embedPassage === 'function') {
