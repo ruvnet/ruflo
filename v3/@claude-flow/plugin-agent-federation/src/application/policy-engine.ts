@@ -45,6 +45,33 @@ const DEFAULT_SECURITY_POLICY: SecurityPolicy = {
   minTrustLevelForSpawn: TrustLevel.PRIVILEGED,
 };
 
+// Message categories gated by the per-operation thresholds declared on
+// SecurityPolicy (minTrustLevelForWrite/Memory/Spawn). Message types not
+// listed here rely solely on CAPABILITY_GATES (trust-level.ts) — their
+// gating is not configurable via SecurityPolicy today.
+type PolicyGatedCategory = 'write' | 'memory' | 'spawn';
+
+const POLICY_CATEGORY_FOR_MESSAGE_TYPE: Partial<Record<FederationMessageType, PolicyGatedCategory>> = {
+  'task-assignment': 'write',
+  'context-share': 'write',
+  'claim-event': 'write',
+  'memory-query': 'memory',
+  'memory-response': 'memory',
+  'agent-spawn': 'spawn',
+  'agent-handoff': 'spawn',
+};
+
+function policyThresholdForCategory(policy: SecurityPolicy, category: PolicyGatedCategory): TrustLevel {
+  switch (category) {
+    case 'write':
+      return policy.minTrustLevelForWrite;
+    case 'memory':
+      return policy.minTrustLevelForMemory;
+    case 'spawn':
+      return policy.minTrustLevelForSpawn;
+  }
+}
+
 const CLAIMS_FOR_MESSAGE_TYPE: Record<FederationMessageType, FederationClaimType[]> = {
   'task-assignment': ['federation:write'],
   'memory-query': ['federation:read', 'federation:memory'],
@@ -151,6 +178,19 @@ export class PolicyEngine {
         requiredClaims,
         trustLevelSufficient: false,
       };
+    }
+
+    const policyCategory = POLICY_CATEGORY_FOR_MESSAGE_TYPE[messageType];
+    if (policyCategory) {
+      const requiredLevel = policyThresholdForCategory(this.securityPolicy, policyCategory);
+      if (trustLevel < requiredLevel) {
+        return {
+          allowed: false,
+          reason: `Trust level ${trustLevel} below configured minimum ${requiredLevel} for ${policyCategory} operations`,
+          requiredClaims,
+          trustLevelSufficient: false,
+        };
+      }
     }
 
     return {
