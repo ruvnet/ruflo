@@ -61,7 +61,7 @@ export function getOrchestration() {
 /**
  * Compute an embedding vector via ReasoningBank, falling back to null.
  */
-export async function computeEmbedding(text: string): Promise<number[] | null> {
+export async function computeEmbedding(text: string): Promise<Float32Array | null> {
   const rb = await getReasoningBank();
   if (!rb?.computeEmbedding) return null;
   return rb.computeEmbedding(text);

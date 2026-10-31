@@ -151,7 +151,9 @@ function ensureEmbeddings(): Promise<void> {
       if (!realEmbeddings) {
         const rb = await import('agentic-flow/reasoningbank').catch(() => null);
         if (rb?.computeEmbedding) {
-          realEmbeddings = { embed: (text: string) => rb.computeEmbedding(text) };
+          // computeEmbedding returns a Float32Array; JSON.stringify writes that as
+          // {"0":…,"1":…}, so convert before it reaches the neural store.
+          realEmbeddings = { embed: async (text: string) => Array.from(await rb.computeEmbedding(text)) };
           embeddingServiceName = 'agentic-flow/reasoningbank';
         }
       }

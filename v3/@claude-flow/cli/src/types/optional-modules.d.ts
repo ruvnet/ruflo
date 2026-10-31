@@ -60,7 +60,7 @@ declare module 'agentic-flow/reasoningbank' {
   export function distillMemories(...args: any[]): any;
   export function consolidate(...args: any[]): any;
   export function shouldConsolidate(...args: any[]): boolean;
-  export function computeEmbedding(text: string): Promise<number[]>;
+  export function computeEmbedding(text: string): Promise<Float32Array>;
   export function cosineSimilarity(a: number[], b: number[]): number;
   export function clearEmbeddingCache(): void;
   export function containsPII(text: string): boolean;

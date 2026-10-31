@@ -162,7 +162,7 @@ Bash("npx @claude-flow/codex dual run --worker 'codex:coder:Implement the soluti
 Bash("npx @claude-flow/codex dual run --worker 'codex:optimizer:Optimize performance based on implementation' --namespace collaboration")
 
 // STEP 3: Coordinate via shared memory
-Bash("npx claude-flow@v3alpha memory store --namespace collaboration --key 'task-context' --value '[task description]'")
+Bash("npx ruflo@latest memory store --namespace collaboration --key 'task-context' --value '[task description]'")
 ```
 
 ### Collaboration Templates (Pre-Built Pipelines)
@@ -203,13 +203,13 @@ All workers share state via the `collaboration` namespace:
 
 ```bash
 # Store context for cross-platform sharing
-npx claude-flow@v3alpha memory store --namespace collaboration --key "design-decisions" --value "..."
+npx ruflo@latest memory store --namespace collaboration --key "design-decisions" --value "..."
 
 # Search for patterns across all workers
-npx claude-flow@v3alpha memory search --namespace collaboration --query "authentication patterns"
+npx ruflo@latest memory search --namespace collaboration --query "authentication patterns"
 
 # Retrieve specific findings
-npx claude-flow@v3alpha memory retrieve --namespace collaboration --key "security-findings"
+npx ruflo@latest memory retrieve --namespace collaboration --key "security-findings"
 ```
 
 ### Cross-Platform Learning
@@ -218,13 +218,13 @@ Both platforms learn from each other's outputs:
 
 ```bash
 # After successful collaboration, train patterns
-npx claude-flow@v3alpha hooks post-task --task-id "dual-[id]" --success true --train-neural true
+npx ruflo@latest hooks post-task --task-id "dual-[id]" --success true --train-neural true
 
 # Store successful collaboration patterns
-npx claude-flow@v3alpha memory store --namespace patterns --key "dual-mode-[pattern]" --value "[what worked]"
+npx ruflo@latest memory store --namespace patterns --key "dual-mode-[pattern]" --value "[what worked]"
 
 # Transfer learnings to both platforms
-npx claude-flow@v3alpha hooks transfer store --pattern "dual-collab-success"
+npx ruflo@latest hooks transfer store --pattern "dual-collab-success"
 ```
 
 ### Worker Dependency Levels
@@ -409,28 +409,28 @@ This project is configured with Claude Flow V3 (Anti-Drift Defaults):
 
 ```bash
 # Initialize project
-npx claude-flow@v3alpha init --wizard
+npx ruflo@latest init --wizard
 
 # Start daemon with background workers
-npx claude-flow@v3alpha daemon start
+npx ruflo@latest daemon start
 
 # Spawn an agent
-npx claude-flow@v3alpha agent spawn -t coder --name my-coder
+npx ruflo@latest agent spawn -t coder --name my-coder
 
 # Initialize swarm
-npx claude-flow@v3alpha swarm init --v3-mode
+npx ruflo@latest swarm init --v3-mode
 
 # Search memory (HNSW-indexed)
-npx claude-flow@v3alpha memory search -q "authentication patterns"
+npx ruflo@latest memory search -q "authentication patterns"
 
 # System diagnostics
-npx claude-flow@v3alpha doctor --fix
+npx ruflo@latest doctor --fix
 
 # Security scan
-npx claude-flow@v3alpha security scan --depth full
+npx ruflo@latest security scan --depth full
 
 # Performance benchmark
-npx claude-flow@v3alpha performance benchmark --suite all
+npx ruflo@latest performance benchmark --suite all
 ```
 
 ## Headless Background Instances (claude -p)
@@ -711,8 +711,8 @@ Task({
 | `TaskCompleted` | Task marked complete | Train patterns, notify lead via SendMessage |
 
 ```bash
-npx claude-flow@v3alpha hooks teammate-idle --auto-assign true
-npx claude-flow@v3alpha hooks task-completed -i task-123 --train-patterns true
+npx ruflo@latest hooks teammate-idle --auto-assign true
+npx ruflo@latest hooks task-completed -i task-123 --train-patterns true
 ```
 
 ### Rules
@@ -758,27 +758,27 @@ npx claude-flow@v3alpha hooks task-completed -i task-123 --train-patterns true
 
 ```bash
 # Core hooks
-npx claude-flow@v3alpha hooks pre-task --description "[task]"
-npx claude-flow@v3alpha hooks post-task --task-id "[id]" --success true
-npx claude-flow@v3alpha hooks post-edit --file "[file]" --train-patterns
+npx ruflo@latest hooks pre-task --description "[task]"
+npx ruflo@latest hooks post-task --task-id "[id]" --success true
+npx ruflo@latest hooks post-edit --file "[file]" --train-patterns
 
 # Session management
-npx claude-flow@v3alpha hooks session-start --session-id "[id]"
-npx claude-flow@v3alpha hooks session-end --export-metrics true
-npx claude-flow@v3alpha hooks session-restore --session-id "[id]"
+npx ruflo@latest hooks session-start --session-id "[id]"
+npx ruflo@latest hooks session-end --export-metrics true
+npx ruflo@latest hooks session-restore --session-id "[id]"
 
 # Intelligence routing
-npx claude-flow@v3alpha hooks route --task "[task]"
-npx claude-flow@v3alpha hooks explain --topic "[topic]"
+npx ruflo@latest hooks route --task "[task]"
+npx ruflo@latest hooks explain --topic "[topic]"
 
 # Neural learning
-npx claude-flow@v3alpha hooks pretrain --model-type moe --epochs 10
-npx claude-flow@v3alpha hooks build-agents --agent-types coder,tester
+npx ruflo@latest hooks pretrain --model-type moe --epochs 10
+npx ruflo@latest hooks build-agents --agent-types coder,tester
 
 # Background workers
-npx claude-flow@v3alpha hooks worker list
-npx claude-flow@v3alpha hooks worker dispatch --trigger audit
-npx claude-flow@v3alpha hooks worker status
+npx ruflo@latest hooks worker list
+npx ruflo@latest hooks worker dispatch --trigger audit
+npx ruflo@latest hooks worker status
 ```
 
 ## Intelligence System (RuVector)
@@ -860,7 +860,7 @@ CLAUDE_FLOW_MEMORY_PATH=./data/memory
 
 ## Doctor Health Checks
 
-Run `npx claude-flow@v3alpha doctor` to check:
+Run `npx ruflo@latest doctor` to check:
 - Node.js version (20+)
 - npm version (9+)
 - Git installation
@@ -881,10 +881,10 @@ claude mcp add ruv-swarm npx ruv-swarm mcp start  # Optional
 claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional
 
 # Start daemon
-npx claude-flow@v3alpha daemon start
+npx ruflo@latest daemon start
 
 # Run doctor
-npx claude-flow@v3alpha doctor --fix
+npx ruflo@latest doctor --fix
 ```
 
 ## Claude Code vs MCP Tools
@@ -960,7 +960,7 @@ memory_search_unified({ query: "authentication security", limit: 5 })
   - **PATCH** (3.7.0 → 3.7.1): bug fixes only, no API change, no schema change
   - **MINOR** (3.7.0 → 3.8.0): backward-compatible additions (new MCP tool, new flag, new agent type)
   - **MAJOR** (3.x → 4.0.0): breaking change in CLI surface, MCP tool signature, file layout, or default behavior
-- Default tag is `latest` (no `--tag alpha`). The `alpha` and `v3alpha` dist-tags continue to exist for historical compatibility — point them at the same version as `latest`.
+- Default tag is `latest` (no `--tag alpha`). **No more alpha tags (ADR-513, 2026-10-31):** do not add or move `alpha`, `v3alpha` or `next` dist-tags on any package. The existing tags stay where they point (frozen at 3.66.2 for the train), so old `@alpha` install commands still resolve, but they no longer advance. The same applies to every ruvnet package ruflo depends on (`agentdb`, `agentic-flow`, `aidefence`, `@claude-flow/*`).
 - Never publish a pre-release (`-alpha.N`, `-beta.N`, `-rc.N`) unless the user explicitly asks for a pre-release flow.
 - **The internal `@claude-flow/*` leaves follow the same policy since 2026-09-28**
   (moved to `3.0.0`; `cli-core` `3.7.0`; the two plugins `1.0.0`). One exception:
@@ -1037,7 +1037,7 @@ memory_search_unified({ query: "authentication security", limit: 5 })
   never published. This is now also a required CI check (`plugin-package-audit` job in
   `v3-ci.yml`), so a PR that bumps a pin ahead of its own leaf's publish fails on the PR,
   not on a consumer's install.
-- MUST update ALL dist-tags for ALL THREE packages after publishing (latest + alpha + v3alpha all point to the same version)
+- After publishing, verify `latest` points at the new version for ALL THREE packages. Do not touch `alpha`/`v3alpha` (ADR-513).
 - Publish order: `@claude-flow/cli` first, then `claude-flow` (umbrella), then `ruflo` (alias umbrella)
 - MUST run verification for ALL THREE before telling user publishing is complete
 - Run `node scripts/audit-umbrella-version-lockstep.mjs` before packing or
@@ -1081,8 +1081,6 @@ gcloud secrets versions access latest --secret=NPM_TOKEN --project=ruv-dev > /tm
 printf '//registry.npmjs.org/:_authToken=%s\n' "$(cat /tmp/.npmrc-publish-raw)" > /tmp/.npmrc-publish
 rm -f /tmp/.npmrc-publish-raw
 NPM_CONFIG_USERCONFIG=/tmp/.npmrc-publish npm publish   # from the package dir, with signing-key env vars for @claude-flow/cli
-NPM_CONFIG_USERCONFIG=/tmp/.npmrc-publish npm dist-tag add <pkg>@<version> alpha
-NPM_CONFIG_USERCONFIG=/tmp/.npmrc-publish npm dist-tag add <pkg>@<version> v3alpha
 shred -u /tmp/.npmrc-publish 2>/dev/null || rm -f /tmp/.npmrc-publish   # ALWAYS clean up, same discipline as the signing key
 ```
 
@@ -1175,22 +1173,16 @@ cd v3/@claude-flow/cli
 npm version 3.7.1 --no-git-tag-version
 npm run build
 npm publish                              # default tag is `latest` — no --tag flag
-npm dist-tag add @claude-flow/cli@3.7.1 alpha     # historical compat
-npm dist-tag add @claude-flow/cli@3.7.1 v3alpha   # historical compat
 
 # STEP 2: Publish claude-flow umbrella
 cd /Users/cohen/Projects/ruflo                    # or your repo root
 npm version 3.7.1 --no-git-tag-version
 npm publish
-npm dist-tag add claude-flow@3.7.1 alpha
-npm dist-tag add claude-flow@3.7.1 v3alpha
 
 # STEP 3: Publish ruflo wrapper (CRITICAL — DON'T FORGET — this is what users run)
 cd ruflo
 npm version 3.7.1 --no-git-tag-version
 npm publish
-npm dist-tag add ruflo@3.7.1 alpha
-npm dist-tag add ruflo@3.7.1 v3alpha
 ```
 
 **Verification (run before telling user publishing is complete):**
@@ -1200,25 +1192,21 @@ for pkg in @claude-flow/cli claude-flow ruflo; do
   echo "$pkg: $(npm view $pkg@latest version)"
   npm view $pkg dist-tags --json
 done
-# All three must show latest === alpha === v3alpha === new version
+# All three must show latest === new version (alpha/v3alpha stay frozen, ADR-513)
 ```
 
-### All Tags That Must Be Updated
+### Tags
 
 | Package | Tag | Command Users Run |
 |---------|-----|-------------------|
 | `@claude-flow/cli` | `latest` | `npx @claude-flow/cli@latest` |
-| `@claude-flow/cli` | `alpha` | `npx @claude-flow/cli@alpha` (legacy compat) |
-| `@claude-flow/cli` | `v3alpha` | `npx @claude-flow/cli@v3alpha` (legacy compat) |
 | `claude-flow` | `latest` | `npx claude-flow@latest` |
-| `claude-flow` | `alpha` | `npx claude-flow@alpha` (legacy compat) |
-| `claude-flow` | `v3alpha` | `npx claude-flow@v3alpha` (legacy compat) |
 | `ruflo` | `latest` | `npx ruflo@latest` |
-| `ruflo` | `alpha` | `npx ruflo@alpha` (legacy compat) |
-| `ruflo` | `v3alpha` | `npx ruflo@v3alpha` (legacy compat) |
+
+The `alpha` and `v3alpha` tags still exist on all three, frozen at 3.66.2 (ADR-513). Do not move them.
 
 - Never forget the `ruflo` package — it's the thin wrapper users actually run via `npx ruflo`
-- The legacy `alpha` and `v3alpha` tags MUST stay pointed at the latest stable so old install commands keep working
+- `overrides` in `ruflo/package.json` and the CLI manifest do NOT reach users: npm applies `overrides` only in the root project. Fix a dependency advisory by changing the range the publishing package declares, and prove it with a fresh `npm install ruflo@<ver> && npm audit --omit=dev` (ADR-513).
 - `ruflo` source is in `/ruflo/` — it depends on `@claude-flow/cli`
 - Also remember to update `ruflo/package.json` overrides when adding new pinned transitives (see #2112 lesson — root overrides do NOT propagate to the published `ruflo` wrapper)
 
@@ -1451,14 +1439,14 @@ Plugins are distributed via IPFS and can be installed with the CLI. Browse and i
 
 ```bash
 # List all available plugins
-npx claude-flow@v3alpha plugins list
+npx ruflo@latest plugins list
 
 # Install a plugin
-npx claude-flow@v3alpha plugins install @claude-flow/plugin-name
+npx ruflo@latest plugins install @claude-flow/plugin-name
 
 # Enable/disable
-npx claude-flow@v3alpha plugins enable @claude-flow/plugin-name
-npx claude-flow@v3alpha plugins disable @claude-flow/plugin-name
+npx ruflo@latest plugins enable @claude-flow/plugin-name
+npx ruflo@latest plugins disable @claude-flow/plugin-name
 ```
 
 ### Core Plugins
@@ -1499,13 +1487,13 @@ npx claude-flow@v3alpha plugins disable @claude-flow/plugin-name
 
 ```bash
 # Create a new plugin from template
-npx claude-flow@v3alpha plugins create my-plugin
+npx ruflo@latest plugins create my-plugin
 
 # Test locally
-npx claude-flow@v3alpha plugins install ./path/to/my-plugin
+npx ruflo@latest plugins install ./path/to/my-plugin
 
 # Publish to registry (requires Pinata credentials)
-npx claude-flow@v3alpha plugins publish
+npx ruflo@latest plugins publish
 ```
 
 Registry source: IPFS via Pinata (`QmXbfEAaR7D2Ujm4GAkbwcGZQMHqAMpwDoje4583uNP834`)
