@@ -44,7 +44,7 @@
   },
   "optionalDependencies": {},
   "overrides": {
-    "ruvector": "^0.2.27",
+    "ruvector": "^0.2.41",
     "better-sqlite3": "12.9.0",
     "@ruvector/rvf-wasm": "0.1.5",
     "@ruvector/rvf": "0.3.4",

@@ -104,12 +104,12 @@
     "@ruvector/router": "^0.1.31",
     "@ruvector/router-linux-x64-gnu": "^0.1.31",
     "@ruvector/sona": "^0.1.5",
-    "agentdb": "^3.0.0-alpha.20",
+    "agentdb": "^3.0.0",
     "agentic-flow": "^3.0.0",
     "better-sqlite3": "12.9.0"
   },
   "overrides": {
-    "ruvector": "^0.2.27",
+    "ruvector": "^0.2.41",
     "better-sqlite3": "12.9.0",
     "js-yaml": ">=4.3.0",
     "hono": ">=4.13.2",
