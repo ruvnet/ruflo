@@ -427,6 +427,41 @@ jobs:
             npm dist-tag rm "$package" "$candidate_tag" >/dev/null 2>&1 || true
           done
 
+      - name: Advance bundled-standalone dist-tags to latest
+        # The four bundled runtime packages (security, codex, mcp,
+        # plugin-agent-federation) are also published standalone for direct
+        # consumers. Their standalone versions are independent of the main
+        # release train (e.g. plugin-agent-federation@1.0.4 ships inside
+        # @claude-flow/cli@3.66.x). When a bundled package is bumped and
+        # published standalone, its alpha and v3alpha dist-tags must be
+        # advanced to match latest — otherwise alpha-channel users receive a
+        # stale version that is missing security and behavioural fixes.
+        #
+        # This step reads each bundled package's current latest version from
+        # the registry and ensures alpha and v3alpha point at the same
+        # version. It is idempotent: re-running a release that did not bump
+        # a bundled package is a no-op for that package.
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          bundled_packages=(
+            "@claude-flow/security"
+            "@claude-flow/codex"
+            "@claude-flow/mcp"
+            "@claude-flow/plugin-agent-federation"
+          )
+          for package in "${bundled_packages[@]}"; do
+            pkg_latest="$(npm view "$package" dist-tags.latest 2>/dev/null || true)"
+            if [[ -z "$pkg_latest" ]]; then
+              echo "::warning::${package} not found on registry — skipping dist-tag alignment"
+              continue
+            fi
+            echo "Aligning ${package}: alpha -> ${pkg_latest}, v3alpha -> ${pkg_latest}"
+            npm dist-tag add "${package}@${pkg_latest}" alpha
+            npm dist-tag add "${package}@${pkg_latest}" v3alpha
+          done
+
       - name: Verify registry deployment
         shell: bash
         env:
@@ -496,3 +531,31 @@ jobs:
             npm ls --all
             node node_modules/ruflo/bin/ruflo.js --version
           )
+
+          # Verify bundled-standalone dist-tags are aligned after the
+          # "Advance bundled-standalone dist-tags" step ran above.
+          bundled_packages=(
+            "@claude-flow/security"
+            "@claude-flow/codex"
+            "@claude-flow/mcp"
+            "@claude-flow/plugin-agent-federation"
+          )
+          for package in "${bundled_packages[@]}"; do
+            tags="$(npm view "$package" dist-tags --json 2>/dev/null || true)"
+            if [[ -z "$tags" || "$tags" == "null" ]]; then
+              echo "::warning::${package} not found on registry — skipping alignment verification"
+              continue
+            fi
+            TAGS="$tags" PACKAGE="$package" node - <<'NODE'
+          const tags = JSON.parse(process.env.TAGS);
+          const latest = tags.latest;
+          const misaligned = ['alpha', 'v3alpha'].filter((t) => tags[t] !== latest);
+          if (misaligned.length > 0) {
+            throw new Error(
+              `${process.env.PACKAGE}: dist-tags not aligned — ` +
+              misaligned.map((t) => `${t}=${tags[t]}`).join(', ') +
+              ` (latest=${latest})`,
+            );
+          }
+          NODE
+          done
