@@ -180,6 +180,54 @@ function runInProcess(localBin, projectDir = null) {
   return import(pathToFileURL(localBin).href);
 }
 
+function isMissingModuleError(error) {
+  return Boolean(error) && (error.code === 'ERR_MODULE_NOT_FOUND' || error.code === 'MODULE_NOT_FOUND');
+}
+
+/**
+ * isRunnableCli() only proves bin/cli.js and dist/src/index.js exist; it
+ * cannot know every file cli.js imports. A stale dist/ (source newer than the
+ * last build) therefore passes the guard and then throws on import. The text
+ * below is what the person sees instead of a bare module path.
+ */
+function describeUnloadableCli(localBin, error, willFallBack) {
+  const bin = resolve(localBin);
+  const inRepo = /[\\/]v3[\\/]@claude-flow[\\/]cli[\\/]bin[\\/]cli\.js$/i.test(bin);
+  const lines = [`[mcp-launch] could not load ${bin}: ${error && error.message}`];
+  if (inRepo) {
+    lines.push(
+      'You are running inside a ruflo checkout, so its v3/@claude-flow/cli was picked as the local CLI,',
+      'but its dist/ build is missing files (it is older than src/). To use it, rebuild:',
+      '  cd v3/@claude-flow/cli && pnpm install && pnpm run build',
+      'or start Claude Code outside the ruflo repo to use an installed @claude-flow/cli instead.',
+    );
+  } else {
+    lines.push('That local @claude-flow/cli install is incomplete; reinstall or rebuild it.');
+  }
+  lines.push(willFallBack
+    ? 'Falling back to `npx -y @claude-flow/cli@latest mcp start` for this session.'
+    : 'Not falling back to @latest.');
+  return lines.join('\n') + '\n';
+}
+
+/**
+ * Called when the in-process import of a resolved local CLI throws. A pinned
+ * RUFLO_MCP_CLI_OVERRIDE still fails closed, as does RUFLO_MCP_SKIP_NPX=1;
+ * otherwise a missing-module failure (stale or partial build) degrades to the
+ * npx fallback so the MCP server still comes up. The import fails before the
+ * CLI touches stdio, so starting a second server cannot interleave output.
+ */
+function recoverFromLoadFailure(localBin, error, projectDir, env = process.env, deps = {}) {
+  const run = deps.run || launch;
+  const exit = deps.exit || ((code) => process.exit(code));
+  const canFallBack = isMissingModuleError(error)
+    && !env.RUFLO_MCP_CLI_OVERRIDE
+    && env.RUFLO_MCP_SKIP_NPX !== '1';
+  process.stderr.write(describeUnloadableCli(localBin, error, canFallBack));
+  if (!canFallBack) return exit(1);
+  return run(buildLaunchSpec(null, env, projectDir));
+}
+
 function launch({ command, args, shell, cwd, env }) {
   const child = spawn(command, args, { stdio: 'inherit', env: env || process.env, shell, cwd });
 
@@ -218,8 +266,12 @@ if (require.main === module) {
     const localBin = resolveLocalCliBin(projectDir, home);
     if (localBin && process.env.RUFLO_MCP_SPAWN !== '1') {
       runInProcess(localBin, projectDir).catch((error) => {
-        process.stderr.write(`[mcp-launch] failed to load ${localBin}: ${error && error.message}\n`);
-        process.exit(1);
+        try {
+          recoverFromLoadFailure(localBin, error, projectDir);
+        } catch (recoveryError) {
+          process.stderr.write(`[mcp-launch] ${recoveryError.message}\n`);
+          process.exit(1);
+        }
       });
     } else {
       launch(buildLaunchSpec(localBin, process.env, projectDir));
@@ -230,4 +282,7 @@ if (require.main === module) {
   }
 }
 
-module.exports = { resolveLocalCliBin, resolveProjectDir, isNonProjectDir, buildLaunchSpec, runInProcess, MCP_ARGS };
+module.exports = {
+  resolveLocalCliBin, resolveProjectDir, isNonProjectDir, buildLaunchSpec, runInProcess,
+  isMissingModuleError, describeUnloadableCli, recoverFromLoadFailure, MCP_ARGS,
+};
