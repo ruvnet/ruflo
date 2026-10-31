@@ -30,6 +30,8 @@ interface LoadBalanceConfig {
   algorithm: 'round-robin' | 'least-connections' | 'weighted' | 'adaptive';
   weights: Record<string, number>;
   healthCheck: boolean;
+  /** Node the last round-robin distribute went to; the next one goes to the node after it. */
+  lastAssigned?: string;
 }
 
 interface SyncState {
@@ -268,8 +270,11 @@ export const coordinationTools: MCPTool[] = [
           const weights = store.loadBalance.weights;
           selectedNode = nodes.reduce((max, n) => (weights[n.id] || 1) > (weights[max.id] || 1) ? n : max);
         } else {
-          // Round robin - just pick first active
-          selectedNode = nodes[0];
+          // Round robin: the active node after the one the last task went to,
+          // wrapping around (and starting over if that node is gone).
+          const last = nodes.findIndex(n => n.id === store.loadBalance.lastAssigned);
+          selectedNode = nodes[(last + 1) % nodes.length];
+          store.loadBalance.lastAssigned = selectedNode.id;
         }
 
         // Update load
