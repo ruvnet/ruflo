@@ -30,7 +30,7 @@ const COMPATIBILITY_MATRIX: Record<string, Record<string, PackageCompatibility>>
   },
   '@claude-flow/integration': {
     '@claude-flow/cli': { minVersion: '3.0.0-alpha.70' },
-    'agentic-flow': { minVersion: '2.2.0' },
+    'agentic-flow': { minVersion: '3.0.0' },
   },
 };
 
