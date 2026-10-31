@@ -144,6 +144,16 @@ export class PolicyEngine {
     }
 
     const operationForType = this.getOperationForMessageType(messageType);
+    const trustFloor = this.getTrustFloorForMessageType(messageType);
+    if (trustFloor !== undefined && trustLevel < trustFloor) {
+      return {
+        allowed: false,
+        reason: `Trust level ${trustLevel} is below the configured minimum ${trustFloor} for '${messageType}'`,
+        requiredClaims,
+        trustLevelSufficient: false,
+      };
+    }
+
     if (!isOperationAllowed(trustLevel, operationForType)) {
       return {
         allowed: false,
@@ -218,6 +228,32 @@ export class PolicyEngine {
 
     counter.count++;
     return counter.count <= this.securityPolicy.maxMessagesPerMinute;
+  }
+
+  /**
+   * Resolve the configured trust floor for a message class. These fields were
+   * declared/defaulted but never read; CAPABILITY_GATES alone let memory-query
+   * through at ATTESTED even though minTrustLevelForMemory defaults to TRUSTED.
+   */
+  private getTrustFloorForMessageType(messageType: FederationMessageType): TrustLevel | undefined {
+    switch (messageType) {
+      case 'memory-query':
+      case 'memory-response':
+        return this.securityPolicy.minTrustLevelForMemory;
+      case 'agent-spawn':
+        return this.securityPolicy.minTrustLevelForSpawn;
+      case 'agent-handoff':
+        return Math.max(
+          this.securityPolicy.minTrustLevelForWrite,
+          this.securityPolicy.minTrustLevelForSpawn,
+        ) as TrustLevel;
+      case 'task-assignment':
+      case 'context-share':
+      case 'claim-event':
+        return this.securityPolicy.minTrustLevelForWrite;
+      default:
+        return undefined;
+    }
   }
 
   private getOperationForMessageType(messageType: FederationMessageType): string {
