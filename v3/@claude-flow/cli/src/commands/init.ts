@@ -1206,9 +1206,10 @@ const wizardCommand: Command = {
             options: [
               { value: 'core', label: 'Core', hint: 'Swarm, memory, SPARC skills', selected: true },
               { value: 'agentdb', label: 'AgentDB', hint: 'Vector database skills', selected: true },
-              { value: 'github', label: 'GitHub', hint: 'GitHub integration skills', selected: true },
+              { value: 'github', label: 'GitHub', hint: 'GitHub integration skills', selected: false },
               { value: 'flowNexus', label: 'Flow Nexus', hint: 'Cloud platform skills', selected: false },
               { value: 'v3', label: 'V3', hint: 'V3 implementation skills', selected: true },
+              { value: 'legacy', label: 'Legacy', hint: 'Skills that document commands v3 does not ship', selected: false },
             ],
           });
 
@@ -1217,6 +1218,7 @@ const wizardCommand: Command = {
           options.skills.github = skillSets.includes('github');
           options.skills.flowNexus = skillSets.includes('flowNexus');
           options.skills.v3 = skillSets.includes('v3');
+          options.skills.legacy = skillSets.includes('legacy');
         }
 
         // Hooks selection
@@ -1497,6 +1499,7 @@ const skillsCommand: Command = {
     { name: 'agentdb', description: 'Install AgentDB skills', type: 'boolean', default: false },
     { name: 'github', description: 'Install GitHub skills', type: 'boolean', default: false },
     { name: 'v3', description: 'Install V3 skills', type: 'boolean', default: false },
+    { name: 'legacy', description: 'Install skills that document commands v3 does not ship (stream-chain, sparc)', type: 'boolean', default: false },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const options: InitOptions = {
@@ -1523,6 +1526,7 @@ const skillsCommand: Command = {
         browser: false,
         v3: ctx.flags.v3 as boolean,
         dualMode: false,
+        legacy: ctx.flags.legacy as boolean,
       },
     };
 

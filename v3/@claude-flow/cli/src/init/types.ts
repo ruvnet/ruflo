@@ -82,6 +82,8 @@ export interface SkillsConfig {
   v3: boolean;
   /** Include dual-mode skills (Claude Code + Codex hybrid) */
   dualMode: boolean;
+  /** Include legacy skills that document commands v3 does not ship (opt-in) */
+  legacy: boolean;
   /** Include all available skills */
   all: boolean;
 }
@@ -392,11 +394,12 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
   skills: {
     core: true,
     agentdb: true,
-    github: true,
+    github: false,    // #4539: the GitHub skills run `ruflo github`, which v3 does not ship
     flowNexus: false,
     browser: true,
     v3: false,        // ADR-128: opt-in like agents.v3; use --full or `init skills --v3`
     dualMode: false,  // Optional: enable with --dual flag
+    legacy: false,    // #4539: stream-chain/sparc document verbs v3 does not ship
     all: false,
   },
   commands: {
@@ -506,6 +509,7 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
     browser: false,
     v3: false,
     dualMode: false,
+    legacy: false,
     all: false,
   },
   agents: {
@@ -567,6 +571,7 @@ export const FULL_INIT_OPTIONS: InitOptions = {
     browser: true,
     v3: true,
     dualMode: true,  // Include in full init
+    legacy: true,    // Include in full init
     all: true,
   },
   commands: {
