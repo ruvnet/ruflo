@@ -635,6 +635,9 @@ importers:
       express:
         specifier: '>=4.22.2'
         version: 5.2.1
+      express-rate-limit:
+        specifier: ^8.4.1
+        version: 8.6.2(express@5.2.1)
       helmet:
         specifier: ^7.2.0
         version: 7.2.0

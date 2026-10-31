@@ -15,8 +15,7 @@
 import { EventEmitter } from 'events';
 import { WebSocketServer, WebSocket, RawData } from 'ws';
 import { createServer, Server, type IncomingMessage } from 'http';
-import { createHash, timingSafeEqual } from 'node:crypto';
-import { assertSafeBind, refuseOpenRequest } from './guard.js';
+import { assertSafeBind, assertUsableAuth, bearerCredentials, handshakeAuthorized, refuseOpenRequest } from './guard.js';
 import {
   ITransport,
   TransportType,
@@ -42,9 +41,9 @@ export interface WebSocketTransportConfig {
   heartbeatTimeout?: number;
   maxMessageSize?: number;
   auth?: AuthConfig;
-  /** Accept a non-loopback bind with no token. */
+  /** Accept a non-loopback bind with no token (the operator's own risk). */
   allowUnauthenticated?: boolean;
-  /** Browser origins allowed to connect, by exact name. */
+  /** Browser origins allowed to connect without a token, by exact name. */
   allowedOrigins?: string[];
   enableBinaryMode?: boolean;
 }
@@ -104,7 +103,9 @@ export class WebSocketTransport extends EventEmitter implements ITransport {
       path: this.config.path || '/ws',
     });
 
-    assertSafeBind(this.config.host, this.config.auth?.enabled === true, this.config.allowUnauthenticated);
+    const credentials = bearerCredentials(this.config.auth);
+    assertUsableAuth(credentials);
+    assertSafeBind(this.config.host, credentials !== undefined, this.config.allowUnauthenticated);
 
     // Create HTTP server for WebSocket upgrade
     this.server = createServer((req, res) => {
@@ -119,9 +120,11 @@ export class WebSocketTransport extends EventEmitter implements ITransport {
       path: this.config.path || '/ws',
       maxPayload: this.config.maxMessageSize || 10 * 1024 * 1024,
       perMessageDeflate: true, // Enable compression
+      // Checked on the handshake, before a connection exists: the token when one
+      // is configured, otherwise Host and Origin (CORS does not cover upgrades).
       verifyClient: (info: { req: IncomingMessage }) =>
-        this.config.auth?.enabled === true
-          ? this.upgradeHasValidToken(info.req)
+        credentials !== undefined
+          ? handshakeAuthorized(info.req, credentials)
           : refuseOpenRequest(info.req, this.config.host, this.config.allowedOrigins) === undefined,
     });
 
@@ -304,7 +307,7 @@ export class WebSocketTransport extends EventEmitter implements ITransport {
         lastActivity: new Date(),
         messageCount: 0,
         isAlive: true,
-        // With a token configured the upgrade itself was authenticated (verifyClient).
+        // The handshake already checked the token.
         isAuthenticated: true,
       };
 
@@ -352,21 +355,6 @@ export class WebSocketTransport extends EventEmitter implements ITransport {
   /**
    * Handle incoming message
    */
-  /** Token from `Authorization: Bearer` or `?token=`, compared in constant time. */
-  private upgradeHasValidToken(req: IncomingMessage): boolean {
-    const header = req.headers.authorization;
-    const fromHeader = typeof header === 'string' ? header.match(/^Bearer\s+(.+)$/i)?.[1] : undefined;
-    const fromQuery = new URL(req.url ?? '', 'http://localhost').searchParams.get('token') ?? undefined;
-    const given = fromHeader ?? fromQuery;
-    if (!given) return false;
-    const digest = (v: string) => createHash('sha256').update(v, 'utf8').digest();
-    let ok = false;
-    for (const valid of this.config.auth?.tokens ?? []) {
-      if (timingSafeEqual(digest(given), digest(valid))) ok = true;
-    }
-    return ok;
-  }
-
   private async handleMessage(client: ClientConnection, data: RawData): Promise<void> {
     client.lastActivity = new Date();
     client.messageCount++;
@@ -374,18 +362,6 @@ export class WebSocketTransport extends EventEmitter implements ITransport {
 
     try {
       const message = this.parseMessage(data);
-
-      // Check authentication for non-authenticated clients
-      if (!client.isAuthenticated && this.config.auth?.enabled) {
-        if (message.method !== 'authenticate') {
-          client.ws.send(this.serializeMessage({
-            jsonrpc: '2.0',
-            id: message.id || null,
-            error: { code: -32001, message: 'Authentication required' },
-          } as MCPResponse));
-          return;
-        }
-      }
 
       if (message.jsonrpc !== '2.0') {
         client.ws.send(this.serializeMessage({
