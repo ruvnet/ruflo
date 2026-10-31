@@ -350,7 +350,7 @@ export interface EntailmentQueryResult {
 export const HierarchyNodeSchema = z.object({
   id: z.string().max(200),
   parent: z.string().max(200).nullable(),
-  features: z.record(z.unknown()).optional(),
+  features: z.record(z.string(), z.unknown()).optional(),
   label: z.string().max(500).optional(),
   depth: z.number().int().min(0).optional(),
 });

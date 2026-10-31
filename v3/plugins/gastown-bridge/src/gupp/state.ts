@@ -153,7 +153,7 @@ const HookedWorkItemSchema = z.object({
   formula: z.string().optional(),
   progress: z.number().min(0).max(100),
   error: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**
@@ -189,7 +189,7 @@ const StepSchema = z.object({
   needs: z.array(z.string()).optional(),
   duration: z.number().optional(),
   requires: z.array(z.string()).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**
@@ -216,9 +216,9 @@ const FormulaStateSchema = z.object({
     version: z.number(),
     legs: z.array(LegSchema).optional(),
     steps: z.array(StepSchema).optional(),
-    vars: z.record(VarSchema).optional(),
+    vars: z.record(z.string(), VarSchema).optional(),
   }),
-  vars: z.record(z.string()),
+  vars: z.record(z.string(), z.string()),
   startedAt: z.coerce.date(),
   status: z.enum(['cooking', 'cooked', 'executing', 'completed', 'failed']),
 });

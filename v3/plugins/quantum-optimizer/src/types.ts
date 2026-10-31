@@ -380,14 +380,14 @@ export const DependencyResolveInputSchema = z.object({
   packages: z.array(z.object({
     name: z.string().max(200),
     version: z.string().max(50),
-    dependencies: z.record(z.string()).default({}),
+    dependencies: z.record(z.string(), z.string()).default({}),
     conflicts: z.array(z.string()).default([]),
     size: z.number().optional(),
     vulnerabilities: z.array(z.string()).optional(),
   })).min(1).max(10000),
   constraints: z.object({
     minimize: z.enum(['versions', 'size', 'vulnerabilities', 'depth']).default('versions'),
-    lockfile: z.record(z.string()).optional(),
+    lockfile: z.record(z.string(), z.string()).optional(),
     includePeer: z.boolean().default(true),
     timeout: z.number().int().min(1000).max(300000).default(30000),
   }).optional(),

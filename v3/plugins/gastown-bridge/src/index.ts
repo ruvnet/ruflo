@@ -1214,27 +1214,33 @@ export class GasTownBridgePlugin extends EventEmitter implements IPlugin {
   private zodToJsonSchema(zodSchema: unknown): { type: 'object'; properties: Record<string, unknown>; required?: string[] } {
     // Simplified conversion - in production use zod-to-json-schema
     try {
-      const schema = zodSchema as { _def?: { shape?: () => Record<string, unknown> } };
+      // zod 3 keeps the object shape behind a function and names types as
+      // `_def.typeName` ('ZodNumber'); zod 4 stores the shape itself and names
+      // types as `_def.type` ('number'). Read both, then match case-insensitively.
+      const schema = zodSchema as {
+        _def?: { shape?: Record<string, unknown> | (() => Record<string, unknown>) };
+      };
       if (schema._def?.shape) {
-        const shape = schema._def.shape();
+        const rawShape = schema._def.shape;
+        const shape = typeof rawShape === 'function' ? rawShape() : rawShape;
         const properties: Record<string, unknown> = {};
         const required: string[] = [];
 
         for (const [key, value] of Object.entries(shape)) {
-          const fieldSchema = value as { _def?: { typeName?: string; innerType?: unknown } };
-          const typeName = fieldSchema._def?.typeName ?? 'ZodString';
+          const fieldSchema = value as { _def?: { typeName?: string; type?: string; innerType?: unknown } };
+          const typeName = (fieldSchema._def?.typeName ?? fieldSchema._def?.type ?? 'string').toLowerCase();
 
           // Map Zod types to JSON Schema types
           let jsonType = 'string';
-          if (typeName.includes('Number')) jsonType = 'number';
-          else if (typeName.includes('Boolean')) jsonType = 'boolean';
-          else if (typeName.includes('Array')) jsonType = 'array';
-          else if (typeName.includes('Object')) jsonType = 'object';
+          if (typeName.includes('number')) jsonType = 'number';
+          else if (typeName.includes('boolean')) jsonType = 'boolean';
+          else if (typeName.includes('array')) jsonType = 'array';
+          else if (typeName.includes('object')) jsonType = 'object';
 
           properties[key] = { type: jsonType };
 
           // Check if required (not optional)
-          if (!typeName.includes('Optional') && !typeName.includes('Default')) {
+          if (!typeName.includes('optional') && !typeName.includes('default')) {
             required.push(key);
           }
         }

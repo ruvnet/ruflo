@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/shared",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "type": "module",
   "description": "Shared module - common types, events, utilities, core interfaces",
   "main": "dist/index.js",
@@ -34,7 +34,7 @@
     "helmet": "^7.2.0",
     "sql.js": "^1.10.3",
     "ws": "^8.21.0",
-    "zod": "^3.22.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

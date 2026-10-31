@@ -45,7 +45,7 @@ const nameSchema = z.string().min(1).max(LIMITS.name).regex(COMMAND_NAME);
 const relPathSchema = z.string().min(1).max(LIMITS.path).regex(REL_PATH);
 
 const argumentsSchemaSchema = z
-  .record(z.unknown())
+  .record(z.string(), z.unknown())
   .refine((value) => JSON.stringify(value).length <= LIMITS.argumentsSchemaBytes, {
     message: `argumentsSchema exceeds ${LIMITS.argumentsSchemaBytes} serialized bytes`,
   });

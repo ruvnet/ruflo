@@ -101,13 +101,13 @@
   },
   "dependencies": {
     "@electron/asar": "^4.3.1",
-    "@claude-flow/cli-core": "3.7.5",
+    "@claude-flow/cli-core": "3.7.6",
     "@claude-flow/codex": "3.0.5",
     "@claude-flow/mcp": "3.1.4",
     "@claude-flow/neural": "3.0.1",
     "@claude-flow/plugin-agent-federation": "1.0.3",
     "@claude-flow/security": "3.0.5",
-    "@claude-flow/shared": "3.0.6",
+    "@claude-flow/shared": "3.0.7",
     "@iarna/toml": "^2.2.5",
     "@noble/ed25519": "2.3.0",
     "@ruvector/rabitq-wasm": "0.1.0",
@@ -127,7 +127,7 @@
     "typescript": "^5.3.0",
     "ws": "^8.21.0",
     "yaml": "^2.8.0",
-    "zod": "^3.22.0",
+    "zod": "^4.6.7",
     "@claude-flow/memory": "3.1.0"
   },
   "optionalDependencies": {
