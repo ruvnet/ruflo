@@ -1,0 +1,32 @@
+{
+  "name": "maria",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MarIA — interface de pilotage de missions Claude Code / Ruflo",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "worker": "tsx worker/index.ts",
+    "typecheck": "tsc --noEmit",
+    "service": "bash scripts/worker-service.sh"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "geist": "^1.7.2",
+    "lucide-react": "^1.50.0",
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.2.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
