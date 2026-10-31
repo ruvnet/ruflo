@@ -21,6 +21,8 @@ import {
   UUIDSchema,
   HttpsUrlSchema,
   PortSchema,
+  IPv4Schema,
+  IPSchema,
   UserRoleSchema,
   PermissionSchema,
   LoginRequestSchema,
@@ -378,5 +380,25 @@ describe('InputValidator', () => {
       expect(LIMITS.MAX_PASSWORD_LENGTH).toBe(128);
       expect(LIMITS.MAX_PATH_LENGTH).toBe(4096);
     });
+  });
+});
+
+describe('Zod cross-version security regression tests', () => {
+  it('accepts IPv4 and IPv6 only where appropriate', () => {
+    expect(IPv4Schema.safeParse('127.0.0.1').success).toBe(true);
+    expect(IPv4Schema.safeParse('::1').success).toBe(false);
+    expect(IPSchema.safeParse('127.0.0.1').success).toBe(true);
+    expect(IPSchema.safeParse('::1').success).toBe(true);
+    expect(IPSchema.safeParse('999.999.999.999').success).toBe(false);
+  });
+
+  it('preserves fail-closed validation and useful errors', () => {
+    const invalidEmail = EmailSchema.safeParse('not-an-email');
+    expect(invalidEmail.success).toBe(false);
+    if (!invalidEmail.success) {
+      expect(invalidEmail.error.issues[0]?.message).toBeTruthy();
+    }
+    expect(CommandArgumentSchema.safeParse('arg;rm -rf /').success).toBe(false);
+    expect(PathSchema.safeParse('../../etc/passwd').success).toBe(false);
   });
 });
