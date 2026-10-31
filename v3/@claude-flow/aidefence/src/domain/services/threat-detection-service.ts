@@ -18,11 +18,13 @@ import {
   createThreat
 } from '../entities/threat.js';
 import { createHash } from 'crypto';
+import type { InjectionDetector, PackSelection } from './packs/engine.js';
+import { detectPackThreats, resolvePackDetector } from './packs/adapter.js';
 
 /**
  * Threat pattern definition
  */
-interface ThreatPattern {
+export interface ThreatPattern {
   readonly pattern: RegExp;
   readonly type: ThreatType;
   readonly severity: ThreatSeverity;
@@ -314,15 +316,34 @@ const PII_PATTERNS = [
 ];
 
 /**
+ * Options for ThreatDetectionService. Passing a bare ThreatPattern[] (the
+ * pre-3.1 signature) is still accepted and means `{ patterns }`.
+ */
+export interface ThreatDetectionOptions {
+  /** Replaces the built-in regex patterns. */
+  readonly patterns?: ThreatPattern[];
+  /**
+   * AIMDS pattern packs scanned alongside the built-in patterns (3.1.0).
+   * Default `true`: every vendored pack. `false` disables them; a list or
+   * a record selects packs by name (e.g. `['core', 'exfil_url']`).
+   */
+  readonly packs?: PackSelection;
+}
+
+/**
  * Threat Detection Service
  */
 export class ThreatDetectionService {
   private readonly patterns: ThreatPattern[];
+  private readonly packDetector: InjectionDetector | null;
   private detectionCount = 0;
   private totalDetectionTimeMs = 0;
 
-  constructor(customPatterns?: ThreatPattern[]) {
-    this.patterns = customPatterns ?? PROMPT_INJECTION_PATTERNS;
+  constructor(options?: ThreatPattern[] | ThreatDetectionOptions) {
+    const opts: ThreatDetectionOptions = Array.isArray(options) ? { patterns: options } : options ?? {};
+    this.patterns = opts.patterns ?? PROMPT_INJECTION_PATTERNS;
+    // Packs are compiled once per process; this only selects a detector.
+    this.packDetector = resolvePackDetector(opts.packs);
   }
 
   /**
@@ -366,6 +387,13 @@ export class ThreatDetectionService {
       }
     }
 
+    // AIMDS pattern packs: a separate pass over the RAW input (the pack
+    // normaliser keeps newlines, which some pack regexes rely on). Pack hits
+    // do not feed threatIndicatorCount, so built-in confidences are unchanged.
+    if (this.packDetector) {
+      threats.push(...detectPackThreats(this.packDetector, input));
+    }
+
     // PII detection
     const piiFound = this.detectPII(input);
 
@@ -401,6 +429,13 @@ export class ThreatDetectionService {
         if (pattern.severity === 'critical') {
           return { threat: true, confidence: maxConfidence };
         }
+      }
+    }
+
+    if (this.packDetector) {
+      for (const t of this.packDetector.detect(input).threats) {
+        threatFound = true;
+        maxConfidence = Math.max(maxConfidence, t.confidence);
       }
     }
 
@@ -521,7 +556,7 @@ export class ThreatDetectionService {
  * Create a new ThreatDetectionService instance
  */
 export function createThreatDetectionService(
-  customPatterns?: ThreatPattern[]
+  options?: ThreatPattern[] | ThreatDetectionOptions
 ): ThreatDetectionService {
-  return new ThreatDetectionService(customPatterns);
+  return new ThreatDetectionService(options);
 }
