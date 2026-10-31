@@ -218,11 +218,13 @@ export const workflowTools: MCPTool[] = [
           name: task || `${templateName} workflow`,
           description: task,
           steps,
-          status: 'running',
+          // #4609: nothing is dispatched here, so this is not a run yet. Saving it
+          // as 'running' made workflow_execute and workflow_delete refuse it.
+          // 'ready' matches workflow_create; workflow_execute starts it.
+          status: 'ready',
           currentStep: 0,
           variables: { template: templateName, ...options },
           createdAt: new Date().toISOString(),
-          startedAt: new Date().toISOString(),
         };
 
         store.workflows[workflowId] = workflow;
@@ -232,14 +234,17 @@ export const workflowTools: MCPTool[] = [
       return {
         workflowId,
         template: templateName,
-        status: dryRun ? 'validated' : 'running',
+        status: dryRun ? 'validated' : 'ready',
         stages,
         metrics: {
           totalStages: stages.length,
           completedStages: 0,
           agentsSpawned: 0,
-          estimatedDuration: `${stages.length * 30}s`,
+          estimatedDuration: 'unknown',
         },
+        ...(dryRun ? {} : {
+          nextStep: 'Start it with workflow_execute; task steps need config.agentId or options.defaultAgentId.',
+        }),
       };
     },
   },
