@@ -253,7 +253,7 @@ export const claimsTools: MCPTool[] = [
         },
         progress: {
           type: 'number',
-          description: 'Current progress percentage (0-100)',
+          description: 'Current progress percentage (0-100); omit to keep the recorded progress',
         },
       },
       required: ['issueId', 'from', 'to'],
@@ -263,7 +263,7 @@ export const claimsTools: MCPTool[] = [
       const fromStr = input.from as string;
       const toStr = input.to as string;
       const reason = input.reason as string | undefined;
-      const progress = (input.progress as number) || 0;
+      const progress = input.progress as number | undefined;
 
       { const v = validateIdentifier(issueId, 'issueId'); if (!v.valid) return { success: false, error: v.error }; }
       { const v = validateText(fromStr, 'from'); if (!v.valid) return { success: false, error: v.error }; }
@@ -293,7 +293,11 @@ export const claimsTools: MCPTool[] = [
       claim.statusChangedAt = now;
       claim.handoffTo = to;
       claim.handoffReason = reason;
-      claim.progress = progress;
+      // Optional: keep the progress recorded with claims_status when it is
+      // left out, and clamp it to 0-100 the same way claims_status does.
+      if (progress !== undefined) {
+        claim.progress = Math.min(100, Math.max(0, progress));
+      }
 
       store.claims[issueId] = claim;
       saveClaims(store);
