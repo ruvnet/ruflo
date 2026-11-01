@@ -21,7 +21,8 @@ export const contextPlanCommand: Command = {
       const plan = planContextRead({
         inputBytes: Number(f.bytes), fileCount: Number(f.files ?? 1),
         mode: (f.mode ?? 'legacy') as ContextMode, intent: (f.intent ?? 'analysis') as ContextIntent,
-        workerAvailable: f['worker-available'] === true, depth: Number(f.depth ?? 0),
+        // The parser camelCases flag names; accept both spellings like the other hooks commands.
+        workerAvailable: f['worker-available'] === true || f.workerAvailable === true, depth: Number(f.depth ?? 0),
         ...(f.offset === undefined ? {} : { offset: Number(f.offset) }),
         ...(f.limit === undefined ? {} : { limit: Number(f.limit) }),
       });

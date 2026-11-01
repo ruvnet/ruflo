@@ -165,6 +165,17 @@ describe('core hooks entry', () => {
       expect(log).toHaveBeenCalledWith('{"route":"observe","reason":"bulk-analysis"}');
     } finally { log.mockRestore(); }
   });
+  it('honours --worker-available through the real CLI parser', async () => {
+    const { CommandParser } = await import('../src/parser.js');
+    const parser = new CommandParser({ allowUnknownFlags: true });
+    parser.registerCommand(contextPlanCommand);
+    const parsed = parser.parse(['context-plan', '--bytes', '20000', '--mode', 'observe', '--worker-available']);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      const result = await contextPlanCommand.action!({ args: [], flags: parsed.flags as any, cwd: '.', interactive: false });
+      expect(result).toMatchObject({ success: true, data: { route: 'observe', reason: 'bulk-analysis' } });
+    } finally { log.mockRestore(); }
+  });
   it('rejects malformed CLI values', async () => {
     expect(await contextPlanCommand.action!({ args: [], flags: { _: [], bytes: 'NaN' }, cwd: '.', interactive: false })).toMatchObject({ success: false, exitCode: 1 });
   });

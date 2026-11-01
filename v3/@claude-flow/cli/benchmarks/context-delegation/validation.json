@@ -1,7 +1,7 @@
 {
   "schema": "ruflo.context-validation/v1",
   "baselineCommit": "3667ba6573ef811383881f8a887978798bf2113d",
-  "candidateSnapshotSha256": "9301fbfd0f904c82d3d8062a5a39652c8e197db850db927b47885de5e63522a4",
+  "candidateSnapshotSha256": "20491e6e177cdbab52a4a1b633fafad3463b534609e0bac4a39478a0c11ee5cf",
   "runtime": {
     "node": "v24.22.2",
     "platform": "linux",
@@ -20,9 +20,9 @@
       "exitCode": 0,
       "vitest": "3.2.6",
       "filesPassed": 8,
-      "testsPassed": 162,
-      "focusedNewTests": 125,
-      "coreContextTests": 66,
+      "testsPassed": 163,
+      "focusedNewTests": 126,
+      "coreContextTests": 67,
       "providerAdapterTests": 35,
       "providerPilotRunnerTests": 7,
       "subscriptionPilotTests": 17
