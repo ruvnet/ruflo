@@ -66,6 +66,57 @@ describe('PolicyEngine — SecurityPolicy trust-level enforcement', () => {
     });
   });
 
+  describe('admin-plane messages (trust-change / topology-change)', () => {
+    it('rejects trust-change at ATTESTED — previously fell through to the generic "send" operation', () => {
+      const engine = new PolicyEngine(allowAllClaims());
+      const result = engine.evaluateMessage('trust-change', TrustLevel.ATTESTED, 10, 'node-k');
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toMatch(/admin/i);
+    });
+
+    it('allows trust-change at TRUSTED (matches minTrustLevelForAdmin default)', () => {
+      const engine = new PolicyEngine(allowAllClaims());
+      const result = engine.evaluateMessage('trust-change', TrustLevel.TRUSTED, 10, 'node-l');
+      expect(result.allowed).toBe(true);
+    });
+
+    it('rejects topology-change at ATTESTED — same admin-plane gap as trust-change', () => {
+      const engine = new PolicyEngine(allowAllClaims());
+      const result = engine.evaluateMessage('topology-change', TrustLevel.ATTESTED, 10, 'node-m');
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toMatch(/admin/i);
+    });
+
+    it('allows topology-change at TRUSTED', () => {
+      const engine = new PolicyEngine(allowAllClaims());
+      const result = engine.evaluateMessage('topology-change', TrustLevel.TRUSTED, 10, 'node-n');
+      expect(result.allowed).toBe(true);
+    });
+
+    it('honors a tightened minTrustLevelForAdmin override (PRIVILEGED) by rejecting TRUSTED', () => {
+      const override: Partial<SecurityPolicy> = { minTrustLevelForAdmin: TrustLevel.PRIVILEGED };
+      const engine = new PolicyEngine(allowAllClaims(), override);
+      const result = engine.evaluateMessage('trust-change', TrustLevel.TRUSTED, 10, 'node-o');
+      expect(result.allowed).toBe(false);
+    });
+
+    it('does not let a loosened minTrustLevelForAdmin override bypass the hardcoded CAPABILITY_GATES floor (defense in depth)', () => {
+      const override: Partial<SecurityPolicy> = { minTrustLevelForAdmin: TrustLevel.VERIFIED };
+      const engine = new PolicyEngine(allowAllClaims(), override);
+      // CAPABILITY_GATES (trust-level.ts) only grants 'admin-change' from
+      // TRUSTED, regardless of how permissive the SecurityPolicy override is.
+      const result = engine.evaluateMessage('trust-change', TrustLevel.ATTESTED, 10, 'node-p');
+      expect(result.allowed).toBe(false);
+    });
+
+    it('still rejects trust-change/topology-change at VERIFIED/UNTRUSTED regardless of override', () => {
+      const override: Partial<SecurityPolicy> = { minTrustLevelForAdmin: TrustLevel.UNTRUSTED };
+      const engine = new PolicyEngine(allowAllClaims(), override);
+      expect(engine.evaluateMessage('trust-change', TrustLevel.VERIFIED, 10, 'node-q').allowed).toBe(false);
+      expect(engine.evaluateMessage('topology-change', TrustLevel.UNTRUSTED, 10, 'node-q').allowed).toBe(false);
+    });
+  });
+
   describe('constructor override actually takes effect', () => {
     it('honors a tightened minTrustLevelForMemory override (PRIVILEGED) by rejecting TRUSTED', () => {
       const override: Partial<SecurityPolicy> = { minTrustLevelForMemory: TrustLevel.PRIVILEGED };
