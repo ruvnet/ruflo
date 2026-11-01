@@ -641,12 +641,16 @@ export const agentdbRoute: MCPTool = {
 
 export const agentdbSessionStart: MCPTool = {
   name: 'agentdb_session-start',
-  description: 'Start a session with ReflexionMemory episodic replay Use when generic memory_* tools are wrong because you need AgentDB-specific controllers (HNSW vector search, hierarchical tiers, causal-graph links, pattern store/recall, RaBitQ quantization). For simple key-value persistence, memory_store/memory_retrieve are simpler. For unrelated file work, native Read/Write are fine.',
+  description: 'Start a session with ReflexionMemory episodic replay. Set recall=true with a context to get back past session episodes relevant to it (keyword + vector search; rerank=true adds a local cross-encoder, ~200 ms). Use when generic memory_* tools are wrong because you need AgentDB-specific controllers (HNSW vector search, hierarchical tiers, causal-graph links, pattern store/recall, RaBitQ quantization). For simple key-value persistence, memory_store/memory_retrieve are simpler. For unrelated file work, native Read/Write are fine.',
   inputSchema: {
     type: 'object',
     properties: {
       sessionId: { type: 'string', description: 'Session identifier' },
       context: { type: 'string', description: 'Session context for pattern retrieval' },
+      recall: { type: 'boolean', description: 'Also return past session episodes relevant to context', default: false },
+      k: { type: 'number', description: 'Episodes to recall (1-50)', default: 5 },
+      hybrid: { type: 'boolean', description: 'Keyword + vector search; false = vector only', default: true },
+      rerank: { type: 'boolean', description: 'Rerank with a local cross-encoder (~200 ms, 23 MB model on first use)', default: false },
     },
     required: ['sessionId'],
   },
@@ -661,6 +665,10 @@ export const agentdbSessionStart: MCPTool = {
       const result = await bridge.bridgeSessionStart({
         sessionId,
         context: validateString(params.context, 'context', 10_000) ?? undefined,
+        recall: params.recall === true,
+        k: validatePositiveInt(params.k, 5, 50),
+        hybrid: params.hybrid !== false,
+        rerank: params.rerank === true,
       });
       return result ?? { success: false, error: 'AgentDB bridge not available. Use memory_store/memory_search instead.' };
     } catch (error) {
@@ -697,6 +705,52 @@ export const agentdbSessionEnd: MCPTool = {
         tasksCompleted: validatePositiveInt(params.tasksCompleted, 0, 10_000),
       });
       return result ?? { success: false, error: 'AgentDB bridge not available. Use memory_store/memory_search instead.' };
+    } catch (error) {
+      return { success: false, error: sanitizeError(error) };
+    }
+  },
+};
+
+// ===== agentdb_episode-recall — agentdb 3.2 hybrid episode retrieval (ADR-519) =====
+
+export const agentdbEpisodeRecall: MCPTool = {
+  name: 'agentdb_episode-recall',
+  description: 'Recall past episodes (session summaries, distilled trajectories) relevant to a task, ranked by keyword + vector search. rerank=true adds a local cross-encoder for better ordering at ~200 ms per call. Use when you want what happened last time on similar work; for key-value entries use memory_search.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'What you are about to work on' },
+      k: { type: 'number', description: 'Episodes to return (1-50)', default: 5 },
+      hybrid: { type: 'boolean', description: 'Keyword + vector search; false = vector only', default: true },
+      rerank: { type: 'boolean', description: 'Rerank with a local cross-encoder (~200 ms, 23 MB model on first use)', default: false },
+      onlySuccesses: { type: 'boolean', description: 'Only episodes recorded as successes' },
+      onlyFailures: { type: 'boolean', description: 'Only episodes recorded as failures' },
+      minReward: { type: 'number', description: 'Minimum reward (0-1)' },
+      timeWindowDays: { type: 'number', description: 'Only episodes from the last N days' },
+    },
+    required: ['query'],
+  },
+  handler: async (params: Record<string, unknown>) => {
+    try {
+      const vQuery = validateText(params.query, 'query', 10_000);
+      if (!vQuery.valid) return { success: false, error: vQuery.error };
+      const query = validateString(params.query, 'query', 10_000);
+      if (!query || !query.trim()) return { success: false, error: 'query is required (non-empty string)' };
+      if (params.onlySuccesses === true && params.onlyFailures === true) {
+        return { success: false, error: 'onlySuccesses and onlyFailures are mutually exclusive' };
+      }
+      const bridge = await getBridge();
+      const result = await bridge.bridgeRecallEpisodes({
+        task: query,
+        k: validatePositiveInt(params.k, 5, 50),
+        hybrid: params.hybrid !== false,
+        rerank: params.rerank === true,
+        onlySuccesses: params.onlySuccesses === true,
+        onlyFailures: params.onlyFailures === true,
+        ...(typeof params.minReward === 'number' && Number.isFinite(params.minReward) ? { minReward: validateScore(params.minReward, 0) } : {}),
+        ...(params.timeWindowDays !== undefined ? { timeWindowDays: validatePositiveInt(params.timeWindowDays, 30, 3650) } : {}),
+      });
+      return result ?? { success: false, error: 'AgentDB ReflexionMemory not available. Use memory_search instead.' };
     } catch (error) {
       return { success: false, error: sanitizeError(error) };
     }
@@ -1555,6 +1609,7 @@ export const agentdbTools: MCPTool[] = [
   agentdbRoute,
   agentdbSessionStart,
   agentdbSessionEnd,
+  agentdbEpisodeRecall,    // ADR-519
   agentdbHierarchicalStore,
   agentdbHierarchicalRecall,
   agentdbHierarchicalDelete,

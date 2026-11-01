@@ -236,8 +236,8 @@ importers:
         specifier: 1.3.0
         version: 1.3.0
       agentdb:
-        specifier: ^3.0.0
-        version: 3.0.0(@types/node@20.19.27)(zod@3.25.76)
+        specifier: ^3.2.0
+        version: 3.2.0(@types/node@20.19.27)(zod@3.25.76)
       agentic-flow:
         specifier: ^3.0.0
         version: 3.0.0(@types/node@20.19.27)
@@ -486,7 +486,7 @@ importers:
     optionalDependencies:
       agentdb:
         specifier: ^2.0.0 || ^3.0.0-alpha.1
-        version: 3.0.0(@types/node@20.19.27)(zod@3.25.76)
+        version: 3.2.0(@types/node@20.19.27)(zod@3.25.76)
 
   '@claude-flow/performance':
     dependencies:
@@ -2006,7 +2006,6 @@ packages:
         optional: true
     dependencies:
       '@metaharness/horizon': 0.2.1
-    dev: false
     optional: true
 
   /@metaharness/darwin@0.10.3:
@@ -2014,7 +2013,6 @@ packages:
     engines: {node: '>=20.0.0'}
     hasBin: true
     requiresBuild: true
-    dev: false
     optional: true
 
   /@metaharness/darwin@0.12.1:
@@ -2029,12 +2027,14 @@ packages:
     resolution: {integrity: sha512-B8tF7IrrSxwKS6fEPEL6N2Juth9WWn+hppLUtUYPTJ2vcHzzZPIg2cS5T9qTyNNuANlTSWnQHnvzlfvYdGNfeQ==}
     engines: {node: '>=20.0.0'}
     hasBin: true
+    dev: false
 
   /@metaharness/darwin@0.8.0:
     resolution: {integrity: sha512-Pgefr/es0Btofh7GxQrOAg/i43ZKcLUfeD9rndOAkpA8s3ZYohSmfLerJLNsGOOKc2eTvmmauljl8QEVmKC2dw==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     requiresBuild: true
+    dev: false
     optional: true
 
   /@metaharness/darwin@0.9.3:
@@ -2042,7 +2042,6 @@ packages:
     engines: {node: '>=20.0.0'}
     hasBin: true
     requiresBuild: true
-    dev: false
     optional: true
 
   /@metaharness/flywheel@0.1.10:
@@ -2052,25 +2051,25 @@ packages:
   /@metaharness/flywheel@0.1.7:
     resolution: {integrity: sha512-am7dROkjyS1Zkms3TOcn2LVHjwMLQXPJ6Pu1aP55q40vWJLRONGdGvnrcBL/VhMFqjQrVB57lmSn2E+s5CSZwA==}
     requiresBuild: true
+    dev: false
     optional: true
 
   /@metaharness/harness@0.1.0:
     resolution: {integrity: sha512-KegYx/q8qXlnaSYP0l5hgNPn8iNMl6a2eONqPi68FXd1w1jt7NswJJlt2/Ftl3Sum8qAEchxH1ZJOYFWTvJxTA==}
     engines: {node: '>=20.0.0'}
     requiresBuild: true
+    dev: false
     optional: true
 
   /@metaharness/harness@0.2.0:
     resolution: {integrity: sha512-j/NLHqgPNre4qTTExvjCjh4/HgmhnVZPSQUfj06dyrlkpXCMFJ2abdPrl5yuFfzBMU0wnfFnFY2qQHQnBlAreg==}
     engines: {node: '>=20.0.0'}
     requiresBuild: true
-    dev: false
     optional: true
 
   /@metaharness/horizon@0.2.1:
     resolution: {integrity: sha512-vsHehfWGjdql9IyUvi1/z4i9e8KQjTOOzWABfzXnH89oXE7F42CYhXZE4PzQZFxAemfr/AnYEkPz9kGDdMaqLQ==}
     requiresBuild: true
-    dev: false
     optional: true
 
   /@metaharness/radio@0.1.0:
@@ -2083,13 +2082,13 @@ packages:
     resolution: {integrity: sha512-JaAk6bs3xA7Ks5RnAcZoxI3WfzpYL+Bk262SCI07w82BDOA7C6VxwGM63F7b86lRTKUVjTEnSqf7QZ3uyElT/g==}
     engines: {node: '>=20.0.0'}
     hasBin: true
+    dev: false
 
   /@metaharness/redblue@0.1.6:
     resolution: {integrity: sha512-cnQTOcPVetgz/XoYBdW5carkl48wBJsvBbJ7ntmelFtRu/8N5ARhSXnebEY+05SWaNm8lqij/gxZx2FqNCQWJg==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     requiresBuild: true
-    dev: false
     optional: true
 
   /@metaharness/router@0.3.2(@ruvector/tiny-dancer@0.1.22):
@@ -2103,6 +2102,7 @@ packages:
         optional: true
     dependencies:
       '@ruvector/tiny-dancer': 0.1.22
+    dev: false
     optional: true
 
   /@metaharness/router@0.4.0(@ruvector/tiny-dancer@0.1.22):
@@ -2115,13 +2115,11 @@ packages:
         optional: true
     dependencies:
       '@ruvector/tiny-dancer': 0.1.22
-    dev: false
 
   /@metaharness/turn-credit@0.1.0:
     resolution: {integrity: sha512-A752c0eEYEVodBB8HLOaSvcUMA65TX6/Cru2apZ7EE7aL2FSO74GFbgFWPo85bgqgNuMjhHkl/kG+lkC0TunNA==}
     engines: {node: '>=20.0.0'}
     requiresBuild: true
-    dev: false
     optional: true
 
   /@metaharness/weight-eft@0.1.1:
@@ -2137,7 +2135,6 @@ packages:
   /@metaharness/workspace-lens@0.1.2:
     resolution: {integrity: sha512-Bfkj40rGZeBch4sQH/ma6zlY6dI+2AQfpTS/6AmPUE6/54H8Y04aBH5HPYfL0yBZ0lD/CeLViwFphT0PaiJ1mQ==}
     requiresBuild: true
-    dev: false
     optional: true
 
   /@metaharness/workspace-probe@0.1.1:
@@ -5847,7 +5844,6 @@ packages:
     resolution: {integrity: sha512-vCksKzgzlLiN6tMWC9FBAuXaam3HzAh4Xr+Wgydc4OjuDLUstWb2tgtitEUfPm0NI0W2nILMJ0Jypg1i0hJl7Q==}
     engines: {node: '>=22'}
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/rabitq-wasm@0.1.0:
@@ -7526,51 +7522,6 @@ packages:
       - supports-color
     dev: false
 
-  /agentdb@3.0.0(@types/node@20.19.27)(zod@3.25.76):
-    resolution: {integrity: sha512-ZHV/t7r+xx1sC2kGufA/ajZnB/OK1eXJMFj+fE6pNTCA1M/if5h7Yb/7cTnXRQmX/aQwh55QYpgU0kBmAyi+Tw==}
-    engines: {node: '>=18.0.0'}
-    hasBin: true
-    requiresBuild: true
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.32.1(zod@3.25.76)
-      '@opentelemetry/api': 1.9.1
-      '@ruvector/graph-transformer': 2.0.4
-      ajv: 8.20.0
-      sql.js: 1.14.1
-    optionalDependencies:
-      '@huggingface/transformers': 4.2.0
-      '@opentelemetry/resources': 2.9.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/sdk-node': 0.220.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/semantic-conventions': 1.40.0
-      '@ruvector/attention': 0.1.32
-      '@ruvector/gnn': 0.1.25
-      '@ruvector/graph-node': 2.0.3
-      '@ruvector/router': 0.1.30
-      '@ruvector/ruvllm': 2.6.0
-      '@ruvector/rvf': 0.3.4
-      '@ruvector/rvf-node': 0.1.8
-      '@ruvector/rvf-solver': 0.1.8
-      '@ruvector/rvf-wasm': 0.1.9
-      '@ruvector/sona': 0.1.8
-      argon2: 0.44.0
-      better-sqlite3: 12.9.0
-      chalk: 5.6.2
-      commander: 12.1.0
-      hnswlib-node: 3.0.0
-      inquirer: 9.3.8(@types/node@20.19.27)
-      ruvector: 0.2.41(@ruvector/router@0.1.30)(@ruvector/ruvllm@2.6.0)(zod@3.25.76)
-      ruvector-attention-wasm: 0.1.32
-      ruvector-graph-transformer-wasm: 2.0.4
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - '@metaharness/kernel'
-      - '@ruvector/diskann'
-      - '@ruvector/pi-brain'
-      - '@types/node'
-      - supports-color
-      - zod
-    optional: true
-
   /agentdb@3.0.0-alpha.20(@types/node@20.19.27)(zod@3.25.76):
     resolution: {integrity: sha512-ixjySLNWFDe3G6EiM1+0xKvVB9nWgeSMM7+hkgnQ4C5+trWfukDRYj3G/yU3l4xc/9vpAkLFQS389glsGbH0BQ==}
     engines: {node: '>=18.0.0'}
@@ -7616,6 +7567,52 @@ packages:
       - supports-color
       - zod
     dev: false
+
+  /agentdb@3.2.0(@types/node@20.19.27)(zod@3.25.76):
+    resolution: {integrity: sha512-K0cL6gtiNVuNLyx5RnIZui+mY/IfT8/x80oebvQY5yS4z5bVYdb2n+vARTr6lskPQ1EWMlGqigM9KNHVLYJRvg==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+    requiresBuild: true
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.32.1(zod@3.25.76)
+      '@opentelemetry/api': 1.9.1
+      '@ruvector/graph-transformer': 2.0.4
+      ajv: 8.20.0
+      sql.js: 1.14.1
+    optionalDependencies:
+      '@huggingface/transformers': 4.2.0
+      '@opentelemetry/resources': 2.9.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/sdk-node': 0.220.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/semantic-conventions': 1.40.0
+      '@ruvector/attention': 0.1.32
+      '@ruvector/gnn': 0.1.25
+      '@ruvector/graph-node': 2.0.3
+      '@ruvector/router': 0.1.30
+      '@ruvector/ruvllm': 2.6.0
+      '@ruvector/rvf': 0.3.4
+      '@ruvector/rvf-node': 0.1.8
+      '@ruvector/rvf-solver': 0.1.8
+      '@ruvector/rvf-wasm': 0.1.9
+      '@ruvector/sona': 0.1.8
+      argon2: 0.44.0
+      better-sqlite3: 12.9.0
+      chalk: 5.6.2
+      commander: 12.1.0
+      hnswlib-node: 3.0.0
+      inquirer: 9.3.8(@types/node@20.19.27)
+      ruvector: 0.3.5(@ruvector/router@0.1.30)(@ruvector/ruvllm@2.6.0)(zod@3.25.76)
+      ruvector-attention-wasm: 0.1.32
+      ruvector-graph-transformer-wasm: 2.0.4
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@metaharness/kernel'
+      - '@ruvector/diskann'
+      - '@ruvector/pi-brain'
+      - '@types/node'
+      - agenticow
+      - supports-color
+      - zod
+    optional: true
 
   /agentic-flow@1.10.2(@modelcontextprotocol/sdk@1.27.1):
     resolution: {integrity: sha512-h3d1KNUFkmdFdtjwn792/MPqYrEf7OId2LIIXlJDGM4epx0Vcm5FQ+ROrjxWDE04xgG3AHQ5dNynxPTDdkC7RA==}
@@ -7770,7 +7767,7 @@ packages:
       '@rollup/rollup-darwin-arm64': 4.60.3
       '@ruvector/attention': 0.1.32
       '@ruvector/sona': 0.1.8
-      agentdb: 3.0.0(@types/node@20.19.27)(zod@3.25.76)
+      agentdb: 3.2.0(@types/node@20.19.27)(zod@3.25.76)
       better-sqlite3: 12.9.0
       onnxruntime-node: 1.24.3
       sharp: 0.32.6
@@ -7783,6 +7780,7 @@ packages:
       - '@ruvector/pi-brain'
       - '@types/node'
       - '@valibot/to-json-schema'
+      - agenticow
       - arktype
       - bare-abort-controller
       - bare-buffer
@@ -7829,7 +7827,7 @@ packages:
       '@ruvector/attention': 0.1.32
       '@ruvector/sona': 0.1.8
       '@xenova/transformers': 2.17.2
-      agentdb: 3.0.0(@types/node@20.19.27)(zod@3.25.76)
+      agentdb: 3.2.0(@types/node@20.19.27)(zod@3.25.76)
       better-sqlite3: 12.9.0
       onnxruntime-node: 1.24.3
       sharp: 0.32.6
@@ -7842,6 +7840,7 @@ packages:
       - '@ruvector/pi-brain'
       - '@types/node'
       - '@valibot/to-json-schema'
+      - agenticow
       - arktype
       - bare-abort-controller
       - bare-buffer
@@ -7930,7 +7929,7 @@ packages:
       '@ruvector/ruvllm': 2.6.0
       '@ruvector/tiny-dancer': 0.1.22
       '@supabase/supabase-js': 2.89.0
-      agentdb: 3.0.0(@types/node@20.19.27)(zod@3.25.76)
+      agentdb: 3.2.0(@types/node@20.19.27)(zod@3.25.76)
       axios: 1.13.2(debug@4.4.3)
       dotenv: 16.6.1
       express: 5.2.1
@@ -11064,7 +11063,6 @@ packages:
       '@ruvector/ruvllm': 2.6.0
     transitivePeerDependencies:
       - agenticow
-    dev: false
     optional: true
 
   /metaharness@0.4.2:
@@ -11086,6 +11084,7 @@ packages:
       prompts: 2.4.2
     optionalDependencies:
       '@ruvector/ruvllm': 2.6.0
+    dev: false
     optional: true
 
   /micromatch@4.0.8:
@@ -11109,6 +11108,7 @@ packages:
       - '@ruvector/pi-brain'
       - '@types/node'
       - '@valibot/to-json-schema'
+      - agenticow
       - arktype
       - bare-abort-controller
       - bare-buffer
@@ -12682,6 +12682,7 @@ packages:
       - '@metaharness/kernel'
       - supports-color
       - zod
+    dev: false
     optional: true
 
   /ruvector@0.2.41(zod@3.25.76):
@@ -12799,7 +12800,6 @@ packages:
       - agenticow
       - supports-color
       - zod
-    dev: false
     optional: true
 
   /rxjs@7.8.2:

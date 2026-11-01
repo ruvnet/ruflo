@@ -3279,6 +3279,94 @@ export async function bridgeDeleteCausalNode(options: {
   }
 }
 
+// ===== Episode recall (agentdb 3.2 hybrid retrieval, ADR-519) =====
+
+const EPISODE_TASK_MAX = 4_000;
+const EPISODE_TEXT_MAX = 2_000;
+const EPISODE_RECALL_MAX = 50;
+
+export interface RecalledEpisode {
+  id?: number;
+  sessionId: string;
+  task: string;
+  critique?: string;
+  reward: number;
+  success: boolean;
+  similarity?: number;
+  tags?: string[];
+  ts?: number;
+}
+
+export interface EpisodeRecallOptions {
+  task: string;
+  k?: number;
+  /** Keyword + vector fusion. Default true (agentdb's own default). */
+  hybrid?: boolean;
+  /** Cross-encoder rerank. Default false: ~200 ms on CPU, 23 MB model on first use. */
+  rerank?: boolean;
+  onlySuccesses?: boolean;
+  onlyFailures?: boolean;
+  minReward?: number;
+  timeWindowDays?: number;
+}
+
+/** Null when the registry has no ReflexionMemory with retrieveRelevant. */
+async function recallEpisodesFrom(registry: any, options: EpisodeRecallOptions): Promise<RecalledEpisode[] | null> {
+  const reflexion = registry.get('reflexion');
+  if (!reflexion || typeof reflexion.retrieveRelevant !== 'function') return null;
+  const k = Math.min(Math.max(Math.trunc(options.k ?? 5), 1), EPISODE_RECALL_MAX);
+  const rows: any[] = await reflexion.retrieveRelevant({
+    task: options.task,
+    k,
+    hybrid: options.hybrid !== false,
+    rerank: options.rerank === true,
+    ...(options.onlySuccesses ? { onlySuccesses: true } : {}),
+    ...(options.onlyFailures ? { onlyFailures: true } : {}),
+    ...(typeof options.minReward === 'number' ? { minReward: options.minReward } : {}),
+    ...(typeof options.timeWindowDays === 'number' ? { timeWindowDays: options.timeWindowDays } : {}),
+  });
+  if (!Array.isArray(rows)) return [];
+  // Drop the embedding (1.5 KB of floats per row) and bound the text fields:
+  // this goes back over MCP.
+  return rows.slice(0, k).map(r => ({
+    ...(typeof r.id === 'number' ? { id: r.id } : {}),
+    sessionId: String(r.sessionId ?? ''),
+    task: String(r.task ?? '').slice(0, EPISODE_TEXT_MAX),
+    ...(r.critique ? { critique: String(r.critique).slice(0, EPISODE_TEXT_MAX) } : {}),
+    reward: Number(r.reward ?? 0),
+    success: !!r.success,
+    ...(typeof r.similarity === 'number' ? { similarity: Math.round(r.similarity * 1e4) / 1e4 } : {}),
+    ...(Array.isArray(r.tags) ? { tags: r.tags.slice(0, 20) } : {}),
+    ...(typeof r.ts === 'number' ? { ts: r.ts } : {}),
+  }));
+}
+
+/**
+ * Recall past episodes relevant to a task. Episodes come from session ends
+ * and from `memory distill`. Ranking is agentdb's keyword + vector fusion,
+ * optionally reranked by a local cross-encoder.
+ */
+export async function bridgeRecallEpisodes(options: EpisodeRecallOptions & { dbPath?: string }): Promise<{
+  success: boolean;
+  controller: string;
+  episodes: RecalledEpisode[];
+  hybrid: boolean;
+  rerank: boolean;
+} | null> {
+  if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeRecallEpisodes(options));
+  const registry = await getRegistry(options.dbPath);
+  if (!registry) return null;
+  const episodes = await recallEpisodesFrom(registry, options);
+  if (!episodes) return null;
+  return {
+    success: true,
+    controller: 'reflexion',
+    episodes,
+    hybrid: options.hybrid !== false,
+    rerank: options.rerank === true,
+  };
+}
+
 // ===== Phase 5: ReflexionMemory session lifecycle =====
 
 /**
@@ -3289,11 +3377,17 @@ export async function bridgeSessionStart(options: {
   sessionId: string;
   context?: string;
   dbPath?: string;
+  /** Recall past session episodes relevant to `context`. Default false. */
+  recall?: boolean;
+  k?: number;
+  hybrid?: boolean;
+  rerank?: boolean;
 }): Promise<{
   success: boolean;
   controller: string;
   restoredPatterns: number;
   sessionId: string;
+  episodes?: RecalledEpisode[];
 } | null> {
   if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeSessionStart(options));
   const registry = await getRegistry(options.dbPath);
@@ -3303,21 +3397,35 @@ export async function bridgeSessionStart(options: {
     let restoredPatterns = 0;
     let controller = 'none';
 
-    // Try ReflexionMemory for episodic session replay
-    const reflexion = registry.get('reflexion');
-    if (reflexion && typeof reflexion.startEpisode === 'function') {
-      await reflexion.startEpisode(options.sessionId, { context: options.context });
-      controller = 'reflexion';
+    // Episodic replay: past session episodes relevant to this session's
+    // context, ranked by agentdb's keyword + vector search (agentdb ADR-016).
+    // Opt-in, because a recall costs an embedding call and a generic context
+    // ("new session") matches nothing in particular.
+    let episodes: RecalledEpisode[] | undefined;
+    if (options.recall && options.context) {
+      const recalled = await recallEpisodesFrom(registry, {
+        task: options.context, k: options.k, hybrid: options.hybrid, rerank: options.rerank,
+      });
+      if (recalled) {
+        episodes = recalled;
+        controller = 'reflexion';
+      }
     }
 
-    // Load recent patterns from past sessions
-    const searchResult = await bridgeSearchEntries({
-      query: options.context || 'session patterns',
-      namespace: 'session',
-      limit: 10,
-      threshold: 0.2,
-      dbPath: options.dbPath,
-    });
+    // Load recent patterns from past sessions. A failure here must not
+    // discard episodes already recalled above.
+    let searchResult: Awaited<ReturnType<typeof bridgeSearchEntries>> = null;
+    try {
+      searchResult = await bridgeSearchEntries({
+        query: options.context || 'session patterns',
+        namespace: 'session',
+        limit: 10,
+        threshold: 0.2,
+        dbPath: options.dbPath,
+      });
+    } catch (err) {
+      if (!episodes) throw err;
+    }
 
     if (searchResult?.results) {
       restoredPatterns = searchResult.results.length;
@@ -3328,6 +3436,7 @@ export async function bridgeSessionStart(options: {
       controller: controller === 'none' ? 'bridge-search' : controller,
       restoredPatterns,
       sessionId: options.sessionId,
+      ...(episodes ? { episodes } : {}),
     };
   } catch {
     return null;
@@ -3347,6 +3456,7 @@ export async function bridgeSessionEnd(options: {
   success: boolean;
   controller: string;
   persisted: boolean;
+  episodeId?: number;
 } | null> {
   if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeSessionEnd(options));
   const registry = await getRegistry(options.dbPath);
@@ -3356,36 +3466,62 @@ export async function bridgeSessionEnd(options: {
     let controller = 'none';
     let persisted = false;
 
-    // End episode in ReflexionMemory
+    // Store the session summary as a ReflexionMemory episode so a later
+    // session can recall it. Only a real summary is worth recalling. The
+    // outcome is unverified, so it is stored neutral (reward 0, not a success)
+    // and can never count as evidence that an approach worked (ADR-171).
+    let episodeId: number | undefined;
     const reflexion = registry.get('reflexion');
-    if (reflexion && typeof reflexion.endEpisode === 'function') {
-      await reflexion.endEpisode(options.sessionId, {
-        summary: options.summary,
-        tasksCompleted: options.tasksCompleted,
-        patternsLearned: options.patternsLearned,
-      });
-      controller = 'reflexion';
-      persisted = true;
+    if (options.summary && reflexion && typeof reflexion.storeEpisode === 'function') {
+      try {
+        const id = await reflexion.storeEpisode({
+          sessionId: options.sessionId,
+          task: options.summary.slice(0, EPISODE_TASK_MAX),
+          reward: 0,
+          success: false,
+          tags: ['session-end'],
+          metadata: {
+            source: 'session-end',
+            provenance: 'session-summary',
+            tasksCompleted: options.tasksCompleted ?? 0,
+            patternsLearned: options.patternsLearned ?? 0,
+          },
+        });
+        if (typeof id === 'number' && Number.isFinite(id)) {
+          episodeId = id;
+          controller = 'reflexion';
+          persisted = true;
+        }
+      } catch { /* non-fatal: the memory entry below still records the session */ }
     }
 
-    // Persist session summary as memory entry
-    await bridgeStoreEntry({
-      key: `session-${options.sessionId}`,
-      value: JSON.stringify({
-        sessionId: options.sessionId,
-        summary: options.summary || 'Session ended',
-        tasksCompleted: options.tasksCompleted ?? 0,
-        patternsLearned: options.patternsLearned ?? 0,
-        endedAt: new Date().toISOString(),
-      }),
-      namespace: 'session',
-      tags: ['session-end'],
-      upsert: true,
-      dbPath: options.dbPath,
-    });
+    // Persist session summary as memory entry. A failure here must not hide
+    // an episode that was already stored above.
+    let entryStored = false;
+    try {
+      await bridgeStoreEntry({
+        key: `session-${options.sessionId}`,
+        value: JSON.stringify({
+          sessionId: options.sessionId,
+          summary: options.summary || 'Session ended',
+          tasksCompleted: options.tasksCompleted ?? 0,
+          patternsLearned: options.patternsLearned ?? 0,
+          endedAt: new Date().toISOString(),
+        }),
+        namespace: 'session',
+        tags: ['session-end'],
+        upsert: true,
+        dbPath: options.dbPath,
+      });
+      entryStored = true;
+    } catch (err) {
+      if (episodeId === undefined) throw err;
+    }
 
-    if (controller === 'none') controller = 'bridge-store';
-    persisted = true;
+    if (entryStored) {
+      controller = controller === 'none' ? 'bridge-store' : controller + '+bridge-store';
+      persisted = true;
+    }
 
     // Phase 3: Trigger NightlyLearner consolidation if available
     const nightlyLearner = registry.get('nightlyLearner');
@@ -3396,7 +3532,7 @@ export async function bridgeSessionEnd(options: {
       } catch { /* non-fatal */ }
     }
 
-    return { success: true, controller, persisted };
+    return { success: true, controller, persisted, ...(episodeId !== undefined ? { episodeId } : {}) };
   } catch {
     return null;
   }

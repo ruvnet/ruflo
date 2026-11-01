@@ -5,6 +5,21 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.68.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.68.0 on agentdb 3.2.0 (ADR-519).
+
+### Added
+- **`agentdb_episode-recall` MCP tool.** It recalls past episodes (session summaries and `memory distill` output) relevant to a task. Ranking is agentdb 3.2's keyword + vector search, so an exact name such as a ticket id or function name is found as well as a paraphrase. `rerank: true` adds a local cross-encoder, at about 200 ms per call and a 23 MB model on first use. On LongMemEval_M, recall_all@5 is 0.630 with vector search only, 0.719 with hybrid, and 0.789 with rerank (agentdb ADR-016).
+- **`agentdb_session-start` accepts `recall: true`**, with `k`, `hybrid` and `rerank`, and returns past episodes related to the session context.
+
+### Fixed
+- **Session episodes are stored.** The session bridge called `ReflexionMemory.startEpisode`/`endEpisode`, which do not exist, so `agentdb_session-*` and `hooks session-*` never wrote an episode. A session end with a summary now stores one. It is stored as neutral (reward 0), because the outcome is unverified.
+- A failing secondary write during session start or end no longer discards an episode that was already stored or recalled.
+
+### Changed
+- agentdb `^3.2.0` in the CLI and the `claude-flow` umbrella; the `ruflo` wrapper's override is `>=3.2.0`. This brings in ruvector 0.3.5.
+
 ## [3.67.0] - 2026-10-31
 
 Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.67.0, with standalone `@claude-flow/aidefence` 3.1.0 and `@claude-flow/memory` 3.2.1. It rides on the ecosystem releases agentdb 3.0.0, agentic-flow 3.0.0 and npm `aidefence` 3.0.1 (ADR-513 to ADR-517).
