@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": { "@claude-flow/cli-core/types": ["../cli-core/src/types.ts"] }
+  },
+  "files": ["src/services/context-delegation.ts", "src/commands/context-plan.ts", "src/services/anthropic-context-adapter.ts"]
+}

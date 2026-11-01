@@ -5,6 +5,29 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.70.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.70.0 — governed context delegation (ADR-521, #4648). Nothing changes by default.
+
+### Added
+- **Bounded context delegation.** New public APIs `planContextRead` / `delegateContextRead` and the `ruflo hooks context-plan` command. A large analysis read (many files, bulk search) can be handed to a cheaper worker that returns only cited findings. Every finding must quote whole source lines that match a SHA-256-identified snapshot, so a forged or partial quote is rejected. Routing modes:
+  - `legacy`, the default: unchanged behaviour, zero adapter calls.
+  - `observe`: records the routing decision only.
+  - `enforce`: delegates; must be explicitly enabled.
+  Edits, debugging, architecture work, targeted reads, nested workers and small inputs always read directly.
+- **`createAnthropicContextAdapter`.** An optional governed transport:
+  - Fixed `api.anthropic.com` endpoints, API version `2026-10-21`, no redirects and no custom endpoint.
+  - A one-use grant goes through the host policy gate, and the user-global AI fuse is the default.
+  - Response size, timeout and output tokens are bounded; truncation, refusal, tool content, unknown usage and a model mismatch all fail closed.
+  - Usage is recorded as priced from operator-supplied prices, not as billed cost.
+- **Benchmark protocol** (`v3/@claude-flow/cli/benchmarks/context-delegation/`, not in the npm tarball): 30 fixed lookups × 10 repetitions, 300/300 exact quotes. Coordinator payload is −97.6%; total bytes crossing the core boundary are +3.8% (both disclosed). Added local processing is about 0.1 ms p50. This is deterministic protocol evidence, not a live cost or quality result: no live provider call has succeeded yet.
+
+### Security
+- Pilot runners pass the spawned CLI an allowlisted environment, not the whole shell. The `--runtime` entry is contained and hashed before it is imported.
+
+### Fixed
+- `hooks context-plan --worker-available` is honoured through the CLI parser (camelCased flag).
+
 ## [3.69.0] - 2026-11-01
 
 Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.69.0 on agentdb 3.3.0 (ADR-520), with the 2026-11-01 issue and Dream Cycle sweep. Leaves published alongside: `@claude-flow/memory` 3.2.2, `@claude-flow/neural` 3.0.2, `@claude-flow/swarm` 3.0.4.
