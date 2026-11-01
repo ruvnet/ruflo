@@ -10,5 +10,5 @@
     "baseUrl": ".",
     "paths": { "@claude-flow/cli-core/types": ["../cli-core/src/types.ts"] }
   },
-  "files": ["src/services/context-delegation.ts", "src/commands/context-plan.ts"]
+  "files": ["src/services/context-delegation.ts", "src/commands/context-plan.ts", "src/services/anthropic-context-adapter.ts"]
 }

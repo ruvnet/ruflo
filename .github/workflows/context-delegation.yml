@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'v3/@claude-flow/cli/src/services/context-delegation.ts'
+      - 'v3/@claude-flow/cli/src/services/anthropic-context-adapter.ts'
+      - 'v3/@claude-flow/cli/src/services/global-ai-budget.ts'
+      - 'v3/@claude-flow/cli/__tests__/anthropic-context-adapter.test.ts'
+      - 'v3/@claude-flow/cli/__tests__/context-provider-pilot.test.ts'
       - 'v3/@claude-flow/cli/src/commands/context-plan.ts'
       - 'v3/@claude-flow/cli/src/commands/hooks.ts'
       - 'v3/@claude-flow/cli/src/index.ts'
@@ -27,8 +31,10 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --legacy-peer-deps
       - run: node_modules/.bin/tsc -p v3/@claude-flow/cli/tsconfig.context-delegation.json
-      - run: ../../../node_modules/.bin/vitest run __tests__/context-delegation.test.ts
+      - run: ../../../node_modules/.bin/vitest run __tests__/context-delegation.test.ts __tests__/anthropic-context-adapter.test.ts __tests__/context-provider-pilot.test.ts
         working-directory: v3/@claude-flow/cli
+      - name: Provider pilot preflight (zero network)
+        run: node v3/@claude-flow/cli/benchmarks/context-delegation/provider-pilot.mjs
       - name: Verify committed source-bound evidence
         run: node v3/@claude-flow/cli/benchmarks/context-delegation/verify.mjs
       - name: Reproduce deterministic before and after benchmark

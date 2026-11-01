@@ -39,7 +39,7 @@ flowchart TD
   Check --> Escalate
 ```
 
-Host adapter integration requirements for a later provider enabled change:
+Host integration requirements for enabling the optional provider adapter:
 
 1. Authorize source acquisition under the host's existing filesystem capability before snapshots are created.
 2. Select a model through the existing router without increasing the caller's safety envelope. Enforce destination restrictions, data classification and zero worker tools or MCP capabilities in the actual provider request. `tools: []` in this protocol is a contract, not a sandbox.
@@ -64,7 +64,7 @@ The [benchmark report](../../../docs/benchmarks/context-delegation.md) links the
 
 Focused tests cover routing, malformed metadata, forged/stale citations, bounds, cancellation, redaction and the hook entry. A dedicated CI workflow runs focused strict type checking, tests, committed evidence verification and an independent benchmark replay.
 
-Rollout: merge the default preserving protocol first. A later provider adapter PR must demonstrate at least 30% lower total billed inference cost, no critical factual omissions on a held out corpus, and no more than 20% higher median end to end latency, including retries and escalation. The required host and provider receipts must be recorded. Thresholds are proposed acceptance targets, not measured outcomes.
+Rollout: merge the default preserving protocol first. Live provider and host interception validation must demonstrate at least 30% lower total billed inference cost, no critical factual omissions on a held out corpus, and no more than 20% higher median end to end latency, including retries and escalation. The required host and provider receipts must be recorded. Thresholds are proposed acceptance targets, not measured outcomes.
 
 Rollback: keep hosts in `legacy` or remove the opt in adapter call. No migrations, credentials, daemon schedule, marketplace entry or release version change is needed.
 
@@ -79,4 +79,24 @@ Rollback: keep hosts in `legacy` or remove the opt in adapter call. No migration
 | Finite caller wait | Timeout and preexisting/inflight cancellation tests |
 | Reviewable performance claims | Paired raw samples, full boundary accounting, source manifest verifier |
 | Public integration | Index exports and registered `hooks context-plan` tests |
-| No implicit model spend | No provider, filesystem, network or process implementation |
+| No implicit model spend | No implicit provider activation; host authorization and global budget precede explicit network calls |
+
+## Provider adapter refinement
+
+The continuation implements `createAnthropicContextAdapter` as an optional first party transport. Core planning remains provider neutral and legacy by default. Automatic host interception, filesystem acquisition and provider credential setup remain outside this change.
+
+The adapter has two fixed destinations, `https://api.anthropic.com/v1/messages/count_tokens` and `https://api.anthropic.com/v1/messages`, using API version `2026-10-21`. Both are disclosed in the immutable host authorization request, with separate and aggregate request body sizes. Thus a successful invocation sends the corpus twice. It never follows redirects, takes a custom endpoint, loads plugins, executes a subprocess or supplies tools, MCP servers, containers or caching directives. One token count preflight and at most one generation are permitted. There are no retries.
+
+The host must provide an authorization callback and a model specific timestamped price snapshot. Configuration is copied before authorization. A single use grant binds the immutable request, cancellation signal and expiry. Invocation consumes the grant, reserves through the existing global AI budget, checks cancellation after asynchronous reservation and releases in every terminal path. Authorization alone does not hold a launch permit. A bypass permit is refused. The trusted budget port is injectable for tests, and the host owns that port's authority.
+
+A conservative planning token bound is submitted to the policy gate. The count endpoint must fit inside that bound before generation. `max_tokens` bounds generated output. Actual input, output and usage priced cost overruns are detected and fail the result while preserving the receipt. These are preflight bounds and overrun detection relative to supplied prices, not an invoice guarantee or a refund mechanism. A 429 updates the existing quota circuit with a fixed sanitized message.
+
+Response bodies are read through a chunk byte limit and a deadline. Truncation, refusal, tool content, unknown usage, unpriced cache TTL splits and actual model mismatch fail closed. Model generated usage is ignored. Provider input/output, cache read/write splits, actual model, request ID and stop reason are retained separately from core receipts. `usagePricedCostUsd` means a calculation from the supplied price snapshot, never a reconciled invoice. The core receives token totals without an invented monetary value. Adapter receipts describe transport completion; the core still independently validates source evidence and may reject a transport successful result.
+
+The [resumable pilot](../../@claude-flow/cli/benchmarks/context-delegation/provider-pilot.mjs) performs baseline coordinator, cheaper worker and routed coordinator phases. It defaults to zero network preflight. Execution requires a bound API key, explicit pricing/config, built CLI, existing enforce mode policy and a private owned checkpoint directory. Each call checks the actual policy decision remains in enforce mode, including inherited policy root handling. No mode, credential, route, launch quota or environment budget setting is changed.
+
+Durable intent is synced before each potentially charged call. Checkpoints bind the complete built CLI dist tree, the three first party core service sources, runner and repository lockfile. Installed dependency bytes and OS binaries are not attested by this manifest. Changed inputs fail resume. Failed or uncertain calls require human reconciliation, never automatic retries. A missing late receipt is marked charge uncertain. Only a confirmed pretransmission budget block can resume. Attempts are retained, and the pilot has an attempt cap. Pricing is an operator supplied assertion until reconciled against current provider metadata and price documentation.
+
+Validation now includes mocked full runner execution, mode changes, candidate changes, quota resume, uncertain charges and durable intent failure. The actual live pilot remains blocked in the observed execution runtimes because the API key is not exported into their environment. A working subscription login is not substituted for API billing evidence. The global default of two launches per hour also requires a three call pilot to resume across windows. No paid model calls have been made.
+
+Primary protocol references, inspected 2026-11-01: [Messages](https://platform.claude.com/docs/en/api/messages/create), [token counting](https://platform.claude.com/docs/en/api/messages/count_tokens), [model metadata](https://platform.claude.com/docs/en/api/models/list), [pricing](https://platform.claude.com/docs/en/about-claude/pricing).

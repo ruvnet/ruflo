@@ -80,8 +80,33 @@ Planning can be inspected without reading source or invoking inference:
 ruflo hooks context-plan --bytes 52000 --files 1 --mode observe --worker-available
 ```
 
-This command returns an advisory plan. No automatic tool interception or provider adapter is installed by this change. Code generation and automatic writes are outside this implementation.
+This command returns an advisory plan. Automatic tool interception remains disabled. An optional fixed destination Anthropic adapter is available to an explicitly configured trusted host; it is never activated implicitly. Code generation and automatic writes are outside this implementation.
 
 ## Remaining evidence gate
 
 Before enabling host interception, run a held out analysis corpus through a real governed adapter and coordinator. Record actual billed input/output/cache usage for both models, answer quality, fallback rate, retries and complete latency. Preserve the existing global launch fuse; its default limits must not be silently relaxed for a benchmark. Proposed acceptance: at least 30% lower total billed cost, no critical omissions, and no more than 20% median latency increase.
+
+
+## Optional provider adapter and resumable live pilot
+
+`createAnthropicContextAdapter` implements an actual fixed destination HTTP transport. Its policy descriptor discloses both token counting and generation endpoints. The corpus is transmitted twice per successful invocation. The earlier deterministic byte table measures the core protocol boundary and excludes these provider wrappers, token counting traffic and provider response envelopes. Do not use that table as an actual HTTP network saving claim.
+
+The adapter omits tools, MCP and containers, rejects redirects and handles real chunk limits, timeouts, launch reservations and quota circuit updates. It preserves provider usage even when output is rejected. Captured cache categories are priced from the exact supplied model price snapshot; generated usage is discarded. Supplied prices are an operator assertion. Calculated usage priced cost is not a reconciled bill. Preflight ceilings and overrun detection do not undo a provider charge.
+
+[Provider tests](../../v3/@claude-flow/cli/__tests__/anthropic-context-adapter.test.ts) and [runner integration tests](../../v3/@claude-flow/cli/__tests__/context-provider-pilot.test.ts) use mocked transports and policy decisions, with no provider calls. Runner tests exercise all three phases, an enforce to observe change, changed runtime bytes, quota pause/resume, uncertain charges and failed fsync before dispatch.
+
+Run the zero network preflight on Node 24:
+
+```bash
+node v3/@claude-flow/cli/benchmarks/context-delegation/provider-pilot.mjs
+```
+
+[Recorded preflight](../../v3/@claude-flow/cli/benchmarks/context-delegation/provider-preflight.json) reports the observed missing runtime credential binding and unchanged launch limits. The stored vault key was not read or exported. A working Claude subscription login was not used as a substitute for API cost evidence. No paid model calls have been made.
+
+An authorized operator with an existing API key binding, a normally built CLI and enforce mode policy can run the same command with `--execute --config /owned/pricing.json --state /owned/private/checkpoint.json`. The checkpoint directory must already be private and owned by the executing user. No new policy permission is granted by the script. Its policy resource is `context.read.delegate`, action `context.read.delegate`, with `network: true`, concurrency one and the stated cost/token bounds.
+
+The config must provide `coordinator` and `worker` price snapshots, each with `model`, `inputUsdPerMillion`, `outputUsdPerMillion`, `cacheReadUsdPerMillion`, `cacheWrite5mUsdPerMillion`, `cacheWrite1hUsdPerMillion`, `source` and `observedAt`, plus `maxCostUsdPerCall`. Verify the exact available model IDs and current prices first. There are no built in prices or guessed model defaults. The requested aggregate ceiling is three times the per call ceiling, before any detected provider usage overrun.
+
+Each phase is durably checkpointed with file and directory fsync before dispatch. Resumes bind configuration, fixed public fixture, question, runner, all built CLI files, core source and lockfile hashes. Runtime dependencies and OS binaries are outside this manifest. Failed or uncertain potentially charged calls cannot automatically repeat. Confirmed budget blocks can resume in a later window. The default two launches per hour means a three call comparison cannot finish in one hourly window; quotas are never raised. The checkpoint retains attempts and marks missing late usage as charge uncertain, requiring reconciliation before a new pilot.
+
+The completed pilot reports baseline usage priced cost against worker plus routed coordinator cost, active processing time and elapsed wall time including resume waits. The frozen question tests six budget behavior facts and still requires human semantic review. A single pilot cannot satisfy the held out deployment acceptance gate. Live API economics, semantic quality and latency remain unmeasured until the credential and policy prerequisites are met.

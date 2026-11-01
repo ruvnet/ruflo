@@ -36,6 +36,11 @@ const trackedSources = [
   relative(root, corpusPath), relative(root, fileURLToPath(import.meta.url)),
   relative(root, join(here, 'verify.mjs')),
   'v3/@claude-flow/cli/tsconfig.context-delegation.json',
+  'v3/@claude-flow/cli/src/services/anthropic-context-adapter.ts',
+  'v3/@claude-flow/cli/src/services/global-ai-budget.ts',
+  'v3/@claude-flow/cli/__tests__/anthropic-context-adapter.test.ts',
+  'v3/@claude-flow/cli/__tests__/context-provider-pilot.test.ts',
+  'v3/@claude-flow/cli/benchmarks/context-delegation/provider-pilot.mjs',
 ];
 const manifest = Object.fromEntries(trackedSources.map(p => [p, sha(readFileSync(join(root, p)))]));
 const candidateSnapshotSha256 = sha(JSON.stringify(manifest));
