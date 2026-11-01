@@ -73,7 +73,7 @@
     "@opentelemetry/otlp-exporter-base": ">=0.220.0",
     "@opentelemetry/otlp-grpc-exporter-base": ">=0.220.0",
     "@opentelemetry/otlp-transformer": ">=0.220.0",
-    "agentdb": ">=3.2.0",
+    "agentdb": ">=3.3.0",
     "agentic-flow": ">=2.0.14",
     "@ruvector/ruvllm": ">=2.6.0",
     "fast-uri": ">=3.1.6"

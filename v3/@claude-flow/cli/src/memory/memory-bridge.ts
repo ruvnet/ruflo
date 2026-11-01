@@ -3369,6 +3369,20 @@ export async function bridgeRecallEpisodes(options: EpisodeRecallOptions & { dbP
   };
 }
 
+/**
+ * Run `fn` against the ReflexionMemory controller inside one bridge operation, so a shutdown waits
+ * for it (ADR-520). Null when the bridge or the controller is unavailable.
+ */
+export async function withReflexionController<T>(
+  dbPath: string | undefined,
+  fn: (reflexion: any) => Promise<T>,
+): Promise<T | null> {
+  if (!operationContext.getStore()?.active) return withBridgeOperation(() => withReflexionController(dbPath, fn));
+  const registry = await getRegistry(dbPath);
+  const reflexion = registry?.get?.('reflexion');
+  return reflexion ? fn(reflexion) : null;
+}
+
 // ===== Phase 5: ReflexionMemory session lifecycle =====
 
 /**
