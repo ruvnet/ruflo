@@ -80,7 +80,13 @@ async function seedStore(
   return dbPath;
 }
 
-describe('#4203 RaBitQ index is built on demand instead of only via the manual tool', () => {
+// Every test seeds a real store in a fresh module graph, and two of them build
+// a second graph. The CI ratchet runs vitest from the repo root, where no config
+// sets testTimeout, so the 5 s default applied: on a loaded runner the recall
+// test took 6.2 s and timed out. Its abandoned search kept running, imported
+// rabitq-index.js after the next test's vi.resetModules() and built the index
+// there, so "concurrent ensureRabitqIndex()" saw initialized === true at start.
+describe('#4203 RaBitQ index is built on demand instead of only via the manual tool', { timeout: 60_000 }, () => {
   // Each test gets a fresh module graph: the index state, the auto-build
   // throttle and the bridge registry cache are all module-level.
   beforeEach(() => {

@@ -12,7 +12,7 @@ import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText, validateAgentSpawn } from './validate-input.js';
 import { executeAgentTask } from './agent-execute-core.js';
 import { AGENT_HEALTH_WINDOW, summarizeAgentExecutions, type AgentExecutionSample } from './agent-health-metrics.js';
-import { pheromoneAgentEligibility } from './swarm-tools.js';
+import { pheromoneAgentEligibility, type loadSwarmStore } from './swarm-tools.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -389,19 +389,16 @@ export const agentTools: MCPTool[] = [
       };
 
       const store = loadAgentStore();
-      store.agents[agentId] = agent;
-      saveAgentStore(store);
 
-      // #2085 — also push to the swarm store's agents array so that
-      // swarm_status reports the new agent. Without this, agent_spawn
-      // and swarm_status read/write separate stores and agents added
-      // post-init never show up in swarm_status.agents — confirmed for
-      // all topologies (hierarchical, mesh, etc.).
+      // #2085 — the agent is also pushed to the swarm store's agents array so
+      // that swarm_status reports it. Resolve that swarm first: #4572 — an
+      // active swarm already holding maxAgents live agents refuses the spawn.
+      let swarmTools: typeof import('./swarm-tools.js') | undefined;
+      let swarmStore: ReturnType<typeof loadSwarmStore> | undefined;
+      let targetSwarmId = (input.swarmId as string) || '';
       try {
-        const { loadSwarmStore: _loadSwarmStore, saveSwarmStore: _saveSwarmStore } =
-          await import('./swarm-tools.js');
-        const swarmStore = _loadSwarmStore();
-        let targetSwarmId = (input.swarmId as string) || '';
+        swarmTools = await import('./swarm-tools.js');
+        swarmStore = swarmTools.loadSwarmStore();
         if (!targetSwarmId) {
           // Default to the most-recently-created swarm.
           const all = Object.values(swarmStore.swarms);
@@ -410,16 +407,38 @@ export const agentTools: MCPTool[] = [
           )[0];
           targetSwarmId = latest?.swarmId || '';
         }
-        if (targetSwarmId && swarmStore.swarms[targetSwarmId]) {
-          const swarm = swarmStore.swarms[targetSwarmId];
+      } catch { /* swarm store unavailable — agent still registered globally */ }
+      const swarm = targetSwarmId ? swarmStore?.swarms[targetSwarmId] : undefined;
+      const members = Array.isArray(swarm?.agents) ? swarm.agents : [];
+      if (swarm && swarm.status !== 'terminated' && !members.includes(agentId)) {
+        // Terminated agents stay listed in swarm.agents; they no longer hold a slot.
+        const live = members.filter(
+          (id) => store.agents[id] && store.agents[id].status !== 'terminated',
+        ).length;
+        if (live >= swarm.maxAgents) {
+          return {
+            success: false,
+            error: `Swarm ${swarm.swarmId} is full: ${live}/${swarm.maxAgents} agents. Terminate an agent (agent_terminate) or init a swarm with a larger maxAgents.`,
+            swarmId: swarm.swarmId,
+            agentCount: live,
+            maxAgents: swarm.maxAgents,
+          };
+        }
+      }
+
+      store.agents[agentId] = agent;
+      saveAgentStore(store);
+
+      if (swarm && swarmTools && swarmStore) {
+        try {
           if (!Array.isArray(swarm.agents)) swarm.agents = [];
           // Idempotent — don't duplicate if agent_spawn is retried.
           if (!swarm.agents.includes(agentId)) {
             swarm.agents.push(agentId);
-            _saveSwarmStore(swarmStore);
+            swarmTools.saveSwarmStore(swarmStore);
           }
-        }
-      } catch { /* swarm store unavailable — agent still registered globally */ }
+        } catch { /* swarm store unwritable — agent still registered globally */ }
+      }
 
       // Record agent in graph database (ADR-087, best-effort)
       try {
