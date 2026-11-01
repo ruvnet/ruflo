@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.49.8 — 2026-10-31
+- chore: the plugin map gives the two new external marketplace plugins a home section, `agentdb` under Memory and `agentic-flow` under Learning, so their commands launch from the console (ADR-518).
+
 ## 0.49.7 — 2026-10-27
 - fix: Claude can clear Project Anatole alerts through the console again. `console_run anatole-ack-<id>` (and every other Anatole change or read Claude ran) failed with "command.run: called from a tool.call hook, it would wait on the turn this hook is holding", so nothing was acked and the Security page kept every alert open. The console sent `/protector` and waited for its answer inside Claude's tool call, and the host refuses a slash command while that call holds the turn (a clock tick and `immediate` do not get around it). The console now sends `/protector` without waiting and retries for about a minute while the host still reports the turn as held. Claude's reply says "Queued", not "Done", and the mod applies the ack when the turn ends. The outcome and the Result panel update when the mod answers. Acks still go through the console's confirm and Claude-control level, and the alert file is never edited directly (#4545).
 
