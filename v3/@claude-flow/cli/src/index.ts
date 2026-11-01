@@ -802,3 +802,7 @@ export type {
 
 // Default export
 export default CLI;
+
+// Bounded, provider-neutral context delegation. Hosts retain policy and budget authority.
+export { planContextRead, delegateContextRead, DEFAULT_CONTEXT_LIMITS } from './services/context-delegation.js';
+export type { ContextMode, ContextIntent, ContextRead, ContextLimits, ContextPlan, ContextSource, ContextEvidence, ContextWorkerRequest, ContextWorkerReply, ContextAdapter, ContextReceipt, ContextResult } from './services/context-delegation.js';
