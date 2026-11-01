@@ -7,6 +7,7 @@ on:
       - 'v3/@claude-flow/cli/src/services/global-ai-budget.ts'
       - 'v3/@claude-flow/cli/__tests__/anthropic-context-adapter.test.ts'
       - 'v3/@claude-flow/cli/__tests__/context-provider-pilot.test.ts'
+      - 'v3/@claude-flow/cli/__tests__/context-subscription-pilot.test.ts'
       - 'v3/@claude-flow/cli/src/commands/context-plan.ts'
       - 'v3/@claude-flow/cli/src/commands/hooks.ts'
       - 'v3/@claude-flow/cli/src/index.ts'
@@ -31,7 +32,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --legacy-peer-deps
       - run: node_modules/.bin/tsc -p v3/@claude-flow/cli/tsconfig.context-delegation.json
-      - run: ../../../node_modules/.bin/vitest run __tests__/context-delegation.test.ts __tests__/anthropic-context-adapter.test.ts __tests__/context-provider-pilot.test.ts
+      - run: ../../../node_modules/.bin/vitest run __tests__/context-delegation.test.ts __tests__/anthropic-context-adapter.test.ts __tests__/context-provider-pilot.test.ts __tests__/context-subscription-pilot.test.ts
         working-directory: v3/@claude-flow/cli
       - name: Provider pilot preflight (zero network)
         run: node v3/@claude-flow/cli/benchmarks/context-delegation/provider-pilot.mjs

@@ -33,3 +33,12 @@ assert.equal(result.summary.coordinatorByteReductionPct, (1 - sum('candidateCoor
 assert.ok(result.summary.coordinatorByteReductionPct >= 70);
 assert.equal(result.workerCalls, result.samples.length);
 console.log(`Verified ${result.samples.length} paired samples and ${Object.keys(result.manifest).length} source hashes. Deterministic protocol evidence only.`);
+
+const attempt = JSON.parse(readFileSync(join(here, 'subscription-live-attempt.json'), 'utf8'));
+assert.equal(sha(attempt.provenance.runnerSource), attempt.manifest.runner);
+assert.equal(attempt.phases.baseline.status, 'failed');
+assert.equal(attempt.phases.baseline.chargeUncertain, true);
+assert.equal(attempt.phases.baseline.receipt.childTerminationConfirmed, true);
+assert.equal(attempt.interpretation.cost, 'unknown');
+assert.equal(attempt.interpretation.automaticRetry, false);
+console.log('Verified archived failed live attempt provenance; cost remains unknown.');

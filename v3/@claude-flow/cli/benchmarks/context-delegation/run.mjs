@@ -40,6 +40,9 @@ const trackedSources = [
   'v3/@claude-flow/cli/src/services/global-ai-budget.ts',
   'v3/@claude-flow/cli/__tests__/anthropic-context-adapter.test.ts',
   'v3/@claude-flow/cli/__tests__/context-provider-pilot.test.ts',
+  'v3/@claude-flow/cli/__tests__/context-subscription-pilot.test.ts',
+  'v3/@claude-flow/cli/benchmarks/context-delegation/subscription-pilot.mjs',
+  'v3/@claude-flow/cli/benchmarks/context-delegation/subscription-live-attempt.json',
   'v3/@claude-flow/cli/benchmarks/context-delegation/provider-pilot.mjs',
 ];
 const manifest = Object.fromEntries(trackedSources.map(p => [p, sha(readFileSync(join(root, p)))]));
