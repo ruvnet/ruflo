@@ -1,0 +1,532 @@
+{
+  "schema": "ruflo.context-delegation.mod-live/v1",
+  "model": "haiku",
+  "claude": "2.1.289 (Claude Code)",
+  "at": "2026-11-01T19:38:36.814Z",
+  "summary": {
+    "off": {
+      "runs": 6,
+      "correct": 6,
+      "delegated": 0,
+      "mainCostUsd": 0.2816,
+      "workerCostUsd": 0,
+      "totalCostUsd": 0.2816,
+      "mainInputTokens": 332996,
+      "wallMs": 47018
+    },
+    "enforce": {
+      "runs": 6,
+      "correct": 6,
+      "delegated": 6,
+      "mainCostUsd": 0.1298,
+      "workerCostUsd": 0.0885,
+      "totalCostUsd": 0.2183,
+      "mainInputTokens": 261439,
+      "wallMs": 50054
+    }
+  },
+  "rows": [
+    {
+      "file": "v3/@claude-flow/cli/src/mcp-tools/agentdb-tools.ts",
+      "mode": "off",
+      "exit": 0,
+      "wallMs": 9701,
+      "durationMs": 8784,
+      "costUsd": 0.079932,
+      "mainInputTokens": 71409,
+      "mainOutputTokens": 886,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 886,
+          "cacheReadInputTokens": 35420,
+          "cacheCreationInputTokens": 35971,
+          "webSearchRequests": 0,
+          "costUSD": 0.079932,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 715,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "The largest k (number of episodes) that `agentdb_episode-recall` will return is **50**. This is enforced at line 746 where `validatePositiveInt(params.k, 5, 50)` caps the k value at a maximum of 50, as confirmed by the input schema description on line 724 stating \"Episodes to return (1-50)\".",
+      "delegation": null
+    },
+    {
+      "file": "v3/@claude-flow/cli/src/mcp-tools/agentdb-tools.ts",
+      "mode": "enforce",
+      "exit": 0,
+      "wallMs": 15071,
+      "durationMs": 14142,
+      "costUsd": 0.023225,
+      "mainInputTokens": 44358,
+      "mainOutputTokens": 365,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 365,
+          "cacheReadInputTokens": 35420,
+          "cacheCreationInputTokens": 8920,
+          "webSearchRequests": 0,
+          "costUSD": 0.023225,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 207,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "The `agentdb_episode-recall` tool validates the `k` parameter using `validatePositiveInt(params.k, 5, 50)`, which clamps the value to a maximum of 50. Therefore, the largest k (number of episodes) that agentdb_episode-recall will return is **50 episodes**.",
+      "delegation": {
+        "reads": 1,
+        "delegated": 1,
+        "wouldDelegate": 0,
+        "fallbacks": {},
+        "bytesRead": 82621,
+        "bytesShown": 3785,
+        "workerMs": 10262,
+        "inputTokens": 28644,
+        "outputTokens": 1138,
+        "shownVsReadSavedPct": 95.42,
+        "recent": [
+          {
+            "at": "2026-11-01T19:37:11.522Z",
+            "path": "agentdb-tools.ts",
+            "outcome": "delegated",
+            "reason": "bulk-analysis",
+            "bytesRead": 82621,
+            "bytesShown": 3785,
+            "workerMs": 10262,
+            "inputTokens": 28644,
+            "outputTokens": 1138,
+            "cached": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "v3/@claude-flow/cli/src/mcp-tools/agent-tools.ts",
+      "mode": "off",
+      "exit": 0,
+      "wallMs": 11011,
+      "durationMs": 10142,
+      "costUsd": 0.0564944,
+      "mainInputTokens": 59527,
+      "mainOutputTokens": 949,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 949,
+          "cacheReadInputTokens": 35414,
+          "cacheCreationInputTokens": 24095,
+          "webSearchRequests": 0,
+          "costUSD": 0.0564944,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 763,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "When the active swarm already has `maxAgents` live agents, `agent_spawn` **refuses the spawn** and returns an error response (lines 418-426) indicating the swarm is full with a message like `Swarm ${swarmId} is full: ${live}/${maxAgents} agents`. The response includes details about which swarm is full and instructs the caller to either terminate an existing agent or initialize a swarm with a large",
+      "delegation": null
+    },
+    {
+      "file": "v3/@claude-flow/cli/src/mcp-tools/agent-tools.ts",
+      "mode": "enforce",
+      "exit": 0,
+      "wallMs": 8313,
+      "durationMs": 7477,
+      "costUsd": 0.0221744,
+      "mainInputTokens": 43577,
+      "mainOutputTokens": 465,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 465,
+          "cacheReadInputTokens": 35414,
+          "cacheCreationInputTokens": 8145,
+          "webSearchRequests": 0,
+          "costUSD": 0.0221744,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 306,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "When the active swarm already has `maxAgents` live agents, `agent_spawn` returns a failure response with `success: false` and an error message indicating the swarm is full, along with the current agent count and max capacity. The error message suggests either terminating an agent or initializing a new swarm with a larger `maxAgents` limit.",
+      "delegation": {
+        "reads": 1,
+        "delegated": 1,
+        "wouldDelegate": 0,
+        "fallbacks": {},
+        "bytesRead": 48368,
+        "bytesShown": 1346,
+        "workerMs": 3285,
+        "inputTokens": 16745,
+        "outputTokens": 323,
+        "shownVsReadSavedPct": 97.22,
+        "recent": [
+          {
+            "at": "2026-11-01T19:37:37.935Z",
+            "path": "agent-tools.ts",
+            "outcome": "delegated",
+            "reason": "bulk-analysis",
+            "bytesRead": 48368,
+            "bytesShown": 1346,
+            "workerMs": 3285,
+            "inputTokens": 16745,
+            "outputTokens": 323,
+            "cached": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "v3/@claude-flow/swarm/src/consensus/raft.ts",
+      "mode": "off",
+      "exit": 0,
+      "wallMs": 8610,
+      "durationMs": 7752,
+      "costUsd": 0.0371784,
+      "mainInputTokens": 50552,
+      "mainOutputTokens": 672,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 672,
+          "cacheReadInputTokens": 35404,
+          "cacheCreationInputTokens": 15130,
+          "webSearchRequests": 0,
+          "costUSD": 0.0371784,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 485,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "The vote quorum for a proposal is computed in the `checkConsensus` method (line 493) as the maximum of a strict majority (`Math.floor(totalVoters / 2) + 1`) and a threshold percentage of voters (`Math.floor(totalVoters * threshold)`, where threshold defaults to 0.66). This ensures the quorum never falls below a strict majority, preventing the leader's self-vote alone from accepting a proposal afte",
+      "delegation": null
+    },
+    {
+      "file": "v3/@claude-flow/swarm/src/consensus/raft.ts",
+      "mode": "enforce",
+      "exit": 0,
+      "wallMs": 6605,
+      "durationMs": 5838,
+      "costUsd": 0.021111400000000002,
+      "mainInputTokens": 43391,
+      "mainOutputTokens": 323,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 323,
+          "cacheReadInputTokens": 35404,
+          "cacheCreationInputTokens": 7969,
+          "webSearchRequests": 0,
+          "costUSD": 0.021111400000000002,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 155,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "The vote quorum for a proposal is computed as the maximum of two values: a strict majority (floor of total voters divided by 2, plus 1) and a threshold-based calculation (floor of total voters multiplied by a configured threshold, defaulting to 0.66). The total number of voters includes all peers plus 1 (the leader itself), which forms the basis for these quorum requirements.",
+      "delegation": {
+        "reads": 1,
+        "delegated": 1,
+        "wouldDelegate": 0,
+        "fallbacks": {},
+        "bytesRead": 19509,
+        "bytesShown": 1095,
+        "workerMs": 2571,
+        "inputTokens": 7799,
+        "outputTokens": 268,
+        "shownVsReadSavedPct": 94.39,
+        "recent": [
+          {
+            "at": "2026-11-01T19:37:54.435Z",
+            "path": "raft.ts",
+            "outcome": "delegated",
+            "reason": "bulk-analysis",
+            "bytesRead": 19509,
+            "bytesShown": 1095,
+            "workerMs": 2571,
+            "inputTokens": 7799,
+            "outputTokens": 268,
+            "cached": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "v3/@claude-flow/cli/src/mcp-tools/config-tools.ts",
+      "mode": "off",
+      "exit": 0,
+      "wallMs": 5929,
+      "durationMs": 4994,
+      "costUsd": 0.0358246,
+      "mainInputTokens": 50380,
+      "mainOutputTokens": 467,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 467,
+          "cacheReadInputTokens": 35396,
+          "cacheCreationInputTokens": 14966,
+          "webSearchRequests": 0,
+          "costUSD": 0.0358246,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 319,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "The config tools refuse scope names that are in the `DANGEROUS_KEYS` set: `__proto__`, `constructor`, and `prototype` (line 191). This is enforced by the `validateScope` function (lines 205–210), which is called by all config tools to prevent prototype pollution attacks.",
+      "delegation": null
+    },
+    {
+      "file": "v3/@claude-flow/cli/src/mcp-tools/config-tools.ts",
+      "mode": "enforce",
+      "exit": 0,
+      "wallMs": 6446,
+      "durationMs": 5623,
+      "costUsd": 0.020916,
+      "mainInputTokens": 43397,
+      "mainOutputTokens": 280,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 280,
+          "cacheReadInputTokens": 35400,
+          "cacheCreationInputTokens": 7979,
+          "webSearchRequests": 0,
+          "costUSD": 0.020916,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 138,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "The config tools refuse scope names that are in the `DANGEROUS_KEYS` set: `__proto__`, `constructor`, and `prototype`. The `validateScope` function explicitly rejects any scope name matching these keys, returning an error `'scope uses a reserved name'`.",
+      "delegation": {
+        "reads": 1,
+        "delegated": 1,
+        "wouldDelegate": 0,
+        "fallbacks": {},
+        "bytesRead": 20832,
+        "bytesShown": 1078,
+        "workerMs": 2615,
+        "inputTokens": 7620,
+        "outputTokens": 274,
+        "shownVsReadSavedPct": 94.83,
+        "recent": [
+          {
+            "at": "2026-11-01T19:38:07.021Z",
+            "path": "config-tools.ts",
+            "outcome": "delegated",
+            "reason": "bulk-analysis",
+            "bytesRead": 20832,
+            "bytesShown": 1078,
+            "workerMs": 2615,
+            "inputTokens": 7620,
+            "outputTokens": 274,
+            "cached": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "mode": "off",
+      "exit": 0,
+      "wallMs": 6461,
+      "durationMs": 5600,
+      "costUsd": 0.0354135,
+      "mainInputTokens": 49913,
+      "mainOutputTokens": 575,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 575,
+          "cacheReadInputTokens": 35405,
+          "cacheCreationInputTokens": 14490,
+          "webSearchRequests": 0,
+          "costUSD": 0.0354135,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 416,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "A permit whose id starts with `bypass_` is generated when the AI budget is disabled via the `RUFLO_AI_BUDGET_DISABLE=1` environment variable (line 188). Such permits are exempt from enforcement—they bypass both the release mechanism (line 235) and usage recording (line 330), allowing launches to proceed without budget constraints.",
+      "delegation": null
+    },
+    {
+      "file": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "mode": "enforce",
+      "exit": 0,
+      "wallMs": 8006,
+      "durationMs": 7237,
+      "costUsd": 0.0215787,
+      "mainInputTokens": 43425,
+      "mainOutputTokens": 404,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 404,
+          "cacheReadInputTokens": 35407,
+          "cacheCreationInputTokens": 8000,
+          "webSearchRequests": 0,
+          "costUSD": 0.0215787,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 256,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "When the AI budget is disabled via environment variable, a permit with an id starting with `bypass_` is created and returned immediately with `allowed: true`. When `release()` or `recordUsage()` methods are called on such permits, they are skipped entirely and return early without performing any operations.",
+      "delegation": {
+        "reads": 1,
+        "delegated": 1,
+        "wouldDelegate": 0,
+        "fallbacks": {},
+        "bytesRead": 17881,
+        "bytesShown": 1124,
+        "workerMs": 2974,
+        "inputTokens": 7113,
+        "outputTokens": 304,
+        "shownVsReadSavedPct": 93.71,
+        "recent": [
+          {
+            "at": "2026-11-01T19:38:19.975Z",
+            "path": "global-ai-budget.ts",
+            "outcome": "delegated",
+            "reason": "bulk-analysis",
+            "bytesRead": 17881,
+            "bytesShown": 1124,
+            "workerMs": 2974,
+            "inputTokens": 7113,
+            "outputTokens": 304,
+            "cached": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "v3/@claude-flow/cli/src/mcp-tools/swarm-tools.ts",
+      "mode": "off",
+      "exit": 0,
+      "wallMs": 5306,
+      "durationMs": 4253,
+      "costUsd": 0.0368061,
+      "mainInputTokens": 51215,
+      "mainOutputTokens": 335,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 335,
+          "cacheReadInputTokens": 35411,
+          "cacheCreationInputTokens": 15786,
+          "webSearchRequests": 0,
+          "costUSD": 0.0368061,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 176,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "The `swarm_init` function uses `'hierarchical-mesh'` as the default topology when none is provided, as seen on line 272 where it sets `const topology = (input.topology as string) || 'hierarchical-mesh'`. This is a hybrid topology that combines hierarchical and mesh communication patterns for multi-agent coordination.",
+      "delegation": null
+    },
+    {
+      "file": "v3/@claude-flow/cli/src/mcp-tools/swarm-tools.ts",
+      "mode": "enforce",
+      "exit": 0,
+      "wallMs": 5613,
+      "durationMs": 4649,
+      "costUsd": 0.0207557,
+      "mainInputTokens": 43291,
+      "mainOutputTokens": 293,
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 18,
+          "outputTokens": 293,
+          "cacheReadInputTokens": 35407,
+          "cacheCreationInputTokens": 7866,
+          "webSearchRequests": 0,
+          "costUSD": 0.0207557,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 151,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "correct": true,
+      "answer": "The default topology that `swarm_init` uses when none is given is `'hierarchical-mesh'`. This is set at line 272 via the fallback value in the assignment `const topology = (input.topology as string) || 'hierarchical-mesh'`.",
+      "delegation": {
+        "reads": 1,
+        "delegated": 1,
+        "wouldDelegate": 0,
+        "fallbacks": {},
+        "bytesRead": 22108,
+        "bytesShown": 720,
+        "workerMs": 1436,
+        "inputTokens": 8411,
+        "outputTokens": 128,
+        "shownVsReadSavedPct": 96.74,
+        "recent": [
+          {
+            "at": "2026-11-01T19:38:33.089Z",
+            "path": "swarm-tools.ts",
+            "outcome": "delegated",
+            "reason": "bulk-analysis",
+            "bytesRead": 22108,
+            "bytesShown": 720,
+            "workerMs": 1436,
+            "inputTokens": 8411,
+            "outputTokens": 128,
+            "cached": false
+          }
+        ]
+      }
+    }
+  ],
+  "workerPriceUsdPerM": {
+    "input": 1,
+    "output": 5
+  }
+}

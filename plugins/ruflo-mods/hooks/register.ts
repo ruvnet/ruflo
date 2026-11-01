@@ -3,6 +3,7 @@ import type { Register } from 'claude-code'
 import { registerAgents } from './agents'
 import { registerCompact } from './compact'
 import { registerCompactSnapshot } from './compact-snapshot'
+import { registerContextDelegate } from './context-delegate'
 import { registerCost } from './cost'
 import { registerDelivery } from './delivery'
 import { registerDescribe } from './describe'
@@ -54,4 +55,5 @@ export const register: Register = (on, options) => {
   if (opts.rureOffer) registerRureOffer(on, state)
   if (opts.learningLoop) registerLoop(on, state)
   if (opts.compactSnapshot) registerCompactSnapshot(on, state)
+  if (opts.contextDelegation !== 'off') registerContextDelegate(on, state, opts.contextDelegation)
 }

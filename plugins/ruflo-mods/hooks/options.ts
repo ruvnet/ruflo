@@ -1,6 +1,7 @@
 import type { PluginOptions } from 'claude-code'
 
 import { budgetOf } from './cost/budget'
+import type { DelegationMode } from './context-delegate/plan'
 import type { TrustPolicy } from './trust'
 
 /** The plugin's `userConfig` options, validated: a bad value is the default. */
@@ -25,6 +26,8 @@ export type ModOptions = {
   readonly sessionAttention: boolean
   readonly selfCheck: boolean
   readonly grounding: boolean
+  /** Automatic context delegation (ADR-522): off (default), observe, or enforce. */
+  readonly contextDelegation: DelegationMode
   readonly modTrust: TrustPolicy
   readonly modTrustAllow: ReadonlySet<string>
 }
@@ -33,6 +36,7 @@ const bool = (value: unknown, fallback: boolean) =>
   value === true || value === 'true' ? true : value === false || value === 'false' ? false : fallback
 
 const TRUST: readonly TrustPolicy[] = ['observe', 'refuse-risky', 'off']
+const DELEGATION: readonly DelegationMode[] = ['off', 'observe', 'enforce']
 
 /** Plugin ids (`name@marketplace`), from a comma list or a string array; anything else is none. */
 function names(value: unknown): ReadonlySet<string> {
@@ -63,6 +67,7 @@ export function readOptions(options: PluginOptions | undefined): ModOptions {
     sessionAttention: bool(o.sessionAttention, false),
     selfCheck: bool(o.selfCheck, true),
     grounding: bool(o.grounding, false),
+    contextDelegation: DELEGATION.includes(o.contextDelegation as DelegationMode) ? (o.contextDelegation as DelegationMode) : 'off',
     modTrust: TRUST.includes(o.modTrust as TrustPolicy) ? (o.modTrust as TrustPolicy) : 'observe',
     modTrustAllow: names(o.modTrustAllow),
   }

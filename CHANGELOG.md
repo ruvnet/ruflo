@@ -5,6 +5,22 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.71.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.71.0 — automatic context delegation through ruflo-mods 0.15.0 (ADR-522). Off by default.
+
+### Added
+- **`contextDelegation` mod option** (`off` | `observe` | `enforce`). ruflo-mods automates ADR-521:
+  - **What qualifies:** a main-loop, whole-file `Read` of a 14–120 KB file, for a prompt that routes to research or review and asks for no change.
+  - **What happens:** it is answered by a no-tools haiku completion on the session's own credentials, so no API key is needed. Every quoted line is checked against the file, and the model sees only the cited passages (the file's own lines), with a header saying how to read the rest.
+  - **Why edits still work:** the real `Read` always runs first. Any failure shows the whole file.
+  - **`observe`** changes nothing and records what would have been delegated in `.claude-flow/metrics/context-delegation.json`.
+- **Live A/B result** (real binary, haiku main loop, 6 real repo files of 17–83 KB): 6/6 correct with delegation off and with it on, 6/6 reads delegated, total cost (main loop plus worker) −22.5%, main-loop input tokens −21.5%, wall time +6.5%. These are samples, not a statistical result; raw rows are in `benchmarks/context-delegation/results-mod-live.json`.
+
+### Security
+- **Mod contract:** the "no model calls" check allows exactly one `$.model.complete`, in the opt-in module, and fails if that module is not gated on the option.
+- **No forged quotes reach the model:** a quote whose words differ from the file never reaches it, because what is shown is always the file's own lines.
+
 ## [3.70.0] - 2026-11-01
 
 Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.70.0 — governed context delegation (ADR-521, #4648). Nothing changes by default.
