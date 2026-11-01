@@ -173,7 +173,19 @@ describe('#2226 — pattern store and search share a backend', () => {
           : typeof r.pattern === 'string' ? r.pattern : '';
         return text.includes(marker);
       });
-      expect(hit).toBeDefined();
+      // #4643: this fails only in the full CI ratchet run. Say which path ran so the next failure is a diagnosis.
+      const diag = {
+        stored: { controller: (stored as any).controller, degraded: (stored as any).degraded, patternId: (stored as any).patternId },
+        found: {
+          controller: (found as any).controller,
+          degraded: (found as any).degraded,
+          count: found.results.length,
+          top: found.results.slice(0, 5).map((r: any) => ({ score: r.score ?? r.similarity, text: String(r.content ?? r.pattern ?? '').slice(0, 60) })),
+        },
+        embeddings: process.env.CLAUDE_FLOW_EMBEDDINGS ?? null,
+        memoryPath: process.env.CLAUDE_FLOW_MEMORY_PATH ?? null,
+      };
+      expect(hit, JSON.stringify(diag)).toBeDefined();
     } finally {
       process.chdir(prevCwd);
       vi.unstubAllEnvs();
