@@ -49,7 +49,7 @@ function optionalText(value: unknown, name: string, nullable: boolean): { value?
 
 export const agentdbEpisodeGet: MCPTool = {
   name: 'agentdb_episode-get',
-  description: 'Get one past episode (a session summary or distilled trajectory) by id, as returned by agentdb_episode-recall or agentdb_episode-list. Returns episode: null when it does not exist. Needs agentdb >= 3.3.0.',
+  description: 'Get one past episode (a session summary or distilled trajectory) by id. Use when you already have an episode id from agentdb_episode-recall or agentdb_episode-list and need its full record; memory_retrieve is wrong here because episodes are not key-value entries. Returns episode: null when missing. Needs agentdb >= 3.3.0.',
   inputSchema: {
     type: 'object',
     properties: { id: { type: 'number', description: 'Episode id' } },
@@ -69,7 +69,7 @@ export const agentdbEpisodeGet: MCPTool = {
 
 export const agentdbEpisodeList: MCPTool = {
   name: 'agentdb_episode-list',
-  description: 'Page through past episodes, newest first, optionally for one session or only successes/failures. Returns the page and the total count. For relevance-ranked results use agentdb_episode-recall. Needs agentdb >= 3.3.0.',
+  description: 'Page through past episodes, newest first, optionally for one session or only successes/failures, with a total count. Use when you need to browse or audit what was recorded (e.g. every episode from one session); use agentdb_episode-recall instead when you want the episodes most relevant to a task. Needs agentdb >= 3.3.0.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -112,7 +112,7 @@ export const agentdbEpisodeList: MCPTool = {
 
 export const agentdbEpisodeUpdate: MCPTool = {
   name: 'agentdb_episode-update',
-  description: 'Correct a past episode in place, keeping its id: fix its task/critique/output text, reward, success flag, tags or metadata. Text changes are re-embedded and re-indexed so recall sees them; other changes are not re-embedded. Metadata merges (null removes a key) unless replaceMetadata is true. Use to mark an episode that turned out wrong, e.g. success=false with a critique. Needs agentdb >= 3.3.0.',
+  description: 'Correct a past episode in place, keeping its id: task/critique/output text, reward, success flag, tags or metadata. Use when an outcome has been verified or an episode turned out wrong (e.g. success=false with a critique); deleting and re-recording is wrong because it changes the id. Text changes are re-embedded and re-indexed so recall sees them; metadata merges unless replaceMetadata is true. Needs agentdb >= 3.3.0.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -176,7 +176,7 @@ export const agentdbEpisodeUpdate: MCPTool = {
 
 export const agentdbEpisodeDelete: MCPTool = {
   name: 'agentdb_episode-delete',
-  description: 'Delete a past episode by id, together with its embedding and index entries, so recall stops returning it. Irreversible; to correct an episode use agentdb_episode-update. Needs agentdb >= 3.3.0.',
+  description: 'Delete a past episode by id, with its embedding and index entries, so recall stops returning it. Use when an episode must not be recalled at all (wrong, duplicate or sensitive); prefer agentdb_episode-update over deleting when it only needs correcting. Irreversible. Needs agentdb >= 3.3.0.',
   inputSchema: {
     type: 'object',
     properties: { id: { type: 'number', description: 'Episode id' } },
