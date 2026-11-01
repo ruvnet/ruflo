@@ -3284,6 +3284,8 @@ export async function bridgeDeleteCausalNode(options: {
 const EPISODE_TASK_MAX = 4_000;
 const EPISODE_TEXT_MAX = 2_000;
 const EPISODE_RECALL_MAX = 50;
+/** #3908: upper bound on the session-end NightlyLearner sweep. */
+const SESSION_END_CONSOLIDATE_TIMEOUT_MS = 10_000;
 
 export interface RecalledEpisode {
   id?: number;
@@ -3523,13 +3525,35 @@ export async function bridgeSessionEnd(options: {
       persisted = true;
     }
 
-    // Phase 3: Trigger NightlyLearner consolidation if available
+    // Phase 3: Trigger NightlyLearner consolidation if available.
+    // #3908: neither the MemoryConsolidator wrapper nor AgentDB's NightlyLearner
+    // has `consolidate` — they expose `run`/`runAll` — so probing only for
+    // `consolidate` meant session-end never consolidated. Bounded so a slow
+    // sweep cannot hold session-end open.
     const nightlyLearner = registry.get('nightlyLearner');
-    if (nightlyLearner && typeof nightlyLearner.consolidate === 'function') {
+    const consolidate = nightlyLearner && (
+      typeof nightlyLearner.consolidate === 'function'
+        ? () => nightlyLearner.consolidate({ sessionId: options.sessionId })
+        : typeof nightlyLearner.run === 'function'
+          ? () => nightlyLearner.run()
+          : typeof nightlyLearner.runAll === 'function'
+            ? () => nightlyLearner.runAll()
+            : null
+    );
+    if (consolidate) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        await nightlyLearner.consolidate({ sessionId: options.sessionId });
+        await Promise.race([
+          Promise.resolve().then(consolidate),
+          new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error('nightlyLearner timeout')), SESSION_END_CONSOLIDATE_TIMEOUT_MS);
+            timer.unref?.();
+          }),
+        ]);
         controller += '+nightlyLearner';
-      } catch { /* non-fatal */ }
+      } catch { /* non-fatal */ } finally {
+        if (timer) clearTimeout(timer);
+      }
     }
 
     return { success: true, controller, persisted, ...(episodeId !== undefined ? { episodeId } : {}) };
