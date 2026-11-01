@@ -428,6 +428,10 @@ export const claimsTools: MCPTool[] = [
       if (progress !== undefined) {
         claim.progress = Math.min(100, Math.max(0, progress));
       }
+      // claims_status never sets 'stealable', so a claim it updates is no
+      // longer up for grabs: drop it from the list claims_stealable and
+      // claims_steal read.
+      delete store.stealable[issueId];
 
       store.claims[issueId] = claim;
       saveClaims(store);
