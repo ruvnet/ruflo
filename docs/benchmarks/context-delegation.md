@@ -53,7 +53,7 @@ Files:
 3. [Recorded raw results](../../v3/@claude-flow/cli/benchmarks/context-delegation/results.json)
 4. [Evidence verifier](../../v3/@claude-flow/cli/benchmarks/context-delegation/verify.mjs)
 5. [Acceptance tests](../../v3/@claude-flow/cli/__tests__/context-delegation.test.ts)
-6. [Architecture decision](../../v3/docs/adr/ADR-520-bounded-context-delegation.md)
+6. [Architecture decision](../../v3/docs/adr/ADR-521-bounded-context-delegation.md)
 
 ## Host integration example
 

@@ -49,10 +49,7 @@ if (!process.env.ANTHROPIC_API_KEY || !value("--config") || !value("--state")) {
   process.exitCode = 2;
 } else {
   const runtimePath = resolve(value("--runtime") ?? join(root, "v3/@claude-flow/cli/dist/src/index.js"));
-  const { createAnthropicContextAdapter, delegateContextRead } = await import(pathToFileURL(runtimePath).href);
   const config = JSON.parse(readFileSync(resolve(value("--config")), "utf8"));
-  const { loadPolicyState, authorizeMcpTool } = await import("../../dist/src/services/policy-runtime.js");
-  if (loadPolicyState(root).mode !== "enforce") throw new Error("pilot requires existing enforce-mode policy; no mode changes are made");
   const content = execFileSync("git", ["show", `${corpus.baselineCommit}:${sourceMeta.path}`], { cwd: root, encoding: "utf8" });
   if (contextSha256(content) !== sourceMeta.sha256) throw new Error("fixture hash mismatch");
   // Bind the whole built CLI tree plus first-party source and lockfile. This
@@ -63,6 +60,10 @@ if (!process.env.ANTHROPIC_API_KEY || !value("--config") || !value("--state")) {
   if (!runtimePath.startsWith(runtimeRoot + "/")) throw new Error("runtime must be inside built CLI dist tree");
   const runtimeEntry = runtimePath.slice(runtimeRoot.length + 1);
   walk(runtimeRoot);
+  // Contained and hashed above before any of it runs.
+  const { createAnthropicContextAdapter, delegateContextRead } = await import(pathToFileURL(runtimePath).href);
+  const { loadPolicyState, authorizeMcpTool } = await import("../../dist/src/services/policy-runtime.js");
+  if (loadPolicyState(root).mode !== "enforce") throw new Error("pilot requires existing enforce-mode policy; no mode changes are made");
   const sourceManifest = Object.fromEntries(["src/services/context-delegation.ts","src/services/anthropic-context-adapter.ts","src/services/global-ai-budget.ts"].map(p=>[p,contextSha256(readFileSync(join(root,"v3/@claude-flow/cli",p)))]));
   const runnerSha256 = contextSha256(readFileSync(fileURLToPath(import.meta.url)));
   const lockSha256 = contextSha256(readFileSync(join(root,"package-lock.json")));

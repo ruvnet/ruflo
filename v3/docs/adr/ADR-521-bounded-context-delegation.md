@@ -1,4 +1,4 @@
-# ADR 520: Bounded context delegation in Ruflo core
+# ADR 521: Bounded context delegation in Ruflo core
 
 Status: Proposed, implemented as an opt in core protocol
 Date: 2026-11-01

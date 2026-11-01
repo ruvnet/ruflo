@@ -61,7 +61,7 @@ const args=process.argv.slice(2);
 if(args[0]==='--version'){console.log('fixture-claude 1.0.0');process.exit(0);}
 if(args[0]==='auth'&&args[1]==='status'){console.log(JSON.stringify({loggedIn:true,authMethod:'claude.ai',apiProvider:'firstParty',subscriptionType:'max'}));process.exit(0);}
 const log=e=>fs.appendFileSync(process.env.NATIVE_EVENTS,JSON.stringify(e)+'\\n');
-fs.writeFileSync(process.env.NATIVE_PID,String(process.pid));log({event:'launch',pid:process.pid,args});
+fs.writeFileSync(process.env.NATIVE_PID,String(process.pid));log({event:'launch',pid:process.pid,args,canary:process.env.GH_TOKEN??null});
 const behavior=process.env.NATIVE_BEHAVIOR||'success';
 const model=args[args.indexOf('--model')+1]==='haiku'?'claude-fixture-haiku':'claude-fixture-sonnet';
 console.log(JSON.stringify({type:'system',subtype:'init',claude_code_version:'fixture-1.0.0',model,tools:behavior==='bad-init'?['Bash']:[],mcp_servers:[],plugins:[],skills:[]}));
@@ -77,7 +77,7 @@ console.log(JSON.stringify(result));if(behavior==='result-hang')setInterval(()=>
   const environment = (overrides: Record<string, string> = {}) => {
     const env = { ...process.env };
     for (const key of ['ANTHROPIC_API_KEY','ANTHROPIC_AUTH_TOKEN','ANTHROPIC_BASE_URL','CLAUDE_CODE_USE_BEDROCK','CLAUDE_CODE_USE_VERTEX','CLAUDE_CODE_USE_FOUNDRY']) delete env[key];
-    return { ...env, PATH: join(root, 'bin') + delimiter + (process.env.PATH ?? ''), NATIVE_EVENTS: events, NATIVE_PID: pid, ...overrides };
+    return { ...env, PATH: join(root, 'bin') + delimiter + (process.env.PATH ?? ''), NATIVE_EVENTS: events, NATIVE_PID: pid, GH_TOKEN: 'leak-canary', RUFLO_PILOT_CHILD_ENV_PASS: 'NATIVE_EVENTS,NATIVE_PID,NATIVE_BEHAVIOR', ...overrides };
   };
   const args = (phase: string, deadline: number) => [script, root, phase, String(deadline)];
   const run = (overrides: Record<string, string> = {}, phase = 'baseline', deadline = 1500) => spawnSync(process.execPath, args(phase, deadline), { encoding: 'utf8', env: environment(overrides), timeout: 10_000 });
@@ -111,6 +111,8 @@ describe.skipIf(!node24)('manual subscription pilot contracts using a fake nativ
     const launched = f.log().find(e => e.event === 'launch');
     for (const flag of ['--safe-mode','--restricted','--strict-mcp-config','--disable-slash-commands','--no-session-persistence']) expect(launched.args).toContain(flag);
     expect(launched.args[launched.args.indexOf('--tools') + 1]).toBe('');
+    // The child gets an allowlisted environment: a GH_TOKEN in the shell must not reach it.
+    expect(launched.canary).toBeNull();
     expect(JSON.parse(launched.args[launched.args.indexOf('--mcp-config') + 1])).toEqual({ mcpServers: {} });
     expect(JSON.parse(launched.args[launched.args.indexOf('--settings') + 1])).toEqual({ disableAllHooks: true });
     expect(f.log().find(e => e.event === 'release')).toMatchObject({ alive: false, permitId: 'fixture-permit' });

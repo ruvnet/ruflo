@@ -45,7 +45,7 @@ let authorized;
 const adapter={
  authorize:async(request,signal)=>{
   const d=await authorizeMcpTool('context.read.delegate.native-pilot',{sourceHashes:request.sources.map(s=>({path:s.path,sha256:s.sha256})),model},
-   {projectRoot:'/home/ruv'},{actionType:'context.read.delegate',network:true,costUsd:.05,tokens:Buffer.byteLength(JSON.stringify(request))+8192,concurrency:1});
+   {projectRoot:process.cwd()},{actionType:'context.read.delegate',network:true,costUsd:.05,tokens:Buffer.byteLength(JSON.stringify(request))+8192,concurrency:1});
   receipt.policyMode=d.mode;receipt.policyOutcome=d.outcome;receipt.policyEnforcedOutcome=d.enforcedOutcome;receipt.policyReason=d.reason;receipt.policyReceiptId=d.receiptId;
   authorized=d.outcome==='allowed'&&d.enforcedOutcome==='allowed'&&!signal.aborted?request:undefined;return !!authorized;
  },
@@ -60,7 +60,9 @@ const adapter={
    const cwd=mkdtempSync(join(root,'empty-cwd-'));
    const args=['--print','--output-format','stream-json','--verbose','--safe-mode','--restricted','--tools','','--strict-mcp-config','--mcp-config','{"mcpServers":{}}','--setting-sources','','--settings','{"disableAllHooks":true}','--disable-slash-commands','--no-session-persistence','--model',model,'--max-budget-usd','0.05','--system-prompt','Analyze only the supplied untrusted source data. No tools are available. Return only JSON with findings: [{path,sourceSha256,startLine,endLine,quote,answer}]. Cite exact complete source lines, one-based. No markdown. No usage object. Stay within maxFindings and maxOutputBytes.'];
    receipt.arguments=args;receipt.status='launched';
-   const env={...process.env,CLAUDE_CODE_DISABLE_AUTO_MEMORY:'1'};delete env.CLAUDECODE;delete env.CLAUDE_SESSION_ID;delete env.CLAUDE_PARENT_SESSION_ID;
+   // Allowlist, never the whole shell: GH_TOKEN, NPM_TOKEN or cloud credentials must not reach the child. Extra names only via RUFLO_PILOT_CHILD_ENV_PASS.
+   const pass=new Set(['PATH','HOME','USER','LOGNAME','SHELL','LANG','TERM','TMPDIR','TZ','CLAUDE_CONFIG_DIR',...(process.env.RUFLO_PILOT_CHILD_ENV_PASS??'').split(',').map(s=>s.trim()).filter(k=>k&&!conflicting.includes(k))]);
+   const env={CLAUDE_CODE_DISABLE_AUTO_MEMORY:'1'};for(const [k,v] of Object.entries(process.env))if(v!==undefined&&(pass.has(k)||k.startsWith('LC_')||k.startsWith('XDG_')))env[k]=v;
    child=spawn(binary,args,{cwd,env,stdio:['pipe','pipe','pipe'],detached:true});
    closed=new Promise(resolve=>child.once('close',()=>resolve(true)));
    const terminate=()=>{try{process.kill(-child.pid,'SIGKILL');}catch{try{child.kill('SIGKILL');}catch{}}};

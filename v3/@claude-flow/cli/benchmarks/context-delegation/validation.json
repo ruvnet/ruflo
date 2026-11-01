@@ -1,12 +1,12 @@
 {
   "schema": "ruflo.context-validation/v1",
   "baselineCommit": "3667ba6573ef811383881f8a887978798bf2113d",
-  "candidateSnapshotSha256": "72aba235975f3fee9fb160435f8413708e01ff0e6667b1c9c0564aca1a7a04a2",
+  "candidateSnapshotSha256": "9301fbfd0f904c82d3d8062a5a39652c8e197db850db927b47885de5e63522a4",
   "runtime": {
-    "node": "v24.22.1",
+    "node": "v24.22.2",
     "platform": "linux",
     "arch": "x64",
-    "cpu": "AMD EPYC 9V74 80-Core Processor"
+    "cpu": "AMD Ryzen 9 9950X 16-Core Processor"
   },
   "checks": [
     {
