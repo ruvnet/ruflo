@@ -5,6 +5,30 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.69.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.69.0 on agentdb 3.3.0 (ADR-520), with the 2026-11-01 issue and Dream Cycle sweep. Leaves published alongside: `@claude-flow/memory` 3.2.2, `@claude-flow/neural` 3.0.2, `@claude-flow/swarm` 3.0.4.
+
+### Added
+- **Episode get / list / update / delete** — `agentdb_episode-get`, `agentdb_episode-list`, `agentdb_episode-update`, `agentdb_episode-delete` over agentdb 3.3's ReflexionMemory (ADR-520). Mark a verified session's episode `success: true` with a critique in place; the id is kept and recall re-ranks it immediately. Strict integer ids; on agentdb < 3.3 the tools say so instead of half-working (#4642).
+- `agentdb` ^3.3.0 (full CRUD for episodes, patterns and skills; agentdb ADR-017), ruflo override `>=3.3.0`; marketplace `agentdb` plugin → `plugin-v3.3.0`.
+
+### Security
+- `hooks_codemod` resolves symlinks before its project-root check, so a link inside the project can no longer redirect a write outside it (CWE-59, #4346, #4636).
+- Raft consensus requires a strict majority; a leader's own vote plus a rejecting peer no longer accepts a proposal (#4458, #4636; `@claude-flow/swarm` 3.0.4).
+- Config MCP tools reject `__proto__` / `constructor` / `prototype` scope names and only read own scopes (prototype pollution, #4635 — the first fix opened by the new daily security scan).
+- Federation: `trust-change` / `topology-change` messages need TRUSTED, with a configurable `minTrustLevelForAdmin` floor (#4633, #4634).
+
+### Fixed
+- AgentDB SQL-fallback persistence in `@claude-flow/memory` actually writes (it checked for a `run` method the handle never has, and `references` was unquoted) (#4410, #4639).
+- Session-end consolidation runs (it looked for `.consolidate`, which no controller has) (#3908, #4638).
+- `session_save` keeps distinct memory rows whose namespace or key contains `::` (#4404, #4638).
+- `CLAUDE_FLOW_FISHER_DECAY` sets the EWC Fisher decay rate (#3475, #4638).
+- `agent_spawn` enforces the active swarm's `maxAgents` (#4572, #4640).
+- MoE load-balance loss uses the mean router probability; cache size accounting reuses stored sizes (#4381, #4481, #4639).
+- `workflow_run` creates a ready workflow instead of a fake running one (#4609, #4612); round-robin load balancing rotates (#4621); `daa_knowledge_share` same-millisecond entries no longer overwrite each other (#4601); `daa_workflow_create` keeps object step names (#4599); `claims_handoff` keeps recorded progress (#4596); the ruflo-core launcher explains a stale local build and falls back to npx (#4607); statusline DDD metric (#1047, #4615); bundled SKILL.md names (#1054, #4616).
+- CI: the RaBitQ auto-build test no longer times out on loaded runners (#4640). Still open: #4643 (#2226 pattern search, fails only in the full CI run; the published CLI passes the same check).
+
 ## [3.68.0] - 2026-11-01
 
 Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.68.0 on agentdb 3.2.0 (ADR-519).
