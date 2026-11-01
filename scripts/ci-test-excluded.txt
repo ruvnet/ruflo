@@ -49,6 +49,7 @@ plugins/ruflo-migrations/tests/migrations-mod.test.ts
 plugins/ruflo-mods/tests/attention.test.ts
 plugins/ruflo-mods/tests/agents.test.ts
 plugins/ruflo-mods/tests/compact.test.ts
+plugins/ruflo-mods/tests/context-delegate.test.ts
 plugins/ruflo-mods/tests/delivery.test.ts
 plugins/ruflo-mods/tests/describe.test.ts
 plugins/ruflo-mods/tests/grounding.test.ts
