@@ -62,10 +62,13 @@ Clean. Diff is additive-only (new method + 2 lines in `initialize()`/`cleanup()`
 
 ```
 Session commit:   5f3dacc54b7279e39b172d6027d7989791448e2e
-Candidate commit: PENDING
-Witness stamp:    PENDING
+Candidate commit: 47dafc5b5d9da16adccbe716155e03e3dd7a32ca
+Gist SHA-256 (pre-witness, this block held to the literal text PENDING): 48e2d7c45cf21b1a6e713c2f5abc24714b6eb5c2f8960f4dfee15ec317c9dfec
+Witness stamp:    c972c16f3884ca869e0df970127e3da7bb161fe0509d2465ab15fb41406ec380
 ```
-Verifier: fetch this gist, strip the Witness block's filled-in values back to `PENDING`, SHA-256 the file, concatenate with the Session commit above, SHA-256 again — must equal the Witness stamp.
+Verifier: fetch this gist, replace this block's three dynamic values with the literal text `PENDING` (as they were before this computation), SHA-256 the result, concatenate with the Session commit above, SHA-256 again — must equal the Witness stamp.
+
+Evaluation receipt identity: 5 new tests in `sona-ewc-consolidation-research.test.ts`, stash-isolated 3/5-fail-baseline → 5/5-pass-candidate, independently reproduced by a fresh-context adversarial critic who also ran the full suite and `tsc` themselves. Flywheel evidence identity: none (`.claude-flow/flywheel/` doesn't exist in this repo, confirmed). Darwin lineage identity: none (skipped, see above).
 
 ## Recommended Next Steps
 
