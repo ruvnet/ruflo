@@ -395,6 +395,10 @@ export const agentTools: MCPTool[] = [
       // active swarm already holding maxAgents live agents refuses the spawn.
       let swarmTools: typeof import('./swarm-tools.js') | undefined;
       let swarmStore: ReturnType<typeof loadSwarmStore> | undefined;
+      if (input.swarmId !== undefined && input.swarmId !== '') {
+        const vSwarm = validateIdentifier(input.swarmId, 'swarmId');
+        if (!vSwarm.valid) return { success: false, error: `Input validation failed: ${vSwarm.error}` };
+      }
       let targetSwarmId = (input.swarmId as string) || '';
       try {
         swarmTools = await import('./swarm-tools.js');
