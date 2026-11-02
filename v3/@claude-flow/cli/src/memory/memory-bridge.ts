@@ -3643,6 +3643,12 @@ export async function bridgeHealthCheck(
   controllers: Array<{ name: string; enabled: boolean; level: number }>;
   attestationCount?: number;
   cacheStats?: { size: number; hits: number; misses: number };
+  /** Why AgentDB failed to open, or null when it opened (#4654). */
+  agentdbInitError?: string | null;
+  /** Last bridge-level failure, including the AgentDB lock cause (#4622/#4654). */
+  bridgeFailureReason?: string | null;
+  /** Actionable next step when a second process owns the native store. */
+  hint?: string;
   hierarchicalMemory?: {
     controller: string;
     durable: boolean;
@@ -3658,6 +3664,12 @@ export async function bridgeHealthCheck(
 
   try {
     const controllers = registry.listControllers();
+    const resolvedPath = canonicalDbPath(dbPath);
+    const agentdbInitError = agentdbInitFailure(registry, resolvedPath);
+    const bridgeFailureReason = getBridgeFailureReason(dbPath);
+    const lockHint = agentdbInitError && /already open|cannot acquire lock|locked/i.test(agentdbInitError)
+      ? 'Another process (often the ruflo daemon or a second MCP server) owns the native vector store. Stop one owner and reconnect; reads currently use the volatile fallback.'
+      : undefined;
 
     // Phase 4: AttestationLog stats
     let attestationCount = 0;
@@ -3686,7 +3698,18 @@ export async function bridgeHealthCheck(
       };
     }
 
-    return { available: true, controllers, attestationCount, cacheStats, hierarchicalMemory };
+    return {
+      // A registry with a failed AgentDB still serves its other controllers,
+      // but it is not a working persistent bridge (#4622/#4654).
+      available: agentdbInitError === null,
+      controllers,
+      attestationCount,
+      cacheStats,
+      agentdbInitError,
+      bridgeFailureReason,
+      ...(lockHint ? { hint: lockHint } : {}),
+      hierarchicalMemory,
+    };
   } catch {
     return null;
   }
