@@ -20,7 +20,7 @@ export const EXFIL_URL_PACK: PatternPack = {
       "severity": "high",
       "type": "data_exfiltration",
       "confidence": 0.85,
-      "regex": "\\b(open|opens|visit|visits|fetch|fetches|get|load|loads|loading|browse|navigate\\s+to|go\\s+to|retrieve|retrieves|request|requests|call|calls|ping|hit|access|render|renders|display|displays|embed|embeds|preview|click|follow)\\b[^\\n]{0,80}?https?://[^\\s<>\"'|)]+\\?[^\\s<>\"'|)]*?[a-z0-9_\\-]{1,24}=([A-Za-z0-9+/_\\-]{16,}={0,2}|(%[0-9a-fA-F]{2}){6,})",
+      "regex": "\\b(open|opens|visit|visits|fetch|fetches|get|load|loads|loading|browse|navigate\\s+to|go\\s+to|retrieve|retrieves|request|requests|call|calls|ping|hit|access|render|renders|display|displays|embed|embeds|preview|click|follow)\\b[^\\n]{0,80}?https?://[^\\s<>\"'|)?]+\\?[^\\s<>\"'|)]*?[a-z0-9_\\-]{1,24}=([A-Za-z0-9+/_\\-]{16,}={0,2}|(%[0-9a-fA-F]{2}){6,})",
       "flags": "i",
       "description": "Directive to reach a URL whose query value is a base64/base64url or URL-encoded blob of 16+ characters",
       "examples": [
@@ -34,7 +34,7 @@ export const EXFIL_URL_PACK: PatternPack = {
       "severity": "medium",
       "type": "data_exfiltration",
       "confidence": 0.7,
-      "regex": "\\b(open|opens|visit|visits|fetch|fetches|get|load|loads|loading|browse|navigate\\s+to|go\\s+to|retrieve|retrieves|request|requests|call|calls|ping|hit|access|render|renders|display|displays|embed|embeds|preview|click|follow)\\b[^\\n]{0,80}?https?://[^\\s<>\"'|)]+\\?[^\\s<>\"'|)]*?[a-z0-9_\\-]{1,24}=([0-9a-fA-F]{2}){8,}\\b",
+      "regex": "\\b(open|opens|visit|visits|fetch|fetches|get|load|loads|loading|browse|navigate\\s+to|go\\s+to|retrieve|retrieves|request|requests|call|calls|ping|hit|access|render|renders|display|displays|embed|embeds|preview|click|follow)\\b[^\\n]{0,80}?https?://[^\\s<>\"'|)?]+\\?[^\\s<>\"'|)]*?[a-z0-9_\\-]{1,24}=([0-9a-fA-F]{2}){8,}\\b",
       "flags": "i",
       "description": "Directive to reach a URL whose query value is a hex blob of 16+ characters (medium: hex digests are common in legitimate signed URLs)",
       "examples": [
@@ -61,7 +61,7 @@ export const EXFIL_URL_PACK: PatternPack = {
       "severity": "high",
       "type": "data_exfiltration",
       "confidence": 0.85,
-      "regex": "!\\[[^\\]\\n]{0,300}\\]\\(\\s*https?://[^\\s)]+\\?[^\\s)]*?[a-z0-9_\\-]{1,24}=[A-Za-z0-9+/_\\-%]{16,}={0,2}[^\\s)]*\\)",
+      "regex": "!\\[[^\\]\\n]{0,300}\\]\\(\\s*https?://[^\\s)?]+\\?[^\\s)]*?[a-z0-9_\\-]{1,24}=[A-Za-z0-9+/_\\-%]{16}",
       "flags": "i",
       "description": "Markdown image whose URL carries an opaque query payload (render-time beacon)",
       "examples": [

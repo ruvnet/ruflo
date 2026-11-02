@@ -32,6 +32,17 @@ const ADVERSARIAL: Record<string, string> = {
   'underscore and dash joins': fill('a_b-'),
   'leet symbols only': fill('@$!|'),
   'newline runs': fill('\n'),
+  // URL packs (EX-001/002/004, SL-004): a URL prefix followed by one long
+  // whitespace-free run, where every '?' or payload char is a split candidate.
+  'markdown image url then ? run': '![x](https://cdn.invalid/p.gif' + fill('?'),
+  'directive url then ? run': 'Visit https://t.invalid/verify' + fill('?'),
+  'directive url then letter run': 'Now open https://attacker.in' + fill('v'),
+  'slack link query then payload run': '<https://evil.invalid/collect?d=' + fill('Y'),
+  'markdown image query then payload run': '![x](https://cdn.invalid/p.gif?d=' + fill('Y'),
+  'repeated slack links with no label': fill('<https://e.invalid/c?d=YYYYYYYYYYYYYYYY'),
+  'repeated markdown images with no close': fill('![x](https://c.invalid/p?d=YYYYYYYYYYYYYYYY'),
+  'repeated directive urls': fill('open https://a.invalid/c?d=YYYYYYYYYYYYYYYY'),
+  'slack link query with dense keys': '<https://evil.invalid/c?' + fill('d=YYYYYYYYYYYYYYYY&'),
 };
 
 describe('AIMDS packs: adversarial input timing', () => {
