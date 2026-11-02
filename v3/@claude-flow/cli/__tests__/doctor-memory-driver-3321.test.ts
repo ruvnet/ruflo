@@ -13,6 +13,11 @@ let workdir: string;
 let dbPath: string;
 
 async function runDoctor() {
+  // Isolation (#4643): the full suite may already have imported doctor.ts in
+  // this worker. Reset before re-importing so a doMock('better-sqlite3')
+  // registered by the current test actually applies to its Memory Integrity
+  // check instead of reusing the cached pre-mock module.
+  vi.resetModules();
   const { doctorCommand } = await import('../src/commands/doctor.js');
   const result = await doctorCommand.action!({
     flags: { component: 'memory' }, args: [], config: {},

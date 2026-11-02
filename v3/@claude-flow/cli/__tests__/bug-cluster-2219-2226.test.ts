@@ -149,6 +149,15 @@ describe('#2226 — pattern store and search share a backend', () => {
     const prevCwd = process.cwd();
     process.chdir(dir);
     vi.stubEnv('CLAUDE_FLOW_MEMORY_PATH', path.join(dir, '.swarm'));
+    // Full-suite isolation (#4643): another file can leave CLAUDE_FLOW_DB_PATH
+    // (which outranks MEMORY_PATH) or the bridge opt-out behind in the same
+    // worker. Pin both explicitly so this test cannot write/read a foreign store.
+    vi.stubEnv('CLAUDE_FLOW_DB_PATH', '');
+    // Full-suite isolation (#4643): the native AgentDB/embedder can be left in
+    // a process-wide singleton state by an earlier file in the same worker.
+    // Exercise the documented sql.js fallback deterministically; the
+    // reasoningBank path has its own controller tests.
+    vi.stubEnv('CLAUDE_FLOW_DISABLE_BRIDGE', '1');
     vi.resetModules();
     try {
       const { agentdbPatternStore, agentdbPatternSearch } = await import('../src/mcp-tools/agentdb-tools.js');
@@ -173,7 +182,10 @@ describe('#2226 — pattern store and search share a backend', () => {
           : typeof r.pattern === 'string' ? r.pattern : '';
         return text.includes(marker);
       });
-      expect(hit).toBeDefined();
+      expect(
+        hit,
+        `stored=${JSON.stringify(stored).slice(0, 500)} found=${JSON.stringify(found).slice(0, 1000)}`,
+      ).toBeDefined();
     } finally {
       process.chdir(prevCwd);
       vi.unstubAllEnvs();
