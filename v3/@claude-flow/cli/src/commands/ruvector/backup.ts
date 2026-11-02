@@ -471,7 +471,7 @@ const restoreSubcommand: Command = {
     const config = getConnectionConfig(ctx);
     const inputPath = ctx.flags.input as string;
     const clean = ctx.flags.clean as boolean;
-    const dryRun = ctx.flags['dry-run'] as boolean;
+    const dryRun = ctx.flags.dryRun === true || ctx.flags['dry-run'] === true;
 
     output.writeln();
     output.writeln(output.bold('RuVector Restore'));
