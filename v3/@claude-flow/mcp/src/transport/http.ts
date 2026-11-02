@@ -91,8 +91,11 @@ export class HttpTransport extends EventEmitter implements ITransport {
       server: this.server,
       path: '/ws',
       // CORS does not apply to upgrades, so a token-less server checks Host and Origin itself.
+      // With a token configured, the upgrade itself must carry it: refused clients never connect.
       verifyClient: (info: { req: IncomingMessage }) =>
-        this.config.auth?.enabled === true || refuseOpenRequest(info.req, this.config.host, this.config.corsOrigins) === undefined,
+        this.config.auth?.enabled === true
+          ? this.upgradeHasValidToken(info.req)
+          : refuseOpenRequest(info.req, this.config.host, this.config.corsOrigins) === undefined,
     });
 
     this.setupWebSocketHandlers();
@@ -382,37 +385,8 @@ export class HttpTransport extends EventEmitter implements ITransport {
   private setupWebSocketHandlers(): void {
     if (!this.wss) return;
 
-    // SECURITY: Handle WebSocket authentication via upgrade request
-    this.wss.on('connection', (ws, req) => {
-      // Validate authentication if enabled
-      if (this.config.auth?.enabled) {
-        const url = new URL(req.url || '', `http://${req.headers.host}`);
-        const token = url.searchParams.get('token') || req.headers['authorization']?.replace(/^Bearer\s+/i, '');
-
-        if (!token) {
-          this.logger.warn('WebSocket connection rejected: no authentication token');
-          ws.close(4001, 'Authentication required');
-          return;
-        }
-
-        // SECURITY: Timing-safe token validation
-        let valid = false;
-        if (this.config.auth.tokens?.length) {
-          for (const validToken of this.config.auth.tokens) {
-            if (this.timingSafeCompare(token, validToken)) {
-              valid = true;
-              break;
-            }
-          }
-        }
-
-        if (!valid) {
-          this.logger.warn('WebSocket connection rejected: invalid token');
-          ws.close(4003, 'Invalid token');
-          return;
-        }
-      }
-
+    // The upgrade was already authenticated in verifyClient when auth is enabled.
+    this.wss.on('connection', (ws) => {
       this.activeConnections.add(ws);
       this.logger.info('WebSocket client connected', {
         total: this.activeConnections.size,
@@ -584,6 +558,30 @@ export class HttpTransport extends EventEmitter implements ITransport {
     const digestA = createHash('sha256').update(a, 'utf8').digest();
     const digestB = createHash('sha256').update(b, 'utf8').digest();
     return timingSafeEqual(digestA, digestB);
+  }
+
+  /**
+   * SECURITY: token from `Authorization: Bearer` or `?token=` on a WebSocket upgrade,
+   * compared in constant time. Never throws: it runs before the connection exists, and
+   * an exception there would be uncaught. The query is parsed against a fixed base so a
+   * malformed Host header cannot break URL parsing.
+   */
+  private upgradeHasValidToken(req: IncomingMessage): boolean {
+    try {
+      const fromHeader = bearerToken(req.headers.authorization);
+      const fromQuery = new URL(req.url ?? '', 'http://localhost').searchParams.get('token') ?? undefined;
+      const given = fromHeader ?? fromQuery;
+      if (!given) return false;
+      let ok = false;
+      for (const valid of this.config.auth?.tokens ?? []) {
+        // An unset entry (e.g. `tokens: [process.env.X]` with X unset) matches nothing.
+        if (typeof valid !== 'string' || valid.length === 0) continue;
+        if (this.timingSafeCompare(given, valid)) ok = true;
+      }
+      return ok;
+    } catch {
+      return false;
+    }
   }
 
   /** Only GET/HEAD of exactly /health (any case, optional trailing slash) is public. */
