@@ -386,7 +386,7 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
   skills: {
     core: true,
     agentdb: true,
-    github: false,    // #4539: the GitHub skills run `ruflo github`, which v3 does not ship
+    github: true,     // #4539: only the hook-only GitHub skills remain; the rest are skills.legacy
     flowNexus: false,
     browser: true,
     v3: false,        // ADR-128: opt-in like agents.v3; use --full or `init skills --v3`

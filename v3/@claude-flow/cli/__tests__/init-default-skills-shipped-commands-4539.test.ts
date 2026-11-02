@@ -54,24 +54,33 @@ function dominantCommand(skill: string): string | null {
 
 describe('default init only installs skills whose commands v3 ships (#4539)', () => {
   it('keeps the skills that depend on unshipped commands out of the default set', () => {
-    // stream-chain and sparc-methodology are now opt-in, like skills.v3 after #4140.
+    // stream-chain, sparc-methodology and the three `ruflo github` skills are
+    // now opt-in through skills.legacy, like skills.v3 after #4140.
     expect(DEFAULT_INIT_OPTIONS.skills.legacy).toBe(false);
-    // The GitHub skills still invoke `ruflo github` / `ruflo skill`, which v3 does not ship.
-    expect(DEFAULT_INIT_OPTIONS.skills.github).toBe(false);
+    // github-code-review and github-project-management only use hooks, which v3
+    // ships, so the group stays in the default set.
+    expect(DEFAULT_INIT_OPTIONS.skills.github).toBe(true);
   });
 
-  it('default init does not install stream-chain, sparc-methodology or the GitHub skills', async () => {
+  it('default init skips the legacy skills but keeps the hook-only GitHub ones', async () => {
     const options = skillsOnly(DEFAULT_INIT_OPTIONS);
     const result = await executeInit(options);
     expect(result.success).toBe(true);
 
     const installed = installedSkills(options.targetDir!);
     expect(installed.length).toBeGreaterThan(0);
-    expect(installed).not.toContain('stream-chain');
-    expect(installed).not.toContain('sparc-methodology');
-    expect(installed).not.toContain('github-release-management');
-    expect(installed).not.toContain('github-workflow-automation');
-    expect(installed).not.toContain('github-multi-repo');
+    for (const legacy of [
+      'stream-chain',
+      'sparc-methodology',
+      'github-release-management',
+      'github-workflow-automation',
+      'github-multi-repo',
+    ]) {
+      expect(installed).not.toContain(legacy);
+    }
+    expect(installed).toEqual(
+      expect.arrayContaining(['github-code-review', 'github-project-management']),
+    );
   });
 
   it('every default-installed skill is built around a command the CLI ships', async () => {
@@ -88,7 +97,7 @@ describe('default init only installs skills whose commands v3 ships (#4539)', ()
     expect(missing).toEqual([]);
   }, 120_000);
 
-  it('skills.legacy still installs stream-chain and sparc-methodology when asked', async () => {
+  it('skills.legacy still installs every legacy skill when asked', async () => {
     const options = skillsOnly({
       ...DEFAULT_INIT_OPTIONS,
       skills: { ...DEFAULT_INIT_OPTIONS.skills, legacy: true },
@@ -97,7 +106,13 @@ describe('default init only installs skills whose commands v3 ships (#4539)', ()
     expect(result.success).toBe(true);
 
     expect(installedSkills(options.targetDir!)).toEqual(
-      expect.arrayContaining(['stream-chain', 'sparc-methodology']),
+      expect.arrayContaining([
+        'stream-chain',
+        'sparc-methodology',
+        'github-multi-repo',
+        'github-release-management',
+        'github-workflow-automation',
+      ]),
     );
   });
 });

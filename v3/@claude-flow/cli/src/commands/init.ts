@@ -1162,7 +1162,7 @@ const wizardCommand: Command = {
             options: [
               { value: 'core', label: 'Core', hint: 'Swarm, memory, SPARC skills', selected: true },
               { value: 'agentdb', label: 'AgentDB', hint: 'Vector database skills', selected: true },
-              { value: 'github', label: 'GitHub', hint: 'GitHub integration skills', selected: false },
+              { value: 'github', label: 'GitHub', hint: 'GitHub integration skills', selected: true },
               { value: 'flowNexus', label: 'Flow Nexus', hint: 'Cloud platform skills', selected: false },
               { value: 'v3', label: 'V3', hint: 'V3 implementation skills', selected: true },
               { value: 'legacy', label: 'Legacy', hint: 'Skills that document commands v3 does not ship', selected: false },

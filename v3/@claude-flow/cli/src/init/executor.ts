@@ -58,12 +58,11 @@ const SKILLS_MAP: Record<string, string[]> = {
     'reasoningbank-agentdb',
     'reasoningbank-intelligence',
   ],
+  // github-code-review and github-project-management only use hooks, which v3
+  // ships; the other three drive `ruflo github`, so they live in skills.legacy.
   github: [
     'github-code-review',
-    'github-multi-repo',
     'github-project-management',
-    'github-release-management',
-    'github-workflow-automation',
   ],
   flowNexus: [
     'flow-nexus-neural',
@@ -82,9 +81,13 @@ const SKILLS_MAP: Record<string, string[]> = {
     'v3-swarm-coordination',
   ],
   // ADR-128 / #4539: skills that document v2-era verbs v3 does not ship
-  // (`stream-chain`, `sparc`). Their examples fail with `Unknown command`, so
-  // they are opt-in like skills.v3 instead of being installed by default.
+  // (`stream-chain`, `sparc`, `github`). Their examples fail with `Unknown
+  // command`, so they are opt-in like skills.v3 instead of being installed by
+  // default.
   legacy: [
+    'github-multi-repo',
+    'github-release-management',
+    'github-workflow-automation',
     'sparc-methodology',
     'stream-chain',
   ],
