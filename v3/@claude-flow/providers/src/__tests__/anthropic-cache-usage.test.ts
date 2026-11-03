@@ -66,6 +66,31 @@ describe('Anthropic prompt-cache usage accounting', () => {
     expect(response.cost?.totalCost).toBeCloseTo(0.00204, 8);
   });
 
+  it('keeps the existing usage/cost for a response with no cache tokens', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({
+      id: 'msg_plain',
+      type: 'message',
+      role: 'assistant',
+      model: 'claude-3-5-sonnet-latest',
+      content: [{ type: 'text', text: 'ok' }],
+      stop_reason: 'end_turn',
+      usage: { input_tokens: 100, output_tokens: 50 },
+    })));
+
+    const anthropic = provider();
+    await anthropic.initialize();
+    const response = await anthropic.complete({
+      messages: [{ role: 'user', content: 'hi' }],
+    });
+
+    expect(response.usage).toEqual({
+      promptTokens: 100,
+      completionTokens: 50,
+      totalTokens: 150,
+    });
+    expect(response.cost?.promptCost).toBeCloseTo(0.0003, 8);
+  });
+
   it('carries the same accounting through the streaming done event', async () => {
     const events = [
       'data: {"type":"message_start","message":{"usage":{"input_tokens":10,"cache_creation_input_tokens":20,"cache_read_input_tokens":30}}}\n\n',
