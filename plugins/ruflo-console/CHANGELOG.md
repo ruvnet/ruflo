@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.49.9 — 2026-11-03
+- fix: a cancelled mission no longer puts "The mission is cancelled. Do not start new work." in Claude's prompt. The active mission stays active until another is created, so after a cancel every new goal's guidance reached Claude with that stop line, before the create step could make the new mission, and Claude refused to plan it. The mission context section is now left out for a cancelled mission, as it already was for a finished one.
+
 ## 0.49.8 — 2026-10-31
 - chore: the plugin map gives the two new external marketplace plugins a home section, `agentdb` under Memory and `agentic-flow` under Learning, so their commands launch from the console (ADR-518).
 
