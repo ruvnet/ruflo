@@ -4,10 +4,10 @@
  * Tool definitions for session management with file persistence.
  */
 
-import { existsSync, readFileSync, readdirSync, unlinkSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync, unlinkSync, statSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
-import { join } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import {
   mkdirRestricted,
@@ -406,6 +406,34 @@ function isSessionRecordLike(value: unknown): value is Partial<SessionRecord> {
   return 'data' in v || 'stats' in v || 'sessionId' in v || 'savedAt' in v;
 }
 
+/**
+ * SECURITY: `outputPath` comes from MCP tool input. Resolve it against the
+ * project root and require the real (symlink-resolved) parent directory to stay
+ * inside the real project root, and refuse an existing symlink as the target,
+ * so session_export cannot write files elsewhere on the host. The CLI's
+ * `session export` writes its own file and does not pass outputPath.
+ */
+function containedExportPath(outputPath: string): string | null {
+  if (!outputPath || outputPath.includes('\0')) return null;
+  try {
+    const root = realpathSync(getProjectCwd());
+    const abs = resolve(root, outputPath);
+    const parent = realpathSync(dirname(abs));
+    const target = join(parent, basename(abs));
+    const rel = relative(root, target);
+    if (!rel || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return null;
+    const existing = lstatOrNull(target);
+    if (existing && (existing.isSymbolicLink() || !existing.isFile())) return null;
+    return target;
+  } catch {
+    return null;
+  }
+}
+
+function lstatOrNull(p: string) {
+  try { return lstatSync(p); } catch { return null; }
+}
+
 export const sessionTools: MCPTool[] = [
   {
     name: 'session_save',
@@ -778,7 +806,9 @@ export const sessionTools: MCPTool[] = [
       let path: string | null = null;
       const outputPath = input.outputPath ? String(input.outputPath) : null;
       if (outputPath) {
-        try { writeFileSync(outputPath, JSON.stringify(session, null, 2), 'utf-8'); path = outputPath; }
+        const target = containedExportPath(outputPath);
+        if (!target) return { sessionId, error: 'outputPath must be a file inside the project directory (no symlinks)' };
+        try { writeFileSync(target, JSON.stringify(session, null, 2), 'utf-8'); path = target; }
         catch (e) { return { sessionId, error: `Could not write ${outputPath}: ${(e as Error).message}` }; }
       }
       return { sessionId, name: session.name, data: session, path, exportedAt: new Date().toISOString() };
