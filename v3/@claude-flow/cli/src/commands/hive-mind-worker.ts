@@ -104,6 +104,27 @@ export function currentRufloServer(): { command: string; args: string[] } {
     : { command: 'npx', args: ['-y', '@claude-flow/cli@latest', 'mcp', 'start'] };
 }
 
+const WORKER_MODEL = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,199}$/;
+
+/**
+ * The model for a spawned Claude, from `--model` (#1870). With no `--model`
+ * nothing is passed and Claude Code picks its own default. The value becomes
+ * its own argv token, so one starting with "-" would be read by Claude as a
+ * flag and is refused.
+ */
+export function resolveWorkerModel(flags: Record<string, unknown>): { model?: string; error?: string } {
+  const raw = flags.model;
+  if (raw === undefined || raw === null) return {};
+  if (typeof raw !== 'string' || raw.trim() === '') {
+    return { error: '--model needs a value, e.g. --model sonnet' };
+  }
+  const model = raw.trim();
+  if (!WORKER_MODEL.test(model)) {
+    return { error: `--model "${model}" is not a valid model name or id` };
+  }
+  return { model };
+}
+
 export interface RunOutcome {
   ok: boolean;
   output: string;
