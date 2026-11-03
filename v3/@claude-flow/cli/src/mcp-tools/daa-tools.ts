@@ -68,16 +68,35 @@ function ensureDAADir(): void {
   }
 }
 
+/**
+ * SECURITY: record maps are keyed by ids taken from MCP tool input, and
+ * validateIdentifier accepts names like `__proto__` and `constructor`. On a
+ * plain object those resolve to Object.prototype or a built-in, which a handler
+ * would then write into. Null-prototype maps only ever return own records.
+ */
+function withRecordMaps<S extends object>(store: S, keys: readonly string[]): S {
+  const maps = store as Record<string, unknown>;
+  for (const key of keys) {
+    const map = maps[key];
+    if (map && typeof map === 'object' && !Array.isArray(map)) Object.setPrototypeOf(map, null);
+    else maps[key] = Object.create(null);
+  }
+  return store;
+}
+
+const DAA_MAPS = ['agents', 'workflows', 'knowledge'] as const;
+
 function loadDAAStore(): DAAStore {
   try {
     const path = getDAAPath();
     if (existsSync(path)) {
-      return JSON.parse(readFileSync(path, 'utf-8'));
+      const parsed = JSON.parse(readFileSync(path, 'utf-8'));
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return withRecordMaps(parsed, DAA_MAPS);
     }
   } catch {
     // Return empty store
   }
-  return { agents: {}, workflows: {}, knowledge: {}, version: '3.0.0' };
+  return withRecordMaps({ agents: {}, workflows: {}, knowledge: {}, version: '3.0.0' } as DAAStore, DAA_MAPS);
 }
 
 function saveDAAStore(store: DAAStore): void {
