@@ -19,7 +19,7 @@ After running deep-research (one or multiple times), when you need to pull toget
    - `mcp__plugin_ruflo-core_ruflo__memory_search` namespace `research` for raw findings
    - `mcp__plugin_ruflo-core_ruflo__memory_search` namespace `research-sources` for references
    - `mcp__plugin_ruflo-core_ruflo__agentdb_pattern-search` for discovered patterns
-   - `mcp__plugin_ruflo-core_ruflo__agentdb_context-synthesize` for AI-assisted context building
+   - Synthesize the findings yourself from what the searches return. `mcp__plugin_ruflo-core_ruflo__agentdb_context-synthesize` is not a document synthesizer: it summarizes validated task episodes (task, reward, success) and answers `no-memories` or `no-eligible-episodes` for research notes and sources, which is the correct answer, not missing research
 2. **Grade evidence** — for each finding, assess:
    - **High**: Multiple independent sources agree, directly observed, reproducible
    - **Medium**: Single credible source, indirectly supported, plausible
