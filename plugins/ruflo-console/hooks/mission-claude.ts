@@ -38,13 +38,13 @@ function currentTask(state: State, mission: MissionRecord): { task: LedgerTask |
 let held: { key: string; text: string } | null = null
 
 /**
- * The section `prompt.compose` adds, or null (no mission, a finished one, or the setting off). The text is rebuilt only when its key
+ * The section `prompt.compose` adds, or null (no mission, a finished or cancelled one, or the setting off). The text is rebuilt only when its key
  * changes, and the key changes only with the task: a changed system prompt makes Claude re-read the whole conversation.
  */
 export function contextSection(state: State): { id: string; text: string; scope: 'session' } | null {
   const mission = activeMission(state)
 
-  if (mission === null || !contextEnabled(settingsOf(state).ai.missionContext)) return null
+  if (mission === null || mission.cancelled || !contextEnabled(settingsOf(state).ai.missionContext)) return null
 
   const statuses = derive(mission, state.snapshot?.tasks ?? [])
 
