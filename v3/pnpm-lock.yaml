@@ -71,8 +71,8 @@ importers:
         specifier: '>=3.5.0'
         version: link:../cli
       agent-browser:
-        specifier: ^0.39.0
-        version: 0.39.0
+        specifier: ^0.41.0
+        version: 0.41.2
       agentic-flow:
         specifier: ^2.0.13
         version: 2.0.13(@types/node@20.19.27)
@@ -7373,8 +7373,8 @@ packages:
     dev: false
     optional: true
 
-  /agent-browser@0.39.0:
-    resolution: {integrity: sha512-VtImIqCpHC/xJFw91IAcLlBJzebCBjynOwIKnx4kuCeI2JicpPBMKykdjQ1wmnj2dL2voNKRv8iK+Joe6aHFtw==}
+  /agent-browser@0.41.2:
+    resolution: {integrity: sha512-/agCKB5rw1EEK8SKWo4zid7a5kOwlclqALC0P3c69buJvKdhrl/dJkKdfLqGGaiNIbWzRdqqT0PxZVkwVEf2fg==}
     engines: {node: '>=24.0.0', pnpm: '>=11.0.0'}
     hasBin: true
     requiresBuild: true
