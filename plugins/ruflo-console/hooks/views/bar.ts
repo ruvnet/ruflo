@@ -316,7 +316,7 @@ export function barView(kit: Kit, state: State, columns: number, mark: RenderEle
   const openLabel = inner < NARROW_CELLS ? 'open' : 'open console'
   // Below TINY_CELLS the mark alone stands for ruflo, so the most urgent part is not the one cut.
   const named = inner >= TINY_CELLS
-  const first = fill([mark !== null ? mark : kit.Text({ color: PANEL.attention, children: '◆ ' }), ...(named ? [kit.Text({ bold: true, color: PANEL.text, children: 'ruflo' })] : [])], inner - (named ? 7 : 2) - (state.pane.isOpen ? 0 : openLabel.length + 2), status, 0, !named)
+  const first = fill([mark !== null ? mark : kit.Text({ color: PANEL.attention, children: '◆ ' }), ...(named ? [kit.Text({ weight: 'semibold', color: PANEL.text, children: 'ruflo' })] : [])], inner - (named ? 7 : 2) - (state.pane.isOpen ? 0 : openLabel.length + 2), status, 0, !named)
 
   if (!state.pane.isOpen) first.children.push(kit.Text({ children: '  ' }), kit.Button({ key: 'open-console', label: openLabel, plain: true, onPress: onOpen }))
 
@@ -339,7 +339,7 @@ export function barView(kit: Kit, state: State, columns: number, mark: RenderEle
     kit.Box({
       flexDirection: 'row',
       children: [
-        kit.Text({ bold: true, color: NOTICE_COLOR[notice.level], children: `${NOTICE_MARK[notice.level]} ` }),
+        kit.Text({ weight: 'semibold', color: NOTICE_COLOR[notice.level], children: `${NOTICE_MARK[notice.level]} ` }),
         kit.Text({ color: NOTICE_COLOR[notice.level], wrap: 'truncate-end', children: clipCells(notice.text, Math.max(10, inner - 24)) }),
         kit.Text({ children: '  ' }),
         ...(notice.go !== undefined && onGo !== undefined ? [kit.Button({ key: 'band-notice-go', label: 'view', plain: true, onPress: () => onGo(notice.go as ViewId) })] : []),

@@ -49,7 +49,7 @@ function header(ctx: Ctx, run: WfRun, runs: readonly WfRun[], at: number): Rende
   const tabs = runs.length > 1 ? runs.map((entry, i) => `${i === at ? '▸' : ' '}${i + 1} ${clip(entry.name, 18)}`).join('  ') : ''
 
   return [
-    row(ctx, [ctx.kit.Text({ bold: true, wrap: 'truncate-end', children: `${clip(run.name, Math.max(8, ctx.columns - 24))} ` }), ctx.kit.Text({ wrap: 'truncate-end', ...(tone !== undefined && { color: tone }), children: run.state })]),
+    row(ctx, [ctx.kit.Text({ weight: 'semibold', wrap: 'truncate-end', children: `${clip(run.name, Math.max(8, ctx.columns - 24))} ` }), ctx.kit.Text({ wrap: 'truncate-end', ...(tone !== undefined && { color: tone }), children: run.state })]),
     text(ctx, `${run.total} agents · ${counts} · ${tokens}${span}`, { dimColor: true }),
     ...(tabs === '' ? [] : [text(ctx, `${tabs}   [ ] switch run`, { dimColor: true })]),
   ]
@@ -62,9 +62,9 @@ function phaseCell(ctx: Ctx, phase: WfPhase, index: number, flags: { isHere: boo
   const title = clip(`${index + 1} ${phase.title}`, Math.max(4, flags.width - count.length - 6))
 
   return row(ctx, [
-    ctx.kit.Text({ ...(flags.isHere && { bold: true }), children: `${flags.isHere ? '▸' : ' '}${flags.isCurrent ? '❯' : ' '}` }),
+    ctx.kit.Text({ ...(flags.isHere && { weight: 'semibold' }), children: `${flags.isHere ? '▸' : ' '}${flags.isCurrent ? '❯' : ' '}` }),
     ctx.kit.Text({ ...(color !== undefined && { color }), children: `${mark} ` }),
-    ctx.kit.Text({ ...(flags.isHere && { bold: true }), children: `${title.padEnd(flags.width - count.length - 6)} ` }),
+    ctx.kit.Text({ ...(flags.isHere && { weight: 'semibold' }), children: `${title.padEnd(flags.width - count.length - 6)} ` }),
     ctx.kit.Text({ dimColor: true, children: count }),
   ])
 }
@@ -80,7 +80,7 @@ function agentCell(ctx: Ctx, agent: WfAgent, isHere: boolean, width: number): Re
 
   return row(ctx, [
     ctx.kit.Text({ ...((agent.isUnverified ? THEME.info : COLOR(agent.state)) !== undefined && { color: agent.isUnverified ? THEME.info : COLOR(agent.state) as string }), children: `${isHere ? '▸' : ' '}${agent.isUnverified && agent.state === 'done' ? '○' : MARK(agent.state, ctx.nowMs)} ` }),
-    ctx.kit.Text({ wrap: 'truncate-end', ...(isHere && { bold: true }), children: `${label.padEnd(Math.max(6, width - fixed))}` }),
+    ctx.kit.Text({ wrap: 'truncate-end', ...(isHere && { weight: 'semibold' }), children: `${label.padEnd(Math.max(6, width - fixed))}` }),
     ...(width >= 62 && model !== '' ? [ctx.kit.Text({ dimColor: true, children: model })] : []),
     ...(width >= 74 && badge !== '' ? [ctx.kit.Text({ color: THEME.info, children: badge })] : []),
     ctx.kit.Text({ dimColor: true, children: tail }),

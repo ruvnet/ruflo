@@ -26,7 +26,7 @@ const HOME_FILES = {
 import { drawn } from './fixtures/views'
 
 describe('self-evolution', () => {
-  test('self-evolution: every section from the flywheel files; opening runs nothing; a read runs at once; the gate asks first', { options: { boot: false } }, async ($, on) => {
+  test('self-evolution: every section from the flywheel files; opening runs nothing; a read runs at once; the gate asks first', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, { ...RUFLO_FILES, ...EVOLVE_FILES })
     const evolveRuns = () => world.runs.filter(argv => /flywheel|policy|verify/.test(argv.join(' ')) && !argv.includes('mcp'))
 

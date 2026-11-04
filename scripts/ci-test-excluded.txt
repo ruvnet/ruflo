@@ -53,6 +53,7 @@ plugins/ruflo-mods/tests/context-delegate.test.ts
 plugins/ruflo-mods/tests/delivery.test.ts
 plugins/ruflo-mods/tests/describe.test.ts
 plugins/ruflo-mods/tests/grounding.test.ts
+plugins/ruflo-mods/tests/guard.test.ts
 plugins/ruflo-mods/tests/probe.test.ts
 plugins/ruflo-mods/tests/ranked-context.test.ts
 plugins/ruflo-mods/tests/rollup.test.ts
@@ -89,14 +90,17 @@ tests/check-guard-tool-names.test.mjs
 tests/check-status-forwarding.test.mjs
 tests/external-plugins.test.mjs
 plugins/ruflo-console/tests/result-display.test.ts
+plugins/ruflo-console/tests/text-weight.test.ts
 plugins/ruflo-console/tests/toasts.test.ts
 plugins/ruflo-console/tests/full-text.test.ts
+plugins/ruflo-console/tests/tool-register.test.ts
 plugins/ruflo-console/tests/whatsnew.test.ts
 plugins/ruflo-console/tests/adrs.test.ts
 plugins/ruflo-console/tests/surface-pictures.test.ts
 plugins/ruflo-protector/tests/corpus.test.ts
 plugins/ruflo-protector/tests/mod.test.ts
 plugins/ruflo-protector/tests/rules.test.ts
+plugins/ruflo-swarm/tests/text-weight.test.ts
 plugins/ruflo-swarm/tests/toast.test.ts
 plugins/ruflo-mods/tests/protector.test.ts
 plugins/ruflo-mods/tests/selfcheck.test.ts

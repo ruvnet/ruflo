@@ -34,7 +34,7 @@ export function pluginsView(ctx: Ctx): RenderElement {
     rows.push(kv(ctx, 'ruflo clone', `pulled ${ago(market.updatedMs, nowMs)} · auto-update ${market.isAutoUpdate ? 'on' : 'off'} · lists ${facts.rufloOffered?.length ?? 'n/a'} plugins`, isOld ? THEME.warn : undefined))
 
     if (facts.missingFromClone.length > 0) {
-      rows.push(text(ctx, `STALE: the clone does not list ${facts.missingFromClone.join(', ')} — run /plugin marketplace update ${RUFLO_MARKET}`, { bold: true, color: THEME.bad }))
+      rows.push(text(ctx, `STALE: the clone does not list ${facts.missingFromClone.join(', ')} — run /plugin marketplace update ${RUFLO_MARKET}`, { weight: 'semibold', color: THEME.bad }))
     } else if (facts.rufloOffered === null) {
       rows.push(text(ctx, "n/a — the clone's marketplace.json is not readable, so freshness is unknown", { dimColor: true }))
     } else {

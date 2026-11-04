@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.49.11 — 2026-11-04
+- feat: `console_state` and `console_run` are registered with `isDeferred: false` (Claude Code 2.1.293), so their schemas are in the prompt from the start: every console turn calls them. `console_open` and `console_set` stay behind tool search. Older hosts drop the field.
+- chore: every `Text` says `weight` instead of the deprecated `bold` (2.1.299); `bold: true` became `weight: "semibold"`, the weight the host already reads it as. An engine before 2.1.299 refuses a tree with a Text prop it does not know, so there (and wherever `$.session.version()` gives nothing) the kit turns the weight back into `bold` (hooks/text-weight.ts). The standalone renderer (tui/ansi.ts) draws a semibold or bold weight bold.
+
 ## 0.49.10 — 2026-11-04
 - fix: the band above the prompt stays on its rows in a narrow pane. Widths were counted as string length, which under-counts emoji such as 🎯 and 💻, so a row that looked like it fit overflowed and the host wrapped it onto extra lines. Rows are now measured in terminal columns.
 - fix: a band part that does not fit is left out whole, and a dim "+N" says how many were left out, instead of the last part being cut mid-word. Only a row's first part may be clipped.

@@ -67,7 +67,7 @@ function loggedRows(ctx: Ctx, facts: RecallFacts): RenderElement[] {
   const days = logWindowMs(log, nowMs) / 86_400_000
   const shownRecall = log.find(recall => loggedKey(recall) === pickedLog) ?? log[0]
 
-  rows.push(text(ctx, ` recorded recalls: ${log.length} in recall-log.jsonl, ${days < 1 ? 'under a day' : `${days.toFixed(1)} days`} back. The prompt text is not kept; each is a digest.`, { bold: true, color: THEME.head }))
+  rows.push(text(ctx, ` recorded recalls: ${log.length} in recall-log.jsonl, ${days < 1 ? 'under a day' : `${days.toFixed(1)} days`} back. The prompt text is not kept; each is a digest.`, { weight: 'semibold', color: THEME.head }))
   log.slice(0, LOGGED_SHOWN).forEach((recall, index) => {
     const task = facts.prompts.find(prompt => prompt.digest === recall.digest)
     const label = `${ago(recall.atMs, nowMs)} · ${recall.digest.slice(0, 8)} · ${recall.surfaced.length} surfaced${recall.router === null ? '' : ` · router ${recall.router.agent}`}${task === undefined ? '' : ` · "${clip(task.task, 40)}"`}`
@@ -80,7 +80,7 @@ function loggedRows(ctx: Ctx, facts: RecallFacts): RenderElement[] {
   const counts = [...surfacedCounts(log).values()].sort((a, b) => b.count - a.count || b.lastAtMs - a.lastAtMs).slice(0, 5)
   const byId = new Map((facts.ranked?.entries ?? []).map(entry => [entry.id, entry]))
 
-  if (counts.length > 0) rows.push(text(ctx, ' most surfaced (counts over the recorded recalls)', { bold: true, color: THEME.head }))
+  if (counts.length > 0) rows.push(text(ctx, ' most surfaced (counts over the recorded recalls)', { weight: 'semibold', color: THEME.head }))
   for (const item of counts) rows.push(text(ctx, `   ${String(item.count).padStart(4)}x  last ${ago(item.lastAtMs, nowMs).padEnd(8)} ${byId.get(item.id)?.summary ?? clip(item.id, 48)}`))
 
   return rows
@@ -110,11 +110,11 @@ export function recallRows(ctx: Ctx): RenderElement[] {
   if (!logged && facts.sessions.length === 0) rows.push(text(ctx, ' no session file has a lastMatchedPatterns: no recall is recorded yet', { dimColor: true }))
 
   if (!logged) facts.sessions.slice(0, 4).forEach((session, index) => {
-    rows.push(text(ctx, ` recorded recall · session ${ago(session.updatedAtMs, nowMs)} · ${session.ids.length} pattern${session.ids.length === 1 ? '' : 's'}${index === 0 ? '' : ' (ids only)'}`, { bold: index === 0, color: THEME.head }))
+    rows.push(text(ctx, ` recorded recall · session ${ago(session.updatedAtMs, nowMs)} · ${session.ids.length} pattern${session.ids.length === 1 ? '' : 's'}${index === 0 ? '' : ' (ids only)'}`, { weight: (index === 0) ? 'semibold' : 'regular', color: THEME.head }))
     if (index === 0) rows.push(...sessionRows(ctx, facts, session))
   })
 
-  rows.push(text(ctx, logged ? ' explain a prompt (a prompt the hook recorded shows its recorded recall; any other is recomputed against today’s ranked file)' : ' explain a prompt (what would surface now: recomputed, not what surfaced then)', { bold: true, color: THEME.head }))
+  rows.push(text(ctx, logged ? ' explain a prompt (a prompt the hook recorded shows its recorded recall; any other is recomputed against today’s ranked file)' : ' explain a prompt (what would surface now: recomputed, not what surfaced then)', { weight: 'semibold', color: THEME.head }))
 
   if (facts.prompts.length === 0) rows.push(text(ctx, ` no past prompts: ${facts.reads.prompts === 'ok' ? 'routing-outcomes.json holds no task text' : `.claude-flow/routing-outcomes.json is ${facts.reads.prompts}`}; type one below`, { dimColor: true }))
 
@@ -130,7 +130,7 @@ export function recallRows(ctx: Ctx): RenderElement[] {
 
   const recorded = logged ? facts.log.find(recall => recall.digest === digestOf(prompt)) : undefined
 
-  rows.push(...fullRows(ctx, ' prompt: ', shown(prompt, Number.MAX_SAFE_INTEGER), { key: 'recall-prompt', bold: true, hint: 'press clear and paste a shorter prompt' }))
+  rows.push(...fullRows(ctx, ' prompt: ', shown(prompt, Number.MAX_SAFE_INTEGER), { key: 'recall-prompt', weight: 'semibold', hint: 'press clear and paste a shorter prompt' }))
 
   if (recorded !== undefined) {
     rows.push(text(ctx, ` recorded ${ago(recorded.atMs, nowMs)} (digest ${recorded.digest.slice(0, 8)}): what the hook surfaced then, with its scores; not recomputed`, { color: THEME.ok }))

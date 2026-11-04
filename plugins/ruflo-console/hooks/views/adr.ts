@@ -18,7 +18,7 @@ const FINDINGS_SHOWN = 8
 const COLOR: Record<AdrStatus, string> = { proposed: THEME.warn, accepted: THEME.ok, superseded: THEME.info, deprecated: THEME.info, rejected: THEME.bad, unknown: THEME.warn }
 
 /** A sentence that wraps instead of being cut at the edge: the limits and the reasons must be readable whole. */
-const para = (ctx: Ctx, children: string, props: { color?: string; bold?: boolean; dimColor?: boolean } = {}): RenderElement => ctx.kit.Text({ wrap: 'wrap', ...props, children })
+const para = (ctx: Ctx, children: string, props: { color?: string; weight?: 'regular' | 'medium' | 'semibold' | 'bold'; dimColor?: boolean } = {}): RenderElement => ctx.kit.Text({ wrap: 'wrap', ...props, children })
 
 const label = (doc: AdrDoc): string => (doc.number === null ? doc.file : String(doc.number).padStart(4, '0'))
 
@@ -92,7 +92,7 @@ function missionRows(ctx: Ctx): RenderElement[] {
 
   const attached = attachedOf(mission).map(file => docOf(ctx.state, file) ?? null)
   const suggestions = suggestFor(ctx.state, mission, mission.objective)
-  const rows: RenderElement[] = [text(ctx, ` mission ${mission.id.slice(0, 12)}: ${mission.objective.slice(0, Math.max(10, ctx.columns - 24))}`, { bold: true })]
+  const rows: RenderElement[] = [text(ctx, ` mission ${mission.id.slice(0, 12)}: ${mission.objective.slice(0, Math.max(10, ctx.columns - 24))}`, { weight: 'semibold' })]
 
   if (attached.length === 0) rows.push(text(ctx, ' no ADR attached yet', { dimColor: true }))
   for (const [index, doc] of attached.entries()) {
@@ -153,7 +153,7 @@ export function adrsView(ctx: Ctx): RenderElement {
     rows.push(Input({ key: 'adr-propose', label: '  ▸ propose', placeholder: 'a title: Enter shows the new file and asks before writing it', submitLabel: 'propose', onSubmit: value => ctx.act.adrs.propose(value) }))
   }
 
-  if (adr.last !== null) rows.push(text(ctx, ` ${adr.last.label}: ${adr.last.ok ? '✓' : '✗'}`, { bold: true, color: adr.last.ok ? THEME.ok : THEME.bad }), ...adr.last.lines.slice(0, 12).map(line => text(ctx, `   ${line}`, { dimColor: true })))
+  if (adr.last !== null) rows.push(text(ctx, ` ${adr.last.label}: ${adr.last.ok ? '✓' : '✗'}`, { weight: 'semibold', color: adr.last.ok ? THEME.ok : THEME.bad }), ...adr.last.lines.slice(0, 12).map(line => text(ctx, `   ${line}`, { dimColor: true })))
 
   const picked = adr.selected === null ? undefined : docOf(ctx.state, adr.selected)
 

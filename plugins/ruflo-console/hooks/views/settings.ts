@@ -64,7 +64,7 @@ function settingRows(ctx: Ctx, o: RowSpec): RenderElement[] {
           ? ctx.kit.Text({ color: THEME.warn, children: ' hidden: set it in /plugin configure' })
           : o.choices.length > 0
             ? row(ctx, chips(ctx, `st-opt-${o.key}`, o.choices, o.current, o.onChoice), `st-chips-${o.key}`)
-            : ctx.kit.Text({ bold: true, color: THEME.info, children: ` ${o.current === '' ? 'n/a' : o.current}` }),
+            : ctx.kit.Text({ weight: 'semibold', color: THEME.info, children: ` ${o.current === '' ? 'n/a' : o.current}` }),
         ...(o.isSecret === true ? [] : asks(ctx, o.key, o.title, o.description, o.current, o.where)),
       ],
       `st-row-${o.key}`,
@@ -294,7 +294,7 @@ function rememberedRows(ctx: Ctx): RenderElement[] {
 
   return [
     ...entries.map(([key, label]) =>
-      row(ctx, [ctx.kit.Text({ color: THEME.ok, children: ' ✓ ' }), ctx.kit.Text({ bold: true, children: `${key} ` }), ctx.kit.Text({ dimColor: true, children: clip(`e.g. ${label}`, Math.max(10, ctx.columns - key.length - 24)) }), button(ctx, `st-forget-${key}`, '✕ forget', () => ctx.act.forget(key))], `st-allowed-${key}`),
+      row(ctx, [ctx.kit.Text({ color: THEME.ok, children: ' ✓ ' }), ctx.kit.Text({ weight: 'semibold', children: `${key} ` }), ctx.kit.Text({ dimColor: true, children: clip(`e.g. ${label}`, Math.max(10, ctx.columns - key.length - 24)) }), button(ctx, `st-forget-${key}`, '✕ forget', () => ctx.act.forget(key))], `st-allowed-${key}`),
     ),
     row(ctx, [button(ctx, 'st-forget-all', 'forget all (ask every time again)', () => ctx.act.forget(''))], 'st-allowed-all'),
   ]
@@ -306,7 +306,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
 
   if (outcome === null || ctx.nowMs - outcome.atMs > 120_000 || !/^set /.test(outcome.label)) return []
 
-  return [text(ctx, ` ${outcome.ok ? '✓' : '✗'} ${outcome.label}`, { bold: true, color: outcome.ok ? THEME.ok : THEME.bad }), ...(outcome.detail === '' ? [] : [text(ctx, `   ${clip(outcome.detail, 200)}`, { dimColor: true })])]
+  return [text(ctx, ` ${outcome.ok ? '✓' : '✗'} ${outcome.label}`, { weight: 'semibold', color: outcome.ok ? THEME.ok : THEME.bad }), ...(outcome.detail === '' ? [] : [text(ctx, `   ${clip(outcome.detail, 200)}`, { dimColor: true })])]
 }
 
 /** The search box: a framed field that applies the search on Enter and empties itself; the active search shows as a chip you can clear. */
@@ -326,7 +326,7 @@ function searchRows(ctx: Ctx, query: string, found: number): RenderElement[] {
     )
   }
 
-  if (query !== '') rows.push(row(ctx, [text(ctx, ` search “${clip(query, 40)}” · ${found} found `, { bold: true, color: THEME.ok }), button(ctx, 'st-search-clear', '✕ clear', () => ctx.act.settings.search(''))], 'st-search-chip'))
+  if (query !== '') rows.push(row(ctx, [text(ctx, ` search “${clip(query, 40)}” · ${found} found `, { weight: 'semibold', color: THEME.ok }), button(ctx, 'st-search-clear', '✕ clear', () => ctx.act.settings.search(''))], 'st-search-chip'))
 
   return rows
 }
@@ -382,7 +382,7 @@ export function settingsView(ctx: Ctx): RenderElement {
 
     for (const item of shown) {
       if (item.source !== last) {
-        rows.push(text(ctx, ` ── ${item.source} `, { bold: true, color: THEME.head }))
+        rows.push(text(ctx, ` ── ${item.source} `, { weight: 'semibold', color: THEME.head }))
         last = item.source
       }
 
