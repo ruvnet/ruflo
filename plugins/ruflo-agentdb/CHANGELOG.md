@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-agentdb`.
 
+## 0.4.11 — 2026-11-04
+- fix: `agentdb-query` and `agentdb-specialist` use `agentdb_context-synthesize` only for the outcomes of past tasks. It summarizes validated task episodes and answers `no-eligible-episodes` for ordinary memories, which the old guidance ("combine multiple memories") made look like missing data (#4691, thanks @sparkling)
+
 ## 0.4.10 — 2026-10-14
 - fix: the README no longer says the smoke script "calls each documented MCP tool": the default run is an offline structure and documentation check, and `smoke.sh --live` now really exercises the CLI in a temp directory (`agentdb_health` must report available and durable; a `agentdb_hierarchical-store` then `agentdb_hierarchical-recall` round trip must return the entry; the old L1 called a `claude-flow mcp call` command that does not exist) (#4133, thanks @ronmikailov)
 

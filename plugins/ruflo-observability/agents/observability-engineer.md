@@ -90,7 +90,7 @@ Span hierarchy for swarm operations:
 - `mcp__plugin_ruflo-core_ruflo__agentdb_pattern-store` -- store anomaly patterns for future detection
 - `mcp__plugin_ruflo-core_ruflo__agentdb_pattern-search` -- search for similar anomaly patterns
 - `mcp__plugin_ruflo-core_ruflo__agentdb_semantic-route` -- route observability queries to relevant data
-- `mcp__plugin_ruflo-core_ruflo__agentdb_context-synthesize` -- synthesize context from multiple trace spans
+- `mcp__plugin_ruflo-core_ruflo__agentdb_context-synthesize` -- summarizes validated task episodes only; it answers `no-eligible-episodes` for trace spans, so summarize spans yourself
 
 ### Neural Learning
 
