@@ -180,6 +180,38 @@ describe('#2226 — pattern store and search share a backend', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   }, 60_000);
+
+  // #4643: the full CI run failed this round-trip because agentdb served mock
+  // embeddings there (its Transformers.js model did not load). A passage and a
+  // query then hash to unrelated vectors, so the vector search alone misses a
+  // pattern storePattern just wrote. Force that state and require a hit.
+  it('finds a stored pattern when agentdb falls back to mock embeddings', async () => {
+    const marker = `mock-embedder-roundtrip-${process.pid}-${process.hrtime.bigint()}`;
+    const dir = mkdtempSync(path.join(tmpdir(), 'ruflo-4643-'));
+    const prevCwd = process.cwd();
+    process.chdir(dir);
+    vi.stubEnv('CLAUDE_FLOW_MEMORY_PATH', path.join(dir, '.swarm'));
+    vi.stubEnv('AGENTDB_DISABLE_TRANSFORMERS', '1');
+    vi.resetModules();
+    try {
+      const { agentdbPatternStore, agentdbPatternSearch } = await import('../src/mcp-tools/agentdb-tools.js');
+      const stored = await agentdbPatternStore.handler({
+        pattern: `Use ${marker} for secure session renewal`,
+        type: 'auth-pattern',
+        confidence: 0.9,
+      });
+      if (!stored || stored.success !== true) return; // backend unavailable in isolation — skip
+
+      const found = await agentdbPatternSearch.handler({ query: marker, topK: 5, minConfidence: 0.1 });
+      const hit = (found.results ?? []).find((r: any) =>
+        String(r.content ?? r.pattern ?? '').includes(marker));
+      expect(hit, `stored=${JSON.stringify(stored)} found=${JSON.stringify(found).slice(0, 800)}`).toBeDefined();
+    } finally {
+      process.chdir(prevCwd);
+      vi.unstubAllEnvs();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
 });
 
 describe('#3288 — pattern store/search surface degraded:true on every non-reasoningBank path', () => {
