@@ -2,6 +2,8 @@
 name: nested-leaf
 description: Leaf-worker template for nested spawn trees — performs one focused task and returns a structured summary. Deliberately does NOT have the Task tool (least-privilege boundary)
 model: haiku
+effort: low
+omitClaudeMd: true
 tools:
   - Read
   - Grep
