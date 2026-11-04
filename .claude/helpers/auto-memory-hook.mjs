@@ -9,6 +9,10 @@
  *   node auto-memory-hook.mjs import   # SessionStart: import auto memory files into backend
  *   node auto-memory-hook.mjs sync     # SessionEnd: sync insights back to MEMORY.md
  *   node auto-memory-hook.mjs status   # Show bridge status
+ *   node auto-memory-hook.mjs read <namespace> <key>   # Read-only exact lookup, prints JSON
+ *
+ * import and sync exit 1 when they fail (never 2, which Claude Code treats as
+ * "block"), so a failed write is visible without stopping the session.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, rmdirSync, rmSync, statSync } from 'fs';
@@ -57,6 +61,9 @@ function warnMemoryUnavailable() {
 
 const DEBUG = !!(process.env.RUFLO_DEBUG || process.env.DEBUG);
 
+/** A command failure whose message is already complete; main prints it and exits 1. */
+class HookFailure extends Error {}
+
 // ── Graceful shutdown (FIX 3) ───────────────────────────────────────────────
 // Track the backend in use so a SIGTERM/SIGINT mid-run can still flush it
 // (the JSON backend persists; a SQLite-backed one closes/flushes WAL) instead
@@ -76,8 +83,9 @@ async function gracefulExit(signal) {
 process.on('SIGTERM', () => { gracefulExit('SIGTERM'); });
 process.on('SIGINT', () => { gracefulExit('SIGINT'); });
 
-// Ensure data dir
-if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+// The data directory is created lazily by import and sync only, so the
+// read-only `read` subcommand never creates directories (#4685).
+function ensureDataDir() { if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true }); }
 
 // ============================================================================
 // Store write safety (#4058): intelligence.cjs read-modify-writes the same
@@ -118,6 +126,83 @@ function writeFileAtomic(filePath, text) {
   }
 }
 
+// ============================================================================
+// Strict store reads (#4685): only ENOENT means "no store yet". A read or
+// parse failure, a non-array document, or an entry without a unique string id
+// is an error, and the file is never rewritten, so its bytes stay intact.
+// ============================================================================
+
+class StoreError extends Error {
+  constructor(code, message, cause) {
+    super(message);
+    this.name = 'StoreError';
+    this.code = code;
+    if (cause) this.cause = cause;
+  }
+}
+
+function parseStoreText(text, filePath) {
+  let data;
+  try { data = JSON.parse(text); } catch (e) {
+    throw new StoreError('STORE_PARSE_FAILED', `${filePath} is not valid JSON (${e.message}); left unchanged`, e);
+  }
+  if (!Array.isArray(data)) {
+    throw new StoreError('STORE_NOT_ARRAY', `${filePath} does not hold a JSON array; left unchanged`);
+  }
+  const seen = new Set();
+  for (let i = 0; i < data.length; i++) {
+    const e = data[i];
+    if (!e || typeof e !== 'object' || Array.isArray(e)) {
+      throw new StoreError('STORE_BAD_ENTRY', `${filePath} entry ${i} is not an object; left unchanged`);
+    }
+    if (typeof e.id !== 'string' || e.id.length === 0) {
+      throw new StoreError('STORE_BAD_ID', `${filePath} entry ${i} has no string id; left unchanged`);
+    }
+    if (seen.has(e.id)) {
+      // intelligence.cjs de-duplicates the store by id when it consolidates,
+      // which repairs a duplicate an older writer left behind.
+      throw new StoreError('STORE_DUPLICATE_ID', `${filePath} holds duplicate id ${JSON.stringify(e.id)}; left unchanged`);
+    }
+    seen.add(e.id);
+  }
+  return data;
+}
+
+/** The parsed entries, or null when the file does not exist. Anything else throws a StoreError. */
+function readStoreFile(filePath) {
+  let text;
+  try { text = readFileSync(filePath, 'utf-8'); } catch (e) {
+    if (e && e.code === 'ENOENT') return null;
+    const why = (e && (e.code || e.message)) || String(e);
+    throw new StoreError('STORE_READ_FAILED', `cannot read ${filePath} (${why}); left unchanged`, e);
+  }
+  return parseStoreText(text, filePath);
+}
+
+/**
+ * Re-read the store and check that every expected entry is present and equal
+ * under `same`, and that every deleted id is gone. Throws on any mismatch.
+ */
+function verifyStoreFile(filePath, expected, deletedIds, same) {
+  const onDisk = readStoreFile(filePath);
+  if (onDisk === null) throw new StoreError('STORE_READBACK_MISMATCH', `${filePath} is missing after the write`);
+  const byId = new Map(onDisk.map((e) => [e.id, e]));
+  for (const [id, want] of expected) {
+    const got = byId.get(id);
+    if (!got) throw new StoreError('STORE_READBACK_MISMATCH', `${filePath} readback is missing entry ${JSON.stringify(id)}`);
+    if (!same(got, want)) throw new StoreError('STORE_READBACK_MISMATCH', `${filePath} readback differs for entry ${JSON.stringify(id)}`);
+  }
+  for (const id of deletedIds) {
+    if (!expected.has(id) && byId.has(id)) {
+      throw new StoreError('STORE_READBACK_MISMATCH', `${filePath} readback still holds deleted entry ${JSON.stringify(id)}`);
+    }
+  }
+  return onDisk;
+}
+
+const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const sameRecord = (a, b) => a.namespace === b.namespace && a.key === b.key && a.content === b.content;
+
 // Claude Code shares one auto-memory directory across every worktree of a
 // repository, but findGitRoot() in the memory package stops at a worktree's
 // `.git` FILE and keys the directory by the worktree path (#4058). Resolve the
@@ -149,21 +234,36 @@ class JsonFileBackend {
     this.entries = new Map();
     this.loadedIds = new Set();
     this.deletedIds = new Set();
+    // Entries this instance wrote (or deleted), so a caller can confirm them on disk.
+    this.written = new Map();
+    this.storePresent = false;
   }
 
   async initialize() {
-    if (existsSync(this.filePath)) {
-      try {
-        const data = JSON.parse(readFileSync(this.filePath, 'utf-8'));
-        if (Array.isArray(data)) {
-          for (const entry of data) { this.entries.set(entry.id, entry); this.loadedIds.add(entry.id); }
-        }
-      } catch { /* start fresh */ }
+    // Throws on anything but a missing file, so a damaged store is never
+    // mistaken for an empty one and later overwritten (#4685).
+    const data = readStoreFile(this.filePath);
+    this.storePresent = data !== null;
+    for (const entry of data || []) { this.entries.set(entry.id, entry); this.loadedIds.add(entry.id); }
+  }
+
+  _track(entry) {
+    if (!entry || typeof entry.id !== 'string' || entry.id.length === 0) {
+      throw new StoreError('STORE_BAD_ID', 'refusing to store an entry without a string id');
     }
+    this.entries.set(entry.id, entry);
+    this.written.set(entry.id, entry);
+    this.deletedIds.delete(entry.id);
+  }
+
+  _forget(id) {
+    this.deletedIds.add(id);
+    this.written.delete(id);
+    return this.entries.delete(id);
   }
 
   async shutdown() { this._persist(); }
-  async store(entry) { this.entries.set(entry.id, entry); this._persist(); }
+  async store(entry) { this._track(entry); this._persist(); }
   async get(id) { return this.entries.get(id) ?? null; }
   async getByKey(key, ns) {
     for (const e of this.entries.values()) {
@@ -178,10 +278,11 @@ class JsonFileBackend {
     if (updates.content !== undefined) e.content = updates.content;
     if (updates.tags) e.tags = updates.tags;
     e.updatedAt = Date.now();
+    this.written.set(id, e);
     this._persist();
     return e;
   }
-  async delete(id) { this.deletedIds.add(id); return this.entries.delete(id); }
+  async delete(id) { return this._forget(id); }
   async query(opts) {
     let results = [...this.entries.values()];
     if (opts?.namespace) results = results.filter(e => e.namespace === opts.namespace);
@@ -199,8 +300,8 @@ class JsonFileBackend {
     return results;
   }
   async search() { return []; } // No vector search in JSON backend
-  async bulkInsert(entries) { for (const e of entries) this.entries.set(e.id, e); this._persist(); }
-  async bulkDelete(ids) { let n = 0; for (const id of ids) { this.deletedIds.add(id); if (this.entries.delete(id)) n++; } this._persist(); return n; }
+  async bulkInsert(entries) { for (const e of entries) this._track(e); this._persist(); }
+  async bulkDelete(ids) { let n = 0; for (const id of ids) { if (this._forget(id)) n++; } this._persist(); return n; }
   async count() { return this.entries.size; }
   async listNamespaces() {
     const ns = new Set();
@@ -209,8 +310,8 @@ class JsonFileBackend {
   }
   async clearNamespace(ns) {
     let n = 0;
-    for (const [id, e] of this.entries) {
-      if (e.namespace === ns) { this.deletedIds.add(id); this.entries.delete(id); n++; }
+    for (const [id, e] of [...this.entries]) {
+      if (e.namespace === ns) { this._forget(id); n++; }
     }
     this._persist();
     return n;
@@ -235,25 +336,24 @@ class JsonFileBackend {
     };
   }
 
+  // Errors propagate (#4685): a failed read, write or rename must reject the
+  // store/bulkInsert/shutdown call instead of resolving with an in-memory-only
+  // update. The readback runs inside the lock so a parallel writer cannot race it.
   _persist() {
-    try {
-      withStoreLock(this.filePath, () => {
-        // Keep entries another writer (intelligence.cjs, a parallel hook) added
-        // after we loaded; ours win on the same id, and our own deletes stay deleted.
-        const merged = new Map(this.entries);
-        try {
-          const onDisk = JSON.parse(readFileSync(this.filePath, 'utf-8'));
-          if (Array.isArray(onDisk)) {
-            for (const e of onDisk) {
-              if (e && !merged.has(e.id) && !this.loadedIds.has(e.id) && !this.deletedIds.has(e.id)) merged.set(e.id, e);
-            }
-          }
-        } catch { /* missing or unreadable: write ours */ }
-        writeFileAtomic(this.filePath, JSON.stringify([...merged.values()], null, 2));
-        for (const id of merged.keys()) this.loadedIds.add(id);
-        this.entries = merged;
-      });
-    } catch { /* best effort */ }
+    withStoreLock(this.filePath, () => {
+      // Keep entries another writer (intelligence.cjs, a parallel hook) added
+      // after we loaded; ours win on the same id, and our own deletes stay deleted.
+      // A missing file is the only case that writes without merging.
+      const merged = new Map(this.entries);
+      for (const e of readStoreFile(this.filePath) || []) {
+        if (!merged.has(e.id) && !this.loadedIds.has(e.id) && !this.deletedIds.has(e.id)) merged.set(e.id, e);
+      }
+      writeFileAtomic(this.filePath, JSON.stringify([...merged.values()], null, 2));
+      verifyStoreFile(this.filePath, merged, this.deletedIds, sameJson);
+      for (const id of merged.keys()) this.loadedIds.add(id);
+      this.entries = merged;
+      this.storePresent = true;
+    });
   }
 }
 
@@ -286,7 +386,7 @@ async function loadMemoryPackage() {
   }
 
   // Strategy 2: Use createRequire for CJS-style resolution (handles nested node_modules
-  // when installed as a transitive dependency via npx ruflo / npx claude-flow)
+  // when installed as a transitive dependency via npx ruflo / npx @claude-flow/cli@latest)
   try {
     const { createRequire } = await import('module');
     const require = createRequire(join(MODULE_ROOT, 'package.json'));
@@ -365,6 +465,7 @@ async function doImport() {
   }
 
   const config = readConfig();
+  ensureDataDir();
   const backend = trackBackend(new JsonFileBackend(STORE_PATH));
   await backend.initialize();
 
@@ -395,19 +496,32 @@ async function doImport() {
   }
 
   const bridge = new memPkg.AutoMemoryBridge(backend, bridgeConfig);
+  const fileErrors = [];
+  if (typeof bridge.on === 'function') bridge.on('import:file-error', (info) => { fileErrors.push(info?.file || 'unknown'); });
 
+  // Success is reported only after the import, the final persist and a fresh
+  // readback of every entry this run wrote have all succeeded (#4685).
+  const failures = [];
+  let result = null;
   try {
-    const result = await bridge.importFromAutoMemory();
-    success(`Imported ${result.imported} entries (${result.skipped} skipped)`);
-    dim(`├─ Backend entries: ${await backend.count()}`);
-    dim(`├─ Learning: ${config.learningBridge.enabled ? 'active' : 'disabled'}`);
-    dim(`├─ Graph: ${config.memoryGraph.enabled ? 'active' : 'disabled'}`);
-    dim(`└─ Agent scopes: ${config.agentScopes.enabled ? 'active' : 'disabled'}`);
+    result = await bridge.importFromAutoMemory();
   } catch (err) {
-    dim(`Import failed (non-critical): ${err.message}`);
+    failures.push(`import: ${err.message}`);
   }
+  try {
+    await backend.shutdown();
+    verifyStoreFile(STORE_PATH, backend.written, backend.deletedIds, sameRecord);
+  } catch (err) {
+    failures.push(`persist: ${err.message}`);
+  }
+  if (fileErrors.length) failures.push(`unreadable source file(s): ${fileErrors.join(', ')}`);
+  if (failures.length) throw new HookFailure(`Import failed: ${failures.join('; ')}`);
 
-  await backend.shutdown();
+  success(`Imported ${result.imported} entries (${result.skipped} skipped), verified in ${STORE_PATH}`);
+  dim(`├─ Backend entries: ${await backend.count()}`);
+  dim(`├─ Learning: ${config.learningBridge.enabled ? 'active' : 'disabled'}`);
+  dim(`├─ Graph: ${config.memoryGraph.enabled ? 'active' : 'disabled'}`);
+  dim(`└─ Agent scopes: ${config.agentScopes.enabled ? 'active' : 'disabled'}`);
 }
 
 async function doSync() {
@@ -420,6 +534,7 @@ async function doSync() {
   }
 
   const config = readConfig();
+  ensureDataDir();
   const backend = trackBackend(new JsonFileBackend(STORE_PATH));
   await backend.initialize();
 
@@ -454,6 +569,7 @@ async function doSync() {
 
   const bridge = new memPkg.AutoMemoryBridge(backend, bridgeConfig);
 
+  let syncError = null;
   try {
     const syncResult = await bridge.syncToAutoMemory();
     success(`Synced ${syncResult.synced} entries to auto memory`);
@@ -467,11 +583,12 @@ async function doSync() {
     if (indexSkipped) dim(`MEMORY.md index unchanged (${indexSkipped.reason || 'nothing to curate'})`);
     else success('Curated MEMORY.md index');
   } catch (err) {
-    dim(`Sync failed (non-critical): ${err.message}`);
+    syncError = err;
   }
 
   if (bridge.destroy) bridge.destroy();
   await backend.shutdown();
+  if (syncError) throw new HookFailure(`Sync failed: ${syncError.message}`);
 }
 
 async function doStatus() {
@@ -489,14 +606,42 @@ async function doStatus() {
   console.log(`  MemoryGraph:    ${config.memoryGraph.enabled ? '✅ Enabled' : '⏸ Disabled'}`);
   console.log(`  AgentScopes:    ${config.agentScopes.enabled ? '✅ Enabled' : '⏸ Disabled'}`);
 
-  if (existsSync(STORE_PATH)) {
-    try {
-      const data = JSON.parse(readFileSync(STORE_PATH, 'utf-8'));
-      console.log(`  Entries:        ${Array.isArray(data) ? data.length : 0}`);
-    } catch { /* ignore */ }
+  try {
+    const data = readStoreFile(STORE_PATH);
+    if (data) console.log(`  Entries:        ${data.length}`);
+  } catch (err) {
+    console.log(`  Entries:        ❌ ${err.message}`);
   }
 
   console.log('');
+}
+
+// Read-only exact lookup (#4685). It never loads the memory package, creates a
+// directory, takes the write lock or calls shutdown, so it cannot change the store.
+const READ_SCHEMA_VERSION = 1;
+async function doRead(namespace, key) {
+  const out = { schemaVersion: READ_SCHEMA_VERSION, store: STORE_PATH, storePresent: false, namespace: namespace ?? null, key: key ?? null, found: false, entry: null };
+  const refuse = (code, message) => {
+    out.error = { code, message };
+    console.log(JSON.stringify(out, null, 2));
+    return 1;
+  };
+  if (typeof namespace !== 'string' || !namespace || typeof key !== 'string' || !key) {
+    return refuse('USAGE', 'usage: auto-memory-hook.mjs read <namespace> <key>');
+  }
+  const backend = new JsonFileBackend(STORE_PATH);
+  try {
+    await backend.initialize();
+  } catch (err) {
+    out.storePresent = true; // initialize() only throws for a file that exists
+    return refuse(err.code || 'STORE_READ_FAILED', err.message);
+  }
+  out.storePresent = backend.storePresent;
+  const matches = await backend.query({ namespace, key });
+  if (matches.length > 1) return refuse('AMBIGUOUS_KEY', `${matches.length} entries share namespace ${JSON.stringify(namespace)} and key ${JSON.stringify(key)}`);
+  if (matches.length === 1) { out.found = true; out.entry = matches[0]; }
+  console.log(JSON.stringify(out, null, 2));
+  return 0;
 }
 
 // ============================================================================
@@ -506,8 +651,10 @@ async function doStatus() {
 // Older settings.json files run `node -e "…import(file)" import`, where the
 // subcommand lands in argv[1] and argv[2] is empty, so both hooks fell through
 // to `status` and never imported or synced (#4058). Accept that shape too.
-const COMMANDS = ['import', 'sync', 'status'];
+const COMMANDS = ['import', 'sync', 'status', 'read'];
+const argvBase = process.argv[2] ? 2 : 1;
 const command = process.argv[2] || (COMMANDS.includes(process.argv[1]) ? process.argv[1] : 'status');
+const commandArgs = process.argv.slice(argvBase + 1);
 
 // Dynamic import() failures can surface as unhandled rejections on a later
 // microtask even when the awaiting call site already caught them, which would
@@ -521,18 +668,25 @@ process.on('unhandledRejection', (reason) => {
   }
 });
 
+// A failed import or sync exits 1, never 2: Claude Code treats exit 2 from a
+// hook as "block", while exit 1 is a non-blocking error it shows to the user,
+// so the session carries on and the failure is no longer hidden (#4685).
+let exitCode = 0;
 try {
   switch (command) {
     case 'import': await doImport(); break;
     case 'sync': await doSync(); break;
     case 'status': await doStatus(); break;
+    case 'read': exitCode = await doRead(commandArgs[0], commandArgs[1]); break;
     default:
-      console.log('Usage: auto-memory-hook.mjs <import|sync|status>');
+      console.log('Usage: auto-memory-hook.mjs <import|sync|status|read <namespace> <key>>');
       break;
   }
 } catch (err) {
-  // Hooks must never crash Claude Code - fail silently
-  try { dim(`Error (non-critical): ${err.message}`); } catch (_) {}
+  exitCode = 1;
+  const detail = err && err.message ? err.message : String(err);
+  const line = err instanceof HookFailure ? `[AutoMemory] ${detail}` : `[AutoMemory] ${command} failed: ${detail}`;
+  try { process.stderr.write(`${line}\n`); } catch (_) {}
 }
-// Force clean exit — process.exitCode alone isn't enough if async errors override it
-process.exit(0);
+// Force exit — process.exitCode alone isn't enough if async errors override it
+process.exit(exitCode);
