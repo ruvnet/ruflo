@@ -94,17 +94,35 @@ function ensureWorkflowDir(): void {
   }
 }
 
+/**
+ * SECURITY: record maps are keyed by ids taken from MCP tool input, and
+ * validateIdentifier accepts names like `__proto__` and `constructor`. On a
+ * plain object those resolve to Object.prototype or a built-in, which a handler
+ * would then write into. Null-prototype maps only ever return own records.
+ */
+function withRecordMaps<S extends object>(store: S, keys: readonly string[]): S {
+  const maps = store as Record<string, unknown>;
+  for (const key of keys) {
+    const map = maps[key];
+    if (map && typeof map === 'object' && !Array.isArray(map)) Object.setPrototypeOf(map, null);
+    else maps[key] = Object.create(null);
+  }
+  return store;
+}
+
+const WORKFLOW_MAPS = ['workflows', 'templates'] as const;
+
 function loadWorkflowStore(): WorkflowStore {
   try {
     const path = getWorkflowPath();
     if (existsSync(path)) {
-      const data = readFileSync(path, 'utf-8');
-      return JSON.parse(data);
+      const data = JSON.parse(readFileSync(path, 'utf-8'));
+      if (data && typeof data === 'object' && !Array.isArray(data)) return withRecordMaps(data, WORKFLOW_MAPS);
     }
   } catch {
     // Return default store on error
   }
-  return { workflows: {}, templates: {}, version: '3.0.0' };
+  return withRecordMaps({ workflows: {}, templates: {}, version: '3.0.0' } as WorkflowStore, WORKFLOW_MAPS);
 }
 
 function saveWorkflowStore(store: WorkflowStore): void {
