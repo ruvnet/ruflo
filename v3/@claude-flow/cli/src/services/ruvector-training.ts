@@ -591,7 +591,8 @@ export function computeFlashAttention(
     throw new Error('Flash attention not initialized');
   }
 
-  return flashAttention.computeRaw(query, keys, values);
+  // #4610: the @ruvector/attention classes expose compute(), not computeRaw().
+  return flashAttention.compute(query, keys, values);
 }
 
 /**
@@ -606,7 +607,7 @@ export function computeMoEAttention(
     throw new Error('MoE attention not initialized');
   }
 
-  return moeAttention.computeRaw(query, keys, values);
+  return moeAttention.compute(query, keys, values);
 }
 
 /**
@@ -621,7 +622,7 @@ export function computeHyperbolicAttention(
     throw new Error('Hyperbolic attention not initialized');
   }
 
-  return hyperbolicAttention.computeRaw(query, keys, values);
+  return hyperbolicAttention.compute(query, keys, values);
 }
 
 /**
@@ -636,8 +637,19 @@ export function computeContrastiveLoss(
     throw new Error('Contrastive loss not initialized');
   }
 
-  const loss = contrastiveLoss.compute(anchor, positives, negatives);
-  const gradient = contrastiveLoss.backward(anchor, positives, negatives);
+  // #4610: InfoNceLoss has no backward(); computeWithGradients(anchor, positive,
+  // negatives) takes one positive and returns { loss, gradients }. Average over
+  // the positives so the list signature keeps its meaning.
+  if (positives.length === 0) {
+    throw new Error('Contrastive loss needs at least one positive');
+  }
+  let loss = 0;
+  const gradient = new Float32Array(anchor.length);
+  for (const positive of positives) {
+    const result = contrastiveLoss.computeWithGradients(anchor, positive, negatives);
+    loss += result.loss / positives.length;
+    for (let i = 0; i < gradient.length; i++) gradient[i] += result.gradients[i] / positives.length;
+  }
 
   return { loss, gradient };
 }
