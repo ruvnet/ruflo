@@ -1,6 +1,7 @@
 import type { Register } from 'claude-code'
 
 import { registerAgents } from './agents'
+import { registerAgentModels } from './agents/models'
 import { registerCompact } from './compact'
 import { registerCompactSnapshot } from './compact-snapshot'
 import { registerContextDelegate } from './context-delegate'
@@ -50,6 +51,8 @@ export const register: Register = (on, options) => {
   registerCost(on, state, opts)
   if (opts.toolHints) registerDescribe(on, state)
   if (opts.agentTrim) registerAgents(on, state, opts)
+  state.agentModels.types = opts.agentModels.size
+  if (opts.agentModels.size > 0) registerAgentModels(on, opts.agentModels, state.agentModels)
   if (opts.deliveryScreen) registerDelivery(on, state)
   if (opts.compactCarry) registerCompact(on, state)
   if (opts.rureOffer) registerRureOffer(on, state)
