@@ -5,6 +5,69 @@ All notable changes to the Ruflo project (formerly Claude Flow) are documented h
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.71.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.71.0 — automatic context delegation through ruflo-mods 0.15.0 (ADR-522). Off by default.
+
+### Added
+- **`contextDelegation` mod option** (`off` | `observe` | `enforce`). ruflo-mods automates ADR-521:
+  - **What qualifies:** a main-loop, whole-file `Read` of a 14–120 KB file, for a prompt that routes to research or review and asks for no change.
+  - **What happens:** it is answered by a no-tools haiku completion on the session's own credentials, so no API key is needed. Every quoted line is checked against the file, and the model sees only the cited passages (the file's own lines), with a header saying how to read the rest.
+  - **Why edits still work:** the real `Read` always runs first. Any failure shows the whole file.
+  - **`observe`** changes nothing and records what would have been delegated in `.claude-flow/metrics/context-delegation.json`.
+- **Live A/B result** (real binary, haiku main loop, 6 real repo files of 17–83 KB): 6/6 correct with delegation off and with it on, 6/6 reads delegated, total cost (main loop plus worker) −22.5%, main-loop input tokens −21.5%, wall time +6.5%. These are samples, not a statistical result; raw rows are in `benchmarks/context-delegation/results-mod-live.json`.
+
+### Security
+- **Mod contract:** the "no model calls" check allows exactly one `$.model.complete`, in the opt-in module, and fails if that module is not gated on the option.
+- **No forged quotes reach the model:** a quote whose words differ from the file never reaches it, because what is shown is always the file's own lines.
+
+## [3.70.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.70.0 — governed context delegation (ADR-521, #4648). Nothing changes by default.
+
+### Added
+- **Bounded context delegation.** New public APIs `planContextRead` / `delegateContextRead` and the `ruflo hooks context-plan` command. A large analysis read (many files, bulk search) can be handed to a cheaper worker that returns only cited findings. Every finding must quote whole source lines that match a SHA-256-identified snapshot, so a forged or partial quote is rejected. Routing modes:
+  - `legacy`, the default: unchanged behaviour, zero adapter calls.
+  - `observe`: records the routing decision only.
+  - `enforce`: delegates; must be explicitly enabled.
+  Edits, debugging, architecture work, targeted reads, nested workers and small inputs always read directly.
+- **`createAnthropicContextAdapter`.** An optional governed transport:
+  - Fixed `api.anthropic.com` endpoints, API version `2026-10-21`, no redirects and no custom endpoint.
+  - A one-use grant goes through the host policy gate, and the user-global AI fuse is the default.
+  - Response size, timeout and output tokens are bounded; truncation, refusal, tool content, unknown usage and a model mismatch all fail closed.
+  - Usage is recorded as priced from operator-supplied prices, not as billed cost.
+- **Benchmark protocol** (`v3/@claude-flow/cli/benchmarks/context-delegation/`, not in the npm tarball): 30 fixed lookups × 10 repetitions, 300/300 exact quotes. Coordinator payload is −97.6%; total bytes crossing the core boundary are +3.8% (both disclosed). Added local processing is about 0.1 ms p50. This is deterministic protocol evidence, not a live cost or quality result: no live provider call has succeeded yet.
+
+### Security
+- Pilot runners pass the spawned CLI an allowlisted environment, not the whole shell. The `--runtime` entry is contained and hashed before it is imported.
+
+### Fixed
+- `hooks context-plan --worker-available` is honoured through the CLI parser (camelCased flag).
+
+## [3.69.0] - 2026-11-01
+
+Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.69.0 on agentdb 3.3.0 (ADR-520), with the 2026-11-01 issue and Dream Cycle sweep. Leaves published alongside: `@claude-flow/memory` 3.2.2, `@claude-flow/neural` 3.0.2, `@claude-flow/swarm` 3.0.4.
+
+### Added
+- **Episode get / list / update / delete** — `agentdb_episode-get`, `agentdb_episode-list`, `agentdb_episode-update`, `agentdb_episode-delete` over agentdb 3.3's ReflexionMemory (ADR-520). Mark a verified session's episode `success: true` with a critique in place; the id is kept and recall re-ranks it immediately. Strict integer ids; on agentdb < 3.3 the tools say so instead of half-working (#4642).
+- `agentdb` ^3.3.0 (full CRUD for episodes, patterns and skills; agentdb ADR-017), ruflo override `>=3.3.0`; marketplace `agentdb` plugin → `plugin-v3.3.0`.
+
+### Security
+- `hooks_codemod` resolves symlinks before its project-root check, so a link inside the project can no longer redirect a write outside it (CWE-59, #4346, #4636).
+- Raft consensus requires a strict majority; a leader's own vote plus a rejecting peer no longer accepts a proposal (#4458, #4636; `@claude-flow/swarm` 3.0.4).
+- Config MCP tools reject `__proto__` / `constructor` / `prototype` scope names and only read own scopes (prototype pollution, #4635 — the first fix opened by the new daily security scan).
+- Federation: `trust-change` / `topology-change` messages need TRUSTED, with a configurable `minTrustLevelForAdmin` floor (#4633, #4634).
+
+### Fixed
+- AgentDB SQL-fallback persistence in `@claude-flow/memory` actually writes (it checked for a `run` method the handle never has, and `references` was unquoted) (#4410, #4639).
+- Session-end consolidation runs (it looked for `.consolidate`, which no controller has) (#3908, #4638).
+- `session_save` keeps distinct memory rows whose namespace or key contains `::` (#4404, #4638).
+- `CLAUDE_FLOW_FISHER_DECAY` sets the EWC Fisher decay rate (#3475, #4638).
+- `agent_spawn` enforces the active swarm's `maxAgents` (#4572, #4640).
+- MoE load-balance loss uses the mean router probability; cache size accounting reuses stored sizes (#4381, #4481, #4639).
+- `workflow_run` creates a ready workflow instead of a fake running one (#4609, #4612); round-robin load balancing rotates (#4621); `daa_knowledge_share` same-millisecond entries no longer overwrite each other (#4601); `daa_workflow_create` keeps object step names (#4599); `claims_handoff` keeps recorded progress (#4596); the ruflo-core launcher explains a stale local build and falls back to npx (#4607); statusline DDD metric (#1047, #4615); bundled SKILL.md names (#1054, #4616).
+- CI: the RaBitQ auto-build test no longer times out on loaded runners (#4640). Still open: #4643 (#2226 pattern search, fails only in the full CI run; the published CLI passes the same check).
+
 ## [3.68.0] - 2026-11-01
 
 Minor release: `@claude-flow/cli`, `claude-flow`, `ruflo` 3.68.0 on agentdb 3.2.0 (ADR-519).

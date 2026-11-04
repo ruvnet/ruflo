@@ -68,10 +68,10 @@
         "source": "git-subdir",
         "url": "https://github.com/ruvnet/agentdb.git",
         "path": "plugins/agentdb",
-        "ref": "plugin-v3.2.0",
-        "sha": "ba52d10bbe32fdf186e2a264305a08d30246a5aa"
+        "ref": "plugin-v3.3.0",
+        "sha": "d3df60d4f94f29199373fd45e837085c0d92a2b2"
       },
-      "description": "AgentDB (external: maintained in ruvnet/agentdb, pinned to plugin-v3.2.0): agentdb's own standalone MCP server pinned to agentdb@3.2.0 (vector memory with hybrid keyword + vector episode search and an opt-in local cross-encoder, reflexion, skills, outcome feedback, capabilities report), a memory-specialist agent, 3 skills, /agentdb-status, and the agentdb mod guard that keeps secrets out of memory and refuses delete/reset unless allowed. Complements ruflo-agentdb, which reaches AgentDB through ruflo's server"
+      "description": "AgentDB (external: maintained in ruvnet/agentdb, pinned to plugin-v3.3.0): agentdb's own standalone MCP server pinned to agentdb@3.3.0 (vector memory with get/list/update/delete for records, patterns and skills, hybrid keyword + vector episode search and an opt-in local cross-encoder, reflexion, skills, outcome feedback, capabilities report), a memory-specialist agent, 3 skills, /agentdb-status, and the agentdb mod guard that keeps secrets out of memory and refuses delete/reset unless allowed. Complements ruflo-agentdb, which reaches AgentDB through ruflo's server"
     },
     {
       "name": "agentic-flow",
