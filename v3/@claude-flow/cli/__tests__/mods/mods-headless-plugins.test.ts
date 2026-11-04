@@ -133,7 +133,7 @@ describe('ADR-510 withHeadlessPlugins', () => {
 
   it('adds --plugin-dir and turns function hooks on', () => {
     const r = withHeadlessPlugins(['-p', '--output-format', 'json'], { PATH: '/bin' }, { resolver: found, warn });
-    expect(r.argv).toEqual(['-p', '--output-format', 'json', '--plugin-dir', MODS]);
+    expect(r.argv).toEqual(['-p', '--output-format', 'json', '--permission-mode', 'auto', '--plugin-dir', MODS]);
     expect(r.env).toEqual({ PATH: '/bin', CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: '1' });
     expect(r.added).toEqual(['ruflo-mods']);
     expect(lines).toEqual([]);
@@ -156,7 +156,7 @@ describe('ADR-510 withHeadlessPlugins', () => {
   it('a missing plugin: the worker still starts, the miss is logged once and reported', () => {
     const a = withHeadlessPlugins(['-p'], {}, { resolver: none, warn });
     const b = withHeadlessPlugins(['-p'], {}, { resolver: none, warn });
-    expect(a.argv).toEqual(['-p']);
+    expect(a.argv).toEqual(['-p', '--permission-mode', 'auto']);
     expect(a.missing).toEqual(['ruflo-mods']);
     expect(b.missing).toEqual(['ruflo-mods']);
     expect(lines).toEqual(['plugin ruflo-mods not found; worker runs without it']);
@@ -168,7 +168,7 @@ describe('ADR-510 withHeadlessPlugins', () => {
     expect(workerProfile({ RUFLO_HEADLESS_PLUGINS: 'ruflo-mods, ruflo-swarm' })).toEqual(['ruflo-mods', 'ruflo-swarm']);
     expect(workerProfile({ RUFLO_HEADLESS_PLUGINS: 'none' })).toEqual([]);
     const r = withHeadlessPlugins(['-p'], { RUFLO_HEADLESS_PLUGINS: 'none' }, { resolver: found, warn });
-    expect(r.argv).toEqual(['-p']);
+    expect(r.argv).toEqual(['-p', '--permission-mode', 'auto']);
   });
 });
 
