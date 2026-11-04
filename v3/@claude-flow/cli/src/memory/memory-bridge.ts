@@ -1686,15 +1686,38 @@ export async function bridgeListEntries(options: {
     // List
     const entries: any[] = [];
     try {
-      // Include tags so export/list can round-trip them.
-      const stmt = ctx.db.prepare(`
-        SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type, expires_at, tags
+      const columns = 'id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type, expires_at, tags';
+      const listLimit = options.includeEmbedding ? Math.min(safeLimit, MAX_LIST_EMBEDDINGS) : safeLimit;
+      // #4686: sort only row identities first, then fetch the payload for the
+      // page. The old query sorted full `content`/`embedding` payloads for
+      // every row and discarded all but the requested page.
+      const pagedSql = `
+        SELECT ${columns}
+        FROM memory_entries
+        WHERE _rowid_ IN (
+          SELECT _rowid_
+          FROM memory_entries
+          WHERE ${statusFilter} ${extraFilter}
+          ORDER BY updated_at DESC
+          LIMIT ? OFFSET ?
+        )
+        ORDER BY updated_at DESC
+      `;
+      const originalSql = `
+        SELECT ${columns}
         FROM memory_entries
         WHERE ${statusFilter} ${extraFilter}
         ORDER BY updated_at DESC
         LIMIT ? OFFSET ?
-      `);
-      const rows = stmt.all(...filterParams, options.includeEmbedding ? Math.min(safeLimit, MAX_LIST_EMBEDDINGS) : safeLimit, safeOffset);
+      `;
+      let rows: any[];
+      try {
+        rows = ctx.db.prepare(pagedSql).all(...filterParams, listLimit, safeOffset);
+      } catch {
+        // WITHOUT ROWID/legacy tables have no _rowid_: preserve the original
+        // query rather than failing the page.
+        rows = ctx.db.prepare(originalSql).all(...filterParams, listLimit, safeOffset);
+      }
       for (const row of rows) {
         let tags: string[] = [];
         if (row.tags) {

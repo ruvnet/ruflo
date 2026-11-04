@@ -3653,18 +3653,35 @@ export async function listEntries(options: {
 
     // Get entries. ADR-472: embedding rows are capped at MAX_LIST_EMBEDDINGS.
     const listLimit = options.includeEmbedding ? Math.min(safeLimit, MAX_LIST_EMBEDDINGS) : safeLimit;
-    // Include tags so export/list can round-trip them.
-    const listStmt = db.prepare(
-      `SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type, expires_at, tags
-       FROM memory_entries WHERE ${whereSql}
-       ORDER BY updated_at DESC LIMIT ? OFFSET ?`
-    );
-    listStmt.bind([...whereParams, listLimit, safeOffset]);
-    const listRows: unknown[][] = [];
-    while (listStmt.step()) {
-      listRows.push(listStmt.get());
+    const columns = 'id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type, expires_at, tags';
+    // #4686: page row identities first so the temporary sort B-tree does not
+    // carry full content/embedding payloads for rows outside the page.
+    const pagedSql = `SELECT ${columns} FROM memory_entries
+       WHERE _rowid_ IN (
+         SELECT _rowid_ FROM memory_entries WHERE ${whereSql}
+         ORDER BY updated_at DESC LIMIT ? OFFSET ?
+       )
+       ORDER BY updated_at DESC`;
+    const originalSql = `SELECT ${columns} FROM memory_entries WHERE ${whereSql}
+       ORDER BY updated_at DESC LIMIT ? OFFSET ?`;
+    let listRows: unknown[][] = [];
+    const runList = (sql: string): unknown[][] => {
+      const stmt = db.prepare(sql);
+      try {
+        stmt.bind([...whereParams, listLimit, safeOffset]);
+        const rows: unknown[][] = [];
+        while (stmt.step()) rows.push(stmt.get());
+        return rows;
+      } finally {
+        stmt.free();
+      }
+    };
+    try {
+      listRows = runList(pagedSql);
+    } catch {
+      // Legacy WITHOUT ROWID tables have no _rowid_: keep the original query.
+      listRows = runList(originalSql);
     }
-    listStmt.free();
 
     const entries: {
       id: string;
