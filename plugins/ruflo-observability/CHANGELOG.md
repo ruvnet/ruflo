@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.3.6 — 2026-11-04
+- fix: `observe-trace` writes its execution-flow summary from the spans itself, and no longer calls `agentdb_context-synthesize`, which summarizes validated task episodes and answers `no-eligible-episodes` for trace spans (#4691, thanks @sparkling)
+
 ## 0.3.5 — 2026-10-12
 - fix: the shared text screen now catches `.env` and e-mailed credentials, no longer flags a model's token talk (`--max-tokens`, `/oauth/token`, "token usage"), and no longer flags values that only name where a secret lives (`./service-account.json`, `--set-secrets=NAME=NAME:latest`); every rule stays linear (#4094, thanks @proffesor-for-testing)
 

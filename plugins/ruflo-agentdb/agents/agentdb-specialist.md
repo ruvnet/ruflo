@@ -31,7 +31,7 @@ For the canonical list of *controllers* (distinct from MCP tools), call `agentdb
 | Structured tier-keyed data | `agentdb_hierarchical-store` / `agentdb_hierarchical-recall` (tiers: `working|episodic|semantic`) |
 | Pattern matching across sessions | `agentdb_pattern-store` / `agentdb_pattern-search` (ReasoningBank) |
 | Routing a query to best knowledge source | `agentdb_semantic-route` |
-| Combining multiple memories | `agentdb_context-synthesize` |
+| Outcomes of past tasks like this one (validated episodes only) | `agentdb_context-synthesize` |
 | Linking related knowledge causally | `agentdb_causal-edge` (graph-node backend with bridge fallback) |
 | Bulk operations | `agentdb_batch` (≤500 entries — `MAX_BATCH_SIZE` at `agentdb-tools.ts:20`) |
 | Cleanup / dedup | `agentdb_consolidate` |

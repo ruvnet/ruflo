@@ -20,7 +20,7 @@ When you need to store, retrieve, or search knowledge across agent sessions. Age
 3. **Store knowledge** — `mcp__plugin_ruflo-core_ruflo__agentdb_hierarchical-store` for structured tier-keyed data (tiers: `working|episodic|semantic`).
 4. **Recall knowledge** — `mcp__plugin_ruflo-core_ruflo__agentdb_hierarchical-recall` with a query.
 5. **Search patterns** — `mcp__plugin_ruflo-core_ruflo__agentdb_pattern-search` for learned patterns (ReasoningBank-routed).
-6. **Synthesize context** — `mcp__plugin_ruflo-core_ruflo__agentdb_context-synthesize` to combine multiple memories.
+6. **Summarize past task outcomes** — `mcp__plugin_ruflo-core_ruflo__agentdb_context-synthesize` for the success rate, reward and critique patterns of earlier tasks like this one. Not for combining ordinary memories: it summarizes validated task episodes (task, reward, success) and answers `no-memories` or `no-eligible-episodes` for ordinary records, which is correct, not missing data. Combine those yourself from what recall and search return.
 7. **Build causal graph** — `mcp__plugin_ruflo-core_ruflo__agentdb_causal-edge` to link related knowledge.
 
 ## Available controller groups

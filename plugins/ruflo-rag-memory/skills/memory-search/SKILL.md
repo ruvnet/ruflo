@@ -45,8 +45,9 @@ If the user requests `--graph-rag`, explain that this plugin has no supported te
    **Cross-namespace bridge search**
    `mcp__plugin_ruflo-core_ruflo__memory_search_unified({ query: "QUERY", limit: 10 })`
 
-3. For a complex query, optionally request AgentDB context synthesis with its registered schema:
+3. Only when the question is about how earlier tasks like this one went, also ask for their validated episodes:
    `mcp__plugin_ruflo-core_ruflo__agentdb_context-synthesize({ query: "QUERY", maxEntries: 10 })`
+   It is not a document synthesizer: it summarizes validated task episodes (task, reward, success) and answers `no-memories` or `no-eligible-episodes` for ordinary records, which is correct, not missing data.
 4. Present the returned entries with namespace attribution. Distinguish raw `similarity` from SmartRetrieval's `rankingScore`; neither is a probability of truth. State when SmartRetrieval fell back to plain search.
 
 ## Namespace guide
