@@ -298,6 +298,10 @@ export const claimsTools: MCPTool[] = [
       if (progress !== undefined) {
         claim.progress = Math.min(100, Math.max(0, progress));
       }
+      // A claim being handed to a named claimant is no longer up for grabs:
+      // drop it from the list claims_stealable and claims_steal read, so it
+      // cannot be stolen while the handoff is pending or after it is accepted.
+      delete store.stealable[issueId];
 
       store.claims[issueId] = claim;
       saveClaims(store);
