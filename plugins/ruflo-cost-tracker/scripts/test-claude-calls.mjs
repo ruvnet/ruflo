@@ -9,8 +9,9 @@ import { mergeCall } from './_claude-calls.mjs';
 let failed = 0;
 const test = (name, fn) => { try { fn(); console.log(`ok   ${name}`); } catch (error) { failed += 1; console.log(`FAIL ${name}\n     ${error.message}`); } };
 
+let seq = 0;
 const line = (id, requestId, usage, extra = {}) => ({
-  type: 'assistant', requestId, timestamp: '2026-11-03T00:00:00.000Z', uuid: `u-${Math.random()}`,
+  type: 'assistant', requestId, timestamp: '2026-11-03T00:00:00.000Z', uuid: `u-${(seq += 1)}`,
   message: { id, role: 'assistant', model: 'claude-sonnet-5', usage }, ...extra,
 });
 const U = { input_tokens: 10, output_tokens: 200, cache_creation_input_tokens: 3000, cache_read_input_tokens: 40000 };
