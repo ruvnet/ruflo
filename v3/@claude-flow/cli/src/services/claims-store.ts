@@ -10,7 +10,7 @@ export function readClaimsStore(file: string): Record<string, unknown> {
   let text: string;
   try { text = readFileSync(file, 'utf8'); }
   catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { claims: {}, stealable: {}, contests: {} };
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { claims: Object.create(null), stealable: Object.create(null), contests: Object.create(null) };
     throw error;
   }
   const data: unknown = JSON.parse(text);
@@ -33,5 +33,8 @@ export function readClaimsStore(file: string): Record<string, unknown> {
   for (const key of ['stealable', 'contests']) {
     if (data[key] !== undefined && !record(data[key])) throw new Error(`Invalid claims store: ${key} must be an object`);
   }
-  return { ...data, claims, stealable: data.stealable ?? {}, contests: data.contests ?? {} };
+  // SECURITY: issue ids come from tool input; null-prototype maps keep a lookup
+  // by `constructor`/`__proto__` from resolving to an inherited built-in.
+  const nullProto = (map: unknown) => Object.assign(Object.create(null), map ?? {});
+  return { ...data, claims, stealable: nullProto(data.stealable), contests: nullProto(data.contests) };
 }
