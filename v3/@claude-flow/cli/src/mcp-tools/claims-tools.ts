@@ -77,6 +77,11 @@ function formatClaimant(claimant: Claimant): string {
     : `agent:${claimant.agentId}:${claimant.agentType}`;
 }
 
+/** An agent's claim that is still work in hand (not completed). */
+function isOpenAgentClaim(claim: IssueClaim): boolean {
+  return claim.claimant.type === 'agent' && claim.status !== 'completed';
+}
+
 function parseClaimant(str: string): Claimant | null {
   const parts = str.split(':');
   if (parts[0] === 'human' && parts.length >= 3) {
@@ -708,7 +713,9 @@ export const claimsTools: MCPTool[] = [
       if (agentType) { const v = validateIdentifier(agentType, 'agentType'); if (!v.valid) return { success: false, error: v.error }; }
 
       const store = loadClaims();
-      const claims = Object.values(store.claims);
+      // A completed claim stays in the store but is no longer work in hand,
+      // so it does not count toward an agent's load.
+      const openAgentClaims = Object.values(store.claims).filter(isOpenAgentClaim);
 
       // Group claims by agent
       const agentLoads = new Map<string, {
@@ -718,9 +725,7 @@ export const claimsTools: MCPTool[] = [
         blockedCount: number;
       }>();
 
-      for (const claim of claims) {
-        if (claim.claimant.type !== 'agent') continue;
-
+      for (const claim of openAgentClaims) {
         const key = claim.claimant.agentId!;
         if (!agentLoads.has(key)) {
           agentLoads.set(key, {
@@ -766,7 +771,7 @@ export const claimsTools: MCPTool[] = [
         success: true,
         loads: result,
         totalAgents: result.length,
-        totalClaims: claims.filter(c => c.claimant.type === 'agent').length,
+        totalClaims: openAgentClaims.length,
         avgUtilization: result.length > 0
           ? result.reduce((sum, l) => sum + l.utilization, 0) / result.length
           : 0,
@@ -852,14 +857,13 @@ export const claimsTools: MCPTool[] = [
       const targetUtilization = (input.targetUtilization as number) || 0.7;
 
       const store = loadClaims();
-      const claims = Object.values(store.claims);
+      // Completed claims are not load, as in claims_load.
+      const openAgentClaims = Object.values(store.claims).filter(isOpenAgentClaim);
 
       // Group by agent
       const agentLoads = new Map<string, { agentId: string; agentType: string; claims: IssueClaim[] }>();
 
-      for (const claim of claims) {
-        if (claim.claimant.type !== 'agent') continue;
-
+      for (const claim of openAgentClaims) {
         const key = claim.claimant.agentId!;
         if (!agentLoads.has(key)) {
           agentLoads.set(key, { agentId: key, agentType: claim.claimant.agentType!, claims: [] });
