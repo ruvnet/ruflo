@@ -622,7 +622,9 @@ export const claimsTools: MCPTool[] = [
       claim.claimant = stealer;
       claim.status = 'active';
       claim.statusChangedAt = now;
-      claim.context = stealableInfo.context;
+      // The context given to claims_mark-stealable is the handoff note for the
+      // stealer; without one, keep the context recorded with the claim.
+      claim.context = stealableInfo.context ?? claim.context;
 
       delete store.stealable[issueId];
       store.claims[issueId] = claim;
