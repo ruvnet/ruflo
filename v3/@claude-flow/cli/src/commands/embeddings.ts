@@ -135,7 +135,7 @@ const searchCommand: Command = {
     const threshold = rawThreshold === undefined || rawThreshold === null
       ? 0.5
       : parseFloat(String(rawThreshold));
-    const dbPath = ctx.flags['db-path'] as string || '.swarm/memory.db';
+    const dbPath = ctx.flags.dbPath as string || '.swarm/memory.db';
 
     if (!query) {
       output.printError('Query is required');
@@ -449,7 +449,7 @@ const collectionsCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const action = ctx.flags.action as string || 'list';
-    const dbPath = ctx.flags['db-path'] as string || '.swarm/memory.db';
+    const dbPath = ctx.flags.dbPath as string || '.swarm/memory.db';
 
     output.writeln();
     output.writeln(output.bold('Embedding Collections (Namespaces)'));
@@ -570,7 +570,7 @@ const indexCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const action = ctx.flags.action as string || 'status';
     const collection = ctx.flags.collection as string;
-    const efConstruction = parseInt(ctx.flags['ef-construction'] as string || '200', 10);
+    const efConstruction = parseInt(ctx.flags.efConstruction as string || '200', 10);
     const m = parseInt(ctx.flags.m as string || '16', 10);
 
     output.writeln();
@@ -959,7 +959,7 @@ const chunkCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const embeddings = await getEmbeddings();
     const text = ctx.flags.text as string || '';
-    const maxSize = parseInt(ctx.flags['max-size'] as string || '512', 10);
+    const maxSize = parseInt(ctx.flags.maxSize as string || '512', 10);
     const overlap = parseInt(ctx.flags.overlap as string || '50', 10);
     const strategy = ctx.flags.strategy as string || 'sentence';
 
@@ -1420,7 +1420,7 @@ const cacheCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const action = ctx.flags.action as string || 'stats';
-    const dbPath = ctx.flags['db-path'] as string || '.cache/embeddings.db';
+    const dbPath = ctx.flags.dbPath as string || '.cache/embeddings.db';
 
     output.writeln();
     output.writeln(output.bold('Embedding Cache'));
@@ -1640,7 +1640,7 @@ const benchmarkCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const iterations = parseInt(ctx.flags.iterations as string || '10', 10);
-    const batchSize = parseInt(ctx.flags['batch-size'] as string || '5', 10);
+    const batchSize = parseInt(ctx.flags.batchSize as string || '5', 10);
     const full = ctx.flags.full === true;
 
     output.writeln();
