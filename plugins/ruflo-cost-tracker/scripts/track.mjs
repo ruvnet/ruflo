@@ -24,6 +24,7 @@ import { spawnNpxSync } from './_npx.mjs';
 import { logFailure } from './_diagnostic-log.cjs';
 // iter 68 — shared PRICING table (was duplicated in counterfactual.mjs too).
 import { modelTier, costForUsage } from './_prices.mjs';
+import { mergeCall } from './_claude-calls.mjs';
 import { encodeProjectPath } from './_encode-project-path.mjs';
 
 const PROJECTS_DIR = join(homedir(), '.claude', 'projects');
@@ -50,6 +51,12 @@ function summarizeSession(jsonlPath) {
   let firstTs = null, lastTs = null;
   let sessionId = null, cwd = null;
 
+  // Claude Code logs one assistant line per content block and repeats the whole
+  // response's usage on each, so count each response once, keyed by
+  // message.id + requestId as _ledger.mjs does. Taking the largest value of each
+  // field across a response's lines keeps the total right if a line was written
+  // before the final count.
+  const calls = new Map();
   for (const line of lines) {
     let m;
     try { m = JSON.parse(line); } catch { continue; }
@@ -60,10 +67,12 @@ function summarizeSession(jsonlPath) {
       if (!lastTs || m.timestamp > lastTs) lastTs = m.timestamp;
     }
     if (m.type !== 'assistant' || !m.message?.usage) continue;
+    mergeCall(calls, m);
+  }
+
+  for (const { model, usage: u } of calls.values()) {
     messageCount++;
-    const model = m.message.model || 'unknown';
     const tier = modelTier(model);
-    const u = m.message.usage;
     const cost = costForUsage(tier, u);
     const slot = byModel[model] || {
       tier,
