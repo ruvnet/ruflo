@@ -55,7 +55,9 @@ const DEFAULT_SECURITY_POLICY: SecurityPolicy = {
 // 'admin' covers trust-change/topology-change: control-plane messages that
 // mutate a peer's trust level or the mesh topology itself, as distinct from
 // the data-plane write/memory/spawn categories above (ADR-101).
-type PolicyGatedCategory = 'write' | 'memory' | 'spawn' | 'admin';
+// 'write+spawn' is for agent-handoff, which transfers both work state (write)
+// and ownership/lifecycle authority (spawn).
+type PolicyGatedCategory = 'write' | 'memory' | 'spawn' | 'admin' | 'write+spawn';
 
 const POLICY_CATEGORY_FOR_MESSAGE_TYPE: Partial<Record<FederationMessageType, PolicyGatedCategory>> = {
   'task-assignment': 'write',
@@ -64,7 +66,7 @@ const POLICY_CATEGORY_FOR_MESSAGE_TYPE: Partial<Record<FederationMessageType, Po
   'memory-query': 'memory',
   'memory-response': 'memory',
   'agent-spawn': 'spawn',
-  'agent-handoff': 'spawn',
+  'agent-handoff': 'write+spawn',
   'trust-change': 'admin',
   'topology-change': 'admin',
 };
@@ -79,6 +81,11 @@ function policyThresholdForCategory(policy: SecurityPolicy, category: PolicyGate
       return policy.minTrustLevelForSpawn;
     case 'admin':
       return policy.minTrustLevelForAdmin;
+    case 'write+spawn':
+      return Math.max(
+        policy.minTrustLevelForWrite,
+        policy.minTrustLevelForSpawn,
+      ) as TrustLevel;
   }
 }
 
