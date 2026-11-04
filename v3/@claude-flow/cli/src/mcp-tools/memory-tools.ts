@@ -235,6 +235,14 @@ function resolveProjectMemoryDir(claudeProjectsDir: string, projectPathOverride?
     if (/^[A-Za-z]:[\\/]/.test(source)) {
       candidates.add(source.replace(/[:\\/]/g, '-').replace(/\s+/g, '-'));
     }
+
+    // Candidate 6: Claude Code's own rule, which replaces every character
+    // other than [A-Za-z0-9] with `-` (the cost tracker's
+    // _encode-project-path.mjs does the same, #4366). The candidates above
+    // keep `_`, `.` and the like, so `/work/my_app` never found its folder
+    // `-work-my-app`. A WSL path is also tried in its Windows form.
+    candidates.add(source.replace(/[^a-zA-Z0-9]/g, '-'));
+    if (wsl) candidates.add(`${wsl[1].toUpperCase()}:${wsl[2] ?? ''}`.replace(/[^a-zA-Z0-9]/g, '-'));
   }
 
   for (const projectHash of candidates) {

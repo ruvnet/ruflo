@@ -107,11 +107,15 @@ export const progressOf = (mission: MissionRecord, tasks: readonly TaskRecord[])
   return { done: [...status.values()].filter(value => value === 'done').length, total: mission.tasks.length }
 }
 
-/** Whether the mission is over: cancelled, or every task done in the task store (a mission with no tasks is not). The record's own state is not read: it stays `planned` until the executor exists. */
+/**
+ * Whether the mission is over: cancelled, or every task settled in the task store, each one done or cancelled (a mission with no tasks is not). A single
+ * cancelled task, say a research step dropped on purpose, must not keep a mission with every other task done open for ever. A task still pending, running
+ * or failed keeps it open. The record's own state is not read: it stays `planned` until the executor exists.
+ */
 export function isOver(mission: MissionRecord, tasks: readonly TaskRecord[]): boolean {
-  const { done, total } = progressOf(mission, tasks)
+  const settled = [...derive(mission, tasks).values()].every(value => value === 'done' || value === 'cancelled')
 
-  return mission.cancelled || (total > 0 && done >= total)
+  return mission.cancelled || (mission.tasks.length > 0 && settled)
 }
 
 /**

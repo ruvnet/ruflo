@@ -428,6 +428,10 @@ export const claimsTools: MCPTool[] = [
       if (progress !== undefined) {
         claim.progress = Math.min(100, Math.max(0, progress));
       }
+      // claims_status never sets 'stealable', so a claim it updates is no
+      // longer up for grabs: drop it from the list claims_stealable and
+      // claims_steal read.
+      delete store.stealable[issueId];
 
       store.claims[issueId] = claim;
       saveClaims(store);
@@ -622,7 +626,9 @@ export const claimsTools: MCPTool[] = [
       claim.claimant = stealer;
       claim.status = 'active';
       claim.statusChangedAt = now;
-      claim.context = stealableInfo.context;
+      // The context given to claims_mark-stealable is the handoff note for the
+      // stealer; without one, keep the context recorded with the claim.
+      claim.context = stealableInfo.context ?? claim.context;
 
       delete store.stealable[issueId];
       store.claims[issueId] = claim;
