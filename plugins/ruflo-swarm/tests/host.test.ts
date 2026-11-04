@@ -65,7 +65,8 @@ describe('host', () => {
     on('ui.invalidate', () => DENY)
     on('ui.toast', () => DENY)
     on('process.run', () => DENY)
-    on('prompt.fill', () => DENY as never)
+    // A refused fill answers { isFilled: false }: since 2.1.296 the kit checks a stub's answer like the engine does, and a bare deny has no isFilled.
+    on('prompt.fill', () => ({ isFilled: false }))
     on('turn.start', ($, e) => ({ turnId: e.turnId }))
     on('tool.call', () => ({ result: 'ok', text: 'ok' }))
 

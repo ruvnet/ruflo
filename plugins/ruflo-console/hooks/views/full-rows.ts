@@ -7,7 +7,7 @@ type Opts = {
   /** The key the rows are addressed by: `<key>-0`, `<key>-1`, and `<key>-more` for the marker. */
   key: string
   color?: string
-  bold?: boolean
+  weight?: 'regular' | 'medium' | 'semibold' | 'bold'
   dimColor?: boolean
   /** What sits after the last line (an ✎ edit button), so it reads as part of the text. */
   after?: RenderElement
@@ -24,7 +24,7 @@ export function fullRows(ctx: Ctx, lead: string, value: string, opts: Opts): Ren
   const indent = ' '.repeat(lead.length)
   const width = Math.max(12, ctx.columns - lead.length - 4)
   const shown = showFull(value, width, { maxLines: opts.maxLines ?? SHOW_LINES, ...(opts.hint !== undefined && { hint: opts.hint }) })
-  const style = { ...(opts.color !== undefined && { color: opts.color }), ...(opts.bold === true && { bold: true }), ...(opts.dimColor === true && { dimColor: true }) }
+  const style = { ...(opts.color !== undefined && { color: opts.color }), ...(opts.weight !== undefined && { weight: opts.weight }), ...(opts.dimColor === true && { dimColor: true }) }
   const last = shown.lines.length - 1
 
   return shown.lines.map((line, i) => {

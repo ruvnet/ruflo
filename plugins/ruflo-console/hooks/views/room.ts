@@ -66,7 +66,7 @@ export function roomView(ctx: Ctx): RenderElement {
   else if (banner === null) rows.push(text(ctx, ' Nothing is waiting. Anything that asks first shows up here, unmissable, with how long you have to answer.', { dimColor: true }))
   else if (isLate) rows.push(text(ctx, `⌛ ${banner.label}: expired after ${PENDING_TTL_MS / 1000} s with no answer. It will not run: ask again.`, { color: THEME.bad }))
   else {
-    rows.push(text(ctx, `⚠ ${banner.label}`, { bold: true, color: TONE_COLOR[banner.tone] }))
+    rows.push(text(ctx, `⚠ ${banner.label}`, { weight: 'semibold', color: TONE_COLOR[banner.tone] }))
     rows.push(text(ctx, `   expects: ${banner.expect}${banner.view === null ? '' : ` · raised on ${banner.view}`} · ${banner.leftS}s left to answer`, { color: TONE_COLOR[banner.tone] }))
   }
 
@@ -105,7 +105,7 @@ export function roomView(ctx: Ctx): RenderElement {
         ctx,
         [
           ctx.kit.Text({ dimColor: true, children: `${ago(item.atMs, nowMs).padStart(8)} ` }),
-          ctx.kit.Text({ bold: item.source !== 'event', color: item.source === 'event' ? THEME.info : TONE_COLOR[item.tone], children: `${clip(item.who, 10).padEnd(10)} ` }),
+          ctx.kit.Text({ weight: (item.source !== 'event') ? 'semibold' : 'regular', color: item.source === 'event' ? THEME.info : TONE_COLOR[item.tone], children: `${clip(item.who, 10).padEnd(10)} ` }),
           ctx.kit.Button({ key: `room-open-${item.id}`, label: `${isOpen ? '▾' : '▸'} ${clip(item.text, Math.max(16, ctx.columns - 26))}`, plain: true, onPress: () => ctx.act.room.open(item.id) }),
         ],
         `room-${item.id}`,
@@ -131,7 +131,7 @@ export function roomView(ctx: Ctx): RenderElement {
     const stats = statsOf(lane, nowMs - 15 * 60_000, nowMs)
     const share = stats.observedMs === 0 ? null : Math.round((stats.busyMs / stats.observedMs) * 100)
 
-    rows.push(row(ctx, [ctx.kit.Text({ bold: true, color: THEME.head, children: ` ${clip(lane.label, 20).padEnd(20)}` }), ctx.kit.Text({ color: share === null ? THEME.info : share >= 60 ? THEME.ok : share >= 20 ? THEME.warn : THEME.info, children: ` ${share === null ? 'no status seen' : `busy ${share}%`}` }), ctx.kit.Text({ dimColor: true, children: ` · ${stats.calls} tool call${stats.calls === 1 ? '' : 's'}` })], `room-lane-${i}`))
+    rows.push(row(ctx, [ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: ` ${clip(lane.label, 20).padEnd(20)}` }), ctx.kit.Text({ color: share === null ? THEME.info : share >= 60 ? THEME.ok : share >= 20 ? THEME.warn : THEME.info, children: ` ${share === null ? 'no status seen' : `busy ${share}%`}` }), ctx.kit.Text({ dimColor: true, children: ` · ${stats.calls} tool call${stats.calls === 1 ? '' : 's'}` })], `room-lane-${i}`))
   }
 
   if (lanes.length > 8) rows.push(text(ctx, ` +${lanes.length - 8} more`, { dimColor: true }))

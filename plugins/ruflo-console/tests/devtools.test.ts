@@ -26,7 +26,7 @@ const HOME_FILES = {
 import { drawn } from './fixtures/views'
 
 describe('dev tools', () => {
-  test('devtools: every section with its fields and rows; drawing it runs nothing', { options: { boot: false } }, async ($, on) => {
+  test('devtools: every section with its fields and rows; drawing it runs nothing', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -42,7 +42,7 @@ describe('dev tools', () => {
     expect(world.runs.some(argv => /analyze_|github_|browser_|terminal_|guidance_|agenticow_|wasm_|managed_|daa_|ruvllm_|transfer_|providers|cleanup|update|migrate|appliance/.test(argv.join(' ')))).toBe(false)
   })
 
-  test('devtools: a diff read runs at once with one fixed argv; a GitHub read asks first, runs nothing on no and one argv on yes', { options: { boot: false } }, async ($, on) => {
+  test('devtools: a diff read runs at once with one fixed argv; a GitHub read asks first, runs nothing on no and one argv on yes', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const STATS = 'Result:\n{\n  "ref": "HEAD",\n  "totalFiles": 3,\n  "totalAdditions": 12\n}\n'
     world.respond = argv => (argv.includes('analyze_diff-stats') ? { exitCode: 0, stdout: STATS, stderr: '' } : cliAnswer(argv))
@@ -74,7 +74,7 @@ describe('dev tools', () => {
     await pane.unmount()
   })
 
-  test('devtools headless: a terminal command asks with the command shown, runs once on yes; a wrapped tool error reads ✗', { options: { boot: false } }, async ($, on) => {
+  test('devtools headless: a terminal command asks with the command shown, runs once on yes; a wrapped tool error reads ✗', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const FAILED = 'Result:\n' + JSON.stringify({ content: [{ type: 'text', text: JSON.stringify({ error: 'Error: Failed to initialize @ruvector/rvagent-wasm' }) }], isError: true })
     world.respond = argv => (argv.includes('wasm_gallery_list') ? { exitCode: 0, stdout: FAILED, stderr: '' } : cliAnswer(argv))

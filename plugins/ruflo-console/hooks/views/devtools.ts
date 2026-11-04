@@ -64,12 +64,12 @@ export function entryRow(ctx: Ctx, entry: DevEntry, lead: number): RenderElement
   return row(
     ctx,
     [
-      isNa ? ctx.kit.Text({ bold: true, color: THEME.info, dimColor: true, children: ` ${'n/a '}` }) : tagChip(ctx, tag.text, tag.color()),
-      ctx.kit.Text({ bold: true, color: entry.cost === 'spends' || entry.cost === 'deletes' ? THEME.warn : THEME.head, dimColor: isNa, children: clip(` ${entry.name} `, lead).padEnd(lead, '.') }),
+      isNa ? ctx.kit.Text({ weight: 'semibold', color: THEME.info, dimColor: true, children: ` ${'n/a '}` }) : tagChip(ctx, tag.text, tag.color()),
+      ctx.kit.Text({ weight: 'semibold', color: entry.cost === 'spends' || entry.cost === 'deletes' ? THEME.warn : THEME.head, dimColor: isNa, children: clip(` ${entry.name} `, lead).padEnd(lead, '.') }),
       ctx.kit.Text({ color: THEME.info, dimColor: isNa || isBlocked, wrap: 'truncate-end', children: clip(` ${entry.about}`, Math.max(4, ctx.columns - lead - 16)) }),
       // A blocked row keeps its button: pressing it says which field to fill. The button is primary, the one action on the row.
       ...(isNa ? [] : [ctx.kit.Button({ key: `dt-${entry.id.slice(3)}`, label: ' ▶ run ', variant: 'primary' as const, onPress: () => void ctx.act.run(entry.id) })]),
-      ...(isBlocked ? [ctx.kit.Text({ bold: true, color: THEME.warn, children: ' needs input above ↑' })] : []),
+      ...(isBlocked ? [ctx.kit.Text({ weight: 'semibold', color: THEME.warn, children: ' needs input above ↑' })] : []),
     ],
     `dt-row-${entry.id}`,
   )
@@ -120,7 +120,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
     return [frameResult(ctx, rows, running !== null ? 'run' : 'idle')]
   }
 
-  rows.push(text(ctx, ` ${result.label}`, { bold: true, color: result.ok ? THEME.ok : THEME.bad }))
+  rows.push(text(ctx, ` ${result.label}`, { weight: 'semibold', color: result.ok ? THEME.ok : THEME.bad }))
   if (result.note !== undefined) rows.push(text(ctx, ` ${result.note}`, { color: /MONEY|DELETES|DISCARDS|SHELL/.test(result.note) ? THEME.bad : THEME.warn }))
 
   const top = Math.max(0, Math.min(state.select.item, result.lines.length - RESULT_ROWS))

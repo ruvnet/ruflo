@@ -51,11 +51,11 @@ export function screenOf(lines: readonly TermLine[], width: number): ScreenRow[]
     switch (line.kind) {
       case 'in':
         rows.push({ gutter: ' ', gutterColor: color, text: ' ', style: {} })
-        rows.push({ gutter: '╭─ ', gutterColor: THEME.head, text: `you${line.from !== undefined ? ` → ${line.from}` : ''}`, style: { bold: true, color: THEME.head } })
-        at('│  ', line.text, { bold: true }, line.text)
+        rows.push({ gutter: '╭─ ', gutterColor: THEME.head, text: `you${line.from !== undefined ? ` → ${line.from}` : ''}`, style: { weight: 'semibold', color: THEME.head } })
+        at('│  ', line.text, { weight: 'semibold' }, line.text)
         break
       case 'head':
-        rows.push({ gutter: '├─ ', gutterColor: color, text: line.text, style: { bold: true, color } })
+        rows.push({ gutter: '├─ ', gutterColor: color, text: line.text, style: { weight: 'semibold', color } })
         break
       case 'out': {
         const key = line.from ?? ''
@@ -67,7 +67,7 @@ export function screenOf(lines: readonly TermLine[], width: number): ScreenRow[]
         } else if (inFence.get(key) === true) {
           at('│  ', `┆ ${line.text}`, { color: THEME.info })
         } else if (/^\s*#{1,6}\s/.test(line.text)) {
-          at('│  ', line.text.replace(/^\s*#{1,6}\s/, ''), { bold: true, color })
+          at('│  ', line.text.replace(/^\s*#{1,6}\s/, ''), { weight: 'semibold', color })
         } else {
           at('│  ', line.text.replace(/^(\s*)[-*]\s/, '$1• '))
         }
@@ -203,7 +203,7 @@ export function terminalView(ctx: Ctx): RenderElement {
           key: 'term-pick',
           children: HARNESSES.map(entry =>
             entry.id === term.harness
-              ? ctx.kit.Box({ key: `term-${entry.id}`, children: [ctx.kit.Text({ bold: true, color: THEME.head, children: `[${entry.key}: ${entry.label.toUpperCase()}]` })] })
+              ? ctx.kit.Box({ key: `term-${entry.id}`, children: [ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: `[${entry.key}: ${entry.label.toUpperCase()}]` })] })
               : ctx.kit.Button({ key: `term-${entry.id}`, label: entry.label, hotkey: entry.key, onPress: () => ctx.act.term.harness(entry.id) }),
           ),
         }),

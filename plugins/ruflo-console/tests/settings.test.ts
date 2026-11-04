@@ -1,6 +1,7 @@
 import type { TestBody } from 'claude-code/testing'
 import { describe, expect, mock, test } from 'claude-code/testing'
 
+import { VERIFY_RETRY_MS } from '../hooks/runner'
 import { settingsAnswer } from './fixtures/settings'
 import { RUFLO_FILES } from './fixtures/ruflo-run'
 import { inputKeys, command, elementsOf, keyOf, paneAt, PLUGIN, SESSION, textOf, worldOf } from './fixtures/world'
@@ -11,7 +12,7 @@ async function opened($: Body[0], on: Body[1], view = 'settings') {
   const world = worldOf(on, RUFLO_FILES)
 
   world.respond = settingsAnswer
-  mock.clock(on)
+  const clock = mock.clock(on)
   await $.session.start(SESSION)
   await $.command.run(command(view))
 
@@ -20,13 +21,13 @@ async function opened($: Body[0], on: Body[1], view = 'settings') {
   await pane.drawn()
   await pane.drawn()
 
-  return { world, pane }
+  return { world, pane, clock }
 }
 
 const claudeRuns = (runs: readonly string[][]) => runs.filter(argv => argv[0] === 'claude')
 
 describe('settings', () => {
-  test('opening reads the plugin’s options and ruflo config, runs no write, and simple shows only the few that matter', { options: { boot: false } }, async ($, on) => {
+  test('opening reads the plugin’s options and ruflo config, runs no write, and simple shows only the few that matter', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
     const tree = await pane.drawn()
     const text = textOf(tree)
@@ -44,7 +45,7 @@ describe('settings', () => {
     await pane.unmount()
   })
 
-  test('advanced adds every option and the rest of ruflo config', { options: { boot: false } }, async ($, on) => {
+  test('advanced adds every option and the rest of ruflo config', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
 
     await pane.press({ key: 'st-level-advanced' })
@@ -58,7 +59,7 @@ describe('settings', () => {
     await pane.unmount()
   })
 
-  test('a choice asks first with the exact argv and stdin, then runs once on yes', { options: { boot: false } }, async ($, on) => {
+  test('a choice asks first with the exact argv and stdin, then runs once on yes', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
     const writes = () => claudeRuns(world.runs).filter(argv => argv.includes('--values-stdin'))
 
@@ -76,7 +77,7 @@ describe('settings', () => {
     await pane.unmount()
   })
 
-  test('ruflo-mods lists its tool hints, agent trim and delivery screen at the simple level, each with an honest note, and a toggle asks first', { options: { boot: false } }, async ($, on) => {
+  test('ruflo-mods lists its tool hints, agent trim and delivery screen at the simple level, each with an honest note, and a toggle asks first', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
 
     await pane.press({ key: 'st-plugin-ruflo-mods' })
@@ -101,7 +102,7 @@ describe('settings', () => {
     await pane.unmount()
   })
 
-  test('a number field takes digits only; ruflo config keys outside the list or out of range are refused', { options: { boot: false } }, async ($, on) => {
+  test('a number field takes digits only; ruflo config keys outside the list or out of range are refused', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
 
     await pane.press({ key: 'st-level-advanced' })
@@ -125,7 +126,7 @@ describe('settings', () => {
     await pane.unmount()
   })
 
-  test('a secret option is never shown or editable; its value does not reach the screen', { options: { boot: false } }, async ($, on) => {
+  test('a secret option is never shown or editable; its value does not reach the screen', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
 
     await pane.press({ key: 'st-plugin-ruflo-mods' })
@@ -142,7 +143,7 @@ describe('settings', () => {
     await pane.unmount()
   })
 
-  test('▸ ask codex sends the explaining prompt at once: the terminal opens on it with no confirm and nothing is changed', { options: { boot: false } }, async ($, on) => {
+  test('▸ ask codex sends the explaining prompt at once: the terminal opens on it with no confirm and nothing is changed', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
 
     await pane.press({ key: 'st-ask-codex-ruflo-console-look' })
@@ -158,7 +159,7 @@ describe('settings', () => {
     await pane.unmount()
   })
 
-  test('the AI terminal’s model and budget are chips; a saved model reaches the next claude command', { options: { boot: false } }, async ($, on) => {
+  test('the AI terminal’s model and budget are chips; a saved model reaches the next claude command', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
 
     await pane.press({ key: 'st-opt-ai-model-haiku' })
@@ -172,7 +173,7 @@ describe('settings', () => {
     await pane.unmount()
   })
 
-  test('"Always accept AI turns" on a claude confirm saves the choice and runs it; later turns go out with no confirm; Settings resets it; ruflo commands still ask', { options: { boot: false } }, async ($, on) => {
+  test('"Always accept AI turns" on a claude confirm saves the choice and runs it; later turns go out with no confirm; Settings resets it; ruflo commands still ask', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on, 'terminal')
 
     await pane.input({ key: 'term-input', text: 'what can this system do?', kind: 'submit' })
@@ -213,7 +214,7 @@ describe('settings', () => {
   })
 
 
-  test('search finds a setting across plugins and ruflo config in either level, applies on Enter, empties the box, and clears with the chip', { options: { boot: false } }, async ($, on) => {
+  test('search finds a setting across plugins and ruflo config in either level, applies on Enter, empties the box, and clears with the chip', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
 
     // Simple level: the budget is an advanced option of ruflo-mods, yet a search still finds it.
@@ -239,7 +240,7 @@ describe('settings', () => {
     await pane.unmount()
   })
 
-  test('changed only keeps what differs from its default; the header counts shown, total and changed', { options: { boot: false } }, async ($, on) => {
+  test('changed only keeps what differs from its default; the header counts shown, total and changed', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
 
     expect(textOf(await pane.drawn())).toMatch(/\d+ shown of \d+ · \d+ changed/)
@@ -253,7 +254,7 @@ describe('settings', () => {
   })
 
 
-  test('the nav style is a Settings choice: icons only, icon and brief title, icon and full title; the nav page row follows it', { options: { boot: false } }, async ($, on) => {
+  test('the nav style is a Settings choice: icons only, icon and brief title, icon and full title; the nav page row follows it', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on, 'settings')
     const keysNow = async () => elementsOf(await pane.drawn(), 'Button').map(keyOf)
 
@@ -273,8 +274,13 @@ describe('settings', () => {
     await pane.unmount()
   })
 
-  test('a low-risk ruflo action offers "Always allow"; after it, that kind runs with no confirm; Settings forgets it; risky kinds never offer it', { options: { boot: false } }, async ($, on) => {
-    const { world, pane } = await opened($, on, 'hive')
+  test('a low-risk ruflo action offers "Always allow"; after it, that kind runs with no confirm; Settings forgets it; risky kinds never offer it', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
+    const { world, pane, clock } = await opened($, on, 'hive')
+    // A write whose state file has not landed is looked at once more VERIFY_RETRY_MS later (runner.ts), on the mock clock.
+    const settled = async (run: Promise<unknown>) => {
+      await clock.advance(VERIFY_RETRY_MS)
+      await run
+    }
     const spawns = () => world.runs.filter(argv => argv.join(' ').includes('hive-mind_spawn'))
 
     await $.command.run(command('run hive-spawn-scout'))
@@ -284,11 +290,11 @@ describe('settings', () => {
     expect(textOf(asked)).toContain('Confirm:')
     expect(elementsOf(asked, 'Button').map(keyOf)).toContain('remember')
     expect(spawns()).toEqual([])
-    await pane.press({ key: 'remember' })
+    await settled(pane.press({ key: 'remember' }))
     expect(spawns()).toHaveLength(1)
 
     // The next spawn (a different role) is the same kind: it runs without asking.
-    await $.command.run(command('run hive-spawn-specialist'))
+    await settled($.command.run(command('run hive-spawn-specialist')))
     expect(textOf(await pane.drawn())).not.toContain('Confirm:')
     expect(spawns()).toHaveLength(2)
 

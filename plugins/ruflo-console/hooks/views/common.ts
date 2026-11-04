@@ -208,7 +208,7 @@ export const isBbs = (): boolean => look === 'bbs'
 export function tagChip(ctx: Ctx, text: string, color: string): RenderElement {
   const ground = look !== 'bbs' ? undefined : color === THEME.ok ? COST_CHIP.ok : color === THEME.info ? COST_CHIP.info : color === THEME.warn ? COST_CHIP.warn : color === THEME.bad ? COST_CHIP.bad : undefined
 
-  if (ground === undefined) return ctx.kit.Text({ bold: true, color, children: ` ${text}` })
+  if (ground === undefined) return ctx.kit.Text({ weight: 'semibold', color, children: ` ${text}` })
 
   return ctx.kit.Box({ flexDirection: 'row', children: [ctx.kit.Text({ children: ' ' }), ctx.kit.Text({ ...chip(ground), children: text })] })
 }
@@ -255,7 +255,7 @@ export function count(value: number | null | undefined): string {
 
 export const pct = (value: number | null | undefined): string => (value === null || value === undefined || !Number.isFinite(value) ? 'n/a' : `${Math.round(Math.min(1, Math.max(0, value)) * 100)}%`)
 
-export function text(ctx: Ctx, children: string, props: { color?: string; bold?: boolean; dimColor?: boolean; italic?: boolean } = {}): RenderElement {
+export function text(ctx: Ctx, children: string, props: { color?: string; weight?: 'regular' | 'medium' | 'semibold' | 'bold'; dimColor?: boolean; italic?: boolean } = {}): RenderElement {
   return ctx.kit.Text({ wrap: 'truncate-end', ...props, children: clip(children, Math.max(4, ctx.columns)) })
 }
 
@@ -263,7 +263,7 @@ export function text(ctx: Ctx, children: string, props: { color?: string; bold?:
  * Prose a person needs to read in full (an approval's text, a mission's objective): wrapped on word breaks into as many rows as it takes, each
  * continuation row indented by `indent`, so a narrow terminal (80 columns in tmux) shows all of it instead of cutting it at the edge with "…".
  */
-export function paragraph(ctx: Ctx, line: string, props: { color?: string; bold?: boolean; dimColor?: boolean; italic?: boolean } = {}, indent = ''): RenderElement[] {
+export function paragraph(ctx: Ctx, line: string, props: { color?: string; weight?: 'regular' | 'medium' | 'semibold' | 'bold'; dimColor?: boolean; italic?: boolean } = {}, indent = ''): RenderElement[] {
   const lead = line.match(/^ */)?.[0] ?? ''
   const width = Math.max(16, ctx.columns - Math.max(lead.length, indent.length))
   // A word longer than the row (an id, a path) is cut into row-sized pieces, so no character of it is lost to the edge.
@@ -324,7 +324,7 @@ export function rule(ctx: Ctx, title: string, right = ''): RenderElement {
     const tail = clip(right, room)
     const fill = Math.max(1, ctx.columns - head.length - tail.length - 2)
 
-    const line = row(ctx, [ctx.kit.Text({ bold: true, color: accentOf(ctx), wrap: 'truncate-end', children: head }), ctx.kit.Text({ color: accentOf(ctx), dimColor: true, children: `${'═'.repeat(fill)} ` }), ctx.kit.Text({ color: accentOf(ctx), wrap: 'truncate-end', children: tail })])
+    const line = row(ctx, [ctx.kit.Text({ weight: 'semibold', color: accentOf(ctx), wrap: 'truncate-end', children: head }), ctx.kit.Text({ color: accentOf(ctx), dimColor: true, children: `${'═'.repeat(fill)} ` }), ctx.kit.Text({ color: accentOf(ctx), wrap: 'truncate-end', children: tail })])
 
     // In a card the header is the card's first row; otherwise a blank line above each section, so the board breathes instead of packing every block together.
     return ctx.cards === true ? marked(HEADS, line) : marked(HEADS, col(ctx, [ctx.kit.Text({ children: ' ' }), line]))
@@ -334,7 +334,7 @@ export function rule(ctx: Ctx, title: string, right = ''): RenderElement {
   const tail = clip(right, Math.max(0, ctx.columns - name.length - 4))
   const fill = Math.max(1, ctx.columns - name.length - tail.length - 3)
 
-  return marked(HEADS, row(ctx, [ctx.kit.Text({ bold: true, color: THEME.head, wrap: 'truncate-end', children: name }), ctx.kit.Text({ dimColor: true, children: ` ${'─'.repeat(fill)} ` }), ctx.kit.Text({ dimColor: true, wrap: 'truncate-end', children: tail })]))
+  return marked(HEADS, row(ctx, [ctx.kit.Text({ weight: 'semibold', color: THEME.head, wrap: 'truncate-end', children: name }), ctx.kit.Text({ dimColor: true, children: ` ${'─'.repeat(fill)} ` }), ctx.kit.Text({ dimColor: true, wrap: 'truncate-end', children: tail })]))
 }
 
 /** A label and its value; the value dims when it is n/a. */
@@ -432,7 +432,7 @@ export function confirmRow(ctx: Ctx): RenderElement | null {
     return row(
       ctx,
       [
-        text(ctx, `⚠ An ask is waiting on ${where?.label ?? pending.view}: ${clip(askedBy(pending) + pending.label, Math.max(16, ctx.columns - 64))} `, { bold: true, color: THEME.warn }),
+        text(ctx, `⚠ An ask is waiting on ${where?.label ?? pending.view}: ${clip(askedBy(pending) + pending.label, Math.max(16, ctx.columns - 64))} `, { weight: 'semibold', color: THEME.warn }),
         button(ctx, 'confirm-go', 'Go there', () => ctx.act.view(pending.view as ViewId)),
         button(ctx, 'cancel', 'Cancel (n)', ctx.act.cancel, { hotkey: 'n' }),
       ],
@@ -455,12 +455,12 @@ export function confirmRow(ctx: Ctx): RenderElement | null {
     borderColor: THEME.warn,
     paddingX: 1,
     children: [
-      row(ctx, [ctx.kit.Text({ bold: true, color: THEME.warn, children: '▶ CONFIRM NEEDED' }), ctx.kit.Text({ dimColor: true, children: '  click Yes or press y' })]),
+      row(ctx, [ctx.kit.Text({ weight: 'semibold', color: THEME.warn, children: '▶ CONFIRM NEEDED' }), ctx.kit.Text({ dimColor: true, children: '  click Yes or press y' })]),
       text(inner, '─'.repeat(inner.columns), { dimColor: true }),
-      text(inner, `Confirm: ${askedBy(pending)}${pending.label.replace(/\?+$/, '')}?`, { bold: true, color: THEME.warn }),
+      text(inner, `Confirm: ${askedBy(pending)}${pending.label.replace(/\?+$/, '')}?`, { weight: 'semibold', color: THEME.warn }),
       // Wrapped, not clipped: the person says yes to the whole argv, so all of it shows (a JSON argument runs long).
       ctx.kit.Text({ dimColor: true, wrap: 'wrap', children: `runs: ${pending.shows ?? `ruflo ${pending.args.join(' ')}`}` }),
-      ...(pending.note !== undefined ? [ctx.kit.Text({ wrap: 'wrap', bold: hasMoney, color: hasMoney ? THEME.bad : THEME.warn, children: `Effect: ${pending.note}` })] : []),
+      ...(pending.note !== undefined ? [ctx.kit.Text({ wrap: 'wrap', weight: hasMoney ? 'semibold' : 'regular', color: hasMoney ? THEME.bad : THEME.warn, children: `Effect: ${pending.note}` })] : []),
       ctx.kit.Box({
         flexDirection: 'row',
         marginTop: 1,

@@ -28,7 +28,7 @@ function entryRow(ctx: Ctx, entry: LabEntry, lead: number): RenderElement {
     ctx,
     [
       tagChip(ctx, tag.text, tag.color()),
-      ctx.kit.Text({ bold: true, color: entry.cost === 'spends' ? THEME.warn : THEME.head, children: ` ${entry.name} `.padEnd(lead, '.') }),
+      ctx.kit.Text({ weight: 'semibold', color: entry.cost === 'spends' ? THEME.warn : THEME.head, children: ` ${entry.name} `.padEnd(lead, '.') }),
       ctx.kit.Text({ color: THEME.info, dimColor: isBlocked, wrap: 'truncate-end', children: clip(` ${entry.about}`, Math.max(4, ctx.columns - lead - 18)) }),
       // A verb that needs a path types its command into the terminal, which asks before it runs.
       ctx.kit.Button({ key: `lab-${entry.id}`, label: isTyped ? ' ▸ type' : ' ▸ run', plain: true, dimColor: true, onPress: typed !== undefined ? () => ctx.act.term.load('ruflo', typed) : () => void ctx.act.run(entry.id) }),
@@ -57,7 +57,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
     return [frameResult(ctx, rows, running !== null ? 'run' : 'idle')]
   }
 
-  rows.push(text(ctx, ` ${result.label}`, { bold: true, color: result.ok ? THEME.ok : THEME.bad }))
+  rows.push(text(ctx, ` ${result.label}`, { weight: 'semibold', color: result.ok ? THEME.ok : THEME.bad }))
   if (result.note !== undefined) rows.push(text(ctx, ` ${result.note}`, { color: /money|models/i.test(result.note) ? THEME.bad : THEME.warn }))
 
   const top = Math.max(0, Math.min(state.select.item, result.lines.length - LAB_ROWS))
@@ -104,7 +104,7 @@ export function labRows(ctx: Ctx): RenderElement[] {
       'a policy act · never from this pane',
       [
         text(ctx, ' Promotion needs a receipt id, an approved Ed25519 public key and --confirm, and passes the policy gate:', { color: THEME.info }),
-        text(ctx, `   ${PROMOTE_COMMAND}`, { bold: true, color: THEME.warn }),
+        text(ctx, `   ${PROMOTE_COMMAND}`, { weight: 'semibold', color: THEME.warn }),
         text(ctx, ' Review the receipt (▸ RECEIPTS), then run it yourself in a terminal. The console proposes and evaluates; it never promotes.', { dimColor: true }),
       ],
       false,

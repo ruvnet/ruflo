@@ -34,7 +34,7 @@ describe('clean', () => {
 
 describe('render', () => {
   it('never lets content write an escape: only the renderer\'s own colour codes remain', () => {
-    const hostile = box([text('\u001b]0;pwned\u0007\u001b[2J\u001b[?1049h name', { color: '#ff2a6d', bold: true }), kit.Button({ key: 'x', label: 'go\u001b[31m', hotkey: 'g' } as never)], { flexDirection: 'row' })
+    const hostile = box([text('\u001b]0;pwned\u0007\u001b[2J\u001b[?1049h name', { color: '#ff2a6d', weight: 'semibold' }), kit.Button({ key: 'x', label: 'go\u001b[31m', hotkey: 'g' } as never)], { flexDirection: 'row' })
 
     for (const depth of ['none', '256', 'truecolor'] as const) {
       const out = render(hostile, 80, depth)
@@ -49,7 +49,7 @@ describe('render', () => {
     expect(render(text('x', { color: 'success' }), 20, '256')[0]).toContain('38;5;71')
     expect(render(text('x', { color: '#ff0000' }), 20, 'truecolor')[0]).toContain('38;2;255;0;0')
     expect(render(text('x', { color: '#ff0000' }), 20, '256')[0]).toContain('38;5;196')
-    expect(render(text('x', { color: 'error', bold: true }), 20, 'none')).toEqual(['x'])
+    expect(render(text('x', { color: 'error', weight: 'semibold' }), 20, 'none')).toEqual(['x'])
   })
 
   it('lays a row out side by side and a column as lines', () => {

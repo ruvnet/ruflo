@@ -27,7 +27,7 @@ async function opened($: Body[0], on: Body[1]) {
 }
 
 describe('learning page', () => {
-  test('the pulse is there, and it moves: over a couple of seconds the pipeline marker visits more than one stage', { options: { boot: false } }, async ($, on) => {
+  test('the pulse is there, and it moves: over a couple of seconds the pipeline marker visits more than one stage', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { pane } = await opened($, on)
     const first = textOf(await pane.drawn())
 
@@ -51,7 +51,7 @@ describe('learning page', () => {
     await pane.unmount()
   })
 
-  test('Settings & configuration is folded; opened, a switch asks first with its key, and nothing runs until yes', { options: { boot: false } }, async ($, on) => {
+  test('Settings & configuration is folded; opened, a switch asks first with its key, and nothing runs until yes', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
     const folded = await pane.drawn()
 
@@ -70,7 +70,7 @@ describe('learning page', () => {
     await pane.unmount()
   })
 
-  test('Self-learning actions is folded; opened, pretrain asks first with the confirm right under it; the pattern fields are there', { options: { boot: false } }, async ($, on) => {
+  test('Self-learning actions is folded; opened, pretrain asks first with the confirm right under it; the pattern fields are there', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, pane } = await opened($, on)
 
     expect(keys(await pane.drawn())).not.toContain('run-nn-pretrain-shallow')

@@ -19,7 +19,7 @@ export function statusCard(ctx: Ctx, key: string, tone: StatusTone, title: strin
     borderStyle: 'round',
     borderColor: COLOR[tone](),
     paddingX: 1,
-    children: [row(ctx, [ctx.kit.Text({ bold: true, color: COLOR[tone](), wrap: 'truncate-end', children: `${MARK[tone]} ${title}` }), ...(right === '' ? [] : [ctx.kit.Text({ dimColor: true, children: `  ${right}` })])]), ...body],
+    children: [row(ctx, [ctx.kit.Text({ weight: 'semibold', color: COLOR[tone](), wrap: 'truncate-end', children: `${MARK[tone]} ${title}` }), ...(right === '' ? [] : [ctx.kit.Text({ dimColor: true, children: `  ${right}` })])]), ...body],
   })
 }
 

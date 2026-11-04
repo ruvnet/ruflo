@@ -113,7 +113,7 @@ function browseRows(ctx: Ctx, entries: readonly MemoryEntry[]): RenderElement[] 
   shown.slice(page * BROWSE, page * BROWSE + BROWSE).forEach((entry, i) => {
     rows.push(
       row(ctx, [
-        ctx.kit.Text({ bold: true, color: entry.hasVector ? THEME.head : THEME.info, children: clip(` ${entry.hasVector ? '◆' : '◇'} ${entry.key} `, lead).padEnd(lead, '.') }),
+        ctx.kit.Text({ weight: 'semibold', color: entry.hasVector ? THEME.head : THEME.info, children: clip(` ${entry.hasVector ? '◆' : '◇'} ${entry.key} `, lead).padEnd(lead, '.') }),
         ctx.kit.Text({ color: THEME.info, wrap: 'truncate-end', children: clip(` ${entry.namespace} · ${entry.size === undefined ? 'n/a' : `${entry.size} B`} · ${ago(entry.atMs, nowMs)}`, Math.max(4, ctx.columns - lead - 22)) }),
         ctx.kit.Button({ key: `mem-open-${i}`, label: ' ▸ view', plain: true, dimColor: true, onPress: () => ctx.act.memory.open(entry) }),
         ctx.kit.Button({ key: `mem-del-${i}`, label: ' ▸ delete', plain: true, dimColor: true, onPress: () => ctx.act.memory.remove(entry) }),

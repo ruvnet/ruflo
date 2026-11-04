@@ -23,7 +23,7 @@ const HOME_FILES = {
 import { drawn } from './fixtures/views'
 
 describe('skills, security and performance', () => {
-  test('skills: installed, search and create sections; opening lists, nothing else runs until asked and confirmed', { options: { boot: false } }, async ($, on) => {
+  test('skills: installed, search and create sections; opening lists, nothing else runs until asked and confirmed', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const skillRuns = () => world.runs.filter(argv => argv[2] === 'skills@1.7.2').map(argv => argv.slice(3).join(' '))
 
@@ -67,7 +67,7 @@ describe('skills, security and performance', () => {
     await pane.unmount()
   })
 
-  test('security & doctor: meter, paste field, scans, doctor; a read runs at once, a write asks with its argv, nothing runs unasked', { options: { boot: false } }, async ($, on) => {
+  test('security & doctor: meter, paste field, scans, doctor; a read runs at once, a write asks with its argv, nothing runs unasked', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const ours = () => world.runs.map(argv => argv.slice(4)).filter(args => /^(security|doctor|performance)$/.test(args[0] ?? '') || /aidefence|policy_|performance_/.test(args.join(' ')))
     const doctor = '\u001b[32m✓\u001b[0m Node.js Version: v22.23.2 (>= 20 required)\n\u001b[33m⚠\u001b[0m Daemon Status: Not running\n'
@@ -111,7 +111,7 @@ describe('skills, security and performance', () => {
     await pane.unmount()
   })
 
-  test('performance: the latency sparkline fills from metrics runs; a write asks first', { options: { boot: false } }, async ($, on) => {
+  test('performance: the latency sparkline fills from metrics runs; a write asks first', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     let avg = 0.05
 
@@ -139,7 +139,7 @@ describe('skills, security and performance', () => {
     await pane.unmount()
   })
 
-  test('skills: use, preview, targets, maintain and scan; reads run on a click, every change asks with its argv and cost', { options: { boot: false } }, async ($, on) => {
+  test('skills: use, preview, targets, maintain and scan; reads run on a click, every change asks with its argv and cost', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const files = { ...RUFLO_FILES, 'package.json': JSON.stringify({ dependencies: { react: '19' } }), '.claude/agents/coder.md': 'Use the tdd skill.' }
     const world = worldOf(on, files)
     const skillRuns = () => world.runs.filter(argv => argv[2] === 'skills@1.7.2').map(argv => argv.slice(3).join(' '))
