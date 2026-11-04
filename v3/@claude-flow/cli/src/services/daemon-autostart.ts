@@ -76,6 +76,54 @@ function autostartDisabledByProjectConfig(projectRoot: string): boolean {
   return false;
 }
 
+/**
+ * #4654: an explicit `daemon stop` is an opt-out that must survive the next
+ * hook. Every ruflo-core plugin hook (PreToolUse/PostToolUse, PreCompact, Stop)
+ * runs the CLI, and the CLI auto-starts a daemon whenever none is alive, so a
+ * stopped daemon came back within minutes. `daemon stop` now writes this
+ * marker, auto-start honours it, and only an explicit `daemon start` clears it.
+ */
+export const DAEMON_STOP_MARKER = 'daemon.stopped';
+
+/**
+ * Set on the daemon that auto-start spawns, so that spawned `daemon start` does
+ * not clear a stop marker written after auto-start checked it (a `daemon stop`
+ * racing a hook). Only a user-driven start clears the marker.
+ */
+export const AUTOSTART_ENV = 'RUFLO_DAEMON_AUTOSTARTED';
+
+function stopMarkerPath(projectRoot: string): string {
+  return path.join(projectRoot, '.claude-flow', DAEMON_STOP_MARKER);
+}
+
+/** True if the user explicitly stopped the daemon for this project (#4654). */
+export function isDaemonStopMarked(projectRoot: string): boolean {
+  try { return fs.existsSync(stopMarkerPath(projectRoot)); } catch { return false; }
+}
+
+/**
+ * Record an explicit `daemon stop` (#4654). Writes only into a directory that is
+ * already a Ruflo project or already has `.claude-flow/`, so `daemon stop` in an
+ * unrelated directory does not litter it. Best-effort; never throws.
+ */
+export function writeDaemonStopMarker(projectRoot: string): boolean {
+  try {
+    const dir = path.join(projectRoot, '.claude-flow');
+    if (!fs.existsSync(dir) && !isRufloProject(projectRoot)) return false;
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      stopMarkerPath(projectRoot),
+      JSON.stringify({ stoppedAt: new Date().toISOString(), pid: process.pid }) + '\n',
+    );
+    return true;
+  } catch { return false; }
+}
+
+/** Clear the stop marker. Called by an explicit `daemon start` (#4654). Never throws. */
+export function clearDaemonStopMarker(projectRoot: string): void {
+  try { fs.unlinkSync(stopMarkerPath(projectRoot)); } catch { /* absent */ }
+}
+
 function autostartDisabled(projectRoot: string): boolean {
   if (/^(0|false|no|off)$/i.test(process.env.RUFLO_DAEMON_AUTOSTART ?? '')) return true;
   return autostartDisabledByProjectConfig(projectRoot);
@@ -167,7 +215,7 @@ const defaultSpawn: SpawnDaemonFn = (projectRoot) => {
     cwd: projectRoot,
     detached: true,
     stdio: 'ignore',
-    env: { ...process.env },
+    env: { ...process.env, [AUTOSTART_ENV]: '1' },
   });
   child.unref();
 };
@@ -189,6 +237,9 @@ export function ensureDaemonRunning(
     if (autostartDisabled(projectRoot)) return { started: false, reason: 'disabled (RUFLO_DAEMON_AUTOSTART=0 or project config)' };
     if (!isRufloProject(projectRoot)) {
       return { started: false, reason: 'not a ruflo project' };
+    }
+    if (isDaemonStopMarked(projectRoot)) {
+      return { started: false, reason: 'stopped by user (daemon stop); run `daemon start` to re-enable' };
     }
     const alive = (opts.isAlive ?? isDaemonAlive)(projectRoot);
     if (alive) return { started: false, reason: 'already running' };
