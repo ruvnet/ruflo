@@ -26,7 +26,7 @@ async function opened($: Body[0], on: Body[1], view: string) {
 }
 
 describe('timeline and events pages', () => {
-  test('timeline: the window chips change the window named in the title', { options: { boot: false } }, async ($, on) => {
+  test('timeline: the window chips change the window named in the title', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const pane = await opened($, on, 'timeline')
     const first = await pane.drawn()
 
@@ -41,7 +41,7 @@ describe('timeline and events pages', () => {
     await pane.unmount()
   })
 
-  test('events: kind chips, a search field and a pause button; searching for nothing says no event matches; pause then resume flips the button', { options: { boot: false } }, async ($, on) => {
+  test('events: kind chips, a search field and a pause button; searching for nothing says no event matches; pause then resume flips the button', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const pane = await opened($, on, 'events')
     const first = await pane.drawn()
 

@@ -2,6 +2,7 @@ import type { PluginOptions } from 'claude-code'
 
 import { budgetOf } from './cost/budget'
 import type { DelegationMode } from './context-delegate/plan'
+import { readAgentModels, type AgentModels } from './agents/models'
 import type { TrustPolicy } from './trust'
 
 /** The plugin's `userConfig` options, validated: a bad value is the default. */
@@ -16,6 +17,8 @@ export type ModOptions = {
   readonly toolHints: boolean
   readonly agentTrim: boolean
   readonly agentTrimKeep: ReadonlySet<string>
+  /** Agent type → model for spawns that chose none (`agentModels`); empty is off. */
+  readonly agentModels: AgentModels
   readonly deliveryScreen: boolean
   readonly compactCarry: boolean
   readonly compactSnapshot: boolean
@@ -57,6 +60,7 @@ export function readOptions(options: PluginOptions | undefined): ModOptions {
     toolHints: bool(o.toolHints, false),
     agentTrim: bool(o.agentTrim, false),
     agentTrimKeep: keepNames(o.agentTrimKeep),
+    agentModels: readAgentModels(o.agentModels),
     deliveryScreen: bool(o.deliveryScreen, false),
     compactCarry: bool(o.compactCarry, false),
     compactSnapshot: bool(o.compactSnapshot, true),

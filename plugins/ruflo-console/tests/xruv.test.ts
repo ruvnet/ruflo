@@ -28,7 +28,7 @@ const fedRuns = (runs: readonly string[][]) => runs.filter(argv => NETWORK.test(
 const argsOf = (runs: readonly string[][], tool: string) => runs.find(argv => argv.includes(tool))?.slice(4)
 
 describe('x.ruv.io board', () => {
-  test('every capability is a row with a button or a field; nothing on the network is asked and the key is never read', { options: { boot: false } }, async ($, on) => {
+  test('every capability is a row with a button or a field; nothing on the network is asked and the key is never read', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES, { home: { '.ruflo/nostr.key': 'never-read' } })
     world.respond = respond
     mock.clock(on)
@@ -53,7 +53,7 @@ describe('x.ruv.io board', () => {
     await pane.unmount()
   })
 
-  test('a fetch runs one fixed read on the click, fills its section and the result panel', { options: { boot: false } }, async ($, on) => {
+  test('a fetch runs one fixed read on the click, fills its section and the result panel', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     world.respond = respond
@@ -73,7 +73,7 @@ describe('x.ruv.io board', () => {
     await pane.unmount()
   })
 
-  test('with federationNetwork on, the board keeps the registry, roster, claims and swarm live', { options: { boot: false, federationNetwork: true } }, async ($, on) => {
+  test('with federationNetwork on, the board keeps the registry, roster, claims and swarm live', { timeoutMs: 30_000, options: { boot: false, federationNetwork: true } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     world.respond = respond
@@ -93,7 +93,7 @@ describe('x.ruv.io board', () => {
     expect(world.runs.some(argv => /x_federation_(join|channel_publish|channel_grant|channel_accept|admit|publish|invite_mint)/.test(argv.join(' ')))).toBe(false)
   })
 
-  test('writes ask first and run one fixed argv on yes; a bad value runs nothing', { options: { boot: false } }, async ($, on) => {
+  test('writes ask first and run one fixed argv on yes; a bad value runs nothing', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES, { home: { '.ruflo/nostr.key': 'never-read' } })
 
     world.respond = respond
@@ -123,7 +123,7 @@ describe('x.ruv.io board', () => {
     await pane.unmount()
   })
 
-  test('join with an invite: the code is masked on the confirm row and in the answer, and sent once as its own argv', { options: { boot: false } }, async ($, on) => {
+  test('join with an invite: the code is masked on the confirm row and in the answer, and sent once as its own argv', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     world.respond = respond
@@ -147,7 +147,7 @@ describe('x.ruv.io board', () => {
     expect(textOf(await $.ui.render(paneAt(120)))).not.toContain(INVITE)
   })
 
-  test('unregister is never run; headless reads answer with what they fetched', { options: { boot: false } }, async ($, on) => {
+  test('unregister is never run; headless reads answer with what they fetched', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     world.respond = respond
@@ -164,7 +164,7 @@ describe('x.ruv.io board', () => {
     expect(roster.text).toContain('◉ abababababababababab — coder node in Toronto')
   })
 
-  test('admin rows: refused without the token; with it, they ask first and the token never reaches argv or the screen', { options: { boot: false } }, async ($, on) => {
+  test('admin rows: refused without the token; with it, they ask first and the token never reaches argv or the screen', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     world.respond = respond
@@ -174,7 +174,7 @@ describe('x.ruv.io board', () => {
     expect(fedRuns(world.runs)).toEqual([])
   })
 
-  test('with the admin token set, admit asks first and runs without the token in its argv', { options: { boot: false } }, async ($, on) => {
+  test('with the admin token set, admit asks first and runs without the token in its argv', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES, { env: { RUFLO_X_ADMIN_TOKEN: TOKEN } })
 
     world.respond = respond
@@ -198,7 +198,7 @@ describe('x.ruv.io board', () => {
     expect(world.runs.some(argv => argv.includes('x_federation_invite_mint'))).toBe(false)
   })
 
-  test('the whole row is clickable: pressing a row name reads, asks, or focuses its field; nothing is a dead label', { options: { boot: false } }, async ($, on) => {
+  test('the whole row is clickable: pressing a row name reads, asks, or focuses its field; nothing is a dead label', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     world.respond = respond

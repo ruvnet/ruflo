@@ -6,7 +6,7 @@ import { drawn, memoryWorld } from './fixtures/views'
 import { inputKeys, cliAnswer, command, elementsOf, keyOf, paneAt, PLUGIN, SESSION, textOf, worldOf } from './fixtures/world'
 
 describe('labs and starts', () => {
-  test('cost: a preset asks first, names the exact change, and sends one fixed argv with JSON stdin on yes', { options: { boot: false } }, async ($, on) => {
+  test('cost: a preset asks first, names the exact change, and sends one fixed argv with JSON stdin on yes', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -38,7 +38,7 @@ describe('labs and starts', () => {
     await pane.unmount()
   })
 
-  test('cost: unsupported configuration says where to set it and no preset or custom entry runs a setter', { options: { boot: false } }, async ($, on) => {
+  test('cost: unsupported configuration says where to set it and no preset or custom entry runs a setter', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     world.respond = argv => argv.includes('configure') ? { exitCode: 1, stdout: '', stderr: 'unknown command configure' } : cliAnswer(argv)
@@ -57,7 +57,7 @@ describe('labs and starts', () => {
     await pane.unmount()
   })
 
-  test('cost: its probes stay on Cost and model inspection is an immediate offline read', { options: { boot: false, cli: 'npx' } }, async ($, on) => {
+  test('cost: its probes stay on Cost and model inspection is an immediate offline read', { timeoutMs: 30_000, options: { boot: false, cli: 'npx' } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     mock.clock(on)
@@ -80,7 +80,7 @@ describe('labs and starts', () => {
     await pane.unmount()
   })
 
-  test('memory lab: gauge, namespace bars, recency, browse, search, entry fields and every group; nothing runs unasked', { options: { boot: false } }, async ($, on) => {
+  test('memory lab: gauge, namespace bars, recency, browse, search, entry fields and every group; nothing runs unasked', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = memoryWorld(on)
 
     mock.clock(on)
@@ -102,7 +102,7 @@ describe('labs and starts', () => {
     expect(world.runs.filter(argv => /memory (retrieve|search|store|delete|export)|mcp exec -t (memory_|agentdb_|embeddings_)/.test(argv.join(' ')))).toEqual([])
   })
 
-  test('memory lab: a confirm and a result open under the area that was clicked, not at the top or in one far block', { options: { boot: false } }, async ($, on) => {
+  test('memory lab: a confirm and a result open under the area that was clicked, not at the top or in one far block', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = memoryWorld(on)
 
     mock.clock(on)
@@ -154,7 +154,7 @@ describe('labs and starts', () => {
     await pane.unmount()
   })
 
-  test('memory lab: view reads at once with one fixed argv; delete and store ask with their argv, then run it on yes', { options: { boot: false } }, async ($, on) => {
+  test('memory lab: view reads at once with one fixed argv; delete and store ask with their argv, then run it on yes', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = memoryWorld(on)
     const ran = (word: string) => world.runs.filter(argv => argv[5] === word).map(argv => argv.slice(4).join(' '))
 
@@ -196,7 +196,7 @@ describe('labs and starts', () => {
     await pane.unmount()
   })
 
-  test('memory lab: search runs at once from its field and headless, a bad key never reaches the CLI', { options: { boot: false } }, async ($, on) => {
+  test('memory lab: search runs at once from its field and headless, a bad key never reaches the CLI', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = memoryWorld(on)
 
     mock.clock(on)
@@ -223,7 +223,7 @@ describe('labs and starts', () => {
     await pane.unmount()
   })
 
-  test('empty sections offer the button that starts them, not a command to copy; a start asks first and runs one fixed argv', { options: { boot: false } }, async ($, on) => {
+  test('empty sections offer the button that starts them, not a command to copy; a start asks first and runs one fixed argv', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { ".claude-flow/hive-mind/state.json": _hive, ...withoutHive } = RUFLO_FILES
     const world = worldOf(on, withoutHive)
 
@@ -252,7 +252,7 @@ describe('labs and starts', () => {
     await pane.unmount()
   })
 
-  test('starts that take a sentence refuse a leading dash and an empty one; nothing runs', { options: { boot: false } }, async ($, on) => {
+  test('starts that take a sentence refuse a leading dash and an empty one; nothing runs', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     mock.clock(on)

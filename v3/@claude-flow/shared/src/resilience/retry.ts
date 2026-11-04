@@ -209,12 +209,12 @@ export const RetryableErrors = {
 
   /** Rate limit errors (429) */
   rateLimit: (error: Error): boolean => {
-    return error.message.includes('429') || error.message.toLowerCase().includes('rate limit');
+    return /(^|\D)429(?!\d)/.test(error.message) || error.message.toLowerCase().includes('rate limit');
   },
 
   /** Server errors (5xx) */
   serverError: (error: Error): boolean => {
-    return /5\d\d/.test(error.message) || error.message.includes('Internal Server Error');
+    return /(^|\D)5\d\d(?!\d)/.test(error.message) || error.message.includes('Internal Server Error');
   },
 
   /** Transient errors (network + rate limit + 5xx) */

@@ -2,6 +2,15 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.16.1 — 2026-11-04
+- feat: `agentModels` option (`Explore=haiku,general-purpose=sonnet`). An `agent.spawn` with no model chosen runs on the model named for its type. This covers built-in and other plugins' agent types, whose definitions a person cannot edit, and workflow agents, whose model a hook may set since Claude Code 2.1.300. A model the call or another hook chose is kept, and forks and teammates are left alone. A malformed pair is dropped, and a failing hook passes the spawn through unchanged. `/ruflo-mods` shows how many types are mapped and how many spawns were given a model. Empty, the default, is off.
+
+## 0.16.0 — 2026-11-04
+- feat: the `tool.check` guard reads Claude Code 2.1.290–2.1.304 fields. A call the host marks `isReadOnly` (not WebFetch or WebSearch, which the research guard asks on) skips the policy-projection stat when a full check found no projection less than 2 s before; a write call, or the window passing, looks again, so a projection written mid-session is seen. A chain that already denies is returned without any file read. The dangerous-command list still applies on every path.
+- feat: every ask ruflo raises (its check failing, an unreadable projection, a policy `require_approval`, the research first-fetch) carries `decider: "person"` (2.1.304), so only the permission dialog or a host callback can approve it, never a classifier. A subagent's check (`agentId`, 2.1.290) is named on ruflo's reason; the organization's `ceiling` rides on a verdict ruflo tightened instead of being dropped.
+- fix: `.catch` on the guard is documented for 2.1.301 (it runs only when the hook throws or times out) and still fails closed by one step.
+- fix: the capability probe lists `session.compact` when `compactSnapshot` (on by default) hooks it, not only for `compactCarry`.
+
 ## 0.15.0 — 2026-11-01
 - feat: option `contextDelegation` (`off` by default, ADR-522): automatic context delegation. A large whole-file analysis `Read` is answered by a no-tools haiku completion whose every quote is checked against the file; the model sees the cited passages and how to read the rest. The real Read still runs, so edits work, and any failure shows the whole file. `observe` records what would have been delegated without changing anything; `enforce` delegates. Metrics in `.claude-flow/metrics/context-delegation.json`.
 

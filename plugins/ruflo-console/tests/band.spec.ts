@@ -8,7 +8,8 @@ import type { ReadCache } from '../hooks/data/files'
 import { readSnapshot } from '../hooks/data/snapshot'
 import { newState } from '../hooks/state'
 import { secMemo } from '../hooks/secure'
-import { BAND_LINKS, barParts, barText, barView, money, PANEL } from '../hooks/views/bar'
+import { BAND_LINKS, barParts, barText, barView, money, NARROW_CELLS, PANEL } from '../hooks/views/bar'
+import { cells, clipCells } from '../hooks/views/cells'
 import type { Kit } from '../hooks/views/common'
 import { RUFLO_FILES } from './fixtures/ruflo-run'
 
@@ -139,8 +140,10 @@ describe('band: a panel of two rows, standing facts that stay, and links', () =>
     const [top, bottom] = panel.props.children as El[]
     const narrow = readable(bottom)
 
-    // The long task is clipped on the status row: that is what keeps the second row whole.
-    expect(readable(top)).toContain('…')
+    // The long task shortens to its compact form on the status row (who, not what), so neither row is cut mid-word.
+    expect(readable(top)).toContain('▶ coder')
+    expect(readable(top)).not.toContain('research prior art')
+    expect(readable(top)).not.toContain('…')
     expect(narrow).toContain('claude: Bash')
     expect(narrow).toContain('5m ago')
     expect(narrow).toMatch(/\d+ claims?/)
@@ -200,6 +203,55 @@ describe('band: a panel of two rows, standing facts that stay, and links', () =>
     expect(buttons(barView(kit, closed, 100, null, () => undefined, () => undefined)).some(node => node.props.key === 'open-console')).toBe(true)
     expect(buttons(barView(kit, open, 100, null, () => undefined, () => undefined)).some(node => node.props.key === 'open-console')).toBe(false)
   })
+})
+
+describe('band: a narrow pane', () => {
+  async function busyState() {
+    const state = await capturedState(['ruflo-core', 'ruflo-swarm', 'ruflo-mods', 'ruflo-console'])
+    const snap = state.snapshot as NonNullable<typeof state.snapshot>
+    const agent = snap.agents[0] as (typeof snap.agents)[number]
+
+    agent.status = 'busy'
+    snap.tasks.push({ id: 'task-9', type: 'feature', description: 'research prior art, existing ADRs and the whole of the history of this repository', status: 'in_progress', assignedTo: [agent.id] })
+    state.terminal.runs.set('codex', { label: 'codex', startedAtMs: Date.now() - 90_000, stop: () => undefined })
+    state.usage = { costUsd: 19.81, contextPercent: 91 }
+    state.events.push({ atMs: Date.now() - 300_000, kind: 'claims', text: 'claude: Bash' })
+
+    return state
+  }
+
+  it('measures terminal columns, not string length', () => {
+    expect(cells('abc')).toBe(3)
+    expect(cells('🎯 3/5')).toBe(6)
+    expect(cells('💻 codex')).toBe(8)
+    expect(cells('⚠ 2 alerts')).toBe(10)
+    expect(cells('✔️')).toBe(1)
+    expect(clipCells('💻 codex answering', 6)).toBe('💻 co…')
+    expect(cells(clipCells('🎯🎯🎯🎯', 5))).toBeLessThanOrEqual(5)
+  })
+
+  for (const columns of [32, 40, 48, 60]) {
+    it(`at ${columns} columns every row fits on one line, nothing is cut mid-word past the first part, and what was left out is counted`, async () => {
+      const state = await busyState()
+      const panel = barView(kit, state, columns, null, () => undefined, () => undefined) as unknown as El
+      const rows = panel.props.children as El[]
+      // Border (2) and padding (2) take four columns: the rows get the rest.
+      const inner = columns - 4
+
+      for (const row of rows) expect(cells(readable(row)), readable(row)).toBeLessThanOrEqual(inner)
+
+      const top = readable(rows[0])
+
+      // The ellipsis may only end the first part of a row: later parts are whole or left out.
+      expect(top.split('…').length - 1).toBeLessThanOrEqual(1)
+      // At the narrowest widths something is left out, and the row says how much.
+      if (columns <= 40) expect(top).toMatch(/\+\d+/)
+      // Narrow, the open button is just "open".
+      expect(buttons(rows[0]).map(button => button.props.label)).toContain(inner < NARROW_CELLS ? 'open' : 'open console')
+      // The most urgent thing still shows.
+      expect(top).toMatch(/2 to approve|⚠/)
+    })
+  }
 })
 
 describe('band: findings and an available update', () => {

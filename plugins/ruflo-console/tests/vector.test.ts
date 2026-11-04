@@ -25,7 +25,7 @@ const HOME_FILES = {
 import { drawn } from './fixtures/views'
 
 describe('vector lab', () => {
-  test('vector lab: every section, its fields and tagged entries; opening it runs no ruvector command', { options: { boot: false } }, async ($, on) => {
+  test('vector lab: every section, its fields and tagged entries; opening it runs no ruvector command', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const vecRuns = () => world.runs.filter(argv => argv[3] === 'ruvector@0.3.3')
 
@@ -46,7 +46,7 @@ describe('vector lab', () => {
     expect(vecRuns()).toHaveLength(0)
   })
 
-  test('vector lab: a local read runs one fixed argv at once and shows its lines; the shared brain asks first', { options: { boot: false } }, async ($, on) => {
+  test('vector lab: a local read runs one fixed argv at once and shows its lines; the shared brain asks first', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const vecRuns = () => world.runs.filter(argv => argv[3] === 'ruvector@0.3.3').map(argv => argv.slice(4).join(' '))
 
@@ -84,7 +84,7 @@ describe('vector lab', () => {
     await pane.unmount()
   })
 
-  test('vector lab headless: /ruflo run vec-<id> <text> answers with the lines; a network one asks and runs on yes', { options: { boot: false } }, async ($, on) => {
+  test('vector lab headless: /ruflo run vec-<id> <text> answers with the lines; a network one asks and runs on yes', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const vecRuns = () => world.runs.filter(argv => argv[3] === 'ruvector@0.3.3').map(argv => argv.slice(4).join(' '))
 

@@ -25,8 +25,8 @@ function entryRow(ctx: Ctx, id: string): RenderElement | null {
   return row(
     ctx,
     [
-      ctx.kit.Text({ bold: true, color: entry.cost === 'read' ? THEME.ok : THEME.info, children: entry.cost === 'read' ? '  $0 ' : '  wr ' }),
-      ctx.kit.Text({ bold: true, color: THEME.head, children: ` ${entry.name} `.padEnd(lead, '.') }),
+      ctx.kit.Text({ weight: 'semibold', color: entry.cost === 'read' ? THEME.ok : THEME.info, children: entry.cost === 'read' ? '  $0 ' : '  wr ' }),
+      ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: ` ${entry.name} `.padEnd(lead, '.') }),
       ctx.kit.Text({ color: THEME.info, dimColor: isBlocked, wrap: 'truncate-end', children: clip(` ${isBlocked ? (entry.why ?? entry.about) : entry.about}`, Math.max(4, ctx.columns - lead - 16)) }),
       ctx.kit.Button({ key: `evolve-${entry.id}`, label: entry.cost === 'read' ? ' ▸ run' : ' ▸ ask', plain: true, dimColor: true, onPress: () => void ctx.act.run(entry.id) }),
     ],
@@ -54,7 +54,7 @@ function receiptLine(ctx: Ctx, receipt: Receipt): RenderElement {
   const lift = receipt.lift === undefined ? '' : ` · lift ${receipt.lift >= 0 ? '+' : ''}${(receipt.lift * 100).toFixed(1)}%`
 
   return row(ctx, [
-    ctx.kit.Text({ bold: true, color, children: `   ${receipt.decision === 'accepted' ? '✓' : receipt.decision === 'rejected' ? '✗' : '?'} ${shortRef(receipt.id)} ` }),
+    ctx.kit.Text({ weight: 'semibold', color, children: `   ${receipt.decision === 'accepted' ? '✓' : receipt.decision === 'rejected' ? '✗' : '?'} ${shortRef(receipt.id)} ` }),
     ctx.kit.Text({ color, children: verdict.padEnd(9) }),
     ctx.kit.Text({ dimColor: true, wrap: 'truncate-end', children: clip(` ${receipt.isSigned ? 'signed' : 'UNSIGNED'} · ${receipt.status ?? 'unregistered'} · ${shortRef(receipt.baseline)} → ${shortRef(receipt.candidate)}${lift} · ${ago(receipt.atMs, ctx.nowMs)}`, Math.max(4, ctx.columns - 24)) }),
   ])
@@ -93,7 +93,7 @@ function treeLine(ctx: Ctx, line: LineageRow): RenderElement {
 
   return row(ctx, [
     ctx.kit.Text({ dimColor: true, children: `   ${line.prefix}` }),
-    ctx.kit.Text({ bold: line.kind === 'champion', color, children: `${glyph} ${line.ref === 'root' ? 'root' : shortRef(line.ref)}${line.kind === 'champion' ? ' champion' : ''} ` }),
+    ctx.kit.Text({ weight: (line.kind === 'champion') ? 'semibold' : 'regular', color, children: `${glyph} ${line.ref === 'root' ? 'root' : shortRef(line.ref)}${line.kind === 'champion' ? ' champion' : ''} ` }),
     ctx.kit.Text({ dimColor: true, wrap: 'truncate-end', children: clip(line.note, Math.max(4, ctx.columns - line.prefix.length - 24)) }),
   ])
 }
@@ -159,13 +159,13 @@ function whereRows(ctx: Ctx): RenderElement[] {
 
   return [
     rule(ctx, 'What runs where', 'integrated here · only linked'),
-    text(ctx, ` Autogenous · ${REPOS.autogenous}`, { bold: true, color: THEME.head }),
+    text(ctx, ` Autogenous · ${REPOS.autogenous}`, { weight: 'semibold', color: THEME.head }),
     text(ctx, '   integrated: the receipt format. ruflo writes ruflo.flywheel-receipt/v1, the schema autogenous’s radio-moe exports and verifies;', { color: THEME.ok }),
     text(ctx, '     fractional policy values are decimal strings so its stricter verifier accepts them (ruvnet/autogenous#15).', { color: THEME.ok }),
     text(ctx, '   linked only: its verifier (crates/verifier, verifyExportedReceipt) is a library with no binary or build here: n/a;', { dimColor: true }),
     text(ctx, '     autogenous-service (HTTP :8080, /v1/agl/admit, /v1/promote) is not built or running here; AGL/AAP are its protocols.', { dimColor: true }),
     row(ctx, [ask('autogenous')]),
-    text(ctx, ` rGi · ${REPOS.rgi}`, { bold: true, color: THEME.head }),
+    text(ctx, ` rGi · ${REPOS.rgi}`, { weight: 'semibold', color: THEME.head }),
     text(ctx, '   linked only: a perpetual runtime (observe → plan → admit → execute → record) holding the enduring cognitive policies;', { dimColor: true }),
     text(ctx, `     its state is SQLite .rgi/runtime.db: ${hasRgiDb ? 'present here (never opened)' : 'not in this project'}; its CLI needs a checkout: none here, so n/a.`, { dimColor: true }),
     text(ctx, '   ruflo stays the execution authority (manifesto §6): neither repo can promote here.', { dimColor: true }),
@@ -187,7 +187,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
     return [frameResult(ctx, out, running !== null ? 'run' : 'idle')]
   }
 
-  out.push(text(ctx, ` ${result.label}`, { bold: true, color: result.ok ? THEME.ok : THEME.bad }))
+  out.push(text(ctx, ` ${result.label}`, { weight: 'semibold', color: result.ok ? THEME.ok : THEME.bad }))
   if (result.note !== undefined) out.push(text(ctx, ` ${result.note}`, { color: THEME.warn }))
 
   const top = Math.max(0, Math.min(state.select.item, result.lines.length - RESULT_ROWS))
@@ -220,7 +220,7 @@ export function evolveView(ctx: Ctx): RenderElement {
       ...resultRows(ctx),
       rule(ctx, 'Promote', 'a person’s act · never from this pane'),
       text(ctx, ' The flywheel, Darwin and MetaHarness propose and evaluate; none may promote itself (ADR-322). Review the receipt, then run:', { color: THEME.info }),
-      text(ctx, `   ${PROMOTE_COMMAND}`, { bold: true, color: THEME.warn }),
+      text(ctx, `   ${PROMOTE_COMMAND}`, { weight: 'semibold', color: THEME.warn }),
       text(ctx, ' It needs an approved Ed25519 public key and --confirm, and it passes the policy gate (▸ GATE CHECK asks that gate first).', { dimColor: true }),
     ],
     'evolve',

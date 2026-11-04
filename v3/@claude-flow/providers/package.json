@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/providers",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Multi-LLM Provider System for Claude Flow V3",
   "main": "dist/index.js",
   "module": "dist/index.js",

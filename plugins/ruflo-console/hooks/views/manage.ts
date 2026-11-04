@@ -33,7 +33,7 @@ export function approvalsView(ctx: Ctx): RenderElement {
   items.slice(0, 12).forEach((item, i) => {
     const isPicked = i === picked
 
-    rows.push(...paragraph(ctx, `${isPicked ? '▸' : ' '} [${item.kind}] ${item.text}`, isPicked ? { bold: true, color: THEME.head } : { color: item.kind === 'policy-deny' || item.kind === 'mod-trust' ? THEME.bad : THEME.warn }, '    '))
+    rows.push(...paragraph(ctx, `${isPicked ? '▸' : ' '} [${item.kind}] ${item.text}`, isPicked ? { weight: 'semibold', color: THEME.head } : { color: item.kind === 'policy-deny' || item.kind === 'mod-trust' ? THEME.bad : THEME.warn }, '    '))
     rows.push(...paragraph(ctx, `    ${item.detail}`, { dimColor: true }, '    '))
 
     if (isPicked && item.actions.length > 0 && ctx.columns >= 44) {

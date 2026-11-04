@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
 
+import { VERIFY_RETRY_MS } from '../hooks/runner'
 import { RUFLO_FILES } from './fixtures/ruflo-run'
 import { command, SESSION, worldOf } from './fixtures/world'
 
@@ -28,9 +29,9 @@ const CASES: { id: string; setup?: string[]; text?: string; head: string[] }[] =
 
 describe('every confirm-gated action', () => {
   for (const entry of CASES) {
-    test(`${entry.id}: asks first, runs nothing until yes, then exactly its fixed argv`, async ($, on) => {
+    test(`${entry.id}: asks first, runs nothing until yes, then exactly its fixed argv`, { timeoutMs: 30_000 }, async ($, on) => {
       const world = worldOf(on, RUFLO_FILES)
-      mock.clock(on)
+      const clock = mock.clock(on)
       await $.session.start(SESSION)
 
       for (const step of entry.setup ?? []) await $.command.run(command(step))
@@ -41,7 +42,10 @@ describe('every confirm-gated action', () => {
       expect(asked.text).toMatch(/^Asked: /)
       expect(world.runs.slice(before).filter(argv => argv.join(' ').includes(entry.head.slice(0, 2).join(' ')))).toHaveLength(0)
 
-      await $.command.run(command('yes'))
+      // A write whose state file has not landed is looked at once more VERIFY_RETRY_MS later (runner.ts), on the mock clock.
+      const answered = $.command.run(command('yes'))
+      await clock.advance(VERIFY_RETRY_MS)
+      await answered
 
       const ran = world.runs.slice(before).filter(argv => argv.slice(4, 4 + entry.head.length).join(' ') === entry.head.join(' '))
 

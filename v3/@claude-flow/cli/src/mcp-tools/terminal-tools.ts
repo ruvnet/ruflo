@@ -164,6 +164,12 @@ export const terminalTools: MCPTool[] = [
       const sessionId = input.sessionId as string;
       const command = input.command as string;
 
+      // An explicit sessionId must name a stored session; only fall back to
+      // (or create) the default session when no sessionId was given.
+      if (sessionId && !store.sessions[sessionId]) {
+        return { success: false, error: 'Session not found' };
+      }
+
       // Find or create default session
       let session = sessionId ? store.sessions[sessionId] : Object.values(store.sessions).find(s => s.status === 'active');
 

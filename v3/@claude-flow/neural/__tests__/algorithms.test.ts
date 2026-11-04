@@ -407,6 +407,13 @@ describe('PPO Algorithm', () => {
       epochs: 1,
     });
 
+    // Warm the JIT first, as in the Decision Transformer timing test.
+    const warmup = createPPO({ miniBatchSize: 16, epochs: 1 });
+    for (let i = 0; i < 3; i++) {
+      warmup.addExperience(createTestTrajectory(10));
+    }
+    warmup.update();
+
     for (let i = 0; i < 3; i++) {
       smallPPO.addExperience(createTestTrajectory(10));
     }
@@ -518,6 +525,21 @@ describe('Decision Transformer', () => {
   });
 
   it('should train under performance target (<10ms per batch)', () => {
+    // Warm the JIT on a throwaway instance first: the cold first call is
+    // several times slower than steady state and, on a loaded 2-worker CI
+    // runner, crossed the bound on its own (110-154ms observed).
+    const warmup = createDecisionTransformer({
+      contextLength: 20,
+      numHeads: 4,
+      numLayers: 2,
+      hiddenDim: 64,
+      embeddingDim: 32,
+    });
+    for (let i = 0; i < 3; i++) {
+      warmup.addTrajectory(createTestTrajectory(5));
+    }
+    warmup.train();
+
     for (let i = 0; i < 3; i++) {
       dt.addTrajectory(createTestTrajectory(5));
     }

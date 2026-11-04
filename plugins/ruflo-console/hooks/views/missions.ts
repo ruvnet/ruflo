@@ -14,7 +14,7 @@ const TASK_GLYPH: Record<string, string> = { pending: '○', running: '◐', 're
 function missionRows(ctx: Ctx, mission: Mission, isFirst: boolean): RenderElement[] {
   const budget = mission.budget
   const rows: RenderElement[] = [
-    ...paragraph(ctx, `${isFirst ? '▸' : ' '} ${mission.objective || '(no objective)'}`, { bold: true, ...(own(STATE_COLOR, mission.state) !== undefined && { color: own(STATE_COLOR, mission.state) }) }, '  '),
+    ...paragraph(ctx, `${isFirst ? '▸' : ' '} ${mission.objective || '(no objective)'}`, { weight: 'semibold', ...(own(STATE_COLOR, mission.state) !== undefined && { color: own(STATE_COLOR, mission.state) }) }, '  '),
     ...paragraph(
       ctx,
       `    ${isLive(mission.state) ? `${spinAt(ctx.nowMs)} ` : ''}${mission.state} · rev ${mission.revision} · ${mission.executionMode === 'session-bound' ? 'session-bound (runs only while a session drives it)' : mission.executionMode} · ${mission.id}`,
@@ -68,7 +68,7 @@ export function observationRows(ctx: Ctx): RenderElement[] {
   const cursor = clampCursor(ctx.state.select.item, observation.missions.length)
   const layout = listLayout(observation.missions, cursor, ctx.nowMs)
 
-  for (const { index, line } of layout.rows) rows.push(text(ctx, `${index === cursor ? '▸' : ' '} ${line}`, index === cursor ? { bold: true } : { dimColor: true }))
+  for (const { index, line } of layout.rows) rows.push(text(ctx, `${index === cursor ? '▸' : ' '} ${line}`, index === cursor ? { weight: 'semibold' } : { dimColor: true }))
   if (layout.hidden > 0) rows.push(text(ctx, `  ${layout.hidden} more not shown · j and k scroll`, { dimColor: true }))
   if (layout.expanded !== null) rows.push(...missionRows(ctx, layout.expanded, true))
 

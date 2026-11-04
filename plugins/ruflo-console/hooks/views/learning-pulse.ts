@@ -26,7 +26,7 @@ export function pulseRows(ctx: Ctx): RenderElement[] {
     row(
       ctx,
       stages.flatMap((stage, i) => [
-        ctx.kit.Text({ bold: i === at, color: i === at ? THEME.warn : THEME.info, children: ` ${i === at ? (running ? spinAt(ctx.nowMs) : '●') : '○'} ${stage.name} ${stage.count ?? 'n/a'}` }),
+        ctx.kit.Text({ weight: (i === at) ? 'semibold' : 'regular', color: i === at ? THEME.warn : THEME.info, children: ` ${i === at ? (running ? spinAt(ctx.nowMs) : '●') : '○'} ${stage.name} ${stage.count ?? 'n/a'}` }),
         ...(i < stages.length - 1 ? [ctx.kit.Text({ dimColor: true, children: ' ━━' })] : []),
       ]),
       'pulse-pipeline',
@@ -40,7 +40,7 @@ export function pulseRows(ctx: Ctx): RenderElement[] {
     row(ctx, [
       ctx.kit.Text({ dimColor: true, children: ` ${label.slice(0, 14).padEnd(14)} ` }),
       ctx.kit.Text({ color, children: bar }),
-      ctx.kit.Text({ bold: true, children: ` ${value.padStart(6)}` }),
+      ctx.kit.Text({ weight: 'semibold', children: ` ${value.padStart(6)}` }),
       ...(extra === '' ? [] : [ctx.kit.Text({ dimColor: true, children: `  ${extra}` })]),
     ])
 

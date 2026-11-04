@@ -43,11 +43,9 @@ const SKILLS_MAP: Record<string, string[]> = {
   core: [
     'swarm-orchestration',
     'swarm-advanced',
-    'sparc-methodology',
     'hooks-automation',
     'pair-programming',
     'verification-quality',
-    'stream-chain',
     'skill-builder',
   ],
   browser: ['browser'],  // agent-browser integration
@@ -61,12 +59,11 @@ const SKILLS_MAP: Record<string, string[]> = {
     'reasoningbank-agentdb',
     'reasoningbank-intelligence',
   ],
+  // github-code-review and github-project-management only use hooks, which v3
+  // ships; the other three drive `ruflo github`, so they live in skills.legacy.
   github: [
     'github-code-review',
-    'github-multi-repo',
     'github-project-management',
-    'github-release-management',
-    'github-workflow-automation',
   ],
   flowNexus: [
     'flow-nexus-neural',
@@ -83,6 +80,17 @@ const SKILLS_MAP: Record<string, string[]> = {
     'v3-performance-optimization',
     'v3-security-overhaul',
     'v3-swarm-coordination',
+  ],
+  // ADR-128 / #4539: skills that document v2-era verbs v3 does not ship
+  // (`stream-chain`, `sparc`, `github`). Their examples fail with `Unknown
+  // command`, so they are opt-in like skills.v3 instead of being installed by
+  // default.
+  legacy: [
+    'github-multi-repo',
+    'github-release-management',
+    'github-workflow-automation',
+    'sparc-methodology',
+    'stream-chain',
   ],
 };
 
@@ -1201,6 +1209,7 @@ async function copySkills(
     if (skillsConfig.browser) skillsToCopy.push(...SKILLS_MAP.browser);
     if (skillsConfig.v3) skillsToCopy.push(...SKILLS_MAP.v3);
     if (skillsConfig.dualMode) skillsToCopy.push(...SKILLS_MAP.dualMode);
+    if (skillsConfig.legacy) skillsToCopy.push(...SKILLS_MAP.legacy);
   }
 
   // Find source skills directory

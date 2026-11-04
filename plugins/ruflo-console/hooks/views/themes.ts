@@ -13,7 +13,7 @@ export function themesView(ctx: Ctx): RenderElement {
     : text(edit, `${label}: text input unavailable`, { dimColor: true })
   const panel = (key: string, width: number, rows: RenderElement[]) => ctx.kit.Box({ key, width, flexDirection: 'column', borderStyle: 'single', borderColor: THEME.head, children: rows })
   const selected = studio.selected ?? ctx.state.options.look
-  const choices: RenderElement[] = [text(edit, '01  LOOK', { bold: true, color: THEME.head })]
+  const choices: RenderElement[] = [text(edit, '01  LOOK', { weight: 'semibold', color: THEME.head })]
   for (const id of ['bbs', 'plain', 'orbital'] as const) choices.push(pick(`theme-${id}`, `${selected === id ? '●' : '○'} ${id === 'bbs' ? 'Classic BBS' : id === 'plain' ? 'Terminal plain' : 'Orbital'}`, () => act.select(id)))
   choices.push(text(edit, 'COLOR PRESETS', { color: THEME.info }))
   for (const { id, theme } of THEME_PRESETS) choices.push(row(edit, [
@@ -21,7 +21,7 @@ export function themesView(ctx: Ctx): RenderElement {
     pick(`theme-preset-${id}`, clip(`${selected === `preset:${id}` ? '●' : '○'} ${theme.name}`, Math.max(1, edit.columns - 7)), () => act.select(`preset:${id}`)),
   ]))
   for (const theme of studio.saved) choices.push(pick(`theme-custom-${theme.name}`, `${selected === `custom:${theme.name}` ? '●' : '○'} ${theme.name}`, () => act.select(`custom:${theme.name}`)))
-  choices.push(text(edit, '02  CUSTOMIZE', { bold: true, color: THEME.head }))
+  choices.push(text(edit, '02  CUSTOMIZE', { weight: 'semibold', color: THEME.head }))
   const tabs = (['colors', 'motion', 'generate'] as const).map(tab => pick(`theme-tab-${tab}`, `${studio.tab === tab ? '▸' : '·'} ${tab === 'generate' ? 'AI' : tab}`, () => act.tab(tab)))
   choices.push(edit.columns >= 31 ? row(edit, tabs) : col(edit, tabs))
   if (studio.tab === 'colors') {
@@ -53,18 +53,18 @@ export function themesView(ctx: Ctx): RenderElement {
   }
   const low = lowContrast(studio.draft)
   if (low.length) choices.push(text(edit, `Low contrast: ${low.join(', ')}`, { color: THEME.warn }))
-  choices.push(text(edit, '03  APPLY', { bold: true, color: THEME.head }))
+  choices.push(text(edit, '03  APPLY', { weight: 'semibold', color: THEME.head }))
   choices.push(pick('theme-save', studio.saving ? 'Saving…' : 'Save and apply', act.save))
   choices.push(pick('theme-discard', 'Discard draft changes', act.discard))
   choices.push(pick('theme-reset', 'Use configured look', act.reset))
   choices.push(text(edit, studio.message || 'Draft only until saved.', { dimColor: true }))
-  const stage = [text(preview, `LIVE PREVIEW / ${studio.draft.name}`, { bold: true, color: studio.draft.palette.head }),
+  const stage = [text(preview, `LIVE PREVIEW / ${studio.draft.name}`, { weight: 'semibold', color: studio.draft.palette.head }),
     ...(studio.draft.motion.globe ? [picture(preview, 'theme-globe', 'Globe preview')] : [text(preview, 'Globe layer off', { dimColor: true })]),
     picture(preview, 'theme-preview', 'Swarm preview'),
     text(preview, `${studio.draft.motion.speed}x motion / ${ctx.state.options.fps === 0 ? 'paused' : 'animated'} / illustrative`, { dimColor: true }),
     (preview.columns >= 18 ? row : col)(preview, [text(preview, ' PASS ', { color: studio.draft.palette.ok }), text(preview, ' WARN ', { color: studio.draft.palette.warn }), text(preview, ' FAIL ', { color: studio.draft.palette.bad })]),
   ]
-  return col(ctx, [text(ctx, `THEME STUDIO / active: ${studio.active ? activeTheme(ctx.state).name : ctx.state.options.look}`, { bold: true, color: THEME.head }),
+  return col(ctx, [text(ctx, `THEME STUDIO / active: ${studio.active ? activeTheme(ctx.state).name : ctx.state.options.look}`, { weight: 'semibold', color: THEME.head }),
     ctx.kit.Box({ key: 'theme-layout', flexDirection: layout.wide ? 'row' : 'column', gap: layout.wide ? 2 : 1, children: layout.wide ? [panel('theme-editor', layout.controls, choices), panel('theme-stage', layout.preview, stage)] : [panel('theme-stage', layout.preview, stage), panel('theme-editor', layout.controls, choices)] }),
   ], 'themes')
 }

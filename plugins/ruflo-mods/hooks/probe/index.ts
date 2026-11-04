@@ -33,7 +33,7 @@ const MAX_LINE = 240
 const ALWAYS = ['command.run', 'engine.create', 'prompt.submit', 'session.end', 'session.start', 'tool.call', 'tool.check', 'turn.complete'] as const
 
 type EventOptions = Pick<ModOptions, 'toolHints' | 'agentTrim' | 'deliveryScreen'> &
-  Partial<Pick<ModOptions, 'compactCarry' | 'costBudgetUsd' | 'costHardStop' | 'costLedger' | 'sessionRollup' | 'modTrust'>>
+  Partial<Pick<ModOptions, 'compactCarry' | 'compactSnapshot' | 'costBudgetUsd' | 'costHardStop' | 'costLedger' | 'sessionRollup' | 'modTrust'>>
 
 export function registeredEvents(opts: EventOptions): string[] {
   const names: string[] = [...ALWAYS]
@@ -44,7 +44,8 @@ export function registeredEvents(opts: EventOptions): string[] {
   if (opts.toolHints) names.push('tool.describe')
   if (opts.agentTrim) names.push('agent.offer')
   if (opts.deliveryScreen) names.push('session.receive', 'session.send')
-  if (opts.compactCarry) names.push('session.compact')
+  // compactCarry and compactSnapshot (ADR-505, on by default) each hook session.compact.
+  if (opts.compactCarry || opts.compactSnapshot) names.push('session.compact')
   return names.sort()
 }
 

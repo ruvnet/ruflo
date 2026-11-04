@@ -41,7 +41,7 @@ export function loopRows(ctx: Ctx): RenderElement[] {
       ? [text(ctx, ' pick a preset above, or type a task below', { dimColor: true })]
       : [
           row(ctx, [text(ctx, ' every '), ...INTERVALS.map(interval => chip(ctx, `loop-int-${interval}`, interval, cfg.interval === interval, () => m.interval(interval)))], 'loop-intervals'),
-          ...fullRows(ctx, ' task: ', cfg.task, { key: 'loop-task-line', bold: true, after: ctx.kit.Button({ key: 'loop-edit-task', label: '✎ edit', plain: true, onPress: () => ctx.act.editField('loop-task', cfg.task) }) }),
+          ...fullRows(ctx, ' task: ', cfg.task, { key: 'loop-task-line', weight: 'semibold', after: ctx.kit.Button({ key: 'loop-edit-task', label: '✎ edit', plain: true, onPress: () => ctx.act.editField('loop-task', cfg.task) }) }),
         ]
 
   return section(

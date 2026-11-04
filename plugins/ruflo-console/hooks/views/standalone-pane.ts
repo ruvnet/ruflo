@@ -21,14 +21,14 @@ export function standalonePane(base: Ctx, body: (ctx: Ctx) => RenderElement): Re
   if (isBooting(ctx.state, ctx.nowMs)) {
     const intro = art(ctx, ctx.pictures.get('boot'), 'boot', 'RUFLO AGENT SWARM CONSOLE · loading…')
 
-    return col(ctx, [intro ?? text(ctx, 'RUFLO AGENT SWARM CONSOLE · loading…', { bold: true, color: THEME.head })], 'boot')
+    return col(ctx, [intro ?? text(ctx, 'RUFLO AGENT SWARM CONSOLE · loading…', { weight: 'semibold', color: THEME.head })], 'boot')
   }
   const cardsOn = hasCards(ctx.columns, isCompactPane(ctx.state))
   const bodyCtx: Ctx = cardsOn ? { ...ctx, columns: ctx.columns - CARD_COLUMNS, cards: true, kit: withCards(ctx.kit, undefined) } : ctx
   const view = VIEWS.find(entry => entry.id === ctx.state.view)
   // The purpose line, minus what only Claude Code can do: Missions here is the record, and Events has no filter key.
   const purpose = view === undefined ? '' : view.id === 'missions' ? 'the mission record ruflo wrote: state, tasks and evidence as recorded (read-only)' : view.blurb.replace(/\s*\(f filters them\)/, '')
-  const about = view === undefined ? [] : [text(ctx, `${view.icon} ${view.label} — ${purpose}`, { color: THEME.head, bold: true })]
+  const about = view === undefined ? [] : [text(ctx, `${view.icon} ${view.label} — ${purpose}`, { color: THEME.head, weight: 'semibold' })]
 
   // The page's own title art (BBS: the page's name in block letters; Orbital: the shaded masthead with its globe) when the host draws pictures: the same
   // picture the Claude Code pane leads with, without the icon row beside it. A host with no Raster gets the plain purpose line alone.

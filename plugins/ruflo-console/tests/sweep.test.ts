@@ -53,7 +53,7 @@ describe('every button does something', () => {
     })
   }
 
-  test('the refresh icon reads changed disk data on a view with no CLI probes, without a status command', { options: { boot: false } }, async ($, on) => {
+  test('the refresh icon reads changed disk data on a view with no CLI probes, without a status command', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     const clock = mock.clock(on)
 

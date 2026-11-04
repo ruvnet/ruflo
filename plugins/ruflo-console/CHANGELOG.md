@@ -2,6 +2,20 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.49.11 — 2026-11-04
+- feat: `console_state` and `console_run` are registered with `isDeferred: false` (Claude Code 2.1.293), so their schemas are in the prompt from the start: every console turn calls them. `console_open` and `console_set` stay behind tool search. Older hosts drop the field.
+- chore: every `Text` says `weight` instead of the deprecated `bold` (2.1.299); `bold: true` became `weight: "semibold"`, the weight the host already reads it as. An engine before 2.1.299 refuses a tree with a Text prop it does not know, so there (and wherever `$.session.version()` gives nothing) the kit turns the weight back into `bold` (hooks/text-weight.ts). The standalone renderer (tui/ansi.ts) draws a semibold or bold weight bold.
+
+## 0.49.10 — 2026-11-04
+- fix: the band above the prompt stays on its rows in a narrow pane. Widths were counted as string length, which under-counts emoji such as 🎯 and 💻, so a row that looked like it fit overflowed and the host wrapped it onto extra lines. Rows are now measured in terminal columns.
+- fix: a band part that does not fit is left out whole, and a dim "+N" says how many were left out, instead of the last part being cut mid-word. Only a row's first part may be clipped.
+- fix: when a row is too long, the parts that save the most are shortened one at a time (the working agent loses its task text, a terminal run loses "answering"), so a wide band keeps every other part's full words. Before, one long part switched the whole row to its short forms.
+- fix: the "open console" button takes only its own width, and below 64 columns it reads "open". Below 40 columns the ◆ mark stands for ruflo without the word, so the most urgent part (approvals, alerts) is shown instead of cut.
+
+## 0.49.9 — 2026-11-04
+- fix: Mission Control now offers to create a mission for a new goal when the active mission has one cancelled task and every other task done. 0.49.6 counted a mission as over only when the whole mission was cancelled or every task was done, so a mission with 14 tasks completed and 1 cancelled (for example a research step dropped on purpose) was never over: the NEXT STEP box still showed "Create the mission and its tasks" as done, with the old mission's id and no create button. A mission is now over when every task is done or cancelled (a mission with no tasks still is not). A task that is pending, running or failed keeps it open, a finished mission's own goal is still not offered a second time, and nothing is created unasked.
+- fix: a cancelled mission no longer puts "The mission is cancelled. Do not start new work." in Claude's prompt. The active mission stays active until another is created, so after a cancel every new goal's guidance reached Claude with that stop line, before the create step could make the new mission, and Claude refused to plan it. The mission context section is now left out for a cancelled mission, as it already was for a finished one.
+
 ## 0.49.8 — 2026-10-31
 - chore: the plugin map gives the two new external marketplace plugins a home section, `agentdb` under Memory and `agentic-flow` under Learning, so their commands launch from the console (ADR-518).
 

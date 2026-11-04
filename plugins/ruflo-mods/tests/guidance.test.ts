@@ -36,12 +36,16 @@ describe('guidance (ADR-447)', () => {
   test('native lifecycle stores only unverified metadata once, with failures and final denies', { options }, async ($, on) => {
     const w = world(on, {}, { [PATH]: projection() })
     on('prompt.submit', ($, e) => ({ text: e.text }))
-    on('tool.check', () => ({ decision: 'deny', reason: 'host rule', rule: 'Read(secret)' }))
+    // Only the secret path is denied: since 2.1.296 the kit's $.tool.call asks tool.check first, as a session does, so a
+    // blanket deny would refuse the two calls below too. Their own checks (2.1.296+) are allows; older kits raise none.
+    on('tool.check', ($, e) => (e.input as { file_path?: string } | undefined)?.file_path === 'EXAMPLE_SECRET_SENTINEL'
+      ? { decision: 'deny', reason: 'host rule', rule: 'Read(secret)' }
+      : { decision: 'allow' })
     on('tool.call', ($, e) => e.file_path === 'failure' ? { isError: true, result: 'EXAMPLE_OUTPUT_SENTINEL' } : { result: 'EXAMPLE_OUTPUT_SENTINEL' })
     on('turn.complete', ($, e) => ({ text: e.answer }))
     await $.session.start(START)
     await $.prompt.submit(prompt('Write parser tests EXAMPLE_PROMPT_SENTINEL'))
-    expect((await $.tool.check({ tool: 'Read', input: { file_path: 'EXAMPLE_PATH_SENTINEL' } })).decision).toBe('deny')
+    expect((await $.tool.check({ tool: 'Read', input: { file_path: 'EXAMPLE_SECRET_SENTINEL' } })).decision).toBe('deny')
     await $.tool.call({ tool: 'Read', file_path: 'EXAMPLE_PATH_SENTINEL' })
     await $.tool.call({ tool: 'Read', file_path: 'failure' })
     await $.turn.complete(complete('t1'))
@@ -49,7 +53,8 @@ describe('guidance (ADR-447)', () => {
     const [[, text]] = queued(w.files)
     const records = JSON.parse(text)
     expect(records.length).toBe(1)
-    expect(records[0]).toMatchObject({ bundleId: BUNDLE, sourceRevision: REVISION, tools: { ok: 1, error: 1, denied: 0 }, checks: { allow: 0, ask: 0, deny: 1 }, verified: false, learningEligible: false })
+    expect(records[0]).toMatchObject({ bundleId: BUNDLE, sourceRevision: REVISION, tools: { ok: 1, error: 1, denied: 0 }, checks: { ask: 0, deny: 1 }, verified: false, learningEligible: false })
+    expect([0, 2]).toContain(records[0].checks.allow)
     expect(text).not.toMatch(/SENTINEL|host rule|Read\(secret\)/)
   })
 

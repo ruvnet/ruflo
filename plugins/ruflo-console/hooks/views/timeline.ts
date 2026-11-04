@@ -26,8 +26,8 @@ function textLines(ctx: Ctx, lines: readonly Line[]): RenderElement[] {
     row(
       ctx,
       line.kind === 'group'
-        ? [ctx.kit.Text({ bold: true, color: THEME.head, children: clip(line.label, ctx.columns) })]
-        : [ctx.kit.Text({ ...(line.isCursor === true ? { bold: true, color: THEME.head } : { dimColor: line.kind === 'axis' }), children: `${line.label} ` }), ...runsOf(line.cells).map(run => ctx.kit.Text({ ...TONE(run.tone), children: run.text }))],
+        ? [ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: clip(line.label, ctx.columns) })]
+        : [ctx.kit.Text({ ...(line.isCursor === true ? { weight: 'semibold', color: THEME.head } : { dimColor: line.kind === 'axis' }), children: `${line.label} ` }), ...runsOf(line.cells).map(run => ctx.kit.Text({ ...TONE(run.tone), children: run.text }))],
       `tl-line-${i}`,
     ),
   )
@@ -38,7 +38,7 @@ function laneDetail(ctx: Ctx, lane: LaneView, model: TlModel, nowMs: number): Re
   const a = ctx.act.timeline
   const act = activityOf(ctx.state)
   const spans = lane.spans.slice(-8)
-  const out: RenderElement[] = [text(ctx, ` ${lane.group} · ${lane.label}`, { bold: true }), text(ctx, `   busy ${lane.busyPct === null ? 'n/a' : `${lane.busyPct}%`} of ${dur(lane.observedMs)} observed · longest busy stretch ${dur(lane.longestMs)} · ${lane.calls} tool call${lane.calls === 1 ? '' : 's'}`, { dimColor: true })]
+  const out: RenderElement[] = [text(ctx, ` ${lane.group} · ${lane.label}`, { weight: 'semibold' }), text(ctx, `   busy ${lane.busyPct === null ? 'n/a' : `${lane.busyPct}%`} of ${dur(lane.observedMs)} observed · longest busy stretch ${dur(lane.longestMs)} · ${lane.calls} tool call${lane.calls === 1 ? '' : 's'}`, { dimColor: true })]
 
   if (spans.length === 0) out.push(text(ctx, '   no busy or idle stretch was observed in this window', { dimColor: true }))
 

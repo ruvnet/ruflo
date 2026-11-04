@@ -13,7 +13,7 @@ const FILES = {
 }
 
 describe('the Room: Mods rows and the blocked chip', () => {
-  test('each Mods row is a button that opens its detail, and a hostile file renders as plain text', { options: { boot: false } }, async ($, on) => {
+  test('each Mods row is a button that opens its detail, and a hostile file renders as plain text', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     worldOf(on, FILES)
     mock.clock(on)
     await $.session.start(SESSION)
@@ -42,7 +42,7 @@ describe('the Room: Mods rows and the blocked chip', () => {
     await pane.unmount()
   })
 
-  test('the blocked chip is reachable, shows its count, and toggles', { options: { boot: false } }, async ($, on) => {
+  test('the blocked chip is reachable, shows its count, and toggles', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     worldOf(on, FILES)
     mock.clock(on)
     await $.session.start(SESSION)

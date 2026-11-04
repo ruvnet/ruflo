@@ -36,6 +36,8 @@
 /ruflo
 ```
 
+From a terminal on Claude Code 2.1.292 or later, one command adds the marketplace and installs a plugin: `claude plugin install ruflo-core@ruflo --marketplace ruvnet/ruflo`.
+
 **Core** provides foundation tools. **Console** opens the agent cockpit. **Mods** add routing and policy enforcement inside Claude Code. Mods run with your account's permissions; review their code before installing.
 
 <img src="docs/assets/readme/icons/terminal.svg" width="28" height="28" alt=""> **Using Codex or another MCP enabled tool?** Use NPX for Ruflo project setup and connect your client to the Ruflo MCP server. Run the setup wizard in your project terminal:
