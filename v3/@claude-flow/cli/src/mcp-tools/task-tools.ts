@@ -144,6 +144,10 @@ export const taskTools: MCPTool[] = [
       if (!vType.valid) return { success: false, error: vType.error };
       const vDesc = validateText(input.description, 'description');
       if (!vDesc.valid) return { success: false, error: vDesc.error };
+      if (input.assignTo !== undefined && (!Array.isArray(input.assignTo)
+        || !input.assignTo.every(id => validateIdentifier(id, 'assignTo').valid))) {
+        return { success: false, error: 'assignTo must be an array of agent ids' };
+      }
 
       const store = loadTaskStore();
       const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -164,6 +168,14 @@ export const taskTools: MCPTool[] = [
 
       store.tasks[taskId] = task;
       saveTaskStore(store);
+
+      // Assigning at creation must mark the workers busy, as task_assign and task_update do;
+      // otherwise they read idle while holding the task, and task_complete or task_cancel,
+      // which only release a worker whose currentTask is this task, never free them either.
+      updateAgents(task.assignedTo, (agent) => {
+        agent.status = 'busy';
+        agent.currentTask = taskId;
+      });
 
       return {
         taskId,
