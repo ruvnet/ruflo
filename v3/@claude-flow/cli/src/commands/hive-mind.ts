@@ -12,7 +12,7 @@ import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
 import { spawn as childSpawn } from 'child_process';
 import { mkdir, writeFile } from 'fs/promises';
-import { resolveWorkerMcpConfig, currentRufloServer, workCommand } from './hive-mind-worker.js';
+import { resolveWorkerMcpConfig, resolveWorkerModel, currentRufloServer, workCommand } from './hive-mind-worker.js';
 import { join } from 'path';
 import { resolveClaudeLaunchCommand } from '../runtime/claude-command.js';
 import { withHeadlessPlugins } from '../mods/headless-plugins.js';
@@ -212,6 +212,8 @@ async function spawnClaudeCodeInstance(
 
     spinner.succeed('Hive Mind coordination prompt ready!');
 
+    const { model: workerModel } = resolveWorkerModel(flags);
+
     // Display coordination summary
     output.writeln();
     output.writeln(output.bold('🧠 Hive Mind Configuration'));
@@ -223,6 +225,7 @@ async function spawnClaudeCodeInstance(
       `Worker Count: ${output.highlight(String(workers.length))}`,
       `Worker Types: ${output.highlight(Object.keys(workerGroups).join(', '))}`,
       `Consensus: ${output.highlight((flags.consensus as string) || 'byzantine')}`,
+      `Model: ${output.highlight(workerModel ?? 'Claude Code default')}`,
       `MCP Tools: ${output.success('Full Claude-Flow integration enabled')}`
     ]);
 
@@ -301,6 +304,11 @@ async function spawnClaudeCodeInstance(
         if (!isNonInteractive) {
           output.printWarning('Using --dangerously-skip-permissions for seamless hive-mind execution');
         }
+      }
+
+      // #1870: without --model the argv is unchanged and Claude Code picks its default.
+      if (workerModel) {
+        claudeArgs.push('--model', workerModel);
       }
 
       // ADR-510 §2.2: a non-interactive (-p) run is a headless worker and loads
@@ -409,11 +417,12 @@ async function spawnClaudeCodeInstance(
       output.writeln();
       output.writeln(output.bold('📋 Manual Execution Instructions:'));
       output.writeln(output.dim('─'.repeat(50)));
+      const modelArg = workerModel ? ` --model ${workerModel}` : '';
       output.printList([
         'Install Claude Code: npm install -g @anthropic-ai/claude-code',
-        `Run with saved prompt: claude < ${promptFile}`,
-        `Or copy manually: cat ${promptFile} | claude`,
-        `With auto-permissions: claude --dangerously-skip-permissions < ${promptFile}`
+        `Run with saved prompt: claude${modelArg} < ${promptFile}`,
+        `Or copy manually: cat ${promptFile} | claude${modelArg}`,
+        `With auto-permissions: claude${modelArg} --dangerously-skip-permissions < ${promptFile}`
       ]);
 
       return { success: true, promptFile };
@@ -616,6 +625,12 @@ const spawnCommand: Command = {
       type: 'string'
     },
     {
+      name: 'model',
+      short: 'm',
+      description: 'Model for the Claude Code worker started by --claude, passed as claude --model (e.g. sonnet, opus, or a full model id; default: the Claude Code default)',
+      type: 'string'
+    },
+    {
       name: 'dangerously-skip-permissions',
       description: 'Skip permission prompts in Claude Code (use with caution)',
       type: 'boolean',
@@ -650,6 +665,7 @@ const spawnCommand: Command = {
     { command: 'claude-flow hive-mind spawn -n 3 -r specialist', description: 'Spawn 3 specialists' },
     { command: 'claude-flow hive-mind spawn -t coder -p my-coder', description: 'Spawn coder with custom prefix' },
     { command: 'claude-flow hive-mind spawn --claude -o "Build a REST API"', description: 'Launch Claude Code with objective' },
+    { command: 'claude-flow hive-mind spawn --claude -m sonnet -o "Build a REST API"', description: 'Launch Claude Code on a pinned model' },
     { command: 'claude-flow hive-mind spawn -n 5 --claude -o "Research AI patterns"', description: 'Spawn workers and launch Claude Code' }
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
@@ -660,6 +676,16 @@ const spawnCommand: Command = {
     const prefix = (ctx.flags.prefix as string) || 'hive-worker';
     const launchClaude = ctx.flags.claude as boolean;
     let objective = (ctx.flags.objective as string) || ctx.args.join(' ');
+
+    // #1870: refuse a bad --model before any worker is spawned.
+    const workerModel = resolveWorkerModel(ctx.flags as Record<string, unknown>);
+    if (workerModel.error) {
+      output.printError(workerModel.error);
+      return { success: false, exitCode: 1 };
+    }
+    if (workerModel.model && !launchClaude) {
+      output.printWarning('--model only applies with --claude; ignoring it');
+    }
 
     output.printInfo(`Spawning ${count} ${role} agent(s)...`);
 
