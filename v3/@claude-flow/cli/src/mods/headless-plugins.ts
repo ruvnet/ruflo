@@ -14,6 +14,14 @@
  *
  * Profile override: `RUFLO_HEADLESS_PLUGINS` is a comma list of plugin names;
  * `none` (or an empty value) turns plugin loading off.
+ *
+ * Permission mode: Claude Code 2.1.302 starts a `claude -p` with no
+ * permission mode in `manual` mode on third-party providers, with telemetry
+ * off, or on a fresh install. A headless worker has nobody to answer a prompt,
+ * so a print-mode argv without its own `--permission-mode` or
+ * `--dangerously-skip-permissions` gets `--permission-mode auto` — the mode
+ * first-party installs already started in. `RUFLO_HEADLESS_PERMISSION_MODE`
+ * picks another mode; `none` (or an empty value) passes no flag.
  */
 
 import { realpathSync } from 'node:fs';
@@ -24,6 +32,9 @@ import { resolvePluginPaths, type ResolveOptions, type PluginPaths } from './plu
 
 export const DEFAULT_WORKER_PLUGINS: readonly string[] = ['ruflo-mods'];
 export const PROFILE_ENV = 'RUFLO_HEADLESS_PLUGINS';
+export const PERMISSION_MODE_ENV = 'RUFLO_HEADLESS_PERMISSION_MODE';
+export const DEFAULT_HEADLESS_PERMISSION_MODE = 'auto';
+const PERMISSION_MODES = new Set(['acceptEdits', 'auto', 'bypassPermissions', 'manual', 'default', 'dontAsk', 'plan']);
 
 export interface HeadlessPluginOptions extends ResolveOptions {
   /** Plugin names to load; defaults to the env profile, else DEFAULT_WORKER_PLUGINS. */
@@ -78,13 +89,31 @@ export function existingPluginDirs(argv: readonly string[]): string[] {
   return dirs;
 }
 
+/**
+ * The `--permission-mode` args to append to a headless argv: none when the
+ * argv is not print mode or already sets a mode, else the env choice
+ * (default `auto`). An unknown mode is ignored with the default used instead.
+ */
+export function headlessPermissionArgs(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): string[] {
+  const isPrint = argv.some((a) => a === '-p' || a === '--print');
+  if (!isPrint) return [];
+  const hasMode = argv.some(
+    (a) => a === '--permission-mode' || a.startsWith('--permission-mode=') || a === '--dangerously-skip-permissions',
+  );
+  if (hasMode) return [];
+  const raw = env[PERMISSION_MODE_ENV];
+  if (raw !== undefined && (raw.trim() === '' || raw.trim().toLowerCase() === 'none')) return [];
+  const mode = raw !== undefined && PERMISSION_MODES.has(raw.trim()) ? raw.trim() : DEFAULT_HEADLESS_PERMISSION_MODE;
+  return ['--permission-mode', mode];
+}
+
 export function withHeadlessPlugins<E extends Record<string, string | undefined>>(
   argv: readonly string[],
   env: E,
   opts: HeadlessPluginOptions = {},
 ): HeadlessPluginResult<E> {
   const profile = workerProfile(opts.env ?? (env as NodeJS.ProcessEnv), opts.profile);
-  const outArgv = [...argv];
+  const outArgv = [...argv, ...headlessPermissionArgs(argv, opts.env ?? (env as NodeJS.ProcessEnv))];
   const outEnv = { ...env } as E;
   if (profile.length === 0) return { argv: outArgv, env: outEnv, added: [], missing: [] };
 
