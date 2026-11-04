@@ -32,6 +32,7 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 // iter 73 — shared PRICING + cost helpers.
 import { modelTier, costForUsage } from './_prices.mjs';
+import { mergeCall } from './_claude-calls.mjs';
 
 const PROJECTS_DIR = join(homedir(), '.claude', 'projects');
 
@@ -98,17 +99,21 @@ function summarizeMessages(jsonlPath) {
     const t = Date.parse(ARGS.since);
     if (Number.isFinite(t)) sinceMs = t;
   }
+  // One response is logged once per content block with the same usage on each
+  // line; count it once (see _claude-calls.mjs).
+  const calls = new Map();
   for (const line of lines) {
     let m;
     try { m = JSON.parse(line); } catch { continue; }
     if (m.type !== 'assistant' || !m.message?.usage) continue;
     if (sinceMs !== null && m.timestamp && new Date(m.timestamp).getTime() < sinceMs) continue;
-    const model = m.message.model || 'unknown';
+    mergeCall(calls, m);
+  }
+  for (const { model, timestamp, usage: u } of calls.values()) {
     const tier = modelTier(model);
-    const u = m.message.usage;
     const cost = costForUsage(tier, u);
     messages.push({
-      timestamp: m.timestamp || null,
+      timestamp,
       model,
       tier,
       input_tokens: u.input_tokens || 0,
