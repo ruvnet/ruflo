@@ -1,7 +1,7 @@
 {
   "name": "ruflo-mods",
   "description": "ruflo as a Claude Code mod (function hooks, ADR-404): in-process prompt routing, edit learning signals, tighten-only tool checks from ruflo policy, the cost-tracker budget ladder, a mod trust gate for newly installed mods, and the $.ruflo noun other mods compose their status with. Opt-in and removable: the classic hook-handler hooks stay the default and take every event back whenever the mod is not loaded.",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "author": {
     "name": "ruvnet",
     "url": "https://github.com/ruvnet"
@@ -137,6 +137,18 @@
       "description": "Show one line in /ruflo-mods saying whether the optional third-party ruvnet-brain plugin (github.com/stuinfla/ruvnet-brain) is installed and enabled: on, not installed, installed but disabled, or unknown. Reads installed_plugins.json and your settings; detect-only: never calls, installs, blocks or rewrites anything, and ruflo works the same without that plugin. Off by default.",
       "required": false,
       "default": false
+    },
+    "contextDelegation": {
+      "type": "string",
+      "title": "Automatic context delegation",
+      "description": "When the model reads a whole 14-120 KB file for an analysis prompt (one that routes to research or review and asks for no change), hand that read to a no-tools haiku completion that returns cited passages, check every quote against the file, and show the model only those passages with a header saying how to read the rest. The real Read always runs first, so edits still work, and any failure shows the whole file as before. Subagent reads, ranged reads, second reads of a file and change requests are never delegated. \"off\" (default): nothing changes. \"observe\": nothing the model sees changes; record what would have been delegated in .claude-flow/metrics/context-delegation.json. \"enforce\": delegate. Uses your session's own credentials for the haiku call.",
+      "required": false,
+      "default": "off",
+      "options": [
+        "off",
+        "observe",
+        "enforce"
+      ]
     },
     "modTrust": {
       "type": "string",

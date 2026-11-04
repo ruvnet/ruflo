@@ -1,0 +1,34 @@
+{
+  "kind": "live-provider-pilot-preflight",
+  "execute": false,
+  "credentialBound": false,
+  "configProvided": false,
+  "phaseCount": 3,
+  "defaultPilotCases": 1,
+  "launchLimits": {
+    "maxConcurrentGlobal": 1,
+    "maxLaunchesPerHour": 2,
+    "maxLaunchesPerDay": 12,
+    "pauseOnQuotaErrorMinutes": 60
+  },
+  "resumeRequiredForDefaultHourlyLimit": true,
+  "caseDefinition": {
+    "id": "launch-fuse-analysis-v1",
+    "question": "Explain the default global concurrency, hourly and daily launch limits, quota cooldown, whether release restores hourly launch slots, and what happens if the budget ledger cannot be read. Cite the exact source spans supporting each claim.",
+    "expectedFactsForHumanReview": [
+      "one concurrent model launch",
+      "two launches per hour",
+      "twelve launches per day",
+      "sixty minute quota cooldown",
+      "release frees concurrency but does not restore hourly launch slots",
+      "ledger errors fail closed"
+    ]
+  },
+  "source": {
+    "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+    "sha256": "07bf10322979e8b883e68447506486247e0a9176946663f4087ca53fda360b9b",
+    "bytes": 17881
+  },
+  "modelCalls": 0,
+  "networkCalls": 0
+}

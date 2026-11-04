@@ -10,6 +10,7 @@ import { probeLine, probeState, type ProbeState } from './probe'
 import { loopLine, loopSegment, loopState, type LoopState } from './loop/status'
 import { snapshotLine, snapshotState, type SnapshotState } from './compact-snapshot/snapshot'
 import type { RouteResult } from './route/route-task'
+import { createDelegateState, type ContextDelegateState } from './context-delegate/stats'
 
 /**
  * What the mod knows during one process, shared by its features. In memory
@@ -55,6 +56,8 @@ export type ModState = {
   rollup: RollupState
   /** The verified-outcome learning loop (#4581, ADR-502): off unless the learningLoop option is on. */
   loop: LoopState
+  /** Automatic context delegation (ADR-522): off unless the contextDelegation option is observe or enforce. */
+  contextDelegate: ContextDelegateState
   /** Other mods' status segments, by id (`$.ruflo.segment`). */
   segments: Map<string, string>
   /**
@@ -89,6 +92,7 @@ export function createState(): ModState {
     grounding: groundingState(),
     rollup: rollupState(),
     loop: loopState(),
+    contextDelegate: createDelegateState(),
     segments: new Map(),
     draw: () => undefined,
     say: async () => undefined,

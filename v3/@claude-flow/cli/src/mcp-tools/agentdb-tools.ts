@@ -14,6 +14,7 @@ import { feedbackPatternsSchema, validateFeedbackPatterns } from '../memory/feed
 
 import type { MCPTool } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { agentdbEpisodeCrudTools } from './agentdb-episode-tools.js';
 
 // ===== Shared validation helpers =====
 
@@ -1610,6 +1611,7 @@ export const agentdbTools: MCPTool[] = [
   agentdbSessionStart,
   agentdbSessionEnd,
   agentdbEpisodeRecall,    // ADR-519
+  ...agentdbEpisodeCrudTools, // ADR-520
   agentdbHierarchicalStore,
   agentdbHierarchicalRecall,
   agentdbHierarchicalDelete,

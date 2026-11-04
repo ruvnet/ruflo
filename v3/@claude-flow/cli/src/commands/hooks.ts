@@ -10,6 +10,7 @@ import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
 import { storeCommand } from './transfer-store.js';
+import { contextPlanCommand } from './context-plan.js';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -5581,6 +5582,7 @@ export const hooksCommand: Command = {
     coverageGapsCommand,
     // Token optimization
     tokenOptimizeCommand,
+    contextPlanCommand,
     // Model routing (tiny-dancer integration)
     modelRouteCommand,
     modelOutcomeCommand,

@@ -656,20 +656,32 @@ export class AgentDBBackend extends EventEmitter implements IMemoryBackend {
   }
 
   /**
+   * The raw SQLite handle behind AgentDB, when it exposes one. agentdb's
+   * `.database` is a better-sqlite3-style Database (prepare/exec, no
+   * run/get on the handle itself). Parameters are passed spread, which both
+   * better-sqlite3 and agentdb's sql.js shim bind correctly.
+   */
+  private sqlDatabase(): { prepare(sql: string): any; exec(sql: string): unknown } | null {
+    const db = this.agentdb?.database;
+    if (!db || typeof db.prepare !== 'function' || typeof db.exec !== 'function') return null;
+    return db;
+  }
+
+  /**
    * Create database schema
    */
   private async createSchema(): Promise<void> {
     if (!this.agentdb) return;
 
-    const db = this.agentdb.database;
-    if (!db || typeof db.run !== 'function') {
+    const db = this.sqlDatabase();
+    if (!db) {
       // AgentDB doesn't expose raw database - using native API
       return;
     }
 
     try {
     // Create memory_entries table
-    await db.run(`
+    db.exec(`
       CREATE TABLE IF NOT EXISTS memory_entries (
         id TEXT PRIMARY KEY,
         key TEXT NOT NULL,
@@ -685,18 +697,18 @@ export class AgentDBBackend extends EventEmitter implements IMemoryBackend {
         updated_at INTEGER NOT NULL,
         expires_at INTEGER,
         version INTEGER NOT NULL,
-        references TEXT,
+        "references" TEXT,
         access_count INTEGER DEFAULT 0,
         last_accessed_at INTEGER
       )
     `);
 
     // Create indexes
-    await db.run(
+    db.exec(
       'CREATE INDEX IF NOT EXISTS idx_namespace ON memory_entries(namespace)'
     );
-    await db.run('CREATE INDEX IF NOT EXISTS idx_key ON memory_entries(key)');
-    await db.run('CREATE INDEX IF NOT EXISTS idx_type ON memory_entries(type)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_key ON memory_entries(key)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_type ON memory_entries(type)');
     } catch {
       // Schema creation failed - using in-memory only
     }
@@ -724,22 +736,21 @@ export class AgentDBBackend extends EventEmitter implements IMemoryBackend {
       }
 
       // Fallback: use database directly if available
-      const db = this.agentdb.database;
-      if (!db || typeof db.run !== 'function') {
+      const db = this.sqlDatabase();
+      if (!db) {
         // No compatible database interface - skip agentdb storage
         // Entry is already stored in-memory
         return;
       }
 
-      await db.run(
+      db.prepare(
       `
       INSERT OR REPLACE INTO memory_entries
       (id, key, content, embedding, type, namespace, tags, metadata, owner_id,
-       access_level, created_at, updated_at, expires_at, version, references,
+       access_level, created_at, updated_at, expires_at, version, "references",
        access_count, last_accessed_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,
-      [
+    `).run(
         entry.id,
         entry.key,
         entry.content,
@@ -757,7 +768,6 @@ export class AgentDBBackend extends EventEmitter implements IMemoryBackend {
         JSON.stringify(entry.references),
         entry.accessCount,
         entry.lastAccessedAt,
-      ]
     );
     } catch {
       // AgentDB storage failed - entry is already in-memory
@@ -779,10 +789,10 @@ export class AgentDBBackend extends EventEmitter implements IMemoryBackend {
       }
 
       // Fallback to database
-      const db = this.agentdb.database;
-      if (!db || typeof db.get !== 'function') return null;
+      const db = this.sqlDatabase();
+      if (!db) return null;
 
-      const row = await db.get('SELECT * FROM memory_entries WHERE id = ?', [id]);
+      const row = db.prepare('SELECT * FROM memory_entries WHERE id = ?').get(id);
       if (!row) return null;
       return this.rowToEntry(row);
     } catch {
@@ -837,10 +847,10 @@ export class AgentDBBackend extends EventEmitter implements IMemoryBackend {
       }
 
       // Fallback to database
-      const db = this.agentdb.database;
-      if (!db || typeof db.run !== 'function') return;
+      const db = this.sqlDatabase();
+      if (!db) return;
 
-      await db.run('DELETE FROM memory_entries WHERE id = ?', [id]);
+      db.prepare('DELETE FROM memory_entries WHERE id = ?').run(id);
     } catch {
       // Delete failed - entry removed from in-memory
     }

@@ -49,6 +49,7 @@ plugins/ruflo-migrations/tests/migrations-mod.test.ts
 plugins/ruflo-mods/tests/attention.test.ts
 plugins/ruflo-mods/tests/agents.test.ts
 plugins/ruflo-mods/tests/compact.test.ts
+plugins/ruflo-mods/tests/context-delegate.test.ts
 plugins/ruflo-mods/tests/delivery.test.ts
 plugins/ruflo-mods/tests/describe.test.ts
 plugins/ruflo-mods/tests/grounding.test.ts
@@ -108,6 +109,7 @@ plugins/ruflo-adr/scripts/__tests__/adr-status-forms-4126.test.mjs
 scripts/__tests__/probe-mod-guards.test.mjs
 plugins/ruflo-core/scripts/witness/__tests__/witness-auth.test.mjs
 v3/@claude-flow/cli/__tests__/real-binary/classic-loop.test.ts
+v3/@claude-flow/cli/__tests__/real-binary/context-delegation.test.ts
 v3/@claude-flow/cli/__tests__/real-binary/contracts.test.ts
 v3/@claude-flow/cli/__tests__/real-binary/external-plugins.test.ts
 v3/@claude-flow/cli/__tests__/real-binary/loads.test.ts

@@ -162,6 +162,19 @@ const DEFAULT_EWC_CONFIG: EWCConfig = {
   dimensions: 384
 };
 
+/**
+ * #3475: `CLAUDE_FLOW_FISHER_DECAY` overrides the default Fisher EMA decay
+ * rate. Only a finite number in (0, 1] is honoured; anything else is ignored
+ * and the default stands. An explicit `fisherDecayRate` passed to the
+ * constructor still wins.
+ */
+export function fisherDecayRateFromEnv(env: NodeJS.ProcessEnv = process.env): number | undefined {
+  const raw = env.CLAUDE_FLOW_FISHER_DECAY;
+  if (raw === undefined || raw.trim() === '') return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 && value <= 1 ? value : undefined;
+}
+
 // ============================================================================
 // EWC Consolidator Class
 // ============================================================================
@@ -180,7 +193,12 @@ export class EWCConsolidator {
   private initialized: boolean = false;
 
   constructor(config?: Partial<EWCConfig>) {
-    this.config = { ...DEFAULT_EWC_CONFIG, ...config };
+    const envDecay = fisherDecayRateFromEnv();
+    this.config = {
+      ...DEFAULT_EWC_CONFIG,
+      ...(envDecay !== undefined ? { fisherDecayRate: envDecay } : {}),
+      ...config,
+    };
     this.globalFisher = new Array(this.config.dimensions).fill(0);
   }
 

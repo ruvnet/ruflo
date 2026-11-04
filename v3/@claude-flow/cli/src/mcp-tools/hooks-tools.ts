@@ -6,7 +6,7 @@ import { feedbackPatternsSchema, validateFeedbackPatterns } from '../memory/feed
 
 import { mkdirSync, writeFileSync, existsSync, readFileSync, statSync, unlinkSync, readdirSync, rmSync } from 'fs';
 import * as nodeFs from 'fs';
-import { dirname, join, resolve, sep } from 'path';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText, validatePath } from './validate-input.js';
 import { commandRecordingDisabled, redactCommandForStorage } from '../services/command-recording.js';
@@ -5403,6 +5403,36 @@ function codemodLangForExt(abs: string): 'javascript' | 'typescript' | 'jsx' | '
   return 'typescript';
 }
 
+// Canonicalize a path that may not exist yet: realpath the nearest existing
+// ancestor and re-attach the missing tail, so a symlinked parent still
+// resolves to its real location (mirrors @claude-flow/security's
+// canonicalizeSync, which is not exported).
+function realpathNearest(p: string): string {
+  try {
+    return nodeFs.realpathSync(p);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException)?.code !== 'ENOENT') throw err;
+  }
+  const parent = dirname(p);
+  if (parent === p) return p;
+  return join(realpathNearest(parent), basename(p));
+}
+
+// CWE-59 (#4346): containment must compare real paths on BOTH sides — a
+// symlink inside the project pointing outside it must not pass, and a
+// symlinked project root (e.g. macOS /var -> /private/var) must not make
+// every path fail. Fails closed if canonicalization throws (ELOOP, EACCES).
+function isInsideRealRoot(realRoot: string, abs: string): boolean {
+  let real: string;
+  try {
+    real = realpathNearest(abs);
+  } catch {
+    return false;
+  }
+  const rel = relative(realRoot, real);
+  return rel === '' || (rel !== '..' && !rel.startsWith('..' + sep) && !isAbsolute(rel));
+}
+
 // Deterministic codemod execution — the real Tier-1 path (ADR-143)
 export const hooksCodemod: MCPTool = {
   name: 'hooks_codemod',
@@ -5452,6 +5482,12 @@ export const hooksCodemod: MCPTool = {
     // Resolve the target file set (single / array / glob), with path containment.
     const resolveTargets = (): { abs: string[]; truncated: boolean; error?: string } => {
       const out = new Set<string>();
+      let realRoot: string;
+      try {
+        realRoot = realpathNearest(cwd);
+      } catch (err) {
+        return { abs: [], truncated: false, error: `cannot resolve project root: ${(err as Error).message}` };
+      }
       const addRaw = (p: string): string | undefined => {
         const v = validatePath(p, 'path');
         if (!v.valid) return v.error;
@@ -5461,12 +5497,9 @@ export const hooksCodemod: MCPTool = {
         // path like `${cwd}-staging/x.ts` pass as "inside" `cwd`. Matches
         // the pattern already used correctly elsewhere in this codebase
         // (@claude-flow/security's `isWithinPrefix`, hooks/workers, plugins/security).
-        // KNOWN LIMITATION (disclosed 2026-10-20, not fixed here): this
-        // compares the resolved-but-not-realpath'd path, so a symlink
-        // inside cwd pointing outside it still escapes containment
-        // (CWE-59, a distinct/broader gap than the CWE-22 prefix bug this
-        // anchors). Needs fs.realpathSync-based containment as a follow-up.
         if (abs !== cwd && !abs.startsWith(cwd + sep)) return `path escapes project root: ${p}`;
+        // The lexical check above cannot see symlinks; re-check on real paths.
+        if (!isInsideRealRoot(realRoot, abs)) return `path escapes project root via symlink: ${p}`;
         out.add(abs);
         return undefined;
       };
@@ -5488,7 +5521,9 @@ export const hooksCodemod: MCPTool = {
         }
         for (const m of matches) {
           const abs = resolve(cwd, m);
-          if ((abs === cwd || abs.startsWith(cwd + sep)) && CODEMOD_EXTENSIONS.has(abs.slice(abs.lastIndexOf('.')).toLowerCase())) {
+          // Matches that resolve outside the root (via a symlinked file or
+          // directory) are skipped silently, like other non-matching entries.
+          if ((abs === cwd || abs.startsWith(cwd + sep)) && isInsideRealRoot(realRoot, abs) && CODEMOD_EXTENSIONS.has(abs.slice(abs.lastIndexOf('.')).toLowerCase())) {
             out.add(abs);
           }
         }

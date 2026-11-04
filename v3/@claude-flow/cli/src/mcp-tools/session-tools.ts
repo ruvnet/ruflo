@@ -171,6 +171,20 @@ export interface MemoryCaptureReport {
   error?: string;
 }
 
+/**
+ * #4404: snapshot map ID for a live (namespace, key) row. A bare
+ * `namespace::key` join collides when either part contains `::`
+ * (`team::alice`/`profile` vs `team`/`alice::profile`), so one row was
+ * dropped on save and a distinct sibling row was skipped as a mirror. `%` and
+ * `:` are percent-escaped in each part, which keeps ordinary IDs unchanged.
+ * Restore reads the explicit namespace/key fields, never this ID, so older
+ * snapshots restore as before.
+ */
+export function memorySnapshotId(namespace: string, key: string): string {
+  const escape = (part: string) => part.replace(/%/g, '%25').replace(/:/g, '%3A');
+  return `${escape(namespace)}::${escape(key)}`;
+}
+
 async function readLiveEntries(
   listEntries: typeof import('../memory/memory-initializer.js').listEntries,
   dbPath: string,
@@ -230,7 +244,7 @@ async function captureMemorySnapshot(): Promise<{ memory?: Record<string, unknow
     if (existsSync(primary)) {
       sawStore = true;
       for (const row of await readLiveEntries(listEntries, primary)) {
-        const id = `${row.namespace}::${row.key}`;
+        const id = memorySnapshotId(row.namespace, row.key);
         seen.add(id);
         entries[id] = {
           key: row.key, value: row.content ?? '', namespace: row.namespace,
@@ -248,7 +262,7 @@ async function captureMemorySnapshot(): Promise<{ memory?: Record<string, unknow
       sawStore = true;
       // The AgentDB store is read by native SQLite and must stay plaintext.
       for (const row of await readLiveEntries(listEntries, sibling, false)) {
-        const id = `${row.namespace}::${row.key}`;
+        const id = memorySnapshotId(row.namespace, row.key);
         if (seen.has(id)) continue;
         seen.add(id);
         entries[id] = {

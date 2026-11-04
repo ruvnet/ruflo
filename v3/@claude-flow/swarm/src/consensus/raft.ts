@@ -484,8 +484,13 @@ export class RaftConsensus extends EventEmitter {
       0
     );
 
+    // #4458: quorum is never below a strict majority of approvals. The old
+    // floor(n * 0.66) gave 1 for n = 2 and n = 3, so the leader's own
+    // self-vote accepted a proposal even after a peer explicitly rejected it.
+    // A configured threshold can still make quorum stricter, never looser.
     const threshold = this.config.threshold ?? 0.66;
-    const quorum = Math.floor(totalVoters * threshold);
+    const strictMajority = Math.floor(totalVoters / 2) + 1;
+    const quorum = Math.max(strictMajority, Math.floor(totalVoters * threshold));
 
     if (approvingWeight >= quorum) {
       proposal.status = 'accepted';

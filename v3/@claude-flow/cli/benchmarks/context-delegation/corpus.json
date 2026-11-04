@@ -1,0 +1,233 @@
+{
+  "schema": "ruflo.context-corpus/v1",
+  "baselineCommit": "3667ba6573ef811383881f8a887978798bf2113d",
+  "sources": [
+    {
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "sha256": "07bf10322979e8b883e68447506486247e0a9176946663f4087ca53fda360b9b",
+      "bytes": 17881
+    },
+    {
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "sha256": "f59d7b8fd1d0ff25829a96d0e05f250264e163274796a607ee226867ecb202fe",
+      "bytes": 51884
+    },
+    {
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "sha256": "1f0a67cd4a7623902b0a3e7c9f3f81a6567f7c1cc053efaf9471f0e4081906d9",
+      "bytes": 19747
+    }
+  ],
+  "cases": [
+    {
+      "id": "01",
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "line": 35,
+      "quote": "export interface AiBudgetLimits {",
+      "question": "Find the declaration of AiBudgetLimits in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "02",
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "line": 36,
+      "quote": "  maxConcurrentGlobal: number;",
+      "question": "Find the declaration of maxConcurrentGlobal in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "03",
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "line": 37,
+      "quote": "  maxLaunchesPerHour: number;",
+      "question": "Find the declaration of maxLaunchesPerHour in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "04",
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "line": 38,
+      "quote": "  maxLaunchesPerDay: number;",
+      "question": "Find the declaration of maxLaunchesPerDay in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "05",
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "line": 39,
+      "quote": "  pauseOnQuotaErrorMinutes: number;",
+      "question": "Find the declaration of pauseOnQuotaErrorMinutes in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "06",
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "line": 42,
+      "quote": "export const DEFAULT_AI_BUDGET_LIMITS: AiBudgetLimits = {",
+      "question": "Find the declaration of DEFAULT_AI_BUDGET_LIMITS in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "07",
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "line": 43,
+      "quote": "  maxConcurrentGlobal: 1,",
+      "question": "Find the declaration of maxConcurrentGlobal in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "08",
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "line": 44,
+      "quote": "  maxLaunchesPerHour: 2,",
+      "question": "Find the declaration of maxLaunchesPerHour in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "09",
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "line": 45,
+      "quote": "  maxLaunchesPerDay: 12,",
+      "question": "Find the declaration of maxLaunchesPerDay in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "10",
+      "path": "v3/@claude-flow/cli/src/services/global-ai-budget.ts",
+      "line": 46,
+      "quote": "  pauseOnQuotaErrorMinutes: 60,",
+      "question": "Find the declaration of pauseOnQuotaErrorMinutes in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "11",
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "line": 39,
+      "quote": "export type HeadlessWorkerType =",
+      "question": "Find the declaration of HeadlessWorkerType in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "12",
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "line": 52,
+      "quote": "export type LocalWorkerType = 'map' | 'consolidate' | 'benchmark' | 'preload';",
+      "question": "Find the declaration of LocalWorkerType in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "13",
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "line": 57,
+      "quote": "export type SandboxMode = 'strict' | 'permissive' | 'disabled';",
+      "question": "Find the declaration of SandboxMode in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "14",
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "line": 62,
+      "quote": "export type ModelType = 'sonnet' | 'opus' | 'haiku';",
+      "question": "Find the declaration of ModelType in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "15",
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "line": 67,
+      "quote": "export type OutputFormat = 'text' | 'json' | 'markdown';",
+      "question": "Find the declaration of OutputFormat in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "16",
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "line": 72,
+      "quote": "export type ExecutionMode = 'local' | 'headless';",
+      "question": "Find the declaration of ExecutionMode in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "17",
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "line": 77,
+      "quote": "export type WorkerPriority = 'low' | 'normal' | 'high' | 'critical';",
+      "question": "Find the declaration of WorkerPriority in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "18",
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "line": 86,
+      "quote": "export interface WorkerConfig {",
+      "question": "Find the declaration of WorkerConfig in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "19",
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "line": 87,
+      "quote": "  type: WorkerType;",
+      "question": "Find the declaration of type in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "20",
+      "path": "v3/@claude-flow/cli/src/services/headless-worker-executor.ts",
+      "line": 88,
+      "quote": "  intervalMs: number;",
+      "question": "Find the declaration of intervalMs in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "21",
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "line": 31,
+      "quote": "export type TaskStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'timeout' | 'cancelled';",
+      "question": "Find the declaration of TaskStatus in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "22",
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "line": 36,
+      "quote": "export interface QueueTask {",
+      "question": "Find the declaration of QueueTask in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "23",
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "line": 37,
+      "quote": "  id: string;",
+      "question": "Find the declaration of id in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "24",
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "line": 38,
+      "quote": "  workerType: HeadlessWorkerType;",
+      "question": "Find the declaration of workerType in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "25",
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "line": 39,
+      "quote": "  priority: WorkerPriority;",
+      "question": "Find the declaration of priority in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "26",
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "line": 40,
+      "quote": "  payload: {",
+      "question": "Find the declaration of payload in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "27",
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "line": 47,
+      "quote": "  status: TaskStatus;",
+      "question": "Find the declaration of status in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "28",
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "line": 48,
+      "quote": "  createdAt: Date;",
+      "question": "Find the declaration of createdAt in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "29",
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "line": 49,
+      "quote": "  startedAt?: Date;",
+      "question": "Find the declaration of startedAt in this source snapshot and report its exact text with a source citation."
+    },
+    {
+      "id": "30",
+      "path": "v3/@claude-flow/cli/src/services/worker-queue.ts",
+      "line": 50,
+      "quote": "  completedAt?: Date;",
+      "question": "Find the declaration of completedAt in this source snapshot and report its exact text with a source citation."
+    }
+  ]
+}

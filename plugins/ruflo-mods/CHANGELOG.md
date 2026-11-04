@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.15.0 — 2026-11-01
+- feat: option `contextDelegation` (`off` by default, ADR-522): automatic context delegation. A large whole-file analysis `Read` is answered by a no-tools haiku completion whose every quote is checked against the file; the model sees the cited passages and how to read the rest. The real Read still runs, so edits work, and any failure shows the whole file. `observe` records what would have been delegated without changing anything; `enforce` delegates. Metrics in `.claude-flow/metrics/context-delegation.json`.
+
 ## 0.14.0 — 2026-10-30
 - feat: the learning loop reaches projects without the mod (ADR-512). Its record and lesson code is also bundled into `.claude/helpers/learning-loop.cjs` for the classic hooks, which replay the session transcript; with the loop on, the mod adds `learning-loop` to `RUFLO_MODS_OWNS` so the classic hooks record none of the turns it records.
 
