@@ -4315,11 +4315,21 @@ export const hooksIntelligenceLearn: MCPTool = {
   inputSchema: {
     type: 'object',
     properties: {
-      trajectoryIds: { type: 'array', items: { type: 'string' }, description: 'Specific trajectories to learn from' },
+      trajectoryIds: { type: 'array', items: { type: 'string' }, description: 'Not supported: a learning cycle always covers every recorded trajectory. Supplying this returns an error and runs nothing, rather than learning from more than was asked (#4693).' },
       consolidate: { type: 'boolean', description: 'Run EWC++ consolidation' },
     },
   },
   handler: async (params: Record<string, unknown>) => {
+    // #4693: distillLearning() and the background pass have no way to select
+    // trajectories, so a request scoped to some must not trigger learning over all.
+    // Refuse it before anything is imported or mutated; omitting the field is unchanged.
+    if (params.trajectoryIds !== undefined) {
+      return {
+        success: false,
+        learned: false,
+        error: 'hooks_intelligence_learn: trajectoryIds is not supported; a learning cycle always covers every recorded trajectory. Omit trajectoryIds to run it.',
+      };
+    }
     const consolidate = params.consolidate !== false;
     const startTime = Date.now();
 

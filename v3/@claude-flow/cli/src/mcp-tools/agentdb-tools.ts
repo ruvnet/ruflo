@@ -967,12 +967,12 @@ export const agentdbBatch: MCPTool = {
 
 export const agentdbContextSynthesize: MCPTool = {
   name: 'agentdb_context-synthesize',
-  description: 'Synthesize context from stored memories for a given query Use when generic memory_* tools are wrong because you need AgentDB-specific controllers (HNSW vector search, hierarchical tiers, causal-graph links, pattern store/recall, RaBitQ quantization). For simple key-value persistence, memory_store/memory_retrieve are simpler. For unrelated file work, native Read/Write are fine.',
+  description: 'Summarize validated task episodes (task, reward, success, critique) that match a query: observed success rate, reward and critique-derived patterns. Ordinary documents, research notes and graph entities are not episodes, so for them it answers no-memories or no-eligible-episodes; read those with memory_search or memory_retrieve instead. Use when generic memory_* tools are wrong because you need AgentDB-specific controllers (HNSW vector search, hierarchical tiers, causal-graph links, pattern store/recall, RaBitQ quantization). For simple key-value persistence, memory_store/memory_retrieve are simpler. For unrelated file work, native Read/Write are fine.',
   inputSchema: {
     type: 'object',
     properties: {
-      query: { type: 'string', description: 'Query to synthesize context for' },
-      maxEntries: { type: 'number', description: 'Maximum entries to include (default: 10)' },
+      query: { type: 'string', description: 'Task to find matching validated episodes for' },
+      maxEntries: { type: 'number', description: 'Maximum episodes to include (default: 10)' },
     },
     required: ['query'],
   },
