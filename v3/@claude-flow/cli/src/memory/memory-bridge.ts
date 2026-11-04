@@ -975,9 +975,23 @@ export async function rescueAgentdbEmbedder(agentdb: { embedder?: { pipeline?: u
       ? out.embedding
       : new Float32Array((out.embedding as number[]) ?? []);
   };
-  emb.embed = newEmbed;
-  emb.embedBatch = async (texts: string[]): Promise<Float32Array[]> =>
+  const newBatch = async (texts: string[]): Promise<Float32Array[]> =>
     Promise.all(texts.map(t => newEmbed(t)));
+  emb.embed = newEmbed;
+  emb.embedBatch = newBatch;
+  // #4643: agentdb 3.x's ReasoningBank calls embedQuery()/embedPassage(),
+  // which route through embedFor() → generateEmbedding() → mockEmbedding()
+  // and never touch embed(). Patch the role methods too, or the rescue never
+  // reaches pattern store/search. The model is symmetric, so both roles share
+  // one function; drop any mock vectors already cached under the old space.
+  const roles = emb as typeof emb & {
+    embedQuery?: unknown; embedPassage?: unknown; embedQueryBatch?: unknown; embedPassageBatch?: unknown; clearCache?: () => void;
+  };
+  if (typeof roles.embedQuery === 'function') roles.embedQuery = newEmbed;
+  if (typeof roles.embedPassage === 'function') roles.embedPassage = newEmbed;
+  if (typeof roles.embedQueryBatch === 'function') roles.embedQueryBatch = newBatch;
+  if (typeof roles.embedPassageBatch === 'function') roles.embedPassageBatch = newBatch;
+  try { roles.clearCache?.(); } catch { /* best-effort */ }
   emb.__ruvectorRescued = true;
 }
 
@@ -2684,6 +2698,25 @@ export async function bridgeStorePattern(options: {
 }
 
 /**
+ * Case-insensitive substring match over agentdb's reasoning_patterns table —
+ * the rows ReasoningBank.storePattern() writes. Used only when the vector
+ * search returns nothing. Returns [] when the table or handle is unavailable.
+ */
+function substringSearchReasoningPatterns(registry: any, query: string, k: number): Array<{ id: string; content: string; score: number }> {
+  try {
+    const db = registry?.getAgentDB?.()?.database;
+    if (!db || typeof db.prepare !== 'function') return [];
+    const like = `%${query.toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const rows = db.prepare(
+      "SELECT id, approach, success_rate FROM reasoning_patterns WHERE lower(approach) LIKE ? ESCAPE '\\' ORDER BY id DESC LIMIT ?",
+    ).all(like, k) as Array<{ id: number; approach: string; success_rate: number }>;
+    return rows.map((r) => ({ id: String(r.id), content: r.approach, score: r.success_rate ?? 0 }));
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Search patterns via ReasoningBank controller.
  */
 export async function bridgeSearchPatterns(options: {
@@ -2713,14 +2746,18 @@ export async function bridgeSearchPatterns(options: {
       // mapping produced `content: ''` and `score: 0` for every hit even when
       // the search itself succeeded. Read the real fields first, keeping the
       // legacy names as fallbacks for the pre-agentdb shape.
-      return {
-        results: Array.isArray(results) ? results.map((r: any) => ({
-          id: String(r.id ?? r.patternId ?? ''),
-          content: r.approach ?? r.content ?? r.pattern ?? '',
-          score: r.similarity ?? r.score ?? r.successRate ?? r.confidence ?? 0,
-        })) : [],
-        controller: 'reasoningBank',
-      };
+      let mapped = Array.isArray(results) ? results.map((r: any) => ({
+        id: String(r.id ?? r.patternId ?? ''),
+        content: r.approach ?? r.content ?? r.pattern ?? '',
+        score: r.similarity ?? r.score ?? r.successRate ?? r.confidence ?? 0,
+      })) : [];
+      // #4643 — with agentdb's mock embedder (Transformers.js failed to load:
+      // offline, or a failed `sharp` install) a passage and a query embed to
+      // unrelated hash vectors, so the vector search misses a pattern that
+      // storePattern just wrote. Scan the same reasoning_patterns table for the
+      // query text, as the LocalReasoningBank branch below does over getAll().
+      if (mapped.length === 0) mapped = substringSearchReasoningPatterns(registry, options.query, options.topK || 5);
+      return { results: mapped, controller: 'reasoningBank' };
     }
 
     // #2226 — the wired-in LocalReasoningBank implements store() + findSimilar()/getAll()
@@ -3643,6 +3680,12 @@ export async function bridgeHealthCheck(
   controllers: Array<{ name: string; enabled: boolean; level: number }>;
   attestationCount?: number;
   cacheStats?: { size: number; hits: number; misses: number };
+  /** Why AgentDB failed to open, or null when it opened (#4654). */
+  agentdbInitError?: string | null;
+  /** Last bridge-level failure, including the AgentDB lock cause (#4622/#4654). */
+  bridgeFailureReason?: string | null;
+  /** Actionable next step when a second process owns the native store. */
+  hint?: string;
   hierarchicalMemory?: {
     controller: string;
     durable: boolean;
@@ -3658,6 +3701,12 @@ export async function bridgeHealthCheck(
 
   try {
     const controllers = registry.listControllers();
+    const resolvedPath = canonicalDbPath(dbPath);
+    const agentdbInitError = agentdbInitFailure(registry, resolvedPath);
+    const bridgeFailureReason = getBridgeFailureReason(dbPath);
+    const lockHint = agentdbInitError && /already open|cannot acquire lock|locked/i.test(agentdbInitError)
+      ? 'Another process (often the ruflo daemon or a second MCP server) owns the native vector store. Stop one owner and reconnect; reads currently use the volatile fallback.'
+      : undefined;
 
     // Phase 4: AttestationLog stats
     let attestationCount = 0;
@@ -3686,7 +3735,18 @@ export async function bridgeHealthCheck(
       };
     }
 
-    return { available: true, controllers, attestationCount, cacheStats, hierarchicalMemory };
+    return {
+      // A registry with a failed AgentDB still serves its other controllers,
+      // but it is not a working persistent bridge (#4622/#4654).
+      available: agentdbInitError === null,
+      controllers,
+      attestationCount,
+      cacheStats,
+      agentdbInitError,
+      bridgeFailureReason,
+      ...(lockHint ? { hint: lockHint } : {}),
+      hierarchicalMemory,
+    };
   } catch {
     return null;
   }
