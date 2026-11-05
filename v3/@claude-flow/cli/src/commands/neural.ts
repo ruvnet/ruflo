@@ -38,8 +38,8 @@ const trainCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const patternType = (ctx.flags.pattern || ctx.flags.patternType || ctx.flags['pattern-type']) as string || 'coordination';
     const epochs = parseInt(ctx.flags.epochs as string || '50', 10);
-    const learningRate = parseFloat(ctx.flags['learning-rate'] as string || '0.01');
-    const batchSize = parseInt(ctx.flags['batch-size'] as string || '32', 10);
+    const learningRate = parseFloat((ctx.flags.learningRate ?? ctx.flags['learning-rate']) as string || '0.01');
+    const batchSize = parseInt((ctx.flags.batchSize ?? ctx.flags['batch-size']) as string || '32', 10);
     const dim = Math.min(parseInt(ctx.flags.dim as string || '256', 10), 256);
     // #2549 follow-up — backend routing: 'native' = @ruvector/ruvllm
     // TrainingPipeline (real epochs/early-stopping/disk checkpoints),
@@ -47,7 +47,7 @@ const trainCommand: Command = {
     // 'auto' = native when the module resolves, else wasm.
     const backendFlag = String(ctx.flags.backend || 'auto');
     // Feature: validation split + resume (native TrainingPipeline leg).
-    const valSplitRaw = parseFloat((ctx.flags['val-split'] as string) ?? '0.1');
+    const valSplitRaw = parseFloat(((ctx.flags.valSplit ?? ctx.flags['val-split']) as string) ?? '0.1');
     const valSplit = Number.isFinite(valSplitRaw) ? Math.max(0, Math.min(1, valSplitRaw)) : 0.1;
     const resumePath = ctx.flags.resume ? String(ctx.flags.resume) : undefined;
     // --resume is a native-only capability; refuse the WASM combination up
@@ -1160,7 +1160,7 @@ const exportCommand: Command = {
     const outputFile = ctx.flags.output as string | undefined;
     const pinToIpfs = ctx.flags.ipfs as boolean;
     const signExport = ctx.flags.sign !== false;
-    const stripPii = ctx.flags['strip-pii'] !== false;
+    const stripPii = (ctx.flags.stripPii ?? ctx.flags['strip-pii']) !== false;
     const customName = ctx.flags.name as string;
 
     output.writeln();
@@ -1979,7 +1979,8 @@ const routerTrainCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const corpusPath = ctx.flags.corpus as string | undefined;
     const outPath = (ctx.flags.out as string) || './router.krr.json';
-    const qualityBar = parseFloat(ctx.flags['quality-bar'] as string || '0.8') || 0.8;
+    const requestedQualityBar = parseFloat(String(ctx.flags.qualityBar ?? ctx.flags['quality-bar'] ?? 0.8));
+    const qualityBar = Number.isNaN(requestedQualityBar) ? 0.8 : requestedQualityBar;
     // Indirect the optional-dep specifier through a string variable so tsc
     // doesn't statically resolve `@metaharness/router` at build time (TS2307
     // when it isn't installed — #2586 pattern). The dep is optional at
@@ -3819,7 +3820,8 @@ const routerBanditStateCommand: Command = {
     const statePath = (ctx.flags.path as string | undefined)
       ?? path.resolve(process.cwd(), '.swarm', 'model-router-state.json');
     const fmt = (ctx.flags.format as string) || 'table';
-    const coldThreshold = parseInt(ctx.flags['cold-threshold'] as string || '4', 10) || 4;
+    const requestedColdThreshold = parseInt(String(ctx.flags.coldThreshold ?? ctx.flags['cold-threshold'] ?? 4), 10);
+    const coldThreshold = Number.isNaN(requestedColdThreshold) ? 4 : requestedColdThreshold;
 
     if (!fs.existsSync(statePath)) {
       const msg = `Bandit state file not found at ${statePath}`;
