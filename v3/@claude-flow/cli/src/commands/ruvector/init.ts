@@ -165,7 +165,7 @@ export const initCommand: Command = {
 
     const force = ctx.flags.force as boolean;
     const dimensions = parseInt((ctx.flags.dimensions as string) || '1536', 10);
-    const indexType = (ctx.flags['index-type'] as string) || 'hnsw';
+    const indexType = ((ctx.flags.indexType ?? ctx.flags['index-type']) as string) || 'hnsw';
 
     // Show configuration
     output.writeln(output.highlight('Connection Configuration:'));
