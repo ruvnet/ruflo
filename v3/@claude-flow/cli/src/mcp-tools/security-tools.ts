@@ -43,6 +43,44 @@ const wrapperStats = {
   quickScanThreats: 0,
 };
 
+const KNOWN_PACKS = new Set([
+  'core',
+  'tool_invocation',
+  'exfil_url',
+  'encoded_instruction',
+  'slack_markup_forgery',
+  'instruction_override_i18n',
+]);
+
+/**
+ * Pattern-pack selection for the shared defender (#4785, ADR-517), read once
+ * per process from RUFLO_AIDEFENCE_PACKS:
+ *   unset/empty  current default (option omitted)
+ *   true|false   all enabled packs | built-in patterns only
+ *   a,b,c        exactly the named packs
+ * Anything else is refused rather than silently falling back.
+ */
+export function aidefencePackSelection(raw = process.env.RUFLO_AIDEFENCE_PACKS): boolean | string[] | undefined {
+  const value = raw?.trim();
+  if (!value) return undefined;
+  const lower = value.toLowerCase();
+  if (lower === 'true') return true;
+  if (lower === 'false') return false;
+  const names = value.split(',').map(name => name.trim()).filter(Boolean);
+  const unknown = names.filter(name => !KNOWN_PACKS.has(name));
+  if (names.length === 0 || unknown.length > 0) {
+    throw new Error(
+      `Invalid RUFLO_AIDEFENCE_PACKS=${JSON.stringify(value)}: use true, false, or a comma list of ${[...KNOWN_PACKS].join(', ')}`,
+    );
+  }
+  return [...new Set(names)];
+}
+
+function aidefenceOptions(): { enableLearning: true; packs?: boolean | string[] } {
+  const packs = aidefencePackSelection();
+  return packs === undefined ? { enableLearning: true } : { enableLearning: true, packs };
+}
+
 /**
  * Get or create AIDefence instance (throws if unavailable)
  */
@@ -56,7 +94,7 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
   // First attempt - try to load via dynamic import (ESM)
   try {
     const aidefence = await import(packageName);
-    const instance = aidefence.createAIDefence({ enableLearning: true });
+    const instance = aidefence.createAIDefence(aidefenceOptions());
     if (!instance) {
       throw new Error('createAIDefence returned null');
     }
@@ -96,7 +134,7 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
   // the module cache is stable across the await boundary.
   try {
     const aidefence = await import(packageName);
-    const instance = aidefence.createAIDefence({ enableLearning: true });
+    const instance = aidefence.createAIDefence(aidefenceOptions());
     if (instance) {
       aidefenceInstance = instance;
       console.error(`[claude-flow] ${packageName} loaded after install (resolver path)`);
@@ -110,7 +148,7 @@ async function getAIDefence(): Promise<AIDefenceInstance> {
     const modulePath = require.resolve(packageName);
     const cacheBust = `?t=${Date.now()}`;
     const aidefence = await import(`file://${modulePath}${cacheBust}`);
-    const instance = aidefence.createAIDefence({ enableLearning: true });
+    const instance = aidefence.createAIDefence(aidefenceOptions());
     if (!instance) {
       throw new Error('createAIDefence returned null after install');
     }
