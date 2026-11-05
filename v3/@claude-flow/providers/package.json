@@ -53,7 +53,7 @@
     "vitest": "^4.1.0"
   },
   "peerDependencies": {
-    "@ruvector/ruvllm": "^0.2.3"
+    "@ruvector/ruvllm": ">=2.6.0 <4.0.0 || ^4.1.0"
   },
   "peerDependenciesMeta": {
     "@ruvector/ruvllm": {

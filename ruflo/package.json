@@ -44,7 +44,7 @@
   },
   "optionalDependencies": {},
   "overrides": {
-    "ruvector": "^0.2.41",
+    "ruvector": "^0.3.11",
     "better-sqlite3": "12.9.0",
     "@ruvector/rvf-wasm": "0.1.5",
     "@ruvector/rvf": "0.3.4",
@@ -73,9 +73,9 @@
     "@opentelemetry/otlp-exporter-base": ">=0.220.0",
     "@opentelemetry/otlp-grpc-exporter-base": ">=0.220.0",
     "@opentelemetry/otlp-transformer": ">=0.220.0",
-    "agentdb": ">=3.3.0",
-    "agentic-flow": ">=2.0.14",
-    "@ruvector/ruvllm": ">=2.6.0",
+    "agentdb": "^3.3.0",
+    "agentic-flow": "^2.0.14 || ^3.0.0",
+    "@ruvector/ruvllm": ">=2.6.0 <4.0.0 || ^4.1.0",
     "fast-uri": ">=3.1.6"
   },
   "engines": {

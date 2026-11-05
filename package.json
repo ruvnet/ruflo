@@ -109,7 +109,7 @@
     "better-sqlite3": "12.9.0"
   },
   "overrides": {
-    "ruvector": "^0.2.41",
+    "ruvector": "^0.3.11",
     "better-sqlite3": "12.9.0",
     "js-yaml": ">=4.3.0",
     "hono": ">=4.13.2",
@@ -150,7 +150,7 @@
     "@grpc/grpc-js": ">=1.14.4",
     "form-data": ">=4.0.6",
     "http-proxy-middleware": ">=3.0.7",
-    "@ruvector/ruvllm": ">=2.6.0"
+    "@ruvector/ruvllm": ">=2.6.0 <4.0.0 || ^4.1.0"
   },
   "devDependencies": {
     "@openai/codex": "^0.98.0",

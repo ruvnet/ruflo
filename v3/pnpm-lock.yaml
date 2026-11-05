@@ -15,7 +15,7 @@ overrides:
   '@vitest/coverage-v8': '>=4.1.0'
   handlebars: '>=4.7.9'
   protobufjs: '>=8.6.0'
-  '@ruvector/ruvllm': '>=2.6.0'
+  '@ruvector/ruvllm': '>=2.6.0 <4.0.0 || ^4.1.0'
   '@ruvector/rvf': 0.3.4
   js-yaml: '>=4.3.0'
   express: '>=4.22.2'
@@ -588,7 +588,7 @@ importers:
   '@claude-flow/providers':
     dependencies:
       '@ruvector/ruvllm':
-        specifier: '>=2.6.0'
+        specifier: '>=2.6.0 <4.0.0 || ^4.1.0'
         version: 2.6.0
       events:
         specifier: ^3.3.0
@@ -12621,7 +12621,7 @@ packages:
       '@ruvector/diskann': '>=0.1.0'
       '@ruvector/pi-brain': '>=0.1.0'
       '@ruvector/router': '>=0.1.0'
-      '@ruvector/ruvllm': '>=2.6.0'
+      '@ruvector/ruvllm': '>=2.6.0 <4.0.0 || ^4.1.0'
     peerDependenciesMeta:
       '@ruvector/diskann':
         optional: true
@@ -12672,7 +12672,7 @@ packages:
       '@ruvector/pi-brain': '>=0.1.0'
       '@ruvector/rabitq-wasm': '>=0.1.1'
       '@ruvector/router': '>=0.1.0'
-      '@ruvector/ruvllm': '>=2.6.0'
+      '@ruvector/ruvllm': '>=2.6.0 <4.0.0 || ^4.1.0'
       rvlite: '>=0.2.0'
     peerDependenciesMeta:
       '@metaharness/darwin':
