@@ -323,6 +323,8 @@ npm install -g ruflo@latest
 claude mcp add claude-flow -- npx ruflo@latest mcp start
 ```
 
+For static inspection of local applications and binaries, see the [ruRE plugin guide](plugins/ruflo-rure/README.md).
+
 ---
 
 ## What You Get
