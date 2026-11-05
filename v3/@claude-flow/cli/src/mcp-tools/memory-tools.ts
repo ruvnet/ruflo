@@ -20,6 +20,7 @@ import { getProjectCwd, type MCPTool } from './types.js';
 import { validateIdentifier } from './validate-input.js';
 import { DEFAULT_SEARCH_THRESHOLD, nearMisses } from '../memory/search-defaults.js';
 import { compileExclusionPatterns, MAX_EXCLUDE_PATTERNS, MAX_EXCLUDE_PATTERN_LENGTH } from './glob-exclusions.js';
+import { readImportFile } from './import-limits.js';
 
 // Legacy JSON store interface (for migration)
 interface LegacyMemoryEntry {
@@ -1811,7 +1812,7 @@ export const memoryTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        inputPath: { type: 'string', description: 'Path to the JSON export file' },
+        inputPath: { type: 'string', description: 'Path to the JSON export file (maximum 16 MiB)' },
         merge: { type: 'boolean', description: 'Merge into existing entries (upsert) vs. fail on conflict (default true)' },
         namespace: { type: 'string', description: 'Override the namespace for all imported entries' },
         dbPath: { type: 'string', description: 'Database file to import into (defaults to the MCP memory store)' },
@@ -1820,8 +1821,6 @@ export const memoryTools: MCPTool[] = [
     },
     handler: async (input, context) => {
       const dbPath = resolveDbPathOption(input.dbPath, context);
-      await ensureInitialized(dbPath);
-      const { storeEntry } = await getMemoryFunctions();
       const t0 = Date.now();
       // Values are re-embedded on import; count the vectors actually written
       // rather than reporting a constant 0 next to entries that show a vector.
@@ -1836,8 +1835,12 @@ export const memoryTools: MCPTool[] = [
           : 'inputPath must be an existing regular file inside the project directory (not a symlink)' };
       }
       let doc: { entries?: Array<{ key: string; namespace?: string; value?: unknown; tags?: string[] | string }> };
-      try { doc = JSON.parse(readFileSync(inputPath, 'utf-8')); }
-      catch { return { error: 'inputPath is not a valid memory export (JSON parse failed)' }; }
+      try { doc = JSON.parse(readImportFile(inputPath).toString('utf-8')); }
+      catch (error) { return { error: error instanceof SyntaxError
+        ? 'inputPath is not a valid memory export (JSON parse failed)'
+        : error instanceof Error ? error.message : 'Could not read memory import' }; }
+      await ensureInitialized(dbPath);
+      const { storeEntry } = await getMemoryFunctions();
       const entries = Array.isArray(doc.entries) ? doc.entries : [];
       const nsOverride = input.namespace ? String(input.namespace) : undefined;
       if (nsOverride) { const v = validateIdentifier(nsOverride, 'namespace'); if (!v.valid) throw new Error(v.error); }
