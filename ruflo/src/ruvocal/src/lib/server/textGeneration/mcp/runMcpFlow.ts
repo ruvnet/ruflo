@@ -2,7 +2,7 @@ import { config } from "$lib/server/config";
 import { mergeMcpServers } from "./mergeServers";
 import { MessageUpdateType, type MessageUpdate } from "$lib/types/MessageUpdate";
 import { getMcpServers } from "$lib/server/mcp/registry";
-import { isValidUrl } from "$lib/server/urlSafety";
+import { isAllowedMcpUrl } from "$lib/server/mcp/serverTrust";
 import { resetMcpToolsCache } from "$lib/server/mcp/tools";
 import { getOpenAiToolsForMcp } from "$lib/server/mcp/tools";
 import type {
@@ -144,7 +144,7 @@ export async function* runMcpFlow({
 		const before = servers.slice();
 		servers = servers.filter((s) => {
 			try {
-				return isValidUrl(s.url);
+				return isAllowedMcpUrl(s.url);
 			} catch {
 				return false;
 			}

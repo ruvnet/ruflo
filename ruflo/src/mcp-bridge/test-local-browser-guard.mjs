@@ -11,6 +11,8 @@
  *   G6. an Origin listed in MCP_CORS_ORIGIN is still accepted
  *   G7. with MCP_AUTH_TOKEN set the guard is off and bearer auth decides
  *
+ * Runs against both bridges (src/mcp-bridge and src/ruvocal/mcp-bridge).
+ *
  *   node test-local-browser-guard.mjs
  */
 import { spawn } from "node:child_process";
@@ -19,7 +21,13 @@ import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
-const ENTRY = path.join(path.dirname(fileURLToPath(import.meta.url)), "index.js");
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+// Both bridges carry the same guard; ruvocal's copy missed #4226 until it was ported.
+const ENTRIES = [
+  { label: "src/mcp-bridge", entry: path.join(HERE, "index.js") },
+  { label: "src/ruvocal/mcp-bridge", entry: path.join(HERE, "..", "ruvocal", "mcp-bridge", "index.js") },
+];
+let ENTRY = ENTRIES[0].entry;
 const QUIET = {
   MCP_GROUP_INTELLIGENCE: "false",
   MCP_GROUP_AGENTS: "false",
@@ -64,6 +72,9 @@ function request(port, { method = "POST", path: p = "/mcp", headers = {}, body }
 const initialize = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} });
 const json = { "Content-Type": "application/json" };
 
+for (const { label, entry } of ENTRIES) {
+ENTRY = entry;
+console.log(`\n[${label}]`);
 console.log("local-only mode (no MCP_AUTH_TOKEN)");
 await withBridge({ MCP_CORS_ORIGIN: "" }, async (port) => {
   check((await request(port, { headers: json, body: initialize })).status === 200, "G1 native client reaches /mcp");
@@ -82,6 +93,7 @@ await withBridge({ MCP_AUTH_TOKEN: "t0ken" }, async (port) => {
   const res = await request(port, { headers: { ...json, Origin: "https://example.com", Authorization: "Bearer t0ken" }, body: initialize });
   check(res.status === 200, "G7 bearer token decides when set");
 });
+}
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");
 process.exit(failed ? 1 : 0);

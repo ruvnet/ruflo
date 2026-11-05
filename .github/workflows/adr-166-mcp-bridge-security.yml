@@ -50,6 +50,8 @@ jobs:
           (cd ruflo/src/ruvocal/mcp-bridge && npm install --no-audit --no-fund)
       - name: ADR-166 runtime verification
         run: node ruflo/src/mcp-bridge/test-runtime-security.mjs
+      - name: Local-only browser guard (#4226) on both bridges
+        run: node ruflo/src/mcp-bridge/test-local-browser-guard.mjs
 
   compose-loopback-only:
     name: Compose default binds loopback + Mongo has auth
