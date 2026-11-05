@@ -1,10 +1,19 @@
 /**
  * Success and missing-argument tests for MCP tools that had no tests (#4767).
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+// The tools under test are the MCP wrappers, not the detector. Without a built
+// @claude-flow/aidefence (the root CI job) the wrapper would try an npm install.
+vi.mock('@claude-flow/aidefence', () => ({
+  createAIDefence: () => ({
+    hasPII: (input: string) => /[\w.+-]+@[\w-]+\.[\w.]+/.test(input),
+    getStats: async () => ({}),
+  }),
+}));
+
 import { taskTools } from '../src/mcp-tools/task-tools.js';
 import { sessionTools } from '../src/mcp-tools/session-tools.js';
 import { systemTools } from '../src/mcp-tools/system-tools.js';
