@@ -1,4 +1,5 @@
-import { chmodSync, copyFileSync, existsSync, readFileSync, statSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 
 /**
  * Give a record map a null prototype. Record keys come from MCP tool input; on
@@ -83,8 +84,14 @@ function refuseCorruptStore(path: string, label: string, detail?: string): never
   throw new Error(`Invalid ${label} store at ${path}${suffix}; ${where}`);
 }
 
-/** Copy `path` to `${path}.corrupt-<timestamp>` without removing the original. */
+/**
+ * Copy `path` to `${path}.corrupt-<timestamp>` without removing the original.
+ * A backup with identical bytes is reused, so polling a corrupt store does not
+ * add a copy on every read.
+ */
 function backupCorruptStore(path: string): string {
+  const existing = existingIdenticalBackup(path);
+  if (existing) return existing;
   const stamp = Date.now();
   let backup = `${path}.corrupt-${stamp}`;
   let n = 0;
@@ -99,4 +106,30 @@ function backupCorruptStore(path: string): string {
     /* content is already copied; mode is best-effort */
   }
   return backup;
+}
+
+function existingIdenticalBackup(path: string): string | null {
+  const dir = dirname(path);
+  const prefix = `${basename(path)}.corrupt-`;
+  let current: Buffer;
+  try {
+    current = readFileSync(path);
+  } catch {
+    return null;
+  }
+  let names: string[];
+  try {
+    names = readdirSync(dir).filter((name) => name.startsWith(prefix));
+  } catch {
+    return null;
+  }
+  for (const name of names) {
+    const candidate = join(dir, name);
+    try {
+      if (statSync(candidate).size === current.length && readFileSync(candidate).equals(current)) return candidate;
+    } catch {
+      /* unreadable candidate: keep looking */
+    }
+  }
+  return null;
 }

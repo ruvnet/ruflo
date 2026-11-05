@@ -55,6 +55,19 @@ describe('readPreservedJsonStore (#4737)', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it('reuses an identical backup instead of copying on every read', () => {
+    const file = join(dir, 'store.json');
+    writeFileSync(file, CORRUPT);
+    for (let i = 0; i < 5; i++) {
+      expect(() => readPreservedJsonStore(file, 'workflow', () => ({ workflows: {} }))).toThrow(/backed up to/);
+    }
+    expect(corruptCopies(file)).toHaveLength(1);
+
+    writeFileSync(file, CORRUPT + ' more');
+    expect(() => readPreservedJsonStore(file, 'workflow', () => ({ workflows: {} }))).toThrow(/backed up to/);
+    expect(corruptCopies(file)).toHaveLength(2);
+  });
+
   it('treats a missing file as empty and writes nothing', () => {
     const file = join(dir, 'store.json');
     const store = readPreservedJsonStore(file, 'workflow', () => ({ workflows: {}, version: '3.0.0' }));
