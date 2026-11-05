@@ -84,6 +84,63 @@ export async function executeManagedControl(input: Record<string, unknown>, deps
   return { success: true, currentStatus: current.status, cancellationConfirmed: true, result: await deps.terminate(sessionId) };
 }
 
+/** Sessions this project created. Every other session in the organisation needs a host allowlist entry. */
+export interface ManagedSessionRecord { sessionId: string; environmentId?: string; createdMs: number }
+const LEDGER_LIMIT = 1000;
+function ledgerEntries(path: string): ManagedSessionRecord[] {
+  if (!existsSync(path)) return [];
+  if (!lstatSync(path).isFile() || lstatSync(path).isSymbolicLink()) throw new Error('Invalid managed session ledger');
+  const fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  try {
+    const buffer = Buffer.alloc(256_001);
+    const count = readSync(fd, buffer, 0, buffer.length, 0);
+    if (count > 256_000) throw new Error('Managed session ledger exceeds limit');
+    const value = JSON.parse(buffer.subarray(0, count).toString('utf8'));
+    if (value.version !== 1 || !Array.isArray(value.sessions) || value.sessions.length > LEDGER_LIMIT) throw new Error('Invalid managed session ledger');
+    for (const s of value.sessions) {
+      if (typeof s?.sessionId !== 'string' || !/^sesn_[A-Za-z0-9]+$/.test(s.sessionId) || (s.environmentId !== undefined && (typeof s.environmentId !== 'string' || !/^env_[A-Za-z0-9]+$/.test(s.environmentId)))) throw new Error('Invalid managed session ledger');
+    }
+    return value.sessions;
+  } finally { closeSync(fd); }
+}
+
+// A lost record would strand a session this project just paid for, so wait briefly for another writer.
+function ledgerLock(path: string): number {
+  for (let attempt = 0; ; attempt++) {
+    try { return openSync(path, 'wx', 0o600); } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST' || attempt >= 20) throw error;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+    }
+  }
+}
+
+function updateLedger(root: string, change: (sessions: ManagedSessionRecord[]) => ManagedSessionRecord[]): void {
+  const dir = folder(root), lockPath = join(dir, 'sessions.lock');
+  const fd = ledgerLock(lockPath);
+  const temp = join(dir, `${randomUUID()}.tmp`);
+  try {
+    const path = join(dir, 'sessions.json');
+    const text = JSON.stringify({ version: 1, sessions: change(ledgerEntries(path)).slice(0, LEDGER_LIMIT) });
+    const out = openSync(temp, 'wx', 0o600);
+    try { writeFileSync(out, text); fsyncSync(out); } finally { closeSync(out); }
+    renameSync(temp, path);
+  } finally { if (existsSync(temp)) unlinkSync(temp); closeSync(fd); unlinkSync(lockPath); }
+}
+
+export function recordManagedSession(root: string, sessionId: string, environmentId: string): void {
+  if (!/^sesn_[A-Za-z0-9]+$/.test(sessionId) || !/^env_[A-Za-z0-9]+$/.test(environmentId)) throw new Error('Invalid managed session ID');
+  updateLedger(root, sessions => [{ sessionId, environmentId, createdMs: Date.now() }, ...sessions.filter(s => s.sessionId !== sessionId)]);
+}
+
+export function forgetManagedSession(root: string, sessionId: string): void {
+  updateLedger(root, sessions => sessions.filter(s => s.sessionId !== sessionId));
+}
+
+/** Reads never create the state directory. A missing ledger owns nothing; an unreadable one throws. */
+export function ownedManagedSession(root: string, sessionId: string): ManagedSessionRecord | undefined {
+  return ledgerEntries(join(resolve(root), '.claude-flow', 'managed-workflows', 'sessions.json')).find(s => s.sessionId === sessionId);
+}
+
 /** Successful provider deletion is a session fact, never an acceptance verdict. */
 export function publishManagedTermination(root: string, sessionId: string, collector: { page: (id: string) => ManagedRunSnapshot | undefined; forget: (id: string) => boolean }): void {
   const snapshot = collector.page(sessionId);
