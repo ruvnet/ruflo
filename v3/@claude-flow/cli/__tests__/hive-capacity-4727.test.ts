@@ -116,6 +116,15 @@ describe('#4727 hive capacity and registered membership', () => {
     expect(read('agents.json').agents[agentId].config).toEqual({ role: 'worker', hiveRole: 'worker' });
   });
 
+  it('rejects a role outside the schema enum on spawn and join without writing', async () => {
+    await run('hive-mind_init', { maxAgents: 4 });
+    await register('agent-r');
+    const before = snapshot();
+    expect(await run('hive-mind_spawn', { count: 1, role: 'queen' })).toMatchObject({ success: false, error: expect.stringMatching(/role must be one of/) });
+    expect(await run('hive-mind_join', { agentId: 'agent-r', role: 'queen' })).toMatchObject({ success: false, error: expect.stringMatching(/role must be one of/) });
+    expect(snapshot()).toEqual(before);
+  });
+
   it('rejects unknown agents, including with a valid remote token, without writing', async () => {
     await run('hive-mind_init', { maxAgents: 2 });
     const before = snapshot();

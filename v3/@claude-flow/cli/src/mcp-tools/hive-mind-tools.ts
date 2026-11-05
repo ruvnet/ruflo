@@ -388,6 +388,8 @@ function findAgent(store: HiveAgentStore, agentId: string): HiveAgentRecord | un
   return Object.prototype.hasOwnProperty.call(store.agents, agentId) ? store.agents[agentId] : undefined;
 }
 
+const HIVE_ROLES = new Set(['worker', 'specialist', 'scout']);
+
 function capacityError(state: HiveState, additionalWorkers: number): Record<string, unknown> | null {
   const maxAgents = state.maxAgents ?? 15;
   if (state.workers.length + additionalWorkers <= maxAgents) return null;
@@ -445,6 +447,9 @@ export const hiveMindTools: MCPTool[] = [
       const full = capacityError(state, count);
       if (full) return full;
       const role = (input.role as string) || 'worker';
+      if (!HIVE_ROLES.has(role)) {
+        return { success: false, error: `role must be one of: ${[...HIVE_ROLES].join(', ')}` };
+      }
       const agentType = (input.agentType as string) || 'worker';
       const prefix = (input.prefix as string) || 'hive-worker';
       const agentStore = loadAgentStore();
@@ -775,6 +780,9 @@ export const hiveMindTools: MCPTool[] = [
         return { success: false, agentId, error: 'Agent not found. Register it with agent_spawn or hive-mind_spawn first.' };
       }
       const role = (input.role as string) || 'worker';
+      if (!HIVE_ROLES.has(role)) {
+        return { success: false, agentId, error: `role must be one of: ${[...HIVE_ROLES].join(', ')}` };
+      }
       for (const { path, store, agent } of records) {
         agent.config = { ...(agent.config as Record<string, unknown>), role, hiveRole: role };
         saveAgentStore(store, path);
