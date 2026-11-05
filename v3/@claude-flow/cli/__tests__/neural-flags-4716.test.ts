@@ -41,11 +41,6 @@ vi.mock('node:fs', async (importOriginal) => ({
   writeFileSync,
   statSync: () => ({ size: 2 }),
 }));
-vi.mock('fs', async (importOriginal) => ({
-  ...await importOriginal<typeof import('fs')>(),
-  existsSync: () => false,
-  writeFileSync,
-}));
 
 vi.mock('../src/output.js', () => ({
   output: {
