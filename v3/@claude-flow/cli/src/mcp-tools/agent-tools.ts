@@ -7,7 +7,7 @@
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { readRecordStore } from './record-store.js';
+import { nullPrototypeRecords, readRecordStore } from './record-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText, validateAgentSpawn } from './validate-input.js';
 import { executeAgentTask } from './agent-execute-core.js';
@@ -98,13 +98,13 @@ function loadHiveAgents(): Record<string, AgentRecord> {
     if (existsSync(path)) {
       const data = JSON.parse(readFileSync(path, 'utf-8'));
       if (data && typeof data.agents === 'object' && data.agents) {
-        return data.agents as Record<string, AgentRecord>;
+        return nullPrototypeRecords(data.agents as Record<string, AgentRecord>);
       }
     }
   } catch {
     // Ignore — hive store is optional/best-effort.
   }
-  return {};
+  return nullPrototypeRecords<Record<string, AgentRecord>>(undefined);
 }
 
 /**
@@ -113,7 +113,7 @@ function loadHiveAgents(): Record<string, AgentRecord> {
  * wins (it carries model-routing + lastResult that the hive store omits).
  */
 function loadAllAgents(): Record<string, AgentRecord> {
-  return { ...loadHiveAgents(), ...loadAgentStore().agents };
+  return Object.assign(nullPrototypeRecords<Record<string, AgentRecord>>(undefined), loadHiveAgents(), loadAgentStore().agents);
 }
 
 // Default model mappings for agent types (can be overridden)

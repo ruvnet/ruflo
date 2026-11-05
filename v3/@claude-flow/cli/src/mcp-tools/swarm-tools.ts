@@ -16,9 +16,9 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
+import { nullPrototypeRecords, readPreservedJsonStore } from './record-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier } from './validate-input.js';
-import { readPreservedJsonStore } from './record-store.js';
 import {
   createApscState,
   isApscAgentEligible,
@@ -147,6 +147,9 @@ export function loadSwarmStore(): SwarmStore {
     },
   );
   if (!store.swarms) store.swarms = {};
+  // Record ids come from MCP input. A null prototype stops `__proto__` and
+  // `constructor` from resolving onto Object.prototype.
+  store.swarms = nullPrototypeRecords(store.swarms);
 
   // #1799 — reconcile orphans on every load and persist if anything changed.
   // Cheap (process.kill(pid, 0) is sub-millisecond) and means

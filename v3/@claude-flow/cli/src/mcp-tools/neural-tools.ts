@@ -13,6 +13,7 @@
  */
 
 import { type MCPTool, getProjectCwd } from './types.js';
+import { nullPrototypeRecords } from './record-store.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -265,12 +266,17 @@ function loadNeuralStore(): NeuralStore {
   try {
     const path = getNeuralPath();
     if (existsSync(path)) {
-      return JSON.parse(readFileSync(path, 'utf-8'));
+      const parsed = JSON.parse(readFileSync(path, 'utf-8'));
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        parsed.models = nullPrototypeRecords(parsed.models);
+        parsed.patterns = nullPrototypeRecords(parsed.patterns);
+        return parsed;
+      }
     }
   } catch {
     // Return empty store
   }
-  return { models: {}, patterns: {}, version: '3.0.0' };
+  return { models: nullPrototypeRecords<NeuralStore['models']>(undefined), patterns: nullPrototypeRecords<NeuralStore['patterns']>(undefined), version: '3.0.0' };
 }
 
 /**

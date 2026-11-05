@@ -19,7 +19,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { hiveMindTools } from '../src/mcp-tools/hive-mind-tools.js';
 import { readPreservedJsonStore } from '../src/mcp-tools/record-store.js';
-import { swarmTools } from '../src/mcp-tools/swarm-tools.js';
+import { loadSwarmStore, swarmTools } from '../src/mcp-tools/swarm-tools.js';
 import { workflowTools } from '../src/mcp-tools/workflow-tools.js';
 
 const tool = (tools: { name: string; handler: (input: Record<string, unknown>) => Promise<unknown> }[], name: string) => {
@@ -248,6 +248,15 @@ describe('workflow, hive-mind, and swarm tools preserve a corrupt store (#4737)'
     expect(swarm.swarmId).toBe('swarm-1');
     expect(swarm.status).toBe('paused');
     expect(corruptCopies(swarmPath)).toEqual([]);
+    expect(Object.getPrototypeOf(loadSwarmStore().swarms)).toBeNull();
+  });
+
+  it('gives a missing swarm record map a null prototype and does not create the file', () => {
+    const swarmPath = join(dir, '.claude-flow', 'swarm', 'swarm-state.json');
+    const store = loadSwarmStore();
+    expect(Object.getPrototypeOf(store.swarms)).toBeNull();
+    expect(store.swarms.constructor).toBeUndefined();
+    expect(existsSync(swarmPath)).toBe(false);
   });
 
   it('a workflow store whose workflows map is an array is not replaced by defaults', async () => {

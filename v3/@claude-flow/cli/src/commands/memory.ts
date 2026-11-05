@@ -9,6 +9,7 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
+import { localCliContext } from '../mcp-tools/path-containment.js';
 import { distillCommand } from './memory-distill.js';
 import { backupCommand } from './memory-backup.js';
 import { countSiblingStoreRows } from '../memory/sibling-store.js';
@@ -1155,7 +1156,7 @@ const statsCommand: Command = {
     // Call MCP memory/stats tool for real statistics
     try {
       const dbPath = resolveDbPath(ctx.flags.path as string | undefined);
-      const statsResult = await callMCPTool('memory_stats', { dbPath }) as {
+      const statsResult = await callMCPTool('memory_stats', { dbPath }, localCliContext()) as {
         available?: boolean;
         error?: string;
         truncated?: boolean;
@@ -1825,7 +1826,7 @@ const exportCommand: Command = {
         namespace: ctx.flags.namespace,
         includeVectors: ctx.flags.includeVectors ?? true,
         dbPath: resolveDbPath(ctx.flags.path as string | undefined),
-      });
+      }, localCliContext());
 
       // memory_export reports failure as { error } rather than throwing; without
       // this check the command printed "Exported to undefined" and then crashed
@@ -1914,7 +1915,7 @@ const importCommand: Command = {
         merge: ctx.flags.merge ?? true,
         namespace: ctx.flags.namespace,
         dbPath: resolveDbPath(ctx.flags.path as string | undefined),
-      });
+      }, localCliContext());
 
       // memory_import reports a bad file as { error } rather than throwing, and
       // a partial write as { success: false, error, imported }. Without this the

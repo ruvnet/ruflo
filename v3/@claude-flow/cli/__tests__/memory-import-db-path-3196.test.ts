@@ -33,6 +33,7 @@ import { memoryTools } from '../src/mcp-tools/memory-tools.js';
 const importCommand = memoryCommand.subcommands!.find(command => command.name === 'import')!;
 const importTool = memoryTools.find(tool => tool.name === 'memory_import')!;
 const tempDir = mkdtempSync(join(tmpdir(), 'ruflo-import-3196-'));
+process.env.CLAUDE_FLOW_CWD = tempDir; // MCP import paths are contained to the project
 const importPath = join(tempDir, 'export.json');
 writeFileSync(importPath, JSON.stringify({
   entries: [{ key: 'remember-me', namespace: 'project', value: 'persisted' }],
@@ -62,7 +63,7 @@ describe('memory import database selection', () => {
     } as any);
     expect(mocks.callMCPTool).toHaveBeenCalledWith('memory_import', expect.objectContaining({
       dbPath: '/project/custom.db',
-    }));
+    }), expect.anything());
   });
 
   it('uses the same default database as CLI store when --path is omitted', async () => {
@@ -72,7 +73,7 @@ describe('memory import database selection', () => {
     } as any);
     expect(mocks.callMCPTool).toHaveBeenCalledWith('memory_import', expect.objectContaining({
       dbPath: '/project/.swarm/memory.db',
-    }));
+    }), expect.anything());
   });
 
   it('initializes and writes the selected file rather than the bridge fallback', async () => {
