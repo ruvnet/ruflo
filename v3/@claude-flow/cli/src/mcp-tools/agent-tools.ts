@@ -116,6 +116,40 @@ function loadAllAgents(): Record<string, AgentRecord> {
   return Object.assign(nullPrototypeRecords<Record<string, AgentRecord>>(undefined), loadHiveAgents(), loadAgentStore().agents);
 }
 
+export const AGENT_STATUSES = ['idle', 'busy', 'terminated'] as const;
+type AgentLifecycleStatus = (typeof AGENT_STATUSES)[number];
+
+// Spellings callers write for the three stored states. v2 `agent/list` used
+// "active" for a working agent; hive liveness folds running/working into busy.
+const AGENT_STATUS_ALIASES: Readonly<Record<string, AgentLifecycleStatus>> = {
+  active: 'busy', running: 'busy', working: 'busy',
+  ready: 'idle', waiting: 'idle',
+  stopped: 'terminated', inactive: 'terminated', offline: 'terminated',
+};
+
+/** Canonical lifecycle status (trimmed, any case, known aliases), or null. */
+export function agentStatusOf(value: unknown): AgentLifecycleStatus | null {
+  if (typeof value !== 'string') return null;
+  const key = value.trim().toLowerCase();
+  if ((AGENT_STATUSES as readonly string[]).includes(key)) return key as AgentLifecycleStatus;
+  return Object.hasOwn(AGENT_STATUS_ALIASES, key) ? AGENT_STATUS_ALIASES[key] : null;
+}
+
+/**
+ * Statuses `agent_list` should keep. `null` means no status filter:
+ * omitted, empty, whitespace, or `all` (any case, including inside a comma list).
+ * The caller still hides terminated agents unless includeTerminated is set.
+ */
+export function agentListStatusFilter(status: unknown): string[] | null {
+  if (typeof status !== 'string' || status.trim() === '') return null;
+  const canonical = status.split(',').map(part => part.trim()).filter(Boolean).map(part => {
+    if (part.toLowerCase() === 'all') return 'all';
+    return agentStatusOf(part) ?? part.toLowerCase();
+  });
+  if (canonical.length === 0 || canonical.includes('all')) return null;
+  return canonical;
+}
+
 // Default model mappings for agent types (can be overridden)
 const AGENT_TYPE_MODEL_DEFAULTS: Record<string, ClaudeModel> = {
   // Complex agents → opus
@@ -664,16 +698,22 @@ export const agentTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        status: { type: 'string', description: 'Filter by status' },
+        status: { type: 'string', description: 'Filter by status (idle, busy, terminated; case-insensitive, aliases such as active/running/stopped). "all" or empty applies no status filter. Comma-separated values match any of them.' },
         domain: { type: 'string', description: 'Filter by domain' },
         agentType: { type: 'string', description: 'Filter by agent type' },
         includeTerminated: { type: 'boolean', description: 'Include terminated agents' },
       },
     },
     handler: async (input) => {
-      if (input.status) {
-        const v = validateIdentifier(input.status, 'status');
-        if (!v.valid) return { agents: [], total: 0, error: `Input validation failed: ${v.error}` };
+      // Validate each status token. Commas separate values (`active,idle`);
+      // the whole string is not one identifier.
+      if (typeof input.status === 'string' && input.status.trim() !== '') {
+        for (const part of input.status.split(',')) {
+          const token = part.trim();
+          if (!token || token.toLowerCase() === 'all') continue;
+          const v = validateIdentifier(token, 'status');
+          if (!v.valid) return { agents: [], total: 0, error: `Input validation failed: ${v.error}` };
+        }
       }
       if (input.domain) {
         const v = validateIdentifier(input.domain, 'domain');
@@ -686,9 +726,14 @@ export const agentTools: MCPTool[] = [
 
       let agents = Object.values(loadAllAgents()); // #1916: includes hive-mind-spawned workers
 
-      // Filter by status
-      if (input.status) {
-        agents = agents.filter(a => a.status === input.status);
+      // Filter by status. `all` and empty mean no status filter (#4732),
+      // matching task_list: comma-separated, case-insensitive, known aliases.
+      const statuses = agentListStatusFilter(input.status);
+      if (statuses) {
+        agents = agents.filter(a => {
+          const stored = agentStatusOf(a.status) ?? String(a.status).trim().toLowerCase();
+          return statuses.includes(stored);
+        });
       } else if (!input.includeTerminated) {
         agents = agents.filter(a => a.status !== 'terminated');
       }
