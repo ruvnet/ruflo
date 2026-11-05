@@ -2508,7 +2508,8 @@ export const hooksTransfer: MCPTool = {
   },
   handler: async (params: Record<string, unknown>) => {
     const sourcePath = params.sourcePath as string;
-    const minConfidence = (params.minConfidence as number) || 0.7;
+    // #4728: an explicit 0 must not fall through to 0.7 (`0 || 0.7` is 0.7).
+    const minConfidence = (params.minConfidence as number) ?? 0.7;
     const filter = params.filter as string;
 
     { const v = validatePath(sourcePath, 'sourcePath'); if (!v.valid) return { success: false, error: v.error }; }
@@ -3677,7 +3678,8 @@ export const hooksPatternStore: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const pattern = params.pattern as string;
     const type = (params.type as string) || 'general';
-    const confidence = (params.confidence as number) || 0.8;
+    // #4728: an explicit 0 must not fall through to 0.8 (`0 || 0.8` is 0.8).
+    const confidence = (params.confidence as number) ?? 0.8;
     const metadata = params.metadata as Record<string, unknown> | undefined;
     const timestamp = new Date().toISOString();
 
@@ -3758,7 +3760,8 @@ export const hooksPatternSearch: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const query = params.query as string;
     const topK = (params.topK as number) || 5;
-    const minConfidence = (params.minConfidence as number) || 0.3;
+    // #4728: an explicit 0 must not fall through to 0.3 (`0 || 0.3` is 0.3).
+    const minConfidence = (params.minConfidence as number) ?? 0.3;
     const namespace = (params.namespace as string) || 'pattern';
     const strategy = (params.strategy as string) || 'semantic';
 
@@ -5153,7 +5156,8 @@ export const hooksWorkerDetect: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const prompt = params.prompt as string;
     const autoDispatch = params.autoDispatch as boolean;
-    const minConfidence = (params.minConfidence as number) || 0.5;
+    // #4728: an explicit 0 must not fall through to 0.5 (`0 || 0.5` is 0.5).
+    const minConfidence = (params.minConfidence as number) ?? 0.5;
 
     { const v = validateText(prompt, 'prompt'); if (!v.valid) return { success: false, error: v.error }; }
 
