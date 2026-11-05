@@ -15,8 +15,8 @@
  *
  *   - dangerous command → exit 2 + `[BLOCKED] Dangerous command detected:`
  *   - innocuous command → exit 0 + `[OK] Command validated`
- *   - empty payload    → exit 0 (no crash, no false positive)
- *   - non-string command field → exit 0 (defensive String() wrap holds)
+ *   - empty payload    → exit 2 (fail closed: nothing to validate, #4743)
+ *   - non-string command field → exit 2 (fail closed, never a crash, #4743)
  *
  * Runs against BOTH copies of the handler in the repo:
  *   1. v3/@claude-flow/cli/.claude/helpers/hook-handler.cjs  (the published template)
@@ -51,17 +51,19 @@ const cases = [
     expectStdoutIncludes: '[OK] Command validated',
   },
   {
-    name: 'empty payload → no crash, no false block',
+    // #4743: a gate that cannot see a command blocks it instead of passing it.
+    name: 'empty payload → fail closed',
     input: {},
-    expectExit: 0,
+    expectExit: 2,
+    expectStderrIncludes: '[BLOCKED] pre-bash received no command',
   },
   {
-    // Defensive String() wrap: even if a future regression binds command to
-    // null / undefined / an object, the handler must not throw and silently
-    // exit 0 from the global safety catch.
-    name: 'null command field → no crash',
+    // A non-string command (#2017) must neither throw nor pass: it blocks
+    // with the explicit reason, not via the global catch (#4743).
+    name: 'null command field → fail closed, no crash',
     input: { tool_name: 'Bash', tool_input: { command: null } },
-    expectExit: 0,
+    expectExit: 2,
+    expectStderrIncludes: '[BLOCKED] pre-bash received no command',
   },
   {
     // The legacy camelCase shape must preserve the same blocking contract
