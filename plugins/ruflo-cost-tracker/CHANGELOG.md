@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-cost-tracker`.
 
+## 0.31.2 — 2026-11-05
+- fix: `cost-health` resolves an npx CLI once before starting its four subchecks in parallel. With a cold npm cache, four concurrent first installs raced in one `~/.npm/_npx` directory and left a broken install (#4711). Skip with `HEALTH_SKIP_WARMUP=1`.
+- fix: budget, burn, anomaly and projection report a failed `memory list` as an error (exit 2, with the CLI's stderr) instead of treating it as no data, which showed "no budget set" (#4711).
+
 ## 0.31.0 — 2026-10-29
 - docs: `/ruflo-cost` documents the budget file and `ruflo cost budget set|export --gateway litellm [--apply]` and `ruflo cost report` (ADR-508, #4592).
 
