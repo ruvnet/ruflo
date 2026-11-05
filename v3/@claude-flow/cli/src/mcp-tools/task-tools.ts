@@ -122,6 +122,43 @@ function releaseAgents(agentIds: string[], taskId: string): void {
   });
 }
 
+/**
+ * Stores `task_assign` may bind an agent from.
+ *
+ * The canonical file is `.claude-flow/agents/store.json`. `hive-mind_spawn`
+ * writes its workers to `.claude-flow/agents.json` instead (#1916), so an id
+ * that exists in either store is a real agent. A corrupt canonical store
+ * throws, matching the read this handler already performed, so a bad file is
+ * never replaced. The hive file stays best-effort: a corrupt copy must not
+ * hide agents that are present in the canonical store.
+ */
+function assignableAgentStores(): Array<Record<string, AgentRow>> {
+  const canonical = readRecordStore<{ agents: Record<string, AgentRow> }>(
+    join(getProjectCwd(), STORAGE_DIR, 'agents', 'store.json'),
+    'agents',
+    () => ({ agents: {} }),
+  );
+  const stores: Array<Record<string, AgentRow>> = [canonical.agents];
+  const hivePath = join(getProjectCwd(), STORAGE_DIR, 'agents.json');
+  try {
+    if (!existsSync(hivePath)) return stores;
+    const parsed = JSON.parse(readFileSync(hivePath, 'utf-8')) as { agents?: unknown };
+    const agents = parsed?.agents;
+    if (agents && typeof agents === 'object' && !Array.isArray(agents)) {
+      stores.push(agents as Record<string, AgentRow>);
+    }
+  } catch {
+    // Best-effort, same as updateAgents.
+  }
+  return stores;
+}
+
+function agentIsAssignable(id: string, stores: Array<Record<string, AgentRow>>): boolean {
+  return stores.some((agents) =>
+    Object.prototype.hasOwnProperty.call(agents, id) && Boolean(agents[id]),
+  );
+}
+
 export const taskTools: MCPTool[] = [
   {
     name: 'task_create',
@@ -497,19 +534,41 @@ export const taskTools: MCPTool[] = [
         return { taskId, error: 'Task not found' };
       }
 
-      const previouslyAssigned = [...task.assignedTo];
+      // Completed and cancelled tasks are terminal (#4725). Assigning a
+      // completed task marks the agent busy, and task_complete then returns
+      // without releasing it; task_cancel refuses a finished task too, so
+      // nothing ever sets that agent back to idle.
+      if (task.status === 'completed' || task.status === 'cancelled') {
+        return {
+          success: false,
+          taskId,
+          status: task.status,
+          error: `Cannot assign a ${task.status} task`,
+        };
+      }
 
-      // Load agent store to sync worker state
-      const agentStorePath = join(getProjectCwd(), STORAGE_DIR, 'agents', 'store.json');
-      readRecordStore<{ agents: Record<string, Record<string, unknown>> }>(
-        agentStorePath, 'agents', () => ({ agents: {} }),
-      );
+      const previouslyAssigned = [...task.assignedTo];
+      const agentStores = assignableAgentStores();
       if (input.unassign) {
         // Revert previously assigned agents to idle
         releaseAgents(previouslyAssigned, taskId);
         task.assignedTo = [];
       } else {
         const agentIds = (input.agentIds as string[]) || [];
+        // An id in neither store is a ghost owner: the task would go
+        // in_progress with nobody to do the work (#4725).
+        if (Array.isArray(agentIds)) {
+          const missing = agentIds.filter((id) => typeof id === 'string' && !agentIsAssignable(id, agentStores));
+          if (missing.length > 0) {
+            const listed = missing.join(', ');
+            return {
+              success: false,
+              taskId,
+              status: task.status,
+              error: missing.length === 1 ? `Agent not found: ${listed}` : `Agents not found: ${listed}`,
+            };
+          }
+        }
         // Revert old agents to idle
         releaseAgents(previouslyAssigned.filter((id) => !agentIds.includes(id)), taskId);
         // Set new agents to active
