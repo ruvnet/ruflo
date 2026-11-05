@@ -34,9 +34,22 @@ test('discovery finds only plugins whose tests import the kit', () => {
   } finally { done(); }
 });
 
-test('results keep failure names without their durations', () => {
-  const parsed = parseResults(summary(1, 1, '(pass) ok [1.5ms]\n(fail) group > it breaks [5010.01ms]'));
-  assert.deepEqual(parsed, { pass: 1, fail: 1, failures: ['group > it breaks'] });
+test('results keep failure names without their durations, and the error lines under each', () => {
+  const parsed = parseResults(summary(1, 1, '(pass) ok [1.5ms]\n(fail) group > it breaks [5010.01ms]\n  Error: expected 1\n    at a.test.ts:3\n\nb.test.ts:'));
+  assert.deepEqual({ ...parsed, details: undefined }, { pass: 1, fail: 1, failures: ['group > it breaks'], details: undefined });
+  assert.deepEqual([...parsed.details], [['group > it breaks', '  Error: expected 1\n    at a.test.ts:3']]);
+});
+
+test('the log shows a new failure with its error, and leaves known failures out', async () => {
+  const run = fixture(`printf '(fail) known one [1ms]\\n  Error: old\\n(fail) new one [1ms]\\n  Error: why it broke\\n 0 pass\\n 2 fail\\n'; exit 1`);
+  try {
+    writeFileSync(join(run.root, 'scripts', 'ci-plugin-kit-known-failures.txt'), 'demo | known one\n');
+    const lines = [];
+    assert.equal(await main({ repoRoot: run.root, claude: run.claude, log: (line) => lines.push(line) }), 1);
+    const text = lines.join('\n');
+    assert.match(text, /✗ new one\n {2}Error: why it broke/);
+    assert.doesNotMatch(text, /Error: old/);
+  } finally { run.done(); }
 });
 
 test('a known failure passes the gate and a new one does not', () => {

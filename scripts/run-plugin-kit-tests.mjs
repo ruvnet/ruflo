@@ -30,17 +30,33 @@ export function discoverPlugins(repoRoot = REPO_ROOT) {
     .sort();
 }
 
-/** Reads `claude plugin test` output. Counts are null when the summary is missing, which means the run did not finish. */
+/**
+ * Reads `claude plugin test` output. Counts are null when the summary is missing, which means the run did not finish.
+ * `details` maps each failure to the indented error lines printed under it.
+ */
 export function parseResults(output) {
   const count = (label) => {
     const match = output.match(new RegExp(`^\\s*(\\d+) ${label}\\s*$`, 'm'));
     return match ? Number(match[1]) : null;
   };
-  const failures = output.split(/\r?\n/)
-    .filter((line) => line.startsWith('(fail) '))
-    .map((line) => line.slice('(fail) '.length).replace(/\s*\[[\d.]+m?s\]\s*$/, ''));
-  return { pass: count('pass'), fail: count('fail'), failures };
+  const failures = [];
+  const details = new Map();
+  let current = null;
+  for (const line of output.split(/\r?\n/)) {
+    if (line.startsWith('(fail) ')) {
+      current = line.slice('(fail) '.length).replace(/\s*\[[\d.]+m?s\]\s*$/, '');
+      failures.push(current);
+      details.set(current, []);
+    } else if (current !== null && /^\s+\S/.test(line)) {
+      details.get(current).push(line);
+    } else {
+      current = null;
+    }
+  }
+  return { pass: count('pass'), fail: count('fail'), failures, details: new Map([...details].map(([name, lines]) => [name, lines.join('\n')])) };
 }
+
+const DETAIL_LINES = 40;
 
 /** Parses `plugin | test name` lines. Blank lines and # comments are ignored. */
 export function parseKnownFailures(text) {
@@ -120,12 +136,17 @@ export async function main({
     while (queue.length > 0) {
       const plugin = queue.shift();
       const run = await runPlugin(claude, plugin, repoRoot, timeoutMs);
-      const { pass, fail } = parseResults(run.output);
+      const { pass, fail, details } = parseResults(run.output);
       totalPass += pass ?? 0;
       totalFail += fail ?? 0;
       const found = evaluatePlugin(plugin, run, known.get(plugin));
       log(`${found.length === 0 ? 'ok  ' : 'FAIL'} ${plugin}: ${pass ?? '?'} pass, ${fail ?? '?'} fail`);
-      if (found.length > 0 && parseResults(run.output).pass === null) log(run.output.slice(-2000));
+      if (found.length > 0 && pass === null) log(run.output.slice(-2000));
+      // A new failure is only useful with its error, so print what the test printed under it.
+      for (const [name, text] of details) {
+        if (known.get(plugin)?.has(name)) continue;
+        log(`  ✗ ${name}\n${text.split('\n').slice(0, DETAIL_LINES).join('\n') || '    (no error lines were printed)'}`);
+      }
       problems.push(...found);
     }
   };
