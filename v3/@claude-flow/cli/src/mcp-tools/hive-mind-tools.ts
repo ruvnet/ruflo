@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { readPreservedJsonStore } from './record-store.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -316,16 +317,10 @@ function ensureHiveDir(): void {
 }
 
 function loadHiveState(): HiveState {
-  try {
-    const path = getHivePath();
-    if (existsSync(path)) {
-      const data = readFileSync(path, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch {
-    // Return default state on error
-  }
-  return {
+  // #4737: a parse error used to return a fresh hive, and the next save
+  // overwrote state.json (including its capability token). Only a missing
+  // file is empty; corrupt bytes are copied aside and the error is reported.
+  return readPreservedJsonStore(getHivePath(), 'hive-mind', () => ({
     initialized: false,
     topology: 'mesh',
     workers: [],
@@ -333,7 +328,7 @@ function loadHiveState(): HiveState {
     sharedMemory: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-  };
+  }));
 }
 
 function saveHiveState(state: HiveState): void {
