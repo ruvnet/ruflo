@@ -1,6 +1,6 @@
 // Public member enrollment. Durable reservations precede every relay side effect.
 import { createHash, createHmac } from 'node:crypto';
-import { isIP } from 'node:net';
+import { deriveClientIp } from './client-ip.mjs';
 import { verifyEvent } from 'nostr-tools/pure';
 import { Firestore } from '@google-cloud/firestore';
 
@@ -11,21 +11,9 @@ const fail = (status, message) => { throw new RegistrationError(status, message)
 export const REGISTRATION_LIMITS = Object.freeze({ ipHourly: 3, daily: 100, maxConcurrent: 4 });
 
 export function registrationIp(req, trustedProxyHops = 0) {
-  const raw = req.headers['x-forwarded-for'] || '';
-  if (typeof raw !== 'string' || raw.length > 1024) fail(400, 'invalid forwarding chain');
-  const chain = [...raw.split(',').map(x => x.trim()).filter(Boolean), req.socket.remoteAddress];
-  const address = chain[chain.length - 1 - trustedProxyHops];
-  if (!address || !isIP(address)) fail(400, 'client address unavailable');
-  if (address.startsWith('::ffff:') && isIP(address.slice(7)) === 4) return address.slice(7);
-  // URL canonicalization removes alternate IPv6 spellings. Limit IPv6 by /64
-  // so rotating interface identifiers does not create a fresh quota.
-  if (isIP(address) === 6) {
-    const canonical = new URL(`http://[${address}]/`).hostname.slice(1, -1);
-    const [left, right = ''] = canonical.split('::');
-    const a = left ? left.split(':') : [], b = right ? right.split(':') : [];
-    return [...a, ...Array(8 - a.length - b.length).fill('0'), ...b].slice(0, 4).join(':') + '::/64';
-  }
-  return address;
+  const { ip, error } = deriveClientIp(req, trustedProxyHops);
+  if (error) fail(400, error);
+  return ip;
 }
 
 export function verifyRegistration(header, body, url, now = Date.now()) {
