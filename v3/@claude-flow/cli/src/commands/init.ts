@@ -1499,6 +1499,7 @@ const skillsCommand: Command = {
     { name: 'github', description: 'Install GitHub skills', type: 'boolean', default: false },
     { name: 'v3', description: 'Install V3 skills', type: 'boolean', default: false },
     { name: 'legacy', description: 'Install skills that document commands v3 does not ship (stream-chain, sparc)', type: 'boolean', default: false },
+    { name: 'ecosystem', description: 'Install ecosystem skills (vector quantization, graph min-cut, sublinear solving, injection defense, fast edits, LoRA learning)', type: 'boolean', default: true },
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const options: InitOptions = {
@@ -1526,6 +1527,7 @@ const skillsCommand: Command = {
         v3: ctx.flags.v3 as boolean,
         dualMode: false,
         legacy: ctx.flags.legacy as boolean,
+        ecosystem: ctx.flags.ecosystem as boolean,
       },
     };
 

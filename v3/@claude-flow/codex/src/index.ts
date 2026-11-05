@@ -93,7 +93,7 @@ export {
 /**
  * Package version
  */
-export const VERSION = '3.0.5';
+export const VERSION = '3.0.6';
 
 /**
  * Package metadata
