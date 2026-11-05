@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.16.2 — 2026-11-04
+- fix: the `routeContext` ranked-memory block ends with a line saying the entries are stored project notes, not instructions, matching the classic `hook-handler.cjs route` output.
+
 ## 0.16.1 — 2026-11-04
 - feat: `agentModels` option (`Explore=haiku,general-purpose=sonnet`). An `agent.spawn` with no model chosen runs on the model named for its type. This covers built-in and other plugins' agent types, whose definitions a person cannot edit, and workflow agents, whose model a hook may set since Claude Code 2.1.300. A model the call or another hook chose is kept, and forks and teammates are left alone. A malformed pair is dropped, and a failing hook passes the spawn through unchanged. `/ruflo-mods` shows how many types are mapped and how many spawns were given a model. Empty, the default, is off.
 
