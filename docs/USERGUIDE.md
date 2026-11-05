@@ -213,7 +213,7 @@ curl -fsSL https://cdn.jsdelivr.net/gh/ruvnet/ruflo@main/scripts/install.sh | ba
 npx ruflo@latest init wizard
 ```
 
-> **New to Ruflo?** You don't need to learn 310+ MCP tools or 26 CLI commands. After running `init`, just use Claude Code normally — the hooks system automatically routes tasks to the right agents, learns from successful patterns, and coordinates multi-agent work in the background. The advanced tools exist for fine-grained control when you need it.
+> **New to Ruflo?** You don't need to learn 406 MCP tools or 61 CLI commands. After running `init`, just use Claude Code normally — the hooks system automatically routes tasks to the right agents, learns from successful patterns, and coordinates multi-agent work in the background. The advanced tools exist for fine-grained control when you need it.
 
 ---
 ### Key Capabilities

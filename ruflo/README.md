@@ -37,7 +37,7 @@ User --> Ruflo (CLI/MCP) --> Router --> Swarm --> Agents --> Memory --> LLM Prov
                           +---- Learning Loop <-------+
 ```
 
-> **New to Ruflo?** You don't need to learn 314 MCP tools or 26 CLI commands. After `init`, just use Claude Code normally — the hooks system automatically routes tasks, learns from successful patterns, and coordinates agents in the background.
+> **New to Ruflo?** You don't need to learn 406 MCP tools or 61 CLI commands. After `init`, just use Claude Code normally — the hooks system automatically routes tasks, learns from successful patterns, and coordinates agents in the background.
 
 <details>
 <summary><strong>📖 Background — where the name comes from</strong></summary>
@@ -78,7 +78,7 @@ There are **two different install paths** with very different surface areas. Pic
 This adds slash commands and agent definitions. `ruflo-core` (installed above) does register its own MCP server on install — its tools are callable as `mcp__plugin_ruflo-core_ruflo__*` (e.g. `mcp__plugin_ruflo-core_ruflo__memory_store`), not the bare `memory_store`/`swarm_init`/`agent_spawn` names the CLI-track scaffold uses. Other plugins generally don't ship their own MCP server. For the full loop with the CLI-track tool names, use Path B below.
 
 <details>
-<summary><strong>🔌 All 35 plugins</strong></summary>
+<summary><strong>🔌 All 48 plugins</strong></summary>
 
 #### Core & Orchestration
 
@@ -90,6 +90,14 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 | [**ruflo-loop-workers**](../plugins/ruflo-loop-workers/README.md) | Schedule background tasks on a timer |
 | [**ruflo-workflows**](../plugins/ruflo-workflows/README.md) | Reusable multi-step task templates |
 | [**ruflo-federation**](../plugins/ruflo-federation/README.md) | Agents on different machines collaborate securely |
+| [**ruflo-console**](../plugins/ruflo-console/README.md) | Cockpit inside Claude Code, and the `/ruflo` command for ruflo mods |
+| [**ruflo-mods**](../plugins/ruflo-mods/README.md) | In-process Claude Code mod — routing, learning signals, and policy checks |
+| [**ruflo-ai-team**](../plugins/ruflo-ai-team/README.md) | Tenant-isolated team that divides work and returns evidence |
+| [**ruflo-agntcy**](../plugins/ruflo-agntcy/README.md) | AGNTCY/Outshift transport and intent-scoped tool authorization |
+| [**ruflo-bbs-federation**](../plugins/ruflo-bbs-federation/README.md) | AgentBBS rooms so agents on different hosts can coordinate |
+| [**ruflo-chatgpt-federation**](../plugins/ruflo-chatgpt-federation/README.md) | ChatGPT federation publisher with its own signing keys |
+| [**ruflo-x-gateway**](../plugins/ruflo-x-gateway/README.md) | Signed federation messages, channels, and work claims |
+| [**ruflo-business-pods**](../plugins/ruflo-business-pods/README.md) | Business-domain pod templates and a dry-run tick runner |
 
 #### Memory & Knowledge
 
@@ -110,6 +118,7 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 | [**ruflo-daa**](../plugins/ruflo-daa/README.md) | Dynamic agent behavior and cognitive patterns |
 | [**ruflo-ruvllm**](../plugins/ruflo-ruvllm/README.md) | Run local LLMs (Ollama, etc.) with smart routing |
 | [**ruflo-goals**](../plugins/ruflo-goals/README.md) | Break big goals into plans and track progress |
+| [**ruflo-deepseek-harness**](../plugins/ruflo-deepseek-harness/README.md) | Agents, commands, and skills for DeepSeek-backed workflows |
 
 #### Code Quality & Testing
 
@@ -118,6 +127,7 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 | [**ruflo-testgen**](../plugins/ruflo-testgen/README.md) | Find missing tests and generate them automatically |
 | [**ruflo-browser**](../plugins/ruflo-browser/README.md) | Automate browser testing with Playwright |
 | [**ruflo-jujutsu**](../plugins/ruflo-jujutsu/README.md) | Analyze git diffs, score risk, suggest reviewers |
+| [**ruflo-rure**](../plugins/ruflo-rure/) | Static analysis of a local JS/Electron app you are authorized to study, with file and line evidence |
 | [**ruflo-docs**](../plugins/ruflo-docs/README.md) | Generate and maintain documentation automatically |
 
 #### Security & Compliance
@@ -126,6 +136,7 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 |--------|-------------|
 | [**ruflo-security-audit**](../plugins/ruflo-security-audit/README.md) | Scan for vulnerabilities and CVEs |
 | [**ruflo-aidefence**](../plugins/ruflo-aidefence/README.md) | Block prompt injection, detect PII, safety scanning |
+| [**ruflo-protector**](../plugins/ruflo-protector/README.md) | Optional watchdog for unattended agents — learn, notify, or enforce |
 
 #### Architecture & Methodology
 
@@ -144,6 +155,7 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 | [**ruflo-migrations**](../plugins/ruflo-migrations/README.md) | Manage database schema changes safely |
 | [**ruflo-observability**](../plugins/ruflo-observability/README.md) | Structured logs, traces, and metrics in one place |
 | [**ruflo-cost-tracker**](../plugins/ruflo-cost-tracker/README.md) | Track token usage, set budgets, get cost alerts |
+| [**ruflo-ruos**](../plugins/ruflo-ruos/README.md) | Run swarm agents on your own ruOS cloud desktops |
 
 #### Extensibility
 
@@ -159,6 +171,7 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 | [**ruflo-iot-cognitum**](../plugins/ruflo-iot-cognitum/README.md) | IoT device management — trust scoring, anomaly detection, fleets |
 | [**ruflo-neural-trader**](../plugins/ruflo-neural-trader/README.md) | [`neural-trader`](https://npmjs.com/package/neural-trader) — AI trading with 4 agents, backtesting, 112+ tools |
 | [**ruflo-market-data**](../plugins/ruflo-market-data/README.md) | Ingest market data, vectorize OHLCV, detect patterns |
+| [**ruflo-music**](../plugins/ruflo-music/README.md) | Compose and generate music through a Cognitum Music account |
 
 </details>
 
@@ -205,7 +218,7 @@ claude mcp add claude-flow -- npx ruflo@latest mcp start
 | 🧠 **Self-Learning** | SONA neural patterns, ReasoningBank, trajectory learning |
 | 💾 **Vector Memory** | HNSW-indexed AgentDB — measured ~1.9x faster at N=20k, ~3.2x–4.7x at N=5k vs brute force (recall@10 ~0.99); ANN wins above the crossover, ties/loses at small N. See [audit](../docs/reviews/intelligence-system-audit-2026-05-29.md) + [`scripts/benchmark-intelligence.mjs`](../scripts/benchmark-intelligence.mjs) |
 | ⚡ **Background Workers** | 12 auto-triggered workers (audit, optimize, testgaps, etc.) |
-| 🧩 **Plugin Marketplace** | 33 native Claude Code plugins + 21 npm plugins |
+| 🧩 **Plugin Marketplace** | 48 native Claude Code plugins + 14 in-tree npm plugins |
 | 🔌 **Multi-Provider** | Claude, GPT, Gemini, Cohere, Ollama with smart routing |
 | 🛡️ **Security** | AIDefence, input validation, CVE remediation, path traversal prevention |
 | 🌐 **Agent Federation** | Cross-installation agent collaboration with zero-trust security |
