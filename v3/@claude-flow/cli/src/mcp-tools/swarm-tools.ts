@@ -19,6 +19,7 @@ import {
 import { join } from 'node:path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier } from './validate-input.js';
+import { asRecordMap } from './record-store.js';
 import {
   createApscState,
   isApscAgentEligible,
@@ -141,6 +142,9 @@ export function loadSwarmStore(): SwarmStore {
       store = JSON.parse(readFileSync(path, 'utf-8'));
     }
   } catch { /* fall through with default */ }
+  // SECURITY: swarm ids come from tool input; see asRecordMap.
+  if (!store.swarms || typeof store.swarms !== 'object' || Array.isArray(store.swarms)) store.swarms = {};
+  asRecordMap(store.swarms);
 
   // #1799 — reconcile orphans on every load and persist if anything changed.
   // Cheap (process.kill(pid, 0) is sub-millisecond) and means

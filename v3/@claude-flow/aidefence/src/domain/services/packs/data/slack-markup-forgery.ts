@@ -59,7 +59,7 @@ export const SLACK_MARKUP_FORGERY_PACK: PatternPack = {
       "severity": "high",
       "type": "data_exfiltration",
       "confidence": 0.85,
-      "regex": "<https?://[^\\s|>]+\\?[^\\s|>]*?[a-z0-9_\\-]{1,24}=([A-Za-z0-9+/_\\-]{16,}={0,2}|([0-9a-fA-F]{2}){8,}|(%[0-9a-fA-F]{2}){6,})[^\\s|>]*\\|[^>\\n]{1,120}>[^\\n]{0,80}?\\b(open|opens|click|visit|fetch|load|follow|report|confirm|go\\s+to)\\b",
+      "regex": "<https?://[^\\s|>?]+\\?[^\\s|>]{0,256}?[a-z0-9_\\-]{1,24}=([A-Za-z0-9+/_\\-]{16}|([0-9a-fA-F]{2}){8}|(%[0-9a-fA-F]{2}){6})[^\\s|>]{0,256}\\|[^>\\n]{1,120}>[^\\n]{0,80}?\\b(open|opens|click|visit|fetch|load|follow|report|confirm|go\\s+to)\\b",
       "flags": "i",
       "description": "Labelled Slack link whose hidden URL carries an opaque payload, followed by a directive to open it",
       "examples": [

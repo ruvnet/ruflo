@@ -11,6 +11,7 @@
 
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { asRecordMap } from './record-store.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -98,7 +99,11 @@ function loadCoordStore(): CoordinationStore {
   try {
     const path = getCoordPath();
     if (existsSync(path)) {
-      return JSON.parse(readFileSync(path, 'utf-8'));
+      const store = JSON.parse(readFileSync(path, 'utf-8')) as CoordinationStore;
+      // SECURITY: node ids come from tool input; see asRecordMap.
+      if (!store.nodes || typeof store.nodes !== 'object' || Array.isArray(store.nodes)) store.nodes = {};
+      asRecordMap(store.nodes);
+      return store;
     }
   } catch {
     // Return default store
@@ -121,7 +126,7 @@ function loadCoordStore(): CoordinationStore {
       conflicts: 0,
       pendingChanges: 0,
     },
-    nodes: {},
+    nodes: asRecordMap({}),
     version: '3.0.0',
   };
 }
