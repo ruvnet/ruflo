@@ -3,11 +3,17 @@
  * real code path, not only declared. These tests import the real packages
  * (no mocks) — @ruvector/learning-wasm, ruvector (+ @ruvector/mincut-wasm),
  * agent-booster — and assert the accelerated path is the one that ran.
+ *
+ * Each block runs when its package is installed for the CLI (the pnpm
+ * workspace that "Test V3 Packages" uses installs all of them) and is skipped
+ * otherwise (the repo-root npm layout of ci.yml does not install the CLI's
+ * optional dependencies). The probe stops at the repository root so a stray
+ * node_modules above the checkout cannot make a skipped block run.
  */
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createRequire } from 'node:module';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
@@ -19,6 +25,21 @@ import { hooksFastApply } from '../src/mcp-tools/fast-apply-tools.js';
 import { agentdbGraphPathfinder } from '../src/mcp-tools/agentdb-tools.js';
 import { _resetMemoryRootCache } from '../src/memory/memory-initializer.js';
 import { _resetBridgeDb } from '../src/memory/graph-edge-writer.js';
+
+const REPO_ROOT = resolve(__dirname, '..', '..', '..', '..');
+
+/** True when `pkg` is installed in a node_modules between the CLI and the repo root. */
+function installedForCli(pkg: string): boolean {
+  let dir = resolve(__dirname, '..');
+  for (;;) {
+    if (existsSync(join(dir, 'node_modules', ...pkg.split('/'), 'package.json'))) return true;
+    if (dir === REPO_ROOT || dirname(dir) === dir) return false;
+    dir = dirname(dir);
+  }
+}
+const HAS_LEARNING_WASM = installedForCli('@ruvector/learning-wasm');
+const HAS_RUVECTOR = installedForCli('ruvector');
+const HAS_AGENT_BOOSTER = installedForCli('agent-booster');
 
 type Edge = [string, string, number];
 
@@ -56,7 +77,7 @@ function probeTraining(): Record<string, any> {
   return JSON.parse(line.slice('RESULT='.length));
 }
 
-describe('@ruvector/learning-wasm activates the WASM MicroLoRA backend', () => {
+describe.skipIf(!HAS_LEARNING_WASM)('@ruvector/learning-wasm activates the WASM MicroLoRA backend', () => {
   it('initializeTraining() selects the wasm backend, not the JS fallback', () => {
     const r = probeTraining();
     expect(r.available).toBe(true);
@@ -68,7 +89,7 @@ describe('@ruvector/learning-wasm activates the WASM MicroLoRA backend', () => {
   });
 });
 
-describe('ruvector DynamicMinCut (@ruvector/mincut-wasm) backs graph min-cut', () => {
+describe.skipIf(!HAS_RUVECTOR)('ruvector DynamicMinCut (@ruvector/mincut-wasm) backs graph min-cut', () => {
   it('loads the wasm solver through ruvector', async () => {
     expect(await loadWasmMinCut()).not.toBeNull();
     expect(await getMinCutBackend()).toBe('mincut-wasm');
@@ -123,7 +144,7 @@ describe('ruvector DynamicMinCut (@ruvector/mincut-wasm) backs graph min-cut', (
   });
 });
 
-describe('agentdb_graph-pathfinder dynamic-mincut runs the real min cut', () => {
+describe.skipIf(!HAS_RUVECTOR)('agentdb_graph-pathfinder dynamic-mincut runs the real min cut', () => {
   const req = createRequire(import.meta.url);
   let Database: any;
   let native = true;
@@ -182,7 +203,7 @@ describe('agentdb_graph-pathfinder dynamic-mincut runs the real min cut', () => 
   });
 });
 
-describe('agent-booster backs hooks_fast-apply', () => {
+describe.skipIf(!HAS_AGENT_BOOSTER)('agent-booster backs hooks_fast-apply', () => {
   const code = 'function add(a, b) {\n  return a + b;\n}\n\nfunction sub(a, b) {\n  return a - b;\n}\n';
   const snippet = 'function add(a: number, b: number): number {\n  return a + b;\n}';
 

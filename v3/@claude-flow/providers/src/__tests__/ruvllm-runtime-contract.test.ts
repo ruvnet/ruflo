@@ -8,6 +8,10 @@
  * intelligence.ts SonaCoordinator, sona-optimizer.ts, native-training.ts)
  * silently fell back to JS. Load the installed package the same way and
  * require the symbols, so a wrong-package release fails CI instead.
+ *
+ * Skipped only when no @ruvector/ruvllm directory is installed between this
+ * package and the repo root. A directory that exists but does not load (as
+ * 4.0.x does not, having no CommonJS entry) fails.
  */
 import { describe, expect, it } from 'vitest';
 import { createRequire } from 'node:module';
@@ -15,17 +19,39 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 const requireCjs = createRequire(import.meta.url);
+const REPO_ROOT = join(__dirname, '..', '..', '..', '..', '..');
 
-describe('@ruvector/ruvllm runtime contract', () => {
+function installedDir(): string | null {
+  let dir = join(__dirname, '..', '..');
+  for (;;) {
+    const candidate = join(dir, 'node_modules', '@ruvector', 'ruvllm');
+    if (existsSync(join(candidate, 'package.json'))) return candidate;
+    if (dir === REPO_ROOT || dirname(dir) === dir) return null;
+    dir = dirname(dir);
+  }
+}
+const INSTALLED = installedDir();
+
+/** require() the package, naming the installed copy when it does not load. */
+function loadRuvllm(): Record<string, any> {
+  try {
+    return requireCjs('@ruvector/ruvllm');
+  } catch (err) {
+    const pkg = INSTALLED ? JSON.parse(readFileSync(join(INSTALLED, 'package.json'), 'utf8')) : {};
+    throw new Error(`@ruvector/ruvllm@${pkg.version ?? '?'} at ${INSTALLED} does not load via require(): ${(err as Error).message}`);
+  }
+}
+
+describe.skipIf(!INSTALLED)('@ruvector/ruvllm runtime contract', () => {
   it('loads through CommonJS require and exports the runtime classes', () => {
-    const ruvllm = requireCjs('@ruvector/ruvllm');
+    const ruvllm = loadRuvllm();
     for (const symbol of ['SonaCoordinator', 'ContrastiveTrainer', 'TrainingPipeline', 'LoraAdapter']) {
       expect(typeof ruvllm[symbol], `@ruvector/ruvllm.${symbol}`).toBe('function');
     }
   });
 
   it('constructs a SonaCoordinator the way the CLI does', () => {
-    const ruvllm = requireCjs('@ruvector/ruvllm');
+    const ruvllm = loadRuvllm();
     const coordinator = new ruvllm.SonaCoordinator(ruvllm.DEFAULT_SONA_CONFIG);
     expect(coordinator).toBeTruthy();
   });
