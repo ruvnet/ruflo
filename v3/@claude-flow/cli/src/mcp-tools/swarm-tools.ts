@@ -413,14 +413,19 @@ export const swarmTools: MCPTool[] = [
       const store = loadSwarmStore();
       const swarmId = input.swarmId as string;
 
-      if (swarmId && store.swarms[swarmId]) {
+      if (swarmId && !store.swarms[swarmId]) {
+        return { success: false, error: `Swarm ${swarmId} not found` };
+      }
+
+      const { getLiveAgentIds } = await import('./agent-tools.js');
+      if (swarmId) {
         const swarm = store.swarms[swarmId];
         return {
           swarmId: swarm.swarmId,
           status: swarm.status,
           topology: swarm.topology,
           maxAgents: swarm.maxAgents,
-          agentCount: swarm.agents.length,
+          agentCount: getLiveAgentIds(swarm.agents).length,
           taskCount: swarm.tasks.length,
           config: swarm.config,
           apsc: apscStateOf(swarm),
@@ -448,7 +453,7 @@ export const swarmTools: MCPTool[] = [
         status: latest.status,
         topology: latest.topology,
         maxAgents: latest.maxAgents,
-        agentCount: latest.agents.length,
+        agentCount: getLiveAgentIds(latest.agents).length,
         taskCount: latest.tasks.length,
         config: latest.config,
         apsc: apscStateOf(latest),
@@ -481,7 +486,7 @@ export const swarmTools: MCPTool[] = [
 
       // Find the swarm
       let target: SwarmState | undefined;
-      if (swarmId && store.swarms[swarmId]) {
+      if (swarmId) {
         target = store.swarms[swarmId];
       } else {
         // Shutdown most recent running swarm
@@ -506,6 +511,20 @@ export const swarmTools: MCPTool[] = [
         };
       }
 
+      const { agentTools, getLiveAgentIds } = await import('./agent-tools.js');
+      const terminateAgent = agentTools.find(tool => tool.name === 'agent_terminate')!;
+      let agentsTerminated = 0;
+      for (const agentId of getLiveAgentIds(target.agents)) {
+        const result = await terminateAgent.handler({
+          agentId,
+          force: input.graceful === false,
+        }) as { success: boolean; error?: string };
+        if (!result.success) {
+          return { success: false, swarmId: target.swarmId, agentsTerminated, error: result.error };
+        }
+        agentsTerminated++;
+      }
+
       target.status = 'terminated';
       target.updatedAt = new Date().toISOString();
       saveSwarmStore(store);
@@ -515,7 +534,7 @@ export const swarmTools: MCPTool[] = [
         swarmId: target.swarmId,
         terminated: true,
         graceful: (input.graceful as boolean) ?? true,
-        agentsTerminated: target.agents.length,
+        agentsTerminated,
         terminatedAt: target.updatedAt,
       };
     },

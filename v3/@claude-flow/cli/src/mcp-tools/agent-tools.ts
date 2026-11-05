@@ -82,6 +82,12 @@ function loadAgentStore(): AgentStore {
   return readRecordStore(getAgentPath(), 'agents', () => ({ agents: {}, version: '3.0.0' }));
 }
 
+/** Live canonical registry members, excluding stale or duplicate swarm IDs. */
+export function getLiveAgentIds(agentIds: string[]): string[] {
+  const { agents } = loadAgentStore();
+  return [...new Set(agentIds)].filter(id => agents[id] && agents[id].status !== 'terminated');
+}
+
 function saveAgentStore(store: AgentStore): void {
   ensureAgentDir();
   writeFileSync(getAgentPath(), JSON.stringify(store, null, 2), 'utf-8');
