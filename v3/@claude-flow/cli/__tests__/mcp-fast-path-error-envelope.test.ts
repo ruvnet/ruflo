@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -7,12 +7,16 @@ const root = mkdtempSync(join(tmpdir(), 'ruflo-mcp-error-'));
 mkdirSync(join(root, 'bin'));
 mkdirSync(join(root, 'dist/src/mcp-tools'), { recursive: true });
 copyFileSync(new URL('../bin/cli.js', import.meta.url), join(root, 'bin/cli.js'));
+// ADR-524: bin/cli.js routes every message through the real (dependency-free) protocol module.
+const protocolModule = new URL('../dist/src/mcp-protocol.js', import.meta.url);
+const built = existsSync(protocolModule);
+if (built) copyFileSync(protocolModule, join(root, 'dist/src/mcp-protocol.js'));
 writeFileSync(join(root, 'package.json'), '{"type":"module"}');
 writeFileSync(join(root, 'dist/src/mcp-client.js'), 'export const hasTool = () => true; export const listMCPTools = () => []; export const callMCPTool = async (_name, input) => input.payload;');
 writeFileSync(join(root, 'dist/src/mcp-tools/policy-enforcer.js'), 'export const isPolicyEnforcementEnabled = () => false; export const loadMcpPolicy = () => ({}); export const evaluateToolCall = () => ({allowed:true});');
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-describe('executable MCP fast path tool errors', () => {
+describe.skipIf(!built)('executable MCP fast path tool errors', () => {
   it.each([
     [{ success: false, error: 'invalid input' }, true],
     [{ success: false, recorded: true }, false],
