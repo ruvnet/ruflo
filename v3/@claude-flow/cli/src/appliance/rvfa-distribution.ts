@@ -10,7 +10,7 @@
 
 import { createHash, sign, verify as edVerify } from 'node:crypto';
 import { readFile, writeFile, rename, unlink, copyFile, mkdir } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { basename, dirname } from 'node:path';
 import { request as httpsRequest } from 'node:https';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { RvfaReader, RvfaWriter } from './rvfa-format.js';
@@ -351,7 +351,7 @@ export class RvfaPublisher {
 
   async publish(rvfaPath: string, meta?: PublishMetadata): Promise<PublishResult> {
     const data = await readFile(rvfaPath);
-    const name = meta?.name || rvfaPath.split('/').pop() || 'appliance.rvf';
+    const name = meta?.name || basename(rvfaPath) || 'appliance.rvf';
     return this.upload(name, data, {
       type: 'rvfa-appliance', version: meta?.version || '',
       profile: meta?.profile || '', description: meta?.description || '',
