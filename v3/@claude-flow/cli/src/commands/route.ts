@@ -417,7 +417,7 @@ const feedbackCommand: Command = {
     const taskDescription = ctx.flags.task as string;
     const agentId = ctx.flags.agent as string;
     const reward = ctx.flags.reward as number;
-    const nextTask = ctx.flags['next-task'] as string | undefined;
+    const nextTask = ctx.flags.nextTask as string | undefined;
 
     if (!taskDescription || !agentId) {
       output.printError('Task description and agent are required');

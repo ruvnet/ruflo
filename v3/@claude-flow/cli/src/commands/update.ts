@@ -152,7 +152,7 @@ const allCommand: Command = {
         autoUpdate: {
           patch: true,
           minor: true,
-          major: flags['include-major'] as boolean || false,
+          major: flags.includeMajor as boolean || false,
         },
       };
 
