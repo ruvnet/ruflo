@@ -42,11 +42,14 @@
  * hive-mind-gate-matrix.test.ts.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { hiveMindTools, getHiveTokenForCli } from '../src/mcp-tools/hive-mind-tools.js';
+import { agentTools } from '../src/mcp-tools/agent-tools.js';
+
+vi.mock('../src/ruvector/graph-backend.js', () => ({ addNode: vi.fn() }));
 
 const REMOTE = { sessionId: 'auth-test', transport: 'http' };
 const SECRET = 'operator-secret-for-tests-0123456789';
@@ -78,11 +81,16 @@ describe('hive-mind_spawn / consensus(propose) / broadcast / shutdown capability
   let dir: string;
   let prevCwd: string | undefined;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     dir = mkdtempSync(join(tmpdir(), 'hive-mind-auth-'));
     prevCwd = process.env.CLAUDE_FLOW_CWD;
     process.env.CLAUDE_FLOW_CWD = dir;
     process.env.RUFLO_HIVE_BOOTSTRAP_SECRET = SECRET;
+    // #4727: the shutdown fixtures join a previously registered worker.
+    const agent = await agentTools.find(t => t.name === 'agent_spawn')!.handler({
+      agentId: 'worker-0', agentType: 'worker', model: 'sonnet',
+    }) as any;
+    expect(agent.success).toBe(true);
   });
 
   afterEach(() => {

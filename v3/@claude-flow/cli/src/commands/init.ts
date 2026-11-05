@@ -917,17 +917,24 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       output.writeln();
       output.printInfo('Starting services...');
 
-      const { execSync } = await import('child_process');
+      const { execFileSync } = await import('child_process');
+
+      // #4770: drop stderr via stdio, not a shell redirect (breaks on cmd.exe).
+      // shell on win32 so npx.cmd resolves (#2770); args are fixed literals.
+      const runCli = (args: string[]): void => {
+        execFileSync('npx', ['@claude-flow/cli@latest', ...args], {
+          stdio: ['ignore', 'pipe', 'ignore'],
+          cwd: ctx.cwd,
+          timeout: 30000,
+          shell: process.platform === 'win32',
+        });
+      };
 
       // Initialize memory database
       if (startAll) {
         try {
           output.writeln(output.dim('  Initializing memory database...'));
-          execSync('npx @claude-flow/cli@latest memory init 2>/dev/null', {
-            stdio: 'pipe',
-            cwd: ctx.cwd,
-            timeout: 30000
-          });
+          runCli(['memory', 'init']);
           output.writeln(output.success('  ✓ Memory initialized'));
         } catch {
           output.writeln(output.dim('  Memory database already exists'));
@@ -956,11 +963,7 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       if (startDaemon) {
         try {
           output.writeln(output.dim('  Starting daemon...'));
-          execSync('npx @claude-flow/cli@latest daemon start 2>/dev/null', {
-            stdio: 'pipe',
-            cwd: ctx.cwd,
-            timeout: 30000
-          });
+          runCli(['daemon', 'start']);
           output.writeln(output.success('  ✓ Daemon started'));
         } catch {
           // Daemon dedup hit (already running) OR spawn timed out.
@@ -974,11 +977,7 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       if (startAll) {
         try {
           output.writeln(output.dim('  Initializing swarm...'));
-          execSync('npx @claude-flow/cli@latest swarm init --topology hierarchical 2>/dev/null', {
-            stdio: 'pipe',
-            cwd: ctx.cwd,
-            timeout: 30000
-          });
+          runCli(['swarm', 'init', '--topology', 'hierarchical']);
           output.writeln(output.success('  ✓ Swarm initialized'));
         } catch {
           output.writeln(output.dim('  Swarm initialization skipped'));

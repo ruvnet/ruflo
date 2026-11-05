@@ -23,6 +23,7 @@ const STORAGE_DIR = '.claude-flow';
 const PERF_DIR = 'performance';
 const METRICS_FILE = 'metrics.json';
 const BENCHMARKS_FILE = 'benchmarks.json';
+const MAX_BENCHMARK_ITERATIONS = 10_000;
 
 interface PerfMetrics {
   timestamp: string;
@@ -293,14 +294,18 @@ export const performanceTools: MCPTool[] = [
       type: 'object',
       properties: {
         suite: { type: 'string', enum: ['all', 'memory', 'neural', 'swarm', 'io'], description: 'Benchmark suite' },
-        iterations: { type: 'number', description: 'Number of iterations' },
+        iterations: { type: 'integer', minimum: 1, maximum: MAX_BENCHMARK_ITERATIONS, description: 'Number of iterations (maximum 10000)' },
         warmup: { type: 'boolean', description: 'Include warmup phase' },
       },
     },
     handler: async (input) => {
+      const requestedIterations = input.iterations === undefined ? 100 : input.iterations;
+      if (typeof requestedIterations !== 'number' || !Number.isSafeInteger(requestedIterations) || requestedIterations < 1) {
+        return { success: false, error: 'iterations must be a positive safe integer' };
+      }
+      const iterations = Math.min(requestedIterations, MAX_BENCHMARK_ITERATIONS);
       const store = loadPerfStore();
       const suite = (input.suite as string) || 'all';
-      const iterations = (input.iterations as number) || 100;
       const warmup = input.warmup !== false;
 
       // Synthetic data benchmarks — measures actual CPU/memory throughput

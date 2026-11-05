@@ -2,6 +2,7 @@
   "name": "ruflo-protector",
   "description": "Project Anatole: an optional, learning watchdog for unattended agents. Deterministic OWASP-mapped rules, a per-project behavioural baseline, four modes (off, learn, notify, enforce), alerts you can read later.",
   "version": "0.1.2",
+  "repository": "https://github.com/ruvnet/ruflo",
   "author": {
     "name": "ruvnet",
     "url": "https://github.com/ruvnet"

@@ -2548,12 +2548,21 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
  * own embedder is real or stubbed). Set `backend` truthfully by the path that
  * actually produced the vector. Do NOT change the embedding math.
  */
-export async function generateEmbedding(text: string): Promise<{
+export async function generateEmbedding(
+  text: string,
+  options?: { normalize?: boolean },
+): Promise<{
   embedding: number[];
   dimensions: number;
   model: string;
   backend: 'onnx' | 'mock';
 }> {
+  // #4724: AgentDB embed() has no normalize switch and always returns a unit
+  // vector. A raw request has to use the local chain, which can skip L2.
+  if (options?.normalize === false) {
+    return generateLocalEmbedding(text, { normalize: false });
+  }
+
   // ADR-053: Try AgentDB v3 bridge first
   const bridge = await getBridge();
   if (bridge) {
@@ -2586,12 +2595,17 @@ export async function generateEmbedding(text: string): Promise<{
  *
  * Keeping the local chain as its own export breaks that cycle structurally.
  */
-export async function generateLocalEmbedding(text: string): Promise<{
+export async function generateLocalEmbedding(
+  text: string,
+  options?: { normalize?: boolean },
+): Promise<{
   embedding: number[];
   dimensions: number;
   model: string;
   backend: 'onnx' | 'mock';
 }> {
+  // Default true keeps the historical unit-norm embedding math.
+  const normalize = options?.normalize !== false;
   // Ensure the LOCAL model is loaded. #3375: this must not go through
   // loadEmbeddingModel(), which is bridge-first — when the bridge answered
   // there, no local model was ever loaded and this function always returned
@@ -2625,7 +2639,7 @@ export async function generateLocalEmbedding(text: string): Promise<{
   // Use ONNX model if available
   if (state.model && typeof (state.model as any) === 'function') {
     try {
-      const output = await (state.model as any)(text, { pooling: 'mean', normalize: true });
+      const output = await (state.model as any)(text, { pooling: 'mean', normalize });
       // Handle @xenova/transformers (output.data), ruvector (plain array) and
       // typed-array (ReasoningBank Float32Array, #3114) formats. DataView is an
       // ArrayBuffer view without an iterator (Array.from gives []), so exclude it.
@@ -2649,7 +2663,7 @@ export async function generateLocalEmbedding(text: string): Promise<{
   // Deterministic hash-based fallback (for testing/demo without ONNX).
   // AUDIT #3: backend='mock' — these vectors do NOT carry real semantics.
   (await import('./embedding-policy.js')).enforceNoStub('memory-initializer.generateLocalEmbedding'); // "no stubs" strict mode
-  const embedding = generateHashEmbedding(text, state.dimensions);
+  const embedding = generateHashEmbedding(text, state.dimensions, normalize);
   return {
     embedding,
     dimensions: state.dimensions,
@@ -2734,7 +2748,7 @@ export async function generateBatchEmbeddings(
  * Generate deterministic hash-based embedding
  * Not semantic, but deterministic and useful for testing
  */
-function generateHashEmbedding(text: string, dimensions: number): number[] {
+function generateHashEmbedding(text: string, dimensions: number, normalize = true): number[] {
   const embedding: number[] = new Array(dimensions).fill(0);
 
   // Simple hash-based approach for reproducibility
@@ -2749,7 +2763,8 @@ function generateHashEmbedding(text: string, dimensions: number): number[] {
     }
   }
 
-  // Normalize to unit vector
+  // Normalize to unit vector unless the caller asked for the raw vector (#4724).
+  if (!normalize) return embedding;
   const magnitude = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0)) || 1;
   return embedding.map(v => v / magnitude);
 }

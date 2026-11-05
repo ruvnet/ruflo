@@ -227,10 +227,18 @@ export async function callAnthropicMessages(input: AnthropicCallInput): Promise<
     // checked in that order — matching callOllamaCompat's own precedence).
     const resolvedBaseUrl = process.env.OLLAMA_BASE_URL || persistedOllama?.baseUrl;
     const isSelfHosted = !!resolvedBaseUrl && !/^https:\/\/ollama\.com\/?$/i.test(resolvedBaseUrl);
+    // The persisted baseUrl comes from project config, which a cloned repo
+    // can commit. Never hand the environment's OLLAMA_API_KEY to an endpoint
+    // the project chose: that endpoint gets only the key saved beside it (or
+    // none). The env key goes to OLLAMA_BASE_URL, or to Ollama Cloud itself.
+    const baseFromProject = !process.env.OLLAMA_BASE_URL && !!persistedOllama?.baseUrl && isSelfHosted;
+    const apiKey = baseFromProject
+      ? persistedOllama?.apiKey || 'local'
+      : ollamaKey || persistedOllama?.apiKey || 'local';
     if (ollamaKey || persistedOllama?.apiKey || isSelfHosted) {
       return callOllamaCompat({
         ...input,
-        apiKey: ollamaKey || persistedOllama?.apiKey || 'local',
+        apiKey,
         baseUrl: resolvedBaseUrl,
         model: input.model,
         // Local default for tier aliases / Anthropic ids (see

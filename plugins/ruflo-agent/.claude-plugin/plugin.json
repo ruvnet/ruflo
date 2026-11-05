@@ -2,6 +2,7 @@
   "name": "ruflo-agent",
   "description": "Local WASM and managed cloud runtimes with bounded dynamic workflows, live capability discovery and session-local mod policy.",
   "version": "0.4.2",
+  "repository": "https://github.com/ruvnet/ruflo",
   "author": {
     "name": "ruvnet",
     "url": "https://github.com/ruvnet"

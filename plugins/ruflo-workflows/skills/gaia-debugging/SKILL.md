@@ -63,7 +63,18 @@ node v3/@claude-flow/cli/bin/cli.js gaia-bench run \
 
 `gaia-bench run` cannot select one task: there is no `--task-id` flag (unknown flags are ignored silently). Use the smallest `--limit N` that reaches the question's position in the level's dataset order, and read only the trace for `$TASK_ID` from the output; completed questions are skipped on resume via the checkpoint file.
 
-### Step 4 — Apply targeted fix
+### Step 4 — Compare reasoning strategies
+
+- **Wrong answer despite relevant evidence:** Re-run the command from Step 3
+  with `--enable-critic --voting-attempts 1`. The critic reviews the answer
+  against the evidence and can trigger one retry with revision guidance.
+  Voting takes precedence when `--voting-attempts` exceeds 1.
+- **Multi-step reasoning failure:** Try a separate run with `--decompose`.
+  This can split a complex question into smaller questions, solve them
+  separately, and synthesize their answers. Compare the result for the same
+  task with the baseline to see whether breaking up the question helps.
+
+### Step 5 — Apply targeted fix
 
 | Failure | Action |
 |---------|--------|
@@ -74,7 +85,7 @@ node v3/@claude-flow/cli/bin/cli.js gaia-bench run \
 | LI — loop | Add a tool-call deduplication guard in `gaia-agent.ts` |
 | AT — timeout | Set `DEFAULT_PER_TURN_TIMEOUT_MS` higher or use `--max-turns` flag |
 
-### Step 5 — Verify fix and store pattern
+### Step 6 — Verify fix and store pattern
 
 ```bash
 # Re-run (no --task-id exists; use the smallest --limit that includes the question)

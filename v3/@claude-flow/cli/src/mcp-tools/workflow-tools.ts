@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validatePath, validateText } from './validate-input.js';
 import { executeAgentTask } from './agent-execute-core.js';
+import { readPreservedJsonStore } from './record-store.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -112,17 +113,25 @@ function withRecordMaps<S extends object>(store: S, keys: readonly string[]): S 
 
 const WORKFLOW_MAPS = ['workflows', 'templates'] as const;
 
+function isRecordMap(value: unknown): boolean {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
 function loadWorkflowStore(): WorkflowStore {
-  try {
-    const path = getWorkflowPath();
-    if (existsSync(path)) {
-      const data = JSON.parse(readFileSync(path, 'utf-8'));
-      if (data && typeof data === 'object' && !Array.isArray(data)) return withRecordMaps(data, WORKFLOW_MAPS);
-    }
-  } catch {
-    // Return default store on error
-  }
-  return withRecordMaps({ workflows: {}, templates: {}, version: '3.0.0' } as WorkflowStore, WORKFLOW_MAPS);
+  // #4737: a parse error used to return an empty store, and the next save
+  // overwrote the file. Only a missing file is empty; corrupt bytes are
+  // copied aside and the error is reported.
+  const path = getWorkflowPath();
+  const data = readPreservedJsonStore(
+    path,
+    'workflow',
+    () => ({ workflows: {}, templates: {}, version: '3.0.0' }) as WorkflowStore,
+    (store) => WORKFLOW_MAPS.every((key) => {
+      const map = (store as unknown as Record<string, unknown>)[key];
+      return map === undefined || isRecordMap(map);
+    }),
+  );
+  return withRecordMaps(data, WORKFLOW_MAPS);
 }
 
 function saveWorkflowStore(store: WorkflowStore): void {

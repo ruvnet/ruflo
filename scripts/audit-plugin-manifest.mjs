@@ -23,6 +23,8 @@
 //   3. version matches semver (N.N.N optionally with +/- suffix).
 //   4. name matches the enclosing directory name (drift after rename).
 //   5. keywords is an array (may be empty, but must be present).
+//   6. repository is present and an http(s) URL, as a string or as an
+//      object's url: the directory listing and `npm view` both read it.
 //
 // EXIT CODES
 //   0  all manifests clean
@@ -50,6 +52,7 @@ const ARGS = (() => {
 })();
 
 const SEMVER_RE = /^\d+\.\d+\.\d+([+-][\w.-]+)?$/;
+const REPO_URL_RE = /^https?:\/\/\S+$/i;
 
 function existsSync(p) {
   try { statSync(p); return true; } catch { return false; }
@@ -118,6 +121,13 @@ function auditManifest(entry) {
     violations.push({ check: 'keywords is array', detail: `got ${typeof json.keywords}` });
   }
 
+  const repository = typeof json.repository === 'string' ? json.repository : json.repository?.url;
+  if (!repository) {
+    violations.push({ check: 'repository field', detail: 'missing or empty' });
+  } else if (!REPO_URL_RE.test(repository)) {
+    violations.push({ check: 'repository is a URL', detail: `"${repository}" is not an http(s) URL` });
+  }
+
   return violations;
 }
 
@@ -155,7 +165,7 @@ function main() {
     if (findings.length === 0) {
       console.log('✓ Every plugin.json:');
       console.log('  - parses as JSON');
-      console.log('  - has name / version / description / keywords[]');
+      console.log('  - has name / version / description / keywords[] / repository');
       console.log('  - name matches the enclosing directory');
       console.log('  - version matches semver X.Y.Z[±suffix]');
     } else {

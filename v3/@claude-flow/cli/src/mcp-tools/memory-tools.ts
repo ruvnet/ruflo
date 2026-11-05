@@ -19,6 +19,8 @@ import { createHash } from 'crypto';
 import { getProjectCwd, type MCPTool } from './types.js';
 import { validateIdentifier } from './validate-input.js';
 import { DEFAULT_SEARCH_THRESHOLD, nearMisses } from '../memory/search-defaults.js';
+import { compileExclusionPatterns, MAX_EXCLUDE_PATTERNS, MAX_EXCLUDE_PATTERN_LENGTH } from './glob-exclusions.js';
+import { readImportFile } from './import-limits.js';
 
 // Legacy JSON store interface (for migration)
 interface LegacyMemoryEntry {
@@ -152,34 +154,6 @@ function missingRequiredString(
 function sanitizeMemoryKey(key: string): string {
   const safe = key.replace(DANGEROUS_KEY_CHARS, '_');
   return safe.length > MAX_KEY_LENGTH ? safe.slice(0, MAX_KEY_LENGTH) : safe;
-}
-
-// #1937 — minimal glob → RegExp helper for memory_import_claude exclusion
-// patterns. Anchored. Supports the three operators the issue's voice-fidelity
-// workflow needs:
-//   `**` — any chars including path separators
-//   `*`  — any chars except path separators
-//   `?`  — exactly one char except a path separator
-// Everything else is regex-escaped. Used to match absolute file paths.
-function globToRegex(pattern: string): RegExp {
-  // Tokenize so we can replace `**` before `*` without overlap.
-  let out = '';
-  for (let i = 0; i < pattern.length; i++) {
-    const c = pattern[i];
-    if (c === '*' && pattern[i + 1] === '*') {
-      out += '.*';
-      i++;
-    } else if (c === '*') {
-      out += '[^/\\\\]*';
-    } else if (c === '?') {
-      out += '[^/\\\\]';
-    } else if (/[.+^$|(){}\[\]\\]/.test(c)) {
-      out += '\\' + c;
-    } else {
-      out += c;
-    }
-  }
-  return new RegExp('^' + out + '$');
 }
 
 // #1883 — resolve the Claude-Code project memory directory for the *current*
@@ -1226,8 +1200,9 @@ export const memoryTools: MCPTool[] = [
         projectPath: { type: 'string', description: '#1883 — explicit project path to hash, used when cwd does not match Claude Code\'s view (e.g. WSL bridge to Windows host). Pass the canonical project root as Claude Code sees it.' },
         excludeFilePatterns: {
           type: 'array',
-          items: { type: 'string' },
-          description: '#1937 — glob patterns matched against the absolute file path. Files matching ANY pattern are skipped. Supports `*` (any chars within a path segment), `**` (any chars including separators), and `?` (single char). Examples: `**/voice-*.md`, `**/persona-*.md`. Combine with excludeFiles for explicit paths.',
+          maxItems: MAX_EXCLUDE_PATTERNS,
+          items: { type: 'string', maxLength: MAX_EXCLUDE_PATTERN_LENGTH },
+          description: '#1937 — glob patterns matched against the absolute file path. Files matching ANY pattern are skipped. Supports `*` (any chars within a path segment), `**` (any chars including separators), and `?` (single char). At most 64 patterns, 1024 characters and 32 wildcard operators per pattern. Examples: `**/voice-*.md`, `**/persona-*.md`. Combine with excludeFiles for explicit paths.',
         },
         excludeFiles: {
           type: 'array',
@@ -1237,6 +1212,12 @@ export const memoryTools: MCPTool[] = [
       },
     },
     handler: async (input) => {
+      let excludeMatchers: Array<(path: string) => boolean>;
+      try {
+        excludeMatchers = compileExclusionPatterns(input.excludeFilePatterns);
+      } catch (error) {
+        return { success: false, imported: 0, error: (error as Error).message };
+      }
       await ensureInitialized();
       const { storeEntry } = await getMemoryFunctions();
 
@@ -1247,12 +1228,10 @@ export const memoryTools: MCPTool[] = [
       const claudeProjectsDir = join(homedir(), '.claude', 'projects');
 
       // #1937 — voice-fidelity / persona-restricted exclusion.
-      const excludeFilePatterns = Array.isArray(input.excludeFilePatterns) ? input.excludeFilePatterns as string[] : [];
       const excludeFilesList = Array.isArray(input.excludeFiles) ? new Set(input.excludeFiles as string[]) : new Set<string>();
-      const excludeRegexes = excludeFilePatterns.map(globToRegex);
       const isExcluded = (absPath: string): boolean => {
         if (excludeFilesList.has(absPath)) return true;
-        return excludeRegexes.some(re => re.test(absPath));
+        return excludeMatchers.some(matches => matches(absPath));
       };
 
       // Find memory files
@@ -1833,7 +1812,7 @@ export const memoryTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        inputPath: { type: 'string', description: 'Path to the JSON export file' },
+        inputPath: { type: 'string', description: 'Path to the JSON export file (maximum 16 MiB)' },
         merge: { type: 'boolean', description: 'Merge into existing entries (upsert) vs. fail on conflict (default true)' },
         namespace: { type: 'string', description: 'Override the namespace for all imported entries' },
         dbPath: { type: 'string', description: 'Database file to import into (defaults to the MCP memory store)' },
@@ -1842,8 +1821,6 @@ export const memoryTools: MCPTool[] = [
     },
     handler: async (input, context) => {
       const dbPath = resolveDbPathOption(input.dbPath, context);
-      await ensureInitialized(dbPath);
-      const { storeEntry } = await getMemoryFunctions();
       const t0 = Date.now();
       // Values are re-embedded on import; count the vectors actually written
       // rather than reporting a constant 0 next to entries that show a vector.
@@ -1858,8 +1835,12 @@ export const memoryTools: MCPTool[] = [
           : 'inputPath must be an existing regular file inside the project directory (not a symlink)' };
       }
       let doc: { entries?: Array<{ key: string; namespace?: string; value?: unknown; tags?: string[] | string }> };
-      try { doc = JSON.parse(readFileSync(inputPath, 'utf-8')); }
-      catch { return { error: 'inputPath is not a valid memory export (JSON parse failed)' }; }
+      try { doc = JSON.parse(readImportFile(inputPath).toString('utf-8')); }
+      catch (error) { return { error: error instanceof SyntaxError
+        ? 'inputPath is not a valid memory export (JSON parse failed)'
+        : error instanceof Error ? error.message : 'Could not read memory import' }; }
+      await ensureInitialized(dbPath);
+      const { storeEntry } = await getMemoryFunctions();
       const entries = Array.isArray(doc.entries) ? doc.entries : [];
       const nsOverride = input.namespace ? String(input.namespace) : undefined;
       if (nsOverride) { const v = validateIdentifier(nsOverride, 'namespace'); if (!v.valid) throw new Error(v.error); }
