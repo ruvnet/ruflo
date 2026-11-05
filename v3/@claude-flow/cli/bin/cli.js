@@ -382,9 +382,14 @@ if (isHarness) {
       try {
         const { shutdownBridge } = await import('../dist/src/memory/memory-bridge.js');
         if (typeof shutdownBridge === 'function') await shutdownBridge();
-      } catch {
-        // Cleanup is best-effort: it must never turn a successful command into
-        // a failure. Commands that do not use memory simply have nothing to do.
+      } catch (error) {
+        // Cleanup is best-effort for everything except a failed persist: when
+        // the sql.js save is refused (#4733), the command's writes never reached
+        // disk, so it must not exit 0. Other teardown errors stay silent.
+        if (error?.code === 'AGENTDB_LOCK_UNRECOVERABLE') {
+          console.error(`Error: ${error.message}`);
+          process.exitCode = 1;
+        }
       }
     })
     .catch((error) => {
