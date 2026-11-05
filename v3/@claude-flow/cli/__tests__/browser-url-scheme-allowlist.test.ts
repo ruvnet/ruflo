@@ -68,7 +68,8 @@ describe('browser navigation tools', () => {
   it('browser_open still opens a web page', async () => {
     const r = await call('browser_open', { url: 'https://example.com' });
     expect(r.isError).toBeFalsy();
-    expect(spawnedArgs().some(a => a.includes('open') && a.includes('https://example.com'))).toBe(true);
+    const argv = spawnedArgs()[0] ?? [];
+    expect(argv[argv.indexOf('open') + 1]).toBe('https://example.com');
   });
 
   it('browser_session_record refuses a file: URL before doing anything', async () => {
