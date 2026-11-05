@@ -10,7 +10,6 @@ import {
   existsSync,
   mkdirSync,
   openSync,
-  readFileSync,
   renameSync,
   statSync,
   unlinkSync,
@@ -19,6 +18,7 @@ import {
 import { join } from 'node:path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier } from './validate-input.js';
+import { readPreservedJsonStore } from './record-store.js';
 import {
   createApscState,
   isApscAgentEligible,
@@ -134,13 +134,19 @@ function reconcileOrphanSwarms(store: SwarmStore): number {
 // #2085 — exported so `agent-tools.ts agent_spawn` can push into
 // `swarm.agents` (the field `swarm_status` reads).
 export function loadSwarmStore(): SwarmStore {
-  let store: SwarmStore = { swarms: {}, version: '3.0.0' };
-  try {
-    const path = getSwarmStatePath();
-    if (existsSync(path)) {
-      store = JSON.parse(readFileSync(path, 'utf-8'));
-    }
-  } catch { /* fall through with default */ }
+  // #4737: a parse error used to fall through to an empty store, and the next
+  // save (or orphan reconcile) overwrote swarm-state.json. Only a missing
+  // file is empty; corrupt bytes are copied aside and the error is reported.
+  const store = readPreservedJsonStore(
+    getSwarmStatePath(),
+    'swarm',
+    () => ({ swarms: {}, version: '3.0.0' }),
+    (candidate) => {
+      const swarms = candidate.swarms as unknown;
+      return swarms === undefined || (!!swarms && typeof swarms === 'object' && !Array.isArray(swarms));
+    },
+  );
+  if (!store.swarms) store.swarms = {};
 
   // #1799 — reconcile orphans on every load and persist if anything changed.
   // Cheap (process.kill(pid, 0) is sub-millisecond) and means
