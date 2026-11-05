@@ -5,6 +5,7 @@
  */
 
 import { type MCPTool, getProjectCwd } from './types.js';
+import { nullPrototypeRecords } from './record-store.js';
 import { existsSync } from 'node:fs';
 import {
   mkdirRestricted,
@@ -59,12 +60,16 @@ function loadTerminalStore(): TerminalStore {
       // ADR-096 Phase 3: readFileMaybeEncrypted handles both legacy
       // plaintext stores and post-migration encrypted ones via the RFE1
       // magic-byte sniff.
-      return JSON.parse(readFileMaybeEncrypted(path, 'utf-8'));
+      const parsed = JSON.parse(readFileMaybeEncrypted(path, 'utf-8'));
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        parsed.sessions = nullPrototypeRecords(parsed.sessions);
+        return parsed;
+      }
     }
   } catch {
     // Return empty store
   }
-  return { sessions: {}, version: '3.0.0' };
+  return { sessions: nullPrototypeRecords<TerminalStore['sessions']>(undefined), version: '3.0.0' };
 }
 
 function saveTerminalStore(store: TerminalStore): void {

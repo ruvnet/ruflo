@@ -13,6 +13,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { basename, dirname, join, resolve } from 'path';
+import { containedReadPath, containedWritePath, dbPathError, isLocalCliCall } from './path-containment.js';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'crypto';
 import { getProjectCwd, type MCPTool } from './types.js';
@@ -45,10 +46,19 @@ const LEGACY_MEMORY_DIR = '.claude-flow/memory';
  * deliberately not an implicit `CLAUDE_FLOW_DB_PATH` override because the
  * native/encrypted CLI store and the AgentDB sibling are separate backends.
  */
-function resolveDbPathOption(inputDbPath: unknown): string | undefined {
-  return typeof inputDbPath === 'string' && inputDbPath.trim().length > 0
-    ? resolve(inputDbPath)
-    : undefined;
+/**
+ * Resolve an explicit `dbPath`. MCP callers may only name a SQLite database
+ * file, so the memory tools cannot be aimed at and overwrite an unrelated file;
+ * the local CLI (`--path`) keeps operator-chosen paths as-is.
+ */
+function resolveDbPathOption(inputDbPath: unknown, context?: unknown): string | undefined {
+  if (typeof inputDbPath !== 'string' || inputDbPath.trim().length === 0) return undefined;
+  const dbPath = resolve(inputDbPath);
+  if (!isLocalCliCall(context)) {
+    const error = dbPathError(dbPath);
+    if (error) throw new Error(error);
+  }
+  return dbPath;
 }
 const MIGRATION_MARKER = '.migrated-to-sqlite';
 
@@ -534,13 +544,13 @@ export const memoryTools: MCPTool[] = [
       },
       required: ['key', 'value'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const missingKey = missingRequiredString(input, 'key', 'memory_store');
       if (missingKey) {
         return { success: false, key: input.key, stored: false, hasEmbedding: false, ...missingKey };
       }
 
-      const dbPath = resolveDbPathOption(input.dbPath);
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       if (!dbPath) await ensureInitialized();
       const { storeEntry } = await getMemoryFunctions();
 
@@ -626,13 +636,13 @@ export const memoryTools: MCPTool[] = [
       },
       required: ['key'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const missingKey = missingRequiredString(input, 'key', 'memory_retrieve');
       if (missingKey) {
         return { key: input.key, namespace: input.namespace, value: null, found: false, ...missingKey };
       }
 
-      const dbPath = resolveDbPathOption(input.dbPath);
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       if (!dbPath) await ensureInitialized();
       const { getEntry } = await getMemoryFunctions();
 
@@ -705,13 +715,13 @@ export const memoryTools: MCPTool[] = [
       },
       required: ['query'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const missingQuery = missingRequiredString(input, 'query', 'memory_search');
       if (missingQuery) {
         return { query: input.query, results: [], total: 0, ...missingQuery };
       }
 
-      const dbPath = resolveDbPathOption(input.dbPath);
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       if (!dbPath) await ensureInitialized();
       const { searchEntries } = await getMemoryFunctions();
 
@@ -903,13 +913,13 @@ export const memoryTools: MCPTool[] = [
       },
       required: ['key'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const missingKey = missingRequiredString(input, 'key', 'memory_delete');
       if (missingKey) {
         return { success: false, key: input.key, namespace: input.namespace, deleted: false, ...missingKey };
       }
 
-      const dbPath = resolveDbPathOption(input.dbPath);
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       if (!dbPath) await ensureInitialized();
       const { deleteEntry } = await getMemoryFunctions();
 
@@ -958,8 +968,8 @@ export const memoryTools: MCPTool[] = [
         dbPath: { type: 'string', description: 'Explicit SQLite store to read/write; omit to use the MCP default (the native/AgentDB sibling).' },
       },
     },
-    handler: async (input) => {
-      const dbPath = resolveDbPathOption(input.dbPath);
+    handler: async (input, context) => {
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       if (!dbPath) await ensureInitialized();
       const { listEntries } = await getMemoryFunctions();
 
@@ -1035,11 +1045,11 @@ export const memoryTools: MCPTool[] = [
         dbPath: { type: 'string', description: 'Explicit SQLite store to read/write; omit to use the MCP default (the native/AgentDB sibling).' },
       },
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       if (input.dbPath !== undefined && (typeof input.dbPath !== 'string' || !input.dbPath.trim())) {
         return memoryStatsUnavailable('dbPath must be a non-empty string');
       }
-      const dbPath = resolveDbPathOption(input.dbPath);
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       // An explicit read must not initialize or migrate the unrelated default store.
       if (!dbPath) await ensureInitialized();
       const { listEntries } = await getMemoryFunctions();
@@ -1715,16 +1725,16 @@ export const memoryTools: MCPTool[] = [
       },
       required: ['outputPath'],
     },
-    handler: async (input) => {
-      const requestedDbPath = typeof input.dbPath === 'string' && input.dbPath.trim()
-        ? resolve(input.dbPath)
-        : undefined;
+    handler: async (input, context) => {
+      const requestedOutput = String(input.outputPath ?? '');
+      if (!requestedOutput) return { error: 'outputPath is required' };
+      const outputPath = isLocalCliCall(context) ? resolve(requestedOutput) : containedWritePath(requestedOutput, ['.json']);
+      if (!outputPath) return { error: 'outputPath must be a .json file inside the project directory (not a symlink, not in .git)' };
+      const requestedDbPath = resolveDbPathOption(input.dbPath, context);
       // An explicit file selection is a single-store read. Do not initialize or
       // migrate the unrelated default store just to export a snapshot.
       if (!requestedDbPath) await ensureInitialized();
       const { listEntries } = await getMemoryFunctions();
-      const outputPath = String(input.outputPath ?? '');
-      if (!outputPath) return { error: 'outputPath is required' };
       const namespace = input.namespace ? String(input.namespace) : undefined;
       if (namespace) { const v = validateIdentifier(namespace, 'namespace'); if (!v.valid) throw new Error(v.error); }
       // #2073: pass includeContent so the value field carries the actual
@@ -1830,21 +1840,26 @@ export const memoryTools: MCPTool[] = [
       },
       required: ['inputPath'],
     },
-    handler: async (input) => {
-      const dbPath = typeof input.dbPath === 'string' && input.dbPath.trim()
-        ? resolve(input.dbPath)
-        : undefined;
+    handler: async (input, context) => {
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       await ensureInitialized(dbPath);
       const { storeEntry } = await getMemoryFunctions();
       const t0 = Date.now();
       // Values are re-embedded on import; count the vectors actually written
       // rather than reporting a constant 0 next to entries that show a vector.
       let vectors = 0;
-      const inputPath = String(input.inputPath ?? '');
-      if (!inputPath || !existsSync(inputPath)) return { error: `File not found: ${inputPath || '(empty)'}` };
+      const requestedInput = String(input.inputPath ?? '');
+      const inputPath = !requestedInput ? null
+        : isLocalCliCall(context) ? (existsSync(requestedInput) ? resolve(requestedInput) : null)
+        : containedReadPath(requestedInput);
+      if (!inputPath) {
+        return { error: isLocalCliCall(context) || !requestedInput
+          ? `File not found: ${requestedInput || '(empty)'}`
+          : 'inputPath must be an existing regular file inside the project directory (not a symlink)' };
+      }
       let doc: { entries?: Array<{ key: string; namespace?: string; value?: unknown; tags?: string[] | string }> };
       try { doc = JSON.parse(readFileSync(inputPath, 'utf-8')); }
-      catch (e) { return { error: `Invalid export JSON: ${(e as Error).message}` }; }
+      catch { return { error: 'inputPath is not a valid memory export (JSON parse failed)' }; }
       const entries = Array.isArray(doc.entries) ? doc.entries : [];
       const nsOverride = input.namespace ? String(input.namespace) : undefined;
       if (nsOverride) { const v = validateIdentifier(nsOverride, 'namespace'); if (!v.valid) throw new Error(v.error); }

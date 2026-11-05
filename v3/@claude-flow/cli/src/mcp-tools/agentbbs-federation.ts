@@ -341,6 +341,21 @@ export interface MergeResult {
   skippedUnverified: number;
   skippedOversize: number;
   skippedHopLimit: number;
+  /** Envelopes whose `origin` names a node the signature does not belong to. */
+  skippedForeignOrigin: number;
+  /** Highest `seq` among envelopes merged or already held; the next sync starts after it. */
+  acceptedMaxSeq: number;
+}
+
+/**
+ * Who may have signed an envelope. `origin` is inside the signature, but a
+ * signature only proves which key signed, not which node the envelope names.
+ * An envelope is accepted only when its origin is the syncing peer itself or
+ * another pinned peer, and it verifies against that origin's pinned key.
+ */
+export interface OriginKeys {
+  peerNodeId: string;
+  pinned: ReadonlyMap<string, string>;
 }
 
 /**
@@ -349,22 +364,27 @@ export interface MergeResult {
  * Idempotent: `envelopeId` is the merge key, so replaying the same batch is a
  * no-op. Anything that fails verification is dropped and counted rather than
  * quarantined — a receiver has no use for an envelope it cannot attribute.
+ *
+ * `hops` is not signed (relays change it), so it only limits propagation and
+ * is never trusted for anything else.
  */
 export async function mergeEnvelopes(
   basePath: string,
   roomId: string,
   incoming: SignedEnvelope[],
   peerPublicKey: string,
+  origins?: OriginKeys,
 ): Promise<MergeResult> {
   validateRoomId(roomId);
   ensureDir(basePath);
 
   const result: MergeResult = {
     merged: 0, skippedDuplicate: 0, skippedUnverified: 0, skippedOversize: 0, skippedHopLimit: 0,
+    skippedForeignOrigin: 0, acceptedMaxSeq: 0,
   };
 
   const existing = readEnvelopes(basePath, roomId);
-  const seen = new Set(existing.map(e => e.envelopeId));
+  const seen = new Map(existing.map(e => [e.envelopeId, Number(e.seq) || 0] as const));
   const logPath = roomLogPath(basePath, roomId);
 
   const batch = incoming.slice(0, MAX_ENVELOPES_PER_SYNC);
@@ -373,13 +393,24 @@ export async function mergeEnvelopes(
       result.skippedUnverified++; continue;
     }
     if (env.roomId !== roomId) { result.skippedUnverified++; continue; }
-    if (seen.has(env.envelopeId)) { result.skippedDuplicate++; continue; }
+    if (seen.has(env.envelopeId)) {
+      result.skippedDuplicate++;
+      result.acceptedMaxSeq = Math.max(result.acceptedMaxSeq, seen.get(env.envelopeId) ?? 0);
+      continue;
+    }
     if (JSON.stringify(env).length > MAX_ENVELOPE_BYTES) { result.skippedOversize++; continue; }
     if ((env.hops ?? 0) >= MAX_HOPS) { result.skippedHopLimit++; continue; }
-    if (!(await verifyEnvelope(env, peerPublicKey))) { result.skippedUnverified++; continue; }
+    let signerKey = peerPublicKey;
+    if (origins) {
+      const key = env.origin === origins.peerNodeId ? peerPublicKey : typeof env.origin === 'string' ? origins.pinned.get(env.origin) : undefined;
+      if (!key) { result.skippedForeignOrigin++; continue; }
+      signerKey = key;
+    }
+    if (!(await verifyEnvelope(env, signerKey))) { result.skippedUnverified++; continue; }
 
     appendFileSync(logPath, JSON.stringify({ ...env, hops: (env.hops ?? 0) + 1 }) + '\n');
-    seen.add(env.envelopeId);
+    seen.set(env.envelopeId, Number(env.seq) || 0);
+    result.acceptedMaxSeq = Math.max(result.acceptedMaxSeq, Number(env.seq) || 0);
     result.merged++;
   }
   return result;
@@ -410,15 +441,16 @@ export async function syncRoomFromPeer(
   }
 
   const envelopes: SignedEnvelope[] = Array.isArray(body?.envelopes) ? body.envelopes : [];
-  const merged = await mergeEnvelopes(basePath, roomId, envelopes, peer.publicKey);
-
   const peers = readPeers(basePath);
+  const pinned = new Map(peers.filter(p => typeof p.publicKey === 'string').map(p => [p.nodeId, p.publicKey] as const));
+  const merged = await mergeEnvelopes(basePath, roomId, envelopes, peer.publicKey, { peerNodeId: peer.nodeId, pinned });
+
   const rec = peers.find(p => p.nodeId === peer.nodeId);
   if (rec) {
     rec.lastSyncedAt = new Date().toISOString();
     rec.lastSeq = rec.lastSeq ?? {};
-    const maxSeq = envelopes.reduce((m, e) => Math.max(m, Number(e.seq) || 0), since);
-    rec.lastSeq[roomId] = maxSeq;
+    // Advance only past envelopes that verified; an unverifiable batch must not skip the cursor forward.
+    rec.lastSeq[roomId] = Math.max(since, merged.acceptedMaxSeq);
     writePeers(basePath, peers);
   }
   return { ...merged, peerNodeId: peer.nodeId, roomId };

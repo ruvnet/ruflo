@@ -23,6 +23,7 @@ vi.mock('../src/memory/memory-initializer.js', () => ({
 let dir: string;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'ruflo-export-4148-'));
+  process.env.CLAUDE_FLOW_CWD = dir; // MCP export paths are contained to the project
   state.cliStore = join(dir, 'memory.db');
   writeFileSync(state.cliStore, 'x'); // the CLI store exists on disk
   state.stores = {};
