@@ -2,6 +2,7 @@
   "name": "ruflo-aidefence",
   "description": "AI safety scanning, PII detection, prompt injection defense, and adaptive threat learning",
   "version": "0.3.3",
+  "repository": "https://github.com/ruvnet/ruflo",
   "author": {
     "name": "ruvnet",
     "url": "https://github.com/ruvnet"
