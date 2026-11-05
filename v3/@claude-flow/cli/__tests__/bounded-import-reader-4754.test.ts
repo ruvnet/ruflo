@@ -3,6 +3,8 @@ import { fstatSync, mkdtempSync, rmSync, truncateSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 
 const state = vi.hoisted(() => ({ reportedSize: undefined as number | undefined, fd: -1 }));
 vi.mock('node:fs', async (original) => {
@@ -46,7 +48,8 @@ it.skipIf(process.platform === 'win32')('rejects FIFO input without waiting for 
   const fifo = join(directory, 'fifo');
   execFileSync('mkfifo', [fifo]);
   const reader = new URL('../src/mcp-tools/import-limits.ts', import.meta.url).href;
-  const result = spawnSync(process.execPath, ['--import', 'tsx/esm', '--input-type=module', '-e',
+  const loader = pathToFileURL(createRequire(import.meta.url).resolve('tsx/esm')).href;
+  const result = spawnSync(process.execPath, ['--import', loader, '--input-type=module', '-e',
     `import { readImportFile } from ${JSON.stringify(reader)}; readImportFile(${JSON.stringify(fifo)});`],
     { encoding: 'utf8', timeout: 2000 });
   expect(result.error).toBeUndefined();
