@@ -5260,7 +5260,10 @@ export const hooksModelRoute: MCPTool = {
       };
     }
 
-    const result = await router.route(task);
+    const result = await router.route(task, undefined, {
+      preferCost: typeof params.preferCost === 'boolean' ? params.preferCost : undefined,
+      preferSpeed: typeof params.preferSpeed === 'boolean' ? params.preferSpeed : undefined,
+    });
     return {
       model: result.model,
       confidence: result.confidence,

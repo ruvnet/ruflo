@@ -219,6 +219,12 @@ export interface ModelRouterConfig {
   priorDecay: number;
 }
 
+/** Request-local preferences; omitted or false keeps the existing scoring. */
+export interface ModelRoutingPreferences {
+  preferCost?: boolean;
+  preferSpeed?: boolean;
+}
+
 /**
  * Routing decision result
  */
@@ -616,7 +622,7 @@ export class ModelRouter {
    * 'bandit-fallback'` (neural was enabled but declined) or
    * `'heuristic'` (neural was disabled).
    */
-  async route(task: string, embedding?: number[]): Promise<ModelRoutingResult> {
+  async route(task: string, embedding?: number[], preferences: ModelRoutingPreferences = {}): Promise<ModelRoutingResult> {
     const startTime = performance.now();
 
     // Analyze task complexity
@@ -694,7 +700,7 @@ export class ModelRouter {
       }
     }
 
-    const scores = this.computeModelScores(complexity);
+    const scores = this.computeModelScores(complexity, preferences);
     const adjustedScores = this.applyCircuitBreaker(scores);
 
     // A/B mode: compute the pure-bandit pick alongside the hybrid pick so
@@ -968,18 +974,27 @@ export class ModelRouter {
   /**
    * Compute scores for each model
    */
-  private computeModelScores(complexity: ComplexityAnalysis): Record<ClaudeModel, number> {
+  private computeModelScores(complexity: ComplexityAnalysis, preferences: ModelRoutingPreferences): Record<ClaudeModel, number> {
     const { score } = complexity;
 
     // Base scoring: inverse relationship with complexity
     // Low complexity → haiku scores high
     // High complexity → opus scores high
-    return {
+    const scores: Record<ClaudeModel, number> = {
       haiku: Math.max(0, 1 - score * 2), // Drops off quickly as complexity rises
       sonnet: 1 - Math.abs(score - 0.5) * 2, // Peaks at medium complexity
       opus: Math.min(1, score * 1.5), // Rises with complexity
       inherit: 0.1, // Low baseline unless explicitly needed
     };
+    for (const model of ['haiku', 'sonnet', 'opus'] as const) {
+      const capabilities = MODEL_CAPABILITIES[model];
+      // Preferences must not boost a tier beyond its task capability.
+      // Circuit-breaker penalties and uncertainty escalation still apply.
+      if (score > capabilities.maxComplexity) continue;
+      if (preferences.preferCost) scores[model] *= 2 - capabilities.costMultiplier;
+      if (preferences.preferSpeed) scores[model] *= capabilities.speedMultiplier;
+    }
+    return scores;
   }
 
   /**

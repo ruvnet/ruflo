@@ -4921,7 +4921,7 @@ const modelRouteCommand: Command = {
     { name: 'task', short: 't', type: 'string', description: 'Task description to route', required: true },
     { name: 'context', short: 'c', type: 'string', description: 'Additional context' },
     { name: 'prefer-cost', type: 'boolean', description: 'Prefer lower cost models' },
-    { name: 'prefer-quality', type: 'boolean', description: 'Prefer higher quality models' },
+    { name: 'prefer-speed', type: 'boolean', description: 'Prefer faster models when possible' },
   ],
   examples: [
     { command: 'claude-flow hooks model-route -t "fix typo"', description: 'Route simple task (likely haiku)' },
@@ -4947,8 +4947,8 @@ const modelRouteCommand: Command = {
       }>('hooks_model-route', {
         task,
         context: ctx.flags.context,
-        preferCost: ctx.flags['prefer-cost'],
-        preferQuality: ctx.flags['prefer-quality'],
+        preferCost: ctx.flags.preferCost,
+        preferSpeed: ctx.flags.preferSpeed,
       });
 
       if (ctx.flags.format === 'json') {
