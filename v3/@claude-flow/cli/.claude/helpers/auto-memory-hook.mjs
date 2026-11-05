@@ -524,8 +524,25 @@ async function doImport() {
   dim(`└─ Agent scopes: ${config.agentScopes.enabled ? 'active' : 'disabled'}`);
 }
 
+// A store committed to the repository came from whoever wrote the repo. Its
+// entries must never be promoted into the user's own Claude Code memory,
+// which the model loads every session as the user's notes.
+function storeIsRepoTracked() {
+  if (!existsSync(STORE_PATH)) return false;
+  try {
+    execFileSync('git', ['ls-files', '--error-unmatch', '--', STORE_PATH], { cwd: PROJECT_ROOT, stdio: 'ignore', timeout: 2000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function doSync() {
   log('Syncing insights to auto memory files...');
+  if (storeIsRepoTracked()) {
+    dim('Skipping sync: the memory store is committed to this repository, so its entries are not this machine\'s');
+    return;
+  }
 
   const memPkg = await loadMemoryPackage();
   if (!memPkg || !memPkg.AutoMemoryBridge) {
