@@ -57,10 +57,10 @@ const backupSubcommand: Command = {
     {
       name: 'format',
       short: 'f',
-      description: 'Output format',
+      description: 'Output format (defaults to SQL)',
       type: 'string',
-      default: 'sql',
-      choices: ['sql', 'json', 'csv'],
+      default: 'text',
+      choices: ['text', 'sql', 'json', 'csv'],
     },
     {
       name: 'compress',
@@ -129,9 +129,11 @@ const backupSubcommand: Command = {
     const config = getConnectionConfig(ctx);
     let outputPath = ctx.flags.output as string;
     const tablesFilter = ctx.flags.tables as string;
-    const format = (ctx.flags.format as string) || 'sql';
+    // The CLI validates the shared --format flag against its global choices.
+    const requestedFormat = ctx.flags.format as string;
+    const format = !requestedFormat || requestedFormat === 'text' ? 'sql' : requestedFormat;
     const compress = ctx.flags.compress as boolean;
-    const includeIndexes = ctx.flags['include-indexes'] !== false;
+    const includeIndexes = (ctx.flags.includeIndexes ?? ctx.flags['include-indexes']) !== false;
 
     output.writeln();
     output.writeln(output.bold('RuVector Backup'));
