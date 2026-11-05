@@ -3736,8 +3736,8 @@ const coverageGapsCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const threshold = ctx.flags.threshold as number ?? 80;
-    const groupByAgent = ctx.flags['group-by-agent'] !== false;
-    const criticalOnly = ctx.flags['critical-only'] as boolean || false;
+    const groupByAgent = (ctx.flags.groupByAgent ?? ctx.flags['group-by-agent']) !== false;
+    const criticalOnly = (ctx.flags.criticalOnly ?? ctx.flags['critical-only']) === true;
 
     const spinner = output.createSpinner({ text: 'Analyzing project coverage gaps...' });
     spinner.start();
