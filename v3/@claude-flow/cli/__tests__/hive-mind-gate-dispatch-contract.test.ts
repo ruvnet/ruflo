@@ -15,7 +15,7 @@ describe('hive-mind gate: dispatchers label their transport', () => {
   const server = src('mcp-server.ts');
 
   it('the stdio loop passes transport: stdio', () => {
-    expect(server).toMatch(/callMCPTool\(toolName, toolParams, \{ sessionId, transport: 'stdio' \}\)/);
+    expect(server).toMatch(/callMCPTool\(toolName, toolParams, \{ sessionId, transport: 'stdio'(?:, \.\.\.[\w.]+\(protocol\))? \}\)/);
   });
 
   it('the HTTP/WebSocket handler passes http or websocket, never stdio/cli', () => {
@@ -28,7 +28,7 @@ describe('hive-mind gate: dispatchers label their transport', () => {
   it('both shipped stdio entry points (bin/mcp-server.js, bin/cli.js) pass transport: stdio', () => {
     for (const bin of ['mcp-server.js', 'cli.js']) {
       const text = readFileSync(join(__dirname, '..', 'bin', bin), 'utf-8');
-      expect(text, bin).toMatch(/callMCPTool\(toolName, toolParams, \{ sessionId, transport: 'stdio' \}\)/);
+      expect(text, bin).toMatch(/callMCPTool\(toolName, toolParams, \{ sessionId, transport: 'stdio'(?:, \.\.\.[\w.]+\(protocol\))? \}\)/);
     }
   });
 
