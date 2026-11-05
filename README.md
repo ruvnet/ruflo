@@ -217,6 +217,13 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 | [**ruflo-loop-workers**](plugins/ruflo-loop-workers/README.md) | Schedule background tasks on a timer |
 | [**ruflo-workflows**](plugins/ruflo-workflows/README.md) | Reusable multi-step task templates |
 | [**ruflo-federation**](plugins/ruflo-federation/README.md) | Agents on different machines collaborate securely |
+| [**ruflo-agntcy**](plugins/ruflo-agntcy/README.md) | AGNTCY/Outshift Internet-of-Cognition runtime integration — agent network transport and CASA authorization (ADR-380) |
+| [**ruflo-ai-team**](plugins/ruflo-ai-team/README.md) | Hosted MCP service giving Claude a tenant-isolated AI team that divides work and keeps a shared, evidence-backed record |
+| [**ruflo-bbs-federation**](plugins/ruflo-bbs-federation/README.md) | Federated BBS messaging between swarm peers, with a tighten-only mod guard for secrets and peer URLs |
+| [**ruflo-business-pods**](plugins/ruflo-business-pods/README.md) | Business pod templates and backend routing, with a mod guard keeping secrets and unsafe paths out of templates |
+| [**ruflo-chatgpt-federation**](plugins/ruflo-chatgpt-federation/README.md) | ChatGPT Federation connector — signs swarm events with a Nostr key and publishes to `wss://relay.ruv.io` |
+| [**ruflo-ruos**](plugins/ruflo-ruos/README.md) | Run ruflo swarm agents on your own ruOS cloud desktops and stream output back |
+| [**ruflo-x-gateway**](plugins/ruflo-x-gateway/README.md) | MCP gateway for the open ruflo swarm federation — signed Nostr events over a membership-gated relay (x.ruv.io) |
 
 #### Memory & Knowledge
 
@@ -236,6 +243,7 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 | [**ruflo-graph-intelligence**](plugins/ruflo-graph-intelligence/) | Sublinear graph reasoning — PageRank, delta updates, complexity-aware execution (ADR-123) |
 | [**ruflo-daa**](plugins/ruflo-daa/README.md) | Dynamic agent behavior and cognitive patterns |
 | [**ruflo-ruvllm**](plugins/ruflo-ruvllm/README.md) | Run local LLMs (Ollama, etc.) with smart routing |
+| [**ruflo-deepseek-harness**](plugins/ruflo-deepseek-harness/README.md) | DeepSeek chat and reasoning completions as ruflo skills, plus a tighten-only function-hook mod |
 | [**ruflo-goals**](plugins/ruflo-goals/README.md) | Break big goals into plans and track progress |
 
 #### Code Quality & Testing
@@ -256,6 +264,7 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 |--------|-------------|
 | [**ruflo-security-audit**](plugins/ruflo-security-audit/README.md) | Scan for vulnerabilities and CVEs |
 | [**ruflo-aidefence**](plugins/ruflo-aidefence/README.md) | Block prompt injection, detect PII, safety scanning |
+| [**ruflo-protector**](plugins/ruflo-protector/README.md) | Project Anatole — optional learning watchdog for unattended agents; OWASP-mapped rules, default off (ADR-453) |
 
 #### Architecture & Methodology
 
@@ -281,6 +290,7 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 |--------|-------------|
 | [**ruflo-agent**](plugins/ruflo-agent/README.md) | Run agents — local WASM sandbox (rvagent) + Anthropic Claude Managed Agents (cloud), with opt-in bounded dynamic workflows, gated session controls and verified advisory learning |
 | [**ruflo-plugin-creator**](plugins/ruflo-plugin-creator/README.md) | Scaffold, validate, and publish your own plugins |
+| [**ruflo-mods**](plugins/ruflo-mods/README.md) | ruflo as a Claude Code mod (function hooks, ADR-404) — on by default in Claude Code >= 2.1.287 |
 
 #### Domain-Specific
 
@@ -289,6 +299,8 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 | [**ruflo-iot-cognitum**](plugins/ruflo-iot-cognitum/README.md) | IoT device management — trust scoring, anomaly detection, fleets |
 | [**ruflo-neural-trader**](plugins/ruflo-neural-trader/README.md) | [`neural-trader`](https://npmjs.com/package/neural-trader) — AI trading with 4 agents, backtesting, 112+ tools |
 | [**ruflo-market-data**](plugins/ruflo-market-data/README.md) | Ingest market data, vectorize OHLCV, detect patterns |
+| [**ruflo-music**](plugins/ruflo-music/README.md) | AI music generation via Cognitum Music — lyrics, tracks, stems, MIDI extraction and mastering through the `cogmusic` MCP server |
+| [**ruflo-rure**](plugins/ruflo-rure/) | ruRE — inspect an application you don't have source for and explain how a feature works with evidence (ADRs 0001–0006) |
 
 </details>
 
