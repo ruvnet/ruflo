@@ -24,6 +24,7 @@
 
 import type { MCPTool, MCPToolResult } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { browserUrlError } from './browser-argv.js';
 
 // Pin matches the version in this package's own dependency tree so the npx
 // fallback never downloads a second ruvector. Subcommand surface verified
@@ -159,6 +160,8 @@ export const browserSessionTools: MCPTool[] = [
     handler: async (input) => {
       const vUrl = validateText(input.url as string, 'url');
       if (!vUrl.valid) return fail(vUrl.error || 'invalid url');
+      const urlError = browserUrlError(input.url);
+      if (urlError) return fail(urlError);
       const vTask = validateText(input.task as string, 'task');
       if (!vTask.valid) return fail(vTask.error || 'invalid task');
       const path = await import('node:path');
