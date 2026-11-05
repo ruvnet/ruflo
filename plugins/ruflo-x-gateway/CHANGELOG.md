@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-x-gateway`.
 
+## 0.10.3 — 2026-11-04
+- fix: every per-IP limit (MCP rate limit, Seraphina hourly allowance, GitHub hourly allowance) now keys on the trusted end of the forwarding chain, the same address registration uses, instead of the caller-supplied leftmost `X-Forwarded-For` entry. `RUFLO_PROXY_HOPS` (falling back to `RUFLO_REGISTRATION_PROXY_HOPS`) sets the trusted hop count (gateway 0.9.2)
+
 ## 0.10.2 — 2026-10-24
 - fix: a `tools/call` without an `arguments` field (allowed by MCP, and what clients send for tools that take none) failed with `-32602 expected object, received undefined` on every path; an absent or null `arguments` is now treated as `{}` (gateway 0.9.1)
 - fix: `POST /` on the bare host now serves the directory-safe profile instead of a 404, so a connector added as `https://x.ruv.io` (no path) works; its OAuth challenge points at the root metadata
