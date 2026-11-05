@@ -11,6 +11,10 @@
 const SHELL_META = /[;&|`$(){}[\]<>!#\\]/;
 const PATH_TRAVERSAL = /\.\.[/\\]/;
 const IDENTIFIER_RE = /^[a-zA-Z0-9_][a-zA-Z0-9_\-.:]{0,127}$/;
+// Names that resolve to Object.prototype or a built-in when used as a key on a
+// plain object. Identifiers key JSON record stores, so they are refused
+// (GHSA-6rwv-52g2-vx7j).
+const RESERVED_KEYS: ReadonlySet<string> = new Set(['__proto__', 'constructor', 'prototype']);
 const GIT_REF_RE = /^[a-zA-Z0-9_][a-zA-Z0-9_\-.:~^/]{0,255}$/;
 const NPM_PACKAGE_RE = /^(@[a-zA-Z0-9_\-]+\/)?[a-zA-Z0-9_\-][a-zA-Z0-9_\-.]{0,213}$/;
 
@@ -39,6 +43,9 @@ export function validateIdentifier(value: unknown, label: string): ValidationRes
   }
   if (!IDENTIFIER_RE.test(value)) {
     return { valid: false, sanitized: '', error: `${label} contains invalid characters (allowed: alphanumeric, _, -, ., :)` };
+  }
+  if (RESERVED_KEYS.has(value)) {
+    return { valid: false, sanitized: '', error: `${label} must not be a reserved name (${value})` };
   }
   return { valid: true, sanitized: value };
 }
