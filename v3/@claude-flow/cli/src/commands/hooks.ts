@@ -3055,8 +3055,8 @@ const workerDetectCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const prompt = ctx.flags['prompt'] as string;
-    const autoDispatch = ctx.flags['auto-dispatch'] as boolean;
-    const minConfidence = parseFloat(ctx.flags['min-confidence'] as string || '0.5');
+    const autoDispatch = (ctx.flags.autoDispatch ?? ctx.flags['auto-dispatch']) as boolean | undefined;
+    const minConfidence = parseFloat(String(ctx.flags.minConfidence ?? ctx.flags['min-confidence'] ?? 0.5) || '0.5');
 
     if (!prompt) {
       output.printError('--prompt is required');
@@ -3082,6 +3082,8 @@ const workerDetectCommand: Command = {
           priority: string;
         }>;
         autoDispatched?: boolean;
+        autoDispatchStatus?: string;
+        note?: string;
         workerIds?: string[];
       }>('hooks_worker-detect', {
         prompt,
@@ -3118,7 +3120,11 @@ const workerDetectCommand: Command = {
 
       if (result.autoDispatched && result.workerIds) {
         output.writeln();
-        output.writeln(output.success('Workers auto-dispatched:'));
+        if (result.autoDispatchStatus === 'synthetic-completed') {
+          output.printWarning(result.note ?? 'No executor ran. Worker records are synthetic placeholders.');
+        } else {
+          output.writeln(output.success('Workers auto-dispatched:'));
+        }
         result.workerIds.forEach(id => {
           output.writeln(`  - ${id}`);
         });
