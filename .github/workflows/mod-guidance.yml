@@ -75,5 +75,39 @@ jobs:
           RUFLO_REAL_BINARY_CLAUDE: claude
         run: ../../../node_modules/.bin/vitest run --config vitest.real-binary.config.ts
 
-# Claude Code native kit tests require the separately enabled host runtime.
+  mods-kit-tests:
+    # Plugin tests that import `claude-code/testing` only run under `claude plugin test`. Each plugin's smoke.sh skips
+    # them when `claude` is not on PATH, and all-plugins-smoke does not install it, so this job is their gate. This pin
+    # matches the mod API the plugins use (2.1.290-2.1.318), so it is newer than the mods-real-binary pin.
+    name: Plugin kit tests (pinned Claude Code)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLAUDE_CODE_VERSION: '2.1.318'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install the pinned Claude Code binary
+        run: npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+      - name: Check the binary starts and is the pinned version
+        run: |
+          set -euo pipefail
+          if ! actual="$(claude --version)"; then
+            echo "::error::claude --version failed: the pinned Claude Code binary did not start"
+            exit 1
+          fi
+          echo "claude --version: ${actual}"
+          if [ "${actual%% *}" != "${CLAUDE_CODE_VERSION}" ]; then
+            echo "::error::expected Claude Code ${CLAUDE_CODE_VERSION}, got ${actual}"
+            exit 1
+          fi
+      - name: Check the gate itself
+        run: node --test tests/run-plugin-kit-tests.test.mjs
+      - name: Run every plugin's kit tests
+        run: node scripts/run-plugin-kit-tests.mjs
+
 # Built CLI tests still belong to the normal provisioned build gate.
