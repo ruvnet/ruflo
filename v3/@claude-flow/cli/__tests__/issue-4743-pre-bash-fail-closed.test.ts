@@ -46,6 +46,28 @@ describe('pre-bash fails closed — issue #4743', () => {
     expect(stderr).toContain('[BLOCKED]');
   });
 
+  function runLate(command: string, delayMs: number) {
+    const child = spawn(process.execPath, [HELPER, 'pre-bash'], { cwd: project, env });
+    let stderr = '';
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    return new Promise<{ status: number | null; stderr: string }>((resolve) => {
+      child.on('close', (status) => resolve({ status, stderr }));
+      setTimeout(() => {
+        if (child.stdin.writable) child.stdin.end(JSON.stringify({ tool_input: { command } }));
+      }, delayMs);
+    });
+  }
+
+  it('still validates a safe command that arrives within the pre-bash window', async () => {
+    expect((await runLate('ls -la', 900)).status).toBe(0);
+  });
+
+  it('blocks when no input arrives within the pre-bash window', async () => {
+    const r = await runLate('ls -la', 3600);
+    expect(r.status).toBe(2);
+    expect(r.stderr).toContain('[BLOCKED]');
+  }, 15_000);
+
   it('still validates a safe command and blocks a dangerous one', () => {
     expect(run('pre-bash', JSON.stringify({ tool_input: { command: 'ls -la' } })).status).toBe(0);
     expect(run('pre-bash', JSON.stringify({ tool_input: { command: 'rm -rf /' } })).status).toBe(2);

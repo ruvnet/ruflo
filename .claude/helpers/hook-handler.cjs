@@ -682,7 +682,7 @@ const [,, command, ...args] = process.argv;
 
 // Read stdin with timeout — Claude Code sends hook data as JSON via stdin.
 // Timeout prevents hanging when stdin is not properly closed (common on Windows).
-async function readStdin() {
+async function readStdin(windowMs = 500) {
   if (process.stdin.isTTY) return '';
   return new Promise((resolve) => {
     let data = '';
@@ -690,7 +690,7 @@ async function readStdin() {
       process.stdin.removeAllListeners();
       process.stdin.pause();
       resolve(data);
-    }, 500);
+    }, windowMs);
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', (chunk) => { data += chunk; });
     process.stdin.on('end', () => { clearTimeout(timer); resolve(data); });
@@ -797,7 +797,9 @@ async function main() {
   safetyTimer.unref(); // don't keep process alive just for this timer
 
   let stdinData = '';
-  try { stdinData = await readStdin(); } catch (e) { /* ignore stdin errors */ }
+  // pre-bash blocks when it gets no command (#4743), so a slow host gets a
+  // wider window. The read ends at EOF, so a prompt host waits no longer.
+  try { stdinData = await readStdin(command === 'pre-bash' ? 3000 : 500); } catch (e) { /* ignore stdin errors */ }
 
   let hookInput = {};
   let stdinUnparsable = false;
