@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { CommandParser } from '../src/parser.js';
 import type { CommandContext } from '../src/types.js';
 
 vi.mock('../src/output.js', () => ({ output: new Proxy({}, {
@@ -34,6 +35,33 @@ async function run(name: string, flags: Record<string, unknown> = {}) {
 }
 
 describe('coverage hooks disk integration (#4082–#4084)', () => {
+  it('honors coverage gap filtering and grouping flags parsed from argv', async () => {
+    writeFileSync('coverage/lcov.info', [
+      'SF:critical.ts', 'LF:10', 'LH:1', 'end_of_record',
+      'SF:low.ts', 'LF:10', 'LH:7', 'end_of_record',
+    ].join('\n'));
+    const parser = new CommandParser();
+    parser.registerCommand(hooksCommand);
+    const runGaps = (...args: string[]) => {
+      const { flags } = parser.parse(['hooks', 'coverage-gaps', '--format', 'json', ...args]);
+      return run('coverage-gaps', flags);
+    };
+
+    const baseline = await runGaps();
+    expect(baseline.data).toMatchObject({
+      gaps: [{ filePath: 'critical.ts' }, { filePath: 'low.ts' }],
+      agentAssignments: { tester: ['critical.ts', 'low.ts'] },
+    });
+    const criticalOnly = await runGaps('--critical-only');
+    expect(criticalOnly.data).toMatchObject({ gaps: [{ filePath: 'critical.ts' }] });
+    const ungrouped = await runGaps('--no-group-by-agent');
+    expect(ungrouped.data).toMatchObject({
+      gaps: [{ filePath: 'critical.ts' }, { filePath: 'low.ts' }],
+    });
+    expect(ungrouped.data).toHaveProperty('agentAssignments', {});
+    expect(callMCPTool).not.toHaveBeenCalled();
+  });
+
   it('does not route or suggest tests for empty instrumented files', async () => {
     const metric = { total: 0, covered: 0, pct: 'Unknown' };
     const empty = { lines: metric, branches: metric, functions: metric, statements: metric };
