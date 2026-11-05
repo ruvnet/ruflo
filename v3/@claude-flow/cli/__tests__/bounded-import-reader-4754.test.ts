@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { fstatSync, mkdtempSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 
 const state = vi.hoisted(() => ({ reportedSize: undefined as number | undefined, fd: -1 }));
@@ -48,7 +49,8 @@ it.skipIf(process.platform === 'win32')('rejects FIFO input without waiting for 
   const reader = new URL('../src/mcp-tools/import-limits.ts', import.meta.url).href;
   const result = spawnSync(process.execPath, ['--import', 'tsx/esm', '--input-type=module', '-e',
     `import { readImportFile } from ${JSON.stringify(reader)}; readImportFile(${JSON.stringify(fifo)});`],
-    { encoding: 'utf8', timeout: 2000 });
+    // Resolve tsx from this package: the root vitest runs from v3/, where it is not hoisted.
+    { encoding: 'utf8', timeout: 2000, cwd: fileURLToPath(new URL('..', import.meta.url)) });
   expect(result.error).toBeUndefined();
   expect(result.status).toBe(1);
   expect(result.stderr).toMatch(/regular file/);
