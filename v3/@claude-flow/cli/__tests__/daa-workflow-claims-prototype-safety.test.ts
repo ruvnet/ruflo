@@ -39,7 +39,9 @@ describe('daa_workflow_execute', () => {
     const { daaTools } = await import('../src/mcp-tools/daa-tools.js');
     const exec = daaTools.find((t) => t.name === 'daa_workflow_execute')!;
     const result = (await exec.handler({ workflowId: id })) as Record<string, unknown>;
-    expect(result).toMatchObject({ success: false, error: 'Workflow not found' });
+    // Reserved names are refused by validateIdentifier; other built-ins are unknown ids.
+    expect(result.success).toBe(false);
+    expect(String(result.error)).toMatch(/Workflow not found|reserved name/);
     clean();
   });
 
@@ -58,7 +60,7 @@ describe('workflow_cancel / workflow_stop', () => {
     const tool = workflowTools.find((t) => t.name === name)!;
     for (const id of ['__proto__', 'constructor']) {
       const result = (await tool.handler({ workflowId: id, reason: 'x' })) as Record<string, unknown>;
-      expect(result.error).toBe('Workflow not found');
+      expect(String(result.error)).toMatch(/Workflow not found|reserved name/);
     }
     clean();
   });
@@ -68,9 +70,10 @@ describe('claims_steal', () => {
   it('refuses a reserved-name claim that was never marked stealable', async () => {
     const { claimsTools } = await import('../src/mcp-tools/claims-tools.js');
     const tool = (n: string) => claimsTools.find((t) => t.name === n)!;
-    const claimed = (await tool('claims_claim').handler({ issueId: 'constructor', claimant: 'agent:a1:coder' })) as Record<string, unknown>;
-    expect(claimed.success).toBe(true);
+    // validateIdentifier now refuses the reserved name outright; either way it must not be stealable.
+    await tool('claims_claim').handler({ issueId: 'constructor', claimant: 'agent:a1:coder' });
     const stolen = (await tool('claims_steal').handler({ issueId: 'constructor', stealer: 'agent:a2:coder' })) as Record<string, unknown>;
-    expect(stolen).toMatchObject({ success: false, error: 'Issue is not stealable' });
+    expect(stolen.success).toBe(false);
+    expect(String(stolen.error)).toMatch(/not stealable|reserved name/);
   });
 });
