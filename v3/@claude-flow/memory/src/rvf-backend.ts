@@ -12,11 +12,26 @@ import type {
   HealthCheckResult,
   MemoryType,
 } from './types.js';
+import { HNSWIndex } from './hnsw-index.js';
 
 // ----------------------------------------------------------------------------
-// HnswLite — small brute-force-degrading HNSW used ONLY by RvfBackend.
-// Inlined here by ADR-125 Phase 3 so the canonical `src/hnsw-index.ts` can be
-// the single HNSW implementation in the public surface. Not exported.
+// RvfVectorIndex — RvfBackend's vector index, backed by the canonical
+// `HNSWIndex` from `src/hnsw-index.ts` (ADR-125: one HNSW implementation).
+//
+// It replaces the inlined `HnswLite`, whose search seeded from the first
+// `efConstruction` vectors in insertion order and BFS'd over a flat
+// neighbour graph: on 5,000 random 384-dim unit vectors it reached
+// recall@10 = 0.091 against exact search (0.079 at 1536-dim), and every
+// insert was an O(n) brute-force scan. HNSWIndex measured 0.888 (384-dim)
+// and 0.744 (1536-dim) on the same data, 0.990 on clustered data.
+// @ruvector/diskann was also measured (0.896 / 0.739) but a vector inserted
+// after build() is not searchable until a full rebuild (3.6 s at 1k vectors),
+// which breaks store()-then-search(); see the RvfBackend recall test.
+//
+// Small indexes (<= EXACT_SEARCH_MAX vectors) are searched exactly, so the
+// common small memory store keeps recall 1.0. Embeddings whose length does not
+// match the configured dimensions are kept out of the graph (HNSWIndex
+// rejects them) and are only reachable through the exact scan. Not exported.
 // ----------------------------------------------------------------------------
 
 interface HnswSearchResult {
@@ -24,94 +39,65 @@ interface HnswSearchResult {
   score: number;
 }
 
-class HnswLite {
-  private vectors = new Map<string, Float32Array>();
-  private neighbors = new Map<string, Set<string>>();
-  private readonly dimensions: number;
-  private readonly maxNeighbors: number;
-  private readonly efConstruction: number;
-  private readonly metric: string;
+/** Below this many indexed vectors, search() is an exact scan. */
+const EXACT_SEARCH_MAX = 1000;
 
-  constructor(dimensions: number, m: number, efConstruction: number, metric: string) {
+class RvfVectorIndex {
+  private readonly vectors = new Map<string, Float32Array>();
+  private readonly graph: HNSWIndex;
+  private readonly dimensions: number;
+  private readonly efConstruction: number;
+  private readonly metric: 'cosine' | 'euclidean' | 'dot';
+
+  constructor(dimensions: number, m: number, efConstruction: number, metric: 'cosine' | 'euclidean' | 'dot') {
     this.dimensions = dimensions;
-    this.maxNeighbors = m;
     this.efConstruction = efConstruction;
     this.metric = metric;
+    this.graph = new HNSWIndex({
+      dimensions,
+      M: m,
+      efConstruction,
+      // RvfBackend never capped its index; keep that (maxElements is advisory
+      // in RvfBackendConfig).
+      maxElements: Number.MAX_SAFE_INTEGER,
+      metric,
+    });
   }
 
   get size(): number { return this.vectors.size; }
 
-  add(id: string, vector: Float32Array): void {
+  async add(id: string, vector: Float32Array): Promise<void> {
+    if (this.vectors.has(id)) await this.remove(id);
     this.vectors.set(id, vector);
-    if (this.vectors.size === 1) {
-      this.neighbors.set(id, new Set());
-      return;
-    }
-    const nearest = this.findNearest(vector, this.maxNeighbors);
-    const neighborSet = new Set<string>();
-    for (const n of nearest) {
-      neighborSet.add(n.id);
-      const nNeighbors = this.neighbors.get(n.id);
-      if (nNeighbors) {
-        nNeighbors.add(id);
-        if (nNeighbors.size > this.maxNeighbors * 2) this.pruneNeighbors(n.id);
-      }
-    }
-    this.neighbors.set(id, neighborSet);
+    if (vector.length === this.dimensions) await this.graph.addPoint(id, vector);
   }
 
-  remove(id: string): void {
-    this.vectors.delete(id);
-    const my = this.neighbors.get(id);
-    if (my) for (const nId of my) this.neighbors.get(nId)?.delete(id);
-    this.neighbors.delete(id);
+  async remove(id: string): Promise<void> {
+    if (!this.vectors.delete(id)) return;
+    if (this.graph.has(id)) await this.graph.removePoint(id);
   }
 
-  search(query: Float32Array, k: number, threshold?: number): HnswSearchResult[] {
-    if (this.vectors.size === 0) return [];
-    if (this.vectors.size <= k * 2) return this.bruteForce(query, k, threshold);
-
-    const visited = new Set<string>();
-    const candidates: HnswSearchResult[] = [];
-
-    let entryId: string | undefined;
-    let bestScore = -1;
-    for (const [id] of this.vectors) {
-      const score = this.similarity(query, this.vectors.get(id)!);
-      if (score > bestScore) { bestScore = score; entryId = id; }
-      if (visited.size >= Math.min(this.efConstruction, this.vectors.size)) break;
-      visited.add(id);
-      candidates.push({ id, score });
+  async search(query: Float32Array, k: number, threshold?: number): Promise<HnswSearchResult[]> {
+    if (this.vectors.size === 0 || k <= 0) return [];
+    if (this.vectors.size <= EXACT_SEARCH_MAX || query.length !== this.dimensions) {
+      return this.exact(query, k, threshold);
     }
-
-    if (entryId) {
-      const queue = [entryId];
-      let idx = 0;
-      while (idx < queue.length && visited.size < this.efConstruction * 2) {
-        const currentId = queue[idx++];
-        const currentNeighbors = this.neighbors.get(currentId);
-        if (!currentNeighbors) continue;
-        for (const nId of currentNeighbors) {
-          if (visited.has(nId)) continue;
-          visited.add(nId);
-          const vec = this.vectors.get(nId);
-          if (!vec) continue;
-          const score = this.similarity(query, vec);
-          candidates.push({ id: nId, score });
-          queue.push(nId);
-        }
-      }
+    const ef = Math.max(k, this.efConstruction);
+    const raw = await this.graph.search(query, k, ef);
+    const out: HnswSearchResult[] = [];
+    for (const r of raw) {
+      if (!this.vectors.has(r.id)) continue;
+      const score = this.toScore(r.distance);
+      if (threshold !== undefined && score < threshold) continue;
+      out.push({ id: r.id, score });
     }
-
-    candidates.sort((a, b) => b.score - a.score);
-    let filtered = candidates;
-    if (threshold !== undefined) filtered = filtered.filter(c => c.score >= threshold);
-    return filtered.slice(0, k);
+    return out;
   }
 
-  private bruteForce(query: Float32Array, k: number, threshold?: number): HnswSearchResult[] {
+  private exact(query: Float32Array, k: number, threshold?: number): HnswSearchResult[] {
     const results: HnswSearchResult[] = [];
     for (const [id, vec] of this.vectors) {
+      if (vec.length !== query.length) continue;
       const score = this.similarity(query, vec);
       if (threshold !== undefined && score < threshold) continue;
       results.push({ id, score });
@@ -120,24 +106,11 @@ class HnswLite {
     return results.slice(0, k);
   }
 
-  private findNearest(query: Float32Array, k: number): HnswSearchResult[] {
-    return this.bruteForce(query, k);
-  }
-
-  private pruneNeighbors(id: string): void {
-    const my = this.neighbors.get(id);
-    if (!my) return;
-    const vec = this.vectors.get(id);
-    if (!vec) return;
-    const scored: HnswSearchResult[] = [];
-    for (const nId of my) {
-      const nVec = this.vectors.get(nId);
-      if (!nVec) continue;
-      scored.push({ id: nId, score: this.similarity(vec, nVec) });
-    }
-    scored.sort((a, b) => b.score - a.score);
-    const keep = new Set(scored.slice(0, this.maxNeighbors).map(s => s.id));
-    for (const nId of my) if (!keep.has(nId)) my.delete(nId);
+  /** Map HNSWIndex distances back to the similarity scale RvfBackend reports. */
+  private toScore(distance: number): number {
+    if (this.metric === 'dot') return -distance;
+    if (this.metric === 'euclidean') return 1 / (1 + distance);
+    return 1 - distance;
   }
 
   private similarity(a: Float32Array, b: Float32Array): number {
@@ -212,7 +185,7 @@ const DEFAULT_PERSIST_INTERVAL = 30000;
 
 /**
  * Pure-TS RVF backend: entries live in memory and persist to a single
- * `RVF\0` snapshot file at `databasePath`, with `HnswLite` for search.
+ * `RVF\0` snapshot file at `databasePath`, with `RvfVectorIndex` (the canonical HNSWIndex) for search.
  *
  * There is deliberately no `@ruvector/rvf` native path (#4279). The SDK is a
  * vector index (u64 ids, `{id, distance}` results, no payloads), so it cannot
@@ -222,7 +195,7 @@ const DEFAULT_PERSIST_INTERVAL = 30000;
 export class RvfBackend implements IMemoryBackend {
   private entries = new Map<string, MemoryEntry>();
   private keyIndex = new Map<string, string>();
-  private hnswIndex: HnswLite | null = null;
+  private hnswIndex: RvfVectorIndex | null = null;
   private config: Required<RvfBackendConfig>;
   private initialized = false;
   private dirty = false;
@@ -254,7 +227,7 @@ export class RvfBackend implements IMemoryBackend {
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    this.hnswIndex = new HnswLite(
+    this.hnswIndex = new RvfVectorIndex(
       this.config.dimensions,
       this.config.hnswM,
       this.config.hnswEfConstruction,
@@ -298,8 +271,11 @@ export class RvfBackend implements IMemoryBackend {
     const e = ns !== entry.namespace ? { ...entry, namespace: ns } : entry;
     this.entries.set(e.id, e);
     this.keyIndex.set(this.compositeKey(e.namespace, e.key), e.id);
-    if (e.embedding && this.hnswIndex) {
-      this.hnswIndex.add(e.id, e.embedding);
+    if (this.hnswIndex) {
+      // Upsert: add() replaces any previous vector for this id; an entry
+      // re-stored without an embedding must not keep its old one searchable.
+      if (e.embedding) await this.hnswIndex.add(e.id, e.embedding);
+      else await this.hnswIndex.remove(e.id);
     }
     this.dirty = true;
   }
@@ -329,6 +305,12 @@ export class RvfBackend implements IMemoryBackend {
       version: entry.version + 1,
     };
     this.entries.set(id, updated);
+    // MemoryEntryUpdate has no `embedding`, but untyped callers can pass one;
+    // keep the index in step with the stored entry either way.
+    if (this.hnswIndex && updated.embedding !== entry.embedding) {
+      if (updated.embedding) await this.hnswIndex.add(id, updated.embedding);
+      else await this.hnswIndex.remove(id);
+    }
     this.dirty = true;
     return updated;
   }
@@ -338,7 +320,7 @@ export class RvfBackend implements IMemoryBackend {
     if (!entry) return false;
     this.entries.delete(id);
     this.keyIndex.delete(this.compositeKey(entry.namespace, entry.key));
-    if (this.hnswIndex) this.hnswIndex.remove(id);
+    if (this.hnswIndex) await this.hnswIndex.remove(id);
     this.dirty = true;
     return true;
   }
@@ -364,7 +346,7 @@ export class RvfBackend implements IMemoryBackend {
     }
 
     if (q.type === 'semantic' && q.embedding && this.hnswIndex) {
-      const searchResults = this.hnswIndex.search(q.embedding, q.limit, q.threshold);
+      const searchResults = await this.hnswIndex.search(q.embedding, q.limit, q.threshold);
       const idSet = new Set(searchResults.map(r => r.id));
       results = results.filter(e => idSet.has(e.id));
     }
@@ -381,7 +363,7 @@ export class RvfBackend implements IMemoryBackend {
     let results: SearchResult[];
 
     if (this.hnswIndex) {
-      const raw = this.hnswIndex.search(embedding, options.k * 2, options.threshold);
+      const raw = await this.hnswIndex.search(embedding, options.k * 2, options.threshold);
       results = [];
       for (const r of raw) {
         const entry = this.entries.get(r.id);
@@ -404,7 +386,7 @@ export class RvfBackend implements IMemoryBackend {
     for (const entry of entries) {
       this.entries.set(entry.id, entry);
       this.keyIndex.set(this.compositeKey(entry.namespace, entry.key), entry.id);
-      if (entry.embedding && this.hnswIndex) this.hnswIndex.add(entry.id, entry.embedding);
+      if (entry.embedding && this.hnswIndex) await this.hnswIndex.add(entry.id, entry.embedding);
     }
     this.dirty = true;
   }
@@ -416,7 +398,7 @@ export class RvfBackend implements IMemoryBackend {
       if (entry) {
         this.entries.delete(id);
         this.keyIndex.delete(this.compositeKey(entry.namespace, entry.key));
-        if (this.hnswIndex) this.hnswIndex.remove(id);
+        if (this.hnswIndex) await this.hnswIndex.remove(id);
         count++;
       }
     }
@@ -448,7 +430,7 @@ export class RvfBackend implements IMemoryBackend {
       const entry = this.entries.get(id)!;
       this.entries.delete(id);
       this.keyIndex.delete(this.compositeKey(entry.namespace, entry.key));
-      if (this.hnswIndex) this.hnswIndex.remove(id);
+      if (this.hnswIndex) await this.hnswIndex.remove(id);
     }
     if (toDelete.length > 0) this.dirty = true;
     return toDelete.length;
@@ -575,7 +557,7 @@ export class RvfBackend implements IMemoryBackend {
         const entry: MemoryEntry = parsed;
         this.entries.set(entry.id, entry);
         this.keyIndex.set(this.compositeKey(entry.namespace, entry.key), entry.id);
-        if (entry.embedding && this.hnswIndex) this.hnswIndex.add(entry.id, entry.embedding);
+        if (entry.embedding && this.hnswIndex) await this.hnswIndex.add(entry.id, entry.embedding);
       }
     } catch (err) {
       if (this.config.verbose) {
