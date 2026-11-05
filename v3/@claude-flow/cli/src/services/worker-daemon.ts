@@ -13,7 +13,7 @@
 
 import { ConfigFileManager } from './config-file-manager.js';
 import { EventEmitter } from 'events';
-import { existsSync, mkdirSync, writeFileSync, readFileSync, appendFileSync, unlinkSync, renameSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, appendFileSync, unlinkSync, renameSync, statSync } from 'fs';
 import { cpus, homedir } from 'os';
 import { join } from 'path';
 import { createRequire } from 'node:module';
@@ -45,6 +45,8 @@ import { getRepoSupervisorRegistry, type SupervisorRecord } from './repo-supervi
 // Daemon config is read synchronously from the constructor. In an ESM build,
 // bare `require` is undefined, so use a module-relative require for YAML.
 const requireYaml = createRequire(import.meta.url);
+const DAEMON_LOG_MAX_BYTES = 5 * 1024 * 1024;
+const DAEMON_LOG_BACKUPS = 3;
 
 // Worker types matching hooks-tools.ts
 export type WorkerType =
@@ -1745,7 +1747,7 @@ export class WorkerDaemon extends EventEmitter {
       rawOutputLength: typeof result.output === 'string' ? result.output.length : 0,
     };
 
-    writeFileSync(metricsFile, JSON.stringify(persisted, null, 2));
+    writeFileAtomic(metricsFile, Buffer.from(JSON.stringify(persisted, null, 2)));
   }
 
   // Worker implementations
@@ -1771,7 +1773,7 @@ export class WorkerDaemon extends EventEmitter {
       scannedAt: Date.now(),
     };
 
-    writeFileSync(metricsFile, JSON.stringify(map, null, 2));
+    writeFileAtomic(metricsFile, Buffer.from(JSON.stringify(map, null, 2)));
     return map;
   }
 
@@ -1807,7 +1809,7 @@ export class WorkerDaemon extends EventEmitter {
       note: 'Local fallback checks file presence only; it does not scan source contents.',
     };
 
-    writeFileSync(auditFile, JSON.stringify(audit, null, 2));
+    writeFileAtomic(auditFile, Buffer.from(JSON.stringify(audit, null, 2)));
     return audit;
   }
 
@@ -1835,7 +1837,7 @@ export class WorkerDaemon extends EventEmitter {
       note: 'Install Claude Code CLI for AI-powered optimization suggestions',
     };
 
-    writeFileSync(optimizeFile, JSON.stringify(perf, null, 2));
+    writeFileAtomic(optimizeFile, Buffer.from(JSON.stringify(perf, null, 2)));
     return perf;
   }
 
@@ -1880,7 +1882,7 @@ export class WorkerDaemon extends EventEmitter {
         memoryCleaned: 0,
         duplicatesRemoved: 0,
       };
-      writeFileSync(consolidateFile, JSON.stringify(disabledResult, null, 2));
+      writeFileAtomic(consolidateFile, Buffer.from(JSON.stringify(disabledResult, null, 2)));
       return disabledResult;
     }
 
@@ -1907,7 +1909,7 @@ export class WorkerDaemon extends EventEmitter {
         memoryCleaned: 0,
         duplicatesRemoved: 0,
       };
-      writeFileSync(consolidateFile, JSON.stringify(errorResult, null, 2));
+      writeFileAtomic(consolidateFile, Buffer.from(JSON.stringify(errorResult, null, 2)));
       return errorResult;
     }
 
@@ -1953,7 +1955,7 @@ export class WorkerDaemon extends EventEmitter {
       })),
     };
 
-    writeFileSync(consolidateFile, JSON.stringify(result, null, 2));
+    writeFileAtomic(consolidateFile, Buffer.from(JSON.stringify(result, null, 2)));
     return result;
   }
 
@@ -1996,7 +1998,7 @@ export class WorkerDaemon extends EventEmitter {
       result = { timestamp: new Date().toISOString(), backedUp: false, error: message };
     }
 
-    writeFileSync(backupFile, JSON.stringify(result, null, 2));
+    writeFileAtomic(backupFile, Buffer.from(JSON.stringify(result, null, 2)));
     return result;
   }
 
@@ -2034,7 +2036,7 @@ export class WorkerDaemon extends EventEmitter {
       result = { timestamp: new Date().toISOString(), ran: false, error: message };
     }
 
-    writeFileSync(harnessFile, JSON.stringify(result, null, 2));
+    writeFileAtomic(harnessFile, Buffer.from(JSON.stringify(result, null, 2)));
     return result;
   }
 
@@ -2059,7 +2061,7 @@ export class WorkerDaemon extends EventEmitter {
       note: 'Install Claude Code CLI for AI-powered test gap analysis',
     };
 
-    writeFileSync(testGapsFile, JSON.stringify(result, null, 2));
+    writeFileAtomic(testGapsFile, Buffer.from(JSON.stringify(result, null, 2)));
     return result;
   }
 
@@ -2149,7 +2151,7 @@ export class WorkerDaemon extends EventEmitter {
       },
     };
 
-    writeFileSync(benchmarkFile, JSON.stringify(result, null, 2));
+    writeFileAtomic(benchmarkFile, Buffer.from(JSON.stringify(result, null, 2)));
     return result;
   }
 
@@ -2263,6 +2265,20 @@ export class WorkerDaemon extends EventEmitter {
     // Also write to log file
     try {
       const logFile = join(this.config.logDir, 'daemon.log');
+      // Keep three generations. Rotate before the next complete record
+      // crosses 5 MiB; a single oversized record is preserved intact.
+      if (existsSync(logFile)) {
+        const size = statSync(logFile).size;
+        if (size > 0 && size + Buffer.byteLength(logMessage + '\n') > DAEMON_LOG_MAX_BYTES) {
+          const oldest = `${logFile}.${DAEMON_LOG_BACKUPS}`;
+          if (existsSync(oldest)) unlinkSync(oldest);
+          for (let generation = DAEMON_LOG_BACKUPS - 1; generation >= 1; generation--) {
+            const previous = `${logFile}.${generation}`;
+            if (existsSync(previous)) renameSync(previous, `${logFile}.${generation + 1}`);
+          }
+          renameSync(logFile, `${logFile}.1`);
+        }
+      }
       appendFileSync(logFile, logMessage + '\n');
     } catch {
       // Ignore log write errors
