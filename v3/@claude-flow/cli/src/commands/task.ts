@@ -743,7 +743,7 @@ const retryCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const taskId = ctx.args[0];
-    const resetState = ctx.flags['reset-state'] as boolean;
+    const resetState = (ctx.flags.resetState ?? ctx.flags['reset-state']) as boolean | undefined;
 
     if (!taskId) {
       output.printError('Task ID is required');

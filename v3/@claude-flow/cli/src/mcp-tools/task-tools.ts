@@ -623,21 +623,29 @@ export const taskTools: MCPTool[] = [
       const original = store.tasks[taskId];
       if (!original) return { success: false, taskId, error: 'Task not found' };
 
+      const retainState = input.resetState === false;
       const newTaskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      store.tasks[newTaskId] = {
+      const retry: TaskRecord = {
         taskId: newTaskId,
         type: original.type,
         description: original.description,
         priority: original.priority,
         status: 'pending',
-        progress: 0,
+        progress: retainState ? original.progress ?? 0 : 0,
         assignedTo: [...original.assignedTo],
         tags: [...original.tags, 'retry-of:' + taskId],
         createdAt: new Date().toISOString(),
         startedAt: null,
         completedAt: null,
       };
+      if (retainState && original.result !== undefined) retry.result = original.result;
+      store.tasks[newTaskId] = retry;
       saveTaskStore(store);
+
+      updateAgents(retry.assignedTo, (agent) => {
+        agent.status = 'busy';
+        agent.currentTask = newTaskId;
+      });
 
       return {
         taskId,
