@@ -18,7 +18,9 @@ import { encodeEmbeddingQ8, MAX_LIST_EMBEDDINGS, type EmbeddingQ8 } from './embe
 import * as fs from 'fs';
 import * as path from 'path';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
+import { hostname } from 'node:os';
 import { readFileMaybeEncrypted, writeDbImagePreservingFormat, writeFileAtomic, writeFileRestricted } from '../fs-secure.js';
 import { restoreMemoryDbFromBackup } from '../services/memory-backup.js';
 import { validateIdentifier } from '../mcp-tools/validate-input.js';
@@ -4116,6 +4118,83 @@ export async function deleteEntry(options: {
 
 const MEMORY_DB_LOCK_STALE_MS = 10_000;
 const MEMORY_DB_LOCK_ACQUIRE_TIMEOUT_MS = 15_000;
+const MEMORY_DB_LOCK_IDENTITY = (() => {
+  let pidns: string | undefined;
+  let boot: string | undefined;
+  if (process.platform === 'linux') {
+    try {
+      pidns = fs.readlinkSync('/proc/self/ns/pid');
+      boot = fs.readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim();
+    } catch { /* unverifiable Linux identities cannot authorize takeover */ }
+  }
+  return { host: hostname(), platform: process.platform, pidns, boot };
+})();
+
+function readMemoryDbLock(lockFile: string): { content: string; mtimeMs: number } | undefined {
+  let fd: number | undefined;
+  try {
+    if (!fs.lstatSync(lockFile).isFile()) return undefined;
+    fd = fs.openSync(lockFile, fs.constants.O_RDONLY
+      | (fs.constants.O_NOFOLLOW ?? 0) | (fs.constants.O_NONBLOCK ?? 0));
+    const stat = fs.fstatSync(fd);
+    if (!stat.isFile() || stat.size > 1024) return undefined;
+    const buffer = Buffer.alloc(1025);
+    const size = fs.readSync(fd, buffer, 0, buffer.length, 0);
+    if (size > 1024) return undefined;
+    return { content: buffer.toString('utf8', 0, size), mtimeMs: stat.mtimeMs };
+  } catch {
+    return undefined;
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
+
+function memoryDbLockOwnerIsDead(content: string): boolean {
+  try {
+    const owner = JSON.parse(content);
+    // A PID alone (including the legacy format) cannot identify an owner
+    // across hosts, kernel boots or container PID namespaces.
+    if (!owner || owner.host !== MEMORY_DB_LOCK_IDENTITY.host
+      || owner.platform !== MEMORY_DB_LOCK_IDENTITY.platform
+      || owner.pidns !== MEMORY_DB_LOCK_IDENTITY.pidns
+      || owner.boot !== MEMORY_DB_LOCK_IDENTITY.boot) return false;
+    if (process.platform === 'linux'
+      && (!MEMORY_DB_LOCK_IDENTITY.pidns || !MEMORY_DB_LOCK_IDENTITY.boot)) return false;
+    const pid = owner.pid;
+    if (!Number.isInteger(pid) || pid <= 0 || pid > 0x7fffffff) return false;
+    try {
+      process.kill(pid, 0);
+      return false;
+    } catch (error) {
+      // EPERM and unexpected probe failures are not evidence of a dead owner.
+      return (error as NodeJS.ErrnoException).code === 'ESRCH';
+    }
+  } catch {
+    return false;
+  }
+}
+
+function reclaimStaleMemoryDbLock(lockFile: string, ownerFile: string, ownership: string): boolean {
+  const previous = readMemoryDbLock(lockFile);
+  if (!previous || Date.now() - previous.mtimeMs <= MEMORY_DB_LOCK_STALE_MS
+    || !memoryDbLockOwnerIsDead(previous.content)) return false;
+
+  // Only one reclaimer may inspect and unlink an orphan at a time. Without
+  // this guard, a second reclaimer could unlink the first successor's lock.
+  // As in policy-runtime.ts, a crash during reclamation leaves a guard for
+  // explicit inspection. Age-reaping that guard would recreate the same race.
+  const guard = `${lockFile}.reclaim`;
+  try { fs.linkSync(ownerFile, guard); } catch { return false; }
+  try {
+    if (readMemoryDbLock(lockFile)?.content !== previous.content) return false;
+    fs.unlinkSync(lockFile);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    try { if (readMemoryDbLock(guard)?.content === ownership) fs.unlinkSync(guard); } catch { /* preserve a replacement */ }
+  }
+}
 
 function delayMs(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -4133,8 +4212,10 @@ function delayMs(ms: number): Promise<void> {
 const heldMemoryDbLocks = new AsyncLocalStorage<ReadonlySet<string>>();
 
 /**
- * Advisory O_EXCL lock scoped to a single memory.db file (`<dbPath>.lock`),
- * same stale-takeover pattern as services/global-ai-budget.ts.
+ * Advisory exclusive lock scoped to a single memory.db file (`<dbPath>.lock`),
+ * renewed while held and reclaimed only after its recorded owner has exited.
+ * Atomic publication requires a local filesystem with hard-link support.
+ * Unverifiable legacy owners and orphaned reclaim guards require inspection.
  *
  * #2878: sql.js persists by rewriting the whole database image, so every
  * `load → mutate → export → write` sequence is a read-modify-write that a
@@ -4156,34 +4237,56 @@ export async function withMemoryDbLock<T>(dbPath: string, fn: () => Promise<T> |
   nested.add(resolved);
 
   const lockFile = `${resolved}.lock`;
+  const token = randomUUID();
+  const ownership = JSON.stringify({ ...MEMORY_DB_LOCK_IDENTITY, pid: process.pid, token });
+  const ownerFile = `${lockFile}.${token}.tmp`;
+  const fd = fs.openSync(ownerFile, 'wx', 0o600);
   const deadline = Date.now() + MEMORY_DB_LOCK_ACQUIRE_TIMEOUT_MS;
-  for (;;) {
-    let fd: number;
-    try {
-      fd = fs.openSync(lockFile, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY, 0o600);
-    } catch (e) {
-      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
+  let acquired = false;
+  try {
+    // Publish fully initialized ownership atomically. A crash while writing
+    // the unique candidate must not leave an empty, unrecoverable lock file.
+    fs.writeFileSync(fd, ownership);
+    for (;;) {
       try {
-        const st = fs.lstatSync(lockFile);
-        if (Date.now() - st.mtimeMs > MEMORY_DB_LOCK_STALE_MS) {
-          fs.unlinkSync(lockFile);
-          continue;
+        fs.linkSync(ownerFile, lockFile);
+        acquired = true;
+        break;
+      } catch (e) {
+        const code = (e as NodeJS.ErrnoException).code;
+        if (code !== 'EEXIST') {
+          if (['ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EPERM'].includes(code ?? '')) {
+            throw Object.assign(new Error(
+              `memory.db locking requires atomic hard links; use a filesystem that supports them and permits their creation: ${lockFile}`,
+              { cause: e },
+            ), { code });
+          }
+          throw e;
         }
-      } catch { /* raced — retry */ }
-      if (Date.now() > deadline) {
-        throw new Error(`timed out acquiring memory.db lock: ${lockFile}`);
+        if (reclaimStaleMemoryDbLock(lockFile, ownerFile, ownership)) continue;
+        if (Date.now() > deadline) {
+          const guard = `${lockFile}.reclaim`;
+          const recovery = fs.existsSync(guard)
+            ? `; inspect the recorded owner of ${guard} and confirm no reclamation is active before manual recovery`
+            : '; inspect the recorded owner before manual recovery';
+          throw new Error(`timed out acquiring memory.db lock: ${lockFile}${recovery}`);
+        }
+        await delayMs(25);
       }
-      await delayMs(25);
-      continue;
     }
-
-    fs.writeSync(fd, String(process.pid));
+    heartbeat = setInterval(() => {
+      // Refresh the inode we opened, never a replacement at the same path.
+      const now = new Date();
+      try { fs.futimesSync(fd, now, now); } catch { /* PID probing still protects a live owner */ }
+    }, Math.floor(MEMORY_DB_LOCK_STALE_MS / 3));
+    heartbeat.unref();
+    return await heldMemoryDbLocks.run(nested, fn);
+  } finally {
+    if (heartbeat) clearInterval(heartbeat);
     fs.closeSync(fd);
-    try {
-      return await heldMemoryDbLocks.run(nested, fn);
-    } finally {
-      try { fs.unlinkSync(lockFile); } catch { /* already gone */ }
-    }
+    try { if (acquired && readMemoryDbLock(lockFile)?.content === ownership) fs.unlinkSync(lockFile); } catch { /* already gone or replaced */ }
+    try { fs.unlinkSync(ownerFile); } catch { /* already gone */ }
   }
 }
 

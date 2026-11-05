@@ -15,6 +15,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import {
   initializeMemoryDatabase,
   storeEntry,
@@ -111,7 +112,13 @@ describe('withMemoryDbLock (#2666)', () => {
 
   it('takes over a stale lock left by a crashed process instead of hanging', async () => {
     const lockFile = `${dbPath}.lock`;
-    fs.writeFileSync(lockFile, '999999999'); // a pid that cannot be this test
+    let content = '';
+    await withMemoryDbLock(dbPath, () => { content = fs.readFileSync(lockFile, 'utf8'); });
+    const owner = JSON.parse(content);
+    // Use a reaped child PID and the production identity format, rather than
+    // treating an unscoped legacy PID as proof that an owner is dead.
+    owner.pid = Number(execFileSync(process.execPath, ['-e', 'console.log(process.pid)'], { encoding: 'utf8' }).trim());
+    fs.writeFileSync(lockFile, JSON.stringify(owner));
     const staleTime = Date.now() / 1000 - 60; // 60s old — well past the stale threshold
     fs.utimesSync(lockFile, staleTime, staleTime);
 
