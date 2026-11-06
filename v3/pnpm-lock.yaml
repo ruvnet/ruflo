@@ -190,8 +190,8 @@ importers:
         specifier: ^9.2.0
         version: 9.3.8(@types/node@20.19.27)
       metaharness:
-        specifier: ^0.4.1
-        version: 0.4.1
+        specifier: ^0.4.20
+        version: 0.4.20
       semver:
         specifier: 7.7.3
         version: 7.7.3
@@ -221,8 +221,8 @@ importers:
         specifier: 3.2.3
         version: link:../memory
       '@metaharness/darwin':
-        specifier: ~0.12.0
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
       '@metaharness/flywheel':
         specifier: ~0.1.10
         version: 0.1.10
@@ -255,7 +255,7 @@ importers:
         version: 2.25.2(typescript@5.9.3)
       ruvector:
         specifier: ^0.3.11
-        version: 0.3.12(@ruvector/rabitq-wasm@0.1.2)(@ruvector/router@0.1.30)(@ruvector/ruvllm@2.6.0)(zod@3.25.76)
+        version: 0.3.12(@ruvector/rabitq-wasm@0.1.2)(zod@3.25.76)
     devDependencies:
       tsx:
         specifier: ^4.19.0
@@ -885,6 +885,12 @@ packages:
       js-tokens: 4.0.0
       picocolors: 1.1.1
 
+  /@babel/helper-string-parser@7.29.13:
+    resolution: {integrity: sha512-fWegr+WsEsiMVW4KUNdIIzzMTZSzNiqhy0//6+2MRi2d5NFNsL/AYwBQW8eBnRbTBVRnDVzjaJEUqKaCWjMMdQ==}
+    engines: {node: '>=6.9.0'}
+    requiresBuild: true
+    dev: false
+
   /@babel/helper-string-parser@7.29.7:
     resolution: {integrity: sha512-Pb5ijPrZ89GDH8223L4UP8i6QApWxs04RbPQJTeWDV0/keR2E36MeKnyr6LYmUUvqRRI+Iv87SuF1W6ErINzYw==}
     engines: {node: '>=6.9.0'}
@@ -897,7 +903,15 @@ packages:
   /@babel/helper-validator-identifier@7.29.7:
     resolution: {integrity: sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg==}
     engines: {node: '>=6.9.0'}
-    dev: true
+
+  /@babel/parser@7.29.13:
+    resolution: {integrity: sha512-fJM50YYjlTiBhgdkGmC1tBpv+FMAyo4annf2X6Aks+0yRlaiVkYW/3f07xAfVVkYIoZ9fFZp+mEThUFnuybhkQ==}
+    engines: {node: '>=6.0.0'}
+    hasBin: true
+    requiresBuild: true
+    dependencies:
+      '@babel/types': 7.29.11
+    dev: false
 
   /@babel/parser@7.29.7:
     resolution: {integrity: sha512-hnORnjP/1P/zFEndoeX+n+t1RwWRJiJpM/jO7FW32Kn9r5+sJB2JWOdYo4L6k78j15eCwY3Gm/7364B1EMwtNg==}
@@ -910,6 +924,15 @@ packages:
   /@babel/runtime@7.28.4:
     resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
     engines: {node: '>=6.9.0'}
+
+  /@babel/types@7.29.11:
+    resolution: {integrity: sha512-WCsemW40Cpc6gouC1SrY6PBaZ+oLRlEVY9XBvZBI7il/HyUrb2nJ505wE1MHEFyDZNnrWDEuy4jL50WVHfTTSQ==}
+    engines: {node: '>=6.9.0'}
+    requiresBuild: true
+    dependencies:
+      '@babel/helper-string-parser': 7.29.13
+      '@babel/helper-validator-identifier': 7.29.7
+    dev: false
 
   /@babel/types@7.29.7:
     resolution: {integrity: sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==}
@@ -2012,7 +2035,6 @@ packages:
         optional: true
     dependencies:
       '@metaharness/horizon': 0.2.1
-    optional: true
 
   /@metaharness/darwin@0.10.3:
     resolution: {integrity: sha512-xqFWTqG8tHk2Gwts07EJgU2E7WANkhjwPc5Dk9nG3tbW8Hqb+O7Ut5ixp8+HoBlod8EgNigMT9MSrOpCpHSXEQ==}
@@ -2021,19 +2043,21 @@ packages:
     requiresBuild: true
     optional: true
 
-  /@metaharness/darwin@0.12.1:
-    resolution: {integrity: sha512-LJfSbi2kOwEoyao5NrwgB4JeIbQPBmFPdF5njhS4gK3Z0GU3eqkvrGcw66OLuwP4hUIk/U7prhz0zZTq0uFkDw==}
+  /@metaharness/darwin@0.13.0:
+    resolution: {integrity: sha512-L3SrQii70erHVDmo1qx0875IRpVujk86zAO7sxtSVChWCgAjabEmmYRYt72D1VekfUCbSWCgZKIktqUxVAKCFA==}
     engines: {node: '>=20.0.0'}
     hasBin: true
-    requiresBuild: true
+    dependencies:
+      '@babel/parser': 7.29.13
     dev: false
-    optional: true
 
   /@metaharness/darwin@0.2.8:
     resolution: {integrity: sha512-B8tF7IrrSxwKS6fEPEL6N2Juth9WWn+hppLUtUYPTJ2vcHzzZPIg2cS5T9qTyNNuANlTSWnQHnvzlfvYdGNfeQ==}
     engines: {node: '>=20.0.0'}
     hasBin: true
+    requiresBuild: true
     dev: false
+    optional: true
 
   /@metaharness/darwin@0.8.0:
     resolution: {integrity: sha512-Pgefr/es0Btofh7GxQrOAg/i43ZKcLUfeD9rndOAkpA8s3ZYohSmfLerJLNsGOOKc2eTvmmauljl8QEVmKC2dw==}
@@ -2076,7 +2100,6 @@ packages:
   /@metaharness/horizon@0.2.1:
     resolution: {integrity: sha512-vsHehfWGjdql9IyUvi1/z4i9e8KQjTOOzWABfzXnH89oXE7F42CYhXZE4PzQZFxAemfr/AnYEkPz9kGDdMaqLQ==}
     requiresBuild: true
-    optional: true
 
   /@metaharness/radio@0.1.0:
     resolution: {integrity: sha512-m1GCeGCbjo7h5OLMCgb2VZFbhY6aHP5x28q0j/AFqXRWwStt5/Z+sWMuGNaNKVtnB7PGueNbtVoxLzMQ53rrFg==}
@@ -2088,14 +2111,15 @@ packages:
     resolution: {integrity: sha512-JaAk6bs3xA7Ks5RnAcZoxI3WfzpYL+Bk262SCI07w82BDOA7C6VxwGM63F7b86lRTKUVjTEnSqf7QZ3uyElT/g==}
     engines: {node: '>=20.0.0'}
     hasBin: true
+    requiresBuild: true
     dev: false
+    optional: true
 
   /@metaharness/redblue@0.1.6:
     resolution: {integrity: sha512-cnQTOcPVetgz/XoYBdW5carkl48wBJsvBbJ7ntmelFtRu/8N5ARhSXnebEY+05SWaNm8lqij/gxZx2FqNCQWJg==}
     engines: {node: '>=20.0.0'}
     hasBin: true
     requiresBuild: true
-    optional: true
 
   /@metaharness/router@0.3.2(@ruvector/tiny-dancer@0.1.22):
     resolution: {integrity: sha512-LQElU6mUrWd3ffJ5bwoonEIgw7oFQZpwZaehffyl/Pg+iozpRjIBPEXdb4uTOBnKH+yPiTEWKc+h9AiZr9Os9w==}
@@ -2126,7 +2150,6 @@ packages:
     resolution: {integrity: sha512-A752c0eEYEVodBB8HLOaSvcUMA65TX6/Cru2apZ7EE7aL2FSO74GFbgFWPo85bgqgNuMjhHkl/kG+lkC0TunNA==}
     engines: {node: '>=20.0.0'}
     requiresBuild: true
-    optional: true
 
   /@metaharness/weight-eft@0.1.1:
     resolution: {integrity: sha512-GSg0APPAbRK93OzrzlE+R8hfEK+I5+Zhmh0Z28RC9Mk5/MjhPo3shqINO7ye8VPGYHIO4rars9FwCWbe/V4cEQ==}
@@ -10995,26 +11018,6 @@ packages:
   /merge-stream@2.0.0:
     resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
 
-  /metaharness@0.4.1:
-    resolution: {integrity: sha512-Kd+cd2VJcTHZwh5YTIIj/Qe/dmhRVpvT9Q1iSn+bbFkFWPcvArAIqJ114kpBLQi2Om3jxXX+oGA2QaAn9NUeaA==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
-    peerDependencies:
-      '@metaharness/kernel': ^0.1.0
-    peerDependenciesMeta:
-      '@metaharness/kernel':
-        optional: true
-    dependencies:
-      '@metaharness/darwin': 0.2.8
-      '@metaharness/flywheel': 0.1.10
-      '@metaharness/redblue': 0.1.4
-      '@metaharness/weight-eft': 0.1.1
-      kolorist: 1.8.0
-      prompts: 2.4.2
-    optionalDependencies:
-      '@ruvector/ruvllm': 2.6.0
-    dev: false
-
   /metaharness@0.4.19:
     resolution: {integrity: sha512-wUlsJjjZ97GVGY5wYDhKgV09G1v7RdNQYrWzwMwdcF+pUd0ijUkh41HpaeD/Xvubtgw5AeSTOlNSGeacZVrpsQ==}
     engines: {node: '>=20.0.0'}
@@ -11061,6 +11064,30 @@ packages:
       '@ruvector/ruvllm': 2.6.0
     dev: false
     optional: true
+
+  /metaharness@0.4.20:
+    resolution: {integrity: sha512-nhQOpnwjgZgW4hufxVLbrWtUmNQ+dgakowuQDnwfAQ65dkpAUzRY7vQUOSOPqMMMXPDEhfqQb4Yf5BqMFV/95A==}
+    engines: {node: '>=20.0.0'}
+    hasBin: true
+    peerDependencies:
+      '@metaharness/kernel': ^0.1.0
+    peerDependenciesMeta:
+      '@metaharness/kernel':
+        optional: true
+    dependencies:
+      '@metaharness/avo': 0.1.5
+      '@metaharness/darwin': 0.13.0
+      '@metaharness/flywheel': 0.1.10
+      '@metaharness/redblue': 0.1.6
+      '@metaharness/turn-credit': 0.1.0
+      '@metaharness/weight-eft': 0.1.1
+      kolorist: 1.8.0
+      prompts: 2.4.2
+    optionalDependencies:
+      '@ruvector/ruvllm': 2.6.0
+    transitivePeerDependencies:
+      - agenticow
+    dev: false
 
   /micromatch@4.0.8:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
@@ -12736,6 +12763,81 @@ packages:
       - agenticow
       - supports-color
       - zod
+    optional: true
+
+  /ruvector@0.3.12(@ruvector/rabitq-wasm@0.1.2)(zod@3.25.76):
+    resolution: {integrity: sha512-p0ZddgvfvbqSVg0r5UyjltascarwLfSQtdhGEFzLogi8fybxlpEXpc+a525YyTjAz57hVaFyAOcY9OjGf1XAQQ==}
+    engines: {node: '>=20.0.0'}
+    hasBin: true
+    requiresBuild: true
+    peerDependencies:
+      '@ruvector/diskann': '>=0.1.0'
+      '@ruvector/pi-brain': '>=0.1.0'
+      '@ruvector/rabitq-wasm': '>=0.1.1'
+      '@ruvector/router': '>=0.1.0'
+      '@ruvector/ruvllm': '>=2.6.0 <4.0.0 || ^4.1.0'
+      rvlite: '>=0.2.0'
+    peerDependenciesMeta:
+      '@metaharness/darwin':
+        optional: true
+      '@metaharness/flywheel':
+        optional: true
+      '@metaharness/harness':
+        optional: true
+      '@metaharness/redblue':
+        optional: true
+      '@metaharness/router':
+        optional: true
+      '@metaharness/weight-eft':
+        optional: true
+      '@metaharness/workspace-lens':
+        optional: true
+      '@metaharness/workspace-probe':
+        optional: true
+      '@ruvector/diskann':
+        optional: true
+      '@ruvector/pi-brain':
+        optional: true
+      '@ruvector/rabitq-wasm':
+        optional: true
+      '@ruvector/router':
+        optional: true
+      '@ruvector/ruvllm':
+        optional: true
+      metaharness:
+        optional: true
+      rvlite:
+        optional: true
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.32.1(zod@3.25.76)
+      '@ruvector/attention': 0.1.32
+      '@ruvector/core': 0.1.30
+      '@ruvector/gnn': 0.1.25
+      '@ruvector/rabitq-wasm': 0.1.2
+      '@ruvector/sona': 0.1.10
+      chalk: 4.1.2
+      commander: 11.1.0
+      ora: 5.4.1
+    optionalDependencies:
+      '@metaharness/darwin': 0.9.3
+      '@metaharness/flywheel': 0.1.10
+      '@metaharness/harness': 0.2.0
+      '@metaharness/redblue': 0.1.6
+      '@metaharness/router': 0.4.0(@ruvector/tiny-dancer@0.1.22)
+      '@metaharness/weight-eft': 0.1.1
+      '@metaharness/workspace-lens': 0.1.2
+      '@metaharness/workspace-probe': 0.1.1
+      '@ruvector/mincut-wasm': 2.3.0
+      '@ruvector/rvf': 0.3.4
+      '@ruvector/tiny-dancer': 0.1.22
+      metaharness: 0.4.20
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@metaharness/kernel'
+      - agenticow
+      - supports-color
+      - zod
+    dev: false
     optional: true
 
   /rxjs@7.8.2:

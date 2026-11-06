@@ -134,7 +134,7 @@
     "@agntcy/slim-bindings": "2.1.1",
     "@claude-flow/aidefence": "3.1.0",
     "@claude-flow/memory": "3.2.3",
-    "@metaharness/darwin": "~0.12.0",
+    "@metaharness/darwin": "^0.13.0",
     "@metaharness/flywheel": "~0.1.10",
     "@metaharness/radio": "~0.1.0",
     "@metaharness/turn-credit": "~0.1.0",
@@ -150,7 +150,7 @@
   "peerDependencies": {
     "@metaharness/router": "^0.4.0",
     "@ruvector/typesafe": "^0.1.0",
-    "metaharness": "^0.4.1"
+    "metaharness": "^0.4.20"
   },
   "peerDependenciesMeta": {
     "@metaharness/router": {
