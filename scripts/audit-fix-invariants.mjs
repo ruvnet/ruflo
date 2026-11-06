@@ -91,7 +91,7 @@ const INVARIANTS = [
   },
   {
     issue: '#1946',
-    file: 'v3/@claude-flow/cli/src/commands/doctor.ts',
+    file: 'v3/@claude-flow/cli/src/commands/doctor-checks/memory-store.ts',
     substring: 'getMemoryRoot',
     why: 'doctor.checkMemoryDatabase() routes through getMemoryRoot() — without it, doctor reports "Not initialized" on any DB at a non-default path.',
   },
