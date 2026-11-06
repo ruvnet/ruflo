@@ -127,7 +127,7 @@ importers:
         specifier: 3.1.6
         version: link:../mcp
       '@claude-flow/neural':
-        specifier: 3.0.2
+        specifier: 3.0.3
         version: link:../neural
       '@claude-flow/plugin-agent-federation':
         specifier: 1.0.5
@@ -487,8 +487,8 @@ importers:
         specifier: ^3.0.0
         version: link:../memory
       '@ruvector/sona':
-        specifier: 0.1.5
-        version: 0.1.5
+        specifier: 0.1.10
+        version: 0.1.10
     optionalDependencies:
       agentdb:
         specifier: ^2.0.0 || ^3.0.0-alpha.1
