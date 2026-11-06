@@ -1082,21 +1082,22 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       }
     }
 
-    if (!startDaemon && !startAll) {
+    if (!startDaemon && !startAll && ctx.flags.format !== 'json') {
+      // End on something about the user's own repo, not a list of commands
+      // (adoption plan item 1). Local-only, time-capped, never throws.
+      const { snapshotProject, snapshotLines, firstPrompt } = await import('../init/first-win.js');
+      const snap = snapshotProject(ctx.cwd);
+      const lines = snapshotLines(snap);
+      if (lines.length) {
+        output.writeln(output.bold('Your project:'));
+        output.printList(lines);
+        output.writeln();
+      }
+      output.writeln(output.bold('Try it — open Claude Code here and paste:'));
+      output.writeln(`  ${output.highlight(firstPrompt(snap))}`);
+      output.writeln();
       const bin = (process.argv[1] || '').includes('ruflo') ? 'ruflo' : 'claude-flow';
-      output.writeln(output.bold('Next steps:'));
-      output.printList([
-        `Run ${output.highlight(`${bin} daemon start`)} to start background workers`,
-        // Memory is initialized automatically during init (persistent by
-        // default — see executor.ts) — no separate `memory init` step needed
-        // unless the DB was skipped (MINIMAL_INIT_OPTIONS) or needs --force.
-        `Run ${output.highlight(`${bin} swarm init`)} to initialize a swarm`,
-        `Or use ${output.highlight(`${bin} init --start-all`)} to do all of the above`,
-        options.components.settings ? `Review ${output.highlight('.claude/settings.json')} for hook configurations` : '',
-        // ADR-150 — surface the new metaharness scorecard to every new user.
-        // Optional dep; the command degrades gracefully when not installed.
-        `Run ${output.highlight(`${bin} metaharness score`)} for a 5-dim harness readiness scorecard (ADR-150)`,
-      ].filter(Boolean));
+      output.writeln(output.dim(`Background workers: ${bin} daemon start · health check: ${bin} doctor`));
     }
 
     if (ctx.flags.format === 'json') {
