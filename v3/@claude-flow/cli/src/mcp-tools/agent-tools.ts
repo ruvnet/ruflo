@@ -13,6 +13,7 @@ import { validateIdentifier, validateText, validateAgentSpawn } from './validate
 import { executeAgentTask } from './agent-execute-core.js';
 import { AGENT_HEALTH_WINDOW, summarizeAgentExecutions, type AgentExecutionSample } from './agent-health-metrics.js';
 import { pheromoneAgentEligibility, type loadSwarmStore } from './swarm-tools.js';
+import { noteFirstAgentRun } from '../funnel/activation.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -517,6 +518,7 @@ export const agentTools: MCPTool[] = [
       }
 
       // Include deterministic codemod routing info if applicable
+      noteFirstAgentRun('cli'); // activation funnel (opt-in; no-op without telemetry consent)
       const response: Record<string, unknown> = {
         success: true,
         agentId,

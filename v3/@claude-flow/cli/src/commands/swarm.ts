@@ -10,6 +10,7 @@ import { callMCPTool, MCPClientError } from '../mcp-client.js';
 import { swarmJoinCommand } from './agntcy/swarm-join.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { noteFirstAgentRun } from '../funnel/activation.js';
 
 // Read the CLI-side swarm state file (`.swarm/state.json`), written by
 // `swarm init` and rewritten by `swarm start` / `swarm stop`.
@@ -574,6 +575,7 @@ const initCommand: Command = {
         output.printJson(result);
       }
 
+      noteFirstAgentRun('cli'); // activation funnel (opt-in; no-op without telemetry consent)
       return { success: true, data: result };
     } catch (error) {
       if (error instanceof MCPClientError) {
