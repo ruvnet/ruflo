@@ -75,7 +75,10 @@ jobs:
             //     no lifecycle scripts. Backs the hooks_fast-apply MCP tool.
             // Compare 139 s / 377 packages for a cold install of the CLI itself.
             // 15 declared after this change, budget 17: two slots of headroom.
-            const CLI_MAX = 17;
+            // Lowered 17 → 16 by ADR-525 (2026-11-06): agentic-flow left the
+            // CLI optionalDependencies (14 declared) and is installed on
+            // demand with `ruflo add learning`; two slots of headroom kept.
+            const CLI_MAX = 16;
             const RUFLO_MAX = 0;
 
             // Specific packages proven to trigger the cold-npx timeout in
@@ -101,7 +104,14 @@ jobs:
             // 2026-11-05 under the same escape clause: 0.1.29 is one
             // zero-dependency wasm package (104K installed, 0.38s cold install,
             // no lifecycle scripts), not the native/wasm fan-out behind #2561.
+            // NOTE: "agentic-flow" was added on 2026-11-06 by ADR-525. It hard-
+            // depends on four vendor SDKs; dropping it took a cold node:22 install
+            // of the CLI from 1450 MB / 637 packages / 26.5 s to 1172 MB / 449
+            // packages / 21.2 s. The CLI call sites all degrade without it, and
+            // `ruflo add learning` installs it on demand. Do not escape-clause
+            // it back without superseding ADR-525.
             const FORBIDDEN = [
+              "agentic-flow",
               "@claude-flow/codex",
               "@claude-flow/embeddings",
               "@claude-flow/guidance",

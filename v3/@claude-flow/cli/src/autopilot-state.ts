@@ -10,11 +10,11 @@
 
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, renameSync } from 'node:fs';
-import { resolve, join, dirname } from 'node:path';
-import { createRequire } from 'node:module';
+import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { homedir } from 'node:os';
 import { writeFileAtomic } from './fs-secure.js';
+import { ADDONS, addonHint, resolveAddonPackageRoot } from './addons/index.js';
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -353,25 +353,27 @@ export function getLearningLoadError(): string | null {
 
 /**
  * agentic-flow's `exports` map does not expose dist/coordination/*, so a bare
- * specifier import throws ERR_PACKAGE_PATH_NOT_EXPORTED (#4146). Resolve the
- * package root through its exported entry point and import the file by URL.
+ * specifier import throws ERR_PACKAGE_PATH_NOT_EXPORTED (#4146). Locate the
+ * package root (next to the CLI, or in the ADR-525 add-on root) and import
+ * the file by URL. Null when agentic-flow is installed in neither place.
  */
-function resolveAutopilotLearningUrl(): string {
-  const req = createRequire(import.meta.url);
-  let dir = dirname(req.resolve('agentic-flow'));
-  for (let i = 0; i < 6; i++) {
-    if (existsSync(join(dir, 'package.json')) && existsSync(join(dir, 'dist', 'coordination', 'autopilot-learning.js'))) {
-      return pathToFileURL(join(dir, 'dist', 'coordination', 'autopilot-learning.js')).href;
-    }
-    dir = dirname(dir);
-  }
-  throw new Error('agentic-flow does not ship dist/coordination/autopilot-learning.js');
+function resolveAutopilotLearningUrl(): string | null {
+  const root = resolveAddonPackageRoot(ADDONS.learning.pkg);
+  if (!root) return null;
+  const file = join(root.dir, 'dist', 'coordination', 'autopilot-learning.js');
+  if (!existsSync(file)) throw new Error('agentic-flow does not ship dist/coordination/autopilot-learning.js');
+  return pathToFileURL(file).href;
 }
 
 export async function tryLoadLearning(): Promise<{ initialize: () => Promise<boolean>; [key: string]: unknown } | null> {
   lastLearningLoadError = null;
   try {
-    const mod = await import(/* webpackIgnore: true */ resolveAutopilotLearningUrl());
+    const url = resolveAutopilotLearningUrl();
+    if (!url) {
+      lastLearningLoadError = addonHint('learning');
+      return null;
+    }
+    const mod = await import(/* webpackIgnore: true */ url);
     if (!mod?.AutopilotLearning) {
       lastLearningLoadError = 'agentic-flow autopilot-learning module has no AutopilotLearning export';
       return null;

@@ -23,6 +23,7 @@ import { readFileMaybeEncrypted, writeDbImagePreservingFormat, writeFileAtomic, 
 import { restoreMemoryDbFromBackup } from '../services/memory-backup.js';
 import { validateIdentifier } from '../mcp-tools/validate-input.js';
 import { resolveModelCacheDir } from './model-cache-dir.js';
+import { importAddon } from '../addons/index.js';
 
 /**
  * ADR-323 — typed memory provenance. Distinguishes WHO/WHAT wrote a memory
@@ -2438,7 +2439,7 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
     }
 
     // Fallback: Check for agentic-flow ReasoningBank embeddings (v3)
-    const reasoningBank = await import('agentic-flow/reasoningbank').catch(() => null);
+    const reasoningBank = await importAddon<typeof import('agentic-flow/reasoningbank')>('agentic-flow/reasoningbank');
 
     if (reasoningBank?.computeEmbedding) {
       if (verbose) {

@@ -7,6 +7,7 @@
 
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
+import { ADDONS, addonHint, resolveAddonPackageRoot } from '../addons/index.js';
 import { existsSync, readFileSync, statSync, openSync, readSync, closeSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir } from 'node:os';
@@ -2467,10 +2468,12 @@ async function installClaudeCode(): Promise<boolean> {
   }
 }
 
-// Check agentic-flow v3 integration (filesystem-based to avoid slow WASM/DB init)
+// Check agentic-flow v3 integration (filesystem-based to avoid slow WASM/DB init).
+// agentic-flow is an on-demand add-on (ADR-525), so its absence is not a warning.
 async function checkAgenticFlow(): Promise<HealthCheck> {
   try {
-    // Walk common node_modules paths to find agentic-flow/package.json
+    // Walk common node_modules paths to find agentic-flow/package.json, then
+    // the CLI's own resolution and the add-on root.
     const candidates = [
       join(process.cwd(), 'node_modules', 'agentic-flow', 'package.json'),
       join(process.cwd(), '..', 'node_modules', 'agentic-flow', 'package.json'),
@@ -2479,12 +2482,19 @@ async function checkAgenticFlow(): Promise<HealthCheck> {
     for (const p of candidates) {
       if (existsSync(p)) { pkgJsonPath = p; break; }
     }
+    let where = '';
+    if (!pkgJsonPath) {
+      const found = resolveAddonPackageRoot(ADDONS.learning.pkg);
+      if (found) {
+        pkgJsonPath = join(found.dir, 'package.json');
+        if (found.source === 'addon') where = ' — add-on root';
+      }
+    }
     if (!pkgJsonPath) {
       return {
         name: 'agentic-flow',
-        status: 'warn',
-        message: 'Not installed (optional — embeddings/routing will use fallbacks)',
-        fix: 'npm install agentic-flow@latest'
+        status: 'pass',
+        message: `Not installed (optional): ${addonHint('learning')}`,
       };
     }
     const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
@@ -2498,7 +2508,7 @@ async function checkAgenticFlow(): Promise<HealthCheck> {
     return {
       name: 'agentic-flow',
       status: 'pass',
-      message: `v${version} (${features.join(', ')})`
+      message: `v${version} (${features.join(', ')})${where}`
     };
   } catch {
     return { name: 'agentic-flow', status: 'warn', message: 'Check failed' };

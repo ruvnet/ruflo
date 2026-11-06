@@ -13,6 +13,7 @@ import { storeCommand } from './transfer-store.js';
 import { contextPlanCommand } from './context-plan.js';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { addonHint, importAddon } from '../addons/index.js';
 import {
   getSecurityStatus as sharedGetSecurityStatus,
   getSwarmStatus as sharedGetSwarmStatus,
@@ -4802,7 +4803,7 @@ const tokenOptimizeCommand: Command = {
 
     try {
       // Check if agentic-flow v3 is available
-      const rb = await import('agentic-flow/reasoningbank').catch(() => null);
+      const rb = await importAddon<typeof import('agentic-flow/reasoningbank')>('agentic-flow/reasoningbank');
       // No root-entry fallback: importing 'agentic-flow' runs its CLI main()
       // in 3.0.0-alpha.x, and the root re-exports this same reasoningbank
       // module, so it cannot load when this subpath did not.
@@ -4813,7 +4814,7 @@ const tokenOptimizeCommand: Command = {
         }
       }
 
-      const versionLabel = agenticFlowAvailable ? `agentic-flow v3 detected (ReasoningBank: ${reasoningBank ? 'active' : 'unavailable'})` : 'agentic-flow not available (using fallbacks)';
+      const versionLabel = agenticFlowAvailable ? `agentic-flow v3 detected (ReasoningBank: ${reasoningBank ? 'active' : 'unavailable'})` : `agentic-flow not available (using fallbacks). ${addonHint('learning', 'ReasoningBank retrieval')}`;
       spinner.succeed(versionLabel);
       output.writeln();
 

@@ -88,6 +88,8 @@ const commandLoaders: Record<string, CommandLoader> = {
   metaharness: () => import('./metaharness.js'),
   // Eject (ADR-150 Phase 2) — lift ruflo project into a renamed standalone harness
   eject: () => import('./eject.js'),
+  // Heavy optional capabilities installed on demand (ADR-525)
+  add: () => import('./add.js'),
   // Cognitum lifecycle funnel controls (ADR-301/305/309)
   funnel: () => import('./funnel.js'),
   // User-facing preferences wrapper (ADR-311 copy discipline — no "funnel" in
@@ -285,7 +287,7 @@ export async function getCommandsByCategory(): Promise<Record<string, Command[]>
     analyzeCmd, routeCmd, progressCmd, providersCmd,
     pluginsCmd, deploymentCmd, claimsCmd, issuesCmd,
     updateCmd, processCmd, guidanceCmd, applianceCmd,
-    cleanupCmd, autopilotCmd, policyCmd, pairCmd,
+    cleanupCmd, autopilotCmd, policyCmd, pairCmd, addCmd,
   ] = await Promise.all([
     loadCommand('daemon'), loadCommand('doctor'), loadCommand('embeddings'), loadCommand('neural'),
     loadCommand('performance'), loadCommand('security'), loadCommand('ruvector'), loadCommand('hive-mind'),
@@ -293,7 +295,7 @@ export async function getCommandsByCategory(): Promise<Record<string, Command[]>
     loadCommand('analyze'), loadCommand('route'), loadCommand('progress'), loadCommand('providers'),
     loadCommand('plugins'), loadCommand('deployment'), loadCommand('claims'), loadCommand('issues'),
     loadCommand('update'), loadCommand('process'), loadCommand('guidance'), loadCommand('appliance'),
-    loadCommand('cleanup'), loadCommand('autopilot'), loadCommand('policy'), loadCommand('pair'),
+    loadCommand('cleanup'), loadCommand('autopilot'), loadCommand('policy'), loadCommand('pair'), loadCommand('add'),
   ]);
 
   return {
@@ -308,7 +310,7 @@ export async function getCommandsByCategory(): Promise<Record<string, Command[]>
     ].filter(Boolean) as Command[],
     utility: [
       configCmd, doctorCmd, daemonCmd, completionsCmd,
-      migrateCmd, workflowCmd, pairCmd,
+      migrateCmd, workflowCmd, pairCmd, addCmd,
     ].filter(Boolean) as Command[],
     analysis: [
       analyzeCmd, routeCmd, progressCmd,

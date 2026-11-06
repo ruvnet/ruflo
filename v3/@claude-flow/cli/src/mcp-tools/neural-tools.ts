@@ -17,6 +17,7 @@ import { nullPrototypeRecords } from './record-store.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { importAddon } from '../addons/index.js';
 
 /**
  * ADR-176/177: an adopted+applied proven-config champion supplies the retrieval
@@ -150,7 +151,7 @@ function ensureEmbeddings(): Promise<void> {
       // silently fall back on darwin-arm64 without sharp — that's the bug
       // Tier 0 was added to bypass).
       if (!realEmbeddings) {
-        const rb = await import('agentic-flow/reasoningbank').catch(() => null);
+        const rb = await importAddon<typeof import('agentic-flow/reasoningbank')>('agentic-flow/reasoningbank');
         if (rb?.computeEmbedding) {
           // computeEmbedding returns a Float32Array; JSON.stringify writes that as
           // {"0":…,"1":…}, so convert before it reaches the neural store.

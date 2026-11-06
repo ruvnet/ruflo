@@ -9,7 +9,7 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import {
   loadState, saveState, appendLog, loadLog, discoverTasks,
-  getProgress, calculateReward, tryLoadLearning, validateNumber,
+  getProgress, calculateReward, tryLoadLearning, getLearningLoadError, validateNumber,
   validateConfiguredTaskSources, VALID_TASK_SOURCES, LOG_FILE,
 } from '../autopilot-state.js';
 import { getCheckpointGate, CheckpointGate } from '../services/checkpoint-gate.js';
@@ -301,7 +301,7 @@ const learnCommand: Command = {
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const learning = await tryLoadLearning();
     if (!learning) {
-      output.writeln('Learning not available (AgentDB not initialized). Autopilot still works for task completion tracking.');
+      output.writeln(`Learning not available (${getLearningLoadError() ?? 'AgentDB not initialized'}). Autopilot still works for task completion tracking.`);
       return { success: true };
     }
 
@@ -346,7 +346,7 @@ const historyCommand: Command = {
 
     const learning = await tryLoadLearning();
     if (!learning) {
-      output.writeln('Learning not available. No history to search.');
+      output.writeln(`Learning not available (${getLearningLoadError() ?? 'AgentDB not initialized'}). No history to search.`);
       return { success: true };
     }
 
