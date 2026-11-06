@@ -10,7 +10,7 @@ bad()  { printf "FAIL: %s\n" "$1"; FAIL=$((FAIL+1)); }
 
 step "1. plugin.json declares 0.2.14 with new keywords"
 v=$(grep -E '"version"' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.2.14" ]]; then
+if [[ "$v" != "0.2.15" ]]; then
   bad "expected 0.2.14, got '$v'"
 else
   miss=""
