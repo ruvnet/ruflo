@@ -84,6 +84,12 @@ export interface SkillsConfig {
   dualMode: boolean;
   /** Include legacy skills that document commands v3 does not ship (opt-in) */
   legacy: boolean;
+  /**
+   * Include ecosystem skills (vector quantization, graph min-cut, sublinear
+   * solving, injection defense, fast code edits, LoRA learning). Optional so
+   * existing SkillsConfig literals stay valid; absent means on.
+   */
+  ecosystem?: boolean;
   /** Include all available skills */
   all: boolean;
 }
@@ -400,6 +406,7 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
     v3: false,        // ADR-128: opt-in like agents.v3; use --full or `init skills --v3`
     dualMode: false,  // Optional: enable with --dual flag
     legacy: false,    // #4539: stream-chain/sparc document verbs v3 does not ship
+    ecosystem: true,  // ruvector / agent-booster / aidefence usage skills
     all: false,
   },
   commands: {
@@ -510,6 +517,7 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
     v3: false,
     dualMode: false,
     legacy: false,
+    ecosystem: false,
     all: false,
   },
   agents: {
@@ -572,6 +580,7 @@ export const FULL_INIT_OPTIONS: InitOptions = {
     v3: true,
     dualMode: true,  // Include in full init
     legacy: true,    // Include in full init
+    ecosystem: true,
     all: true,
   },
   commands: {

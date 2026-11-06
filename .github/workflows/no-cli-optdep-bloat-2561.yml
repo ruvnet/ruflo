@@ -64,7 +64,18 @@ jobs:
             // guard for no reason connected to #2561; this bump leaves 2
             // slots of real headroom (11 declared today, budget 13) rather
             // than repeating that mistake.
-            const CLI_MAX = 13;
+            // Raised 13 → 17 for the ecosystem integrations (2026-11-05). Two
+            // entries added, each measured with a cold `npm install <pkg>` into
+            // an empty dir with an empty cache:
+            //   @ruvector/learning-wasm@0.1.29: 0.38s, 1 package, 104K, zero
+            //     deps, no lifecycle scripts (pure wasm-bindgen). It was already
+            //     imported by ruvector-training.ts / neural.ts / ruvector/index.ts
+            //     but undeclared, so the WASM MicroLoRA path never activated.
+            //   agent-booster@0.2.2: 0.98s, 67 packages (express 5 tree), 5.8M,
+            //     no lifecycle scripts. Backs the hooks_fast-apply MCP tool.
+            // Compare 139 s / 377 packages for a cold install of the CLI itself.
+            // 15 declared after this change, budget 17: two slots of headroom.
+            const CLI_MAX = 17;
             const RUFLO_MAX = 0;
 
             // Specific packages proven to trigger the cold-npx timeout in
@@ -86,6 +97,10 @@ jobs:
             // the aidefence_* tools resolve under the pnpm isolated layout (#4445).
             // Removed per the guard escape clause documented above; the rest
             // of the list stands.
+            // NOTE: "@ruvector/learning-wasm" was removed from this list on
+            // 2026-11-05 under the same escape clause: 0.1.29 is one
+            // zero-dependency wasm package (104K installed, 0.38s cold install,
+            // no lifecycle scripts), not the native/wasm fan-out behind #2561.
             const FORBIDDEN = [
               "@claude-flow/codex",
               "@claude-flow/embeddings",
@@ -99,7 +114,6 @@ jobs:
               "@ruvector/attention",
               "@ruvector/attention-darwin-arm64",
               "@ruvector/diskann",
-              "@ruvector/learning-wasm",
               "@ruvector/router",
               "@ruvector/ruvllm-wasm",
               "@ruvector/rvagent-wasm",

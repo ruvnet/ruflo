@@ -1761,6 +1761,11 @@ const benchmarkCommand: Command = {
     spinner.start();
 
     try {
+      const results: { name: string; averageTimeMs: number; opsPerSecond: number }[] = [];
+      // The attention and MicroLoRA benchmarks are independent: a missing or
+      // API-incompatible @ruvector/attention must not hide the
+      // @ruvector/learning-wasm MicroLoRA numbers below.
+      try {
       // Indirect the specifier through a string variable so tsc doesn't
       // statically resolve this optional dependency at build time (TS2307
       // when it isn't installed — install-safety / Build V3 pattern from #2586).
@@ -1803,8 +1808,6 @@ const benchmarkCommand: Command = {
       };
 
       spinner.setText(`Benchmarking attention mechanisms (dim=${dim}, keys=${numKeys}, iter=${iterations})...`);
-
-      const results: { name: string; averageTimeMs: number; opsPerSecond: number }[] = [];
 
       // Benchmark each mechanism
       const dotProduct = new attention.DotProductAttention(dim);
@@ -1852,6 +1855,9 @@ const benchmarkCommand: Command = {
       if (dotProductResult && hyperbolicResult) {
         output.writeln(output.dim(`Hyperbolic overhead: ${(hyperbolicResult.averageTimeMs / dotProductResult.averageTimeMs).toFixed(2)}x (expected for manifold ops)`));
       }
+      } catch (attentionError) {
+        spinner.fail(`Attention benchmark skipped: ${attentionError instanceof Error ? attentionError.message : String(attentionError)}`);
+      }
 
       // Also benchmark MicroLoRA
       spinner.start();
@@ -1869,7 +1875,7 @@ const benchmarkCommand: Command = {
 
       const learningWasm = await import(learningWasmPkg) as {
         initSync: (opts: { module: Buffer | Uint8Array }) => void;
-        WasmMicroLoRA: new (dim: number, lr: number, wd: number) => {
+        WasmMicroLoRA: new (dim: number, alpha: number, learningRate: number) => {
           adapt_array: (gradient: Float32Array) => void;
           free: () => void;
         };

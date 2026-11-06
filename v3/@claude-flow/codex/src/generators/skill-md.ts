@@ -18,6 +18,12 @@ export const BUILT_IN_SKILL_NAMES: readonly BuiltInSkill[] = [
   'security-audit',
   'performance-analysis',
   'github-automation',
+  'vector-quantization',
+  'graph-mincut',
+  'sublinear-solver',
+  'injection-defense',
+  'fast-code-edits',
+  'lora-learning',
 ];
 
 const BUILT_IN_SKILLS_ROOT = path.resolve(

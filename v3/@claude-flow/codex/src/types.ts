@@ -261,7 +261,13 @@ export type BuiltInSkill =
   | 'sparc-methodology'
   | 'security-audit'
   | 'performance-analysis'
-  | 'github-automation';
+  | 'github-automation'
+  | 'vector-quantization'
+  | 'graph-mincut'
+  | 'sublinear-solver'
+  | 'injection-defense'
+  | 'fast-code-edits'
+  | 'lora-learning';
 
 /**
  * Codex undocumented features (from binary analysis)

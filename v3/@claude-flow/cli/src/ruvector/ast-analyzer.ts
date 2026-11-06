@@ -60,8 +60,7 @@ const LANGUAGE_PATTERNS: Record<string, RegExp[]> = {
 
 export class ASTAnalyzer {
   private config: ASTAnalyzerConfig;
-  private ruvectorEngine: unknown = null;
-  private useNative = false;
+  private readonly useNative = false;
   private analysisCache: Map<string, ASTAnalysis> = new Map();
 
   constructor(config: Partial<ASTAnalyzerConfig> = {}) {
@@ -69,16 +68,10 @@ export class ASTAnalyzer {
   }
 
   async initialize(): Promise<void> {
-    try {
-      // @ruvector/ast is optional - gracefully fallback if not installed
-      const ruvector = await import('@ruvector/ast' as string).catch(() => null);
-      if (ruvector) {
-        this.ruvectorEngine = (ruvector as any).createASTAnalyzer?.(this.config);
-        this.useNative = !!this.ruvectorEngine;
-      }
-    } catch {
-      this.useNative = false;
-    }
+    // Pure-JS analysis. This used to try `import('@ruvector/ast')`, a package that has
+    // never been published (npm 404), so it always fell through to here. ruvector@0.3's
+    // ASTParser needs the native tree-sitter grammars and is async-only, so it cannot
+    // back this synchronous analyzer.
   }
 
   analyze(code: string, filePath: string = 'unknown'): ASTAnalysis {

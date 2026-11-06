@@ -62,7 +62,7 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 // moved to ^0.4.1 (b8ec03f34) because nothing compared the two;
 // scripts/check-metaharness-pins.mjs now fails when they diverge.
 const METAHARNESS_PKG = 'metaharness';
-const METAHARNESS_PIN_VERSION = '~0.4.1';
+const METAHARNESS_PIN_VERSION = '~0.4.20';
 
 const REASON_NOT_AVAILABLE = 'metaharness-not-available';
 

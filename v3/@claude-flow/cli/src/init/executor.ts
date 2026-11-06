@@ -92,6 +92,17 @@ const SKILLS_MAP: Record<string, string[]> = {
     'sparc-methodology',
     'stream-chain',
   ],
+  // How and when to use the ecosystem packages ruflo ships or wires in:
+  // ruvector + @ruvector/mincut-wasm, @ruvector/rabitq-wasm, sublinear-time-solver,
+  // @claude-flow/aidefence, agent-booster, @ruvector/learning-wasm.
+  ecosystem: [
+    'vector-quantization',
+    'graph-mincut',
+    'sublinear-solver',
+    'injection-defense',
+    'fast-code-edits',
+    'lora-learning',
+  ],
 };
 
 /**
@@ -1210,6 +1221,7 @@ async function copySkills(
     if (skillsConfig.v3) skillsToCopy.push(...SKILLS_MAP.v3);
     if (skillsConfig.dualMode) skillsToCopy.push(...SKILLS_MAP.dualMode);
     if (skillsConfig.legacy) skillsToCopy.push(...SKILLS_MAP.legacy);
+    if (skillsConfig.ecosystem ?? true) skillsToCopy.push(...SKILLS_MAP.ecosystem);
   }
 
   // Find source skills directory

@@ -1,6 +1,6 @@
 {
   "name": "claude-flow",
-  "version": "3.72.0",
+  "version": "3.72.1",
   "workspaces": [
     "v3/@claude-flow/codex",
     "v3/@claude-flow/mcp",
@@ -70,7 +70,7 @@
   },
   "dependencies": {
     "@claude-flow/cli-core": "3.7.5",
-    "@claude-flow/codex": "3.0.5",
+    "@claude-flow/codex": "3.0.6",
     "@claude-flow/mcp": "3.1.6",
     "@claude-flow/neural": "3.0.2",
     "@claude-flow/plugin-agent-federation": "1.0.5",
@@ -79,7 +79,7 @@
     "@electron/asar": "^4.3.1",
     "@iarna/toml": "^2.2.5",
     "@noble/ed25519": "2.3.0",
-    "@ruvector/rabitq-wasm": "0.1.0",
+    "@ruvector/rabitq-wasm": "0.1.2",
     "ajv": "^8.20.0",
     "bcryptjs": "^3.0.3",
     "chalk": "^5.3.0",
@@ -106,10 +106,13 @@
     "@ruvector/sona": "^0.1.5",
     "agentdb": "^3.3.0",
     "agentic-flow": "^3.0.0",
-    "better-sqlite3": "12.9.0"
+    "better-sqlite3": "12.9.0",
+    "ruvector": "^0.3.11",
+    "@ruvector/learning-wasm": "0.1.29",
+    "agent-booster": "^0.2.2"
   },
   "overrides": {
-    "ruvector": "^0.2.41",
+    "ruvector": "^0.3.11",
     "better-sqlite3": "12.9.0",
     "js-yaml": ">=4.3.0",
     "hono": ">=4.13.2",
@@ -150,7 +153,7 @@
     "@grpc/grpc-js": ">=1.14.4",
     "form-data": ">=4.0.6",
     "http-proxy-middleware": ">=3.0.7",
-    "@ruvector/ruvllm": ">=2.6.0"
+    "@ruvector/ruvllm": "^4.1.0"
   },
   "devDependencies": {
     "@openai/codex": "^0.98.0",
