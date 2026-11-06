@@ -38,6 +38,19 @@ FEDERATION_TRUST_LEVEL=untrusted       # default: untrusted
 
 ## Tests
 
+JCS-signed inbound envelopes must target this node, agree with their signed
+ID/type/source/session metadata, and be no older than five minutes or more than
+30 seconds in the future. A replay guard is shared by the plugin's inbound
+callbacks. It retains IDs until the signed timestamp expires, with limits of
+1,024 IDs per peer, 256 peers, 8,192 IDs total and 256 characters per ID.
+Capacity exhaustion rejects new messages instead of evicting live replay history.
+
+Replay history is in memory for one plugin lifecycle; restarting the plugin
+clears it. This is not durable or cross-replica deduplication. The existing
+legacy-v1 heartbeat/status compatibility path cannot authenticate nested envelope
+fields and does not acquire JCS replay guarantees. Signature and policy checks
+still run before a JCS message can reserve an ID or reach the event bus.
+
 325 unit tests covering audit, routing, discovery, plugin lifecycle.
 
 ```bash
