@@ -33,6 +33,10 @@
  * Windows) plus a second node startup. Stdio, env, cwd and signals are the
  * same process's, so the server sees an identical environment.
  * RUFLO_MCP_SPAWN=1 restores the old child-process behaviour.
+ *
+ * RUFLO_LAUNCH_SURFACE=plugin is set (unless already set) so the CLI's funnel
+ * fetch can count plugin-only users; the CLI only accepts values from a closed
+ * allowlist (funnel/message-transport.ts). Inherited by every launch path.
  */
 
 const { existsSync, statSync } = require('fs');
@@ -253,10 +257,7 @@ function launch({ command, args, shell, cwd, env }) {
 
 if (require.main === module) {
   try {
-    // Tells the CLI it was started by this plugin, so its funnel fetch can be
-    // counted as a plugin user (closed allowlist in funnel/message-transport.ts).
-    // Inherited by both the in-process and the spawned/npx paths.
-    if (!process.env.RUFLO_LAUNCH_SURFACE) process.env.RUFLO_LAUNCH_SURFACE = 'plugin';
+    if (!process.env.RUFLO_LAUNCH_SURFACE) process.env.RUFLO_LAUNCH_SURFACE = 'plugin'; // counts plugin users in the funnel (see header)
     const home = os.homedir();
     const projectDir = resolveProjectDir(process.env, process.cwd(), home);
     if (isNonProjectDir(projectDir, home)) {
