@@ -1,8 +1,8 @@
 # ruflo-ruvector
 
-Self-learning vector database powered by [`ruvector@0.3.12`](https://www.npmjs.com/package/ruvector) — HNSW, Adaptive LoRA embeddings, hooks-based intelligence, SONA self-optimizing patterns, brain (collective knowledge), and 97 MCP tools (verified via `ruvector mcp tools`).
+Self-learning vector database powered by [`ruvector@0.3.13`](https://www.npmjs.com/package/ruvector) — HNSW, Adaptive LoRA embeddings, hooks-based intelligence, SONA self-optimizing patterns, brain (collective knowledge), exact min-cut, opt-in RaBitQ and DiskANN, and 118 MCP tools (the server's `tools/list`; `ruvector mcp tools` prints 97 of them).
 
-> **Pinned version:** this plugin targets `ruvector@0.3.12`. Earlier 0.1.x versions are missing several commands (`brain`, `route`, `sona`); some legacy docs referenced 2.x features that do not exist on npm. Always invoke with the pin.
+> **Pinned version:** this plugin targets `ruvector@0.3.13`. Earlier 0.1.x versions are missing several commands (`brain`, `route`, `sona`); some legacy docs referenced 2.x features that do not exist on npm. Always invoke with the pin.
 
 ## Overview
 
@@ -12,7 +12,7 @@ Wraps the `ruvector` npm package as a Ruflo plugin, providing vector embedding, 
 
 ```bash
 # Required
-npm install ruvector@0.3.12
+npm install ruvector@0.3.13
 
 # Optional add-ons (install as needed)
 npm install @ruvector/pi-brain              # required for `brain` subcommands
@@ -21,7 +21,7 @@ npm install @ruvector/ruvllm                # required for `sona` subcommands (J
 
 Run a health check:
 ```bash
-npx -y ruvector@0.3.12 doctor
+npx -y ruvector@0.3.13 doctor
 ```
 
 ## Installation
@@ -30,14 +30,14 @@ npx -y ruvector@0.3.12 doctor
 claude --plugin-dir plugins/ruflo-ruvector
 ```
 
-## MCP Integration (97 Tools)
+## MCP Integration (118 Tools)
 
 Register with the pinned version:
 ```bash
-claude mcp add ruvector -- npx -y ruvector@0.3.12 mcp start
+claude mcp add ruvector -- npx -y ruvector@0.3.13 mcp start
 ```
 
-Key tool categories: hooks routing, AST analysis, diff classification, coverage routing, graph clustering, security scanning, RAG context, brain knowledge, SONA learning.
+Key tool categories: hooks routing, AST analysis, diff classification, coverage routing, graph clustering and exact min-cut, security scanning, RAG context, brain knowledge, RVF containers, vector-database CRUD (`vectordb_*`), DiskANN (`diskann_build`, `diskann_search`) and MetaHarness (`metaharness_*`). The count is the server's `tools/list`; `ruvector mcp tools` prints a 97-entry subset. SONA, attention and GNN are CLI-only.
 
 ## Agents
 
@@ -49,7 +49,7 @@ Key tool categories: hooks routing, AST analysis, diff classification, coverage 
 
 | Skill | Usage | Description |
 |-------|-------|-------------|
-| `vector-setup` | `/vector-setup [--full]` | First-run installer: pins `ruvector@0.3.12`, adds ONNX/Brain/SONA/router add-ons, registers MCP, runs `doctor` |
+| `vector-setup` | `/vector-setup [--full]` | First-run installer: pins `ruvector@0.3.13`, adds ONNX/Brain/SONA/router add-ons, registers MCP, runs `doctor` |
 | `vector-embed` | `/vector-embed <text>` | ONNX embeddings (384-dim) via `embed text` |
 | `vector-cluster` | `/vector-cluster <files...>` | Spectral/Louvain code-graph clustering via `hooks graph-cluster` |
 | `vector-hyperbolic` | `/vector-hyperbolic <text>` | Standard ONNX embed + Poincare projection in user code |
@@ -128,34 +128,34 @@ The full surface is documented in `commands/vector.md` (80+ subcommands). Quick 
 /vector-setup
 
 # 1. Create a database
-npx -y ruvector@0.3.12 create project.db -d 384 -m cosine
+npx -y ruvector@0.3.13 create project.db -d 384 -m cosine
 
 # 2. Embed every TypeScript source file (loop — no built-in --batch)
 mkdir -p .vec
 for f in $(find src -name '*.ts'); do
-  npx -y ruvector@0.3.12 embed text "$(cat "$f")" -o ".vec/${f//\//_}.json"
+  npx -y ruvector@0.3.13 embed text "$(cat "$f")" -o ".vec/${f//\//_}.json"
 done
 
 # 3. Insert all embeddings (assumes a JSON array of {id, vector, metadata})
 jq -s '[.[] | {id: input_filename, vector: .vector}]' .vec/*.json > corpus.json
-npx -y ruvector@0.3.12 insert project.db corpus.json
+npx -y ruvector@0.3.13 insert project.db corpus.json
 
 # 4. Search by query embedding
-QV=$(npx -y ruvector@0.3.12 embed text "JWT refresh-token rotation" --output -)
-npx -y ruvector@0.3.12 search project.db -v "$QV" -k 5
+QV=$(npx -y ruvector@0.3.13 embed text "JWT refresh-token rotation" --output -)
+npx -y ruvector@0.3.13 search project.db -v "$QV" -k 5
 
 # 5. Inspect index health
-npx -y ruvector@0.3.12 stats project.db
+npx -y ruvector@0.3.13 stats project.db
 ```
 
 For an alternative store format with lineage tracking, replace steps 1–3 with:
 ```bash
-npx -y ruvector@0.3.12 rvf create project.rvf
-npx -y ruvector@0.3.12 rvf ingest project.rvf < corpus.json
-npx -y ruvector@0.3.12 rvf query project.rvf
+npx -y ruvector@0.3.13 rvf create project.rvf
+npx -y ruvector@0.3.13 rvf ingest project.rvf < corpus.json
+npx -y ruvector@0.3.13 rvf query project.rvf
 ```
 
-## Capabilities (ruvector@0.3.12, verified)
+## Capabilities (ruvector@0.3.13, verified)
 
 | Feature | CLI | Notes |
 |---------|-----|-------|
@@ -181,7 +181,7 @@ npx -y ruvector@0.3.12 rvf query project.rvf
 
 ### What changed since 0.3.3
 
-Rows 0.3.4–0.3.8 and 0.3.12 were run against 0.3.12 on 2026-11-06. Both MCP gates were exercised over stdio: refused without the variable, allowed with it. The 0.3.10 and 0.3.11 rows are from the upstream release notes.
+Rows 0.3.4–0.3.8 and 0.3.12 were run against 0.3.12 on 2026-11-06; the 0.3.13 row and `smoke.sh` (14/14) against 0.3.13. Both MCP gates were exercised over stdio: refused without the variable, allowed with it. The 0.3.10 and 0.3.11 rows are from the upstream release notes.
 
 | Version | Change | What to do |
 |---------|--------|-----------|
@@ -193,17 +193,17 @@ Rows 0.3.4–0.3.8 and 0.3.12 were run against 0.3.12 on 2026-11-06. Both MCP ga
 | 0.3.10 | moves to `@ruvector/rvf` ^0.4.2 | — |
 | 0.3.11 | `rvf` commands release the store lock when they fail | a failed `rvf` call no longer wedges the next one |
 | 0.3.12 | `hooks graph-mincut` works (`engine: mincut-wasm`) | use it for code boundaries |
+| 0.3.13 | `diskann build/search` CLI and `diskann_build`/`diskann_search` MCP tools; RaBitQ-backed hook recall in long-lived processes above `RUVECTOR_RABITQ_THRESHOLD` (default 5000); `@ruvector/attention` ^2.2.3 (GHSA-p62c-q7fc-qmg9) and `@ruvector/sona` ^0.1.11 | `add diskann` / `add rabitq` to enable; nothing to change for the security fixes |
 
 `hooks rag-context` prints a "recall quality degraded" warning when stored memories were embedded with a different embedder than the query (ADR-210). `hooks reembed` re-embeds them; `--dry-run` reports first.
 
-### Known limitations in 0.3.12
+### Known limitations in 0.3.13
 
 | Issue | Detail | Workaround |
 |-------|--------|-----------|
 | `hooks force-learn` | Runs, but reports `skipped: insufficient trajectories` until trajectories exist | record some via `trajectory-begin/step/end` first |
 | `hooks trajectory-*` | Takes `--context`/`--agent`, `--action`/`--result`, `--quality`/`--success`. There is no `--session-id`, `--task` or `--verdict`, and one trajectory is open per project at a time | fold a session id into `--context` |
 | `hooks git-churn` | Fails outside a git repo | run from inside the repo |
-| `benchmark` | Some installs fail with `Missing field 'dimensions'` | use `attention benchmark` or `gnn search` benchmarking |
 | `cluster` (top-level) | `Status: Coming Soon` | use `hooks graph-cluster` |
 | `compare`, top-level `index`, `embed --batch/--glob/--model poincare` | Don't exist (`embed text` takes `--input-file` and `--stdin`) | see `commands/vector.md` for replacements |
 
@@ -211,17 +211,17 @@ Rows 0.3.4–0.3.8 and 0.3.12 were run against 0.3.12 on 2026-11-06. Both MCP ga
 
 ```bash
 # Full pretrain pipeline + agent generation
-npx -y ruvector@0.3.12 hooks init --pretrain --build-agents quality
+npx -y ruvector@0.3.13 hooks init --pretrain --build-agents quality
 
 # Smart agent routing (positional task!)
-npx -y ruvector@0.3.12 hooks route "implement OAuth flow"
-npx -y ruvector@0.3.12 hooks route-enhanced "fix CVE-2025-1234"
+npx -y ruvector@0.3.13 hooks route "implement OAuth flow"
+npx -y ruvector@0.3.13 hooks route-enhanced "fix CVE-2025-1234"
 
 # Code analysis (positional file!)
-npx -y ruvector@0.3.12 hooks ast-analyze src/module.ts
-npx -y ruvector@0.3.12 hooks diff-analyze HEAD
-npx -y ruvector@0.3.12 hooks coverage-route src/module.ts
-npx -y ruvector@0.3.12 hooks security-scan src/
+npx -y ruvector@0.3.13 hooks ast-analyze src/module.ts
+npx -y ruvector@0.3.13 hooks diff-analyze HEAD
+npx -y ruvector@0.3.13 hooks coverage-route src/module.ts
+npx -y ruvector@0.3.13 hooks security-scan src/
 ```
 
 ## Brain (Collective Knowledge)
@@ -229,18 +229,18 @@ npx -y ruvector@0.3.12 hooks security-scan src/
 ```bash
 npm install @ruvector/pi-brain   # required dependency
 
-npx -y ruvector@0.3.12 brain status
-npx -y ruvector@0.3.12 brain search "authentication patterns"
-npx -y ruvector@0.3.12 brain list
-npx -y ruvector@0.3.12 brain drift code   # knowledge drift for a domain
+npx -y ruvector@0.3.13 brain status
+npx -y ruvector@0.3.13 brain search "authentication patterns"
+npx -y ruvector@0.3.13 brain list
+npx -y ruvector@0.3.13 brain drift code   # knowledge drift for a domain
 ```
 
 ## SONA (Self-Optimizing Neural Architecture)
 
 ```bash
-npx -y ruvector@0.3.12 sona status
-npx -y ruvector@0.3.12 sona patterns "auth refactor"
-npx -y ruvector@0.3.12 sona stats
+npx -y ruvector@0.3.13 sona status
+npx -y ruvector@0.3.13 sona patterns "auth refactor"
+npx -y ruvector@0.3.13 sona stats
 ```
 
 ## Performance
@@ -255,7 +255,7 @@ npx -y ruvector@0.3.12 sona stats
 ## Known Caveats
 
 - **ONNX runtime is bundled from 0.3.3** — `embed text` works with no add-on. Older ruvector (0.2.x) reports `ONNX WASM files not bundled`.
-- **No `--batch`, `--glob`, `--namespace`, `--k`, `--task`, `--model poincare` flags** (`embed text` does take `--input-file` and `--stdin`) — these were in older docs but are not in 0.3.12. See `agents/vector-engineer.md` for the replacement table.
+- **No `--batch`, `--glob`, `--namespace`, `--k`, `--task`, `--model poincare` flags** (`embed text` does take `--input-file` and `--stdin`) — these were in older docs but are not in 0.3.13. See `agents/vector-engineer.md` for the replacement table.
 - **`brain` requires `@ruvector/pi-brain`** — install separately.
 - **`sona` requires `@ruvector/ruvllm`** — install separately (the native binding is not always present in the npm tarball).
 - **Top-level `cluster` is "Coming Soon"** — for actual clustering use `hooks graph-cluster <files>`.
@@ -263,7 +263,7 @@ npx -y ruvector@0.3.12 sona stats
 
 ## Architecture Decisions
 
-- [`ADR-0001` — Pin ruflo-ruvector to ruvector@0.3.12 with optional add-ons](./docs/adrs/0001-pin-ruvector-0.2.25.md)
+- [`ADR-0001` — Pin ruflo-ruvector to ruvector@0.3.13 with optional add-ons](./docs/adrs/0001-pin-ruvector-0.2.25.md)
 
 ## Smoke test
 
