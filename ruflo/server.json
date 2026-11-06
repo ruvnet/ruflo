@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "name": "io.github.ruvnet/ruflo",
+  "title": "Ruflo",
+  "description": "Agent teams, swarms, memory and hooks for Claude Code and Codex, served over MCP.",
+  "repository": {
+    "url": "https://github.com/ruvnet/ruflo",
+    "source": "github",
+    "subfolder": "ruflo"
+  },
+  "websiteUrl": "https://github.com/ruvnet/ruflo",
+  "version": "3.72.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "ruflo",
+      "version": "3.72.2",
+      "runtimeHint": "npx",
+      "transport": { "type": "stdio" },
+      "packageArguments": [
+        { "type": "positional", "value": "mcp" },
+        { "type": "positional", "value": "start" }
+      ]
+    }
+  ]
+}
