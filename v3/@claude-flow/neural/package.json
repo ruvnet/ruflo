@@ -122,7 +122,7 @@
   ],
   "dependencies": {
     "@claude-flow/memory": "^3.0.0",
-    "@ruvector/sona": "0.1.10"
+    "@ruvector/sona": "0.1.11"
   },
   "optionalDependencies": {
     "agentdb": "^2.0.0 || ^3.0.0-alpha.1"

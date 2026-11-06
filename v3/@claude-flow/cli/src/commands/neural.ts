@@ -1771,10 +1771,12 @@ const benchmarkCommand: Command = {
       // when it isn't installed — install-safety / Build V3 pattern from #2586).
       const attentionPkg: string = '@ruvector/attention';
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic import of optional native WASM module with no type declarations
-      const attention = await import(attentionPkg) as unknown as Record<string, new (...args: number[]) => { computeRaw: (q: Float32Array, k: Float32Array[], v: Float32Array[]) => Float32Array }>;
+      // @ruvector/attention is CommonJS: under import() its classes sit on `default`.
+      const attentionMod = await import(attentionPkg) as { default?: unknown };
+      const attention = (attentionMod.default ?? attentionMod) as unknown as Record<string, new (...args: number[]) => { compute: (q: Float32Array, k: Float32Array[], v: Float32Array[]) => Float32Array }>;
 
       // Manual benchmark since benchmarkAttention has a binding bug
-      const benchmarkMechanism = async (name: string, mechanism: { computeRaw: (q: Float32Array, k: Float32Array[], v: Float32Array[]) => Float32Array }) => {
+      const benchmarkMechanism = async (name: string, mechanism: { compute: (q: Float32Array, k: Float32Array[], v: Float32Array[]) => Float32Array }) => {
         const query = new Float32Array(dim);
         const keys: Float32Array[] = [];
         const values: Float32Array[] = [];
@@ -1792,11 +1794,11 @@ const benchmarkCommand: Command = {
         }
 
         // Warmup
-        for (let i = 0; i < 10; i++) mechanism.computeRaw(query, keys, values);
+        for (let i = 0; i < 10; i++) mechanism.compute(query, keys, values);
 
         const start = performance.now();
         for (let i = 0; i < iterations; i++) {
-          mechanism.computeRaw(query, keys, values);
+          mechanism.compute(query, keys, values);
         }
         const elapsed = performance.now() - start;
 
