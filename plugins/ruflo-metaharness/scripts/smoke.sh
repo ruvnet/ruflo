@@ -1496,15 +1496,17 @@ printf '%s' "$OUT" | node -e '
 step "17z24. doctor required-files include iter-53 + iter-56 surfaces (iter 61)"
 miss=""
 DOC="$ROOT/../../v3/@claude-flow/cli/src/commands/doctor.ts"
+# The checks themselves moved to doctor-checks/metaharness.ts (#4773).
+DOC_CHECKS="$ROOT/../../v3/@claude-flow/cli/src/commands/doctor-checks/metaharness.ts"
 # Newly-gated files (iter 53 surfaces)
-grep -q "drift-from-history.mjs" "$DOC" 2>/dev/null || miss="$miss no-drift-script-check"
-grep -q "harness-drift-from-history/SKILL.md" "$DOC" 2>/dev/null || miss="$miss no-drift-skill-check"
+grep -q "drift-from-history.mjs" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss no-drift-script-check"
+grep -q "harness-drift-from-history/SKILL.md" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss no-drift-skill-check"
 # Newly-gated iter-56 async exports
-grep -q "runHarnessAsync" "$DOC" 2>/dev/null || miss="$miss no-runHarnessAsync-check"
-grep -q "runMetaharnessAsync" "$DOC" 2>/dev/null || miss="$miss no-runMetaharnessAsync-check"
-grep -q "oia-audit parallelization will fail" "$DOC" 2>/dev/null || miss="$miss no-async-fail-msg"
+grep -q "runHarnessAsync" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss no-runHarnessAsync-check"
+grep -q "runMetaharnessAsync" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss no-runMetaharnessAsync-check"
+grep -q "oia-audit parallelization will fail" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss no-async-fail-msg"
 # Comment block updated
-grep -q "iter 36-53 surfaces" "$DOC" 2>/dev/null || miss="$miss no-iter53-comment"
+grep -q "iter 36-53 surfaces" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss no-iter53-comment"
 [[ -z "$miss" ]] && ok || bad "$miss"
 
 step "17z23. ADR-150 implementation notes reflect iters 13-59 (iter 60)"
@@ -1664,9 +1666,11 @@ grep -q "mcp_scan positive: first finding has string severity" "$T" 2>/dev/null 
 grep -q "mcp_scan positive: data.summary.totalCount" "$T" 2>/dev/null || miss="$miss no-summary-mcp-assert"
 # Doctor verifies parseMcpScanText export + smoke
 DOC="$ROOT/../../v3/@claude-flow/cli/src/commands/doctor.ts"
-grep -q "parseMcpScanText" "$DOC" 2>/dev/null || miss="$miss doctor-no-parser-import"
-grep -q "iter 50 — needed by mcp-scan + oia-audit" "$DOC" 2>/dev/null || miss="$miss doctor-no-iter50-marker"
-grep -q "parseMcpScanText returned unexpected shape" "$DOC" 2>/dev/null || miss="$miss doctor-no-empty-input-check"
+# The checks themselves moved to doctor-checks/metaharness.ts (#4773).
+DOC_CHECKS="$ROOT/../../v3/@claude-flow/cli/src/commands/doctor-checks/metaharness.ts"
+grep -q "parseMcpScanText" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss doctor-no-parser-import"
+grep -q "iter 50 — needed by mcp-scan + oia-audit" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss doctor-no-iter50-marker"
+grep -q "parseMcpScanText returned unexpected shape" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss doctor-no-empty-input-check"
 # Runtime: extended test passes at least the structural envelopes.
 # Iter 55: the runtime invocation is flaky in some smoke environments
 # (slow tools time out independently of correctness). Accept the test
@@ -1811,18 +1815,20 @@ grep -q "audit_trend file-input path: success === true" "$T" 2>/dev/null || miss
 step "17z8. ruflo doctor checks the integration layer, not just upstream (iter 45)"
 miss=""
 DOC="$ROOT/../../v3/@claude-flow/cli/src/commands/doctor.ts"
+# The checks themselves moved to doctor-checks/metaharness.ts (#4773).
+DOC_CHECKS="$ROOT/../../v3/@claude-flow/cli/src/commands/doctor-checks/metaharness.ts"
 # New function present
-grep -q "function checkMetaharnessIntegration" "$DOC" 2>/dev/null || miss="$miss no-integration-check"
+grep -q "function checkMetaharnessIntegration" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss no-integration-check"
 # Registered in allChecks
 grep -q "checkMetaharnessIntegration, // iter 45" "$DOC" 2>/dev/null || miss="$miss not-in-allchecks"
 # Alias in componentMap
 grep -q "'metaharness-integration': checkMetaharnessIntegration" "$DOC" 2>/dev/null || miss="$miss no-component-alias"
 # Verifies the 5 critical files
 for f in _harness _similarity similarity _spike-similarity harness-similarity; do
-  grep -q "${f}" "$DOC" 2>/dev/null || miss="$miss check-missing-${f}"
+  grep -q "${f}" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss check-missing-${f}"
 done
 # Runtime smoke: similarity({}, {}) call present
-grep -q "mod.similarity({}, {})" "$DOC" 2>/dev/null || miss="$miss no-smoke-call"
+grep -q "mod.similarity({}, {})" "$DOC" "$DOC_CHECKS" 2>/dev/null || miss="$miss no-smoke-call"
 [[ -z "$miss" ]] && ok || bad "$miss"
 
 step "17z7. MCP wrapper success semantic fix (iter 44 — exitCode is the source of truth)"
@@ -2311,11 +2317,13 @@ grep -q "process.exit(1)" "$F" || miss="$miss no-fail-closed"
 
 step "17h. doctor integration — checkMetaharness in standard health checks (iter 14)"
 F="$ROOT/../../v3/@claude-flow/cli/src/commands/doctor.ts"
+# The checks themselves moved to doctor-checks/metaharness.ts (#4773).
+F_CHECKS="$ROOT/../../v3/@claude-flow/cli/src/commands/doctor-checks/metaharness.ts"
 miss=""
 [[ -f "$F" ]] || miss="$miss missing-file"
 # The check function exists, with ADR-150 anchor
-grep -q "async function checkMetaharness" "$F" || miss="$miss no-check-function"
-grep -q "ADR-150" "$F" || miss="$miss no-adr-anchor"
+grep -q "async function checkMetaharness" "$F" "$F_CHECKS" || miss="$miss no-check-function"
+grep -q "ADR-150" "$F" "$F_CHECKS" || miss="$miss no-adr-anchor"
 # Registered in BOTH the allChecks array AND the componentMap. The
 # componentMap entry is now an ARRAY (upstream + declared-deps + integration
 # checks, PR #2956) — accept either the legacy bare form or the array form.
@@ -2324,7 +2332,7 @@ grep -Eq "'metaharness': (checkMetaharness|\[checkMetaharness)" "$F" || miss="$m
 # Help text mentions it
 grep -q "metaharness)" "$F" || miss="$miss not-in-help-text"
 # Graceful: never throws; returns warn (not fail) on missing
-grep -q "status: 'warn'" "$F" || miss="$miss no-graceful-warn"
+grep -q "status: 'warn'" "$F" "$F_CHECKS" || miss="$miss no-graceful-warn"
 [[ -z "$miss" ]] && ok || bad "$miss"
 
 step "17g. parallel-pipeline e2e integration test (ADR-150 — iter 13)"
