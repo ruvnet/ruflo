@@ -6,16 +6,25 @@
 
 ## Context
 
-Measured 2026-11-06 in a fresh `node:22` container with an empty npm cache, on a fast network:
+Earlier measurement, 2026-11-06, in a fresh `node:22` container with an empty npm cache, on a fast network. Rows A and B are estimates that did **not** reproduce once phase 1 was implemented (see the next table):
 
 | Install | Time | Size | Packages |
 |---|---|---|---|
 | `npm install ruflo@3.72.2` today | 31 s | **1.5 GB** | 383 |
-| Same, minus `agentic-flow` (A) | 16 s | 887 MB | 283 |
-| A, plus agentdb no longer pulling `@huggingface/transformers` (B) | 12 s | 411 MB | 264 |
+| Same, minus `agentic-flow` (A, not reproduced) | 16 s | 887 MB | 283 |
+| A, plus agentdb no longer pulling `@huggingface/transformers` (B, not reproduced) | 12 s | 411 MB | 264 |
 | `--omit=optional` (floor) | 12 s | 166 MB | 231 |
 
 `ruflo init` succeeds at the floor.
+
+Phase 1 as implemented (PR #4866), measured 2026-11-06. Each install ran one after another in a fresh `node:22` container with an empty npm cache. "After" is the CLI packed from the branch; for `ruflo`, it is `ruflo@3.72.2` with an `overrides` entry pointing `@claude-flow/cli` at that tarball. Package counts are npm's "added N packages".
+
+| Install | Before (registry 3.72.2) | After phase 1 |
+|---|---|---|
+| `@claude-flow/cli` | 26.5 s / 1450 MB / 637 pkgs | 21.2 s / 1172 MB / 449 pkgs |
+| `ruflo` | 25.6 s / 1460 MB / 638 pkgs | 24.0 s / 1181 MB / 450 pkgs |
+
+Removing `agentic-flow` saves about 280 MB and 188 packages, not the ~600 MB that row A implied. Most of the remaining weight is about 690 MB of ONNX runtime: `onnxruntime-node` (547 MB) plus `onnxruntime-web` (140 MB). Both come in through `agentdb` → `@huggingface/transformers`. Removing them is the upstream agentdb ask below (phase 2), not a ruflo change.
 
 Three things cause the weight:
 
@@ -47,8 +56,9 @@ The default install contains what `init`, memory, swarm, hooks and MCP need. Cap
 
 ## Consequences
 
-- A cold install drops from 1.5 GB to about 0.9 GB with ruflo's change alone, and to about 0.4 GB once agentdb ships its change. The time drops from 31 s to 12–16 s on a fast network, with larger absolute savings on slow ones.
+- Measured: ruflo's change alone takes a cold install from about 1.45 GB to about 1.17 GB, and from 637 to 449 packages (see Context). The remaining ~690 MB of ONNX runtime goes only when agentdb ships its change (phase 2). The 0.9 GB and 0.4 GB projections did not reproduce.
 - Users who rely on autopilot learning or ReasoningBank retrieval run `ruflo add learning` once. Their features are otherwise unchanged.
+- **`ruflo add learning` costs more than it saves.** Measured in the same container: 29 s and 1842 MB in `~/.ruflo/addons`. A standalone `--prefix` install pulls its own copies of agentdb and the ONNX runtime. Installing with `--omit=optional` cut this to 16 s, 1024 MB and 371 packages, but broke the feature. agentic-flow's ReasoningBank imports `better-sqlite3`, which agentic-flow declares as optional, so the import fails with `ERR_MODULE_NOT_FOUND`. Autopilot learning then reports "AgentDB not initialized" and token-optimize falls back. The add-on therefore installs with optional dependencies, and the CLI prints the ~1.8 GB estimate before installing. Shrinking it depends on the upstream agentic-flow ask (vendor SDKs as optional peers), with better-sqlite3 kept as a real dependency of its ReasoningBank entry point.
 - The #2561 optional-dependency budget goes down by one. The `no-cli-optdep-bloat` guard should put `agentic-flow` on its FORBIDDEN list so it cannot quietly come back.
 - Activation is measurable through the opt-in funnel (ADR-309 / #4860). The success metric is the share of weekly clients seen on more than one day, which was 41% before this change.
 
