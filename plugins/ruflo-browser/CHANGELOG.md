@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.3.8 — 2026-11-06
+- fix: the `browser-agent` and `browser-record` recipes call `hooks trajectory-begin --context … --agent browser-session`, `trajectory-step --action … --result …` and `trajectory-end --quality <n> [--success]`. They used `--session-id`, `--task`, `--args`, `--selector` and `--verdict`, which no ruvector release accepts: trajectory-begin exited with `required option --context` and trajectory-end with `unknown option --session-id`. The `browser_session_*` MCP tools already used this argv.
+- chore: pin ruvector@0.3.12 (from 0.2.27/0.2.25), matching the CLI dependency, so the npx fallback no longer downloads a second, older ruvector.
+
 ## 0.3.6 — 2026-10-12
 - fix: the shared text screen now catches `.env` and e-mailed credentials, no longer flags a model's token talk (`--max-tokens`, `/oauth/token`, "token usage"), and no longer flags values that only name where a secret lives (`./service-account.json`, `--set-secrets=NAME=NAME:latest`); every rule stays linear (#4094, thanks @proffesor-for-testing)
 

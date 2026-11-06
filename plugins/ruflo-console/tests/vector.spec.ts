@@ -83,7 +83,7 @@ describe('the catalog', () => {
 
     expect(new Set(ids).size).toBe(ids.length)
     expect(ids.every(id => id.startsWith('vec-'))).toBe(true)
-    expect(RV).toEqual(['npx', '--offline', '-y', 'ruvector@0.3.3'])
+    expect(RV).toEqual(['npx', '--offline', '-y', 'ruvector@0.3.12'])
 
     for (const one of VEC) {
       const spec = vecSpec(one, state, 'x')

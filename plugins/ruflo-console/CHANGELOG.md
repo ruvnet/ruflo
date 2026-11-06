@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.49.12 — 2026-11-06
+- chore: the vector page runs ruvector@0.3.12 (from 0.3.3), the version the CLI and ruflo-ruvector now pin. Every read command on the page (`rvf examples`, `hooks stats/learning-stats/route/recall/rag-context/remember`, `edge join`, `identity show`, `decompile <file> --json`) was run against 0.3.12 and prints what its reader expects.
+
 ## 0.49.11 — 2026-11-04
 - feat: `console_state` and `console_run` are registered with `isDeferred: false` (Claude Code 2.1.293), so their schemas are in the prompt from the start: every console turn calls them. `console_open` and `console_set` stay behind tool search. Older hosts drop the field.
 - chore: every `Text` says `weight` instead of the deprecated `bold` (2.1.299); `bold: true` became `weight: "semibold"`, the weight the host already reads it as. An engine before 2.1.299 refuses a tree with a Text prop it does not know, so there (and wherever `$.session.version()` gives nothing) the kit turns the weight back into `bold` (hooks/text-weight.ts). The standalone renderer (tui/ansi.ts) draws a semibold or bold weight bold.

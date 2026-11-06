@@ -13,9 +13,9 @@
  *     AgentDB index). They do not inline a replay engine; replay
  *     enumerates trajectory steps and returns them for the caller to dispatch.
  *   - ruvector resolution is local-first: if a locally installed `ruvector`
- *     package is found (the CLI already depends on ruvector@0.2.27), its bin
+ *     package is found (the CLI already depends on ruvector@0.3.12), its bin
  *     is spawned directly with `node`; otherwise we fall back to
- *     `npx -y ruvector@0.2.27`. The previous 0.2.25 pin forced cold npx
+ *     `npx -y ruvector@0.3.12`. The previous 0.2.25 pin forced cold npx
  *     downloads of a *second* ruvector version — 4 per browser session.
  *   - Best-effort: missing dependencies (no `ruvector`, no `agent-browser`,
  *     no AgentDB controller) degrade gracefully with a structured error
@@ -28,9 +28,9 @@ import { browserUrlError } from './browser-argv.js';
 
 // Pin matches the version in this package's own dependency tree so the npx
 // fallback never downloads a second ruvector. Subcommand surface verified
-// against ruvector@0.2.27 --help: `rvf create/compact/status/derive/segments`
+// against ruvector@0.3.12 --help: `rvf create/compact/status/derive/segments`
 // and `hooks trajectory-begin/step/end` all exist with the flags used below.
-const RUVECTOR_PIN = 'ruvector@0.2.27';
+const RUVECTOR_PIN = 'ruvector@0.3.12';
 const RVF_DIR_DEFAULT = '.ruflo/browser-sessions';
 
 interface ShellResult {
@@ -176,7 +176,7 @@ export const browserSessionTools: MCPTool[] = [
       const rvfPath = path.join(dir, `${sessionId}.rvf`);
 
       // 1. RVF allocate.
-      // Issue #2015: ruvector@0.2.25's `rvf create` accepts only
+      // Issue #2015: ruvector@0.3.12's `rvf create` accepts only
       // `-d/--dimension <n>` (required) and `-m/--metric <metric>`.
       // The wrapper previously passed `--kind browser-session` and
       // omitted `--dimension`, so commander hit the required-option

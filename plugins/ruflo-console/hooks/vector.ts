@@ -1,7 +1,7 @@
 /**
  * The Vector Lab: the ruvector toolchain (its CLI, and the MCP server's tools that have a CLI verb) as fixed argv,
- * each checked against ruvector 0.3.3's `--help` and source. ruflo's own MCP has none of these tools, so every entry
- * runs `npx --offline -y ruvector@0.3.3 …` with no shell. A local read runs at once; a local write asks; anything that
+ * each checked against ruvector 0.3.12's `--help` and source. ruflo's own MCP has none of these tools, so every entry
+ * runs `npx --offline -y ruvector@0.3.12 …` with no shell. A local read runs at once; a local write asks; anything that
  * reaches the network (pi.ruv.io, the edge genesis node, the npm registry), publishes, spends or deletes asks first and
  * says so on the confirm row. Tools with no CLI verb (rvlite_*, rvf_delete, decompile_witness/search) are n/a here; the
  * rvlite queries are handed to the AI terminal, which asks before it runs anything. Pure: entries and specs only.
