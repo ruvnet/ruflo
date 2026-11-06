@@ -218,7 +218,7 @@ importers:
         specifier: 3.1.0
         version: link:../aidefence
       '@claude-flow/memory':
-        specifier: 3.2.2
+        specifier: 3.2.3
         version: link:../memory
       '@metaharness/darwin':
         specifier: ~0.12.0
@@ -6115,6 +6115,13 @@ packages:
       '@ruvector/rvf-wasm': 0.1.9
     optional: true
 
+  /@ruvector/sona-darwin-arm64@0.1.10:
+    resolution: {integrity: sha512-KDb++39pQ8hg1Wy9z6qmPQKWusskitgLMxTZlbTqiHgC7LxnMH4AkA0fsZnJUOLxohhWvSEFVnPZ4DNP9qnR5Q==}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    optional: true
+
   /@ruvector/sona-darwin-arm64@0.1.5:
     resolution: {integrity: sha512-+bXB7+WdbkiNbcw0Xh5VENNILgDVpuma7fyx8NwGylWaYRe1niM03k/rezdM3zbpf4qGSqp6fVKIIDU8/H9lHw==}
     cpu: [arm64]
@@ -6134,6 +6141,14 @@ packages:
   /@ruvector/sona-darwin-arm64@0.1.8:
     resolution: {integrity: sha512-lv8YOBTamryaAKsjGgYe8TvAW/pccTJhwLexaBre0KpCp1BPnULqT4lYQQB4YjIQqML4cuzSIoDHRH9a9JwTtQ==}
     cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/sona-darwin-x64@0.1.10:
+    resolution: {integrity: sha512-fxK6eIIfsTJIJbO9gbuhLVgjH6HmqsfY6t1hBzABTwBcaLG7iX60G//fdOW580wLy2vmSTdS1TmTIxnHo2RVKw==}
+    cpu: [x64]
     os: [darwin]
     requiresBuild: true
     optional: true
@@ -6159,6 +6174,14 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/sona-linux-arm64-gnu@0.1.10:
+    resolution: {integrity: sha512-kqpSo2fhF4s6SGpy4Ap/4IaAZOGP5qkyaw4Fi6HXCTUe4WYZcpOGVhL5VsiaWBPCRqqHj5zpQ95pPyG/awH0qA==}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
     optional: true
 
   /@ruvector/sona-linux-arm64-gnu@0.1.5:
@@ -6182,6 +6205,14 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/sona-linux-x64-gnu@0.1.10:
+    resolution: {integrity: sha512-tarsh0L5UW7INzVWobp7WLQY4IJZVU4OmbzSrJgrejG66a5Qr3gCVIqpno5FqM9jufOnKq/tsuKRtNTPo+xdxQ==}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
     optional: true
 
   /@ruvector/sona-linux-x64-gnu@0.1.5:
@@ -6202,6 +6233,14 @@ packages:
 
   /@ruvector/sona-linux-x64-gnu@0.1.8:
     resolution: {integrity: sha512-5dtjvRk/buod4JBnfJaSXLWwvOTkDTt8l8yiK53VfIBeTHLVD4HxCs2UXOanf367KNKrSWlIkssE/UCtX8jtUQ==}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/sona-linux-x64-musl@0.1.10:
+    resolution: {integrity: sha512-8YdaDc4GAuVwqv79eDokMCtzV+jMevIiCraFSQ+pItFn8Jmi+2Q2mcUyVH2g/glfeRjSFQYUSC/W7yFJiiWIfA==}
     cpu: [x64]
     os: [linux]
     requiresBuild: true
@@ -6228,6 +6267,14 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/sona-win32-arm64-msvc@0.1.10:
+    resolution: {integrity: sha512-NUzYU94CUWzKAf7xZHUYvqOUvIkk2TUbCgAH33yphlH6mLQpCcC03Xt+9UdYvFk0NVA0ZLZ62UrzNwwTasmQxw==}
+    cpu: [arm64]
+    os: [win32]
+    requiresBuild: true
     optional: true
 
   /@ruvector/sona-win32-arm64-msvc@0.1.5:
@@ -6249,6 +6296,14 @@ packages:
   /@ruvector/sona-win32-arm64-msvc@0.1.8:
     resolution: {integrity: sha512-LKhT9x9Tkz4SvEKO5PSjj0fj30hSS4DYmWd+mxf2y1iF9GfDzWxy2OxTkDJ8t/fT9YD+N7Da32lfRrWcKzc3AA==}
     cpu: [arm64]
+    os: [win32]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@ruvector/sona-win32-x64-msvc@0.1.10:
+    resolution: {integrity: sha512-kw99twEsiu+QEcHJ8gQRt/XVjOpUb0R6r5dvaVirtjbeNFPFGivuji4JTGwREZgxB6rmAdXTyJZ++Ul1OIZ3Rg==}
+    cpu: [x64]
     os: [win32]
     requiresBuild: true
     optional: true
@@ -6274,7 +6329,20 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
+    dev: false
     optional: true
+
+  /@ruvector/sona@0.1.10:
+    resolution: {integrity: sha512-z+WyumpoJbtpQiZD9D/CtQfrTInZkupqvkDttxiNun+0lzXjVVw30k1kWCKJeGxQAI+GPirjrT7eBcxl+hTvpw==}
+    engines: {node: '>= 16'}
+    optionalDependencies:
+      '@ruvector/sona-darwin-arm64': 0.1.10
+      '@ruvector/sona-darwin-x64': 0.1.10
+      '@ruvector/sona-linux-arm64-gnu': 0.1.10
+      '@ruvector/sona-linux-x64-gnu': 0.1.10
+      '@ruvector/sona-linux-x64-musl': 0.1.10
+      '@ruvector/sona-win32-arm64-msvc': 0.1.10
+      '@ruvector/sona-win32-x64-msvc': 0.1.10
 
   /@ruvector/sona@0.1.5:
     resolution: {integrity: sha512-XHQbphnWsRzWRWGK/HxK+RreY6OdlggMrOvrfkWlEq8EctHVy2ASwps7hk25Somx8Umj7+CkNuyQEbHcNcl/oQ==}
@@ -6315,6 +6383,7 @@ packages:
       '@ruvector/sona-linux-x64-musl': 0.1.8
       '@ruvector/sona-win32-arm64-msvc': 0.1.8
       '@ruvector/sona-win32-x64-msvc': 0.1.8
+    dev: false
 
   /@ruvector/tiny-dancer-darwin-arm64@0.1.15:
     resolution: {integrity: sha512-99vy9OLjppPj3kjusQnirgLvOnBt6Jrt2pij3Fvs5pzyp+zh04gb1np0tFR4JCxftKnuoKYqN7bCtQvgQbBBSg==}
@@ -7548,7 +7617,7 @@ packages:
       '@ruvector/rvf-node': 0.1.8
       '@ruvector/rvf-solver': 0.1.8
       '@ruvector/rvf-wasm': 0.1.9
-      '@ruvector/sona': 0.1.8
+      '@ruvector/sona': 0.1.10
       argon2: 0.44.0
       better-sqlite3: 12.9.0
       chalk: 5.6.2
@@ -7593,7 +7662,7 @@ packages:
       '@ruvector/rvf-node': 0.1.8
       '@ruvector/rvf-solver': 0.1.8
       '@ruvector/rvf-wasm': 0.1.9
-      '@ruvector/sona': 0.1.8
+      '@ruvector/sona': 0.1.10
       argon2: 0.44.0
       better-sqlite3: 12.9.0
       chalk: 5.6.2
@@ -7766,7 +7835,7 @@ packages:
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.60.3
       '@ruvector/attention': 0.1.32
-      '@ruvector/sona': 0.1.8
+      '@ruvector/sona': 0.1.10
       agentdb: 3.3.0(@types/node@20.19.27)(zod@3.25.76)
       better-sqlite3: 12.9.0
       onnxruntime-node: 1.24.3
@@ -7825,7 +7894,7 @@ packages:
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.60.3
       '@ruvector/attention': 0.1.32
-      '@ruvector/sona': 0.1.8
+      '@ruvector/sona': 0.1.10
       '@xenova/transformers': 2.17.2
       agentdb: 3.3.0(@types/node@20.19.27)(zod@3.25.76)
       better-sqlite3: 12.9.0
@@ -7886,7 +7955,7 @@ packages:
       zod: 3.25.76
     optionalDependencies:
       '@ruvector/attention': 0.1.32
-      '@ruvector/sona': 0.1.8
+      '@ruvector/sona': 0.1.10
       agentdb: 2.0.0-alpha.3.7(@types/node@20.19.27)(express@5.2.1)(marked@11.2.0)
       better-sqlite3: 12.9.0
       onnxruntime-node: 1.24.3
@@ -7947,7 +8016,7 @@ packages:
     optionalDependencies:
       '@rollup/rollup-darwin-arm64': 4.60.3
       '@ruvector/attention': 0.1.32
-      '@ruvector/sona': 0.1.8
+      '@ruvector/sona': 0.1.10
       better-sqlite3: 12.9.0
       onnxruntime-node: 1.24.3
       sharp: 0.35.5(@types/node@20.19.27)
@@ -12601,7 +12670,7 @@ packages:
       '@ruvector/attention': 0.1.32
       '@ruvector/core': 0.1.30
       '@ruvector/gnn': 0.1.25
-      '@ruvector/sona': 0.1.8
+      '@ruvector/sona': 0.1.10
       chalk: 4.1.2
       commander: 11.1.0
       ora: 5.4.1
@@ -12621,7 +12690,7 @@ packages:
       '@ruvector/attention': 0.1.32
       '@ruvector/core': 0.1.30
       '@ruvector/gnn': 0.1.25
-      '@ruvector/sona': 0.1.8
+      '@ruvector/sona': 0.1.10
       '@xenova/transformers': 2.17.2
       chalk: 4.1.2
       commander: 11.1.0
@@ -12669,7 +12738,7 @@ packages:
       '@ruvector/gnn': 0.1.25
       '@ruvector/router': 0.1.30
       '@ruvector/ruvllm': 2.6.0
-      '@ruvector/sona': 0.1.8
+      '@ruvector/sona': 0.1.10
       chalk: 4.1.2
       commander: 11.1.0
       metaharness: 0.4.2
@@ -12777,7 +12846,7 @@ packages:
       '@ruvector/gnn': 0.1.25
       '@ruvector/router': 0.1.30
       '@ruvector/ruvllm': 2.6.0
-      '@ruvector/sona': 0.1.8
+      '@ruvector/sona': 0.1.10
       chalk: 4.1.2
       commander: 11.1.0
       ora: 5.4.1
