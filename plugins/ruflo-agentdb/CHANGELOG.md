@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-agentdb`.
 
+## 0.4.12 — 2026-11-06
+- chore: `agentdb-specialist` names the sibling ruflo-ruvector pin as `ruvector@0.3.12`.
+
 ## 0.4.11 — 2026-11-04
 - fix: `agentdb-query` and `agentdb-specialist` use `agentdb_context-synthesize` only for the outcomes of past tasks. It summarizes validated task episodes and answers `no-eligible-episodes` for ordinary memories, which the old guidance ("combine multiple memories") made look like missing data (#4691, thanks @sparkling)
 
