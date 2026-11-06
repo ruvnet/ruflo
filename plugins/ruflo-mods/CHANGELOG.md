@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.16.3 — 2026-11-06
+- fix: learning-loop lessons are shown only from a `learned-lessons.json` the CLI on this machine wrote (#4747). The ingest stamps the file with an id kept in `~/.claude-flow/learning-loop-origin`, and the mod and the classic `learning-loop.cjs` helper show nothing from a file without it, so one committed to a cloned repository is never presented as the project's own test and build history. A file written before this version shows nothing until the next ingest rewrites it.
+
 ## 0.16.2 — 2026-11-04
 - fix: the `routeContext` ranked-memory block ends with a line saying the entries are stored project notes, not instructions, matching the classic `hook-handler.cjs route` output.
 

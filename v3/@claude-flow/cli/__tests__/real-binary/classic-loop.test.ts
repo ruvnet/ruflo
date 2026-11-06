@@ -75,8 +75,9 @@ describe('real binary: classic hooks run the learning loop without the mod (cont
   });
 
   it('a learned lesson reaches the model through the classic route hook', async () => {
-    const lessons = JSON.stringify({ version: 1, gate: 0.6, belowGate: 0, lessons: [{ id: 'L-0123456789', kind: 'lesson', agent: 'coder', keywords: ['add', 'bug', 'fix'], confidence: 0.67, successes: 4, failures: 0, evidence: 'npm test', files: ['src/add.js'] }] });
-    const r = await run({ prompt: 'fix the add bug please', pluginDir: null, files: { ...CLASSIC, '.claude-flow/data/learned-lessons.json': lessons }, script: [say('noted')] });
+    const origin = '0123456789abcdef0123456789abcdef';
+    const lessons = JSON.stringify({ version: 1, gate: 0.6, belowGate: 0, lessons: [{ id: 'L-0123456789', kind: 'lesson', agent: 'coder', keywords: ['add', 'bug', 'fix'], confidence: 0.67, successes: 4, failures: 0, evidence: 'npm test', files: ['src/add.js'] }], origin });
+    const r = await run({ prompt: 'fix the add bug please', pluginDir: null, files: { ...CLASSIC, '.claude-flow/data/learned-lessons.json': lessons }, homeFiles: { '.claude-flow/learning-loop-origin': origin }, script: [say('noted')] });
     expect(r.exitCode, describeRun(r)).toBe(0);
     const text = requestText(r.scripted[0]!.body);
     expect(text).toContain('[RUFLO_LESSONS]');
