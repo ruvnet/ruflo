@@ -1,37 +1,41 @@
 ---
-title: Ruflo vs CrewAI, LangGraph, AutoGen and Claude Code
-description: Compare Ruflo with other multi-agent frameworks and Claude Code's built-in agents.
+title: Ruflo vs CrewAI, LangGraph, AutoGen and Claude Code subagents
+description: How Ruflo compares with Claude Code's built-in subagents, CrewAI, LangGraph and AutoGen, and when to pick each.
 ---
 
-# Comparing multi-agent frameworks
+# Ruflo compared with other multi-agent tools
 
-Ruflo is one answer to a specific question: _How do you give Claude Code and Codex agents that coordinate, remember, and improve over time?_ Below is how it stacks up against other platforms and approaches.
+Ruflo answers one question: how do you get Claude Code and Codex agents that coordinate, remember across sessions, and get better over time, without writing your own agent runtime? It installs into your project and runs inside your Claude Code or Codex session, through MCP tools and hooks.
 
-## Comparison table
+The other tools below answer different questions. CrewAI, LangGraph and AutoGen are libraries for building your own agent applications, where your code calls the model. Claude Code's subagents are a built-in feature of Claude Code itself.
 
-| What it is | Ruflo | Claude Code (built-in) | CrewAI | LangGraph | AutoGen |
+## At a glance
+
+| | Ruflo | Claude Code subagents | CrewAI | LangGraph | AutoGen |
 |---|---|---|---|---|---|
-| **Framework type** | Agent meta-harness for Claude Code/Codex | Integrated multi-agent system in Claude Code editor | Framework for collaborative agents and crews | Graph-based orchestration runtime | Multi-agent conversation framework |
-| **Language/runtime** | TypeScript (runs in Claude Code or via MCP) | TypeScript/Node.js (inside Claude Code) | Python | Python | Python (+ .NET variant) |
-| **How agents run** | Hierarchical swarms via MCP with SendMessage comms | Built-in types (Explore, Plan, General-purpose) + custom via Agent tool | Collaborative tasks through sequential/hierarchical/hybrid processes | Graph nodes + edges with state transitions | Multi-agent conversations with customizable agents |
-| **Your own LLM calls?** | No, integrated with Claude/Codex | No, integrated with Claude | Yes, configure your own | Yes, configure your own | Yes, configure your own |
-| **Persistent memory** | AgentDB + HNSW vector search, cross-session | Claude Code memory system | Yes, memory component included | Thread state + session memory, checkpointing | — |
-| **Install** | `npx ruflo@latest init` | Built into Claude Code 2.1.287+ | `uv` package manager | `pip install langgraph` or `uv add` | `pip install autogen-agentchat~=0.2` |
+| **What it is** | Agent harness for Claude Code and Codex | Built-in Claude Code feature: specialized assistants with their own context | Python framework for crews of collaborating agents | Low-level orchestration library for stateful agent graphs | Multi-agent conversation framework (archived; Microsoft points to Microsoft Agent Framework as its successor) |
+| **Language** | TypeScript, Node.js CLI and MCP server | Configured as Markdown files with frontmatter | Python | Python (JavaScript version also available) | Python |
+| **Where agents run** | Inside your Claude Code or Codex session | Inside your Claude Code session | In your own application, which calls the model | In your own application, which calls the model | In your own application, which calls the model |
+| **Models** | The models your Claude Code or Codex session uses | Claude; the main conversation's model by default, overridable per subagent | Configurable | Configurable | Configurable |
+| **Memory across sessions** | Project memory database with vector search (AgentDB) | Optional per-subagent `memory` field (user, project or local scope) | Built-in memory component | Checkpointed thread state and long-term memory store | — |
+| **Get started** | `npx ruflo@latest init` | Add an agent file under `.claude/agents/` | `uv tool install crewai` | `pip install -U langgraph` | `pip install -U "autogen-agentchat" "autogen-ext[openai]"` |
+
+"—" means we couldn't confirm it from the project's own documentation.
 
 ## When to pick which
 
-| Your situation | Pick |
-|---|---|
-| You write code in Claude Code and want agents to coordinate within your project | **Ruflo** or **Claude Code built-in** |
-| You need agents to call your own LLMs or manage costs | **CrewAI**, **LangGraph**, or **AutoGen** |
-| You want a lightweight graph-based workflow without agents | **LangGraph** |
-| You're building in Python and want multi-agent conversations | **AutoGen** |
-| You want memory and agents with minimal setup | **Ruflo** (in Claude Code) or **Claude Code built-in** |
+- **You already work in Claude Code or Codex and want a team of agents, shared memory, hooks and swarms there:** Ruflo.
+- **You want one or two focused helpers in Claude Code with nothing to install:** Claude Code subagents. Ruflo also works alongside them.
+- **You're building your own Python application and want role-based crews:** CrewAI.
+- **You need fine-grained control over agent state and control flow, with durable execution:** LangGraph.
+- **You're on AutoGen today:** Microsoft recommends moving to Microsoft Agent Framework for new work.
 
 ## Sources
 
-- [CrewAI Framework Documentation](https://docs.crewai.com)
-- [LangGraph Documentation](https://docs.langchain.com/oss/python/langgraph/)
-- [AutoGen Documentation](https://microsoft.github.io/autogen/0.2/docs/Getting-Started/)
-- [Claude Code Documentation](https://code.claude.com/docs/en/sub-agents)
-- [Ruflo GitHub](https://github.com/ruvnet/ruflo)
+Checked 2026-11-06.
+
+- Claude Code subagents: <https://code.claude.com/docs/en/sub-agents>
+- CrewAI: <https://docs.crewai.com>, <https://github.com/crewAIInc/crewAI>
+- LangGraph: <https://docs.langchain.com/oss/python/langgraph/>, <https://github.com/langchain-ai/langgraph>
+- AutoGen (repository, archive notice and install command): <https://github.com/microsoft/autogen>
+- Ruflo: [README](https://github.com/ruvnet/ruflo#readme)
