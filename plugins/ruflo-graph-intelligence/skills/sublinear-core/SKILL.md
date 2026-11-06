@@ -1,6 +1,6 @@
 ---
 name: sublinear-core
-description: Rank nodes around a seed (personalized PageRank, local forward/backward push) or solve a sparse diagonally dominant system with @ruvnet/sublinear-core, the zero-dependency core of sublinear-time-solver. Use for influence or relevance around a few nodes in a large graph, or a few entries of A⁻¹b. Skip for global ranking of ruflo's knowledge graph (use agentdb_graph-pathfinder).
+description: Personalized PageRank, local forward/backward push and sparse diagonally dominant solves with the zero-dependency @ruvnet/sublinear-core. Use for relevance around a few nodes of a large graph or a few entries of A⁻¹b; for ruflo's own knowledge graph use agentdb_graph-pathfinder.
 argument-hint: "[ppr|push|solve|estimate]"
 allowed-tools: Bash Read Write
 ---

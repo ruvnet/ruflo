@@ -1,6 +1,6 @@
 ---
 name: ruvllm-runtime
-description: Pick and check the right RuVLLM package — the WASM add-on behind the ruvllm_* MCP tools, the @ruvector/ruvllm 4.1 native runtime (SonaCoordinator, LoraAdapter, TrainingPipeline), or the @ruvector/ruvllm-gpu-loop job harness. Use when ruvllm_status shows a backend unavailable, when choosing between them, or when an install resolved the broken 4.0.x.
+description: Tell apart and check the RuVLLM packages — the WASM add-on behind ruvllm_* tools, the @ruvector/ruvllm 4.1 native runtime and the GPU-loop harness. Use when ruvllm_status shows a backend unavailable or an install resolved the broken 4.0.x.
 argument-hint: "[status|install|gpu]"
 allowed-tools: mcp__plugin_ruflo-core_ruflo__ruvllm_status Bash Read
 ---
