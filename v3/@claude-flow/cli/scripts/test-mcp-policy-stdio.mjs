@@ -17,6 +17,10 @@ const policySource = readFileSync(join(packageDir, 'src/mcp-tools/policy-enforce
 const policyJavaScript = ts.transpileModule(policySource, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;
+// ADR-524: both launchers route every message through the protocol module, so ship it too.
+const protocolJavaScript = ts.transpileModule(readFileSync(join(packageDir, 'src/mcp-protocol.ts'), 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+}).outputText;
 const toolStub = `
 import { appendFileSync } from 'node:fs';
 export const hasTool = (name) => name === 'demo_tool';
@@ -39,6 +43,7 @@ async function runSession(entry, { policy, enforce = true, calls = 1, badAuditPa
     copyFileSync(join(packageDir, 'bin', entry), join(bin, entry));
     writeFileSync(join(dist, 'mcp-client.js'), toolStub);
     writeFileSync(join(dist, 'mcp-tools/policy-enforcer.js'), policyJavaScript);
+    writeFileSync(join(dist, 'mcp-protocol.js'), protocolJavaScript);
     if (policy !== undefined) {
       mkdirSync(join(project, '.harness'));
       writeFileSync(join(project, '.harness/mcp-policy.json'), policy);
