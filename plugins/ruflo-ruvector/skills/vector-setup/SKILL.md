@@ -58,6 +58,8 @@ This skill installs them in one pass.
 
    Pass them with `claude mcp add ruvector -e RUVECTOR_MCP_ALLOW_INIT=1 -- npx -y ruvector@0.3.12 mcp start` only for a setup session, then re-register without the flag.
 
+   Upgrading from an older pin: remove and re-add the server at 0.3.12 (`claude mcp remove ruvector`, then the `add` line above). The ruflo-console vector page runs `npx --offline -y ruvector@0.3.12`, which works only once 0.3.12 is in the npx cache.
+
    Since 0.3.5 a project with no `.ruvector/` directory uses its own store, not `~/.ruvector`. Memories recorded before that sit in the home store and do not show up in a new project.
 5. **Sanity check** the most common subcommands:
    ```bash

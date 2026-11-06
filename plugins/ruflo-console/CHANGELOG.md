@@ -4,6 +4,7 @@ Newest first. One `## <version> — <date>` heading per version, then `feat:`, `
 
 ## 0.49.12 — 2026-11-06
 - chore: the vector page runs ruvector@0.3.12 (from 0.3.3), the version the CLI and ruflo-ruvector now pin. Every read command on the page (`rvf examples`, `hooks stats/learning-stats/route/recall/rag-context/remember`, `edge join`, `identity show`, `decompile <file> --json`) was run against 0.3.12 and prints what its reader expects.
+- fix: the page runs `npx --offline`, so a machine whose npx cache holds only the old pin got a bare `npm error code ENOTCACHED`. The result now starts with the fix: run `npx -y ruvector@0.3.12 --version` once (or re-register the ruvector MCP server with `/vector-setup`).
 
 ## 0.49.11 — 2026-11-04
 - feat: `console_state` and `console_run` are registered with `isDeferred: false` (Claude Code 2.1.293), so their schemas are in the prompt from the start: every console turn calls them. `console_open` and `console_set` stay behind tool search. Older hosts drop the field.

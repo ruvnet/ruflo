@@ -8,7 +8,7 @@
  */
 import { countOf, LONG_TEXT_MAX } from './full-text'
 import type { ActionSpec } from './actions'
-import { dimensionOf, domainOf, generatedLines, isKeyless, redact, relPathOf, RV, shareOf, targetOf, textOf, twoOf, vecIdOf, vectorOf, type VectorField } from './data/vector'
+import { dimensionOf, domainOf, generatedLines, isKeyless, redact, relPathOf, RUVECTOR_VERSION, RV, shareOf, targetOf, textOf, twoOf, vecIdOf, vectorOf, type VectorField } from './data/vector'
 import { labLines } from './mh-lab'
 import type { Runner } from './runner'
 import type { State } from './state'
@@ -147,8 +147,15 @@ export const VEC: readonly VecEntry[] = [
 
 export const vecEntry = (id: string): VecEntry | undefined => VEC.find(entry => entry.id === id)
 
+/** Said first when npx has no cached copy of the pinned ruvector: the page runs `npx --offline`, so it never downloads one. */
+export const NOT_CACHED = `ruvector@${RUVECTOR_VERSION} is not in the npx cache; run \`npx -y ruvector@${RUVECTOR_VERSION} --version\` once, then try again`
+
 /** What a run printed, as lines for the result panel, with every trace of key material taken out. */
-export const vecLines = (id: string, stdout: string, stderr: string): string[] => redact(labLines(id, stdout, stderr))
+export const vecLines = (id: string, stdout: string, stderr: string): string[] => {
+  const lines = redact(labLines(id, stdout, stderr))
+
+  return /\bENOTCACHED\b/.test(stderr) ? [NOT_CACHED, ...lines] : lines
+}
 
 /** The argv after the prefix for `text`, or null; the fixed ones ignore the text. */
 export function vecArgs(entry: VecEntry, text = ''): readonly string[] | null {

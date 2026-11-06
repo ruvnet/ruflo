@@ -181,7 +181,7 @@ npx -y ruvector@0.3.12 rvf query project.rvf
 
 ### What changed since 0.3.3
 
-Each row was run against 0.3.12 on 2026-11-06.
+Rows 0.3.4–0.3.8 and 0.3.12 were run against 0.3.12 on 2026-11-06. Both MCP gates were exercised over stdio: refused without the variable, allowed with it. The 0.3.10 and 0.3.11 rows are from the upstream release notes.
 
 | Version | Change | What to do |
 |---------|--------|-----------|
