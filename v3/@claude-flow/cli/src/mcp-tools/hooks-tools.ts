@@ -2436,8 +2436,19 @@ export const hooksBuildAgents: MCPTool = {
       if (!v.valid) return { success: false, error: v.error };
     }
     const outputDir = resolve(getProjectCwd(), (params.outputDir as string) || './agents');
+    // validatePath allows absolute paths, so keep the real output dir inside
+    // the real project root (CWE-22/59): configs are only ever project files.
+    let realProjectRoot: string;
+    try { realProjectRoot = nodeFs.realpathSync(getProjectCwd()); } catch { realProjectRoot = getProjectCwd(); }
+    if (!isInsideRealRoot(realProjectRoot, outputDir)) {
+      return { success: false, error: 'outputDir must be inside the project directory' };
+    }
     const focus = (params.focus as string) || 'all';
-    const format = (params.format as string) || 'yaml';
+    // format is spliced into each file name; only the two supported formats.
+    const format = params.format === undefined ? 'yaml' : params.format;
+    if (format !== 'yaml' && format !== 'json') {
+      return { success: false, error: 'format must be "yaml" or "json"' };
+    }
     const persist = params.persist !== false; // Default to true
 
     const agents = [
