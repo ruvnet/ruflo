@@ -59,7 +59,7 @@ export class PatternPublisher {
       let publicKey: string | undefined;
 
       if (options.privateKeyPath && fs.existsSync(options.privateKeyPath)) {
-        const signResult = this.signContent(contentBuffer, options.privateKeyPath);
+        const signResult = await this.signContent(contentBuffer, options.privateKeyPath);
         signature = signResult.signature;
         publicKey = signResult.publicKey;
         console.log(`[Publish] Content signed`);
@@ -178,27 +178,25 @@ export class PatternPublisher {
   }
 
   /**
-   * Sign content with private key
+   * Sign content with Ed25519. The private key file holds a 32-byte hex seed.
    */
-  private signContent(
+  private async signContent(
     content: Buffer,
     privateKeyPath: string
-  ): { signature: string; publicKey: string } {
-    // In production: Use actual Ed25519 signing
-    // For demo: Generate mock signature
-    const privateKey = fs.readFileSync(privateKeyPath, 'utf-8').trim();
-    const signature = crypto
-      .createHmac('sha256', privateKey)
-      .update(content)
-      .digest('hex');
-
-    const publicKey =
-      'ed25519:' +
-      crypto.createHash('sha256').update(privateKey).digest('hex').slice(0, 32);
-
+  ): Promise<{ signature: string; publicKey: string }> {
+    const ed = await import('@noble/ed25519');
+    const raw = fs.readFileSync(privateKeyPath, 'utf-8').trim();
+    const seed = Buffer.from(raw, 'hex');
+    if (seed.length !== 32 || seed.toString('hex') !== raw.toLowerCase()) {
+      throw new Error(
+        `[Publish] Ed25519 private key at ${privateKeyPath} must be a 32-byte hex seed.`
+      );
+    }
+    const pub = await ed.getPublicKeyAsync(seed);
+    const sig = await ed.signAsync(content, seed);
     return {
-      signature: `ed25519:${signature}`,
-      publicKey,
+      signature: 'ed25519:' + Buffer.from(sig).toString('hex'),
+      publicKey: 'ed25519:' + Buffer.from(pub).toString('hex'),
     };
   }
 
