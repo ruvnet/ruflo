@@ -56,7 +56,7 @@ describe.skipIf(!INSTALLED)('@ruvector/ruvllm runtime contract', () => {
     expect(coordinator).toBeTruthy();
   });
 
-  it('resolves a version inside the declared range (>=2.6.0 <4.0.0 || ^4.1.0)', () => {
+  it('resolves a version inside the declared range (^4.1.0)', () => {
     // The package's exports map does not expose ./package.json, so find it
     // from the resolved entry point.
     let dir = dirname(requireCjs.resolve('@ruvector/ruvllm'));
@@ -67,7 +67,7 @@ describe.skipIf(!INSTALLED)('@ruvector/ruvllm runtime contract', () => {
     }
     const { version } = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { version: string };
     const [major, minor] = version.split('.').map(Number);
-    const inRange = (major === 2 && minor >= 6) || major === 3 || (major === 4 && minor >= 1);
+    const inRange = major === 4 && minor >= 1;
     expect(inRange, `@ruvector/ruvllm@${version}`).toBe(true);
   });
 });
