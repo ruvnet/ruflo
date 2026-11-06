@@ -497,11 +497,11 @@ importers:
   '@claude-flow/performance':
     dependencies:
       '@ruvector/attention':
-        specifier: latest
-        version: 0.1.4
+        specifier: ^2.2.3
+        version: 2.2.3
       '@ruvector/sona':
-        specifier: latest
-        version: 0.1.5
+        specifier: ^0.1.11
+        version: 0.1.11
     devDependencies:
       vitest:
         specifier: '>=4.1.0'
@@ -5675,7 +5675,6 @@ packages:
       '@ruvector/attention-linux-arm64-gnu': 2.2.3
       '@ruvector/attention-linux-x64-gnu': 2.2.3
       '@ruvector/attention-win32-x64-msvc': 2.2.3
-    optional: true
 
   /@ruvector/core@0.1.30:
     resolution: {integrity: sha512-pMeh4G3OkX2BLQZ2XUnTD8FlipRDqgvAVQlR02TTgo8/Ri2u4WmDZUHROOsKLKF7IbPLKL6G81zebiFCfC9SMA==}

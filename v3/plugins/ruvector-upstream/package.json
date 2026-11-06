@@ -81,13 +81,13 @@
   },
   "peerDependencies": {
     "@ruvector/micro-hnsw-wasm": ">=0.1.0",
-    "@ruvector/attention-wasm": ">=0.1.0",
-    "@ruvector/gnn-wasm": ">=0.1.0",
+    "@ruvector/attention-wasm": "^2.2.2",
+    "@ruvector/gnn-wasm": "^0.1.0",
     "@ruvector/hyperbolic-hnsw-wasm": ">=0.1.0",
-    "@ruvector/learning-wasm": ">=0.1.0",
-    "@ruvector/exotic-wasm": ">=0.1.0",
+    "@ruvector/learning-wasm": "^0.1.29",
+    "@ruvector/exotic-wasm": "^0.1.29",
     "@ruvector/cognitum-gate-kernel": ">=0.1.0",
-    "@ruvector/sona": ">=0.1.0"
+    "@ruvector/sona": "^0.1.11"
   },
   "peerDependenciesMeta": {
     "@ruvector/micro-hnsw-wasm": { "optional": true },

@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-quantum-optimizer",
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.2",
   "description": "Quantum-inspired optimization plugin providing simulated annealing, QAOA, Grover search, dependency resolution, and schedule optimization for combinatorial problems.",
   "type": "module",
   "main": "./dist/index.js",
