@@ -5463,6 +5463,9 @@ const refreshFunnelCommand: Command = {
       // telemetry consent receipt; flushEvents re-checks consent itself.
       if (decision.enabled && hasConsent('telemetry')) {
         const { rufloPackageVersion } = await import('../mcp-protocol.js');
+        // Activation funnel: one "active today" marker per day (7-day retention).
+        const { recordSessionActive } = await import('../funnel/activation.js');
+        recordSessionActive(rufloPackageVersion());
         result.events = await flushEvents({ release: rufloPackageVersion() });
       }
       if (!ctx.flags.quiet) {

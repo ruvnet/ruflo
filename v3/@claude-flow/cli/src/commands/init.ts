@@ -90,6 +90,43 @@ async function offerCapabilityEnrollment(ctx: CommandContext): Promise<void> {
   }
 }
 
+/**
+ * One-time opt-in to anonymous usage telemetry (ADR-302 telemetry domain,
+ * ADR-309). Separate from enrollment, which must never toggle telemetry.
+ * Interactive TTY only, never in CI, skipped with --no-telemetry-prompt,
+ * asked once whatever the answer, default No. Never affects init success.
+ */
+async function offerTelemetryOptIn(ctx: CommandContext): Promise<void> {
+  try {
+    if (ctx.flags.format === 'json') return;
+    const noPrompt = Boolean(ctx.flags['no-telemetry-prompt'] || ctx.flags.noTelemetryPrompt || ctx.flags.telemetryPrompt === false);
+    const { shouldOfferTelemetry } = await import('../funnel/activation.js');
+    if (!shouldOfferTelemetry({ noTelemetryPrompt: noPrompt, cwd: ctx.cwd })) return;
+    output.writeln();
+    output.writeln('Help improve ruflo? Opting in sends anonymous usage events: init finished, first agent run, active days.');
+    output.writeln(output.dim('  Daily-bucketed, with a random ID that rotates every 90 days. No code, paths, prompts or account data.'));
+    const accepted = await confirm({ message: 'Share anonymous usage telemetry?', default: false });
+    const { recordConsent } = await import('../funnel/index.js');
+    recordConsent('telemetry', Boolean(accepted), 'init-prompt');
+    output.writeln(output.dim(accepted
+      ? '  Thanks. Turn it off any time with \`ruflo funnel telemetry off\`.'
+      : '  Telemetry stays off. Turn it on later with \`ruflo funnel telemetry on\`.'));
+  } catch {
+    // Optional; init success is never affected.
+  }
+}
+
+/** Activation funnel: no-op without telemetry consent; never throws. */
+async function noteInitCompleted(): Promise<void> {
+  try {
+    const [{ recordInitCompleted }, { rufloPackageVersion }] = await Promise.all([
+      import('../funnel/activation.js'),
+      import('../mcp-protocol.js'),
+    ]);
+    recordInitCompleted(rufloPackageVersion());
+  } catch { /* optional */ }
+}
+
 // Dynamic import of the optional @claude-flow/codex package. Returns
 // undefined (never throws) when the package isn't resolvable anywhere —
 // callers decide whether that's a hard error (explicit --codex/--dual) or a
@@ -1068,6 +1105,10 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
 
     await offerCapabilityEnrollment(ctx);
 
+    await offerTelemetryOptIn(ctx);
+
+    await noteInitCompleted();
+
     return { success: true, data: result };
   } catch (error) {
     spinner.fail('Initialization failed');
@@ -1437,6 +1478,10 @@ const wizardCommand: Command = {
       });
 
       await offerCapabilityEnrollment(ctx);
+
+      await offerTelemetryOptIn(ctx);
+
+      await noteInitCompleted();
 
       return { success: true, data: result };
     } catch (error) {
@@ -1899,6 +1944,12 @@ export const initCommand: Command = {
       // ADR-302 — skip the one-time post-init capability enrollment prompt.
       name: 'no-signup',
       description: 'Skip the post-init Cognitum capability enrollment prompt',
+      type: 'boolean',
+      default: false,
+    },
+    {
+      name: 'no-telemetry-prompt',
+      description: 'Skip the one-time question about anonymous usage telemetry (default answer is No)',
       type: 'boolean',
       default: false,
     },

@@ -11,6 +11,7 @@ import { wasmSubcommands } from './agent-wasm.js';
 import { agentPublishCommand } from './agntcy/publish.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { noteFirstAgentRun } from '../funnel/activation.js';
 
 /**
  * Update swarm-activity.json metrics after agent count changes.
@@ -195,6 +196,7 @@ const spawnCommand: Command = {
         output.printJson(result);
       }
 
+      noteFirstAgentRun('cli'); // activation funnel (opt-in; no-op without telemetry consent)
       return { success: true, data: result };
     } catch (error) {
       if (error instanceof MCPClientError) {
