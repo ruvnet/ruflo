@@ -44,7 +44,7 @@ describe('locators of executed modules never consult the cwd', () => {
     ['v3/@claude-flow/cli/src/mcp-tools/testgen-tools.ts', 'locateTestgenScripts'],
     ['v3/@claude-flow/cli/src/mcp-tools/metaharness-tools.ts', 'locatePluginScripts'],
     ['v3/@claude-flow/cli/src/commands/metaharness.ts', 'locatePluginScripts'],
-    ['v3/@claude-flow/cli/src/commands/doctor.ts', 'checkMetaharnessIntegration'],
+    ['v3/@claude-flow/cli/src/commands/doctor-checks/metaharness.ts', 'checkMetaharnessIntegration'],
     ['v3/@claude-flow/cli/src/commands/init.ts', 'resolveCodexInitializer'],
     ['plugins/ruflo-ruos/scripts/lib/ledger.mjs', 'resolveCallTool'],
   ];
@@ -67,7 +67,7 @@ describe('plugin locators stay inside the package own install', () => {
     ['v3/@claude-flow/cli/src/mcp-tools/testgen-tools.ts', 'locateTestgenScripts'],
     ['v3/@claude-flow/cli/src/mcp-tools/metaharness-tools.ts', 'locatePluginScripts'],
     ['v3/@claude-flow/cli/src/commands/metaharness.ts', 'locatePluginScripts'],
-    ['v3/@claude-flow/cli/src/commands/doctor.ts', 'checkMetaharnessIntegration'],
+    ['v3/@claude-flow/cli/src/commands/doctor-checks/metaharness.ts', 'checkMetaharnessIntegration'],
   ];
   for (const [file, name] of sources) {
     it(`${file} ${name}() walks up through the bounded helper, not a hand-rolled loop`, () => {
