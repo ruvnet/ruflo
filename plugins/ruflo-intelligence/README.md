@@ -15,6 +15,7 @@ User-facing surface for Ruflo's self-learning system. Wraps **29 intelligence-re
 
 - **CLI:** checked against `@claude-flow/cli` 3.56.x (`mcp exec`, `hooks`, `neural` flags as in `--help`).
 - **Verification:** `bash plugins/ruflo-intelligence/scripts/smoke.sh` is the contract.
+- **Learning backends (`@claude-flow/cli` 3.72.1+):** MicroLoRA training runs on `@ruvector/learning-wasm` (an optional dependency of the CLI; about 2 µs per 256-dim adaptation), and falls back to JS when `--omit=optional` skipped it. The SONA coordinator and contrastive trainer come from `@ruvector/ruvllm` ^4.1.0; `ruvllm_status` shows `native.coordinator` and `native.trainingBackend`. 4.0.x lacked those classes, so anything that resolved it trained on the JS fallback.
 
 ## Tool inventory
 
@@ -124,6 +125,11 @@ Inspect with `npx @claude-flow/cli@latest mcp exec -t hooks_intelligence -p '{"s
 - `neural-train` — Train SONA + MicroLoRA patterns from successful tasks
 - `intelligence-route` — Route tasks using learned patterns; produces a `hooks_explain` rationale
 - `intelligence-transfer` — Publish/fetch patterns via IPFS (`hooks_transfer`)
+
+Skills installed by `ruflo init` that pair with this plugin (not duplicated here):
+
+- `lora-learning` — check the MicroLoRA backend (`neural benchmark`), record trajectories, train and reuse patterns
+- `fast-code-edits` — deterministic `hooks_codemod` and `hooks_fast-apply` (agent-booster snippet merge, no LLM call) for edits the 3-tier router sends to Tier 1
 
 ## As a mod (0.4.2)
 
