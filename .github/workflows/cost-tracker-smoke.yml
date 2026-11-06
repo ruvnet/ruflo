@@ -71,8 +71,14 @@ jobs:
             console.log('cost-health: ' + r.checks.length + ' subchecks, all OK on empty fixture');
           "
 
+      - name: cost-health CLI failure + warm-up test (#4711)
+        run: node plugins/ruflo-cost-tracker/scripts/test-cli-failure-4711.mjs
+
       - name: cost-health integration test (synthetic fixtures incl. iter-75 regression)
         run: node plugins/ruflo-cost-tracker/scripts/test-health-integration.mjs
+        env:
+          # Fixture CLI calls must not leave daemons sharing the fixture store (#4711).
+          RUFLO_DAEMON_AUTOSTART: '0'
         # 7 end-to-end assertions including the EXACT iter-75 regression
         # target: budget HARD_STOP via BUDGET_QUIET=1 must propagate as
         # exit 1 to cost-health's composite gate. Catches cross-script
