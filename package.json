@@ -79,7 +79,7 @@
     "@electron/asar": "^4.3.1",
     "@iarna/toml": "^2.2.5",
     "@noble/ed25519": "2.3.0",
-    "@ruvector/rabitq-wasm": "0.1.0",
+    "@ruvector/rabitq-wasm": "0.1.2",
     "ajv": "^8.20.0",
     "bcryptjs": "^3.0.3",
     "chalk": "^5.3.0",
@@ -106,7 +106,10 @@
     "@ruvector/sona": "^0.1.5",
     "agentdb": "^3.3.0",
     "agentic-flow": "^3.0.0",
-    "better-sqlite3": "12.9.0"
+    "better-sqlite3": "12.9.0",
+    "ruvector": "^0.3.11",
+    "@ruvector/learning-wasm": "0.1.29",
+    "agent-booster": "^0.2.2"
   },
   "overrides": {
     "ruvector": "^0.3.11",
