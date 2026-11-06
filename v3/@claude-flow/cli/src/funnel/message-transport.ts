@@ -47,14 +47,27 @@ const CACHE_FILE = 'funnel-messages-cache.json';
  * release and the coarse OS/CPU family, so the server can count releases
  * and platforms. No identifier, path, hostname, or account: the
  * `ruflo-funnel/messages` prefix stays first so existing log filters match.
+ * A trailing `surface/plugin` marks a fetch made by the ruflo-core plugin's
+ * MCP launch, so plugin-only users (who never run `init`) can be counted.
  */
 export function funnelUserAgent(
   version: string = rufloPackageVersion(),
   platform: string = process.platform,
   arch: string = process.arch,
+  surface: string | undefined = launchSurface(),
 ): string {
   const clean = (v: string) => v.replace(/[^A-Za-z0-9._-]/g, '').slice(0, 32) || 'unknown';
-  return `ruflo-funnel/messages ruflo/${clean(version)} (${clean(platform)}; ${clean(arch)})`;
+  const tail = surface ? ` surface/${surface}` : '';
+  return `ruflo-funnel/messages ruflo/${clean(version)} (${clean(platform)}; ${clean(arch)})${tail}`;
+}
+
+/** Launch surfaces the UA may name. Closed set: an env value outside it is dropped. */
+const LAUNCH_SURFACES = new Set(['plugin']);
+
+/** The surface set by a launcher (plugins/ruflo-core/scripts/mcp-launch.cjs), if any. */
+export function launchSurface(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const v = env.RUFLO_LAUNCH_SURFACE;
+  return v && LAUNCH_SURFACES.has(v) ? v : undefined;
 }
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h — matches server Cache-Control
 const CACHE_MAX_BYTES = 128 * 1024;

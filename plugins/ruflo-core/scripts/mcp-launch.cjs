@@ -253,6 +253,10 @@ function launch({ command, args, shell, cwd, env }) {
 
 if (require.main === module) {
   try {
+    // Tells the CLI it was started by this plugin, so its funnel fetch can be
+    // counted as a plugin user (closed allowlist in funnel/message-transport.ts).
+    // Inherited by both the in-process and the spawned/npx paths.
+    if (!process.env.RUFLO_LAUNCH_SURFACE) process.env.RUFLO_LAUNCH_SURFACE = 'plugin';
     const home = os.homedir();
     const projectDir = resolveProjectDir(process.env, process.cwd(), home);
     if (isNonProjectDir(projectDir, home)) {

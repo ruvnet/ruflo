@@ -20,7 +20,7 @@ vi.mock('https', async (importOriginal) => {
 
 import { hooksCommand } from '../src/commands/hooks.js';
 import { funnelCommand } from '../src/commands/funnel.js';
-import { funnelUserAgent, getFunnelId, hasConsent } from '../src/funnel/index.js';
+import { funnelUserAgent, getFunnelId, hasConsent, launchSurface } from '../src/funnel/index.js';
 import type { CommandContext } from '../src/types.js';
 
 const sub = (cmd: typeof hooksCommand, name: string) => {
@@ -101,7 +101,18 @@ describe('refresh-funnel honors every opt-out (ADR-309)', () => {
 
 describe('funnelUserAgent — release + OS family only', () => {
   it('carries version, platform and arch and nothing else', () => {
-    expect(funnelUserAgent('3.72.3', 'linux', 'x64')).toBe('ruflo-funnel/messages ruflo/3.72.3 (linux; x64)');
+    expect(funnelUserAgent('3.72.3', 'linux', 'x64', undefined)).toBe('ruflo-funnel/messages ruflo/3.72.3 (linux; x64)');
+  });
+
+  it('appends surface/plugin when the ruflo-core plugin launched the CLI', () => {
+    expect(funnelUserAgent('3.72.3', 'linux', 'x64', 'plugin')).toBe('ruflo-funnel/messages ruflo/3.72.3 (linux; x64) surface/plugin');
+  });
+
+  it('only names surfaces from the closed allowlist', () => {
+    expect(launchSurface({ RUFLO_LAUNCH_SURFACE: 'plugin' })).toBe('plugin');
+    expect(launchSurface({ RUFLO_LAUNCH_SURFACE: 'plugin\r\nX-Evil: 1' })).toBeUndefined();
+    expect(launchSurface({ RUFLO_LAUNCH_SURFACE: 'my-host-name' })).toBeUndefined();
+    expect(launchSurface({})).toBeUndefined();
   });
 
   it('strips anything that is not a token character', () => {

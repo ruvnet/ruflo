@@ -40,6 +40,7 @@ export {
   DEFAULT_MESSAGES_ENDPOINT,
   getRemoteMessages,
   funnelUserAgent,
+  launchSurface,
   refreshRemoteMessages,
 } from './message-transport.js';
 export { flushEvents } from './event-transport.js';

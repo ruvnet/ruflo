@@ -10,12 +10,12 @@
 | Data | Source | Why |
 |---|---|---|
 | Source IP address | the HTTPS connection itself | unavoidable for any request; used server-side only to count distinct clients per day |
-| User-Agent `ruflo-funnel/messages ruflo/<version> (<platform>; <arch>)` | the CLI | release adoption and OS support decisions |
+| User-Agent `ruflo-funnel/messages ruflo/<version> (<platform>; <arch>)`, plus ` surface/plugin` when the ruflo-core plugin started the CLI | the CLI | release adoption, OS support, and how many people use ruflo only as a Claude Code plugin |
 | Request time | the server | daily aggregation |
 
 Nothing else is sent. The request carries no ID, path, hostname, username, repository, prompt, command line, or account data. The CLI sanitizes the User-Agent fields to token characters (`funnelUserAgent()` in `v3/@claude-flow/cli/src/funnel/message-transport.ts`).
 
-**When it happens:** at most once per Claude Code session, from the SessionStart hook (`hooks refresh-funnel`), and at most once per 6 hours per machine because of the local cache.
+**When it happens:** at most once per Claude Code session, from the SessionStart hook (`hooks refresh-funnel`) or, for plugin-only users who never ran `init`, when the ruflo-core plugin starts the MCP server (`mcp start` with `RUFLO_LAUNCH_SURFACE=plugin`). Either way it happens at most once per 6 hours per machine because of the local cache. `surface` is a closed allowlist (`plugin`); any other value is dropped.
 
 ## 2. Purpose test
 
@@ -39,7 +39,7 @@ It also delivers the statusline tips the user sees, so the request serves the us
 - **Impact on the individual:** low. An IP address is personal data under GDPR, so it is treated as such:
   - raw request logs keep the IP for **30 days** (Cloud Logging default, and the BigQuery raw table's partition expiry);
   - the long-lived dataset `ruflo_funnel.daily_active` holds **counts only, never IPs**.
-- **Control:** every opt-out stops the request. This is enforced in `hooks refresh-funnel` and covered by `__tests__/funnel-telemetry-optout.test.ts`. The opt-outs are:
+- **Control:** every opt-out stops the request. This is enforced in `hooks refresh-funnel` and in `mcp start`, and covered by `__tests__/funnel-telemetry-optout.test.ts`. The opt-outs are:
   - `ruflo funnel disable` (user-wide);
   - `funnel.enabled: false` in `claude-flow.config.json` (per project);
   - `RUFLO_FUNNEL=0` or `RUFLO_FUNNEL_MESSAGES=0` (environment);
