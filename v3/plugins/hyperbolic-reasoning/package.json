@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-hyperbolic-reasoning",
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.2",
   "description": "Hyperbolic reasoning plugin providing Poincare ball embeddings, taxonomic reasoning, hierarchical search, and entailment graphs for superior hierarchical understanding.",
   "type": "module",
   "main": "./dist/index.js",

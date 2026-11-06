@@ -80,9 +80,9 @@
         "url": "https://github.com/ruvnet/agentic-flow.git",
         "path": "plugins/agentic-flow",
         "ref": "main",
-        "sha": "b50796f21f9357db8c70ad0c33dc80fb77b51bc1"
+        "sha": "d19737b8574c956d17d695f09113e8b445d965b0"
       },
-      "description": "agentic-flow (external: maintained in ruvnet/agentic-flow, pinned to commit b50796f, plugin 3.3.1): the agentic-flow MCP server pinned to agentic-flow@3.3.1 (ReasoningBank learning, ecosystem tools prompt_injection_scan, swarm_partition_tasks, sublinear_solve, sublinear_pagerank and ecosystem_status, multi-provider routing, autopilot learning; readonly profile by default, no tool pre-approved), 2 agents, 4 skills, /agentic-flow-status, and a mod guard on agentic_flow_agent with /agentic-flow-guard"
+      "description": "agentic-flow (external: maintained in ruvnet/agentic-flow, pinned to commit d19737b, plugin 3.4.0): the agentic-flow MCP server pinned to agentic-flow@3.4.0 (ReasoningBank learning, ecosystem tools prompt_injection_scan, swarm_partition_tasks, sublinear_solve, sublinear_pagerank and ecosystem_status, multi-provider routing, autopilot learning; readonly profile by default, no tool pre-approved), 2 agents, 4 skills, /agentic-flow-status, and a mod guard on agentic_flow_agent with /agentic-flow-guard"
     },
     {
       "name": "ruflo-docs",
