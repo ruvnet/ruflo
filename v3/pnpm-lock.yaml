@@ -221,11 +221,11 @@ importers:
         specifier: 3.2.3
         version: link:../memory
       '@metaharness/darwin':
-        specifier: ^0.13.0
+        specifier: ~0.13.0
         version: 0.13.0
       '@metaharness/flywheel':
         specifier: ~0.1.10
-        version: 0.1.10
+        version: 0.1.13
       '@metaharness/radio':
         specifier: ~0.1.0
         version: 0.1.0
@@ -2063,14 +2063,9 @@ packages:
     requiresBuild: true
     optional: true
 
-  /@metaharness/flywheel@0.1.10:
-    resolution: {integrity: sha512-yrLXDXNdf4jKqHlW6QZw3Cy5T0eMMjjaPqn1XB717/Xx/y0Iv9R03W0OhMEiR/kfqMNebRBW1fi6D7inStEyqA==}
-    requiresBuild: true
-
   /@metaharness/flywheel@0.1.13:
     resolution: {integrity: sha512-Ual/ZM0n4/AuFwyXsyPi8bXZdnLm7zNvNLDH1E+63UzySEPA9HWJFmr7obGLEE0jpKkz3bnZY0aYzAWhmXNRkA==}
     requiresBuild: true
-    optional: true
 
   /@metaharness/flywheel@0.1.7:
     resolution: {integrity: sha512-am7dROkjyS1Zkms3TOcn2LVHjwMLQXPJ6Pu1aP55q40vWJLRONGdGvnrcBL/VhMFqjQrVB57lmSn2E+s5CSZwA==}
@@ -2154,7 +2149,6 @@ packages:
     resolution: {integrity: sha512-2C6Ivgz1yJgRrklG0NqsNAjm+THyFsfX4DR2VyeqkLHJeR+LnVEOmzdUPQPp0yBJcXvoO9+du8R6HzZ4vDItrQ==}
     engines: {node: '>=20.0.0'}
     hasBin: true
-    requiresBuild: true
     optional: true
 
   /@metaharness/workspace-lens@0.1.1:
@@ -11043,9 +11037,9 @@ packages:
         optional: true
     dependencies:
       '@metaharness/darwin': 0.2.8
-      '@metaharness/flywheel': 0.1.10
+      '@metaharness/flywheel': 0.1.13
       '@metaharness/redblue': 0.1.6
-      '@metaharness/weight-eft': 0.1.1
+      '@metaharness/weight-eft': 0.1.2
       kolorist: 1.8.0
       prompts: 2.4.2
     optionalDependencies:
@@ -11065,7 +11059,7 @@ packages:
     dependencies:
       '@metaharness/avo': 0.1.5
       '@metaharness/darwin': 0.13.0
-      '@metaharness/flywheel': 0.1.10
+      '@metaharness/flywheel': 0.1.13
       '@metaharness/redblue': 0.1.6
       '@metaharness/turn-credit': 0.1.0
       '@metaharness/weight-eft': 0.1.1
@@ -12733,11 +12727,11 @@ packages:
       ora: 5.4.1
     optionalDependencies:
       '@metaharness/darwin': 0.9.3
-      '@metaharness/flywheel': 0.1.10
+      '@metaharness/flywheel': 0.1.13
       '@metaharness/harness': 0.2.0
       '@metaharness/redblue': 0.1.6
       '@metaharness/router': 0.4.0(@ruvector/tiny-dancer@0.1.22)
-      '@metaharness/weight-eft': 0.1.1
+      '@metaharness/weight-eft': 0.1.2
       '@metaharness/workspace-lens': 0.1.2
       '@metaharness/workspace-probe': 0.1.1
       '@ruvector/mincut-wasm': 2.3.0

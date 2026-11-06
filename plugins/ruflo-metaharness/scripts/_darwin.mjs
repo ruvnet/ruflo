@@ -61,8 +61,8 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 
 // Pinned semver range. The `~` allows patch upgrades without re-pinning.
 // Must cover the `@metaharness/darwin` optionalDependency range in
-// v3/@claude-flow/cli/package.json (`^0.13.0`). It sat at ~0.8.0 while that
-// range moved to ~0.9.0 (#2958), ~0.10.2 (#3262), ~0.12.0 (#3219) and ^0.13.0 (GHSA-mjwg-5fm3-fx2p), because the pin-drift
+// v3/@claude-flow/cli/package.json (`~0.13.0`). It sat at ~0.8.0 while that
+// range moved to ~0.9.0 (#2958), ~0.10.2 (#3262), ~0.12.0 (#3219) and ~0.13.0 (GHSA-mjwg-5fm3-fx2p), because the pin-drift
 // guard only compared MH_DARWIN_PIN (distill-oracle.ts). This range picks
 // the darwin version the evolve / bench / security-bench tools run and the
 // gepa cache fallback installs; scripts/check-metaharness-pins.mjs now fails
