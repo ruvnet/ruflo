@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-ruvector`.
 
+## 0.4.0 — 2026-11-06
+- feat: pin ruvector@0.3.12 (from 0.3.3). The pin now matches the CLI dependency (`^0.3.11`) and picks up the 0.3.4 MCP security hardening. `/vector-setup` documents the `RUVECTOR_MCP_ALLOW_INIT` and `RUVECTOR_MCP_ROOTS` gates, the per-project store and `ruvector add <extra>`. The README adds a "What changed since 0.3.3" table, checked command by command against 0.3.12, including CRUD (`get`/`update`/`delete`, `hooks memory-*`), `hooks reembed` and the now-working `hooks graph-mincut`.
+- fix: the README links to the ADR file that exists; the MCP tool count reads 97 (what `ruvector mcp tools` lists) instead of 91 or 103.
+
 ## 0.3.8 — 2026-10-29
 - chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
 

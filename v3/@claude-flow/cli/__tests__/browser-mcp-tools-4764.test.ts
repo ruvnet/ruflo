@@ -206,8 +206,8 @@ describe('browser_session_record', () => {
 
     const openArgs = ['--session', session, '--json', 'open', url];
     expect(sessionExec.mock.calls.map(([command, args]) => [command, args])).toEqual([
-      ['npx', ['-y', 'ruvector@0.2.27', 'rvf', 'create', rvfPath, '--dimension', '384']],
-      ['npx', ['-y', 'ruvector@0.2.27', 'hooks', 'trajectory-begin',
+      ['npx', ['-y', 'ruvector@0.3.12', 'rvf', 'create', rvfPath, '--dimension', '384']],
+      ['npx', ['-y', 'ruvector@0.3.12', 'hooks', 'trajectory-begin',
         '--context', session + ': ' + input.task, '--agent', 'browser-session']],
       ['agent-browser', openArgs],
       ['npx', ['--yes', 'agent-browser', ...openArgs]],
@@ -244,7 +244,7 @@ describe('browser_session_end', () => {
     });
     expect(sessionExec).toHaveBeenCalledTimes(1);
     expect(sessionExec).toHaveBeenCalledWith(
-      'npx', ['-y', 'ruvector@0.2.27', 'hooks', 'trajectory-end', '--quality', '0.5'], expect.any(Object),
+      'npx', ['-y', 'ruvector@0.3.12', 'hooks', 'trajectory-end', '--quality', '0.5'], expect.any(Object),
     );
     expect(browserExec).not.toHaveBeenCalled();
   });

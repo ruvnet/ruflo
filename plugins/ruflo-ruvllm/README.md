@@ -73,7 +73,7 @@ bash plugins/ruflo-ruvllm/scripts/smoke.sh
 
 - `ruflo-intelligence` — owns SONA + MicroLoRA in the 4-step pipeline
 - `ruflo-agentdb` — owns HNSW WASM router; namespace convention owner
-- `ruflo-ruvector` — sibling substrate plugin (pinned `ruvector@0.2.25`)
+- `ruflo-ruvector` — sibling substrate plugin (pinned `ruvector@0.3.12`)
 - `ruflo-rag-memory` — consumes RAG context routing
 
 ## As a mod
