@@ -1082,12 +1082,24 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       }
     }
 
+    if (ctx.flags.format === 'json') {
+      output.printJson(result);
+    }
+
+    await offerCapabilityEnrollment(ctx);
+
+    await offerTelemetryOptIn(ctx);
+
+    await noteInitCompleted();
+
     if (!startDaemon && !startAll && ctx.flags.format !== 'json') {
       // End on something about the user's own repo, not a list of commands
-      // (adoption plan item 1). Local-only, time-capped, never throws.
+      // (adoption plan item 1). Printed after the optional prompts so it is
+      // the last thing on screen. Local-only, time-capped, never throws.
       const { snapshotProject, snapshotLines, firstPrompt } = await import('../init/first-win.js');
       const snap = snapshotProject(ctx.cwd);
       const lines = snapshotLines(snap);
+      output.writeln();
       if (lines.length) {
         output.writeln(output.bold('Your project:'));
         output.printList(lines);
@@ -1099,16 +1111,6 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       const bin = (process.argv[1] || '').includes('ruflo') ? 'ruflo' : 'claude-flow';
       output.writeln(output.dim(`Background workers: ${bin} daemon start · health check: ${bin} doctor`));
     }
-
-    if (ctx.flags.format === 'json') {
-      output.printJson(result);
-    }
-
-    await offerCapabilityEnrollment(ctx);
-
-    await offerTelemetryOptIn(ctx);
-
-    await noteInitCompleted();
 
     return { success: true, data: result };
   } catch (error) {
