@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import { type MCPTool, getProjectCwd } from './types.js';
-import { containedWritePath } from './path-containment.js';
+import { containedReadPath, containedWritePath, isLocalCliCall } from './path-containment.js';
 import { MAX_IMPORT_BYTES, readImportFile } from './import-limits.js';
 import {
   mkdirRestricted,
@@ -803,21 +803,31 @@ export const sessionTools: MCPTool[] = [
         activate: { type: 'boolean', description: 'Restore the imported session into the active stores' },
       },
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       let parsed: unknown;
       if (input.data !== undefined && input.data !== null) {
         parsed = input.data;
       } else {
-        const inputPath = String(input.inputPath ?? '');
-        if (!inputPath) return { error: 'Provide inputPath (a session JSON file) or data (a session record)' };
-        if (!existsSync(inputPath)) return { error: `File not found: ${inputPath}` };
+        const requestedPath = String(input.inputPath ?? '');
+        if (!requestedPath) return { error: 'Provide inputPath (a session JSON file) or data (a session record)' };
+        // MCP callers may only read regular files inside the project, matching
+        // memory_import; the local CLI may name any file the operator chooses.
+        const local = isLocalCliCall(context);
+        const inputPath = local ? (existsSync(requestedPath) ? requestedPath : null) : containedReadPath(requestedPath);
+        if (!inputPath) {
+          return { error: local ? `File not found: ${requestedPath}`
+            : 'inputPath must be an existing regular file inside the project directory (not a symlink)' };
+        }
         try {
           const bytes = readImportFile(inputPath);
           const content = bytes[0] === 0x1f && bytes[1] === 0x8b
             ? gunzipSync(bytes, { maxOutputLength: MAX_IMPORT_BYTES }) : bytes;
           parsed = JSON.parse(content.toString('utf-8'));
         }
-        catch (e) { return { error: `Invalid session JSON: ${(e as Error).message}` }; }
+        catch (e) {
+          // Never echo parser text: a SyntaxError message quotes the file's contents.
+          return { error: e instanceof SyntaxError ? 'Invalid session JSON (parse failed)' : `Invalid session JSON: ${(e as Error).message}` };
+        }
       }
       const validationError = validateImportedSession(parsed);
       if (validationError) return { error: validationError };
