@@ -1110,6 +1110,10 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       output.writeln();
       const bin = (process.argv[1] || '').includes('ruflo') ? 'ruflo' : 'claude-flow';
       output.writeln(output.dim(`Background workers: ${bin} daemon start · health check: ${bin} doctor`));
+      // ADR-150: #4871 replaced the old Next-steps list, which removed the
+      // only in-init pointer to the optional metaharness readiness score.
+      // Keep a single dim line so new users can still discover it.
+      output.writeln(output.dim(`Readiness: ${bin} metaharness score for a 5-dim harness scorecard (ADR-150)`));
     }
 
     return { success: true, data: result };
