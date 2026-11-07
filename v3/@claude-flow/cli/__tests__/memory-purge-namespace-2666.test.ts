@@ -11,11 +11,10 @@
  * genuinely free again — this is the concrete, observable difference this
  * suite asserts, not just "the row doesn't show up in a list anymore".
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import {
   initializeMemoryDatabase,
   storeEntry,
@@ -115,15 +114,24 @@ describe('withMemoryDbLock (#2666)', () => {
     let content = '';
     await withMemoryDbLock(dbPath, () => { content = fs.readFileSync(lockFile, 'utf8'); });
     const owner = JSON.parse(content);
-    // Use a reaped child PID and the production identity format, rather than
-    // treating an unscoped legacy PID as proof that an owner is dead.
-    owner.pid = Number(execFileSync(process.execPath, ['-e', 'console.log(process.pid)'], { encoding: 'utf8' }).trim());
+    // Keep the real scoped identity without spawning another Node process
+    // under full-suite memory pressure. Only this fixture PID reports ESRCH.
+    owner.pid = 12345;
+    const kill = process.kill.bind(process);
+    const probe = vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
+      if (pid === owner.pid && signal === 0) throw Object.assign(new Error('owner exited'), { code: 'ESRCH' });
+      return kill(pid, signal);
+    });
     fs.writeFileSync(lockFile, JSON.stringify(owner));
     const staleTime = Date.now() / 1000 - 60; // 60s old — well past the stale threshold
     fs.utimesSync(lockFile, staleTime, staleTime);
 
     let ran = false;
-    await withMemoryDbLock(dbPath, () => { ran = true; });
+    try {
+      await withMemoryDbLock(dbPath, () => { ran = true; });
+    } finally {
+      probe.mockRestore();
+    }
 
     expect(ran).toBe(true);
     expect(fs.existsSync(lockFile)).toBe(false);

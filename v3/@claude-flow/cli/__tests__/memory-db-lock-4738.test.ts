@@ -24,29 +24,43 @@ afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-function ageLock(): void {
-  const old = new Date(Date.now() - 60_000);
-  fs.utimesSync(lockFile, old, old);
+function ageLock(file = lockFile, ageMs = 60_000): void {
+  const old = new Date(Date.now() - ageMs);
+  fs.utimesSync(file, old, old);
+}
+
+async function currentOwner(): Promise<Record<string, unknown>> {
+  let content = '';
+  await withMemoryDbLock(dbPath, () => { content = fs.readFileSync(lockFile, 'utf8'); });
+  return JSON.parse(content);
+}
+
+async function expectRecovery(): Promise<void> {
+  vi.useFakeTimers();
+  const result = withMemoryDbLock(dbPath, () => 'recovered').catch((error) => error);
+  await vi.advanceTimersByTimeAsync(15_100);
+  expect(await result).toBe('recovered');
 }
 
 describe('memory.db lock ownership (#4738)', () => {
-  it('explains unsupported hard links and cleans up without running the operation', async () => {
+  it.each(['ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EPERM'])('uses exclusive creation when hard links fail with %s', async (code) => {
     const originalLink = fs.linkSync;
     vi.spyOn(fs, 'linkSync').mockImplementation((from, to) => {
-      if (to === lockFile) throw Object.assign(new Error('not supported'), { code: 'EOPNOTSUPP' });
+      if (to === lockFile) throw Object.assign(new Error('not supported'), { code });
       return originalLink(from, to);
     });
     syncBuiltinESMExports();
-    let entered = false;
-    await expect(withMemoryDbLock(dbPath, () => { entered = true; })).rejects.toThrow(/requires.*hard.link.*filesystem/i);
-    expect(entered).toBe(false);
+    await expect(withMemoryDbLock(dbPath, () => {
+      expect(JSON.parse(fs.readFileSync(lockFile, 'utf8')).pid).toBe(process.pid);
+      return 'written';
+    })).resolves.toBe('written');
     expect(fs.readdirSync(root)).toEqual([]);
   });
 
   it('does not steal an aged lock from an independent live caller', async () => {
     let release!: () => void;
     const held = withMemoryDbLock(dbPath, () => new Promise<void>((resolve) => { release = resolve; }));
-    ageLock();
+    ageLock(lockFile, 360_000);
     let entered = false;
     const contender = withMemoryDbLock(dbPath, () => { entered = true; });
     try {
@@ -110,21 +124,93 @@ describe('memory.db lock ownership (#4738)', () => {
     expect(fs.readFileSync(lockFile, 'utf8')).toBe(JSON.stringify(owner));
   });
 
-  it('fails closed with an actionable error when a crashed reclaimer left its guard', async () => {
-    let content = '';
-    await withMemoryDbLock(dbPath, () => { content = fs.readFileSync(lockFile, 'utf8'); });
-    const owner = JSON.stringify({ ...JSON.parse(content), pid: 999999999 });
-    fs.writeFileSync(lockFile, owner);
+  it.each(['', '999999999', 'incomplete owner'])('recovers an expired legacy or incomplete owner: %j', async (content) => {
+    fs.writeFileSync(lockFile, content);
+    ageLock(lockFile, 360_000);
+    await expectRecovery();
+    expect(fs.readdirSync(root)).toEqual([]);
+  });
+
+  it.each(['host', 'platform', 'pidns', 'boot'])('recovers an expired owner after %s identity drift', async (field) => {
+    const owner = { ...await currentOwner(), [field]: 'old-identity' };
+    fs.writeFileSync(lockFile, JSON.stringify(owner));
+    ageLock(lockFile, 360_000);
+    await expectRecovery();
+  });
+
+  it.each(['', '12345', 'unknown-owner'])('recovers an expired reclaim guard: %j', async (content) => {
+    fs.writeFileSync(lockFile, 'old owner');
+    fs.writeFileSync(`${lockFile}.reclaim`, content);
+    ageLock(lockFile, 360_000);
+    ageLock(`${lockFile}.reclaim`, 360_000);
+    await expectRecovery();
+    expect(fs.readdirSync(root)).toEqual([]);
+  });
+
+  it('preserves an expired reclaim guard with a verifiably live owner', async () => {
+    const owner = JSON.stringify(await currentOwner());
+    fs.writeFileSync(lockFile, 'old owner');
     fs.writeFileSync(`${lockFile}.reclaim`, owner);
-    ageLock();
+    ageLock(lockFile, 360_000);
+    ageLock(`${lockFile}.reclaim`, 360_000);
     vi.useFakeTimers();
     const result = withMemoryDbLock(dbPath, () => 'unsafe').catch((error) => error);
     await vi.advanceTimersByTimeAsync(15_100);
     expect(await result).toBeInstanceOf(Error);
-    expect((await result as Error).message).toContain(`${lockFile}.reclaim`);
-    expect((await result as Error).message).toMatch(/inspect.*owner.*reclamation/i);
     expect(fs.readFileSync(`${lockFile}.reclaim`, 'utf8')).toBe(owner);
-    expect(fs.readFileSync(lockFile, 'utf8')).toBe(owner);
+    expect(fs.readFileSync(lockFile, 'utf8')).toBe('old owner');
+  });
+
+  it('cleans an expired guard left after a reclaimer already removed the main lock', async () => {
+    fs.writeFileSync(`${lockFile}.reclaim`, 'crashed guard');
+    ageLock(`${lockFile}.reclaim`, 360_000);
+    await withMemoryDbLock(dbPath, () => {});
+    expect(fs.readdirSync(root)).toEqual([]);
+  });
+
+  it('refreshes the actual lock inode when exclusive creation replaces hard links', async () => {
+    vi.spyOn(fs, 'linkSync').mockImplementation(() => {
+      throw Object.assign(new Error('not supported'), { code: 'EPERM' });
+    });
+    syncBuiltinESMExports();
+    vi.useFakeTimers();
+    await withMemoryDbLock(dbPath, async () => {
+      const before = fs.statSync(lockFile).mtimeMs;
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(fs.statSync(lockFile).mtimeMs).toBeGreaterThan(before + 1_000);
+    });
+    expect(fs.readdirSync(root)).toEqual([]);
+  });
+
+  it('recovers an expired owner and guard on a filesystem without hard links', async () => {
+    vi.spyOn(fs, 'linkSync').mockImplementation(() => {
+      throw Object.assign(new Error('not supported'), { code: 'ENOTSUP' });
+    });
+    syncBuiltinESMExports();
+    fs.writeFileSync(lockFile, 'old owner');
+    fs.writeFileSync(`${lockFile}.reclaim`, 'old guard');
+    ageLock(lockFile, 360_000);
+    ageLock(`${lockFile}.reclaim`, 360_000);
+    await expectRecovery();
+    expect(fs.readdirSync(root)).toEqual([]);
+  });
+
+  it('removes only expired orphan candidate files and preserves fresh or live candidates', async () => {
+    const liveOwner = await currentOwner();
+    const orphan = `${lockFile}.11111111-1111-4111-8111-111111111111.tmp`;
+    const fresh = `${lockFile}.22222222-2222-4222-8222-222222222222.tmp`;
+    const live = `${lockFile}.33333333-3333-4333-8333-333333333333.tmp`;
+    const unrelated = `${lockFile}.user-backup.tmp`;
+    fs.writeFileSync(orphan, '');
+    fs.writeFileSync(fresh, '');
+    fs.writeFileSync(live, JSON.stringify(liveOwner));
+    fs.writeFileSync(unrelated, '');
+    for (const file of [orphan, live, unrelated]) ageLock(file, 360_000);
+    await withMemoryDbLock(dbPath, () => {});
+    expect(fs.existsSync(orphan)).toBe(false);
+    expect(fs.existsSync(fresh)).toBe(true);
+    expect(fs.existsSync(live)).toBe(true);
+    expect(fs.existsSync(unrelated)).toBe(true);
   });
 
   it('does not treat a permission error probing the owner as a dead process', async () => {
@@ -133,7 +219,7 @@ describe('memory.db lock ownership (#4738)', () => {
     vi.useFakeTimers();
     const owner = JSON.stringify({ ...JSON.parse(content), pid: 12345 });
     fs.writeFileSync(lockFile, owner);
-    ageLock();
+    ageLock(lockFile, 360_000);
     vi.spyOn(process, 'kill').mockImplementation(() => {
       throw Object.assign(new Error('permission denied'), { code: 'EPERM' });
     });
@@ -142,6 +228,125 @@ describe('memory.db lock ownership (#4738)', () => {
     expect(await result).toBeInstanceOf(Error);
     expect((await result as Error).message).toMatch(/timed out acquiring memory.db lock/);
     expect(fs.readFileSync(lockFile, 'utf8')).toBe(owner);
+  });
+
+  it('preserves an expired guard when its scoped owner cannot be probed due to permissions', async () => {
+    const owner = JSON.stringify({ ...await currentOwner(), pid: 12345 });
+    fs.writeFileSync(lockFile, 'expired owner');
+    fs.writeFileSync(`${lockFile}.reclaim`, owner);
+    ageLock(lockFile, 360_000);
+    ageLock(`${lockFile}.reclaim`, 360_000);
+    vi.spyOn(process, 'kill').mockImplementation(() => {
+      throw Object.assign(new Error('permission denied'), { code: 'EPERM' });
+    });
+    vi.useFakeTimers();
+    const result = withMemoryDbLock(dbPath, () => 'unsafe').catch((error) => error);
+    await vi.advanceTimersByTimeAsync(15_100);
+    expect(await result).toBeInstanceOf(Error);
+    expect(fs.readFileSync(`${lockFile}.reclaim`, 'utf8')).toBe(owner);
+  });
+
+  it('preserves a successor published before the reclaim guard is acquired', async () => {
+    const live = await currentOwner();
+    const previous = JSON.stringify({ ...live, pid: 999999999 });
+    const successor = JSON.stringify({ ...live, token: 'successor' });
+    fs.writeFileSync(lockFile, previous);
+    ageLock();
+    const link = fs.linkSync;
+    let replaced = false;
+    vi.spyOn(fs, 'linkSync').mockImplementation((from, to) => {
+      if (to === `${lockFile}.reclaim` && !replaced) {
+        replaced = true;
+        fs.unlinkSync(lockFile);
+        fs.writeFileSync(lockFile, successor);
+      }
+      return link(from, to);
+    });
+    syncBuiltinESMExports();
+    vi.useFakeTimers();
+    const result = withMemoryDbLock(dbPath, () => 'unsafe').catch((error) => error);
+    await vi.advanceTimersByTimeAsync(15_100);
+    expect(await result).toBeInstanceOf(Error);
+    expect(fs.readFileSync(lockFile, 'utf8')).toBe(successor);
+  });
+
+  it('does not reclaim through a replaced guard or remove the replacement guard', async () => {
+    const live = await currentOwner();
+    fs.writeFileSync(lockFile, JSON.stringify({ ...live, pid: 999999999 }));
+    ageLock();
+    const guardOwner = JSON.stringify({ ...live, token: 'replacement-reclaimer' });
+    const link = fs.linkSync;
+    vi.spyOn(fs, 'linkSync').mockImplementation((from, to) => {
+      link(from, to);
+      if (to === `${lockFile}.reclaim`) {
+        fs.unlinkSync(to);
+        fs.writeFileSync(to, guardOwner);
+      }
+    });
+    syncBuiltinESMExports();
+    vi.useFakeTimers();
+    const result = withMemoryDbLock(dbPath, () => 'unsafe').catch((error) => error);
+    await vi.advanceTimersByTimeAsync(15_100);
+    expect(await result).toBeInstanceOf(Error);
+    expect(fs.readFileSync(`${lockFile}.reclaim`, 'utf8')).toBe(guardOwner);
+    expect(fs.existsSync(lockFile)).toBe(true);
+  });
+
+  it('keeps concurrent callers exclusive without hard links', async () => {
+    vi.spyOn(fs, 'linkSync').mockImplementation(() => {
+      throw Object.assign(new Error('not supported'), { code: 'ENOTSUP' });
+    });
+    syncBuiltinESMExports();
+    let release!: () => void;
+    let inside = 0;
+    let overlap = false;
+    const first = withMemoryDbLock(dbPath, async () => {
+      inside++;
+      await new Promise<void>((resolve) => { release = resolve; });
+      inside--;
+    });
+    const second = withMemoryDbLock(dbPath, () => { overlap = inside > 0; });
+    release();
+    await Promise.all([first, second]);
+    expect(overlap).toBe(false);
+    expect(fs.readdirSync(root)).toEqual([]);
+  });
+
+  it.each([false, true])('cleans a failed exclusive owner write without removing a replacement: %s', async (replace) => {
+    const link = fs.linkSync;
+    const open = fs.openSync;
+    const write = fs.writeFileSync;
+    let directFd: number | undefined;
+    vi.spyOn(fs, 'linkSync').mockImplementation((from, to) => {
+      if (to === lockFile) throw Object.assign(new Error('not supported'), { code: 'ENOTSUP' });
+      return link(from, to);
+    });
+    vi.spyOn(fs, 'openSync').mockImplementation((...args) => {
+      const fd = open(...args);
+      if (args[0] === lockFile && args[1] === 'wx') directFd = fd;
+      return fd;
+    });
+    const failure = Object.assign(new Error('disk full'), { code: 'ENOSPC' });
+    vi.spyOn(fs, 'writeFileSync').mockImplementation((file, ...args) => {
+      if (typeof file === 'number' && file === directFd) {
+        if (replace) {
+          fs.unlinkSync(lockFile);
+          write(lockFile, 'replacement');
+        }
+        throw failure;
+      }
+      return write(file, ...args);
+    });
+    syncBuiltinESMExports();
+    let entered = false;
+    await expect(withMemoryDbLock(dbPath, () => { entered = true; })).rejects.toBe(failure);
+    expect(entered).toBe(false);
+    if (replace) {
+      expect(fs.readFileSync(lockFile, 'utf8')).toBe('replacement');
+      expect(fs.readdirSync(root)).toEqual([path.basename(lockFile)]);
+    } else {
+      expect(fs.readdirSync(root)).toEqual([]);
+    }
   });
 
   it('does not publish an empty lock if the owner write is interrupted', async () => {
@@ -183,7 +388,7 @@ describe('memory.db lock ownership (#4738)', () => {
       child.kill('SIGKILL');
       await exited;
     }
-    await expect(withMemoryDbLock(dbPath, () => 'recovered')).resolves.toBe('recovered');
+    await expectRecovery();
     expect(fs.existsSync(lockFile)).toBe(false);
   });
 
