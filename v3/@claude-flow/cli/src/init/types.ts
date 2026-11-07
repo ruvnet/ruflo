@@ -394,7 +394,7 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
     notification: true,
     teammateIdle: true,
     taskCompleted: true,
-    timeout: 5000,
+    timeout: 10000,
     continueOnError: true,
   },
   skills: {
