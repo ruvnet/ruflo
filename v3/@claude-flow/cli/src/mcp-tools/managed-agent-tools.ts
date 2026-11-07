@@ -19,7 +19,7 @@
  */
 import { managedLearningTool } from './managed-learning-tool.js';
 import { ManagedRunCollector } from '../services/managed-run-collector.js';
-import { collectWithLease, executeManagedControl, publishManagedSnapshot, publishManagedTermination } from '../services/managed-run-store.js';
+import { collectWithLease, executeManagedControl, forgetManagedSession, ownedManagedSession, publishManagedSnapshot, publishManagedTermination, recordManagedSession, type ManagedSessionRecord } from '../services/managed-run-store.js';
 import { getProjectCwd, type MCPTool } from './types.js';
 import { dynamicConfig, eventPage, readManagedEvents, ManagedProgress, type ManagedEvent } from '../services/managed-workflows.js';
 // Dedicated override avoids forwarding credentials to a generic model proxy.
@@ -192,6 +192,20 @@ async function waitForIdle(sessionId: string, maxWaitMs: number, messageId: stri
   return progress.snapshot();
 }
 
+function hostAllowlist(): string[] {
+  return (process.env.RUFLO_MANAGED_CONTROL_SESSIONS ?? '').split(',').map(s => s.trim()).filter(Boolean);
+}
+
+// The API key reaches every session in the organisation. Only sessions this project created, or that the host
+// allowlisted, may be read or changed; an unreadable ledger owns nothing.
+const NOT_OWNED = 'Managed session was not created by this project and is not in RUFLO_MANAGED_CONTROL_SESSIONS';
+function sessionAccess(sessionId: string): { owned?: ManagedSessionRecord } | undefined {
+  let owned: ManagedSessionRecord | undefined;
+  try { owned = ownedManagedSession(getProjectCwd(), sessionId); } catch { owned = undefined; }
+  if (owned) return { owned };
+  return hostAllowlist().includes(sessionId) ? {} : undefined;
+}
+
 function definiteRejection(status: number): boolean { return [400, 401, 403, 404, 422].includes(status); }
 
 function maName(prefix: string, given?: unknown): string {
@@ -324,6 +338,8 @@ export const managedAgentTools: MCPTool[] = [
       }
 
       if (!s.data || typeof s.data.id !== 'string' || !/^sesn_[A-Za-z0-9]+$/.test(s.data.id)) return { success: false, stage: 'session', agentId: a.data.id, environmentId: e.data.id, error: 'Invalid session acknowledgement; inspect provider resources before retrying', cleanupRequired: true };
+      let ledgerRecorded = true;
+      try { recordManagedSession(getProjectCwd(), s.data.id, e.data.id); } catch { ledgerRecorded = false; }
       return {
         success: true,
         runtime: 'managed',
@@ -336,6 +352,7 @@ export const managedAgentTools: MCPTool[] = [
         dynamicWorkflows: config.enabled,
         budget: config.budget,
         verification: 'unverified',
+        ...(ledgerRecorded ? {} : { ledgerRecorded, warning: 'Session was not recorded locally; the other managed_agent_* tools refuse it until it is added to RUFLO_MANAGED_CONTROL_SESSIONS.' }),
         note: 'Cloud agent provisioned. Send work with managed_agent_prompt({sessionId, message}); inspect with managed_agent_events; clean up with managed_agent_terminate (running sessions consume runtime and tokens).',
       };
     },
@@ -362,6 +379,7 @@ export const managedAgentTools: MCPTool[] = [
       if (!message) return { success: false, error: 'message is required' };
 
       if (input.maxWaitMs !== undefined && (typeof input.maxWaitMs !== 'number' || !Number.isFinite(input.maxWaitMs) || input.maxWaitMs <= 0)) return { success: false, error: 'maxWaitMs must be finite and positive' };
+      if (!sessionAccess(sessionId)) return { success: false, sessionId, error: NOT_OWNED };
       if (pendingPrompts.has(sessionId)) return { success: false, error: 'A prompt is already pending for this session' };
       pendingPrompts.add(sessionId);
       let sentMessageId: string | undefined;
@@ -397,6 +415,7 @@ export const managedAgentTools: MCPTool[] = [
       if (!apiKey()) return { ...NEEDS_KEY };
       const sessionId = String(input.sessionId ?? '');
       if (!sessionId) return { error: 'sessionId is required' };
+      if (!sessionAccess(sessionId)) return { sessionId, error: NOT_OWNED };
       const r = await maRequest<MaSession>('GET', `/sessions/${encodeURIComponent(sessionId)}`);
       if (!r.ok) return { sessionId, error: r.error };
       return { runtime: 'managed', sessionId: r.data.id, status: r.data.status, title: r.data.title, error: r.data.error ?? null, environmentId: r.data.environment_id };
@@ -420,6 +439,7 @@ export const managedAgentTools: MCPTool[] = [
       if (!apiKey()) return { ...NEEDS_KEY };
       const sessionId = String(input.sessionId ?? '');
       if (!sessionId) return { error: 'sessionId is required' };
+      if (!sessionAccess(sessionId)) return { success: false, sessionId, error: NOT_OWNED };
       let events: MaEvent[];
       try { events = typeof input.threadId === 'string' ? await fetchSessionEvents(sessionId, undefined, input.threadId) : (await observeSession(sessionId)).events; } catch (error) { return { success: false, sessionId, error: (error as Error).message }; }
       const sum = summarizeEvents(events);
@@ -488,15 +508,16 @@ export const managedAgentTools: MCPTool[] = [
       if (!apiKey()) return { success: false, ...NEEDS_KEY };
       const sessionId = String(input.sessionId ?? '');
       if (!sessionId) return { success: false, error: 'sessionId is required' };
-      // Default behaviour is unchanged. Once the host has switched on the governed control plane
-      // (RUFLO_MANAGED_CONTROL=1) this tool obeys the same session allowlist, and may delete only that session's own environment.
+      // Once the host has switched on the governed control plane (RUFLO_MANAGED_CONTROL=1) only the allowlist admits a session.
       const governed = process.env.RUFLO_MANAGED_CONTROL === '1';
-      if (governed && !(process.env.RUFLO_MANAGED_CONTROL_SESSIONS ?? '').split(',').map(x => x.trim()).filter(Boolean).includes(sessionId)) {
+      if (governed && !hostAllowlist().includes(sessionId)) {
         return { success: false, error: 'Host managed control policy denies this session' };
       }
+      const access = sessionAccess(sessionId);
+      if (!access) return { success: false, sessionId, error: NOT_OWNED };
       const wantsEnvironment = typeof input.environmentId === 'string' && input.environmentId.length > 0;
-      let ownEnvironment: string | undefined;
-      if (governed && wantsEnvironment) {
+      let ownEnvironment = access.owned?.environmentId;
+      if (wantsEnvironment && !ownEnvironment) {
         const g = await maRequest<MaSession>('GET', `/sessions/${encodeURIComponent(sessionId)}`);
         if (!g.ok) return { success: false, error: g.error };
         ownEnvironment = g.data.environment_id;
@@ -505,9 +526,10 @@ export const managedAgentTools: MCPTool[] = [
       const result: Record<string, unknown> = { runtime: 'managed', sessionId, sessionDeleted: s.ok };
       // The deletion already happened; a failed local snapshot update must not turn it into an error or skip the environment.
       if (s.ok) { try { publishManagedTermination(getProjectCwd(), sessionId, scopedCollector()); } catch { result.snapshotUpdated = false; } }
+      if (s.ok && access.owned) { try { forgetManagedSession(getProjectCwd(), sessionId); } catch { /* a stale entry names a deleted session */ } }
       if (!s.ok) result.error = s.error;
       if (s.ok && wantsEnvironment) {
-        if (governed && input.environmentId !== ownEnvironment) {
+        if (input.environmentId !== ownEnvironment) {
           result.environmentDeleted = false;
           result.environmentError = 'environmentId does not belong to this session';
         } else {
