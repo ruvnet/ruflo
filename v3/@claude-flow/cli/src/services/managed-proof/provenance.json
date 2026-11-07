@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/ruvnet/rGi",
+  "commit": "fe5456234bcae654c513d1360f6f2d67d5933fb3",
+  "path": "src/evaluation.ts",
+  "usage": "Exact pure evaluator reused for the repository owner's requested integration. Upstream has no declared license; no MIT attribution is asserted.",
+  "boundary": "No rGi runtime, SQLite promotion ledger, Autogenous population or AVO operator is started. Statistical eligibility is advisory and never promotion authority.",
+  "sha256": "151fc23d209129a0fb5bd746fc3338831feb3017e208dae5d969ec3b2d42cf6e"
+}

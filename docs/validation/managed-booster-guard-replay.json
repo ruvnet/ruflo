@@ -1,0 +1,81 @@
+{
+  "kind": "posthoc-verified-application-replay",
+  "providerCalls": 0,
+  "guardSha256": "24ea0bc6592f40bf446b7409680a11e63e5d954161e71b534e1065206095b6d9",
+  "accepted": 10,
+  "total": 10,
+  "originalBoosterPassed": 8,
+  "freshGeneralizationProof": false,
+  "checks": [
+    {
+      "task": "add-offset",
+      "accepted": true,
+      "selected": "booster",
+      "boosterOraclePassed": true,
+      "directOraclePassed": null
+    },
+    {
+      "task": "round-up",
+      "accepted": true,
+      "selected": "booster",
+      "boosterOraclePassed": true,
+      "directOraclePassed": null
+    },
+    {
+      "task": "immutable-sort",
+      "accepted": true,
+      "selected": "booster",
+      "boosterOraclePassed": true,
+      "directOraclePassed": null
+    },
+    {
+      "task": "trim-normalize",
+      "accepted": true,
+      "selected": "booster",
+      "boosterOraclePassed": true,
+      "directOraclePassed": null
+    },
+    {
+      "task": "literal-match",
+      "accepted": true,
+      "selected": "booster",
+      "boosterOraclePassed": true,
+      "directOraclePassed": null
+    },
+    {
+      "task": "null-safe",
+      "accepted": true,
+      "selected": "verified-full-source",
+      "boosterOraclePassed": false,
+      "directOraclePassed": true
+    },
+    {
+      "task": "prototype-keys",
+      "accepted": true,
+      "selected": "booster",
+      "boosterOraclePassed": true,
+      "directOraclePassed": null
+    },
+    {
+      "task": "include-zero",
+      "accepted": true,
+      "selected": "booster",
+      "boosterOraclePassed": true,
+      "directOraclePassed": null
+    },
+    {
+      "task": "preserve-helper",
+      "accepted": true,
+      "selected": "verified-full-source",
+      "boosterOraclePassed": false,
+      "directOraclePassed": true
+    },
+    {
+      "task": "numeric-order",
+      "accepted": true,
+      "selected": "booster",
+      "boosterOraclePassed": true,
+      "directOraclePassed": null
+    }
+  ]
+}

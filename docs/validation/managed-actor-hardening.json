@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-25",
+  "localOfflinePythonTests": 17,
+  "liveActorCallsForHardening": 0,
+  "providerCostUSD": 0,
+  "ruosPrototypeRegression": {
+    "correctOwnPrototypeKey": true,
+    "missingPrototypeKeyRejected": true,
+    "passed": true,
+    "runnerSha256": "6b8d50b2f9c0f8fe63d480d866d755775e8ef5ab2ff0d2898c3c0cec34bfbcb2"
+  },
+  "boundary": "Offline tests exercise VM isolation, metering, terminal accounting, manifest freshness and cost endpoint fixtures. Two actual ruOS bubblewrap checks confirm corrected prototype-key handling. No OS RSS/tmpfs/process-count limit is claimed. Live campaign results are separate."
+}
