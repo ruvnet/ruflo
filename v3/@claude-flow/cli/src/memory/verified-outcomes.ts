@@ -18,7 +18,10 @@
  * It then writes `.claude-flow/data/learned-lessons.json`: patterns that
  * verified outcomes produced, those at or above the SONA routing gate as
  * lessons, and repeated verified failures as cautions. The mod reads that
- * file and adds at most three cited lessons to a prompt.
+ * file and adds at most three cited lessons to a prompt. The file carries
+ * this machine's origin id (`~/.claude-flow/learning-loop-origin`, #4747),
+ * and readers show no file without it, so a lessons file committed to a
+ * repository is never presented as the project's own history.
  *
  * ADR-503 hardens it against gamed signals (verified-guards.ts,
  * verified-reverify.ts): a tainted success does not train unless the project
@@ -27,7 +30,9 @@
  * prompt. Every one of these can only downgrade.
  */
 
+import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 import { addOutcome, blockedTaints, emptyStats, parseStats, parseTaint, readLoopConfig, type LoopConfig, type PatternStats, type Taint } from './verified-guards.js';
@@ -39,6 +44,8 @@ export { buildLessons, CAUTION_MIN_FAILURES, LESSON_GATE, lessonFile, lessonId, 
 export const VERIFIED_PATH = join('.claude-flow', 'data', 'verified-trajectories.jsonl');
 export const LEDGER_PATH = join('.claude-flow', 'data', 'verified-ingest.json');
 export const LESSONS_PATH = join('.claude-flow', 'data', 'learned-lessons.json');
+/** Under the home directory, never a project, so a cloned repository cannot carry it (#4747). */
+export const ORIGIN_PATH = join('.claude-flow', 'learning-loop-origin');
 
 /** Ingested ids remembered; the mod keeps at most 500 lines, so this always covers the whole file. */
 export const MAX_LEDGER_IDS = 2000;
@@ -229,6 +236,30 @@ function writeAtomic(path: string, body: string): void {
   renameSync(tmp, path);
 }
 
+const ORIGIN = /^[a-f0-9]{32}$/;
+
+/** This machine's lessons origin id, created on first use; null when the home directory cannot hold it. */
+export function lessonsOrigin(home: string = homedir()): string | null {
+  const path = join(home, ORIGIN_PATH);
+  const read = () => {
+    try {
+      const id = readFileSync(path, 'utf8').trim();
+      return ORIGIN.test(id) ? id : null;
+    } catch {
+      return null;
+    }
+  };
+  const known = read();
+  if (known) return known;
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, randomBytes(16).toString('hex'), { mode: 0o600, flag: existsSync(path) ? 'w' : 'wx' });
+  } catch {
+    // another ingest created it first, or the home directory is read-only
+  }
+  return read();
+}
+
 export interface IngestOptions {
   /** Project root; defaults to process.cwd(), where SONA keeps `.swarm/`. */
   root?: string;
@@ -248,6 +279,8 @@ export interface IngestOptions {
   allowReverify?: boolean;
   /** Re-verify runner; defaults to the detached-git-worktree runner. Tests inject one. */
   reverifier?: ReverifyRunner;
+  /** Where the origin id lives (#4747); defaults to os.homedir(). */
+  home?: string;
 }
 
 /**
@@ -397,7 +430,10 @@ export async function ingestVerifiedOutcomes(options: IngestOptions = {}): Promi
   writeAtomic(ledgerPath, JSON.stringify(ledger));
 
   const lessons = sona ? buildLessons(patterns, ledger.patterns, now) : undefined;
-  if (lessons) writeAtomic(join(root, LESSONS_PATH), JSON.stringify(lessons, null, 2));
+  if (lessons) {
+    const origin = lessonsOrigin(options.home);
+    writeAtomic(join(root, LESSONS_PATH), JSON.stringify(origin ? { ...lessons, origin } : lessons, null, 2));
+  }
   return done(null, !!sona, lessons);
 }
 
