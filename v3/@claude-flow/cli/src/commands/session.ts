@@ -7,6 +7,7 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { confirm, input, select } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
+import { localCliContext } from '../mcp-tools/path-containment.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { stringify as stringifyYaml } from 'yaml';
@@ -809,7 +810,7 @@ const importCommand: Command = {
         inputPath: absolutePath,
         name: sessionName,
         activate
-      });
+      }, localCliContext());
 
       const failure = toolError(result);
       if (failure) {
