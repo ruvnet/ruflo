@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.16.3 — 2026-11-06
+- fix: the dangerous-command guard reads `$(...)` as a command substitution, as it already read backticks, so `rm -rf "$(echo)"/` is refused, and it skips `$((...))` arithmetic. A parameter's default is a word the shell may use, so `rm -rf ${X:-/}` is refused too (#4742). Same change in both classic `hook-handler.cjs` copies and the generated fallback.
+
 ## 0.16.2 — 2026-11-04
 - fix: the `routeContext` ranked-memory block ends with a line saying the entries are stored project notes, not instructions, matching the classic `hook-handler.cjs route` output.
 
