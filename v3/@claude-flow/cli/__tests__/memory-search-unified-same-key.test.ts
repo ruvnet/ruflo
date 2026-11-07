@@ -55,4 +55,33 @@ describe('memory_search_unified merge', () => {
     const r = await tool.handler({ query: 'config', namespace: 'project-a' }) as UnifiedResult;
     expect(r.results.map((e) => [e.namespace, e.key])).toEqual([['project-a', 'config']]);
   });
+
+  it('reports namespace failures and elapsed search time instead of a false complete', async () => {
+    searchEntries.mockImplementation(async ({ namespace }: { namespace: string }) => {
+      if (namespace === 'throws') throw new Error('namespace offline');
+      if (namespace === 'denied') return { success: false, error: 'access denied', results: [] };
+      return {
+        success: true,
+        results: [{ key: 'config', content: 'ok config', score: 0.9, namespace }],
+      };
+    });
+
+    const r = await tool.handler({
+      query: 'config',
+      namespaces: ['good', 'throws', 'denied'],
+    }) as UnifiedResult & {
+      complete: boolean;
+      namespaceErrors: Array<{ namespace: string; error: string }>;
+      searchTime: number;
+    };
+
+    expect(r.results.map((e) => e.key)).toEqual(['config']);
+    expect(r.complete).toBe(false);
+    expect(r.namespaceErrors).toEqual([
+      { namespace: 'throws', error: 'namespace offline' },
+      { namespace: 'denied', error: 'access denied' },
+    ]);
+    expect(typeof r.searchTime).toBe('number');
+    expect(r.searchTime).toBeLessThan(10_000);
+  });
 });

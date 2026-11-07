@@ -1536,10 +1536,19 @@ export const memoryTools: MCPTool[] = [
       }
 
       const allResults: Array<{ key: string; content: string; score: number; namespace: string; source: string }> = [];
+      const namespaceErrors: Array<{ namespace: string; error: string }> = [];
+      const searchStartedAt = performance.now();
 
       for (const searchNs of namespaces) {
         try {
           const r = await searchEntries({ query, namespace: searchNs, limit: limit * 2 });
+          if (r && r.success === false) {
+            namespaceErrors.push({
+              namespace: searchNs,
+              error: typeof r.error === 'string' && r.error ? r.error : 'namespace search failed',
+            });
+            continue;
+          }
           if (r?.results) {
             for (const entry of r.results) {
               allResults.push({
@@ -1551,8 +1560,17 @@ export const memoryTools: MCPTool[] = [
               });
             }
           }
-        } catch { /* namespace may not exist */ }
+        } catch (error) {
+          // A missing namespace is expected; an operational failure is not.
+          // Keep the other namespaces' results, but make partial coverage
+          // explicit instead of returning success:true as if all ran (#4876).
+          namespaceErrors.push({
+            namespace: searchNs,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
+      const searchTime = Math.max(0, Math.round(performance.now() - searchStartedAt));
 
       // Sort by score, deduplicate by (namespace, key), take top N. An entry is
       // identified by both (see #2271), so the same key in another namespace is
@@ -1573,7 +1591,9 @@ export const memoryTools: MCPTool[] = [
         total: deduplicated.length,
         searchedNamespaces: namespaces,
         namespaceSource,        // #2246 — surface how the namespace list was resolved
-        searchTime: Date.now(),
+        complete: namespaceErrors.length === 0,
+        ...(namespaceErrors.length > 0 ? { namespaceErrors } : {}),
+        searchTime,             // #4876 — elapsed ms, not Date.now()
       };
     },
   },
