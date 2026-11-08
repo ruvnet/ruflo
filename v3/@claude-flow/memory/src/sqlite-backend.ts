@@ -730,6 +730,25 @@ export class SQLiteBackend extends EventEmitter implements IMemoryBackend {
       );
     `);
 
+    // #1426: a memory.db created by the CLI (memory-initializer DDL) has a
+    // memory_entries table without these columns. CREATE TABLE IF NOT EXISTS
+    // leaves it untouched, so every store() then failed with "no such column".
+    // Add whatever is missing; the defaults match createDefaultEntry().
+    const migrations: Array<{ column: string; ddl: string }> = [
+      { column: 'access_level', ddl: `ALTER TABLE memory_entries ADD COLUMN access_level TEXT NOT NULL DEFAULT 'private'` },
+      { column: 'version', ddl: 'ALTER TABLE memory_entries ADD COLUMN version INTEGER NOT NULL DEFAULT 1' },
+      { column: 'references', ddl: `ALTER TABLE memory_entries ADD COLUMN "references" TEXT NOT NULL DEFAULT '[]'` },
+      { column: 'access_count', ddl: 'ALTER TABLE memory_entries ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0' },
+      { column: 'last_accessed_at', ddl: 'ALTER TABLE memory_entries ADD COLUMN last_accessed_at INTEGER NOT NULL DEFAULT 0' },
+    ];
+    const existing = new Set(
+      (this.db.prepare('PRAGMA table_info(memory_entries)').all() as Array<{ name: string }>)
+        .map((r) => r.name),
+    );
+    for (const m of migrations) {
+      if (!existing.has(m.column)) this.db.exec(m.ddl);
+    }
+
     // ADR-125 Phase 5 — FTS5 virtual table for keyword search.
     // FTS5 is built into better-sqlite3 since 11.x. Surrounding try/catch so
     // older SQLite builds gracefully skip FTS without taking the whole backend

@@ -1068,6 +1068,8 @@ export async function bridgeStoreEntry(options: {
   namespace?: string;
   generateEmbeddingFlag?: boolean;
   tags?: string[];
+  /** #1426: JSON object persisted to the metadata column. */
+  metadata?: Record<string, unknown>;
   ttl?: number;
   dbPath?: string;
   upsert?: boolean;
@@ -1242,7 +1244,7 @@ export async function bridgeStoreEntry(options: {
       id, key, namespace, value,
       embeddingJson, dimensions || null, model,
       tags.length > 0 ? JSON.stringify(tags) : null,
-      '{}',
+      JSON.stringify(options.metadata ?? {}),
       provenanceType,
       now, now,
       ttl ? now + (ttl * 1000) : null
