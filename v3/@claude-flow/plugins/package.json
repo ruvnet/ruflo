@@ -41,6 +41,9 @@
   "dependencies": {
     "events": "^3.3.0"
   },
+  "optionalDependencies": {
+    "@ruvnet/sublinear-core": "^1.0.1"
+  },
   "peerDependencies": {
     "@claude-flow/hooks": "^3.0.0",
     "@claude-flow/memory": "^3.0.0",

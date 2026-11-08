@@ -22,7 +22,8 @@
     "sql.js": "^1.10.3"
   },
   "optionalDependencies": {
-    "better-sqlite3": "^12.9.0"
+    "better-sqlite3": "^12.9.0",
+    "@ruvnet/sublinear-core": "^1.0.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
