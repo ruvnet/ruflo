@@ -51,6 +51,7 @@ function cleanIsUnspecified(address: string): boolean {
 export function isValidUrl(urlString: string, opts: { allowPrivate?: boolean } = {}): boolean {
 	try {
 		const url = new URL(urlString.trim());
+		if (url.protocol === "wasm:") return true;
 		const hostname = url.hostname.toLowerCase();
 		// Allow HTTP for localhost/loopback/Docker-internal (dev & local MCP bridge)
 		if (opts.allowPrivate && (
