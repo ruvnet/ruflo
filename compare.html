@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruflo vs CrewAI, LangGraph, AutoGen and Claude Code subagents</title>
+<meta name="description" content="How Ruflo compares with Claude Code’s built-in subagents, CrewAI, LangGraph and AutoGen, and when to pick each.">
+<link rel="canonical" href="https://ruvnet.github.io/ruflo/compare.html">
+<meta property="og:title" content="Ruflo vs CrewAI, LangGraph, AutoGen and Claude Code subagents">
+<meta property="og:description" content="How Ruflo compares with Claude Code’s built-in subagents, CrewAI, LangGraph and AutoGen, and when to pick each.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://ruvnet.github.io/ruflo/compare.html">
+<meta property="og:image" content="https://ruvnet.github.io/ruflo/media/poster.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 29 9.5v13L16 30 3 22.5v-13z' fill='none' stroke='%2368E4FF' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+  @font-face { font-family: "Inter"; src: url("source/assets/fonts/Inter-Variable.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+  @font-face { font-family: "JetBrains Mono"; src: url("source/assets/fonts/JetBrainsMono-Variable.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+  :root { --canvas: #030611; --ink: #F7FBFF; --muted: #BDC9DF; --accent: #68E4FF; --gold: #FFCB6B; --hair: rgba(189,201,223,0.18); --panel: #07101f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--canvas); color: var(--ink); font: 16px/1.6 "Inter", system-ui, sans-serif; }
+  nav, main, footer { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  nav { display: flex; gap: 20px; padding-top: 20px; font-size: 14px; }
+  a { color: var(--accent); }
+  h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.2; margin: 32px 0 16px; }
+  h2 { font-size: 22px; margin: 40px 0 12px; border-top: 1px solid var(--hair); padding-top: 24px; }
+  p, li { color: var(--muted); }
+  strong { color: var(--ink); }
+  code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.88em; background: var(--panel); padding: 1px 5px; border-radius: 4px; color: var(--gold); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--hair); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; min-width: 820px; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--hair); }
+  thead th { background: var(--panel); color: var(--ink); }
+  td { color: var(--muted); }
+  footer { color: var(--muted); font-size: 13px; padding: 40px 20px; }
+</style>
+</head>
+<body>
+<nav><a href="./">RuFlo Explained</a><a href="https://github.com/ruvnet/ruflo">GitHub</a><a href="https://www.npmjs.com/package/ruflo">npm</a></nav>
+<main>
+<h1>Ruflo compared with other multi-agent tools</h1>
+<p>Ruflo answers one question: how do you get Claude Code and Codex agents that coordinate, remember across sessions, and get better over time, without writing your own agent runtime? It installs into your project and runs inside your Claude Code or Codex session, through MCP tools and hooks.</p>
+<p>The other tools below answer different questions. CrewAI, LangGraph and AutoGen are libraries for building your own agent applications, where your code calls the model. Claude Code&#39;s subagents are a built-in feature of Claude Code itself.</p>
+<h2>At a glance</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Ruflo</th>
+<th>Claude Code subagents</th>
+<th>CrewAI</th>
+<th>LangGraph</th>
+<th>AutoGen</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>What it is</strong></td>
+<td>Agent harness for Claude Code and Codex</td>
+<td>Built-in Claude Code feature: specialized assistants with their own context</td>
+<td>Python framework for crews of collaborating agents</td>
+<td>Low-level orchestration library for stateful agent graphs</td>
+<td>Multi-agent conversation framework (archived; Microsoft points to Microsoft Agent Framework as its successor)</td>
+</tr>
+<tr>
+<td><strong>Language</strong></td>
+<td>TypeScript, Node.js CLI and MCP server</td>
+<td>Configured as Markdown files with frontmatter</td>
+<td>Python</td>
+<td>Python (JavaScript version also available)</td>
+<td>Python</td>
+</tr>
+<tr>
+<td><strong>Where agents run</strong></td>
+<td>Inside your Claude Code or Codex session</td>
+<td>Inside your Claude Code session</td>
+<td>In your own application, which calls the model</td>
+<td>In your own application, which calls the model</td>
+<td>In your own application, which calls the model</td>
+</tr>
+<tr>
+<td><strong>Models</strong></td>
+<td>The models your Claude Code or Codex session uses</td>
+<td>Claude; the main conversation&#39;s model by default, overridable per subagent</td>
+<td>Configurable</td>
+<td>Configurable</td>
+<td>Configurable</td>
+</tr>
+<tr>
+<td><strong>Memory across sessions</strong></td>
+<td>Project memory database with vector search (AgentDB)</td>
+<td>Optional per-subagent <code>memory</code> field (user, project or local scope)</td>
+<td>Built-in memory component</td>
+<td>Checkpointed thread state and long-term memory store</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Get started</strong></td>
+<td><code>npx ruflo@latest init</code></td>
+<td>Add an agent file under <code>.claude/agents/</code></td>
+<td><code>uv tool install crewai</code></td>
+<td><code>pip install -U langgraph</code></td>
+<td><code>pip install -U &quot;autogen-agentchat&quot; &quot;autogen-ext[openai]&quot;</code></td>
+</tr>
+</tbody></table></div>
+<p>&quot;—&quot; means we couldn&#39;t confirm it from the project&#39;s own documentation.</p>
+<h2>When to pick which</h2>
+<ul>
+<li><strong>You already work in Claude Code or Codex and want a team of agents, shared memory, hooks and swarms there:</strong> Ruflo.</li>
+<li><strong>You want one or two focused helpers in Claude Code with nothing to install:</strong> Claude Code subagents. Ruflo also works alongside them.</li>
+<li><strong>You&#39;re building your own Python application and want role-based crews:</strong> CrewAI.</li>
+<li><strong>You need fine-grained control over agent state and control flow, with durable execution:</strong> LangGraph.</li>
+<li><strong>You&#39;re on AutoGen today:</strong> Microsoft recommends moving to Microsoft Agent Framework for new work.</li>
+</ul>
+<h2>Sources</h2>
+<p>Checked 2026-11-06.</p>
+<ul>
+<li>Claude Code subagents: <a rel="noopener" href="https://code.claude.com/docs/en/sub-agents">https://code.claude.com/docs/en/sub-agents</a></li>
+<li>CrewAI: <a rel="noopener" href="https://docs.crewai.com">https://docs.crewai.com</a>, <a rel="noopener" href="https://github.com/crewAIInc/crewAI">https://github.com/crewAIInc/crewAI</a></li>
+<li>LangGraph: <a rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/">https://docs.langchain.com/oss/python/langgraph/</a>, <a rel="noopener" href="https://github.com/langchain-ai/langgraph">https://github.com/langchain-ai/langgraph</a></li>
+<li>AutoGen (repository, archive notice and install command): <a rel="noopener" href="https://github.com/microsoft/autogen">https://github.com/microsoft/autogen</a></li>
+<li>Ruflo: <a rel="noopener" href="https://github.com/ruvnet/ruflo#readme">README</a></li>
+</ul>
+
+</main>
+<footer>Source: <a href="https://github.com/ruvnet/ruflo/blob/main/docs/compare.md">docs/compare.md</a> in ruvnet/ruflo. Corrections welcome as issues or PRs.</footer>
+</body>
+</html>
