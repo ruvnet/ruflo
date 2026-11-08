@@ -24,7 +24,7 @@
     "swarm"
   ],
   "peerDependencies": {
-    "agentic-flow": "^2.0.14"
+    "agentic-flow": "^2.0.0-alpha"
   },
   "devDependencies": {
     "vitest": "^4.1.0"
