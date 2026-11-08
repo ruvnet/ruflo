@@ -9,17 +9,25 @@
     "subfolder": "ruflo"
   },
   "websiteUrl": "https://github.com/ruvnet/ruflo",
-  "version": "3.72.2",
+  "version": "3.73.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "ruflo",
-      "version": "3.72.2",
+      "version": "3.73.0",
       "runtimeHint": "npx",
-      "transport": { "type": "stdio" },
+      "transport": {
+        "type": "stdio"
+      },
       "packageArguments": [
-        { "type": "positional", "value": "mcp" },
-        { "type": "positional", "value": "start" }
+        {
+          "type": "positional",
+          "value": "mcp"
+        },
+        {
+          "type": "positional",
+          "value": "start"
+        }
       ]
     }
   ]
