@@ -49,7 +49,7 @@
   },
   "peerDependencies": {
     "@claude-flow/shared": "^3.0.0-alpha.1",
-    "agentic-flow": "^2.0.0",
+    "agentic-flow": "^2.0.14",
     "@huggingface/transformers": "^4.0.0"
   },
   "peerDependenciesMeta": {
