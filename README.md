@@ -214,6 +214,8 @@ This adds slash commands and agent definitions. `ruflo-core` (installed above) d
 <details>
 <summary><strong>🔌 All 48 plugins</strong> (plus 3 external)</summary>
 
+Ruflo is CLI-agnostic and works with any compatible agent CLI, including Claude Code, OpenAI CLI, Gemini CLI, and Google CLI.
+
 #### Core & Orchestration
 
 | Plugin | What it does |
