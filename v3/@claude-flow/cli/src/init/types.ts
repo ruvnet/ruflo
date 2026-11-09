@@ -364,6 +364,13 @@ export interface InitOptions {
    * (--drop-risky-settings).
    */
   riskySettings?: 'stop' | 'keep' | 'drop';
+  /**
+   * #2638 — where the shared project instructions live. `claude-md` (default,
+   * single-host) writes the full CLAUDE.md. `agents-md` (set by `init --dual`)
+   * writes CLAUDE.md as `@AGENTS.md` plus Claude-only sections; AGENTS.md,
+   * written by the Codex pass, carries the shared sections.
+   */
+  instructionsSource?: 'claude-md' | 'agents-md';
 }
 
 /**
@@ -638,4 +645,10 @@ export interface InitResult {
   riskySettings?: string[];
   /** ADR-509 §2.3 — init stopped before writing anything because of riskySettings. */
   stoppedOnRiskySettings?: boolean;
+  /**
+   * #2638 — set when this run wrote CLAUDE.md in its `@AGENTS.md` import form.
+   * `fullForm` is the single-host CLAUDE.md to restore if AGENTS.md turns out
+   * not to carry the shared sections (see finalizeDualInstructions).
+   */
+  dualInstructions?: { importForm: string; fullForm: string };
 }

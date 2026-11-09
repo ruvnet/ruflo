@@ -77,7 +77,7 @@ describe('native dual initialization (#2636)', () => {
     expect(codexMock.initialize).toHaveBeenCalledWith(expect.objectContaining({
       projectPath,
       template: 'minimal',
-      dual: false,
+      dual: true,
     }));
   });
 });

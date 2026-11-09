@@ -30,6 +30,7 @@ import {
 } from './helpers-generator.js';
 import { getInstalledCliVersion, HELPERS_STAMP_FILE } from './helper-refresh.js';
 import { generateClaudeMd } from './claudemd-generator.js';
+import { writeDualClaudeMd } from './dual-instructions.js';
 import { recordMemoryPackagePath } from './memory-package-resolver.js';
 import { COMMONJS_COMPANION_HELPERS, ensureCommonJsCompanions } from './helper-companions.js';
 import { scanSettingsForRisk, formatRiskFindingsAsWarnings, RISKY_SETTINGS_HINT, type RiskySettingsMode } from './settings-risk-scanner.js';
@@ -2304,7 +2305,9 @@ async function writeClaudeMd(
 ): Promise<void> {
   const claudeMdPath = path.join(targetDir, 'CLAUDE.md');
 
-  if (fs.existsSync(claudeMdPath) && !options.force) {
+  if (options.instructionsSource === 'agents-md') {
+    writeDualClaudeMd(claudeMdPath, options, result);
+  } else if (fs.existsSync(claudeMdPath) && !options.force) {
     result.skipped.push('CLAUDE.md');
   } else {
     // #2208: if overwriting an existing CLAUDE.md (force mode), back it up first so

@@ -8,7 +8,7 @@
 import type { AgentsMdOptions, AgentsMdTemplate } from '../types.js';
 import { BUILT_IN_SKILLS } from '../templates/index.js';
 
-function concurrentRufloWorkflow(): string {
+export function concurrentRufloWorkflow(): string {
   return `## Ruflo + Codex Automated Workflow
 
 Ruflo is the coordination ledger and policy decision point; Codex workers execute code, tests, and commands. A Ruflo coordination call records work but never replaces implementation.
