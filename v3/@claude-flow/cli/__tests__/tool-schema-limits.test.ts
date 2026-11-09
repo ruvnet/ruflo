@@ -141,7 +141,7 @@ describe('#4887 hooks_post-task identifiers', () => {
     });
 
     it(`${field} agrees with the runtime validator the HTTP transport applies`, async () => {
-      const { validateSchema } = await import('@claude-flow/mcp');
+      const { validateSchema } = await import('../../mcp/src/schema-validator.js');
       const handlerAccepts = (v: string) => (field === 'agent' && v === '') || validateIdentifier(v, field).valid;
       // validateSchema ignores `not`, so reserved names are left to the handler.
       const reserved = new Set(['__proto__', 'constructor', 'prototype']);
