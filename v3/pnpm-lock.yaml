@@ -224,7 +224,7 @@ importers:
         specifier: 3.1.1
         version: link:../aidefence
       '@claude-flow/memory':
-        specifier: 3.2.5
+        specifier: 3.2.6
         version: link:../memory
       '@metaharness/flywheel':
         specifier: ~0.1.10
@@ -467,6 +467,9 @@ importers:
         specifier: ^1.10.3
         version: 1.13.0
     optionalDependencies:
+      '@ruvnet/sublinear-core':
+        specifier: ^1.0.1
+        version: 1.0.1
       better-sqlite3:
         specifier: 12.9.0
         version: 12.9.0
@@ -574,6 +577,10 @@ importers:
       events:
         specifier: ^3.3.0
         version: 3.3.0
+    optionalDependencies:
+      '@ruvnet/sublinear-core':
+        specifier: ^1.0.1
+        version: 1.0.1
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
