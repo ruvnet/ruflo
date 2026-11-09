@@ -137,7 +137,7 @@ importers:
         version: link:../security
       '@claude-flow/shared':
         specifier: 3.0.7
-        version: link:../shared
+        version: 3.0.7
       '@electron/asar':
         specifier: ^4.3.1
         version: 4.3.1
@@ -658,8 +658,8 @@ importers:
         specifier: ^8.21.0
         version: 8.21.1
       zod:
-        specifier: ^3.22.4
-        version: 3.25.76
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/cors':
         specifier: ^2.8.17
@@ -954,6 +954,22 @@ packages:
   /@borewit/text-codec@0.2.1:
     resolution: {integrity: sha512-k7vvKPbf7J2fZ5klGRD9AeKfUvojuZIQ3BT5u7Jfv+puwXkUBUT5PVyMDfJZpy30CBDXGMgw7fguK/lpOMBvgw==}
     requiresBuild: true
+
+  /@claude-flow/shared@3.0.7:
+    resolution: {integrity: sha512-eX/JdzywhVFxL+BQaMOphPBVL95icFJgf3piNzTyGy2nT8zFqdDQ34qpS+RfFv3Yjpo00NDj/4CzoqRTni7ImA==}
+    dependencies:
+      '@types/ws': 8.18.1
+      cors: 2.8.6
+      express: 5.2.1
+      helmet: 7.2.0
+      sql.js: 1.14.1
+      ws: 8.21.1
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+    dev: false
 
   /@cognitum-one/sdk@0.2.1(multicast-dns@7.2.5):
     resolution: {integrity: sha512-ZIYKq6Tqc7zcDQRSrxphm0Uji497Mf1bi7azn2aTM4F0k+IEdPpTmAngGVaXX/hR7DYhOQ5gkUCja0DiOJLOJw==}
@@ -6175,8 +6191,6 @@ packages:
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
-      agentic-flow:
-        optional: true
       typescript:
         optional: true
     dependencies:
@@ -10442,33 +10456,13 @@ packages:
       '@ruvector/ruvllm': ^4.1.0
       rvlite: ^0.2.0
     peerDependenciesMeta:
-      '@metaharness/darwin':
-        optional: true
-      '@metaharness/flywheel':
-        optional: true
-      '@metaharness/harness':
-        optional: true
-      '@metaharness/redblue':
-        optional: true
-      '@metaharness/router':
-        optional: true
-      '@metaharness/weight-eft':
-        optional: true
-      '@metaharness/workspace-lens':
-        optional: true
-      '@metaharness/workspace-probe':
-        optional: true
       '@ruvector/diskann':
         optional: true
       '@ruvector/pi-brain':
         optional: true
-      '@ruvector/rabitq-wasm':
-        optional: true
       '@ruvector/router':
         optional: true
       '@ruvector/ruvllm':
-        optional: true
-      metaharness:
         optional: true
       rvlite:
         optional: true
