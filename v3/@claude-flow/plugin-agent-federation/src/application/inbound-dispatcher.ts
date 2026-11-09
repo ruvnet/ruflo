@@ -24,6 +24,7 @@ import type { DiscoveryService } from '../domain/services/discovery-service.js';
 import type { AuditService } from '../domain/services/audit-service.js';
 import type { FederationNode } from '../domain/entities/federation-node.js';
 import { FederationNodeState } from '../domain/value-objects/federation-node-state.js';
+import type { InboundEnvelopeGuard, InboundEnvelopeRejection } from './inbound-envelope-guard.js';
 
 /** What gets emitted on the event bus per messageType. */
 /** Message types whose policy denial is enforced even outside enforce mode. */
@@ -36,6 +37,7 @@ export const FEDERATION_INBOUND_EVENT_PREFIX = 'federation:inbound';
 
 /** Reasons we reject an inbound message — constant strings, no oracle leak. */
 export type InboundRejectionReason =
+  | InboundEnvelopeRejection
   | 'PEER_UNKNOWN'
   | 'PEER_SUSPENDED'
   | 'PEER_EVICTED'
@@ -131,6 +133,8 @@ export interface InboundDispatchDeps {
   readonly authorizationMode?: InboundAuthorizationMode;
   /** Injected policy decision point. It is always called before event emission. */
   readonly authorizeInbound?: InboundAuthorizationEvaluator;
+  /** Shared across callbacks. Production injects one guard per plugin lifecycle. */
+  readonly envelopeGuard?: InboundEnvelopeGuard;
 }
 
 /**
@@ -457,6 +461,18 @@ export async function dispatchInbound(
       `Inbound authorization would deny ${message.type} from ${sourceNodeId} ` +
         `(mode=${authorizationMode})`,
     );
+  }
+
+  if (signatureVersion === 'jcs-v1' && deps.envelopeGuard) {
+    const reason = deps.envelopeGuard.checkAndRecord(message, sourceNodeId);
+    if (reason) {
+      await deps.audit.log('message_rejected', {
+        sourceNodeId,
+        metadata: { address, reason, messageType: message.type },
+      });
+      deps.logger.warn(`Inbound rejected: ${reason} from ${sourceNodeId}`);
+      return { accepted: false, reason };
+    }
   }
 
   // Touch lastSeen on every successful inbound — drives the
