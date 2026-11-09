@@ -116,9 +116,9 @@ bash plugins/ruflo-federation/scripts/smoke.sh
 
 Since this version the plugin is also a function-hook mod (ADR-445 pattern; needs Claude Code 2.1.287 or later). It never calls the network or spawns a process, and it only tightens: it can refuse a call, never allow one.
 
-- **Guard** (default on): refuses outbound federation calls (`x_federation_publish`, `x_federation_channel_publish`, `x_federation_sync`, `federation_bbs_publish`, `federation_bbs_sync`, and `federation`-namespace memory writes) that hold a key, token or password or personal data (an SSN or a Luhn-valid card number). The reason names the kind of secret, never the value.
+- **Guard** (default on): refuses outbound federation calls (`x_federation_publish`, `x_federation_channel_publish`, `x_federation_sync`, `federation_bbs_publish`, `federation_bbs_sync`, and `federation`-namespace memory writes) that hold a key, token or password, or input too large to screen, or (while `piiGuard` is on) personal data (an SSN or a Luhn-valid card number). The reason names the kind of secret, never the value.
 - **`/federation-mod`**: answered locally, no model turn: `status`, `scan <text>` (would the guard refuse this?), and `tools` (the connected federation tools).
 - **Status file**: `.claude-flow/federation-mod/status.json` (`{version, updatedMs, guard, blocked}`), written at session start and when a call is blocked.
-- **Option**: `guard` (`on` | `off`, default `on`) in the plugin's `userConfig`.
+- **Options** (`userConfig`): `guard` (`on` | `off`, default `on`) and `piiGuard` (`on` | `off`, default `on`). `piiGuard: off` makes the SSN/card check informational only: personal data may leave, while secrets are still refused whenever `guard` is on (#4861).
 
 Test it: `claude plugin test plugins/ruflo-federation` and `bash plugins/ruflo-federation/scripts/smoke.sh`.
