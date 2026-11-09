@@ -580,6 +580,52 @@ describe('QueenCoordinator', () => {
       expect(plan.backupAgents.length).toBeLessThanOrEqual(2);
     });
 
+    describe('failover config (#4902)', () => {
+      // Six identical idle coders: one becomes primary, five are eligible
+      // backups (each scores well above the 0.3 backup floor), so the
+      // backup count is bounded only by the config under test.
+      const sixIdleCoders = () =>
+        Array.from({ length: 6 }, (_, i) => createMockAgent(`coder_${i + 1}`, 'coder', 'idle'));
+
+      async function planWith(config: Partial<QueenCoordinatorConfig>): Promise<DelegationPlan> {
+        const q = createQueenCoordinator(mockSwarm, { enableLearning: false, ...config });
+        await q.initialize();
+        vi.mocked(mockSwarm.getAllAgents).mockReturnValue(sixIdleCoders());
+        vi.mocked(mockSwarm.getAvailableAgents).mockReturnValue(sixIdleCoders());
+        try {
+          const task = createMockTask('task_failover', 'coding');
+          const analysis = await q.analyzeTask(task);
+          return await q.delegateToAgents(task, analysis);
+        } finally {
+          await q.shutdown();
+        }
+      }
+
+      it('selects 2 backups with the default config (control)', async () => {
+        const plan = await planWith({});
+        expect(plan.backupAgents).toHaveLength(2);
+        expect(plan.backupAgents.map(b => b.agentId)).not.toContain(plan.primaryAgent.agentId);
+      });
+
+      it('selects no backups when enableFailover is false', async () => {
+        const plan = await planWith({ enableFailover: false });
+        expect(plan.backupAgents).toHaveLength(0);
+      });
+
+      it('selects no backups when maxDelegationAttempts is 1', async () => {
+        const plan = await planWith({ maxDelegationAttempts: 1 });
+        expect(plan.backupAgents).toHaveLength(0);
+      });
+
+      it('selects maxDelegationAttempts - 1 backups when more are eligible', async () => {
+        const plan = await planWith({ maxDelegationAttempts: 5 });
+        expect(plan.backupAgents).toHaveLength(4);
+        const ids = plan.backupAgents.map(b => b.agentId);
+        expect(new Set(ids).size).toBe(4);
+        expect(ids).not.toContain(plan.primaryAgent.agentId);
+      });
+    });
+
     it('should create parallel assignments for subtasks', async () => {
       const task = createMockTask('task_1', 'coding', 'high');
       task.description = 'Complex task requiring design, implementation, and testing phases';

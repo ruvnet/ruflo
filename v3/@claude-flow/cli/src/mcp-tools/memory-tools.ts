@@ -121,6 +121,86 @@ function validateMemoryInput(key?: string, value?: string, query?: string, names
   }
 }
 
+// ===== #1227: AgentMemoryScope wiring =====
+//
+// @claude-flow/memory's agent-memory-scope.ts defines the three scopes
+// ('project' | 'local' | 'user') and keys each scope by agent name, sanitized
+// to [a-zA-Z0-9_-]. It has no namespace scheme — only a directory layout. In
+// the CLI's single SQLite store a scope is therefore a NAMESPACE PREFIX:
+//
+//   agent-memory:<scope>:<agentId>:<namespace>
+//
+// The agent id is required with a scope (the package's AgentScopedConfig
+// requires agentName) and must already match the package's sanitizer class,
+// so an accepted id names the same agent in both. It is rejected, not
+// sanitized, so two different ids can never collapse into one partition.
+// Without a scope nothing is prefixed: existing namespaces are untouched.
+
+export const MEMORY_SCOPES = ['project', 'local', 'user'] as const;
+export type MemoryScope = typeof MEMORY_SCOPES[number];
+export const SCOPED_NAMESPACE_PREFIX = 'agent-memory';
+/** The character class @claude-flow/memory's resolveAgentMemoryDir keeps. */
+const SCOPE_AGENT_ID_RE = /^[a-zA-Z0-9_-]+$/;
+
+export type ScopedNamespace =
+  | { ok: true; namespace: string; scope?: MemoryScope; agentId?: string }
+  | { ok: false; error: string };
+
+/**
+ * Resolve the namespace a memory operation actually reads or writes.
+ * `scope`/`agentId` absent → `namespace` unchanged. Otherwise both are
+ * validated and the result is the prefixed form, itself run through the
+ * namespace validator so the stored namespace stays exportable and purgeable.
+ */
+export function resolveScopedNamespace(opts: { scope?: unknown; agentId?: unknown; namespace: string }): ScopedNamespace {
+  const { scope, agentId, namespace } = opts;
+  const scopeGiven = scope !== undefined && scope !== null && scope !== '';
+  const agentGiven = agentId !== undefined && agentId !== null && agentId !== '';
+  if (!scopeGiven) {
+    if (agentGiven) return { ok: false, error: 'agentId requires scope (project, local or user)' };
+    return { ok: true, namespace };
+  }
+  if (typeof scope !== 'string' || !(MEMORY_SCOPES as readonly string[]).includes(scope)) {
+    return { ok: false, error: `scope must be one of: ${MEMORY_SCOPES.join(', ')}` };
+  }
+  if (!agentGiven) return { ok: false, error: 'scope requires agentId (the agent whose memory partition to use)' };
+  const vAgent = validateIdentifier(agentId, 'agentId');
+  if (!vAgent.valid) return { ok: false, error: vAgent.error ?? 'agentId is invalid' };
+  if (!SCOPE_AGENT_ID_RE.test(agentId as string)) {
+    return { ok: false, error: 'agentId may contain only letters, digits, _ and - (the agent-memory directory name rule)' };
+  }
+  const effective = `${SCOPED_NAMESPACE_PREFIX}:${scope}:${agentId as string}:${namespace}`;
+  const vNs = validateIdentifier(effective, 'namespace');
+  if (!vNs.valid) {
+    return { ok: false, error: `${vNs.error} (scoped namespace "${effective}" includes the ${effective.length - namespace.length}-character scope prefix)` };
+  }
+  return { ok: true, namespace: effective, scope: scope as MemoryScope, agentId: agentId as string };
+}
+
+/** Inverse of resolveScopedNamespace; null for an unscoped namespace. */
+export function parseScopedNamespace(stored: string): { scope: MemoryScope; agentId: string; namespace: string } | null {
+  const parts = stored.split(':');
+  if (parts.length < 4 || parts[0] !== SCOPED_NAMESPACE_PREFIX) return null;
+  const [, scope, agentId] = parts;
+  if (!(MEMORY_SCOPES as readonly string[]).includes(scope) || !SCOPE_AGENT_ID_RE.test(agentId)) return null;
+  const namespace = parts.slice(3).join(':');
+  if (!namespace) return null;
+  return { scope: scope as MemoryScope, agentId, namespace };
+}
+
+/** Schema fragment shared by memory_store / memory_retrieve / memory_search. */
+const SCOPE_SCHEMA_PROPERTIES = {
+  scope: {
+    type: 'string',
+    enum: [...MEMORY_SCOPES],
+    description: 'AgentMemoryScope (#1227): project (shared), local (this machine) or user (this user). Requires agentId. Partitions the store by prefixing the namespace as agent-memory:<scope>:<agentId>:<namespace>; omit for the unscoped namespace exactly as before.',
+  },
+  agentId: {
+    type: 'string',
+    description: 'Agent whose scoped memory to use; letters, digits, _ and - only. Required with scope, rejected without it.',
+  },
+} as const;
+
 /**
  * #3374 — presence check for a schema-`required` string parameter.
  *
@@ -519,6 +599,7 @@ export const memoryTools: MCPTool[] = [
           description: 'ADR-323: who/what produced this value, so shared-namespace retrieval can filter by trust level instead of conflating a user\'s stated claim with an agent\'s own output. Default: "unknown".',
         },
         dbPath: { type: 'string', description: 'Explicit SQLite store to read/write; omit to use the MCP default (the native/AgentDB sibling).' },
+        ...SCOPE_SCHEMA_PROPERTIES,
       },
       required: ['key', 'value'],
     },
@@ -533,7 +614,13 @@ export const memoryTools: MCPTool[] = [
       const { storeEntry } = await getMemoryFunctions();
 
       const key = input.key as string;
-      const namespace = (input.namespace as string) || 'default';
+      // #1227: with scope + agentId the write lands in the scoped namespace.
+      const scoped = resolveScopedNamespace({ scope: input.scope, agentId: input.agentId, namespace: (input.namespace as string) || 'default' });
+      if (!scoped.ok) {
+        return { success: false, key, stored: false, hasEmbedding: false, error: scoped.error };
+      }
+      const namespace = scoped.namespace;
+      const scopeInfo = scoped.scope ? { scope: scoped.scope, agentId: scoped.agentId } : {};
       const rawValue = input.value;
       const value = typeof rawValue === 'string' ? rawValue : (rawValue !== undefined ? JSON.stringify(rawValue) : '');
       const tags = (input.tags as string[]) || [];
@@ -594,6 +681,7 @@ export const memoryTools: MCPTool[] = [
           success: result.success,
           key,
           namespace,
+          ...scopeInfo,
           stored: result.success,
           storedAt: new Date().toISOString(),
           hasEmbedding: !!result.embedding,
@@ -624,6 +712,7 @@ export const memoryTools: MCPTool[] = [
         key: { type: 'string', description: 'Memory key' },
         namespace: { type: 'string', description: 'Namespace (default: "default")' },
         dbPath: { type: 'string', description: 'Explicit SQLite store to read/write; omit to use the MCP default (the native/AgentDB sibling).' },
+        ...SCOPE_SCHEMA_PROPERTIES,
       },
       required: ['key'],
     },
@@ -638,7 +727,13 @@ export const memoryTools: MCPTool[] = [
       const { getEntry } = await getMemoryFunctions();
 
       const key = input.key as string;
-      const namespace = (input.namespace as string) || 'default';
+      // #1227: a scoped read only ever sees its own scope's namespace.
+      const scoped = resolveScopedNamespace({ scope: input.scope, agentId: input.agentId, namespace: (input.namespace as string) || 'default' });
+      if (!scoped.ok) {
+        return { key, namespace: input.namespace, value: null, found: false, error: scoped.error };
+      }
+      const namespace = scoped.namespace;
+      const scopeInfo = scoped.scope ? { scope: scoped.scope, agentId: scoped.agentId } : {};
 
       validateMemoryInput(key, undefined, undefined, namespace);
 
@@ -657,6 +752,7 @@ export const memoryTools: MCPTool[] = [
           return {
             key,
             namespace,
+            ...scopeInfo,
             value,
             tags: result.entry.tags,
             storedAt: result.entry.createdAt,
@@ -671,6 +767,7 @@ export const memoryTools: MCPTool[] = [
         return {
           key,
           namespace,
+          ...scopeInfo,
           value: null,
           found: false,
         };
@@ -703,6 +800,11 @@ export const memoryTools: MCPTool[] = [
           description: 'ADR-323: restrict results to these provenance types (e.g. exclude user_claim when fact-checking). Omit for no filtering. Enforced for standard and SmartRetrieval searches.',
         },
         dbPath: { type: 'string', description: 'Explicit SQLite store to read/write; omit to use the MCP default (the native/AgentDB sibling).' },
+        scope: {
+          ...SCOPE_SCHEMA_PROPERTIES.scope,
+          description: SCOPE_SCHEMA_PROPERTIES.scope.description + ' With scope, an omitted namespace means "default" inside that scope (not every namespace), and only that scope is searched. Without scope, an omitted namespace still searches every namespace, scoped ones included.',
+        },
+        agentId: SCOPE_SCHEMA_PROPERTIES.agentId,
       },
       required: ['query'],
     },
@@ -726,7 +828,21 @@ export const memoryTools: MCPTool[] = [
       // the search to a namespace that is usually empty. Leave namespace
       // undefined when not provided so the underlying `|| 'all'` fallback
       // in the search layer actually fires.
-      const namespace = input.namespace as string | undefined;
+      //
+      // #1227: with a scope the namespace is resolved (an omitted one becomes
+      // that scope's "default"); without one it stays undefined → 'all'.
+      let namespace = input.namespace as string | undefined;
+      let scopeInfo: { scope?: MemoryScope; agentId?: string } = {};
+      if (input.scope !== undefined || input.agentId !== undefined) {
+        const scoped = resolveScopedNamespace({ scope: input.scope, agentId: input.agentId, namespace: namespace || 'default' });
+        if (!scoped.ok) {
+          return { query, results: [], total: 0, error: scoped.error };
+        }
+        if (scoped.scope) {
+          namespace = scoped.namespace;
+          scopeInfo = { scope: scoped.scope, agentId: scoped.agentId };
+        }
+      }
       const limit = (input.limit as number) ?? 10;
       const threshold = (input.threshold as number) ?? DEFAULT_SEARCH_THRESHOLD;
       const thresholdWasDefault = input.threshold === undefined || input.threshold === null;
@@ -818,6 +934,8 @@ export const memoryTools: MCPTool[] = [
               results,
               total: results.length,
               ...(smartNearMisses ?? {}),
+              ...scopeInfo,
+              ...(scopeInfo.scope ? { namespace } : {}),
               searchTime: `${duration.toFixed(2)}ms`,
               backend: 'SmartRetrieval (RRF + MMR + Recency)',
               stats: smartResult.stats,
@@ -877,6 +995,8 @@ export const memoryTools: MCPTool[] = [
           results,
           total: results.length,
           ...(nearMissInfo ?? {}),
+          ...scopeInfo,
+          ...(scopeInfo.scope ? { namespace } : {}),
           searchTime: `${duration.toFixed(2)}ms`,
           backend: 'HNSW + sql.js',
           ...(smartFallbackReason ? { smartFallback: smartFallbackReason } : {}),
@@ -1506,6 +1626,7 @@ export const memoryTools: MCPTool[] = [
         return { success: false, query: input.query, results: [], total: 0, ...missingQuery };
       }
 
+      const startTime = performance.now();
       await ensureInitialized();
       const { searchEntries, listEntries } = await getMemoryFunctions();
       validateMemoryInput(undefined, undefined, input.query as string);
@@ -1552,24 +1673,57 @@ export const memoryTools: MCPTool[] = [
         }
       }
 
-      const allResults: Array<{ key: string; content: string; score: number; namespace: string; source: string }> = [];
+      type UnifiedHit = { key: string; content: string; score: number; namespace: string; source: string };
 
-      for (const searchNs of namespaces) {
+      // #4876: namespaces are searched concurrently (bounded) instead of one
+      // after another. Each search is a read of the same store and keeps no
+      // shared mutable state, so they are independent. Results land in a slot
+      // per namespace and are flattened in namespace order, so the merge below
+      // sees exactly the sequence the sequential loop produced. Failures are
+      // collected instead of swallowed, so success:true no longer hides
+      // namespaces that were never searched.
+      const NAMESPACE_CONCURRENCY = 4;
+      const perNamespace: UnifiedHit[][] = namespaces.map(() => []);
+      const namespaceErrors: Array<{ namespace: string; error: string }> = [];
+      const failedAt: Array<string | undefined> = namespaces.map(() => undefined);
+
+      const searchOne = async (index: number): Promise<void> => {
+        const searchNs = namespaces[index];
         try {
           const r = await searchEntries({ query, namespace: searchNs, limit: limit * 2 });
-          if (r?.results) {
-            for (const entry of r.results) {
-              allResults.push({
-                key: entry.key || entry.id || '',
-                content: (entry.content || (entry as any).value || '').toString().slice(0, 200),
-                score: entry.score || 0,
-                namespace: searchNs,
-                source: searchNs === 'claude-memories' ? 'claude-code' : searchNs === 'auto-memory' ? 'auto-memory' : 'agentdb',
-              });
-            }
+          if (r && r.success === false && r.error) {
+            failedAt[index] = String(r.error);
+            return;
           }
-        } catch { /* namespace may not exist */ }
-      }
+          for (const entry of r?.results ?? []) {
+            perNamespace[index].push({
+              key: entry.key || entry.id || '',
+              content: (entry.content || (entry as any).value || '').toString().slice(0, 200),
+              score: entry.score || 0,
+              namespace: searchNs,
+              source: searchNs === 'claude-memories' ? 'claude-code' : searchNs === 'auto-memory' ? 'auto-memory' : 'agentdb',
+            });
+          }
+        } catch (error) {
+          failedAt[index] = error instanceof Error ? error.message : String(error);
+        }
+      };
+
+      let nextIndex = 0;
+      const worker = async (): Promise<void> => {
+        while (nextIndex < namespaces.length) {
+          const index = nextIndex++;
+          await searchOne(index);
+        }
+      };
+      await Promise.all(
+        Array.from({ length: Math.min(NAMESPACE_CONCURRENCY, namespaces.length) }, () => worker()),
+      );
+
+      failedAt.forEach((error, index) => {
+        if (error !== undefined) namespaceErrors.push({ namespace: namespaces[index], error });
+      });
+      const allResults: UnifiedHit[] = perNamespace.flat();
 
       // Sort by score, deduplicate by (namespace, key), take top N. An entry is
       // identified by both (see #2271), so the same key in another namespace is
@@ -1583,14 +1737,23 @@ export const memoryTools: MCPTool[] = [
         return true;
       }).slice(0, limit);
 
+      const duration = performance.now() - startTime;
+      const namespacesFailed = namespaceErrors.length;
+
       return {
-        success: true,
+        // Partial coverage still succeeds; only a search where every
+        // namespace failed is a failure (#4876).
+        success: namespaces.length === 0 || namespacesFailed < namespaces.length,
         query,
         results: deduplicated,
         total: deduplicated.length,
         searchedNamespaces: namespaces,
         namespaceSource,        // #2246 — surface how the namespace list was resolved
-        searchTime: Date.now(),
+        namespacesSearched: namespaces.length,
+        namespacesFailed,
+        namespaceErrors,
+        // #4876: elapsed time, not a timestamp.
+        searchTime: `${duration.toFixed(2)}ms`,
       };
     },
   },
@@ -1918,6 +2081,73 @@ export const memoryTools: MCPTool[] = [
         imported: { entries: imported, vectors, patterns: 0, withTags },
         skipped,
         duration: Date.now() - t0,
+      };
+    },
+  },
+  {
+    name: 'memory_list_scopes',
+    description: 'List the AgentMemoryScope partitions (project, local, user) in the memory store, with each agent and the namespaces and entry counts under it (#1227). Use when you need to know which scope/agentId pairs already hold memory before calling memory_store, memory_retrieve or memory_search with scope; native Glob is wrong here because scopes are namespace prefixes inside .swarm/memory.db, not directories. Read-only. Pair with memory_list to see the entries themselves.',
+    category: 'memory',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dbPath: { type: 'string', description: 'Explicit SQLite store to read; omit to use the MCP default (the native/AgentDB sibling).' },
+      },
+    },
+    handler: async (input, context) => {
+      const dbPath = resolveDbPathOption(input.dbPath, context);
+      if (!dbPath) await ensureInitialized();
+      const { listEntries } = await getMemoryFunctions();
+
+      let listing: ListPage<{ namespace: string }>;
+      try {
+        listing = await collectAllEntries(listEntries, dbPath);
+      } catch (error) {
+        return { success: false, scopes: [], error: error instanceof Error ? error.message : 'Unknown error' };
+      }
+      // A failed listing is not an empty store (#4622).
+      if (!listing.success) {
+        return { success: false, scopes: [], error: listing.error || 'listEntries reported failure' };
+      }
+
+      // scope → agentId → namespace → entry count. Maps, not object literals,
+      // so an agent or namespace named `__proto__` is counted, not assigned.
+      const buckets = new Map<MemoryScope, Map<string, Map<string, number>>>(
+        MEMORY_SCOPES.map((s) => [s, new Map()]),
+      );
+      let unscopedEntries = 0;
+      for (const entry of listing.entries) {
+        const parsed = parseScopedNamespace(String(entry.namespace ?? ''));
+        if (!parsed) { unscopedEntries++; continue; }
+        const agents = buckets.get(parsed.scope)!;
+        if (!agents.has(parsed.agentId)) agents.set(parsed.agentId, new Map());
+        const namespaces = agents.get(parsed.agentId)!;
+        namespaces.set(parsed.namespace, (namespaces.get(parsed.namespace) ?? 0) + 1);
+      }
+
+      const scopes = MEMORY_SCOPES.map((scope) => {
+        const agents = [...buckets.get(scope)!.entries()]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([agentId, namespaces]) => ({
+            agentId,
+            namespaces: [...namespaces.entries()]
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([namespace, entries]) => ({
+                namespace,
+                storedNamespace: `${SCOPED_NAMESPACE_PREFIX}:${scope}:${agentId}:${namespace}`,
+                entries,
+              })),
+          }));
+        const entries = agents.reduce((n, a) => n + a.namespaces.reduce((m, ns) => m + ns.entries, 0), 0);
+        return { scope, agents, entries };
+      });
+
+      return {
+        success: true,
+        prefix: `${SCOPED_NAMESPACE_PREFIX}:<scope>:<agentId>:<namespace>`,
+        scopes,
+        unscopedEntries,
+        totalEntries: listing.total,
       };
     },
   },

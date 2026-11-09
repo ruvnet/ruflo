@@ -2725,31 +2725,46 @@ export async function bridgeStorePattern(options: {
 /**
  * Case-insensitive substring match over agentdb's reasoning_patterns table —
  * the rows ReasoningBank.storePattern() writes. Used only when the vector
- * search returns nothing. Returns [] when the table or handle is unavailable.
+ * search returns nothing. Returns no rows (and no error) when there is no
+ * database handle to scan.
+ *
+ * #4714: a read that throws is reported through `error`, not turned into an
+ * empty list. The pattern-search handler reports an error-free empty result
+ * as a healthy no-match, so a SQL failure must not look like one.
  */
-function substringSearchReasoningPatterns(registry: any, query: string, k: number): Array<{ id: string; content: string; score: number }> {
+function substringSearchReasoningPatterns(
+  registry: any,
+  query: string,
+  k: number,
+): { rows: Array<{ id: string; content: string; score: number }>; error?: string } {
+  const db = registry?.getAgentDB?.()?.database;
+  if (!db || typeof db.prepare !== 'function') return { rows: [] };
   try {
-    const db = registry?.getAgentDB?.()?.database;
-    if (!db || typeof db.prepare !== 'function') return [];
     const like = `%${query.toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
     const rows = db.prepare(
       "SELECT id, approach, success_rate FROM reasoning_patterns WHERE lower(approach) LIKE ? ESCAPE '\\' ORDER BY id DESC LIMIT ?",
     ).all(like, k) as Array<{ id: number; approach: string; success_rate: number }>;
-    return rows.map((r) => ({ id: String(r.id), content: r.approach, score: r.success_rate ?? 0 }));
-  } catch {
-    return [];
+    return { rows: rows.map((r) => ({ id: String(r.id), content: r.approach, score: r.success_rate ?? 0 })) };
+  } catch (err) {
+    return { rows: [], error: `reasoning_patterns substring scan failed: ${err instanceof Error ? err.message : String(err)}` };
   }
 }
 
 /**
  * Search patterns via ReasoningBank controller.
+ *
+ * Returns null when no registry is available. With `controller:
+ * 'reasoningBank'`, an empty `results` and no `error` means the controller
+ * ran and found nothing. #4714: when the controller throws, returns a
+ * non-array, or the substring scan fails, the result carries `error` so the
+ * caller cannot mistake the failure for a no-match.
  */
 export async function bridgeSearchPatterns(options: {
   query: string;
   topK?: number;
   minConfidence?: number;
   dbPath?: string;
-}): Promise<{ results: Array<{ id: string; content: string; score: number }>; controller: string } | null> {
+}): Promise<{ results: Array<{ id: string; content: string; score: number }>; controller: string; error?: string } | null> {
   if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeSearchPatterns(options));
   const registry = await getRegistry(options.dbPath);
   if (!registry) return null;
@@ -2760,10 +2775,25 @@ export async function bridgeSearchPatterns(options: {
     // ReasoningBank may expose .searchPatterns() (agentdb) or .search() (legacy) (#1492 Bug 2)
     if (reasoningBank && typeof (reasoningBank.searchPatterns ?? reasoningBank.search) === 'function') {
       let results: any;
-      if (typeof reasoningBank.searchPatterns === 'function') {
-        results = await reasoningBank.searchPatterns({ task: options.query, k: options.topK || 5, threshold: options.minConfidence || 0.3 });
-      } else {
-        results = await reasoningBank.search(options.query, { topK: options.topK || 5, minScore: options.minConfidence || 0.3 });
+      try {
+        if (typeof reasoningBank.searchPatterns === 'function') {
+          results = await reasoningBank.searchPatterns({ task: options.query, k: options.topK || 5, threshold: options.minConfidence || 0.3 });
+        } else {
+          results = await reasoningBank.search(options.query, { topK: options.topK || 5, minScore: options.minConfidence || 0.3 });
+        }
+      } catch (err) {
+        // #4714 — report the failure with the result instead of a bare null,
+        // which callers read as "no registry". Still recorded for agentdb_health.
+        const message = err instanceof Error ? err.message : String(err);
+        bridgeFailureReasons.set(canonicalDbPath(options.dbPath), message);
+        return { results: [], controller: 'reasoningBank', error: `ReasoningBank search failed: ${message}` };
+      }
+      if (!Array.isArray(results)) {
+        return {
+          results: [],
+          controller: 'reasoningBank',
+          error: `ReasoningBank search returned a non-array result (${results === null ? 'null' : typeof results})`,
+        };
       }
       // #3327 Finding A — agentdb returns ReasoningPattern[]: the text lives in
       // `approach` and the cosine score in `similarity`. Neither `content`/
@@ -2771,18 +2801,21 @@ export async function bridgeSearchPatterns(options: {
       // mapping produced `content: ''` and `score: 0` for every hit even when
       // the search itself succeeded. Read the real fields first, keeping the
       // legacy names as fallbacks for the pre-agentdb shape.
-      let mapped = Array.isArray(results) ? results.map((r: any) => ({
+      const mapped = results.map((r: any) => ({
         id: String(r.id ?? r.patternId ?? ''),
         content: r.approach ?? r.content ?? r.pattern ?? '',
         score: r.similarity ?? r.score ?? r.successRate ?? r.confidence ?? 0,
-      })) : [];
+      }));
+      if (mapped.length > 0) return { results: mapped, controller: 'reasoningBank' };
       // #4643 — with agentdb's mock embedder (Transformers.js failed to load:
       // offline, or a failed `sharp` install) a passage and a query embed to
       // unrelated hash vectors, so the vector search misses a pattern that
       // storePattern just wrote. Scan the same reasoning_patterns table for the
       // query text, as the LocalReasoningBank branch below does over getAll().
-      if (mapped.length === 0) mapped = substringSearchReasoningPatterns(registry, options.query, options.topK || 5);
-      return { results: mapped, controller: 'reasoningBank' };
+      const scan = substringSearchReasoningPatterns(registry, options.query, options.topK || 5);
+      return scan.error
+        ? { results: scan.rows, controller: 'reasoningBank', error: scan.error }
+        : { results: scan.rows, controller: 'reasoningBank' };
     }
 
     // #2226 — the wired-in LocalReasoningBank implements store() + findSimilar()/getAll()
