@@ -28,6 +28,12 @@ import { mkdirSync, realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { validateFeedbackPatterns } from './feedback-patterns.js';
+import {
+  DEFAULT_EMBEDDING_MODEL,
+  resolveEffectiveEmbeddingConfig,
+  resolveEmbeddingConfig,
+  type EmbeddingConfig,
+} from './embedding-config.js';
 
 // ===== Lazy registry cache, keyed by database path =====
 
@@ -48,6 +54,25 @@ import { validateFeedbackPatterns } from './feedback-patterns.js';
  */
 const registryPromises = new Map<string, Promise<any>>();
 const registryInstances = new Map<string, any>();
+
+/**
+ * #2305: the embedding model/dimension the AgentDB registry was opened with —
+ * `.claude-flow/embeddings.json`, or the store's recorded dimension when that
+ * differs. Falls back to the configured value before any registry opened.
+ */
+let bridgeEmbeddingConfig: EmbeddingConfig | null = null;
+
+function activeEmbeddingConfig(): EmbeddingConfig {
+  return bridgeEmbeddingConfig ?? resolveEmbeddingConfig(process.cwd());
+}
+
+/** Model name recorded next to a vector of `dimension` length. */
+function embeddingModelLabel(dimension: number): string {
+  const cfg = activeEmbeddingConfig();
+  if (dimension === cfg.dimension) return cfg.model;
+  // Unchanged pre-#2305 label for any other size.
+  return DEFAULT_EMBEDDING_MODEL;
+}
 // One lease spans an entire bridge operation, including its awaited controller
 // effects and nested bridge calls. Initializer ownership alone is insufficient:
 // a ReasoningBank write can still be pending after its registry has opened.
@@ -288,11 +313,22 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
         // lifetime and hierarchical memory silently ran volatile.
         try {
           if (resolvedPath !== ':memory:') mkdirSync(path.dirname(resolvedPath), { recursive: true });
+          // Check memory.db as well as this store: the memory path mirrors
+          // the same vectors into both, so an old 384-dim memory.db must keep
+          // an empty agentdb-memory.db at 384 too (same order as the
+          // initializer, so both converge on one answer).
+          const embCfg = await resolveEffectiveEmbeddingConfig({
+            root: process.cwd(),
+            dbPaths: resolvedPath === ':memory:'
+              ? []
+              : [path.join(path.dirname(resolvedPath), 'memory.db'), resolvedPath],
+          });
+          bridgeEmbeddingConfig = embCfg;
           await (registry as any).initialize({
             // #2786: use agentdb-memory.db (plaintext) so native better-sqlite3 doesn't hit the encrypted memory.db.
             dbPath: resolvedPath,
-            embeddingModel: 'Xenova/all-MiniLM-L6-v2',
-            dimension: 384,
+            embeddingModel: embCfg.model,
+            dimension: embCfg.dimension,
             vectorBackend: 'auto',
             controllers: {
               reasoningBank: true,
@@ -542,6 +578,7 @@ export function _resetRegistryCacheForTest(): void {
   testRegistryOverride = null;
   testRegistryFactory = null;
   bridgeFailureReasons.clear();
+  bridgeEmbeddingConfig = null;
 }
 
 /** Inject registry construction without requiring the optional native package in tests. */
@@ -1033,7 +1070,7 @@ async function embedForBridge(
     try {
       const emb = await embedder.embed(text);
       if (emb && emb.length > 0) {
-        return { vector: Array.from(emb), model: 'Xenova/all-MiniLM-L6-v2' };
+        return { vector: Array.from(emb), model: embeddingModelLabel(emb.length) };
       }
       agentdbProblem = 'agentdb embedder returned no vector';
     } catch (err) {
@@ -2091,18 +2128,19 @@ export async function bridgeGenerateEmbedding(
     // yet) and silently fall back to a 128-dim hash stub. The embedder doesn't
     // expose isMock=true in that path, so the wrapper above was reporting
     // backend='onnx' on what's actually 128-dim hash garbage. The model name
-    // we hardcode ('Xenova/all-MiniLM-L6-v2') always produces 384-dim, so a
-    // dimensions mismatch is a definitive stub signal: return null and let
-    // the caller fall through to generateLocalEmbedding which routes to
-    // transformers.js / ruvector ONNX directly.
-    if (emb.length !== 384) {
+    // the registry was opened with (#2305: from embeddings.json, default
+    // MiniLM/384) has a fixed dimension, so a dimensions mismatch is a
+    // definitive stub signal: return null and let the caller fall through to
+    // generateLocalEmbedding which routes to transformers.js / ruvector ONNX.
+    const embCfg = activeEmbeddingConfig();
+    if (emb.length !== embCfg.dimension) {
       return null;
     }
 
     return {
       embedding: Array.from(emb),
       dimensions: emb.length,
-      model: 'Xenova/all-MiniLM-L6-v2',
+      model: embCfg.model,
       backend: isMock ? 'mock' : 'onnx',
     };
   } catch {
@@ -2139,7 +2177,7 @@ export async function bridgeLoadEmbeddingModel(
     return {
       success: true,
       dimensions: test.length,
-      modelName: 'Xenova/all-MiniLM-L6-v2',
+      modelName: embeddingModelLabel(test.length),
       loadTime: Date.now() - startTime,
     };
   } catch {
@@ -2406,7 +2444,7 @@ export async function bridgeAddEmbedding(
         id, key, namespace, content, type,
         embedding, embedding_dimensions, embedding_model,
         created_at, updated_at, status
-      ) VALUES (?, ?, ?, ?, 'semantic', ?, ?, 'Xenova/all-MiniLM-L6-v2', ?, ?, 'active')
+      ) VALUES (?, ?, ?, ?, 'semantic', ?, ?, ?, ?, ?, 'active')
       ON CONFLICT(namespace, key) DO UPDATE SET
         id                   = excluded.id,
         content              = excluded.content,
@@ -2418,7 +2456,7 @@ export async function bridgeAddEmbedding(
         status               = 'active'
     `).run(
       id, entry.key, entry.namespace, entry.content,
-      embeddingJson, embedding.length,
+      embeddingJson, embedding.length, embeddingModelLabel(embedding.length),
       now, now,
     );
     return true;
@@ -2542,6 +2580,7 @@ export function __setMemoryBridgeRegistryForTests(registry: any | null): void {
   testRegistryOverride = registry;
   testRegistryFactory = null;
   bridgeFailureReasons.clear();
+  bridgeEmbeddingConfig = null;
 }
 
 /**
