@@ -130,7 +130,7 @@ importers:
         specifier: 3.0.3
         version: link:../neural
       '@claude-flow/plugin-agent-federation':
-        specifier: 1.0.6
+        specifier: 1.0.7
         version: 1.0.6(agentic-flow@3.0.0)
       '@claude-flow/security':
         specifier: 3.0.6
