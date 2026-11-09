@@ -178,7 +178,8 @@ const aidefenceScanTool: MCPTool = {
     properties: {
       input: {
         type: 'string',
-        description: 'Text to scan for threats',
+        maxLength: 10000,
+        description: 'Text to scan for threats. Max 10000 UTF-16 code units (JavaScript string length); longer input is refused. JSON Schema maxLength counts code points, so text with astral characters (emoji, some CJK) can pass this schema and still exceed the limit — each such character counts as 2.',
       },
       quick: {
         type: 'boolean',

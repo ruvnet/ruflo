@@ -767,7 +767,12 @@ export const agentdbHierarchicalStore: MCPTool = {
     type: 'object',
     properties: {
       key: { type: 'string', description: 'Memory entry key' },
-      value: { type: 'string', description: 'Memory entry value' },
+      value: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 10000,
+        description: 'Memory entry value. Non-empty, max 10000 UTF-16 code units (JavaScript string length); longer values are refused. JSON Schema maxLength counts code points, so text with astral characters (emoji, some CJK) can pass this schema and still exceed the limit — each such character counts as 2.',
+      },
       tier: {
         type: 'string',
         description: 'Memory tier (working, episodic, semantic)',
@@ -799,7 +804,7 @@ export const agentdbHierarchicalStore: MCPTool = {
       const key = validateString(params.key, 'key', 1000);
       const value = validateString(params.value, 'value');
       if (!key) return { success: false, error: 'key is required (non-empty string, max 1KB)' };
-      if (!value) return { success: false, error: 'value is required (non-empty string, max 100KB)' };
+      if (!value) return { success: false, error: 'value is required (non-empty string, max 10000 characters)' };
       const tier = validateString(params.tier, 'tier', 20) ?? 'working';
       if (!['working', 'episodic', 'semantic'].includes(tier)) {
         return { success: false, error: `Invalid tier: ${tier}. Must be working, episodic, or semantic` };
