@@ -9,6 +9,7 @@
  * must sum to 1 and match a power-iteration reference within 1e-9.
  */
 import { describe, expect, it, afterEach } from 'vitest';
+import { createRequire } from 'node:module';
 import { GraphOperations } from '../src/integrations/ruvector/gnn.js';
 import { _setSublinearCoreForTests } from '../src/integrations/ruvector/pagerank.js';
 
@@ -66,10 +67,11 @@ function reference(graph: ReturnType<typeof makeGraph>, weighted: boolean, telep
 
 afterEach(() => _setSublinearCoreForTests(undefined));
 
-describe.each([
-  ['sublinear-core', undefined],
-  ['in-tree', null],
-] as const)('GraphOperations.pageRank (%s)', (_name, hook) => {
+// @ruvnet/sublinear-core is optional; skip its cases where it is not installed.
+const HAS_CORE = (() => { try { createRequire(import.meta.url).resolve('@ruvnet/sublinear-core'); return true; } catch { return false; } })();
+const BACKENDS = ([['sublinear-core', undefined], ['in-tree', null]] as const).filter(([b]) => HAS_CORE || b === 'in-tree');
+
+describe.each(BACKENDS)('GraphOperations.pageRank (%s)', (_name, hook) => {
   const graph = makeGraph(300, 900, 9);
 
   const run = async (opts: Parameters<GraphOperations['pageRank']>[0]) => {

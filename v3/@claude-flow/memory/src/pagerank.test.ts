@@ -5,6 +5,7 @@
  * is absent.
  */
 import { describe, it, expect, afterEach } from 'vitest';
+import { createRequire } from 'node:module';
 import { computePageRankScores, _setSublinearCoreForTests } from './pagerank.js';
 import { MemoryGraph } from './memory-graph.js';
 import type { MemoryEntry } from './types.js';
@@ -57,10 +58,12 @@ const maxErr = (a: ArrayLike<number>, b: number[]) => Math.max(...b.map((bi, i) 
 
 afterEach(() => _setSublinearCoreForTests(undefined));
 
-describe.each([
-  ['sublinear-core', undefined],
-  ['in-tree', null],
-] as const)('computePageRankScores (%s)', (backend, hook) => {
+// @ruvnet/sublinear-core is an optional dependency: the repo-root test run
+// (npm workspaces) does not install it, so its cases are skipped there.
+const HAS_CORE = (() => { try { createRequire(import.meta.url).resolve('@ruvnet/sublinear-core'); return true; } catch { return false; } })();
+const BACKENDS = ([['sublinear-core', undefined], ['in-tree', null]] as const).filter(([b]) => HAS_CORE || b === 'in-tree');
+
+describe.each(BACKENDS)('computePageRankScores (%s)', (backend, hook) => {
   it('uses the expected backend', () => {
     _setSublinearCoreForTests(hook);
     const run = computePageRankScores(3, [[0, 1], [1, 2]]);
@@ -103,10 +106,7 @@ describe('MemoryGraph.computePageRank', () => {
     accessCount: 0, lastAccessedAt: 0,
   });
 
-  it.each([
-    ['sublinear-core', undefined],
-    ['in-tree', null],
-  ] as const)('matches power iteration within 1e-9 and sums to 1 (%s)', (backend, hook) => {
+  it.each(BACKENDS)('matches power iteration within 1e-9 and sums to 1 (%s)', (backend, hook) => {
     _setSublinearCoreForTests(hook);
     const n = 1000;
     const edges = randomGraph(n, 3, 5);
