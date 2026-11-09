@@ -23,7 +23,7 @@
     "demo": "node --experimental-strip-types src/cli.ts demo"
   },
   "dependencies": {
-    "zod": "^3.22.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",

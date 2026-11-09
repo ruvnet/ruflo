@@ -71,6 +71,9 @@ jobs:
             console.log('cost-health: ' + r.checks.length + ' subchecks, all OK on empty fixture');
           "
 
+      - name: compact.mjs exits with a live optimizer timer (agentic-flow >= 2.0.14)
+        run: node plugins/ruflo-cost-tracker/scripts/smoke-compact-exit.mjs
+
       - name: cost-health CLI failure + warm-up test (#4711)
         run: node plugins/ruflo-cost-tracker/scripts/test-cli-failure-4711.mjs
 

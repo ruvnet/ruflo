@@ -1,8 +1,8 @@
 {
   "name": "@claude-flow/shared",
-  "version": "3.0.7",
+  "version": "3.0.8",
   "type": "module",
-  "description": "Shared module - common types, events, utilities, core interfaces",
+  "description": "Shared types, event bus, config schemas and validators, MCP transport helpers and resilience utilities used by the Ruflo (claude-flow) V3 packages.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -30,11 +30,11 @@
   "dependencies": {
     "@types/ws": "^8.5.10",
     "cors": "^2.8.5",
-    "express": "^4.22.2 || ^5.0.0",
+    "express": "^4.22.3 || ^5.1.0",
     "helmet": "^7.2.0",
     "sql.js": "^1.10.3",
     "ws": "^8.21.0",
-    "zod": "^3.22.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -45,5 +45,26 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "keywords": [
+    "ruflo",
+    "claude-flow",
+    "shared",
+    "types",
+    "event-bus",
+    "config-validation",
+    "zod",
+    "mcp",
+    "resilience",
+    "typescript"
+  ],
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/shared"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
   }
 }

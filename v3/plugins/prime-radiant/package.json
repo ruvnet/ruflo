@@ -1,7 +1,7 @@
 {
   "name": "@claude-flow/plugin-prime-radiant",
-  "version": "0.1.6",
-  "description": "Mathematical AI interpretability plugin providing sheaf cohomology, spectral analysis, causal inference, and quantum topology for coherence validation, consensus verification, and hallucination prevention.",
+  "version": "0.1.7",
+  "description": "AI interpretability plugin: sheaf cohomology, spectral analysis, causal inference and quantum topology for coherence checks, consensus verification and hallucination prevention.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -29,13 +29,16 @@
     "prepublishOnly": "npm run build"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
     "plugin",
     "ai-interpretability",
     "sheaf-cohomology",
+    "spectral-analysis",
     "causal-inference",
     "quantum-topology",
     "coherence-engine",
+    "hallucination-detection",
     "mcp",
     "rag"
   ],
@@ -43,13 +46,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/plugins/prime-radiant"
   },
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues"
+    "url": "https://github.com/ruvnet/ruflo/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow/tree/main/v3/plugins/prime-radiant#readme",
+  "homepage": "https://ruv.io",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -66,7 +69,7 @@
     }
   },
   "dependencies": {
-    "zod": "^3.22.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
