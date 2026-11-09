@@ -12517,7 +12517,7 @@
         "revision": 1,
         "schemaVersion": 1,
         "source": {
-          "commit": "7f07fae49fcc82d0b4243432c9d65706b45a4b38",
+          "commit": "59377fdb63573bf82a3d7fcdf86c67915b051eaa",
           "path": "plugins/ruflo-federation/hooks/register.ts",
           "repository": "ruvnet/ruflo"
         },
@@ -12531,7 +12531,7 @@
         {
           "binding": "mod-register",
           "channel": "mod-registration",
-          "digest": "sha256:ab498345f97a94c9450fbc67384dcae3e3d2fdbaec58f63904b831d05ed6f7cc",
+          "digest": "sha256:b5bb2698ca9a016b7dad8a46d66dfe62b839d365f33cdf612a18730ef8dc753c",
           "observedInvocation": "/federation-mod",
           "package": "ruflo-federation@ruflo",
           "shippedIn": [],
@@ -15665,5 +15665,5 @@
     }
   ],
   "sourceCommit": "0f1bbe88a585ee9c6ef21e6da5e7d651c7938da7",
-  "sourceDigest": "sha256:7de1fb7aa091e13ef6299e6fa132f5917259698db1273997883701e13128a3df"
+  "sourceDigest": "sha256:120292836ad8289270cc02baebb3e59043a37dc1363c51bb4dd70eb9b4fc19c4"
 }

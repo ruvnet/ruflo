@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.50.1 — 2026-11-09
+- chore: the command catalog (`catalog/command-catalog.json`) is regenerated from the CLI's `catalog.generated.json`. It picks up the three init commands renamed so they no longer collide with plugin commands (`/memory-neural`, `/stream-chain-run`, `/swarm-orchestrate`, #2640) and the mod registrations and plugins added since the last regeneration
+
 ## 0.50.0 — 2026-11-09
 - feat: the AIDefence screen of mission text (goal, question, instruction, loop task) tells a secret from personal data: a key, token or password is now its own `secret` status, found by the local secret screen, so it blocks guidance even when AIDefence is not installed. A new `piiGuard` option (default on, so nothing changes unless you turn it off) decides whether personal data blocks guidance; off, the finding is reported in the screen's detail and the text goes through. Secrets and injections always block (#4861)
 
