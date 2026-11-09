@@ -1861,16 +1861,35 @@ export const hooksPreTask: MCPTool = {
   },
 };
 
+// #4887 — advertise the grammar validateIdentifier() (cli-core) plus the CLI
+// reserved-name wrapper enforce, so callers learn it from the schema instead of
+// from a refusal. NATIVE_ID_PATTERN is IDENTIFIER_RE (with '-' moved last so no
+// escape is needed); the shell-meta and path-traversal checks can never fire on a
+// string it accepts. ASCII-only, so maxLength (code points) and the 128 .length
+// cap agree. The HTTP transport enforces pattern/minLength at runtime, so a
+// field the handler treats as omitted when empty (agent) must accept ''.
+const NATIVE_ID_BODY = '[a-zA-Z0-9_][a-zA-Z0-9_.:-]{0,127}';
+const NATIVE_ID_RESERVED = ['__proto__', 'constructor', 'prototype'];
+const NATIVE_ID_RULES = '1-128 chars of A-Z a-z 0-9 _ - . : (first char alphanumeric or _); not __proto__, constructor or prototype. Must be a registered native ID, not a host path such as /root/x.';
+const nativeIdSchema = (description: string, opts: { emptyMeansOmitted?: boolean } = {}) => ({
+  type: 'string',
+  ...(opts.emptyMeansOmitted ? {} : { minLength: 1 }),
+  maxLength: 128,
+  pattern: opts.emptyMeansOmitted ? `^(?:${NATIVE_ID_BODY})?$` : `^${NATIVE_ID_BODY}$`,
+  not: { enum: NATIVE_ID_RESERVED },
+  description: `${description} ${NATIVE_ID_RULES}`,
+});
+
 export const hooksPostTask: MCPTool = {
   name: 'hooks_post-task',
   description: 'Record task completion for learning Use when native Bash hooks (via Claude Code\'s settings.json) are wrong because you need Ruflo-side state — pattern persistence, neural training signals, model-routing learning, cost tracking, audit chain. For one-off shell commands, plain Bash hooks are fine.',
   inputSchema: {
     type: 'object',
     properties: {
-      taskId: { type: 'string', description: 'Task identifier' },
+      taskId: nativeIdSchema('Task identifier.'),
       patterns: feedbackPatternsSchema,
       success: { type: 'boolean', description: 'Whether task was successful' },
-      agent: { type: 'string', description: 'Agent that completed the task' },
+      agent: nativeIdSchema('Agent that completed the task. An empty string is treated as omitted.', { emptyMeansOmitted: true }),
       quality: { type: 'number', minimum: 0, maximum: 1, description: 'Quality score (0-1)' },
       task: { type: 'string', description: 'Task description text (used for learning keyword extraction)' },
       duration: { type: 'number', description: 'Observed task duration in milliseconds (used by pheromone-adaptive topology)' },
@@ -1879,7 +1898,7 @@ export const hooksPostTask: MCPTool = {
       agentRole: { type: 'string', description: 'Role for role-local pheromone normalization (default agent)' },
       storeDecisions: { type: 'boolean', description: 'Also store routing decision in memory DB' },
       // ADR-147 P2: nested-subagent spawn-tree capture
-      parentAgentId: { type: 'string', description: 'ID of the parent agent (from Claude Code\'s parent_agent_id OTel span tag / x-claude-code-parent-agent-id header). Omit for top-level work.' },
+      parentAgentId: nativeIdSchema('ID of the parent agent (from Claude Code\'s parent_agent_id OTel span tag / x-claude-code-parent-agent-id header). Omit for top-level work.'),
       depth: { type: 'number', description: 'Chain depth from root lead session (0 = lead, 1+ = subagent). Used by ADR-147 P3 depth-aware guardrail.' },
     },
     required: ['taskId'],

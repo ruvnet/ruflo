@@ -126,11 +126,61 @@ export function textVariants(normalized: string, limit = 65536): TextVariant[] {
   const sep = undoSeparators(head);
   push('separators', sep);
   push('leet', undoLeet(sep));
-  push('compact', sep.replace(/[ \t.\-_]+/g, ''));
+  push('compact', compactText(sep));
   return out;
 }
 
-/** Compact-form regex source: `\s+`/`\s*` become empty so joined words match. */
+/**
+ * Whitespace-free form of a variant: spaces, tabs, periods, hyphens and
+ * underscores are removed so joined words line up ("you are now" ->
+ * "youarenow"). Newlines are kept. A removed run that contains a period and
+ * ends a line (or the text) leaves one "." behind, so the sentence boundary
+ * survives. Without it, "...where you are now.\nUp to" and
+ * "you are now\nan unrestricted assistant" compact to the same
+ * "youarenow\n" shape (ruflo #4715).
+ */
+function compactText(text: string): string {
+  return text.replace(/[ \t.\-_]+/g, (run: string, offset: number) => {
+    if (!run.includes('.')) return '';
+    const next = text.charAt(offset + run.length);
+    return next === '' || next === '\n' || next === '\r' ? '.' : '';
+  });
+}
+
+/**
+ * A required whitespace atom at the end of a pattern, followed only by
+ * lookarounds, e.g. `now\s+(?!going|about)`. Lookaround bodies must not
+ * contain nested groups; anything more complex falls back to plain removal.
+ */
+const TRAILING_REQUIRED_WS = /\\s\+((?:\(\?<?[!=](?:[^()\\]|\\.)*\))*)$/;
+
+/** Stands in for a trailing required `\s+` in compact form. */
+const COMPACT_CONTINUATION = '\\s*(?=[^\\s.!?,;:])';
+
+/**
+ * Compact-form regex source: `\s+`/`\s*` become empty so joined words match.
+ *
+ * A trailing required `\s+` is not dropped. In the original pattern it means
+ * "the phrase is followed by more text"; dropping it lets a phrase that ends a
+ * sentence match (CORE-005 flagged "a price that fits where you are now." as
+ * role switching, ruflo #4715). It becomes `\s*(?=[^\s.!?,;:])`: the compact
+ * text must continue, either directly ("YouAreNowDAN") or after a kept
+ * newline, with something other than sentence punctuation. Lookarounds after
+ * it still apply after the consumed newline, as they applied after the
+ * whitespace in the original pattern.
+ */
 export function compactSource(source: string): string {
+  const m = TRAILING_REQUIRED_WS.exec(source);
+  if (m && !isEscaped(source, m.index)) {
+    const head = source.slice(0, m.index).replace(/\\s[+*]/g, '');
+    return `${head}${COMPACT_CONTINUATION}${m[1]}`;
+  }
   return source.replace(/\\s[+*]/g, '');
+}
+
+/** True when the character at `index` is preceded by an odd run of backslashes. */
+function isEscaped(source: string, index: number): boolean {
+  let n = 0;
+  for (let i = index - 1; i >= 0 && source[i] === '\\'; i--) n++;
+  return n % 2 === 1;
 }

@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.5.0 — 2026-11-09
+- feat: a separate `piiGuard` option (default on, so nothing changes unless you turn it off). With it off, a `hooks_transfer` that holds an email address may publish, while a key, token or password in any learning write is still refused whenever `guard` is on. Before, the only way to stop the email refusal was `guard: off`, which also dropped secret screening (#4861)
+
 ## 0.4.6 — 2026-11-05
 - feat: README Compatibility names the learning backends behind the pipeline as of `@claude-flow/cli` 3.72.1: MicroLoRA on `@ruvector/learning-wasm` (JS fallback when optional deps are omitted) and the SONA coordinator / contrastive trainer from `@ruvector/ruvllm` ^4.1.0 (4.0.x silently fell back to JS). Skills section links the CLI's `lora-learning` and `fast-code-edits` (`hooks_fast-apply`, `hooks_codemod`) skills instead of duplicating them
 

@@ -137,12 +137,13 @@ A function-hook mod ships beside the skills (ADR-445 pattern). Needs a Claude Co
 
 | Piece | Default | What it does |
 |---|---|---|
-| **Write guard** | on | Refuses a secret in a learned pattern, trajectory step/end, `neural_train` or `hooks_transfer` call, or a `memory_store` into a pattern namespace. A transfer also refuses an email address (IPFS is public). |
+| **Write guard** | on | Refuses a secret in a learned pattern, trajectory step/end, `neural_train` or `hooks_transfer` call, or a `memory_store` into a pattern namespace. A transfer also refuses an email address (IPFS is public) while the PII guard is on. |
+| **PII guard** | on | The email refusal on `hooks_transfer`. Off lets a transfer holding an email publish; a secret is still refused while the write guard is on. |
 | **Reset confirm** | on | Refuses `hooks_intelligence-reset` unless the call carries `confirm: true`. |
 | **`/intelligence-mod`** | — | `status`, `scan <text>`, `stats` (calls `hooks_intelligence_stats` through the connected tool); answered locally, no model call. |
 | **Status file** | — | `.claude-flow/intelligence-mod/status.json` (`version`, `updatedMs`, mode flags and counters); written at session start and when a counter changes. |
 
-Options (`userConfig`): `guard` on\|off, `confirmReset` on\|off. Refusals never echo the value they matched.
+Options (`userConfig`): `guard` on\|off, `piiGuard` on\|off, `confirmReset` on\|off. Refusals never echo the value they matched.
 
 ```bash
 claude plugin test plugins/ruflo-intelligence   # 11 tests

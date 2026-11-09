@@ -221,7 +221,7 @@ importers:
         specifier: 2.1.1
         version: 2.1.1
       '@claude-flow/aidefence':
-        specifier: 3.1.1
+        specifier: 3.1.2
         version: link:../aidefence
       '@claude-flow/memory':
         specifier: 3.2.6

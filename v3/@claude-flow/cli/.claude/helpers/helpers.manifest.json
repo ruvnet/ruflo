@@ -1,8 +1,8 @@
 {
   "manifest": {
-    "version": "3.71.5",
+    "version": "3.74.1",
     "files": {
-      "auto-memory-hook.mjs": "6078bd1c6b02dd3f80097f8d7f28904d48b3cdf7a534d2aa13966590694ca403",
+      "auto-memory-hook.mjs": "2434c33ec1adc001b902a9eab16414d2d20ceb1c900aa84220fa220554a30336",
       "hook-handler.cjs": "31db0f7492fbd8b2e48ea9adbc1ba293dfed1e006666d20e93ea76e158986947",
       "intelligence.cjs": "ffdcfa6d2665a16e417dedd5bc67080c8192820f76265de5013fcb49f668ec71",
       "statusline.cjs": "284b95629ced4340667872b977de3f2beac90fc6bb7ab1a62dd7f7ae75c5e5d1",
@@ -10,6 +10,6 @@
       "learning-loop.cjs": "d046cd6f8efb7dd40e1d2451516c181fc8b26477aefb1124c0df5f52a23f9190"
     }
   },
-  "signature": "jshmCG3CvT7P27Z7g+lpvJRvhLGwJ0qdXh08Wi5GhJRVSEN5xDaJtitbb9G8Nc8MaNwEaeMcDHrZ2f2J2NfWDg==",
+  "signature": "bMoqVxEdQNjBMlt9xsJ+dFhJBT8/81zWECoLksuk7WVP80R07P9wMdCw6wMWLgbLrROAMTns5ZJeedl375jACw==",
   "algorithm": "ed25519"
 }
