@@ -43,6 +43,10 @@ Use a ruflo swarm to review this repo: find the riskiest module, write tests for
 
 [First useful task, step by step](docs/ruflo-explained.md) · [User guide](docs/USERGUIDE.md) · [Compare install paths](#quick-start)
 
+<a href="https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/main/docs/assets/readme/rvf-mcp-search.svg" width="720" alt="Search a local RVF index from a Ruflo project using the stdio RVF MCP server and a read-only handle"></a>
+
+[Optional recipe: local vector search with RVF and MCP](https://github.com/ruvnet/ruflo/blob/main/docs/recipes/rvf-mcp-search.md) · [Ruvnet ecosystem](https://ruv.io)
+
 <details>
 <summary><b>Other ways to install</b> (Claude Code plugins only, MCP-only clients, terminal UI)</summary>
 

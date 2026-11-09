@@ -11,13 +11,13 @@
     "claude-flow": "bin/cli.js",
     "claude-flow-mcp": "bin/mcp-server.js"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow#readme",
+  "homepage": "https://ruv.io",
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues"
+    "url": "https://github.com/ruvnet/ruflo/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/@claude-flow/cli"
   },
   "keywords": [
@@ -38,7 +38,10 @@
     "vector-database",
     "embeddings",
     "self-learning",
-    "enterprise"
+    "enterprise",
+    "local-vector-search",
+    "rvf",
+    "mcp-server"
   ],
   "author": "RuvNet <ruv@ruv.io> (https://ruv.io)",
   "license": "MIT",

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="180" viewBox="0 0 900 180" role="img" aria-labelledby="title desc">
+  <title id="title">Ruflo recipe: search a local portable RVF index</title>
+  <desc id="desc">A Ruflo project sends a vector query through a local stdio MCP server. The server searches a trusted RVF copy using a read-only handle.</desc>
+  <style>
+    .trace { stroke-dasharray: 10 16; animation: move 3s linear 4; }
+    @keyframes move { to { stroke-dashoffset: -52; } }
+    @media (prefers-reduced-motion: reduce) { .trace { animation: none; } }
+  </style>
+  <rect x="1" y="1" width="898" height="178" rx="17" fill="#101827" stroke="#405575" stroke-width="2"/>
+  <text x="26" y="36" fill="#edf4ff" font-family="system-ui,sans-serif" font-size="24" font-weight="700">Search a local RVF index</text>
+  <g fill="#182640" stroke="#5b769d" stroke-width="2">
+    <rect x="26" y="64" width="245" height="81" rx="12"/>
+    <rect x="327" y="64" width="246" height="81" rx="12"/>
+    <rect x="629" y="64" width="245" height="81" rx="12"/>
+  </g>
+  <g fill="#edf4ff" text-anchor="middle" font-family="system-ui,sans-serif" font-size="19" font-weight="700">
+    <text x="149" y="97">Ruflo project</text>
+    <text x="450" y="97">RVF MCP server</text>
+    <text x="751" y="97">Trusted RVF copy</text>
+  </g>
+  <g fill="#b4cae6" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15">
+    <text x="149" y="123">Supply a query vector</text>
+    <text x="450" y="123">Local stdio transport</text>
+    <text x="751" y="123">Read-only search handle</text>
+  </g>
+  <path class="trace" d="M272 104h54m248 0h54" stroke="#61dfcc" stroke-width="4" fill="none"/>
+</svg>
