@@ -22,6 +22,7 @@
 
 import * as fs from 'node:fs';
 import { resolveModelCacheDir } from '../memory/model-cache-dir.js';
+import { resolveEmbeddingConfig } from '../memory/embedding-config.js';
 
 // ============================================================================
 // FNV-1a-32 hash (matches scripts/gen-seed-corpus.mjs + router-trajectory.ts)
@@ -93,7 +94,9 @@ function loadExtractor(): Promise<ExtractorFn | null> {
       const env = (mod as Record<string, unknown>).env as { cacheDir: string } | undefined;
       if (env) env.cacheDir = cacheDir;
 
-      const extractor = await mod.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { quantized: true });
+      // #2305: honour `.claude-flow/embeddings.json` (default MiniLM/384).
+      const { model } = resolveEmbeddingConfig(process.cwd());
+      const extractor = await mod.pipeline('feature-extraction', model, { quantized: true });
       _extractorDegradedReason = null;
       return extractor;
     } catch {
@@ -125,7 +128,7 @@ async function loadEmbedderBatch(): Promise<EmbedBatchFn | null> {
   if (!ex) return null;
   return async (texts: string[]): Promise<number[][]> => {
     const out = await ex(texts, { pooling: 'mean', normalize: true });
-    const dims = out.dims ?? [texts.length, 384];
+    const dims = out.dims ?? [texts.length, resolveEmbeddingConfig(process.cwd()).dimension];
     const N = dims[0] ?? texts.length;
     const dim = dims[1] ?? Math.floor(out.data.length / N);
     const data = out.data;
@@ -175,7 +178,8 @@ function lruSet(key: string, value: number[]): void {
 // ============================================================================
 
 /**
- * Compute (or fetch from cache) the 384-dim MiniLM embedding for `task`.
+ * Compute (or fetch from cache) the embedding for `task` with the configured
+ * model (`.claude-flow/embeddings.json`; default 384-dim MiniLM).
  * Returns `undefined` on any failure (missing @xenova/transformers, ONNX
  * runtime error, etc.) so callers can gracefully fall back to the
  * heuristic+bandit path. Best-effort and never throws.

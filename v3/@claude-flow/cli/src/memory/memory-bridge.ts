@@ -28,6 +28,12 @@ import { mkdirSync, realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { validateFeedbackPatterns } from './feedback-patterns.js';
+import {
+  DEFAULT_EMBEDDING_MODEL,
+  resolveEffectiveEmbeddingConfig,
+  resolveEmbeddingConfig,
+  type EmbeddingConfig,
+} from './embedding-config.js';
 
 // ===== Lazy registry cache, keyed by database path =====
 
@@ -48,6 +54,25 @@ import { validateFeedbackPatterns } from './feedback-patterns.js';
  */
 const registryPromises = new Map<string, Promise<any>>();
 const registryInstances = new Map<string, any>();
+
+/**
+ * #2305: the embedding model/dimension the AgentDB registry was opened with —
+ * `.claude-flow/embeddings.json`, or the store's recorded dimension when that
+ * differs. Falls back to the configured value before any registry opened.
+ */
+let bridgeEmbeddingConfig: EmbeddingConfig | null = null;
+
+function activeEmbeddingConfig(): EmbeddingConfig {
+  return bridgeEmbeddingConfig ?? resolveEmbeddingConfig(process.cwd());
+}
+
+/** Model name recorded next to a vector of `dimension` length. */
+function embeddingModelLabel(dimension: number): string {
+  const cfg = activeEmbeddingConfig();
+  if (dimension === cfg.dimension) return cfg.model;
+  // Unchanged pre-#2305 label for any other size.
+  return DEFAULT_EMBEDDING_MODEL;
+}
 // One lease spans an entire bridge operation, including its awaited controller
 // effects and nested bridge calls. Initializer ownership alone is insufficient:
 // a ReasoningBank write can still be pending after its registry has opened.
@@ -288,11 +313,22 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
         // lifetime and hierarchical memory silently ran volatile.
         try {
           if (resolvedPath !== ':memory:') mkdirSync(path.dirname(resolvedPath), { recursive: true });
+          // Check memory.db as well as this store: the memory path mirrors
+          // the same vectors into both, so an old 384-dim memory.db must keep
+          // an empty agentdb-memory.db at 384 too (same order as the
+          // initializer, so both converge on one answer).
+          const embCfg = await resolveEffectiveEmbeddingConfig({
+            root: process.cwd(),
+            dbPaths: resolvedPath === ':memory:'
+              ? []
+              : [path.join(path.dirname(resolvedPath), 'memory.db'), resolvedPath],
+          });
+          bridgeEmbeddingConfig = embCfg;
           await (registry as any).initialize({
             // #2786: use agentdb-memory.db (plaintext) so native better-sqlite3 doesn't hit the encrypted memory.db.
             dbPath: resolvedPath,
-            embeddingModel: 'Xenova/all-MiniLM-L6-v2',
-            dimension: 384,
+            embeddingModel: embCfg.model,
+            dimension: embCfg.dimension,
             vectorBackend: 'auto',
             controllers: {
               reasoningBank: true,
@@ -542,6 +578,7 @@ export function _resetRegistryCacheForTest(): void {
   testRegistryOverride = null;
   testRegistryFactory = null;
   bridgeFailureReasons.clear();
+  bridgeEmbeddingConfig = null;
 }
 
 /** Inject registry construction without requiring the optional native package in tests. */
@@ -1033,7 +1070,7 @@ async function embedForBridge(
     try {
       const emb = await embedder.embed(text);
       if (emb && emb.length > 0) {
-        return { vector: Array.from(emb), model: 'Xenova/all-MiniLM-L6-v2' };
+        return { vector: Array.from(emb), model: embeddingModelLabel(emb.length) };
       }
       agentdbProblem = 'agentdb embedder returned no vector';
     } catch (err) {
@@ -2091,18 +2128,19 @@ export async function bridgeGenerateEmbedding(
     // yet) and silently fall back to a 128-dim hash stub. The embedder doesn't
     // expose isMock=true in that path, so the wrapper above was reporting
     // backend='onnx' on what's actually 128-dim hash garbage. The model name
-    // we hardcode ('Xenova/all-MiniLM-L6-v2') always produces 384-dim, so a
-    // dimensions mismatch is a definitive stub signal: return null and let
-    // the caller fall through to generateLocalEmbedding which routes to
-    // transformers.js / ruvector ONNX directly.
-    if (emb.length !== 384) {
+    // the registry was opened with (#2305: from embeddings.json, default
+    // MiniLM/384) has a fixed dimension, so a dimensions mismatch is a
+    // definitive stub signal: return null and let the caller fall through to
+    // generateLocalEmbedding which routes to transformers.js / ruvector ONNX.
+    const embCfg = activeEmbeddingConfig();
+    if (emb.length !== embCfg.dimension) {
       return null;
     }
 
     return {
       embedding: Array.from(emb),
       dimensions: emb.length,
-      model: 'Xenova/all-MiniLM-L6-v2',
+      model: embCfg.model,
       backend: isMock ? 'mock' : 'onnx',
     };
   } catch {
@@ -2139,7 +2177,7 @@ export async function bridgeLoadEmbeddingModel(
     return {
       success: true,
       dimensions: test.length,
-      modelName: 'Xenova/all-MiniLM-L6-v2',
+      modelName: embeddingModelLabel(test.length),
       loadTime: Date.now() - startTime,
     };
   } catch {
@@ -2406,7 +2444,7 @@ export async function bridgeAddEmbedding(
         id, key, namespace, content, type,
         embedding, embedding_dimensions, embedding_model,
         created_at, updated_at, status
-      ) VALUES (?, ?, ?, ?, 'semantic', ?, ?, 'Xenova/all-MiniLM-L6-v2', ?, ?, 'active')
+      ) VALUES (?, ?, ?, ?, 'semantic', ?, ?, ?, ?, ?, 'active')
       ON CONFLICT(namespace, key) DO UPDATE SET
         id                   = excluded.id,
         content              = excluded.content,
@@ -2418,7 +2456,7 @@ export async function bridgeAddEmbedding(
         status               = 'active'
     `).run(
       id, entry.key, entry.namespace, entry.content,
-      embeddingJson, embedding.length,
+      embeddingJson, embedding.length, embeddingModelLabel(embedding.length),
       now, now,
     );
     return true;
@@ -2542,6 +2580,7 @@ export function __setMemoryBridgeRegistryForTests(registry: any | null): void {
   testRegistryOverride = registry;
   testRegistryFactory = null;
   bridgeFailureReasons.clear();
+  bridgeEmbeddingConfig = null;
 }
 
 /**
@@ -4418,4 +4457,120 @@ export async function bridgeHierarchicalGet(params: { id: string; includeInactiv
     const entry = hm.getEntry(params.id, { includeInactive: params.includeInactive === true });
     return { found: entry !== null, entry };
   });
+}
+
+// ===== #4707: read-only pattern / skill inventory and hierarchical counts =====
+
+/** Smallest agentdb whose ReasoningBank/SkillLibrary ship listPatterns/listSkills/getSkill. */
+const AGENTDB_INVENTORY_MIN = '3.3.0';
+
+/**
+ * Run one read against a registry controller inside a bridge operation.
+ * Refuses, never fabricates: a missing controller and a controller without
+ * the method both come back as `success: false, code: 'unsupported'` naming
+ * the method, so neither can be read as an empty inventory. A native error
+ * (bad page arguments, the graph-adapter refusal) keeps its own code.
+ */
+async function withInventoryController(
+  controllerName: 'reasoningBank' | 'skills',
+  method: string,
+  read: (controller: any) => Record<string, unknown>,
+): Promise<any> {
+  if (!operationContext.getStore()?.active) {
+    return withBridgeOperation(() => withInventoryController(controllerName, method, read));
+  }
+  const registry = await getRegistry();
+  if (!registry) return null;
+  let controller: any;
+  try {
+    controller = registry.get(controllerName);
+  } catch (e: any) {
+    return { success: false, controller: controllerName, code: 'unsupported', error: `${controllerName} not available, so ${method} cannot run: ${e?.message ?? e}` };
+  }
+  if (!controller) {
+    return { success: false, controller: controllerName, code: 'unsupported', error: `${controllerName} controller is not available, so ${method} cannot run` };
+  }
+  if (typeof controller[method] !== 'function') {
+    return {
+      success: false,
+      controller: controllerName,
+      code: 'unsupported',
+      error: `the active ${controllerName} controller has no ${method}() (needs agentdb >= ${AGENTDB_INVENTORY_MIN})`,
+    };
+  }
+  try {
+    return { success: true, controller: controllerName, ...read(controller) };
+  } catch (e: any) {
+    return {
+      success: false,
+      controller: controllerName,
+      ...(typeof e?.code === 'string' ? { code: e.code } : {}),
+      ...(typeof e?.field === 'string' ? { field: e.field } : {}),
+      error: String(e?.message ?? e),
+    };
+  }
+}
+
+/** Native list result envelope, passed through unchanged. */
+function pageOf(page: any): Record<string, unknown> {
+  return { items: page?.items, total: page?.total, limit: page?.limit, offset: page?.offset };
+}
+
+/** Page through ReasoningBank patterns, newest first (#4707). */
+export async function bridgeListPatterns(params: { taskType?: string; limit?: number; offset?: number }): Promise<any> {
+  return withInventoryController('reasoningBank', 'listPatterns', rb =>
+    pageOf(rb.listPatterns({ taskType: params.taskType, limit: params.limit, offset: params.offset })));
+}
+
+/** Page through SkillLibrary skills, newest first (#4707). */
+export async function bridgeListSkills(params: { minSuccessRate?: number; limit?: number; offset?: number }): Promise<any> {
+  return withInventoryController('skills', 'listSkills', sk =>
+    pageOf(sk.listSkills({ minSuccessRate: params.minSuccessRate, limit: params.limit, offset: params.offset })));
+}
+
+/** Exact read of one skill by its numeric id (#4707). */
+export async function bridgeGetSkill(params: { id: number }): Promise<any> {
+  return withInventoryController('skills', 'getSkill', sk => {
+    const skill = sk.getSkill(params.id);
+    return { found: skill != null, skill: skill ?? null };
+  });
+}
+
+/**
+ * Count-only view of the hierarchical store (#4707). `tiers` is the
+ * in-memory tier map sizes from getTierStats(); `persistedRows` is the
+ * tiered_memory row count from countPersisted() (null on a volatile store).
+ * They measure different things and are reported side by side.
+ */
+export async function bridgeHierarchicalStats(): Promise<any> {
+  if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeHierarchicalStats());
+  const registry = await getRegistry();
+  if (!registry) return null;
+  let hm: any;
+  try {
+    hm = registry.get('hierarchicalMemory');
+  } catch (e: any) {
+    return { success: false, code: 'unsupported', error: `HierarchicalMemory not available, so getTierStats/countPersisted cannot run: ${e?.message ?? e}` };
+  }
+  if (!hm) {
+    return { success: false, code: 'unsupported', error: 'HierarchicalMemory not available, so getTierStats/countPersisted cannot run' };
+  }
+  const isNative = typeof hm.getStats === 'function' && typeof hm.promote === 'function';
+  const missing = ['getTierStats', 'countPersisted'].filter(m => typeof hm[m] !== 'function');
+  if (isNative || missing.length > 0) {
+    return {
+      success: false,
+      controller: isNative ? 'hierarchicalMemory' : 'tieredMemoryStore',
+      code: 'unsupported',
+      error: isNative
+        ? 'the native agentdb HierarchicalMemory has no getTierStats()/countPersisted()'
+        : `the active hierarchical store has no ${missing.join('()/')}() (the installed @claude-flow/memory predates it)`,
+    };
+  }
+  const info = describeHierarchicalStore(hm, getHierarchicalFallback(registry));
+  try {
+    return { success: true, ...info, tiers: hm.getTierStats(), persistedRows: hm.countPersisted() };
+  } catch (e: any) {
+    return { success: false, ...info, error: String(e?.message ?? e) };
+  }
 }
