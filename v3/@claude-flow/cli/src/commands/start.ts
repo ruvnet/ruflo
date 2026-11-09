@@ -9,6 +9,7 @@ import { confirm, select } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { runStartAll } from './start-all.js';
 
 // Default configuration
 const DEFAULT_PORT = 3000;
@@ -16,7 +17,7 @@ const DEFAULT_TOPOLOGY = 'hierarchical-mesh';
 const DEFAULT_MAX_AGENTS = 15;
 
 // Check if project is initialized
-function isInitialized(cwd: string): boolean {
+export function isInitialized(cwd: string): boolean {
   const configPath = path.join(cwd, '.claude-flow', 'config.yaml');
   return fs.existsSync(configPath);
 }
@@ -87,7 +88,7 @@ function loadConfig(cwd: string): Record<string, unknown> | null {
 }
 
 // Main start action
-const startAction = async (ctx: CommandContext): Promise<CommandResult> => {
+export const startAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const daemon = ctx.flags.daemon as boolean;
   const port = (ctx.flags.port as number) || DEFAULT_PORT;
   const topology = (ctx.flags.topology as string) || DEFAULT_TOPOLOGY;
@@ -400,6 +401,12 @@ const restartCommand: Command = {
   }
 };
 
+/** Project init shared by `start quick` and `start all`: `init --minimal`. Callers check isInitialized() first. */
+export async function runMinimalProjectInit(ctx: CommandContext): Promise<CommandResult | void> {
+  const { initCommand } = await import('./init.js');
+  return initCommand.action!({ ...ctx, flags: { ...ctx.flags, minimal: true } });
+}
+
 // Quick start subcommand
 const quickCommand: Command = {
   name: 'quick',
@@ -411,13 +418,7 @@ const quickCommand: Command = {
       output.printInfo('Project not initialized, running init first...');
       output.writeln();
 
-      // Call init with minimal settings
-      const { initCommand } = await import('./init.js');
-      const initCtx = {
-        ...ctx,
-        flags: { ...ctx.flags, minimal: true }
-      };
-      await initCommand.action!(initCtx);
+      await runMinimalProjectInit(ctx);
       output.writeln();
     }
 
@@ -429,91 +430,10 @@ const quickCommand: Command = {
   }
 };
 
-/** Steps `start all` runs, injectable so tests can replace each one (#1177). */
-export interface StartAllDeps {
-  isMemoryInitialized: () => Promise<boolean>;
-  initMemory: () => Promise<{ success: boolean; error?: string }>;
-  isDaemonRunning: (cwd: string) => boolean | Promise<boolean>;
-  startDaemon: (ctx: CommandContext) => Promise<CommandResult | void>;
-  start: (ctx: CommandContext) => Promise<CommandResult>;
-}
-
-// Real steps, loaded lazily so plain `start` does not pull in sql.js or the daemon module.
-const defaultStartAllDeps: StartAllDeps = {
-  isMemoryInitialized: async () => {
-    const { checkMemoryInitialization } = await import('../memory/memory-initializer.js');
-    return (await checkMemoryInitialization()).initialized;
-  },
-  initMemory: async () => {
-    const { initializeMemoryDatabase } = await import('../memory/memory-initializer.js');
-    // force: false — never overwrite an existing database.
-    return initializeMemoryDatabase({ force: false });
-  },
-  isDaemonRunning: async (cwd) => {
-    const { isDaemonAlive, resolveDaemonProjectRoot } = await import('../services/daemon-autostart.js');
-    return isDaemonAlive(resolveDaemonProjectRoot(cwd));
-  },
-  startDaemon: async (ctx) => {
-    const { daemonCommand } = await import('./daemon.js');
-    const daemonStart = daemonCommand.subcommands?.find((c) => c.name === 'start');
-    if (!daemonStart?.action) throw new Error('daemon start command not found');
-    // Only `quiet` is forwarded: start's own flags (port, topology, daemon) mean something else to `daemon start`.
-    const flags: CommandContext['flags'] = { _: [] };
-    if (ctx.flags.quiet !== undefined) flags.quiet = ctx.flags.quiet;
-    return daemonStart.action({ ...ctx, args: [], flags });
-  },
-  start: (ctx) => startAction(ctx),
-};
-
-/**
- * `start all`: memory (only if missing) → daemon (only if not running) → start.
- * Stops at the first failing step and returns a non-zero result naming it.
- */
-export async function runStartAll(
-  ctx: CommandContext,
-  deps: StartAllDeps = defaultStartAllDeps
-): Promise<CommandResult> {
-  const fail = (step: string, error: unknown): CommandResult => {
-    const detail = error instanceof Error ? error.message : String(error ?? 'unknown error');
-    output.printError(`start all: ${step} failed: ${detail}`);
-    return { success: false, exitCode: 1, data: { failedStep: step, error: detail } };
-  };
-
-  try {
-    if (await deps.isMemoryInitialized()) {
-      output.printInfo('Memory already initialized, skipping');
-    } else {
-      const init = await deps.initMemory();
-      if (!init.success) return fail('memory init', init.error);
-      output.printSuccess('Memory initialized');
-    }
-  } catch (error) {
-    return fail('memory init', error);
-  }
-
-  try {
-    if (await deps.isDaemonRunning(ctx.cwd)) {
-      output.printInfo('Daemon already running, skipping');
-    } else {
-      const daemon = await deps.startDaemon(ctx);
-      if (daemon && !daemon.success) return fail('daemon start', 'daemon start returned failure');
-    }
-  } catch (error) {
-    return fail('daemon start', error);
-  }
-
-  try {
-    const result = await deps.start(ctx);
-    return result.success ? result : fail('start', 'start returned failure');
-  } catch (error) {
-    return fail('start', error);
-  }
-}
-
-// Start-all subcommand (#1177)
+// Start-all subcommand (#1177); steps live in start-all.ts
 const allCommand: Command = {
   name: 'all',
-  description: 'Initialize memory if needed, start the daemon if not running, then start the system',
+  description: 'Init the project and memory if needed, start the daemon if not running, then start the system',
   action: (ctx: CommandContext): Promise<CommandResult> => runStartAll(ctx),
 };
 
@@ -558,7 +478,7 @@ export const startCommand: Command = {
     { command: 'claude-flow start --topology mesh', description: 'Start with mesh topology' },
     { command: 'claude-flow start --skip-mcp', description: 'Start without MCP server' },
     { command: 'claude-flow start quick', description: 'Quick start with defaults' },
-    { command: 'claude-flow start all', description: 'Init memory if needed, start the daemon, then start' },
+    { command: 'claude-flow start all', description: 'Init project/memory if needed, start the daemon, then start' },
     { command: 'claude-flow start stop', description: 'Stop the running system' }
   ],
   action: startAction
