@@ -12,7 +12,7 @@ import Ajv from 'ajv';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { validateSchema } from '@claude-flow/mcp/schema-validator';
+import { validateSchema } from '../../mcp/src/schema-validator.js';
 import { agentTools } from '../src/mcp-tools/agent-tools.js';
 
 const tool = agentTools.find(t => t.name === 'agent_spawn')!;
