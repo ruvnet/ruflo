@@ -1110,6 +1110,8 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       output.writeln();
       const bin = (process.argv[1] || '').includes('ruflo') ? 'ruflo' : 'claude-flow';
       output.writeln(output.dim(`Background workers: ${bin} daemon start · health check: ${bin} doctor`));
+      // ADR-150: surface the metaharness scorecard (optional dep; degrades gracefully when absent).
+      output.writeln(output.dim(`Harness readiness: ${bin} metaharness score (5-dim scorecard)`));
     }
 
     return { success: true, data: result };
