@@ -12,6 +12,7 @@ import type { AppendCondition } from './append-conditions.js';
 
 import { loadBetterSqlite3 } from './shared-sqlite.js';
 import { resolveMemoryRoot } from './memory-root.js';
+import { getProjectRoot } from '../services/project-root.js';
 import { DEFAULT_SEARCH_THRESHOLD } from './search-defaults.js';
 import { liveMemoryRowSql } from './live-memory-row.js';
 import { encodeEmbeddingQ8, MAX_LIST_EMBEDDINGS, type EmbeddingQ8 } from './embedding-q8.js';
@@ -185,10 +186,18 @@ async function releaseOwnNativeHandle(dbPath: string): Promise<void> {
  * this file flows through it.
  *
  * Precedence (highest → lowest):
- *   1. CLAUDE_FLOW_MEMORY_PATH env var
- *   2. memory.persistPath / memory.path in claude-flow.config.json (cwd or
- *      the directory the CLI was invoked from)
- *   3. Default: cwd/.swarm
+ *   1. CLAUDE_FLOW_MEMORY_PATH env var (a relative value resolves against
+ *      the project root)
+ *   2. memory.persistPath / memory.path in claude-flow.config.json or
+ *      .claude-flow/config.json at the project root
+ *   3. Default: <project root>/.swarm
+ *
+ * #2633: "project root" is the nearest ancestor of process.cwd() carrying a
+ * Ruflo marker (getProjectRoot: the walk the daemon uses since #2877, minus
+ * home / filesystem roots),
+ * so a shell that drifted into a subdirectory still opens the project's
+ * memory DB instead of silently starting a new one. With no marker it is
+ * process.cwd(), exactly as before.
  *
  * Cached per-process so repeated lookups are cheap; reset only by spawning
  * a fresh process (which is how config changes already propagate).
@@ -196,7 +205,7 @@ async function releaseOwnNativeHandle(dbPath: string): Promise<void> {
 let _memoryRootCache: string | undefined;
 export function getMemoryRoot(): string {
   if (_memoryRootCache !== undefined) return _memoryRootCache;
-  _memoryRootCache = resolveMemoryRoot(process.cwd());
+  _memoryRootCache = resolveMemoryRoot(getProjectRoot());
   return _memoryRootCache;
 }
 
