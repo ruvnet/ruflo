@@ -1,5 +1,34 @@
 # @claude-flow/plugin-test-intelligence
 
+<!-- adr-356:quickstart:start -->
+**@claude-flow/plugin-test-intelligence** — A Ruflo plugin that gives agents MCP tools for predictive test selection, flaky test detection, coverage gaps, mutation testing optimization and test suggestions.
+
+**Supported environments:** Node.js 18+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/plugin-test-intelligence
+```
+
+```js
+import { testIntelligenceTools, CoverageGapsInputSchema } from '@claude-flow/plugin-test-intelligence';
+
+console.log('tools:', testIntelligenceTools.map((t) => t.name).join(', '));
+const check = CoverageGapsInputSchema.safeParse({ targetPaths: ['src/'] });
+console.log('valid input:', check.success);
+```
+
+Expected output:
+
+```text
+tools: test/select-predictive, test/flaky-detect, test/coverage-gaps, test/mutation-optimize, test/generate-suggest
+valid input: true
+```
+
+Install it into a Ruflo project with [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli): `npx @claude-flow/cli@latest plugins install -n @claude-flow/plugin-test-intelligence`.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-test-intelligence.svg)](https://www.npmjs.com/package/@claude-flow/plugin-test-intelligence)
 [![npm downloads](https://img.shields.io/npm/dm/@claude-flow/plugin-test-intelligence.svg)](https://www.npmjs.com/package/@claude-flow/plugin-test-intelligence)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -407,3 +436,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/plugins/test-intelligence)
+<!-- adr-356:footer:end -->

@@ -1,5 +1,34 @@
 # @claude-flow/integration
 
+<!-- adr-356:quickstart:start -->
+**@claude-flow/integration** — Connects Ruflo (claude-flow) V3 to [`agentic-flow`](https://www.npmjs.com/package/agentic-flow): the TokenOptimizer (ReasoningBank compact context, Agent Booster edits), feature flags, worker pools and swarm adapters.
+
+**Supported environments:** Node.js 20+ · ESM · peer dependency `agentic-flow` `^2.0.14 || ^3.0.0`
+
+## Quickstart
+
+```bash
+npm install @claude-flow/integration
+```
+
+```js
+import { createFeatureFlagManager } from '@claude-flow/integration';
+
+const flags = await createFeatureFlagManager();
+console.log('flags:', Object.keys(flags.getAllFlags()).length);
+console.log('enableSONA:', flags.isEnabled('enableSONA'));
+```
+
+Expected output:
+
+```text
+flags: 9
+enableSONA: true
+```
+
+Peer: [`agentic-flow`](https://www.npmjs.com/package/agentic-flow) supplies ReasoningBank and Agent Booster.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/integration.svg)](https://www.npmjs.com/package/@claude-flow/integration)
 [![npm downloads](https://img.shields.io/npm/dm/@claude-flow/integration.svg)](https://www.npmjs.com/package/@claude-flow/integration)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -268,3 +297,9 @@ import type {
 ## License
 
 MIT
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/@claude-flow/integration)
+<!-- adr-356:footer:end -->
