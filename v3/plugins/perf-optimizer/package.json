@@ -1,4 +1,5 @@
 {
+  "homepage": "https://ruv.io",
   "name": "@claude-flow/plugin-perf-optimizer",
   "version": "3.0.0-alpha.2",
   "description": "AI-powered performance optimization plugin for bottleneck detection, memory analysis, and configuration tuning",

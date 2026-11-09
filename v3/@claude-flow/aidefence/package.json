@@ -65,7 +65,7 @@
   "bugs": {
     "url": "https://github.com/ruvnet/claude-flow/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow/tree/main/v3/@claude-flow/aidefence#readme",
+  "homepage": "https://ruv.io",
   "publishConfig": {
     "access": "public"
   },

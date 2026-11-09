@@ -1,4 +1,5 @@
 {
+  "homepage": "https://ruv.io",
   "name": "@claude-flow/guidance",
   "version": "3.0.0",
   "description": "Guidance Control Plane - Compiles, retrieves, enforces, and evolves guidance rules for Claude Code sessions",

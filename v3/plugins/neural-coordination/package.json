@@ -1,4 +1,5 @@
 {
+  "homepage": "https://ruv.io",
   "name": "@claude-flow/plugin-neural-coordination",
   "version": "3.0.0-alpha.2",
   "description": "Neural coordination plugin for multi-agent swarm intelligence using SONA, GNN, and attention mechanisms",

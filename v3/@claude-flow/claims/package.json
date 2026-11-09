@@ -55,7 +55,7 @@
   "bugs": {
     "url": "https://github.com/ruvnet/claude-flow/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow#readme",
+  "homepage": "https://ruv.io",
   "dependencies": {
     "zod": "^3.22.4"
   },

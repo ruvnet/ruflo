@@ -1,4 +1,5 @@
 {
+  "homepage": "https://ruv.io",
   "name": "@claude-flow/hooks",
   "version": "3.0.2",
   "description": "V3 Hooks System - Event-driven lifecycle hooks with ReasoningBank learning integration",

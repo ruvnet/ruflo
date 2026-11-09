@@ -75,7 +75,7 @@
   "bugs": {
     "url": "https://github.com/ruvnet/claude-flow/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow/tree/main/v3/plugins/financial-risk#readme",
+  "homepage": "https://ruv.io",
   "engines": {
     "node": ">=20.0.0"
   },

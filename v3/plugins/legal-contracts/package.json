@@ -1,4 +1,5 @@
 {
+  "homepage": "https://ruv.io",
   "name": "@claude-flow/plugin-legal-contracts",
   "version": "3.0.0-alpha.2",
   "description": "Legal contract analysis plugin for Claude Flow V3 - clause extraction, risk assessment, contract comparison, obligation tracking, and playbook matching",
