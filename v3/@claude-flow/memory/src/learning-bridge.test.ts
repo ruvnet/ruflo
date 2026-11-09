@@ -631,6 +631,164 @@ describe('LearningBridge', () => {
     });
   });
 
+  // ===== reopen after consolidation (#4884) =====
+
+  describe('onInsightAccessed after consolidation (#4884)', () => {
+    let lowBridge: LearningBridge;
+
+    beforeEach(() => {
+      lowBridge = new LearningBridge(backend, {
+        consolidationThreshold: 1,
+        neuralLoader: createNeuralLoader(neural),
+      });
+    });
+
+    afterEach(() => {
+      lowBridge.destroy();
+    });
+
+    async function recordAndConsolidate(entryId = 'entry-1') {
+      neural.beginTask.mockReturnValueOnce('traj-original');
+      await lowBridge.onInsightRecorded(createTestInsight(), entryId);
+      const result = await lowBridge.consolidate();
+      expect(result.trajectoriesCompleted).toBe(1);
+      expect(lowBridge.getStats().activeTrajectories).toBe(0);
+      vi.clearAllMocks();
+    }
+
+    it('reopens a trajectory and records the access step for a consolidated insight', async () => {
+      await recordAndConsolidate();
+      neural.beginTask.mockReturnValueOnce('traj-reopened');
+      (backend.get as any).mockResolvedValueOnce(
+        createTestEntry({ metadata: { confidence: 0.8, summary: 'Reused insight summary' } }),
+      );
+
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(neural.beginTask).toHaveBeenCalledTimes(1);
+      expect(neural.beginTask).toHaveBeenCalledWith('Reused insight summary', 'general');
+      expect(neural.recordStep).toHaveBeenCalledTimes(1);
+      expect(neural.recordStep).toHaveBeenCalledWith('traj-reopened', {
+        action: 'access',
+        reward: 0.03,
+        stateEmbedding: expect.any(Float32Array),
+      });
+      const stats = lowBridge.getStats();
+      expect(stats.activeTrajectories).toBe(1);
+      expect(stats.totalTrajectories).toBe(2);
+    });
+
+    it('emits insight:learning-reopened when a trajectory is reopened', async () => {
+      await recordAndConsolidate();
+      (backend.get as any).mockResolvedValueOnce(createTestEntry());
+      const handler = vi.fn();
+      lowBridge.on('insight:learning-reopened', handler);
+
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(handler).toHaveBeenCalledWith({ entryId: 'entry-1' });
+    });
+
+    it('falls back to entry content when metadata has no summary', async () => {
+      await recordAndConsolidate();
+      (backend.get as any).mockResolvedValueOnce(
+        createTestEntry({ content: 'Content only', metadata: { confidence: 0.8 } }),
+      );
+
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(neural.beginTask).toHaveBeenCalledWith('Content only', 'general');
+    });
+
+    it('records later accesses on the reopened trajectory without opening another', async () => {
+      await recordAndConsolidate();
+      neural.beginTask.mockReturnValueOnce('traj-reopened');
+      (backend.get as any).mockResolvedValue(createTestEntry());
+
+      await lowBridge.onInsightAccessed('entry-1');
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(neural.beginTask).toHaveBeenCalledTimes(1);
+      expect(neural.recordStep).toHaveBeenLastCalledWith('traj-reopened', {
+        action: 'access',
+        reward: 0.03,
+      });
+      expect(lowBridge.getStats().activeTrajectories).toBe(1);
+    });
+
+    it('completes the reopened trajectory on the next consolidation (no unbounded growth)', async () => {
+      await recordAndConsolidate();
+      neural.beginTask.mockReturnValueOnce('traj-reopened');
+      (backend.get as any).mockResolvedValueOnce(createTestEntry());
+      await lowBridge.onInsightAccessed('entry-1');
+
+      const result = await lowBridge.consolidate();
+
+      expect(result.trajectoriesCompleted).toBe(1);
+      expect(neural.completeTask).toHaveBeenCalledWith('traj-reopened', expect.any(Number));
+      expect(lowBridge.getStats().activeTrajectories).toBe(0);
+      expect(lowBridge.getStats().completedTrajectories).toBe(2);
+    });
+
+    it('can reopen again after a second consolidation', async () => {
+      await recordAndConsolidate();
+      neural.beginTask.mockReturnValueOnce('traj-2').mockReturnValueOnce('traj-3');
+      (backend.get as any).mockResolvedValue(createTestEntry());
+
+      await lowBridge.onInsightAccessed('entry-1');
+      await lowBridge.consolidate();
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(neural.beginTask).toHaveBeenCalledTimes(2);
+      expect(neural.recordStep).toHaveBeenLastCalledWith('traj-3', expect.objectContaining({
+        action: 'access',
+      }));
+    });
+
+    it('does not open a trajectory for an entry never recorded through the bridge', async () => {
+      await recordAndConsolidate('entry-1');
+      (backend.get as any).mockResolvedValueOnce(createTestEntry({ id: 'other' }));
+
+      await lowBridge.onInsightAccessed('other');
+
+      expect(neural.beginTask).not.toHaveBeenCalled();
+      expect(neural.recordStep).not.toHaveBeenCalled();
+    });
+
+    it('survives beginTask throwing on reopen and retries on the next access', async () => {
+      await recordAndConsolidate();
+      (backend.get as any).mockResolvedValue(createTestEntry());
+      neural.beginTask
+        .mockImplementationOnce(() => { throw new Error('neural down'); })
+        .mockReturnValueOnce('traj-retry');
+
+      await expect(lowBridge.onInsightAccessed('entry-1')).resolves.toBeUndefined();
+      expect(lowBridge.getStats().activeTrajectories).toBe(0);
+
+      await lowBridge.onInsightAccessed('entry-1');
+      expect(neural.recordStep).toHaveBeenCalledWith('traj-retry', expect.objectContaining({
+        action: 'access',
+      }));
+    });
+
+    it('control: access before consolidation records on the original trajectory only', async () => {
+      neural.beginTask.mockReturnValueOnce('traj-original');
+      await lowBridge.onInsightRecorded(createTestInsight(), 'entry-1');
+      vi.clearAllMocks();
+      (backend.get as any).mockResolvedValueOnce(createTestEntry());
+
+      await lowBridge.onInsightAccessed('entry-1');
+
+      expect(neural.beginTask).not.toHaveBeenCalled();
+      expect(neural.recordStep).toHaveBeenCalledTimes(1);
+      expect(neural.recordStep).toHaveBeenCalledWith('traj-original', {
+        action: 'access',
+        reward: 0.03,
+      });
+      expect(lowBridge.getStats().activeTrajectories).toBe(1);
+    });
+  });
+
   // ===== decayConfidences =====
 
   describe('decayConfidences', () => {
