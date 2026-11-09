@@ -11,6 +11,7 @@ import { wasmSubcommands } from './agent-wasm.js';
 import { agentPublishCommand } from './agntcy/publish.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getProjectRoot } from '../services/project-root.js';
 import { noteFirstAgentRun } from '../funnel/activation.js';
 
 /**
@@ -19,7 +20,7 @@ import { noteFirstAgentRun } from '../funnel/activation.js';
  */
 function updateSwarmActivityMetrics(agentCountDelta: number): void {
   try {
-    const metricsDir = path.join(process.cwd(), '.claude-flow', 'metrics');
+    const metricsDir = path.join(getProjectRoot(), '.claude-flow', 'metrics');
     const activityPath = path.join(metricsDir, 'swarm-activity.json');
 
     let data: Record<string, unknown> = {
