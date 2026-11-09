@@ -28,9 +28,9 @@ function withControllers(controllers: Record<string, unknown>, fallback: { reaso
   });
 }
 
-/** Error shaped like agentdb's CrudValidationError. */
+/** Error shaped like agentdb's CrudValidationError (code CRUD_VALIDATION_ERROR, field). */
 function crudError(message: string, field: string): Error {
-  return Object.assign(new Error(message), { code: 'VALIDATION_ERROR', field });
+  return Object.assign(new Error(message), { code: 'CRUD_VALIDATION_ERROR', field });
 }
 
 const NAMES = ['agentdb_pattern-list', 'agentdb_skill-list', 'agentdb_skill-get', 'agentdb_hierarchical-stats'];
@@ -144,7 +144,7 @@ describe('agentdb_pattern-list', () => {
   it('surfaces a native validation error with its code and field', async () => {
     withControllers({ reasoningBank: { listPatterns: () => { throw crudError('limit must be an integer between 1 and 500', 'limit'); } } });
     const r = await agentdbPatternList.handler({ limit: 10 });
-    expect(r).toMatchObject({ success: false, code: 'VALIDATION_ERROR', field: 'limit', error: 'limit must be an integer between 1 and 500' });
+    expect(r).toMatchObject({ success: false, code: 'CRUD_VALIDATION_ERROR', field: 'limit', error: 'limit must be an integer between 1 and 500' });
   });
 
   it('returns the unavailable error when the bridge has no registry', async () => {
@@ -195,7 +195,7 @@ describe('agentdb_skill-list', () => {
     const refuse = () => { throw crudError('listSkills addresses skills by SQL id and is not available with a graph adapter', 'id'); };
     withControllers({ skills: { listSkills: refuse, getSkill: refuse } });
     const r: any = await agentdbSkillList.handler({});
-    expect(r).toMatchObject({ success: false, code: 'VALIDATION_ERROR' });
+    expect(r).toMatchObject({ success: false, code: 'CRUD_VALIDATION_ERROR' });
     expect(r.error).toMatch(/graph adapter/);
     expect(r).not.toHaveProperty('items');
   });
