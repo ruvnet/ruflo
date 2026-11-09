@@ -33,7 +33,7 @@ const DEFAULT_CONFIG: UpdateConfig = {
   enabled: true,
   checkIntervalHours: 24,
   autoUpdate: {
-    patch: true,
+    patch: false,
     minor: false,
     major: false,
   },
@@ -112,15 +112,9 @@ export function getUpdateType(
 
 function shouldAutoUpdate(
   updateType: 'major' | 'minor' | 'patch' | 'none',
-  priority: 'critical' | 'high' | 'normal' | 'low',
   config: UpdateConfig
 ): boolean {
   if (updateType === 'none') return false;
-
-  // Critical security packages always auto-update patches
-  if (priority === 'critical' && updateType === 'patch') {
-    return true;
-  }
 
   // Check config
   if (updateType === 'major') return config.autoUpdate.major;
@@ -220,7 +214,7 @@ export async function checkForUpdates(
         latestVersion,
         updateType,
         priority,
-        shouldAutoUpdate: shouldAutoUpdate(updateType, priority, config),
+        shouldAutoUpdate: shouldAutoUpdate(updateType, config),
       });
     })
   );
@@ -262,7 +256,7 @@ export async function checkSinglePackage(
     latestVersion,
     updateType,
     priority,
-    shouldAutoUpdate: shouldAutoUpdate(updateType, priority, config),
+    shouldAutoUpdate: shouldAutoUpdate(updateType, config),
   };
 }
 
