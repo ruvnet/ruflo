@@ -75,7 +75,7 @@ importers:
         version: 0.41.2
       agentic-flow:
         specifier: ^2.0.14
-        version: 2.1.5(@types/node@20.19.27)
+        version: 2.0.14(@types/node@20.19.27)
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -131,7 +131,7 @@ importers:
         version: link:../neural
       '@claude-flow/plugin-agent-federation':
         specifier: 1.0.6
-        version: 1.0.6(agentic-flow@3.4.2)
+        version: 1.0.6(agentic-flow@3.0.0)
       '@claude-flow/security':
         specifier: 3.0.6
         version: link:../security
@@ -246,7 +246,7 @@ importers:
         version: 3.6.0(@types/node@20.19.27)(zod@3.25.76)
       agentic-flow:
         specifier: ^3.0.0
-        version: 3.4.2(@types/node@20.19.27)
+        version: 3.0.0(@types/node@20.19.27)
       better-sqlite3:
         specifier: 12.9.0
         version: 12.9.0
@@ -335,7 +335,7 @@ importers:
         version: 2.17.2
       agentic-flow:
         specifier: ^2.0.14
-        version: 2.1.5(@types/node@20.19.27)
+        version: 2.0.14(@types/node@20.19.27)
       sql.js:
         specifier: ^1.13.0
         version: 1.13.0
@@ -514,7 +514,7 @@ importers:
         version: 2.3.0
       midstreamer:
         specifier: ^0.3.2
-        version: 0.3.2(agentic-flow@3.4.2)
+        version: 0.3.2(agentic-flow@2.0.14)
       ws:
         specifier: ^8.21.0
         version: 8.21.1
@@ -529,8 +529,8 @@ importers:
         specifier: ^8.18.1
         version: 8.18.1
       agentic-flow:
-        specifier: ^3.4.1
-        version: 3.4.2(@types/node@20.19.27)
+        specifier: 2.0.14
+        version: 2.0.14(@types/node@20.19.27)
       typescript:
         specifier: ^5.4.0
         version: 5.9.3
@@ -849,24 +849,6 @@ packages:
       '@img/sharp-linuxmusl-arm64': 0.33.5
       '@img/sharp-linuxmusl-x64': 0.33.5
       '@img/sharp-win32-x64': 0.33.5
-    dev: false
-
-  /@anthropic-ai/claude-agent-sdk@0.1.77(zod@4.6.7):
-    resolution: {integrity: sha512-ZEjWQtkoB2MEY6K16DWMmF+8OhywAynH0m08V265cerbZ8xPD/2Ng2jPzbbO40mPeFSsMDJboShL+a3aObP0Jg==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      zod: ^3.25.0 || ^4.0.0
-    dependencies:
-      zod: 4.6.7
-    optionalDependencies:
-      '@img/sharp-darwin-arm64': 0.33.5
-      '@img/sharp-darwin-x64': 0.33.5
-      '@img/sharp-linux-arm': 0.33.5
-      '@img/sharp-linux-arm64': 0.33.5
-      '@img/sharp-linux-x64': 0.33.5
-      '@img/sharp-linuxmusl-arm64': 0.33.5
-      '@img/sharp-linuxmusl-x64': 0.33.5
-      '@img/sharp-win32-x64': 0.33.5
 
   /@anthropic-ai/claude-code@2.0.76:
     resolution: {integrity: sha512-BVwPez7Pst729gxHZNb7iUdjrn4UAzO49zC+Bxlyf0fMe3SsutxEhKTT16VMs2qInE9xhEBCxajCCa888mFPBg==}
@@ -894,19 +876,6 @@ packages:
     dependencies:
       json-schema-to-ts: 3.1.1
       zod: 3.25.76
-    dev: false
-
-  /@anthropic-ai/sdk@0.65.0(zod@4.6.7):
-    resolution: {integrity: sha512-zIdPOcrCVEI8t3Di40nH4z9EoeyGZfXbYSvWdDLsB/KkaSYMnEgC7gmcgWu83g2NTn1ZTpbMvpdttWDGGIk6zw==}
-    hasBin: true
-    peerDependencies:
-      zod: ^3.25.0 || ^4.0.0
-    peerDependenciesMeta:
-      zod:
-        optional: true
-    dependencies:
-      json-schema-to-ts: 3.1.1
-      zod: 4.6.7
 
   /@babel/code-frame@7.27.1:
     resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
@@ -979,7 +948,7 @@ packages:
     resolution: {integrity: sha512-k7vvKPbf7J2fZ5klGRD9AeKfUvojuZIQ3BT5u7Jfv+puwXkUBUT5PVyMDfJZpy30CBDXGMgw7fguK/lpOMBvgw==}
     requiresBuild: true
 
-  /@claude-flow/plugin-agent-federation@1.0.6(agentic-flow@3.4.2):
+  /@claude-flow/plugin-agent-federation@1.0.6(agentic-flow@3.0.0):
     resolution: {integrity: sha512-oH/5xyZPUX7M5b6P3dQpojOXNYgbiXhPz76czVt2mo2cTl75U10vqIGtkEE5GQReuJ0712KOyyK3DZoK6NschA==}
     hasBin: true
     peerDependencies:
@@ -992,7 +961,7 @@ packages:
         optional: true
     dependencies:
       '@noble/ed25519': 2.3.0
-      agentic-flow: 3.4.2(@types/node@20.19.27)
+      agentic-flow: 3.0.0(@types/node@20.19.27)
       ws: 8.21.1
     transitivePeerDependencies:
       - bufferutil
@@ -1379,7 +1348,6 @@ packages:
   /@huggingface/jinja@0.2.2:
     resolution: {integrity: sha512-/KPde26khDUIPkTGU82jdtTW9UAuvUTumCAbFs/7giR0SxsvZC4hru51PBvpijH6BVkHcROcvZM/lpy5h1jRRA==}
     engines: {node: '>=18'}
-    dev: false
 
   /@huggingface/jinja@0.5.8:
     resolution: {integrity: sha512-ZdElB7DPS7QQS8ZnFc5RPPtkg+eN11z8AmIZWAyes6pSbwXqiFB/POVevvm01begdSX1ho9Gxln/F6qlQMsuaA==}
@@ -1389,15 +1357,6 @@ packages:
   /@huggingface/tokenizers@0.1.3:
     resolution: {integrity: sha512-8rF/RRT10u+kn7YuUbUg0OF30K8rjTc78aHpxT+qJ1uWSqxT1MHi8+9ltwYfkFYJzT/oS+qw3JVfHtNMGAdqyA==}
     requiresBuild: true
-
-  /@huggingface/transformers@3.8.1:
-    resolution: {integrity: sha512-tsTk4zVjImqdqjS8/AOZg2yNLd1z9S5v+7oUPpXaasDRwEDhB+xnglK1k5cad26lL5/ZIaeREgWWy0bs9y9pPA==}
-    dependencies:
-      '@huggingface/jinja': 0.5.8
-      onnxruntime-node: 1.21.0
-      onnxruntime-web: 1.22.0-dev.20250409-89f8206ba4
-      sharp: 0.34.5
-    dev: false
 
   /@huggingface/transformers@4.2.0:
     resolution: {integrity: sha512-8BRCoBMH0XsWaEIamuR0LrJGAfftgHAfb2Vrffy0VKlSAE/MnUJ5/h/zTfEP3fDIft+nk7TqB8xXEyABGitBjQ==}
@@ -1470,6 +1429,7 @@ packages:
     requiresBuild: true
     optionalDependencies:
       '@img/sharp-libvips-darwin-arm64': 1.3.4
+    dev: false
     optional: true
 
   /@img/sharp-darwin-x64@0.33.5:
@@ -1500,6 +1460,7 @@ packages:
     requiresBuild: true
     optionalDependencies:
       '@img/sharp-libvips-darwin-x64': 1.3.4
+    dev: false
     optional: true
 
   /@img/sharp-freebsd-wasm32@0.35.5:
@@ -1509,6 +1470,7 @@ packages:
     requiresBuild: true
     dependencies:
       '@img/sharp-wasm32': 0.35.5
+    dev: false
     optional: true
 
   /@img/sharp-libvips-darwin-arm64@1.0.4:
@@ -1530,6 +1492,7 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-libvips-darwin-x64@1.0.4:
@@ -1551,6 +1514,7 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-libvips-linux-arm64@1.0.4:
@@ -1572,6 +1536,7 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-libvips-linux-arm@1.0.5:
@@ -1593,6 +1558,7 @@ packages:
     cpu: [arm]
     os: [linux]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-libvips-linux-ppc64@1.2.4:
@@ -1607,6 +1573,7 @@ packages:
     cpu: [ppc64]
     os: [linux]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-libvips-linux-riscv64@1.2.4:
@@ -1621,6 +1588,7 @@ packages:
     cpu: [riscv64]
     os: [linux]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-libvips-linux-s390x@1.2.4:
@@ -1635,6 +1603,7 @@ packages:
     cpu: [s390x]
     os: [linux]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-libvips-linux-x64@1.0.4:
@@ -1656,6 +1625,7 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-libvips-linuxmusl-arm64@1.0.4:
@@ -1677,6 +1647,7 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-libvips-linuxmusl-x64@1.0.4:
@@ -1698,6 +1669,7 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-linux-arm64@0.33.5:
@@ -1728,6 +1700,7 @@ packages:
     requiresBuild: true
     optionalDependencies:
       '@img/sharp-libvips-linux-arm64': 1.3.4
+    dev: false
     optional: true
 
   /@img/sharp-linux-arm@0.33.5:
@@ -1758,6 +1731,7 @@ packages:
     requiresBuild: true
     optionalDependencies:
       '@img/sharp-libvips-linux-arm': 1.3.4
+    dev: false
     optional: true
 
   /@img/sharp-linux-ppc64@0.34.5:
@@ -1778,6 +1752,7 @@ packages:
     requiresBuild: true
     optionalDependencies:
       '@img/sharp-libvips-linux-ppc64': 1.3.4
+    dev: false
     optional: true
 
   /@img/sharp-linux-riscv64@0.34.5:
@@ -1798,6 +1773,7 @@ packages:
     requiresBuild: true
     optionalDependencies:
       '@img/sharp-libvips-linux-riscv64': 1.3.4
+    dev: false
     optional: true
 
   /@img/sharp-linux-s390x@0.34.5:
@@ -1818,6 +1794,7 @@ packages:
     requiresBuild: true
     optionalDependencies:
       '@img/sharp-libvips-linux-s390x': 1.3.4
+    dev: false
     optional: true
 
   /@img/sharp-linux-x64@0.33.5:
@@ -1848,6 +1825,7 @@ packages:
     requiresBuild: true
     optionalDependencies:
       '@img/sharp-libvips-linux-x64': 1.3.4
+    dev: false
     optional: true
 
   /@img/sharp-linuxmusl-arm64@0.33.5:
@@ -1878,6 +1856,7 @@ packages:
     requiresBuild: true
     optionalDependencies:
       '@img/sharp-libvips-linuxmusl-arm64': 1.3.4
+    dev: false
     optional: true
 
   /@img/sharp-linuxmusl-x64@0.33.5:
@@ -1908,6 +1887,7 @@ packages:
     requiresBuild: true
     optionalDependencies:
       '@img/sharp-libvips-linuxmusl-x64': 1.3.4
+    dev: false
     optional: true
 
   /@img/sharp-wasm32@0.34.5:
@@ -1925,6 +1905,7 @@ packages:
     requiresBuild: true
     dependencies:
       '@emnapi/runtime': 1.11.3
+    dev: false
     optional: true
 
   /@img/sharp-webcontainers-wasm32@0.35.5:
@@ -1934,6 +1915,7 @@ packages:
     requiresBuild: true
     dependencies:
       '@img/sharp-wasm32': 0.35.5
+    dev: false
     optional: true
 
   /@img/sharp-win32-arm64@0.34.5:
@@ -1950,6 +1932,7 @@ packages:
     cpu: [arm64]
     os: [win32]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-win32-ia32@0.34.5:
@@ -1966,6 +1949,7 @@ packages:
     cpu: [ia32]
     os: [win32]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@img/sharp-win32-x64@0.33.5:
@@ -1990,6 +1974,7 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@inquirer/external-editor@1.0.3(@types/node@20.19.27):
@@ -2031,16 +2016,6 @@ packages:
       strip-ansi-cjs: /strip-ansi@6.0.1
       wrap-ansi: 8.1.0
       wrap-ansi-cjs: /wrap-ansi@7.0.0
-
-  /@isaacs/fs-minipass@4.0.1:
-    resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
-    engines: {node: '>=18.0.0'}
-    dependencies:
-      minipass: 7.1.3
-    dev: false
-
-  /@isaacs/nonrecursive-glob-match@1.1.0:
-    resolution: {integrity: sha512-GPm/Dbvk5RLmhRnxXIa7nTpK0xtl4E0wj0MslsuNiJ1FIROU+2+9lgUC/dgF7Ey4QCWhfEsgxilMRMCdHPfDfw==}
 
   /@jridgewell/gen-mapping@0.3.13:
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2099,6 +2074,7 @@ packages:
     hasBin: true
     requiresBuild: true
     dev: false
+    optional: true
 
   /@metaharness/darwin@0.8.0:
     resolution: {integrity: sha512-Pgefr/es0Btofh7GxQrOAg/i43ZKcLUfeD9rndOAkpA8s3ZYohSmfLerJLNsGOOKc2eTvmmauljl8QEVmKC2dw==}
@@ -2106,6 +2082,7 @@ packages:
     hasBin: true
     requiresBuild: true
     dev: false
+    optional: true
 
   /@metaharness/flywheel@0.1.13:
     resolution: {integrity: sha512-Ual/ZM0n4/AuFwyXsyPi8bXZdnLm7zNvNLDH1E+63UzySEPA9HWJFmr7obGLEE0jpKkz3bnZY0aYzAWhmXNRkA==}
@@ -2115,12 +2092,14 @@ packages:
     resolution: {integrity: sha512-am7dROkjyS1Zkms3TOcn2LVHjwMLQXPJ6Pu1aP55q40vWJLRONGdGvnrcBL/VhMFqjQrVB57lmSn2E+s5CSZwA==}
     requiresBuild: true
     dev: false
+    optional: true
 
   /@metaharness/harness@0.1.0:
     resolution: {integrity: sha512-KegYx/q8qXlnaSYP0l5hgNPn8iNMl6a2eONqPi68FXd1w1jt7NswJJlt2/Ftl3Sum8qAEchxH1ZJOYFWTvJxTA==}
     engines: {node: '>=20.0.0'}
     requiresBuild: true
     dev: false
+    optional: true
 
   /@metaharness/harness@0.2.0:
     resolution: {integrity: sha512-j/NLHqgPNre4qTTExvjCjh4/HgmhnVZPSQUfj06dyrlkpXCMFJ2abdPrl5yuFfzBMU0wnfFnFY2qQHQnBlAreg==}
@@ -2144,6 +2123,7 @@ packages:
     hasBin: true
     requiresBuild: true
     dev: false
+    optional: true
 
   /@metaharness/redblue@0.1.6:
     resolution: {integrity: sha512-cnQTOcPVetgz/XoYBdW5carkl48wBJsvBbJ7ntmelFtRu/8N5ARhSXnebEY+05SWaNm8lqij/gxZx2FqNCQWJg==}
@@ -2162,6 +2142,7 @@ packages:
         optional: true
     dependencies:
       '@ruvector/tiny-dancer': 0.1.22
+    dev: false
 
   /@metaharness/router@0.4.0(@ruvector/tiny-dancer@0.1.22):
     resolution: {integrity: sha512-VOfjHM7AMWwDH41AAMHOHFbH1r898xJqhqyE3G/r8OAxxrMgujX2SZsYkj/eXfBEmoPMhDVRkuO2abxvzCgEUA==}
@@ -2189,15 +2170,18 @@ packages:
     engines: {node: '>=20.0.0'}
     hasBin: true
     requiresBuild: true
+    optional: true
 
   /@metaharness/workspace-lens@0.1.1:
     resolution: {integrity: sha512-BkEdTvjD2PEhkGTCmtTIPnoeaOsxvzFtsFEAurwVKlVOu4hQetHeXDfiyAYheWg8Cp4fcGcr7E5MO1ptQveQ2g==}
     requiresBuild: true
     dev: false
+    optional: true
 
   /@metaharness/workspace-lens@0.1.2:
     resolution: {integrity: sha512-Bfkj40rGZeBch4sQH/ma6zlY6dI+2AQfpTS/6AmPUE6/54H8Y04aBH5HPYfL0yBZ0lD/CeLViwFphT0PaiJ1mQ==}
     requiresBuild: true
+    optional: true
 
   /@metaharness/workspace-probe@0.1.1:
     resolution: {integrity: sha512-kHL7T16476a5obVunbZ2NYqK7YY/1qtZTaQC1KyXmFh/7dRNselqGAilawspuD86F9U1H/LMCDvchDj3Vh5duw==}
@@ -2205,6 +2189,7 @@ packages:
     requiresBuild: true
     dependencies:
       '@metaharness/workspace-lens': 0.1.2
+    optional: true
 
   /@modelcontextprotocol/client@2.4.0:
     resolution: {integrity: sha512-LgrD2OphHuG12vfKFKz6SOnq7bKHQmhGJIAYdD+MZBn2npHEyry6uD8zvktodtl5CQM85MO0anUyD9JwmUmxww==}
@@ -2317,7 +2302,6 @@ packages:
       zod-to-json-schema: 3.25.1(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
-    dev: false
 
   /@modelcontextprotocol/sdk@1.32.1(zod@4.3.5):
     resolution: {integrity: sha512-2DdE+SJDtzLEEWzY1ZjY7Q+VcPhcV1KisD3zI4u0XZyktsjHum1mwbMI+JaulUBi2OZk+KJAi2uPXzxichPkdw==}
@@ -4221,7 +4205,6 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/attention-darwin-arm64@2.2.3:
@@ -4236,7 +4219,6 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/attention-darwin-x64@2.2.3:
@@ -4251,7 +4233,6 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/attention-linux-arm64-gnu@2.2.3:
@@ -4266,7 +4247,6 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/attention-linux-x64-gnu@2.2.3:
@@ -4281,7 +4261,6 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/attention-win32-x64-msvc@2.2.3:
@@ -4299,7 +4278,6 @@ packages:
       '@ruvector/attention-linux-arm64-gnu': 0.1.32
       '@ruvector/attention-linux-x64-gnu': 0.1.32
       '@ruvector/attention-win32-x64-msvc': 0.1.32
-    dev: false
 
   /@ruvector/attention@2.2.3:
     resolution: {integrity: sha512-pR5iHTG9Am1liIBkLzAENZLHCvFxdxJGvzIhKcFQmsj54vEn9dGXEWNvabMH8M2MXsneP/2eex8ME0jyI/ZNlQ==}
@@ -4703,7 +4681,6 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/rvf-node-darwin-arm64@0.2.2:
@@ -4718,7 +4695,6 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/rvf-node-darwin-x64@0.2.2:
@@ -4733,7 +4709,6 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/rvf-node-linux-arm64-gnu@0.2.2:
@@ -4748,7 +4723,6 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/rvf-node-linux-x64-gnu@0.2.2:
@@ -4763,7 +4737,6 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
-    dev: false
     optional: true
 
   /@ruvector/rvf-node-win32-x64-msvc@0.2.2:
@@ -4783,7 +4756,6 @@ packages:
       '@ruvector/rvf-node-linux-arm64-gnu': 0.1.7
       '@ruvector/rvf-node-linux-x64-gnu': 0.1.7
       '@ruvector/rvf-node-win32-x64-msvc': 0.1.7
-    dev: false
     optional: true
 
   /@ruvector/rvf-node@0.2.3:
@@ -4795,12 +4767,6 @@ packages:
       '@ruvector/rvf-node-linux-arm64-gnu': 0.2.2
       '@ruvector/rvf-node-linux-x64-gnu': 0.2.2
       '@ruvector/rvf-node-win32-x64-msvc': 0.2.2
-    optional: true
-
-  /@ruvector/rvf-node@0.4.2:
-    resolution: {integrity: sha512-luvsGE4nysNlDnIcmWHbOiQY55ZKkRn/Z+Tezhf8NhqJ5MeRG3f+zUr0mcNmvFJ2JB1RztygfelehAQPHiYRWA==}
-    engines: {node: '>= 16'}
-    requiresBuild: true
     optional: true
 
   /@ruvector/rvf-solver@0.1.8:
@@ -4970,12 +4936,6 @@ packages:
   /@ruvector/wasm@0.1.16:
     resolution: {integrity: sha512-BvtXLvBDxDxsnFVIi7rsRE8AvPxYOWqHvj8PUOEb3TfsCWBEA2gT5VodMJEv+DWx/mVqdongxRkuHGlVcK9pug==}
     dev: false
-
-  /@ruvnet/sublinear-core@1.0.1:
-    resolution: {integrity: sha512-3QkspuVBijsNA+F2ZY+Z8Goq5uNfd26MW0QHpRx1LdOAMvyq7SZja1Jw6SdAohwve/9OcaXiou2x9vw2R+dY6Q==}
-    engines: {node: '>=16'}
-    requiresBuild: true
-    optional: true
 
   /@scure/base@2.0.0:
     resolution: {integrity: sha512-3E1kpuZginKkek01ovG8krQ0Z44E3DHPjc5S2rjJw9lZn3KSQOs8S7wqikF/AH7iRanHypj85uGyxk0XAyC37w==}
@@ -5811,7 +5771,6 @@ packages:
       - bare-abort-controller
       - bare-buffer
       - react-native-b4a
-    dev: false
 
   /accepts@1.3.8:
     resolution: {integrity: sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==}
@@ -5876,6 +5835,7 @@ packages:
       express: 5.2.1
     transitivePeerDependencies:
       - supports-color
+    dev: false
     optional: true
 
   /agent-browser@0.41.2:
@@ -6061,58 +6021,6 @@ packages:
       - rvlite
       - supports-color
       - zod
-    dev: false
-
-  /agentdb@3.7.1(@types/node@20.19.27)(zod@4.6.7):
-    resolution: {integrity: sha512-/JOJxU71xskKk60oOdvI6+RyQqD1jwhrwod0ip2NaFbSvPqGtVWIJqaNenuOlQdFL00d1HTZ+LNzlKYdLMvOMQ==}
-    engines: {node: '>=20.9.0'}
-    hasBin: true
-    requiresBuild: true
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.7)
-      '@opentelemetry/api': 1.9.1
-      ajv: 8.20.0
-      semver: 7.7.3
-      sql.js: 1.14.1
-    optionalDependencies:
-      '@huggingface/transformers': 4.2.0
-      '@opentelemetry/resources': 2.9.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/sdk-node': 0.220.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/semantic-conventions': 1.40.0
-      '@ruvector/attention': 2.2.3
-      '@ruvector/gnn': 0.1.25
-      '@ruvector/graph-node': 2.1.2
-      '@ruvector/graph-transformer': 2.0.4
-      '@ruvector/mincut-wasm': 2.3.0
-      '@ruvector/rabitq-wasm': 0.1.2
-      '@ruvector/router': 0.1.30
-      '@ruvector/ruvllm': 4.1.0
-      '@ruvector/rvf': 0.3.4
-      '@ruvector/rvf-node': 0.4.2
-      '@ruvector/rvf-solver': 0.1.8
-      '@ruvector/rvf-wasm': 0.1.9
-      '@ruvector/sona': 0.1.11
-      '@ruvnet/sublinear-core': 1.0.1
-      aidefence: 3.0.2
-      argon2: 0.44.0
-      better-sqlite3: 12.9.0
-      chalk: 5.6.2
-      commander: 12.1.0
-      hnswlib-node: 3.0.0
-      inquirer: 9.3.8(@types/node@20.19.27)
-      ruvector: 0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@4.6.7)
-      ruvector-attention-wasm: 0.1.32
-      ruvector-graph-transformer-wasm: 2.0.4
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - '@metaharness/kernel'
-      - '@ruvector/diskann'
-      - '@ruvector/pi-brain'
-      - '@types/node'
-      - agenticow
-      - rvlite
-      - supports-color
-      - zod
 
   /agentic-flow@1.10.2(@modelcontextprotocol/sdk@1.27.1):
     resolution: {integrity: sha512-h3d1KNUFkmdFdtjwn792/MPqYrEf7OId2LIIXlJDGM4epx0Vcm5FQ+ROrjxWDE04xgG3AHQ5dNynxPTDdkC7RA==}
@@ -6130,7 +6038,7 @@ packages:
       better-sqlite3: 12.9.0
       dotenv: 16.6.1
       express: 5.2.1
-      fastmcp: 3.26.7
+      fastmcp: 3.35.0
       http-proxy-middleware: 3.0.5
       tiktoken: 1.0.22
       ulid: 3.0.2
@@ -6233,24 +6141,22 @@ packages:
       - utf-8-validate
     dev: false
 
-  /agentic-flow@2.1.5(@types/node@20.19.27):
-    resolution: {integrity: sha512-C6x6V4mq3YaF2xP8hrWbwJrXr5AhsIdOi6wesOhJGGM7ZI0uiXeeNQ31I/HZdUQVDMOnf5B5KYUvtT3fF9iCPg==}
-    engines: {node: '>=20.0.0'}
+  /agentic-flow@2.0.14(@types/node@20.19.27):
+    resolution: {integrity: sha512-8+AQhXI0P0mK26mZ8zsTQkhUhRsPWYP52Diwzr3Nk0dUNXd+pBjzdyQDfFxttGIymBfMqvRr8VRBd+bZLSYWcg==}
+    engines: {node: '>=18.0.0'}
     hasBin: true
     requiresBuild: true
     dependencies:
       '@anthropic-ai/claude-agent-sdk': 0.1.76(zod@3.25.76)
       '@anthropic-ai/sdk': 0.65.0(zod@3.25.76)
       '@google/genai': 1.44.0(@modelcontextprotocol/sdk@1.27.1)
-      '@huggingface/transformers': 3.8.1
-      '@metaharness/router': 0.3.2(@ruvector/tiny-dancer@0.1.22)
       '@ruvector/core': 0.1.30
       '@ruvector/edge-full': 0.1.0
       '@ruvector/router': 0.1.30
       '@ruvector/ruvllm': 4.1.0
       '@ruvector/tiny-dancer': 0.1.22
       '@supabase/supabase-js': 2.89.0
-      agentdb: 3.0.0-alpha.20(@types/node@20.19.27)(zod@3.25.76)
+      '@xenova/transformers': 2.17.2
       axios: 1.13.2(debug@4.4.3)
       dotenv: 16.6.1
       express: 5.2.1
@@ -6258,7 +6164,70 @@ packages:
       glob: 13.0.6
       gun: 0.2020.1241
       http-proxy-middleware: 3.0.5
-      ruvector: 0.2.40(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76)
+      ruvector: 0.1.100(zod@3.25.76)
+      ruvector-onnx-embeddings-wasm: 0.1.2
+      tiktoken: 1.0.22
+      ulid: 3.0.2
+      ws: 8.21.1
+      yaml: 2.9.0
+      zod: 3.25.76
+    optionalDependencies:
+      '@rollup/rollup-darwin-arm64': 4.60.3
+      '@ruvector/attention': 0.1.32
+      '@ruvector/sona': 0.1.11
+      agentdb: 3.6.0(@types/node@20.19.27)(zod@3.25.76)
+      better-sqlite3: 12.9.0
+      onnxruntime-node: 1.24.3
+      sharp: 0.32.6
+      sql.js: 1.14.1
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@metaharness/kernel'
+      - '@modelcontextprotocol/sdk'
+      - '@ruvector/diskann'
+      - '@ruvector/pi-brain'
+      - '@types/node'
+      - '@valibot/to-json-schema'
+      - agenticow
+      - arktype
+      - bare-abort-controller
+      - bare-buffer
+      - bufferutil
+      - debug
+      - effect
+      - jose
+      - react-native-b4a
+      - rvlite
+      - supports-color
+      - sury
+      - utf-8-validate
+
+  /agentic-flow@3.0.0(@types/node@20.19.27):
+    resolution: {integrity: sha512-HTn8/lMOlQmi2FDRcSCk/9UjHMxLu0RXwfyhpBFJr38q8EAMk5/YEqCe4o9d0Sw/NXc0lrvQ6OgbF8oLjNY/Xw==}
+    engines: {node: '>=20.0.0'}
+    hasBin: true
+    requiresBuild: true
+    dependencies:
+      '@anthropic-ai/claude-agent-sdk': 0.1.76(zod@3.25.76)
+      '@anthropic-ai/sdk': 0.65.0(zod@3.25.76)
+      '@google/genai': 1.44.0(@modelcontextprotocol/sdk@1.27.1)
+      '@huggingface/transformers': 4.2.0
+      '@metaharness/router': 0.3.2(@ruvector/tiny-dancer@0.1.22)
+      '@ruvector/core': 0.1.30
+      '@ruvector/edge-full': 0.1.0
+      '@ruvector/router': 0.1.30
+      '@ruvector/ruvllm': 4.1.0
+      '@ruvector/tiny-dancer': 0.1.22
+      '@supabase/supabase-js': 2.89.0
+      agentdb: 3.6.0(@types/node@20.19.27)(zod@3.25.76)
+      axios: 1.13.2(debug@4.4.3)
+      dotenv: 16.6.1
+      express: 5.2.1
+      fastmcp: 3.35.0
+      glob: 13.0.6
+      gun: 0.2020.1241
+      http-proxy-middleware: 3.0.5
+      ruvector: 0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76)
       ruvector-onnx-embeddings-wasm: 0.1.2
       tiktoken: 1.0.22
       ulid: 3.0.2
@@ -6271,66 +6240,6 @@ packages:
       '@ruvector/sona': 0.1.11
       better-sqlite3: 12.9.0
       onnxruntime-node: 1.24.3
-      sharp: 0.34.5
-      sql.js: 1.14.1
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - '@metaharness/kernel'
-      - '@modelcontextprotocol/sdk'
-      - '@ruvector/diskann'
-      - '@ruvector/pi-brain'
-      - '@types/node'
-      - '@valibot/to-json-schema'
-      - arktype
-      - bufferutil
-      - debug
-      - effect
-      - jose
-      - supports-color
-      - sury
-      - utf-8-validate
-    dev: false
-
-  /agentic-flow@3.4.2(@types/node@20.19.27):
-    resolution: {integrity: sha512-1wKOy/BoWz3bCSvG4NQTYgNyiK54SB/itZUm115QxJtgpgzT9TrtajcNZo3UZ5KT4G0hj/6xFyoSDFUC6b/8WQ==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
-    requiresBuild: true
-    dependencies:
-      '@anthropic-ai/claude-agent-sdk': 0.1.77(zod@4.6.7)
-      '@anthropic-ai/sdk': 0.65.0(zod@4.6.7)
-      '@google/genai': 1.44.0(@modelcontextprotocol/sdk@1.27.1)
-      '@huggingface/transformers': 4.2.0
-      '@metaharness/router': 0.3.2(@ruvector/tiny-dancer@0.1.22)
-      '@ruvector/edge-full': 0.1.0
-      '@ruvector/router': 0.1.30
-      '@ruvector/tiny-dancer': 0.1.22
-      '@supabase/supabase-js': 2.89.0
-      agentdb: 3.7.1(@types/node@20.19.27)(zod@4.6.7)
-      axios: 1.13.2(debug@4.4.3)
-      dotenv: 16.6.1
-      express: 5.2.1
-      fastmcp: 3.35.0
-      glob: 14.0.4
-      gun: 0.2020.1241
-      http-proxy-middleware: 3.0.5
-      ruvector: 0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@4.6.7)
-      ruvector-onnx-embeddings-wasm: 0.1.2
-      tiktoken: 1.0.22
-      ulid: 3.0.2
-      ws: 8.21.1
-      yaml: 2.9.0
-      zod: 4.6.7
-    optionalDependencies:
-      '@rollup/rollup-darwin-arm64': 4.60.3
-      '@ruvector/attention': 2.2.3
-      '@ruvector/mincut-wasm': 2.3.0
-      '@ruvector/sona': 0.1.11
-      '@ruvnet/sublinear-core': 1.0.1
-      agent-booster: 0.2.2
-      aidefence: 3.0.2
-      better-sqlite3: 12.9.0
-      onnxruntime-node: 1.24.3
       sharp: 0.35.5(@types/node@20.19.27)
       sql.js: 1.14.1
     transitivePeerDependencies:
@@ -6339,7 +6248,6 @@ packages:
       - '@modelcontextprotocol/sdk'
       - '@ruvector/diskann'
       - '@ruvector/pi-brain'
-      - '@ruvector/ruvllm'
       - '@types/node'
       - '@valibot/to-json-schema'
       - agenticow
@@ -6352,6 +6260,7 @@ packages:
       - supports-color
       - sury
       - utf-8-validate
+    dev: false
 
   /agentic-payments@0.1.13(typescript@5.9.3):
     resolution: {integrity: sha512-XMwOIjodoqg+Q5usjcuZUYiu54O1Jn1PeLm7VYEpWG6GIANb6LM8ZbihlshhjhDetqfSBLT4hmrKZfKxuySzxg==}
@@ -6591,7 +6500,6 @@ packages:
     peerDependenciesMeta:
       react-native-b4a:
         optional: true
-    dev: false
 
   /balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -6608,7 +6516,6 @@ packages:
     peerDependenciesMeta:
       bare-abort-controller:
         optional: true
-    dev: false
 
   /bare-fs@4.6.0:
     resolution: {integrity: sha512-2YkS7NuiJceSEbyEOdSNLE9tsGd+f4+f7C+Nik/MCk27SYdwIMPT/yRKvg++FZhQXgk0KWJKJyXX9RhVV0RGqA==}
@@ -6628,14 +6535,12 @@ packages:
     transitivePeerDependencies:
       - bare-abort-controller
       - react-native-b4a
-    dev: false
     optional: true
 
   /bare-os@3.6.2:
     resolution: {integrity: sha512-T+V1+1srU2qYNBmJCXZkUY5vQ0B4FSlL3QDROnKQYOqeiQR8UbjNHlPa+TIbM4cuidiN9GaTaOZgSEgsvPbh5A==}
     engines: {bare: '>=1.14.0'}
     requiresBuild: true
-    dev: false
     optional: true
 
   /bare-path@3.0.0:
@@ -6643,7 +6548,6 @@ packages:
     requiresBuild: true
     dependencies:
       bare-os: 3.6.2
-    dev: false
     optional: true
 
   /bare-stream@2.7.0(bare-events@2.8.2):
@@ -6663,7 +6567,6 @@ packages:
     transitivePeerDependencies:
       - bare-abort-controller
       - react-native-b4a
-    dev: false
     optional: true
 
   /bare-url@2.3.2:
@@ -6671,7 +6574,6 @@ packages:
     requiresBuild: true
     dependencies:
       bare-path: 3.0.0
-    dev: false
     optional: true
 
   /base64-js@1.5.1:
@@ -6910,11 +6812,6 @@ packages:
     resolution: {integrity: sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg==}
     requiresBuild: true
 
-  /chownr@3.0.0:
-    resolution: {integrity: sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==}
-    engines: {node: '>=18'}
-    dev: false
-
   /cjs-module-lexer@1.4.3:
     resolution: {integrity: sha512-9z8TZaGM1pfswYeXrUpzPrkx8UnWYdhJclsiYMm6x/w5+nN+8Tf/LnAgfLGQCm59qAOxU8WwHEq2vNwF6i4j+Q==}
     requiresBuild: true
@@ -7053,7 +6950,6 @@ packages:
     dependencies:
       color-name: 1.1.4
       simple-swizzle: 0.2.4
-    dev: false
 
   /color-string@2.1.4:
     resolution: {integrity: sha512-Bb6Cq8oq0IjDOe8wJmi4JeNn763Xs9cfrBcaylK1tPypWzyoy2G3l90v9k64kjphl/ZJjPIShFztenRomi8WTg==}
@@ -7069,7 +6965,6 @@ packages:
     dependencies:
       color-convert: 2.0.1
       color-string: 1.9.1
-    dev: false
 
   /color@5.0.3:
     resolution: {integrity: sha512-ezmVcLR3xAVp8kYOm4GS45ZLLgIE6SPAFoduLr6hTDajwb3KZ2F46gulK3XpcwRFb5KKGCSezCBAY4Dw4HsyXA==}
@@ -7693,7 +7588,6 @@ packages:
       bare-events: 2.8.2
     transitivePeerDependencies:
       - bare-abort-controller
-    dev: false
 
   /events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
@@ -7824,7 +7718,6 @@ packages:
 
   /fast-fifo@1.3.2:
     resolution: {integrity: sha512-/d9sfos4yxzpwkDkuN7k2SqFKtYNmCTzgfEpz82x34IM9/zc8KGxQoXg1liNC/izpRM/MBdt44Nmx41ZWqk+FQ==}
-    dev: false
 
   /fast-json-stable-stringify@2.1.0:
     resolution: {integrity: sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==}
@@ -8027,7 +7920,6 @@ packages:
 
   /flatbuffers@1.12.0:
     resolution: {integrity: sha512-c7CZADjRcl6j0PlvFy0ZqXQ67qSEZfrVPynmnL+2zPc+NtMvrF8Y0QceMo7QqnSPc7+uWjUIAbvCQ5WIKlMVdQ==}
-    dev: false
 
   /flatbuffers@25.9.23:
     resolution: {integrity: sha512-MI1qs7Lo4Syw0EOzUl0xjs2lsoeqFku44KpngfIduHBYvzm8h2+7K8YMQh1JtVVVrUvhLpNwqVi4DERegUJhPQ==}
@@ -8284,15 +8176,6 @@ packages:
       minimatch: 10.2.6
       minipass: 7.1.3
       path-scurry: 2.0.2
-    dev: false
-
-  /glob@14.0.4:
-    resolution: {integrity: sha512-mMiwNKoJZ4HAIRVJxotO6LsNRReA30gQwP9E2/p94tfLv+jygCNpKDjhhSL6OLY6LE371EZm5EAf7RpYuUqlsw==}
-    engines: {node: 18 || 20 || >=22}
-    dependencies:
-      minimatch: 11.0.5
-      minipass: 7.1.3
-      path-scurry: 3.0.0
 
   /glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
@@ -8700,7 +8583,6 @@ packages:
   /is-arrayish@0.3.4:
     resolution: {integrity: sha512-m6UrgzFVUYawGBh1dUsWR5M2Clqic9RVXC/9f8ceNlv2IcO9j9J/z8UoCLPqtsPBFNzEpfR3xftohbfqDx8EQA==}
     requiresBuild: true
-    dev: false
 
   /is-core-module@2.16.1:
     resolution: {integrity: sha512-UfoeMA6fIJ8wTYFEUjelnaGI67v6+N7qXJEvQuIGa99l4xsCruSYOVSQ0uPANn4dAzm8lkYPaKLrrijLq7x23w==}
@@ -9141,7 +9023,6 @@ packages:
 
   /long@4.0.0:
     resolution: {integrity: sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==}
-    dev: false
 
   /long@5.3.2:
     resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
@@ -9295,6 +9176,7 @@ packages:
     optionalDependencies:
       '@ruvector/ruvllm': 4.1.0
     dev: false
+    optional: true
 
   /metaharness@0.4.20:
     resolution: {integrity: sha512-nhQOpnwjgZgW4hufxVLbrWtUmNQ+dgakowuQDnwfAQ65dkpAUzRY7vQUOSOPqMMMXPDEhfqQb4Yf5BqMFV/95A==}
@@ -9326,7 +9208,7 @@ packages:
       braces: 3.0.3
       picomatch: 2.3.1
 
-  /midstreamer@0.3.2(agentic-flow@3.4.2):
+  /midstreamer@0.3.2(agentic-flow@2.0.14):
     resolution: {integrity: sha512-h9CCbOJDtCZMBz+3omxKkHQu8GsuQsXNXrJwIG95Dls7c+70FnTzP8Y3IIDEbG7LngxT1cwDPRfHQBqMm+eAiQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
@@ -9335,7 +9217,7 @@ packages:
       agentic-flow:
         optional: true
     dependencies:
-      agentic-flow: 3.4.2(@types/node@20.19.27)
+      agentic-flow: 2.0.14(@types/node@20.19.27)
     dev: false
 
   /mime-db@1.52.0:
@@ -9394,14 +9276,6 @@ packages:
     engines: {node: 18 || 20 || >=22}
     dependencies:
       brace-expansion: 5.0.12
-    dev: false
-
-  /minimatch@11.0.5:
-    resolution: {integrity: sha512-snPlVppFcYWfLLFQGhDxUyBcHNtMlWmn3jtj7pEaO+DP8pqL0IvAzXhMYmn1z9ASNtgmwLBdFxSf4tMUB0OTKA==}
-    engines: {node: 20 || >=22}
-    dependencies:
-      '@isaacs/nonrecursive-glob-match': 1.1.0
-      brace-expansion: 5.0.12
 
   /minimatch@3.1.2:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
@@ -9425,13 +9299,6 @@ packages:
   /minipass@7.1.3:
     resolution: {integrity: sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A==}
     engines: {node: '>=16 || 14 >=14.17'}
-
-  /minizlib@3.1.0:
-    resolution: {integrity: sha512-KZxYo1BUkWD2TVFLr0MQoM8vUUigWD3LlD83a/75BqC+4qE0Hb1Vo5v1FgcfaNXvfXzr+5EhQ6ing/CaBijTlw==}
-    engines: {node: '>= 18'}
-    dependencies:
-      minipass: 7.1.3
-    dev: false
 
   /mkdirp-classic@0.5.3:
     resolution: {integrity: sha512-gKLcREMhtuZRwRAfqP3RFW+TK4JqApVBtOIftVgjuABpAtpxhPGaDcfvbhNvD0B8iD1oUr/txX35NjcaY6Ns/A==}
@@ -9521,7 +9388,6 @@ packages:
 
   /node-addon-api@6.1.0:
     resolution: {integrity: sha512-+eawOlIgy680F0kBzPUNFhMZGtJ1YmqM6l4+Crf4IkImjYrO/mqPwRMh352g23uIaQKFItcQ64I7KMaJxHgAVA==}
-    dev: false
 
   /node-addon-api@8.5.0:
     resolution: {integrity: sha512-/bRZty2mXUIFY/xU5HLvveNHlswNJej+RnxBjOMkidWfwZzgTbPG1E3K5TOxRLOR+5hX7bSofy8yf1hZevMS8A==}
@@ -9778,19 +9644,9 @@ packages:
     resolution: {integrity: sha512-aldMOB3HRoo6q/phyB6QRQxSt895HNNw82BNyZ2CMh4bjeKv7g/c+VpAFtJuEMVfYLMbRx61hbuqnKceLeDcDA==}
     dependencies:
       protobufjs: 8.6.5
-    dev: false
 
   /onnxruntime-common@1.14.0:
     resolution: {integrity: sha512-3LJpegM2iMNRX2wUmtYfeX/ytfOzNwAWKSq1HbRrKc9+uqG/FsEA0bbKZl1btQeZaXhC26l44NWpNUeXPII7Ew==}
-    dev: false
-
-  /onnxruntime-common@1.21.0:
-    resolution: {integrity: sha512-Q632iLLrtCAVOTO65dh2+mNbQir/QNTVBG3h/QdZBpns7mZ0RYbLRBgGABPbpU9351AgYy7SJf1WaeVwMrBFPQ==}
-    dev: false
-
-  /onnxruntime-common@1.22.0-dev.20250409-89f8206ba4:
-    resolution: {integrity: sha512-vDJMkfCfb0b1A836rgHj+ORuZf4B4+cc2bASQtpeoJLueuFc5DuYwjIZUBrSvx/fO5IrLjLz+oTrB3pcGlhovQ==}
-    dev: false
 
   /onnxruntime-common@1.24.0-dev.20251116-b39e144322:
     resolution: {integrity: sha512-BOoomdHYmNRL5r4iQ4bMvsl2t0/hzVQ3OM3PHD0gxeXu1PmggqBv3puZicEUVOA3AtHHYmqZtjMj9FOfGrATTw==}
@@ -9805,17 +9661,7 @@ packages:
     os: [win32, darwin, linux]
     dependencies:
       onnxruntime-common: 1.14.0
-    dev: false
     optional: true
-
-  /onnxruntime-node@1.21.0:
-    resolution: {integrity: sha512-NeaCX6WW2L8cRCSqy3bInlo5ojjQqu2fD3D+9W5qb5irwxhEyWKXeH2vZ8W9r6VxaMPUan+4/7NDwZMtouZxEw==}
-    os: [win32, darwin, linux]
-    dependencies:
-      global-agent: 3.0.0
-      onnxruntime-common: 1.21.0
-      tar: 7.5.22
-    dev: false
 
   /onnxruntime-node@1.24.3:
     resolution: {integrity: sha512-JH7+czbc8ALA819vlTgcV+Q214/+VjGeBHDjX81+ZCD0PCVCIFGFNtT0V4sXG/1JXypKPgScQcB3ij/hk3YnTg==}
@@ -9834,18 +9680,6 @@ packages:
       onnx-proto: 4.0.4
       onnxruntime-common: 1.14.0
       platform: 1.3.6
-    dev: false
-
-  /onnxruntime-web@1.22.0-dev.20250409-89f8206ba4:
-    resolution: {integrity: sha512-0uS76OPgH0hWCPrFKlL8kYVV7ckM7t/36HfbgoFw6Nd0CZVVbQC4PkrR8mBX8LtNUFZO25IQBqV2Hx2ho3FlbQ==}
-    dependencies:
-      flatbuffers: 25.9.23
-      guid-typescript: 1.0.9
-      long: 5.3.2
-      onnxruntime-common: 1.22.0-dev.20250409-89f8206ba4
-      platform: 1.3.6
-      protobufjs: 8.6.5
-    dev: false
 
   /onnxruntime-web@1.26.0-dev.20260416-b7804b056c:
     resolution: {integrity: sha512-MD6Ss4GSpQBo6zqoJzyT9LRbKYs7x/JVN23FT24EcEvlqF4VuzPOeH6X38orZPKHQDbprn7K+SBpu0/mj2CQiw==}
@@ -10074,14 +9908,6 @@ packages:
 
   /path-scurry@2.0.2:
     resolution: {integrity: sha512-3O/iVVsJAPsOnpwWIeD+d6z/7PmqApyQePUtCndjatj/9I5LylHvt5qluFaBT3I5h3r1ejfR056c+FCv+NnNXg==}
-    engines: {node: 18 || 20 || >=22}
-    dependencies:
-      lru-cache: 11.2.4
-      minipass: 7.1.3
-    dev: false
-
-  /path-scurry@3.0.0:
-    resolution: {integrity: sha512-1pTbQqH1wIwMi/eleQ5leFTTCkzFsPcgXNjwOA8YGGW/W4/kHT3dssE7Z6NH+zuqNLOzOB0uaD61yl7cAcVhgg==}
     engines: {node: 18 || 20 || >=22}
     dependencies:
       lru-cache: 11.2.4
@@ -10726,55 +10552,6 @@ packages:
       - '@cfworker/json-schema'
       - supports-color
       - zod
-    dev: false
-
-  /ruvector@0.2.40(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76):
-    resolution: {integrity: sha512-PHvu4sP1Qqm12IXlzpuy3Fy8R8tt6jpetklTC2jSN0kZWwHdsaw7YvOnE8FcYFOJDbd+OvzFQvSlGiwoQq6+UQ==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
-    peerDependencies:
-      '@ruvector/diskann': '>=0.1.0'
-      '@ruvector/pi-brain': '>=0.1.0'
-      '@ruvector/router': '>=0.1.0'
-      '@ruvector/ruvllm': ^4.1.0
-    peerDependenciesMeta:
-      '@ruvector/diskann':
-        optional: true
-      '@ruvector/pi-brain':
-        optional: true
-      '@ruvector/router':
-        optional: true
-      '@ruvector/ruvllm':
-        optional: true
-    dependencies:
-      '@metaharness/darwin': 0.8.0
-      '@metaharness/flywheel': 0.1.7
-      '@metaharness/harness': 0.1.0
-      '@metaharness/redblue': 0.1.4
-      '@metaharness/router': 0.3.2(@ruvector/tiny-dancer@0.1.22)
-      '@metaharness/weight-eft': 0.1.1
-      '@metaharness/workspace-lens': 0.1.1
-      '@metaharness/workspace-probe': 0.1.1
-      '@modelcontextprotocol/sdk': 1.32.1(zod@3.25.76)
-      '@ruvector/attention': 0.1.32
-      '@ruvector/core': 0.1.30
-      '@ruvector/gnn': 0.1.25
-      '@ruvector/router': 0.1.30
-      '@ruvector/ruvllm': 4.1.0
-      '@ruvector/sona': 0.1.11
-      chalk: 4.1.2
-      commander: 11.1.0
-      metaharness: 0.4.2
-      ora: 5.4.1
-    optionalDependencies:
-      '@ruvector/rvf': 0.3.4
-      '@ruvector/tiny-dancer': 0.1.22
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - '@metaharness/kernel'
-      - supports-color
-      - zod
-    dev: false
 
   /ruvector@0.2.41(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76):
     resolution: {integrity: sha512-6ox6kcONkFxKhOv6yAp6FKonn+WlNQ8t0tnK9xsOJKkQEru1psptGrObPA57VenaZ7pToEUvvgiLJYLc9uukIg==}
@@ -10899,82 +10676,6 @@ packages:
       - agenticow
       - supports-color
       - zod
-    dev: false
-    optional: true
-
-  /ruvector@0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@4.6.7):
-    resolution: {integrity: sha512-Vf32SOx8a+N36D4B7zWYMhYuNK9BkvjOs//XAgi5wGrLLqU+N6SOgBvKMVym2//ISF9bqWLpfPodyHkWxoWdzg==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
-    requiresBuild: true
-    peerDependencies:
-      '@ruvector/diskann': ^0.1.0
-      '@ruvector/pi-brain': ^0.1.0
-      '@ruvector/router': ^0.1.0
-      '@ruvector/ruvllm': ^4.1.0
-      rvlite: ^0.2.0
-    peerDependenciesMeta:
-      '@metaharness/darwin':
-        optional: true
-      '@metaharness/flywheel':
-        optional: true
-      '@metaharness/harness':
-        optional: true
-      '@metaharness/redblue':
-        optional: true
-      '@metaharness/router':
-        optional: true
-      '@metaharness/weight-eft':
-        optional: true
-      '@metaharness/workspace-lens':
-        optional: true
-      '@metaharness/workspace-probe':
-        optional: true
-      '@ruvector/diskann':
-        optional: true
-      '@ruvector/pi-brain':
-        optional: true
-      '@ruvector/rabitq-wasm':
-        optional: true
-      '@ruvector/router':
-        optional: true
-      '@ruvector/ruvllm':
-        optional: true
-      metaharness:
-        optional: true
-      rvlite:
-        optional: true
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.7)
-      '@ruvector/attention': 2.2.3
-      '@ruvector/core': 0.1.30
-      '@ruvector/gnn': 0.1.25
-      '@ruvector/router': 0.1.30
-      '@ruvector/ruvllm': 4.1.0
-      '@ruvector/sona': 0.1.11
-      chalk: 4.1.2
-      commander: 11.1.0
-      ora: 5.4.1
-    optionalDependencies:
-      '@metaharness/darwin': 0.13.0
-      '@metaharness/flywheel': 0.1.13
-      '@metaharness/harness': 0.2.0
-      '@metaharness/redblue': 0.1.6
-      '@metaharness/router': 0.4.0(@ruvector/tiny-dancer@0.1.22)
-      '@metaharness/weight-eft': 0.1.2
-      '@metaharness/workspace-lens': 0.1.2
-      '@metaharness/workspace-probe': 0.1.1
-      '@ruvector/mincut-wasm': 2.3.0
-      '@ruvector/rabitq-wasm': 0.1.2
-      '@ruvector/rvf': 0.3.4
-      '@ruvector/tiny-dancer': 0.1.22
-      metaharness: 0.4.20
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - '@metaharness/kernel'
-      - agenticow
-      - supports-color
-      - zod
 
   /rxjs@7.8.2:
     resolution: {integrity: sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==}
@@ -11063,6 +10764,7 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
     requiresBuild: true
+    dev: false
     optional: true
 
   /send@1.2.1:
@@ -11124,7 +10826,6 @@ packages:
       - bare-abort-controller
       - bare-buffer
       - react-native-b4a
-    dev: false
 
   /sharp@0.34.5:
     resolution: {integrity: sha512-Ou9I5Ft9WNcCbXrU9cMgPBcCK8LiwLqcbywW3t4oDV37n1pzpuNLsYiAV8eODnjbtQlSDwZ2cUEeQz4E54Hltg==}
@@ -11198,6 +10899,7 @@ packages:
       '@img/sharp-win32-arm64': 0.35.5
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
+    dev: false
     optional: true
 
   /shebang-command@2.0.0:
@@ -11287,7 +10989,6 @@ packages:
     requiresBuild: true
     dependencies:
       is-arrayish: 0.3.4
-    dev: false
 
   /sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
@@ -11399,7 +11100,6 @@ packages:
     transitivePeerDependencies:
       - bare-abort-controller
       - react-native-b4a
-    dev: false
 
   /strict-event-emitter-types@2.0.0:
     resolution: {integrity: sha512-Nk/brWYpD85WlOgzw5h173aci0Teyv8YdIAEtV+N88nDB0dLlazZyJMIsN6eo1/AR61l+p6CJTG1JIyFaoNEEA==}
@@ -11581,7 +11281,6 @@ packages:
       - bare-abort-controller
       - bare-buffer
       - react-native-b4a
-    dev: false
 
   /tar-stream@2.2.0:
     resolution: {integrity: sha512-ujeqbceABgwMZxEJnk2HDY2DlnUZ+9oEcb1KzTVfYHio0UE6dG71n60d8D2I4qNvleWrrXpmjpt7vZeF1LnMZQ==}
@@ -11603,18 +11302,6 @@ packages:
     transitivePeerDependencies:
       - bare-abort-controller
       - react-native-b4a
-    dev: false
-
-  /tar@7.5.22:
-    resolution: {integrity: sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA==}
-    engines: {node: '>=18'}
-    dependencies:
-      '@isaacs/fs-minipass': 4.0.1
-      chownr: 3.0.0
-      minipass: 7.1.3
-      minizlib: 3.1.0
-      yallist: 5.0.0
-    dev: false
 
   /tdigest@0.1.3:
     resolution: {integrity: sha512-zbRt+lT+/H4fRItHshczHErVCQnitJk8MfMT24MqFJf3YL7SJJPqGIGeuOdvxXxM/AHFzKBl7WoyaYwqO9s3Kw==}
@@ -11643,7 +11330,6 @@ packages:
       b4a: 1.7.3
     transitivePeerDependencies:
       - react-native-b4a
-    dev: false
 
   /text-hex@1.0.0:
     resolution: {integrity: sha512-uuVGNWzgJ4yhRaNSiubPY7OjISw4sw4E5Uv0wbjp+OzcbmVU/rsT8ujgcXJhn9ypzsgr5vlzpPqP+MBBKcGvbg==}
@@ -12343,11 +12029,6 @@ packages:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
 
-  /yallist@5.0.0:
-    resolution: {integrity: sha512-YgvUTfwqyc7UXVMrB+SImsVYSmTS8X/tSrtdNZMImM+n7+QTriRXyXim0mBrTXNeqzVF0KWGgHPeiyViFFrNDw==}
-    engines: {node: '>=18'}
-    dev: false
-
   /yaml@2.8.2:
     resolution: {integrity: sha512-mplynKqc1C2hTVYxd0PU2xQAc22TI1vShAYGksCCfxbn/dFwnHTNi1bvYsBTkhdUNtGIf5xNOg938rrSSYvS9A==}
     engines: {node: '>= 14.6'}
@@ -12429,7 +12110,6 @@ packages:
       zod: ^3.25 || ^4
     dependencies:
       zod: 3.25.76
-    dev: false
 
   /zod-to-json-schema@3.25.1(zod@4.3.5):
     resolution: {integrity: sha512-pM/SU9d3YAggzi6MtR4h7ruuQlqKtad8e9S0fmxcMi+ueAK5Korys/aWcV9LIIHTVbj01NdzxcnXSN+O74ZIVA==}
@@ -12447,7 +12127,6 @@ packages:
 
   /zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
-    dev: false
 
   /zod@4.3.5:
     resolution: {integrity: sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==}

@@ -42,7 +42,7 @@
     "@claude-flow/shared": "^3.0.0",
     "@claude-flow/security": "^3.0.0",
     "@types/ws": "^8.18.1",
-    "agentic-flow": "^3.4.1",
+    "agentic-flow": "2.0.14",
     "typescript": "^5.4.0",
     "vitest": "^4.1.0"
   },
