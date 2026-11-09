@@ -6,13 +6,21 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { benchVerify, gepaOp, loadDarwin } from '../src/metaharness/darwin-lib.js';
 
 const SCRIPTS = resolve(__dirname, '../../../../plugins/ruflo-metaharness/scripts');
-const DARWIN_CLI = resolve(__dirname, '../node_modules/@metaharness/darwin/dist/cli.js');
+/** The nearest installed darwin CLI: the package's own node_modules locally, the hoisted root copy under CI's root npm install. */
+function findDarwinCli(): string {
+  for (let d = resolve(__dirname, '..'); ; d = dirname(d)) {
+    const p = join(d, 'node_modules/@metaharness/darwin/dist/cli.js');
+    if (existsSync(p)) return p;
+    if (dirname(d) === d) throw new Error('@metaharness/darwin is not installed');
+  }
+}
+const DARWIN_CLI = findDarwinCli();
 
 function runScript(name: string, args: string[]): { exitCode: number; json: unknown } {
   const r = spawnSync(process.execPath, [join(SCRIPTS, name), ...args, '--format', 'json'], { encoding: 'utf8', timeout: 60_000 });
