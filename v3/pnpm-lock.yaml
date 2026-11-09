@@ -144,6 +144,9 @@ importers:
       '@iarna/toml':
         specifier: ^2.2.5
         version: 2.2.5
+      '@metaharness/darwin':
+        specifier: ~0.13.0
+        version: 0.13.0
       '@metaharness/router':
         specifier: ^0.4.0
         version: 0.4.0(@ruvector/tiny-dancer@0.1.22)
@@ -223,9 +226,6 @@ importers:
       '@claude-flow/memory':
         specifier: 3.2.5
         version: link:../memory
-      '@metaharness/darwin':
-        specifier: ~0.13.0
-        version: 0.13.0
       '@metaharness/flywheel':
         specifier: ~0.1.10
         version: 0.1.13
