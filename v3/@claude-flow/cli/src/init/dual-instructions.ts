@@ -16,7 +16,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import type { InitOptions, InitResult } from './types.js';
-import { generateClaudeMd, generateDualClaudeMd, sharedSectionsForImport } from './claudemd-generator.js';
+import { AGENTS_MD_CLI, generateClaudeMd, generateDualClaudeMd, sharedSectionsForImport } from './claudemd-generator.js';
 import { importsAgentsMd } from './shared-instructions.js';
 
 export const DUAL_MIGRATION_HINT =
@@ -87,7 +87,7 @@ export function finalizeDualInstructions(targetDir: string, claudeResult: InitRe
     agentsMd = fs.readFileSync(path.join(targetDir, 'AGENTS.md'), 'utf-8');
   } catch { /* missing AGENTS.md: handled below */ }
 
-  const missing = sharedSectionsForImport().filter((section) => !agentsMd.includes(section));
+  const missing = sharedSectionsForImport(AGENTS_MD_CLI).filter((section) => !agentsMd.includes(section));
   if (missing.length === 0) {
     return { action: 'import', message: 'CLAUDE.md imports AGENTS.md (shared sections live once, in AGENTS.md)' };
   }

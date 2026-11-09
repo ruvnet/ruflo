@@ -17,6 +17,13 @@
  * Pure: no imports, no I/O.
  */
 
+/**
+ * How the sections invoke the Ruflo CLI. The default is the codex generators'
+ * convention (unversioned, as in AGENTS.md); the CLI passes its own pinned-tag
+ * form so its single-host CLAUDE.md is unchanged.
+ */
+export const DEFAULT_CLI = 'npx @claude-flow/cli';
+
 /** Rules both hosts follow. The Claude-only commit-trailer rule is kept by the CLI. */
 export const SHARED_RULE_LINES: readonly string[] = [
   '- Do what has been asked; nothing more, nothing less',
@@ -37,8 +44,9 @@ export function sharedRules(): string {
 }
 
 /** Swarm body shared by both hosts: init command, routing table, when to swarm. */
-export const SWARM_ROUTING_BODY = `\`\`\`bash
-npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --strategy specialized
+export function swarmRoutingBody(cli: string = DEFAULT_CLI): string {
+  return `\`\`\`bash
+${cli} swarm init --topology hierarchical --max-agents 8 --strategy specialized
 \`\`\`
 
 ### Agent Routing
@@ -54,24 +62,25 @@ npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --
 ### When to Swarm
 - **YES**: 3+ files, new features, cross-module refactoring, API changes, security, performance
 - **NO**: single file edits, 1-2 line fixes, docs updates, config changes, questions`;
-
-export function sharedSwarmRouting(): string {
-  return `## Swarm & Routing\n\n${SWARM_ROUTING_BODY}`;
 }
 
-export function sharedMemoryAndLearning(): string {
+export function sharedSwarmRouting(cli: string = DEFAULT_CLI): string {
+  return `## Swarm & Routing\n\n${swarmRoutingBody(cli)}`;
+}
+
+export function sharedMemoryAndLearning(cli: string = DEFAULT_CLI): string {
   return `## Memory & Learning
 
 ### Before Any Task
 \`\`\`bash
-npx @claude-flow/cli@latest memory search --query "[task keywords]" --namespace patterns
-npx @claude-flow/cli@latest hooks route --task "[task description]"
+${cli} memory search --query "[task keywords]" --namespace patterns
+${cli} hooks route --task "[task description]"
 \`\`\`
 
 ### After Success
 \`\`\`bash
-npx @claude-flow/cli@latest memory store --namespace patterns --key "[name]" --value "[what worked]"
-npx @claude-flow/cli@latest hooks post-task --task-id "[id]" --success true --store-results true
+${cli} memory store --namespace patterns --key "[name]" --value "[what worked]"
+${cli} hooks post-task --task-id "[id]" --success true --store-results true
 \`\`\`
 
 ### MCP Tools (use \`ToolSearch("keyword")\` to discover)
@@ -97,7 +106,7 @@ npx @claude-flow/cli@latest hooks post-task --task-id "[id]" --success true --st
 | \`document\` | After API changes |
 
 \`\`\`bash
-npx @claude-flow/cli@latest hooks worker dispatch --trigger audit
+${cli} hooks worker dispatch --trigger audit
 \`\`\``;
 }
 
@@ -125,17 +134,17 @@ npm run build && npm test
 \`\`\``;
 }
 
-export function sharedCliQuickRef(): string {
+export function sharedCliQuickRef(cli: string = DEFAULT_CLI): string {
   return `## CLI Quick Reference
 
 \`\`\`bash
-npx @claude-flow/cli@latest init --wizard           # Setup
-npx @claude-flow/cli@latest swarm init --v3-mode     # Start swarm
-npx @claude-flow/cli@latest memory search --query "" # Vector search
-npx @claude-flow/cli@latest hooks route --task ""    # Route to agent
-npx @claude-flow/cli@latest doctor --fix             # Diagnostics
-npx @claude-flow/cli@latest security scan            # Security scan
-npx @claude-flow/cli@latest performance benchmark    # Benchmarks
+${cli} init --wizard           # Setup
+${cli} swarm init --v3-mode     # Start swarm
+${cli} memory search --query "" # Vector search
+${cli} hooks route --task ""    # Route to agent
+${cli} doctor --fix             # Diagnostics
+${cli} security scan            # Security scan
+${cli} performance benchmark    # Benchmarks
 \`\`\`
 
 26 commands, 140+ subcommands. Use \`--help\` on any command for details.`;
@@ -145,14 +154,14 @@ npx @claude-flow/cli@latest performance benchmark    # Benchmarks
  * Every shared section, in order. AGENTS.md (dual mode) writes all of them;
  * a CLAUDE.md that imports AGENTS.md must not repeat any of them.
  */
-export function generateSharedInstructions(): string[] {
+export function generateSharedInstructions(cli: string = DEFAULT_CLI): string[] {
   return [
     sharedRules(),
-    sharedSwarmRouting(),
-    sharedMemoryAndLearning(),
+    sharedSwarmRouting(cli),
+    sharedMemoryAndLearning(cli),
     sharedAgentTypes(),
     sharedBuildAndTest(),
-    sharedCliQuickRef(),
+    sharedCliQuickRef(cli),
   ];
 }
 

@@ -21,7 +21,7 @@ vi.mock('@claude-flow/codex', () => ({
 }));
 
 import { initCommand } from '../src/commands/init.js';
-import { generateClaudeMd, generateDualClaudeMd, sharedSectionsForImport } from '../src/init/claudemd-generator.js';
+import { AGENTS_MD_CLI, generateClaudeMd, generateDualClaudeMd, sharedSectionsForImport } from '../src/init/claudemd-generator.js';
 import { finalizeDualInstructions, writeDualClaudeMd } from '../src/init/dual-instructions.js';
 import { executeInit } from '../src/init/executor.js';
 import { DEFAULT_INIT_OPTIONS, MINIMAL_INIT_OPTIONS, type ClaudeMdTemplate, type InitOptions, type InitResult } from '../src/init/types.js';
@@ -59,6 +59,10 @@ describe('shared sections have one source (#2638)', () => {
 describe('generateDualClaudeMd (#2638)', () => {
   const agents = generateDualAgentsMd({ projectName: 'demo' });
 
+  it('the dual AGENTS.md carries the shared sections in the form finalize checks for', () => {
+    for (const section of sharedSectionsForImport(AGENTS_MD_CLI)) expect(agents).toContain(section);
+  });
+
   for (const template of TEMPLATES) {
     it(`${template}: imports AGENTS.md, repeats no shared section, loses no line`, () => {
       const dual = generateDualClaudeMd(DEFAULT_INIT_OPTIONS, template);
@@ -66,11 +70,13 @@ describe('generateDualClaudeMd (#2638)', () => {
       for (const section of sharedSectionsForImport()) expect(dual).not.toContain(section);
       expect(h2(dual).filter((h) => h2(agents).includes(h))).toEqual([]);
 
-      // Lossless: every line of the single-host file is in CLAUDE.md or AGENTS.md.
+      // Lossless: every line of the single-host file is in CLAUDE.md or AGENTS.md
+      // (AGENTS.md invokes the CLI in the codex generators' form).
       const single = generateClaudeMd(DEFAULT_INIT_OPTIONS, template);
+      const asAgents = (l: string) => l.split('npx @claude-flow/cli@latest').join(AGENTS_MD_CLI);
       const missing = single.split('\n')
         .filter((l) => l.trim() && !/^#{1,3} /.test(l))
-        .filter((l) => !dual.includes(l) && !agents.includes(l));
+        .filter((l) => !dual.includes(l) && !agents.includes(asAgents(l)));
       expect(missing).toEqual([]);
     });
   }

@@ -11,7 +11,8 @@ import {
   AGENTS_MD_IMPORT,
   CLAUDE_RULE_INSERT_AT,
   SHARED_RULE_LINES,
-  SWARM_ROUTING_BODY,
+  DEFAULT_CLI,
+  swarmRoutingBody,
   sharedAgentTypes,
   sharedBuildAndTest,
   sharedCliQuickRef,
@@ -23,6 +24,9 @@ import {
 // #2638: sections both hosts share come from shared-instructions.ts (the
 // mirror of the codex module that writes them into AGENTS.md). Everything
 // left in this file is Claude-specific, or a template extra.
+
+/** How this file's sections invoke the CLI (single-host CLAUDE.md form). */
+const CLI = 'npx @claude-flow/cli@latest';
 
 /** Claude-only: the Claude Code Bash tool suggests this trailer; Codex has its own commit rule. */
 const CO_AUTHORED_BY_RULE = '- NEVER add a `Co-Authored-By` trailer to user commits unless this project\'s `.claude/settings.json` has `attribution.commit` set (#2078). The Claude Code Bash tool may suggest one in its default commit-message template — ignore it. `Co-Authored-By` is semantic authorship attribution under git/GitHub convention; the tool is the facilitator, not a co-author.';
@@ -144,12 +148,12 @@ const THREE_TIER_ROUTING = `### 3-Tier Model Routing
 | 3 | Sonnet/Opus | Architecture, security, complex reasoning |`;
 
 function swarmConfig(options: InitOptions): string {
-  return `## Swarm & Routing\n\n${swarmRuntimeConfig(options)}\n\n${SWARM_ROUTING_BODY}\n\n${THREE_TIER_ROUTING}`;
+  return `## Swarm & Routing\n\n${swarmRuntimeConfig(options)}\n\n${swarmRoutingBody(CLI)}\n\n${THREE_TIER_ROUTING}`;
 }
 
-const memoryAndLearning = sharedMemoryAndLearning;
+const memoryAndLearning = () => sharedMemoryAndLearning(CLI);
 const agentTypes = sharedAgentTypes;
-const cliQuickRef = sharedCliQuickRef;
+const cliQuickRef = () => sharedCliQuickRef(CLI);
 const buildAndTest = sharedBuildAndTest;
 
 function setupAndBoundary(): string {
@@ -350,17 +354,25 @@ export function generateMinimalClaudeMd(options: InitOptions): string {
   return generateClaudeMd(options, 'minimal');
 }
 
-/** The sections a CLAUDE.md that imports AGENTS.md must not repeat. */
-export function sharedSectionsForImport(): string[] {
+/**
+ * The shared sections, with the CLI invoked as `cli`. With the default (this
+ * file's form) they are what a CLAUDE.md importing AGENTS.md must not repeat;
+ * with `AGENTS_MD_CLI` they are exactly what the codex generator writes into
+ * AGENTS.md.
+ */
+export function sharedSectionsForImport(cli: string = CLI): string[] {
   return [
     `## Rules\n\n${SHARED_RULE_LINES.join('\n')}`,
-    `## Swarm & Routing\n\n${SWARM_ROUTING_BODY}`,
-    sharedMemoryAndLearning(),
+    `## Swarm & Routing\n\n${swarmRoutingBody(cli)}`,
+    sharedMemoryAndLearning(cli),
     sharedAgentTypes(),
     sharedBuildAndTest(),
-    sharedCliQuickRef(),
+    sharedCliQuickRef(cli),
   ];
 }
+
+/** How the codex generator writes the CLI invocation into AGENTS.md. */
+export const AGENTS_MD_CLI = DEFAULT_CLI;
 
 /**
  * #2638 dual mode: CLAUDE.md imports AGENTS.md (which carries the shared
