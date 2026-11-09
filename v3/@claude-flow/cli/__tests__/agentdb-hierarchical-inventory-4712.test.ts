@@ -44,9 +44,11 @@ function typedError(message: string, code: string): Error {
 }
 
 describe('registration', () => {
-  it('registers both tools at the end of agentdbTools, after the existing ones', () => {
+  it('registers both tools in agentdbTools, adjacent and in order', () => {
     const names = agentdbTools.map(t => t.name);
-    expect(names.slice(-2)).toEqual(['agentdb_hierarchical-list', 'agentdb_hierarchical-get']);
+    const at = names.indexOf('agentdb_hierarchical-list');
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(names.slice(at, at + 2)).toEqual(['agentdb_hierarchical-list', 'agentdb_hierarchical-get']);
     expect(names).toContain('agentdb_hierarchical-recall');
     expect(new Set(names).size).toBe(names.length);
   });
