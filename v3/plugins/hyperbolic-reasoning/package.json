@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-hyperbolic-reasoning",
-  "version": "3.0.0-alpha.2",
+  "version": "3.0.0-alpha.3",
   "description": "Hyperbolic reasoning plugin providing Poincare ball embeddings, taxonomic reasoning, hierarchical search, and entailment graphs for superior hierarchical understanding.",
   "type": "module",
   "main": "./dist/index.js",
@@ -51,6 +51,7 @@
     "tag": "v3alpha"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
     "plugin",
     "hyperbolic",
@@ -66,18 +67,18 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/plugins/hyperbolic-reasoning"
   },
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues"
+    "url": "https://github.com/ruvnet/ruflo/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow/tree/main/v3/plugins/hyperbolic-reasoning#readme",
+  "homepage": "https://ruv.io",
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "zod": "^3.22.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

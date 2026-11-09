@@ -23,6 +23,9 @@
 // Optional env:
 //   COMPACT_QUIET=1   emit JSON only (no markdown banner)
 //   HEALTH_PORT=<n>   override agentic-flow's health-server port (default 0)
+//
+// The script always exits when it is done, even if agentic-flow leaves a
+// timer or server handle open.
 
 import { createRequire } from 'node:module';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -149,4 +152,16 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error('compact.mjs failed:', e.message || e); process.exit(1); });
+// Exit explicitly once stdout has drained. A patched agentic-flow (>= 2.0.14)
+// leaves a ReasoningBank timer alive after getTokenOptimizer(), so the event
+// loop never empties and the script would print its result and then hang. The
+// empty write's callback runs after every earlier console.log chunk has been
+// flushed, so piped output is not truncated.
+function exitAfterFlush(code) {
+  process.stdout.write('', () => process.exit(code));
+}
+
+main().then(
+  () => exitAfterFlush(0),
+  (e) => { console.error('compact.mjs failed:', e.message || e); exitAfterFlush(1); },
+);

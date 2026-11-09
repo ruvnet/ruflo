@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-cognitive-kernel",
-  "version": "3.0.0-alpha.2",
+  "version": "3.0.0-alpha.3",
   "description": "Cognitive kernel plugin for LLM augmentation with working memory, attention control, meta-cognition, and scaffolding",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -40,24 +40,26 @@
     "prepublishOnly": "npm run clean && npm run build && npm run typecheck"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
+    "plugin",
     "cognitive-kernel",
     "working-memory",
     "attention",
     "meta-cognition",
     "scaffolding",
     "sona",
-    "cognitum"
+    "mcp"
   ],
   "author": "Claude Flow Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/plugins/cognitive-kernel"
   },
   "dependencies": {
-    "zod": "^3.22.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -71,5 +73,9 @@
   "publishConfig": {
     "access": "public",
     "tag": "v3alpha"
+  },
+  "homepage": "https://ruv.io",
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
   }
 }

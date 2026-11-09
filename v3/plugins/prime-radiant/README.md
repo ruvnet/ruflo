@@ -1,5 +1,34 @@
 # @claude-flow/plugin-prime-radiant
 
+<!-- adr-356:quickstart:start -->
+**@claude-flow/plugin-prime-radiant** — A Ruflo plugin that gives agents MCP tools to check coherence, verify consensus, gate memory writes and run spectral, causal and topological analysis, to catch contradictions and hallucinations.
+
+**Supported environments:** Node.js 20+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/plugin-prime-radiant
+```
+
+```js
+import { primeRadiantTools, PrimeRadiantConfigSchema } from '@claude-flow/plugin-prime-radiant';
+
+console.log('tools:', primeRadiantTools.map((t) => t.name).join(', '));
+const check = PrimeRadiantConfigSchema.safeParse({});
+console.log('valid input:', check.success);
+```
+
+Expected output:
+
+```text
+tools: pr_coherence_check, pr_spectral_analyze, pr_causal_infer, pr_consensus_verify, pr_quantum_topology, pr_memory_gate
+valid input: true
+```
+
+Install it into a Ruflo project with [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli): `npx @claude-flow/cli@latest plugins install -n @claude-flow/plugin-prime-radiant`.
+<!-- adr-356:quickstart:end -->
+
 **Mathematical AI that catches contradictions, verifies consensus, and prevents hallucinations before they cause problems.**
 
 ## What is this?
@@ -359,3 +388,9 @@ plugins:
 ## License
 
 MIT
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/plugins/prime-radiant)
+<!-- adr-356:footer:end -->

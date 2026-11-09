@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/mcp",
-  "version": "3.1.6",
+  "version": "3.1.7",
   "type": "module",
   "description": "Standalone MCP (Model Context Protocol) server - stdio/http/websocket transports, connection pooling, tool registry",
   "main": "dist/index.js",
@@ -19,12 +19,12 @@
     "build": "tsc"
   },
   "dependencies": {
-    "ajv": "^8.12.0",
+    "ajv": "^8.20.0",
     "cors": "^2.8.5",
-    "express": "^4.18.2",
+    "express": "^4.22.3",
     "express-rate-limit": "^8.4.1",
     "helmet": "^7.1.0",
-    "ws": "^8.14.2"
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -33,8 +33,11 @@
     "vitest": "^4.1.0"
   },
   "keywords": [
+    "ruflo",
+    "claude-flow",
     "mcp",
     "model-context-protocol",
+    "mcp-server",
     "claude",
     "ai-agents",
     "json-rpc",
@@ -44,5 +47,14 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
   }
 }

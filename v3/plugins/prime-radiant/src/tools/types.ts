@@ -194,7 +194,7 @@ export const AgentStateSchema = z.object({
   agentId: z.string().describe('Unique agent identifier'),
   embedding: z.array(z.number()).describe('Agent state embedding vector'),
   vote: z.string().optional().describe('Agent vote or decision'),
-  metadata: z.record(z.unknown()).optional().describe('Additional agent metadata'),
+  metadata: z.record(z.string(), z.unknown()).optional().describe('Additional agent metadata'),
 });
 
 export type AgentState = z.infer<typeof AgentStateSchema>;
