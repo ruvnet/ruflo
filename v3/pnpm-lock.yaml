@@ -121,7 +121,7 @@ importers:
         specifier: 3.7.6
         version: link:../cli-core
       '@claude-flow/codex':
-        specifier: 3.0.6
+        specifier: 3.0.8
         version: 3.0.6(@types/node@20.19.27)
       '@claude-flow/mcp':
         specifier: 3.1.6
