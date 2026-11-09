@@ -36,7 +36,7 @@ Three signals make this the right time to commit a broader integration:
 Every integration in this ADR, and every future ADR that extends it, must satisfy:
 
 1. **Removable**: ruflo's `npm ls` with all `@metaharness/*` packages removed must still produce a working CLI. The triple-gate pattern used for `@metaharness/router` (env flag + artifact + import success) is the reference implementation.
-2. **Optional in `package.json`**: `@metaharness/*` packages MUST appear in `optionalDependencies` or `peerDependencies` (optional), never in `dependencies`.
+2. **Optional in `package.json`**: `@metaharness/*` packages MUST appear in `optionalDependencies` or `peerDependencies` (optional), never in `dependencies`. *Amended by [ADR-526](ADR-526-metaharness-darwin-regular-dependency.md): `@metaharness/darwin` is a regular dependency of `@claude-flow/cli`; this rule still applies to every other MetaHarness package.*
 3. **Graceful degradation**: every code path that imports a `@metaharness/*` symbol must catch `MODULE_NOT_FOUND` and fall back to a built-in path (or a clearly-degraded but functional state).
 4. **CI coverage of the absent path**: at least one CI job must run `--ignore-optional` (or equivalent) and assert ruflo still passes its smoke contract. This is the only structural defense against accidentally promoting an optional dep to required.
 

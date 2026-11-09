@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.5.0 — 2026-11-09
+- feat: `bench --op verify` runs through @metaharness/darwin's library (`loadSuite` + `verifySuite`) instead of spawning the darwin CLI, and reports `suiteId`, `version`, `tasks`, `hashOk` and `hash` as fields beside the old `stdoutTail` line. It never installs at tool time: when the library entry is missing it falls back to the installed darwin CLI (ADR-526).
+
 ## 0.4.0 — 2026-10-29
 - chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
 
