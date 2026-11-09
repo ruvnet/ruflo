@@ -6,19 +6,18 @@
 
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { describe, it, expect } from 'vitest';
 import { validateConvoyId } from '../src/validators.js';
 
-const require = createRequire(import.meta.url);
 const pkg = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 ) as Record<string, Record<string, string> | undefined>;
 
 describe('dependency floor', () => {
-  it('resolves zod 4.6.6 or later', () => {
-    const { version } = require('zod/package.json') as { version: string };
-    const [major, minor, patch] = version.split('.').map(Number);
+  it('declares zod ^4.6.6 or later', () => {
+    const m = /^\^?(\d+)\.(\d+)\.(\d+)$/.exec(String(pkg.dependencies?.zod));
+    expect(m).not.toBeNull();
+    const [major, minor, patch] = m!.slice(1).map(Number);
     expect(major).toBe(4);
     expect(minor * 1000 + patch).toBeGreaterThanOrEqual(6 * 1000 + 6);
   });

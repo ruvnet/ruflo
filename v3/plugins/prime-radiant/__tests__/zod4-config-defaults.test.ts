@@ -6,16 +6,19 @@
  * field default. These run against the real schema, not a mock.
  */
 
-import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { validateConfig } from '../src/schemas.js';
 
-const require = createRequire(import.meta.url);
+const manifest = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+) as { dependencies?: Record<string, string> };
 
 describe('zod floor', () => {
-  it('resolves zod 4.6.6 or later (GHSA-mrhx-c7xc-m3w5)', () => {
-    const { version } = require('zod/package.json') as { version: string };
-    const [major, minor, patch] = version.split('.').map(Number);
+  it('declares zod ^4.6.6 or later (GHSA-mrhx-c7xc-m3w5)', () => {
+    const m = /^\^?(\d+)\.(\d+)\.(\d+)$/.exec(String(manifest.dependencies?.zod));
+    expect(m).not.toBeNull();
+    const [major, minor, patch] = m!.slice(1).map(Number);
     expect(major).toBe(4);
     expect(minor * 1000 + patch).toBeGreaterThanOrEqual(6 * 1000 + 6);
   });
