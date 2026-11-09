@@ -31,8 +31,10 @@ plugins/ruflo-ddd/tests/mod.test.ts
 plugins/ruflo-deepseek-harness/tests/mod.test.ts
 plugins/ruflo-docs/tests/mod.test.ts
 plugins/ruflo-federation/tests/mod.test.ts
+plugins/ruflo-federation/tests/pii-guard.test.ts
 plugins/ruflo-goals/tests/register.test.ts
 plugins/ruflo-graph-intelligence/hooks/tests/register.test.ts
+plugins/ruflo-intelligence/tests/pii-guard.test.ts
 plugins/ruflo-intelligence/tests/register.test.ts
 plugins/ruflo-iot-cognitum/tests/register.test.ts
 plugins/ruflo-jujutsu/tests/register.test.ts

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Structural smoke test for ruflo-intelligence v0.4.6.
+# Structural smoke test for ruflo-intelligence v0.5.0.
 # Per ADR-0001 §6 Verification: 13 contract checks + 3 doc invariants.
 # Offline-safe; no live MCP calls.
 set -u
@@ -27,10 +27,10 @@ grep -qE "IPFS.+pattern|pattern.+IPFS|Pinata" "$ROOT/README.md" \
   && ok || bad "README missing IPFS / Pinata transfer docs"
 
 # 1. plugin.json bump + new keywords
-step "1. plugin.json declares 0.4.6 with new keywords"
+step "1. plugin.json declares 0.5.0 with new keywords"
 v=$(grep -E '"version"[[:space:]]*:' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.4.6" ]]; then
-  bad "expected 0.4.6, got '$v'"
+if [[ "$v" != "0.5.0" ]]; then
+  bad "expected 0.5.0, got '$v'"
 else
   miss=""
   for k in microlora ewc attention moe pattern-transfer model-routing; do
@@ -159,12 +159,12 @@ for f in options screen tools guard command status register; do
 done
 [[ $mod_ok -eq 1 ]] && ok || bad "mod hooks incomplete or too long"
 
-step "M2. mod: userConfig defaults are the safe ones (guard confirmReset all on)"
+step "M2. mod: userConfig defaults are the safe ones (guard piiGuard confirmReset all on)"
 node -e '
 const c = require(process.argv[1]).userConfig || {}
 const need = process.argv.slice(2)
 process.exit(need.every(k => c[k] && c[k].default === "on") ? 0 : 1)
-' "$ROOT/.claude-plugin/plugin.json" guard confirmReset && ok || bad "userConfig defaults wrong"
+' "$ROOT/.claude-plugin/plugin.json" guard piiGuard confirmReset && ok || bad "userConfig defaults wrong"
 
 step "M3. mod: hooks never touch the network or spawn a process"
 if grep -nE '\$\.(http|process)\.|child_process|fetch\(' "$ROOT"/hooks/*.ts >/dev/null; then bad "network or process call in hooks"; else ok; fi
