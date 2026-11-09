@@ -10,6 +10,10 @@
  *   node auto-memory-hook.mjs sync     # SessionEnd: sync insights back to MEMORY.md
  *   node auto-memory-hook.mjs status   # Show bridge status
  *   node auto-memory-hook.mjs read <namespace> <key>   # Read-only exact lookup, prints JSON
+ *   node auto-memory-hook.mjs read --all <namespace> <key>   # Read-only: every match + multiplicity
+ *   node auto-memory-hook.mjs read-id <id>             # Read-only lookup by entry id
+ *   node auto-memory-hook.mjs dedupe <namespace> <key> [--keep <id>] [--apply]
+ *                                                      # Dry run unless --apply: keep one entry for the key
  *
  * import and sync exit 1 when they fail (never 2, which Claude Code treats as
  * "block"), so a failed write is visible without stopping the session.
@@ -697,32 +701,143 @@ async function doStatus() {
   console.log('');
 }
 
-// Read-only exact lookup (#4685). It never loads the memory package, creates a
-// directory, takes the write lock or calls shutdown, so it cannot change the store.
+// Read-only lookups (#4685, #4852). They never load the memory package, create
+// a directory, take the write lock or call shutdown, so they cannot change the store.
 const READ_SCHEMA_VERSION = 1;
-async function doRead(namespace, key) {
-  const out = { schemaVersion: READ_SCHEMA_VERSION, store: STORE_PATH, storePresent: false, namespace: namespace ?? null, key: key ?? null, found: false, entry: null };
-  const refuse = (code, message) => {
-    out.error = { code, message };
-    console.log(JSON.stringify(out, null, 2));
-    return 1;
-  };
-  if (typeof namespace !== 'string' || !namespace || typeof key !== 'string' || !key) {
-    return refuse('USAGE', 'usage: auto-memory-hook.mjs read <namespace> <key>');
-  }
-  const backend = new JsonFileBackend(STORE_PATH);
-  try {
-    await backend.initialize();
-  } catch (err) {
-    out.storePresent = true; // initialize() only throws for a file that exists
-    return refuse(err.code || 'STORE_READ_FAILED', err.message);
-  }
-  out.storePresent = backend.storePresent;
-  const matches = await backend.query({ namespace, key });
-  if (matches.length > 1) return refuse('AMBIGUOUS_KEY', `${matches.length} entries share namespace ${JSON.stringify(namespace)} and key ${JSON.stringify(key)}`);
-  if (matches.length === 1) { out.found = true; out.entry = matches[0]; }
+
+/** Print the JSON result; a refusal adds `error` and returns exit code 1. */
+function emit(out, code, message, extra) {
+  if (code) out.error = { code, message, ...extra };
   console.log(JSON.stringify(out, null, 2));
-  return 0;
+  return code ? 1 : 0;
+}
+
+/** Load the store read-only into out.storePresent; returns the entries, or a StoreError. */
+function loadStoreForRead(out) {
+  try {
+    const data = readStoreFile(STORE_PATH);
+    out.storePresent = data !== null;
+    return data || [];
+  } catch (err) {
+    out.storePresent = true; // readStoreFile only throws for a file that exists
+    return err;
+  }
+}
+
+const keyMatches = (entries, namespace, key) => entries.filter((e) => e.namespace === namespace && e.key === key);
+/** What a refusal or dry run shows about an entry: enough to choose between duplicates. */
+const describeEntry = (e) => ({ id: e.id, createdAt: e.createdAt ?? null, updatedAt: e.updatedAt ?? null });
+
+// `read <ns> <key>` returns the single match. `read --all <ns> <key>` returns
+// every match with its multiplicity, so a duplicated key can be inspected.
+async function doRead(args) {
+  const all = args.includes('--all');
+  const [namespace, key] = args.filter((a) => a !== '--all');
+  const out = { schemaVersion: READ_SCHEMA_VERSION, store: STORE_PATH, storePresent: false, namespace: namespace ?? null, key: key ?? null };
+  if (all) Object.assign(out, { multiplicity: 0, entries: [] });
+  else Object.assign(out, { found: false, entry: null });
+  if (typeof namespace !== 'string' || !namespace || typeof key !== 'string' || !key) {
+    return emit(out, 'USAGE', 'usage: auto-memory-hook.mjs read [--all] <namespace> <key>');
+  }
+  const entries = loadStoreForRead(out);
+  if (entries instanceof Error) return emit(out, entries.code || 'STORE_READ_FAILED', entries.message);
+  const matches = keyMatches(entries, namespace, key);
+  if (all) {
+    out.multiplicity = matches.length;
+    out.entries = matches;
+    return emit(out);
+  }
+  if (matches.length > 1) {
+    // #4852: name the entries, so the caller can pick one with read-id or dedupe.
+    return emit(out, 'AMBIGUOUS_KEY',
+      `${matches.length} entries share namespace ${JSON.stringify(namespace)} and key ${JSON.stringify(key)}; inspect them with read --all or read-id, or collapse them with dedupe`,
+      { matches: matches.map(describeEntry) });
+  }
+  if (matches.length === 1) { out.found = true; out.entry = matches[0]; }
+  return emit(out);
+}
+
+// `read-id <id>` returns the entry with that id, whatever its key.
+async function doReadId(args) {
+  const [id] = args;
+  const out = { schemaVersion: READ_SCHEMA_VERSION, store: STORE_PATH, storePresent: false, id: id ?? null, found: false, entry: null };
+  if (typeof id !== 'string' || !id) return emit(out, 'USAGE', 'usage: auto-memory-hook.mjs read-id <id>');
+  const entries = loadStoreForRead(out);
+  if (entries instanceof Error) return emit(out, entries.code || 'STORE_READ_FAILED', entries.message);
+  const entry = entries.find((e) => e.id === id);
+  if (entry) { out.found = true; out.entry = entry; }
+  return emit(out);
+}
+
+/** Newest first by updatedAt (then createdAt); ties broken by ascending id. */
+function newestFirst(a, b) {
+  const t = (e) => (Number.isFinite(e.updatedAt) ? e.updatedAt : Number.isFinite(e.createdAt) ? e.createdAt : 0);
+  return t(b) - t(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}
+
+/** Which entry survives and which go; a { refuse } result when --keep names a non-match. */
+function planDedupe(entries, namespace, key, keepId) {
+  const matches = keyMatches(entries, namespace, key).sort(newestFirst);
+  if (keepId !== undefined && !matches.some((e) => e.id === keepId)) {
+    const elsewhere = entries.some((e) => e.id === keepId);
+    return { refuse: { code: 'UNKNOWN_ID', message: elsewhere
+      ? `entry ${JSON.stringify(keepId)} exists but does not have namespace ${JSON.stringify(namespace)} and key ${JSON.stringify(key)}`
+      : `no entry has id ${JSON.stringify(keepId)}`, matches: matches.map(describeEntry) } };
+  }
+  const keep = matches.length ? (keepId !== undefined ? matches.find((e) => e.id === keepId) : matches[0]) : null;
+  return { matches, keep, remove: matches.filter((e) => e !== keep) };
+}
+
+// `dedupe <ns> <key> [--keep <id>] [--apply]`. A dry run by default: it reads
+// the store and reports the plan. With --apply it removes the other entries of
+// that namespace+key, and nothing else, through the locked atomic write path
+// and a readback check.
+async function doDedupe(args) {
+  const apply = args.includes('--apply');
+  const keepAt = args.indexOf('--keep');
+  const keepId = keepAt >= 0 ? args[keepAt + 1] : undefined;
+  const [namespace, key] = args.filter((a, i) => a !== '--apply' && i !== keepAt && !(keepAt >= 0 && i === keepAt + 1));
+  const out = { schemaVersion: READ_SCHEMA_VERSION, store: STORE_PATH, storePresent: false, namespace: namespace ?? null, key: key ?? null, dryRun: !apply, multiplicity: 0, keep: null, remove: [], applied: false };
+  if (typeof namespace !== 'string' || !namespace || typeof key !== 'string' || !key || (keepAt >= 0 && (typeof keepId !== 'string' || !keepId || keepId.startsWith('--')))) {
+    return emit(out, 'USAGE', 'usage: auto-memory-hook.mjs dedupe <namespace> <key> [--keep <id>] [--apply]');
+  }
+  const report = (plan) => {
+    out.multiplicity = plan.matches.length;
+    out.keep = plan.keep ? describeEntry(plan.keep) : null;
+    out.remove = plan.remove.map(describeEntry);
+  };
+
+  if (!apply) {
+    const entries = loadStoreForRead(out);
+    if (entries instanceof Error) return emit(out, entries.code || 'STORE_READ_FAILED', entries.message);
+    const plan = planDedupe(entries, namespace, key, keepId);
+    if (plan.refuse) { const { code, message, ...extra } = plan.refuse; return emit(out, code, message, extra); }
+    report(plan);
+    return emit(out);
+  }
+
+  // Plan and write under one lock, from a fresh read, so what is reported is what was applied.
+  let refusal = null;
+  try {
+    withStoreLock(STORE_PATH, () => {
+      const entries = readStoreFile(STORE_PATH);
+      out.storePresent = entries !== null;
+      const plan = planDedupe(entries || [], namespace, key, keepId);
+      if (plan.refuse) { refusal = plan.refuse; return; }
+      report(plan);
+      if (!plan.remove.length) return;
+      const removed = new Set(plan.remove.map((e) => e.id));
+      const kept = entries.filter((e) => !removed.has(e.id));
+      writeFileAtomic(STORE_PATH, JSON.stringify(kept, null, 2));
+      verifyStoreFile(STORE_PATH, new Map(kept.map((e) => [e.id, e])), removed, sameJson);
+      out.applied = true;
+    });
+  } catch (err) {
+    if (err instanceof StoreError && err.code !== 'STORE_READBACK_MISMATCH') out.storePresent = true;
+    return emit(out, err.code || 'DEDUPE_FAILED', err.message);
+  }
+  if (refusal) { const { code, message, ...extra } = refusal; return emit(out, code, message, extra); }
+  return emit(out);
 }
 
 // ============================================================================
@@ -732,7 +847,7 @@ async function doRead(namespace, key) {
 // Older settings.json files run `node -e "…import(file)" import`, where the
 // subcommand lands in argv[1] and argv[2] is empty, so both hooks fell through
 // to `status` and never imported or synced (#4058). Accept that shape too.
-const COMMANDS = ['import', 'sync', 'status', 'read'];
+const COMMANDS = ['import', 'sync', 'status', 'read', 'read-id', 'dedupe'];
 const argvBase = process.argv[2] ? 2 : 1;
 const command = process.argv[2] || (COMMANDS.includes(process.argv[1]) ? process.argv[1] : 'status');
 const commandArgs = process.argv.slice(argvBase + 1);
@@ -758,9 +873,11 @@ try {
     case 'import': await doImport(); break;
     case 'sync': await doSync(); break;
     case 'status': await doStatus(); break;
-    case 'read': exitCode = await doRead(commandArgs[0], commandArgs[1]); break;
+    case 'read': exitCode = await doRead(commandArgs); break;
+    case 'read-id': exitCode = await doReadId(commandArgs); break;
+    case 'dedupe': exitCode = await doDedupe(commandArgs); break;
     default:
-      console.log('Usage: auto-memory-hook.mjs <import|sync|status|read <namespace> <key>>');
+      console.log('Usage: auto-memory-hook.mjs <import|sync|status|read [--all] <namespace> <key>|read-id <id>|dedupe <namespace> <key> [--keep <id>] [--apply]>');
       break;
   }
 } catch (err) {
