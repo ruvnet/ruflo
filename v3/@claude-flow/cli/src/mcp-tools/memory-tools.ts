@@ -1506,6 +1506,7 @@ export const memoryTools: MCPTool[] = [
         return { success: false, query: input.query, results: [], total: 0, ...missingQuery };
       }
 
+      const startTime = performance.now();
       await ensureInitialized();
       const { searchEntries, listEntries } = await getMemoryFunctions();
       validateMemoryInput(undefined, undefined, input.query as string);
@@ -1552,24 +1553,57 @@ export const memoryTools: MCPTool[] = [
         }
       }
 
-      const allResults: Array<{ key: string; content: string; score: number; namespace: string; source: string }> = [];
+      type UnifiedHit = { key: string; content: string; score: number; namespace: string; source: string };
 
-      for (const searchNs of namespaces) {
+      // #4876: namespaces are searched concurrently (bounded) instead of one
+      // after another. Each search is a read of the same store and keeps no
+      // shared mutable state, so they are independent. Results land in a slot
+      // per namespace and are flattened in namespace order, so the merge below
+      // sees exactly the sequence the sequential loop produced. Failures are
+      // collected instead of swallowed, so success:true no longer hides
+      // namespaces that were never searched.
+      const NAMESPACE_CONCURRENCY = 4;
+      const perNamespace: UnifiedHit[][] = namespaces.map(() => []);
+      const namespaceErrors: Array<{ namespace: string; error: string }> = [];
+      const failedAt: Array<string | undefined> = namespaces.map(() => undefined);
+
+      const searchOne = async (index: number): Promise<void> => {
+        const searchNs = namespaces[index];
         try {
           const r = await searchEntries({ query, namespace: searchNs, limit: limit * 2 });
-          if (r?.results) {
-            for (const entry of r.results) {
-              allResults.push({
-                key: entry.key || entry.id || '',
-                content: (entry.content || (entry as any).value || '').toString().slice(0, 200),
-                score: entry.score || 0,
-                namespace: searchNs,
-                source: searchNs === 'claude-memories' ? 'claude-code' : searchNs === 'auto-memory' ? 'auto-memory' : 'agentdb',
-              });
-            }
+          if (r && r.success === false && r.error) {
+            failedAt[index] = String(r.error);
+            return;
           }
-        } catch { /* namespace may not exist */ }
-      }
+          for (const entry of r?.results ?? []) {
+            perNamespace[index].push({
+              key: entry.key || entry.id || '',
+              content: (entry.content || (entry as any).value || '').toString().slice(0, 200),
+              score: entry.score || 0,
+              namespace: searchNs,
+              source: searchNs === 'claude-memories' ? 'claude-code' : searchNs === 'auto-memory' ? 'auto-memory' : 'agentdb',
+            });
+          }
+        } catch (error) {
+          failedAt[index] = error instanceof Error ? error.message : String(error);
+        }
+      };
+
+      let nextIndex = 0;
+      const worker = async (): Promise<void> => {
+        while (nextIndex < namespaces.length) {
+          const index = nextIndex++;
+          await searchOne(index);
+        }
+      };
+      await Promise.all(
+        Array.from({ length: Math.min(NAMESPACE_CONCURRENCY, namespaces.length) }, () => worker()),
+      );
+
+      failedAt.forEach((error, index) => {
+        if (error !== undefined) namespaceErrors.push({ namespace: namespaces[index], error });
+      });
+      const allResults: UnifiedHit[] = perNamespace.flat();
 
       // Sort by score, deduplicate by (namespace, key), take top N. An entry is
       // identified by both (see #2271), so the same key in another namespace is
@@ -1583,14 +1617,23 @@ export const memoryTools: MCPTool[] = [
         return true;
       }).slice(0, limit);
 
+      const duration = performance.now() - startTime;
+      const namespacesFailed = namespaceErrors.length;
+
       return {
-        success: true,
+        // Partial coverage still succeeds; only a search where every
+        // namespace failed is a failure (#4876).
+        success: namespaces.length === 0 || namespacesFailed < namespaces.length,
         query,
         results: deduplicated,
         total: deduplicated.length,
         searchedNamespaces: namespaces,
         namespaceSource,        // #2246 — surface how the namespace list was resolved
-        searchTime: Date.now(),
+        namespacesSearched: namespaces.length,
+        namespacesFailed,
+        namespaceErrors,
+        // #4876: elapsed time, not a timestamp.
+        searchTime: `${duration.toFixed(2)}ms`,
       };
     },
   },
