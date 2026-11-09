@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.50.0 — 2026-11-09
+- feat: the AIDefence screen of mission text (goal, question, instruction, loop task) tells a secret from personal data: a key, token or password is now its own `secret` status, found by the local secret screen, so it blocks guidance even when AIDefence is not installed. A new `piiGuard` option (default on, so nothing changes unless you turn it off) decides whether personal data blocks guidance; off, the finding is reported in the screen's detail and the text goes through. Secrets and injections always block (#4861)
+
 ## 0.49.13 — 2026-11-06
 - chore: the Vector Lab pin follows ruflo-ruvector to `ruvector@0.3.13` (`hooks/data/vector.ts`). The readers were checked against 0.3.13's output for `hooks stats`, `hooks route`, `rvf examples` and `identity show`: same shapes as 0.3.12. As before, the page runs `npx --offline`, so the pin must be in the npx cache (re-register the ruvector MCP server at 0.3.13)
 
