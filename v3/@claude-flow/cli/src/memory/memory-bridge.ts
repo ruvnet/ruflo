@@ -4313,3 +4313,76 @@ export async function getMemoryBridgeStats(options: {
     return { totalEntries: 0, perNamespace: {}, source: 'memory-bridge (error)', reachable: false };
   }
 }
+
+// ===== #4712: persisted inventory of the hierarchical (tiered) store =====
+
+/** Smallest @claude-flow/memory that ships TieredMemoryStore.listEntries/getEntry. */
+const TIERED_INVENTORY_MIN_MEMORY = '3.3.0';
+
+/**
+ * Run a read-only inventory call against the `hierarchicalMemory` controller
+ * inside one bridge operation. Refuses, never fabricates: a native agentdb
+ * controller, an older @claude-flow/memory without the API, a volatile store
+ * and a failed read each come back as `success: false` with the reason.
+ */
+async function withHierarchicalInventory(
+  operation: 'list' | 'get',
+  read: (store: any) => Record<string, unknown>,
+): Promise<any> {
+  if (!operationContext.getStore()?.active) return withBridgeOperation(() => withHierarchicalInventory(operation, read));
+  const registry = await getRegistry();
+  if (!registry) return null;
+  let hm: any;
+  try {
+    hm = registry.get('hierarchicalMemory');
+  } catch (e: any) {
+    return { success: false, error: `HierarchicalMemory not available: ${e?.message ?? e}` };
+  }
+  if (!hm) return { success: false, error: 'HierarchicalMemory not available' };
+  if (typeof hm.getStats === 'function' && typeof hm.promote === 'function') {
+    return {
+      success: false,
+      controller: 'native-unsupported',
+      error: `hierarchical-${operation} reads the tiered_memory table; the native agentdb HierarchicalMemory has no inventory API`,
+    };
+  }
+  const info = describeHierarchicalStore(hm, getHierarchicalFallback(registry));
+  if (typeof hm.listEntries !== 'function' || typeof hm.getEntry !== 'function') {
+    return {
+      success: false,
+      ...info,
+      code: 'unsupported',
+      error: `the installed @claude-flow/memory predates TieredMemoryStore.listEntries/getEntry (needs >= ${TIERED_INVENTORY_MIN_MEMORY})`,
+    };
+  }
+  try {
+    return { success: true, ...info, ...read(hm) };
+  } catch (e: any) {
+    return {
+      success: false,
+      ...info,
+      ...(typeof e?.code === 'string' ? { code: e.code } : {}),
+      error: String(e?.message ?? e),
+    };
+  }
+}
+
+/** Page through every persisted hierarchical-memory entry (#4712). */
+export async function bridgeHierarchicalList(params: {
+  tier?: string; status?: string; limit?: number; cursor?: string;
+}): Promise<any> {
+  return withHierarchicalInventory('list', hm => hm.listEntries({
+    tier: params.tier,
+    status: params.status,
+    limit: params.limit,
+    cursor: params.cursor,
+  }));
+}
+
+/** Exact read of one hierarchical-memory entry by its stable id (#4712). */
+export async function bridgeHierarchicalGet(params: { id: string; includeInactive?: boolean }): Promise<any> {
+  return withHierarchicalInventory('get', hm => {
+    const entry = hm.getEntry(params.id, { includeInactive: params.includeInactive === true });
+    return { found: entry !== null, entry };
+  });
+}
