@@ -13,6 +13,7 @@ import { feedbackPatternsSchema, validateFeedbackPatterns } from '../memory/feed
  */
 
 import type { MCPTool } from './types.js';
+import { agentdbInventoryTools } from './agentdb-inventory-tools.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { agentdbEpisodeCrudTools } from './agentdb-episode-tools.js';
 
@@ -1697,4 +1698,5 @@ export const agentdbTools: MCPTool[] = [
   agentdbSemanticRoute,
   agentdbGraphQuery,       // ADR-130 Phase 2
   agentdbGraphPathfinder,  // ADR-130 Phase 5
+  ...agentdbInventoryTools, // #4707
 ];
