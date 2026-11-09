@@ -118,7 +118,7 @@ importers:
   '@claude-flow/cli':
     dependencies:
       '@claude-flow/cli-core':
-        specifier: 3.7.6
+        specifier: 3.7.7
         version: link:../cli-core
       '@claude-flow/codex':
         specifier: 3.0.6
