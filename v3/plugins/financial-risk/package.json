@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-financial-risk",
-  "version": "3.0.0-alpha.2",
+  "version": "3.0.0-alpha.3",
   "description": "High-performance financial risk analysis plugin with portfolio risk scoring, anomaly detection, market regime classification, and compliance reporting using RuVector WASM packages.",
   "type": "module",
   "main": "./dist/index.js",
@@ -88,10 +88,6 @@
     "vitest": "^1.0.0"
   },
   "optionalDependencies": {
-    "micro-hnsw-wasm": "^0.2.0",
-    "ruvector-sparse-inference-wasm": "^0.1.0",
-    "ruvector-gnn-wasm": "^0.1.0",
-    "ruvector-economy-wasm": "^0.1.0",
-    "ruvector-learning-wasm": "^0.1.0"
+    "ruvector-gnn-wasm": "^0.1.0"
   }
 }
