@@ -507,6 +507,10 @@ export const memoryTools: MCPTool[] = [
           items: { type: 'string' },
           description: 'Optional tags for filtering',
         },
+        metadata: {
+          type: 'object',
+          description: 'Optional JSON object stored with the entry (e.g. { confidence: 0.9 }, which AutoMemoryBridge reads for sync eligibility). Replaces any existing metadata on upsert.',
+        },
         ttl: { type: 'number', description: 'Time-to-live in seconds (optional)' },
         upsert: { type: 'boolean', description: 'Update existing key instead of failing (default: true, matching CLI `memory store`; set false for strict-insert). #2775 parity.' },
         provenance_type: {
@@ -539,6 +543,18 @@ export const memoryTools: MCPTool[] = [
       // ADR-323: leave undefined when omitted so storeEntry's own default
       // ('unknown') applies uniformly across the CLI, MCP tool, and other callers.
       const provenanceType = input.provenance_type as string | undefined;
+      // #1426: metadata must be a plain JSON object; reject arrays, null and scalars.
+      const rawMetadata = input.metadata;
+      if (rawMetadata !== undefined && (typeof rawMetadata !== 'object' || rawMetadata === null || Array.isArray(rawMetadata))) {
+        return {
+          success: false,
+          key,
+          stored: false,
+          hasEmbedding: false,
+          error: 'metadata must be a JSON object',
+        };
+      }
+      const metadata = rawMetadata as Record<string, unknown> | undefined;
 
       if (!value) {
         return {
@@ -565,6 +581,7 @@ export const memoryTools: MCPTool[] = [
           namespace,
           generateEmbeddingFlag: true,
           tags,
+          metadata,
           ttl,
           upsert,
           provenanceType,
