@@ -17,6 +17,7 @@ import {
   MINIMAL_INIT_OPTIONS,
   FULL_INIT_OPTIONS,
   finalizeDualInstructions,
+  formatPluginDedupSummary,
   type InitOptions,
   type InitResult,
 } from '../init/index.js';
@@ -900,6 +901,13 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
 
     output.printBox(summary.join('\n'), 'Summary');
     output.writeln();
+
+    // #2640: say what was left to the installed ruflo plugins, and why.
+    const pluginLines = result.pluginDedup ? formatPluginDedupSummary(result.pluginDedup) : [];
+    if (pluginLines.length > 0) {
+      output.printBox(pluginLines.join('\n'), 'Provided by installed plugins');
+      output.writeln();
+    }
 
     // Security: surface anything settings-risk-scanner.ts flagged in a
     // pre-existing settings.json this init carried forward unexamined.

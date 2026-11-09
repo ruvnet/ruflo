@@ -371,6 +371,13 @@ export interface InitOptions {
    * written by the Codex pass, carries the shared sections.
    */
   instructionsSource?: 'claude-md' | 'agents-md';
+  /**
+   * #2640 — when the ruflo Claude Code plugins are installed (ruflo-core@ruflo
+   * enabled), skip the agents/commands/skills they already ship and the
+   * standalone `claude-flow` MCP server. On by default; `--full` turns it off.
+   * No effect when the plugins are absent.
+   */
+  deferToPlugins?: boolean;
 }
 
 /**
@@ -380,6 +387,7 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
   targetDir: process.cwd(),
   force: false,
   interactive: true,
+  deferToPlugins: true,
   components: {
     settings: true,
     skills: true,
@@ -567,6 +575,8 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
  */
 export const FULL_INIT_OPTIONS: InitOptions = {
   ...DEFAULT_INIT_OPTIONS,
+  // #2640: --full copies everything, even what installed plugins provide.
+  deferToPlugins: false,
   components: {
     settings: true,
     skills: true,
@@ -651,4 +661,10 @@ export interface InitResult {
    * not to carry the shared sections (see finalizeDualInstructions).
    */
   dualInstructions?: { importForm: string; fullForm: string };
+  /** #2640 — what init left to the installed ruflo plugins (absent when none are installed). */
+  pluginDedup?: {
+    plugins: string[];
+    skipped: { agents: string[]; commands: string[]; skills: string[] };
+    mcpServerSkipped: boolean;
+  };
 }
