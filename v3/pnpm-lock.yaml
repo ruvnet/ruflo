@@ -131,7 +131,7 @@ importers:
         version: link:../neural
       '@claude-flow/plugin-agent-federation':
         specifier: 1.0.7
-        version: 1.0.6(agentic-flow@3.0.0)
+        version: link:../plugin-agent-federation
       '@claude-flow/security':
         specifier: 3.0.6
         version: link:../security
@@ -221,7 +221,7 @@ importers:
         specifier: 3.1.1
         version: link:../aidefence
       '@claude-flow/memory':
-        specifier: 3.2.3
+        specifier: 3.2.4
         version: link:../memory
       '@metaharness/darwin':
         specifier: ~0.13.0
@@ -947,26 +947,6 @@ packages:
   /@borewit/text-codec@0.2.1:
     resolution: {integrity: sha512-k7vvKPbf7J2fZ5klGRD9AeKfUvojuZIQ3BT5u7Jfv+puwXkUBUT5PVyMDfJZpy30CBDXGMgw7fguK/lpOMBvgw==}
     requiresBuild: true
-
-  /@claude-flow/plugin-agent-federation@1.0.6(agentic-flow@3.0.0):
-    resolution: {integrity: sha512-oH/5xyZPUX7M5b6P3dQpojOXNYgbiXhPz76czVt2mo2cTl75U10vqIGtkEE5GQReuJ0712KOyyK3DZoK6NschA==}
-    hasBin: true
-    peerDependencies:
-      agentic-flow: '>=2.0.12-fix.8 <4.0.0'
-      midstreamer: ^0.3.2
-    peerDependenciesMeta:
-      agentic-flow:
-        optional: true
-      midstreamer:
-        optional: true
-    dependencies:
-      '@noble/ed25519': 2.3.0
-      agentic-flow: 3.0.0(@types/node@20.19.27)
-      ws: 8.21.1
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-    dev: false
 
   /@cognitum-one/sdk@0.2.1(multicast-dns@7.2.5):
     resolution: {integrity: sha512-ZIYKq6Tqc7zcDQRSrxphm0Uji497Mf1bi7azn2aTM4F0k+IEdPpTmAngGVaXX/hR7DYhOQ5gkUCja0DiOJLOJw==}
