@@ -221,7 +221,7 @@ importers:
         specifier: 3.1.1
         version: link:../aidefence
       '@claude-flow/memory':
-        specifier: 3.2.4
+        specifier: 3.2.5
         version: link:../memory
       '@metaharness/darwin':
         specifier: ~0.13.0
@@ -246,7 +246,7 @@ importers:
         version: 0.2.2
       agentdb:
         specifier: ^3.6.0
-        version: 3.6.0(@types/node@20.19.27)(zod@3.25.76)
+        version: 3.7.2(@types/node@20.19.27)(zod@3.25.76)
       better-sqlite3:
         specifier: 12.9.0
         version: 12.9.0
@@ -461,8 +461,8 @@ importers:
         specifier: ^3.0.0
         version: link:../security
       agentdb:
-        specifier: ^3.0.0-alpha.20
-        version: 3.0.0-alpha.20(@types/node@20.19.27)(zod@3.25.76)
+        specifier: ^3.7.2
+        version: 3.7.2(@types/node@20.19.27)(zod@3.25.76)
       sql.js:
         specifier: ^1.10.3
         version: 1.13.0
@@ -492,7 +492,7 @@ importers:
     optionalDependencies:
       agentdb:
         specifier: ^2.0.0 || ^3.0.0-alpha.1
-        version: 3.6.0(@types/node@20.19.27)(zod@3.25.76)
+        version: 3.7.2(@types/node@20.19.27)(zod@3.25.76)
 
   '@claude-flow/performance':
     dependencies:
@@ -2048,38 +2048,9 @@ packages:
     dependencies:
       '@babel/parser': 7.29.13
 
-  /@metaharness/darwin@0.2.8:
-    resolution: {integrity: sha512-B8tF7IrrSxwKS6fEPEL6N2Juth9WWn+hppLUtUYPTJ2vcHzzZPIg2cS5T9qTyNNuANlTSWnQHnvzlfvYdGNfeQ==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
-    requiresBuild: true
-    dev: false
-    optional: true
-
-  /@metaharness/darwin@0.8.0:
-    resolution: {integrity: sha512-Pgefr/es0Btofh7GxQrOAg/i43ZKcLUfeD9rndOAkpA8s3ZYohSmfLerJLNsGOOKc2eTvmmauljl8QEVmKC2dw==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
-    requiresBuild: true
-    dev: false
-    optional: true
-
   /@metaharness/flywheel@0.1.13:
     resolution: {integrity: sha512-Ual/ZM0n4/AuFwyXsyPi8bXZdnLm7zNvNLDH1E+63UzySEPA9HWJFmr7obGLEE0jpKkz3bnZY0aYzAWhmXNRkA==}
     requiresBuild: true
-
-  /@metaharness/flywheel@0.1.7:
-    resolution: {integrity: sha512-am7dROkjyS1Zkms3TOcn2LVHjwMLQXPJ6Pu1aP55q40vWJLRONGdGvnrcBL/VhMFqjQrVB57lmSn2E+s5CSZwA==}
-    requiresBuild: true
-    dev: false
-    optional: true
-
-  /@metaharness/harness@0.1.0:
-    resolution: {integrity: sha512-KegYx/q8qXlnaSYP0l5hgNPn8iNMl6a2eONqPi68FXd1w1jt7NswJJlt2/Ftl3Sum8qAEchxH1ZJOYFWTvJxTA==}
-    engines: {node: '>=20.0.0'}
-    requiresBuild: true
-    dev: false
-    optional: true
 
   /@metaharness/harness@0.2.0:
     resolution: {integrity: sha512-j/NLHqgPNre4qTTExvjCjh4/HgmhnVZPSQUfj06dyrlkpXCMFJ2abdPrl5yuFfzBMU0wnfFnFY2qQHQnBlAreg==}
@@ -2093,14 +2064,6 @@ packages:
 
   /@metaharness/radio@0.1.0:
     resolution: {integrity: sha512-m1GCeGCbjo7h5OLMCgb2VZFbhY6aHP5x28q0j/AFqXRWwStt5/Z+sWMuGNaNKVtnB7PGueNbtVoxLzMQ53rrFg==}
-    requiresBuild: true
-    dev: false
-    optional: true
-
-  /@metaharness/redblue@0.1.4:
-    resolution: {integrity: sha512-JaAk6bs3xA7Ks5RnAcZoxI3WfzpYL+Bk262SCI07w82BDOA7C6VxwGM63F7b86lRTKUVjTEnSqf7QZ3uyElT/g==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
     requiresBuild: true
     dev: false
     optional: true
@@ -2152,12 +2115,6 @@ packages:
     requiresBuild: true
     optional: true
 
-  /@metaharness/workspace-lens@0.1.1:
-    resolution: {integrity: sha512-BkEdTvjD2PEhkGTCmtTIPnoeaOsxvzFtsFEAurwVKlVOu4hQetHeXDfiyAYheWg8Cp4fcGcr7E5MO1ptQveQ2g==}
-    requiresBuild: true
-    dev: false
-    optional: true
-
   /@metaharness/workspace-lens@0.1.2:
     resolution: {integrity: sha512-Bfkj40rGZeBch4sQH/ma6zlY6dI+2AQfpTS/6AmPUE6/54H8Y04aBH5HPYfL0yBZ0lD/CeLViwFphT0PaiJ1mQ==}
     requiresBuild: true
@@ -2190,37 +2147,6 @@ packages:
     requiresBuild: true
     dependencies:
       zod: 4.6.7
-
-  /@modelcontextprotocol/sdk@1.27.1(zod@3.25.76):
-    resolution: {integrity: sha512-sr6GbP+4edBwFndLbM60gf07z0FQ79gaExpnsjMGePXqFcSSb7t6iscpjk9DhFhwd+mTEQrzNafGP8/iGGFYaA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      '@cfworker/json-schema': ^4.1.1
-      zod: ^3.25 || ^4.0
-    peerDependenciesMeta:
-      '@cfworker/json-schema':
-        optional: true
-    dependencies:
-      '@hono/node-server': 1.19.9(hono@4.12.11)
-      ajv: 8.20.0
-      ajv-formats: 3.0.1(ajv@8.20.0)
-      content-type: 1.0.5
-      cors: 2.8.6
-      cross-spawn: 7.0.6
-      eventsource: 3.0.7
-      eventsource-parser: 3.0.6
-      express: 5.2.1
-      express-rate-limit: 8.6.2(express@5.2.1)
-      hono: 4.12.11
-      jose: 6.1.3
-      json-schema-typed: 8.0.2
-      pkce-challenge: 5.0.1
-      raw-body: 3.0.2
-      zod: 3.25.76
-      zod-to-json-schema: 3.25.1(zod@3.25.76)
-    transitivePeerDependencies:
-      - supports-color
-    dev: false
 
   /@modelcontextprotocol/sdk@1.27.1(zod@4.3.5):
     resolution: {integrity: sha512-sr6GbP+4edBwFndLbM60gf07z0FQ79gaExpnsjMGePXqFcSSb7t6iscpjk9DhFhwd+mTEQrzNafGP8/iGGFYaA==}
@@ -2270,7 +2196,7 @@ packages:
       cors: 2.8.6
       cross-spawn: 7.0.6
       eventsource: 3.0.7
-      eventsource-parser: 3.0.6
+      eventsource-parser: 3.1.1
       express: 5.2.1
       express-rate-limit: 8.6.2(express@5.2.1)
       hono: 4.12.11
@@ -2301,7 +2227,7 @@ packages:
       cors: 2.8.6
       cross-spawn: 7.0.6
       eventsource: 3.0.7
-      eventsource-parser: 3.0.6
+      eventsource-parser: 3.1.1
       express: 5.2.1
       express-rate-limit: 8.6.2(express@5.2.1)
       hono: 4.12.11
@@ -2333,7 +2259,7 @@ packages:
       cors: 2.8.6
       cross-spawn: 7.0.6
       eventsource: 3.0.7
-      eventsource-parser: 3.0.6
+      eventsource-parser: 3.1.1
       express: 5.2.1
       express-rate-limit: 8.6.2(express@5.2.1)
       hono: 4.12.11
@@ -4523,6 +4449,7 @@ packages:
       '@ruvector/graph-transformer-linux-x64-gnu': 2.0.4
       '@ruvector/graph-transformer-linux-x64-musl': 2.0.4
       '@ruvector/graph-transformer-win32-x64-msvc': 2.0.4
+    optional: true
 
   /@ruvector/learning-wasm@0.1.29:
     resolution: {integrity: sha512-W6Fd/jhIQVQ4Cr7vKtU1rwdM3SfgTSNUmZr3uIpt/xfsET6u2lxIBrcRyuKbkNRuweOJdb4C/scEAfiDt1OCTw==}
@@ -4661,6 +4588,7 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@ruvector/rvf-node-darwin-arm64@0.2.2:
@@ -4675,6 +4603,7 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@ruvector/rvf-node-darwin-x64@0.2.2:
@@ -4689,6 +4618,7 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@ruvector/rvf-node-linux-arm64-gnu@0.2.2:
@@ -4703,6 +4633,7 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@ruvector/rvf-node-linux-x64-gnu@0.2.2:
@@ -4717,6 +4648,7 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
+    dev: false
     optional: true
 
   /@ruvector/rvf-node-win32-x64-msvc@0.2.2:
@@ -4736,6 +4668,7 @@ packages:
       '@ruvector/rvf-node-linux-arm64-gnu': 0.1.7
       '@ruvector/rvf-node-linux-x64-gnu': 0.1.7
       '@ruvector/rvf-node-win32-x64-msvc': 0.1.7
+    dev: false
     optional: true
 
   /@ruvector/rvf-node@0.2.3:
@@ -4747,6 +4680,12 @@ packages:
       '@ruvector/rvf-node-linux-arm64-gnu': 0.2.2
       '@ruvector/rvf-node-linux-x64-gnu': 0.2.2
       '@ruvector/rvf-node-win32-x64-msvc': 0.2.2
+    optional: true
+
+  /@ruvector/rvf-node@0.4.3:
+    resolution: {integrity: sha512-v+FhbulO/6GJLcJzFydcyvPI2qDxtzDla4PeXDPabu+iamSf+jVYGUY0jbnVxImEQJ/JzooB0kBcUkd+InmHeQ==}
+    engines: {node: '>= 16'}
+    requiresBuild: true
     optional: true
 
   /@ruvector/rvf-solver@0.1.8:
@@ -4916,6 +4855,12 @@ packages:
   /@ruvector/wasm@0.1.16:
     resolution: {integrity: sha512-BvtXLvBDxDxsnFVIi7rsRE8AvPxYOWqHvj8PUOEb3TfsCWBEA2gT5VodMJEv+DWx/mVqdongxRkuHGlVcK9pug==}
     dev: false
+
+  /@ruvnet/sublinear-core@1.0.1:
+    resolution: {integrity: sha512-3QkspuVBijsNA+F2ZY+Z8Goq5uNfd26MW0QHpRx1LdOAMvyq7SZja1Jw6SdAohwve/9OcaXiou2x9vw2R+dY6Q==}
+    engines: {node: '>=16'}
+    requiresBuild: true
+    optional: true
 
   /@scure/base@2.0.0:
     resolution: {integrity: sha512-3E1kpuZginKkek01ovG8krQ0Z44E3DHPjc5S2rjJw9lZn3KSQOs8S7wqikF/AH7iRanHypj85uGyxk0XAyC37w==}
@@ -5906,52 +5851,6 @@ packages:
       - supports-color
     dev: false
 
-  /agentdb@3.0.0-alpha.20(@types/node@20.19.27)(zod@3.25.76):
-    resolution: {integrity: sha512-ixjySLNWFDe3G6EiM1+0xKvVB9nWgeSMM7+hkgnQ4C5+trWfukDRYj3G/yU3l4xc/9vpAkLFQS389glsGbH0BQ==}
-    engines: {node: '>=18.0.0'}
-    hasBin: true
-    requiresBuild: true
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
-      '@opentelemetry/api': 1.9.1
-      '@ruvector/graph-transformer': 2.0.4
-      ajv: 8.20.0
-      jsonwebtoken: 9.0.3
-      sql.js: 1.14.1
-    optionalDependencies:
-      '@huggingface/transformers': 4.2.0
-      '@opentelemetry/resources': 2.9.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/sdk-node': 0.220.0(@opentelemetry/api@1.9.1)
-      '@opentelemetry/semantic-conventions': 1.40.0
-      '@ruvector/attention': 0.1.32
-      '@ruvector/gnn': 0.1.25
-      '@ruvector/graph-node': 2.1.2
-      '@ruvector/router': 0.1.30
-      '@ruvector/ruvllm': 4.1.0
-      '@ruvector/rvf': 0.3.4
-      '@ruvector/rvf-node': 0.1.8
-      '@ruvector/rvf-solver': 0.1.8
-      '@ruvector/rvf-wasm': 0.1.9
-      '@ruvector/sona': 0.1.11
-      argon2: 0.44.0
-      better-sqlite3: 12.9.0
-      chalk: 5.6.2
-      commander: 12.1.0
-      hnswlib-node: 3.0.0
-      inquirer: 9.3.8(@types/node@20.19.27)
-      ruvector: 0.2.41(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76)
-      ruvector-attention-wasm: 0.1.32
-      ruvector-graph-transformer-wasm: 2.0.4
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - '@metaharness/kernel'
-      - '@ruvector/diskann'
-      - '@ruvector/pi-brain'
-      - '@types/node'
-      - supports-color
-      - zod
-    dev: false
-
   /agentdb@3.6.0(@types/node@20.19.27)(zod@3.25.76):
     resolution: {integrity: sha512-G61ik5BiBvohgbyCOsNdoSYLsdd0XMQ/xpA2HPDeM5IWBaXCp9ZUREX9i+U4+8cM6REhTHZZcthmz8PWRYKnBw==}
     engines: {node: '>=20.9.0'}
@@ -5981,6 +5880,58 @@ packages:
       '@ruvector/rvf-solver': 0.1.8
       '@ruvector/rvf-wasm': 0.1.9
       '@ruvector/sona': 0.1.11
+      aidefence: 3.0.2
+      argon2: 0.44.0
+      better-sqlite3: 12.9.0
+      chalk: 5.6.2
+      commander: 12.1.0
+      hnswlib-node: 3.0.0
+      inquirer: 9.3.8(@types/node@20.19.27)
+      ruvector: 0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76)
+      ruvector-attention-wasm: 0.1.32
+      ruvector-graph-transformer-wasm: 2.0.4
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@metaharness/kernel'
+      - '@ruvector/diskann'
+      - '@ruvector/pi-brain'
+      - '@types/node'
+      - agenticow
+      - rvlite
+      - supports-color
+      - zod
+    dev: false
+
+  /agentdb@3.7.2(@types/node@20.19.27)(zod@3.25.76):
+    resolution: {integrity: sha512-1knpJnlYSfx+wxie44GDEyT6cKTga1APb0m5iCTf+dkmA7Wx1f6SepRj0YohFnwhFiBq9Y5oEFhzMTFb03Pb7A==}
+    engines: {node: '>=20.9.0'}
+    hasBin: true
+    requiresBuild: true
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.32.1(zod@3.25.76)
+      '@opentelemetry/api': 1.9.1
+      ajv: 8.20.0
+      semver: 7.7.3
+      sql.js: 1.14.1
+    optionalDependencies:
+      '@huggingface/transformers': 4.2.0
+      '@opentelemetry/resources': 2.9.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/sdk-node': 0.220.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/semantic-conventions': 1.40.0
+      '@ruvector/attention': 2.2.3
+      '@ruvector/gnn': 0.1.25
+      '@ruvector/graph-node': 2.1.2
+      '@ruvector/graph-transformer': 2.0.4
+      '@ruvector/mincut-wasm': 2.3.0
+      '@ruvector/rabitq-wasm': 0.1.2
+      '@ruvector/router': 0.1.30
+      '@ruvector/ruvllm': 4.1.0
+      '@ruvector/rvf': 0.3.4
+      '@ruvector/rvf-node': 0.4.3
+      '@ruvector/rvf-solver': 0.1.8
+      '@ruvector/rvf-wasm': 0.1.9
+      '@ruvector/sona': 0.1.11
+      '@ruvnet/sublinear-core': 1.0.1
       aidefence: 3.0.2
       argon2: 0.44.0
       better-sqlite3: 12.9.0
@@ -6155,7 +6106,7 @@ packages:
       '@rollup/rollup-darwin-arm64': 4.60.3
       '@ruvector/attention': 0.1.32
       '@ruvector/sona': 0.1.11
-      agentdb: 3.6.0(@types/node@20.19.27)(zod@3.25.76)
+      agentdb: 3.7.2(@types/node@20.19.27)(zod@3.25.76)
       better-sqlite3: 12.9.0
       onnxruntime-node: 1.24.3
       sharp: 0.32.6
@@ -6199,7 +6150,7 @@ packages:
       '@ruvector/ruvllm': 4.1.0
       '@ruvector/tiny-dancer': 0.1.22
       '@supabase/supabase-js': 2.89.0
-      agentdb: 3.6.0(@types/node@20.19.27)(zod@3.25.76)
+      agentdb: 3.7.2(@types/node@20.19.27)(zod@3.25.76)
       axios: 1.13.2(debug@4.4.3)
       dotenv: 16.6.1
       express: 5.2.1
@@ -6569,7 +6520,7 @@ packages:
     engines: {node: '>= 18'}
     requiresBuild: true
     dependencies:
-      node-addon-api: 8.5.0
+      node-addon-api: 8.7.0
       node-gyp-build: 4.8.4
     dev: false
     optional: true
@@ -9136,28 +9087,6 @@ packages:
   /merge-stream@2.0.0:
     resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
 
-  /metaharness@0.4.2:
-    resolution: {integrity: sha512-h94B47zBEuNEfKLFMZMV/fRnXBrkwV6L8kMukgioB/9621k6Lm6s2lR2gBKl3BAT1sfN/DYqhsqAJc+6H5PTGQ==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
-    requiresBuild: true
-    peerDependencies:
-      '@metaharness/kernel': ^0.1.0
-    peerDependenciesMeta:
-      '@metaharness/kernel':
-        optional: true
-    dependencies:
-      '@metaharness/darwin': 0.2.8
-      '@metaharness/flywheel': 0.1.13
-      '@metaharness/redblue': 0.1.6
-      '@metaharness/weight-eft': 0.1.2
-      kolorist: 1.8.0
-      prompts: 2.4.2
-    optionalDependencies:
-      '@ruvector/ruvllm': 4.1.0
-    dev: false
-    optional: true
-
   /metaharness@0.4.20:
     resolution: {integrity: sha512-nhQOpnwjgZgW4hufxVLbrWtUmNQ+dgakowuQDnwfAQ65dkpAUzRY7vQUOSOPqMMMXPDEhfqQb4Yf5BqMFV/95A==}
     engines: {node: '>=20.0.0'}
@@ -9368,13 +9297,6 @@ packages:
 
   /node-addon-api@6.1.0:
     resolution: {integrity: sha512-+eawOlIgy680F0kBzPUNFhMZGtJ1YmqM6l4+Crf4IkImjYrO/mqPwRMh352g23uIaQKFItcQ64I7KMaJxHgAVA==}
-
-  /node-addon-api@8.5.0:
-    resolution: {integrity: sha512-/bRZty2mXUIFY/xU5HLvveNHlswNJej+RnxBjOMkidWfwZzgTbPG1E3K5TOxRLOR+5hX7bSofy8yf1hZevMS8A==}
-    engines: {node: ^18 || ^20 || >= 21}
-    requiresBuild: true
-    dev: false
-    optional: true
 
   /node-addon-api@8.7.0:
     resolution: {integrity: sha512-9MdFxmkKaOYVTV+XVRG8ArDwwQ77XIgIPyKASB1k3JPq3M8fGQQQE3YpMOrKm6g//Ktx8ivZr8xo1Qmtqub+GA==}
@@ -10532,56 +10454,6 @@ packages:
       - '@cfworker/json-schema'
       - supports-color
       - zod
-
-  /ruvector@0.2.41(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76):
-    resolution: {integrity: sha512-6ox6kcONkFxKhOv6yAp6FKonn+WlNQ8t0tnK9xsOJKkQEru1psptGrObPA57VenaZ7pToEUvvgiLJYLc9uukIg==}
-    engines: {node: '>=20.0.0'}
-    hasBin: true
-    requiresBuild: true
-    peerDependencies:
-      '@ruvector/diskann': '>=0.1.0'
-      '@ruvector/pi-brain': '>=0.1.0'
-      '@ruvector/router': '>=0.1.0'
-      '@ruvector/ruvllm': ^4.1.0
-    peerDependenciesMeta:
-      '@ruvector/diskann':
-        optional: true
-      '@ruvector/pi-brain':
-        optional: true
-      '@ruvector/router':
-        optional: true
-      '@ruvector/ruvllm':
-        optional: true
-    dependencies:
-      '@metaharness/darwin': 0.8.0
-      '@metaharness/flywheel': 0.1.7
-      '@metaharness/harness': 0.1.0
-      '@metaharness/redblue': 0.1.4
-      '@metaharness/router': 0.3.2(@ruvector/tiny-dancer@0.1.22)
-      '@metaharness/weight-eft': 0.1.1
-      '@metaharness/workspace-lens': 0.1.1
-      '@metaharness/workspace-probe': 0.1.1
-      '@modelcontextprotocol/sdk': 1.32.1(zod@3.25.76)
-      '@ruvector/attention': 0.1.32
-      '@ruvector/core': 0.1.30
-      '@ruvector/gnn': 0.1.25
-      '@ruvector/router': 0.1.30
-      '@ruvector/ruvllm': 4.1.0
-      '@ruvector/sona': 0.1.11
-      chalk: 4.1.2
-      commander: 11.1.0
-      metaharness: 0.4.2
-      ora: 5.4.1
-    optionalDependencies:
-      '@ruvector/rvf': 0.3.4
-      '@ruvector/tiny-dancer': 0.1.22
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - '@metaharness/kernel'
-      - supports-color
-      - zod
-    dev: false
-    optional: true
 
   /ruvector@0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76):
     resolution: {integrity: sha512-Vf32SOx8a+N36D4B7zWYMhYuNK9BkvjOs//XAgi5wGrLLqU+N6SOgBvKMVym2//ISF9bqWLpfPodyHkWxoWdzg==}
