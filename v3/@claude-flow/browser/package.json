@@ -1,4 +1,5 @@
 {
+  "homepage": "https://ruv.io",
   "name": "@claude-flow/browser",
   "version": "3.0.1",
   "description": "Browser automation for AI agents - integrates agent-browser with claude-flow swarms",
