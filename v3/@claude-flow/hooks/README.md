@@ -1,5 +1,35 @@
 # @claude-flow/hooks
 
+<!-- adr-356:quickstart:start -->
+![Animated diagram: a lifecycle event reaches the HookRegistry, the HookExecutor runs hooks in priority order, and ReasoningBank learns from the outcome](https://raw.githubusercontent.com/ruvnet/ruflo/main/v3/@claude-flow/hooks/assets/hooks-flow.svg)
+
+**@claude-flow/hooks** — Registers and runs lifecycle hooks (PreEdit, PostTask, session start and end, and more) in priority order, and feeds their outcomes to ReasoningBank pattern learning.
+
+**Supported environments:** Node.js 20+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/hooks
+```
+
+```js
+import { HookRegistry, HookEvent, HookPriority } from '@claude-flow/hooks';
+
+const registry = new HookRegistry();
+registry.register(HookEvent.PreEdit, async () => ({ success: true }), HookPriority.Normal, { name: 'log-edit' });
+console.log(registry.getForEvent(HookEvent.PreEdit).map((h) => h.name));
+```
+
+Expected output:
+
+```text
+[ 'log-edit' ]
+```
+
+Built on [`@claude-flow/shared`](https://www.npmjs.com/package/@claude-flow/shared); used by [`@claude-flow/plugins`](https://www.npmjs.com/package/@claude-flow/plugins).
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/hooks.svg)](https://www.npmjs.com/package/@claude-flow/hooks)
 [![npm downloads](https://img.shields.io/npm/dm/@claude-flow/hooks.svg)](https://www.npmjs.com/package/@claude-flow/hooks)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -438,3 +468,9 @@ Add to your Claude settings (`~/.claude/settings.json`):
 ## License
 
 MIT © [Claude Flow Team](https://github.com/ruvnet/claude-flow)
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/@claude-flow/hooks)
+<!-- adr-356:footer:end -->

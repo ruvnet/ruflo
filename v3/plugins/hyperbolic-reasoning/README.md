@@ -1,5 +1,40 @@
 # @claude-flow/plugin-hyperbolic-reasoning
 
+<!-- adr-356:quickstart:start -->
+![Animated diagram: a hierarchy is embedded in the Poincare ball and distances answer search, taxonomy and entailment queries](https://raw.githubusercontent.com/ruvnet/ruflo/main/v3/plugins/hyperbolic-reasoning/assets/hyperbolic-flow.svg)
+
+**@claude-flow/plugin-hyperbolic-reasoning** — A Ruflo plugin that embeds hierarchies in the Poincaré ball and gives agents MCP tools for hierarchical search, taxonomic reasoning, hierarchy comparison and entailment graphs.
+
+**Supported environments:** Node.js 20+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/plugin-hyperbolic-reasoning
+```
+
+```js
+import { hyperbolicReasoningTools, poincareDistance } from '@claude-flow/plugin-hyperbolic-reasoning';
+
+console.log('tools:', hyperbolicReasoningTools.map((t) => t.name).join(', '));
+// Distance in the Poincare ball (curvature 1) grows fast near the boundary,
+// which is what lets deep hierarchies fit in few dimensions.
+const origin = new Float32Array([0, 0]);
+console.log('d(origin, 0.5):', poincareDistance(origin, new Float32Array([0.5, 0]), 1).toFixed(4));
+console.log('d(origin, 0.9):', poincareDistance(origin, new Float32Array([0.9, 0]), 1).toFixed(4));
+```
+
+Expected output:
+
+```text
+tools: hyperbolic_embed_hierarchy, hyperbolic_taxonomic_reason, hyperbolic_semantic_search, hyperbolic_hierarchy_compare, hyperbolic_entailment_graph
+d(origin, 0.5): 1.0986
+d(origin, 0.9): 2.9444
+```
+
+Install it into a Ruflo project with [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli): `npx @claude-flow/cli@latest plugins install -n @claude-flow/plugin-hyperbolic-reasoning`.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-hyperbolic-reasoning.svg)](https://www.npmjs.com/package/@claude-flow/plugin-hyperbolic-reasoning)
 [![license](https://img.shields.io/npm/l/@claude-flow/plugin-hyperbolic-reasoning.svg)](https://github.com/ruvnet/claude-flow/blob/main/LICENSE)
 [![downloads](https://img.shields.io/npm/dm/@claude-flow/plugin-hyperbolic-reasoning.svg)](https://www.npmjs.com/package/@claude-flow/plugin-hyperbolic-reasoning)
@@ -316,3 +351,9 @@ The plugin supports learning optimal curvature per hierarchy:
 ## License
 
 MIT
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/plugins/hyperbolic-reasoning)
+<!-- adr-356:footer:end -->

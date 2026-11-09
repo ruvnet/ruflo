@@ -1,5 +1,34 @@
 # @claude-flow/plugin-cognitive-kernel
 
+<!-- adr-356:quickstart:start -->
+**@claude-flow/plugin-cognitive-kernel** — A Ruflo plugin that gives agents MCP tools for working memory, attention control, meta-cognitive monitoring, task scaffolding and cognitive-load management.
+
+**Supported environments:** Node.js 18+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/plugin-cognitive-kernel
+```
+
+```js
+import { cognitiveKernelTools, AttentionFiltersSchema } from '@claude-flow/plugin-cognitive-kernel';
+
+console.log('tools:', cognitiveKernelTools.map((t) => t.name).join(', '));
+const check = AttentionFiltersSchema.safeParse({ includePatterns: ['src/**'] });
+console.log('valid input:', check.success);
+```
+
+Expected output:
+
+```text
+tools: cognition/working-memory, cognition/attention-control, cognition/meta-monitor, cognition/scaffold, cognition/cognitive-load
+valid input: true
+```
+
+Install it into a Ruflo project with [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli): `npx @claude-flow/cli@latest plugins install -n @claude-flow/plugin-cognitive-kernel`.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-cognitive-kernel.svg)](https://www.npmjs.com/package/@claude-flow/plugin-cognitive-kernel)
 [![license](https://img.shields.io/npm/l/@claude-flow/plugin-cognitive-kernel.svg)](https://github.com/ruvnet/claude-flow/blob/main/LICENSE)
 [![downloads](https://img.shields.io/npm/dm/@claude-flow/plugin-cognitive-kernel.svg)](https://www.npmjs.com/package/@claude-flow/plugin-cognitive-kernel)
@@ -313,3 +342,9 @@ interface CognitiveKernelConfig {
 ## License
 
 MIT
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/plugins/cognitive-kernel)
+<!-- adr-356:footer:end -->

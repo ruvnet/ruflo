@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-neural-coordination",
-  "version": "3.0.0-alpha.2",
+  "version": "3.0.0-alpha.3",
   "description": "Neural coordination plugin for multi-agent swarm intelligence using SONA, GNN, and attention mechanisms",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -40,7 +40,9 @@
     "prepublishOnly": "npm run clean && npm run build && npm run typecheck"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
+    "plugin",
     "neural-coordination",
     "multi-agent",
     "swarm",
@@ -48,17 +50,18 @@
     "topology",
     "sona",
     "gnn",
-    "attention"
+    "attention",
+    "mcp"
   ],
   "author": "Claude Flow Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/plugins/neural-coordination"
   },
   "dependencies": {
-    "zod": "^3.22.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -72,5 +75,9 @@
   "publishConfig": {
     "access": "public",
     "tag": "v3alpha"
+  },
+  "homepage": "https://ruv.io",
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
   }
 }

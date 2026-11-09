@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 170" width="760" height="170" role="img" aria-labelledby="t d">
+<title id="t">@claude-flow/hooks: lifecycle event to learned pattern</title>
+<desc id="d">A lifecycle event such as PreEdit reaches the HookRegistry, the HookExecutor runs matching hooks in priority order, and outcomes feed the ReasoningBank.</desc>
+<style>
+.bg{fill:#1e293b}
+.cap{fill:#e2e8f0;font:600 15px system-ui,-apple-system,Segoe UI,sans-serif}
+.s rect{fill:#334155;stroke:#64748b;stroke-width:1.5}
+.s{animation:pulse 4.8s infinite}
+.h{fill:#f8fafc;font:600 13px system-ui,-apple-system,Segoe UI,sans-serif;text-anchor:middle}
+.t{fill:#cbd5e1;font:11px system-ui,-apple-system,Segoe UI,sans-serif;text-anchor:middle}
+.a{fill:none;stroke:#94a3b8;stroke-width:2}
+.dot{fill:#38bdf8;animation:move 4.8s linear infinite}
+@keyframes pulse{0%,25.0%{opacity:1}33.0%,100%{opacity:.62}}
+@keyframes move{from{transform:translateX(0)}to{transform:translateX(561px)}}
+@media (prefers-reduced-motion:reduce){.s,.dot{animation:none}}
+</style>
+<rect class="bg" width="760" height="170" rx="14"/>
+<text class="cap" x="20" y="34">@claude-flow/hooks: lifecycle event to learned pattern</text>
+<path class="a" d="M184 90h14m-5 -4l5 4l-5 4"/><path class="a" d="M371 90h14m-5 -4l5 4l-5 4"/><path class="a" d="M558 90h14m-5 -4l5 4l-5 4"/>
+<g class="s" style="animation-delay:0.0s"><rect x="16" y="58" width="165" height="64" rx="10"/><text class="h" x="98.5" y="85">Lifecycle event</text><text class="t" x="98.5" y="104">PreEdit, PostTask</text></g><g class="s" style="animation-delay:1.2s"><rect x="203" y="58" width="165" height="64" rx="10"/><text class="h" x="285.5" y="85">HookRegistry</text><text class="t" x="285.5" y="104">match by event</text></g><g class="s" style="animation-delay:2.4s"><rect x="390" y="58" width="165" height="64" rx="10"/><text class="h" x="472.5" y="85">HookExecutor</text><text class="t" x="472.5" y="104">priority order</text></g><g class="s" style="animation-delay:3.6s"><rect x="577" y="58" width="165" height="64" rx="10"/><text class="h" x="659.5" y="85">ReasoningBank</text><text class="t" x="659.5" y="104">learn patterns</text></g>
+<circle class="dot" cx="98.5" cy="140" r="5"/>
+</svg>
