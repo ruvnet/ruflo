@@ -17,9 +17,10 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, rmdirSync, rmSync, statSync } from 'fs';
 import { execFileSync } from 'child_process';
+import { createRequire } from 'module';
 import { homedir } from 'os';
 import { join, dirname, resolve, sep } from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -51,12 +52,13 @@ const dim = (msg) => console.log(`  ${DIM}${msg}${RESET}`);
 // be resolved, self-learning imports are a no-op — the user must see this and be
 // told exactly how to fix it (on both stdout, so it shows in the Claude Code hook
 // transcript, and stderr, per the issue's requested channel).
-function warnMemoryUnavailable() {
+function warnMemoryUnavailable(searched = []) {
   const line1 = `[AutoMemory] @claude-flow/memory not resolvable from ${MODULE_ROOT} — self-learning imports are DISABLED.`;
   const line2 = '             Fix: npm i -D @claude-flow/memory   (or re-run: npx ruflo@latest init, then npx ruflo@latest doctor --fix)';
-  console.log(`${YELLOW}${line1}${RESET}`);
-  console.log(`${YELLOW}${line2}${RESET}`);
-  process.stderr.write(`${line1}\n${line2}\n`);
+  // #4851: name every place the resolver looked, so the cause is visible.
+  const lines = [line1, line2, ...(searched.length ? ['             Searched:', ...searched.map((s) => `               - ${s}`)] : [])];
+  for (const l of lines) console.log(`${YELLOW}${l}${RESET}`);
+  process.stderr.write(lines.join('\n') + '\n');
 }
 
 const DEBUG = !!(process.env.RUFLO_DEBUG || process.env.DEBUG);
@@ -361,57 +363,118 @@ class JsonFileBackend {
 // Resolve memory package path (local dev or npm installed)
 // ============================================================================
 
-async function loadMemoryPackage() {
-  // Strategy 0 (#2545): sidecar recorded by `init` / `doctor --fix`. On the
-  // documented `npx ruflo` path @claude-flow/memory (an optionalDependency of
-  // the CLI) lands in the npx cache, which is NOT on the walk-up path from the
-  // project — so init resolves it from the CLI's own context and records the
-  // absolute path here. This is the only strategy that works on that install.
-  try {
-    const sidecar = join(MODULE_ROOT, '.claude-flow', 'memory-package.json');
-    if (existsSync(sidecar)) {
-      const rec = JSON.parse(readFileSync(sidecar, 'utf-8'));
-      if (rec?.distPath && existsSync(rec.distPath)) {
-        return await import(`file://${rec.distPath}`);
-      }
-    }
-  } catch { /* fall through */ }
+// #4851: SessionStart runs this helper directly, so it must find the package
+// itself when the sidecar written by init / upgrade / doctor is missing (a
+// fresh worktree: .claude-flow/ is gitignored) or stale. Every candidate comes
+// from MODULE_ROOT or the helper's own location, never CLAUDE_PROJECT_DIR, and
+// is used only if it exports AutoMemoryBridge. No network, no install.
+const MEMORY_PKG = '@claude-flow/memory';
+const SIDECAR_PATH = join(MODULE_ROOT, '.claude-flow', 'memory-package.json');
+// Packages that carry @claude-flow/memory as a dependency; ruflo and
+// claude-flow reach it through their own @claude-flow/cli.
+const CLI_HOSTS = [['@claude-flow/cli'], ['ruflo', '@claude-flow/cli'], ['claude-flow', '@claude-flow/cli']];
 
-  // Strategy 1: Local dev (built dist)
-  const localDist = join(MODULE_ROOT, 'v3/@claude-flow/memory/dist/index.js');
-  if (existsSync(localDist)) {
-    try {
-      return await import(`file://${localDist}`);
-    } catch { /* fall through */ }
+function sidecarDistPath(file) {
+  try {
+    const rec = JSON.parse(readFileSync(file, 'utf-8'));
+    return rec && typeof rec.distPath === 'string' && rec.distPath ? rec.distPath : null;
+  } catch { return null; }
+}
+
+/** require.resolve(spec) as if called from a module in `dir`, or null. */
+function resolveFrom(dir, spec) {
+  try { return createRequire(join(dir, 'package.json')).resolve(spec); } catch { return null; }
+}
+
+/** The package.json of `name` as seen from `dir`: require.resolve, then a node_modules walk-up. */
+function packageJsonFrom(dir, name) {
+  const viaRequire = resolveFrom(dir, `${name}/package.json`);
+  if (viaRequire) return viaRequire;
+  for (let d = resolve(dir); ; d = dirname(d)) {
+    const candidate = join(d, 'node_modules', ...name.split('/'), 'package.json');
+    if (existsSync(candidate)) return candidate;
+    if (dirname(d) === d) return null;
   }
+}
 
-  // Strategy 2: Use createRequire for CJS-style resolution (handles nested node_modules
-  // when installed as a transitive dependency via npx ruflo / npx @claude-flow/cli@latest)
-  try {
-    const { createRequire } = await import('module');
-    const require = createRequire(join(MODULE_ROOT, 'package.json'));
-    return require('@claude-flow/memory');
-  } catch { /* fall through */ }
-
-  // Strategy 3: ESM import (works when @claude-flow/memory is a direct dependency)
-  try {
-    return await import('@claude-flow/memory');
-  } catch { /* fall through */ }
-
-  // Strategy 4: Walk up from MODULE_ROOT looking for @claude-flow/memory in any node_modules
-  let searchDir = MODULE_ROOT;
-  const { parse } = await import('path');
-  while (searchDir !== parse(searchDir).root) {
-    const candidate = join(searchDir, 'node_modules', '@claude-flow', 'memory', 'dist', 'index.js');
-    if (existsSync(candidate)) {
-      try {
-        return await import(`file://${candidate}`);
-      } catch { /* fall through */ }
-    }
-    searchDir = dirname(searchDir);
+/**
+ * The CLI's own module context, which is where recordMemoryPackagePath()
+ * resolves from: find the installed @claude-flow/cli (directly or under ruflo /
+ * claude-flow) and require.resolve the memory package from there.
+ */
+function memoryFromCliPackage(dir) {
+  for (const chain of CLI_HOSTS) {
+    let pkgJson = packageJsonFrom(dir, chain[0]);
+    for (let i = 1; pkgJson && i < chain.length; i++) pkgJson = packageJsonFrom(dirname(pkgJson), chain[i]);
+    const found = pkgJson && resolveFrom(dirname(pkgJson), MEMORY_PKG);
+    if (found) return found;
   }
-
   return null;
+}
+
+/** The resolution strategies, in order; each find() yields a dist path or null. */
+function memoryCandidates() {
+  const list = [{ source: 'sidecar', label: `sidecar ${SIDECAR_PATH}`, find: () => sidecarDistPath(SIDECAR_PATH) }];
+  // A fresh git worktree has no sidecar of its own, but its main checkout usually does.
+  const main = mainCheckoutRoot(MODULE_ROOT);
+  if (main) {
+    const mainSidecar = join(main, '.claude-flow', 'memory-package.json');
+    list.push({ source: 'main-checkout-sidecar', label: `sidecar ${mainSidecar}`, find: () => sidecarDistPath(mainSidecar) });
+  }
+  const localDist = join(MODULE_ROOT, 'v3/@claude-flow/memory/dist/index.js');
+  list.push(
+    { source: 'local-dist', label: localDist, find: () => (existsSync(localDist) ? localDist : null) },
+    { source: 'project-root', label: `require.resolve from ${MODULE_ROOT}`, find: () => resolveFrom(MODULE_ROOT, MEMORY_PKG) },
+    { source: 'helper-dir', label: `require.resolve from ${__dirname}`, find: () => resolveFrom(__dirname, MEMORY_PKG) },
+    { source: 'cli-package', label: `@claude-flow/cli dependencies from ${MODULE_ROOT}`, find: () => memoryFromCliPackage(MODULE_ROOT) },
+    { source: 'cli-package', label: `@claude-flow/cli dependencies from ${__dirname}`, find: () => memoryFromCliPackage(__dirname) },
+  );
+  return list;
+}
+
+function memoryPackageVersion(distPath) {
+  try { return JSON.parse(readFileSync(resolve(dirname(distPath), '..', 'package.json'), 'utf-8')).version ?? null; } catch { return null; }
+}
+
+/** Same record shape as recordMemoryPackagePath(). Best effort, atomic. */
+function recordSidecar(distPath) {
+  try {
+    mkdirSync(dirname(SIDECAR_PATH), { recursive: true });
+    const record = { distPath, version: memoryPackageVersion(distPath), resolvedBy: 'auto-memory-hook', resolvedAt: new Date().toISOString() };
+    writeFileAtomic(SIDECAR_PATH, JSON.stringify(record, null, 2));
+    return true;
+  } catch { return false; }
+}
+
+/**
+ * Returns { pkg, distPath, source, searched }. pkg is null when no candidate
+ * exports AutoMemoryBridge, and `searched` then lists every place tried and why
+ * it failed. With record: true, a package found anywhere but this helper's own
+ * sidecar is written to that sidecar, so the next session takes the fast path.
+ */
+async function resolveMemoryPackage({ record = false } = {}) {
+  const searched = [];
+  const tried = new Set();
+  for (const c of memoryCandidates()) {
+    let distPath = null;
+    try { distPath = c.find(); } catch { /* treated as not found */ }
+    if (!distPath) { searched.push(`${c.label}: not found`); continue; }
+    if (tried.has(distPath)) continue;
+    tried.add(distPath);
+    if (!existsSync(distPath)) { searched.push(`${c.label}: ${distPath} does not exist`); continue; }
+    let pkg;
+    try { pkg = await import(pathToFileURL(distPath).href); } catch (e) {
+      searched.push(`${c.label}: ${distPath} failed to load (${e && e.message ? e.message : e})`);
+      continue;
+    }
+    if (!pkg || typeof pkg.AutoMemoryBridge !== 'function') {
+      searched.push(`${c.label}: ${distPath} has no AutoMemoryBridge export`);
+      continue;
+    }
+    if (record && c.source !== 'sidecar') recordSidecar(distPath);
+    return { pkg, distPath, source: c.source, searched };
+  }
+  return { pkg: null, distPath: null, source: null, searched };
 }
 
 // ============================================================================
@@ -458,9 +521,9 @@ function readConfig() {
 async function doImport() {
   log('Importing auto memory files into bridge...');
 
-  const memPkg = await loadMemoryPackage();
-  if (!memPkg || !memPkg.AutoMemoryBridge) {
-    warnMemoryUnavailable();
+  const { pkg: memPkg, searched } = await resolveMemoryPackage({ record: true });
+  if (!memPkg) {
+    warnMemoryUnavailable(searched);
     return;
   }
 
@@ -544,9 +607,9 @@ async function doSync() {
     return;
   }
 
-  const memPkg = await loadMemoryPackage();
-  if (!memPkg || !memPkg.AutoMemoryBridge) {
-    warnMemoryUnavailable();
+  const { pkg: memPkg, searched } = await resolveMemoryPackage({ record: true });
+  if (!memPkg) {
+    warnMemoryUnavailable(searched);
     return;
   }
 
@@ -609,15 +672,16 @@ async function doSync() {
 }
 
 async function doStatus() {
-  const memPkg = await loadMemoryPackage();
+  // Read-only: status reports where the package resolves but never records it.
+  const { pkg: memPkg, distPath, source } = await resolveMemoryPackage();
   const config = readConfig();
 
-  const sidecar = join(MODULE_ROOT, '.claude-flow', 'memory-package.json');
-  const hasSidecar = existsSync(sidecar);
+  const hasSidecar = existsSync(SIDECAR_PATH);
 
   console.log('\n=== Auto Memory Bridge Status ===\n');
   console.log(`  Package:        ${memPkg ? '✅ Available' : '❌ Not found — self-learning DISABLED (fix: npm i -D @claude-flow/memory)'}`);
-  console.log(`  Resolver:       ${hasSidecar ? '✅ .claude-flow/memory-package.json' : '⏸ no sidecar (run: npx ruflo@latest doctor --fix)'}`);
+  if (memPkg) console.log(`  Resolved via:   ${source} (${distPath})`);
+  console.log(`  Resolver:       ${hasSidecar ? '✅ .claude-flow/memory-package.json' : memPkg ? '⏸ no sidecar yet (the next import records one)' : '⏸ no sidecar (run: npx ruflo@latest doctor --fix)'}`);
   console.log(`  Store:          ${existsSync(STORE_PATH) ? '✅ ' + STORE_PATH : '⏸ Not initialized'}`);
   console.log(`  LearningBridge: ${config.learningBridge.enabled ? '✅ Enabled' : '⏸ Disabled'}`);
   console.log(`  MemoryGraph:    ${config.memoryGraph.enabled ? '✅ Enabled' : '⏸ Disabled'}`);
