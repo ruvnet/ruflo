@@ -53,7 +53,7 @@ importers:
     dependencies:
       agentdb:
         specifier: ^3.6.0
-        version: 3.6.0(@types/node@20.19.27)(zod@3.25.76)
+        version: 3.6.0(@types/node@20.19.27)(zod@4.6.7)
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -136,7 +136,7 @@ importers:
         specifier: 3.0.7
         version: link:../security
       '@claude-flow/shared':
-        specifier: 3.0.7
+        specifier: 3.0.8
         version: link:../shared
       '@electron/asar':
         specifier: ^4.3.1
@@ -459,7 +459,7 @@ importers:
         version: link:../security
       agentdb:
         specifier: ^3.7.2
-        version: 3.7.2(@types/node@20.19.27)(zod@3.25.76)
+        version: 3.7.2(@types/node@20.19.27)(zod@4.6.7)
       sql.js:
         specifier: ^1.10.3
         version: 1.13.0
@@ -492,7 +492,7 @@ importers:
     optionalDependencies:
       agentdb:
         specifier: ^2.0.0 || ^3.0.0-alpha.1
-        version: 3.7.2(@types/node@20.19.27)(zod@3.25.76)
+        version: 3.7.2(@types/node@20.19.27)(zod@4.6.7)
 
   '@claude-flow/performance':
     dependencies:
@@ -655,8 +655,8 @@ importers:
         specifier: ^8.21.0
         version: 8.21.1
       zod:
-        specifier: ^3.22.4
-        version: 3.25.76
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/cors':
         specifier: ^2.8.17
@@ -4512,13 +4512,13 @@ packages:
     requiresBuild: true
     dev: false
 
-  /agentdb@3.6.0(@types/node@20.19.27)(zod@3.25.76):
+  /agentdb@3.6.0(@types/node@20.19.27)(zod@4.6.7):
     resolution: {integrity: sha512-G61ik5BiBvohgbyCOsNdoSYLsdd0XMQ/xpA2HPDeM5IWBaXCp9ZUREX9i+U4+8cM6REhTHZZcthmz8PWRYKnBw==}
     engines: {node: '>=20.9.0'}
     hasBin: true
     requiresBuild: true
     dependencies:
-      '@modelcontextprotocol/sdk': 1.32.1(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.7)
       '@opentelemetry/api': 1.9.1
       ajv: 8.20.0
       semver: 7.7.3
@@ -4548,7 +4548,7 @@ packages:
       commander: 12.1.0
       hnswlib-node: 3.0.0
       inquirer: 9.3.8(@types/node@20.19.27)
-      ruvector: 0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76)
+      ruvector: 0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@4.6.7)
       ruvector-attention-wasm: 0.1.32
       ruvector-graph-transformer-wasm: 2.0.4
     transitivePeerDependencies:
@@ -4613,6 +4613,58 @@ packages:
       - rvlite
       - supports-color
       - zod
+
+  /agentdb@3.7.2(@types/node@20.19.27)(zod@4.6.7):
+    resolution: {integrity: sha512-1knpJnlYSfx+wxie44GDEyT6cKTga1APb0m5iCTf+dkmA7Wx1f6SepRj0YohFnwhFiBq9Y5oEFhzMTFb03Pb7A==}
+    engines: {node: '>=20.9.0'}
+    hasBin: true
+    requiresBuild: true
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.7)
+      '@opentelemetry/api': 1.9.1
+      ajv: 8.20.0
+      semver: 7.7.3
+      sql.js: 1.14.1
+    optionalDependencies:
+      '@huggingface/transformers': 4.2.0
+      '@opentelemetry/resources': 2.9.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/sdk-node': 0.220.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/semantic-conventions': 1.40.0
+      '@ruvector/attention': 2.2.3
+      '@ruvector/gnn': 0.1.25
+      '@ruvector/graph-node': 2.1.2
+      '@ruvector/graph-transformer': 2.0.4
+      '@ruvector/mincut-wasm': 2.3.0
+      '@ruvector/rabitq-wasm': 0.1.2
+      '@ruvector/router': 0.1.30
+      '@ruvector/ruvllm': 4.1.0
+      '@ruvector/rvf': 0.3.4
+      '@ruvector/rvf-node': 0.4.3
+      '@ruvector/rvf-solver': 0.1.8
+      '@ruvector/rvf-wasm': 0.1.9
+      '@ruvector/sona': 0.1.11
+      '@ruvnet/sublinear-core': 1.0.1
+      aidefence: 3.0.2
+      argon2: 0.44.0
+      better-sqlite3: 12.9.0
+      chalk: 5.6.2
+      commander: 12.1.0
+      hnswlib-node: 3.0.0
+      inquirer: 9.3.8(@types/node@20.19.27)
+      ruvector: 0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@4.6.7)
+      ruvector-attention-wasm: 0.1.32
+      ruvector-graph-transformer-wasm: 2.0.4
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@metaharness/kernel'
+      - '@ruvector/diskann'
+      - '@ruvector/pi-brain'
+      - '@types/node'
+      - agenticow
+      - rvlite
+      - supports-color
+      - zod
+    dev: false
 
   /agentic-flow@2.0.14(@types/node@20.19.27):
     resolution: {integrity: sha512-8+AQhXI0P0mK26mZ8zsTQkhUhRsPWYP52Diwzr3Nk0dUNXd+pBjzdyQDfFxttGIymBfMqvRr8VRBd+bZLSYWcg==}
@@ -8447,6 +8499,62 @@ packages:
       - agenticow
       - supports-color
       - zod
+
+  /ruvector@0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@4.6.7):
+    resolution: {integrity: sha512-Vf32SOx8a+N36D4B7zWYMhYuNK9BkvjOs//XAgi5wGrLLqU+N6SOgBvKMVym2//ISF9bqWLpfPodyHkWxoWdzg==}
+    engines: {node: '>=20.0.0'}
+    hasBin: true
+    requiresBuild: true
+    peerDependencies:
+      '@ruvector/diskann': ^0.1.0
+      '@ruvector/pi-brain': ^0.1.0
+      '@ruvector/router': ^0.1.0
+      '@ruvector/ruvllm': ^4.1.0
+      rvlite: ^0.2.0
+    peerDependenciesMeta:
+      '@ruvector/diskann':
+        optional: true
+      '@ruvector/pi-brain':
+        optional: true
+      '@ruvector/router':
+        optional: true
+      '@ruvector/ruvllm':
+        optional: true
+      rvlite:
+        optional: true
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.32.1(zod@4.6.7)
+      '@ruvector/attention': 2.2.3
+      '@ruvector/core': 0.1.30
+      '@ruvector/gnn': 0.1.25
+      '@ruvector/router': 0.1.30
+      '@ruvector/ruvllm': 4.1.0
+      '@ruvector/sona': 0.1.11
+      chalk: 4.1.2
+      commander: 11.1.0
+      ora: 5.4.1
+    optionalDependencies:
+      '@metaharness/darwin': 0.13.0
+      '@metaharness/flywheel': 0.1.13
+      '@metaharness/harness': 0.2.0
+      '@metaharness/redblue': 0.1.6
+      '@metaharness/router': 0.4.0(@ruvector/tiny-dancer@0.1.22)
+      '@metaharness/weight-eft': 0.1.2
+      '@metaharness/workspace-lens': 0.1.2
+      '@metaharness/workspace-probe': 0.1.1
+      '@ruvector/mincut-wasm': 2.3.0
+      '@ruvector/rabitq-wasm': 0.1.2
+      '@ruvector/rvf': 0.3.4
+      '@ruvector/tiny-dancer': 0.1.22
+      metaharness: 0.4.20
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@metaharness/kernel'
+      - agenticow
+      - supports-color
+      - zod
+    dev: false
+    optional: true
 
   /rxjs@7.8.2:
     resolution: {integrity: sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==}
