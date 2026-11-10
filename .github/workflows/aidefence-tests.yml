@@ -1,0 +1,52 @@
+name: AIDefence tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'v3/@claude-flow/aidefence/**'
+      - '.github/workflows/aidefence-tests.yml'
+  pull_request:
+    paths:
+      - 'v3/@claude-flow/aidefence/**'
+      - '.github/workflows/aidefence-tests.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aidefence-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: AIDefence build + tests (real agentdb import)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install package dependencies
+        run: npm install --prefix v3/@claude-flow/aidefence --workspaces=false --legacy-peer-deps --package-lock=false --no-audit --no-fund
+      # agentdb is an optional peer; install it explicitly so the real-import tests run.
+      - name: Install the optional agentdb peer
+        run: npm install --prefix v3/@claude-flow/aidefence --workspaces=false --no-save --package-lock=false --no-audit --no-fund agentdb@3.7.7
+      - run: npm run build --prefix v3/@claude-flow/aidefence
+      - name: Test
+        working-directory: v3/@claude-flow/aidefence
+        run: npx vitest run
+      - name: Load the built package without agentdb on the resolution path
+        working-directory: v3/@claude-flow/aidefence
+        run: |
+          rm -rf node_modules/agentdb
+          node --input-type=module -e "
+            const m = await import('./dist/index.js');
+            const s = m.createAgentDBVectorStore({ onFallback: () => {} });
+            await s.store({ namespace: 'n', key: 'k', value: { pattern: 'x' } });
+            if (s.mode !== 'memory') throw new Error('expected in-memory fallback, got ' + s.mode);
+            console.log('fallback ok:', s.fallbackCause);
+          "
