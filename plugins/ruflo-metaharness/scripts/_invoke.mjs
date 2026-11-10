@@ -58,7 +58,12 @@ const INSTALL_TIMEOUT_MS = 180_000; // npm install can be slow on cold cache
 // Superset of the three per-file regexes. `npm ERR` (from _redblue) is
 // included for everyone: an npm-level failure during a cached install or an
 // npx shim means "upstream unavailable", never a ruflo bug.
-export const DEGRADED_RX = /could not determine executable|404|not installed|MODULE_NOT_FOUND|ENOTFOUND|getaddrinfo|ECONNREFUSED|ETIMEDOUT|npm ERR/i;
+//
+// `404` must be a whole token (`404 Not Found`, `E404`), never three digits
+// inside a longer word (#4930): darwin's `bench verify` reports a tampered
+// suite with both sha256 hex digests on stderr, and a digest containing
+// "404" (~3% of tampered suites) turned exit 1 into degraded exit 0.
+export const DEGRADED_RX = /could not determine executable|\bE?404\b|not installed|MODULE_NOT_FOUND|ENOTFOUND|getaddrinfo|ECONNREFUSED|ETIMEDOUT|npm ERR/i;
 
 /**
  * Classify a finished subprocess as degraded or healthy.

@@ -131,3 +131,34 @@ describe('ADR-526 darwin in-process parity', () => {
     expect((inProc!.json as { success: boolean }).success).toBe(false);
   });
 });
+
+/**
+ * #4930 — the root cause of the flake. Where the plugin script cannot import
+ * darwin (CI's v3-only pnpm install), bench.mjs runs the darwin CLI, which
+ * prints both sha256 digests of a tampered suite to stderr. The degraded
+ * classifier matched any "404", so a digest containing it turned exit 1 into
+ * degraded exit 0.
+ */
+describe('#4930 degraded classification ignores "404" inside hex digests', () => {
+  type Classify = (stderr: string, exitCode: number | null, prefix: string) => { degraded: boolean; reason?: string };
+  let classifyDegraded: Classify;
+
+  beforeAll(async () => {
+    ({ classifyDegraded } = (await import(join(SCRIPTS, '_invoke.mjs'))) as { classifyDegraded: Classify });
+  });
+
+  it('a tampered-suite error whose digests contain 404 is a real failure', () => {
+    const stderr = 'Error: benchmark suite tampered: taskHash 89e4265664cd17b0c2a1f404e8d1 != recomputed 404a1b2c3d4e5f60718293a4b5c6d7e8f9\n    at loadSuite (file:///x/suite.js:50:15)\n';
+    expect(classifyDegraded(stderr, 1, 'metaharness-darwin')).toEqual({ degraded: false });
+  });
+
+  it('still treats npm 404s as unavailable', () => {
+    for (const stderr of [
+      'npm error code E404\nnpm error 404 Not Found - GET https://registry.npmjs.org/@metaharness%2fdarwin',
+      'npm error code E404',
+      '404 Not Found',
+    ]) {
+      expect(classifyDegraded(stderr, 1, 'metaharness-darwin')).toEqual({ degraded: true, reason: 'metaharness-darwin-not-available' });
+    }
+  });
+});
