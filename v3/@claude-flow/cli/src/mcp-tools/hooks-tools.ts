@@ -23,8 +23,17 @@ import {
   DEFAULT_ROUTER_EMBEDDER,
   embedForRouter,
   resolveRouterEmbedder,
+  routerEmbedderModel,
   type RouterEmbedderKind,
 } from '../ruvector/router-embedder.js';
+import {
+  ABSTAIN_LABEL,
+  centroidRouterEnabled,
+  classify,
+  loadCentroidArtifact,
+  resolveMargin,
+  type CentroidDecision,
+} from '../ruvector/centroid-router.js';
 
 // Real vector search functions - lazy loaded to avoid circular imports
 let searchEntriesFn: ((options: {
@@ -1357,6 +1366,7 @@ export const hooksRoute: MCPTool = {
               complexity,
             },
             swarmRecommendation: agents.length > 2 ? { topology: 'hierarchical', agents, coordination: 'queen-led' } : null,
+            ...centroidBypassed(`AgentDB ${agentdbRoute.controller}`, agents[0]),
           };
         }
       } catch {
@@ -1405,6 +1415,7 @@ export const hooksRoute: MCPTool = {
             },
             swarmRecommendation: null,
             learning: { source: suggestion.source, matchedKeywords: suggestion.matchedKeywords },
+            ...centroidBypassed('a persisted SONA pattern', suggestion.agent),
           };
         }
       } catch {
@@ -1422,6 +1433,40 @@ export const hooksRoute: MCPTool = {
  * so the benchmark measures this local path. (Body kept at its original
  * indentation to keep this refactor's diff small.)
  */
+/**
+ * ADR-527 centroid routing for one query. Returns null when the flag is off.
+ * Never throws: an unusable artifact or embedder comes back as `unavailable`.
+ */
+/**
+ * ADR-527: learned routes (AgentDB, persisted SONA patterns) answer before the
+ * centroid router. Say so under the flag, so a pilot's fallback rate counts them.
+ */
+function centroidBypassed(by: string, agent: string): { centroid?: CentroidDecision & { baselineAgent: string } } {
+  return centroidRouterEnabled()
+    ? { centroid: { status: 'bypassed', reason: `${by} answered before the centroid router`, baselineAgent: agent } }
+    : {};
+}
+
+async function centroidRoute(
+  queryText: string,
+  task: string,
+  baselineAgent: string,
+): Promise<(CentroidDecision & { baselineAgent: string }) | null> {
+  if (!centroidRouterEnabled()) return null;
+  try {
+    if (!hasRoutableText(task)) {
+      return { status: 'unavailable', reason: 'task has no letters or digits', baselineAgent };
+    }
+    const { artifact, error } = loadCentroidArtifact();
+    if (!artifact) return { status: 'unavailable', reason: error ?? 'centroid artifact unavailable', baselineAgent };
+    const q = await embedForRouter([queryText], 'minilm');
+    const d = classify(artifact, q.vectors[0], q.embedder, routerEmbedderModel(), resolveMargin(artifact));
+    return { ...d, ...(d.status === 'unavailable' && q.reason ? { reason: `${d.reason}; ${q.reason}` } : {}), baselineAgent };
+  } catch (err) {
+    return { status: 'unavailable', reason: `centroid router failed: ${err instanceof Error ? err.message : String(err)}`, baselineAgent };
+  }
+}
+
 async function routeTaskLocal(
   task: string,
   context: string | undefined,
@@ -1540,6 +1585,27 @@ async function routeTaskLocal(
       }
     }
 
+    // ADR-527: opt-in nearest-centroid router. The current router's pick is
+    // kept as `baselineAgent` so a pilot can compare the two on outcomes.
+    const centroid = await centroidRoute(queryText, task, agents[0]);
+    if (centroid?.status === 'decided') {
+      if (centroid.label === ABSTAIN_LABEL) {
+        noMatchDetail = `Centroid router: no agent fits (closest is "none", score ${centroid.score}).`;
+        matchedPattern = 'centroid-abstain';
+        confidence = NO_MATCH_CONFIDENCE; // #3567: a no-match ranks below every real match
+      } else {
+        agents = [centroid.label, ...agents.filter(a => a !== centroid.label)];
+        // Cosine runs about 0.2-0.6 here, so a raw score could rank a real match
+        // below a no-match (#3567). Rescale monotonically into (NO_MATCH, 1];
+        // the raw cosine stays in `centroid.score`. Not a probability.
+        confidence = Math.round((NO_MATCH_CONFIDENCE + 0.01 + (0.99 - NO_MATCH_CONFIDENCE) * Math.max(0, Math.min(1, centroid.score))) * 100) / 100;
+        matchedPattern = `centroid:${centroid.label}`;
+        noMatchDetail = null;
+      }
+      routingMethod = 'centroid';
+      backendInfo = 'nearest centroid (MiniLM)';
+    }
+
     // Determine complexity
     const taskLower = task.toLowerCase();
     const complexity = taskLower.includes('complex') || taskLower.includes('architecture') || task.length > 200
@@ -1567,7 +1633,9 @@ async function routeTaskLocal(
       primaryAgent: {
         type: agents[0],
         confidence: Math.round(confidence * 100) / 100,
-        reason: routingMethod.startsWith('semantic')
+        reason: routingMethod === 'centroid' && noMatchDetail === null
+          ? `Nearest agent centroid (${Math.round(confidence * 100)}% cosine)`
+          : routingMethod.startsWith('semantic')
           ? `Semantic similarity to "${matchedPattern}" pattern (${Math.round(confidence * 100)}%)`
           : noMatchDetail !== null
             ? `Nothing matched; default suggestion only. ${noMatchDetail}`
@@ -1591,6 +1659,7 @@ async function routeTaskLocal(
       } : null,
       // ADR-390: which embedder the semantic index + query used ('hash' when degraded).
       embedder: handle.embedder,
+      ...(centroid ? { centroid } : {}),
       ...(handle.embedderReason ? { embedderReason: handle.embedderReason } : {}),
     };
 }

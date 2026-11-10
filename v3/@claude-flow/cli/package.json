@@ -76,6 +76,7 @@
     "!dist/**/*.tsbuildinfo",
     "bin",
     "scripts/postinstall.cjs",
+    "assets/agent-router",
     "templates",
     ".claude",
     "plugins",

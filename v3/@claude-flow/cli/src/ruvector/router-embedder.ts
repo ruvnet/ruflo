@@ -108,6 +108,13 @@ function l2Normalize(v: Float32Array): Float32Array {
 // changes, so this survives router rebuilds (e.g. after saveRoutingOutcomes).
 const MINILM_CACHE = new Map<string, Float32Array>();
 const MINILM_CACHE_MAX = 2048;
+/** Model id the local embedder last reported for a MiniLM vector (ADR-527 version check). */
+let lastMiniLMModel: string | undefined;
+
+/** Model id behind the most recent MiniLM vector, or undefined before the first one. */
+export function routerEmbedderModel(): string | undefined {
+  return lastMiniLMModel;
+}
 
 async function embedOneMiniLM(text: string): Promise<Float32Array> {
   const cached = MINILM_CACHE.get(text);
@@ -122,6 +129,7 @@ async function embedOneMiniLM(text: string): Promise<Float32Array> {
       `local embedder returned ${out.embedding?.length ?? 0}-d vectors; router index is ${ROUTER_EMBEDDING_DIM}-d`,
     );
   }
+  lastMiniLMModel = out.modelId ?? out.model;
   const vec = l2Normalize(Float32Array.from(out.embedding));
   if (MINILM_CACHE.size >= MINILM_CACHE_MAX) {
     const oldest = MINILM_CACHE.keys().next().value;

@@ -2278,6 +2278,8 @@ interface EmbeddingModel {
   model: unknown;
   tokenizer: unknown;
   dimensions: number;
+  /** Which model produced the vectors (ADR-527 checks it against the agent centroids). */
+  modelId?: string;
   /**
    * ADR-454: distinguishes a hash-fallback state that's legitimately
    * permanent (no transformers package importable at all) from one caused
@@ -2444,7 +2446,8 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
           loaded: true,
           model: embedder,
           tokenizer: null,
-          dimensions: embCfg.dimension
+          dimensions: embCfg.dimension,
+          modelId: embCfg.model,
         };
 
         return {
@@ -2484,7 +2487,8 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
         loaded: true,
         model: (text: string) => reasoningBank.computeEmbedding(text),
         tokenizer: null,
-        dimensions: 384
+        dimensions: 384,
+        modelId: 'agentic-flow/all-MiniLM-L6-v2',
       };
 
       return {
@@ -2518,7 +2522,8 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
               loaded: true,
               model: (text: string) => onnxEmb.embed(text),
               tokenizer: null,
-              dimensions: probe.length || 384
+              dimensions: probe.length || 384,
+              modelId: 'ruvector/all-MiniLM-L6-v2',
             };
             return {
               success: true,
@@ -2633,6 +2638,8 @@ export async function generateLocalEmbedding(
   embedding: number[];
   dimensions: number;
   model: string;
+  /** Model id behind an onnx vector, when known (ADR-527). */
+  modelId?: string;
   backend: 'onnx' | 'mock';
 }> {
   // Default true keeps the historical unit-norm embedding math.
@@ -2683,6 +2690,7 @@ export async function generateLocalEmbedding(
           embedding,
           dimensions: embedding.length,
           model: 'onnx',
+          ...(state.modelId ? { modelId: state.modelId } : {}),
           backend: 'onnx'
         };
       }
