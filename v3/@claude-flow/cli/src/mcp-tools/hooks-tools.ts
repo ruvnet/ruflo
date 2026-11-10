@@ -1366,6 +1366,7 @@ export const hooksRoute: MCPTool = {
               complexity,
             },
             swarmRecommendation: agents.length > 2 ? { topology: 'hierarchical', agents, coordination: 'queen-led' } : null,
+            ...centroidBypassed(`AgentDB ${agentdbRoute.controller}`, agents[0]),
           };
         }
       } catch {
@@ -1414,6 +1415,7 @@ export const hooksRoute: MCPTool = {
             },
             swarmRecommendation: null,
             learning: { source: suggestion.source, matchedKeywords: suggestion.matchedKeywords },
+            ...centroidBypassed('a persisted SONA pattern', suggestion.agent),
           };
         }
       } catch {
@@ -1435,6 +1437,16 @@ export const hooksRoute: MCPTool = {
  * ADR-527 centroid routing for one query. Returns null when the flag is off.
  * Never throws: an unusable artifact or embedder comes back as `unavailable`.
  */
+/**
+ * ADR-527: learned routes (AgentDB, persisted SONA patterns) answer before the
+ * centroid router. Say so under the flag, so a pilot's fallback rate counts them.
+ */
+function centroidBypassed(by: string, agent: string): { centroid?: CentroidDecision & { baselineAgent: string } } {
+  return centroidRouterEnabled()
+    ? { centroid: { status: 'bypassed', reason: `${by} answered before the centroid router`, baselineAgent: agent } }
+    : {};
+}
+
 async function centroidRoute(
   queryText: string,
   task: string,
@@ -1580,9 +1592,13 @@ async function routeTaskLocal(
       if (centroid.label === ABSTAIN_LABEL) {
         noMatchDetail = `Centroid router: no agent fits (closest is "none", score ${centroid.score}).`;
         matchedPattern = 'centroid-abstain';
+        confidence = NO_MATCH_CONFIDENCE; // #3567: a no-match ranks below every real match
       } else {
         agents = [centroid.label, ...agents.filter(a => a !== centroid.label)];
-        confidence = centroid.score;
+        // Cosine runs about 0.2-0.6 here, so a raw score could rank a real match
+        // below a no-match (#3567). Rescale monotonically into (NO_MATCH, 1];
+        // the raw cosine stays in `centroid.score`. Not a probability.
+        confidence = Math.round((NO_MATCH_CONFIDENCE + 0.01 + (0.99 - NO_MATCH_CONFIDENCE) * Math.max(0, Math.min(1, centroid.score))) * 100) / 100;
         matchedPattern = `centroid:${centroid.label}`;
         noMatchDetail = null;
       }

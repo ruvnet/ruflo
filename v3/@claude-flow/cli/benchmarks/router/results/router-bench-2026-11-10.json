@@ -1,6 +1,6 @@
 {
   "adr": "ADR-391",
-  "ts": "2026-11-10T19:53:12.601Z",
+  "ts": "2026-11-10T20:02:00.694Z",
   "corpusSha256": "b0c1923b2813b61907304dff56c53d199b709797bfb9600a7c1f496cf0c0bf04",
   "node": "v22.23.2",
   "host": "linux-x64",
@@ -8,7 +8,7 @@
   "gate": {
     "B": {
       "accuracyDeltaPts": 10.62,
-      "p95LatencyRegressionPct": 881.5,
+      "p95LatencyRegressionPct": 644.9,
       "requiredDependencyAdded": false,
       "passesAccuracy": true,
       "passesLatency": false,
@@ -16,7 +16,7 @@
     },
     "E": {
       "accuracyDeltaPts": 38.06,
-      "p95LatencyRegressionPct": 1322.6,
+      "p95LatencyRegressionPct": 502.8,
       "requiredDependencyAdded": false,
       "passesAccuracy": true,
       "passesLatency": false,
@@ -40,14 +40,14 @@
         "trapAccuracy": 0.2903
       },
       "latencyMs": {
-        "cold": 39.86,
-        "p50": 0.726,
-        "p95": 1.199
+        "cold": 65.71,
+        "p50": 0.77,
+        "p95": 1.418
       },
       "predictions": [
         {
           "id": "r001",
-          "ms": 39.858169,
+          "ms": 65.705321,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -55,7 +55,7 @@
         },
         {
           "id": "r002",
-          "ms": 0.7214090000000013,
+          "ms": 0.758570000000006,
           "agent": "coder",
           "confidence": 0.48,
           "embedder": "hash",
@@ -63,7 +63,7 @@
         },
         {
           "id": "r003",
-          "ms": 1.3536000000000001,
+          "ms": 1.606059000000002,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -71,7 +71,7 @@
         },
         {
           "id": "r004",
-          "ms": 0.6818189999999902,
+          "ms": 0.924548999999999,
           "agent": "tester",
           "confidence": 0.52,
           "embedder": "hash",
@@ -79,7 +79,7 @@
         },
         {
           "id": "r005",
-          "ms": 0.6944500000000033,
+          "ms": 0.9556200000000104,
           "agent": "tester",
           "confidence": 0.46,
           "embedder": "hash",
@@ -87,7 +87,7 @@
         },
         {
           "id": "r006",
-          "ms": 0.6478189999999984,
+          "ms": 0.8623599999999954,
           "agent": "tester",
           "confidence": 0.44,
           "embedder": "hash",
@@ -95,7 +95,7 @@
         },
         {
           "id": "r007",
-          "ms": 0.7099199999999968,
+          "ms": 0.9448490000000049,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "hash",
@@ -103,7 +103,7 @@
         },
         {
           "id": "r008",
-          "ms": 0.9673000000000087,
+          "ms": 1.0171200000000056,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -111,7 +111,7 @@
         },
         {
           "id": "r009",
-          "ms": 0.9713590000000067,
+          "ms": 1.0642799999999966,
           "agent": "swarm-specialist",
           "confidence": 0.4,
           "embedder": "hash",
@@ -119,7 +119,7 @@
         },
         {
           "id": "r010",
-          "ms": 0.6781600000000054,
+          "ms": 0.8277089999999987,
           "agent": "tester",
           "confidence": 0.56,
           "embedder": "hash",
@@ -127,7 +127,7 @@
         },
         {
           "id": "r011",
-          "ms": 0.705798999999999,
+          "ms": 0.9008400000000023,
           "agent": "security-architect",
           "confidence": 0.92,
           "embedder": "hash",
@@ -135,7 +135,7 @@
         },
         {
           "id": "r012",
-          "ms": 0.6053599999999904,
+          "ms": 0.7395089999999982,
           "agent": "tester",
           "confidence": 0.46,
           "embedder": "hash",
@@ -143,7 +143,7 @@
         },
         {
           "id": "r013",
-          "ms": 0.20372000000000412,
+          "ms": 0.279910000000001,
           "agent": "tester",
           "confidence": 0.64,
           "embedder": "hash",
@@ -151,7 +151,7 @@
         },
         {
           "id": "r014",
-          "ms": 0.20201000000000136,
+          "ms": 0.22408000000000072,
           "agent": "swarm-specialist",
           "confidence": 0.69,
           "embedder": "hash",
@@ -159,7 +159,7 @@
         },
         {
           "id": "r015",
-          "ms": 0.731609000000006,
+          "ms": 0.755359999999996,
           "agent": "performance-engineer",
           "confidence": 0.4,
           "embedder": "hash",
@@ -167,7 +167,7 @@
         },
         {
           "id": "r016",
-          "ms": 0.6774199999999979,
+          "ms": 0.6482000000000028,
           "agent": "performance-engineer",
           "confidence": 0.44,
           "embedder": "hash",
@@ -175,7 +175,7 @@
         },
         {
           "id": "r017",
-          "ms": 0.6310999999999893,
+          "ms": 0.7049090000000007,
           "agent": "tester",
           "confidence": 0.45,
           "embedder": "hash",
@@ -183,7 +183,7 @@
         },
         {
           "id": "r018",
-          "ms": 0.769479000000004,
+          "ms": 1.0175700000000063,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -191,7 +191,7 @@
         },
         {
           "id": "r019",
-          "ms": 0.5381300000000095,
+          "ms": 0.7126999999999981,
           "agent": "architect",
           "confidence": 0.5,
           "embedder": "hash",
@@ -199,7 +199,7 @@
         },
         {
           "id": "r020",
-          "ms": 0.6561690000000056,
+          "ms": 0.8592390000000023,
           "agent": "tester",
           "confidence": 0.49,
           "embedder": "hash",
@@ -207,7 +207,7 @@
         },
         {
           "id": "r021",
-          "ms": 0.871380000000002,
+          "ms": 0.9688500000000033,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -215,7 +215,7 @@
         },
         {
           "id": "r022",
-          "ms": 0.8613100000000031,
+          "ms": 2.305749000000006,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -223,7 +223,7 @@
         },
         {
           "id": "r023",
-          "ms": 0.5918999999999954,
+          "ms": 0.7848090000000099,
           "agent": "memory-specialist",
           "confidence": 0.44,
           "embedder": "hash",
@@ -231,7 +231,7 @@
         },
         {
           "id": "r024",
-          "ms": 0.11229999999999052,
+          "ms": 0.16590999999999667,
           "agent": "architect",
           "confidence": 0.52,
           "embedder": "hash",
@@ -239,7 +239,7 @@
         },
         {
           "id": "r025",
-          "ms": 0.37433999999998946,
+          "ms": 0.49746999999999275,
           "agent": "memory-specialist",
           "confidence": 0.57,
           "embedder": "hash",
@@ -247,7 +247,7 @@
         },
         {
           "id": "r026",
-          "ms": 0.6752499999999912,
+          "ms": 0.9608000000000061,
           "agent": "coder",
           "confidence": 0.44,
           "embedder": "hash",
@@ -255,7 +255,7 @@
         },
         {
           "id": "r027",
-          "ms": 0.6211290000000105,
+          "ms": 0.802929000000006,
           "agent": "performance-engineer",
           "confidence": 0.46,
           "embedder": "hash",
@@ -263,7 +263,7 @@
         },
         {
           "id": "r028",
-          "ms": 1.013620000000003,
+          "ms": 1.0275699999999972,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -271,7 +271,7 @@
         },
         {
           "id": "r029",
-          "ms": 0.8039290000000108,
+          "ms": 0.8329200000000014,
           "agent": "tester",
           "confidence": 0.43,
           "embedder": "hash",
@@ -279,7 +279,7 @@
         },
         {
           "id": "r030",
-          "ms": 0.589579999999998,
+          "ms": 0.7233990000000006,
           "agent": "tester",
           "confidence": 0.58,
           "embedder": "hash",
@@ -287,7 +287,7 @@
         },
         {
           "id": "r031",
-          "ms": 0.7308089999999936,
+          "ms": 0.931209999999993,
           "agent": "coder",
           "confidence": 0.41,
           "embedder": "hash",
@@ -295,7 +295,7 @@
         },
         {
           "id": "r032",
-          "ms": 0.8301799999999986,
+          "ms": 1.0585590000000025,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -303,7 +303,7 @@
         },
         {
           "id": "r033",
-          "ms": 1.199269000000001,
+          "ms": 1.5211299999999994,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -311,7 +311,7 @@
         },
         {
           "id": "r034",
-          "ms": 0.29801999999999396,
+          "ms": 0.3984190000000041,
           "agent": "architect",
           "confidence": 0.52,
           "embedder": "hash",
@@ -319,7 +319,7 @@
         },
         {
           "id": "r035",
-          "ms": 0.5288899999999899,
+          "ms": 0.7294399999999968,
           "agent": "coder",
           "confidence": 0.49,
           "embedder": "hash",
@@ -327,7 +327,7 @@
         },
         {
           "id": "r036",
-          "ms": 0.7260290000000111,
+          "ms": 1.0496699999999919,
           "agent": "security-architect",
           "confidence": 0.92,
           "embedder": "hash",
@@ -335,7 +335,7 @@
         },
         {
           "id": "r037",
-          "ms": 1.11327,
+          "ms": 1.6647690000000068,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "hash",
@@ -343,7 +343,7 @@
         },
         {
           "id": "r038",
-          "ms": 1.0468489999999946,
+          "ms": 1.387558999999996,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -351,7 +351,7 @@
         },
         {
           "id": "r039",
-          "ms": 1.4460299999999933,
+          "ms": 1.8280189999999976,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "hash",
@@ -359,7 +359,7 @@
         },
         {
           "id": "r040",
-          "ms": 1.1334790000000083,
+          "ms": 1.4317700000000002,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -367,7 +367,7 @@
         },
         {
           "id": "r041",
-          "ms": 0.4689699999999988,
+          "ms": 0.6282600000000116,
           "agent": "architect",
           "confidence": 0.55,
           "embedder": "hash",
@@ -375,7 +375,7 @@
         },
         {
           "id": "r042",
-          "ms": 1.2006290000000064,
+          "ms": 1.732958999999994,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "hash",
@@ -383,7 +383,7 @@
         },
         {
           "id": "r043",
-          "ms": 0.9098799999999869,
+          "ms": 1.1057890000000157,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -391,7 +391,7 @@
         },
         {
           "id": "r044",
-          "ms": 0.8835789999999974,
+          "ms": 0.8936400000000049,
           "agent": "architect",
           "confidence": 0.9,
           "embedder": "hash",
@@ -399,7 +399,7 @@
         },
         {
           "id": "r045",
-          "ms": 1.5143890000000084,
+          "ms": 1.556098999999989,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -407,7 +407,7 @@
         },
         {
           "id": "r046",
-          "ms": 0.7402900000000017,
+          "ms": 1.038800000000009,
           "agent": "performance-engineer",
           "confidence": 0.49,
           "embedder": "hash",
@@ -415,7 +415,7 @@
         },
         {
           "id": "r047",
-          "ms": 0.7183399999999978,
+          "ms": 0.8817589999999882,
           "agent": "architect",
           "confidence": 0.9,
           "embedder": "hash",
@@ -423,7 +423,7 @@
         },
         {
           "id": "r048",
-          "ms": 0.6870490000000018,
+          "ms": 0.7408800000000042,
           "agent": "tester",
           "confidence": 0.57,
           "embedder": "hash",
@@ -431,7 +431,7 @@
         },
         {
           "id": "r049",
-          "ms": 0.8044100000000043,
+          "ms": 1.0154300000000092,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -439,7 +439,7 @@
         },
         {
           "id": "r050",
-          "ms": 0.7133789999999891,
+          "ms": 0.8902590000000146,
           "agent": "tester",
           "confidence": 0.43,
           "embedder": "hash",
@@ -447,7 +447,7 @@
         },
         {
           "id": "r051",
-          "ms": 0.8848899999999986,
+          "ms": 1.147449999999992,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -455,7 +455,7 @@
         },
         {
           "id": "r052",
-          "ms": 0.6958100000000087,
+          "ms": 0.8723990000000015,
           "agent": "tester",
           "confidence": 0.52,
           "embedder": "hash",
@@ -463,7 +463,7 @@
         },
         {
           "id": "r053",
-          "ms": 0.7906090000000034,
+          "ms": 1.008010000000013,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "hash",
@@ -471,7 +471,7 @@
         },
         {
           "id": "r054",
-          "ms": 0.3483200000000011,
+          "ms": 0.4460199999999759,
           "agent": "tester",
           "confidence": 0.67,
           "embedder": "hash",
@@ -479,7 +479,7 @@
         },
         {
           "id": "r055",
-          "ms": 1.1217989999999958,
+          "ms": 1.4445289999999886,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -487,7 +487,7 @@
         },
         {
           "id": "r056",
-          "ms": 0.8634899999999988,
+          "ms": 1.0592900000000043,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "hash",
@@ -495,7 +495,7 @@
         },
         {
           "id": "r057",
-          "ms": 0.45488000000000284,
+          "ms": 0.7564590000000067,
           "agent": "architect",
           "confidence": 0.5,
           "embedder": "hash",
@@ -503,7 +503,7 @@
         },
         {
           "id": "r058",
-          "ms": 1.0579589999999968,
+          "ms": 1.3740999999999985,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -511,7 +511,7 @@
         },
         {
           "id": "r059",
-          "ms": 0.3277999999999963,
+          "ms": 0.33841999999998507,
           "agent": "swarm-specialist",
           "confidence": 0.47,
           "embedder": "hash",
@@ -519,7 +519,7 @@
         },
         {
           "id": "r060",
-          "ms": 0.7659289999999999,
+          "ms": 0.8570190000000082,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -527,7 +527,7 @@
         },
         {
           "id": "r061",
-          "ms": 0.9318799999999925,
+          "ms": 1.0590200000000038,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -535,7 +535,7 @@
         },
         {
           "id": "r062",
-          "ms": 0.4890100000000075,
+          "ms": 0.5495599999999854,
           "agent": "tester",
           "confidence": 0.6,
           "embedder": "hash",
@@ -543,7 +543,7 @@
         },
         {
           "id": "r063",
-          "ms": 0.5883390000000048,
+          "ms": 0.6425090000000182,
           "agent": "coder",
           "confidence": 0.44,
           "embedder": "hash",
@@ -551,7 +551,7 @@
         },
         {
           "id": "r064",
-          "ms": 0.37451999999998975,
+          "ms": 0.45975000000001387,
           "agent": "architect",
           "confidence": 0.48,
           "embedder": "hash",
@@ -559,7 +559,7 @@
         },
         {
           "id": "r065",
-          "ms": 0.7575999999999965,
+          "ms": 0.8354499999999803,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -567,7 +567,7 @@
         },
         {
           "id": "r066",
-          "ms": 0.9312490000000082,
+          "ms": 1.0343790000000013,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -575,7 +575,7 @@
         },
         {
           "id": "r067",
-          "ms": 0.6639800000000093,
+          "ms": 0.7330599999999947,
           "agent": "tester",
           "confidence": 0.48,
           "embedder": "hash",
@@ -583,7 +583,7 @@
         },
         {
           "id": "r068",
-          "ms": 0.6846689999999995,
+          "ms": 0.7524899999999946,
           "agent": "tester",
           "confidence": 0.4,
           "embedder": "hash",
@@ -591,7 +591,7 @@
         },
         {
           "id": "r069",
-          "ms": 0.9483299999999986,
+          "ms": 1.0582389999999862,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -599,7 +599,7 @@
         },
         {
           "id": "r070",
-          "ms": 0.7986489999999975,
+          "ms": 1.0487099999999998,
           "agent": "architect",
           "confidence": 0.85,
           "embedder": "hash",
@@ -607,7 +607,7 @@
         },
         {
           "id": "r071",
-          "ms": 0.9826900000000052,
+          "ms": 1.1777490000000057,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -615,7 +615,7 @@
         },
         {
           "id": "r072",
-          "ms": 1.0229389999999938,
+          "ms": 1.4075599999999895,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -623,7 +623,7 @@
         },
         {
           "id": "r073",
-          "ms": 0.4450999999999965,
+          "ms": 0.5465189999999893,
           "agent": "tester",
           "confidence": 0.57,
           "embedder": "hash",
@@ -631,7 +631,7 @@
         },
         {
           "id": "r074",
-          "ms": 0.6465800000000002,
+          "ms": 0.6845600000000047,
           "agent": "memory-specialist",
           "confidence": 0.43,
           "embedder": "hash",
@@ -639,7 +639,7 @@
         },
         {
           "id": "r075",
-          "ms": 1.1458689999999905,
+          "ms": 1.4179089999999803,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -647,7 +647,7 @@
         },
         {
           "id": "r076",
-          "ms": 0.8902299999999883,
+          "ms": 1.1642200000000003,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "hash",
@@ -655,7 +655,7 @@
         },
         {
           "id": "r077",
-          "ms": 0.890158999999997,
+          "ms": 0.9939500000000123,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -663,7 +663,7 @@
         },
         {
           "id": "r078",
-          "ms": 0.5841300000000018,
+          "ms": 0.5901389999999935,
           "agent": "tester",
           "confidence": 0.54,
           "embedder": "hash",
@@ -671,7 +671,7 @@
         },
         {
           "id": "r079",
-          "ms": 0.7745989999999949,
+          "ms": 0.8161699999999996,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -679,7 +679,7 @@
         },
         {
           "id": "r080",
-          "ms": 1.0800200000000046,
+          "ms": 1.2571889999999826,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -687,7 +687,7 @@
         },
         {
           "id": "r081",
-          "ms": 0.22434999999998695,
+          "ms": 0.4269400000000019,
           "agent": "coder",
           "confidence": 0.56,
           "embedder": "hash",
@@ -695,7 +695,7 @@
         },
         {
           "id": "r082",
-          "ms": 0.5816700000000026,
+          "ms": 0.67804000000001,
           "agent": "tester",
           "confidence": 0.43,
           "embedder": "hash",
@@ -703,7 +703,7 @@
         },
         {
           "id": "r083",
-          "ms": 0.3759990000000073,
+          "ms": 0.4687600000000032,
           "agent": "tester",
           "confidence": 0.75,
           "embedder": "hash",
@@ -711,7 +711,7 @@
         },
         {
           "id": "r084",
-          "ms": 0.8763800000000117,
+          "ms": 0.9375689999999963,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -719,7 +719,7 @@
         },
         {
           "id": "r085",
-          "ms": 0.5739099999999979,
+          "ms": 0.5942799999999977,
           "agent": "tester",
           "confidence": 0.54,
           "embedder": "hash",
@@ -727,7 +727,7 @@
         },
         {
           "id": "r086",
-          "ms": 0.9038290000000018,
+          "ms": 0.9103800000000035,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -735,7 +735,7 @@
         },
         {
           "id": "r087",
-          "ms": 1.0277900000000102,
+          "ms": 1.0498990000000106,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -743,7 +743,7 @@
         },
         {
           "id": "r088",
-          "ms": 0.3887990000000059,
+          "ms": 0.4250499999999988,
           "agent": "tester",
           "confidence": 0.68,
           "embedder": "hash",
@@ -751,7 +751,7 @@
         },
         {
           "id": "r089",
-          "ms": 0.9457599999999786,
+          "ms": 0.967979999999983,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -759,7 +759,7 @@
         },
         {
           "id": "r090",
-          "ms": 0.084210000000013,
+          "ms": 0.08162900000002082,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -767,7 +767,7 @@
         },
         {
           "id": "r091",
-          "ms": 0.45423999999999864,
+          "ms": 0.44553999999999405,
           "agent": "tester",
           "confidence": 0.52,
           "embedder": "hash",
@@ -775,7 +775,7 @@
         },
         {
           "id": "r092",
-          "ms": 0.6837589999999807,
+          "ms": 0.6834900000000061,
           "agent": "tester",
           "confidence": 0.62,
           "embedder": "hash",
@@ -783,7 +783,7 @@
         },
         {
           "id": "r093",
-          "ms": 1.3159289999999828,
+          "ms": 1.1574690000000203,
           "agent": "swarm-specialist",
           "confidence": 0.9,
           "embedder": "hash",
@@ -791,7 +791,7 @@
         },
         {
           "id": "r094",
-          "ms": 1.1249500000000126,
+          "ms": 1.1725100000000168,
           "agent": "performance-engineer",
           "confidence": 0.88,
           "embedder": "hash",
@@ -799,7 +799,7 @@
         },
         {
           "id": "r095",
-          "ms": 0.5842299999999909,
+          "ms": 0.5959799999999973,
           "agent": "memory-specialist",
           "confidence": 0.43,
           "embedder": "hash",
@@ -807,7 +807,7 @@
         },
         {
           "id": "r096",
-          "ms": 0.872509000000008,
+          "ms": 0.7593189999999765,
           "agent": "tester",
           "confidence": 0.5,
           "embedder": "hash",
@@ -815,7 +815,7 @@
         },
         {
           "id": "r097",
-          "ms": 0.3084299999999871,
+          "ms": 0.26264000000000465,
           "agent": "memory-specialist",
           "confidence": 0.65,
           "embedder": "hash",
@@ -823,7 +823,7 @@
         },
         {
           "id": "r098",
-          "ms": 0.5153699999999901,
+          "ms": 0.5483800000000087,
           "agent": "architect",
           "confidence": 0.62,
           "embedder": "hash",
@@ -831,7 +831,7 @@
         },
         {
           "id": "r099",
-          "ms": 0.5898489999999867,
+          "ms": 0.5999999999999943,
           "agent": "tester",
           "confidence": 0.49,
           "embedder": "hash",
@@ -839,7 +839,7 @@
         },
         {
           "id": "r100",
-          "ms": 0.7225599999999872,
+          "ms": 0.7234190000000069,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -847,7 +847,7 @@
         },
         {
           "id": "r101",
-          "ms": 0.8299989999999866,
+          "ms": 0.8717800000000011,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -855,7 +855,7 @@
         },
         {
           "id": "r102",
-          "ms": 0.9786199999999781,
+          "ms": 1.0048299999999983,
           "agent": "security-architect",
           "confidence": 0.92,
           "embedder": "hash",
@@ -863,7 +863,7 @@
         },
         {
           "id": "r103",
-          "ms": 0.6488899999999944,
+          "ms": 0.6459890000000144,
           "agent": "tester",
           "confidence": 0.52,
           "embedder": "hash",
@@ -871,7 +871,7 @@
         },
         {
           "id": "r104",
-          "ms": 0.3537390000000187,
+          "ms": 0.3587799999999959,
           "agent": "tester",
           "confidence": 0.61,
           "embedder": "hash",
@@ -879,7 +879,7 @@
         },
         {
           "id": "r105",
-          "ms": 0.2840399999999761,
+          "ms": 0.32478000000000407,
           "agent": "architect",
           "confidence": 0.75,
           "embedder": "hash",
@@ -887,7 +887,7 @@
         },
         {
           "id": "r106",
-          "ms": 0.1363800000000026,
+          "ms": 0.1371599999999944,
           "agent": "devops",
           "confidence": 0.51,
           "embedder": "hash",
@@ -895,7 +895,7 @@
         },
         {
           "id": "r107",
-          "ms": 1.0961790000000065,
+          "ms": 1.1063099999999793,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -903,7 +903,7 @@
         },
         {
           "id": "r108",
-          "ms": 0.5674199999999985,
+          "ms": 0.5685990000000061,
           "agent": "performance-engineer",
           "confidence": 0.42,
           "embedder": "hash",
@@ -911,7 +911,7 @@
         },
         {
           "id": "r109",
-          "ms": 0.9396699999999782,
+          "ms": 0.9353499999999997,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -919,7 +919,7 @@
         },
         {
           "id": "r110",
-          "ms": 0.45547899999999686,
+          "ms": 0.4375199999999779,
           "agent": "tester",
           "confidence": 0.67,
           "embedder": "hash",
@@ -927,7 +927,7 @@
         },
         {
           "id": "r111",
-          "ms": 0.7362399999999809,
+          "ms": 0.7189189999999996,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -935,7 +935,7 @@
         },
         {
           "id": "r112",
-          "ms": 0.8913900000000012,
+          "ms": 0.8802799999999991,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -943,7 +943,7 @@
         },
         {
           "id": "r113",
-          "ms": 1.1693089999999984,
+          "ms": 1.161469000000011,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "hash",
@@ -951,7 +951,7 @@
         },
         {
           "id": "r114",
-          "ms": 0.9895490000000109,
+          "ms": 1.2029400000000123,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -959,7 +959,7 @@
         },
         {
           "id": "r115",
-          "ms": 0.8392699999999991,
+          "ms": 0.7192099999999755,
           "agent": "performance-engineer",
           "confidence": 0.41,
           "embedder": "hash",
@@ -967,7 +967,7 @@
         },
         {
           "id": "r116",
-          "ms": 0.14955000000000496,
+          "ms": 0.14606000000000563,
           "agent": "security-architect",
           "confidence": 0.52,
           "embedder": "hash",
@@ -975,7 +975,7 @@
         },
         {
           "id": "r117",
-          "ms": 0.8672990000000027,
+          "ms": 0.8528790000000015,
           "agent": "architect",
           "confidence": 0.9,
           "embedder": "hash",
@@ -983,7 +983,7 @@
         },
         {
           "id": "r118",
-          "ms": 0.5113000000000056,
+          "ms": 0.49671999999998206,
           "agent": "architect",
           "confidence": 0.46,
           "embedder": "hash",
@@ -991,7 +991,7 @@
         },
         {
           "id": "r119",
-          "ms": 0.8999099999999771,
+          "ms": 0.8863500000000215,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -999,7 +999,7 @@
         },
         {
           "id": "r120",
-          "ms": 1.1533990000000074,
+          "ms": 1.2766190000000108,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1007,7 +1007,7 @@
         },
         {
           "id": "r121",
-          "ms": 0.8153489999999977,
+          "ms": 0.8059100000000115,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -1015,7 +1015,7 @@
         },
         {
           "id": "r122",
-          "ms": 0.6206400000000087,
+          "ms": 0.6001489999999876,
           "agent": "tester",
           "confidence": 0.47,
           "embedder": "hash",
@@ -1023,7 +1023,7 @@
         },
         {
           "id": "r123",
-          "ms": 0.8319099999999935,
+          "ms": 0.8102399999999932,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1031,7 +1031,7 @@
         },
         {
           "id": "r124",
-          "ms": 0.4409689999999955,
+          "ms": 0.4265399999999886,
           "agent": "tester",
           "confidence": 0.53,
           "embedder": "hash",
@@ -1039,7 +1039,7 @@
         },
         {
           "id": "r125",
-          "ms": 0.6844600000000014,
+          "ms": 0.6877700000000004,
           "agent": "devops",
           "confidence": 0.54,
           "embedder": "hash",
@@ -1047,7 +1047,7 @@
         },
         {
           "id": "r126",
-          "ms": 1.148779999999988,
+          "ms": 1.1276090000000067,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "hash",
@@ -1055,7 +1055,7 @@
         },
         {
           "id": "r127",
-          "ms": 0.48199900000000184,
+          "ms": 0.4770599999999945,
           "agent": "architect",
           "confidence": 0.45,
           "embedder": "hash",
@@ -1063,7 +1063,7 @@
         },
         {
           "id": "r128",
-          "ms": 0.7108499999999935,
+          "ms": 0.6737600000000157,
           "agent": "devops",
           "confidence": 0.48,
           "embedder": "hash",
@@ -1071,7 +1071,7 @@
         },
         {
           "id": "r129",
-          "ms": 0.8505499999999984,
+          "ms": 0.829858999999999,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1079,7 +1079,7 @@
         },
         {
           "id": "r130",
-          "ms": 0.2612489999999923,
+          "ms": 0.24733000000000516,
           "agent": "performance-engineer",
           "confidence": 0.79,
           "embedder": "hash",
@@ -1087,7 +1087,7 @@
         },
         {
           "id": "r131",
-          "ms": 1.334920000000011,
+          "ms": 1.112259999999992,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1095,7 +1095,7 @@
         },
         {
           "id": "r132",
-          "ms": 0.7582689999999843,
+          "ms": 0.7030490000000214,
           "agent": "tester",
           "confidence": 0.48,
           "embedder": "hash",
@@ -1103,7 +1103,7 @@
         },
         {
           "id": "r133",
-          "ms": 0.5525399999999934,
+          "ms": 0.5454799999999977,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1111,7 +1111,7 @@
         },
         {
           "id": "r134",
-          "ms": 0.9111090000000104,
+          "ms": 0.8879499999999894,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -1119,7 +1119,7 @@
         },
         {
           "id": "r135",
-          "ms": 0.7036899999999946,
+          "ms": 0.6803089999999941,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1127,7 +1127,7 @@
         },
         {
           "id": "r136",
-          "ms": 0.7336300000000051,
+          "ms": 0.7242600000000152,
           "agent": "devops",
           "confidence": 0.42,
           "embedder": "hash",
@@ -1135,7 +1135,7 @@
         },
         {
           "id": "r137",
-          "ms": 0.9405490000000043,
+          "ms": 0.9379100000000165,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "hash",
@@ -1143,7 +1143,7 @@
         },
         {
           "id": "r138",
-          "ms": 0.7317800000000148,
+          "ms": 0.724788999999987,
           "agent": "swarm-specialist",
           "confidence": 0.5,
           "embedder": "hash",
@@ -1151,7 +1151,7 @@
         },
         {
           "id": "r139",
-          "ms": 0.5071689999999762,
+          "ms": 0.4929899999999918,
           "agent": "tester",
           "confidence": 0.65,
           "embedder": "hash",
@@ -1159,7 +1159,7 @@
         },
         {
           "id": "r140",
-          "ms": 0.8719499999999982,
+          "ms": 0.8473099999999931,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1167,7 +1167,7 @@
         },
         {
           "id": "r141",
-          "ms": 0.4995499999999993,
+          "ms": 0.4872699999999952,
           "agent": "tester",
           "confidence": 0.5,
           "embedder": "hash",
@@ -1175,7 +1175,7 @@
         },
         {
           "id": "r142",
-          "ms": 1.0102489999999875,
+          "ms": 1.0237490000000093,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1183,7 +1183,7 @@
         },
         {
           "id": "r143",
-          "ms": 0.32453999999998473,
+          "ms": 0.31126999999997906,
           "agent": "architect",
           "confidence": 0.64,
           "embedder": "hash",
@@ -1191,7 +1191,7 @@
         },
         {
           "id": "r144",
-          "ms": 0.637740000000008,
+          "ms": 0.6157399999999882,
           "agent": "tester",
           "confidence": 0.55,
           "embedder": "hash",
@@ -1199,7 +1199,7 @@
         },
         {
           "id": "r145",
-          "ms": 0.5910289999999918,
+          "ms": 0.5863290000000063,
           "agent": "architect",
           "confidence": 0.43,
           "embedder": "hash",
@@ -1207,7 +1207,7 @@
         },
         {
           "id": "r146",
-          "ms": 0.9100300000000061,
+          "ms": 0.8904899999999998,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "hash",
@@ -1215,7 +1215,7 @@
         },
         {
           "id": "r147",
-          "ms": 0.9003689999999835,
+          "ms": 0.8627099999999928,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1223,7 +1223,7 @@
         },
         {
           "id": "r148",
-          "ms": 0.1262100000000146,
+          "ms": 0.12284999999999968,
           "agent": "devops",
           "confidence": 0.6,
           "embedder": "hash",
@@ -1231,7 +1231,7 @@
         },
         {
           "id": "r149",
-          "ms": 0.7109199999999873,
+          "ms": 0.700129000000004,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1239,7 +1239,7 @@
         },
         {
           "id": "r150",
-          "ms": 1.100718999999998,
+          "ms": 1.0718600000000151,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "hash",
@@ -1247,7 +1247,7 @@
         },
         {
           "id": "r151",
-          "ms": 0.8027899999999875,
+          "ms": 0.7702290000000005,
           "agent": "tester",
           "confidence": 0.4,
           "embedder": "hash",
@@ -1255,7 +1255,7 @@
         },
         {
           "id": "r152",
-          "ms": 0.6482489999999927,
+          "ms": 0.6322199999999896,
           "agent": "tester",
           "confidence": 0.48,
           "embedder": "hash",
@@ -1263,7 +1263,7 @@
         },
         {
           "id": "r153",
-          "ms": 0.8855599999999981,
+          "ms": 0.861220000000003,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1271,7 +1271,7 @@
         },
         {
           "id": "r154",
-          "ms": 0.6988799999999742,
+          "ms": 0.6748499999999922,
           "agent": "architect",
           "confidence": 0.41,
           "embedder": "hash",
@@ -1279,7 +1279,7 @@
         },
         {
           "id": "r155",
-          "ms": 1.1007390000000044,
+          "ms": 0.9204589999999939,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1287,7 +1287,7 @@
         },
         {
           "id": "r156",
-          "ms": 1.4997989999999959,
+          "ms": 1.1185800000000086,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1295,7 +1295,7 @@
         },
         {
           "id": "r157",
-          "ms": 1.6313490000000002,
+          "ms": 1.3629290000000083,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1303,7 +1303,7 @@
         },
         {
           "id": "r158",
-          "ms": 0.8694100000000162,
+          "ms": 0.8103200000000186,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1311,7 +1311,7 @@
         },
         {
           "id": "r159",
-          "ms": 0.9389390000000049,
+          "ms": 0.8557389999999998,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "hash",
@@ -1319,7 +1319,7 @@
         },
         {
           "id": "r160",
-          "ms": 0.6440600000000245,
+          "ms": 0.6121700000000203,
           "agent": "swarm-specialist",
           "confidence": 0.45,
           "embedder": "hash",
@@ -1327,7 +1327,7 @@
         },
         {
           "id": "r161",
-          "ms": 0.8990389999999877,
+          "ms": 0.8653700000000129,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1335,7 +1335,7 @@
         },
         {
           "id": "r162",
-          "ms": 0.7339899999999773,
+          "ms": 0.6149289999999894,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1343,7 +1343,7 @@
         },
         {
           "id": "r163",
-          "ms": 0.2515899999999931,
+          "ms": 0.2315799999999797,
           "agent": "tester",
           "confidence": 0.77,
           "embedder": "hash",
@@ -1351,7 +1351,7 @@
         },
         {
           "id": "r164",
-          "ms": 0.6323100000000181,
+          "ms": 0.6097900000000038,
           "agent": "performance-engineer",
           "confidence": 0.47,
           "embedder": "hash",
@@ -1359,7 +1359,7 @@
         },
         {
           "id": "r165",
-          "ms": 0.48152999999999224,
+          "ms": 0.4604399999999771,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1367,7 +1367,7 @@
         },
         {
           "id": "r166",
-          "ms": 0.7330090000000098,
+          "ms": 0.6958199999999977,
           "agent": "swarm-specialist",
           "confidence": 0.9,
           "embedder": "hash",
@@ -1375,7 +1375,7 @@
         },
         {
           "id": "r167",
-          "ms": 0.7668699999999831,
+          "ms": 0.5885590000000036,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1383,7 +1383,7 @@
         },
         {
           "id": "r168",
-          "ms": 0.5983190000000036,
+          "ms": 0.525100000000009,
           "agent": "tester",
           "confidence": 0.52,
           "embedder": "hash",
@@ -1391,7 +1391,7 @@
         },
         {
           "id": "r169",
-          "ms": 0.48849000000001297,
+          "ms": 0.4143500000000131,
           "agent": "tester",
           "confidence": 0.62,
           "embedder": "hash",
@@ -1399,7 +1399,7 @@
         },
         {
           "id": "r170",
-          "ms": 0.4902500000000032,
+          "ms": 0.4394499999999937,
           "agent": "tester",
           "confidence": 0.61,
           "embedder": "hash",
@@ -1407,7 +1407,7 @@
         },
         {
           "id": "r171",
-          "ms": 0.4325900000000047,
+          "ms": 0.4102800000000002,
           "agent": "architect",
           "confidence": 0.65,
           "embedder": "hash",
@@ -1415,7 +1415,7 @@
         },
         {
           "id": "r172",
-          "ms": 0.6459189999999921,
+          "ms": 0.6310489999999902,
           "agent": "tester",
           "confidence": 0.44,
           "embedder": "hash",
@@ -1423,7 +1423,7 @@
         },
         {
           "id": "r173",
-          "ms": 0.9064199999999971,
+          "ms": 0.8601400000000012,
           "agent": "devops",
           "confidence": 0.85,
           "embedder": "hash",
@@ -1431,7 +1431,7 @@
         },
         {
           "id": "r174",
-          "ms": 0.7358490000000018,
+          "ms": 0.713310000000007,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1439,7 +1439,7 @@
         },
         {
           "id": "r175",
-          "ms": 1.1388900000000035,
+          "ms": 1.0317489999999907,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "hash",
@@ -1447,7 +1447,7 @@
         },
         {
           "id": "r176",
-          "ms": 0.4867089999999905,
+          "ms": 0.46993000000000507,
           "agent": "memory-specialist",
           "confidence": 0.54,
           "embedder": "hash",
@@ -1455,7 +1455,7 @@
         },
         {
           "id": "r177",
-          "ms": 0.5512899999999945,
+          "ms": 0.52928,
           "agent": "devops",
           "confidence": 0.44,
           "embedder": "hash",
@@ -1463,7 +1463,7 @@
         },
         {
           "id": "r178",
-          "ms": 0.6249600000000157,
+          "ms": 0.5969499999999925,
           "agent": "memory-specialist",
           "confidence": 0.51,
           "embedder": "hash",
@@ -1471,7 +1471,7 @@
         },
         {
           "id": "r179",
-          "ms": 1.215789000000001,
+          "ms": 1.0788689999999974,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "hash",
@@ -1479,7 +1479,7 @@
         },
         {
           "id": "r180",
-          "ms": 0.6144100000000208,
+          "ms": 0.4677000000000078,
           "agent": "memory-specialist",
           "confidence": 0.5,
           "embedder": "hash",
@@ -1487,7 +1487,7 @@
         },
         {
           "id": "r181",
-          "ms": 1.0099390000000028,
+          "ms": 0.8859600000000114,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1495,7 +1495,7 @@
         },
         {
           "id": "r182",
-          "ms": 0.4287800000000175,
+          "ms": 0.41518899999999803,
           "agent": "tester",
           "confidence": 0.65,
           "embedder": "hash",
@@ -1503,7 +1503,7 @@
         },
         {
           "id": "r183",
-          "ms": 0.8707100000000025,
+          "ms": 0.8226999999999975,
           "agent": "devops",
           "confidence": 0.85,
           "embedder": "hash",
@@ -1511,7 +1511,7 @@
         },
         {
           "id": "r184",
-          "ms": 0.7153790000000129,
+          "ms": 0.6677799999999934,
           "agent": "memory-specialist",
           "confidence": 0.5,
           "embedder": "hash",
@@ -1519,7 +1519,7 @@
         },
         {
           "id": "r185",
-          "ms": 0.7942999999999927,
+          "ms": 0.7553589999999986,
           "agent": "security-architect",
           "confidence": 0.4,
           "embedder": "hash",
@@ -1527,7 +1527,7 @@
         },
         {
           "id": "r186",
-          "ms": 0.9604490000000112,
+          "ms": 0.9132199999999955,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "hash",
@@ -1535,7 +1535,7 @@
         },
         {
           "id": "r187",
-          "ms": 0.723889999999983,
+          "ms": 0.7115300000000104,
           "agent": "architect",
           "confidence": 0.41,
           "embedder": "hash",
@@ -1543,7 +1543,7 @@
         },
         {
           "id": "r188",
-          "ms": 0.39506000000000085,
+          "ms": 0.3766290000000083,
           "agent": "memory-specialist",
           "confidence": 0.55,
           "embedder": "hash",
@@ -1551,7 +1551,7 @@
         },
         {
           "id": "r189",
-          "ms": 0.5113790000000051,
+          "ms": 0.5004100000000165,
           "agent": "performance-engineer",
           "confidence": 0.41,
           "embedder": "hash",
@@ -1559,7 +1559,7 @@
         },
         {
           "id": "r190",
-          "ms": 0.7584099999999978,
+          "ms": 0.722139999999996,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1567,7 +1567,7 @@
         },
         {
           "id": "r191",
-          "ms": 0.5456099999999822,
+          "ms": 0.5223200000000077,
           "agent": "tester",
           "confidence": 0.45,
           "embedder": "hash",
@@ -1575,7 +1575,7 @@
         },
         {
           "id": "r192",
-          "ms": 0.6563289999999995,
+          "ms": 0.6188390000000084,
           "agent": "architect",
           "confidence": 0.42,
           "embedder": "hash",
@@ -1583,7 +1583,7 @@
         },
         {
           "id": "r193",
-          "ms": 0.09141999999999939,
+          "ms": 0.10202000000001021,
           "agent": "devops",
           "confidence": 0.56,
           "embedder": "hash",
@@ -1591,7 +1591,7 @@
         },
         {
           "id": "r194",
-          "ms": 0.5309599999999932,
+          "ms": 0.5108899999999892,
           "agent": "tester",
           "confidence": 0.59,
           "embedder": "hash",
@@ -1599,7 +1599,7 @@
         },
         {
           "id": "r195",
-          "ms": 0.9381290000000035,
+          "ms": 0.9115400000000022,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "hash",
@@ -1607,7 +1607,7 @@
         },
         {
           "id": "r196",
-          "ms": 0.9071600000000046,
+          "ms": 0.8633389999999963,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1615,7 +1615,7 @@
         },
         {
           "id": "r197",
-          "ms": 0.9399789999999939,
+          "ms": 0.9096000000000117,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "hash",
@@ -1639,14 +1639,14 @@
         "trapAccuracy": 0.2581
       },
       "latencyMs": {
-        "cold": 456.56,
-        "p50": 5.479,
-        "p95": 11.768
+        "cold": 354.18,
+        "p50": 4.306,
+        "p95": 10.563
       },
       "predictions": [
         {
           "id": "r001",
-          "ms": 456.562504,
+          "ms": 354.177496,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1654,7 +1654,7 @@
         },
         {
           "id": "r002",
-          "ms": 10.94494400000002,
+          "ms": 5.653897000000029,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1662,7 +1662,7 @@
         },
         {
           "id": "r003",
-          "ms": 7.0555760000000305,
+          "ms": 5.379177999999968,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1670,7 +1670,7 @@
         },
         {
           "id": "r004",
-          "ms": 5.283776999999986,
+          "ms": 1.997998999999993,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1678,7 +1678,7 @@
         },
         {
           "id": "r005",
-          "ms": 6.908177000000023,
+          "ms": 4.845397999999989,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1686,7 +1686,7 @@
         },
         {
           "id": "r006",
-          "ms": 5.633295999999973,
+          "ms": 5.568177999999989,
           "agent": "memory-specialist",
           "confidence": 0.45,
           "embedder": "minilm",
@@ -1694,7 +1694,7 @@
         },
         {
           "id": "r007",
-          "ms": 7.4431560000000445,
+          "ms": 1.9490989999999897,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -1702,7 +1702,7 @@
         },
         {
           "id": "r008",
-          "ms": 5.877576999999974,
+          "ms": 5.966047000000003,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -1710,7 +1710,7 @@
         },
         {
           "id": "r009",
-          "ms": 8.907474999999977,
+          "ms": 7.53277700000001,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1718,7 +1718,7 @@
         },
         {
           "id": "r010",
-          "ms": 5.074707999999987,
+          "ms": 10.454094999999995,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1726,7 +1726,7 @@
         },
         {
           "id": "r011",
-          "ms": 2.284057999999959,
+          "ms": 18.211401999999964,
           "agent": "security-architect",
           "confidence": 0.92,
           "embedder": "minilm",
@@ -1734,7 +1734,7 @@
         },
         {
           "id": "r012",
-          "ms": 6.558726999999976,
+          "ms": 6.813696999999991,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1742,7 +1742,7 @@
         },
         {
           "id": "r013",
-          "ms": 9.259224999999901,
+          "ms": 10.284205999999983,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1750,7 +1750,7 @@
         },
         {
           "id": "r014",
-          "ms": 8.865994999999998,
+          "ms": 5.954306999999972,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1758,7 +1758,7 @@
         },
         {
           "id": "r015",
-          "ms": 7.835065999999983,
+          "ms": 3.6760489999999777,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1766,7 +1766,7 @@
         },
         {
           "id": "r016",
-          "ms": 5.013196999999991,
+          "ms": 10.563204999999982,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1774,7 +1774,7 @@
         },
         {
           "id": "r017",
-          "ms": 5.572467000000074,
+          "ms": 2.0255089999999996,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1782,7 +1782,7 @@
         },
         {
           "id": "r018",
-          "ms": 2.1340490000000045,
+          "ms": 9.33806599999997,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1790,7 +1790,7 @@
         },
         {
           "id": "r019",
-          "ms": 5.958016999999927,
+          "ms": 5.894358000000011,
           "agent": "swarm-specialist",
           "confidence": 0.43,
           "embedder": "minilm",
@@ -1798,7 +1798,7 @@
         },
         {
           "id": "r020",
-          "ms": 6.652445999999941,
+          "ms": 3.0837779999999952,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -1806,7 +1806,7 @@
         },
         {
           "id": "r021",
-          "ms": 2.0661590000000842,
+          "ms": 2.512029000000041,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1814,7 +1814,7 @@
         },
         {
           "id": "r022",
-          "ms": 4.976296999999931,
+          "ms": 5.357018000000039,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1822,7 +1822,7 @@
         },
         {
           "id": "r023",
-          "ms": 5.496287000000052,
+          "ms": 1.946909000000005,
           "agent": "swarm-specialist",
           "confidence": 0.58,
           "embedder": "minilm",
@@ -1830,7 +1830,7 @@
         },
         {
           "id": "r024",
-          "ms": 1.276110000000017,
+          "ms": 1.6687689999999975,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1838,7 +1838,7 @@
         },
         {
           "id": "r025",
-          "ms": 4.674496999999974,
+          "ms": 2.4586590000000115,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1846,7 +1846,7 @@
         },
         {
           "id": "r026",
-          "ms": 1.7216190000000324,
+          "ms": 1.4920589999999265,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1854,7 +1854,7 @@
         },
         {
           "id": "r027",
-          "ms": 4.956777999999986,
+          "ms": 1.476220000000012,
           "agent": "architect",
           "confidence": 0.5,
           "embedder": "minilm",
@@ -1862,7 +1862,7 @@
         },
         {
           "id": "r028",
-          "ms": 13.49080200000003,
+          "ms": 7.541655999999989,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -1870,7 +1870,7 @@
         },
         {
           "id": "r029",
-          "ms": 6.442087000000015,
+          "ms": 2.57338900000002,
           "agent": "architect",
           "confidence": 0.42,
           "embedder": "minilm",
@@ -1878,7 +1878,7 @@
         },
         {
           "id": "r030",
-          "ms": 6.893296000000078,
+          "ms": 1.6543700000000854,
           "agent": "swarm-specialist",
           "confidence": 0.54,
           "embedder": "minilm",
@@ -1886,7 +1886,7 @@
         },
         {
           "id": "r031",
-          "ms": 7.83223600000008,
+          "ms": 5.4638570000000755,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1894,7 +1894,7 @@
         },
         {
           "id": "r032",
-          "ms": 6.047477000000072,
+          "ms": 6.352987999999982,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1902,7 +1902,7 @@
         },
         {
           "id": "r033",
-          "ms": 6.14529600000003,
+          "ms": 7.477086000000099,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1910,7 +1910,7 @@
         },
         {
           "id": "r034",
-          "ms": 2.042549000000008,
+          "ms": 2.094769000000042,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1918,7 +1918,7 @@
         },
         {
           "id": "r035",
-          "ms": 5.244397000000049,
+          "ms": 3.4143889999999146,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1926,7 +1926,7 @@
         },
         {
           "id": "r036",
-          "ms": 1.723459000000048,
+          "ms": 1.853729000000044,
           "agent": "security-architect",
           "confidence": 0.47,
           "embedder": "minilm",
@@ -1934,7 +1934,7 @@
         },
         {
           "id": "r037",
-          "ms": 15.149831999999947,
+          "ms": 6.7897669999999835,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -1942,7 +1942,7 @@
         },
         {
           "id": "r038",
-          "ms": 7.115035999999918,
+          "ms": 2.914529000000016,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1950,7 +1950,7 @@
         },
         {
           "id": "r039",
-          "ms": 6.502887000000101,
+          "ms": 3.4896080000000893,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -1958,7 +1958,7 @@
         },
         {
           "id": "r040",
-          "ms": 5.434326999999939,
+          "ms": 2.0923689999999624,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -1966,7 +1966,7 @@
         },
         {
           "id": "r041",
-          "ms": 4.006208000000015,
+          "ms": 1.4027600000000575,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1974,7 +1974,7 @@
         },
         {
           "id": "r042",
-          "ms": 9.244415000000004,
+          "ms": 4.076067999999964,
           "agent": "swarm-specialist",
           "confidence": 0.43,
           "embedder": "minilm",
@@ -1982,7 +1982,7 @@
         },
         {
           "id": "r043",
-          "ms": 6.214456000000041,
+          "ms": 5.573667999999998,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -1990,7 +1990,7 @@
         },
         {
           "id": "r044",
-          "ms": 5.5502970000000005,
+          "ms": 3.279708000000028,
           "agent": "architect",
           "confidence": 0.63,
           "embedder": "minilm",
@@ -1998,7 +1998,7 @@
         },
         {
           "id": "r045",
-          "ms": 2.2454890000000205,
+          "ms": 1.9734389999999848,
           "agent": "swarm-specialist",
           "confidence": 0.49,
           "embedder": "minilm",
@@ -2006,7 +2006,7 @@
         },
         {
           "id": "r046",
-          "ms": 4.995568000000048,
+          "ms": 3.9762590000000273,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2014,7 +2014,7 @@
         },
         {
           "id": "r047",
-          "ms": 4.984246999999982,
+          "ms": 1.6153790000000754,
           "agent": "swarm-specialist",
           "confidence": 0.47,
           "embedder": "minilm",
@@ -2022,7 +2022,7 @@
         },
         {
           "id": "r048",
-          "ms": 1.7867690000000493,
+          "ms": 5.380677999999989,
           "agent": "memory-specialist",
           "confidence": 0.43,
           "embedder": "minilm",
@@ -2030,7 +2030,7 @@
         },
         {
           "id": "r049",
-          "ms": 6.961905999999999,
+          "ms": 8.19268599999998,
           "agent": "memory-specialist",
           "confidence": 0.42,
           "embedder": "minilm",
@@ -2038,7 +2038,7 @@
         },
         {
           "id": "r050",
-          "ms": 6.06996700000002,
+          "ms": 1.8595890000000281,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -2046,7 +2046,7 @@
         },
         {
           "id": "r051",
-          "ms": 5.67660699999999,
+          "ms": 3.607949000000076,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2054,7 +2054,7 @@
         },
         {
           "id": "r052",
-          "ms": 1.8108689999999115,
+          "ms": 2.1962389999999914,
           "agent": "tester",
           "confidence": 0.41,
           "embedder": "minilm",
@@ -2062,7 +2062,7 @@
         },
         {
           "id": "r053",
-          "ms": 10.213374000000044,
+          "ms": 2.1829890000000205,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -2070,7 +2070,7 @@
         },
         {
           "id": "r054",
-          "ms": 1.8915490000000545,
+          "ms": 1.46396900000002,
           "agent": "coder",
           "confidence": 0.51,
           "embedder": "minilm",
@@ -2078,7 +2078,7 @@
         },
         {
           "id": "r055",
-          "ms": 6.344827000000009,
+          "ms": 1.6565389999999525,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2086,7 +2086,7 @@
         },
         {
           "id": "r056",
-          "ms": 2.1025490000000673,
+          "ms": 1.4712799999999788,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -2094,7 +2094,7 @@
         },
         {
           "id": "r057",
-          "ms": 5.630616000000032,
+          "ms": 1.7830490000000054,
           "agent": "security-architect",
           "confidence": 0.51,
           "embedder": "minilm",
@@ -2102,7 +2102,7 @@
         },
         {
           "id": "r058",
-          "ms": 2.183889000000022,
+          "ms": 4.898408000000018,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2110,7 +2110,7 @@
         },
         {
           "id": "r059",
-          "ms": 4.445578000000069,
+          "ms": 1.1603890000000092,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2118,7 +2118,7 @@
         },
         {
           "id": "r060",
-          "ms": 2.0247490000000425,
+          "ms": 2.1403490000000147,
           "agent": "swarm-specialist",
           "confidence": 0.45,
           "embedder": "minilm",
@@ -2126,7 +2126,7 @@
         },
         {
           "id": "r061",
-          "ms": 4.263458000000014,
+          "ms": 1.8191000000000486,
           "agent": "performance-engineer",
           "confidence": 0.46,
           "embedder": "minilm",
@@ -2134,7 +2134,7 @@
         },
         {
           "id": "r062",
-          "ms": 5.757535999999959,
+          "ms": 1.3980390000000398,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2142,7 +2142,7 @@
         },
         {
           "id": "r063",
-          "ms": 5.035648000000037,
+          "ms": 4.590757999999937,
           "agent": "memory-specialist",
           "confidence": 0.43,
           "embedder": "minilm",
@@ -2150,7 +2150,7 @@
         },
         {
           "id": "r064",
-          "ms": 6.22301600000003,
+          "ms": 1.1905990000000202,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2158,7 +2158,7 @@
         },
         {
           "id": "r065",
-          "ms": 2.0056390000000874,
+          "ms": 4.829277999999931,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2166,7 +2166,7 @@
         },
         {
           "id": "r066",
-          "ms": 5.08854800000006,
+          "ms": 2.758499000000029,
           "agent": "architect",
           "confidence": 0.52,
           "embedder": "minilm",
@@ -2174,7 +2174,7 @@
         },
         {
           "id": "r067",
-          "ms": 4.718447000000083,
+          "ms": 10.260255999999913,
           "agent": "architect",
           "confidence": 0.46,
           "embedder": "minilm",
@@ -2182,7 +2182,7 @@
         },
         {
           "id": "r068",
-          "ms": 1.6791389999999637,
+          "ms": 4.893987000000038,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2190,7 +2190,7 @@
         },
         {
           "id": "r069",
-          "ms": 5.128557000000001,
+          "ms": 4.8631579999999985,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2198,7 +2198,7 @@
         },
         {
           "id": "r070",
-          "ms": 5.115507999999977,
+          "ms": 2.0496899999999414,
           "agent": "architect",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -2206,7 +2206,7 @@
         },
         {
           "id": "r071",
-          "ms": 2.1922080000000506,
+          "ms": 1.8960089999999354,
           "agent": "swarm-specialist",
           "confidence": 0.4,
           "embedder": "minilm",
@@ -2214,7 +2214,7 @@
         },
         {
           "id": "r072",
-          "ms": 5.916547000000037,
+          "ms": 2.4457689999999275,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2222,7 +2222,7 @@
         },
         {
           "id": "r073",
-          "ms": 4.601598000000081,
+          "ms": 1.2488590000000386,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2230,7 +2230,7 @@
         },
         {
           "id": "r074",
-          "ms": 2.2068790000000718,
+          "ms": 7.0651169999999865,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2238,7 +2238,7 @@
         },
         {
           "id": "r075",
-          "ms": 5.928865999999971,
+          "ms": 5.426827999999887,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2246,7 +2246,7 @@
         },
         {
           "id": "r076",
-          "ms": 7.193306000000007,
+          "ms": 2.0618389999999636,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -2254,7 +2254,7 @@
         },
         {
           "id": "r077",
-          "ms": 14.67439300000001,
+          "ms": 4.367368000000056,
           "agent": "tester",
           "confidence": 0.46,
           "embedder": "minilm",
@@ -2262,7 +2262,7 @@
         },
         {
           "id": "r078",
-          "ms": 6.527776000000017,
+          "ms": 1.3881489999999985,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2270,7 +2270,7 @@
         },
         {
           "id": "r079",
-          "ms": 8.580125000000066,
+          "ms": 14.819313999999963,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2278,7 +2278,7 @@
         },
         {
           "id": "r080",
-          "ms": 7.136976000000004,
+          "ms": 5.013697999999977,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2286,7 +2286,7 @@
         },
         {
           "id": "r081",
-          "ms": 2.996428999999921,
+          "ms": 8.734465999999998,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2294,7 +2294,7 @@
         },
         {
           "id": "r082",
-          "ms": 10.513864000000012,
+          "ms": 1.8548090000000457,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2302,7 +2302,7 @@
         },
         {
           "id": "r083",
-          "ms": 1.6318790000000263,
+          "ms": 1.2781800000000203,
           "agent": "coder",
           "confidence": 0.48,
           "embedder": "minilm",
@@ -2310,7 +2310,7 @@
         },
         {
           "id": "r084",
-          "ms": 5.198177999999984,
+          "ms": 1.649018999999953,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2318,7 +2318,7 @@
         },
         {
           "id": "r085",
-          "ms": 4.766676999999959,
+          "ms": 1.352218999999991,
           "agent": "security-architect",
           "confidence": 0.52,
           "embedder": "minilm",
@@ -2326,7 +2326,7 @@
         },
         {
           "id": "r086",
-          "ms": 8.037146000000007,
+          "ms": 2.3891889999999876,
           "agent": "performance-engineer",
           "confidence": 0.44,
           "embedder": "minilm",
@@ -2334,7 +2334,7 @@
         },
         {
           "id": "r087",
-          "ms": 11.846753000000035,
+          "ms": 2.1010989999999765,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -2342,7 +2342,7 @@
         },
         {
           "id": "r088",
-          "ms": 3.938507999999956,
+          "ms": 2.031729000000041,
           "agent": "devops",
           "confidence": 0.57,
           "embedder": "minilm",
@@ -2350,7 +2350,7 @@
         },
         {
           "id": "r089",
-          "ms": 5.668757000000028,
+          "ms": 1.584259999999972,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2358,7 +2358,7 @@
         },
         {
           "id": "r090",
-          "ms": 6.3707469999999375,
+          "ms": 10.421354999999949,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2366,7 +2366,7 @@
         },
         {
           "id": "r091",
-          "ms": 4.939026999999896,
+          "ms": 2.0479289999999537,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2374,7 +2374,7 @@
         },
         {
           "id": "r092",
-          "ms": 7.873626000000058,
+          "ms": 1.6396499999999605,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -2382,7 +2382,7 @@
         },
         {
           "id": "r093",
-          "ms": 6.112696000000028,
+          "ms": 1.7646290000000135,
           "agent": "swarm-specialist",
           "confidence": 0.56,
           "embedder": "minilm",
@@ -2390,7 +2390,7 @@
         },
         {
           "id": "r094",
-          "ms": 8.284176000000002,
+          "ms": 2.153548999999998,
           "agent": "performance-engineer",
           "confidence": 0.4,
           "embedder": "minilm",
@@ -2398,7 +2398,7 @@
         },
         {
           "id": "r095",
-          "ms": 9.362455000000068,
+          "ms": 1.6879690000000664,
           "agent": "coder",
           "confidence": 0.47,
           "embedder": "minilm",
@@ -2406,7 +2406,7 @@
         },
         {
           "id": "r096",
-          "ms": 8.310474999999997,
+          "ms": 2.403368999999998,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -2414,7 +2414,7 @@
         },
         {
           "id": "r097",
-          "ms": 4.80322799999999,
+          "ms": 1.1305599999999458,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2422,7 +2422,7 @@
         },
         {
           "id": "r098",
-          "ms": 1.6660589999999047,
+          "ms": 2.167929000000072,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2430,7 +2430,7 @@
         },
         {
           "id": "r099",
-          "ms": 8.036005999999816,
+          "ms": 1.472268999999983,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2438,7 +2438,7 @@
         },
         {
           "id": "r100",
-          "ms": 2.127358999999842,
+          "ms": 2.4579989999999725,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2446,7 +2446,7 @@
         },
         {
           "id": "r101",
-          "ms": 4.94031700000005,
+          "ms": 1.6908589999999322,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -2454,7 +2454,7 @@
         },
         {
           "id": "r102",
-          "ms": 12.215052999999898,
+          "ms": 5.907077999999956,
           "agent": "security-architect",
           "confidence": 0.92,
           "embedder": "minilm",
@@ -2462,7 +2462,7 @@
         },
         {
           "id": "r103",
-          "ms": 11.709924,
+          "ms": 5.55058699999995,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2470,7 +2470,7 @@
         },
         {
           "id": "r104",
-          "ms": 1.8194790000000012,
+          "ms": 5.607978000000003,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2478,7 +2478,7 @@
         },
         {
           "id": "r105",
-          "ms": 3.7251280000000406,
+          "ms": 1.5977589999999964,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2486,7 +2486,7 @@
         },
         {
           "id": "r106",
-          "ms": 5.574756999999863,
+          "ms": 1.1719900000000507,
           "agent": "architect",
           "confidence": 0.43,
           "embedder": "minilm",
@@ -2494,7 +2494,7 @@
         },
         {
           "id": "r107",
-          "ms": 15.087031999999908,
+          "ms": 5.2242069999999785,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -2502,7 +2502,7 @@
         },
         {
           "id": "r108",
-          "ms": 5.069377000000031,
+          "ms": 8.034787000000051,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2510,7 +2510,7 @@
         },
         {
           "id": "r109",
-          "ms": 7.384446000000025,
+          "ms": 2.6748190000000704,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2518,7 +2518,7 @@
         },
         {
           "id": "r110",
-          "ms": 6.100226999999904,
+          "ms": 1.8887389999999868,
           "agent": "tester",
           "confidence": 0.44,
           "embedder": "minilm",
@@ -2526,7 +2526,7 @@
         },
         {
           "id": "r111",
-          "ms": 9.943504000000075,
+          "ms": 3.110638999999992,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2534,7 +2534,7 @@
         },
         {
           "id": "r112",
-          "ms": 5.4789270000001125,
+          "ms": 8.00240599999995,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2542,7 +2542,7 @@
         },
         {
           "id": "r113",
-          "ms": 10.752795000000106,
+          "ms": 10.72159499999998,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -2550,7 +2550,7 @@
         },
         {
           "id": "r114",
-          "ms": 5.998426000000109,
+          "ms": 3.5444190000000617,
           "agent": "performance-engineer",
           "confidence": 0.5,
           "embedder": "minilm",
@@ -2558,7 +2558,7 @@
         },
         {
           "id": "r115",
-          "ms": 9.69778499999984,
+          "ms": 7.148856999999907,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2566,7 +2566,7 @@
         },
         {
           "id": "r116",
-          "ms": 5.319167000000107,
+          "ms": 2.841637999999989,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2574,7 +2574,7 @@
         },
         {
           "id": "r117",
-          "ms": 10.272834999999986,
+          "ms": 6.888327000000004,
           "agent": "architect",
           "confidence": 0.9,
           "embedder": "minilm",
@@ -2582,7 +2582,7 @@
         },
         {
           "id": "r118",
-          "ms": 6.546895999999833,
+          "ms": 8.655627000000095,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2590,7 +2590,7 @@
         },
         {
           "id": "r119",
-          "ms": 13.607643000000053,
+          "ms": 20.776640999999927,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2598,7 +2598,7 @@
         },
         {
           "id": "r120",
-          "ms": 6.745976000000155,
+          "ms": 4.3030180000000655,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2606,7 +2606,7 @@
         },
         {
           "id": "r121",
-          "ms": 5.242876999999908,
+          "ms": 2.0978589999999713,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -2614,7 +2614,7 @@
         },
         {
           "id": "r122",
-          "ms": 5.320966999999882,
+          "ms": 1.6696590000000242,
           "agent": "performance-engineer",
           "confidence": 0.47,
           "embedder": "minilm",
@@ -2622,7 +2622,7 @@
         },
         {
           "id": "r123",
-          "ms": 6.274836999999934,
+          "ms": 2.56626899999992,
           "agent": "devops",
           "confidence": 0.44,
           "embedder": "minilm",
@@ -2630,7 +2630,7 @@
         },
         {
           "id": "r124",
-          "ms": 5.6290170000002036,
+          "ms": 24.39942899999994,
           "agent": "tester",
           "confidence": 0.41,
           "embedder": "minilm",
@@ -2638,7 +2638,7 @@
         },
         {
           "id": "r125",
-          "ms": 5.906996999999819,
+          "ms": 12.088595000000055,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2646,7 +2646,7 @@
         },
         {
           "id": "r126",
-          "ms": 7.636066000000028,
+          "ms": 6.744727000000012,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -2654,7 +2654,7 @@
         },
         {
           "id": "r127",
-          "ms": 5.390506999999843,
+          "ms": 11.997965000000022,
           "agent": "swarm-specialist",
           "confidence": 0.9,
           "embedder": "minilm",
@@ -2662,7 +2662,7 @@
         },
         {
           "id": "r128",
-          "ms": 5.112247000000025,
+          "ms": 6.765186999999969,
           "agent": "performance-engineer",
           "confidence": 0.63,
           "embedder": "minilm",
@@ -2670,7 +2670,7 @@
         },
         {
           "id": "r129",
-          "ms": 6.807686000000103,
+          "ms": 6.8147769999999355,
           "agent": "memory-specialist",
           "confidence": 0.51,
           "embedder": "minilm",
@@ -2678,7 +2678,7 @@
         },
         {
           "id": "r130",
-          "ms": 4.953458000000182,
+          "ms": 6.168106999999964,
           "agent": "performance-engineer",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -2686,7 +2686,7 @@
         },
         {
           "id": "r131",
-          "ms": 4.982776999999942,
+          "ms": 6.183477999999923,
           "agent": "devops",
           "confidence": 0.51,
           "embedder": "minilm",
@@ -2694,7 +2694,7 @@
         },
         {
           "id": "r132",
-          "ms": 7.51653599999986,
+          "ms": 5.46286699999996,
           "agent": "swarm-specialist",
           "confidence": 0.48,
           "embedder": "minilm",
@@ -2702,7 +2702,7 @@
         },
         {
           "id": "r133",
-          "ms": 7.295455999999831,
+          "ms": 10.034555999999952,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2710,7 +2710,7 @@
         },
         {
           "id": "r134",
-          "ms": 6.07239699999991,
+          "ms": 2.365579000000025,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -2718,7 +2718,7 @@
         },
         {
           "id": "r135",
-          "ms": 7.344976000000088,
+          "ms": 9.76837599999999,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2726,7 +2726,7 @@
         },
         {
           "id": "r136",
-          "ms": 7.294006000000081,
+          "ms": 7.62314600000002,
           "agent": "security-architect",
           "confidence": 0.4,
           "embedder": "minilm",
@@ -2734,7 +2734,7 @@
         },
         {
           "id": "r137",
-          "ms": 7.977896000000101,
+          "ms": 5.405847999999992,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -2742,7 +2742,7 @@
         },
         {
           "id": "r138",
-          "ms": 6.120225999999775,
+          "ms": 6.263396999999941,
           "agent": "performance-engineer",
           "confidence": 0.47,
           "embedder": "minilm",
@@ -2750,7 +2750,7 @@
         },
         {
           "id": "r139",
-          "ms": 4.824997999999823,
+          "ms": 6.72399699999994,
           "agent": "security-architect",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -2758,7 +2758,7 @@
         },
         {
           "id": "r140",
-          "ms": 5.319516999999905,
+          "ms": 6.3751880000002075,
           "agent": "security-architect",
           "confidence": 0.6,
           "embedder": "minilm",
@@ -2766,7 +2766,7 @@
         },
         {
           "id": "r141",
-          "ms": 7.070236000000023,
+          "ms": 5.3652770000001055,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2774,7 +2774,7 @@
         },
         {
           "id": "r142",
-          "ms": 12.104273000000148,
+          "ms": 6.217367999999851,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2782,7 +2782,7 @@
         },
         {
           "id": "r143",
-          "ms": 1.4962000000000444,
+          "ms": 5.661946999999827,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2790,7 +2790,7 @@
         },
         {
           "id": "r144",
-          "ms": 4.789087000000109,
+          "ms": 4.305747999999994,
           "agent": "tester",
           "confidence": 0.48,
           "embedder": "minilm",
@@ -2798,7 +2798,7 @@
         },
         {
           "id": "r145",
-          "ms": 1.5519789999998466,
+          "ms": 1.6928490000000238,
           "agent": "coder",
           "confidence": 0.46,
           "embedder": "minilm",
@@ -2806,7 +2806,7 @@
         },
         {
           "id": "r146",
-          "ms": 4.867388000000119,
+          "ms": 7.519477000000052,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -2814,7 +2814,7 @@
         },
         {
           "id": "r147",
-          "ms": 5.840667000000167,
+          "ms": 6.643146999999999,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2822,7 +2822,7 @@
         },
         {
           "id": "r148",
-          "ms": 1.240188999999873,
+          "ms": 4.791087999999945,
           "agent": "architect",
           "confidence": 0.5,
           "embedder": "minilm",
@@ -2830,7 +2830,7 @@
         },
         {
           "id": "r149",
-          "ms": 4.796806999999944,
+          "ms": 1.952628999999888,
           "agent": "swarm-specialist",
           "confidence": 0.43,
           "embedder": "minilm",
@@ -2838,7 +2838,7 @@
         },
         {
           "id": "r150",
-          "ms": 4.906487999999854,
+          "ms": 5.9820279999999,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -2846,7 +2846,7 @@
         },
         {
           "id": "r151",
-          "ms": 2.3108380000001034,
+          "ms": 5.834937000000082,
           "agent": "tester",
           "confidence": 0.95,
           "embedder": "minilm",
@@ -2854,7 +2854,7 @@
         },
         {
           "id": "r152",
-          "ms": 2.8104490000000624,
+          "ms": 7.126437000000124,
           "agent": "architect",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -2862,7 +2862,7 @@
         },
         {
           "id": "r153",
-          "ms": 5.971585999999888,
+          "ms": 2.1003089999999247,
           "agent": "swarm-specialist",
           "confidence": 0.45,
           "embedder": "minilm",
@@ -2870,7 +2870,7 @@
         },
         {
           "id": "r154",
-          "ms": 4.807997999999998,
+          "ms": 6.666476999999986,
           "agent": "swarm-specialist",
           "confidence": 0.55,
           "embedder": "minilm",
@@ -2878,7 +2878,7 @@
         },
         {
           "id": "r155",
-          "ms": 2.041488999999956,
+          "ms": 4.477628000000095,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2886,7 +2886,7 @@
         },
         {
           "id": "r156",
-          "ms": 5.765736999999945,
+          "ms": 7.409357,
           "agent": "swarm-specialist",
           "confidence": 0.44,
           "embedder": "minilm",
@@ -2894,7 +2894,7 @@
         },
         {
           "id": "r157",
-          "ms": 5.670607000000018,
+          "ms": 5.651387999999997,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2902,7 +2902,7 @@
         },
         {
           "id": "r158",
-          "ms": 4.990457000000106,
+          "ms": 6.294707000000017,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2910,7 +2910,7 @@
         },
         {
           "id": "r159",
-          "ms": 13.386103000000048,
+          "ms": 14.419083999999884,
           "agent": "performance-engineer",
           "confidence": 0.42,
           "embedder": "minilm",
@@ -2918,7 +2918,7 @@
         },
         {
           "id": "r160",
-          "ms": 1.6941790000000765,
+          "ms": 2.1700489999998354,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2926,7 +2926,7 @@
         },
         {
           "id": "r161",
-          "ms": 5.0461270000000695,
+          "ms": 11.92815500000006,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2934,7 +2934,7 @@
         },
         {
           "id": "r162",
-          "ms": 5.011567000000014,
+          "ms": 5.631417000000056,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2942,7 +2942,7 @@
         },
         {
           "id": "r163",
-          "ms": 1.4456400000001395,
+          "ms": 3.587248000000045,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2950,7 +2950,7 @@
         },
         {
           "id": "r164",
-          "ms": 4.865587000000005,
+          "ms": 2.7454790000001594,
           "agent": "coder",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -2958,7 +2958,7 @@
         },
         {
           "id": "r165",
-          "ms": 1.6020689999998012,
+          "ms": 3.848208999999997,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2966,7 +2966,7 @@
         },
         {
           "id": "r166",
-          "ms": 9.503495000000157,
+          "ms": 9.89977500000009,
           "agent": "swarm-specialist",
           "confidence": 0.47,
           "embedder": "minilm",
@@ -2974,7 +2974,7 @@
         },
         {
           "id": "r167",
-          "ms": 11.768073999999842,
+          "ms": 6.886476999999786,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2982,7 +2982,7 @@
         },
         {
           "id": "r168",
-          "ms": 1.5932690000001912,
+          "ms": 1.4892299999999068,
           "agent": "coder",
           "confidence": 0.47,
           "embedder": "minilm",
@@ -2990,7 +2990,7 @@
         },
         {
           "id": "r169",
-          "ms": 4.49039700000003,
+          "ms": 4.490178000000014,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -2998,7 +2998,7 @@
         },
         {
           "id": "r170",
-          "ms": 7.0600869999998395,
+          "ms": 4.616248000000041,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3006,7 +3006,7 @@
         },
         {
           "id": "r171",
-          "ms": 4.845816999999897,
+          "ms": 1.3594990000001417,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3014,7 +3014,7 @@
         },
         {
           "id": "r172",
-          "ms": 1.8949589999999716,
+          "ms": 2.998499000000038,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3022,7 +3022,7 @@
         },
         {
           "id": "r173",
-          "ms": 4.833407000000079,
+          "ms": 2.0741890000001604,
           "agent": "devops",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -3030,7 +3030,7 @@
         },
         {
           "id": "r174",
-          "ms": 1.7681589999999687,
+          "ms": 7.649776999999858,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3038,7 +3038,7 @@
         },
         {
           "id": "r175",
-          "ms": 5.669146999999839,
+          "ms": 6.732987000000094,
           "agent": "swarm-specialist",
           "confidence": 0.57,
           "embedder": "minilm",
@@ -3046,7 +3046,7 @@
         },
         {
           "id": "r176",
-          "ms": 9.99957500000005,
+          "ms": 1.7939790000000357,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3054,7 +3054,7 @@
         },
         {
           "id": "r177",
-          "ms": 4.220377999999982,
+          "ms": 10.428805000000011,
           "agent": "memory-specialist",
           "confidence": 0.41,
           "embedder": "minilm",
@@ -3062,7 +3062,7 @@
         },
         {
           "id": "r178",
-          "ms": 4.845087000000149,
+          "ms": 6.080228000000034,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -3070,7 +3070,7 @@
         },
         {
           "id": "r179",
-          "ms": 7.170045999999957,
+          "ms": 2.4936890000001313,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -3078,7 +3078,7 @@
         },
         {
           "id": "r180",
-          "ms": 6.0571769999999105,
+          "ms": 1.8246590000001106,
           "agent": "devops",
           "confidence": 0.54,
           "embedder": "minilm",
@@ -3086,7 +3086,7 @@
         },
         {
           "id": "r181",
-          "ms": 5.547837000000072,
+          "ms": 10.493894999999839,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3094,7 +3094,7 @@
         },
         {
           "id": "r182",
-          "ms": 4.619077999999945,
+          "ms": 1.9306389999999283,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3102,7 +3102,7 @@
         },
         {
           "id": "r183",
-          "ms": 1.89430799999991,
+          "ms": 4.9747879999999896,
           "agent": "devops",
           "confidence": 0.85,
           "embedder": "minilm",
@@ -3110,7 +3110,7 @@
         },
         {
           "id": "r184",
-          "ms": 4.625598000000082,
+          "ms": 4.883957999999893,
           "agent": "swarm-specialist",
           "confidence": 0.57,
           "embedder": "minilm",
@@ -3118,7 +3118,7 @@
         },
         {
           "id": "r185",
-          "ms": 1.8976490000000013,
+          "ms": 2.232939000000215,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3126,7 +3126,7 @@
         },
         {
           "id": "r186",
-          "ms": 4.686286999999993,
+          "ms": 4.983997999999929,
           "agent": "tester",
           "confidence": 0.42,
           "embedder": "minilm",
@@ -3134,7 +3134,7 @@
         },
         {
           "id": "r187",
-          "ms": 4.97561799999994,
+          "ms": 4.236817999999857,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3142,7 +3142,7 @@
         },
         {
           "id": "r188",
-          "ms": 1.4465690000001814,
+          "ms": 1.3883999999998196,
           "agent": "performance-engineer",
           "confidence": 0.6,
           "embedder": "minilm",
@@ -3150,7 +3150,7 @@
         },
         {
           "id": "r189",
-          "ms": 5.962726999999859,
+          "ms": 8.59401600000001,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3158,7 +3158,7 @@
         },
         {
           "id": "r190",
-          "ms": 4.937237000000096,
+          "ms": 5.816606999999976,
           "agent": "performance-engineer",
           "confidence": 0.6,
           "embedder": "minilm",
@@ -3166,7 +3166,7 @@
         },
         {
           "id": "r191",
-          "ms": 5.046426999999994,
+          "ms": 5.074788000000126,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3174,7 +3174,7 @@
         },
         {
           "id": "r192",
-          "ms": 8.813775000000078,
+          "ms": 1.8398290000000088,
           "agent": "coder",
           "confidence": 0.41,
           "embedder": "minilm",
@@ -3182,7 +3182,7 @@
         },
         {
           "id": "r193",
-          "ms": 5.018048000000135,
+          "ms": 4.245638000000099,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3190,7 +3190,7 @@
         },
         {
           "id": "r194",
-          "ms": 2.3742879999999786,
+          "ms": 1.5401600000000144,
           "agent": "tester",
           "confidence": 0.46,
           "embedder": "minilm",
@@ -3198,7 +3198,7 @@
         },
         {
           "id": "r195",
-          "ms": 9.372496000000183,
+          "ms": 6.336337000000185,
           "agent": "memory-specialist",
           "confidence": 0.88,
           "embedder": "minilm",
@@ -3206,7 +3206,7 @@
         },
         {
           "id": "r196",
-          "ms": 2.1949279999998907,
+          "ms": 5.371057999999948,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3214,7 +3214,7 @@
         },
         {
           "id": "r197",
-          "ms": 3.2824090000001434,
+          "ms": 2.0665389999999206,
           "agent": "coder",
           "confidence": 0.3,
           "embedder": "minilm",
@@ -3234,258 +3234,258 @@
         "n": 113,
         "accuracy": 0.6372,
         "macroF1": 0.6269,
-        "wrongHighConfRate": 0,
+        "wrongHighConfRate": 0.0088,
         "trapAccuracy": 0.4516
       },
       "latencyMs": {
-        "cold": 3225.69,
-        "p50": 6.586,
-        "p95": 17.057
+        "cold": 500.08,
+        "p50": 3.191,
+        "p95": 8.548
       },
       "predictions": [
         {
           "id": "r001",
-          "ms": 3225.692802,
+          "ms": 500.08435299999996,
           "agent": "security-architect",
-          "confidence": 0.5,
+          "confidence": 0.65,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r002",
-          "ms": 5.3590369999997165,
+          "ms": 7.635066999999935,
           "agent": "researcher",
-          "confidence": 0.55,
+          "confidence": 0.69,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r003",
-          "ms": 17.527770000000146,
+          "ms": 8.54757600000005,
           "agent": "devops",
-          "confidence": 0.45,
+          "confidence": 0.62,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r004",
-          "ms": 15.446871999999985,
+          "ms": 11.245016000000078,
           "agent": "memory-specialist",
-          "confidence": 0.39,
+          "confidence": 0.58,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r005",
-          "ms": 12.795932999999877,
+          "ms": 11.77716399999997,
           "agent": "performance-engineer",
-          "confidence": 0.47,
+          "confidence": 0.63,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r006",
-          "ms": 10.79238499999974,
+          "ms": 6.64038800000003,
           "agent": "memory-specialist",
-          "confidence": 0.4,
+          "confidence": 0.59,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r007",
-          "ms": 5.552297000000181,
+          "ms": 12.27784399999996,
           "agent": "coder",
-          "confidence": 0.32,
+          "confidence": 0.53,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r008",
-          "ms": 13.574342999999772,
+          "ms": 7.444647000000032,
           "agent": "tester",
-          "confidence": 0.5,
+          "confidence": 0.66,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r009",
-          "ms": 10.94288400000005,
+          "ms": 6.742017000000033,
           "agent": "coder",
-          "confidence": 0.34,
+          "confidence": 0.54,
           "centroidStatus": "decided",
           "baselineAgent": "swarm-specialist"
         },
         {
           "id": "r010",
-          "ms": 6.385087000000112,
+          "ms": 5.427877999999964,
           "agent": "coder",
-          "confidence": 0.37,
+          "confidence": 0.56,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r011",
-          "ms": 41.624037000000044,
+          "ms": 5.716387000000054,
           "agent": "devops",
-          "confidence": 0.38,
+          "confidence": 0.57,
           "centroidStatus": "decided",
           "baselineAgent": "security-architect"
         },
         {
           "id": "r012",
-          "ms": 4.5445880000002035,
+          "ms": 10.932524999999941,
           "agent": "architect",
-          "confidence": 0.29,
+          "confidence": 0.51,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r013",
-          "ms": 9.738155000000006,
+          "ms": 6.222548000000074,
           "agent": "none",
-          "confidence": 0.64,
+          "confidence": 0.3,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r014",
-          "ms": 2.2758490000001075,
+          "ms": 1.9367990000000646,
           "agent": "none",
-          "confidence": 0.69,
+          "confidence": 0.3,
           "centroidStatus": "decided",
           "baselineAgent": "swarm-specialist"
         },
         {
           "id": "r015",
-          "ms": 3.176868000000013,
+          "ms": 12.208354999999983,
           "agent": "coder",
-          "confidence": 0.3,
+          "confidence": 0.52,
           "centroidStatus": "decided",
           "baselineAgent": "performance-engineer"
         },
         {
           "id": "r016",
-          "ms": 3.192768000000342,
+          "ms": 4.920846999999981,
           "agent": "researcher",
-          "confidence": 0.46,
+          "confidence": 0.62,
           "centroidStatus": "decided",
           "baselineAgent": "performance-engineer"
         },
         {
           "id": "r017",
-          "ms": 2.73580899999979,
+          "ms": 3.052308999999923,
           "agent": "reviewer",
-          "confidence": 0.51,
+          "confidence": 0.66,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r018",
-          "ms": 2.75659799999994,
+          "ms": 2.7217090000000326,
           "agent": "swarm-specialist",
-          "confidence": 0.74,
+          "confidence": 0.82,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r019",
-          "ms": 2.346458999999868,
+          "ms": 13.142024000000106,
           "agent": "memory-specialist",
-          "confidence": 0.75,
+          "confidence": 0.83,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r020",
-          "ms": 3.3333279999997103,
+          "ms": 4.221648000000073,
           "agent": "memory-specialist",
-          "confidence": 0.49,
+          "confidence": 0.65,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r021",
-          "ms": 2.6343289999999797,
+          "ms": 6.0534280000000535,
           "agent": "architect",
-          "confidence": 0.51,
+          "confidence": 0.66,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r022",
-          "ms": 4.837667000000238,
+          "ms": 3.5758480000000645,
           "agent": "reviewer",
-          "confidence": 0.23,
+          "confidence": 0.47,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r023",
-          "ms": 9.000285000000076,
+          "ms": 4.45335799999998,
           "agent": "reviewer",
-          "confidence": 0.58,
+          "confidence": 0.71,
           "centroidStatus": "decided",
           "baselineAgent": "memory-specialist"
         },
         {
           "id": "r024",
-          "ms": 3.613278000000264,
+          "ms": 1.849599000000012,
           "agent": "none",
-          "confidence": 0.52,
+          "confidence": 0.3,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r025",
-          "ms": 9.516975000000002,
+          "ms": 1.8628099999999677,
           "agent": "none",
-          "confidence": 0.57,
+          "confidence": 0.3,
           "centroidStatus": "decided",
           "baselineAgent": "memory-specialist"
         },
         {
           "id": "r026",
-          "ms": 5.018156999999974,
+          "ms": 2.230199000000084,
           "agent": "swarm-specialist",
-          "confidence": 0.41,
+          "confidence": 0.59,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r027",
-          "ms": 12.332694000000174,
+          "ms": 2.3013189999999213,
           "agent": "swarm-specialist",
-          "confidence": 0.29,
+          "confidence": 0.51,
           "centroidStatus": "decided",
           "baselineAgent": "performance-engineer"
         },
         {
           "id": "r028",
-          "ms": 8.422875000000204,
+          "ms": 2.761577999999986,
           "agent": "tester",
-          "confidence": 0.39,
+          "confidence": 0.58,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r029",
-          "ms": 8.916465000000244,
+          "ms": 2.419328999999948,
           "agent": "architect",
-          "confidence": 0.47,
+          "confidence": 0.64,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r030",
-          "ms": 9.293485000000146,
+          "ms": 4.253467999999998,
           "agent": "swarm-specialist",
-          "confidence": 0.42,
+          "confidence": 0.6,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r031",
-          "ms": 9.169165999999677,
+          "ms": 2.6370490000000473,
           "agent": "coder",
           "confidence": 0.41,
           "centroidStatus": "fallback",
@@ -3493,471 +3493,471 @@
         },
         {
           "id": "r032",
-          "ms": 10.697573999999804,
+          "ms": 4.494667999999933,
           "agent": "reviewer",
-          "confidence": 0.42,
+          "confidence": 0.6,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r033",
-          "ms": 7.593735999999808,
+          "ms": 4.601787999999942,
           "agent": "coder",
-          "confidence": 0.27,
+          "confidence": 0.5,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r034",
-          "ms": 6.4169660000002295,
+          "ms": 2.2602390000000696,
           "agent": "devops",
-          "confidence": 0.41,
+          "confidence": 0.59,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r035",
-          "ms": 11.978533999999854,
+          "ms": 2.4414090000000215,
           "agent": "coder",
-          "confidence": 0.29,
+          "confidence": 0.51,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r036",
-          "ms": 10.170204000000012,
+          "ms": 2.542028999999957,
           "agent": "security-architect",
-          "confidence": 0.61,
+          "confidence": 0.73,
           "centroidStatus": "decided",
           "baselineAgent": "security-architect"
         },
         {
           "id": "r037",
-          "ms": 9.767085000000407,
+          "ms": 3.542878999999971,
           "agent": "memory-specialist",
-          "confidence": 0.43,
+          "confidence": 0.61,
           "centroidStatus": "decided",
           "baselineAgent": "memory-specialist"
         },
         {
           "id": "r038",
-          "ms": 12.77262299999984,
+          "ms": 3.4775379999999814,
           "agent": "tester",
-          "confidence": 0.42,
+          "confidence": 0.6,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r039",
-          "ms": 9.453895000000102,
+          "ms": 4.40912800000001,
           "agent": "coder",
-          "confidence": 0.45,
+          "confidence": 0.62,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r040",
-          "ms": 12.968163000000004,
+          "ms": 3.26070900000002,
           "agent": "tester",
-          "confidence": 0.62,
+          "confidence": 0.73,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r041",
-          "ms": 9.880674999999883,
+          "ms": 2.138918999999987,
           "agent": "performance-engineer",
-          "confidence": 0.36,
+          "confidence": 0.56,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r042",
-          "ms": 14.471692000000075,
+          "ms": 7.272077000000081,
           "agent": "swarm-specialist",
-          "confidence": 0.49,
+          "confidence": 0.64,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r043",
-          "ms": 7.393946000000142,
+          "ms": 3.646478000000002,
           "agent": "performance-engineer",
-          "confidence": 0.53,
+          "confidence": 0.68,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r044",
-          "ms": 6.314597000000049,
+          "ms": 2.5694389999999885,
           "agent": "coder",
-          "confidence": 0.26,
+          "confidence": 0.49,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r045",
-          "ms": 9.921464000000014,
+          "ms": 3.341739000000075,
           "agent": "swarm-specialist",
-          "confidence": 0.51,
+          "confidence": 0.66,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r046",
-          "ms": 6.335126999999829,
+          "ms": 2.8657879999999523,
           "agent": "performance-engineer",
-          "confidence": 0.31,
+          "confidence": 0.52,
           "centroidStatus": "decided",
           "baselineAgent": "performance-engineer"
         },
         {
           "id": "r047",
-          "ms": 2.8847679999998945,
+          "ms": 4.63464799999997,
           "agent": "swarm-specialist",
-          "confidence": 0.76,
+          "confidence": 0.84,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r048",
-          "ms": 8.6162860000004,
+          "ms": 2.5085189999999784,
           "agent": "researcher",
-          "confidence": 0.46,
+          "confidence": 0.63,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r049",
-          "ms": 7.058905999999752,
+          "ms": 3.700608999999986,
           "agent": "memory-specialist",
-          "confidence": 0.41,
+          "confidence": 0.59,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r050",
-          "ms": 6.66209600000002,
+          "ms": 2.534789000000046,
           "agent": "tester",
-          "confidence": 0.44,
+          "confidence": 0.61,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r051",
-          "ms": 6.361417000000074,
+          "ms": 3.126957999999945,
           "agent": "tester",
-          "confidence": 0.44,
+          "confidence": 0.61,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r052",
-          "ms": 5.753437000000304,
+          "ms": 6.361517000000049,
+          "agent": "tester",
+          "confidence": 0.66,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r053",
+          "ms": 4.0282889999999725,
+          "agent": "reviewer",
+          "confidence": 0.72,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r054",
+          "ms": 3.1331579999999803,
+          "agent": "researcher",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r055",
+          "ms": 3.294469000000049,
+          "agent": "security-architect",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r056",
+          "ms": 2.8671390000000656,
+          "agent": "researcher",
+          "confidence": 0.73,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r057",
+          "ms": 2.5633189999999786,
+          "agent": "security-architect",
+          "confidence": 0.67,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r058",
+          "ms": 3.2419479999999794,
+          "agent": "coder",
+          "confidence": 0.51,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r059",
+          "ms": 2.4678890000000138,
+          "agent": "reviewer",
+          "confidence": 0.78,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r060",
+          "ms": 2.504428999999959,
+          "agent": "memory-specialist",
+          "confidence": 0.72,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r061",
+          "ms": 9.252206000000001,
+          "agent": "performance-engineer",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r062",
+          "ms": 6.051316999999926,
           "agent": "tester",
           "confidence": 0.51,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
-          "id": "r053",
-          "ms": 8.435815000000275,
-          "agent": "reviewer",
-          "confidence": 0.59,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r054",
-          "ms": 7.229665999999725,
-          "agent": "researcher",
-          "confidence": 0.42,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r055",
-          "ms": 6.882596999999805,
-          "agent": "security-architect",
-          "confidence": 0.31,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r056",
-          "ms": 13.514122000000043,
-          "agent": "researcher",
+          "id": "r063",
+          "ms": 5.307248000000072,
+          "agent": "memory-specialist",
           "confidence": 0.61,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
-          "id": "r057",
-          "ms": 6.530256999999892,
-          "agent": "security-architect",
-          "confidence": 0.52,
-          "centroidStatus": "decided",
-          "baselineAgent": "architect"
-        },
-        {
-          "id": "r058",
-          "ms": 8.208314999999857,
-          "agent": "coder",
-          "confidence": 0.28,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r059",
-          "ms": 5.433387000000039,
-          "agent": "reviewer",
-          "confidence": 0.69,
-          "centroidStatus": "decided",
-          "baselineAgent": "swarm-specialist"
-        },
-        {
-          "id": "r060",
-          "ms": 6.645176999999876,
-          "agent": "memory-specialist",
-          "confidence": 0.6,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r061",
-          "ms": 7.24952600000006,
-          "agent": "performance-engineer",
-          "confidence": 0.41,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r062",
-          "ms": 6.39749699999993,
-          "agent": "tester",
-          "confidence": 0.29,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r063",
-          "ms": 4.470076999999947,
-          "agent": "memory-specialist",
-          "confidence": 0.43,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
           "id": "r064",
-          "ms": 8.908114999999725,
+          "ms": 2.339909000000034,
           "agent": "none",
-          "confidence": 0.48,
+          "confidence": 0.3,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r065",
-          "ms": 5.253727999999683,
+          "ms": 3.8291080000000193,
           "agent": "coder",
-          "confidence": 0.31,
+          "confidence": 0.52,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r066",
-          "ms": 8.791635000000042,
+          "ms": 3.07841899999994,
           "agent": "architect",
-          "confidence": 0.28,
+          "confidence": 0.5,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r067",
-          "ms": 5.887706999999864,
+          "ms": 2.52684899999997,
           "agent": "architect",
-          "confidence": 0.56,
+          "confidence": 0.7,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r068",
-          "ms": 5.836826000000201,
+          "ms": 4.855097999999998,
           "agent": "devops",
-          "confidence": 0.3,
+          "confidence": 0.52,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r069",
-          "ms": 13.19757299999992,
+          "ms": 4.5223980000000665,
           "agent": "swarm-specialist",
-          "confidence": 0.42,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r070",
-          "ms": 13.076242999999977,
-          "agent": "devops",
-          "confidence": 0.31,
-          "centroidStatus": "decided",
-          "baselineAgent": "architect"
-        },
-        {
-          "id": "r071",
-          "ms": 5.951387000000068,
-          "agent": "tester",
-          "confidence": 0.65,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r072",
-          "ms": 10.331704000000173,
-          "agent": "researcher",
-          "confidence": 0.45,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r073",
-          "ms": 9.004636000000119,
-          "agent": "swarm-specialist",
-          "confidence": 0.33,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r074",
-          "ms": 5.776766999999836,
-          "agent": "reviewer",
-          "confidence": 0.34,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r075",
-          "ms": 8.556035000000065,
-          "agent": "coder",
-          "confidence": 0.36,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r076",
-          "ms": 10.085023999999976,
-          "agent": "coder",
-          "confidence": 0.44,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r077",
-          "ms": 8.119975999999951,
-          "agent": "tester",
-          "confidence": 0.56,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r078",
-          "ms": 6.586327000000438,
-          "agent": "devops",
-          "confidence": 0.28,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r079",
-          "ms": 21.439298000000235,
-          "agent": "reviewer",
           "confidence": 0.6,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
-          "id": "r080",
-          "ms": 22.22998800000005,
-          "agent": "swarm-specialist",
-          "confidence": 0.36,
+          "id": "r070",
+          "ms": 3.968527999999992,
+          "agent": "devops",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r071",
+          "ms": 3.3555489999999963,
+          "agent": "tester",
+          "confidence": 0.76,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r072",
+          "ms": 3.644337999999948,
+          "agent": "researcher",
+          "confidence": 0.62,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
-          "id": "r081",
-          "ms": 21.86372799999981,
-          "agent": "none",
+          "id": "r073",
+          "ms": 2.0022689999999557,
+          "agent": "swarm-specialist",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r074",
+          "ms": 2.5074690000000146,
+          "agent": "reviewer",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r075",
+          "ms": 3.835378000000105,
+          "agent": "coder",
           "confidence": 0.56,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
+          "id": "r076",
+          "ms": 4.108408999999938,
+          "agent": "coder",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r077",
+          "ms": 3.450207999999975,
+          "agent": "tester",
+          "confidence": 0.7,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r078",
+          "ms": 2.9567690000000084,
+          "agent": "devops",
+          "confidence": 0.51,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r079",
+          "ms": 2.755318999999986,
+          "agent": "reviewer",
+          "confidence": 0.72,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r080",
+          "ms": 3.2912580000000844,
+          "agent": "swarm-specialist",
+          "confidence": 0.56,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r081",
+          "ms": 1.5009000000000015,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
           "id": "r082",
-          "ms": 7.748176000000058,
+          "ms": 2.5562380000000076,
           "agent": "performance-engineer",
-          "confidence": 0.55,
+          "confidence": 0.69,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r083",
-          "ms": 5.937586999999894,
+          "ms": 1.9378699999999753,
           "agent": "tester",
-          "confidence": 0.43,
+          "confidence": 0.61,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r084",
-          "ms": 6.838726000000406,
+          "ms": 2.7110480000000052,
           "agent": "performance-engineer",
-          "confidence": 0.43,
+          "confidence": 0.61,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r085",
-          "ms": 10.11772499999961,
+          "ms": 2.5241989999999532,
           "agent": "security-architect",
-          "confidence": 0.36,
+          "confidence": 0.56,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r086",
-          "ms": 17.629249999999956,
+          "ms": 3.5280989999999974,
           "agent": "performance-engineer",
-          "confidence": 0.38,
+          "confidence": 0.57,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r087",
-          "ms": 17.329071000000113,
+          "ms": 3.369228000000021,
           "agent": "tester",
-          "confidence": 0.63,
+          "confidence": 0.74,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r088",
-          "ms": 10.579893999999967,
+          "ms": 4.61712799999998,
           "agent": "devops",
-          "confidence": 0.59,
+          "confidence": 0.72,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r089",
-          "ms": 6.705637000000024,
+          "ms": 3.5329590000000053,
           "agent": "architect",
-          "confidence": 0.35,
+          "confidence": 0.55,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r090",
-          "ms": 0.4199189999999362,
+          "ms": 2.5559690000000046,
           "agent": "coder",
           "confidence": 0.3,
           "centroidStatus": "unavailable",
@@ -3965,455 +3965,455 @@
         },
         {
           "id": "r091",
-          "ms": 13.68910300000016,
+          "ms": 2.9757280000000037,
           "agent": "reviewer",
-          "confidence": 0.23,
+          "confidence": 0.47,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r092",
-          "ms": 6.233157000000119,
+          "ms": 2.589509000000021,
           "agent": "memory-specialist",
-          "confidence": 0.76,
+          "confidence": 0.84,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r093",
-          "ms": 7.471645999999964,
+          "ms": 3.030108999999925,
           "agent": "swarm-specialist",
-          "confidence": 0.56,
+          "confidence": 0.7,
           "centroidStatus": "decided",
           "baselineAgent": "swarm-specialist"
         },
         {
           "id": "r094",
-          "ms": 14.370612000000165,
+          "ms": 2.957918999999947,
           "agent": "coder",
-          "confidence": 0.44,
+          "confidence": 0.61,
           "centroidStatus": "decided",
           "baselineAgent": "performance-engineer"
         },
         {
           "id": "r095",
-          "ms": 5.595676999999796,
+          "ms": 2.4376590000000533,
           "agent": "researcher",
-          "confidence": 0.39,
+          "confidence": 0.58,
           "centroidStatus": "decided",
           "baselineAgent": "memory-specialist"
         },
         {
           "id": "r096",
-          "ms": 5.8630269999998745,
+          "ms": 2.8661480000000665,
           "agent": "tester",
-          "confidence": 0.43,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r097",
-          "ms": 6.052886999999828,
-          "agent": "none",
-          "confidence": 0.65,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r098",
-          "ms": 4.4501970000001165,
-          "agent": "security-architect",
-          "confidence": 0.54,
-          "centroidStatus": "decided",
-          "baselineAgent": "architect"
-        },
-        {
-          "id": "r099",
-          "ms": 10.569875000000138,
-          "agent": "researcher",
-          "confidence": 0.27,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r100",
-          "ms": 6.1524060000001555,
-          "agent": "performance-engineer",
-          "confidence": 0.58,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r101",
-          "ms": 4.117627999999968,
-          "agent": "tester",
-          "confidence": 0.43,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r102",
-          "ms": 14.086301999999705,
-          "agent": "security-architect",
-          "confidence": 0.37,
-          "centroidStatus": "decided",
-          "baselineAgent": "security-architect"
-        },
-        {
-          "id": "r103",
-          "ms": 4.699867999999697,
-          "agent": "reviewer",
-          "confidence": 0.36,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r104",
-          "ms": 11.316773999999896,
-          "agent": "none",
           "confidence": 0.61,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
-          "id": "r105",
-          "ms": 2.6378079999994952,
+          "id": "r097",
+          "ms": 1.4380300000000261,
           "agent": "none",
-          "confidence": 0.75,
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r098",
+          "ms": 1.8185290000000123,
+          "agent": "security-architect",
+          "confidence": 0.68,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r099",
+          "ms": 2.1645790000000034,
+          "agent": "researcher",
+          "confidence": 0.5,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r100",
+          "ms": 2.353609000000006,
+          "agent": "performance-engineer",
+          "confidence": 0.71,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r101",
+          "ms": 2.621138999999971,
+          "agent": "tester",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r102",
+          "ms": 4.008628000000044,
+          "agent": "security-architect",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "security-architect"
+        },
+        {
+          "id": "r103",
+          "ms": 3.2425289999999904,
+          "agent": "reviewer",
+          "confidence": 0.56,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r104",
+          "ms": 3.169338000000039,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r105",
+          "ms": 1.6556589999999005,
+          "agent": "none",
+          "confidence": 0.3,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r106",
-          "ms": 1.6689699999997174,
+          "ms": 1.430409999999938,
           "agent": "none",
-          "confidence": 0.51,
+          "confidence": 0.3,
           "centroidStatus": "decided",
           "baselineAgent": "devops"
         },
         {
           "id": "r107",
-          "ms": 10.857453999999962,
+          "ms": 3.462978000000021,
           "agent": "tester",
-          "confidence": 0.5,
+          "confidence": 0.65,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r108",
-          "ms": 4.7358070000000225,
+          "ms": 2.1249090000000024,
           "agent": "none",
-          "confidence": 0.42,
+          "confidence": 0.3,
           "centroidStatus": "decided",
           "baselineAgent": "performance-engineer"
         },
         {
           "id": "r109",
-          "ms": 5.1942470000003595,
+          "ms": 2.839578999999958,
           "agent": "architect",
-          "confidence": 0.55,
+          "confidence": 0.69,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r110",
-          "ms": 7.464955999999802,
+          "ms": 1.9725190000000339,
           "agent": "tester",
-          "confidence": 0.37,
+          "confidence": 0.57,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r111",
-          "ms": 6.789206999999806,
+          "ms": 3.205808999999931,
           "agent": "security-architect",
-          "confidence": 0.28,
+          "confidence": 0.5,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r112",
-          "ms": 15.284770999999637,
+          "ms": 4.745217999999909,
           "agent": "reviewer",
-          "confidence": 0.43,
+          "confidence": 0.61,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r113",
-          "ms": 8.410216000000219,
+          "ms": 5.586537000000021,
           "agent": "coder",
-          "confidence": 0.41,
+          "confidence": 0.59,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r114",
-          "ms": 7.09716600000047,
+          "ms": 3.9599889999999505,
           "agent": "researcher",
-          "confidence": 0.47,
+          "confidence": 0.63,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r115",
-          "ms": 11.871223999999529,
+          "ms": 3.3757779999999684,
           "agent": "coder",
-          "confidence": 0.31,
+          "confidence": 0.52,
           "centroidStatus": "decided",
           "baselineAgent": "performance-engineer"
         },
         {
           "id": "r116",
-          "ms": 1.6582189999999173,
+          "ms": 1.717999999999961,
           "agent": "none",
-          "confidence": 0.52,
+          "confidence": 0.3,
           "centroidStatus": "decided",
           "baselineAgent": "security-architect"
         },
         {
           "id": "r117",
-          "ms": 8.49143499999991,
+          "ms": 3.2895079999999552,
           "agent": "coder",
-          "confidence": 0.45,
+          "confidence": 0.62,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r118",
-          "ms": 2.5309390000002168,
+          "ms": 2.2652890000000525,
           "agent": "architect",
-          "confidence": 0.23,
-          "centroidStatus": "decided",
-          "baselineAgent": "architect"
-        },
-        {
-          "id": "r119",
-          "ms": 8.153475000000071,
-          "agent": "devops",
-          "confidence": 0.58,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r120",
-          "ms": 9.921384999999646,
-          "agent": "coder",
-          "confidence": 0.31,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r121",
-          "ms": 5.953446999999869,
-          "agent": "tester",
-          "confidence": 0.5,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r122",
-          "ms": 5.3485869999994975,
-          "agent": "performance-engineer",
-          "confidence": 0.48,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r123",
-          "ms": 11.306053999999676,
-          "agent": "devops",
-          "confidence": 0.32,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r124",
-          "ms": 5.842826999999488,
-          "agent": "coder",
-          "confidence": 0.39,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r125",
-          "ms": 5.750536999999895,
-          "agent": "swarm-specialist",
-          "confidence": 0.37,
-          "centroidStatus": "decided",
-          "baselineAgent": "devops"
-        },
-        {
-          "id": "r126",
-          "ms": 6.7987960000000385,
-          "agent": "performance-engineer",
-          "confidence": 0.4,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r127",
-          "ms": 5.622456999999486,
-          "agent": "coder",
           "confidence": 0.47,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
-          "id": "r128",
-          "ms": 5.694727000000057,
+          "id": "r119",
+          "ms": 3.0349390000000085,
+          "agent": "devops",
+          "confidence": 0.71,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r120",
+          "ms": 5.476286999999957,
+          "agent": "coder",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r121",
+          "ms": 2.7713289999999233,
+          "agent": "tester",
+          "confidence": 0.66,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r122",
+          "ms": 2.224438999999961,
           "agent": "performance-engineer",
-          "confidence": 0.54,
+          "confidence": 0.64,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r123",
+          "ms": 4.832908000000089,
+          "agent": "devops",
+          "confidence": 0.53,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r124",
+          "ms": 3.3942690000000084,
+          "agent": "coder",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r125",
+          "ms": 2.693659000000025,
+          "agent": "swarm-specialist",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r126",
+          "ms": 3.577317999999991,
+          "agent": "performance-engineer",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r127",
+          "ms": 2.2724090000000388,
+          "agent": "coder",
+          "confidence": 0.64,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r128",
+          "ms": 2.343699000000015,
+          "agent": "performance-engineer",
+          "confidence": 0.68,
           "centroidStatus": "decided",
           "baselineAgent": "devops"
         },
         {
           "id": "r129",
-          "ms": 9.473085000000538,
+          "ms": 4.044157999999925,
+          "agent": "architect",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r130",
+          "ms": 1.7482790000001387,
+          "agent": "performance-engineer",
+          "confidence": 0.77,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r131",
+          "ms": 3.3486390000000483,
+          "agent": "swarm-specialist",
+          "confidence": 0.74,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r132",
+          "ms": 2.4548789999998917,
+          "agent": "swarm-specialist",
+          "confidence": 0.71,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r133",
+          "ms": 2.599698999999873,
+          "agent": "devops",
+          "confidence": 0.63,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r134",
+          "ms": 3.02493800000002,
+          "agent": "tester",
+          "confidence": 0.63,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r135",
+          "ms": 3.2581689999999526,
+          "agent": "swarm-specialist",
+          "confidence": 0.78,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r136",
+          "ms": 3.190788999999995,
+          "agent": "security-architect",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r137",
+          "ms": 3.0041479999999865,
+          "agent": "memory-specialist",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r138",
+          "ms": 2.420429000000013,
+          "agent": "swarm-specialist",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r139",
+          "ms": 2.3520790000000034,
+          "agent": "tester",
+          "confidence": 0.7,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r140",
+          "ms": 2.9491689999999835,
           "agent": "architect",
           "confidence": 0.49,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
-          "id": "r130",
-          "ms": 5.129047000000355,
-          "agent": "performance-engineer",
-          "confidence": 0.67,
-          "centroidStatus": "decided",
-          "baselineAgent": "performance-engineer"
-        },
-        {
-          "id": "r131",
-          "ms": 6.750055999999859,
-          "agent": "swarm-specialist",
-          "confidence": 0.63,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r132",
-          "ms": 6.020176999999421,
-          "agent": "swarm-specialist",
-          "confidence": 0.57,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r133",
-          "ms": 6.007956999999806,
-          "agent": "devops",
-          "confidence": 0.46,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r134",
-          "ms": 6.129117000000406,
-          "agent": "tester",
-          "confidence": 0.47,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r135",
-          "ms": 10.988574000000881,
-          "agent": "swarm-specialist",
-          "confidence": 0.68,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r136",
-          "ms": 5.894995999999992,
-          "agent": "security-architect",
-          "confidence": 0.41,
-          "centroidStatus": "decided",
-          "baselineAgent": "devops"
-        },
-        {
-          "id": "r137",
-          "ms": 11.692893999999797,
-          "agent": "memory-specialist",
-          "confidence": 0.42,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r138",
-          "ms": 6.0666470000005575,
-          "agent": "swarm-specialist",
-          "confidence": 0.5,
-          "centroidStatus": "decided",
-          "baselineAgent": "swarm-specialist"
-        },
-        {
-          "id": "r139",
-          "ms": 2.474588999999469,
-          "agent": "tester",
-          "confidence": 0.56,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r140",
-          "ms": 8.797354999999698,
-          "agent": "architect",
-          "confidence": 0.26,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
           "id": "r141",
-          "ms": 14.835841999999502,
+          "ms": 4.207237999999961,
           "agent": "devops",
-          "confidence": 0.55,
+          "confidence": 0.69,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r142",
-          "ms": 13.573223000000326,
+          "ms": 2.961979000000156,
           "agent": "security-architect",
-          "confidence": 0.28,
+          "confidence": 0.5,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r143",
-          "ms": 5.401856999999836,
+          "ms": 1.5864389999999275,
           "agent": "performance-engineer",
-          "confidence": 0.24,
+          "confidence": 0.48,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r144",
-          "ms": 6.079866000000038,
+          "ms": 2.3177689999999984,
           "agent": "performance-engineer",
-          "confidence": 0.59,
+          "confidence": 0.71,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
           "id": "r145",
-          "ms": 5.695416999999907,
+          "ms": 2.157139000000143,
           "agent": "swarm-specialist",
-          "confidence": 0.33,
+          "confidence": 0.54,
           "centroidStatus": "decided",
           "baselineAgent": "architect"
         },
         {
           "id": "r146",
-          "ms": 6.277426999999989,
+          "ms": 5.070247999999992,
           "agent": "memory-specialist",
-          "confidence": 0.24,
+          "confidence": 0.48,
           "centroidStatus": "decided",
           "baselineAgent": "memory-specialist"
         },
         {
           "id": "r147",
-          "ms": 17.258130999999594,
+          "ms": 3.1869990000000143,
           "agent": "coder",
           "confidence": 0.3,
           "centroidStatus": "fallback",
@@ -4421,401 +4421,401 @@
         },
         {
           "id": "r148",
-          "ms": 1.9496989999997822,
+          "ms": 1.6479490000001533,
           "agent": "none",
-          "confidence": 0.6,
+          "confidence": 0.3,
           "centroidStatus": "decided",
           "baselineAgent": "devops"
         },
         {
           "id": "r149",
-          "ms": 6.069806999999855,
+          "ms": 2.5482090000000426,
           "agent": "swarm-specialist",
-          "confidence": 0.41,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r150",
-          "ms": 9.763954000000012,
-          "agent": "memory-specialist",
-          "confidence": 0.43,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r151",
-          "ms": 6.199956999999813,
-          "agent": "tester",
-          "confidence": 0.42,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r152",
-          "ms": 8.532385000000431,
-          "agent": "memory-specialist",
-          "confidence": 0.38,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r153",
-          "ms": 6.021467000000484,
-          "agent": "swarm-specialist",
-          "confidence": 0.4,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r154",
-          "ms": 5.848817000000054,
-          "agent": "swarm-specialist",
-          "confidence": 0.56,
-          "centroidStatus": "decided",
-          "baselineAgent": "architect"
-        },
-        {
-          "id": "r155",
-          "ms": 6.928045999999995,
-          "agent": "swarm-specialist",
-          "confidence": 0.45,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r156",
-          "ms": 8.360845999999583,
-          "agent": "swarm-specialist",
-          "confidence": 0.39,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r157",
-          "ms": 10.908894000000146,
-          "agent": "coder",
-          "confidence": 0.51,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r158",
-          "ms": 7.118905999999697,
-          "agent": "security-architect",
-          "confidence": 0.26,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r159",
-          "ms": 17.1681209999997,
-          "agent": "memory-specialist",
-          "confidence": 0.27,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r160",
-          "ms": 6.423455999999533,
-          "agent": "researcher",
-          "confidence": 0.41,
-          "centroidStatus": "decided",
-          "baselineAgent": "swarm-specialist"
-        },
-        {
-          "id": "r161",
-          "ms": 6.491766999999527,
-          "agent": "architect",
-          "confidence": 0.54,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r162",
-          "ms": 6.1087259999994785,
-          "agent": "performance-engineer",
-          "confidence": 0.33,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r163",
-          "ms": 5.538047000000006,
-          "agent": "none",
-          "confidence": 0.77,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r164",
-          "ms": 6.624917000000096,
-          "agent": "reviewer",
-          "confidence": 0.45,
-          "centroidStatus": "decided",
-          "baselineAgent": "performance-engineer"
-        },
-        {
-          "id": "r165",
-          "ms": 5.614926999999625,
-          "agent": "devops",
-          "confidence": 0.44,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r166",
-          "ms": 6.107046999999511,
-          "agent": "swarm-specialist",
-          "confidence": 0.56,
-          "centroidStatus": "decided",
-          "baselineAgent": "swarm-specialist"
-        },
-        {
-          "id": "r167",
-          "ms": 6.397315999999591,
-          "agent": "architect",
-          "confidence": 0.31,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r168",
-          "ms": 6.134697000000415,
-          "agent": "reviewer",
-          "confidence": 0.5,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r169",
-          "ms": 5.371866999999838,
-          "agent": "none",
-          "confidence": 0.62,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r170",
-          "ms": 6.514235999999983,
-          "agent": "coder",
-          "confidence": 0.24,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r171",
-          "ms": 1.9726889999992636,
-          "agent": "performance-engineer",
-          "confidence": 0.34,
-          "centroidStatus": "decided",
-          "baselineAgent": "architect"
-        },
-        {
-          "id": "r172",
-          "ms": 5.62312700000075,
-          "agent": "coder",
-          "confidence": 0.19,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r173",
-          "ms": 5.9148370000002615,
-          "agent": "devops",
-          "confidence": 0.65,
-          "centroidStatus": "decided",
-          "baselineAgent": "devops"
-        },
-        {
-          "id": "r174",
-          "ms": 6.1616570000005595,
-          "agent": "tester",
-          "confidence": 0.38,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r175",
-          "ms": 11.952783000000636,
-          "agent": "coder",
-          "confidence": 0.49,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r176",
-          "ms": 8.644556000000193,
-          "agent": "researcher",
-          "confidence": 0.39,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r177",
-          "ms": 16.89013100000011,
-          "agent": "researcher",
-          "confidence": 0.37,
-          "centroidStatus": "decided",
-          "baselineAgent": "devops"
-        },
-        {
-          "id": "r178",
-          "ms": 9.133784999999989,
-          "agent": "memory-specialist",
-          "confidence": 0.62,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r179",
-          "ms": 17.057050999999774,
-          "agent": "memory-specialist",
-          "confidence": 0.33,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r180",
-          "ms": 2.6480979999996634,
-          "agent": "devops",
-          "confidence": 0.21,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r181",
-          "ms": 9.630494999999428,
-          "agent": "security-architect",
           "confidence": 0.59,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
-          "id": "r182",
-          "ms": 2.062959000000774,
+          "id": "r150",
+          "ms": 3.402567999999974,
+          "agent": "memory-specialist",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r151",
+          "ms": 2.750368999999864,
+          "agent": "tester",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r152",
+          "ms": 2.365528999999924,
+          "agent": "memory-specialist",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r153",
+          "ms": 5.7103380000000925,
+          "agent": "swarm-specialist",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r154",
+          "ms": 2.897418000000016,
+          "agent": "swarm-specialist",
+          "confidence": 0.7,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r155",
+          "ms": 6.254028000000062,
+          "agent": "swarm-specialist",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r156",
+          "ms": 8.732876000000033,
+          "agent": "swarm-specialist",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r157",
+          "ms": 8.505945999999994,
+          "agent": "coder",
+          "confidence": 0.66,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r158",
+          "ms": 5.324967999999899,
+          "agent": "security-architect",
+          "confidence": 0.49,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r159",
+          "ms": 3.813618000000133,
+          "agent": "memory-specialist",
+          "confidence": 0.5,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r160",
+          "ms": 9.144525999999814,
+          "agent": "researcher",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r161",
+          "ms": 7.328387000000021,
+          "agent": "architect",
+          "confidence": 0.68,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r162",
+          "ms": 3.4915779999998904,
+          "agent": "performance-engineer",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r163",
+          "ms": 1.9420500000001084,
           "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r164",
+          "ms": 2.474078999999847,
+          "agent": "reviewer",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r165",
+          "ms": 2.682418000000098,
+          "agent": "devops",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r166",
+          "ms": 4.355948000000126,
+          "agent": "swarm-specialist",
+          "confidence": 0.69,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r167",
+          "ms": 5.039647999999943,
+          "agent": "architect",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r168",
+          "ms": 2.191109000000097,
+          "agent": "reviewer",
           "confidence": 0.65,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
-          "id": "r183",
-          "ms": 5.995727000000443,
-          "agent": "devops",
-          "confidence": 0.57,
-          "centroidStatus": "decided",
-          "baselineAgent": "devops"
-        },
-        {
-          "id": "r184",
-          "ms": 5.819025999999212,
-          "agent": "researcher",
-          "confidence": 0.39,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r185",
-          "ms": 5.8840369999998074,
-          "agent": "architect",
-          "confidence": 0.28,
-          "centroidStatus": "decided",
-          "baselineAgent": "security-architect"
-        },
-        {
-          "id": "r186",
-          "ms": 6.365366999999424,
-          "agent": "tester",
-          "confidence": 0.52,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r187",
-          "ms": 9.78322499999922,
-          "agent": "researcher",
-          "confidence": 0.42,
-          "centroidStatus": "decided",
-          "baselineAgent": "architect"
-        },
-        {
-          "id": "r188",
-          "ms": 5.142037000000528,
-          "agent": "researcher",
-          "confidence": 0.43,
-          "centroidStatus": "decided",
-          "baselineAgent": "memory-specialist"
-        },
-        {
-          "id": "r189",
-          "ms": 5.486026999999922,
-          "agent": "coder",
-          "confidence": 0.39,
-          "centroidStatus": "decided",
-          "baselineAgent": "performance-engineer"
-        },
-        {
-          "id": "r190",
-          "ms": 5.896147000000383,
-          "agent": "performance-engineer",
-          "confidence": 0.48,
-          "centroidStatus": "decided",
-          "baselineAgent": "coder"
-        },
-        {
-          "id": "r191",
-          "ms": 5.714867000000595,
-          "agent": "coder",
-          "confidence": 0.29,
-          "centroidStatus": "decided",
-          "baselineAgent": "tester"
-        },
-        {
-          "id": "r192",
-          "ms": 5.542027000000417,
-          "agent": "swarm-specialist",
-          "confidence": 0.37,
-          "centroidStatus": "decided",
-          "baselineAgent": "architect"
-        },
-        {
-          "id": "r193",
-          "ms": 1.7378490000000966,
+          "id": "r169",
+          "ms": 5.746048000000201,
           "agent": "none",
-          "confidence": 0.56,
+          "confidence": 0.3,
           "centroidStatus": "decided",
-          "baselineAgent": "devops"
+          "baselineAgent": "tester"
         },
         {
-          "id": "r194",
-          "ms": 5.410987000000205,
-          "agent": "tester",
+          "id": "r170",
+          "ms": 3.8678879999999936,
+          "agent": "coder",
           "confidence": 0.47,
           "centroidStatus": "decided",
           "baselineAgent": "tester"
         },
         {
-          "id": "r195",
-          "ms": 3.7670380000008663,
+          "id": "r171",
+          "ms": 2.9204990000000635,
+          "agent": "performance-engineer",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r172",
+          "ms": 5.904556999999841,
+          "agent": "coder",
+          "confidence": 0.44,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r173",
+          "ms": 3.361108999999942,
+          "agent": "devops",
+          "confidence": 0.76,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r174",
+          "ms": 6.371887000000015,
+          "agent": "tester",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r175",
+          "ms": 6.897147000000132,
+          "agent": "coder",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r176",
+          "ms": 3.699767999999949,
+          "agent": "researcher",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r177",
+          "ms": 2.3081090000000586,
+          "agent": "researcher",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r178",
+          "ms": 2.3358489999998255,
           "agent": "memory-specialist",
-          "confidence": 0.46,
+          "confidence": 0.74,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r179",
+          "ms": 5.0112779999999475,
+          "agent": "memory-specialist",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r180",
+          "ms": 6.576058000000103,
+          "agent": "devops",
+          "confidence": 0.45,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r181",
+          "ms": 3.853998000000047,
+          "agent": "security-architect",
+          "confidence": 0.72,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r182",
+          "ms": 2.0399889999998777,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r183",
+          "ms": 6.242187000000058,
+          "agent": "devops",
+          "confidence": 0.7,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r184",
+          "ms": 2.9915189999999257,
+          "agent": "researcher",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r185",
+          "ms": 3.477777999999944,
+          "agent": "architect",
+          "confidence": 0.5,
+          "centroidStatus": "decided",
+          "baselineAgent": "security-architect"
+        },
+        {
+          "id": "r186",
+          "ms": 3.6113789999999426,
+          "agent": "tester",
+          "confidence": 0.67,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r187",
+          "ms": 2.684499000000187,
+          "agent": "researcher",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r188",
+          "ms": 1.9085190000000694,
+          "agent": "researcher",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r189",
+          "ms": 2.1402689999999893,
+          "agent": "coder",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r190",
+          "ms": 2.7848390000001473,
+          "agent": "performance-engineer",
+          "confidence": 0.64,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r191",
+          "ms": 2.523718999999801,
+          "agent": "coder",
+          "confidence": 0.51,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r192",
+          "ms": 2.64305800000011,
+          "agent": "swarm-specialist",
+          "confidence": 0.56,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r193",
+          "ms": 1.3334999999999582,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r194",
+          "ms": 2.0499790000001212,
+          "agent": "tester",
+          "confidence": 0.63,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r195",
+          "ms": 3.8536880000001474,
+          "agent": "memory-specialist",
+          "confidence": 0.63,
           "centroidStatus": "decided",
           "baselineAgent": "memory-specialist"
         },
         {
           "id": "r196",
-          "ms": 6.1965369999998074,
+          "ms": 3.1732990000000427,
           "agent": "coder",
-          "confidence": 0.5,
+          "confidence": 0.65,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         },
         {
           "id": "r197",
-          "ms": 6.180855999999949,
+          "ms": 4.497998000000052,
           "agent": "architect",
-          "confidence": 0.43,
+          "confidence": 0.61,
           "centroidStatus": "decided",
           "baselineAgent": "coder"
         }

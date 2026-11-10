@@ -34,7 +34,8 @@ import {
   __resetCentroidRouterForTests,
   type CentroidArtifact,
 } from '../src/ruvector/centroid-router.js';
-import { hooksRoute, resetSemanticRouterForTests } from '../src/mcp-tools/hooks-tools.js';
+import { NO_MATCH_CONFIDENCE, hooksRoute, resetSemanticRouterForTests } from '../src/mcp-tools/hooks-tools.js';
+import { bridgeRouteTask } from '../src/memory/memory-bridge.js';
 
 const DIM = 384;
 const axis = (k: number, w = 1): number[] => { const v = new Array(DIM).fill(0); v[k] = w; return v; };
@@ -154,6 +155,8 @@ describe('ADR-527 hooks_route integration', () => {
     expect(r.routing.method).toBe('centroid');
     expect(r.matchedPattern).toBe('centroid:tester');
     expect(r.centroid).toMatchObject({ status: 'decided', label: 'tester' });
+    // #3567: a real match ranks above a no-match even at a low cosine.
+    expect(r.primaryAgent.confidence).toBeGreaterThan(NO_MATCH_CONFIDENCE);
     expect(typeof r.centroid?.baselineAgent).toBe('string');
   });
 
@@ -163,6 +166,15 @@ describe('ADR-527 hooks_route integration', () => {
     const r = await route('what is the weather like today');
     expect(r.matchedPattern).toBe('centroid-abstain');
     expect(r.matched).toBe(false);
+    expect(r.primaryAgent.confidence).toBe(NO_MATCH_CONFIDENCE);
+  });
+
+  it('keeps a weak but decided match above the no-match confidence', async () => {
+    process.env.CLAUDE_FLOW_ROUTER_CENTROID = '1';
+    mini.vec = between(2, 0.12, 1, 0.02);
+    const r = await route('write unit tests for the parser');
+    expect(r.centroid).toMatchObject({ status: 'decided', label: 'tester' });
+    expect(r.primaryAgent.confidence).toBeGreaterThan(NO_MATCH_CONFIDENCE);
   });
 
   it('keeps the current router on a near-tie and says so', async () => {
@@ -181,6 +193,21 @@ describe('ADR-527 hooks_route integration', () => {
     expect(r.centroid?.status).toBe('unavailable');
     expect(r.centroid?.reason).toMatch(/hash/);
     expect(r.routing.method).not.toBe('centroid');
+  });
+
+  it('reports "bypassed" when a learned AgentDB route answers first', async () => {
+    process.env.CLAUDE_FLOW_ROUTER_CENTROID = '1';
+    mini.vec = between(2, 0.9, 1, 0.1);
+    vi.mocked(bridgeRouteTask).mockResolvedValueOnce({ route: 'review', agents: ['reviewer'], confidence: 0.9, controller: 'semanticRouter' } as never);
+    const r = await route('write unit tests for the parser');
+    expect(r.primaryAgent.type).toBe('reviewer');
+    expect(r.centroid).toMatchObject({ status: 'bypassed', baselineAgent: 'reviewer' });
+  });
+
+  it('adds nothing to a learned route when the flag is off', async () => {
+    delete process.env.CLAUDE_FLOW_ROUTER_CENTROID;
+    vi.mocked(bridgeRouteTask).mockResolvedValueOnce({ route: 'review', agents: ['reviewer'], confidence: 0.9, controller: 'semanticRouter' } as never);
+    expect((await route('write unit tests for the parser')).centroid).toBeUndefined();
   });
 
   it('reports a missing artifact instead of throwing', async () => {

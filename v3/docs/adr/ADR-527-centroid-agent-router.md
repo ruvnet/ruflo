@@ -12,8 +12,9 @@ WebAssembly with SGD/AdamW training) should become part of ruflo's agent routing
 It was measured on the frozen ADR-391 corpus: 197 labelled prompts, 11 labels
 (10 agents plus `none` for "no agent fits"), split into 84 `dev` and 113 `test`.
 MiniLM (`Xenova/all-MiniLM-L6-v2`, 384-d) embeddings, the ones ADR-390 added.
-Every model choice was made on `dev` (5-fold cross-validation); `test` was
-scored once per method.
+Every model choice was made on `dev` (5-fold cross-validation). `test` was
+scored once per method, except that the margin grid's test accuracy was also
+printed for reference (it was not used to pick the margin).
 
 | Router (held-out test, n = 113) | Accuracy | Notes |
 |---|---|---|
@@ -52,9 +53,17 @@ Measured ruv-fann properties worth recording for a later decision:
      0.02 → 45.2%) because the router it falls back to is weak; 0.005 is the
      smallest grid value that still sends near-ties back.
    - **`none` abstains.** A decided `none` returns `matched: false`,
-     `matchedPattern: 'centroid-abstain'`.
+     `matchedPattern: 'centroid-abstain'` and `NO_MATCH_CONFIDENCE` (#3567).
+   - **Confidence is rescaled, not a probability.** Cosine to the nearest
+     centroid runs about 0.2–0.6, so a raw score would rank a real match below
+     a no-match. `primaryAgent.confidence` maps the cosine monotonically into
+     (0.31, 0.99]; the raw cosine stays in `centroid.score`.
+   - **Learned routes still answer first.** When AgentDB or a persisted SONA
+     pattern answers before local routing, the centroid router does not run and
+     the response says `centroid.status: 'bypassed'`, so a pilot can count it.
    - Every response under the flag carries `centroid: { status, label, score,
-     runnerUp, margin, baselineAgent, … }`. `baselineAgent` is what the current
+     runnerUp, margin, baselineAgent, … }`, with `status` one of `decided`,
+     `fallback`, `unavailable` or `bypassed`. `baselineAgent` is what the current
      router would have picked, so a pilot can compare both on the same task.
 2. **Defer ruv-fann for routing** until there are enough verified task outcomes
    to test whether a trained model beats the centroid under dev-only selection.
@@ -67,18 +76,28 @@ Measured ruv-fann properties worth recording for a later decision:
 
 Corpus sha256 `b0c1923b…bf04`. Receipt `benchmarks/router/results/router-bench-2026-11-10.json`.
 
-| | Test acc | Macro-F1 | Wrong @ ≥0.7 conf | Traps | p50 / p95 warm | Cold |
-|---|---|---|---|---|---|---|
-| A | 25.7% | 0.178 | 8.0% | 29.0% | 0.73 / 1.20 ms | 40 ms |
-| B | 36.3% | 0.334 | 5.3% | 25.8% | 5.5 / 11.8 ms | 457 ms |
-| **E — centroid** | **63.7%** (72) | **0.627** | **0%** | **45.2%** | 6.6 / 17.1 ms | 3.2 s |
+| | Test acc | Macro-F1 | Traps | p50 / p95 warm | Cold (in-process) |
+|---|---|---|---|---|---|
+| A | 25.7% | 0.178 | 29.0% | 0.77 / 1.42 ms | 66 ms |
+| B | 36.3% | 0.334 | 25.8% | 4.3 / 10.6 ms | 354 ms |
+| **E — centroid** | **63.7%** (72) | **0.627** | **45.2%** | 3.2 / 8.5 ms | 500 ms |
 
 E decided 98.2% of test prompts and fell back on 1.8%. Its dev score (96.4%)
-is in-sample and is not evidence.
+is in-sample and is not evidence. The bench's "wrong at ≥0.7 confidence" metric
+says nothing about E: before rescaling its cosine never reached 0.7.
+
+Warm latency moved between runs on the same host (E p95 8.5–17 ms across three
+runs). One CLI `hooks route` process took about 0.85 s with the flag versus
+0.77 s without, once the model was in the local cache; the first use on a
+machine also downloads it.
+
+Verified on a clean `npm install` of the packed CLI: `@huggingface/transformers`
+loads `Xenova/all-MiniLM-L6-v2`, which matches the artifact's model stamp, and
+routes come back `decided`.
 
 ADR-391 gate for E: accuracy +38.1 points (passes), no required dependency
-(passes), p95 latency +1323% (fails; MiniLM embedding dominates, and the first
-call loads the model). That latency failure is why this stays opt-in.
+(passes), p95 latency +503% in this run (fails; MiniLM embedding dominates).
+That latency failure is why this stays opt-in.
 
 ## Acceptance test for making it the default
 
@@ -93,7 +112,8 @@ task outcomes:
 
 ## Consequences
 
-- Users who opt in pay the MiniLM model load once and about 6–17 ms per route.
+- Users who opt in pay a MiniLM model load per process (about 0.1 s from the
+  local cache; a download on first use) and a few ms per route after that.
 - The artifact is 40 KB and ships in `@claude-flow/cli` (`assets/agent-router/`).
   The rest of `assets/` is not in the package's `files` list, so the model-tier
   router's bundled seed artifacts (`assets/model-router/`, 4.8 MB) do not reach

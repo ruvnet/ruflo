@@ -50,7 +50,9 @@ export interface CentroidArtifact {
 export type CentroidDecision =
   | { status: 'decided'; label: string; score: number; runnerUp: string; runnerUpScore: number; margin: number }
   | { status: 'fallback'; label: string; score: number; runnerUp: string; runnerUpScore: number; margin: number; reason: string }
-  | { status: 'unavailable'; reason: string };
+  | { status: 'unavailable'; reason: string }
+  /** A learned route (AgentDB or a persisted SONA pattern) answered before the centroid router ran. */
+  | { status: 'bypassed'; reason: string };
 
 export function centroidRouterEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env[CENTROID_ROUTER_ENV] === '1';
