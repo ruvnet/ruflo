@@ -125,6 +125,19 @@ async function validateEntrypoints(packageRoot, packageJson) {
   }
 }
 
+/**
+ * Public runtime dependencies that must remain declared on the nested bundled
+ * package so npm installs a version that satisfies it beside the wrapper.
+ *
+ * @claude-flow/security needs zod >=4.6.7, while the CLI itself keeps zod 3.
+ * Stripping this declaration made Node resolve security's `import 'zod'` to
+ * the CLI's zod 3 and fail at `z.config` (#4940). The package is public, so
+ * declaring it does not introduce an unpublished coordinate.
+ */
+const PUBLIC_RUNTIME_DEPENDENCIES = {
+  '@claude-flow/security': ['zod'],
+};
+
 export function createBundledRuntimeManifest(packageJson) {
   const dependencyMetadata = {};
   for (const field of [
@@ -149,6 +162,20 @@ export function createBundledRuntimeManifest(packageJson) {
   delete bundledManifest.optionalDependencies;
   delete bundledManifest.peerDependencies;
   delete bundledManifest.peerDependenciesMeta;
+
+  const preserved = PUBLIC_RUNTIME_DEPENDENCIES[packageJson.name];
+  if (preserved?.length && packageJson.dependencies) {
+    const dependencies = {};
+    for (const name of preserved) {
+      if (packageJson.dependencies[name] !== undefined) {
+        dependencies[name] = packageJson.dependencies[name];
+      }
+    }
+    if (Object.keys(dependencies).length > 0) {
+      bundledManifest.dependencies = dependencies;
+    }
+  }
+
   return bundledManifest;
 }
 

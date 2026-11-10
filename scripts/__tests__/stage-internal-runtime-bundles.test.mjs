@@ -36,6 +36,17 @@ assert.deepEqual(bundled.rufloBundledRuntime, {
 });
 assert.deepEqual(source.dependencies, { runtime: '^1.0.0' });
 
+const security = createBundledRuntimeManifest({
+  name: '@claude-flow/security',
+  version: '3.0.7',
+  dependencies: { '@noble/ed25519': '^2.1.0', zod: '^4.6.7' },
+});
+assert.deepEqual(security.dependencies, { zod: '^4.6.7' });
+assert.deepEqual(security.rufloBundledRuntime.sourceDependencies.dependencies, {
+  '@noble/ed25519': '^2.1.0',
+  zod: '^4.6.7',
+});
+
 const target = {
   name: 'public-wrapper',
   dependencies: { '@claude-flow/mcp': '3.0.0-alpha.9' },
