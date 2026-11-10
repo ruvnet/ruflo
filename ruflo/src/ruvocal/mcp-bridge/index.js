@@ -88,7 +88,7 @@ const TOOL_GROUPS = {
   // --- Agentic Flow (agentic-flow, pinned in BACKEND_VERSIONS) ---
   "agentic-flow": {
     enabled: process.env.MCP_GROUP_AGENTIC_FLOW === "true",
-    description: "Execute 66+ specialized agents, batch code editing, AgentDB patterns (agentic-flow)",
+    description: "Agent catalog lookup and AgentDB reasoning-pattern search (agentic-flow)",
     source: "agentic-flow",
     prefixes: ["agentic_flow_", "agent_booster_", "agentdb_"],
   },
@@ -275,7 +275,7 @@ class StdioMcpClient {
 // ruvector and ruflo are first-party and follow `latest`. Keep these in step
 // with the Dockerfile's pre-install lines.
 const BACKEND_VERSIONS = {
-  "agentic-flow": "3.0.0-alpha.2", // what the `alpha` tag resolved to; 3.5.3 drops tools the help text lists
+  "agentic-flow": "3.5.4", // stable; 3.0.0-alpha.2 pulled protobufjs@6 via @xenova/transformers (ADR-513)
   "gemini-mcp-server": "1.2.2",
 };
 
@@ -580,20 +580,20 @@ Neural network operations and Decentralized Autonomous Agents.
 
     "agentic-flow": `# Agentic Flow Group (agentic-flow)
 
-Execute 66+ specialized agents with boosted code editing and AgentDB.
+Look up agentic-flow's agent catalog and search AgentDB reasoning patterns.
 
 ## Key Tools
-- **agentic-flow__agentic_flow_agent** — Execute any of 66+ specialized agents
 - **agentic-flow__agentic_flow_list_agents** — List available agent types
-- **agentic-flow__agent_booster_edit_file** — 352x faster code editing
-- **agentic-flow__agent_booster_batch_edit** — Multi-file refactoring
-- **agentic-flow__agentdb_pattern_store** — Store reasoning patterns
-- **agentic-flow__agentdb_pattern_search** — Search similar patterns
+- **agentic-flow__agentic_flow_list_all_agents** — List package and local custom agents, with source
+- **agentic-flow__agentic_flow_agent_info** — Show an agent's source, category and system-prompt preview
+- **agentic-flow__agentic_flow_check_conflicts** — Find local agents that shadow package agents
+- **agentic-flow__agentdb_pattern_search** — Search past reasoning patterns by task description
+- **agentic-flow__agentdb_pattern_stats** — Aggregated stats and critique summary for a task's patterns
+- **agentic-flow__agentdb_stats** — AgentDB table counts and memory usage
 
 ## When to Use
-- Complex code generation with specialized agents
-- Batch code refactoring across files
-- Agent selection when you need the right specialist`,
+- Choosing the right specialist agent for a task
+- Recalling how similar tasks were approached before`,
 
     "claude-code": `# Claude Code Group
 
