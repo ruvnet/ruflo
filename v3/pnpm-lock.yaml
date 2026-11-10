@@ -136,8 +136,8 @@ importers:
         specifier: 3.0.7
         version: link:../security
       '@claude-flow/shared':
-        specifier: 3.0.7
-        version: 3.0.7
+        specifier: 3.0.8
+        version: link:../shared
       '@electron/asar':
         specifier: ^4.3.1
         version: 4.3.1
@@ -981,22 +981,6 @@ packages:
       zod: 4.6.7
     optionalDependencies:
       '@napi-rs/keyring': 1.3.0
-    dev: false
-
-  /@claude-flow/shared@3.0.7:
-    resolution: {integrity: sha512-eX/JdzywhVFxL+BQaMOphPBVL95icFJgf3piNzTyGy2nT8zFqdDQ34qpS+RfFv3Yjpo00NDj/4CzoqRTni7ImA==}
-    dependencies:
-      '@types/ws': 8.18.1
-      cors: 2.8.6
-      express: 5.2.1
-      helmet: 7.2.0
-      sql.js: 1.14.1
-      ws: 8.21.1
-      zod: 3.25.76
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
     dev: false
 
   /@cognitum-one/sdk@0.2.1(multicast-dns@7.2.5):
