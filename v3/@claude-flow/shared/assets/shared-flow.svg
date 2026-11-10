@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 170" width="760" height="170" role="img" aria-labelledby="t d">
+<title id="t">@claude-flow/shared: validated config to typed events</title>
+<desc id="d">Raw configuration is checked by Zod schemas in ConfigValidator, becomes typed config, and flows through the EventBus and EventStore to the other @claude-flow packages.</desc>
+<style>
+.bg{fill:#1e293b}
+.cap{fill:#e2e8f0;font:600 15px system-ui,-apple-system,Segoe UI,sans-serif}
+.s rect{fill:#334155;stroke:#64748b;stroke-width:1.5}
+.s{animation:pulse 6s infinite}
+.h{fill:#f8fafc;font:600 13px system-ui,-apple-system,Segoe UI,sans-serif;text-anchor:middle}
+.t{fill:#cbd5e1;font:11px system-ui,-apple-system,Segoe UI,sans-serif;text-anchor:middle}
+.a{fill:none;stroke:#94a3b8;stroke-width:2}
+.dot{fill:#38bdf8;animation:move 6s linear infinite}
+@keyframes pulse{0%,20.0%{opacity:1}28.0%,100%{opacity:.62}}
+@keyframes move{from{transform:translateX(0)}to{transform:translateX(600px)}}
+@media (prefers-reduced-motion:reduce){.s,.dot{animation:none}}
+</style>
+<rect class="bg" width="760" height="170" rx="14"/>
+<text class="cap" x="20" y="34">@claude-flow/shared: validated config to typed events</text>
+<path class="a" d="M147 90h14m-5 -4l5 4l-5 4"/><path class="a" d="M297 90h14m-5 -4l5 4l-5 4"/><path class="a" d="M447 90h14m-5 -4l5 4l-5 4"/><path class="a" d="M597 90h14m-5 -4l5 4l-5 4"/>
+<g class="s" style="animation-delay:0.0s"><rect x="16" y="58" width="128" height="64" rx="10"/><text class="h" x="80" y="85">Raw config</text><text class="t" x="80" y="104">JSON / object</text></g><g class="s" style="animation-delay:1.2s"><rect x="166" y="58" width="128" height="64" rx="10"/><text class="h" x="230" y="85">Zod schemas</text><text class="t" x="230" y="104">ConfigValidator</text></g><g class="s" style="animation-delay:2.4s"><rect x="316" y="58" width="128" height="64" rx="10"/><text class="h" x="380" y="85">Typed config</text><text class="t" x="380" y="104">defaults applied</text></g><g class="s" style="animation-delay:3.6s"><rect x="466" y="58" width="128" height="64" rx="10"/><text class="h" x="530" y="85">EventBus</text><text class="t" x="530" y="104">EventStore</text></g><g class="s" style="animation-delay:4.8s"><rect x="616" y="58" width="128" height="64" rx="10"/><text class="h" x="680" y="85">Consumers</text><text class="t" x="680" y="104">hooks, plugins, cli</text></g>
+<circle class="dot" cx="80" cy="140" r="5"/>
+</svg>
