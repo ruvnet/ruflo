@@ -25,7 +25,8 @@ mkdirSync(compiled);
 writeFileSync(join(compiled, 'package.json'), '{"type":"module"}');
 const sources = [
   'cli/src/memory/intelligence.ts', 'cli/src/memory/stats-file-lock.ts',
-  'cli/src/ruvector/lora-adapter.ts', 'cli/src/mcp-tools/types.ts', 'cli-core/src/mcp-tools/types.ts',
+  'cli/src/ruvector/lora-adapter.ts', 'cli/src/services/project-root.ts',
+  'cli/src/mcp-tools/types.ts', 'cli-core/src/mcp-tools/types.ts',
 ];
 for (const source of sources) {
   const output = join(compiled, source.replace(/\.ts$/, '.js'));

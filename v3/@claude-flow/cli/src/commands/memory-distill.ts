@@ -29,6 +29,7 @@ import * as path from 'path';
 
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
+import { anchorToProjectRoot } from '../services/project-root.js';
 import {
   runDistillationForStores,
   projectMemoryDbPaths,
@@ -176,7 +177,7 @@ const runCommand: Command = {
     const explicitDb = typeof ctx.flags.db === 'string' && ctx.flags.db.trim()
       ? path.resolve(ctx.flags.db)
       : undefined;
-    const dbPaths = explicitDb ? [explicitDb] : projectMemoryDbPaths(ctx.cwd || process.cwd());
+    const dbPaths = explicitDb ? [explicitDb] : projectMemoryDbPaths(anchorToProjectRoot(ctx.cwd || process.cwd()));
     const dbPath = explicitDb ?? dbPaths[0];
 
     output.writeln();

@@ -7,6 +7,7 @@
  */
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
+import { anchorToProjectRoot } from '../services/project-root.js';
 import { backupMemoryDb, backupProjectMemoryDbs, type BackupResult } from '../services/memory-backup.js';
 
 export const backupCommand: Command = {
@@ -38,7 +39,7 @@ export const backupCommand: Command = {
       r = await backupMemoryDb({ ...options, dbPath: explicitDb });
       receipts = [r];
     } else {
-      const project = await backupProjectMemoryDbs(ctx.cwd, options);
+      const project = await backupProjectMemoryDbs(anchorToProjectRoot(ctx.cwd || process.cwd()), options);
       r = project;
       receipts = project.backups;
     }
