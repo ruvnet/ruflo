@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Structural smoke test for ruflo-core v0.2.14 (ADR-0001).
+# Structural smoke test for ruflo-core v0.2.15+ (ADR-0001).
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PASS=0
@@ -8,10 +8,10 @@ step() { printf "→ %s ... " "$1"; }
 ok()   { printf "PASS\n"; PASS=$((PASS+1)); }
 bad()  { printf "FAIL: %s\n" "$1"; FAIL=$((FAIL+1)); }
 
-step "1. plugin.json declares 0.2.14 with new keywords"
+step "1. plugin.json declares 0.2.15 or later with new keywords"
 v=$(grep -E '"version"' "$ROOT/.claude-plugin/plugin.json" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [[ "$v" != "0.2.15" ]]; then
-  bad "expected 0.2.14, got '$v'"
+if [[ -z "$v" || "$(printf "%s\n%s\n" 0.2.15 "$v" | sort -V | head -1)" != "0.2.15" ]]; then
+  bad "expected 0.2.15 or later, got '$v'"
 else
   miss=""
   for k in foundation mcp-server plugin-catalog discovery; do
