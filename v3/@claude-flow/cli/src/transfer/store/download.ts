@@ -106,11 +106,23 @@ export class PatternDownloader {
         }
       }
 
-      // Verify signature against a trusted key (#4750). A signature that does
-      // not verify against a trusted key is refused rather than written; when
-      // requireVerification is set, a missing/untrusted signature is also
-      // refused. The self-declared pattern.publicKey alone is not trusted.
-      const trustedKey = this.resolveTrustedPublicKey(pattern);
+      // Verify the signature (#4750). A signature that does not verify against
+      // the resolved key is refused rather than written. When requireVerification
+      // is on, verification must be backed by a *pinned* key: a self-declared
+      // pattern.publicKey is not trusted, so an entry that supplies its own key
+      // is refused rather than allowed to self-sign.
+      const { key: trustedKey, pinned } = this.resolveVerificationKey(pattern);
+      if (this.config.requireVerification && !pinned) {
+        console.warn(
+          `[Download] requireVerification is on but no trusted (pinned) key is configured for ${pattern.id}; refusing self-declared key. Configure StoreConfig.trustedRegistryPublicKeys to download this pattern, or disable requireVerification.`
+        );
+        return {
+          success: false,
+          pattern,
+          verified: false,
+          size: content.length,
+        };
+      }
       if (pattern.signature && trustedKey) {
         const sigVerified = await verifyEd25519(content, pattern.signature, trustedKey);
         if (!sigVerified) {
@@ -123,6 +135,7 @@ export class PatternDownloader {
           };
         }
         console.log(`[Download] Signature verified!`);
+        verified = true;
       } else if (this.config.requireVerification) {
         console.warn(`[Download] No verifiable signature and requireVerification is on, not writing the pattern.`);
         return {
@@ -350,32 +363,39 @@ export class PatternDownloader {
   }
 
   /**
-   * Return the trusted Ed25519 public key that a pattern's signature must verify
-   * against (#4750). Prefers config.trustedRegistryPublicKeys, falls back to the
-   * entry's declared publicKey only when it is well-formed.
+   * Resolve the Ed25519 public key a pattern's signature must verify against
+   * (#4750). Returns whether the key is *pinned* (came from the operator's
+   * config.trustedRegistryPublicKeys) or merely the entry's own self-declared
+   * publicKey. Callers that enforce verification must treat a self-declared key
+   * as untrusted: otherwise a malicious registry entry can sign its own content
+   * with its own key and pass (the exact gap #4750 was filed to close).
    */
-  private resolveTrustedPublicKey(pattern: PatternEntry): string | null {
-    // Prefer an explicitly configured trusted key (keyed by registry name /
-    // IPNS name). Otherwise fall back to the entry's own declared public key,
-    // which is only acceptable when it is a well-formed ed25519 key.
+  private resolveVerificationKey(pattern: PatternEntry): { key: string | null; pinned: boolean } {
     const trusted = this.config.trustedRegistryPublicKeys;
     if (trusted) {
       const candidates = [pattern.author?.id, pattern.source, pattern.id].filter(Boolean) as string[];
       for (const key of candidates) {
         const pinned = trusted[key];
         if (pinned && pinned.startsWith('ed25519:')) {
-          return pinned;
+          return { key: pinned, pinned: true };
         }
       }
       // Any configured key also matches a pattern that declares the same key.
       if (pattern.publicKey && Object.values(trusted).includes(pattern.publicKey)) {
-        return pattern.publicKey;
+        return { key: pattern.publicKey, pinned: true };
       }
     }
     if (pattern.publicKey && pattern.publicKey.startsWith('ed25519:')) {
-      return pattern.publicKey;
+      return { key: pattern.publicKey, pinned: false };
     }
-    return null;
+    return { key: null, pinned: false };
+  }
+
+  /**
+   * Thin wrapper kept for callers that only need a usable key.
+   */
+  private resolveTrustedPublicKey(pattern: PatternEntry): string | null {
+    return this.resolveVerificationKey(pattern).key;
   }
 
   /**

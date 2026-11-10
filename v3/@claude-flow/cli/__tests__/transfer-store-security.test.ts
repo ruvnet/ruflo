@@ -105,6 +105,30 @@ describe('#4750 pattern download security', () => {
     }
   });
 
+  it('self-declared key: requireVerification on but no pinned key refuses a self-signed entry', async () => {
+    // The exact gap the maintainer flagged on #4750: the entry brings its own
+    // key and a matching self-signature, no trustedRegistryPublicKeys is set,
+    // and requireVerification is on. It must be refused, not accepted.
+    const content = Buffer.from('hello');
+    const { publicKey, signature } = await makeSigned('bafycontent', content);
+    stubFetch(content);
+    const dl = new PatternDownloader({ cacheDir: tmp, requireVerification: true });
+    const res = await dl.downloadPattern(makeEntry({ signature, publicKey }));
+    expect(res.success).toBe(false);
+    expect(fs.readdirSync(tmp).filter((f) => f.endsWith('.cfp.json')).length).toBe(0);
+  });
+
+  it('self-declared key: requireVerification off still accepts a well-formed self-signed entry', async () => {
+    // Documented default: without requireVerification and without a pinned key,
+    // a self-declared key is still accepted (unchanged behavior).
+    const content = Buffer.from('hello');
+    const { publicKey, signature } = await makeSigned('bafycontent', content);
+    stubFetch(content);
+    const dl = new PatternDownloader({ cacheDir: tmp });
+    const res = await dl.downloadPattern(makeEntry({ signature, publicKey }));
+    expect(res.success).toBe(true);
+  });
+
   it('oversized content: aborts and does not persist', async () => {
     const big = Buffer.alloc(64);
     stubFetch(big);
