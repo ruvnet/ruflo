@@ -57,7 +57,15 @@ console.log('bundled runtime manifest is self-contained and preserves source met
   const { mkdtemp, mkdir, writeFile, readFile, rm, access } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
-  const { vendorDependency } = await import('../stage-internal-runtime-bundles.mjs');
+  const { vendorDependency, satisfiesCaretOrExact } = await import('../stage-internal-runtime-bundles.mjs');
+  assert.equal(satisfiesCaretOrExact('4.6.7', '^4.6.7'), true);
+  assert.equal(satisfiesCaretOrExact('4.7.0', '^4.6.7'), true);
+  assert.equal(satisfiesCaretOrExact('4.6.6', '^4.6.7'), false);
+  assert.equal(satisfiesCaretOrExact('5.0.0', '^4.6.7'), false);
+  assert.equal(satisfiesCaretOrExact('3.25.76', '^4.6.7'), false);
+  assert.equal(satisfiesCaretOrExact('4.6.7', '4.6.7'), true);
+  assert.throws(() => satisfiesCaretOrExact('4.6.7', '>=4'), /Unsupported/);
+  assert.throws(() => satisfiesCaretOrExact('0.2.1', '^0.2.0'), /Unsupported/);
 
   const withVendored = createBundledRuntimeManifest(
     { name: '@claude-flow/example', version: '1.0.0', dependencies: { leaf: '^4.6.7', other: '^1.0.0' } },

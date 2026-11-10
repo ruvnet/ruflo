@@ -170,6 +170,24 @@ export function createBundledRuntimeManifest(packageJson, vendoredDependencies =
 }
 
 /**
+ * Range check for a vendored dependency, without a semver package: this script
+ * also runs in CI jobs that install only the v3 workspace. Accepts an exact
+ * version or a caret range on a major >= 1; anything else is refused so an
+ * unusual range is looked at, not guessed.
+ */
+export function satisfiesCaretOrExact(version, range) {
+  const parse = (value) => /^(\d+)\.(\d+)\.(\d+)$/.exec(value)?.slice(1).map(Number);
+  const got = parse(version);
+  const caret = range.startsWith('^');
+  const want = parse(caret ? range.slice(1) : range);
+  if (!got || !want) throw new Error(`Unsupported vendored version or range: ${version} vs ${range}`);
+  if (!caret) return got.join('.') === want.join('.');
+  if (want[0] === 0) throw new Error(`Unsupported vendored range (0.x caret): ${range}`);
+  if (got[0] !== want[0]) return false;
+  return got[1] !== want[1] ? got[1] > want[1] : got[2] >= want[2];
+}
+
+/**
  * Copy one dependency of a bundled package into that package's node_modules,
  * from the copy the workspace build resolved. Only leaf packages qualify: a
  * vendored dependency with dependencies of its own would need them vendored
@@ -191,8 +209,7 @@ export async function vendorDependency(sourceRoot, stagedRoot, packageJson, name
     if (parent === directory) throw new Error(`Cannot find the package root of ${name}`);
     directory = parent;
   }
-  const { default: semver } = await import('semver');
-  if (!semver.satisfies(manifest.version, range)) {
+  if (!satisfiesCaretOrExact(manifest.version, range)) {
     throw new Error(
       `${packageJson.name} needs ${name}@${range}, but the workspace resolved ${manifest.version}`,
     );

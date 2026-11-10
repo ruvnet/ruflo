@@ -49,10 +49,19 @@ const packDest = mkdtempSync(join(tmpdir(), 'cli-pack-'));
 let tarball;
 {
   console.log(`[1/5] packing CLI to ${packDest}`);
-  const pnpm = run('pnpm', ['pack', '--pack-destination', packDest], { cwd: CLI_DIR });
-  if (pnpm.code === 0) {
+  // #4940: pack what a release packs. A release stages the bundled runtime
+  // packages (and their vendored dependencies) and then runs npm pack; a bare
+  // `pnpm pack` bundles the workspace links, which is not the published shape.
+  let pnpm = { code: 1, stderr: 'skipped: staged bundles are packed with npm' };
+  try {
+    const { stageInternalRuntimeBundles } = await import('./stage-internal-runtime-bundles.mjs');
+    await stageInternalRuntimeBundles(CLI_DIR, { build: false });
+    const staged = run('npm', ['pack', '--ignore-scripts', '--pack-destination', packDest], { cwd: CLI_DIR });
+    if (staged.code !== 0) fail(`npm pack of the staged CLI failed:\n${staged.stderr}`);
     const tgz = readdirSync(packDest).find((f) => f.endsWith('.tgz'));
     if (tgz) tarball = join(packDest, tgz);
+  } catch (error) {
+    fail(`staging the bundled runtime packages failed: ${error?.stack ?? error}`);
   }
   if (!tarball) {
     // Fallback to npm pack — works when run with pnpm-resolved workspace already installed
