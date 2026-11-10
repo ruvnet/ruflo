@@ -218,7 +218,7 @@ export class LearningBridge extends EventEmitter {
   async onInsightAccessed(entryId: string): Promise<void> {
     if (!this.config.enabled || this.destroyed) return;
 
-    const entry = await this.backend.get(entryId);
+    const entry = await this.getInsightEntry(entryId);
     if (!entry) return;
 
     const currentConf = (entry.metadata?.confidence as number) ?? 0.5;
@@ -227,7 +227,7 @@ export class LearningBridge extends EventEmitter {
       currentConf + this.config.accessBoostAmount,
     );
 
-    await this.backend.update(entryId, {
+    await this.backend.update(entry.id, {
       metadata: { ...entry.metadata, confidence: newConf },
     });
 
@@ -249,6 +249,21 @@ export class LearningBridge extends EventEmitter {
     }
 
     this.emit('insight:accessed', { entryId, newConfidence: newConf });
+  }
+
+  /**
+   * Resolve an insight the caller addresses by the key it was stored under.
+   * `get()` only knows the backend's internal `entry.id`, and
+   * `createDefaultEntry` mints that id independently of the caller's key, so a
+   * key lookup must go through `getByKey` first; fall back to `get()` for
+   * callers that really pass an id.
+   */
+  private async getInsightEntry(entryId: string): Promise<MemoryEntry | null> {
+    if (typeof this.backend.getByKey === 'function') {
+      const byKey = await this.backend.getByKey(this.config.insightNamespace, entryId);
+      if (byKey) return byKey;
+    }
+    return this.backend.get(entryId);
   }
 
   /**
