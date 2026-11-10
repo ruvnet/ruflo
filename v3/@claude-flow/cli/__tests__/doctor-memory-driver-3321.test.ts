@@ -13,6 +13,10 @@ let workdir: string;
 let dbPath: string;
 
 async function runDoctor() {
+  // Full-suite isolation (#4643): this worker may already have imported
+  // doctor.ts before the current test registered its vi.doMock. Re-import a
+  // fresh module so the mock applies to its Memory Integrity check.
+  vi.resetModules();
   const { doctorCommand } = await import('../src/commands/doctor.js');
   const result = await doctorCommand.action!({
     flags: { component: 'memory' }, args: [], config: {},
