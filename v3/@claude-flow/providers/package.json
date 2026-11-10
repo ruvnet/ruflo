@@ -2,6 +2,15 @@
   "name": "@claude-flow/providers",
   "version": "3.0.1",
   "description": "Multi-LLM Provider System for Claude Flow V3",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/providers"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -28,17 +37,18 @@
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
-    "claude-flow",
     "llm",
-    "provider",
+    "llm-providers",
+    "multi-provider",
     "anthropic",
     "openai",
-    "google",
-    "cohere",
+    "gemini",
     "ollama",
-    "multi-provider",
+    "failover",
     "load-balancing",
-    "failover"
+    "claude",
+    "claude-flow",
+    "ruflo"
   ],
   "author": "Claude Flow Team",
   "license": "MIT",
