@@ -148,6 +148,8 @@ export interface MCPServerConfig {
   tlsCert?: string;
   tlsKey?: string;
   auth?: AuthConfig;
+  /** Allow a non-loopback bind with no token. Off unless the operator opts in. */
+  allowUnauthenticated?: boolean;
   loadBalancer?: LoadBalancerConfig;
   connectionPool?: ConnectionPoolConfig;
   corsEnabled?: boolean;

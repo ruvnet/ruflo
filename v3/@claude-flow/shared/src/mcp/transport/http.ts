@@ -15,9 +15,10 @@
 import { EventEmitter } from 'events';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import { createServer, Server, type IncomingMessage } from 'http';
-import { assertSafeBind, refuseOpenRequest } from './guard.js';
+import { assertSafeBind, assertUsableAuth, bearerCredentials, handshakeAuthorized, refuseOpenRequest, tokenAllowed } from './guard.js';
 import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
+import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import {
   ITransport,
@@ -94,17 +95,23 @@ export class HttpTransport extends EventEmitter implements ITransport {
       port: this.config.port,
     });
 
-    assertSafeBind(this.config.host, this.config.auth?.enabled === true, this.config.allowUnauthenticated);
+    const credentials = bearerCredentials(this.config.auth);
+    assertUsableAuth(credentials);
+    assertSafeBind(this.config.host, credentials !== undefined, this.config.allowUnauthenticated);
 
     // Create HTTP server
     this.server = createServer(this.app);
 
-    // Create WebSocket server (CORS does not apply to upgrades, so a token-less server checks Host and Origin itself)
+    // Create WebSocket server
     this.wss = new WebSocketServer({
       server: this.server,
       path: '/ws',
+      // CORS does not apply to upgrades: a server with a token checks it on the
+      // handshake, one without checks Host and Origin itself.
       verifyClient: (info: { req: IncomingMessage }) =>
-        this.config.auth?.enabled === true || refuseOpenRequest(info.req, this.config.host, this.config.corsOrigins) === undefined,
+        credentials !== undefined
+          ? handshakeAuthorized(info.req, credentials)
+          : refuseOpenRequest(info.req, this.config.host, this.config.corsOrigins) === undefined,
     });
 
     this.setupWebSocketHandlers();
@@ -215,8 +222,10 @@ export class HttpTransport extends EventEmitter implements ITransport {
    * Setup Express middleware
    */
   private setupMiddleware(): void {
+    const credentials = bearerCredentials(this.config.auth);
+
     // A server with no token must not answer a web page or a rebound hostname.
-    if (this.config.auth?.enabled !== true) {
+    if (credentials === undefined) {
       this.app.use((req: Request, res: Response, next: NextFunction) => {
         const why = refuseOpenRequest(req, this.config.host, this.config.corsOrigins);
         if (why === undefined) {
@@ -268,6 +277,27 @@ export class HttpTransport extends EventEmitter implements ITransport {
       }));
     }
 
+    // Bearer gate for every route but GET /health, before the body parser, so
+    // a client without the token cannot make the server read or parse a body.
+    // Failed requests are rate-limited per client, which bounds token guessing.
+    if (credentials !== undefined) {
+      this.app.use(rateLimit({
+        windowMs: 60_000,
+        limit: 120,
+        skipSuccessfulRequests: true,
+        standardHeaders: 'draft-7',
+        legacyHeaders: false,
+        message: { jsonrpc: '2.0', id: null, error: { code: -32000, message: 'Rate limit exceeded' } },
+      }));
+      this.app.use((req: Request, res: Response, next: NextFunction) => {
+        if ((req.method === 'GET' && req.path === '/health') || this.validateAuth(req).valid) {
+          next();
+          return;
+        }
+        res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Unauthorized' } });
+      });
+    }
+
     // Body parsing
     this.app.use(express.json({
       limit: this.config.maxRequestSize || '10mb',
@@ -309,6 +339,11 @@ export class HttpTransport extends EventEmitter implements ITransport {
   private setupRoutes(): void {
     // Health check
     this.app.get('/health', (req, res) => {
+      // With auth on this route needs no token, so it reveals only liveness.
+      if (bearerCredentials(this.config.auth) !== undefined) {
+        res.json({ status: 'ok' });
+        return;
+      }
       res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
@@ -563,12 +598,9 @@ export class HttpTransport extends EventEmitter implements ITransport {
       return { valid: false, error: 'Invalid authorization format' };
     }
 
-    const token = tokenMatch[1];
-
-    if (this.config.auth?.tokens?.length) {
-      if (!this.config.auth.tokens.includes(token)) {
-        return { valid: false, error: 'Invalid token' };
-      }
+    // No configured token means no token is valid.
+    if (!tokenAllowed(tokenMatch[1], bearerCredentials(this.config.auth))) {
+      return { valid: false, error: 'Invalid token' };
     }
 
     return { valid: true };
