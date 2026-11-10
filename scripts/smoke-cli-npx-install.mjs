@@ -112,4 +112,20 @@ if (ver.code !== 0 || !ver.stdout.trim()) {
 }
 console.log(`      ${ver.stdout.trim()}`);
 
-console.log(`[5/5] ok — installed cleanly, no "Invalid Version" regression`);
+// #4940: every bundled runtime package must load from the installed CLI. The
+// bundled security package once resolved `zod` to the CLI's zod 3 and its root
+// export threw `z.config is not a function`; --version never imports it.
+const cliRoot = join(scratch, 'node_modules', '@claude-flow', 'cli');
+for (const name of installedPkg.bundleDependencies ?? installedPkg.bundledDependencies ?? []) {
+  const load = run('node', ['--input-type=module', '-e',
+    `import { createRequire } from 'node:module'; import { pathToFileURL } from 'node:url';
+     const r = createRequire(${JSON.stringify(join(cliRoot, 'package.json'))});
+     await import(pathToFileURL(r.resolve(${JSON.stringify(name)})).href);`], { cwd: scratch });
+  if (load.code !== 0) {
+    console.error(load.stderr);
+    fail(`bundled ${name} does not import from the installed CLI (exit ${load.code})`);
+  }
+  console.log(`      bundled ${name} imports`);
+}
+
+console.log(`[5/5] ok — installed cleanly, no "Invalid Version" regression, bundled runtimes import`);
