@@ -1,7 +1,7 @@
 {
   "name": "@claude-flow/aidefence",
-  "version": "3.1.2",
-  "description": "AI Manipulation Defense System (AIMDS) with self-learning, prompt injection detection, and vector search integration",
+  "version": "3.2.1",
+  "description": "Prompt injection, jailbreak and PII detection for LLM agents, with self-learning threat patterns and optional AgentDB semantic search over what it learns.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -49,23 +49,25 @@
     "jailbreak-detection",
     "threat-detection",
     "pii-detection",
-    "claude-flow",
-    "vector-search",
-    "self-learning",
+    "llm-security",
     "aimds",
-    "llm-security"
+    "self-learning",
+    "semantic-search",
+    "agentdb",
+    "claude-flow",
+    "ruflo"
   ],
   "author": "rUv <hello@ruv.io>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/@claude-flow/aidefence"
   },
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues"
+    "url": "https://github.com/ruvnet/ruflo/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow/tree/main/v3/@claude-flow/aidefence#readme",
+  "homepage": "https://ruv.io",
   "publishConfig": {
     "access": "public"
   },
