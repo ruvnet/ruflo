@@ -19,7 +19,6 @@
   },
   "files": [
     "bin/**",
-    "src/**",
     "dist/**",
     "README.md",
     "LICENSE"

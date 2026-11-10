@@ -80,7 +80,7 @@ tar czf "$OUTPUT" \
   mcp-bridge/package.json \
   mcp-bridge/Dockerfile \
   chat-ui/Dockerfile \
-  chat-ui/patch-mcp-url-safety.sh \
+  mcp-bridge/url-guard.js \
   chat-ui/static/ \
   mcp-bridge/mcp-stdio-kernel.js \
   mcp-bridge/test-harness.js \

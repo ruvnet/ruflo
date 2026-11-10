@@ -73,6 +73,16 @@ const CHECKS = [
     rx: /Mcp-Session-Id/,
     hint: "Mcp-Session-Id header must be echoed on /mcp* responses (#2425)",
   },
+  {
+    id: "10. outbound-url-guard-resolves-dns",
+    rx: /import\s*\{\s*assertPublicUrl\s*\}\s*from\s*["']\.\/url-guard\.js["'][\s\S]*?async function callCloudFunction[\s\S]*?await assertPublicUrl\(url\)[\s\S]*?redirect:\s*["']error["']/,
+    hint: "callCloudFunction must await assertPublicUrl (./url-guard.js) and refuse redirects",
+  },
+  {
+    id: "11. backends-do-not-inherit-bridge-token",
+    rx: /delete env\.MCP_AUTH_TOKEN[\s\S]*?env:\s*backendEnv\(\)/,
+    hint: "spawned backends must not receive MCP_AUTH_TOKEN",
+  },
 ];
 
 let hardFail = false;
@@ -85,6 +95,14 @@ for (const bridge of BRIDGES) {
   const src = fs.readFileSync(bridge, "utf-8");
   const rel = path.relative(path.join(HERE, "..", ".."), bridge);
   console.log(`\n# ${rel}`);
+  const tagged = src.match(/["'`][\w@/.-]+@(?:alpha|beta|next|latest|canary)["'`]/g);
+  if (tagged) {
+    console.log(`  ✗ 12. no-dist-tag-backend-specs: ${tagged.join(", ")}`);
+    console.log("    hint: a backend spec must be a bare first-party name or an exact version, never a moving dist-tag");
+    hardFail = true;
+  } else {
+    console.log("  ✓ 12. no-dist-tag-backend-specs");
+  }
   for (const check of CHECKS) {
     if (check.rx.test(src)) {
       console.log(`  ✓ ${check.id}`);
@@ -105,6 +123,13 @@ for (const dockerfile of DOCKERFILES) {
   const source = fs.readFileSync(dockerfile, "utf-8");
   const rel = path.relative(path.join(HERE, "..", ".."), dockerfile);
   console.log(`\n# ${rel}`);
+  if (/^COPY\s+url-guard\.js\s/m.test(source)) {
+    console.log("  ✓ 13. image-includes-url-guard");
+  } else {
+    console.log("  ✗ 13. image-includes-url-guard");
+    console.log("    hint: the image must COPY url-guard.js or the bridge fails to start");
+    hardFail = true;
+  }
   if (/^FROM\s+node:24(?:[.-][^\s]+)?\s*$/m.test(source)) {
     console.log("  ✓ 9. supported-node-lts-runtime (#2847)");
   } else {

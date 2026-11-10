@@ -1,7 +1,7 @@
 # ADR-032: RVF Private Network MCP Tunnel
 
 ## Status
-Implemented
+Implemented, then the build-time patch was removed (2026-11-10). The `sed` patterns no longer match the upstream image, so the script had become a silent no-op, and where it did match it relaxed the check for every URL, not only operator-configured ones. The ruvocal fork implements the same allowance in source (`isAllowedMcpUrl`, `allowPrivate` for `MCP_SERVERS` entries only).
 
 ## Context
 HuggingFace Chat UI enforces HTTPS-only for MCP server URLs as SSRF protection (`urlSafety.isValidUrl()`). In containerized deployments (Docker Compose), the MCP bridge runs on a private Docker network (`http://mcp-bridge:3001/mcp`) — not exposed to the internet.
