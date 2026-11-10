@@ -331,6 +331,24 @@ describe('LearningBridge', () => {
       });
     });
 
+    it('should resolve a stored key and update the entry by its internal id', async () => {
+      const entry = createTestEntry({
+        id: 'internal-1',
+        key: 'insight:debugging:12345:0',
+        metadata: { confidence: 0.5 },
+      });
+      backend.storedEntries.push(entry);
+
+      await bridge.onInsightAccessed(entry.key);
+
+      expect(backend.getByKey).toHaveBeenCalledWith('learnings', entry.key);
+      expect(backend.get).not.toHaveBeenCalled();
+      expect(backend.update).toHaveBeenCalledWith('internal-1', {
+        metadata: expect.objectContaining({ confidence: 0.53 }),
+      });
+      expect(entry.metadata?.confidence).toBeCloseTo(0.53);
+    });
+
     it('should cap confidence at maxConfidence', async () => {
       const entry = createTestEntry({ metadata: { confidence: 0.99 } });
       (backend.get as any).mockResolvedValueOnce(entry);

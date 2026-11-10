@@ -3,6 +3,27 @@
   "version": "3.0.0",
   "type": "module",
   "description": "Deployment module - Release management, CI/CD, versioning",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/deployment"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
+  "keywords": [
+    "release-management",
+    "deployment",
+    "versioning",
+    "semver",
+    "changelog",
+    "conventional-commits",
+    "npm-publish",
+    "ci-cd",
+    "claude-flow",
+    "ruflo"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

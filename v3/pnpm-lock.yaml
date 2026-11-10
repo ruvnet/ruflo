@@ -224,7 +224,7 @@ importers:
         specifier: 3.2.1
         version: link:../aidefence
       '@claude-flow/memory':
-        specifier: 3.3.0
+        specifier: 3.3.1
         version: link:../memory
       '@metaharness/flywheel':
         specifier: ~0.1.10
