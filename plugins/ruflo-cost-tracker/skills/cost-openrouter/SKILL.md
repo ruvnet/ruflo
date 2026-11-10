@@ -18,7 +18,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/openrouter.mjs credits --yes
 ## Rules
 
 - Without `--yes` the script prints the call it would make and sends nothing.
-- The key comes from `OPENROUTER_API_KEY` (credits: `OPENROUTER_MANAGEMENT_KEY`). Never ask the user to paste a key, never print, log or write one.
+- The key comes from `OPENROUTER_API_KEY` (credits: `OPENROUTER_MANAGEMENT_KEY`). A key the user stored as the plugin option `openrouterApiKey` arrives as `OPENROUTER_API_KEY` too: the plugin's SessionStart hook puts it there for this session's commands when the variable is not already set (ADR-506). Never ask the user to paste a key, never print, log or write one.
 - OpenRouter's `usage.cost` / `total_cost` is **authoritative**; do not recompute it from list prices.
 - `credits` needs a management key (a normal key returns 403). A fresh generation can 404 briefly: retry.
 - BYOK rows carry the 5% OpenRouter fee in `usage`, the provider's charge in `upstream_inference_cost`: show both, labelled.

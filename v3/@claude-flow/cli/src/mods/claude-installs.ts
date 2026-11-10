@@ -8,8 +8,8 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, realpathSync, statSync } from 'node:fs';
-import { delimiter, join } from 'node:path';
+import { closeSync, existsSync, fstatSync, openSync, readSync, realpathSync, statSync } from 'node:fs';
+import { delimiter, dirname, join, resolve } from 'node:path';
 
 export const MODS_DEFAULT_ON = '2.1.287';
 export const MODS_FIRST = '2.1.277';
@@ -63,6 +63,93 @@ export const defaultVersionOf: VersionOf = (path) => {
   }
 };
 
+/** Known npm/cmd-shim Node launcher forms (legacy basedir and basedir_win).
+ * Match the whole template, not comments or arbitrary shell code. Unknown npm
+ * versions/formats simply keep the independent probe result. Never execute it.
+ */
+const npmCmdShim = (entry: string, modern: boolean) => [
+  '@ECHO off', 'GOTO start', ':find_dp0', 'SET dp0=%~dp0', 'EXIT /b', ':start',
+  'SETLOCAL', 'CALL :find_dp0', '', 'IF EXIST "%dp0%\\node.exe" (',
+  '  SET "_prog=%dp0%\\node.exe"', ') ELSE (', '  SET "_prog=node"',
+  ...(!modern ? ['  SET PATHEXT=%PATHEXT:;.JS;=;%'] : []), ')', '',
+  'endLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & '
+    + (modern ? 'set PATHEXT=%PATHEXT:;.JS;=;% & ' : '')
+    + `"%_prog%"  "%dp0%\\${entry.replaceAll('/', '\\')}" %*`, '',
+].join('\r\n');
+const npmPosixShim = (entry: string, modern: boolean) => [
+  '#!/bin/sh', 'basedir=$(dirname "$(echo "$0" | sed -e \'s,\\\\,/,g\')")',
+  ...(modern ? ['basedir_win="$basedir"'] : []), '',
+  modern ? 'case `uname -a` in' : 'case `uname` in',
+  ...(modern ? [
+    '  *CYGWIN*|*MINGW*|*MSYS*)', '    if command -v cygpath > /dev/null 2>&1; then',
+    '      basedir_win=`cygpath -w "$basedir"`', '    fi', '  ;;', '  *WSL2*)',
+    '    if command -v wslpath > /dev/null 2>&1; then',
+    '      basedir_win="$(wslpath -w "$basedir" 2> /dev/null)"',
+    '      if [ $? -ne 0 ] || [ -z "$basedir_win" ]; then',
+    '        echo "Error: wslpath failed to convert path. WSL environment may be misconfigured." >&2',
+    '        exit 1', '      fi', '    fi', '  ;;',
+  ] : [
+    '    *CYGWIN*|*MINGW*|*MSYS*)', '        if command -v cygpath > /dev/null 2>&1; then',
+    '            basedir=`cygpath -w "$basedir"`', '        fi', '    ;;',
+  ]), 'esac', '',
+  ...(modern ? [
+    'PROG_EXE="$basedir/node.exe"', 'if ! [ -x "$PROG_EXE" ]; then',
+    '  PROG_EXE="$basedir/node"', '  if ! [ -x "$PROG_EXE" ]; then',
+    '    PROG_EXE=node', '    if ! [ -x "$PROG_EXE" ]; then', '      PROG_EXE=node.exe',
+    '    fi', '  fi', 'fi', '', `exec "$PROG_EXE"  "$basedir_win/${entry}" "$@"`,
+  ] : [
+    'if [ -x "$basedir/node" ]; then', `  exec "$basedir/node"  "$basedir/${entry}" "$@"`,
+    'else ', `  exec node  "$basedir/${entry}" "$@"`, 'fi',
+  ]), '',
+].join('\n');
+
+// A no-shebang/native bin uses npm's direct-exec forms, not a Node wrapper.
+const npmDirectCmdShim = (entry: string) => [
+  '@ECHO off', 'GOTO start', ':find_dp0', 'SET dp0=%~dp0', 'EXIT /b', ':start',
+  'SETLOCAL', 'CALL :find_dp0', `"%dp0%\\${entry.replaceAll('/', '\\')}"   %*`, '',
+].join('\r\n');
+const npmDirectPosixShim = (entry: string, modern: boolean) => {
+  const nodeShim = npmPosixShim(entry, modern);
+  const preamble = nodeShim.slice(0, nodeShim.indexOf(modern ? 'PROG_EXE=' : 'if [ -x'));
+  return preamble + `exec "$basedir/${entry}"   "$@"\n`;
+};
+
+function npmShimTarget(path: string, cmd: boolean): { path: string; mode: 'node' | 'direct' } | null {
+  let fd: number | undefined;
+  try {
+    fd = openSync(path, 'r');
+    const stat = fstatSync(fd);
+    if (!stat.isFile() || stat.size > 64 * 1024) return null;
+    // Also cap the actual read if a file grows after stat.
+    const bytes = Buffer.alloc(64 * 1024 + 1);
+    let size = 0;
+    while (size < bytes.length) {
+      const n = readSync(fd, bytes, size, bytes.length - size, null);
+      if (!n) break;
+      size += n;
+    }
+    if (size > 64 * 1024) return null;
+    const text = bytes.subarray(0, size).toString('utf8').replace(/\r\n/g, '\n').trimEnd();
+    const targets = cmd
+      ? [...text.matchAll(/"%dp0%\\([^"\r\n]+)" +%\*$/gm)].map(m => m[1].replaceAll('\\', '/'))
+      : [...text.matchAll(/^\s*exec (?:[^\r\n]* )?"\$basedir(?:_win)?\/([^"\r\n]+)" +"\$@"$/gm)].map(m => m[1]);
+    const entry = targets[0];
+    if (!entry || targets.some(t => t !== entry) || !/^[a-zA-Z0-9@._ /-]+$/.test(entry) || entry.startsWith('/')) return null;
+    const template = cmd ? npmCmdShim : npmPosixShim;
+    const normalize = (value: string) => value.replace(/\r\n/g, '\n').trimEnd();
+    const node = [false, true].some(modern => normalize(template(entry, modern)) === text);
+    const direct = cmd ? normalize(npmDirectCmdShim(entry)) === text
+      : [false, true].some(modern => normalize(npmDirectPosixShim(entry, modern)) === text);
+    if (!node && !direct) return null;
+    const target = realpathSync(resolve(dirname(path), entry));
+    return statSync(target).isFile() ? { path: target, mode: node ? 'node' : 'direct' } : null;
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
+}
+
 /** Every `claude` on PATH, in PATH order (the first is what runs), plus ~/.local/bin. */
 export function findClaudeInstalls(env: NodeJS.ProcessEnv, home: string, versionOf: VersionOf = defaultVersionOf): ClaudeInstall[] {
   const names = process.platform === 'win32' ? ['claude.exe', 'claude.cmd', 'claude'] : ['claude'];
@@ -70,6 +157,7 @@ export function findClaudeInstalls(env: NodeJS.ProcessEnv, home: string, version
   const seen = new Set<string>();
   const installs: ClaudeInstall[] = [];
   for (const dir of dirs) {
+    let cmd: ClaudeInstall | undefined;
     for (const name of names) {
       const path = join(dir, name);
       let real: string;
@@ -81,7 +169,17 @@ export function findClaudeInstalls(env: NodeJS.ProcessEnv, home: string, version
       }
       if (seen.has(real)) continue;
       seen.add(real);
-      installs.push({ path, version: versionOf(path) });
+      let version = versionOf(path);
+      if (process.platform === 'win32' && name === 'claude' && version === null && cmd?.version) {
+        const target = npmShimTarget(path, false);
+        const cmdTarget = npmShimTarget(cmd.path, true);
+        if (target && cmdTarget && target.path === cmdTarget.path && target.mode === cmdTarget.mode) version = cmd.version;
+      }
+      const install = { path, version };
+      installs.push(install);
+      // Only a .cmd actually probed in this directory can supply a version.
+      // A realpath-deduplicated alias in another directory proves nothing here.
+      if (name === 'claude.cmd') cmd = install;
     }
   }
   return installs;

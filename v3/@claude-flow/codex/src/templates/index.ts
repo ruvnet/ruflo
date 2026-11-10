@@ -40,6 +40,36 @@ export const BUILT_IN_SKILLS: Record<BuiltInSkill, { name: string; description: 
     description: 'CI/CD and PR management',
     category: 'automation',
   },
+  'vector-quantization': {
+    name: 'Vector Quantization',
+    description: 'Semantic memory search and RaBitQ compression',
+    category: 'memory',
+  },
+  'graph-mincut': {
+    name: 'Graph Min-Cut',
+    description: 'Exact minimum cut for module and cluster boundaries',
+    category: 'analysis',
+  },
+  'sublinear-solver': {
+    name: 'Sublinear Solver',
+    description: 'Diagonally dominant linear systems via sublinear-time-solver',
+    category: 'analysis',
+  },
+  'injection-defense': {
+    name: 'Injection Defense',
+    description: 'Prompt-injection and PII screening with AIDefence',
+    category: 'security',
+  },
+  'fast-code-edits': {
+    name: 'Fast Code Edits',
+    description: 'Codemods and agent-booster snippet merges, no LLM',
+    category: 'automation',
+  },
+  'lora-learning': {
+    name: 'LoRA Learning',
+    description: 'MicroLoRA adaptation on @ruvector/learning-wasm',
+    category: 'learning',
+  },
 };
 
 /**
@@ -98,6 +128,13 @@ export const ALL_AVAILABLE_SKILLS: string[] = [
   'security-audit',
   'performance-analysis',
   'github-automation',
+  // Ecosystem skills (ruvector, agent-booster, aidefence, sublinear-time-solver)
+  'vector-quantization',
+  'graph-mincut',
+  'sublinear-solver',
+  'injection-defense',
+  'fast-code-edits',
+  'lora-learning',
   // Advanced skills
   'agent-coordination',
   'agentdb-advanced',

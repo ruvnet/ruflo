@@ -1,0 +1,32 @@
+{
+  "_comment": "Monotone-decreasing baseline of shipped SKILL.md files that tell agents to run a ruflo CLI command or subcommand the CLI does not register (entries are <skill path>::<command> or <skill path>::<command> <subcommand>). Fix one, then re-run with --update-baseline to lower the floor. NEVER add entries to hide a new reference.",
+  "unknownCount": 25,
+  "knownUnknown": [
+    "plugins/ruflo-intelligence/skills/neural-train/SKILL.md::neural compress",
+    "v3/@claude-flow/cli/.claude/skills/github-multi-repo/SKILL.md::skill",
+    "v3/@claude-flow/cli/.claude/skills/github-release-management/SKILL.md::diagnostic-run",
+    "v3/@claude-flow/cli/.claude/skills/github-release-management/SKILL.md::github",
+    "v3/@claude-flow/cli/.claude/skills/github-release-management/SKILL.md::sparc",
+    "v3/@claude-flow/cli/.claude/skills/github-workflow-automation/SKILL.md::github",
+    "v3/@claude-flow/cli/.claude/skills/hooks-automation/SKILL.md::hooks agent-spawned",
+    "v3/@claude-flow/cli/.claude/skills/hooks-automation/SKILL.md::hooks check-protected",
+    "v3/@claude-flow/cli/.claude/skills/hooks-automation/SKILL.md::hooks mcp-initialized",
+    "v3/@claude-flow/cli/.claude/skills/hooks-automation/SKILL.md::hooks memory-sync",
+    "v3/@claude-flow/cli/.claude/skills/hooks-automation/SKILL.md::hooks neural-trained",
+    "v3/@claude-flow/cli/.claude/skills/hooks-automation/SKILL.md::hooks post-search",
+    "v3/@claude-flow/cli/.claude/skills/hooks-automation/SKILL.md::hooks pre-search",
+    "v3/@claude-flow/cli/.claude/skills/hooks-automation/SKILL.md::hooks task-orchestrated",
+    "v3/@claude-flow/cli/.claude/skills/hooks-automation/SKILL.md::hooks validate-config",
+    "v3/@claude-flow/cli/.claude/skills/hooks-automation/SKILL.md::metrics",
+    "v3/@claude-flow/cli/.claude/skills/pair-programming/SKILL.md::pair config",
+    "v3/@claude-flow/cli/.claude/skills/pair-programming/SKILL.md::pair profile",
+    "v3/@claude-flow/cli/.claude/skills/sparc-methodology/SKILL.md::sparc",
+    "v3/@claude-flow/cli/.claude/skills/stream-chain/SKILL.md::stream-chain",
+    "v3/@claude-flow/cli/.claude/skills/v3-cli-modernization/SKILL.md::learning",
+    "v3/@claude-flow/cli/.claude/skills/v3-cli-modernization/SKILL.md::workflow create",
+    "v3/@claude-flow/cli/.claude/skills/verification-quality/SKILL.md::report",
+    "v3/@claude-flow/cli/.claude/skills/verification-quality/SKILL.md::train",
+    "v3/@claude-flow/cli/.claude/skills/verification-quality/SKILL.md::truth"
+  ],
+  "updatedAt": "2026-10-28T07:24:38.869Z"
+}

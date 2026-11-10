@@ -2,6 +2,16 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-ai-team`.
 
+## 0.4.1 — 2026-11-09
+- fix(deps): zod ^4.6.7 (GHSA-mrhx-c7xc-m3w5: zod < 4.6.6 can exhaust memory validating oversized constrained collections).
+
+## 0.4.0 — 2026-10-26
+- feat: `memory_search` ranks by meaning through Cognitum's managed `/v1/embeddings` (`cognitum-embed`, 384-dim) when `RUFLO_AI_TEAM_EMBEDDINGS_KEY` is set; vectors are stored with each memory (only if the text is unchanged), never returned to callers, and an outage or a missing key falls back to the labelled lexical index, so a search never fails because embeddings did
+- feat: memory listing reads newest first, so a team with more than 1000 memories keeps the latest; needs the composite index in `deploy/firestore.indexes.json`, and without it the read falls back to the old unordered query rather than erroring
+- feat: the workflow funnel (team created, run started, run completed, memory written, memory searched) is logged as one structured line per success with a hashed tenant and no content
+- feat: unauthenticated requests are limited per client (default 600 a minute, `RUFLO_AI_TEAM_ANON_RPM`); OAuth callers and `/health` are never throttled, and the client key is the last `X-Forwarded-For` entry because Cloud Run appends the real address there
+- chore: the privacy page discloses that memory text is sent to Cognitum's embeddings service when semantic search is on
+
 ## 0.3.5 — 2026-10-24
 - feat: the guard also screens `team_create` and `team_update` (team name, objective and roles are shared, retained text like task and memory writes); read tools stay unguarded
 - feat: `/team-remember` and `/team-board` commands (memory store/search and the board view)

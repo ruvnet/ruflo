@@ -13,6 +13,7 @@
  */
 
 import { readFile, readdir, stat } from 'fs/promises';
+import { loadWasmMinCut, minCutWith } from './mincut-bridge.js';
 import { join, relative, extname, dirname, basename } from 'path';
 
 // ============================================================================
@@ -164,48 +165,32 @@ let ruVectorGraph: IRuVectorGraph | null = null;
 let ruVectorLoadAttempted = false;
 
 /**
- * Attempt to load ruvector graph algorithms
+ * Load the accelerated graph backend.
+ *
+ * MinCut runs on ruvector's `DynamicMinCut` (the `@ruvector/mincut-wasm`
+ * solver ruvector ships as an optional dependency), see mincut-bridge.ts.
+ * Inputs the wasm solver cannot describe (isolated nodes, no edges) and
+ * Louvain go to the built-in JS implementations — ruvector's own
+ * `louvainCommunities` is plain JS too, so there is nothing to gain there.
+ * Returns null when the wasm solver is unavailable; callers then use the
+ * built-in Stoer-Wagner `fallbackMinCut`.
  */
 async function loadRuVector(): Promise<IRuVectorGraph | null> {
   if (ruVectorLoadAttempted) return ruVectorGraph;
   ruVectorLoadAttempted = true;
 
-  // Use dynamic module names to bypass TypeScript static analysis
-  // These modules are optional and may not be installed
-  const ruvectorModule = 'ruvector';
-  const wasmModule = '@ruvector/wasm';
+  const Ctor = await loadWasmMinCut();
+  if (!Ctor) return null;
+  ruVectorGraph = {
+    mincut: (nodes, edges) => minCutWith(Ctor, nodes, edges) ?? fallbackMinCut(nodes, edges),
+    louvain: (nodes, edges) => fallbackLouvain(nodes, edges),
+  };
+  return ruVectorGraph;
+}
 
-  try {
-    // Try to load ruvector's graph module
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ruvector: any = await import(/* webpackIgnore: true */ ruvectorModule).catch(() => null);
-
-    if (ruvector && typeof ruvector.hooks_graph_mincut === 'function' && typeof ruvector.hooks_graph_cluster === 'function') {
-      ruVectorGraph = {
-        mincut: (nodes, edges) => ruvector.hooks_graph_mincut(nodes, edges),
-        louvain: (nodes, edges) => ruvector.hooks_graph_cluster(nodes, edges),
-      };
-      return ruVectorGraph;
-    }
-  } catch {
-    // Try alternative import paths
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const wasm: any = await import(/* webpackIgnore: true */ wasmModule).catch(() => null);
-      if (wasm && wasm.GraphAnalyzer) {
-        const analyzer = new wasm.GraphAnalyzer();
-        ruVectorGraph = {
-          mincut: (nodes, edges) => analyzer.mincut(nodes, edges),
-          louvain: (nodes, edges) => analyzer.louvain(nodes, edges),
-        };
-        return ruVectorGraph;
-      }
-    } catch {
-      // Fallback will be used
-    }
-  }
-
-  return null;
+/** Which MinCut backend `analyzeMinCutBoundaries` will use. */
+export async function getMinCutBackend(): Promise<'mincut-wasm' | 'stoer-wagner'> {
+  return (await loadRuVector()) ? 'mincut-wasm' : 'stoer-wagner';
 }
 
 // ============================================================================

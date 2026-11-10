@@ -85,7 +85,7 @@ export function searchPanel(env: SlotEnv): RenderElement[] {
 
     if (hits.length === 0) continue
 
-    rows.push(text(ctx, `${HIT_NAME[level]} (${result.counts[level]}${result.counts[level] > MAX_SHOWN ? `, first ${MAX_SHOWN} shown` : ''})`, { bold: true }))
+    rows.push(text(ctx, `${HIT_NAME[level]} (${result.counts[level]}${result.counts[level] > MAX_SHOWN ? `, first ${MAX_SHOWN} shown` : ''})`, { weight: 'semibold' }))
     for (const [i, hit] of hits.entries()) rows.push(hitButton(env, hit, i))
   }
 

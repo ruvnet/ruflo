@@ -95,7 +95,13 @@ export function createPublisherService({ relay, keyPath, port } = {}) {
    *   denied  — a token that did not verify, or none while OAuth is mandatory.
    */
   async function authContext(req) {
-    const bearer = String(req?.headers?.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+    // Prefix compare + trim, not /^Bearer\s+(.+)$/i: `\s+` and `.+` both match
+    // whitespace, so a header of many tabs backtracks quadratically (CodeQL
+    // js/polynomial-redos) on input an unauthenticated caller controls.
+    const rawAuth = String(req?.headers?.authorization || '');
+    const bearer = rawAuth.length <= 8192 && rawAuth.slice(0, 6).toLowerCase() === 'bearer' && /^\s/.test(rawAuth.slice(6))
+      ? rawAuth.slice(6).trim() || undefined
+      : undefined;
     if (bearer) {
       const v = await verifyAccessToken(bearer, { issuer: OAUTH_ISSUER, jwksUri: OAUTH_JWKS,
         audience: OAUTH_CLIENT_ID || undefined });
@@ -134,7 +140,7 @@ export function createPublisherService({ relay, keyPath, port } = {}) {
       'Sign a message with this connector\'s own key and publish it to a public swarm channel over its own NIP-42 authenticated relay connection. Use when this connector has something the federation needs — a status, a finding, a result. Requires the caller token; public (pub:) channels only, because publishing to a private channel needs a channel key this connector deliberately does not hold.',
       { channel: z.string().describe('Public channel id, e.g. "pub:announce".'),
         msgType: z.string().describe('Message type, e.g. "Status", "Result", "Question".'),
-        payload: z.record(z.any()).describe('Message body. Never put secrets or credentials here — channel content is readable by every relay member.') },
+        payload: z.record(z.string(), z.any()).describe('Message body. Never put secrets or credentials here — channel content is readable by every relay member.') },
       async ({ channel, msgType, payload }) => {
         // OAuth scope is the real gate. The caller token remains a transitional
         // fallback and only while OAuth is not yet mandatory.

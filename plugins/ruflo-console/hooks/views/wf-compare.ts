@@ -79,7 +79,7 @@ export function compareBody(env: SlotEnv, run: WfRun): RenderElement[] {
   }
 
   return [
-    row(ctx, [text(ctx, ` A ${runTag(run.id)}`, { bold: true }), text(ctx, '  vs  '), text(ctx, `B ${runTag(other.id)}`, { bold: true }), text(ctx, total > 1 ? `  (${total} other runs of this workflow)` : '', { dimColor: true })], 'wf-cmp-ids'),
+    row(ctx, [text(ctx, ` A ${runTag(run.id)}`, { weight: 'semibold' }), text(ctx, '  vs  '), text(ctx, `B ${runTag(other.id)}`, { weight: 'semibold' }), text(ctx, total > 1 ? `  (${total} other runs of this workflow)` : '', { dimColor: true })], 'wf-cmp-ids'),
     ...flow(ctx, [...(total > 1 ? [{ key: 'wf-cmp-prev', label: '◂ other run', onPress: () => (stepPartner(run, runs, -1), redraw(ctx)) }, { key: 'wf-cmp-next', label: 'other run ▸', onPress: () => (stepPartner(run, runs, 1), redraw(ctx)) }] : []), { key: 'wf-cmp-only', label: isOnly ? 'show all agents' : 'changed only', onPress: flip }], 'wf-cmp-controls'),
     ...totalsRows(ctx, result),
     text(ctx, ` ${result.counts.same} same · ${result.counts.changed} changed · ${result.counts.added} only in B (+) · ${result.counts.removed} only in A (-)   ~ = tokens off by ${TOKEN_DELTA * 100}% or time by ${TIME_DELTA * 100}% or a state/model change`, { dimColor: true }),

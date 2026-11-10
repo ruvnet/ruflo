@@ -1,8 +1,9 @@
 ---
 name: harness-security-bench
-description: Run `@metaharness/darwin security bench` (upstream "Darwin Shield" / ADR-155) — evolves a champion security-detection harness against a 10-vuln / 9-decoy corpus and grades it on TPR/FPR/patch-pass/repro/unsafe vs four baselines (B0 static, B1 LLM-single-pass, B2 fixed-agent, B3 Darwin-champion). Closest reference implementation for ruflo's own ADR-155 nightly self-learning security harness (PR #2417). Degrades gracefully when @metaharness/darwin is absent.
+description: "Run `@metaharness/darwin security bench` (Darwin Shield): evolve a security-detection harness on a 10-vuln/9-decoy corpus and grade TPR/FPR/patch/repro against four baselines. Use when benchmarking security-harness detection. Degrades gracefully without darwin."
 argument-hint: "[--population 2] [--cycles 1] [--seed N] [--alert-on-fail]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 Surfaces the upstream `metaharness-darwin security bench` command. **This is

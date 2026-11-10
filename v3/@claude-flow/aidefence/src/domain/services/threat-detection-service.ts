@@ -18,11 +18,13 @@ import {
   createThreat
 } from '../entities/threat.js';
 import { createHash } from 'crypto';
+import type { InjectionDetector, PackSelection } from './packs/engine.js';
+import { detectPackThreats, resolvePackDetector } from './packs/adapter.js';
 
 /**
  * Threat pattern definition
  */
-interface ThreatPattern {
+export interface ThreatPattern {
   readonly pattern: RegExp;
   readonly type: ThreatType;
   readonly severity: ThreatSeverity;
@@ -31,10 +33,42 @@ interface ThreatPattern {
 }
 
 /**
- * Prompt injection patterns (50+ patterns from AIMDS)
+ * Prompt injection patterns (originally 50+ patterns from AIMDS).
+ *
+ * Includes the wider-detection pass ported from upstream `aidefence@2.3.0` /
+ * `aimds-*@0.1.1` (ADR-118, #2004). @claude-flow/aidefence 3.0.3 shipped it,
+ * but it was published from an uncommitted tree; ADR-516 restores it to source.
+ *
+ *  - A verb→noun window of 0..6 modifier words catches the
+ *    "ignore all previous instructions" family in its many phrasings
+ *    ("disregard every system prompt above", "forget all of the prior rules").
+ *    The narrow regexes below stay for phrasings the window misses.
+ *  - Role hijack adds `behave (as|like) …`.
+ *  - Jailbreak markers add `god|root|admin|sudo mode`.
  */
+
+/** Verbs that flag a likely override attempt. ADR-118 / #2004. */
+const OVERRIDE_VERBS = ['ignore', 'disregard', 'forget', 'override'].join('|');
+/** Nouns the override targets. `system\s*-?\s*prompts?` matches "system prompt" and "system-prompt". */
+const OVERRIDE_NOUNS = ['instructions?', 'prompts?', 'rules?', 'context', 'system\\s*-?\\s*prompts?'].join('|');
+/**
+ * 0..6 modifier words between verb and noun. ADR-118 specified 0..4; "forget
+ * every single one of the previous prompts" needs 6. `\s+` and `\S+` are
+ * disjoint, so each repetition has exactly one split point and the window
+ * stays linear (timed in threat-detection.test.ts).
+ */
+const OVERRIDE_WINDOW = '(?:\\s+\\S+){0,6}';
+
 const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
-  // Instruction override patterns
+  // ADR-118 window: override verb → target noun across 0..6 modifier words.
+  {
+    pattern: new RegExp(`\\b(${OVERRIDE_VERBS})${OVERRIDE_WINDOW}\\s+(${OVERRIDE_NOUNS})\\b`, 'i'),
+    type: 'instruction_override',
+    severity: 'critical',
+    description: 'Override verb followed by a target noun within 0..6 words (ADR-118)',
+    baseConfidence: 0.96,
+  },
+  // Instruction override patterns (narrow; kept for phrasings the window misses)
   {
     pattern: /ignore\s+(all\s+)?(previous\s+)?instructions/i,
     type: 'instruction_override',
@@ -86,6 +120,14 @@ const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
     description: 'Roleplay instruction that may be legitimate',
     baseConfidence: 0.65,
   },
+  {
+    // ADR-118: `behave as/like a different|new|another|unrestricted …`.
+    pattern: /behave\s+(as|like)\s+(an?\s+)?(different|new|another|unrestricted)/i,
+    type: 'role_switching',
+    severity: 'high',
+    description: 'Behavior-hijack instruction (ADR-118)',
+    baseConfidence: 0.78,
+  },
 
   // Jailbreak patterns
   {
@@ -122,6 +164,14 @@ const PROMPT_INJECTION_PATTERNS: ThreatPattern[] = [
     severity: 'critical',
     description: 'Attempt to disable safety filters',
     baseConfidence: 0.96,
+  },
+  {
+    // ADR-118: privileged-mode jailbreaks beyond DAN / developer mode.
+    pattern: /\b(god|root|admin|sudo)\s*mode\b/i,
+    type: 'jailbreak',
+    severity: 'critical',
+    description: 'Privileged-mode jailbreak attempt (ADR-118)',
+    baseConfidence: 0.94,
   },
 
   // Context manipulation patterns
@@ -266,15 +316,34 @@ const PII_PATTERNS = [
 ];
 
 /**
+ * Options for ThreatDetectionService. Passing a bare ThreatPattern[] (the
+ * pre-3.1 signature) is still accepted and means `{ patterns }`.
+ */
+export interface ThreatDetectionOptions {
+  /** Replaces the built-in regex patterns. */
+  readonly patterns?: ThreatPattern[];
+  /**
+   * AIMDS pattern packs scanned alongside the built-in patterns (3.1.0).
+   * Default `true`: every vendored pack. `false` disables them; a list or
+   * a record selects packs by name (e.g. `['core', 'exfil_url']`).
+   */
+  readonly packs?: PackSelection;
+}
+
+/**
  * Threat Detection Service
  */
 export class ThreatDetectionService {
   private readonly patterns: ThreatPattern[];
+  private readonly packDetector: InjectionDetector | null;
   private detectionCount = 0;
   private totalDetectionTimeMs = 0;
 
-  constructor(customPatterns?: ThreatPattern[]) {
-    this.patterns = customPatterns ?? PROMPT_INJECTION_PATTERNS;
+  constructor(options?: ThreatPattern[] | ThreatDetectionOptions) {
+    const opts: ThreatDetectionOptions = Array.isArray(options) ? { patterns: options } : options ?? {};
+    this.patterns = opts.patterns ?? PROMPT_INJECTION_PATTERNS;
+    // Packs are compiled once per process; this only selects a detector.
+    this.packDetector = resolvePackDetector(opts.packs);
   }
 
   /**
@@ -318,6 +387,13 @@ export class ThreatDetectionService {
       }
     }
 
+    // AIMDS pattern packs: a separate pass over the RAW input (the pack
+    // normaliser keeps newlines, which some pack regexes rely on). Pack hits
+    // do not feed threatIndicatorCount, so built-in confidences are unchanged.
+    if (this.packDetector) {
+      threats.push(...detectPackThreats(this.packDetector, input));
+    }
+
     // PII detection
     const piiFound = this.detectPII(input);
 
@@ -353,6 +429,13 @@ export class ThreatDetectionService {
         if (pattern.severity === 'critical') {
           return { threat: true, confidence: maxConfidence };
         }
+      }
+    }
+
+    if (this.packDetector) {
+      for (const t of this.packDetector.detect(input).threats) {
+        threatFound = true;
+        maxConfidence = Math.max(maxConfidence, t.confidence);
       }
     }
 
@@ -473,7 +556,7 @@ export class ThreatDetectionService {
  * Create a new ThreatDetectionService instance
  */
 export function createThreatDetectionService(
-  customPatterns?: ThreatPattern[]
+  options?: ThreatPattern[] | ThreatDetectionOptions
 ): ThreatDetectionService {
-  return new ThreatDetectionService(customPatterns);
+  return new ThreatDetectionService(options);
 }

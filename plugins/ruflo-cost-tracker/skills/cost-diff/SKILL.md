@@ -3,6 +3,7 @@ name: cost-diff
 description: Snapshot delta between two cost-summary JSON outputs. PR-level cost regression detection — answers "what changed between these two specific snapshots?". Pairs with cost-summary's stable JSON contract.
 argument-hint: "--baseline <baseline.json> --current <current.json> [--alert-on-pct N] [--alert-on-usd N] [--alert-on-class-pct <class>:N[,<class>:N]] [--format table|json]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 PR-level cost regression detection. Where cost-counterfactual compares

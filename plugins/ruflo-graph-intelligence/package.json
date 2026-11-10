@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "sublinear-time-solver": "^1.7.0",
+    "@ruvnet/sublinear-core": "^1.0.0",
     "zod": "^4.6.7"
   },
   "overrides": {

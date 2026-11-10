@@ -6,10 +6,11 @@ import { feedbackPatternsSchema, validateFeedbackPatterns } from '../memory/feed
 
 import { mkdirSync, writeFileSync, existsSync, readFileSync, statSync, unlinkSync, readdirSync, rmSync } from 'fs';
 import * as nodeFs from 'fs';
-import { dirname, join, resolve, sep } from 'path';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { dispatchQueueDir } from '../services/dispatch-queue.js';
 import { validateIdentifier, validateText, validatePath } from './validate-input.js';
+import { realpathNearest, isInsideRealRoot } from './realpath-containment.js';
 import { commandRecordingDisabled, redactCommandForStorage } from '../services/command-recording.js';
 import { checkCommandLoop, recordCommandOutcome } from './tool-loop-guardrail.js';
 import {
@@ -1367,6 +1368,9 @@ export const hooksRoute: MCPTool = {
       // Q-learning and keyword suggestions retain their existing routing paths.
       try {
         const sonaStart = performance.now();
+        // #4581: fold in any verified outcomes the ruflo-mods learning loop
+        // recorded since the last call (one stat when nothing changed).
+        await ingestVerifiedQuietly();
         const sona = await getSONAOptimizer();
         const suggestion = await sona?.getRoutingSuggestion(task);
         const { isSupportedSonaAgent } = await import('../memory/sona-optimizer.js');
@@ -1858,16 +1862,35 @@ export const hooksPreTask: MCPTool = {
   },
 };
 
+// #4887 — advertise the grammar validateIdentifier() (cli-core) plus the CLI
+// reserved-name wrapper enforce, so callers learn it from the schema instead of
+// from a refusal. NATIVE_ID_PATTERN is IDENTIFIER_RE (with '-' moved last so no
+// escape is needed); the shell-meta and path-traversal checks can never fire on a
+// string it accepts. ASCII-only, so maxLength (code points) and the 128 .length
+// cap agree. The HTTP transport enforces pattern/minLength at runtime, so a
+// field the handler treats as omitted when empty (agent) must accept ''.
+const NATIVE_ID_BODY = '[a-zA-Z0-9_][a-zA-Z0-9_.:-]{0,127}';
+const NATIVE_ID_RESERVED = ['__proto__', 'constructor', 'prototype'];
+const NATIVE_ID_RULES = '1-128 chars of A-Z a-z 0-9 _ - . : (first char alphanumeric or _); not __proto__, constructor or prototype. Must be a registered native ID, not a host path such as /root/x.';
+const nativeIdSchema = (description: string, opts: { emptyMeansOmitted?: boolean } = {}) => ({
+  type: 'string',
+  ...(opts.emptyMeansOmitted ? {} : { minLength: 1 }),
+  maxLength: 128,
+  pattern: opts.emptyMeansOmitted ? `^(?:${NATIVE_ID_BODY})?$` : `^${NATIVE_ID_BODY}$`,
+  not: { enum: NATIVE_ID_RESERVED },
+  description: `${description} ${NATIVE_ID_RULES}`,
+});
+
 export const hooksPostTask: MCPTool = {
   name: 'hooks_post-task',
   description: 'Record task completion for learning Use when native Bash hooks (via Claude Code\'s settings.json) are wrong because you need Ruflo-side state — pattern persistence, neural training signals, model-routing learning, cost tracking, audit chain. For one-off shell commands, plain Bash hooks are fine.',
   inputSchema: {
     type: 'object',
     properties: {
-      taskId: { type: 'string', description: 'Task identifier' },
+      taskId: nativeIdSchema('Task identifier.'),
       patterns: feedbackPatternsSchema,
       success: { type: 'boolean', description: 'Whether task was successful' },
-      agent: { type: 'string', description: 'Agent that completed the task' },
+      agent: nativeIdSchema('Agent that completed the task. An empty string is treated as omitted.', { emptyMeansOmitted: true }),
       quality: { type: 'number', minimum: 0, maximum: 1, description: 'Quality score (0-1)' },
       task: { type: 'string', description: 'Task description text (used for learning keyword extraction)' },
       duration: { type: 'number', description: 'Observed task duration in milliseconds (used by pheromone-adaptive topology)' },
@@ -1876,7 +1899,7 @@ export const hooksPostTask: MCPTool = {
       agentRole: { type: 'string', description: 'Role for role-local pheromone normalization (default agent)' },
       storeDecisions: { type: 'boolean', description: 'Also store routing decision in memory DB' },
       // ADR-147 P2: nested-subagent spawn-tree capture
-      parentAgentId: { type: 'string', description: 'ID of the parent agent (from Claude Code\'s parent_agent_id OTel span tag / x-claude-code-parent-agent-id header). Omit for top-level work.' },
+      parentAgentId: nativeIdSchema('ID of the parent agent (from Claude Code\'s parent_agent_id OTel span tag / x-claude-code-parent-agent-id header). Omit for top-level work.'),
       depth: { type: 'number', description: 'Chain depth from root lead session (0 = lead, 1+ = subagent). Used by ADR-147 P3 depth-aware guardrail.' },
     },
     required: ['taskId'],
@@ -2426,9 +2449,26 @@ export const hooksBuildAgents: MCPTool = {
     },
   },
   handler: async (params: Record<string, unknown>) => {
-    const outputDir = resolve((params.outputDir as string) || './agents');
+    // #4558: outputDir was never validated and resolved against the process
+    // cwd, so a default call from another directory overwrote files there.
+    if (params.outputDir !== undefined) {
+      const v = validatePath(params.outputDir, 'outputDir');
+      if (!v.valid) return { success: false, error: v.error };
+    }
+    const outputDir = resolve(getProjectCwd(), (params.outputDir as string) || './agents');
+    // validatePath allows absolute paths, so keep the real output dir inside
+    // the real project root (CWE-22/59): configs are only ever project files.
+    let realProjectRoot: string;
+    try { realProjectRoot = nodeFs.realpathSync(getProjectCwd()); } catch { realProjectRoot = getProjectCwd(); }
+    if (!isInsideRealRoot(realProjectRoot, outputDir)) {
+      return { success: false, error: 'outputDir must be inside the project directory' };
+    }
     const focus = (params.focus as string) || 'all';
-    const format = (params.format as string) || 'yaml';
+    // format is spliced into each file name; only the two supported formats.
+    const format = params.format === undefined ? 'yaml' : params.format;
+    if (format !== 'yaml' && format !== 'json') {
+      return { success: false, error: 'format must be "yaml" or "json"' };
+    }
     const persist = params.persist !== false; // Default to true
 
     const agents = [
@@ -2476,9 +2516,11 @@ export const hooksBuildAgents: MCPTool = {
       agents: filteredAgents,
       stats: {
         configsGenerated: filteredAgents.length,
-        patternsApplied: filteredAgents.length * 3,
+        // #4558: was agents * 3; no pretrain data is read, the configs are templates.
+        patternsApplied: 0,
         optimizationsIncluded: filteredAgents.reduce((acc, a) => acc + a.optimizations.length, 0),
       },
+      _note: 'Configs are built-in templates; pretrain data is not read.',
     };
   },
 };
@@ -2498,7 +2540,8 @@ export const hooksTransfer: MCPTool = {
   },
   handler: async (params: Record<string, unknown>) => {
     const sourcePath = params.sourcePath as string;
-    const minConfidence = (params.minConfidence as number) || 0.7;
+    // #4728: an explicit 0 must not fall through to 0.7 (`0 || 0.7` is 0.7).
+    const minConfidence = (params.minConfidence as number) ?? 0.7;
     const filter = params.filter as string;
 
     { const v = validatePath(sourcePath, 'sourcePath'); if (!v.valid) return { success: false, error: v.error }; }
@@ -2837,9 +2880,12 @@ export const hooksSessionEnd: MCPTool = {
       }
     }
 
+    const verifiedOutcomes = await ingestVerifiedQuietly();
+
     return {
       sessionId,
       duration,
+      verifiedOutcomes,
       statePath: saveState ? `.claude/sessions/${sessionId}.json` : undefined,
       daemon: { stopped: daemonStopped },
       sessionPersistence: sessionPersistence || { controller: 'none', persisted: false },
@@ -3664,7 +3710,8 @@ export const hooksPatternStore: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const pattern = params.pattern as string;
     const type = (params.type as string) || 'general';
-    const confidence = (params.confidence as number) || 0.8;
+    // #4728: an explicit 0 must not fall through to 0.8 (`0 || 0.8` is 0.8).
+    const confidence = (params.confidence as number) ?? 0.8;
     const metadata = params.metadata as Record<string, unknown> | undefined;
     const timestamp = new Date().toISOString();
 
@@ -3745,7 +3792,8 @@ export const hooksPatternSearch: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const query = params.query as string;
     const topK = (params.topK as number) || 5;
-    const minConfidence = (params.minConfidence as number) || 0.3;
+    // #4728: an explicit 0 must not fall through to 0.3 (`0 || 0.3` is 0.3).
+    const minConfidence = (params.minConfidence as number) ?? 0.3;
     const namespace = (params.namespace as string) || 'pattern';
     const strategy = (params.strategy as string) || 'semantic';
 
@@ -4302,11 +4350,21 @@ export const hooksIntelligenceLearn: MCPTool = {
   inputSchema: {
     type: 'object',
     properties: {
-      trajectoryIds: { type: 'array', items: { type: 'string' }, description: 'Specific trajectories to learn from' },
+      trajectoryIds: { type: 'array', items: { type: 'string' }, description: 'Not supported: a learning cycle always covers every recorded trajectory. Supplying this returns an error and runs nothing, rather than learning from more than was asked (#4693).' },
       consolidate: { type: 'boolean', description: 'Run EWC++ consolidation' },
     },
   },
   handler: async (params: Record<string, unknown>) => {
+    // #4693: distillLearning() and the background pass have no way to select
+    // trajectories, so a request scoped to some must not trigger learning over all.
+    // Refuse it before anything is imported or mutated; omitting the field is unchanged.
+    if (params.trajectoryIds !== undefined) {
+      return {
+        success: false,
+        learned: false,
+        error: 'hooks_intelligence_learn: trajectoryIds is not supported; a learning cycle always covers every recorded trajectory. Omit trajectoryIds to run it.',
+      };
+    }
     const consolidate = params.consolidate !== false;
     const startTime = Date.now();
 
@@ -4822,6 +4880,10 @@ const activeWorkers: Map<string, {
   phase: string;
   startedAt: Date;
   completedAt?: Date;
+  /** True when this record was created by the in-process detect path, not a real executor. */
+  synthetic?: boolean;
+  /** Why the worker record is synthetic, propagated to worker-status/list. */
+  note?: string;
 }> = new Map();
 
 let workerIdCounter = 0;
@@ -5104,6 +5166,7 @@ export const hooksWorkerStatus: MCPTool = {
       workers,
       summary: {
         total: workers.length,
+        pending: workers.filter(w => w.status === 'pending').length,
         running: workers.filter(w => w.status === 'running').length,
         completed: workers.filter(w => w.status === 'completed').length,
         failed: workers.filter(w => w.status === 'failed').length,
@@ -5128,7 +5191,8 @@ export const hooksWorkerDetect: MCPTool = {
   handler: async (params: Record<string, unknown>) => {
     const prompt = params.prompt as string;
     const autoDispatch = params.autoDispatch as boolean;
-    const minConfidence = (params.minConfidence as number) || 0.5;
+    // #4728: an explicit 0 must not fall through to 0.5 (`0 || 0.5` is 0.5).
+    const minConfidence = (params.minConfidence as number) ?? 0.5;
 
     { const v = validateText(prompt, 'prompt'); if (!v.valid) return { success: false, error: v.error }; }
 
@@ -5158,6 +5222,12 @@ export const hooksWorkerDetect: MCPTool = {
             progress: 0,
             phase: 'initializing',
             startedAt: new Date(),
+            // hooks_worker-detect has no executor. Unlike its sibling
+            // hooks_worker-dispatch, it used to silently fabricate a
+            // completed worker after 1.5s. Mark the record and response so
+            // callers cannot treat it as real analysis (#4549 automation scan).
+            synthetic: true,
+            note: 'No executor ran: hooks_worker-detect only records a synthetic worker. Use hooks_worker-dispatch with the daemon for real work.',
           });
           dispatched.push(workerId);
 
@@ -5166,13 +5236,15 @@ export const hooksWorkerDetect: MCPTool = {
             const w = activeWorkers.get(workerId);
             if (w) {
               w.progress = 100;
-              w.phase = 'completed';
+              w.phase = 'synthetic-completed';
               w.status = 'completed';
               w.completedAt = new Date();
             }
           }, 1500);
         }
         result.autoDispatched = true;
+        result.autoDispatchStatus = 'synthetic-completed';
+        result.note = 'No executor ran: these worker records are synthetic placeholders. Use hooks_worker-dispatch with the daemon for real work.';
         result.workerIds = dispatched;
       }
     }
@@ -5227,7 +5299,10 @@ export const hooksModelRoute: MCPTool = {
       };
     }
 
-    const result = await router.route(task);
+    const result = await router.route(task, undefined, {
+      preferCost: typeof params.preferCost === 'boolean' ? params.preferCost : undefined,
+      preferSpeed: typeof params.preferSpeed === 'boolean' ? params.preferSpeed : undefined,
+    });
     return {
       model: result.model,
       confidence: result.confidence,
@@ -5429,6 +5504,12 @@ export const hooksCodemod: MCPTool = {
     // Resolve the target file set (single / array / glob), with path containment.
     const resolveTargets = (): { abs: string[]; truncated: boolean; error?: string } => {
       const out = new Set<string>();
+      let realRoot: string;
+      try {
+        realRoot = realpathNearest(cwd);
+      } catch (err) {
+        return { abs: [], truncated: false, error: `cannot resolve project root: ${(err as Error).message}` };
+      }
       const addRaw = (p: string): string | undefined => {
         const v = validatePath(p, 'path');
         if (!v.valid) return v.error;
@@ -5438,12 +5519,9 @@ export const hooksCodemod: MCPTool = {
         // path like `${cwd}-staging/x.ts` pass as "inside" `cwd`. Matches
         // the pattern already used correctly elsewhere in this codebase
         // (@claude-flow/security's `isWithinPrefix`, hooks/workers, plugins/security).
-        // KNOWN LIMITATION (disclosed 2026-10-20, not fixed here): this
-        // compares the resolved-but-not-realpath'd path, so a symlink
-        // inside cwd pointing outside it still escapes containment
-        // (CWE-59, a distinct/broader gap than the CWE-22 prefix bug this
-        // anchors). Needs fs.realpathSync-based containment as a follow-up.
         if (abs !== cwd && !abs.startsWith(cwd + sep)) return `path escapes project root: ${p}`;
+        // The lexical check above cannot see symlinks; re-check on real paths.
+        if (!isInsideRealRoot(realRoot, abs)) return `path escapes project root via symlink: ${p}`;
         out.add(abs);
         return undefined;
       };
@@ -5465,7 +5543,9 @@ export const hooksCodemod: MCPTool = {
         }
         for (const m of matches) {
           const abs = resolve(cwd, m);
-          if ((abs === cwd || abs.startsWith(cwd + sep)) && CODEMOD_EXTENSIONS.has(abs.slice(abs.lastIndexOf('.')).toLowerCase())) {
+          // Matches that resolve outside the root (via a symlinked file or
+          // directory) are skipped silently, like other non-matching entries.
+          if ((abs === cwd || abs.startsWith(cwd + sep)) && isInsideRealRoot(realRoot, abs) && CODEMOD_EXTENSIONS.has(abs.slice(abs.lastIndexOf('.')).toLowerCase())) {
             out.add(abs);
           }
         }
@@ -5726,6 +5806,39 @@ export const hooksIntelligenceUnifiedStats: MCPTool = {
   },
 };
 
+/**
+ * #4581 / ADR-502: ingest the ruflo-mods learning loop's verified outcomes.
+ * Never throws; null when the module or SONA is unavailable.
+ */
+async function ingestVerifiedQuietly(force = false) {
+  try {
+    const { ingestVerifiedOutcomes } = await import('../memory/verified-outcomes.js');
+    const sona = await getSONAOptimizer();
+    return await ingestVerifiedOutcomes({ force, sona: sona as never });
+  } catch {
+    return null;
+  }
+}
+
+export const hooksVerifiedIngest: MCPTool = {
+  name: 'hooks_intelligence_verified-ingest',
+  description: 'Ingest the ruflo-mods learning loop\'s recorded turns (.claude-flow/data/verified-trajectories.jsonl, #4581): turns a test, build or typecheck process verified train SONA; unverified turns are counted and never train. Writes .claude-flow/data/learned-lessons.json (patterns at or above the 0.6 routing gate, plus repeated verified failures as cautions). hooks_route and hooks_session-end already ingest automatically; call this to see the counts or to force a re-read. Use when native Bash hooks (via Claude Code\'s settings.json) are wrong because the outcome must reach Ruflo-side state — SONA pattern persistence and routing — and must be gated on a verifier\'s exit status rather than recorded unconditionally.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      dryRun: { type: 'boolean', description: 'Count only: train nothing and write nothing' },
+      force: { type: 'boolean', description: 'Re-read the file even if it has not changed since the last ingest' },
+    },
+  },
+  handler: async (params: Record<string, unknown>) => {
+    const { ingestVerifiedOutcomes } = await import('../memory/verified-outcomes.js');
+    const sona = await getSONAOptimizer();
+    // ADR-503 §2.3: only this explicit ingest may re-verify (run project code), and only when learningLoop.reverify is on.
+    const result = await ingestVerifiedOutcomes({ dryRun: params.dryRun === true, force: params.force === true || params.dryRun === true, sona: sona as never, allowReverify: true });
+    return { success: true, ...result };
+  },
+};
+
 // Export all hooks tools
 export const hooksTools: MCPTool[] = [
   hooksIntelligenceUnifiedStats,
@@ -5755,6 +5868,7 @@ export const hooksTools: MCPTool[] = [
   hooksTrajectoryStart,
   hooksTrajectoryStep,
   hooksTrajectoryEnd,
+  hooksVerifiedIngest,
   hooksPatternStore,
   hooksPatternSearch,
   hooksIntelligenceStats,

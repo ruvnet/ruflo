@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.3.8 — 2026-11-04
+- chore: the swarm pane's `Text` says `weight` instead of the deprecated `bold` (Claude Code 2.1.299), with the same fallback to `bold` on an engine before 2.1.299 as ruflo-console (hooks/text-weight.ts).
+- fix: a test's refused `prompt.fill` stub answers `{ isFilled: false }`, which the 2.1.296+ kit requires.
+
 ## 0.3.7 — 2026-10-11
 - fix: `swarm watch --stream`, `swarm health` and `swarm shutdown` are not ruflo CLI subcommands; added `scripts/swarm-watch.mjs`, a Monitor-friendly poller of `swarm status --format json` that prints NDJSON on change, and pointed watch/monitor-stream at it; health and stop use `swarm_health`, `swarm stop` / `swarm_shutdown`
 - chore: release the host-specific Codex hook manifest merged in #4050

@@ -39,7 +39,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   dir = mkdtempSync(join(tmpdir(), 'stats-selected-'));
   selected = join(dir, 'selected.db');
-  writeFileSync(selected, 'store');
+  // MCP callers may only name a real SQLite file, so the fixture carries the header.
+  writeFileSync(selected, Buffer.concat([Buffer.from('SQLite format 3\0', 'latin1'), Buffer.from('store')]));
   writeFileSync(selected + '-wal', 'wal');
   vi.stubEnv('CLAUDE_FLOW_DB_PATH', '');
   mocks.labels.mockResolvedValue({ initialized: true, version: 'selected-version' });
@@ -58,7 +59,7 @@ describe('stats describes the selected store', () => {
     expect(mocks.labels).toHaveBeenCalledWith(selected);
     expect(mocks.init).not.toHaveBeenCalled();
     expect(result.location).toBe(selected);
-    expect(result.totalSize).toBe('8 B');
+    expect(result.totalSize).toBe('24 B');
     expect(result.oldestEntry).toBe('2026-01-01T00:00:00.000Z');
     expect(result.newestEntry).toBe('2026-03-01T00:00:00.000Z');
   });
@@ -69,7 +70,7 @@ describe('stats describes the selected store', () => {
     const result = await run({ path: selected }) as any;
     expect(result.success).toBe(true);
     expect(result.data.entries.total).toBe(2);
-    expect(result.data.storage).toEqual({ total: '8 B', location: selected });
+    expect(result.data.storage).toEqual({ total: '24 B', location: selected });
     expect(result.data.unreadStore.rows).toBe(9);
     expect(mocks.sibling).toHaveBeenCalledWith(selected);
   });

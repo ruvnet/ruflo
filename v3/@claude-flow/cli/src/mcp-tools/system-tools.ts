@@ -665,6 +665,7 @@ export const systemTools: MCPTool[] = [
         running: tasks.filter(t => t.status === 'in_progress').length,
         completed: tasks.filter(t => t.status === 'completed').length,
         failed: tasks.filter(t => t.status === 'failed').length,
+        cancelled: tasks.filter(t => t.status === 'cancelled').length,
       };
     },
   },

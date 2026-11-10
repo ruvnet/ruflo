@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/memory",
-  "version": "3.0.9",
+  "version": "3.3.0",
   "type": "module",
   "description": "Memory module - AgentDB unification, HNSW indexing, vector search, hybrid SQLite+AgentDB backend (ADR-009)",
   "main": "dist/index.js",
@@ -18,11 +18,12 @@
   },
   "dependencies": {
     "@claude-flow/security": "^3.0.0",
-    "agentdb": "^3.0.0-alpha.20",
+    "agentdb": "^3.7.2",
     "sql.js": "^1.10.3"
   },
   "optionalDependencies": {
-    "better-sqlite3": "^12.9.0"
+    "better-sqlite3": "^12.9.0",
+    "@ruvnet/sublinear-core": "^1.0.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",

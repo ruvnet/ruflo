@@ -2,6 +2,22 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-cost-tracker`.
 
+## 0.31.3 — 2026-11-09
+- fix: `scripts/compact.mjs` exits once its output has been flushed. With a patched agentic-flow (>= 2.0.14, GHSA-vcv2-r9jh-99m5) the ReasoningBank backend leaves a timer alive, so the script printed its result and then never exited. `scripts/smoke-compact-exit.mjs` guards it.
+
+## 0.31.2 — 2026-11-05
+- fix: `cost-health` resolves an npx CLI once before starting its four subchecks in parallel. With a cold npm cache, four concurrent first installs raced in one `~/.npm/_npx` directory and left a broken install (#4711). Skip with `HEALTH_SKIP_WARMUP=1`.
+- fix: budget, burn, anomaly and projection report a failed `memory list` as an error (exit 2, with the CLI's stderr) instead of treating it as no data, which showed "no budget set" (#4711).
+
+## 0.31.0 — 2026-10-29
+- docs: `/ruflo-cost` documents the budget file and `ruflo cost budget set|export --gateway litellm [--apply]` and `ruflo cost report` (ADR-508, #4592).
+
+## 0.30.0 — 2026-10-29
+- chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
+
+## 0.29.0 — 2026-10-29
+- feat: `openrouterApiKey` is a `userConfig` option with `sensitive: true` (ADR-506, #4587): entered masked, kept in the platform credential store, read through `readSecret` before the `OPENROUTER_API_KEY` environment fallback; never logged or put on a command line.
+
 ## 0.28.3 — 2026-10-24
 - fix: `ledger.mjs`, `advise.mjs` and `local-cost.mjs` do nothing on Windows: they ran only when `import.meta.url === "file://" + argv[1]`, which is never true there (`file:///C:/…` against `C:…`), so every call exited 0 with no output. They now compare against `pathToFileURL(argv[1])`.
 - fix: `ledger.mjs --project` takes a drive-lettered path, and the project filter matches Windows paths ignoring separator style and drive-letter case, so the ruflo console's mission spend works on Windows.

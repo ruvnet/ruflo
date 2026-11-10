@@ -19,6 +19,7 @@ import type {
   BrowserSession,
   NetworkRouteInput,
 } from '../domain/types.js';
+import { browserUrlError, commandArgvError } from './argv-guard.js';
 
 export interface AgentBrowserAdapterOptions {
   session?: string;
@@ -55,6 +56,9 @@ export class AgentBrowserAdapter {
 
   private async exec<T = unknown>(args: string[], jsonOutput = true): Promise<ActionResult<T>> {
     const startTime = Date.now();
+    // Caller values must not be parsed as agent-browser options.
+    const argvError = commandArgvError(args);
+    if (argvError) return { success: false, error: argvError, duration: 0 };
     const fullArgs = [
       '--session', this.session,
       ...(this.timeout ? ['--timeout', String(this.timeout)] : []),
@@ -106,6 +110,8 @@ export class AgentBrowserAdapter {
   // ===========================================================================
 
   async open(input: OpenInput): Promise<ActionResult> {
+    const urlError = browserUrlError(input.url);
+    if (urlError) return { success: false, error: urlError, duration: 0 };
     const args = ['open', input.url];
     if (input.waitUntil) args.push('--wait', input.waitUntil);
     if (input.headers) args.push('--headers', JSON.stringify(input.headers));
@@ -461,7 +467,11 @@ export class AgentBrowserAdapter {
 
   async newTab(url?: string): Promise<ActionResult> {
     const args = ['tab', 'new'];
-    if (url) args.push(url);
+    if (url) {
+      const urlError = browserUrlError(url);
+      if (urlError) return { success: false, error: urlError, duration: 0 };
+      args.push(url);
+    }
     return this.exec(args);
   }
 

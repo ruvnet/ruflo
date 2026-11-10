@@ -62,7 +62,7 @@ export function swarmView(ctx: Ctx): RenderElement {
         ctx.kit.Text({ ...(color === undefined ? { dimColor: true } : { color }), children: `${isPicked ? '▸' : ' '}● ` }),
         ctx.kit.Text({
           wrap: 'truncate-end',
-          ...(isPicked && { bold: true }),
+          ...(isPicked && { weight: 'semibold' }),
           // One label (name, else type, with a short id only where two read the same); the type only when it differs.
           children: clip(`${(labels.get(agent.id) ?? agent.type).padEnd(16)} ${agent.status.padEnd(8)} ${hasTypes ? `${(agent.name !== undefined && agent.name !== agent.type ? agent.type : '').padEnd(12)} ` : ''}tasks ${agent.taskCount ?? 'n/a'} · health ${agent.health === undefined ? 'n/a' : `${Math.round(agent.health * 100)}%`} · #${shortId(agent.id)}`, ctx.columns - 3),
         }),

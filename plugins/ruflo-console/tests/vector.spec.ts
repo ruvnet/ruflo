@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { dimensionOf, generatedLines, isKeyless, redact, relPathOf, RV, shareOf, targetOf, textOf, vecIdOf, vectorOf } from '../hooks/data/vector'
 import { filterPalette, paletteEntries } from '../hooks/palette'
 import { newState } from '../hooks/state'
-import { rvlitePrompt, VEC, vecArgs, vecEntry, vecLines, vecSpec, vecWhy } from '../hooks/vector'
+import { NOT_CACHED, rvlitePrompt, VEC, vecArgs, vecEntry, vecLines, vecSpec, vecWhy } from '../hooks/vector'
 import { FAKE_KEY, FAKE_PSEUDONYM, VEC_OUT } from './fixtures/vector'
 
 /** One text each typed entry accepts, tried in turn. */
@@ -83,7 +83,7 @@ describe('the catalog', () => {
 
     expect(new Set(ids).size).toBe(ids.length)
     expect(ids.every(id => id.startsWith('vec-'))).toBe(true)
-    expect(RV).toEqual(['npx', '--offline', '-y', 'ruvector@0.3.3'])
+    expect(RV).toEqual(['npx', '--offline', '-y', 'ruvector@0.3.13'])
 
     for (const one of VEC) {
       const spec = vecSpec(one, state, 'x')
@@ -186,6 +186,16 @@ describe('readers', () => {
     expect(vecLines('vec-hooks-route', VEC_OUT.route, '')).toEqual(['task: write tests for login', 'recommended: coder', 'confidence: 0', 'reasoning: default for unknown files'])
     expect(vecLines('vec-rvf-status', VEC_OUT.rvfStatus, '')).toContain('totalVectors: 2')
     expect(vecLines('vec-brain-status', '', VEC_OUT.brainMissing)[0]).toBe('Brain commands require @ruvector/pi-brain')
+  })
+
+  it('a pin npx has not cached says how to fetch it, before what npm printed', () => {
+    const stderr = "npm error code ENOTCACHED\nnpm error request to https://registry.npmjs.org/ruvector failed: cache mode is 'only-if-cached' but no cached response is available."
+    const lines = vecLines('vec-hooks-stats', '', stderr)
+
+    expect(lines[0]).toBe(NOT_CACHED)
+    expect(NOT_CACHED).toContain(`npx -y ${RV[3]} --version`)
+    expect(lines.slice(1).join('\n')).toContain('ENOTCACHED')
+    expect(vecLines('vec-hooks-stats', '', VEC_OUT.brainMissing)).not.toContain(NOT_CACHED)
   })
 })
 

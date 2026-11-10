@@ -121,6 +121,7 @@ async function getSystemStatus(): Promise<{
     running: number;
     completed: number;
     failed: number;
+    cancelled: number;
   };
   performance: {
     cpuUsage: number;
@@ -167,6 +168,7 @@ async function getSystemStatus(): Promise<{
       running: number;
       completed: number;
       failed: number;
+      cancelled: number;
     }>('task_summary', {});
 
     return {
@@ -220,7 +222,7 @@ async function getSystemStatus(): Promise<{
         backend: 'none',
         performance: { searchTime: 0, cacheHitRate: 0 }
       },
-      tasks: { total: 0, pending: 0, running: 0, completed: 0, failed: 0 },
+      tasks: { total: 0, pending: 0, running: 0, completed: 0, failed: 0, cancelled: 0 },
       performance: {
         cpuUsage: 0,
         memoryUsage: 0,
@@ -289,6 +291,7 @@ function displayStatus(status: Awaited<ReturnType<typeof getSystemStatus>>): voi
       { status: 'Running', count: status.tasks.running },
       { status: 'Completed', count: status.tasks.completed },
       { status: 'Failed', count: status.tasks.failed },
+      { status: 'Cancelled', count: status.tasks.cancelled },
       { status: output.bold('Total'), count: status.tasks.total }
     ]
   });
@@ -355,7 +358,7 @@ function formatHealth(health: string): string {
 const statusAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const watch = ctx.flags.watch as boolean;
   const interval = (ctx.flags.interval as number) || DEFAULT_WATCH_INTERVAL / 1000;
-  const healthCheck = ctx.flags['health-check'] as boolean;
+  const healthCheck = ctx.flags.healthCheck as boolean;
   const cwd = ctx.cwd;
 
   // Check initialization

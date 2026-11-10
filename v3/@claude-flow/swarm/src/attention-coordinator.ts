@@ -185,6 +185,9 @@ export class AttentionCoordinator extends EventEmitter {
     flashSpeedup: 0,
     memoryReduction: 0,
   };
+  // Identity-keyed: avoids rebuilding the O(content.length) hash embedding on
+  // every pairwise call in the O(n^2)/O(numHeads*n^2) coordination loops below.
+  private readonly syntheticEmbeddingCache = new WeakMap<AgentOutput, Float32Array>();
 
   constructor(config: Partial<AttentionCoordinatorConfig> = {}) {
     super();
@@ -756,11 +759,22 @@ export class AttentionCoordinator extends EventEmitter {
     return similarity * (conf1 + conf2) / 2;
   }
 
+  // KNOWN LIMITATION (disclosed post-critique, 2026-10-30): the cache below
+  // is keyed by AgentOutput object identity, not content. If a caller ever
+  // mutates `output.content` in place and reuses the same object reference
+  // across coordinateAgents() calls on a long-lived coordinator instance,
+  // the stale embedding would be returned. No current call site in this
+  // repo does this (verified repo-wide); flagged for future callers.
   private getOrCreateEmbedding(output: AgentOutput): Float32Array {
     if (output.embedding) {
       return output.embedding instanceof Float32Array
         ? output.embedding
         : new Float32Array(output.embedding);
+    }
+
+    const cached = this.syntheticEmbeddingCache.get(output);
+    if (cached) {
+      return cached;
     }
 
     // Create hash-based embedding from content
@@ -784,6 +798,7 @@ export class AttentionCoordinator extends EventEmitter {
       }
     }
 
+    this.syntheticEmbeddingCache.set(output, embedding);
     return embedding;
   }
 

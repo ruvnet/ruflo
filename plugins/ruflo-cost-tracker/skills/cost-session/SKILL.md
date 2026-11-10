@@ -3,6 +3,7 @@ name: cost-session
 description: Per-message cost breakdown within a single session. The drill-down companion to cost-anomaly — when an outlier session is flagged, this surfaces the specific expensive messages so operators can see whether the cost came from output tokens, cache writes, or model escalations.
 argument-hint: "[--session-id <id>] [--top 20] [--since <iso-ts>] [--format table|json]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 When cost-anomaly flags a session as a >3.5σ outlier, the next question

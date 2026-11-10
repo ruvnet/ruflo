@@ -8,6 +8,7 @@
 
 import * as crypto from 'crypto';
 import * as fs from 'fs';
+import { tmpdir } from 'node:os';
 import * as path from 'path';
 import { execFileSync } from 'child_process';
 
@@ -136,7 +137,7 @@ export async function uploadToGCS(
   console.log(`[GCS] Uploading to gs://${config.bucket}/${objectPath}...`);
 
   // Write content to temp file
-  const tempDir = process.env.TMPDIR || '/tmp';
+  const tempDir = tmpdir();
   const tempFile = path.join(tempDir, `claude-flow-upload-${Date.now()}.json`);
   fs.writeFileSync(tempFile, content);
 
@@ -204,7 +205,7 @@ export async function downloadFromGCS(
   console.log(`[GCS] Downloading from ${uri}...`);
 
   // Write to temp file first
-  const tempDir = process.env.TMPDIR || '/tmp';
+  const tempDir = tmpdir();
   const tempFile = path.join(tempDir, `claude-flow-download-${Date.now()}.json`);
 
   try {

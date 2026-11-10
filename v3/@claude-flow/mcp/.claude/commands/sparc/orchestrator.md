@@ -48,7 +48,7 @@ mcp__claude-flow__swarm_init {
 
 // Spawn coordinator agent
 mcp__claude-flow__agent_spawn {
-  type: "coordinator",
+  agentType: "coordinator",
   capabilities: ["task-planning", "resource-management"]
 }
 

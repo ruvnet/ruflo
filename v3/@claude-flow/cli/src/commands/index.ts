@@ -101,6 +101,8 @@ const commandLoaders: Record<string, CommandLoader> = {
   advisor: () => import('./advisor.js'),
   // Ruflo verbs in Claude Code's spinnerVerbs rotation (ADR-318)
   spinner: () => import('./spinner.js'),
+  // Budget file, gateway budget export and per-agent/tool cost attribution (ADR-508)
+  cost: () => import('./cost.js'),
   // ruflo as a Claude Code mod: function hooks, early access (ADR-404)
   mods: () => import('./mods.js'),
   // ADR-489: the console in a terminal of its own (read-only Overview and Cost); loads a bundle from this CLI's own install.

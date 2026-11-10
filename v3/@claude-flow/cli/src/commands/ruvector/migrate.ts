@@ -263,7 +263,7 @@ export const migrateCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const config = getConnectionConfig(ctx);
-    const dryRun = ctx.flags['dry-run'] as boolean;
+    const dryRun = ctx.flags.dryRun === true || ctx.flags['dry-run'] === true;
     const force = ctx.flags.force as boolean;
     const targetVersion = ctx.flags.to as string;
     const rollback = ctx.flags.down as boolean;

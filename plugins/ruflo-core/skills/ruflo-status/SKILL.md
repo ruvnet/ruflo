@@ -3,6 +3,7 @@ name: ruflo-status
 description: Diagnose Ruflo health, then report system, MCP server, and active-agent status without changing the installation
 argument-hint: "[--fix]"
 allowed-tools: Bash(npx *)
+disable-model-invocation: true
 ---
 
 # Ruflo status

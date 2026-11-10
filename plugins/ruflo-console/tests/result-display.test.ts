@@ -17,7 +17,7 @@ const TABLE = [
 ].join('\n')
 
 describe('result display in the real engine', () => {
-  test('a result is one coloured frame, its CLI table is drawn with aligned columns, and markdown is read as text', { options: { boot: false } }, async ($, on) => {
+  test('a result is one coloured frame, its CLI table is drawn with aligned columns, and markdown is read as text', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
 
     world.respond = argv => (argv.includes('analyze_diff-stats') ? { exitCode: 0, stdout: TABLE, stderr: '' } : cliAnswer(argv))

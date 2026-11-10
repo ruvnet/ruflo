@@ -232,7 +232,7 @@ const runCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const cwd = ctx.cwd || process.cwd();
-    const dryRun = ctx.flags['dry-run'] === true;
+    const dryRun = ctx.flags.dryRun === true || ctx.flags['dry-run'] === true;
     const skipBackup = ctx.flags.backup === false;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const v3Dir = path.join(cwd, '.claude-flow');
@@ -794,7 +794,7 @@ const fixCommand: Command = {
       return { success: true, data: { results: [] } };
     }
 
-    const dryRun = Boolean(ctx.flags['dry-run']);
+    const dryRun = ctx.flags.dryRun === true || ctx.flags['dry-run'] === true;
     const results = await restoreRemovedAgents(cwd, gaps, { dryRun });
 
     if (ctx.flags.format === 'json') {

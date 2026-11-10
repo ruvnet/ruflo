@@ -3,6 +3,8 @@
 #   - plugins/*/tests/*.test.ts import `claude-code/testing`, which only exists inside Claude Code: `claude plugin test <dir>` runs them
 #     (every plugin's scripts/smoke.sh, and .github/workflows/all-plugins-smoke.yml).
 #   - the .mjs files use node:test: `node --test` runs them (all-plugins-smoke.yml and the plugin smokes).
+#   - v3/@claude-flow/cli/__tests__/real-binary/*.test.ts need the real `claude` binary: `npm run test:real-binary` runs them
+#     (ADR-504; the mods-real-binary job in .github/workflows/mod-guidance.yml).
 # A listed file that no longer exists fails the ratchet, so this list cannot go stale silently. Never add a file here to make a real
 # regression green: a file that vitest CAN run belongs in scripts/ci-test-baseline.txt (and that file may only shrink).
 
@@ -29,8 +31,10 @@ plugins/ruflo-ddd/tests/mod.test.ts
 plugins/ruflo-deepseek-harness/tests/mod.test.ts
 plugins/ruflo-docs/tests/mod.test.ts
 plugins/ruflo-federation/tests/mod.test.ts
+plugins/ruflo-federation/tests/pii-guard.test.ts
 plugins/ruflo-goals/tests/register.test.ts
 plugins/ruflo-graph-intelligence/hooks/tests/register.test.ts
+plugins/ruflo-intelligence/tests/pii-guard.test.ts
 plugins/ruflo-intelligence/tests/register.test.ts
 plugins/ruflo-iot-cognitum/tests/register.test.ts
 plugins/ruflo-jujutsu/tests/register.test.ts
@@ -47,9 +51,11 @@ plugins/ruflo-migrations/tests/migrations-mod.test.ts
 plugins/ruflo-mods/tests/attention.test.ts
 plugins/ruflo-mods/tests/agents.test.ts
 plugins/ruflo-mods/tests/compact.test.ts
+plugins/ruflo-mods/tests/context-delegate.test.ts
 plugins/ruflo-mods/tests/delivery.test.ts
 plugins/ruflo-mods/tests/describe.test.ts
 plugins/ruflo-mods/tests/grounding.test.ts
+plugins/ruflo-mods/tests/guard.test.ts
 plugins/ruflo-mods/tests/probe.test.ts
 plugins/ruflo-mods/tests/ranked-context.test.ts
 plugins/ruflo-mods/tests/rollup.test.ts
@@ -86,14 +92,17 @@ tests/check-guard-tool-names.test.mjs
 tests/check-status-forwarding.test.mjs
 tests/external-plugins.test.mjs
 plugins/ruflo-console/tests/result-display.test.ts
+plugins/ruflo-console/tests/text-weight.test.ts
 plugins/ruflo-console/tests/toasts.test.ts
 plugins/ruflo-console/tests/full-text.test.ts
+plugins/ruflo-console/tests/tool-register.test.ts
 plugins/ruflo-console/tests/whatsnew.test.ts
 plugins/ruflo-console/tests/adrs.test.ts
 plugins/ruflo-console/tests/surface-pictures.test.ts
 plugins/ruflo-protector/tests/corpus.test.ts
 plugins/ruflo-protector/tests/mod.test.ts
 plugins/ruflo-protector/tests/rules.test.ts
+plugins/ruflo-swarm/tests/text-weight.test.ts
 plugins/ruflo-swarm/tests/toast.test.ts
 plugins/ruflo-mods/tests/protector.test.ts
 plugins/ruflo-mods/tests/selfcheck.test.ts
@@ -105,3 +114,8 @@ tests/regression/oct12-coverage.test.cjs
 plugins/ruflo-adr/scripts/__tests__/adr-status-forms-4126.test.mjs
 scripts/__tests__/probe-mod-guards.test.mjs
 plugins/ruflo-core/scripts/witness/__tests__/witness-auth.test.mjs
+v3/@claude-flow/cli/__tests__/real-binary/classic-loop.test.ts
+v3/@claude-flow/cli/__tests__/real-binary/context-delegation.test.ts
+v3/@claude-flow/cli/__tests__/real-binary/contracts.test.ts
+v3/@claude-flow/cli/__tests__/real-binary/external-plugins.test.ts
+v3/@claude-flow/cli/__tests__/real-binary/loads.test.ts

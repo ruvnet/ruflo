@@ -136,6 +136,7 @@ export type Options = GuardOptions & ConvoOptions & SessionOptions & {
   eventsPersist: boolean
   /** ADR-499: outside folders ruRE may read, alias -> absolute folder. Set only by the person (a plugin option); empty by default. */
   rureFolders: Folders
+  /** #4861: PII the mission screen finds blocks guidance (on, default) or is only reported (off); a secret always blocks. */ piiGuard: boolean
 }
 
 const num = (value: unknown, fallback: number, lo: number, hi: number): number => {
@@ -159,6 +160,7 @@ export function optionsOf(raw: PluginOptions | undefined): Options {
     boot: value.boot !== false,
     eventsPersist: value.eventsPersist !== false && value.eventsPersist !== 'false',
     rureFolders: parseFolders(value.rureFolders),
+    piiGuard: value.piiGuard !== false && value.piiGuard !== 'false' && value.piiGuard !== 'off',
     ...guardOptionsOf(raw),
     ...convoOptionsOf(raw),
     ...sessionOptionsOf(raw),
@@ -189,7 +191,7 @@ export type TermSessions = { codex?: string; claude?: string }
 export const termStoreKeyOf = (cwd: string): string => `ruflo-console/term:${workspaceKeyOf(cwd)}`
 
 /** What an action did: what ran, how it exited, whether the disk shows the change, and anything it printed to show. */
-export type Outcome = { label: string; ok: boolean; verified: 'yes' | 'no' | 'n/a'; detail: string; atMs: number; lines?: string[]; /** A confirm card that nobody answered within PENDING_TTL_MS and was cleared unrun (the Room shows it briefly). */ expired?: boolean }
+export type Outcome = { label: string; ok: boolean; verified: 'yes' | 'no' | 'n/a'; detail: string; atMs: number; lines?: string[]; /** Sent but not answered yet (a slash command waits for the turn to end): Claude's tools say Queued, not Done. */ queued?: boolean; /** A confirm card that nobody answered within PENDING_TTL_MS and was cleared unrun (the Room shows it briefly). */ expired?: boolean }
 
 /** One module seen registering since the console loaded, as the engine's scan named it. */
 export type ModSeen = { name: string; provenance: string; isLoaded: boolean; reason?: string; atMs: number }

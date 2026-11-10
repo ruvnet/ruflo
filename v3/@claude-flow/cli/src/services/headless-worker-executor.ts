@@ -27,6 +27,7 @@ import type { WorkerType } from './worker-daemon.js';
 import { getGlobalAiBudget, isQuotaErrorText } from './global-ai-budget.js';
 import { resolveGitWorkspaceIdentity } from './git-workspace-identity.js';
 import { getAiJobDedupRegistry, computeAiJobKey, hashWorkerConfig } from './ai-job-dedup.js';
+import { withHeadlessPlugins } from '../mods/headless-plugins.js';
 
 // ============================================
 // Type Definitions
@@ -177,6 +178,13 @@ export interface HeadlessExecutionResult {
   outputTokens?: number;
   costUsd?: number;
 
+  /**
+   * When the stored claude.ai sign-in the worker ran under ends (ISO 8601),
+   * from `credential_expires_at` in the `claude -p` JSON result (Claude Code
+   * 2.1.318+). Absent for API-key auth and older CLIs.
+   */
+  credentialExpiresAt?: string;
+
   /** Model used for execution */
   model: string;
 
@@ -194,6 +202,9 @@ export interface HeadlessExecutionResult {
 
   /** Execution ID for tracking */
   executionId: string;
+
+  /** ADR-510 — plugins in the worker profile that could not be found; the worker ran without them. */
+  missingPlugins?: string[];
 
   /**
    * #2661 — true when the launch was skipped because the same job
@@ -592,6 +603,25 @@ export interface ClaudePrintEnvelope {
   outputTokens?: number;
   costUsd?: number;
   durationMs?: number;
+  /** ISO 8601 end of the stored claude.ai sign-in (Claude Code 2.1.318+). */
+  credentialExpiresAt?: string;
+}
+
+/** Days before a sign-in ends at which the executor emits 'credential-expiring' (matches Claude Code's own stderr warning). */
+export const CREDENTIAL_EXPIRY_WARN_DAYS = 10;
+
+/**
+ * Normalise `credential_expires_at` to ISO 8601. Accepts an ISO string or an
+ * epoch number (seconds or milliseconds); anything else is undefined.
+ */
+export function normalizeCredentialExpiry(v: unknown): string | undefined {
+  let ms: number | undefined;
+  if (typeof v === 'number' && Number.isFinite(v) && v > 0) ms = v < 1e12 ? v * 1000 : v;
+  else if (typeof v === 'string' && v.trim()) {
+    const t = Date.parse(v);
+    if (Number.isFinite(t)) ms = t;
+  }
+  return ms === undefined ? undefined : new Date(ms).toISOString();
 }
 
 /**
@@ -627,6 +657,7 @@ export function parseClaudePrintJsonEnvelope(raw: string): ClaudePrintEnvelope |
     outputTokens: numOrUndef(usage?.output_tokens ?? usage?.outputTokens),
     costUsd: numOrUndef(obj.total_cost_usd ?? obj.cost_usd ?? obj.totalCostUsd),
     durationMs: numOrUndef(obj.duration_ms ?? obj.durationMs),
+    credentialExpiresAt: normalizeCredentialExpiry(obj.credential_expires_at ?? obj.credentialExpiresAt),
   };
 }
 
@@ -1077,7 +1108,18 @@ export class HeadlessWorkerExecutor extends EventEmitter {
         timestamp: new Date(),
         executionId,
         error: result.error,
+        ...(result.missingPlugins ? { missingPlugins: result.missingPlugins } : {}),
+        ...(result.credentialExpiresAt ? { credentialExpiresAt: result.credentialExpiresAt } : {}),
       };
+
+      // Claude Code 2.1.318: surface a claude.ai sign-in that ends soon, so the
+      // daemon can say so before workers start failing on auth.
+      if (result.credentialExpiresAt) {
+        const daysLeft = (Date.parse(result.credentialExpiresAt) - Date.now()) / 86_400_000;
+        if (daysLeft <= CREDENTIAL_EXPIRY_WARN_DAYS) {
+          this.emit('credential-expiring', { expiresAt: result.credentialExpiresAt, daysLeft: Math.max(0, Math.floor(daysLeft)), workerType });
+        }
+      }
 
       // Log result
       this.logExecution(executionId, 'result', JSON.stringify(executionResult, null, 2));
@@ -1355,9 +1397,15 @@ Analyze the above codebase context and provide your response following the forma
     outputTokens?: number;
     costUsd?: number;
     apiDurationMs?: number;
+    credentialExpiresAt?: string;
     error?: string;
+    missingPlugins?: string[];
   }> {
-    return new Promise((resolve) => {
+    return new Promise((resolveRaw) => {
+      // ADR-510: a plugin the worker profile wants but cannot find is recorded on the result.
+      let missingPlugins: string[] = [];
+      const resolve = (r: Parameters<typeof resolveRaw>[0]) =>
+        resolveRaw(missingPlugins.length > 0 ? { ...r, missingPlugins } : r);
       const env: Record<string, string> = {
         ...(process.env as Record<string, string>),
         CLAUDE_CODE_HEADLESS: 'true',
@@ -1405,9 +1453,14 @@ Analyze the above codebase context and provide your response following the forma
       // and ALWAYS falls back to the raw text on any mismatch — a schema
       // surprise from an older/newer `claude` CLI must degrade to exactly
       // today's behavior (no usage captured), never break analysis output.
-      const child = spawn('claude', ['--print', '--output-format', 'json'], {
+      // ADR-510: `claude -p` on a fresh config loads no marketplace plugins, so
+      // pass the worker profile (default ruflo-mods) as --plugin-dir and turn
+      // function hooks on unless the caller set CLAUDE_CODE_ENABLE_FUNCTION_HOOKS.
+      const staged = withHeadlessPlugins(['--print', '--output-format', 'json'], env, { projectRoot: this.projectRoot });
+      missingPlugins = staged.missing;
+      const child = spawn('claude', staged.argv, {
         cwd: this.projectRoot,
-        env,
+        env: staged.env,
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true, // Prevent phantom console windows on Windows
         detached: process.platform !== 'win32',
@@ -1519,6 +1572,7 @@ Analyze the above codebase context and provide your response following the forma
             : undefined,
           costUsd: envelope?.costUsd,
           apiDurationMs: envelope?.durationMs,
+          credentialExpiresAt: envelope?.credentialExpiresAt,
           error: code !== 0 ? stderr || `Process exited with code ${code}` : undefined,
         });
       });

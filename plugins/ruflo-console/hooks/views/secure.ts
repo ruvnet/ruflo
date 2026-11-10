@@ -31,11 +31,11 @@ export function entryRow(ctx: Ctx, entry: { id: string; name: string; about: str
     ctx,
     [
       tagChip(ctx, tag.text, tag.color()),
-      ctx.kit.Text({ bold: true, color: THEME.head, children: ` ${entry.name} `.padEnd(lead, '.') }),
+      ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: ` ${entry.name} `.padEnd(lead, '.') }),
       ctx.kit.Text({ color: THEME.info, dimColor: waiting, wrap: 'truncate-end', children: clip(` ${entry.about}`, Math.max(4, ctx.columns - lead - 34)) }),
       // The run is the row's one action, so it is a primary button: it is the first thing the eye finds. Waiting on text, it is plain.
       ctx.kit.Button({ key: `run-${entry.id}`, label: ' ▶ run ', ...(waiting ? { plain: true, dimColor: true } : { variant: 'primary' as const }), onPress: () => void ctx.act.run(entry.id, textOf?.() ?? '') }),
-      ...(waiting ? [ctx.kit.Text({ bold: true, color: THEME.warn, children: ' ← type text above first' })] : []),
+      ...(waiting ? [ctx.kit.Text({ weight: 'semibold', color: THEME.warn, children: ' ← type text above first' })] : []),
     ],
     `row-${entry.id}`,
   )
@@ -92,7 +92,7 @@ export function resultRows(ctx: Ctx, isMine: (id: string) => boolean): RenderEle
     return [frameResult(ctx, rows, running !== null ? 'run' : 'idle')]
   }
 
-  rows.push(text(ctx, ` ${result.label}`, { bold: true, color: result.ok ? THEME.ok : THEME.bad }))
+  rows.push(text(ctx, ` ${result.label}`, { weight: 'semibold', color: result.ok ? THEME.ok : THEME.bad }))
   if (result.note !== undefined) rows.push(text(ctx, ` ${result.note}`, { color: THEME.warn }))
 
   const top = Math.max(0, Math.min(state.select.item, result.lines.length - RESULT_ROWS))
@@ -141,7 +141,7 @@ export function meterRows(ctx: Ctx): RenderElement[] {
 
     rows.push(
       row(ctx, [
-        ctx.kit.Text({ bold: n > 0, color: n > 0 ? SEVERITY_COLOR[level]() : THEME.info, dimColor: n === 0, children: ` ${level.padEnd(9)}` }),
+        ctx.kit.Text({ weight: (n > 0) ? 'semibold' : 'regular', color: n > 0 ? SEVERITY_COLOR[level]() : THEME.info, dimColor: n === 0, children: ` ${level.padEnd(9)}` }),
         ctx.kit.Text({ color: SEVERITY_COLOR[level](), children: '█'.repeat(filled) }),
         ctx.kit.Text({ dimColor: true, children: `${'░'.repeat(width - filled)} ${countText(findings, level)}` }),
       ], `meter-${level}`),
@@ -204,7 +204,7 @@ function doctorRows(ctx: Ctx): RenderElement[] {
       flexDirection: 'row',
       flexWrap: 'wrap',
       key: 'doc-components',
-      children: [ctx.kit.Text({ bold: true, color: THEME.ok, children: '  $0  component:' }), ...DOCTOR_COMPONENTS.map(component => ctx.kit.Button({ key: `run-doc-${component}`, label: ` ${component}`, plain: true, dimColor: true, onPress: () => void ctx.act.run(`doc-${component}`) }))],
+      children: [ctx.kit.Text({ weight: 'semibold', color: THEME.ok, children: '  $0  component:' }), ...DOCTOR_COMPONENTS.map(component => ctx.kit.Button({ key: `run-doc-${component}`, label: ` ${component}`, plain: true, dimColor: true, onPress: () => void ctx.act.run(`doc-${component}`) }))],
     }),
   )
 
@@ -216,15 +216,15 @@ function doctorRows(ctx: Ctx): RenderElement[] {
 
   const count = (status: string) => doctor.checks.filter(check => check.status === status).length
 
-  rows.push(text(ctx, ` ${count('pass')} passed · ${count('warn')} warnings · ${count('fail')} failed`, { bold: true, color: count('fail') > 0 ? THEME.bad : count('warn') > 0 ? THEME.warn : THEME.ok }))
+  rows.push(text(ctx, ` ${count('pass')} passed · ${count('warn')} warnings · ${count('fail')} failed`, { weight: 'semibold', color: count('fail') > 0 ? THEME.bad : count('warn') > 0 ? THEME.warn : THEME.ok }))
 
   for (const check of doctor.checks.slice(0, 30)) {
     const mark = check.status === 'pass' ? { glyph: '✓', color: THEME.ok } : check.status === 'warn' ? { glyph: '⚠', color: THEME.warn } : { glyph: '✗', color: THEME.bad }
 
     rows.push(
       row(ctx, [
-        ctx.kit.Text({ bold: true, color: mark.color, children: ` ${mark.glyph} ` }),
-        ctx.kit.Text({ bold: check.status !== 'pass', children: clip(`${check.name}: `, 40) }),
+        ctx.kit.Text({ weight: 'semibold', color: mark.color, children: ` ${mark.glyph} ` }),
+        ctx.kit.Text({ weight: (check.status !== 'pass') ? 'semibold' : 'regular', children: clip(`${check.name}: `, 40) }),
         ctx.kit.Text({ dimColor: check.status === 'pass', wrap: 'truncate-end', children: clip(check.message, Math.max(4, ctx.columns - check.name.length - 8)) }),
       ], `check-${check.name}`),
     )

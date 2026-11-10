@@ -56,6 +56,7 @@ import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { ownPluginDirs } from '../plugins/own-install.js';
 import { runFlywheelWorker } from '../services/harness-flywheel-runtime.js';
+import { benchVerify, gepaOp } from '../metaharness/darwin-lib.js';
 import { evaluatePolicyRequest } from '../services/policy-runtime.js';
 import {
   listFlywheelReceipts,
@@ -384,7 +385,7 @@ export const metaharnessTools: MCPTool[] = [
   },
   // ───────────────────────────────────────────────────────────────────────
   // ADR-153 — @metaharness/darwin integration (3 tools).
-  // Backed by the separate `@metaharness/darwin@~0.12.0` npm package, NOT
+  // Backed by the separate `@metaharness/darwin@~0.13.0` npm package, NOT
   // the umbrella `metaharness`. Plugin scripts shell out via _darwin.mjs.
   // Same {success, data, degraded, exitCode} contract.
   // ───────────────────────────────────────────────────────────────────────
@@ -483,6 +484,12 @@ export const metaharnessTools: MCPTool[] = [
       required: ['op'],
     },
     handler: async (input) => {
+      // ADR-526: verify runs in-process (darwin is a regular dependency);
+      // create still goes through the darwin CLI, which owns the scaffold task.
+      if (input.op === 'verify') {
+        const inProc = await benchVerify(String(input.suite ?? ''));
+        if (inProc) return { success: inProc.exitCode === 0, data: inProc.json, degraded: false, exitCode: inProc.exitCode };
+      }
       const args: string[] = ['--op', String(input.op)];
       if (input.repo) args.push('--repo', String(input.repo));
       if (input.suite) args.push('--suite', String(input.suite));
@@ -605,6 +612,16 @@ export const metaharnessTools: MCPTool[] = [
       required: ['op'],
     },
     handler: async (input) => {
+      // ADR-526: GEPA genome ops run in-process; the plugin script is the fallback.
+      const inProc = await gepaOp({
+        op: String(input.op),
+        path: input.path ? String(input.path) : undefined,
+        transcript: input.transcript ? String(input.transcript) : undefined,
+        ext: input.ext ? String(input.ext) : undefined,
+        glob: input.glob ? String(input.glob) : undefined,
+        alertOnInvalid: input.alertOnInvalid === true,
+      });
+      if (inProc) return { success: inProc.exitCode === 0, data: inProc.json, degraded: false, exitCode: inProc.exitCode };
       const args: string[] = ['--op', String(input.op)];
       if (input.path) args.push('--path', String(input.path));
       if (input.transcript) args.push('--transcript', String(input.transcript));

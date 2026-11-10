@@ -88,6 +88,8 @@ export default defineConfig({
       // node:test files (run with `npx tsx --test`), not vitest suites: vitest
       // executes their top level and then reports "No test suite found".
       '__tests__/appliance/**',
+      // The real-binary tier (ADR-504) needs the `claude` binary; its own CI job runs it.
+      '@claude-flow/cli/__tests__/real-binary/**',
       ...KNOWN_FAILING,
     ],
 

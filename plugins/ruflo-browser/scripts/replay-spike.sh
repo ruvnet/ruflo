@@ -8,7 +8,7 @@
 #
 # This is an INTERACTIVE harness — it requires:
 #   - agent-browser installed (or available via npx)
-#   - ruvector@0.2.25 reachable (npx fetches if missing)
+#   - ruvector@0.3.12 reachable (npx fetches if missing)
 #   - the new browser_session_record / _end / _replay MCP tools wired
 #     (v3/@claude-flow/cli/src/mcp-tools/browser-session-tools.ts)
 #   - network access
@@ -43,38 +43,36 @@ site_record_replay() {
   local rvf="$RESULTS_DIR/$sid.rvf"
 
   # 1. Record a minimal baseline interaction
-  # #2015: ruvector@0.2.25's rvf create needs --dimension and does NOT
+  # #2015: ruvector's rvf create (since 0.2.25) needs --dimension and does NOT
   # support --kind (unknown option). Strip --kind, keep --dimension 384.
-  if ! npx -y ruvector@0.2.25 rvf create "$rvf" --dimension 384 >/dev/null 2>&1; then
+  if ! npx -y ruvector@0.3.12 rvf create "$rvf" --dimension 384 >/dev/null 2>&1; then
     echo "SKIP:$label rvf-create-failed" ; return 2
   fi
-  if ! npx -y ruvector@0.2.25 hooks trajectory-begin --session-id "$sid" --task "spike-$label" >/dev/null 2>&1; then
+  if ! npx -y ruvector@0.3.12 hooks trajectory-begin --context "$sid: spike-$label" --agent browser-session >/dev/null 2>&1; then
     echo "SKIP:$label trajectory-begin-failed" ; return 2
   fi
 
   if ! agent-browser --session "$sid" --json open "$url" >"$RESULTS_DIR/$label.open.json" 2>"$RESULTS_DIR/$label.open.err"; then
     if ! npx --yes agent-browser --session "$sid" --json open "$url" >"$RESULTS_DIR/$label.open.json" 2>"$RESULTS_DIR/$label.open.err"; then
       echo "SKIP:$label browser-open-failed (see $RESULTS_DIR/$label.open.err)"
-      npx -y ruvector@0.2.25 hooks trajectory-end --session-id "$sid" --verdict fail >/dev/null 2>&1 || true
+      npx -y ruvector@0.3.12 hooks trajectory-end --quality 0 >/dev/null 2>&1 || true
       return 2
     fi
   fi
 
-  npx -y ruvector@0.2.25 hooks trajectory-step --session-id "$sid" \
-    --action browser_open --args "$(printf '{"url":"%s"}' "$url")" --result ok >/dev/null 2>&1 || true
+  npx -y ruvector@0.3.12 hooks trajectory-step --action "browser_open $(printf '{"url":"%s"}' "$url")" --result ok >/dev/null 2>&1 || true
 
   agent-browser --session "$sid" --json snapshot >"$RESULTS_DIR/$label.snap.json" 2>/dev/null || true
-  npx -y ruvector@0.2.25 hooks trajectory-step --session-id "$sid" \
-    --action browser_snapshot --args '{}' --result ok >/dev/null 2>&1 || true
+  npx -y ruvector@0.3.12 hooks trajectory-step --action browser_snapshot --result ok >/dev/null 2>&1 || true
 
   agent-browser --session "$sid" --json close >/dev/null 2>&1 || true
-  npx -y ruvector@0.2.25 hooks trajectory-end --session-id "$sid" --verdict pass >/dev/null 2>&1 || true
-  npx -y ruvector@0.2.25 rvf compact "$rvf" >/dev/null 2>&1 || true
+  npx -y ruvector@0.3.12 hooks trajectory-end --quality 1 --success >/dev/null 2>&1 || true
+  npx -y ruvector@0.3.12 rvf compact "$rvf" >/dev/null 2>&1 || true
 
   # 2. Replay: derive a child container, re-run the same step sequence
   local rsid="${sid}-replay"
   local rrvf="$RESULTS_DIR/${rsid}.rvf"
-  if ! npx -y ruvector@0.2.25 rvf derive "$rvf" "$rrvf" >/dev/null 2>&1; then
+  if ! npx -y ruvector@0.3.12 rvf derive "$rvf" "$rrvf" >/dev/null 2>&1; then
     echo "FAIL:$label rvf-derive-failed" ; return 1
   fi
 

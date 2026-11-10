@@ -43,17 +43,36 @@ function load(cwd: string): KnownMiss[] {
   }
 }
 
+/** Atomic write: temp file in the same directory, then rename over the store. */
+function save(cwd: string, entries: KnownMiss[]): void {
+  const dir = join(cwd, '.claude-flow');
+  mkdirSync(dir, { recursive: true });
+  const tmp = `${storePath(cwd)}.${process.pid}.tmp`;
+  writeFileSync(tmp, JSON.stringify(entries.slice(-MAX_ENTRIES), null, 2), { mode: 0o600 });
+  renameSync(tmp, storePath(cwd));
+}
+
 /** Returns true when the miss was newly recorded, false when it was already known. */
 export function recordKnownMiss(input: string, threatType: string, cwd: string = process.cwd()): boolean {
   const hash = hashInput(input);
   const entries = load(cwd);
   if (entries.some((e) => e.hash === hash)) return false;
   entries.push({ hash, threatType, reportedAt: new Date().toISOString() });
-  const dir = join(cwd, '.claude-flow');
-  mkdirSync(dir, { recursive: true });
-  const tmp = `${storePath(cwd)}.${process.pid}.tmp`;
-  writeFileSync(tmp, JSON.stringify(entries.slice(-MAX_ENTRIES), null, 2), { mode: 0o600 });
-  renameSync(tmp, storePath(cwd));
+  save(cwd, entries);
+  return true;
+}
+
+/**
+ * Removes exactly the entry whose hash AND threatType match (#4862), leaving
+ * every other entry in place. Returns true when an entry was removed. When
+ * nothing matches the store is not rewritten, so a no-op leaves it untouched.
+ */
+export function retractKnownMiss(input: string, threatType: string, cwd: string = process.cwd()): boolean {
+  const hash = hashInput(input);
+  const entries = load(cwd);
+  const kept = entries.filter((e) => !(e.hash === hash && e.threatType === threatType));
+  if (kept.length === entries.length) return false;
+  save(cwd, kept);
   return true;
 }
 

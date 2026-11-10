@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import type { McpServerConfig } from "./httpClient";
+import { mcpFetchFor } from "./serverTrust";
 import { logger } from "$lib/server/logger";
 // use console.* for lightweight diagnostics in production logs
 
@@ -71,11 +72,13 @@ async function listServerTools(
 		try {
 			const transport = new StreamableHTTPClientTransport(url, {
 				requestInit: { headers: server.headers, signal: opts.signal },
+				fetch: mcpFetchFor(server.url),
 			});
 			await client.connect(transport);
 		} catch {
 			const transport = new SSEClientTransport(url, {
 				requestInit: { headers: server.headers, signal: opts.signal },
+				fetch: mcpFetchFor(server.url),
 			});
 			await client.connect(transport);
 		}

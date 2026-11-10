@@ -12,6 +12,8 @@ const home = (view: ViewId): PluginHome => ({ view })
 const catalog = (why: string): PluginHome => ({ view: 'market', catalogOnly: why })
 
 export const PLUGIN_MAP: Readonly<Record<string, PluginHome>> = {
+  agentdb: home('memory'),
+  'agentic-flow': home('learning'),
   'agentic-qe-fleet': home('devtools'),
   'ruflo-adr': home('devtools'),
   'ruflo-agent': home('swarm'),

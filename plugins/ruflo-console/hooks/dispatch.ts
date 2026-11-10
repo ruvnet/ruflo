@@ -163,7 +163,7 @@ export async function dispatch(control: Controller, state: State, args: string, 
       // A typed yes names no card: the runner refuses it while the card is too new or just replaced one (press the card's own Yes then).
       await control.runner.confirmUnbound(intent.card)
 
-      return { text: xruvAnswer(state, null, confirmedAtMs) ?? labAnswer(state, null, confirmedAtMs) ?? (state.outcome === null ? 'Ran.' : `${state.outcome.ok ? '✓' : '✗'} ${state.outcome.label}: ${state.outcome.detail}${state.outcome.verified === 'yes' ? ' (on disk)' : state.outcome.verified === 'no' ? ' (not on disk yet)' : ''}`) }
+      return { text: xruvAnswer(state, null, confirmedAtMs) ?? labAnswer(state, null, confirmedAtMs) ?? (state.outcome === null ? 'Ran.' : `${state.outcome.queued === true ? '…' : state.outcome.ok ? '✓' : '✗'} ${state.outcome.label}: ${state.outcome.detail}${state.outcome.verified === 'yes' ? ' (on disk)' : state.outcome.verified === 'no' ? ' (not on disk yet)' : ''}`) }
     case 'agent': {
       const who = intent.who.toLowerCase()
       const agent = state.snapshot?.agents.find(entry => entry.id.toLowerCase() === who || entry.name?.toLowerCase() === who) ?? state.snapshot?.agents.find(entry => entry.id.toLowerCase().endsWith(who))

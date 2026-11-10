@@ -245,10 +245,35 @@ export const INIT_LEVELS: InitLevel[] = [
  * await registry.shutdown();
  * ```
  */
+/**
+ * Name the first backend failure, not just the last fallback's (#4622).
+ * A native vector store locked by another process makes AgentDB fall back to
+ * a backend that then rejects the same file as the wrong format; reporting
+ * only that error reads like corruption.
+ */
+export function describeAgentdbInitFailure(finalMessage: string, backendFailures: readonly string[]): string {
+  const final = finalMessage.split('\n')[0].slice(0, 300);
+  const first = backendFailures.find((r) => r && r !== final);
+  let text = first ? `${first} (fallback backend then failed: ${final})` : final;
+  const shareHint = ' Run one owner (ruflo mcp start --transport http) and point every client at it.';
+  if (/already open|Cannot acquire lock|database is locked/i.test(first ?? final)) {
+    text += '. Another process holds this memory store open; separate stdio MCP servers cannot share one store.' + shareHint;
+  } else if (!first && /not a database|file is encrypted/i.test(final)) {
+    // Without a logged first failure (AgentDB logs it only when it can try
+    // another native backend), a format rejection is often a fallback reading
+    // a store another backend wrote — and that backend may be held elsewhere.
+    text += '. If another process has this memory store open, its native vector store is locked and the fallback'
+      + ' cannot read it; this does not mean the file is corrupt.' + shareHint;
+  }
+  return text;
+}
+
 export class ControllerRegistry extends EventEmitter {
   private controllers: Map<ControllerName, ControllerEntry> = new Map();
   private agentdb: any = null;
   private dbPath: string | undefined;
+  /** Why AgentDB failed to open on the last initialize(), or null (#4622). */
+  private agentdbInitError: string | null = null;
   private backend: IMemoryBackend | null = null;
   private config: RuntimeConfig = {};
   private initialized = false;
@@ -432,6 +457,43 @@ export class ControllerRegistry extends EventEmitter {
   }
 
   /**
+   * Register an already-constructed controller instance directly, outside
+   * the level-based `initialize()` path.
+   *
+   * Dream Cycle 2026-10-28: this method did not exist until now, even though
+   * `memory-bridge.ts`'s post-init wiring (reasoningBank/learningSystem/
+   * skills/semanticRouter/gnnService/rvfOptimizer/mutationGuard/
+   * attestationLog/guardedVectorBackend) has called `typeof reg.set ===
+   * 'function'` and fallen through to a dead `reg._controllers` property —
+   * never read anywhere — on every call since that wiring was added. As a
+   * result `get('mutationGuard')`/`get('attestationLog')` always returned
+   * null, so `guardValidate()` always took its "no guard installed = allow"
+   * branch and `logAttestation()` was a permanent no-op. Same shape as the
+   * already-fixed #3327 Finding A (`reasoningBank.store` never existed, so
+   * its own `typeof ... === 'function'` guard was dead too).
+   *
+   * Dispatches #2432's `closePriorIfAny(name)` for whatever entry `name`
+   * currently holds *before* overwriting the map, same as `initController()`
+   * does, so a `set()` that replaces a resource-holding instance (one
+   * constructed via the normal `initialize()` path, or a prior `set()`
+   * call) doesn't silently orphan it. Intentionally not awaited — like
+   * every other post-init activation call site, `set()` stays synchronous
+   * so `get(name)` reflects the new instance immediately; the old
+   * instance's `close()`/`dispose()` (best-effort, errors swallowed) runs
+   * in the background.
+   */
+  set<T>(name: ControllerName, instance: T): void {
+    void this.closePriorIfAny(name);
+    this.controllers.set(name, {
+      name,
+      instance,
+      level: -1, // externally registered — not part of level-based init
+      initTimeMs: 0,
+      enabled: true,
+    });
+  }
+
+  /**
    * Aggregate health check across all controllers.
    */
   async healthCheck(): Promise<RegistryHealthReport> {
@@ -489,6 +551,17 @@ export class ControllerRegistry extends EventEmitter {
   }
 
   /**
+   * Why AgentDB failed to open on the last initialize(), or null when it
+   * opened (or was never asked to). The message keeps the first backend's
+   * own failure — e.g. a native vector store already locked by another
+   * process — which AgentDB's fallback chain otherwise replaces with the
+   * last fallback's unrelated error (#4622).
+   */
+  getAgentDBInitError(): string | null {
+    return this.agentdbInitError;
+  }
+
+  /**
    * Get the memory backend.
    */
   getBackend(): IMemoryBackend | null {
@@ -538,6 +611,11 @@ export class ControllerRegistry extends EventEmitter {
       return;
     }
 
+    this.agentdbInitError = null;
+    // AgentDB logs why each backend it tried failed, then tries the next one
+    // against the same file. Those lines are suppressed below as noise, but
+    // when every backend fails they hold the original cause (#4622).
+    const backendFailures: string[] = [];
     try {
       // Validate dbPath to prevent path traversal
       const dbPath = config.dbPath || ':memory:';
@@ -547,6 +625,7 @@ export class ControllerRegistry extends EventEmitter {
         const { resolve: resolvePath } = await import('node:path');
         const resolved = resolvePath(dbPath);
         if (resolved.includes('..')) {
+          this.agentdbInitError = 'Invalid dbPath';
           this.emit('agentdb:unavailable', { reason: 'Invalid dbPath' });
           return;
         }
@@ -556,6 +635,7 @@ export class ControllerRegistry extends EventEmitter {
       const AgentDBClass = agentdbModule.AgentDB || agentdbModule.default;
 
       if (!AgentDBClass) {
+        this.agentdbInitError = 'No AgentDB class found';
         this.emit('agentdb:unavailable', { reason: 'No AgentDB class found' });
         return;
       }
@@ -571,9 +651,17 @@ export class ControllerRegistry extends EventEmitter {
                msg.includes('better-sqlite3') ||
                msg.includes('[AgentDB]');
       };
-      console.log = (...args: unknown[]) => {
-        if (!suppressFilter(args)) origLog.apply(console, args);
+      // agentdb 3.0.0 moved its diagnostics from stdout to stderr (a library
+      // must not write to a stdio MCP server's JSON-RPC stream), so capture the
+      // backend failure reason from either stream.
+      const origError = console.error;
+      const capture = (orig: (...a: unknown[]) => void) => (...args: unknown[]) => {
+        const reason = /^\[AgentDB\] Reason: (.+)$/.exec(String(args[0] ?? ''));
+        if (reason && backendFailures.length < 4) backendFailures.push(reason[1].slice(0, 300));
+        if (!suppressFilter(args)) orig.apply(console, args);
       };
+      console.log = capture(origLog);
+      console.error = capture(origError);
       try {
         // agentdb >= alpha.20 refuses sql.js saves while a `<db>.agentdb.lock`
         // exists. A lock left by a dead writer is cleared (only when provably
@@ -586,11 +674,13 @@ export class ControllerRegistry extends EventEmitter {
         });
       } finally {
         console.log = origLog;
+        console.error = origError;
       }
       this.emit('agentdb:initialized');
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      this.emit('agentdb:unavailable', { reason: msg.substring(0, 200) });
+      this.agentdbInitError = describeAgentdbInitFailure(msg, backendFailures);
+      this.emit('agentdb:unavailable', { reason: this.agentdbInitError });
       this.agentdb = null;
     }
   }
@@ -1032,7 +1122,7 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const CR = agentdbModule.CausalRecall;
           if (!CR) return null;
-          return new CR(this.agentdb.database);
+          return new CR(this.agentdb.database, this.agentdbEmbedder(), this.agentdb.vectorBackend ?? undefined);
         } catch { return null; }
       }
 
@@ -1042,7 +1132,7 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const LS = agentdbModule.LearningSystem;
           if (!LS) return null;
-          return new LS(this.agentdb.database);
+          return new LS(this.agentdb.database, this.agentdbEmbedder());
         } catch { return null; }
       }
 
@@ -1052,7 +1142,7 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const ER = agentdbModule.ExplainableRecall;
           if (!ER) return null;
-          return new ER(this.agentdb.database);
+          return new ER(this.agentdb.database, this.agentdbEmbedder());
         } catch { return null; }
       }
 
@@ -1081,7 +1171,7 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const NL = agentdbModule.NightlyLearner;
           if (!NL) return null;
-          return new NL(this.agentdb.database);
+          return new NL(this.agentdb.database, this.agentdbEmbedder());
         } catch { return null; }
       }
 
@@ -1091,7 +1181,7 @@ export class ControllerRegistry extends EventEmitter {
           const agentdbModule: any = await import('agentdb');
           const GT = agentdbModule.CausalMemoryGraph;
           if (!GT) return null;
-          return new GT(this.agentdb.database);
+          return new GT(this.agentdb.database, undefined, this.agentdbEmbedder(), undefined, this.agentdb.vectorBackend ?? undefined);
         } catch { return null; }
       }
 
@@ -1220,6 +1310,18 @@ export class ControllerRegistry extends EventEmitter {
    *
    * Returns null when there is nothing usable to adapt.
    */
+  /**
+   * The embedder handed to directly constructed AgentDB controllers.
+   * CausalRecall, LearningSystem and NightlyLearner take `(db, embedder, …)`
+   * and call `embedder.embed*` on first use; constructing them with only the
+   * database left every recall/predict/discover call throwing a TypeError
+   * that the registry swallowed (same defect class as #3327 Finding A, which
+   * was fixed for ReasoningBank only). ADR-514.
+   */
+  private agentdbEmbedder(): any {
+    return this.adaptEmbedderForAgentdb(this.agentdb?.embedder) ?? this.createEmbeddingService();
+  }
+
   private adaptEmbedderForAgentdb(embedder: any): any {
     if (!embedder || typeof embedder.embed !== 'function') return null;
     if (typeof embedder.embedQuery === 'function' && typeof embedder.embedPassage === 'function') {

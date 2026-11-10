@@ -25,10 +25,10 @@ Multi-package synchronization and version alignment with ruv-swarm coordination 
 ```javascript
 // Initialize sync coordination swarm
 mcp__claude-flow__swarm_init { topology: "hierarchical", maxAgents: 5 }
-mcp__claude-flow__agent_spawn { type: "coordinator", name: "Sync Coordinator" }
-mcp__claude-flow__agent_spawn { type: "analyst", name: "Dependency Analyzer" }
-mcp__claude-flow__agent_spawn { type: "coder", name: "Integration Developer" }
-mcp__claude-flow__agent_spawn { type: "tester", name: "Validation Engineer" }
+mcp__claude-flow__agent_spawn { agentType: "coordinator", name: "Sync Coordinator" }
+mcp__claude-flow__agent_spawn { agentType: "analyst", name: "Dependency Analyzer" }
+mcp__claude-flow__agent_spawn { agentType: "coder", name: "Integration Developer" }
+mcp__claude-flow__agent_spawn { agentType: "tester", name: "Validation Engineer" }
 
 // Analyze current package states
 Read("/workspaces/ruv-FANN/claude-code-flow/claude-code-flow/package.json")
@@ -148,11 +148,11 @@ This integration uses ruv-swarm agents for:
 [Single Message - Complete Synchronization]:
   // Initialize comprehensive sync swarm
   mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 6 }
-  mcp__claude-flow__agent_spawn { type: "coordinator", name: "Master Sync Coordinator" }
-  mcp__claude-flow__agent_spawn { type: "analyst", name: "Package Analyzer" }
-  mcp__claude-flow__agent_spawn { type: "coder", name: "Integration Coder" }
-  mcp__claude-flow__agent_spawn { type: "tester", name: "Validation Tester" }
-  mcp__claude-flow__agent_spawn { type: "reviewer", name: "Quality Reviewer" }
+  mcp__claude-flow__agent_spawn { agentType: "coordinator", name: "Master Sync Coordinator" }
+  mcp__claude-flow__agent_spawn { agentType: "analyst", name: "Package Analyzer" }
+  mcp__claude-flow__agent_spawn { agentType: "coder", name: "Integration Coder" }
+  mcp__claude-flow__agent_spawn { agentType: "tester", name: "Validation Tester" }
+  mcp__claude-flow__agent_spawn { agentType: "reviewer", name: "Quality Reviewer" }
   
   // Read current state of both packages
   Read("/workspaces/ruv-FANN/claude-code-flow/claude-code-flow/package.json")

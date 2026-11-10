@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.1.2 — 2026-10-29
+- chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
+
 ## 0.1.1 — 2026-10-05
 - feat: mod part — ruos status segment via $.ruflo.segment
 - feat: JobTransport (exec-poll + ruOS jobs API), live-run fixes, ruOS design rules

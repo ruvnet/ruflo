@@ -18,6 +18,14 @@ npm i -g @ruvector/ruvllm-wasm   # global ruflo / @claude-flow/cli install
 npm i @ruvector/ruvllm-wasm      # project-local install
 ```
 
+The native runtime is a separate package. `ruvllm_status` reports it under `native`, and ruflo's learning pipeline loads its `SonaCoordinator`, `ContrastiveTrainer`, `TrainingPipeline` and `LoraAdapter`:
+
+```bash
+npm i @ruvector/ruvllm@^4.1.0
+```
+
+Use `^4.1.0`. Versions 4.0.0 and 4.0.1 were a wrong-repository publish (a GPU-loop harness with none of those classes), so callers silently fell back to JS. 4.1.0 restores the runtime and forwards `ruvllm gpu …` to `@ruvector/ruvllm-gpu-loop` 1.1.x (Node 22+), the bounded GPU experiment and job-loop harness. The `ruvllm-runtime` skill explains which package does what.
+
 ## Features
 
 - **Model configuration**: Generate optimal configs for local inference
@@ -34,6 +42,9 @@ npm i @ruvector/ruvllm-wasm      # project-local install
 
 - `llm-config` -- Configure models, MicroLoRA, and SONA
 - `chat-format` -- Format messages in a local model's chat template
+- `ruvllm-runtime` -- Pick and check the WASM add-on, the 4.1 native runtime or the GPU loop
+
+For ruflo's own MicroLoRA learning backend (`@ruvector/learning-wasm`), see the `lora-learning` skill that `ruflo init` installs.
 
 ## Compatibility
 
@@ -73,7 +84,7 @@ bash plugins/ruflo-ruvllm/scripts/smoke.sh
 
 - `ruflo-intelligence` — owns SONA + MicroLoRA in the 4-step pipeline
 - `ruflo-agentdb` — owns HNSW WASM router; namespace convention owner
-- `ruflo-ruvector` — sibling substrate plugin (pinned `ruvector@0.2.25`)
+- `ruflo-ruvector` — sibling substrate plugin (pinned `ruvector@0.3.12`)
 - `ruflo-rag-memory` — consumes RAG context routing
 
 ## As a mod

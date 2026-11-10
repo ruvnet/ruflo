@@ -13,11 +13,14 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { basename, dirname, join, resolve } from 'path';
+import { containedReadPath, containedWritePath, dbPathError, isLocalCliCall } from './path-containment.js';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'crypto';
 import { getProjectCwd, type MCPTool } from './types.js';
 import { validateIdentifier } from './validate-input.js';
 import { DEFAULT_SEARCH_THRESHOLD, nearMisses } from '../memory/search-defaults.js';
+import { compileExclusionPatterns, MAX_EXCLUDE_PATTERNS, MAX_EXCLUDE_PATTERN_LENGTH } from './glob-exclusions.js';
+import { readImportFile } from './import-limits.js';
 
 // Legacy JSON store interface (for migration)
 interface LegacyMemoryEntry {
@@ -45,10 +48,19 @@ const LEGACY_MEMORY_DIR = '.claude-flow/memory';
  * deliberately not an implicit `CLAUDE_FLOW_DB_PATH` override because the
  * native/encrypted CLI store and the AgentDB sibling are separate backends.
  */
-function resolveDbPathOption(inputDbPath: unknown): string | undefined {
-  return typeof inputDbPath === 'string' && inputDbPath.trim().length > 0
-    ? resolve(inputDbPath)
-    : undefined;
+/**
+ * Resolve an explicit `dbPath`. MCP callers may only name a SQLite database
+ * file, so the memory tools cannot be aimed at and overwrite an unrelated file;
+ * the local CLI (`--path`) keeps operator-chosen paths as-is.
+ */
+function resolveDbPathOption(inputDbPath: unknown, context?: unknown): string | undefined {
+  if (typeof inputDbPath !== 'string' || inputDbPath.trim().length === 0) return undefined;
+  const dbPath = resolve(inputDbPath);
+  if (!isLocalCliCall(context)) {
+    const error = dbPathError(dbPath);
+    if (error) throw new Error(error);
+  }
+  return dbPath;
 }
 const MIGRATION_MARKER = '.migrated-to-sqlite';
 
@@ -109,6 +121,86 @@ function validateMemoryInput(key?: string, value?: string, query?: string, names
   }
 }
 
+// ===== #1227: AgentMemoryScope wiring =====
+//
+// @claude-flow/memory's agent-memory-scope.ts defines the three scopes
+// ('project' | 'local' | 'user') and keys each scope by agent name, sanitized
+// to [a-zA-Z0-9_-]. It has no namespace scheme — only a directory layout. In
+// the CLI's single SQLite store a scope is therefore a NAMESPACE PREFIX:
+//
+//   agent-memory:<scope>:<agentId>:<namespace>
+//
+// The agent id is required with a scope (the package's AgentScopedConfig
+// requires agentName) and must already match the package's sanitizer class,
+// so an accepted id names the same agent in both. It is rejected, not
+// sanitized, so two different ids can never collapse into one partition.
+// Without a scope nothing is prefixed: existing namespaces are untouched.
+
+export const MEMORY_SCOPES = ['project', 'local', 'user'] as const;
+export type MemoryScope = typeof MEMORY_SCOPES[number];
+export const SCOPED_NAMESPACE_PREFIX = 'agent-memory';
+/** The character class @claude-flow/memory's resolveAgentMemoryDir keeps. */
+const SCOPE_AGENT_ID_RE = /^[a-zA-Z0-9_-]+$/;
+
+export type ScopedNamespace =
+  | { ok: true; namespace: string; scope?: MemoryScope; agentId?: string }
+  | { ok: false; error: string };
+
+/**
+ * Resolve the namespace a memory operation actually reads or writes.
+ * `scope`/`agentId` absent → `namespace` unchanged. Otherwise both are
+ * validated and the result is the prefixed form, itself run through the
+ * namespace validator so the stored namespace stays exportable and purgeable.
+ */
+export function resolveScopedNamespace(opts: { scope?: unknown; agentId?: unknown; namespace: string }): ScopedNamespace {
+  const { scope, agentId, namespace } = opts;
+  const scopeGiven = scope !== undefined && scope !== null && scope !== '';
+  const agentGiven = agentId !== undefined && agentId !== null && agentId !== '';
+  if (!scopeGiven) {
+    if (agentGiven) return { ok: false, error: 'agentId requires scope (project, local or user)' };
+    return { ok: true, namespace };
+  }
+  if (typeof scope !== 'string' || !(MEMORY_SCOPES as readonly string[]).includes(scope)) {
+    return { ok: false, error: `scope must be one of: ${MEMORY_SCOPES.join(', ')}` };
+  }
+  if (!agentGiven) return { ok: false, error: 'scope requires agentId (the agent whose memory partition to use)' };
+  const vAgent = validateIdentifier(agentId, 'agentId');
+  if (!vAgent.valid) return { ok: false, error: vAgent.error ?? 'agentId is invalid' };
+  if (!SCOPE_AGENT_ID_RE.test(agentId as string)) {
+    return { ok: false, error: 'agentId may contain only letters, digits, _ and - (the agent-memory directory name rule)' };
+  }
+  const effective = `${SCOPED_NAMESPACE_PREFIX}:${scope}:${agentId as string}:${namespace}`;
+  const vNs = validateIdentifier(effective, 'namespace');
+  if (!vNs.valid) {
+    return { ok: false, error: `${vNs.error} (scoped namespace "${effective}" includes the ${effective.length - namespace.length}-character scope prefix)` };
+  }
+  return { ok: true, namespace: effective, scope: scope as MemoryScope, agentId: agentId as string };
+}
+
+/** Inverse of resolveScopedNamespace; null for an unscoped namespace. */
+export function parseScopedNamespace(stored: string): { scope: MemoryScope; agentId: string; namespace: string } | null {
+  const parts = stored.split(':');
+  if (parts.length < 4 || parts[0] !== SCOPED_NAMESPACE_PREFIX) return null;
+  const [, scope, agentId] = parts;
+  if (!(MEMORY_SCOPES as readonly string[]).includes(scope) || !SCOPE_AGENT_ID_RE.test(agentId)) return null;
+  const namespace = parts.slice(3).join(':');
+  if (!namespace) return null;
+  return { scope: scope as MemoryScope, agentId, namespace };
+}
+
+/** Schema fragment shared by memory_store / memory_retrieve / memory_search. */
+const SCOPE_SCHEMA_PROPERTIES = {
+  scope: {
+    type: 'string',
+    enum: [...MEMORY_SCOPES],
+    description: 'AgentMemoryScope (#1227): project (shared), local (this machine) or user (this user). Requires agentId. Partitions the store by prefixing the namespace as agent-memory:<scope>:<agentId>:<namespace>; omit for the unscoped namespace exactly as before.',
+  },
+  agentId: {
+    type: 'string',
+    description: 'Agent whose scoped memory to use; letters, digits, _ and - only. Required with scope, rejected without it.',
+  },
+} as const;
+
 /**
  * #3374 — presence check for a schema-`required` string parameter.
  *
@@ -142,34 +234,6 @@ function missingRequiredString(
 function sanitizeMemoryKey(key: string): string {
   const safe = key.replace(DANGEROUS_KEY_CHARS, '_');
   return safe.length > MAX_KEY_LENGTH ? safe.slice(0, MAX_KEY_LENGTH) : safe;
-}
-
-// #1937 — minimal glob → RegExp helper for memory_import_claude exclusion
-// patterns. Anchored. Supports the three operators the issue's voice-fidelity
-// workflow needs:
-//   `**` — any chars including path separators
-//   `*`  — any chars except path separators
-//   `?`  — exactly one char except a path separator
-// Everything else is regex-escaped. Used to match absolute file paths.
-function globToRegex(pattern: string): RegExp {
-  // Tokenize so we can replace `**` before `*` without overlap.
-  let out = '';
-  for (let i = 0; i < pattern.length; i++) {
-    const c = pattern[i];
-    if (c === '*' && pattern[i + 1] === '*') {
-      out += '.*';
-      i++;
-    } else if (c === '*') {
-      out += '[^/\\\\]*';
-    } else if (c === '?') {
-      out += '[^/\\\\]';
-    } else if (/[.+^$|(){}\[\]\\]/.test(c)) {
-      out += '\\' + c;
-    } else {
-      out += c;
-    }
-  }
-  return new RegExp('^' + out + '$');
 }
 
 // #1883 — resolve the Claude-Code project memory directory for the *current*
@@ -235,6 +299,14 @@ function resolveProjectMemoryDir(claudeProjectsDir: string, projectPathOverride?
     if (/^[A-Za-z]:[\\/]/.test(source)) {
       candidates.add(source.replace(/[:\\/]/g, '-').replace(/\s+/g, '-'));
     }
+
+    // Candidate 6: Claude Code's own rule, which replaces every character
+    // other than [A-Za-z0-9] with `-` (the cost tracker's
+    // _encode-project-path.mjs does the same, #4366). The candidates above
+    // keep `_`, `.` and the like, so `/work/my_app` never found its folder
+    // `-work-my-app`. A WSL path is also tried in its Windows form.
+    candidates.add(source.replace(/[^a-zA-Z0-9]/g, '-'));
+    if (wsl) candidates.add(`${wsl[1].toUpperCase()}:${wsl[2] ?? ''}`.replace(/[^a-zA-Z0-9]/g, '-'));
   }
 
   for (const projectHash of candidates) {
@@ -515,6 +587,10 @@ export const memoryTools: MCPTool[] = [
           items: { type: 'string' },
           description: 'Optional tags for filtering',
         },
+        metadata: {
+          type: 'object',
+          description: 'Optional JSON object stored with the entry (e.g. { confidence: 0.9 }, which AutoMemoryBridge reads for sync eligibility). Replaces any existing metadata on upsert.',
+        },
         ttl: { type: 'number', description: 'Time-to-live in seconds (optional)' },
         upsert: { type: 'boolean', description: 'Update existing key instead of failing (default: true, matching CLI `memory store`; set false for strict-insert). #2775 parity.' },
         provenance_type: {
@@ -523,21 +599,28 @@ export const memoryTools: MCPTool[] = [
           description: 'ADR-323: who/what produced this value, so shared-namespace retrieval can filter by trust level instead of conflating a user\'s stated claim with an agent\'s own output. Default: "unknown".',
         },
         dbPath: { type: 'string', description: 'Explicit SQLite store to read/write; omit to use the MCP default (the native/AgentDB sibling).' },
+        ...SCOPE_SCHEMA_PROPERTIES,
       },
       required: ['key', 'value'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const missingKey = missingRequiredString(input, 'key', 'memory_store');
       if (missingKey) {
         return { success: false, key: input.key, stored: false, hasEmbedding: false, ...missingKey };
       }
 
-      const dbPath = resolveDbPathOption(input.dbPath);
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       if (!dbPath) await ensureInitialized();
       const { storeEntry } = await getMemoryFunctions();
 
       const key = input.key as string;
-      const namespace = (input.namespace as string) || 'default';
+      // #1227: with scope + agentId the write lands in the scoped namespace.
+      const scoped = resolveScopedNamespace({ scope: input.scope, agentId: input.agentId, namespace: (input.namespace as string) || 'default' });
+      if (!scoped.ok) {
+        return { success: false, key, stored: false, hasEmbedding: false, error: scoped.error };
+      }
+      const namespace = scoped.namespace;
+      const scopeInfo = scoped.scope ? { scope: scoped.scope, agentId: scoped.agentId } : {};
       const rawValue = input.value;
       const value = typeof rawValue === 'string' ? rawValue : (rawValue !== undefined ? JSON.stringify(rawValue) : '');
       const tags = (input.tags as string[]) || [];
@@ -547,6 +630,18 @@ export const memoryTools: MCPTool[] = [
       // ADR-323: leave undefined when omitted so storeEntry's own default
       // ('unknown') applies uniformly across the CLI, MCP tool, and other callers.
       const provenanceType = input.provenance_type as string | undefined;
+      // #1426: metadata must be a plain JSON object; reject arrays, null and scalars.
+      const rawMetadata = input.metadata;
+      if (rawMetadata !== undefined && (typeof rawMetadata !== 'object' || rawMetadata === null || Array.isArray(rawMetadata))) {
+        return {
+          success: false,
+          key,
+          stored: false,
+          hasEmbedding: false,
+          error: 'metadata must be a JSON object',
+        };
+      }
+      const metadata = rawMetadata as Record<string, unknown> | undefined;
 
       if (!value) {
         return {
@@ -573,6 +668,7 @@ export const memoryTools: MCPTool[] = [
           namespace,
           generateEmbeddingFlag: true,
           tags,
+          metadata,
           ttl,
           upsert,
           provenanceType,
@@ -585,6 +681,7 @@ export const memoryTools: MCPTool[] = [
           success: result.success,
           key,
           namespace,
+          ...scopeInfo,
           stored: result.success,
           storedAt: new Date().toISOString(),
           hasEmbedding: !!result.embedding,
@@ -615,21 +712,28 @@ export const memoryTools: MCPTool[] = [
         key: { type: 'string', description: 'Memory key' },
         namespace: { type: 'string', description: 'Namespace (default: "default")' },
         dbPath: { type: 'string', description: 'Explicit SQLite store to read/write; omit to use the MCP default (the native/AgentDB sibling).' },
+        ...SCOPE_SCHEMA_PROPERTIES,
       },
       required: ['key'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const missingKey = missingRequiredString(input, 'key', 'memory_retrieve');
       if (missingKey) {
         return { key: input.key, namespace: input.namespace, value: null, found: false, ...missingKey };
       }
 
-      const dbPath = resolveDbPathOption(input.dbPath);
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       if (!dbPath) await ensureInitialized();
       const { getEntry } = await getMemoryFunctions();
 
       const key = input.key as string;
-      const namespace = (input.namespace as string) || 'default';
+      // #1227: a scoped read only ever sees its own scope's namespace.
+      const scoped = resolveScopedNamespace({ scope: input.scope, agentId: input.agentId, namespace: (input.namespace as string) || 'default' });
+      if (!scoped.ok) {
+        return { key, namespace: input.namespace, value: null, found: false, error: scoped.error };
+      }
+      const namespace = scoped.namespace;
+      const scopeInfo = scoped.scope ? { scope: scoped.scope, agentId: scoped.agentId } : {};
 
       validateMemoryInput(key, undefined, undefined, namespace);
 
@@ -648,6 +752,7 @@ export const memoryTools: MCPTool[] = [
           return {
             key,
             namespace,
+            ...scopeInfo,
             value,
             tags: result.entry.tags,
             storedAt: result.entry.createdAt,
@@ -662,6 +767,7 @@ export const memoryTools: MCPTool[] = [
         return {
           key,
           namespace,
+          ...scopeInfo,
           value: null,
           found: false,
         };
@@ -694,16 +800,21 @@ export const memoryTools: MCPTool[] = [
           description: 'ADR-323: restrict results to these provenance types (e.g. exclude user_claim when fact-checking). Omit for no filtering. Enforced for standard and SmartRetrieval searches.',
         },
         dbPath: { type: 'string', description: 'Explicit SQLite store to read/write; omit to use the MCP default (the native/AgentDB sibling).' },
+        scope: {
+          ...SCOPE_SCHEMA_PROPERTIES.scope,
+          description: SCOPE_SCHEMA_PROPERTIES.scope.description + ' With scope, an omitted namespace means "default" inside that scope (not every namespace), and only that scope is searched. Without scope, an omitted namespace still searches every namespace, scoped ones included.',
+        },
+        agentId: SCOPE_SCHEMA_PROPERTIES.agentId,
       },
       required: ['query'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const missingQuery = missingRequiredString(input, 'query', 'memory_search');
       if (missingQuery) {
         return { query: input.query, results: [], total: 0, ...missingQuery };
       }
 
-      const dbPath = resolveDbPathOption(input.dbPath);
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       if (!dbPath) await ensureInitialized();
       const { searchEntries } = await getMemoryFunctions();
 
@@ -717,7 +828,21 @@ export const memoryTools: MCPTool[] = [
       // the search to a namespace that is usually empty. Leave namespace
       // undefined when not provided so the underlying `|| 'all'` fallback
       // in the search layer actually fires.
-      const namespace = input.namespace as string | undefined;
+      //
+      // #1227: with a scope the namespace is resolved (an omitted one becomes
+      // that scope's "default"); without one it stays undefined → 'all'.
+      let namespace = input.namespace as string | undefined;
+      let scopeInfo: { scope?: MemoryScope; agentId?: string } = {};
+      if (input.scope !== undefined || input.agentId !== undefined) {
+        const scoped = resolveScopedNamespace({ scope: input.scope, agentId: input.agentId, namespace: namespace || 'default' });
+        if (!scoped.ok) {
+          return { query, results: [], total: 0, error: scoped.error };
+        }
+        if (scoped.scope) {
+          namespace = scoped.namespace;
+          scopeInfo = { scope: scoped.scope, agentId: scoped.agentId };
+        }
+      }
       const limit = (input.limit as number) ?? 10;
       const threshold = (input.threshold as number) ?? DEFAULT_SEARCH_THRESHOLD;
       const thresholdWasDefault = input.threshold === undefined || input.threshold === null;
@@ -809,6 +934,8 @@ export const memoryTools: MCPTool[] = [
               results,
               total: results.length,
               ...(smartNearMisses ?? {}),
+              ...scopeInfo,
+              ...(scopeInfo.scope ? { namespace } : {}),
               searchTime: `${duration.toFixed(2)}ms`,
               backend: 'SmartRetrieval (RRF + MMR + Recency)',
               stats: smartResult.stats,
@@ -868,6 +995,8 @@ export const memoryTools: MCPTool[] = [
           results,
           total: results.length,
           ...(nearMissInfo ?? {}),
+          ...scopeInfo,
+          ...(scopeInfo.scope ? { namespace } : {}),
           searchTime: `${duration.toFixed(2)}ms`,
           backend: 'HNSW + sql.js',
           ...(smartFallbackReason ? { smartFallback: smartFallbackReason } : {}),
@@ -895,13 +1024,13 @@ export const memoryTools: MCPTool[] = [
       },
       required: ['key'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const missingKey = missingRequiredString(input, 'key', 'memory_delete');
       if (missingKey) {
         return { success: false, key: input.key, namespace: input.namespace, deleted: false, ...missingKey };
       }
 
-      const dbPath = resolveDbPathOption(input.dbPath);
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       if (!dbPath) await ensureInitialized();
       const { deleteEntry } = await getMemoryFunctions();
 
@@ -950,8 +1079,8 @@ export const memoryTools: MCPTool[] = [
         dbPath: { type: 'string', description: 'Explicit SQLite store to read/write; omit to use the MCP default (the native/AgentDB sibling).' },
       },
     },
-    handler: async (input) => {
-      const dbPath = resolveDbPathOption(input.dbPath);
+    handler: async (input, context) => {
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       if (!dbPath) await ensureInitialized();
       const { listEntries } = await getMemoryFunctions();
 
@@ -973,6 +1102,20 @@ export const memoryTools: MCPTool[] = [
           dbPath,
         });
 
+        // #4622: a failed query is not an empty store. Without this, a
+        // listing that could not read the database came back as a
+        // successful, empty inventory.
+        if (result.success === false) {
+          return {
+            success: false,
+            entries: [],
+            total: 0,
+            limit,
+            offset,
+            error: result.error || 'listEntries reported failure',
+          };
+        }
+
         const entries = result.entries.map(e => ({
           key: e.key,
           namespace: e.namespace,
@@ -993,6 +1136,7 @@ export const memoryTools: MCPTool[] = [
         };
       } catch (error) {
         return {
+          success: false,
           entries: [],
           total: 0,
           limit,
@@ -1012,11 +1156,11 @@ export const memoryTools: MCPTool[] = [
         dbPath: { type: 'string', description: 'Explicit SQLite store to read/write; omit to use the MCP default (the native/AgentDB sibling).' },
       },
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       if (input.dbPath !== undefined && (typeof input.dbPath !== 'string' || !input.dbPath.trim())) {
         return memoryStatsUnavailable('dbPath must be a non-empty string');
       }
-      const dbPath = resolveDbPathOption(input.dbPath);
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       // An explicit read must not initialize or migrate the unrelated default store.
       if (!dbPath) await ensureInitialized();
       const { listEntries } = await getMemoryFunctions();
@@ -1193,8 +1337,9 @@ export const memoryTools: MCPTool[] = [
         projectPath: { type: 'string', description: '#1883 — explicit project path to hash, used when cwd does not match Claude Code\'s view (e.g. WSL bridge to Windows host). Pass the canonical project root as Claude Code sees it.' },
         excludeFilePatterns: {
           type: 'array',
-          items: { type: 'string' },
-          description: '#1937 — glob patterns matched against the absolute file path. Files matching ANY pattern are skipped. Supports `*` (any chars within a path segment), `**` (any chars including separators), and `?` (single char). Examples: `**/voice-*.md`, `**/persona-*.md`. Combine with excludeFiles for explicit paths.',
+          maxItems: MAX_EXCLUDE_PATTERNS,
+          items: { type: 'string', maxLength: MAX_EXCLUDE_PATTERN_LENGTH },
+          description: '#1937 — glob patterns matched against the absolute file path. Files matching ANY pattern are skipped. Supports `*` (any chars within a path segment), `**` (any chars including separators), and `?` (single char). At most 64 patterns, 1024 characters and 32 wildcard operators per pattern. Examples: `**/voice-*.md`, `**/persona-*.md`. Combine with excludeFiles for explicit paths.',
         },
         excludeFiles: {
           type: 'array',
@@ -1204,6 +1349,12 @@ export const memoryTools: MCPTool[] = [
       },
     },
     handler: async (input) => {
+      let excludeMatchers: Array<(path: string) => boolean>;
+      try {
+        excludeMatchers = compileExclusionPatterns(input.excludeFilePatterns);
+      } catch (error) {
+        return { success: false, imported: 0, error: (error as Error).message };
+      }
       await ensureInitialized();
       const { storeEntry } = await getMemoryFunctions();
 
@@ -1214,12 +1365,10 @@ export const memoryTools: MCPTool[] = [
       const claudeProjectsDir = join(homedir(), '.claude', 'projects');
 
       // #1937 — voice-fidelity / persona-restricted exclusion.
-      const excludeFilePatterns = Array.isArray(input.excludeFilePatterns) ? input.excludeFilePatterns as string[] : [];
       const excludeFilesList = Array.isArray(input.excludeFiles) ? new Set(input.excludeFiles as string[]) : new Set<string>();
-      const excludeRegexes = excludeFilePatterns.map(globToRegex);
       const isExcluded = (absPath: string): boolean => {
         if (excludeFilesList.has(absPath)) return true;
-        return excludeRegexes.some(re => re.test(absPath));
+        return excludeMatchers.some(matches => matches(absPath));
       };
 
       // Find memory files
@@ -1477,6 +1626,7 @@ export const memoryTools: MCPTool[] = [
         return { success: false, query: input.query, results: [], total: 0, ...missingQuery };
       }
 
+      const startTime = performance.now();
       await ensureInitialized();
       const { searchEntries, listEntries } = await getMemoryFunctions();
       validateMemoryInput(undefined, undefined, input.query as string);
@@ -1523,24 +1673,57 @@ export const memoryTools: MCPTool[] = [
         }
       }
 
-      const allResults: Array<{ key: string; content: string; score: number; namespace: string; source: string }> = [];
+      type UnifiedHit = { key: string; content: string; score: number; namespace: string; source: string };
 
-      for (const searchNs of namespaces) {
+      // #4876: namespaces are searched concurrently (bounded) instead of one
+      // after another. Each search is a read of the same store and keeps no
+      // shared mutable state, so they are independent. Results land in a slot
+      // per namespace and are flattened in namespace order, so the merge below
+      // sees exactly the sequence the sequential loop produced. Failures are
+      // collected instead of swallowed, so success:true no longer hides
+      // namespaces that were never searched.
+      const NAMESPACE_CONCURRENCY = 4;
+      const perNamespace: UnifiedHit[][] = namespaces.map(() => []);
+      const namespaceErrors: Array<{ namespace: string; error: string }> = [];
+      const failedAt: Array<string | undefined> = namespaces.map(() => undefined);
+
+      const searchOne = async (index: number): Promise<void> => {
+        const searchNs = namespaces[index];
         try {
           const r = await searchEntries({ query, namespace: searchNs, limit: limit * 2 });
-          if (r?.results) {
-            for (const entry of r.results) {
-              allResults.push({
-                key: entry.key || entry.id || '',
-                content: (entry.content || (entry as any).value || '').toString().slice(0, 200),
-                score: entry.score || 0,
-                namespace: searchNs,
-                source: searchNs === 'claude-memories' ? 'claude-code' : searchNs === 'auto-memory' ? 'auto-memory' : 'agentdb',
-              });
-            }
+          if (r && r.success === false && r.error) {
+            failedAt[index] = String(r.error);
+            return;
           }
-        } catch { /* namespace may not exist */ }
-      }
+          for (const entry of r?.results ?? []) {
+            perNamespace[index].push({
+              key: entry.key || entry.id || '',
+              content: (entry.content || (entry as any).value || '').toString().slice(0, 200),
+              score: entry.score || 0,
+              namespace: searchNs,
+              source: searchNs === 'claude-memories' ? 'claude-code' : searchNs === 'auto-memory' ? 'auto-memory' : 'agentdb',
+            });
+          }
+        } catch (error) {
+          failedAt[index] = error instanceof Error ? error.message : String(error);
+        }
+      };
+
+      let nextIndex = 0;
+      const worker = async (): Promise<void> => {
+        while (nextIndex < namespaces.length) {
+          const index = nextIndex++;
+          await searchOne(index);
+        }
+      };
+      await Promise.all(
+        Array.from({ length: Math.min(NAMESPACE_CONCURRENCY, namespaces.length) }, () => worker()),
+      );
+
+      failedAt.forEach((error, index) => {
+        if (error !== undefined) namespaceErrors.push({ namespace: namespaces[index], error });
+      });
+      const allResults: UnifiedHit[] = perNamespace.flat();
 
       // Sort by score, deduplicate by (namespace, key), take top N. An entry is
       // identified by both (see #2271), so the same key in another namespace is
@@ -1554,14 +1737,23 @@ export const memoryTools: MCPTool[] = [
         return true;
       }).slice(0, limit);
 
+      const duration = performance.now() - startTime;
+      const namespacesFailed = namespaceErrors.length;
+
       return {
-        success: true,
+        // Partial coverage still succeeds; only a search where every
+        // namespace failed is a failure (#4876).
+        success: namespaces.length === 0 || namespacesFailed < namespaces.length,
         query,
         results: deduplicated,
         total: deduplicated.length,
         searchedNamespaces: namespaces,
         namespaceSource,        // #2246 — surface how the namespace list was resolved
-        searchTime: Date.now(),
+        namespacesSearched: namespaces.length,
+        namespacesFailed,
+        namespaceErrors,
+        // #4876: elapsed time, not a timestamp.
+        searchTime: `${duration.toFixed(2)}ms`,
       };
     },
   },
@@ -1692,16 +1884,16 @@ export const memoryTools: MCPTool[] = [
       },
       required: ['outputPath'],
     },
-    handler: async (input) => {
-      const requestedDbPath = typeof input.dbPath === 'string' && input.dbPath.trim()
-        ? resolve(input.dbPath)
-        : undefined;
+    handler: async (input, context) => {
+      const requestedOutput = String(input.outputPath ?? '');
+      if (!requestedOutput) return { error: 'outputPath is required' };
+      const outputPath = isLocalCliCall(context) ? resolve(requestedOutput) : containedWritePath(requestedOutput, ['.json']);
+      if (!outputPath) return { error: 'outputPath must be a .json file inside the project directory (not a symlink, not in .git)' };
+      const requestedDbPath = resolveDbPathOption(input.dbPath, context);
       // An explicit file selection is a single-store read. Do not initialize or
       // migrate the unrelated default store just to export a snapshot.
       if (!requestedDbPath) await ensureInitialized();
       const { listEntries } = await getMemoryFunctions();
-      const outputPath = String(input.outputPath ?? '');
-      if (!outputPath) return { error: 'outputPath is required' };
       const namespace = input.namespace ? String(input.namespace) : undefined;
       if (namespace) { const v = validateIdentifier(namespace, 'namespace'); if (!v.valid) throw new Error(v.error); }
       // #2073: pass includeContent so the value field carries the actual
@@ -1800,28 +1992,35 @@ export const memoryTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        inputPath: { type: 'string', description: 'Path to the JSON export file' },
+        inputPath: { type: 'string', description: 'Path to the JSON export file (maximum 16 MiB)' },
         merge: { type: 'boolean', description: 'Merge into existing entries (upsert) vs. fail on conflict (default true)' },
         namespace: { type: 'string', description: 'Override the namespace for all imported entries' },
         dbPath: { type: 'string', description: 'Database file to import into (defaults to the MCP memory store)' },
       },
       required: ['inputPath'],
     },
-    handler: async (input) => {
-      const dbPath = typeof input.dbPath === 'string' && input.dbPath.trim()
-        ? resolve(input.dbPath)
-        : undefined;
-      await ensureInitialized(dbPath);
-      const { storeEntry } = await getMemoryFunctions();
+    handler: async (input, context) => {
+      const dbPath = resolveDbPathOption(input.dbPath, context);
       const t0 = Date.now();
       // Values are re-embedded on import; count the vectors actually written
       // rather than reporting a constant 0 next to entries that show a vector.
       let vectors = 0;
-      const inputPath = String(input.inputPath ?? '');
-      if (!inputPath || !existsSync(inputPath)) return { error: `File not found: ${inputPath || '(empty)'}` };
+      const requestedInput = String(input.inputPath ?? '');
+      const inputPath = !requestedInput ? null
+        : isLocalCliCall(context) ? (existsSync(requestedInput) ? resolve(requestedInput) : null)
+        : containedReadPath(requestedInput);
+      if (!inputPath) {
+        return { error: isLocalCliCall(context) || !requestedInput
+          ? `File not found: ${requestedInput || '(empty)'}`
+          : 'inputPath must be an existing regular file inside the project directory (not a symlink)' };
+      }
       let doc: { entries?: Array<{ key: string; namespace?: string; value?: unknown; tags?: string[] | string }> };
-      try { doc = JSON.parse(readFileSync(inputPath, 'utf-8')); }
-      catch (e) { return { error: `Invalid export JSON: ${(e as Error).message}` }; }
+      try { doc = JSON.parse(readImportFile(inputPath).toString('utf-8')); }
+      catch (error) { return { error: error instanceof SyntaxError
+        ? 'inputPath is not a valid memory export (JSON parse failed)'
+        : error instanceof Error ? error.message : 'Could not read memory import' }; }
+      await ensureInitialized(dbPath);
+      const { storeEntry } = await getMemoryFunctions();
       const entries = Array.isArray(doc.entries) ? doc.entries : [];
       const nsOverride = input.namespace ? String(input.namespace) : undefined;
       if (nsOverride) { const v = validateIdentifier(nsOverride, 'namespace'); if (!v.valid) throw new Error(v.error); }
@@ -1882,6 +2081,73 @@ export const memoryTools: MCPTool[] = [
         imported: { entries: imported, vectors, patterns: 0, withTags },
         skipped,
         duration: Date.now() - t0,
+      };
+    },
+  },
+  {
+    name: 'memory_list_scopes',
+    description: 'List the AgentMemoryScope partitions (project, local, user) in the memory store, with each agent and the namespaces and entry counts under it (#1227). Use when you need to know which scope/agentId pairs already hold memory before calling memory_store, memory_retrieve or memory_search with scope; native Glob is wrong here because scopes are namespace prefixes inside .swarm/memory.db, not directories. Read-only. Pair with memory_list to see the entries themselves.',
+    category: 'memory',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dbPath: { type: 'string', description: 'Explicit SQLite store to read; omit to use the MCP default (the native/AgentDB sibling).' },
+      },
+    },
+    handler: async (input, context) => {
+      const dbPath = resolveDbPathOption(input.dbPath, context);
+      if (!dbPath) await ensureInitialized();
+      const { listEntries } = await getMemoryFunctions();
+
+      let listing: ListPage<{ namespace: string }>;
+      try {
+        listing = await collectAllEntries(listEntries, dbPath);
+      } catch (error) {
+        return { success: false, scopes: [], error: error instanceof Error ? error.message : 'Unknown error' };
+      }
+      // A failed listing is not an empty store (#4622).
+      if (!listing.success) {
+        return { success: false, scopes: [], error: listing.error || 'listEntries reported failure' };
+      }
+
+      // scope → agentId → namespace → entry count. Maps, not object literals,
+      // so an agent or namespace named `__proto__` is counted, not assigned.
+      const buckets = new Map<MemoryScope, Map<string, Map<string, number>>>(
+        MEMORY_SCOPES.map((s) => [s, new Map()]),
+      );
+      let unscopedEntries = 0;
+      for (const entry of listing.entries) {
+        const parsed = parseScopedNamespace(String(entry.namespace ?? ''));
+        if (!parsed) { unscopedEntries++; continue; }
+        const agents = buckets.get(parsed.scope)!;
+        if (!agents.has(parsed.agentId)) agents.set(parsed.agentId, new Map());
+        const namespaces = agents.get(parsed.agentId)!;
+        namespaces.set(parsed.namespace, (namespaces.get(parsed.namespace) ?? 0) + 1);
+      }
+
+      const scopes = MEMORY_SCOPES.map((scope) => {
+        const agents = [...buckets.get(scope)!.entries()]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([agentId, namespaces]) => ({
+            agentId,
+            namespaces: [...namespaces.entries()]
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([namespace, entries]) => ({
+                namespace,
+                storedNamespace: `${SCOPED_NAMESPACE_PREFIX}:${scope}:${agentId}:${namespace}`,
+                entries,
+              })),
+          }));
+        const entries = agents.reduce((n, a) => n + a.namespaces.reduce((m, ns) => m + ns.entries, 0), 0);
+        return { scope, agents, entries };
+      });
+
+      return {
+        success: true,
+        prefix: `${SCOPED_NAMESPACE_PREFIX}:<scope>:<agentId>:<namespace>`,
+        scopes,
+        unscopedEntries,
+        totalEntries: listing.total,
       };
     },
   },

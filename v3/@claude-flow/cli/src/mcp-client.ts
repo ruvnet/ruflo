@@ -16,6 +16,7 @@ import { swarmTools } from './mcp-tools/swarm-tools.js';
 import { memoryTools } from './mcp-tools/memory-tools.js';
 import { configTools } from './mcp-tools/config-tools.js';
 import { hooksTools } from './mcp-tools/hooks-tools.js';
+import { fastApplyTools } from './mcp-tools/fast-apply-tools.js';
 import { taskTools } from './mcp-tools/task-tools.js';
 import { sessionTools } from './mcp-tools/session-tools.js';
 import { hiveMindTools } from './mcp-tools/hive-mind-tools.js';
@@ -142,6 +143,7 @@ registerTools([
   ...memoryTools,
   ...configTools,
   ...hooksTools,
+  ...fastApplyTools,
   ...taskTools,
   ...sessionTools,
   ...hiveMindTools,

@@ -13,7 +13,7 @@ function leader(ctx: Ctx, key: string, name: string, about: string, actions: rea
   return row(
     ctx,
     [
-      ctx.kit.Text({ bold: true, color, children: clip(` ${name} `, lead).padEnd(lead, '.') }),
+      ctx.kit.Text({ weight: 'semibold', color, children: clip(` ${name} `, lead).padEnd(lead, '.') }),
       ctx.kit.Text({ color: THEME.info, wrap: 'truncate-end', children: clip(` ${about}`, Math.max(4, ctx.columns - lead - actions.length * 11)) }),
       ...actions.map(action => ctx.kit.Button({ key: action.key, label: ` ▸ ${action.label}`, plain: true, dimColor: true, onPress: action.onPress })),
     ],
@@ -135,7 +135,7 @@ export function skillsView(ctx: Ctx): RenderElement {
   const skills = state.skills
   const status: RenderElement[] = []
 
-  if (skills.busy !== null) status.push(text(ctx, ` running: ${skills.busy}…`, { bold: true, color: THEME.warn }))
+  if (skills.busy !== null) status.push(text(ctx, ` running: ${skills.busy}…`, { weight: 'semibold', color: THEME.warn }))
   else if (skills.last !== null) {
     status.push(text(ctx, ` ${skills.last.ok ? '✓' : '✗'} ${skills.last.label}${skills.last.verified === 'yes' ? ' · listed' : skills.last.verified === 'no' ? ' · not listed' : ''}: ${skills.last.detail} (${ago(skills.last.atMs, nowMs)})`, { color: skills.last.ok ? THEME.ok : THEME.bad }))
   }

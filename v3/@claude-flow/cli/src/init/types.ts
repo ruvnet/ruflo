@@ -82,6 +82,14 @@ export interface SkillsConfig {
   v3: boolean;
   /** Include dual-mode skills (Claude Code + Codex hybrid) */
   dualMode: boolean;
+  /** Include legacy skills that document commands v3 does not ship (opt-in) */
+  legacy: boolean;
+  /**
+   * Include ecosystem skills (vector quantization, graph min-cut, sublinear
+   * solving, injection defense, fast code edits, LoRA learning). Optional so
+   * existing SkillsConfig literals stay valid; absent means on.
+   */
+  ecosystem?: boolean;
   /** Include all available skills */
   all: boolean;
 }
@@ -348,6 +356,28 @@ export interface InitOptions {
    * GitHub contributor graph. Pass `--attribution` to opt in.
    */
   attribution?: boolean;
+  /**
+   * ADR-509 §2.3 — what to do when the existing project settings.json carries
+   * auto-approve keys (enableAllProjectMcpServers, enabledMcpjsonServers,
+   * bypassPermissions, blanket Bash allows, non-ruflo hooks): `stop`
+   * (default — nothing is written), `keep` (--keep-risky-settings) or `drop`
+   * (--drop-risky-settings).
+   */
+  riskySettings?: 'stop' | 'keep' | 'drop';
+  /**
+   * #2638 — where the shared project instructions live. `claude-md` (default,
+   * single-host) writes the full CLAUDE.md. `agents-md` (set by `init --dual`)
+   * writes CLAUDE.md as `@AGENTS.md` plus Claude-only sections; AGENTS.md,
+   * written by the Codex pass, carries the shared sections.
+   */
+  instructionsSource?: 'claude-md' | 'agents-md';
+  /**
+   * #2640 — when the ruflo Claude Code plugins are installed (ruflo-core@ruflo
+   * enabled), skip the agents/commands/skills they already ship and the
+   * standalone `claude-flow` MCP server. On by default; `--full` turns it off.
+   * No effect when the plugins are absent.
+   */
+  deferToPlugins?: boolean;
 }
 
 /**
@@ -357,6 +387,7 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
   targetDir: process.cwd(),
   force: false,
   interactive: true,
+  deferToPlugins: true,
   components: {
     settings: true,
     skills: true,
@@ -384,11 +415,13 @@ export const DEFAULT_INIT_OPTIONS: InitOptions = {
   skills: {
     core: true,
     agentdb: true,
-    github: true,
+    github: true,     // #4539: only the hook-only GitHub skills remain; the rest are skills.legacy
     flowNexus: false,
     browser: true,
     v3: false,        // ADR-128: opt-in like agents.v3; use --full or `init skills --v3`
     dualMode: false,  // Optional: enable with --dual flag
+    legacy: false,    // #4539: stream-chain/sparc document verbs v3 does not ship
+    ecosystem: true,  // ruvector / agent-booster / aidefence usage skills
     all: false,
   },
   commands: {
@@ -498,6 +531,8 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
     browser: false,
     v3: false,
     dualMode: false,
+    legacy: false,
+    ecosystem: false,
     all: false,
   },
   agents: {
@@ -540,6 +575,8 @@ export const MINIMAL_INIT_OPTIONS: InitOptions = {
  */
 export const FULL_INIT_OPTIONS: InitOptions = {
   ...DEFAULT_INIT_OPTIONS,
+  // #2640: --full copies everything, even what installed plugins provide.
+  deferToPlugins: false,
   components: {
     settings: true,
     skills: true,
@@ -559,6 +596,8 @@ export const FULL_INIT_OPTIONS: InitOptions = {
     browser: true,
     v3: true,
     dualMode: true,  // Include in full init
+    legacy: true,    // Include in full init
+    ecosystem: true,
     all: true,
   },
   commands: {
@@ -612,4 +651,20 @@ export interface InitResult {
    * init — surfaced so a user can review before trusting it.
    */
   warnings?: string[];
+  /** ADR-509 §2.3 — auto-approve keys found in the existing project settings.json. */
+  riskySettings?: string[];
+  /** ADR-509 §2.3 — init stopped before writing anything because of riskySettings. */
+  stoppedOnRiskySettings?: boolean;
+  /**
+   * #2638 — set when this run wrote CLAUDE.md in its `@AGENTS.md` import form.
+   * `fullForm` is the single-host CLAUDE.md to restore if AGENTS.md turns out
+   * not to carry the shared sections (see finalizeDualInstructions).
+   */
+  dualInstructions?: { importForm: string; fullForm: string };
+  /** #2640 — what init left to the installed ruflo plugins (absent when none are installed). */
+  pluginDedup?: {
+    plugins: string[];
+    skipped: { agents: string[]; commands: string[]; skills: string[] };
+    mcpServerSkipped: boolean;
+  };
 }

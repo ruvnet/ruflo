@@ -1,6 +1,6 @@
 import type { RenderElement } from 'claude-code'
 
-import { activeMission, derive, mcOf, nextTask, progressOf } from '../mission-control'
+import { derive, mcOf, missionOfGoal, nextTask, progressOf } from '../mission-control'
 import { blocksCreate, blocksGuidance, capabilitiesOf, PLUGIN_NOTES } from '../mission-options'
 import { settingsOf } from '../settings'
 import { clip, col, confirmHere, paragraph, row, section, text, THEME, type Ctx } from './common'
@@ -16,7 +16,8 @@ export function launchSteps(ctx: Ctx): Step[] {
   const { state } = ctx
   const mc = mcOf(state)
   const m = ctx.act.mission
-  const mission = activeMission(state)
+  // The mission this goal belongs to: none when the active one is over and the goal is a new one (it needs its own create).
+  const mission = missionOfGoal(state)
   const tasks = state.snapshot?.tasks ?? []
   const planned = mc.planned !== null
   const guidance = mc.guidance
@@ -93,7 +94,7 @@ export function launchRows(ctx: Ctx): RenderElement[] {
       row(
         ctx,
         [
-          ctx.kit.Text({ bold: step.state === 'next', color: COLOR[step.state], children: ` ${GLYPH[step.state]} ${step.label.padEnd(32)} ` }),
+          ctx.kit.Text({ weight: (step.state === 'next') ? 'semibold' : 'regular', color: COLOR[step.state], children: ` ${GLYPH[step.state]} ${step.label.padEnd(32)} ` }),
           ...(fits ? [ctx.kit.Text({ dimColor: step.state !== 'next', children: step.detail })] : []),
           ...button,
         ],
@@ -111,7 +112,7 @@ export function launchRows(ctx: Ctx): RenderElement[] {
       borderColor: THEME.ok,
       paddingX: 1,
       children: [
-        ctx.kit.Text({ bold: true, color: THEME.head, children: `▓▒░ NEXT STEP${next === undefined ? ' · all done' : `: ${next.label}`} ░▒▓` }),
+        ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: `▓▒░ NEXT STEP${next === undefined ? ' · all done' : `: ${next.label}`} ░▒▓` }),
         ...lines,
         ...confirmHere(ctx, 'goal', true),
         ...confirmHere(ctx, 'controls'),
@@ -131,14 +132,14 @@ export function capabilityRows(ctx: Ctx): RenderElement[] {
   const toggle = row(
     ctx,
     [
-      ctx.kit.Text({ bold: true, color: THEME.head, children: ' 🛡 AIDefence ' }),
+      ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: ' 🛡 AIDefence ' }),
       ctx.kit.Button({ key: 'mc-screen', label: ` ${mc.isScreenOn ? '●' : '○'} screen mission text `, plain: true, ...(mc.isScreenOn && { variant: 'primary' as const }), onPress: () => ctx.act.mission.screen(!mc.isScreenOn) }),
       ctx.kit.Text({ dimColor: true, children: ' the goal and guide text are checked for injection and PII before a model sees them' }),
     ],
     'mc-screen-row',
   )
   const body = groups.flatMap(group => [
-    ctx.kit.Text({ bold: true, color: THEME.ok, children: ` ${group.label}${noteOf(group.plugin)}` }),
+    ctx.kit.Text({ weight: 'semibold', color: THEME.ok, children: ` ${group.label}${noteOf(group.plugin)}` }),
     ...group.items.map(item =>
       row(
         ctx,

@@ -66,9 +66,9 @@ npx ruv-swarm github board-init \
 ```javascript
 // Initialize issue management swarm
 mcp__claude-flow__swarm_init { topology: "star", maxAgents: 3 }
-mcp__claude-flow__agent_spawn { type: "coordinator", name: "Issue Coordinator" }
-mcp__claude-flow__agent_spawn { type: "researcher", name: "Requirements Analyst" }
-mcp__claude-flow__agent_spawn { type: "coder", name: "Implementation Planner" }
+mcp__claude-flow__agent_spawn { agentType: "coordinator", name: "Issue Coordinator" }
+mcp__claude-flow__agent_spawn { agentType: "researcher", name: "Requirements Analyst" }
+mcp__claude-flow__agent_spawn { agentType: "coder", name: "Implementation Planner" }
 
 // Create comprehensive issue
 mcp__github__create_issue {
@@ -93,10 +93,10 @@ mcp__github__create_issue {
 }
 
 // Set up automated tracking
-mcp__claude-flow__task_orchestrate {
-  task: "Monitor and coordinate issue progress with automated updates",
-  strategy: "adaptive",
-  priority: "medium"
+mcp__claude-flow__task_create {
+  type: "coordination",
+  description: "Monitor and coordinate issue progress with automated updates",
+  priority: "normal"
 }
 ```
 

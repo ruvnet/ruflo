@@ -3,6 +3,7 @@ name: cost-benchmark
 description: Run the corpus benchmark — booster locally, optional Gemini/Sonnet/Opus baselines — and persist a verifiable measured-vs-claimed table
 argument-hint: "[--llm] [--anthropic]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 # Cost Benchmark

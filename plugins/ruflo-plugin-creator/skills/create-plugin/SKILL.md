@@ -36,7 +36,7 @@ When you want to create a new plugin that extends Claude Code with skills, comma
    │   └── smoke.sh                         # Structural contract (≥8 checks)
    └── README.md                            # Compatibility + Namespace coordination + Verification + ADR sections
    ```
-4. **Generate plugin.json** with name, description, version, author (do NOT include `skills`, `commands`, or `agents` arrays — Claude Code auto-discovers these from directory structure)
+4. **Generate plugin.json** with name, description, version, repository (the repo URL the plugin ships from), author (do NOT include `skills`, `commands`, or `agents` arrays — Claude Code auto-discovers these from directory structure)
 5. **Generate SKILL.md files** with proper frontmatter:
    ```yaml
    ---
@@ -72,6 +72,7 @@ Required fields (the repo gate `scripts/audit-plugin-manifest.mjs` fails without
 - `description` — what the plugin does
 - `version` — semver (`X.Y.Z`, optional pre-release suffix); bump it on every change, because marketplace users only receive a plugin when its version changes
 - `keywords` — non-empty array of strings
+- `repository` — the repo URL the plugin ships from (`https://github.com/ruvnet/ruflo` for plugins in this repo), as a string or an object's `url`
 
 Recommended fields:
 - `author` — `{ "name": "...", "url": "..." }`

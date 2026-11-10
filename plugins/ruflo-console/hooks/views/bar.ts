@@ -15,6 +15,7 @@ import { secMemo, securityBand } from '../secure'
 import type { State, ViewId } from '../state'
 import { sparkline } from '../memory-lines'
 import { visibleNotice, type Notice } from '../notices'
+import { cells, clipCells } from './cells'
 import { ago, clip, type Kit } from './common'
 
 export const BAR_KEY = 'mark'
@@ -65,10 +66,12 @@ function workingParts(state: State, nowMs: number): BarPart[] {
     const what = task !== undefined ? ` on ${clip(task.description || task.type, 40)}` : ' working'
     const span = state.statusLog.get(agent.id)?.at(-1)?.atMs
 
-    return { text: `▶ ${labels.get(agent.id) ?? agent.type}${what}${since(span, nowMs)}`, tone: 'live' as const, go: 'swarm' as const }
+    const who = labels.get(agent.id) ?? agent.type
+
+    return { text: `▶ ${who}${what}${since(span, nowMs)}`, tone: 'live' as const, go: 'swarm' as const, compact: `▶ ${who}${since(span, nowMs)}` }
   })
 
-  if (busy.length > 2) parts.push({ text: `+${busy.length - 2} more working`, tone: 'live', go: 'swarm' })
+  if (busy.length > 2) parts.push({ text: `+${busy.length - 2} more working`, tone: 'live', go: 'swarm', compact: `+${busy.length - 2}▶` })
 
   return parts
 }
@@ -91,7 +94,7 @@ export function missionPart(state: State): BarPart | null {
 
   if (total === 0 || done >= total) return null
 
-  return { text: `🎯 ${done}/${total}${mission.paused ? ' paused' : running !== undefined ? ` · ${running.id} ${clip(running.title, 28)}` : ''} (1)`, tone: running !== undefined ? 'live' : 'plain', go: 'missions' }
+  return { text: `🎯 ${done}/${total}${mission.paused ? ' paused' : running !== undefined ? ` · ${running.id} ${clip(running.title, 28)}` : ''} (1)`, tone: running !== undefined ? 'live' : 'plain', go: 'missions', compact: `🎯 ${done}/${total}${mission.paused ? ' paused' : ''}` }
 }
 
 /**
@@ -110,7 +113,7 @@ export function barParts(state: State, nowMs: number = Date.now()): BarPart[] {
   const approvals = waitingApprovalsOf(state).length
   const alerts = alertsOf(state, nowMs, state.loadedAtMs).filter(alert => alert.level !== 'info').length
 
-  if (approvals > 0) parts.push({ text: `${approvals} to approve (q)`, tone: 'attention', go: 'approvals' })
+  if (approvals > 0) parts.push({ text: `${approvals} to approve (q)`, tone: 'attention', go: 'approvals', compact: `${approvals} to approve` })
   if (alerts > 0) parts.push({ text: `⚠ ${alerts} alert${alerts === 1 ? '' : 's'}`, tone: 'attention', go: 'overview' })
 
   // The active mission: how far along, and the task Claude is on (or that it is paused); a click opens Mission Control.
@@ -127,16 +130,16 @@ export function barParts(state: State, nowMs: number = Date.now()): BarPart[] {
   }
 
   // What is happening now: how long Claude has been on this turn, agents at work, the AI terminal's runs, and the newest event while it is fresh.
-  if (state.turnActive && state.turnStartedMs !== null) parts.push({ text: `▶ Claude working${since(state.turnStartedMs, nowMs)}`, tone: 'live', go: 'events' })
+  if (state.turnActive && state.turnStartedMs !== null) parts.push({ text: `▶ Claude working${since(state.turnStartedMs, nowMs)}`, tone: 'live', go: 'events', compact: `▶ Claude${since(state.turnStartedMs, nowMs)}` })
 
   parts.push(...workingParts(state, nowMs))
 
-  for (const [agent, run] of state.terminal.runs) parts.push({ text: `💻 ${agent} answering${since(run.startedAtMs, nowMs)}`, tone: 'live', go: 'terminal' })
+  for (const [agent, run] of state.terminal.runs) parts.push({ text: `💻 ${agent} answering${since(run.startedAtMs, nowMs)}`, tone: 'live', go: 'terminal', compact: `💻 ${agent}` })
 
   const latest = state.events.at(-1)
   const isFresh = latest !== undefined && nowMs - latest.atMs < FRESH_MS
 
-  if (isFresh) parts.push({ text: `${clip(latest.text, 44)} ·${since(latest.atMs, nowMs)} ago`, tone: 'plain', go: 'events' })
+  if (isFresh) parts.push({ text: `${clip(latest.text, 44)} ·${since(latest.atMs, nowMs)} ago`, tone: 'plain', go: 'events', compact: `${clip(latest.text, 18)} ·${since(latest.atMs, nowMs)} ago` })
 
   // Nothing moving: say so, with how many agents stand ready. (When something did happen, the last event is a standing part below.)
   if (!parts.some(part => part.tone === 'live') && !isFresh && snap?.swarm != null) {
@@ -221,6 +224,12 @@ const BORDER: Record<BandTone, string> = { bad: PANEL.bad, attention: PANEL.atte
 const NOTICE_MARK = { ok: '✓', info: 'ℹ', warn: '⚠', bad: '✖' } as const
 const NOTICE_COLOR = { ok: PANEL.live, info: PANEL.text, warn: PANEL.attention, bad: PANEL.bad } as const
 
+/** Columns kept for a row's "+N" when parts may be left out; the narrowest a clipped first part may be; the width below which the band is narrow. */
+const MORE_CELLS = 4
+const MIN_PART_CELLS = 8
+export const NARROW_CELLS = 64
+export const TINY_CELLS = 40
+
 const toneColor = (tone: BarPart['tone']): string => (tone === 'attention' ? PANEL.attention : tone === 'live' ? PANEL.live : PANEL.text)
 
 /**
@@ -237,26 +246,64 @@ export function barView(kit: Kit, state: State, columns: number, mark: RenderEle
   const sep = (): RenderElement => kit.Text({ color: PANEL.dim, children: ' · ' })
 
   // One part: a button to its view where it has one, else words in its tone's colour.
-  const partElement = (part: BarPart, key: string, room: number): RenderElement => {
+  const partElement = (part: BarPart, key: string, label: string): RenderElement => {
     const go = part.go
-    const label = clip(part.text, room - 3)
 
     if (go !== undefined && onGo !== undefined) return kit.Button({ key, label, plain: true, ...(part.tone === 'plain' && { dimColor: true }), onPress: () => onGo(go) })
 
     return kit.Text({ wrap: 'truncate-end', color: toneColor(part.tone), children: label })
   }
-  // A row whose parts do not all fit in full uses their compact forms (a part with none keeps its words), so a part is shortened by
-  // its own choice of words, not cut in the middle of one.
+  // A row whose parts do not all fit in full shortens them to their compact forms (a part with none keeps its words), so a part is
+  // shortened by its own choice of words, not cut in the middle of one. Widths are terminal columns (`cells`), not string length: an emoji
+  // counted as one column overflowed the row, and the host then wrapped it onto a second line. A part that still does not fit is
+  // left out whole, never cut, and a dim "+N" says how many were (a click on the band opens the console, where they all are). Only
+  // the row's first part may be clipped, so a narrow band still says what matters most.
   // `bare` is a row whose lead already ends in its own space (the standing row's "↳ "): its first part needs no separator before it.
   const fill = (lead: RenderElement[], room: number, shown: BarPart[], from: number, bare = false): { children: RenderElement[]; room: number } => {
     const children = [...lead]
-    const tight = shown.reduce((sum, part) => sum + part.text.length + 3, 0) > room
-    const forms = shown.map(part => (tight && part.compact !== undefined ? { ...part, text: part.compact } : part))
+    // Shorten the part that saves the most, one at a time, until the row fits: a wide band keeps every other part's full words.
+    const forms = [...shown]
+    const total = (): number => forms.reduce((sum, part) => sum + cells(part.text) + 3, 0)
+
+    while (total() > room) {
+      let best = -1
+      let saved = 0
+
+      for (const [i, part] of forms.entries()) {
+        const gain = part.compact === undefined ? 0 : cells(part.text) - cells(part.compact)
+
+        if (gain > saved) [best, saved] = [i, gain]
+      }
+
+      if (best < 0) break
+      forms[best] = { ...forms[best]!, text: forms[best]!.compact as string, compact: undefined }
+    }
+    let placed = 0
 
     for (const [i, part] of forms.entries()) {
-      if (room <= 6) break
-      children.push(...(bare && i === 0 ? [] : [sep()]), partElement(part, `band-${from + i}`, room))
-      room -= part.text.length + (bare && i === 0 ? 0 : 3)
+      const gap = bare && i === 0 ? 0 : 3
+      // Keep room for the "+N" when more parts follow this one.
+      const reserve = i < forms.length - 1 ? MORE_CELLS : 0
+      const width = cells(part.text)
+      const fits = gap + width <= room - reserve
+      const first = placed === 0 && room - gap - reserve >= MIN_PART_CELLS
+
+      if (!fits && !first) break
+
+      const label = fits ? part.text : clipCells(part.text, room - gap - reserve)
+
+      children.push(...(gap === 0 ? [] : [sep()]), partElement(part, `band-${from + i}`, label))
+      room -= gap + cells(label)
+      placed += 1
+    }
+
+    const hidden = forms.length - placed
+
+    if (hidden > 0) {
+      const more = ` +${hidden}`
+
+      children.push(kit.Text({ color: PANEL.dim, children: more }))
+      room -= cells(more)
     }
 
     return { children, room }
@@ -264,9 +311,14 @@ export function barView(kit: Kit, state: State, columns: number, mark: RenderEle
 
   const status = parts.filter(part => part.row !== 'standing')
   const standing = parts.filter(part => part.row === 'standing')
-  const first = fill([mark !== null ? mark : kit.Text({ color: PANEL.attention, children: '◆ ' }), kit.Text({ bold: true, color: PANEL.text, children: 'ruflo' })], inner - 5 - (state.pane.isOpen ? 0 : 18), status, 0)
+  // The lead is the mark (two columns) and "ruflo". Closed, the row ends in an open button sized from its own label, which a narrow
+  // band shortens to "open" so the parts keep the room.
+  const openLabel = inner < NARROW_CELLS ? 'open' : 'open console'
+  // Below TINY_CELLS the mark alone stands for ruflo, so the most urgent part is not the one cut.
+  const named = inner >= TINY_CELLS
+  const first = fill([mark !== null ? mark : kit.Text({ color: PANEL.attention, children: '◆ ' }), ...(named ? [kit.Text({ weight: 'semibold', color: PANEL.text, children: 'ruflo' })] : [])], inner - (named ? 7 : 2) - (state.pane.isOpen ? 0 : openLabel.length + 2), status, 0, !named)
 
-  if (!state.pane.isOpen) first.children.push(kit.Text({ children: '  ' }), kit.Button({ key: 'open-console', label: 'open console', plain: true, onPress: onOpen }))
+  if (!state.pane.isOpen) first.children.push(kit.Text({ children: '  ' }), kit.Button({ key: 'open-console', label: openLabel, plain: true, onPress: onOpen }))
 
   // The second row: the standing facts, then the links with what room is left (a link that does not fit is dropped, not cut).
   const second = fill([kit.Text({ color: PANEL.dim, children: '↳ ' })], inner - 2, standing, status.length, true)
@@ -287,8 +339,8 @@ export function barView(kit: Kit, state: State, columns: number, mark: RenderEle
     kit.Box({
       flexDirection: 'row',
       children: [
-        kit.Text({ bold: true, color: NOTICE_COLOR[notice.level], children: `${NOTICE_MARK[notice.level]} ` }),
-        kit.Text({ color: NOTICE_COLOR[notice.level], wrap: 'truncate-end', children: clip(notice.text, Math.max(10, inner - 24)) }),
+        kit.Text({ weight: 'semibold', color: NOTICE_COLOR[notice.level], children: `${NOTICE_MARK[notice.level]} ` }),
+        kit.Text({ color: NOTICE_COLOR[notice.level], wrap: 'truncate-end', children: clipCells(notice.text, Math.max(10, inner - 24)) }),
         kit.Text({ children: '  ' }),
         ...(notice.go !== undefined && onGo !== undefined ? [kit.Button({ key: 'band-notice-go', label: 'view', plain: true, onPress: () => onGo(notice.go as ViewId) })] : []),
         ...(onDismiss !== undefined ? [kit.Text({ children: ' ' }), kit.Button({ key: 'band-notice-dismiss', label: '✕', plain: true, dimColor: true, onPress: onDismiss })] : []),

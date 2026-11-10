@@ -184,8 +184,11 @@ if (isHarness) {
   const { listMCPTools, callMCPTool, hasTool } = await import('../dist/src/mcp-client.js');
   const { isPolicyEnforcementEnabled, loadMcpPolicy, evaluateToolCall } =
     await import('../dist/src/mcp-tools/policy-enforcer.js');
+  // ADR-524: shared MCP revision handling (2026-07-28 + legacy initialize).
+  const mcpProtocol = await import('../dist/src/mcp-protocol.js');
+  const MCP_CAPABILITIES = { tools: { listChanged: true }, resources: {} };
 
-  const VERSION = '3.0.0';
+  const VERSION = mcpProtocol.defaultServerIdentity().version;
   const sessionId = `mcp-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
   console.error(
@@ -262,26 +265,18 @@ if (isHarness) {
         error: { code: -32600, message: 'Invalid Request: missing method' },
       };
     }
+    const preflight = mcpProtocol.protocolPreflight(message, MCP_CAPABILITIES);
+    if (preflight.response) return preflight.response;
+    const response = await dispatchMessage(message, preflight.context);
+    return mcpProtocol.finalizeResponse(response, message.method, preflight.context);
+  }
 
+  async function dispatchMessage(message, protocol) {
     const params = message.params || {};
 
     switch (message.method) {
-      case 'initialize':
-        return {
-          jsonrpc: '2.0',
-          id: message.id,
-          result: {
-            protocolVersion: '2024-11-05',
-            serverInfo: { name: 'ruflo', version: VERSION },
-            capabilities: {
-              tools: { listChanged: true },
-              resources: {},
-            },
-          },
-        };
-
       case 'tools/list': {
-        const tools = _filterAdvertisedMcpTools(listMCPTools());
+        const tools = mcpProtocol.sortToolsDeterministically(_filterAdvertisedMcpTools(listMCPTools()));
         return {
           jsonrpc: '2.0',
           id: message.id,
@@ -319,7 +314,7 @@ if (isHarness) {
         }
 
         try {
-          const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio' });
+          const result = await callMCPTool(toolName, toolParams, { sessionId, transport: 'stdio', ...mcpProtocol.traceContextFields(protocol) });
           // Failed task outcomes are data; an explicit handler error is a tool failure.
           const isError = result !== null && typeof result === 'object'
             && typeof result.error === 'string' && result.error.trim().length > 0;
@@ -348,7 +343,7 @@ if (isHarness) {
         return { jsonrpc: '2.0', id: message.id, result: { resourceTemplates: [] } };
 
       case 'resources/read':
-        return { jsonrpc: '2.0', id: message.id, error: { code: -32002, message: 'Resource not found' } };
+        return { jsonrpc: '2.0', id: message.id, error: { code: mcpProtocol.resourceNotFoundCode(protocol), message: 'Resource not found' } };
 
       case 'notifications/initialized':
         return null;

@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.2.6 — 2026-10-29
+- chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
+
 ## 0.2.5 — 2026-10-12
 - fix: the shared text screen now catches `.env` and e-mailed credentials, no longer flags a model's token talk (`--max-tokens`, `/oauth/token`, "token usage"), and no longer flags values that only name where a secret lives (`./service-account.json`, `--set-secrets=NAME=NAME:latest`); every rule stays linear (#4094, thanks @proffesor-for-testing)
 

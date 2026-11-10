@@ -17,7 +17,7 @@
  * @module v3/security/token-generator
  */
 
-import { randomBytes, createHmac, timingSafeEqual } from 'crypto';
+import { randomBytes, randomInt, createHmac, timingSafeEqual } from 'crypto';
 
 export interface TokenConfig {
   /**
@@ -197,11 +197,12 @@ export class TokenGenerator {
     expirationMinutes = 10,
     maxAttempts = 3
   ): VerificationCode {
-    const buffer = randomBytes(length);
+    // randomInt draws each digit uniformly. `byte % 10` did not: 256 is not a
+    // multiple of 10, so digits 0-5 came up 26/256 of the time and 6-9 only 25/256.
     let code = '';
 
     for (let i = 0; i < length; i++) {
-      code += (buffer[i] % 10).toString();
+      code += randomInt(10).toString();
     }
 
     const now = new Date();

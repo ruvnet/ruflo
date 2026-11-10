@@ -122,6 +122,43 @@ function releaseAgents(agentIds: string[], taskId: string): void {
   });
 }
 
+/**
+ * Stores `task_assign` may bind an agent from.
+ *
+ * The canonical file is `.claude-flow/agents/store.json`. `hive-mind_spawn`
+ * writes its workers to `.claude-flow/agents.json` instead (#1916), so an id
+ * that exists in either store is a real agent. A corrupt canonical store
+ * throws, matching the read this handler already performed, so a bad file is
+ * never replaced. The hive file stays best-effort: a corrupt copy must not
+ * hide agents that are present in the canonical store.
+ */
+function assignableAgentStores(): Array<Record<string, AgentRow>> {
+  const canonical = readRecordStore<{ agents: Record<string, AgentRow> }>(
+    join(getProjectCwd(), STORAGE_DIR, 'agents', 'store.json'),
+    'agents',
+    () => ({ agents: {} }),
+  );
+  const stores: Array<Record<string, AgentRow>> = [canonical.agents];
+  const hivePath = join(getProjectCwd(), STORAGE_DIR, 'agents.json');
+  try {
+    if (!existsSync(hivePath)) return stores;
+    const parsed = JSON.parse(readFileSync(hivePath, 'utf-8')) as { agents?: unknown };
+    const agents = parsed?.agents;
+    if (agents && typeof agents === 'object' && !Array.isArray(agents)) {
+      stores.push(agents as Record<string, AgentRow>);
+    }
+  } catch {
+    // Best-effort, same as updateAgents.
+  }
+  return stores;
+}
+
+function agentIsAssignable(id: string, stores: Array<Record<string, AgentRow>>): boolean {
+  return stores.some((agents) =>
+    Object.prototype.hasOwnProperty.call(agents, id) && Boolean(agents[id]),
+  );
+}
+
 export const taskTools: MCPTool[] = [
   {
     name: 'task_create',
@@ -144,6 +181,10 @@ export const taskTools: MCPTool[] = [
       if (!vType.valid) return { success: false, error: vType.error };
       const vDesc = validateText(input.description, 'description');
       if (!vDesc.valid) return { success: false, error: vDesc.error };
+      if (input.assignTo !== undefined && (!Array.isArray(input.assignTo)
+        || !input.assignTo.every(id => validateIdentifier(id, 'assignTo').valid))) {
+        return { success: false, error: 'assignTo must be an array of agent ids' };
+      }
 
       const store = loadTaskStore();
       const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -164,6 +205,14 @@ export const taskTools: MCPTool[] = [
 
       store.tasks[taskId] = task;
       saveTaskStore(store);
+
+      // Assigning at creation must mark the workers busy, as task_assign and task_update do;
+      // otherwise they read idle while holding the task, and task_complete or task_cancel,
+      // which only release a worker whose currentTask is this task, never free them either.
+      updateAgents(task.assignedTo, (agent) => {
+        agent.status = 'busy';
+        agent.currentTask = taskId;
+      });
 
       return {
         taskId,
@@ -242,7 +291,9 @@ export const taskTools: MCPTool[] = [
       // Apply filters
       if (input.status) {
         // Support comma-separated status values. 'all' (sent by `status tasks`) means no status filter.
-        const statuses = (input.status as string).split(',').map(s => s.trim());
+        // Each value goes through statusOf, the reader task_update uses, so "done", "canceled",
+        // "running" or "Completed" match the stored status rather than matching nothing.
+        const statuses = (input.status as string).split(',').map(s => s.trim()).map(s => statusOf(s) ?? s);
         if (!statuses.includes('all')) {
           tasks = tasks.filter(t => statuses.includes(t.status));
         }
@@ -483,19 +534,41 @@ export const taskTools: MCPTool[] = [
         return { taskId, error: 'Task not found' };
       }
 
-      const previouslyAssigned = [...task.assignedTo];
+      // Completed and cancelled tasks are terminal (#4725). Assigning a
+      // completed task marks the agent busy, and task_complete then returns
+      // without releasing it; task_cancel refuses a finished task too, so
+      // nothing ever sets that agent back to idle.
+      if (task.status === 'completed' || task.status === 'cancelled') {
+        return {
+          success: false,
+          taskId,
+          status: task.status,
+          error: `Cannot assign a ${task.status} task`,
+        };
+      }
 
-      // Load agent store to sync worker state
-      const agentStorePath = join(getProjectCwd(), STORAGE_DIR, 'agents', 'store.json');
-      readRecordStore<{ agents: Record<string, Record<string, unknown>> }>(
-        agentStorePath, 'agents', () => ({ agents: {} }),
-      );
+      const previouslyAssigned = [...task.assignedTo];
+      const agentStores = assignableAgentStores();
       if (input.unassign) {
         // Revert previously assigned agents to idle
         releaseAgents(previouslyAssigned, taskId);
         task.assignedTo = [];
       } else {
         const agentIds = (input.agentIds as string[]) || [];
+        // An id in neither store is a ghost owner: the task would go
+        // in_progress with nobody to do the work (#4725).
+        if (Array.isArray(agentIds)) {
+          const missing = agentIds.filter((id) => typeof id === 'string' && !agentIsAssignable(id, agentStores));
+          if (missing.length > 0) {
+            const listed = missing.join(', ');
+            return {
+              success: false,
+              taskId,
+              status: task.status,
+              error: missing.length === 1 ? `Agent not found: ${listed}` : `Agents not found: ${listed}`,
+            };
+          }
+        }
         // Revert old agents to idle
         releaseAgents(previouslyAssigned.filter((id) => !agentIds.includes(id)), taskId);
         // Set new agents to active
@@ -609,21 +682,29 @@ export const taskTools: MCPTool[] = [
       const original = store.tasks[taskId];
       if (!original) return { success: false, taskId, error: 'Task not found' };
 
+      const retainState = input.resetState === false;
       const newTaskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      store.tasks[newTaskId] = {
+      const retry: TaskRecord = {
         taskId: newTaskId,
         type: original.type,
         description: original.description,
         priority: original.priority,
         status: 'pending',
-        progress: 0,
+        progress: retainState ? original.progress ?? 0 : 0,
         assignedTo: [...original.assignedTo],
         tags: [...original.tags, 'retry-of:' + taskId],
         createdAt: new Date().toISOString(),
         startedAt: null,
         completedAt: null,
       };
+      if (retainState && original.result !== undefined) retry.result = original.result;
+      store.tasks[newTaskId] = retry;
       saveTaskStore(store);
+
+      updateAgents(retry.assignedTo, (agent) => {
+        agent.status = 'busy';
+        agent.currentTask = newTaskId;
+      });
 
       return {
         taskId,

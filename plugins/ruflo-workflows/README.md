@@ -30,6 +30,15 @@ Neither subsumes the other — see [Choosing a surface](#choosing-a-surface).
 - `workflow-create` -- Author MCP workflow templates **or** native `.claude/workflows/*.js` orchestration scripts
 - `workflow-run` -- Execute/manage MCP workflows **or** invoke + resume native workflows
 
+## User-invoked skills (ADR-507)
+
+These skills carry `disable-model-invocation: true`: Claude does not pick them on its own, and they cost nothing in the per-turn skill listing. Type them to run them. The GAIA submission flow publishes to an external leaderboard; the comparison is a report.
+
+| Skill | Run it with |
+|---|---|
+| gaia-architecture-comparison | `/ruflo-workflows:gaia-architecture-comparison` |
+| gaia-submission | `/ruflo-workflows:gaia-submission` |
+
 ## Compatibility
 
 - **CLI:** pinned to `@claude-flow/cli` v3.6 major+minor.

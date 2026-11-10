@@ -245,9 +245,11 @@ describe('ADR-404 amendment: ruflo init upgrade --mods', () => {
   });
 
   it('--add-missing and --settings include mods; --no-mods opts out', async () => {
-    expect((await upgrade.action!(ctx({ settings: true, mods: false }))).success).toBe(true);
+    // The fixture's own `echo mine` hook is a non-ruflo hook: since ADR-509 `--settings` stops on it unless kept.
+    expect((await upgrade.action!(ctx({ settings: true }))).success).toBe(false);
+    expect((await upgrade.action!(ctx({ settings: true, mods: false, keepRiskySettings: true }))).success).toBe(true);
     expect(read(settingsFile()).enabledPlugins[MOD_PLUGIN_ID]).toBeUndefined();
-    expect((await upgrade.action!(ctx({ settings: true }))).success).toBe(true);
+    expect((await upgrade.action!(ctx({ settings: true, keepRiskySettings: true }))).success).toBe(true);
     expect(read(settingsFile()).enabledPlugins[MOD_PLUGIN_ID]).toBe(true);
   });
 

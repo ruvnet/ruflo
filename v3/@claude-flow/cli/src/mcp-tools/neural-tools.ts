@@ -13,6 +13,7 @@
  */
 
 import { type MCPTool, getProjectCwd } from './types.js';
+import { nullPrototypeRecords } from './record-store.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -79,7 +80,7 @@ function activeChampionParams(): Record<string, unknown> {
 // command, because mcp-client statically imports this module. ensureEmbeddings()
 // keeps the exact same tier chain and degraded/fallback semantics, but only
 // pays the cost when a handler actually needs an embedding.
-// Tier 0 (ADR-089): ruvector@0.2.27 bundled ONNX (no sharp dep, fixes ADR-086's
+// Tier 0 (ADR-089): ruvector bundled ONNX (since 0.2.27) (no sharp dep, fixes ADR-086's
 //   silent-fallback bug at source; closes the chain described in ruvnet/ruvector#523).
 // Tier 1: agentic-flow v3 ReasoningBank (was Tier 1 — broken on darwin-arm64 without sharp)
 // Tier 2-3: @claude-flow/embeddings
@@ -116,7 +117,7 @@ function ensureEmbeddings(): Promise<void> {
         }
       } catch { /* not configured — fall through */ }
 
-      // Tier 0: ruvector@0.2.27 — bundled all-MiniLM-L6-v2 + parallel worker pool.
+      // Tier 0: ruvector (CLI dependency) — bundled all-MiniLM-L6-v2 + parallel worker pool.
       // Probe with isOnnxAvailable() and verify an actual embed succeeds (avoids
       // the type-load-success-but-runtime-fails trap from ADR-086). The probe now
       // runs on first embed request instead of at import time.
@@ -138,7 +139,7 @@ function ensureEmbeddings(): Promise<void> {
                 return Array.isArray(v) ? v : Array.from(v as ArrayLike<number>);
               },
             };
-            embeddingServiceName = 'ruvector@0.2.27 (bundled all-MiniLM-L6-v2)';
+            embeddingServiceName = 'ruvector (bundled all-MiniLM-L6-v2)';
           }
         } catch {
           // ruvector embed failed at runtime; fall through to next tier
@@ -151,7 +152,9 @@ function ensureEmbeddings(): Promise<void> {
       if (!realEmbeddings) {
         const rb = await import('agentic-flow/reasoningbank').catch(() => null);
         if (rb?.computeEmbedding) {
-          realEmbeddings = { embed: (text: string) => rb.computeEmbedding(text) };
+          // computeEmbedding returns a Float32Array; JSON.stringify writes that as
+          // {"0":…,"1":…}, so convert before it reaches the neural store.
+          realEmbeddings = { embed: async (text: string) => Array.from(await rb.computeEmbedding(text)) };
           embeddingServiceName = 'agentic-flow/reasoningbank';
         }
       }
@@ -263,12 +266,17 @@ function loadNeuralStore(): NeuralStore {
   try {
     const path = getNeuralPath();
     if (existsSync(path)) {
-      return JSON.parse(readFileSync(path, 'utf-8'));
+      const parsed = JSON.parse(readFileSync(path, 'utf-8'));
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        parsed.models = nullPrototypeRecords(parsed.models);
+        parsed.patterns = nullPrototypeRecords(parsed.patterns);
+        return parsed;
+      }
     }
   } catch {
     // Return empty store
   }
-  return { models: {}, patterns: {}, version: '3.0.0' };
+  return { models: nullPrototypeRecords<NeuralStore['models']>(undefined), patterns: nullPrototypeRecords<NeuralStore['patterns']>(undefined), version: '3.0.0' };
 }
 
 /**

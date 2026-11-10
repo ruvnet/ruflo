@@ -49,6 +49,18 @@ export interface ModeImplementation {
 
   /** Get mode-specific stats */
   getStats(): Record<string, number>;
+
+  /**
+   * Optional: return a Fisher-information/means snapshot derived from this
+   * mode's own internal gradient state, for the manager to fold into EWC
+   * consolidation after a learning cycle. Modes that don't track gradients
+   * internally (or haven't wired this yet) simply omit it; the manager
+   * treats a missing implementation (or an empty snapshot) as a no-op.
+   */
+  getConsolidationSnapshot?(): {
+    fisher: Map<string, Float32Array>;
+    means: Map<string, Float32Array>;
+  };
 }
 
 /**

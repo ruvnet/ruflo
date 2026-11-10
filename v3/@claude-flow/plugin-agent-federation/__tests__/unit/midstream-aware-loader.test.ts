@@ -36,6 +36,8 @@ vi.mock('agentic-flow/transport/loader', async () => {
   };
 });
 
+const wsServerOptions = vi.hoisted(() => [] as Array<{ port?: number; host?: string }>);
+
 vi.mock('ws', async () => {
   class MockWebSocket {
     on() {}
@@ -43,6 +45,9 @@ vi.mock('ws', async () => {
     close() {}
   }
   class MockWebSocketServer {
+    constructor(options: { port?: number; host?: string }) {
+      wsServerOptions.push(options);
+    }
     on(event: string, handler: () => void) {
       if (event === 'listening') queueMicrotask(handler);
     }
@@ -144,6 +149,21 @@ describe('loadFederationTransport — ADR-120 Step 2', () => {
 
     expect(loaded.source).toBe('websocket-fallback');
     expect(typeof loaded.transport.listen).toBe('function');
+  });
+
+  it('the fallback listener binds loopback unless a host is configured', async () => {
+    const mod = await import('agentic-flow/transport/loader');
+    const loaderFn = (mod as unknown as { loadQuicTransport: ReturnType<typeof vi.fn> })
+      .loadQuicTransport;
+    for (let i = 0; i < 3; i++) loaderFn.mockResolvedValueOnce({ send: vi.fn() });
+
+    wsServerOptions.length = 0;
+    for (const host of [undefined, '0.0.0.0', '']) {
+      const loaded = await loadFederationTransport({ port: 0, host });
+      await loaded.transport.listen!(0);
+    }
+
+    expect(wsServerOptions.map((o) => o.host)).toEqual(['127.0.0.1', '0.0.0.0', '127.0.0.1']);
   });
 
   it('returned envelope has the documented LoadedFederationTransport shape', async () => {

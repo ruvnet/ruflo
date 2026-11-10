@@ -50,7 +50,8 @@ describe('Ruflo capability brain', () => {
     expect(auth.riskFlags).toEqual(
       expect.arrayContaining(['network', 'credential-pii', 'approval']),
     );
-    expect(brain.cliCommands).toHaveLength(54);
+    expect(brain.cliCommands).toHaveLength(55);
+    expect(brain.cliCommands).toContain('cost'); // ADR-508
     expect(brain.cliCommands).toContain('harness');
   });
 

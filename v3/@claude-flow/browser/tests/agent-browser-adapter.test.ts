@@ -46,6 +46,46 @@ describe('AgentBrowserAdapter', () => {
     });
   });
 
+  describe('argv and URL guards', () => {
+    it('refuses a caller value that would be parsed as an agent-browser option', async () => {
+      const result = await adapter.fill({ target: '--executable-path=/tmp/x', value: 'v' } as any);
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/must not start with "--"/);
+      expect(mockExecSync).not.toHaveBeenCalled();
+    });
+
+    it('refuses a single-letter option smuggled in as a value', async () => {
+      const result = await adapter.click({ target: '-x' } as any);
+      expect(result.success).toBe(false);
+      expect(mockExecSync).not.toHaveBeenCalled();
+    });
+
+    it.each(['file:///etc/passwd', 'view-source:https://example.com', 'chrome://settings', 'data:text/html,hi', ' \tfile:///etc/hosts'])(
+      'refuses to open non-web URL %s',
+      async (url) => {
+        expect((await adapter.open({ url })).success).toBe(false);
+        expect((await adapter.newTab(url)).success).toBe(false);
+        expect(mockExecSync).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(['https://example.com', 'http://localhost:3000/app', 'example.com/path', 'localhost:8080', 'about:blank'])(
+      'still opens web URL %s',
+      async (url) => {
+        mockExecSync.mockReturnValue(JSON.stringify({ success: true }));
+        expect((await adapter.open({ url })).success).toBe(true);
+        expect(mockExecSync).toHaveBeenCalled();
+      },
+    );
+
+    it('still passes the adapter\'s own command flags', async () => {
+      mockExecSync.mockReturnValue(JSON.stringify({ success: true }));
+      const result = await adapter.open({ url: 'https://example.com', waitUntil: 'load' } as any);
+      expect(result.success).toBe(true);
+      expect(mockExecSync.mock.calls[0][1]).toContain('--wait');
+    });
+  });
+
   describe('navigation', () => {
     it('should open a URL', async () => {
       mockExecSync.mockReturnValue(JSON.stringify({

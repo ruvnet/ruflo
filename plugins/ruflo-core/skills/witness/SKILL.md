@@ -1,6 +1,6 @@
 ---
 name: witness
-description: Sign, verify, and track fix-marker regressions over time using an Ed25519 witness manifest. The default seed is public-commit-derived (integrity only); set RUFLO_WITNESS_SEED/RUFLO_WITNESS_PUBLIC_KEY for authorship. Works in any project — clone the toolkit, run init, register fixes, regen on each release.
+description: Sign, verify and track fix-marker regressions over time with an Ed25519 witness manifest. Use when registering fixes or checking a release for regressed fixes. The default seed proves integrity only; set RUFLO_WITNESS_SEED/RUFLO_WITNESS_PUBLIC_KEY for authorship.
 argument-hint: "init|regen|verify|history [...]"
 allowed-tools: Bash(node *), Read, Write, Edit
 ---

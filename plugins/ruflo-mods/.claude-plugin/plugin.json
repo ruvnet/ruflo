@@ -1,7 +1,8 @@
 {
   "name": "ruflo-mods",
   "description": "ruflo as a Claude Code mod (function hooks, ADR-404): in-process prompt routing, edit learning signals, tighten-only tool checks from ruflo policy, the cost-tracker budget ladder, a mod trust gate for newly installed mods, and the $.ruflo noun other mods compose their status with. Opt-in and removable: the classic hook-handler hooks stay the default and take every event back whenever the mod is not loaded.",
-  "version": "0.7.1",
+  "version": "0.16.2",
+  "repository": "https://github.com/ruvnet/ruflo",
   "author": {
     "name": "ruvnet",
     "url": "https://github.com/ruvnet"
@@ -47,6 +48,13 @@
       "required": false,
       "default": false
     },
+    "costLedger": {
+      "type": "boolean",
+      "title": "Cost ledger and budget file",
+      "description": "In a ruflo project: take the session budget from .claude-flow/cost/budget.json when costBudgetUsd is 0, charge each cost delta to the subagent type and tool behind it (.claude-flow/cost/attribution.jsonl, read by ruflo cost report), and toast once when a gateway refuses a request for budget (ADR-508).",
+      "required": false,
+      "default": true
+    },
     "toolHints": {
       "type": "boolean",
       "title": "Usage hints on ruflo tools",
@@ -65,6 +73,13 @@
       "type": "string",
       "title": "Agent types to never hide",
       "description": "Comma-separated agent type names that agentTrim must keep offered.",
+      "required": false,
+      "default": ""
+    },
+    "agentModels": {
+      "type": "string",
+      "title": "Model per agent type",
+      "description": "Comma-separated type=model pairs, for example Explore=haiku,general-purpose=sonnet. When a subagent of that type is spawned with no model chosen, it runs on this one (haiku, sonnet, opus, inherit, or a full claude- model id). Covers built-in types and other plugins' agents, whose definitions you cannot edit, and workflow agents (Claude Code 2.1.300 or later). A model the call already chose is kept; forks and teammates are left alone. Empty (the default) is off.",
       "required": false,
       "default": ""
     },
@@ -88,6 +103,20 @@
       "description": "When the model reads or writes an executable, library, Electron .asar or CUDA file (.exe .dll .so .dylib .node .asar .cubin .fatbin .ptx .evm .bytecode) inside the project, add one line beneath that answer saying ruRE can look inside it without running it, and how. Offer only: it never runs ruRE, never denies or changes a tool call, and names at most three files a turn and twelve a session, each once. The line holds only validated project-relative paths and fixed words, never file contents. Does nothing when the session has no ruRE tool or the answer is a subagent's. Off by default.",
       "required": false,
       "default": false
+    },
+    "compactSnapshot": {
+      "type": "boolean",
+      "title": "Snapshot the transcript before compaction, reload ruflo state after",
+      "description": "When the main conversation is compacted, write the transcript about to be summarized to .claude-flow/sessions/compactions/snapshot-<n>.jsonl: each message's role, its text cut to 2,000 characters, and tool call names and ids; never tool inputs or outputs; a line with a secret shape or injection phrase is stored as [redacted]; at most 400 messages and 2 MiB, ten files, the oldest overwritten. The compaction is never blocked, delayed or rewritten. The next prompt then gets one context block of at most 2,000 characters: lessons that matched a prompt this session, the latest loop outcomes, open swarm and claim ids, and the snapshot's path. Only in a ruflo project (.claude-flow/, which ruflo init gitignores). On by default; set false to turn it off.",
+      "required": false,
+      "default": true
+    },
+    "learningLoop": {
+      "type": "boolean",
+      "title": "Verified-outcome learning loop",
+      "description": "Record each main-loop turn (the tools it called, in order) and decide its outcome only from a test, build, typecheck or lint command's exit status after the turn's last edit; with no such run the turn is unverified. Turns go to .claude-flow/data/verified-trajectories.jsonl; ruflo hooks verified-ingest (also run by hooks_route and hooks_session-end) trains SONA on verified turns only. Adds at most three cited lessons it learned, at or above the 0.6 routing gate, to a prompt they match. Never denies, rewrites or delays a tool call, runs no process and calls no model. Only in a ruflo project (.claude-flow/). On by default; set false to turn it off.",
+      "required": false,
+      "default": true
     },
     "capabilityProbe": {
       "type": "boolean",
@@ -116,6 +145,18 @@
       "description": "Show one line in /ruflo-mods saying whether the optional third-party ruvnet-brain plugin (github.com/stuinfla/ruvnet-brain) is installed and enabled: on, not installed, installed but disabled, or unknown. Reads installed_plugins.json and your settings; detect-only: never calls, installs, blocks or rewrites anything, and ruflo works the same without that plugin. Off by default.",
       "required": false,
       "default": false
+    },
+    "contextDelegation": {
+      "type": "string",
+      "title": "Automatic context delegation",
+      "description": "When the model reads a whole 14-120 KB file for an analysis prompt (one that routes to research or review and asks for no change), hand that read to a no-tools haiku completion that returns cited passages, check every quote against the file, and show the model only those passages with a header saying how to read the rest. The real Read always runs first, so edits still work, and any failure shows the whole file as before. Subagent reads, ranged reads, second reads of a file and change requests are never delegated. \"off\" (default): nothing changes. \"observe\": nothing the model sees changes; record what would have been delegated in .claude-flow/metrics/context-delegation.json. \"enforce\": delegate. Uses your session's own credentials for the haiku call.",
+      "required": false,
+      "default": "off",
+      "options": [
+        "off",
+        "observe",
+        "enforce"
+      ]
     },
     "modTrust": {
       "type": "string",

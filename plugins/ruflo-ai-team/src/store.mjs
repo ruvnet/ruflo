@@ -50,7 +50,14 @@ export class InMemoryStore {
       contentHash: createHash('sha256').update(input.text).digest('hex'), safetyStatus: input.safetyStatus || 'accepted', embeddingModel: 'feature-hash-256', embeddingVersion: '1', createdAt, updatedAt: timestamp };
     bucket.memories.set(id, clone(value)); this.#audit(bucket, actor, 'memory.remembered', id); return clone(value);
   }
-  async listMemories(tenantId, { teamId } = {}) { return [...this.#bucket(tenantId).memories.values()].filter((x) => !teamId || x.teamId === teamId).map(clone); }
+  async listMemories(tenantId, { teamId, limit = 1000 } = {}) { return [...this.#bucket(tenantId).memories.values()].filter((x) => !teamId || x.teamId === teamId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0)).slice(0, limit).map(clone); }
+  // Attaches a vector only if the text it was computed from is still the stored text.
+  async setEmbedding(tenantId, id, { vector, model, contentHash }) {
+    const current = this.#bucket(tenantId).memories.get(id);
+    if (!current || current.contentHash !== contentHash) return false;
+    current.embedding = Array.from(vector); current.embeddingModel = model; current.embeddingVersion = '1';
+    return true;
+  }
   async usage(tenantId) {
     const b = this.#bucket(tenantId); return { teams: b.teams.size, runs: b.runs.size, tasks: b.tasks.size, memories: b.memories.size, limits: { teams: 1, agentsPerTeam: 3, monthlyTasks: 100, runBudgetUnits: 100 } };
   }
@@ -99,7 +106,15 @@ export class FirestoreStore {
   async listTasks(t,runId) { const snap=await this.#tenant(t).collection('tasks').where('runId','==',runId).limit(200).get(); return snap.docs.map(d=>d.data()); }
   async updateTask(t,id,p,a='-') { const c=await this.#get(t,'tasks',id); if(!c||(await this.#get(t,'runs',c.runId))?.status==='complete')return null; const v={...c,...p,id,updatedAt:now()}; await this.#put(t,'tasks',v); await this.#audit(t,a,'task.updated',id); return v; }
   async remember(t,i,a='-') { const timestamp=now(); const id=i.key||`mem_${randomUUID()}`; const previous=await this.#get(t,'memories',id); const v={id,teamId:i.teamId,runId:i.runId||null,text:i.text,tags:i.tags||[],provenance:i.provenance||'user',actorHash:a,contentHash:createHash('sha256').update(i.text).digest('hex'),safetyStatus:i.safetyStatus||'accepted',embeddingModel:'feature-hash-256',embeddingVersion:'1',createdAt:previous?.createdAt??timestamp,updatedAt:timestamp}; await this.#put(t,'memories',v); await this.#audit(t,a,'memory.remembered',v.id); return v; }
-  async listMemories(t,{teamId}={}) { let query=this.#tenant(t).collection('memories'); if(teamId)query=query.where('teamId','==',teamId); const snap=await query.limit(1000).get(); return snap.docs.map(d=>d.data()); }
+  async listMemories(t,{teamId,limit=1000}={}) {
+    // Newest first, so a capped read drops the oldest rather than an arbitrary slice. With a team
+    // filter this is a composite index (teamId, createdAt desc); until it is deployed the read
+    // falls back to the unordered query instead of failing the tool call (FAILED_PRECONDITION).
+    const base=this.#tenant(t).collection('memories'); const scoped=teamId?base.where('teamId','==',teamId):base;
+    try { return (await scoped.orderBy('createdAt','desc').limit(limit).get()).docs.map(d=>d.data()); }
+    catch(error){ if(error?.code!==9)throw error; return (await scoped.limit(limit).get()).docs.map(d=>d.data()); }
+  }
+  async setEmbedding(t,id,{vector,model,contentHash}) { const ref=this.#tenant(t).collection('memories').doc(id); return this.db.runTransaction(async tx=>{ const snap=await tx.get(ref); if(!snap.exists||snap.data().contentHash!==contentHash)return false; tx.update(ref,{embedding:Array.from(vector),embeddingModel:model,embeddingVersion:'1'}); return true; }); }
   async usage(t) { const [teams,runs,tasks,memories]=await Promise.all(['teams','runs','tasks','memories'].map(k=>this.#list(t,k))); return {teams:teams.length,runs:runs.length,tasks:tasks.length,memories:memories.length,limits:{teams:1,agentsPerTeam:3,monthlyTasks:100,runBudgetUnits:100}}; }
   async evidence(t,runId) { const run=await this.#get(t,'runs',runId); if(!run)return null; const tasks=await this.listTasks(t,runId); const targets=new Set([runId,run.teamId,...tasks.map(task=>task.id)]); const ids=[...targets]; const chunks=[]; for(let i=0;i<ids.length;i+=30)chunks.push(ids.slice(i,i+30)); // Firestore 'in' takes at most 30 values
     const audit=(await Promise.all(chunks.map(async c=>(await this.#tenant(t).collection('audit').where('targetId','in',c).limit(1000).get()).docs.map(d=>d.data())))).flat().sort((a,b)=>a.at<b.at?-1:a.at>b.at?1:0);

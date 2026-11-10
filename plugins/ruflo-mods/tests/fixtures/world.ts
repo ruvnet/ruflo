@@ -12,13 +12,15 @@ export type World = {
   readonly statuses: (string | undefined)[]
   readonly logs: string[]
   readonly commands: string[]
+  /** Every path `$.fs.stat` was asked about, in order. */
+  readonly stats: string[]
 }
 
 export const ROOT = '/work'
 export const HELPER = `${ROOT}/.claude/helpers/hook-handler.cjs`
 
 export function world(on: On, settings: unknown = {}, files: Record<string, string> = {}): World {
-  const w: World = { files: new Map(Object.entries(files)), dirs: new Set([ROOT, `${ROOT}/.claude-flow`]), env: new Map(), statuses: [], logs: [], commands: [] }
+  const w: World = { files: new Map(Object.entries(files)), dirs: new Set([ROOT, `${ROOT}/.claude-flow`]), env: new Map(), statuses: [], logs: [], commands: [], stats: [] }
 
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('session.root', () => ({ value: ROOT }))
@@ -31,6 +33,7 @@ export function world(on: On, settings: unknown = {}, files: Record<string, stri
   })
   on('fs.exists', ($, e) => ({ value: w.files.has(e.path) || w.dirs.has(e.path) }))
   on('fs.stat', ($, e) => {
+    w.stats.push(e.path)
     const text = w.files.get(e.path)
     if (text === undefined && w.dirs.has(e.path)) return { value: { kind: 'dir', size: 0, mtimeMs: 0, isLink: false } }
     if (text === undefined) return { deny: `ENOENT: no such file or directory, '${e.path}'` }

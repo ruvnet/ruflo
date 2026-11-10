@@ -1,6 +1,6 @@
 ---
 name: deepseek-reason
-description: "Reasoning-mode completion against DeepSeek's `deepseek-reasoner` model (R1) via /v1/chat/completions. Surfaces the model's chain-of-thought (`reasoning_content`) separately from the final answer (`content`), so callers can display or discard the CoT without re-parsing. Reads DEEPSEEK_API_KEY; degrades gracefully (exit 0 with status:degraded envelope) when unset or the API is unreachable. Ignores temperature/top_p per DeepSeek's spec for reasoner models."
+description: Reasoning completion against DeepSeek's `deepseek-reasoner` (R1), returning the chain of thought apart from the answer. Use when a task needs step-by-step reasoning from DeepSeek. Reads DEEPSEEK_API_KEY; returns status:degraded when unset or unreachable.
 argument-hint: "--prompt <text> [--system <text>] [--model deepseek-reasoner] [--max-tokens 4096] [--show-reasoning] [--format table|json] [--alert-on-error]"
 allowed-tools: Bash
 ---

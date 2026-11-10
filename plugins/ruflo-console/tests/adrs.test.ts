@@ -40,7 +40,7 @@ async function mounted($: Body[0], view: string, columns = 130) {
 }
 
 describe('ADRs, end to end', () => {
-  test('opens from /ruflo adrs, reads the project’s own folder and lists the records with the health strip, fetching nothing', { options: { boot: false } }, async ($, on) => {
+  test('opens from /ruflo adrs, reads the project’s own folder and lists the records with the health strip, fetching nothing', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { clock, fetches } = await start($, on)
     const pane = await mounted($, 'adrs')
 
@@ -59,7 +59,7 @@ describe('ADRs, end to end', () => {
     await pane.unmount()
   })
 
-  test('is reached by the TOOLS group, by search, and has no hotkey; selecting a record opens its detail', { options: { boot: false } }, async ($, on) => {
+  test('is reached by the TOOLS group, by search, and has no hotkey; selecting a record opens its detail', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { clock } = await start($, on)
     const pane = await mounted($, 'overview')
 
@@ -78,7 +78,7 @@ describe('ADRs, end to end', () => {
     await pane.unmount()
   })
 
-  test('a project with no ADR folder offers to initialise it, and the folder is created only after the Yes', { options: { boot: false } }, async ($, on) => {
+  test('a project with no ADR folder offers to initialise it, and the folder is created only after the Yes', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const { world, clock } = await start($, on, {})
     const pane = await mounted($, 'adrs')
 

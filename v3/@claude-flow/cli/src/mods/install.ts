@@ -61,11 +61,21 @@ export interface Added {
   claudeInstalled?: string[];
 }
 
+/** ADR-509 §2.2: an install that went ahead past a high scan finding because of --accept-risk <plugin>. */
+export interface AcceptedRisk {
+  plugin: string;
+  at: string;
+  /** The high findings accepted, as printed (`[high] plugin: file (rule) detail`). */
+  findings: string[];
+}
+
 export interface InstallRecord {
   version: 2;
   installedAt: string;
   /** What install added, per settings file it wrote. */
   files: Record<string, Added>;
+  /** ADR-509 §2.2: every --accept-risk override, newest last. */
+  acceptedRisk?: AcceptedRisk[];
 }
 
 type Settings = Record<string, unknown> & {
@@ -208,7 +218,10 @@ export function readRecord(projectRoot: string): InstallRecord | null {
         const strings = (v: unknown) => (Array.isArray(v) ? v.filter((p): p is string => typeof p === 'string') : []);
         files[file] = { plugins: strings(a.plugins), marketplace: a.marketplace === true, env: a.env === true, claudeInstalled: strings(a.claudeInstalled) };
       }
-      return { version: 2, installedAt: String(parsed.installedAt ?? ''), files };
+      const accepted = Array.isArray(parsed.acceptedRisk)
+        ? parsed.acceptedRisk.filter(isRecord).map((r) => ({ plugin: String(r.plugin ?? ''), at: String(r.at ?? ''), findings: Array.isArray(r.findings) ? r.findings.map(String) : [] }))
+        : undefined;
+      return { version: 2, installedAt: String(parsed.installedAt ?? ''), files, ...(accepted?.length ? { acceptedRisk: accepted } : {}) };
     }
     if (parsed.version === 1 && typeof parsed.settingsFile === 'string' && isRecord(parsed.added)) {
       const a = parsed.added;
@@ -220,6 +233,14 @@ export function readRecord(projectRoot: string): InstallRecord | null {
   }
 }
 
+/** ADR-509 §2.2: record an --accept-risk override in .claude-flow/mods/install.json. */
+export function recordAcceptedRisk(projectRoot: string, entries: readonly AcceptedRisk[]): void {
+  if (entries.length === 0) return;
+  const record = readRecord(projectRoot) ?? { version: 2 as const, installedAt: new Date().toISOString(), files: {} };
+  record.acceptedRisk = [...(record.acceptedRisk ?? []), ...entries];
+  writeJson(join(resolve(projectRoot), INSTALL_RECORD), record);
+}
+
 /** Note plugins ruflo installed with `claude plugin install` for one settings file. */
 export function recordClaudeInstalled(projectRoot: string, settingsFile: string, ids: readonly string[]): void {
   const record = readRecord(projectRoot);
@@ -227,6 +248,31 @@ export function recordClaudeInstalled(projectRoot: string, settingsFile: string,
   if (!record || !entry || ids.length === 0) return;
   entry.claudeInstalled = [...new Set([...(entry.claudeInstalled ?? []), ...ids])];
   writeJson(join(resolve(projectRoot), INSTALL_RECORD), record);
+}
+
+/**
+ * ADR-509 §2.2: a plugin whose scan blocked it must not stay enabled — Claude
+ * Code loads an enabled plugin straight from the marketplace clone, with or
+ * without an install. Removes `enabledPlugins[id]` (only when it is `true`: a
+ * `false` someone set is already off) and drops the id from what the record
+ * says ruflo added. Returns the ids it turned off.
+ */
+export function disableBlockedPlugins(projectRoot: string, settingsFile: string, ids: readonly string[]): string[] {
+  if (ids.length === 0 || !existsSync(settingsFile)) return [];
+  const settings = readSettingsFile(settingsFile);
+  const enabled = isRecord(settings.enabledPlugins) ? { ...settings.enabledPlugins } : {};
+  const off = ids.filter((id) => enabled[id] === true);
+  if (off.length) {
+    for (const id of off) delete enabled[id];
+    writeJson(settingsFile, { ...settings, enabledPlugins: enabled });
+  }
+  const record = readRecord(projectRoot);
+  const entry = record?.files[settingsFile];
+  if (record && entry && entry.plugins.some((p) => ids.includes(p))) {
+    entry.plugins = entry.plugins.filter((p) => !ids.includes(p));
+    writeJson(join(resolve(projectRoot), INSTALL_RECORD), record);
+  }
+  return off;
 }
 
 /** The scope a recorded settings file was written at. */

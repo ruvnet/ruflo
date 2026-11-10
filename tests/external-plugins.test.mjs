@@ -13,8 +13,8 @@ import { fileURLToPath } from 'node:url';
 import { externalSmokePlan, externalSourceProblem, isAllowedRepoUrl, makeWorkArea, realpathInside, scrubbedEnv } from '../scripts/external-plugins.mjs';
 
 const REPO = fileURLToPath(new URL('..', import.meta.url));
-const SHA = 'e976a8e451b331fff86fc249f2ba40f19644c9fc';
-const source = (over) => ({ source: 'git-subdir', url: 'https://github.com/proffesor-for-testing/agentic-qe.git', path: 'plugins/agentic-qe-fleet', ref: 'v3.15.13', sha: SHA, ...over });
+const SHA = 'b177b2315521376b83f2eed40e4994fd7581d067';
+const source = (over) => ({ source: 'git-subdir', url: 'https://github.com/proffesor-for-testing/agentic-qe.git', path: 'plugins/agentic-qe-fleet', ref: 'v3.15.17', sha: SHA, ...over });
 
 const REFUSED_URLS = [
   'https://github.com.evil.io/owner/repo',

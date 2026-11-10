@@ -1,6 +1,6 @@
 ---
 name: analyze-app
-description: Statically inspects a local JavaScript or Electron application you're authorized to study, explains how a feature works with file+line evidence, and helps build an equivalent for your own project. Use when the user wants to understand or reimplement a feature from an app whose source they have (their own app, a licensed target, or an explicit research/CTF context). Parses only — never executes the target.
+description: Statically inspect a local JavaScript or Electron app you are authorized to study and explain how a feature works with file+line evidence. Use when the user wants to understand or reimplement a feature from an app whose source they have. Parses only; never executes the target.
 allowed-tools: Read
 ---
 

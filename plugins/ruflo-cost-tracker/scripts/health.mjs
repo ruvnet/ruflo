@@ -31,6 +31,8 @@
 import { spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnNpxSync } from './_npx.mjs';
+import { RUFLO_CLI_PKG, resolveRufloCli } from './_ruflo-cli.mjs';
 
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 
@@ -86,8 +88,27 @@ function runScript(name, scriptFile, scriptArgs, jsonViaEnv) {
   });
 }
 
+/**
+ * Each subcheck below shells out to the CLI, and they run in parallel. When the
+ * CLI comes from npx with a cold cache, four concurrent first installs race in
+ * one ~/.npm/_npx/<hash> directory and leave a broken install whose reads fail
+ * (#4711). Resolve it once, serially, first. A locally resolved CLI needs no
+ * install, so this is skipped; so is CLI_CORE=1, which the subchecks route to
+ * a different package.
+ */
+function warmCli() {
+  if (process.env.CLI_CORE === '1' || process.env.HEALTH_SKIP_WARMUP === '1') return;
+  if (resolveRufloCli()) return;
+  spawnNpxSync([RUFLO_CLI_PKG, '--version'], {
+    stdio: 'ignore',
+    timeout: 300_000,
+  });
+}
+
 async function main() {
   const budgetPeriod = process.env.HEALTH_BUDGET_PERIOD || 'all';
+
+  warmCli();
 
   const tasks = [];
   if (!ARGS.skip.has('budget')) {

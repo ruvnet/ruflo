@@ -1,0 +1,4 @@
+# ADR-509: every plugin file is checked out byte-for-byte as committed, so a
+# Windows clone (core.autocrlf=true by default) hashes the same as the signed
+# release digests in .claude-plugin/signature.json. No line-ending conversion.
+** -text

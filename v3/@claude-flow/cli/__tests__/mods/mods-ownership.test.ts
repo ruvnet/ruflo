@@ -123,7 +123,7 @@ describe('ADR-404 session start', () => {
     const world = memoryWorld('/work', CLASSIC);
     (world.files as Map<string, any>).set('/work/.claude/helpers/hook-handler.cjs', { text: '... RUFLO_MODS_OWNS ...', mtimeMs: 1 });
     const { mod } = await start(world);
-    expect(world.env.get('RUFLO_MODS_OWNS')).toBe('route,post-edit');
+    expect(world.env.get('RUFLO_MODS_OWNS')).toBe('route,post-edit,learning-loop');
     expect(world.commands).toEqual(['ruflo-mods']);
     const beat = JSON.parse((world.files as Map<string, any>).get('/work/.claude-flow/mods/session.json').text);
     expect(beat.owned).toEqual(['route', 'post-edit']);
@@ -131,11 +131,18 @@ describe('ADR-404 session start', () => {
     expect(r.text).toContain('owns:        route, post-edit');
   });
 
-  it('with an older helper: stands down, sets nothing', async () => {
+  it('with an older helper: stands down, owns nothing, and only says it records the turns (ADR-512)', async () => {
     const world = memoryWorld('/work', CLASSIC);
     (world.files as Map<string, any>).set('/work/.claude/helpers/hook-handler.cjs', { text: 'old helper', mtimeMs: 1 });
     await start(world);
-    expect(world.env.has('RUFLO_MODS_OWNS')).toBe(false);
+    expect(world.env.get('RUFLO_MODS_OWNS')).toBe('learning-loop');
+  });
+
+  it('with the learning loop off, the handshake names only the owned events', async () => {
+    const world = memoryWorld('/work', CLASSIC);
+    (world.files as Map<string, any>).set('/work/.claude/helpers/hook-handler.cjs', { text: 'RUFLO_MODS_OWNS', mtimeMs: 1 });
+    await start(world, { learningLoop: false });
+    expect(world.env.get('RUFLO_MODS_OWNS')).toBe('route,post-edit');
   });
 
   it('stands down when either copy a hook could run is too old (new project helper, old $HOME helper)', async () => {
@@ -144,7 +151,9 @@ describe('ADR-404 session start', () => {
     (world.files as Map<string, any>).set('/work/.claude/helpers/hook-handler.cjs', { text: 'RUFLO_MODS_OWNS', mtimeMs: 1 });
     (world.files as Map<string, any>).set('/home/u/.claude/helpers/hook-handler.cjs', { text: 'old', mtimeMs: 1 });
     await start(world);
-    expect(world.env.has('RUFLO_MODS_OWNS')).toBe(false);
+    // The classic route keeps running, from the new project helper: `learning-loop` stops it recording the turns
+    // the mod records too (ADR-512).
+    expect(world.env.get('RUFLO_MODS_OWNS')).toBe('learning-loop');
   });
 
   it('checks the $HOME helper settings-generator hookCmd falls back to', async () => {
@@ -152,7 +161,7 @@ describe('ADR-404 session start', () => {
     world.env.set('HOME', '/home/u');
     (world.files as Map<string, any>).set('/home/u/.claude/helpers/hook-handler.cjs', { text: 'RUFLO_MODS_OWNS', mtimeMs: 1 });
     await start(world);
-    expect(world.env.get('RUFLO_MODS_OWNS')).toBe('route,post-edit');
+    expect(world.env.get('RUFLO_MODS_OWNS')).toBe('route,post-edit,learning-loop');
   });
 
   it('when settings cannot be read: owns nothing and the session still starts', async () => {
@@ -239,7 +248,7 @@ describe('ADR-404 no double fire with the real classic hooks', () => {
     const world = realWorld(project, CLASSIC);
     const { mod } = await start(world);
     const env = Object.fromEntries(world.env);
-    expect(env.RUFLO_MODS_OWNS).toBe('route,post-edit');
+    expect(env.RUFLO_MODS_OWNS).toBe('route,post-edit,learning-loop');
     const event = { tool_name: 'Edit', tool_input: { file_path: join(project, 'a.ts') }, tool_use_id: 'tu-1', session_id: 's1' };
 
     await mod.dispatch('tool.call', { tool: 'Edit', tool_use_id: 'tu-1', file_path: join(project, 'a.ts') }, () => {

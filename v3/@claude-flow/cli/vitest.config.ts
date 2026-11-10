@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
@@ -57,6 +57,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['__tests__/**/*.test.ts'],
+    // The real-binary tier (ADR-504) needs the `claude` binary; it has its own config and CI job
+    // (vitest.real-binary.config.ts, `npm run test:real-binary`, mods-real-binary in mod-guidance.yml).
+    exclude: [...configDefaults.exclude, '__tests__/real-binary/**'],
     globals: true,
     // Vitest's 5s default is unrealistic for this suite: a number of the
     // memory/intelligence tests initialise a real ONNX embedder and a SQLite

@@ -3,6 +3,7 @@ name: cost-health
 description: Composite CI gate — runs cost-budget-check + cost-burn + cost-anomaly + cost-projection in parallel and surfaces a single combined health status with max exit code. The operationally-useful entry point — one shell-out covers all four alert ladders.
 argument-hint: "[--alert-acceleration 100] [--alert-outliers 1] [--alert-days-to-exhaust 14] [--skip burn,anomaly] [--format table|json]"
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 The four CI-gate skills (budget / burn / anomaly / projection) each answer

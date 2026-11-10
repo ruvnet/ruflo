@@ -515,6 +515,11 @@ export class MCPServer extends EventEmitter implements IMCPServer {
       );
     }
 
+    // #4674: the server answers every client through one currentSession, so a
+    // session it has superseded is never addressed again; it only holds a slot
+    // until expiry. Short-lived clients exhausted maxSessions that way. Retire
+    // the least recently active superseded session instead of refusing.
+    this.sessionManager.reserveCapacity(this.currentSession?.id);
     const session = this.sessionManager.createSession(this.config.transport);
     this.sessionManager.initializeSession(session.id, params);
     this.currentSession = session;
@@ -1045,6 +1050,7 @@ export class MCPServer extends EventEmitter implements IMCPServer {
       return this.currentSession;
     }
 
+    this.sessionManager.reserveCapacity();
     const session = this.sessionManager.createSession(this.config.transport);
     this.currentSession = session;
     return session;

@@ -1,14 +1,15 @@
 {
   "manifest": {
-    "version": "3.59.12",
+    "version": "3.74.1",
     "files": {
-      "auto-memory-hook.mjs": "631fac9d518835e2852a406888316bbbddddb49e7ed8e406d2e971f46833df9a",
-      "hook-handler.cjs": "24502a3bcb78770971147940515c992e35b6736ae14ee2dc54e07d4cdef6a1d8",
-      "intelligence.cjs": "1d981d6c6a35d70a66450e96458e26169e0cede11523ea246a2c129c197a5b4e",
-      "statusline.cjs": "d72417ecb38634011a19f095a30e07b9929e6f97663520172ece9be7491b2eaa",
-      "router.cjs": "16648b3c0d73b6681ac2d8d13def6a68286c57f5a11004de5b19a0fa088c833d"
+      "auto-memory-hook.mjs": "2434c33ec1adc001b902a9eab16414d2d20ceb1c900aa84220fa220554a30336",
+      "hook-handler.cjs": "31db0f7492fbd8b2e48ea9adbc1ba293dfed1e006666d20e93ea76e158986947",
+      "intelligence.cjs": "ffdcfa6d2665a16e417dedd5bc67080c8192820f76265de5013fcb49f668ec71",
+      "statusline.cjs": "284b95629ced4340667872b977de3f2beac90fc6bb7ab1a62dd7f7ae75c5e5d1",
+      "router.cjs": "16648b3c0d73b6681ac2d8d13def6a68286c57f5a11004de5b19a0fa088c833d",
+      "learning-loop.cjs": "d046cd6f8efb7dd40e1d2451516c181fc8b26477aefb1124c0df5f52a23f9190"
     }
   },
-  "signature": "3W2msAbKXT6nAWSCviEGsLg0KdwT5VcWkBTndXg9RgKY56YkGiwjE8sL0eBI/m5iaGbdHqUOQVbibaBNJkdQAg==",
+  "signature": "bMoqVxEdQNjBMlt9xsJ+dFhJBT8/81zWECoLksuk7WVP80R07P9wMdCw6wMWLgbLrROAMTns5ZJeedl375jACw==",
   "algorithm": "ed25519"
 }

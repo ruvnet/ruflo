@@ -1,6 +1,6 @@
 ---
 name: harness-score
-description: 5-dimension harness readiness scorecard from `metaharness score {path}`. Returns harnessFit / compileConfidence / taskCoverage / toolSafety / memoryUsefulness + estCostPerRunUsd + scaffoldReady. Pure-read; subprocess invocation; degrades gracefully when MetaHarness is absent (ADR-150 architectural constraint).
+description: 5-dimension harness readiness scorecard from `metaharness score {path}` (harnessFit, compileConfidence, taskCoverage, toolSafety, memoryUsefulness, plus cost per run). Use when rating a repo as an agent harness. Pure-read; degrades gracefully without MetaHarness.
 argument-hint: "[--path .] [--alert-on-fit-below 70] [--format table|json]"
 allowed-tools: Bash
 ---

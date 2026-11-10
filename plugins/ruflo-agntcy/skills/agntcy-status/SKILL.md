@@ -1,8 +1,9 @@
 ---
 name: agntcy-status
-description: Show AGNTCY/SLIM/CASA integration status — whether the optional SLIM runtime package is installed, whether a SLIM endpoint is configured, which transport is the default, and what the agntcy mod has seen this session. Use when the user asks "is AGNTCY configured?", "show SLIM/CASA status", or "is AGNTCY/IOC integration active?". Read-only; makes no network call.
+description: "Show AGNTCY/SLIM/CASA integration status: whether the SLIM runtime is installed, an endpoint configured, which transport is default, and what the agntcy mod saw this session. Use when the user asks whether AGNTCY is configured. Read-only; no network call."
 allowed-tools: Read Bash
 argument-hint: ""
+disable-model-invocation: true
 ---
 
 Report what can be measured on this machine, and say "unknown" for anything that cannot. Never invent a healthy status.

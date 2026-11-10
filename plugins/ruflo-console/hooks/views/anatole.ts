@@ -20,7 +20,7 @@ function subhead(ctx: Ctx, title: string, right = ''): RenderElement {
   const tail = right === '' ? '' : ` ${right} `
   const fill = Math.max(2, ctx.columns - 12 - head.length - tail.length)
 
-  return row(ctx, [ctx.kit.Text({ bold: true, color: THEME.head, children: head }), ctx.kit.Text({ dimColor: true, children: '─'.repeat(fill) }), ...(tail === '' ? [] : [ctx.kit.Text({ dimColor: true, children: tail })])])
+  return row(ctx, [ctx.kit.Text({ weight: 'semibold', color: THEME.head, children: head }), ctx.kit.Text({ dimColor: true, children: '─'.repeat(fill) }), ...(tail === '' ? [] : [ctx.kit.Text({ dimColor: true, children: tail })])])
 }
 
 /** An explanation under a block: dim, wrapped (never clipped), indented one column. */
@@ -48,7 +48,7 @@ export function anatoleMeterLine(facts: AnatoleFacts | undefined): string | null
 }
 
 const chipRow = <T extends string>(ctx: Ctx, label: string, keyOf: string, options: readonly T[], current: T | null, press: (value: T) => void): RenderElement =>
-  row(ctx, [text(ctx, ` ${label} `, { bold: true, color: THEME.head }), ...options.map(option => ctx.kit.Button({ key: `${keyOf}-${option}`, label: ` ${option} `, ...(option === current ? { variant: 'primary' as const } : { plain: true, dimColor: true }), onPress: () => press(option) }))], `${keyOf}-row`)
+  row(ctx, [text(ctx, ` ${label} `, { weight: 'semibold', color: THEME.head }), ...options.map(option => ctx.kit.Button({ key: `${keyOf}-${option}`, label: ` ${option} `, ...(option === current ? { variant: 'primary' as const } : { plain: true, dimColor: true }), onPress: () => press(option) }))], `${keyOf}-row`)
 
 function statusRows(ctx: Ctx, facts: AnatoleFacts): RenderElement[] {
   const status = facts.status
@@ -67,7 +67,7 @@ function statusRows(ctx: Ctx, facts: AnatoleFacts): RenderElement[] {
 
   rows.push(
     row(ctx, [
-      text(ctx, ` mode ${status.mode ?? 'unknown'}${facts.modeOverride !== null && facts.modeOverride !== status.mode ? ` (rules.json asks for ${facts.modeOverride})` : ''}`, { bold: true, color: status.mode === 'enforce' ? THEME.warn : THEME.ok }),
+      text(ctx, ` mode ${status.mode ?? 'unknown'}${facts.modeOverride !== null && facts.modeOverride !== status.mode ? ` (rules.json asks for ${facts.modeOverride})` : ''}`, { weight: 'semibold', color: status.mode === 'enforce' ? THEME.warn : THEME.ok }),
       text(ctx, ` · baseline ${base === null ? 'n/a' : `${base.state} ${base.maturity}% `}`, { color: THEME.info }),
       ...(base === null ? [] : [text(ctx, `${'█'.repeat(filled)}${'░'.repeat(width - filled)}`, { color: base.state === 'mature' ? THEME.ok : THEME.warn })]),
       text(ctx, base === null ? '' : ` ${base.events} events · ${base.sessions} sessions`, { dimColor: true }),
@@ -75,10 +75,10 @@ function statusRows(ctx: Ctx, facts: AnatoleFacts): RenderElement[] {
   )
   rows.push(
     row(ctx, [
-      text(ctx, ` open ${status.open.total}:`, { bold: status.open.total > 0, color: status.open.total > 0 ? THEME.warn : THEME.ok }),
+      text(ctx, ` open ${status.open.total}:`, { weight: (status.open.total > 0) ? 'semibold' : 'regular', color: status.open.total > 0 ? THEME.warn : THEME.ok }),
       ...ALERT_SEVERITIES.map(level => text(ctx, ` ${status.open[level]} ${level}`, status.open[level] > 0 ? { color: SEV_COLOR[level]() } : { dimColor: true })),
       text(ctx, ` · blocked ${status.blocked} · calls ${status.calls}`, { dimColor: true }),
-      ...(status.degraded !== false ? [text(ctx, ` · degraded: ${status.degraded}`, { bold: true, color: THEME.bad })] : []),
+      ...(status.degraded !== false ? [text(ctx, ` · degraded: ${status.degraded}`, { weight: 'semibold', color: THEME.bad })] : []),
     ], 'anatole-status-b'),
   )
   rows.push(text(ctx, ` ${UNAUTH} · written ${ago(status.updatedMs, ctx.nowMs)}${stale ? ' (an earlier session)' : ''}`, { dimColor: true }))
@@ -96,7 +96,7 @@ function ruleList(ctx: Ctx, facts: AnatoleFacts): RenderElement[] {
     row(ctx, [text(ctx, ' ID      ', { dimColor: true }), text(ctx, 'SEVERITY '.padEnd(9), { dimColor: true }), text(ctx, 'RULE'.padEnd(lead), { dimColor: true }), text(ctx, ' OWASP'.padEnd(20), { dimColor: true }), text(ctx, ' MODE · RECORD', { dimColor: true })], 'anatole-rules-head'),
     ...rows.map(item =>
       row(ctx, [
-        text(ctx, ` ${item.meta.id} `, { bold: true, color: THEME.head }),
+        text(ctx, ` ${item.meta.id} `, { weight: 'semibold', color: THEME.head }),
         text(ctx, `${item.meta.severity.padEnd(8)} `, { color: SEV_COLOR[item.meta.severity]() }),
         ctx.kit.Text({ color: THEME.info, wrap: 'truncate-end', children: clip(`${item.meta.title}`, lead).padEnd(lead) }),
         text(ctx, ` ${item.meta.owasp.join(',')}`.padEnd(20), { dimColor: true }),
@@ -119,8 +119,8 @@ function alertRows(ctx: Ctx, alerts: readonly AnatoleAlert[]): RenderElement[] {
     head,
     ...open.flatMap(alert => [
       row(ctx, [
-        text(ctx, ` ${alert.severity.padEnd(9)}`, { bold: true, color: SEV_COLOR[alert.severity]() }),
-        text(ctx, `${alert.rule} ${alert.action === 'blocked' ? 'blocked' : 'notified'} `, { bold: true }),
+        text(ctx, ` ${alert.severity.padEnd(9)}`, { weight: 'semibold', color: SEV_COLOR[alert.severity]() }),
+        text(ctx, `${alert.rule} ${alert.action === 'blocked' ? 'blocked' : 'notified'} `, { weight: 'semibold' }),
         text(ctx, ` ${ago(alert.atMs, ctx.nowMs)} `, { dimColor: true }),
         button(ctx, `anatole-ack-${alert.id}`, 'ack', () => void ctx.act.run('anatole-ack', alert.id)),
         ...(alert.fp === null ? [] : [button(ctx, `anatole-allow-${alert.fp}`, 'allow', () => void ctx.act.run('anatole-allow', alert.fp ?? ''))]),

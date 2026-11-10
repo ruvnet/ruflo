@@ -28,6 +28,12 @@ import { mkdirSync, realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { validateFeedbackPatterns } from './feedback-patterns.js';
+import {
+  DEFAULT_EMBEDDING_MODEL,
+  resolveEffectiveEmbeddingConfig,
+  resolveEmbeddingConfig,
+  type EmbeddingConfig,
+} from './embedding-config.js';
 
 // ===== Lazy registry cache, keyed by database path =====
 
@@ -48,6 +54,25 @@ import { validateFeedbackPatterns } from './feedback-patterns.js';
  */
 const registryPromises = new Map<string, Promise<any>>();
 const registryInstances = new Map<string, any>();
+
+/**
+ * #2305: the embedding model/dimension the AgentDB registry was opened with —
+ * `.claude-flow/embeddings.json`, or the store's recorded dimension when that
+ * differs. Falls back to the configured value before any registry opened.
+ */
+let bridgeEmbeddingConfig: EmbeddingConfig | null = null;
+
+function activeEmbeddingConfig(): EmbeddingConfig {
+  return bridgeEmbeddingConfig ?? resolveEmbeddingConfig(process.cwd());
+}
+
+/** Model name recorded next to a vector of `dimension` length. */
+function embeddingModelLabel(dimension: number): string {
+  const cfg = activeEmbeddingConfig();
+  if (dimension === cfg.dimension) return cfg.model;
+  // Unchanged pre-#2305 label for any other size.
+  return DEFAULT_EMBEDDING_MODEL;
+}
 // One lease spans an entire bridge operation, including its awaited controller
 // effects and nested bridge calls. Initializer ownership alone is insufficient:
 // a ReasoningBank write can still be pending after its registry has opened.
@@ -242,6 +267,17 @@ export function shouldSuppressInitLog(msg: string): boolean {
  * Lazily initialize the ControllerRegistry singleton.
  * Returns null if @claude-flow/memory is not available.
  */
+/**
+ * Why the registry's AgentDB did not open, or null when it did (#4622).
+ * Read from the registry's own record (@claude-flow/memory >= 3.2.0); an
+ * older registry has none, and nothing changes for it.
+ */
+function agentdbInitFailure(registry: any, resolvedPath: string): string | null {
+  if (typeof registry?.getAgentDBInitError !== 'function') return null;
+  const reason = registry.getAgentDBInitError();
+  return typeof reason === 'string' && reason ? `AgentDB did not open ${resolvedPath}: ${reason}` : null;
+}
+
 async function getRegistry(dbPath?: string): Promise<any | null> {
   if (shouldDisableNativeBridge()) return null;
   if (testRegistryOverride) return testRegistryOverride;
@@ -277,11 +313,22 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
         // lifetime and hierarchical memory silently ran volatile.
         try {
           if (resolvedPath !== ':memory:') mkdirSync(path.dirname(resolvedPath), { recursive: true });
+          // Check memory.db as well as this store: the memory path mirrors
+          // the same vectors into both, so an old 384-dim memory.db must keep
+          // an empty agentdb-memory.db at 384 too (same order as the
+          // initializer, so both converge on one answer).
+          const embCfg = await resolveEffectiveEmbeddingConfig({
+            root: process.cwd(),
+            dbPaths: resolvedPath === ':memory:'
+              ? []
+              : [path.join(path.dirname(resolvedPath), 'memory.db'), resolvedPath],
+          });
+          bridgeEmbeddingConfig = embCfg;
           await (registry as any).initialize({
             // #2786: use agentdb-memory.db (plaintext) so native better-sqlite3 doesn't hit the encrypted memory.db.
             dbPath: resolvedPath,
-            embeddingModel: 'Xenova/all-MiniLM-L6-v2',
-            dimension: 384,
+            embeddingModel: embCfg.model,
+            dimension: embCfg.dimension,
             vectorBackend: 'auto',
             controllers: {
               reasoningBank: true,
@@ -503,6 +550,11 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
 
         registryInstances.set(resolvedPath, registry);
         bridgeFailureReasons.delete(resolvedPath);
+        // #4622: the registry survives an AgentDB open failure (its other
+        // controllers still work), but every database operation then falls
+        // back to sql.js. Record why, so the fallback's own refusal names it.
+        const agentdbFailure = agentdbInitFailure(registry, resolvedPath);
+        if (agentdbFailure) bridgeFailureReasons.set(resolvedPath, agentdbFailure);
         return registry;
       } catch (err) {
         // initialize() may have opened a native handle before it failed.
@@ -526,6 +578,7 @@ export function _resetRegistryCacheForTest(): void {
   testRegistryOverride = null;
   testRegistryFactory = null;
   bridgeFailureReasons.clear();
+  bridgeEmbeddingConfig = null;
 }
 
 /** Inject registry construction without requiring the optional native package in tests. */
@@ -959,9 +1012,23 @@ export async function rescueAgentdbEmbedder(agentdb: { embedder?: { pipeline?: u
       ? out.embedding
       : new Float32Array((out.embedding as number[]) ?? []);
   };
-  emb.embed = newEmbed;
-  emb.embedBatch = async (texts: string[]): Promise<Float32Array[]> =>
+  const newBatch = async (texts: string[]): Promise<Float32Array[]> =>
     Promise.all(texts.map(t => newEmbed(t)));
+  emb.embed = newEmbed;
+  emb.embedBatch = newBatch;
+  // #4643: agentdb 3.x's ReasoningBank calls embedQuery()/embedPassage(),
+  // which route through embedFor() → generateEmbedding() → mockEmbedding()
+  // and never touch embed(). Patch the role methods too, or the rescue never
+  // reaches pattern store/search. The model is symmetric, so both roles share
+  // one function; drop any mock vectors already cached under the old space.
+  const roles = emb as typeof emb & {
+    embedQuery?: unknown; embedPassage?: unknown; embedQueryBatch?: unknown; embedPassageBatch?: unknown; clearCache?: () => void;
+  };
+  if (typeof roles.embedQuery === 'function') roles.embedQuery = newEmbed;
+  if (typeof roles.embedPassage === 'function') roles.embedPassage = newEmbed;
+  if (typeof roles.embedQueryBatch === 'function') roles.embedQueryBatch = newBatch;
+  if (typeof roles.embedPassageBatch === 'function') roles.embedPassageBatch = newBatch;
+  try { roles.clearCache?.(); } catch { /* best-effort */ }
   emb.__ruvectorRescued = true;
 }
 
@@ -1003,7 +1070,7 @@ async function embedForBridge(
     try {
       const emb = await embedder.embed(text);
       if (emb && emb.length > 0) {
-        return { vector: Array.from(emb), model: 'Xenova/all-MiniLM-L6-v2' };
+        return { vector: Array.from(emb), model: embeddingModelLabel(emb.length) };
       }
       agentdbProblem = 'agentdb embedder returned no vector';
     } catch (err) {
@@ -1038,6 +1105,8 @@ export async function bridgeStoreEntry(options: {
   namespace?: string;
   generateEmbeddingFlag?: boolean;
   tags?: string[];
+  /** #1426: JSON object persisted to the metadata column. */
+  metadata?: Record<string, unknown>;
   ttl?: number;
   dbPath?: string;
   upsert?: boolean;
@@ -1212,7 +1281,7 @@ export async function bridgeStoreEntry(options: {
       id, key, namespace, value,
       embeddingJson, dimensions || null, model,
       tags.length > 0 ? JSON.stringify(tags) : null,
-      '{}',
+      JSON.stringify(options.metadata ?? {}),
       provenanceType,
       now, now,
       ttl ? now + (ttl * 1000) : null
@@ -1656,15 +1725,38 @@ export async function bridgeListEntries(options: {
     // List
     const entries: any[] = [];
     try {
-      // Include tags so export/list can round-trip them.
-      const stmt = ctx.db.prepare(`
-        SELECT id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type, expires_at, tags
+      const columns = 'id, key, namespace, content, embedding, access_count, created_at, updated_at, provenance_type, expires_at, tags';
+      const listLimit = options.includeEmbedding ? Math.min(safeLimit, MAX_LIST_EMBEDDINGS) : safeLimit;
+      // #4686: sort only row identities first, then fetch the payload for the
+      // page. The old query sorted full `content`/`embedding` payloads for
+      // every row and discarded all but the requested page.
+      const pagedSql = `
+        SELECT ${columns}
+        FROM memory_entries
+        WHERE _rowid_ IN (
+          SELECT _rowid_
+          FROM memory_entries
+          WHERE ${statusFilter} ${extraFilter}
+          ORDER BY updated_at DESC
+          LIMIT ? OFFSET ?
+        )
+        ORDER BY updated_at DESC
+      `;
+      const originalSql = `
+        SELECT ${columns}
         FROM memory_entries
         WHERE ${statusFilter} ${extraFilter}
         ORDER BY updated_at DESC
         LIMIT ? OFFSET ?
-      `);
-      const rows = stmt.all(...filterParams, options.includeEmbedding ? Math.min(safeLimit, MAX_LIST_EMBEDDINGS) : safeLimit, safeOffset);
+      `;
+      let rows: any[];
+      try {
+        rows = ctx.db.prepare(pagedSql).all(...filterParams, listLimit, safeOffset);
+      } catch {
+        // WITHOUT ROWID/legacy tables have no _rowid_: preserve the original
+        // query rather than failing the page.
+        rows = ctx.db.prepare(originalSql).all(...filterParams, listLimit, safeOffset);
+      }
       for (const row of rows) {
         let tags: string[] = [];
         if (row.tags) {
@@ -2036,18 +2128,19 @@ export async function bridgeGenerateEmbedding(
     // yet) and silently fall back to a 128-dim hash stub. The embedder doesn't
     // expose isMock=true in that path, so the wrapper above was reporting
     // backend='onnx' on what's actually 128-dim hash garbage. The model name
-    // we hardcode ('Xenova/all-MiniLM-L6-v2') always produces 384-dim, so a
-    // dimensions mismatch is a definitive stub signal: return null and let
-    // the caller fall through to generateLocalEmbedding which routes to
-    // transformers.js / ruvector ONNX directly.
-    if (emb.length !== 384) {
+    // the registry was opened with (#2305: from embeddings.json, default
+    // MiniLM/384) has a fixed dimension, so a dimensions mismatch is a
+    // definitive stub signal: return null and let the caller fall through to
+    // generateLocalEmbedding which routes to transformers.js / ruvector ONNX.
+    const embCfg = activeEmbeddingConfig();
+    if (emb.length !== embCfg.dimension) {
       return null;
     }
 
     return {
       embedding: Array.from(emb),
       dimensions: emb.length,
-      model: 'Xenova/all-MiniLM-L6-v2',
+      model: embCfg.model,
       backend: isMock ? 'mock' : 'onnx',
     };
   } catch {
@@ -2084,7 +2177,7 @@ export async function bridgeLoadEmbeddingModel(
     return {
       success: true,
       dimensions: test.length,
-      modelName: 'Xenova/all-MiniLM-L6-v2',
+      modelName: embeddingModelLabel(test.length),
       loadTime: Date.now() - startTime,
     };
   } catch {
@@ -2351,7 +2444,7 @@ export async function bridgeAddEmbedding(
         id, key, namespace, content, type,
         embedding, embedding_dimensions, embedding_model,
         created_at, updated_at, status
-      ) VALUES (?, ?, ?, ?, 'semantic', ?, ?, 'Xenova/all-MiniLM-L6-v2', ?, ?, 'active')
+      ) VALUES (?, ?, ?, ?, 'semantic', ?, ?, ?, ?, ?, 'active')
       ON CONFLICT(namespace, key) DO UPDATE SET
         id                   = excluded.id,
         content              = excluded.content,
@@ -2363,7 +2456,7 @@ export async function bridgeAddEmbedding(
         status               = 'active'
     `).run(
       id, entry.key, entry.namespace, entry.content,
-      embeddingJson, embedding.length,
+      embeddingJson, embedding.length, embeddingModelLabel(embedding.length),
       now, now,
     );
     return true;
@@ -2436,7 +2529,9 @@ export async function bridgeListControllers(
 export async function isBridgeAvailable(dbPath?: string): Promise<boolean> {
   if (!operationContext.getStore()?.active) return withBridgeOperation(() => isBridgeAvailable(dbPath));
   const registry = await getRegistry(dbPath);
-  return registry !== null;
+  if (registry === null) return false;
+  // #4622: a registry whose AgentDB failed to open serves no stored memory.
+  return agentdbInitFailure(registry, canonicalDbPath(dbPath)) === null;
 }
 
 /**
@@ -2485,6 +2580,7 @@ export function __setMemoryBridgeRegistryForTests(registry: any | null): void {
   testRegistryOverride = registry;
   testRegistryFactory = null;
   bridgeFailureReasons.clear();
+  bridgeEmbeddingConfig = null;
 }
 
 /**
@@ -2569,6 +2665,39 @@ export async function bridgeStorePattern(options: {
       };
     }
 
+    // The intelligence module's LocalReasoningBank (registered when agentdb's
+    // own ReasoningBank is unavailable) has store()/findSimilar() but no
+    // storePattern(). bridgeSearchPatterns reads it through findSimilar(), so
+    // the write must land there too, with an embedding from the same
+    // generateEmbedding() the search uses. Otherwise store and search split
+    // across two backends and a stored pattern is never found.
+    if (reasoningBank && typeof reasoningBank.store === 'function' && typeof reasoningBank.findSimilar === 'function') {
+      let embedding: number[] = [];
+      try {
+        const { generateEmbedding } = await import('./memory-initializer.js');
+        const emb = await generateEmbedding(options.pattern);
+        if (emb && Array.isArray(emb.embedding)) embedding = emb.embedding;
+      } catch { /* no embedder — findSimilar misses it, the getAll() substring scan still finds it */ }
+      // store() returns false when it merges into an existing pattern with the
+      // same content; that is still a successful write.
+      reasoningBank.store({
+        id: patternId,
+        type: options.type,
+        content: options.pattern,
+        confidence: options.confidence,
+        embedding,
+        metadata: options.metadata,
+      });
+      // Saves are debounced; a short-lived CLI process can exit first.
+      if (typeof reasoningBank.flushToDisk === 'function') reasoningBank.flushToDisk();
+      return {
+        success: true,
+        patternId,
+        controller: 'reasoningBank',
+        hasEmbedding: embedding.length > 0,
+      };
+    }
+
     // Fallback: store via bridge SQL
     const patternValue = JSON.stringify({ pattern: options.pattern, type: options.type, confidence: options.confidence, metadata: options.metadata });
     const result = await bridgeStoreEntry({
@@ -2633,14 +2762,48 @@ export async function bridgeStorePattern(options: {
 }
 
 /**
+ * Case-insensitive substring match over agentdb's reasoning_patterns table —
+ * the rows ReasoningBank.storePattern() writes. Used only when the vector
+ * search returns nothing. Returns no rows (and no error) when there is no
+ * database handle to scan.
+ *
+ * #4714: a read that throws is reported through `error`, not turned into an
+ * empty list. The pattern-search handler reports an error-free empty result
+ * as a healthy no-match, so a SQL failure must not look like one.
+ */
+function substringSearchReasoningPatterns(
+  registry: any,
+  query: string,
+  k: number,
+): { rows: Array<{ id: string; content: string; score: number }>; error?: string } {
+  const db = registry?.getAgentDB?.()?.database;
+  if (!db || typeof db.prepare !== 'function') return { rows: [] };
+  try {
+    const like = `%${query.toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const rows = db.prepare(
+      "SELECT id, approach, success_rate FROM reasoning_patterns WHERE lower(approach) LIKE ? ESCAPE '\\' ORDER BY id DESC LIMIT ?",
+    ).all(like, k) as Array<{ id: number; approach: string; success_rate: number }>;
+    return { rows: rows.map((r) => ({ id: String(r.id), content: r.approach, score: r.success_rate ?? 0 })) };
+  } catch (err) {
+    return { rows: [], error: `reasoning_patterns substring scan failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+/**
  * Search patterns via ReasoningBank controller.
+ *
+ * Returns null when no registry is available. With `controller:
+ * 'reasoningBank'`, an empty `results` and no `error` means the controller
+ * ran and found nothing. #4714: when the controller throws, returns a
+ * non-array, or the substring scan fails, the result carries `error` so the
+ * caller cannot mistake the failure for a no-match.
  */
 export async function bridgeSearchPatterns(options: {
   query: string;
   topK?: number;
   minConfidence?: number;
   dbPath?: string;
-}): Promise<{ results: Array<{ id: string; content: string; score: number }>; controller: string } | null> {
+}): Promise<{ results: Array<{ id: string; content: string; score: number }>; controller: string; error?: string } | null> {
   if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeSearchPatterns(options));
   const registry = await getRegistry(options.dbPath);
   if (!registry) return null;
@@ -2651,10 +2814,25 @@ export async function bridgeSearchPatterns(options: {
     // ReasoningBank may expose .searchPatterns() (agentdb) or .search() (legacy) (#1492 Bug 2)
     if (reasoningBank && typeof (reasoningBank.searchPatterns ?? reasoningBank.search) === 'function') {
       let results: any;
-      if (typeof reasoningBank.searchPatterns === 'function') {
-        results = await reasoningBank.searchPatterns({ task: options.query, k: options.topK || 5, threshold: options.minConfidence || 0.3 });
-      } else {
-        results = await reasoningBank.search(options.query, { topK: options.topK || 5, minScore: options.minConfidence || 0.3 });
+      try {
+        if (typeof reasoningBank.searchPatterns === 'function') {
+          results = await reasoningBank.searchPatterns({ task: options.query, k: options.topK || 5, threshold: options.minConfidence || 0.3 });
+        } else {
+          results = await reasoningBank.search(options.query, { topK: options.topK || 5, minScore: options.minConfidence || 0.3 });
+        }
+      } catch (err) {
+        // #4714 — report the failure with the result instead of a bare null,
+        // which callers read as "no registry". Still recorded for agentdb_health.
+        const message = err instanceof Error ? err.message : String(err);
+        bridgeFailureReasons.set(canonicalDbPath(options.dbPath), message);
+        return { results: [], controller: 'reasoningBank', error: `ReasoningBank search failed: ${message}` };
+      }
+      if (!Array.isArray(results)) {
+        return {
+          results: [],
+          controller: 'reasoningBank',
+          error: `ReasoningBank search returned a non-array result (${results === null ? 'null' : typeof results})`,
+        };
       }
       // #3327 Finding A — agentdb returns ReasoningPattern[]: the text lives in
       // `approach` and the cosine score in `similarity`. Neither `content`/
@@ -2662,14 +2840,21 @@ export async function bridgeSearchPatterns(options: {
       // mapping produced `content: ''` and `score: 0` for every hit even when
       // the search itself succeeded. Read the real fields first, keeping the
       // legacy names as fallbacks for the pre-agentdb shape.
-      return {
-        results: Array.isArray(results) ? results.map((r: any) => ({
-          id: String(r.id ?? r.patternId ?? ''),
-          content: r.approach ?? r.content ?? r.pattern ?? '',
-          score: r.similarity ?? r.score ?? r.successRate ?? r.confidence ?? 0,
-        })) : [],
-        controller: 'reasoningBank',
-      };
+      const mapped = results.map((r: any) => ({
+        id: String(r.id ?? r.patternId ?? ''),
+        content: r.approach ?? r.content ?? r.pattern ?? '',
+        score: r.similarity ?? r.score ?? r.successRate ?? r.confidence ?? 0,
+      }));
+      if (mapped.length > 0) return { results: mapped, controller: 'reasoningBank' };
+      // #4643 — with agentdb's mock embedder (Transformers.js failed to load:
+      // offline, or a failed `sharp` install) a passage and a query embed to
+      // unrelated hash vectors, so the vector search misses a pattern that
+      // storePattern just wrote. Scan the same reasoning_patterns table for the
+      // query text, as the LocalReasoningBank branch below does over getAll().
+      const scan = substringSearchReasoningPatterns(registry, options.query, options.topK || 5);
+      return scan.error
+        ? { results: scan.rows, controller: 'reasoningBank', error: scan.error }
+        : { results: scan.rows, controller: 'reasoningBank' };
     }
 
     // #2226 — the wired-in LocalReasoningBank implements store() + findSimilar()/getAll()
@@ -2708,7 +2893,10 @@ export async function bridgeSearchPatterns(options: {
           .map((p: any) => ({ id: p.id ?? '', content: p.content ?? '', score: p.confidence ?? 0 }));
       }
 
-      return { results: mapped, controller: 'reasoningBank' };
+      // Nothing in the bank: patterns written by the SQL fallback path (before
+      // the bank was registered, or by a process without it) live in the
+      // `pattern` namespace, so search that instead of returning empty.
+      if (mapped.length > 0) return { results: mapped, controller: 'reasoningBank' };
     }
 
     // Fallback: search via bridge
@@ -3225,6 +3413,110 @@ export async function bridgeDeleteCausalNode(options: {
   }
 }
 
+// ===== Episode recall (agentdb 3.2 hybrid retrieval, ADR-519) =====
+
+const EPISODE_TASK_MAX = 4_000;
+const EPISODE_TEXT_MAX = 2_000;
+const EPISODE_RECALL_MAX = 50;
+/** #3908: upper bound on the session-end NightlyLearner sweep. */
+const SESSION_END_CONSOLIDATE_TIMEOUT_MS = 10_000;
+
+export interface RecalledEpisode {
+  id?: number;
+  sessionId: string;
+  task: string;
+  critique?: string;
+  reward: number;
+  success: boolean;
+  similarity?: number;
+  tags?: string[];
+  ts?: number;
+}
+
+export interface EpisodeRecallOptions {
+  task: string;
+  k?: number;
+  /** Keyword + vector fusion. Default true (agentdb's own default). */
+  hybrid?: boolean;
+  /** Cross-encoder rerank. Default false: ~200 ms on CPU, 23 MB model on first use. */
+  rerank?: boolean;
+  onlySuccesses?: boolean;
+  onlyFailures?: boolean;
+  minReward?: number;
+  timeWindowDays?: number;
+}
+
+/** Null when the registry has no ReflexionMemory with retrieveRelevant. */
+async function recallEpisodesFrom(registry: any, options: EpisodeRecallOptions): Promise<RecalledEpisode[] | null> {
+  const reflexion = registry.get('reflexion');
+  if (!reflexion || typeof reflexion.retrieveRelevant !== 'function') return null;
+  const k = Math.min(Math.max(Math.trunc(options.k ?? 5), 1), EPISODE_RECALL_MAX);
+  const rows: any[] = await reflexion.retrieveRelevant({
+    task: options.task,
+    k,
+    hybrid: options.hybrid !== false,
+    rerank: options.rerank === true,
+    ...(options.onlySuccesses ? { onlySuccesses: true } : {}),
+    ...(options.onlyFailures ? { onlyFailures: true } : {}),
+    ...(typeof options.minReward === 'number' ? { minReward: options.minReward } : {}),
+    ...(typeof options.timeWindowDays === 'number' ? { timeWindowDays: options.timeWindowDays } : {}),
+  });
+  if (!Array.isArray(rows)) return [];
+  // Drop the embedding (1.5 KB of floats per row) and bound the text fields:
+  // this goes back over MCP.
+  return rows.slice(0, k).map(r => ({
+    ...(typeof r.id === 'number' ? { id: r.id } : {}),
+    sessionId: String(r.sessionId ?? ''),
+    task: String(r.task ?? '').slice(0, EPISODE_TEXT_MAX),
+    ...(r.critique ? { critique: String(r.critique).slice(0, EPISODE_TEXT_MAX) } : {}),
+    reward: Number(r.reward ?? 0),
+    success: !!r.success,
+    ...(typeof r.similarity === 'number' ? { similarity: Math.round(r.similarity * 1e4) / 1e4 } : {}),
+    ...(Array.isArray(r.tags) ? { tags: r.tags.slice(0, 20) } : {}),
+    ...(typeof r.ts === 'number' ? { ts: r.ts } : {}),
+  }));
+}
+
+/**
+ * Recall past episodes relevant to a task. Episodes come from session ends
+ * and from `memory distill`. Ranking is agentdb's keyword + vector fusion,
+ * optionally reranked by a local cross-encoder.
+ */
+export async function bridgeRecallEpisodes(options: EpisodeRecallOptions & { dbPath?: string }): Promise<{
+  success: boolean;
+  controller: string;
+  episodes: RecalledEpisode[];
+  hybrid: boolean;
+  rerank: boolean;
+} | null> {
+  if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeRecallEpisodes(options));
+  const registry = await getRegistry(options.dbPath);
+  if (!registry) return null;
+  const episodes = await recallEpisodesFrom(registry, options);
+  if (!episodes) return null;
+  return {
+    success: true,
+    controller: 'reflexion',
+    episodes,
+    hybrid: options.hybrid !== false,
+    rerank: options.rerank === true,
+  };
+}
+
+/**
+ * Run `fn` against the ReflexionMemory controller inside one bridge operation, so a shutdown waits
+ * for it (ADR-520). Null when the bridge or the controller is unavailable.
+ */
+export async function withReflexionController<T>(
+  dbPath: string | undefined,
+  fn: (reflexion: any) => Promise<T>,
+): Promise<T | null> {
+  if (!operationContext.getStore()?.active) return withBridgeOperation(() => withReflexionController(dbPath, fn));
+  const registry = await getRegistry(dbPath);
+  const reflexion = registry?.get?.('reflexion');
+  return reflexion ? fn(reflexion) : null;
+}
+
 // ===== Phase 5: ReflexionMemory session lifecycle =====
 
 /**
@@ -3235,11 +3527,17 @@ export async function bridgeSessionStart(options: {
   sessionId: string;
   context?: string;
   dbPath?: string;
+  /** Recall past session episodes relevant to `context`. Default false. */
+  recall?: boolean;
+  k?: number;
+  hybrid?: boolean;
+  rerank?: boolean;
 }): Promise<{
   success: boolean;
   controller: string;
   restoredPatterns: number;
   sessionId: string;
+  episodes?: RecalledEpisode[];
 } | null> {
   if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeSessionStart(options));
   const registry = await getRegistry(options.dbPath);
@@ -3249,21 +3547,35 @@ export async function bridgeSessionStart(options: {
     let restoredPatterns = 0;
     let controller = 'none';
 
-    // Try ReflexionMemory for episodic session replay
-    const reflexion = registry.get('reflexion');
-    if (reflexion && typeof reflexion.startEpisode === 'function') {
-      await reflexion.startEpisode(options.sessionId, { context: options.context });
-      controller = 'reflexion';
+    // Episodic replay: past session episodes relevant to this session's
+    // context, ranked by agentdb's keyword + vector search (agentdb ADR-016).
+    // Opt-in, because a recall costs an embedding call and a generic context
+    // ("new session") matches nothing in particular.
+    let episodes: RecalledEpisode[] | undefined;
+    if (options.recall && options.context) {
+      const recalled = await recallEpisodesFrom(registry, {
+        task: options.context, k: options.k, hybrid: options.hybrid, rerank: options.rerank,
+      });
+      if (recalled) {
+        episodes = recalled;
+        controller = 'reflexion';
+      }
     }
 
-    // Load recent patterns from past sessions
-    const searchResult = await bridgeSearchEntries({
-      query: options.context || 'session patterns',
-      namespace: 'session',
-      limit: 10,
-      threshold: 0.2,
-      dbPath: options.dbPath,
-    });
+    // Load recent patterns from past sessions. A failure here must not
+    // discard episodes already recalled above.
+    let searchResult: Awaited<ReturnType<typeof bridgeSearchEntries>> = null;
+    try {
+      searchResult = await bridgeSearchEntries({
+        query: options.context || 'session patterns',
+        namespace: 'session',
+        limit: 10,
+        threshold: 0.2,
+        dbPath: options.dbPath,
+      });
+    } catch (err) {
+      if (!episodes) throw err;
+    }
 
     if (searchResult?.results) {
       restoredPatterns = searchResult.results.length;
@@ -3274,6 +3586,7 @@ export async function bridgeSessionStart(options: {
       controller: controller === 'none' ? 'bridge-search' : controller,
       restoredPatterns,
       sessionId: options.sessionId,
+      ...(episodes ? { episodes } : {}),
     };
   } catch {
     return null;
@@ -3293,6 +3606,7 @@ export async function bridgeSessionEnd(options: {
   success: boolean;
   controller: string;
   persisted: boolean;
+  episodeId?: number;
 } | null> {
   if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeSessionEnd(options));
   const registry = await getRegistry(options.dbPath);
@@ -3302,47 +3616,95 @@ export async function bridgeSessionEnd(options: {
     let controller = 'none';
     let persisted = false;
 
-    // End episode in ReflexionMemory
+    // Store the session summary as a ReflexionMemory episode so a later
+    // session can recall it. Only a real summary is worth recalling. The
+    // outcome is unverified, so it is stored neutral (reward 0, not a success)
+    // and can never count as evidence that an approach worked (ADR-171).
+    let episodeId: number | undefined;
     const reflexion = registry.get('reflexion');
-    if (reflexion && typeof reflexion.endEpisode === 'function') {
-      await reflexion.endEpisode(options.sessionId, {
-        summary: options.summary,
-        tasksCompleted: options.tasksCompleted,
-        patternsLearned: options.patternsLearned,
+    if (options.summary && reflexion && typeof reflexion.storeEpisode === 'function') {
+      try {
+        const id = await reflexion.storeEpisode({
+          sessionId: options.sessionId,
+          task: options.summary.slice(0, EPISODE_TASK_MAX),
+          reward: 0,
+          success: false,
+          tags: ['session-end'],
+          metadata: {
+            source: 'session-end',
+            provenance: 'session-summary',
+            tasksCompleted: options.tasksCompleted ?? 0,
+            patternsLearned: options.patternsLearned ?? 0,
+          },
+        });
+        if (typeof id === 'number' && Number.isFinite(id)) {
+          episodeId = id;
+          controller = 'reflexion';
+          persisted = true;
+        }
+      } catch { /* non-fatal: the memory entry below still records the session */ }
+    }
+
+    // Persist session summary as memory entry. A failure here must not hide
+    // an episode that was already stored above.
+    let entryStored = false;
+    try {
+      await bridgeStoreEntry({
+        key: `session-${options.sessionId}`,
+        value: JSON.stringify({
+          sessionId: options.sessionId,
+          summary: options.summary || 'Session ended',
+          tasksCompleted: options.tasksCompleted ?? 0,
+          patternsLearned: options.patternsLearned ?? 0,
+          endedAt: new Date().toISOString(),
+        }),
+        namespace: 'session',
+        tags: ['session-end'],
+        upsert: true,
+        dbPath: options.dbPath,
       });
-      controller = 'reflexion';
+      entryStored = true;
+    } catch (err) {
+      if (episodeId === undefined) throw err;
+    }
+
+    if (entryStored) {
+      controller = controller === 'none' ? 'bridge-store' : controller + '+bridge-store';
       persisted = true;
     }
 
-    // Persist session summary as memory entry
-    await bridgeStoreEntry({
-      key: `session-${options.sessionId}`,
-      value: JSON.stringify({
-        sessionId: options.sessionId,
-        summary: options.summary || 'Session ended',
-        tasksCompleted: options.tasksCompleted ?? 0,
-        patternsLearned: options.patternsLearned ?? 0,
-        endedAt: new Date().toISOString(),
-      }),
-      namespace: 'session',
-      tags: ['session-end'],
-      upsert: true,
-      dbPath: options.dbPath,
-    });
-
-    if (controller === 'none') controller = 'bridge-store';
-    persisted = true;
-
-    // Phase 3: Trigger NightlyLearner consolidation if available
+    // Phase 3: Trigger NightlyLearner consolidation if available.
+    // #3908: neither the MemoryConsolidator wrapper nor AgentDB's NightlyLearner
+    // has `consolidate` — they expose `run`/`runAll` — so probing only for
+    // `consolidate` meant session-end never consolidated. Bounded so a slow
+    // sweep cannot hold session-end open.
     const nightlyLearner = registry.get('nightlyLearner');
-    if (nightlyLearner && typeof nightlyLearner.consolidate === 'function') {
+    const consolidate = nightlyLearner && (
+      typeof nightlyLearner.consolidate === 'function'
+        ? () => nightlyLearner.consolidate({ sessionId: options.sessionId })
+        : typeof nightlyLearner.run === 'function'
+          ? () => nightlyLearner.run()
+          : typeof nightlyLearner.runAll === 'function'
+            ? () => nightlyLearner.runAll()
+            : null
+    );
+    if (consolidate) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        await nightlyLearner.consolidate({ sessionId: options.sessionId });
+        await Promise.race([
+          Promise.resolve().then(consolidate),
+          new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error('nightlyLearner timeout')), SESSION_END_CONSOLIDATE_TIMEOUT_MS);
+            timer.unref?.();
+          }),
+        ]);
         controller += '+nightlyLearner';
-      } catch { /* non-fatal */ }
+      } catch { /* non-fatal */ } finally {
+        if (timer) clearTimeout(timer);
+      }
     }
 
-    return { success: true, controller, persisted };
+    return { success: true, controller, persisted, ...(episodeId !== undefined ? { episodeId } : {}) };
   } catch {
     return null;
   }
@@ -3415,6 +3777,12 @@ export async function bridgeHealthCheck(
   controllers: Array<{ name: string; enabled: boolean; level: number }>;
   attestationCount?: number;
   cacheStats?: { size: number; hits: number; misses: number };
+  /** Why AgentDB failed to open, or null when it opened (#4654). */
+  agentdbInitError?: string | null;
+  /** Last bridge-level failure, including the AgentDB lock cause (#4622/#4654). */
+  bridgeFailureReason?: string | null;
+  /** Actionable next step when a second process owns the native store. */
+  hint?: string;
   hierarchicalMemory?: {
     controller: string;
     durable: boolean;
@@ -3430,6 +3798,12 @@ export async function bridgeHealthCheck(
 
   try {
     const controllers = registry.listControllers();
+    const resolvedPath = canonicalDbPath(dbPath);
+    const agentdbInitError = agentdbInitFailure(registry, resolvedPath);
+    const bridgeFailureReason = getBridgeFailureReason(dbPath);
+    const lockHint = agentdbInitError && /already open|cannot acquire lock|locked/i.test(agentdbInitError)
+      ? 'Another process (often the ruflo daemon or a second MCP server) owns the native vector store. Stop one owner and reconnect; reads currently use the volatile fallback.'
+      : undefined;
 
     // Phase 4: AttestationLog stats
     let attestationCount = 0;
@@ -3458,7 +3832,18 @@ export async function bridgeHealthCheck(
       };
     }
 
-    return { available: true, controllers, attestationCount, cacheStats, hierarchicalMemory };
+    return {
+      // A registry with a failed AgentDB still serves its other controllers,
+      // but it is not a working persistent bridge (#4622/#4654).
+      available: agentdbInitError === null,
+      controllers,
+      attestationCount,
+      cacheStats,
+      agentdbInitError,
+      bridgeFailureReason,
+      ...(lockHint ? { hint: lockHint } : {}),
+      hierarchicalMemory,
+    };
   } catch {
     return null;
   }
@@ -3998,5 +4383,194 @@ export async function getMemoryBridgeStats(options: {
     };
   } catch {
     return { totalEntries: 0, perNamespace: {}, source: 'memory-bridge (error)', reachable: false };
+  }
+}
+
+// ===== #4712: persisted inventory of the hierarchical (tiered) store =====
+
+/** Smallest @claude-flow/memory that ships TieredMemoryStore.listEntries/getEntry. */
+const TIERED_INVENTORY_MIN_MEMORY = '3.3.0';
+
+/**
+ * Run a read-only inventory call against the `hierarchicalMemory` controller
+ * inside one bridge operation. Refuses, never fabricates: a native agentdb
+ * controller, an older @claude-flow/memory without the API, a volatile store
+ * and a failed read each come back as `success: false` with the reason.
+ */
+async function withHierarchicalInventory(
+  operation: 'list' | 'get',
+  read: (store: any) => Record<string, unknown>,
+): Promise<any> {
+  if (!operationContext.getStore()?.active) return withBridgeOperation(() => withHierarchicalInventory(operation, read));
+  const registry = await getRegistry();
+  if (!registry) return null;
+  let hm: any;
+  try {
+    hm = registry.get('hierarchicalMemory');
+  } catch (e: any) {
+    return { success: false, error: `HierarchicalMemory not available: ${e?.message ?? e}` };
+  }
+  if (!hm) return { success: false, error: 'HierarchicalMemory not available' };
+  if (typeof hm.getStats === 'function' && typeof hm.promote === 'function') {
+    return {
+      success: false,
+      controller: 'native-unsupported',
+      error: `hierarchical-${operation} reads the tiered_memory table; the native agentdb HierarchicalMemory has no inventory API`,
+    };
+  }
+  const info = describeHierarchicalStore(hm, getHierarchicalFallback(registry));
+  if (typeof hm.listEntries !== 'function' || typeof hm.getEntry !== 'function') {
+    return {
+      success: false,
+      ...info,
+      code: 'unsupported',
+      error: `the installed @claude-flow/memory predates TieredMemoryStore.listEntries/getEntry (needs >= ${TIERED_INVENTORY_MIN_MEMORY})`,
+    };
+  }
+  try {
+    return { success: true, ...info, ...read(hm) };
+  } catch (e: any) {
+    return {
+      success: false,
+      ...info,
+      ...(typeof e?.code === 'string' ? { code: e.code } : {}),
+      error: String(e?.message ?? e),
+    };
+  }
+}
+
+/** Page through every persisted hierarchical-memory entry (#4712). */
+export async function bridgeHierarchicalList(params: {
+  tier?: string; status?: string; limit?: number; cursor?: string;
+}): Promise<any> {
+  return withHierarchicalInventory('list', hm => hm.listEntries({
+    tier: params.tier,
+    status: params.status,
+    limit: params.limit,
+    cursor: params.cursor,
+  }));
+}
+
+/** Exact read of one hierarchical-memory entry by its stable id (#4712). */
+export async function bridgeHierarchicalGet(params: { id: string; includeInactive?: boolean }): Promise<any> {
+  return withHierarchicalInventory('get', hm => {
+    const entry = hm.getEntry(params.id, { includeInactive: params.includeInactive === true });
+    return { found: entry !== null, entry };
+  });
+}
+
+// ===== #4707: read-only pattern / skill inventory and hierarchical counts =====
+
+/** Smallest agentdb whose ReasoningBank/SkillLibrary ship listPatterns/listSkills/getSkill. */
+const AGENTDB_INVENTORY_MIN = '3.3.0';
+
+/**
+ * Run one read against a registry controller inside a bridge operation.
+ * Refuses, never fabricates: a missing controller and a controller without
+ * the method both come back as `success: false, code: 'unsupported'` naming
+ * the method, so neither can be read as an empty inventory. A native error
+ * (bad page arguments, the graph-adapter refusal) keeps its own code.
+ */
+async function withInventoryController(
+  controllerName: 'reasoningBank' | 'skills',
+  method: string,
+  read: (controller: any) => Record<string, unknown>,
+): Promise<any> {
+  if (!operationContext.getStore()?.active) {
+    return withBridgeOperation(() => withInventoryController(controllerName, method, read));
+  }
+  const registry = await getRegistry();
+  if (!registry) return null;
+  let controller: any;
+  try {
+    controller = registry.get(controllerName);
+  } catch (e: any) {
+    return { success: false, controller: controllerName, code: 'unsupported', error: `${controllerName} not available, so ${method} cannot run: ${e?.message ?? e}` };
+  }
+  if (!controller) {
+    return { success: false, controller: controllerName, code: 'unsupported', error: `${controllerName} controller is not available, so ${method} cannot run` };
+  }
+  if (typeof controller[method] !== 'function') {
+    return {
+      success: false,
+      controller: controllerName,
+      code: 'unsupported',
+      error: `the active ${controllerName} controller has no ${method}() (needs agentdb >= ${AGENTDB_INVENTORY_MIN})`,
+    };
+  }
+  try {
+    return { success: true, controller: controllerName, ...read(controller) };
+  } catch (e: any) {
+    return {
+      success: false,
+      controller: controllerName,
+      ...(typeof e?.code === 'string' ? { code: e.code } : {}),
+      ...(typeof e?.field === 'string' ? { field: e.field } : {}),
+      error: String(e?.message ?? e),
+    };
+  }
+}
+
+/** Native list result envelope, passed through unchanged. */
+function pageOf(page: any): Record<string, unknown> {
+  return { items: page?.items, total: page?.total, limit: page?.limit, offset: page?.offset };
+}
+
+/** Page through ReasoningBank patterns, newest first (#4707). */
+export async function bridgeListPatterns(params: { taskType?: string; limit?: number; offset?: number }): Promise<any> {
+  return withInventoryController('reasoningBank', 'listPatterns', rb =>
+    pageOf(rb.listPatterns({ taskType: params.taskType, limit: params.limit, offset: params.offset })));
+}
+
+/** Page through SkillLibrary skills, newest first (#4707). */
+export async function bridgeListSkills(params: { minSuccessRate?: number; limit?: number; offset?: number }): Promise<any> {
+  return withInventoryController('skills', 'listSkills', sk =>
+    pageOf(sk.listSkills({ minSuccessRate: params.minSuccessRate, limit: params.limit, offset: params.offset })));
+}
+
+/** Exact read of one skill by its numeric id (#4707). */
+export async function bridgeGetSkill(params: { id: number }): Promise<any> {
+  return withInventoryController('skills', 'getSkill', sk => {
+    const skill = sk.getSkill(params.id);
+    return { found: skill != null, skill: skill ?? null };
+  });
+}
+
+/**
+ * Count-only view of the hierarchical store (#4707). `tiers` is the
+ * in-memory tier map sizes from getTierStats(); `persistedRows` is the
+ * tiered_memory row count from countPersisted() (null on a volatile store).
+ * They measure different things and are reported side by side.
+ */
+export async function bridgeHierarchicalStats(): Promise<any> {
+  if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeHierarchicalStats());
+  const registry = await getRegistry();
+  if (!registry) return null;
+  let hm: any;
+  try {
+    hm = registry.get('hierarchicalMemory');
+  } catch (e: any) {
+    return { success: false, code: 'unsupported', error: `HierarchicalMemory not available, so getTierStats/countPersisted cannot run: ${e?.message ?? e}` };
+  }
+  if (!hm) {
+    return { success: false, code: 'unsupported', error: 'HierarchicalMemory not available, so getTierStats/countPersisted cannot run' };
+  }
+  const isNative = typeof hm.getStats === 'function' && typeof hm.promote === 'function';
+  const missing = ['getTierStats', 'countPersisted'].filter(m => typeof hm[m] !== 'function');
+  if (isNative || missing.length > 0) {
+    return {
+      success: false,
+      controller: isNative ? 'hierarchicalMemory' : 'tieredMemoryStore',
+      code: 'unsupported',
+      error: isNative
+        ? 'the native agentdb HierarchicalMemory has no getTierStats()/countPersisted()'
+        : `the active hierarchical store has no ${missing.join('()/')}() (the installed @claude-flow/memory predates it)`,
+    };
+  }
+  const info = describeHierarchicalStore(hm, getHierarchicalFallback(registry));
+  try {
+    return { success: true, ...info, tiers: hm.getTierStats(), persistedRows: hm.countPersisted() };
+  } catch (e: any) {
+    return { success: false, ...info, error: String(e?.message ?? e) };
   }
 }

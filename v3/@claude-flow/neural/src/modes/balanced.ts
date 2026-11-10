@@ -47,12 +47,14 @@ export class BalancedMode extends BaseModeImplementation {
     this.patternCache.clear();
     this.gradientAccumulator.clear();
     this.momentumBuffers.clear();
+    this.lastConsolidationSnapshot.clear();
   }
 
   async cleanup(): Promise<void> {
     this.patternCache.clear();
     this.gradientAccumulator.clear();
     this.momentumBuffers.clear();
+    this.lastConsolidationSnapshot.clear();
     await super.cleanup();
   }
 
@@ -295,5 +297,72 @@ export class BalancedMode extends BaseModeImplementation {
     }
 
     return lambda * penalty * 0.5;
+  }
+
+  // Raw gradientAccumulator snapshot as of the last call to
+  // getConsolidationSnapshot(), used to compute a bounded per-cycle delta
+  // instead of exposing the ever-growing cumulative accumulator directly.
+  private lastConsolidationSnapshot: Map<string, Float32Array> = new Map();
+
+  /**
+   * Derive a Fisher-information/means snapshot from the CHANGE in this
+   * mode's accumulated gradients since the last consolidation, for EWC
+   * consolidation.
+   *
+   * `gradientAccumulator` is a lifetime-cumulative sum (it is only ever
+   * `.clear()`'d in `initialize()`/`cleanup()`), so squaring it directly
+   * would make Fisher importance grow without bound over a long-running
+   * session rather than reflecting any one task's actual contribution.
+   * Using the delta against the previous snapshot bounds each cycle's
+   * contribution to roughly that cycle's own gradient magnitude (momentum
+   * is itself an EMA, so bounded), which is what `consolidateEWC()`'s decay
+   * step is actually meant to decay against.
+   *
+   * `means` is the accumulator itself at this point (the EWC anchor), so
+   * the penalty is zero immediately after consolidation and grows as the
+   * accumulator moves away from it.
+   *
+   * Fisher uses the diagonal empirical-Fisher approximation
+   * (Fisher_i ~= delta_i^2), the same style of estimator already proven out
+   * — for this exact squared-gradient-of-reward update rule — in this
+   * monorepo's own
+   * `v3/plugins/cognitive-kernel/src/bridges/sona-bridge.ts::computeFisher()`.
+   * Non-finite components are dropped (treated as zero) so a bad sample
+   * can't poison consolidated state.
+   */
+  getConsolidationSnapshot(): {
+    fisher: Map<string, Float32Array>;
+    means: Map<string, Float32Array>;
+  } {
+    const fisher = new Map<string, Float32Array>();
+    const means = new Map<string, Float32Array>();
+
+    for (const [key, gradient] of this.gradientAccumulator) {
+      const previous = this.lastConsolidationSnapshot.get(key);
+      const delta = new Float32Array(gradient.length);
+      const snapshot = new Float32Array(gradient.length);
+
+      for (let i = 0; i < gradient.length; i++) {
+        const g = gradient[i];
+        const safe = Number.isFinite(g) ? g : 0;
+        const prevSafe = previous && Number.isFinite(previous[i]) ? previous[i] : 0;
+        delta[i] = safe - prevSafe;
+        snapshot[i] = safe;
+      }
+
+      const f = new Float32Array(delta.length);
+      for (let i = 0; i < delta.length; i++) {
+        f[i] = delta[i] * delta[i];
+      }
+
+      fisher.set(key, f);
+      // EWC anchors on the parameter values at consolidation (theta*), not on
+      // the delta: computeEWCPenalty() measures current - means, which must be
+      // zero right after consolidating.
+      means.set(key, Float32Array.from(snapshot));
+      this.lastConsolidationSnapshot.set(key, snapshot);
+    }
+
+    return { fisher, means };
   }
 }

@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets. Built from git history; see `git log -- plugins/ruflo-rure` for the full record.
 
+## 0.6.1 — 2026-10-29
+- chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
+
 ## 0.6.0 — 2026-10-24
 
 - feat: `rure_cuda_launch_plan` (ruflo ADR-501, ruflo CLI 3.62.0): the step from "what the CUDA program contains" to "what is worth measuring". For each kernel of each architecture it works out theoretical occupancy at a set of block sizes, which resource limits it, the best block sizes and a few flags, and with `includeHarness` returns the text of a CUDA driver-API program the person can build to check the numbers on their own GPU (and, with arguments they supply, to time launches). The occupancy model reproduces NVIDIA's `cuda_occupancy.h` on every combination checked for sm_70, 75, 80, 86, 87, 89, 90 and 120, and equals the CUDA driver on real devices (see the ADR for which). Read-only: nothing is compiled, loaded or run by ruRE, and nothing from the analyzed file reaches the harness text.

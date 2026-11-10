@@ -84,7 +84,10 @@ function saveConfig(config: EmbeddingsConfig): void {
 }
 
 // Real ONNX embedding generation via memory-initializer
-let realEmbeddingFn: ((text: string) => Promise<{ embedding: number[]; dimensions: number; model: string }>) | null = null;
+let realEmbeddingFn: ((
+  text: string,
+  options?: { normalize?: boolean },
+) => Promise<{ embedding: number[]; dimensions: number; model: string }>) | null = null;
 
 async function getRealEmbeddingFunction() {
   if (!realEmbeddingFn) {
@@ -105,12 +108,19 @@ type EmbeddingResult = {
   model: string;
 };
 
-async function generateRealEmbedding(text: string, dimension: number): Promise<EmbeddingResult> {
+async function generateRealEmbedding(
+  text: string,
+  dimension: number,
+  normalize = true,
+): Promise<EmbeddingResult> {
   const realFn = await getRealEmbeddingFunction();
 
   if (realFn) {
     try {
-      const result = await realFn(text);
+      // Default callers stay a single-argument call so existing mocks and
+      // the unit-norm path are unchanged. Only an explicit opt-out asks the
+      // generator for the pre-L2 vector.
+      const result = normalize ? await realFn(text) : await realFn(text, { normalize: false });
       return {
         embedding: result.embedding,
         backend: (result as { backend?: 'onnx' | 'mock' }).backend ?? 'onnx',
@@ -134,7 +144,10 @@ async function generateRealEmbedding(text: string, dimension: number): Promise<E
     embedding.push(Math.sin(seed) * Math.cos(seed * 0.5));
   }
 
-  // L2 normalize
+  // L2 normalize unless the caller opted out (#4724).
+  if (!normalize) {
+    return { embedding, backend: 'mock', model: 'hash-fallback' };
+  }
   const norm = Math.sqrt(embedding.reduce((sum, x) => sum + x * x, 0));
   return {
     embedding: embedding.map(x => x / norm),
@@ -331,9 +344,11 @@ export const embeddingsTools: MCPTool[] = [
       { const v = validateText(text, 'text'); if (!v.valid) return { success: false, error: v.error }; }
 
       const useHyperbolic = input.hyperbolic === true && config.hyperbolic.enabled;
+      // Default true: omitted and explicit true keep the historical unit vector.
+      const shouldNormalize = input.normalize !== false;
 
       // Generate real ONNX embedding
-      const generated = await generateRealEmbedding(text, config.dimension);
+      const generated = await generateRealEmbedding(text, config.dimension, shouldNormalize);
       const embedding = generated.embedding;
 
       let result: number[];
@@ -507,7 +522,8 @@ export const embeddingsTools: MCPTool[] = [
 
       const query = input.query as string;
       const topK = (input.topK as number) || 5;
-      const threshold = (input.threshold as number) || 0.5;
+      // `??`, not `||`: threshold 0 is a valid request for every match, as in memory_search.
+      const threshold = (input.threshold as number) ?? 0.5;
       const namespace = input.namespace as string;
 
       { const v = validateText(query, 'query'); if (!v.valid) return { success: false, error: v.error }; }

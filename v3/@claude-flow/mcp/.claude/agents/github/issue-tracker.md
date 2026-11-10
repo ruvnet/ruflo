@@ -310,9 +310,9 @@ if (duplicates.length > 0) {
 ```javascript
 // Initialize issue management swarm
 mcp__claude-flow__swarm_init { topology: "star", maxAgents: 3 }
-mcp__claude-flow__agent_spawn { type: "coordinator", name: "Issue Coordinator" }
-mcp__claude-flow__agent_spawn { type: "researcher", name: "Requirements Analyst" }
-mcp__claude-flow__agent_spawn { type: "coder", name: "Implementation Planner" }
+mcp__claude-flow__agent_spawn { agentType: "coordinator", name: "Issue Coordinator" }
+mcp__claude-flow__agent_spawn { agentType: "researcher", name: "Requirements Analyst" }
+mcp__claude-flow__agent_spawn { agentType: "coder", name: "Implementation Planner" }
 
 // Create comprehensive issue
 mcp__github__create_issue {
@@ -410,9 +410,9 @@ mcp__github__update_issue {
 [Single Message - Issue Lifecycle Management]:
   // Initialize issue coordination swarm
   mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 4 }
-  mcp__claude-flow__agent_spawn { type: "coordinator", name: "Issue Manager" }
-  mcp__claude-flow__agent_spawn { type: "analyst", name: "Progress Tracker" }
-  mcp__claude-flow__agent_spawn { type: "researcher", name: "Context Gatherer" }
+  mcp__claude-flow__agent_spawn { agentType: "coordinator", name: "Issue Manager" }
+  mcp__claude-flow__agent_spawn { agentType: "analyst", name: "Progress Tracker" }
+  mcp__claude-flow__agent_spawn { agentType: "researcher", name: "Context Gatherer" }
   
   // Create multiple related issues using gh CLI
   Bash(`gh issue create \

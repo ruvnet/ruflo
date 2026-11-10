@@ -25,11 +25,21 @@ const CLAUDE_OWNED_SUBDIRS = [
  */
 const ARTIFACT_DIRS = [
   { path: '.claude-flow', description: 'Capabilities and configuration' },
-  { path: 'data', description: 'Memory databases' },
   { path: '.swarm', description: 'Swarm state' },
   { path: '.hive-mind', description: 'Consensus state' },
   { path: 'coordination', description: 'Coordination data' },
-  { path: 'memory', description: 'Memory storage' },
+];
+
+/**
+ * Directories a project may own just as well as ruflo. Each one is removed only
+ * when it holds a path ruflo itself writes, so `cleanup --force` cannot take a
+ * project's own `data/` or `memory/` folder with it (issue #4833):
+ *   - `data/memory` is the default `CLAUDE_FLOW_MEMORY_PATH` store directory.
+ *   - `memory/memory.db` is the v2 memory database.
+ */
+const SHARED_ARTIFACT_DIRS = [
+  { path: 'data', description: 'Memory databases', markers: [join('data', 'memory')] },
+  { path: 'memory', description: 'Memory storage', markers: [join('memory', 'memory.db'), join('memory', 'store.json')] },
 ];
 
 const ARTIFACT_FILES = [
@@ -43,6 +53,52 @@ const KEEP_CONFIG_PATHS = [
   'claude-flow.config.json',
   join('.claude', 'settings.json'),
 ];
+
+/**
+ * What makes a hook entry ruflo's: its command runs one of the helpers ruflo
+ * deploys into `.claude/helpers/`, or names the CLI itself. Every other entry in
+ * `.claude/settings.json` belongs to the user and must survive (issue #4833).
+ */
+const RUFLO_HOOK_COMMAND = /(?:^|[\s"'/\\])\.claude[\\/]helpers[\\/]|(?:^|[\s"'/\\])claude-flow(?:@|[\s"'/\\]|$)|(?:^|[\s"'/\\])ruflo(?:@|[\s"'/\\]|$)/i;
+
+type HookEntry = { command?: unknown };
+type HookMatcher = { hooks?: unknown };
+
+function isRufloHook(hook: unknown): boolean {
+  const command = (hook as HookEntry | null)?.command;
+  return typeof command === 'string' && RUFLO_HOOK_COMMAND.test(command);
+}
+
+/**
+ * Drop ruflo's hook matchers from a settings `hooks` block and keep everything the
+ * user wrote. A matcher that mixes both keeps its user half. Returns undefined when
+ * no hook is left, so the caller can drop the key entirely.
+ */
+function pruneRufloHooks(hooks: unknown): Record<string, unknown> | undefined {
+  if (!hooks || typeof hooks !== 'object' || Array.isArray(hooks)) return undefined;
+  const kept: Record<string, unknown> = {};
+
+  for (const [event, matchers] of Object.entries(hooks as Record<string, unknown>)) {
+    if (!Array.isArray(matchers)) {
+      kept[event] = matchers;
+      continue;
+    }
+    const survivors: unknown[] = [];
+    for (const matcher of matchers as HookMatcher[]) {
+      const inner = matcher?.hooks;
+      if (!Array.isArray(inner)) {
+        survivors.push(matcher);
+        continue;
+      }
+      const rest = inner.filter((hook) => !isRufloHook(hook));
+      if (rest.length === inner.length) survivors.push(matcher);
+      else if (rest.length > 0) survivors.push({ ...matcher, hooks: rest });
+    }
+    if (survivors.length > 0) kept[event] = survivors;
+  }
+
+  return Object.keys(kept).length > 0 ? kept : undefined;
+}
 
 /**
  * Calculate the total size of a path (file or directory) in bytes
@@ -164,6 +220,21 @@ export const cleanupCommand: Command = {
       }
     }
 
+    // Scan directories a project may own. A bare `data/` or `memory/` is not
+    // enough: only the presence of ruflo's own file inside makes it an artifact.
+    for (const artifact of SHARED_ARTIFACT_DIRS) {
+      const fullPath = join(cwd, artifact.path);
+      if (!existsSync(fullPath)) continue;
+      const owned = artifact.markers.some((marker) => existsSync(join(cwd, marker)));
+      if (!owned) {
+        output.writeln(output.dim(`  [skip] dir   ${artifact.path}  - not created by ruflo`));
+        continue;
+      }
+      const size = getSize(fullPath);
+      found.push({ path: artifact.path, description: artifact.description, size, type: 'dir' });
+      totalSize += size;
+    }
+
     // Scan files
     for (const artifact of ARTIFACT_FILES) {
       const fullPath = join(cwd, artifact.path);
@@ -216,7 +287,10 @@ export const cleanupCommand: Command = {
           if (item.path === join('.claude', 'settings.json')) {
             try {
               const raw = JSON.parse(readFileSync(fullPath, 'utf-8'));
-              delete raw.hooks;
+              // Only ruflo's own hook entries go; the user's hooks stay (#4833).
+              const hooks = pruneRufloHooks(raw.hooks);
+              if (hooks === undefined) delete raw.hooks;
+              else raw.hooks = hooks;
               delete raw.claudeFlow;
               writeFileSync(fullPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
             } catch { /* settings.json parse failed, skip */ }

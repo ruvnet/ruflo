@@ -31,12 +31,18 @@ npx -y -p @claude-flow/plugin-agent-federation@latest ruflo-federation --help
 
 ```bash
 FEDERATION_NODE_NAME=my-node           # default: hostname
-FEDERATION_BIND_HOST=0.0.0.0           # default: 0.0.0.0
+FEDERATION_BIND_HOST=127.0.0.1         # default: 127.0.0.1 (0.0.0.0 accepts other hosts)
 FEDERATION_BIND_PORT=8443              # default: 8443
 FEDERATION_TRUST_LEVEL=untrusted       # default: untrusted
 ```
 
 ## Tests
+
+Handshake signatures cover `ruflo:federation:handshake:v1:` followed by the nonce,
+not the peer-supplied nonce alone. Signing adapters must sign the supplied bytes
+unchanged. Both peers must use this context; raw-nonce handshake responses from
+older peers are rejected, so upgrade federation peers together. This prevents a
+handshake response from also verifying as a signature over bare envelope bytes.
 
 325 unit tests covering audit, routing, discovery, plugin lifecycle.
 

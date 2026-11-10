@@ -9,6 +9,7 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
+import { localCliContext } from '../mcp-tools/path-containment.js';
 import { distillCommand } from './memory-distill.js';
 import { backupCommand } from './memory-backup.js';
 import { countSiblingStoreRows } from '../memory/sibling-store.js';
@@ -17,7 +18,7 @@ import { MAX_LIST_EMBEDDINGS } from '../memory/embedding-q8.js';
 import { existsSync } from 'node:fs';
 import { siblingAgentDbPath } from '../memory/memory-bridge.js';
 import { validateIdentifier } from '../mcp-tools/validate-input.js';
-import { memoryKeyError } from '../mcp-tools/memory-tools.js';
+import { memoryKeyError, MEMORY_SCOPES, resolveScopedNamespace } from '../mcp-tools/memory-tools.js';
 import { memoryPeek } from '../memory/memory-peek.js';
 
 /**
@@ -79,6 +80,33 @@ const DB_PATH_OPTION = {
     'Precedence: --path > CLAUDE_FLOW_DB_PATH > CLAUDE_FLOW_MEMORY_PATH/memory.db > cwd/.swarm/memory.db',
   type: 'string' as const,
 };
+
+// #1227: AgentMemoryScope flags, shared by store / retrieve / search. Same
+// resolution as the MCP tools: --scope + --agent prefix the namespace as
+// agent-memory:<scope>:<agent>:<namespace>; neither flag → unchanged.
+const SCOPE_OPTIONS = [
+  {
+    name: 'scope',
+    description: 'AgentMemoryScope: project | local | user (requires --agent; #1227)',
+    type: 'string' as const,
+    choices: [...MEMORY_SCOPES],
+  },
+  {
+    name: 'agent',
+    description: 'Agent id whose scoped memory to use (letters, digits, _ and -; requires --scope)',
+    type: 'string' as const,
+  },
+];
+
+/** Resolve --scope/--agent onto a namespace, printing the error on failure. */
+function scopedNamespaceFromFlags(ctx: CommandContext, namespace: string): string | null {
+  const scoped = resolveScopedNamespace({ scope: ctx.flags.scope, agentId: ctx.flags.agent, namespace });
+  if (!scoped.ok) {
+    output.printError(scoped.error);
+    return null;
+  }
+  return scoped.namespace;
+}
 
 // Store command
 const storeCommand: Command = {
@@ -158,10 +186,12 @@ const storeCommand: Command = {
       type: 'string',
       choices: ['user_claim', 'agent_output', 'system_observation', 'tool_result', 'unknown'],
     },
+    ...SCOPE_OPTIONS,
     DB_PATH_OPTION
   ],
   examples: [
     { command: 'claude-flow memory store -k "api/auth" -v "JWT implementation"', description: 'Store text' },
+    { command: 'claude-flow memory store -k "style" -v "tabs" --scope local --agent coder', description: 'Store in the local scope of agent "coder" (#1227)' },
     { command: 'claude-flow memory store -k "pattern/singleton" --vector', description: 'Store vector' },
     { command: 'claude-flow memory store -k "pattern" -v "new" --no-upsert', description: 'Strict insert (fail if key exists)' },
     { command: 'claude-flow memory store -k "user/goal" -v "ship by Friday" --provenance user_claim', description: 'Store with typed provenance (ADR-323)' }
@@ -171,7 +201,9 @@ const storeCommand: Command = {
     let value = ctx.flags.value as string || ctx.args[0];
     // #2461: without `|| 'default'`, omitting -n stores under the literal
     // string namespace "undefined" — silent data loss for first-time users.
-    const namespace = (ctx.flags.namespace as string) || 'default';
+    // #1227: --scope/--agent move the write into that scope's partition.
+    const namespace = scopedNamespaceFromFlags(ctx, (ctx.flags.namespace as string) || 'default');
+    if (namespace === null) return { success: false, exitCode: 1 };
     const ttl = ctx.flags.ttl as number;
     const tags = ctx.flags.tags ? (ctx.flags.tags as string).split(',') : [];
     const asVector = ctx.flags.vector as boolean;
@@ -354,13 +386,16 @@ const retrieveCommand: Command = {
       type: 'boolean',
       default: false
     },
+    ...SCOPE_OPTIONS,
     DB_PATH_OPTION
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const key = ctx.flags.key as string || ctx.args[0];
     // #2461: mirror the store-side default so `memory retrieve -k k` (no -n)
     // looks under "default" rather than the literal namespace "undefined".
-    const namespace = (ctx.flags.namespace as string) || 'default';
+    // #1227: --scope/--agent read only that scope's partition.
+    const namespace = scopedNamespaceFromFlags(ctx, (ctx.flags.namespace as string) || 'default');
+    if (namespace === null) return { success: false, exitCode: 1 };
 
     if (!key) {
       output.printError('Key is required');
@@ -508,6 +543,7 @@ const searchCommand: Command = {
       description: 'Comma-separated provenance types to restrict results to: user_claim,agent_output,system_observation,tool_result,unknown — ADR-323',
       type: 'string',
     },
+    ...SCOPE_OPTIONS,
     DB_PATH_OPTION
   ],
   examples: [
@@ -544,6 +580,15 @@ const searchCommand: Command = {
     if (!query) {
       output.printError('Query is required. Use --query or -q');
       return { success: false, exitCode: 1 };
+    }
+
+    // #1227: with --scope/--agent the search stays inside that scope; an
+    // omitted --namespace there means the scope's "default", matching store
+    // and retrieve. Without them nothing changes (omitted → every namespace).
+    if (ctx.flags.scope !== undefined || ctx.flags.agent !== undefined) {
+      const scopedNs = scopedNamespaceFromFlags(ctx, (ctx.flags.namespace as string) || 'default');
+      if (scopedNs === null) return { success: false, exitCode: 1 };
+      namespace = scopedNs;
     }
 
     // #2760 SCM routed memory (v1 MVP) — classify query intent and
@@ -1155,7 +1200,7 @@ const statsCommand: Command = {
     // Call MCP memory/stats tool for real statistics
     try {
       const dbPath = resolveDbPath(ctx.flags.path as string | undefined);
-      const statsResult = await callMCPTool('memory_stats', { dbPath }) as {
+      const statsResult = await callMCPTool('memory_stats', { dbPath }, localCliContext()) as {
         available?: boolean;
         error?: string;
         truncated?: boolean;
@@ -1825,7 +1870,7 @@ const exportCommand: Command = {
         namespace: ctx.flags.namespace,
         includeVectors: ctx.flags.includeVectors ?? true,
         dbPath: resolveDbPath(ctx.flags.path as string | undefined),
-      });
+      }, localCliContext());
 
       // memory_export reports failure as { error } rather than throwing; without
       // this check the command printed "Exported to undefined" and then crashed
@@ -1914,7 +1959,7 @@ const importCommand: Command = {
         merge: ctx.flags.merge ?? true,
         namespace: ctx.flags.namespace,
         dbPath: resolveDbPath(ctx.flags.path as string | undefined),
-      });
+      }, localCliContext());
 
       // memory_import reports a bad file as { error } rather than throwing, and
       // a partial write as { success: false, error, imported }. Without this the

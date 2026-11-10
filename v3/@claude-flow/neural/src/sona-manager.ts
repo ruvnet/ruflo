@@ -449,6 +449,8 @@ export class SONAManager {
       this.ewcState!
     );
 
+    this.updateEWCConsolidation();
+
     this.learningCycles++;
 
     this.emitEvent({
@@ -577,6 +579,45 @@ export class SONAManager {
 
     this.ewcState.taskCount++;
     this.ewcState.lastConsolidation = Date.now();
+  }
+
+  /**
+   * Fold the active mode's current gradient state into EWC consolidation
+   * after a learning cycle. Decays existing Fisher importance first (via
+   * `consolidateEWC()`, online-EWC style), then additively accumulates the
+   * mode's fresh Fisher snapshot into the decayed map and refreshes `means`
+   * to the latest consolidation point.
+   *
+   * A no-op when the active mode doesn't implement `getConsolidationSnapshot`
+   * (not yet wired for that mode) or reports nothing to consolidate — so
+   * `ewcState.fisher` stays exactly as inert as it is today for any mode
+   * this fix doesn't cover, rather than silently fabricating state for it.
+   */
+  private updateEWCConsolidation(): void {
+    if (!this.ewcState) return;
+
+    if (typeof this.modeImpl.getConsolidationSnapshot !== 'function') return;
+
+    const snapshot = this.modeImpl.getConsolidationSnapshot();
+    if (snapshot.fisher.size === 0) return;
+
+    // Decay existing importance before folding in fresh evidence.
+    this.consolidateEWC();
+
+    for (const [key, newFisher] of snapshot.fisher) {
+      const existing = this.ewcState.fisher.get(key);
+      if (existing && existing.length === newFisher.length) {
+        for (let i = 0; i < newFisher.length; i++) {
+          existing[i] += newFisher[i];
+        }
+      } else {
+        this.ewcState.fisher.set(key, newFisher);
+      }
+    }
+
+    for (const [key, m] of snapshot.means) {
+      this.ewcState.means.set(key, m);
+    }
   }
 
   // ==========================================================================

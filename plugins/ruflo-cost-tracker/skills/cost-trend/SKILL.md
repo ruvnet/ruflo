@@ -3,6 +3,7 @@ name: cost-trend
 description: Read every docs/benchmarks/runs/*.json and surface drift in win rate, latency, escalation rate, and LLM-baseline cost over time
 argument-hint: ""
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 # Cost Trend

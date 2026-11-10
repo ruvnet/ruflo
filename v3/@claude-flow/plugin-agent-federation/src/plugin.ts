@@ -440,7 +440,8 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
     const listenPort = config['port'] as number | undefined;
     if (transport && typeof listenPort === 'number' && transport.listen) {
       // Loopback unless the operator names an interface: the listener is plaintext.
-      const listenHost = (config['host'] as string | undefined) ?? '127.0.0.1';
+      // An empty host would bind every interface, so it counts as unset.
+      const listenHost = (config['host'] as string | undefined) || '127.0.0.1';
       if (listenHost !== '127.0.0.1' && listenHost !== 'localhost' && listenHost !== '::1') {
         context.logger.warn(`Federation listener on ${listenHost} is plaintext WebSocket; keep it on a private network (tailnet, WireGuard) or behind TLS`);
       }

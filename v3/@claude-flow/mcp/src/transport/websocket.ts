@@ -8,7 +8,7 @@ import { EventEmitter } from 'events';
 import { WebSocketServer, WebSocket, RawData } from 'ws';
 import { createServer, Server, type IncomingMessage } from 'http';
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { assertSafeBind, refuseOpenRequest } from './guard.js';
+import { assertSafeBind, bearerToken, refuseOpenRequest } from './guard.js';
 import type {
   ITransport,
   TransportType,
@@ -290,14 +290,16 @@ export class WebSocketTransport extends EventEmitter implements ITransport {
 
   /** Token from `Authorization: Bearer` or `?token=`, compared in constant time. */
   private upgradeHasValidToken(req: IncomingMessage): boolean {
-    const header = req.headers.authorization;
-    const fromHeader = typeof header === 'string' ? header.match(/^Bearer\s+(.+)$/i)?.[1] : undefined;
+    const fromHeader = bearerToken(req.headers.authorization);
     const fromQuery = new URL(req.url ?? '', 'http://localhost').searchParams.get('token') ?? undefined;
     const given = fromHeader ?? fromQuery;
     if (!given) return false;
     const digest = (v: string) => createHash('sha256').update(v, 'utf8').digest();
     let ok = false;
     for (const valid of this.config.auth?.tokens ?? []) {
+      // An unset entry (e.g. `tokens: [process.env.X]` with X unset) matches nothing;
+      // hashing it would throw inside verifyClient on any upgrade carrying a token.
+      if (typeof valid !== 'string' || valid.length === 0) continue;
       if (timingSafeEqual(digest(given), digest(valid))) ok = true;
     }
     return ok;

@@ -1,6 +1,6 @@
 ---
 name: vector-hyperbolic
-description: Place hierarchical data in the Poincare ball using depth for the radius and npx ruvector@0.3.3 embed text for direction (a unit-norm text embedding alone has no depth)
+description: Place hierarchical data in the Poincare ball using depth for the radius and npx ruvector@0.3.13 embed text for direction (a unit-norm text embedding alone has no depth)
 argument-hint: "<text> [--model poincare]"
 allowed-tools: Bash Read mcp__plugin_ruflo-core_ruflo__memory_store mcp__plugin_ruflo-core_ruflo__memory_search
 ---
@@ -15,14 +15,14 @@ Use this skill when your data has inherent hierarchy — dependency trees, modul
 
 ## Steps
 
-1. **Ensure ruvector@0.3.3 is available**:
+1. **Ensure ruvector@0.3.13 is available**:
    ```bash
-   npm ls ruvector 2>/dev/null | grep '0.3.3' || npm install ruvector@0.3.3
+   npm ls ruvector 2>/dev/null | grep '0.3.3' || npm install ruvector@0.3.13
    ```
 2. **Know what a text embedding can and cannot give you.** ONNX sentence embeddings (all-MiniLM-L6-v2) are unit-norm. Rescaling or exp-mapping a unit vector puts every point at the same radius (the MCP `embeddings_hyperbolic convert` gives tanh(0.5) = 0.4621 for all of them), so the radius carries no depth and parent/child distances come out nearly the same as cross-branch distances. Projecting a text embedding does not create hierarchy.
 3. **Put the hierarchy in yourself.** Choose each node's radius from its depth in the tree (root near 0, leaves near 1, for example r = tanh(depth * k)), and take its direction from the text embedding, or use embeddings trained on the tree's edges. Measure on your own tree: parent-child distance should be clearly smaller than cross-branch distance.
    ```bash
-   npx -y ruvector@0.3.3 embed text "hierarchical concept" -o concept.vec.json   # direction only
+   npx -y ruvector@0.3.13 embed text "hierarchical concept" -o concept.vec.json   # direction only
    ```
 4. **Geodesic distance** for points strictly inside the unit ball: `d(u, v) = arcosh(1 + 2 * ||u-v||^2 / ((1-||u||^2)(1-||v||^2)))`. The MCP `embeddings_hyperbolic distance` computes it (curvature -1) and returns `success: false` for a point on or outside the ball rather than a null distance.
 5. **Store results**:
@@ -30,7 +30,7 @@ Use this skill when your data has inherent hierarchy — dependency trees, modul
 
 ## Caveats
 
-- ruvector@0.3.3 has no `--model poincare` flag; `attention hyperbolic` is the Poincare-ball attention op, not a text-embedding projector.
+- ruvector@0.3.13 has no `--model poincare` flag; `attention hyperbolic` is the Poincare-ball attention op, not a text-embedding projector.
 - "Norm encodes depth" only holds when you set the radius from depth yourself (step 3). It does not come from the embedding.
 - If you need a hyperbolic search index, store the placed coordinates in AgentDB and compute geodesic distance in your own retrieval code.
 

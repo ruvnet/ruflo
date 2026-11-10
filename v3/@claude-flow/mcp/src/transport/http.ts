@@ -7,7 +7,7 @@
 import { EventEmitter } from 'events';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import { createServer, Server, type IncomingMessage } from 'http';
-import { assertSafeBind, refuseOpenRequest } from './guard.js';
+import { assertSafeBind, bearerToken, refuseOpenRequest } from './guard.js';
 import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -605,13 +605,8 @@ export class HttpTransport extends EventEmitter implements ITransport {
   }
 
   private validateAuth(req: Request): { valid: boolean } {
-    const auth = req.headers.authorization;
-    if (typeof auth !== 'string') {
-      return { valid: false };
-    }
-
-    const tokenMatch = auth.match(/^Bearer\s+(.+)$/i);
-    if (!tokenMatch) {
+    const given = bearerToken(req.headers.authorization);
+    if (!given) {
       return { valid: false };
     }
 
@@ -620,7 +615,7 @@ export class HttpTransport extends EventEmitter implements ITransport {
     let valid = false;
     for (const validToken of tokens) {
       // No early exit, so timing does not depend on which token matched.
-      if (this.timingSafeCompare(tokenMatch[1], validToken)) {
+      if (this.timingSafeCompare(given, validToken)) {
         valid = true;
       }
     }

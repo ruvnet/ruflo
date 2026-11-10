@@ -647,6 +647,8 @@ const router = safeRequire(path.join(helpersDir, 'router.cjs'));
 const session = safeRequire(path.join(helpersDir, 'session.cjs'));
 const memory = safeRequire(path.join(helpersDir, 'memory.cjs'));
 const intelligence = safeRequire(path.join(helpersDir, 'intelligence.cjs'));
+// ADR-512: the verified-outcome learning loop, bundled from the ruflo-mods loop source.
+const learningLoop = safeRequire(path.join(helpersDir, 'learning-loop.cjs'));
 
 // ── Intelligence timeout protection (fixes #1530, #1531) ───────────────────
 const INTELLIGENCE_TIMEOUT_MS = 3000;
@@ -680,7 +682,7 @@ const [,, command, ...args] = process.argv;
 
 // Read stdin with timeout — Claude Code sends hook data as JSON via stdin.
 // Timeout prevents hanging when stdin is not properly closed (common on Windows).
-async function readStdin() {
+async function readStdin(windowMs = 500) {
   if (process.stdin.isTTY) return '';
   return new Promise((resolve) => {
     let data = '';
@@ -688,7 +690,7 @@ async function readStdin() {
       process.stdin.removeAllListeners();
       process.stdin.pause();
       resolve(data);
-    }, 500);
+    }, windowMs);
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', (chunk) => { data += chunk; });
     process.stdin.on('end', () => { clearTimeout(timer); resolve(data); });
@@ -703,6 +705,50 @@ async function readStdin() {
 // keeps it from firing twice. Only side-effect events can be handed over:
 // guards such as pre-bash always run, whatever the variable says.
 const MOD_OWNABLE_EVENTS = new Set(['route', 'post-edit']);
+
+// ADR-512: classic hooks run the verified-outcome learning loop for users without the mod. A
+// mod that records turns itself says so with `learning-loop` (or, before ADR-512, owns
+// `route`), so a turn is never recorded twice.
+function modRecordsTurns(env = process.env) {
+  return String(env.RUFLO_MODS_OWNS || '').split(',').some((owned) => ['learning-loop', 'route'].includes(owned.trim()));
+}
+
+function learningLoopRoot() {
+  return process.env.CLAUDE_PROJECT_DIR || process.cwd();
+}
+
+// Records the turns the session transcript gained since the last look (all of them when the
+// session ends). Returns the number recorded; never throws.
+function recordLearningTurns(hookInput, final) {
+  try {
+    const root = learningLoopRoot();
+    if (!learningLoop || modRecordsTurns() || !learningLoop.enabled(root)) return 0;
+    const agentFor = (text) => {
+      try { return (router && router.routeTask && router.routeTask(text).agent) || 'coder'; } catch (e) { return 'coder'; }
+    };
+    return learningLoop.recordTurns({
+      root,
+      transcriptPath: hookInput.transcript_path || hookInput.transcriptPath,
+      session: hookInput.session_id || hookInput.sessionId,
+      final,
+      agentFor,
+    });
+  } catch (e) { return 0; }
+}
+
+// Trains SONA from the recorded turns in a detached `ruflo hooks verified-ingest` (a hook has
+// seconds; an ingest may take longer). At most one spawn a minute per project.
+function spawnLearningIngest() {
+  try {
+    const root = learningLoopRoot();
+    if (!learningLoop || !learningLoop.enabled(root) || !learningLoop.ingestDue(root)) return;
+    const stamp = path.join(root, '.claude-flow', 'data', 'verified-ingest.spawned');
+    try { if (Date.now() - fs.statSync(stamp).mtimeMs < 60 * 1000) return; } catch (e) { /* never spawned */ }
+    fs.mkdirSync(path.dirname(stamp), { recursive: true });
+    fs.writeFileSync(stamp, String(Date.now()));
+    spawnDetachedHookRefresh('verified-ingest');
+  } catch (e) { /* best-effort only */ }
+}
 function ownedByMod(cmd, env = process.env) {
   if (!MOD_OWNABLE_EVENTS.has(cmd)) return false;
   return String(env.RUFLO_MODS_OWNS || '').split(',').some((owned) => owned.trim() === cmd);
@@ -733,22 +779,42 @@ function claimSideEffectEvent(family, stdinData, event) {
   }
 }
 
+// pre-bash is a gate (#4743): a path that cannot vouch for the command blocks it.
+function blockPreBash(reason) {
+  console.error(`[BLOCKED] ${reason}`);
+  process.exit(2);
+}
+
 async function main() {
   if (ownedByMod(command)) return;
 
   // Global safety timeout: hooks must NEVER hang (#1530, #1531)
   const safetyTimer = setTimeout(() => {
     process.stderr.write("[WARN] Hook handler global timeout (5s), forcing exit\n");
+    if (command === 'pre-bash') blockPreBash('pre-bash timed out before the command was validated');
     process.exit(0);
   }, 5000);
   safetyTimer.unref(); // don't keep process alive just for this timer
 
   let stdinData = '';
-  try { stdinData = await readStdin(); } catch (e) { /* ignore stdin errors */ }
+  // pre-bash blocks when it gets no command (#4743), so a slow host gets a
+  // wider window. The read ends at EOF, so a prompt host waits no longer.
+  try { stdinData = await readStdin(command === 'pre-bash' ? 3000 : 500); } catch (e) { /* ignore stdin errors */ }
 
   let hookInput = {};
+  let stdinUnparsable = false;
   if (stdinData.trim()) {
-    try { hookInput = JSON.parse(stdinData); } catch (e) { /* ignore parse errors */ }
+    try { hookInput = JSON.parse(stdinData); } catch (e) { stdinUnparsable = true; }
+  }
+
+  // ADR-512: record what finished and train from it, before the dedup below: it keys session-end
+  // on the session id, so after a PreCompact the real SessionEnd would never record the last turn.
+  // Recording is idempotent (a per-session transcript offset, ids from transcript positions).
+  // PreCompact runs mid-session, where the open turn may still edit and verify: only SessionEnd
+  // closes it.
+  if (command === 'session-end') {
+    recordLearningTurns(hookInput, (hookInput.hook_event_name || hookInput.hookEventName) !== 'PreCompact');
+    spawnLearningIngest();
   }
 
   if ((command === 'post-edit' || command === 'session-end') &&
@@ -789,6 +855,16 @@ async function main() {
 
 const handlers = {
   'route': () => {
+    // ADR-512: record the turns that finished, then cite the verified lessons that fit this prompt.
+    recordLearningTurns(hookInput, false);
+    if (learningLoop && !modRecordsTurns()) {
+      try {
+        if (learningLoop.enabled(learningLoopRoot())) {
+          const block = learningLoop.lessonsForPrompt(learningLoopRoot(), prompt);
+          if (block) console.log(block);
+        }
+      } catch (e) { /* non-fatal */ }
+    }
     // Inject ranked intelligence context before routing
     // ADR-472: keep the detailed recall so ONE bounded log record (ids, scores, router pick; never the prompt) is appended after routing.
     let recall = null;
@@ -888,11 +964,12 @@ const handlers = {
 
   'pre-bash': () => {
     // Basic command safety check — prefer stdin command data from Claude Code.
-    // String() wrap is belt-and-suspenders for #2017: even if a future regression
-    // re-binds `prompt` or `hookInput.command` to a non-string, `.toLowerCase()`
-    // can no longer throw a TypeError that the global try/catch would swallow
-    // (silently exiting 0 and letting the dangerous command through).
-    const cmd = String(hookInput.command || toolInput.command || prompt || '').toLowerCase();
+    // Only a non-empty string counts as the command (#2017, #4743): input that
+    // arrived late, did not parse, or carried no command blocks instead of passing.
+    if (stdinUnparsable) blockPreBash('pre-bash could not parse the hook input');
+    const raw = [hookInput.command, toolInput.command, prompt].find((c) => typeof c === 'string' && c.trim());
+    if (!raw) blockPreBash('pre-bash received no command to validate');
+    const cmd = raw.toLowerCase();
     const dangerous = ['rm -rf /', 'format c:', 'del /s /q c:\\', ':(){:|:&};:'];
     // Join literal quote fragments and normalize root paths without shell evaluation.
     function hasRootDelete(command, depth = 0) {
@@ -1242,6 +1319,7 @@ const handlers = {
     try {
       await Promise.resolve(handlers[command]());
     } catch (e) {
+      if (command === 'pre-bash') blockPreBash(`pre-bash failed: ${e && e.message}`);
       // Hooks should never crash Claude Code - fail silently
       console.log(`[WARN] Hook ${command} encountered an error: ${e.message}`);
     }
@@ -1253,7 +1331,7 @@ const handlers = {
   }
 }
 
-// Non-blocking hooks exit 0; pre-bash denials exit 2 to block PreToolUse.
+// Non-blocking hooks exit 0; pre-bash denials and failures exit 2 to block PreToolUse.
 // A denial exits immediately, before the normal completion path below.
 //
 // Only dispatch when run directly (node hook-handler.cjs <cmd>). When
@@ -1265,6 +1343,7 @@ const handlers = {
 if (require.main === module) {
   process.exitCode = 0;
   main().catch((e) => {
+    if (command === 'pre-bash') blockPreBash(`pre-bash failed: ${e && e.message}`);
     try { console.log(`[WARN] Hook handler error: ${e.message}`); } catch (_) {}
   }).finally(() => {
     process.exit(0);

@@ -39,7 +39,7 @@ function guideRows(ctx: Ctx, topic: HelpTopic): RenderElement[] {
 
   return [
     rule(ctx, topic.title, topic.group),
-    ...wrap(topic.summary, width).map(line => text(ctx, ` ${line}`, { bold: true })),
+    ...wrap(topic.summary, width).map(line => text(ctx, ` ${line}`, { weight: 'semibold' })),
     ...stepRows(ctx, topic),
     ...(topic.tips ?? []).flatMap(tip => wrap(tip, width).map((line, n) => text(ctx, `${n === 0 ? ' tip ' : '     '}${line}`, { color: THEME.info, dimColor: true }))),
     ...(related.length === 0 ? [] : [row(ctx, [text(ctx, ' next ', { dimColor: true }), ...related.map(entry => button(ctx, `help-rel-${entry.id}`, entry.title, () => ctx.act.ruhelp.open(entry.id)))], 'help-related')]),
@@ -60,7 +60,7 @@ function answerRows(ctx: Ctx, query: string): RenderElement[] {
 
   return [
     rule(ctx, 'ruHelp', `${hits.length} guide${hits.length === 1 ? '' : 's'} · best match first`),
-    text(ctx, ` ${best.title}`, { bold: true, color: THEME.ok }),
+    text(ctx, ` ${best.title}`, { weight: 'semibold', color: THEME.ok }),
     ...wrap(best.summary, width).map(line => text(ctx, ` ${line}`)),
     ...stepRows(ctx, best, 3),
     row(ctx, [text(ctx, ' '), button(ctx, `help-open-${best.id}`, best.steps.length > 3 ? `▸ the full guide (${best.steps.length} steps)` : '▸ open the guide', () => ctx.act.ruhelp.open(best.id), { primary: true })], 'help-best'),
@@ -77,7 +77,7 @@ function indexRows(ctx: Ctx): RenderElement[] {
     ...['tour', 'setup', 'mission'].flatMap((id, i) => {
       const topic = topicById(id)
 
-      return topic === null ? [] : [row(ctx, [text(ctx, ` ${i + 1}. `, { bold: true, color: THEME.ok }), button(ctx, `help-start-${id}`, `${topic.title} `.padEnd(lead, '.'), () => ctx.act.ruhelp.open(id), i === 0 ? { primary: true } : {}), text(ctx, ` ${clip(topic.summary, Math.max(10, ctx.columns - lead - 12))}`, { dimColor: true })], `help-start-row-${id}`)]
+      return topic === null ? [] : [row(ctx, [text(ctx, ` ${i + 1}. `, { weight: 'semibold', color: THEME.ok }), button(ctx, `help-start-${id}`, `${topic.title} `.padEnd(lead, '.'), () => ctx.act.ruhelp.open(id), i === 0 ? { primary: true } : {}), text(ctx, ` ${clip(topic.summary, Math.max(10, ctx.columns - lead - 12))}`, { dimColor: true })], `help-start-row-${id}`)]
     }),
   ]
 

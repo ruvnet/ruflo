@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Structural + security smoke for ruflo-mods v0.7.1 (ADR-404, ADR-447).
+# Structural + security smoke for ruflo-mods v0.16.2 (ADR-404, ADR-447).
 # Static only: CI has no Claude Code, so the hooks module's behaviour is held
 # by v3/@claude-flow/cli/__tests__/mods/*.test.ts and, where function hooks are
 # on, by `claude plugin test plugins/ruflo-mods`.
@@ -12,9 +12,9 @@ ok()   { printf "PASS\n"; PASS=$((PASS+1)); }
 bad()  { printf "FAIL: %s\n" "$1"; FAIL=$((FAIL+1)); }
 HOOKS="$ROOT/hooks"
 
-step "1. plugin.json declares ruflo-mods 0.7.1"
+step "1. plugin.json declares ruflo-mods 0.16.2"
 grep -q '"name": "ruflo-mods"' "$ROOT/.claude-plugin/plugin.json" \
-  && grep -q '"version": "0.7.1"' "$ROOT/.claude-plugin/plugin.json" && ok || bad "name/version"
+  && grep -q '"version": "0.16.2"' "$ROOT/.claude-plugin/plugin.json" && ok || bad "name/version"
 
 step "2. hooks.json names exactly one module and no classic hook commands"
 grep -q '"modules": \["./register.ts"\]' "$HOOKS/hooks.json" && ! grep -q '"command"' "$HOOKS/hooks.json" \
@@ -27,8 +27,11 @@ deep=$(grep -rnE "from ['\"](\.\./){2,}" "$HOOKS" || true)
 [[ -z "$deep" ]] && ok || bad "$deep"
 
 step "4. no network, process, model or MCP calls (no network by default)"
-hits=$(grep -rnE '\$\.(http|process|model|mcp)\.' "$HOOKS" || true)
-[[ -z "$hits" ]] && ok || bad "$hits"
+# One exception (ADR-522): the opt-in context-delegate module makes one $.model.complete call, and register.ts loads it
+# only when the contextDelegation option is not "off" (the default), so a default install still makes no model call.
+hits=$(grep -rnE '\$\.(http|process|model|mcp)\.' "$HOOKS" | grep -vE "^$HOOKS/context-delegate/index\.ts:[0-9]+:.*\\$\.model\.complete\(" || true)
+gated=$(grep -c "if (opts.contextDelegation !== 'off') registerContextDelegate(" "$HOOKS/register.ts" || true)
+[[ -z "$hits" && "$gated" == "1" ]] && ok || bad "${hits:-context-delegate must be loaded only when contextDelegation is not off}"
 
 step "5. only the documented events are hooked"
 events=$(grep -rhoE "on\('[a-z.*]+'" "$HOOKS" | sort -u | tr '\n' ' ')

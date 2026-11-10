@@ -77,6 +77,11 @@ function formatClaimant(claimant: Claimant): string {
     : `agent:${claimant.agentId}:${claimant.agentType}`;
 }
 
+/** An agent's claim that is still work in hand (not completed). */
+function isOpenAgentClaim(claim: IssueClaim): boolean {
+  return claim.claimant.type === 'agent' && claim.status !== 'completed';
+}
+
 function parseClaimant(str: string): Claimant | null {
   const parts = str.split(':');
   if (parts[0] === 'human' && parts.length >= 3) {
@@ -253,7 +258,7 @@ export const claimsTools: MCPTool[] = [
         },
         progress: {
           type: 'number',
-          description: 'Current progress percentage (0-100)',
+          description: 'Current progress percentage (0-100); omit to keep the recorded progress',
         },
       },
       required: ['issueId', 'from', 'to'],
@@ -263,7 +268,7 @@ export const claimsTools: MCPTool[] = [
       const fromStr = input.from as string;
       const toStr = input.to as string;
       const reason = input.reason as string | undefined;
-      const progress = (input.progress as number) || 0;
+      const progress = input.progress as number | undefined;
 
       { const v = validateIdentifier(issueId, 'issueId'); if (!v.valid) return { success: false, error: v.error }; }
       { const v = validateText(fromStr, 'from'); if (!v.valid) return { success: false, error: v.error }; }
@@ -293,7 +298,15 @@ export const claimsTools: MCPTool[] = [
       claim.statusChangedAt = now;
       claim.handoffTo = to;
       claim.handoffReason = reason;
-      claim.progress = progress;
+      // Optional: keep the progress recorded with claims_status when it is
+      // left out, and clamp it to 0-100 the same way claims_status does.
+      if (progress !== undefined) {
+        claim.progress = Math.min(100, Math.max(0, progress));
+      }
+      // A claim being handed to a named claimant is no longer up for grabs:
+      // drop it from the list claims_stealable and claims_steal read, so it
+      // cannot be stolen while the handoff is pending or after it is accepted.
+      delete store.stealable[issueId];
 
       store.claims[issueId] = claim;
       saveClaims(store);
@@ -424,6 +437,10 @@ export const claimsTools: MCPTool[] = [
       if (progress !== undefined) {
         claim.progress = Math.min(100, Math.max(0, progress));
       }
+      // claims_status never sets 'stealable', so a claim it updates is no
+      // longer up for grabs: drop it from the list claims_stealable and
+      // claims_steal read.
+      delete store.stealable[issueId];
 
       store.claims[issueId] = claim;
       saveClaims(store);
@@ -618,7 +635,9 @@ export const claimsTools: MCPTool[] = [
       claim.claimant = stealer;
       claim.status = 'active';
       claim.statusChangedAt = now;
-      claim.context = stealableInfo.context;
+      // The context given to claims_mark-stealable is the handoff note for the
+      // stealer; without one, keep the context recorded with the claim.
+      claim.context = stealableInfo.context ?? claim.context;
 
       delete store.stealable[issueId];
       store.claims[issueId] = claim;
@@ -698,7 +717,9 @@ export const claimsTools: MCPTool[] = [
       if (agentType) { const v = validateIdentifier(agentType, 'agentType'); if (!v.valid) return { success: false, error: v.error }; }
 
       const store = loadClaims();
-      const claims = Object.values(store.claims);
+      // A completed claim stays in the store but is no longer work in hand,
+      // so it does not count toward an agent's load.
+      const openAgentClaims = Object.values(store.claims).filter(isOpenAgentClaim);
 
       // Group claims by agent
       const agentLoads = new Map<string, {
@@ -708,9 +729,7 @@ export const claimsTools: MCPTool[] = [
         blockedCount: number;
       }>();
 
-      for (const claim of claims) {
-        if (claim.claimant.type !== 'agent') continue;
-
+      for (const claim of openAgentClaims) {
         const key = claim.claimant.agentId!;
         if (!agentLoads.has(key)) {
           agentLoads.set(key, {
@@ -756,7 +775,7 @@ export const claimsTools: MCPTool[] = [
         success: true,
         loads: result,
         totalAgents: result.length,
-        totalClaims: claims.filter(c => c.claimant.type === 'agent').length,
+        totalClaims: openAgentClaims.length,
         avgUtilization: result.length > 0
           ? result.reduce((sum, l) => sum + l.utilization, 0) / result.length
           : 0,
@@ -842,14 +861,13 @@ export const claimsTools: MCPTool[] = [
       const targetUtilization = (input.targetUtilization as number) || 0.7;
 
       const store = loadClaims();
-      const claims = Object.values(store.claims);
+      // Completed claims are not load, as in claims_load.
+      const openAgentClaims = Object.values(store.claims).filter(isOpenAgentClaim);
 
       // Group by agent
       const agentLoads = new Map<string, { agentId: string; agentType: string; claims: IssueClaim[] }>();
 
-      for (const claim of claims) {
-        if (claim.claimant.type !== 'agent') continue;
-
+      for (const claim of openAgentClaims) {
         const key = claim.claimant.agentId!;
         if (!agentLoads.has(key)) {
           agentLoads.set(key, { agentId: key, agentType: claim.claimant.agentType!, claims: [] });
@@ -867,6 +885,9 @@ export const claimsTools: MCPTool[] = [
       const underloaded = loads.filter(l => l.claims.length < maxClaims * targetUtilization * 0.5);
 
       const suggestions: Array<{ issueId: string; from: string; to: string; reason: string }> = [];
+      // Claim counts including moves suggested so far, so one target is not
+      // handed more claims than maxClaims allows.
+      const plannedCount = new Map(loads.map(l => [l.agentId, l.claims.length]));
 
       for (const over of overloaded) {
         // Find low-progress claims to redistribute
@@ -875,8 +896,9 @@ export const claimsTools: MCPTool[] = [
           .slice(0, over.claims.length - Math.ceil(maxClaims * targetUtilization));
 
         for (const claim of movable) {
-          const target = underloaded.find(u => u.agentType === over.agentType && u.claims.length < maxClaims);
+          const target = underloaded.find(u => u.agentType === over.agentType && plannedCount.get(u.agentId)! < maxClaims);
           if (target) {
+            plannedCount.set(target.agentId, plannedCount.get(target.agentId)! + 1);
             suggestions.push({
               issueId: claim.issueId,
               from: `agent:${over.agentId}:${over.agentType}`,

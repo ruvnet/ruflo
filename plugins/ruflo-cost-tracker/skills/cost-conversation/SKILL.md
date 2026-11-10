@@ -3,6 +3,7 @@ name: cost-conversation
 description: Per-conversation cost view — list every session in cost-tracking with started-at, message count, top model, and total cost
 argument-hint: ""
 allowed-tools: Bash
+disable-model-invocation: true
 ---
 
 # Cost per Conversation

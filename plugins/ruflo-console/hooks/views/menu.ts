@@ -121,7 +121,7 @@ export function menuView(ctx: Ctx): RenderElement {
             ctx.kit.Button({ key: `menu-fold-${group.title}`, label: isOpen ? '▾' : '▸', plain: true, onPress: () => ctx.act.toggle(foldKey(group)) }),
             bbs
               ? ctx.kit.Box({ key: `menu-bar-${group.title}`, children: [ctx.kit.Text({ ...chip(accent), wrap: 'truncate-end', children: (entry === null ? ` ${title}` : scramble(` ${title}`, entry, groupStart(gi), ENTRY.titleMs).padEnd(width - 7)).padEnd(width - 2).slice(0, width - 7) })] })
-              : ctx.kit.Text({ bold: true, color: THEME.head, wrap: 'truncate-end', children: title }),
+              : ctx.kit.Text({ weight: 'semibold', color: THEME.head, wrap: 'truncate-end', children: title }),
           ],
         }),
         ...(!isOpen
@@ -142,16 +142,16 @@ export function menuView(ctx: Ctx): RenderElement {
 
                   // Not yet: a blank row, so nothing below moves. Locking in: the key chip and the label scrambling into place, not yet a button.
                   if (since < 0) return ctx.kit.Box({ key: `mi-${item.go}`, children: [ctx.kit.Text({ children: ' ' })] })
-                  if (since < ENTRY.settleMs) return ctx.kit.Box({ flexDirection: 'row', key: `mi-${item.go}`, children: [bbs ? ctx.kit.Text({ ...chip(accent), children: ` ${key} ` }) : ctx.kit.Text({ bold: true, color: THEME.ok, children: ` (${key})` }), ctx.kit.Text({ color: THEME.head, children: ` ${scramble(clip(item.label, width - 11), since, 0, ENTRY.settleMs)}` })] })
+                  if (since < ENTRY.settleMs) return ctx.kit.Box({ flexDirection: 'row', key: `mi-${item.go}`, children: [bbs ? ctx.kit.Text({ ...chip(accent), children: ` ${key} ` }) : ctx.kit.Text({ weight: 'semibold', color: THEME.ok, children: ` (${key})` }), ctx.kit.Text({ color: THEME.head, children: ` ${scramble(clip(item.label, width - 11), since, 0, ENTRY.settleMs)}` })] })
 
                   return ctx.kit.Box({
                     flexDirection: 'row',
                     key: `mi-${item.go}`,
                     children: [
                       // The key is a chip in the accent in the BBS look, so the keys read as the commands; plain, as it always was.
-                      bbs ? ctx.kit.Text({ ...chip(accent), children: ` ${key} ` }) : ctx.kit.Text({ bold: true, color: THEME.ok, children: ` (${key})` }),
+                      bbs ? ctx.kit.Text({ ...chip(accent), children: ` ${key} ` }) : ctx.kit.Text({ weight: 'semibold', color: THEME.ok, children: ` (${key})` }),
                       ctx.kit.Button({ key: `menu-go-${item.go}`, label: ` ${clip(item.label, width - 11 - (badge === undefined ? 0 : badge.text.length + 1))}`, plain: true, onPress: go(item) }),
-                      ...(badge === undefined ? [] : [ctx.kit.Text({ bold: badge.tone === 'attention', color: bbs ? (badge.tone === 'attention' ? LOUD : MUTED) : badge.tone === 'attention' ? THEME.warn : THEME.info, children: ` ${badge.text}` })]),
+                      ...(badge === undefined ? [] : [ctx.kit.Text({ weight: (badge.tone === 'attention') ? 'semibold' : 'regular', color: bbs ? (badge.tone === 'attention' ? LOUD : MUTED) : badge.tone === 'attention' ? THEME.warn : THEME.info, children: ` ${badge.text}` })]),
                     ],
                   })
                 }),
@@ -196,7 +196,7 @@ export function menuView(ctx: Ctx): RenderElement {
       backgroundColor: isBbs() ? '#870000' : undefined,
       key: 'menu-status',
       children: [
-        ctx.kit.Text({ bold: true, color: '#ffd700', children: entry === null ? line : scramble(line, entry, ENTRY.statusFrom, 700).padEnd(line.length) }),
+        ctx.kit.Text({ weight: 'semibold', color: '#ffd700', children: entry === null ? line : scramble(line, entry, ENTRY.statusFrom, 700).padEnd(line.length) }),
         // The live facts are links: a click goes to the view each is about.
         ...facts.flatMap((part, i) => {
           if (room <= 6 || (entry !== null && entry < ENTRY.factsFrom)) return []
@@ -206,14 +206,14 @@ export function menuView(ctx: Ctx): RenderElement {
           room -= label.length + 3
 
           return [
-            ctx.kit.Text({ bold: true, color: '#ffd700', children: ' │ ' }),
+            ctx.kit.Text({ weight: 'semibold', color: '#ffd700', children: ' │ ' }),
             part.go !== undefined
               ? ctx.kit.Button({ key: `status-${i}`, label, plain: true, onPress: () => ctx.act.view(part.go as ViewId) })
-              : ctx.kit.Text({ bold: true, color: '#ffd700', children: label }),
+              : ctx.kit.Text({ weight: 'semibold', color: '#ffd700', children: label }),
           ]
         }),
         ctx.kit.Box({ flexGrow: 1, key: 'status-gap', children: [ctx.kit.Text({ children: ' ' })] }),
-        ctx.kit.Text({ bold: true, color: '#ffd700', children: right }),
+        ctx.kit.Text({ weight: 'semibold', color: '#ffd700', children: right }),
       ],
     }),
   )

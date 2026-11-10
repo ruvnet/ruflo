@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/cli",
-  "version": "3.63.3",
+  "version": "3.75.0",
   "type": "module",
   "description": "Ruflo CLI - Enterprise AI agent orchestration with 60+ specialized agents, swarm coordination, MCP server, self-learning hooks, and vector memory for Claude Code",
   "main": "dist/src/index.js",
@@ -86,6 +86,7 @@
     "build": "tsc",
     "check:metaharness-pins": "node ../../../scripts/check-metaharness-pins.mjs",
     "test": "vitest run",
+    "test:real-binary": "vitest run --config vitest.real-binary.config.ts",
     "test:plugin-store": "npx tsx src/plugins/tests/standalone-test.ts",
     "test:pattern-store": "npx tsx src/transfer/store/tests/standalone-test.ts",
     "postinstall": "node ./scripts/postinstall.cjs",
@@ -100,16 +101,18 @@
   },
   "dependencies": {
     "@electron/asar": "^4.3.1",
-    "@claude-flow/cli-core": "3.7.5",
-    "@claude-flow/codex": "3.0.5",
-    "@claude-flow/mcp": "3.1.3",
-    "@claude-flow/neural": "3.0.0",
-    "@claude-flow/plugin-agent-federation": "1.0.2",
-    "@claude-flow/security": "3.0.5",
-    "@claude-flow/shared": "3.0.5",
+    "@claude-flow/cli-core": "3.7.7",
+    "@claude-flow/codex": "3.0.8",
+    "@claude-flow/mcp": "3.1.6",
+    "@claude-flow/neural": "3.0.3",
+    "@claude-flow/plugin-agent-federation": "1.0.7",
+    "@claude-flow/security": "3.0.7",
+    "@claude-flow/shared": "3.0.7",
     "@iarna/toml": "^2.2.5",
+    "@metaharness/darwin": "~0.13.0",
     "@noble/ed25519": "2.3.0",
-    "@ruvector/rabitq-wasm": "0.1.0",
+    "@ruvector/rabitq-wasm": "0.1.2",
+    "agentic-flow": "^3.0.0",
     "ajv": "^8.20.0",
     "bcryptjs": "^3.0.3",
     "chalk": "^5.3.0",
@@ -127,26 +130,27 @@
     "ws": "^8.21.0",
     "yaml": "^2.8.0",
     "zod": "^3.22.0",
-    "@claude-flow/memory": "3.0.9"
+    "@claude-flow/memory": "3.3.0"
   },
   "optionalDependencies": {
     "@agntcy/slim-bindings": "2.1.1",
-    "@claude-flow/memory": "3.0.9",
-    "@metaharness/darwin": "~0.12.0",
+    "@claude-flow/aidefence": "3.1.2",
+    "@claude-flow/memory": "3.3.0",
     "@metaharness/flywheel": "~0.1.10",
     "@metaharness/radio": "~0.1.0",
     "@metaharness/turn-credit": "~0.1.0",
     "@napi-rs/keyring": "1.3.0",
-    "agentdb": "^3.0.0-alpha.20",
-    "agentic-flow": "^3.0.0-alpha.1",
+    "agentdb": "^3.6.0",
     "better-sqlite3": "^12.9.0",
-    "ruvector": "^0.2.27",
-    "nostr-tools": "^2.7.0"
+    "ruvector": "^0.3.13",
+    "nostr-tools": "^2.7.0",
+    "@ruvector/learning-wasm": "0.1.29",
+    "agent-booster": "^0.2.2"
   },
   "peerDependencies": {
     "@metaharness/router": "^0.4.0",
     "@ruvector/typesafe": "^0.1.0",
-    "metaharness": "^0.4.1"
+    "metaharness": "^0.4.20"
   },
   "peerDependenciesMeta": {
     "@metaharness/router": {

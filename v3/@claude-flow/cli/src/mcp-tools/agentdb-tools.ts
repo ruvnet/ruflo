@@ -13,7 +13,10 @@ import { feedbackPatternsSchema, validateFeedbackPatterns } from '../memory/feed
  */
 
 import type { MCPTool } from './types.js';
+import { agentdbInventoryTools } from './agentdb-inventory-tools.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { agentdbEpisodeCrudTools } from './agentdb-episode-tools.js';
+import { agentdbHierarchicalInventoryTools } from './agentdb-hierarchical-inventory-tools.js';
 
 // ===== Shared validation helpers =====
 
@@ -306,6 +309,13 @@ export const agentdbPatternSearch: MCPTool = {
         };
       }
 
+      // #4714 — an empty result is only a healthy zero-match when the
+      // ReasoningBank controller itself ran and reported no error. `null`
+      // (no registry) and `bridge-fallback` (controller not used) do not
+      // qualify, and neither does an empty list that carries a read error.
+      const reasoningBankError = typeof result?.error === 'string' ? result.error : undefined;
+      const reasoningBankRanClean = !!result && result.controller === 'reasoningBank' && !reasoningBankError;
+
       // #1889 — symmetric fallback. pattern-store writes to the `pattern`
       // namespace via memory_store when ReasoningBank is unavailable; the
       // search path used to return an empty list with `controller: 'unavailable'`
@@ -365,12 +375,18 @@ export const agentdbPatternSearch: MCPTool = {
         // getEntry (which DOES return content) before parsing/matching. This is the path
         // that actually runs when the ReasoningBank controller is unavailable (the common
         // real-world state), so a stored pattern is now findable by search.
+        // #4714 — a failed list or hydrate read must not pass as an empty scan.
+        let listError: string | undefined;
+        let scanLimited = false;
         if (results.length === 0) {
           tier = 'substring';
           const all = await listEntries({ namespace: 'pattern', limit: 200 });
+          if (all && all.success === false) listError = all.error ?? 'listEntries returned success:false';
+          const listed = all?.entries ?? [];
+          if (typeof all?.total === 'number' && all.total > listed.length) scanLimited = true;
           const qLower = query.toLowerCase();
           const matched: Array<Record<string, unknown>> = [];
-          for (const e of (all?.entries ?? [])) {
+          for (const e of listed) {
             const meta = e as Record<string, unknown>;
             let entry: Record<string, unknown> = meta;
             // If the listing lacks content, hydrate it from the keyed store.
@@ -378,6 +394,7 @@ export const agentdbPatternSearch: MCPTool = {
               const key = typeof meta.key === 'string' ? meta.key : (typeof meta.id === 'string' ? meta.id : null);
               if (!key) continue;
               const got = await getEntry({ key, namespace: 'pattern' });
+              if (got && got.success === false) listError ??= got.error ?? `getEntry(${key}) returned success:false`;
               if (!got?.found || !got.entry) continue;
               entry = got.entry as unknown as Record<string, unknown>;
             }
@@ -397,20 +414,45 @@ export const agentdbPatternSearch: MCPTool = {
         // #3288: degraded:true is the structural signal a caller can check
         // without already knowing to distrust an apparently-successful
         // response — matches agentbbs-tools.ts's degradedResult() convention.
+        //
+        // #4714 — except when nothing was found and nothing failed: the
+        // ReasoningBank controller ran cleanly and so did every legacy read.
+        // That is an honest "no match", not a degraded controller.
+        if (results.length === 0 && reasoningBankRanClean && !semanticError && !listError) {
+          return {
+            results: [],
+            noMatch: true,
+            degraded: false,
+            controller: 'reasoningBank',
+            searched: ['reasoningBank', 'pattern-namespace'],
+            // The legacy substring scan reads at most 200 entries; say so
+            // when the namespace holds more than that.
+            ...(scanLimited ? { scanLimited: true } : {}),
+            note: 'No patterns matched the query in ReasoningBank or the legacy pattern namespace.',
+          };
+        }
+
+        const safeReasoningBankError = reasoningBankError ? sanitizeError(new Error(reasoningBankError)) : undefined;
         return {
           results,
           degraded: true,
-          reason: result ? `reasoningBank-empty:${result.controller ?? 'unknown'}` : 'reasoningBank-unavailable:registry-null',
+          reason: safeReasoningBankError
+            ? `reasoningBank-error:${safeReasoningBankError}`
+            : result ? `reasoningBank-empty:${result.controller ?? 'unknown'}` : 'reasoningBank-unavailable:registry-null',
           controller: 'memory-store-fallback',
           tier,
+          ...(safeReasoningBankError ? { reasoningBankError: safeReasoningBankError } : {}),
           // #3325: when tier=substring because tier 1 hit a real error (thrown,
           // or {success:false, error}) rather than a genuine zero-match,
           // surface why — otherwise a hard failure and an honest "not found"
           // are indistinguishable from the response alone.
           ...(tier === 'substring' && semanticError ? { semanticError } : {}),
-          note: result
-            ? `ReasoningBank returned 0 results; tier=${tier} from pattern namespace.`
-            : `ReasoningBank controller unavailable; tier=${tier} from pattern namespace.`,
+          ...(listError ? { listError } : {}),
+          note: safeReasoningBankError
+            ? `ReasoningBank search failed; tier=${tier} from pattern namespace.`
+            : result
+              ? `ReasoningBank returned 0 results; tier=${tier} from pattern namespace.`
+              : `ReasoningBank controller unavailable; tier=${tier} from pattern namespace.`,
         };
       } catch (fallbackErr) {
         return { results: [], controller: 'unavailable', fallbackError: sanitizeError(fallbackErr) };
@@ -641,12 +683,16 @@ export const agentdbRoute: MCPTool = {
 
 export const agentdbSessionStart: MCPTool = {
   name: 'agentdb_session-start',
-  description: 'Start a session with ReflexionMemory episodic replay Use when generic memory_* tools are wrong because you need AgentDB-specific controllers (HNSW vector search, hierarchical tiers, causal-graph links, pattern store/recall, RaBitQ quantization). For simple key-value persistence, memory_store/memory_retrieve are simpler. For unrelated file work, native Read/Write are fine.',
+  description: 'Start a session with ReflexionMemory episodic replay. Set recall=true with a context to get back past session episodes relevant to it (keyword + vector search; rerank=true adds a local cross-encoder, ~200 ms). Use when generic memory_* tools are wrong because you need AgentDB-specific controllers (HNSW vector search, hierarchical tiers, causal-graph links, pattern store/recall, RaBitQ quantization). For simple key-value persistence, memory_store/memory_retrieve are simpler. For unrelated file work, native Read/Write are fine.',
   inputSchema: {
     type: 'object',
     properties: {
       sessionId: { type: 'string', description: 'Session identifier' },
       context: { type: 'string', description: 'Session context for pattern retrieval' },
+      recall: { type: 'boolean', description: 'Also return past session episodes relevant to context', default: false },
+      k: { type: 'number', description: 'Episodes to recall (1-50)', default: 5 },
+      hybrid: { type: 'boolean', description: 'Keyword + vector search; false = vector only', default: true },
+      rerank: { type: 'boolean', description: 'Rerank with a local cross-encoder (~200 ms, 23 MB model on first use)', default: false },
     },
     required: ['sessionId'],
   },
@@ -661,6 +707,10 @@ export const agentdbSessionStart: MCPTool = {
       const result = await bridge.bridgeSessionStart({
         sessionId,
         context: validateString(params.context, 'context', 10_000) ?? undefined,
+        recall: params.recall === true,
+        k: validatePositiveInt(params.k, 5, 50),
+        hybrid: params.hybrid !== false,
+        rerank: params.rerank === true,
       });
       return result ?? { success: false, error: 'AgentDB bridge not available. Use memory_store/memory_search instead.' };
     } catch (error) {
@@ -703,6 +753,52 @@ export const agentdbSessionEnd: MCPTool = {
   },
 };
 
+// ===== agentdb_episode-recall — agentdb 3.2 hybrid episode retrieval (ADR-519) =====
+
+export const agentdbEpisodeRecall: MCPTool = {
+  name: 'agentdb_episode-recall',
+  description: 'Recall past episodes (session summaries, distilled trajectories) relevant to a task, ranked by keyword + vector search. rerank=true adds a local cross-encoder for better ordering at ~200 ms per call. Use when you want what happened last time on similar work; for key-value entries use memory_search.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'What you are about to work on' },
+      k: { type: 'number', description: 'Episodes to return (1-50)', default: 5 },
+      hybrid: { type: 'boolean', description: 'Keyword + vector search; false = vector only', default: true },
+      rerank: { type: 'boolean', description: 'Rerank with a local cross-encoder (~200 ms, 23 MB model on first use)', default: false },
+      onlySuccesses: { type: 'boolean', description: 'Only episodes recorded as successes' },
+      onlyFailures: { type: 'boolean', description: 'Only episodes recorded as failures' },
+      minReward: { type: 'number', description: 'Minimum reward (0-1)' },
+      timeWindowDays: { type: 'number', description: 'Only episodes from the last N days' },
+    },
+    required: ['query'],
+  },
+  handler: async (params: Record<string, unknown>) => {
+    try {
+      const vQuery = validateText(params.query, 'query', 10_000);
+      if (!vQuery.valid) return { success: false, error: vQuery.error };
+      const query = validateString(params.query, 'query', 10_000);
+      if (!query || !query.trim()) return { success: false, error: 'query is required (non-empty string)' };
+      if (params.onlySuccesses === true && params.onlyFailures === true) {
+        return { success: false, error: 'onlySuccesses and onlyFailures are mutually exclusive' };
+      }
+      const bridge = await getBridge();
+      const result = await bridge.bridgeRecallEpisodes({
+        task: query,
+        k: validatePositiveInt(params.k, 5, 50),
+        hybrid: params.hybrid !== false,
+        rerank: params.rerank === true,
+        onlySuccesses: params.onlySuccesses === true,
+        onlyFailures: params.onlyFailures === true,
+        ...(typeof params.minReward === 'number' && Number.isFinite(params.minReward) ? { minReward: validateScore(params.minReward, 0) } : {}),
+        ...(params.timeWindowDays !== undefined ? { timeWindowDays: validatePositiveInt(params.timeWindowDays, 30, 3650) } : {}),
+      });
+      return result ?? { success: false, error: 'AgentDB ReflexionMemory not available. Use memory_search instead.' };
+    } catch (error) {
+      return { success: false, error: sanitizeError(error) };
+    }
+  },
+};
+
 // ===== agentdb_hierarchical_store — Store to hierarchical memory =====
 
 export const agentdbHierarchicalStore: MCPTool = {
@@ -712,7 +808,12 @@ export const agentdbHierarchicalStore: MCPTool = {
     type: 'object',
     properties: {
       key: { type: 'string', description: 'Memory entry key' },
-      value: { type: 'string', description: 'Memory entry value' },
+      value: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 10000,
+        description: 'Memory entry value. Non-empty, max 10000 UTF-16 code units (JavaScript string length); longer values are refused. JSON Schema maxLength counts code points, so text with astral characters (emoji, some CJK) can pass this schema and still exceed the limit — each such character counts as 2.',
+      },
       tier: {
         type: 'string',
         description: 'Memory tier (working, episodic, semantic)',
@@ -744,7 +845,7 @@ export const agentdbHierarchicalStore: MCPTool = {
       const key = validateString(params.key, 'key', 1000);
       const value = validateString(params.value, 'value');
       if (!key) return { success: false, error: 'key is required (non-empty string, max 1KB)' };
-      if (!value) return { success: false, error: 'value is required (non-empty string, max 100KB)' };
+      if (!value) return { success: false, error: 'value is required (non-empty string, max 10000 characters)' };
       const tier = validateString(params.tier, 'tier', 20) ?? 'working';
       if (!['working', 'episodic', 'semantic'].includes(tier)) {
         return { success: false, error: `Invalid tier: ${tier}. Must be working, episodic, or semantic` };
@@ -912,12 +1013,12 @@ export const agentdbBatch: MCPTool = {
 
 export const agentdbContextSynthesize: MCPTool = {
   name: 'agentdb_context-synthesize',
-  description: 'Synthesize context from stored memories for a given query Use when generic memory_* tools are wrong because you need AgentDB-specific controllers (HNSW vector search, hierarchical tiers, causal-graph links, pattern store/recall, RaBitQ quantization). For simple key-value persistence, memory_store/memory_retrieve are simpler. For unrelated file work, native Read/Write are fine.',
+  description: 'Summarize validated task episodes (task, reward, success, critique) that match a query: observed success rate, reward and critique-derived patterns. Ordinary documents, research notes and graph entities are not episodes, so for them it answers no-memories or no-eligible-episodes; read those with memory_search or memory_retrieve instead. Use when generic memory_* tools are wrong because you need AgentDB-specific controllers (HNSW vector search, hierarchical tiers, causal-graph links, pattern store/recall, RaBitQ quantization). For simple key-value persistence, memory_store/memory_retrieve are simpler. For unrelated file work, native Read/Write are fine.',
   inputSchema: {
     type: 'object',
     properties: {
-      query: { type: 'string', description: 'Query to synthesize context for' },
-      maxEntries: { type: 'number', description: 'Maximum entries to include (default: 10)' },
+      query: { type: 'string', description: 'Task to find matching validated episodes for' },
+      maxEntries: { type: 'number', description: 'Maximum episodes to include (default: 10)' },
     },
     required: ['query'],
   },
@@ -1451,6 +1552,8 @@ export const agentdbGraphPathfinder: MCPTool = {
 
       const edges = rawEdges as unknown[][];
       let paths: Array<{ nodeId: string; score: number; depth: number }> = [];
+      let mincutInfo: Record<string, unknown> | undefined;
+      let approximation: string | undefined;
 
       // Check millisecond budget before heavy computation
       if (Date.now() - t0 > budget.maxMillis) {
@@ -1507,10 +1610,38 @@ export const agentdbGraphPathfinder: MCPTool = {
           paths = witnessChain.slice(0, topK);
           break;
         }
+        case 'dynamic-mincut': {
+          // Exact minimum cut of the seed's depth-hop neighbourhood: the
+          // weakest boundary around the seed, and the nodes on its side of it.
+          // Wasm solver via ruvector (@ruvector/mincut-wasm), JS Stoer-Wagner
+          // fallback for small neighbourhoods.
+          const edgeTuples = edges.map(r => [String(r[0]), String(r[1]), Number(r[2]) || 1.0] as [string, string, number]);
+          const { seedLocalMinCut } = await import('../ruvector/mincut-bridge.js');
+          const { fallbackMinCut } = await import('../ruvector/graph-analyzer.js');
+          const cut = await seedLocalMinCut(seedNodeId, edgeTuples, depth, budget.maxNodesVisited, fallbackMinCut);
+          if (!cut) {
+            mincutInfo = { backend: 'none', message: 'seed neighbourhood too large for the JS fallback and the wasm solver is unavailable (install ruvector)' };
+            break;
+          }
+          paths = cut.seedSide
+            .map(r => ({ nodeId: r.nodeId, score: 1 / (1 + r.depth), depth: r.depth }))
+            .filter(r => r.score >= threshold)
+            .slice(0, topK);
+          mincutInfo = {
+            backend: cut.backend,
+            cutValue: cut.cutValue,
+            seedSideSize: cut.seedSide.length + 1,
+            otherSideSize: cut.otherSide.length,
+            subgraphNodes: cut.subgraphNodes,
+            cutEdges: cut.cutEdges.slice(0, 50),
+          };
+          break;
+        }
         case 'connected-component-churn':
-        case 'dynamic-mincut':
         case 'spectral-sparsify': {
-          // Simplified implementations: return k-hop neighbors with basic score
+          // Not implemented natively yet: approximated by k-hop neighbours with
+          // a rank-decay score. The response says so via `implementation`.
+          approximation = 'k-hop';
           const edgeTuples = edges.map(r => [r[0], r[1], Number(r[2]) || 1.0] as [string, string, number]);
           const khopResult = await agentdbGraphQuery.handler({
             nodeId: seedNodeId, mode: 'k-hop', depth, complexityBudget: budget,
@@ -1533,6 +1664,8 @@ export const agentdbGraphPathfinder: MCPTool = {
         count: paths.length,
         elapsedMs,
         budgetUsed: { millis: elapsedMs, nodes: rawEdges.length },
+        ...(mincutInfo && { mincut: mincutInfo }),
+        ...(approximation && { implementation: `${approximation} approximation` }),
         ...(depthWarning && { warning: depthWarning }),
       };
     } catch (error) {
@@ -1555,6 +1688,8 @@ export const agentdbTools: MCPTool[] = [
   agentdbRoute,
   agentdbSessionStart,
   agentdbSessionEnd,
+  agentdbEpisodeRecall,    // ADR-519
+  ...agentdbEpisodeCrudTools, // ADR-520
   agentdbHierarchicalStore,
   agentdbHierarchicalRecall,
   agentdbHierarchicalDelete,
@@ -1564,4 +1699,6 @@ export const agentdbTools: MCPTool[] = [
   agentdbSemanticRoute,
   agentdbGraphQuery,       // ADR-130 Phase 2
   agentdbGraphPathfinder,  // ADR-130 Phase 5
+  ...agentdbHierarchicalInventoryTools, // #4712
+  ...agentdbInventoryTools, // #4707
 ];

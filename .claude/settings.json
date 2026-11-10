@@ -49,7 +49,8 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/helpers/hook-handler.cjs\" pre-bash",
-            "timeout": 5000
+            "timeout": 5000,
+            "onFailure": "block"
           }
         ]
       }

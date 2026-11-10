@@ -125,9 +125,9 @@ const RawFormulaSchema = z.object({
     needs: z.array(z.string()).optional(),
     duration: z.number().optional(),
     requires: z.array(z.string()).optional(),
-    metadata: z.record(z.unknown()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   })).optional(),
-  vars: z.record(z.object({
+  vars: z.record(z.string(), z.object({
     name: z.string().default(''),
     description: z.string().optional(),
     default: z.string().optional(),
@@ -151,7 +151,7 @@ const RawFormulaSchema = z.object({
     advice: z.string().default(''),
     type: z.enum(['before', 'after', 'around']).default('after'),
   })).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 }).passthrough();
 
 /**
@@ -225,7 +225,7 @@ export function sanitizeBeadOutput(raw: string): Bead {
   if (!result.success) {
     throw BeadsError.parseFailed(
       raw,
-      new Error(result.error.errors.map(e => e.message).join('; '))
+      new Error(result.error.issues.map(e => e.message).join('; '))
     );
   }
 
@@ -298,7 +298,7 @@ export function sanitizeFormulaOutput(raw: string): Formula {
   if (!result.success) {
     throw FormulaError.parseFailed(
       'output',
-      result.error.errors.map(e => e.message).join('; ')
+      result.error.issues.map(e => e.message).join('; ')
     );
   }
 
@@ -385,7 +385,7 @@ export function sanitizeConvoyOutput(raw: string): Convoy {
   const result = RawConvoySchema.safeParse(parsed);
   if (!result.success) {
     throw ConvoyError.createFailed(
-      result.error.errors.map(e => e.message).join('; ')
+      result.error.issues.map(e => e.message).join('; ')
     );
   }
 

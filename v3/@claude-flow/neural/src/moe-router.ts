@@ -143,6 +143,10 @@ interface PersistedModel {
     // totalRoutings by exactly 1). Optional for backward compatibility with
     // model files saved before this field existed.
     totalRoutings?: number;
+    // Running sum of each expert's gate probability over probSamples route()
+    // calls (P_i = probSums[i] / probSamples). Optional: older files lack it.
+    probSums?: number[];
+    probSamples?: number;
   };
   metadata: {
     savedAt: string;
@@ -323,6 +327,11 @@ export class MoERouter {
   // Statistics
   private routingCounts: Float32Array; // [NUM_EXPERTS]
   private totalRoutings = 0;
+  // Running sum of gate probabilities per expert and the number of route()
+  // calls it covers, so computeLoadBalanceLoss() can use the mean P_i over the
+  // same history as f_i instead of the latest call's probabilities.
+  private probSums: Float64Array = new Float64Array(NUM_EXPERTS);
+  private probSamples = 0;
   private updateCount = 0;
   private avgReward = 0;
 
@@ -440,6 +449,10 @@ export class MoERouter {
       this.routingCounts[idx]++;
     }
     this.totalRoutings++;
+    for (let i = 0; i < NUM_EXPERTS; i++) {
+      this.probSums[i] += this.probs[i];
+    }
+    this.probSamples++;
 
     // Cache for gradient computation
     this.lastInput = new Float32Array(input);
@@ -659,6 +672,8 @@ export class MoERouter {
   resetStats(): void {
     this.routingCounts.fill(0);
     this.totalRoutings = 0;
+    this.probSums.fill(0);
+    this.probSamples = 0;
     this.updateCount = 0;
     this.avgReward = 0;
   }
@@ -703,6 +718,13 @@ export class MoERouter {
         typeof model.stats.totalRoutings === 'number'
           ? model.stats.totalRoutings
           : this.routingCounts.reduce((a, b) => a + b, 0);
+      // Files saved before probSums existed start a fresh probability average.
+      const probSums = model.stats.probSums;
+      const hasProbSums =
+        Array.isArray(probSums) && probSums.length === NUM_EXPERTS &&
+        typeof model.stats.probSamples === 'number';
+      this.probSums = hasProbSums ? new Float64Array(probSums) : new Float64Array(NUM_EXPERTS);
+      this.probSamples = hasProbSums ? (model.stats.probSamples as number) : 0;
 
       return true;
     } catch (err) {
@@ -753,6 +775,8 @@ export class MoERouter {
           routingCounts: Array.from(this.routingCounts),
           avgReward: this.avgReward,
           totalRoutings: this.totalRoutings,
+          probSums: Array.from(this.probSums),
+          probSamples: this.probSamples,
         },
         metadata: {
           savedAt: new Date().toISOString(),
@@ -809,10 +833,12 @@ export class MoERouter {
   private computeLoadBalanceLoss(): number {
     if (this.totalRoutings === 0) return 0;
 
+    if (this.probSamples === 0) return 0;
+
     let loss = 0;
     for (let i = 0; i < NUM_EXPERTS; i++) {
       const fraction = this.routingCounts[i] / this.totalRoutings;
-      const avgProb = this.probs[i]; // Current routing prob
+      const avgProb = this.probSums[i] / this.probSamples;
       loss += fraction * avgProb;
     }
 

@@ -1,6 +1,6 @@
 /**
  * The ruvector CLI as fixed argv, the checks every typed value passes before it becomes an argv element, and the
- * readers for what it prints. Read against ruvector 0.3.3's own source (bin/cli.js) and `--help`: none of its brain,
+ * readers for what it prints. Read against ruvector 0.3.13's own source (bin/cli.js) and `--help`: none of its brain,
  * rvf, rvlite, decompile, edge, identity or workers tools are in ruflo's MCP server, so each runs through this CLI or
  * not at all. Under a pipe the CLI prints JSON for brain, edge and identity; hooks and rvf print coloured text.
  * Pure: nothing here runs anything.
@@ -8,10 +8,10 @@
 import { plain } from './parse'
 
 /**
- * The pin: the version the session's ruvector MCP server runs (`npx -y ruvector mcp start` resolved to 0.3.3), from
- * the npx cache only. The ruflo-ruvector plugin documents 0.2.25, which has no decompile MCP surface.
+ * The pin: the version the session's ruvector MCP server runs (`npx -y ruvector mcp start` resolved to 0.3.13), from
+ * the npx cache only. The ruflo-ruvector plugin pins the same version.
  */
-export const RUVECTOR_VERSION = '0.3.3'
+export const RUVECTOR_VERSION = '0.3.13'
 export const RV = ['npx', '--offline', '-y', `ruvector@${RUVECTOR_VERSION}`] as const
 
 /** The vector lab's fields between renders: each Input's text, as the person typed it. */

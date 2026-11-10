@@ -9,6 +9,8 @@ import { randomUUID } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import { type MCPTool, getProjectCwd } from './types.js';
+import { containedWritePath } from './path-containment.js';
+import { MAX_IMPORT_BYTES, readImportFile } from './import-limits.js';
 import {
   mkdirRestricted,
   readFileMaybeEncrypted,
@@ -79,6 +81,22 @@ function ensureSessionDir(): void {
   if (!existsSync(dir)) {
     mkdirRestricted(dir);
   }
+}
+
+/**
+ * The session hook (`session.js` from init/helpers-generator.ts) writes its
+ * records into this same directory: `current.json` and `session-<n>.json`
+ * archives shaped `{ id, startedAt, ... }` rather than session_save's
+ * `{ sessionId, name, savedAt, stats }`. Read the id and time from either shape
+ * (ADR-093 F6), falling back to the file's own id.
+ */
+function sessionIdentity(session: SessionRecord, fileId: string): { sessionId: string; savedAt: string } {
+  const raw = session as unknown as Record<string, unknown>;
+  const pick = (...values: unknown[]) => values.find((v): v is string => typeof v === 'string' && v !== '');
+  return {
+    sessionId: pick(raw.sessionId, raw.id) ?? fileId,
+    savedAt: pick(raw.savedAt, raw.startedAt) ?? '',
+  };
 }
 
 function loadSession(sessionId: string): SessionRecord | null {
@@ -155,6 +173,20 @@ export interface MemoryCaptureReport {
   error?: string;
 }
 
+/**
+ * #4404: snapshot map ID for a live (namespace, key) row. A bare
+ * `namespace::key` join collides when either part contains `::`
+ * (`team::alice`/`profile` vs `team`/`alice::profile`), so one row was
+ * dropped on save and a distinct sibling row was skipped as a mirror. `%` and
+ * `:` are percent-escaped in each part, which keeps ordinary IDs unchanged.
+ * Restore reads the explicit namespace/key fields, never this ID, so older
+ * snapshots restore as before.
+ */
+export function memorySnapshotId(namespace: string, key: string): string {
+  const escape = (part: string) => part.replace(/%/g, '%25').replace(/:/g, '%3A');
+  return `${escape(namespace)}::${escape(key)}`;
+}
+
 async function readLiveEntries(
   listEntries: typeof import('../memory/memory-initializer.js').listEntries,
   dbPath: string,
@@ -214,7 +246,7 @@ async function captureMemorySnapshot(): Promise<{ memory?: Record<string, unknow
     if (existsSync(primary)) {
       sawStore = true;
       for (const row of await readLiveEntries(listEntries, primary)) {
-        const id = `${row.namespace}::${row.key}`;
+        const id = memorySnapshotId(row.namespace, row.key);
         seen.add(id);
         entries[id] = {
           key: row.key, value: row.content ?? '', namespace: row.namespace,
@@ -232,7 +264,7 @@ async function captureMemorySnapshot(): Promise<{ memory?: Record<string, unknow
       sawStore = true;
       // The AgentDB store is read by native SQLite and must stay plaintext.
       for (const row of await readLiveEntries(listEntries, sibling, false)) {
-        const id = `${row.namespace}::${row.key}`;
+        const id = memorySnapshotId(row.namespace, row.key);
         if (seen.has(id)) continue;
         seen.add(id);
         entries[id] = {
@@ -662,13 +694,14 @@ export const sessionTools: MCPTool[] = [
       if (session) {
         const path = getSessionPath(sessionId);
         const stat = statSync(path);
+        const identity = sessionIdentity(session, sessionId);
 
         return {
-          sessionId: session.sessionId,
-          name: session.name,
+          sessionId: identity.sessionId,
+          name: session.name ?? identity.sessionId,
           description: session.description,
-          savedAt: session.savedAt,
-          stats: session.stats,
+          savedAt: identity.savedAt,
+          stats: session.stats ?? null,
           fileSize: stat.size,
           path,
           hasData: {
@@ -705,12 +738,13 @@ export const sessionTools: MCPTool[] = [
       const sessionId = newest.replace(/\.json$/, '');
       const session = loadSession(sessionId);
       if (!session) return { sessionId, status: 'unknown', startedAt: '', error: 'Session file unreadable' };
+      const identity = sessionIdentity(session, sessionId);
       return {
-        sessionId: session.sessionId,
-        name: session.name,
+        sessionId: identity.sessionId,
+        name: session.name ?? identity.sessionId,
         status: 'active',
-        startedAt: session.savedAt,
-        stats: session.stats,
+        startedAt: identity.savedAt,
+        stats: session.stats ?? null,
       };
     },
   },
@@ -746,7 +780,9 @@ export const sessionTools: MCPTool[] = [
       let path: string | null = null;
       const outputPath = input.outputPath ? String(input.outputPath) : null;
       if (outputPath) {
-        try { writeFileSync(outputPath, JSON.stringify(session, null, 2), 'utf-8'); path = outputPath; }
+        const target = containedWritePath(outputPath);
+        if (!target) return { sessionId, error: 'outputPath must be a file inside the project directory (no symlinks)' };
+        try { writeFileSync(target, JSON.stringify(session, null, 2), 'utf-8'); path = target; }
         catch (e) { return { sessionId, error: `Could not write ${outputPath}: ${(e as Error).message}` }; }
       }
       return { sessionId, name: session.name, data: session, path, exportedAt: new Date().toISOString() };
@@ -761,7 +797,7 @@ export const sessionTools: MCPTool[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        inputPath: { type: 'string', description: 'Path to the session JSON file to import (or pass data)' },
+        inputPath: { type: 'string', description: 'Path to the session JSON file to import (or pass data); file and gzip output are each limited to 16 MiB' },
         data: { type: 'object', description: 'The session record itself, as written by session_export (or pass inputPath)' },
         name: { type: 'string', description: 'Override the imported session name' },
         activate: { type: 'boolean', description: 'Restore the imported session into the active stores' },
@@ -776,8 +812,9 @@ export const sessionTools: MCPTool[] = [
         if (!inputPath) return { error: 'Provide inputPath (a session JSON file) or data (a session record)' };
         if (!existsSync(inputPath)) return { error: `File not found: ${inputPath}` };
         try {
-          const bytes = readFileSync(inputPath);
-          const content = bytes[0] === 0x1f && bytes[1] === 0x8b ? gunzipSync(bytes) : bytes;
+          const bytes = readImportFile(inputPath);
+          const content = bytes[0] === 0x1f && bytes[1] === 0x8b
+            ? gunzipSync(bytes, { maxOutputLength: MAX_IMPORT_BYTES }) : bytes;
           parsed = JSON.parse(content.toString('utf-8'));
         }
         catch (e) { return { error: `Invalid session JSON: ${(e as Error).message}` }; }

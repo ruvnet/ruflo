@@ -211,7 +211,7 @@ describe('guidance lifecycle', () => {
     const w = memoryWorld('/work', { hooks: { UserPromptSubmit: [{ hooks: [{ command: 'node .claude/helpers/hook-handler.cjs route' }] }] } });
     seed(w); files(w).set('/work/.claude/helpers/hook-handler.cjs', { text: '// older helper', mtimeMs: 1 });
     for (let i = 0; i < 2; i++) { const mod = await start(w); await prompt(mod); await complete(mod); }
-    expect(w.env.get('RUFLO_MODS_OWNS')).toBe('post-edit');
+    expect(w.env.get('RUFLO_MODS_OWNS')).toBe('post-edit,learning-loop');
     expect(queues(w)).toHaveLength(2);
   });
 });

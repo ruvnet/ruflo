@@ -138,9 +138,9 @@ All GitHub modes can be enhanced with ruv-swarm coordination:
 ```javascript
 // Initialize swarm for GitHub workflow
 mcp__claude-flow__swarm_init { topology: "hierarchical", maxAgents: 5 }
-mcp__claude-flow__agent_spawn { type: "coordinator", name: "GitHub Coordinator" }
-mcp__claude-flow__agent_spawn { type: "reviewer", name: "Code Reviewer" }
-mcp__claude-flow__agent_spawn { type: "tester", name: "QA Agent" }
+mcp__claude-flow__agent_spawn { agentType: "coordinator", name: "GitHub Coordinator" }
+mcp__claude-flow__agent_spawn { agentType: "reviewer", name: "Code Reviewer" }
+mcp__claude-flow__agent_spawn { agentType: "tester", name: "QA Agent" }
 
 // Execute GitHub workflow with coordination
 mcp__claude-flow__task_orchestrate { task: "GitHub workflow", strategy: "parallel" }

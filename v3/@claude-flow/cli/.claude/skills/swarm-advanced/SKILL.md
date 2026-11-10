@@ -25,7 +25,7 @@ claude mcp add claude-flow npx claude-flow@alpha mcp start
 mcp__claude-flow__swarm_init({ topology: "mesh", maxAgents: 6 })
 
 // 2. Spawn specialized agents
-mcp__claude-flow__agent_spawn({ type: "researcher", name: "Agent 1" })
+mcp__claude-flow__agent_spawn({ agentType: "researcher", name: "Agent 1" })
 
 // 3. Orchestrate tasks
 mcp__claude-flow__task_orchestrate({ task: "...", strategy: "parallel" })
@@ -108,7 +108,7 @@ const researchAgents = [
 // Spawn all agents
 researchAgents.forEach(agent => {
   mcp__claude-flow__agent_spawn({
-    type: agent.type,
+    agentType: agent.type,
     name: agent.name,
     capabilities: agent.capabilities
   })
@@ -274,7 +274,7 @@ const devTeam = [
 // Spawn all team members
 devTeam.forEach(member => {
   mcp__claude-flow__agent_spawn({
-    type: member.type,
+    agentType: member.type,
     name: member.name,
     capabilities: member.capabilities,
     swarmId: "dev-swarm"
@@ -444,7 +444,7 @@ const testingTeam = [
 // Spawn all testers
 testingTeam.forEach(tester => {
   mcp__claude-flow__agent_spawn({
-    type: tester.type,
+    agentType: tester.type,
     name: tester.name,
     capabilities: tester.capabilities,
     swarmId: "testing-swarm"
@@ -634,7 +634,7 @@ const analysisTeam = [
 // Spawn all analysts
 analysisTeam.forEach(analyst => {
   mcp__claude-flow__agent_spawn({
-    type: analyst.type,
+    agentType: analyst.type,
     name: analyst.name,
     capabilities: analyst.capabilities
   })

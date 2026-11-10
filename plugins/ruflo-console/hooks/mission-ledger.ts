@@ -2,6 +2,10 @@
  * The mission ledger in the host store: one key per project (#4237), and what is left of the machine-wide key that came before it. A
  * mission recorded for this project is taken out of the old key on load; one that names no project is offered, never taken in unasked (#4254).
  */
+import { IGNORE_BODY } from './activity-io'
+import { under } from './data/files'
+import { writeFlavorReady } from './data/write-flavor'
+import { writeVia } from './data/write-via'
 import type { Host } from './host'
 import type { McState, MissionRecord } from './mission-types'
 import type { State } from './state'
@@ -46,6 +50,40 @@ const held = (state: State): Map<string, MissionRecord> => {
 /** The 20 missions the next save keeps, newest last. */
 const keptMissions = (missions: Map<string, MissionRecord>): MissionRecord[] => [...missions.values()].slice(-20)
 
+/**
+ * A copy of the ledger in the project. The host store is the plugin's own file, and one plugin can have two: the console loaded inline and
+ * the same console from the marketplace keep separate stores, so a mission made under one is absent under the other (it "disappears" after
+ * a restart that loads the plugin the other way). The project folder is the same either way.
+ */
+export const mirrorPathOf = (cwd: string): string => under(cwd, '.claude-flow/console/mission-ledger.json')
+
+/** Best effort: a refused write leaves the host store as the only copy, as before. */
+async function writeMirror(state: State, host: Host, saved: unknown): Promise<void> {
+  // An empty ledger (a project whose missions are only offered, not yet adopted) must not overwrite the copy those offers come from.
+  if (state.cwd === '' || (saved as { missions: unknown[] }).missions.length === 0) return
+
+  try {
+    const flavor = await writeFlavorReady()
+
+    await writeVia(flavor, host, { kind: 'replace', path: mirrorPathOf(state.cwd), text: JSON.stringify(saved), hasDir: false })
+    await writeVia(flavor, host, { kind: 'create-excl', path: under(state.cwd, '.claude-flow/console/.gitignore'), text: IGNORE_BODY })
+  } catch {
+    // no file API, or no folder to write in: nothing to mirror to
+  }
+}
+
+async function readMirror(state: State, host: Host): Promise<SavedLedger | undefined> {
+  if (state.cwd === '') return undefined
+
+  try {
+    const text = await host.fs.read(mirrorPathOf(state.cwd))
+
+    return text.length > 0 && text.length < 2_000_000 ? (JSON.parse(text) as SavedLedger) : undefined
+  } catch {
+    return undefined
+  }
+}
+
 /** Saves this project's ledger. The ids of the missions it saved, or null when the store refused the write: nothing is pruned on null. */
 const writeLedger = (state: State, host: Host): Promise<string[] | null> => {
   const mc = mcOf(state)
@@ -53,6 +91,8 @@ const writeLedger = (state: State, host: Host): Promise<string[] | null> => {
   const offered = [...held(state).values()].filter(m => !mc.missions.has(m.id)).slice(-20)
   const dismissed = [...mc.legacyDismissed].slice(-100)
   const saved = { active: mc.active, missions, ...(offered.length > 0 && { offered }), ...(dismissed.length > 0 && { legacyDismissed: dismissed }) }
+
+  void writeMirror(state, host, saved)
 
   return host.storeSet(ledgerKeyOf(state.cwd), saved).then(() => missions.map(m => m.id), () => null)
 }
@@ -137,6 +177,17 @@ export async function loadLedger(state: State, host: Host): Promise<void> {
       if (!mc.missions.has(m.id)) mc.missions.set(m.id, m)
       claimed.push(m.id)
     } else if (m.cwd === undefined && !mc.missions.has(m.id)) offered.set(m.id, m)
+  }
+
+  // The host store has no ledger for this project at all (another store than the one that saved it). The project's copy is a file a cloned
+  // repository can ship, so its missions are only offered, never taken in unasked (#4254): nothing from it is trusted as the person's own, and
+  // its `active` is ignored. One yes (`adoptLegacy`) brings a mission back.
+  if (own === undefined) {
+    const copy = await readMirror(state, host)
+
+    if (state.cwd !== cwd) return
+
+    for (const m of savedMissions(copy)) if (isOurs(m) && !mc.missions.has(m.id)) offered.set(m.id, m)
   }
 
   // 0.44.4 before review saved one `true` for the whole offer: it covered every mission offered then.

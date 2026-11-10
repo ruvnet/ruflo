@@ -1758,7 +1758,7 @@ const modulesCommand: Command = {
     const targetDir = ctx.args[0] || ctx.cwd;
     const outputFile = ctx.flags.output as string | undefined;
     const format = (ctx.flags.format as string) || 'text';
-    const minSize = (ctx.flags['min-size'] as number) || 2;
+    const minSize = (ctx.flags.minSize as number) || 2;
 
     output.printInfo(`Detecting module communities in: ${output.highlight(targetDir)}`);
     output.writeln();

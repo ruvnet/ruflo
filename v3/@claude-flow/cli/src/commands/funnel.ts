@@ -11,6 +11,7 @@
  *   funnel earnings   show accrued and paid revenue-share balance
  *   funnel unenroll   revoke local enrollment (funnel itself stays enabled)
  *   funnel id         print the pseudonymous funnel ID, if one exists
+ *   funnel telemetry  opt in or out of anonymous usage telemetry (on | off | status)
  */
 
 import { execFile } from 'node:child_process';
@@ -83,9 +84,43 @@ const disableSub: Command = {
   action: async (): Promise<CommandResult> => {
     setUserConfigEnabled(false);
     recordDisclosureDeclined();
+    // "All surfaces" includes opt-in event telemetry: revoke it too.
+    if (hasConsent('telemetry')) recordConsent('telemetry', false, 'cli-funnel-disable');
     deleteFunnelData(); // opt-out deletes the pseudonymous ID + local event queue
-    output.printSuccess('Funnel disabled. All promotional surfaces are off; local funnel data deleted.');
+    output.printSuccess('Funnel disabled. All promotional surfaces are off, no funnel.ruv.io requests are made, and local funnel data is deleted.');
     return { success: true };
+  },
+};
+
+// ADR-302 consent domain `telemetry` (ADR-305/309): explicit opt-in to the
+// anonymous funnel event stream. Enrollment never toggles it; only this
+// command does. Off by default.
+const telemetrySub: Command = {
+  name: 'telemetry',
+  description: 'Opt in or out of anonymous usage telemetry: telemetry on | off | status',
+  action: async (ctx: CommandContext): Promise<CommandResult> => {
+    const verb = String(ctx.args[0] ?? 'status').toLowerCase();
+    if (verb === 'on') {
+      recordConsent('telemetry', true, 'cli-funnel-telemetry');
+      const id = getFunnelId();
+      output.printSuccess('Telemetry on. Once per session ruflo sends anonymous funnel events (daily-bucketed, no paths, prompts, code or account data) with a random ID that rotates every 90 days.');
+      output.writeln('Turn it off any time with `ruflo funnel telemetry off`; that also deletes the ID and the local event queue.');
+      return { success: true, data: { telemetry: true, id } };
+    }
+    if (verb === 'off') {
+      recordConsent('telemetry', false, 'cli-funnel-telemetry');
+      deleteFunnelData();
+      output.printSuccess('Telemetry off. The pseudonymous ID and the local event queue are deleted.');
+      return { success: true, data: { telemetry: false } };
+    }
+    if (verb !== 'status') {
+      output.printError(`Unknown telemetry option "${verb}". Use: on | off | status`);
+      return { success: false, exitCode: 1 };
+    }
+    const on = hasConsent('telemetry');
+    output.writeln(`Telemetry: ${on ? 'on (opted in)' : 'off'}`);
+    output.writeln('Without opting in, ruflo makes one anonymous request per session to fetch tips (release + OS only); `ruflo funnel disable` stops that too.');
+    return { success: true, data: { telemetry: on } };
   },
 };
 
@@ -328,7 +363,7 @@ const idSub: Command = {
 export const funnelCommand: Command = {
   name: 'funnel',
   description: 'Control the Cognitum lifecycle funnel surfaces (tips, enrollment, notices)',
-  subcommands: [statusSub, disableSub, enableSub, acceptSub, openSub, enrollSub, earningsSub, unenrollSub, idSub],
+  subcommands: [statusSub, disableSub, enableSub, acceptSub, openSub, enrollSub, earningsSub, unenrollSub, idSub, telemetrySub],
   examples: [
     { command: 'ruflo funnel status', description: 'Effective state + deciding source' },
     { command: 'ruflo funnel accept', description: 'Skip the 24h grace so rotation starts now' },

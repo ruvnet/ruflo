@@ -42,6 +42,24 @@ export { createThreat } from './domain/entities/threat.js';
 
 // Domain services
 export { ThreatDetectionService, createThreatDetectionService } from './domain/services/threat-detection-service.js';
+export type { ThreatDetectionOptions, ThreatPattern } from './domain/services/threat-detection-service.js';
+
+// AIMDS pattern packs (3.1.0): the pack engine, usable on its own.
+export {
+  InjectionDetector,
+  createInjectionDetector,
+  getInjectionDetector,
+  EMBEDDED_PACKS,
+} from './domain/services/packs/index.js';
+export type {
+  InjectionDetectorConfig,
+  InjectionReport,
+  InjectionThreat,
+  PackName,
+  PackSelection,
+  PatternPack,
+  PatternSpec,
+} from './domain/services/packs/index.js';
 
 export type {
   LearnedThreatPattern,
@@ -61,6 +79,7 @@ import { createThreatDetectionService } from './domain/services/threat-detection
 import { createThreatLearningService } from './domain/services/threat-learning-service.js';
 import type { ThreatDetectionResult, ThreatType, Threat } from './domain/entities/threat.js';
 import type { LearnedThreatPattern, MitigationStrategy, VectorStore } from './domain/services/threat-learning-service.js';
+import type { PackSelection } from './domain/services/packs/index.js';
 
 /**
  * Configuration for AIDefence
@@ -74,6 +93,11 @@ export interface AIDefenceConfig {
   confidenceThreshold?: number;
   /** Enable PII detection */
   enablePIIDetection?: boolean;
+  /**
+   * AIMDS pattern packs scanned alongside the built-in patterns. Default
+   * `true` (all vendored packs); `false` restores built-ins-only detection.
+   */
+  packs?: PackSelection;
 }
 
 /**
@@ -172,7 +196,7 @@ export interface AIDefence {
  * ```
  */
 export function createAIDefence(config: AIDefenceConfig = {}): AIDefence {
-  const detectionService = createThreatDetectionService();
+  const detectionService = createThreatDetectionService({ packs: config.packs });
   const learningService = config.enableLearning
     ? createThreatLearningService(config.vectorStore)
     : null;

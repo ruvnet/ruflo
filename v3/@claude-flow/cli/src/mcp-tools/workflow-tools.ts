@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validatePath, validateText } from './validate-input.js';
 import { executeAgentTask } from './agent-execute-core.js';
+import { readPreservedJsonStore } from './record-store.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -56,7 +57,9 @@ function parseCondition(when: unknown): Condition | Error {
   if (expression === 'true' || expression === 'false') {
     return { constant: expression === 'true' };
   }
-  const match = expression.match(/^([a-zA-Z_]\w*)\s*===?\s*(?:'([^']*)'|"([^"]*)"|(-?\d+(?:\.\d+)?)|(true|false))$/);
+  // Variable names follow the `{{…}}` interpolation syntax, so a condition can
+  // read a task step's output, stored as `<stepId>.output` (`step-1.output`).
+  const match = expression.match(/^([a-zA-Z_][\w.-]*)\s*===?\s*(?:'([^']*)'|"([^"]*)"|(-?\d+(?:\.\d+)?)|(true|false))$/);
   if (!match) {
     return new Error('condition config.when must compare a variable to a quoted string, number, or boolean using == or ===');
   }
@@ -92,17 +95,43 @@ function ensureWorkflowDir(): void {
   }
 }
 
-function loadWorkflowStore(): WorkflowStore {
-  try {
-    const path = getWorkflowPath();
-    if (existsSync(path)) {
-      const data = readFileSync(path, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch {
-    // Return default store on error
+/**
+ * SECURITY: record maps are keyed by ids taken from MCP tool input, and
+ * validateIdentifier accepts names like `__proto__` and `constructor`. On a
+ * plain object those resolve to Object.prototype or a built-in, which a handler
+ * would then write into. Null-prototype maps only ever return own records.
+ */
+function withRecordMaps<S extends object>(store: S, keys: readonly string[]): S {
+  const maps = store as Record<string, unknown>;
+  for (const key of keys) {
+    const map = maps[key];
+    if (map && typeof map === 'object' && !Array.isArray(map)) Object.setPrototypeOf(map, null);
+    else maps[key] = Object.create(null);
   }
-  return { workflows: {}, templates: {}, version: '3.0.0' };
+  return store;
+}
+
+const WORKFLOW_MAPS = ['workflows', 'templates'] as const;
+
+function isRecordMap(value: unknown): boolean {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function loadWorkflowStore(): WorkflowStore {
+  // #4737: a parse error used to return an empty store, and the next save
+  // overwrote the file. Only a missing file is empty; corrupt bytes are
+  // copied aside and the error is reported.
+  const path = getWorkflowPath();
+  const data = readPreservedJsonStore(
+    path,
+    'workflow',
+    () => ({ workflows: {}, templates: {}, version: '3.0.0' }) as WorkflowStore,
+    (store) => WORKFLOW_MAPS.every((key) => {
+      const map = (store as unknown as Record<string, unknown>)[key];
+      return map === undefined || isRecordMap(map);
+    }),
+  );
+  return withRecordMaps(data, WORKFLOW_MAPS);
 }
 
 function saveWorkflowStore(store: WorkflowStore): void {
@@ -216,11 +245,13 @@ export const workflowTools: MCPTool[] = [
           name: task || `${templateName} workflow`,
           description: task,
           steps,
-          status: 'running',
+          // #4609: nothing is dispatched here, so this is not a run yet. Saving it
+          // as 'running' made workflow_execute and workflow_delete refuse it.
+          // 'ready' matches workflow_create; workflow_execute starts it.
+          status: 'ready',
           currentStep: 0,
           variables: { template: templateName, ...options },
           createdAt: new Date().toISOString(),
-          startedAt: new Date().toISOString(),
         };
 
         store.workflows[workflowId] = workflow;
@@ -230,14 +261,17 @@ export const workflowTools: MCPTool[] = [
       return {
         workflowId,
         template: templateName,
-        status: dryRun ? 'validated' : 'running',
+        status: dryRun ? 'validated' : 'ready',
         stages,
         metrics: {
           totalStages: stages.length,
           completedStages: 0,
           agentsSpawned: 0,
-          estimatedDuration: `${stages.length * 30}s`,
+          estimatedDuration: 'unknown',
         },
+        ...(dryRun ? {} : {
+          nextStep: 'Start it with workflow_execute; task steps need config.agentId or options.defaultAgentId.',
+        }),
       };
     },
   },

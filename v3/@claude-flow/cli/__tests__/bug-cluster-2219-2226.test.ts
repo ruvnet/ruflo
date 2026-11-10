@@ -13,7 +13,7 @@
  * statusline drift-guard convention.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mkdtempSync, existsSync, readFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import path from 'path';
@@ -142,29 +142,75 @@ describe('audit #1 — negative reward keeps its sign across all flag syntaxes',
 describe('#2226 — pattern store and search share a backend', () => {
   it('stores a pattern and finds it via search', async () => {
     const marker = `oauth-refresh-token-rotation-${process.pid}-${process.hrtime.bigint()}`;
-    // Backend init (registry + ONNX embeddings) can be slow on first load.
+    // The backend lives under cwd/.swarm by default: the repo root in CI, which
+    // every other test file in the run writes patterns to. A top-5 search there
+    // ranks this pattern against theirs, so give the test a store of its own.
+    const dir = mkdtempSync(path.join(tmpdir(), 'ruflo-2226-'));
+    const prevCwd = process.cwd();
+    process.chdir(dir);
+    vi.stubEnv('CLAUDE_FLOW_MEMORY_PATH', path.join(dir, '.swarm'));
+    vi.resetModules();
+    try {
+      const { agentdbPatternStore, agentdbPatternSearch } = await import('../src/mcp-tools/agentdb-tools.js');
+      // Backend init (registry + ONNX embeddings) can be slow on first load.
+      const stored = await agentdbPatternStore.handler({
+        pattern: `Use ${marker} for secure session renewal`,
+        type: 'auth-pattern',
+        confidence: 0.9,
+      });
+      if (!stored || stored.success !== true) return; // backend unavailable in isolation — skip
 
-    const stored = await agentdbPatternStore.handler({
-      pattern: `Use ${marker} for secure session renewal`,
-      type: 'auth-pattern',
-      confidence: 0.9,
-    });
-    if (!stored || stored.success !== true) return; // backend unavailable in isolation — skip
+      const found = await agentdbPatternSearch.handler({
+        query: marker,
+        topK: 5,
+        minConfidence: 0.1,
+      });
 
-    const found = await agentdbPatternSearch.handler({
-      query: marker,
-      topK: 5,
-      minConfidence: 0.1,
-    });
+      expect(Array.isArray(found.results)).toBe(true);
+      // Result text lives in `content` (reasoningBank path) or `pattern` (fallback path).
+      const hit = found.results.find((r: any) => {
+        const text = typeof r.content === 'string' ? r.content
+          : typeof r.pattern === 'string' ? r.pattern : '';
+        return text.includes(marker);
+      });
+      expect(hit).toBeDefined();
+    } finally {
+      process.chdir(prevCwd);
+      vi.unstubAllEnvs();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
 
-    expect(Array.isArray(found.results)).toBe(true);
-    // Result text lives in `content` (reasoningBank path) or `pattern` (fallback path).
-    const hit = found.results.find((r: any) => {
-      const text = typeof r.content === 'string' ? r.content
-        : typeof r.pattern === 'string' ? r.pattern : '';
-      return text.includes(marker);
-    });
-    expect(hit).toBeDefined();
+  // #4643: the full CI run failed this round-trip because agentdb served mock
+  // embeddings there (its Transformers.js model did not load). A passage and a
+  // query then hash to unrelated vectors, so the vector search alone misses a
+  // pattern storePattern just wrote. Force that state and require a hit.
+  it('finds a stored pattern when agentdb falls back to mock embeddings', async () => {
+    const marker = `mock-embedder-roundtrip-${process.pid}-${process.hrtime.bigint()}`;
+    const dir = mkdtempSync(path.join(tmpdir(), 'ruflo-4643-'));
+    const prevCwd = process.cwd();
+    process.chdir(dir);
+    vi.stubEnv('CLAUDE_FLOW_MEMORY_PATH', path.join(dir, '.swarm'));
+    vi.stubEnv('AGENTDB_DISABLE_TRANSFORMERS', '1');
+    vi.resetModules();
+    try {
+      const { agentdbPatternStore, agentdbPatternSearch } = await import('../src/mcp-tools/agentdb-tools.js');
+      const stored = await agentdbPatternStore.handler({
+        pattern: `Use ${marker} for secure session renewal`,
+        type: 'auth-pattern',
+        confidence: 0.9,
+      });
+      if (!stored || stored.success !== true) return; // backend unavailable in isolation — skip
+
+      const found = await agentdbPatternSearch.handler({ query: marker, topK: 5, minConfidence: 0.1 });
+      const hit = (found.results ?? []).find((r: any) =>
+        String(r.content ?? r.pattern ?? '').includes(marker));
+      expect(hit, `stored=${JSON.stringify(stored)} found=${JSON.stringify(found).slice(0, 800)}`).toBeDefined();
+    } finally {
+      process.chdir(prevCwd);
+      vi.unstubAllEnvs();
+      rmSync(dir, { recursive: true, force: true });
+    }
   }, 60_000);
 });
 

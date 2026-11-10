@@ -1087,6 +1087,11 @@ export class UnifiedSwarmCoordinator extends EventEmitter implements IUnifiedSwa
     agent.currentTask = undefined;
     agent.health = 1.0;
     agent.lastHeartbeat = new Date();
+
+    // Domain-pool ownership is separate from AgentState.status. Without this
+    // release the recovered agent stays in AgentPool.busy forever and queued
+    // domain tasks never drain, even though the shared state says idle.
+    await this.releaseDomainAgent(agentId);
   }
 
   private performHealthChecks(): void {

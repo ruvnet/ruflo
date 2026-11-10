@@ -237,7 +237,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
   const { outcome } = state
 
   if (outcome !== null && !outcome.ok && (result === null || outcome.atMs > result.atMs)) {
-    rows.push(text(ctx, ` ✗ ${outcome.label}`, { bold: true, color: THEME.warn }))
+    rows.push(text(ctx, ` ✗ ${outcome.label}`, { weight: 'semibold', color: THEME.warn }))
     rows.push(text(ctx, `   ${outcome.detail}`))
   }
 
@@ -247,7 +247,7 @@ function resultRows(ctx: Ctx): RenderElement[] {
     return [frameResult(ctx, rows, running !== null ? 'run' : 'idle')]
   }
 
-  rows.push(text(ctx, ` ${result.label}`, { bold: true, color: result.ok ? THEME.ok : THEME.bad }))
+  rows.push(text(ctx, ` ${result.label}`, { weight: 'semibold', color: result.ok ? THEME.ok : THEME.bad }))
   if (result.note !== undefined) rows.push(text(ctx, ` ${result.note}`, { color: THEME.warn }))
 
   const top = Math.max(0, Math.min(state.select.item, result.lines.length - XRUV_ROWS))

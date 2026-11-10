@@ -29,6 +29,19 @@ MetaHarness integration plugin for ruflo. Surfaces the upstream `metaharness` / 
 | `harness-learn` | `/harness-learn --host <h> --model <m> --slice <manifest> [--repo <checkout>] [--run]` | metaharness@0.3.0 / upstream ADR-235 — GEPA learning run; $0 dry-run default, `--run` to spend; needs a metaharness repo checkout |
 | `harness-gepa` | `/harness-gepa --op genome\|validate\|render\|analyze [--path <genome.json>]` | darwin@0.8.0 GEPA library surface — genome load/validate/render + transcript failure analysis; `gepaOptimize` stays library-only |
 
+## User-invoked skills (ADR-507)
+
+These skills carry `disable-model-invocation: true`: Claude does not pick them on its own, and they cost nothing in the per-turn skill listing. Type them to run them. They run benchmarks, spend-gated learning or evolution runs, scheduled audits, or a one-shot scaffold.
+
+| Skill | Run it with |
+|---|---|
+| harness-bench | `/ruflo-metaharness:harness-bench` |
+| harness-evolve | `/ruflo-metaharness:harness-evolve` |
+| harness-learn | `/ruflo-metaharness:harness-learn` |
+| harness-mint | `/ruflo-metaharness:harness-mint` |
+| harness-oia-audit | `/ruflo-metaharness:harness-oia-audit` |
+| harness-security-bench | `/ruflo-metaharness:harness-security-bench` |
+
 ## Phase-0 baseline (ruflo itself, 2026-06-16)
 
 ```json
@@ -79,6 +92,6 @@ This plugin ships a function-hook mod (ADR-445, `hooks/register.ts`). It makes n
 - **`/metaharness-mod`**: `status`, `recent`, `tools` (which of this plugin's tools are connected) and `scan <text>` (would the guard refuse it). Answered locally.
 - **Status file**: `.claude-flow/metaharness-mod/status.json` (`{version: 1, updatedMs, guard, calls, total, blocked, recent}`, counters only, never tool input), written at session start and after every call to this plugin's tools.
 
-Options (`userConfig`): `guard` (on).
+Options (`userConfig`): `guard` (on); `openrouterApiKey` (sensitive, empty by default): the key for redblue's real model judge, kept in the credential store. A classic SessionStart hook exports it as `OPENROUTER_API_KEY` to the session's Bash commands when that variable is unset, so a redblue run started from a skill uses it; it never goes in argv. The `metaharness_redblue` MCP tool runs inside ruflo-core's MCP server, which does not see it: export `OPENROUTER_API_KEY` before starting Claude Code for that path (ADR-506).
 
 Test it: `claude plugin validate plugins/ruflo-metaharness`, `claude plugin test plugins/ruflo-metaharness`, `bash plugins/ruflo-metaharness/scripts/smoke.sh`.

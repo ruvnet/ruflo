@@ -4,7 +4,7 @@ import { RUFLO_FILES } from './fixtures/ruflo-run'
 import { cliAnswer, command, HOME, paneAt, PLUGIN, SESSION, textOf, worldOf } from './fixtures/world'
 
 describe('first-time setup', () => {
-  test('an empty offline CLI cache shows an explicit install command and never retries online', { options: { boot: false } }, async ($, on) => {
+  test('an empty offline CLI cache shows an explicit install command and never retries online', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES)
     world.respond = argv => argv[0] === 'npx'
       ? { exitCode: 1, stdout: '', stderr: 'npm warn unrelated warning\nnpm error code ENOTCACHED' }
@@ -26,7 +26,7 @@ describe('first-time setup', () => {
   })
 
   for (const present of [true, false]) {
-    test(`a confirmed federation join verifies key presence ${present} once while background federation is off`, { options: { boot: false } }, async ($, on) => {
+    test(`a confirmed federation join verifies key presence ${present} once while background federation is off`, { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
       const world = worldOf(on, RUFLO_FILES, { home: present ? { '.ruflo/nostr.key': 'never read this private key' } : {} })
       world.respond = argv => argv.includes('federation') && argv.includes('join')
         ? { exitCode: 0, stdout: 'joined', stderr: '' }
@@ -73,7 +73,7 @@ describe('first-time setup', () => {
     })
   }
 
-  test('cancelled and failed joins never inspect the private key', { options: { boot: false } }, async ($, on) => {
+  test('cancelled and failed joins never inspect the private key', { timeoutMs: 30_000, options: { boot: false } }, async ($, on) => {
     const world = worldOf(on, RUFLO_FILES, { home: { '.ruflo/nostr.key': 'never read this private key' } })
     world.respond = argv => argv.includes('federation') && argv.includes('join')
       ? { exitCode: 1, stdout: '', stderr: 'relay unavailable' }

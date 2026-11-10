@@ -4,13 +4,14 @@ import { FirestoreStore, InMemoryStore } from '../src/store.mjs';
 
 // Minimal Firestore double. Like the real thing it applies limit() AFTER ordering,
 // and with no orderBy returns documents in document-id order, not creation order.
-function fakeFirestore() {
+function fakeFirestore({ noCompositeIndex = false } = {}) {
   const data = new Map();
   const query = (path, filters = [], order = null, max = Infinity) => ({
     where: (field, op, value) => query(path, [...filters, { field, op, value }], order, max),
     orderBy: (field, dir = 'asc') => query(path, filters, { field, dir }, max),
     limit: (n) => query(path, filters, order, n),
     async get() {
+      if (noCompositeIndex && order && filters.length) throw Object.assign(new Error('9 FAILED_PRECONDITION: The query requires an index.'), { code: 9 });
       let rows = [...(data.get(path)?.entries() ?? [])].sort(([a], [b]) => (a < b ? -1 : 1)).map(([, v]) => v);
       for (const f of filters) {
         if (f.op === '==') rows = rows.filter((r) => r[f.field] === f.value);
@@ -65,4 +66,37 @@ test('both stores list runs newest first', async () => {
   const a = await mem.createRun('t', { teamId: team.id, objective: 'a', budgetUnits: 1 });
   const b = await mem.createRun('t', { teamId: team.id, objective: 'b', budgetUnits: 1 });
   assert.deepEqual((await mem.listRuns('t')).map((r) => r.id), [b.id, a.id]);
+});
+
+async function seedMemories(store, n) {
+  const team = await store.createTeam('t1', { name: 'T', objective: 'o', roles: [] });
+  const ids = [];
+  for (let i = 0; i < n; i++) {
+    const m = await store.remember('t1', { teamId: team.id, text: `memory ${i}`, key: `m${String(i).padStart(3, '0')}` });
+    // Backdate so creation order is the opposite of document-id order for half the rows.
+    await store.db.collection('ruflo_ai_team_tenants').doc('t1').collection('memories').doc(m.id).set({ ...m, createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString() });
+    ids.push(m.id);
+  }
+  return { team, ids };
+}
+
+test('listMemories keeps the newest memories when a team has more than the cap', async () => {
+  const store = new FirestoreStore(fakeFirestore());
+  const { team, ids } = await seedMemories(store, 12);
+  const listed = await store.listMemories('t1', { teamId: team.id, limit: 5 });
+  assert.deepEqual(listed.map((m) => m.id), ids.slice(-5).reverse(), 'newest five, newest first');
+});
+
+test('listMemories still answers when the composite index is not deployed yet', async () => {
+  const store = new FirestoreStore(fakeFirestore({ noCompositeIndex: true }));
+  const { team } = await seedMemories(store, 12);
+  const listed = await store.listMemories('t1', { teamId: team.id, limit: 5 });
+  assert.equal(listed.length, 5, 'falls back to an unordered read instead of failing the tool call');
+});
+
+test('listMemories without a team filter needs no composite index', async () => {
+  const store = new FirestoreStore(fakeFirestore({ noCompositeIndex: true }));
+  const { ids } = await seedMemories(store, 12);
+  const listed = await store.listMemories('t1', { limit: 5 });
+  assert.deepEqual(listed.map((m) => m.id), ids.slice(-5).reverse());
 });

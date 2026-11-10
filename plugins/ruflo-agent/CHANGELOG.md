@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.4.2 — 2026-11-04
+- feat: `nested-leaf` and `nested-queen-leaf` run with `effort: low` and `omitClaudeMd: true`. Their prompts are self-contained, so they no longer load user, project and local CLAUDE.md files; managed policy files still load. On Claude Code 2.1.318 this measured about 64k fewer input tokens per leaf spawn in this repository, and a one-leaf run cost $0.081 instead of $0.153
+
 ## 0.4.1 — 2026-10-25
 - fix: the dynamic-workflow guard now reads call arguments wrapped as `tool_input`, `params`, `args` or `parameters` (as well as `input` and `arguments`), and refuses a wrapper that is not an object or two competing wrappers; before, an unrecognised wrapper was read as a flat envelope with no policy fields and the call was allowed
 - fix: a session, thread or environment id of `.` or `..` is refused before any request is sent (`encodeURIComponent` leaves it unchanged, so `/v1/sessions/..` would have resolved to `/v1/`)

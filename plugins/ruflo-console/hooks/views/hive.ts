@@ -232,7 +232,7 @@ function proposalsSection(ctx: Ctx, hive: HiveInfo): RenderElement[] {
     const deadline = proposal.timeoutAtMs === undefined ? '' : tally.isTimedOut ? ' · timed out: re-propose in the next term' : ` · times out in ${Math.ceil((proposal.timeoutAtMs - ctx.nowMs) / 1000)}s`
 
     rows.push(
-      text(ctx, `${isPicked ? '▸' : ' '}◇ ${proposal.type} (${noteOf(tally)}) ${proposal.status} · for ${proposal.votesFor} · against ${proposal.votesAgainst} · [${bar(tally)}] need ${tally.required} of ${tally.nodes}`, isPicked ? { bold: true, color: THEME.warn } : { color: THEME.warn }),
+      text(ctx, `${isPicked ? '▸' : ' '}◇ ${proposal.type} (${noteOf(tally)}) ${proposal.status} · for ${proposal.votesFor} · against ${proposal.votesAgainst} · [${bar(tally)}] need ${tally.required} of ${tally.nodes}`, isPicked ? { weight: 'semibold', color: THEME.warn } : { color: THEME.warn }),
     )
 
     if (!isPicked) continue
@@ -305,7 +305,7 @@ function actSection(ctx: Ctx, hive: HiveInfo): RenderElement[] {
   const Input = ctx.kit.Input
   const run = (id: string) => () => void ctx.act.run(id)
   const inner: RenderElement[] = [
-    row(ctx, [ctx.kit.Text({ bold: true, color: THEME.ok, children: ' ACT ' }), ctx.kit.Text({ dimColor: true, children: ' each asks y/n, then runs one ruflo command' })], 'hive-act-title'),
+    row(ctx, [ctx.kit.Text({ weight: 'semibold', color: THEME.ok, children: ' ACT ' }), ctx.kit.Text({ dimColor: true, children: ' each asks y/n, then runs one ruflo command' })], 'hive-act-title'),
     row(
       ctx,
       [

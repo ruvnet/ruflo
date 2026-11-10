@@ -456,6 +456,16 @@ class LocalReasoningBank {
   private persistenceEnabled: boolean;
   private dirty: boolean = false;
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  /** IDs changed locally since the last successful flush. */
+  private dirtyIds: Set<string> = new Set();
+  /** IDs deleted locally; a disk copy must not be resurrected. */
+  private deletedIds: Set<string> = new Set();
+  /** A local clear() must remove disk entries too. */
+  private clearRequested: boolean = false;
+  /** Message of the most recent failed flush; null after a successful one (#4880). */
+  private lastFlushError: string | null = null;
+  /** Time (ms epoch) of the most recent flush attempt that had something to write. */
+  private lastFlushAt: number | null = null;
 
   constructor(options: { maxSize: number; persistence?: boolean }) {
     this.maxSize = options.maxSize;
@@ -482,6 +492,7 @@ class LocalReasoningBank {
 
           // Group by content to deduplicate
           const byContent = new Map<string, StoredPattern>();
+          const removedIds: string[] = [];
           for (const pattern of data) {
             const key = pattern.content;
             const existing = byContent.get(key);
@@ -496,9 +507,11 @@ class LocalReasoningBank {
               ) {
                 // Merge: adopt the higher usageCount sum
                 pattern.usageCount = (pattern.usageCount ?? 0) + (existing.usageCount ?? 0);
+                removedIds.push(existing.id);
                 byContent.set(key, pattern);
               } else {
                 existing.usageCount = (existing.usageCount ?? 0) + (pattern.usageCount ?? 0);
+                removedIds.push(pattern.id);
               }
             }
           }
@@ -512,14 +525,24 @@ class LocalReasoningBank {
           const removed = totalLoaded - byContent.size;
           if (removed > 0) {
             console.log(`Deduplicated ${removed} patterns (${byContent.size} unique)`);
-            // Persist the compacted set immediately so the file shrinks on disk
+            // Persist the compacted set immediately so the file shrinks on disk.
+            // Mark every kept row dirty so this compaction wins over the disk
+            // copies, and tombstone the discarded duplicates.
+            for (const pattern of byContent.values()) this.dirtyIds.add(pattern.id);
+            for (const id of removedIds) this.deletedIds.add(id);
             this.dirty = true;
             this.flushToDisk();
           }
         }
       }
-    } catch {
-      // Ignore load errors, start fresh
+    } catch (error) {
+      // A corrupt patterns file must be preserved, not silently replaced by
+      // an empty bank on the next flush (#4735).
+      try {
+        const corruptPath = `${getPatternsPath()}.corrupt-${Date.now()}`;
+        renameSync(getPatternsPath(), corruptPath);
+        console.warn(`[intelligence] Corrupt patterns file moved to ${corruptPath}`);
+      } catch { /* already absent or rename failed — never overwrite it below */ }
     }
   }
 
@@ -543,19 +566,84 @@ class LocalReasoningBank {
 
   /**
    * Immediately flush patterns to disk
+   *
+   * Re-reads the file under the cooperating-writer lock and merges only the
+   * patterns this process changed, so a long-lived daemon cannot erase patterns
+   * written by another hook/process (#4735). Deletions and clear() are carried
+   * as tombstones; the write itself is temp-file + rename.
+   *
+   * Returns true when the patterns are on disk (or there was nothing to
+   * write) and false when the write failed. A failed flush leaves the bank
+   * dirty so the next flush retries, and records the error for
+   * getPersistenceStatus() (#4880). Never throws: the debounce timer and exit
+   * paths rely on that.
    */
-  flushToDisk(): void {
-    if (!this.persistenceEnabled || !this.dirty) return;
+  flushToDisk(): boolean {
+    if (!this.persistenceEnabled || !this.dirty) return true;
+
+    this.lastFlushAt = Date.now();
 
     try {
       ensureDataDir();
       const path = getPatternsPath();
-      writeFileSync(path, JSON.stringify(this.patternList, null, 2), 'utf-8');
-      this.dirty = false;
+      withStatsFileLock(path, (canonicalPath) => {
+        let diskPatterns: StoredPattern[] = [];
+        if (existsSync(canonicalPath)) {
+          try {
+            const parsed = JSON.parse(readFileSync(canonicalPath, 'utf-8'));
+            if (!Array.isArray(parsed)) throw new Error('patterns.json is not an array');
+            diskPatterns = parsed as StoredPattern[];
+          } catch {
+            // Preserve the corrupt original instead of overwriting it with an
+            // empty bank; the new file is written only after this rename.
+            try {
+              const corruptPath = `${canonicalPath}.corrupt-${Date.now()}`;
+              renameSync(canonicalPath, corruptPath);
+              console.warn(`[intelligence] Corrupt patterns file moved to ${corruptPath}`);
+            } catch { /* leave the original in place */ }
+          }
+        }
+
+        const merged = new Map<string, StoredPattern>();
+        if (!this.clearRequested) {
+          for (const pattern of diskPatterns) {
+            if (!this.deletedIds.has(pattern.id)) merged.set(pattern.id, pattern);
+          }
+        }
+        for (const pattern of this.patternList) {
+          if (this.clearRequested || this.dirtyIds.has(pattern.id)) {
+            merged.set(pattern.id, pattern);
+          }
+        }
+
+        const list = [...merged.values()];
+        const tmp = `${canonicalPath}.${process.pid}.${Date.now()}.tmp`;
+        writeFileSync(tmp, JSON.stringify(list, null, 2), 'utf-8');
+        renameSync(tmp, canonicalPath);
+
+        this.patterns = new Map(list.map((pattern) => [pattern.id, pattern]));
+        this.patternList = list;
+        this.dirty = false;
+        this.dirtyIds.clear();
+        this.deletedIds.clear();
+        this.clearRequested = false;
+      });
     } catch (error) {
-      // Log but don't throw - persistence failures shouldn't break training
+      // Log but don't throw - persistence failures shouldn't break training.
+      this.lastFlushError = error instanceof Error ? error.message : String(error);
       console.error('Failed to persist patterns:', error);
     }
+    // `dirty` is cleared only after the rename succeeded, so any path that did
+    // not complete the write reads as a failure here.
+    if (!this.dirty) this.lastFlushError = null;
+    return !this.dirty;
+  }
+
+  /**
+   * Read-only view of the persistence state (#4880).
+   */
+  getFlushState(): { dirty: boolean; lastFlushError: string | null; lastFlushAt: number | null } {
+    return { dirty: this.dirty, lastFlushError: this.lastFlushError, lastFlushAt: this.lastFlushAt };
   }
 
   /**
@@ -589,6 +677,7 @@ class LocalReasoningBank {
         this.patternList[idx] = stored;
       }
       this.patterns.set(pattern.id, stored);
+      this.dirtyIds.add(pattern.id);
       this.saveToDisk();
       return false;
     } else {
@@ -603,6 +692,7 @@ class LocalReasoningBank {
         }
         // Keep the Map in sync with the mutated object
         this.patterns.set(contentDupe.id, contentDupe);
+        this.dirtyIds.add(contentDupe.id);
         this.saveToDisk();
         return false;
       }
@@ -612,12 +702,15 @@ class LocalReasoningBank {
         const oldest = this.patternList.shift();
         if (oldest) {
           this.patterns.delete(oldest.id);
+          this.deletedIds.add(oldest.id);
+          this.dirtyIds.delete(oldest.id);
         }
       }
       this.patternList.push(stored);
     }
 
     this.patterns.set(pattern.id, stored);
+    this.dirtyIds.add(stored.id);
 
     // Trigger persistence (debounced)
     this.saveToDisk();
@@ -730,6 +823,8 @@ class LocalReasoningBank {
     if (idx >= 0) {
       this.patternList.splice(idx, 1);
     }
+    this.dirtyIds.delete(id);
+    this.deletedIds.add(id);
 
     this.saveToDisk();
     return true;
@@ -741,6 +836,9 @@ class LocalReasoningBank {
   clear(): void {
     this.patterns.clear();
     this.patternList = [];
+    this.dirtyIds.clear();
+    this.deletedIds.clear();
+    this.clearRequested = true;
     this.saveToDisk();
   }
 }
@@ -1316,10 +1414,12 @@ export async function recordTrajectory(
     // #4283: the bank's own save is debounced, and the one-shot bins exit as
     // soon as the command resolves, so write the patterns now. Otherwise
     // stats.json counts patterns that never reach patterns.json.
-    reasoningBank?.flushToDisk();
+    // #4880: a failed write (e.g. ENOSPC) returns false instead of claiming
+    // success for patterns that exist only in memory.
+    const persisted = reasoningBank ? reasoningBank.flushToDisk() : true;
     savePersistedStats();
 
-    return true;
+    return persisted;
   } catch {
     return false;
   }
@@ -1628,12 +1728,13 @@ export async function getPatternsByType(type: string): Promise<Pattern[]> {
 /**
  * Flush patterns to disk immediately
  * Call this at the end of training to ensure all patterns are saved
+ *
+ * @returns false when the patterns could not be written (#4880)
  */
-export function flushPatterns(): void {
-  if (reasoningBank) {
-    reasoningBank.flushToDisk();
-  }
+export function flushPatterns(): boolean {
+  const persisted = reasoningBank ? reasoningBank.flushToDisk() : true;
   savePersistedStats();
+  return persisted;
 }
 
 /**
@@ -1757,10 +1858,19 @@ export function getPersistenceStatus(): {
   statsFile: string;
   patternsExist: boolean;
   statsExist: boolean;
+  /** Patterns changed in memory that are not on disk yet (#4880). */
+  dirty: boolean;
+  /** Error from the most recent failed pattern flush; null after a success. */
+  lastFlushError: string | null;
+  /** Time (ms epoch) of the most recent pattern flush attempt. */
+  lastFlushAt: number | null;
 } {
   const dataDir = getDataDir();
   const patternsFile = getPatternsPath();
   const statsFile = getStatsPath();
+  const flush = reasoningBank
+    ? reasoningBank.getFlushState()
+    : { dirty: false, lastFlushError: null, lastFlushAt: null };
 
   return {
     enabled: true,
@@ -1768,6 +1878,7 @@ export function getPersistenceStatus(): {
     patternsFile,
     statsFile,
     patternsExist: existsSync(patternsFile),
-    statsExist: existsSync(statsFile)
+    statsExist: existsSync(statsFile),
+    ...flush,
   };
 }
