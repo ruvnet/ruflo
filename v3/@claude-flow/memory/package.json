@@ -3,6 +3,29 @@
   "version": "3.3.0",
   "type": "module",
   "description": "Memory module - AgentDB unification, HNSW indexing, vector search, hybrid SQLite+AgentDB backend (ADR-009)",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/memory"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
+  "keywords": [
+    "agent-memory",
+    "vector-search",
+    "vector-database",
+    "hnsw",
+    "semantic-search",
+    "embeddings",
+    "agentdb",
+    "sqlite",
+    "ai-agents",
+    "claude-flow",
+    "ruflo",
+    "typescript"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

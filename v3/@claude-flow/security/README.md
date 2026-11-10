@@ -1,4 +1,8 @@
+<p align="center"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/main/docs/assets/readme/packages/security-boundary-quickstart.svg" alt="@claude-flow/security quickstart: a valid email passes, an invalid one is rejected with a ZodError, a bcrypt hash verifies, and a 48-character API key is generated." width="100%"></p>
+
 # @claude-flow/security
+
+**Security primitives for the system boundary of an agent app:** validate input, hash passwords, generate credentials, and block command injection and path traversal.
 
 [![npm version](https://img.shields.io/npm/v/@claude-flow/security.svg)](https://www.npmjs.com/package/@claude-flow/security)
 [![npm downloads](https://img.shields.io/npm/dm/@claude-flow/security.svg)](https://www.npmjs.com/package/@claude-flow/security)
@@ -23,6 +27,45 @@
 ```bash
 npm install @claude-flow/security
 ```
+
+<!-- weaver:seo:quickstart -->
+## Supported environments
+
+- Node.js, ESM (`import`). The quickstart below was run on Node 22 (Linux x64).
+- Pure JavaScript dependencies (`bcryptjs`, `zod`, `@noble/ed25519`). No native build step.
+- Works standalone. The Ruflo CLI (`@claude-flow/cli`) isn't required.
+
+## Quickstart (verified)
+
+```bash
+npm install @claude-flow/security
+```
+
+```js
+// quickstart.mjs
+import { InputValidator, EmailSchema, PasswordHasher, createCredentialGenerator } from '@claude-flow/security';
+
+console.log('email ok:', InputValidator.validate(EmailSchema, 'user@example.com'));
+try { InputValidator.validate(EmailSchema, 'not-an-email'); } catch (e) { console.log('rejected:', e.constructor.name); }
+
+const hasher = new PasswordHasher({ rounds: 12 });
+const hash = await hasher.hash('CorrectHorseBatteryStaple9');
+console.log('hash prefix:', hash.slice(0, 7), 'verify:', await hasher.verify('CorrectHorseBatteryStaple9', hash));
+
+const apiKey = createCredentialGenerator().generateApiKey('ck_live_');
+console.log('api key prefix:', apiKey.key.slice(0, 8), 'length:', apiKey.key.length);
+```
+
+Expected output (`node quickstart.mjs`, @claude-flow/security 3.0.7):
+
+```text
+email ok: user@example.com
+rejected: ZodError
+hash prefix: $2b$12$ verify: true
+api key prefix: ck_live_ length: 48
+```
+
+**Next:** add prompt-injection and jailbreak detection for LLM input with [`@claude-flow/aidefence`](https://www.npmjs.com/package/@claude-flow/aidefence).
 
 ## Standalone use (without the Ruflo CLI)
 

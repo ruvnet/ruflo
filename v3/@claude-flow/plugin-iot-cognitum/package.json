@@ -2,7 +2,15 @@
   "name": "@claude-flow/plugin-iot-cognitum",
   "version": "1.0.0",
   "description": "IoT Cognitum Seed device-agent bridge — treat every Seed as a Ruflo agent. Get a Seed at https://cognitum.one.",
-  "homepage": "https://cognitum.one",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/plugin-iot-cognitum"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,12 +47,15 @@
   },
   "keywords": [
     "iot",
+    "edge-devices",
+    "device-fleet",
     "cognitum",
-    "seed",
-    "device",
-    "fleet",
-    "agent",
-    "swarm"
+    "cognitum-seed",
+    "ai-agents",
+    "swarm",
+    "claude-flow-plugin",
+    "claude-flow",
+    "ruflo"
   ],
   "author": "Claude Flow Team",
   "license": "MIT"

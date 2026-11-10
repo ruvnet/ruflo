@@ -2,6 +2,15 @@
   "name": "@claude-flow/plugins",
   "version": "3.0.3",
   "description": "Unified Plugin SDK for Claude Flow V3 - Worker, Hook, and Provider Integration",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/plugins"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -70,19 +79,18 @@
     "vitest": "^4.1.0"
   },
   "keywords": [
-    "claude-flow",
     "plugins",
+    "plugin-sdk",
     "sdk",
-    "workers",
     "hooks",
-    "agentic-flow",
-    "agentdb",
+    "workers",
+    "llm-providers",
     "ai-agents",
+    "agentdb",
     "ruvector",
-    "hnsw",
     "vector-search",
-    "lora",
-    "neural-adaptation"
+    "claude-flow",
+    "ruflo"
   ],
   "author": "Claude Flow Team",
   "license": "MIT",
