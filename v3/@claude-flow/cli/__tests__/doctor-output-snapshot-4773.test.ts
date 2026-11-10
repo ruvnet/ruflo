@@ -6,8 +6,9 @@
  * Every input doctor reads from the machine is pinned rather than normalized
  * away: a fresh project and HOME, an env allowlist, fixed answers for the
  * commands it shells out to, the native-addon probe (it depends on the Node
- * minor), the MCP tool list and the optional @metaharness/* packages (two need
- * a build that succeeds on some platforms). The only substitutions are exact
+ * minor), the MCP tool list, the optional @metaharness/* packages (two need
+ * a build that succeeds on some platforms) and the optional metaharness peer,
+ * which CI's `npm ci --legacy-peer-deps` never installs. The only substitutions are exact
  * values read from the same files the checks read, so a wrong value (a version
  * fallback, a mis-resolved package) still shows up as a diff.
  */
@@ -53,6 +54,21 @@ vi.mock('fs', async (importOriginal) => {
   return { ...actual, existsSync, default: { ...actual, existsSync } };
 });
 
+// The MetaHarness check resolves the peer with import.meta.resolve and then
+// converts the URL to a path. Failing that conversion lands a local install in
+// the same not-installed branch that CI takes. The pattern lives in the factory
+// because modules call fileURLToPath while they load, before top-level consts.
+vi.mock('url', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('url')>();
+  const METAHARNESS_PEER = /[\\/]node_modules[\\/]metaharness[\\/]/;
+  const fileURLToPath = (url: string | URL) => {
+    const path = actual.fileURLToPath(url);
+    if (METAHARNESS_PEER.test(path)) throw Object.assign(new Error("Cannot find package 'metaharness'"), { code: 'ERR_MODULE_NOT_FOUND' });
+    return path;
+  };
+  return { ...actual, fileURLToPath, default: { ...actual, fileURLToPath } };
+});
+
 vi.mock('../src/mcp-client.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../src/mcp-client.js')>();
   const schema = { type: 'object' as const, properties: { key: { type: 'string', description: 'Entry key' } }, required: ['key'] };
@@ -80,9 +96,6 @@ const cliPkg = JSON.parse(readFileSync(join(cliRoot, 'package.json'), 'utf-8')) 
 const memoryDeclared = cliPkg.optionalDependencies?.['@claude-flow/memory'] ?? cliPkg.dependencies?.['@claude-flow/memory'];
 const memoryDist = resolveMemoryPackageFromCli();
 const memoryInstalled = memoryDist ? readMemoryPackageVersion(memoryDist) : null;
-const metaharnessVersion = (JSON.parse(
-  readFileSync(join(cliRoot, 'node_modules', 'metaharness', 'package.json'), 'utf-8'),
-) as { version: string }).version;
 const realNativeAddonCheck = nativeAddon.checkNativeAddonHeaders;
 
 const KEEP_ENV = /^(PATH|Path|TMPDIR|TEMP|TMP|SystemRoot|ComSpec|VITEST.*)$/;
@@ -136,7 +149,6 @@ describe('doctor output stays byte-identical (#4773)', () => {
       [process.version, '<node-version>'],
       [`v${memoryInstalled}`, 'v<memory-installed>'],
       [`declared ${memoryDeclared}`, 'declared <memory-declared>'],
-      [`v${metaharnessVersion} `, 'v<metaharness-version> '],
     ];
     return exact.reduce((text, [value, label]) => text.split(value).join(label), stdout);
   }
