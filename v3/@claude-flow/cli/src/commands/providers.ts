@@ -63,12 +63,31 @@ function resolveApiKey(
 }
 
 /**
+ * The models URL to probe for a user-saved API base (#4834).
+ *
+ * `providers configure -e` stores the endpoint as the API base the user points
+ * at, the same shape the OpenAI SDK calls `baseURL` — so a base that already
+ * ends in a version segment (`/v1`, `/v1beta`, `/v2`, …) only needs `/models`,
+ * while a bare host needs `/v1` first.
+ */
+function modelsUrlFor(baseUrl: string): string {
+  const base = baseUrl.trim().replace(/\/+$/, '');
+  return /\/v\d+[a-z0-9]*$/i.test(base) ? `${base}/models` : `${base}/v1/models`;
+}
+
+/**
  * Make a lightweight HTTP request to verify provider API key validity.
  * Uses a 5-second timeout. Returns { ok, reason }.
+ *
+ * #4834 — `baseUrl` is the endpoint saved with `providers configure -e`. For
+ * `openai` it replaces the hardcoded api.openai.com probe: a user pointing at
+ * a self-hosted or third-party OpenAI-compatible endpoint otherwise gets that
+ * endpoint's 401 reported as a bad OpenAI key.
  */
 async function testProviderConnectivity(
   providerName: string,
   apiKey: string,
+  baseUrl?: string,
 ): Promise<{ ok: boolean; reason: string }> {
   const endpoints: Record<string, { url: string; headers: Record<string, string> }> = {
     anthropic: {
@@ -102,12 +121,20 @@ async function testProviderConnectivity(
     return { ok: false, reason: 'No test endpoint available for this provider' };
   }
 
+  // #4834 — probe the endpoint the user saved for `openai` instead of the
+  // hardcoded public one. Anything that is not an http(s) URL is ignored so a
+  // malformed config value cannot replace a working default.
+  const savedBase = providerName.toLowerCase() === 'openai' ? baseUrl?.trim() : undefined;
+  const probe = savedBase !== undefined && /^https?:\/\//i.test(savedBase)
+    ? { url: modelsUrlFor(savedBase), headers: endpointConfig.headers }
+    : endpointConfig;
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(endpointConfig.url, {
+    const res = await fetch(probe.url, {
       method: 'GET',
-      headers: endpointConfig.headers,
+      headers: probe.headers,
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -376,7 +403,12 @@ const testCommand: Command = {
           continue;
         }
         output.writeln(output.dim(`  Testing ${target.name}...`));
-        const result = await testProviderConnectivity(target.name, apiKey);
+        // #4834 — carry the endpoint saved by `providers configure -e` into the probe.
+        const savedEntry = configuredProviders.find(
+          (p) => typeof p.name === 'string' && p.name.toLowerCase() === target.configName,
+        );
+        const savedBaseUrl = typeof savedEntry?.baseUrl === 'string' ? savedEntry.baseUrl : undefined;
+        const result = await testProviderConnectivity(target.name, apiKey, savedBaseUrl);
         results.push({ name: target.name, pass: result.ok, reason: result.reason });
       }
 
