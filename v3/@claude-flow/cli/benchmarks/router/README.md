@@ -2,7 +2,7 @@
 
 `corpus.jsonl` is the labelled, frozen evaluation set that ADR-391 uses to
 compare agent-routing candidates (A current, B MiniLM, C typesafe-hash,
-D typesafe-onnx). It contains 197 prompts, each labelled with the one agent a
+D typesafe-onnx, E centroid per ADR-527). It contains 197 prompts, each labelled with the one agent a
 competent engineering lead would assign.
 
 **Frozen at sha256 `b0c1923b2813b61907304dff56c53d199b709797bfb9600a7c1f496cf0c0bf04`.**
@@ -114,3 +114,11 @@ The validator uses no dependencies. It checks:
 - there are at least 30 traps
 
 It prints the counts table above and the file's sha256.
+
+## Centroid router artifact (ADR-527)
+
+`build-centroids.mjs` builds `assets/agent-router/centroids.minilm.json` from the
+**dev** split only, with MiniLM. Run it after any corpus change; `--check` fails
+when the committed artifact no longer matches a rebuild. Since ADR-527 the
+**test** split has been looked at and is a regression set; the next routing
+decision needs fresh tasks.

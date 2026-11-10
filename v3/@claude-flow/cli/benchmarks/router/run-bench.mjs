@@ -11,6 +11,9 @@
  *   C  ts-hash      hooks_route + CLAUDE_FLOW_ROUTER_TYPESAFE=1, hash embedder
  *   D  ts-onnx      hooks_route + typesafe, ONNX (bge-small) — needs
  *                   ROUTER_BENCH_TYPESAFE_MODEL_DIR pointing at a fetched models/ dir
+ *   E  centroid     hooks_route + CLAUDE_FLOW_ROUTER_CENTROID=1 (ADR-527): nearest
+ *                   MiniLM centroid built from the DEV split, falls back to A on near-ties.
+ *                   Its dev score is in-sample; only its test score is a held-out result.
  *
  * Each candidate runs in its own process from an empty temp cwd so no engine,
  * index or stored memory leaks between candidates. Requires a built dist/.
@@ -27,7 +30,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI_ROOT = join(HERE, '..', '..');
 const CORPUS = join(HERE, 'corpus.jsonl');
 const HOOKS = pathToFileURL(join(CLI_ROOT, 'dist', 'src', 'mcp-tools', 'hooks-tools.js')).href;
-const CANDIDATES = ['A', 'B', 'C', 'D'];
+const CANDIDATES = ['A', 'B', 'C', 'D', 'E'];
 const HIGH_CONF = 0.7;
 
 const argv = process.argv.slice(2);
@@ -52,6 +55,15 @@ async function runChild(cand) {
       return { agent: r.primaryAgent, confidence: r.confidence, embedder: r.embedder, method: r.method };
     }
     const r = await hooks.hooksRoute.handler({ task: prompt });
+    if (cand === 'E') {
+      const c = r.centroid ?? {};
+      return {
+        agent: r.matchedPattern === 'centroid-abstain' ? 'none' : r.primaryAgent?.type,
+        confidence: r.primaryAgent?.confidence,
+        centroidStatus: c.status ?? 'missing',
+        baselineAgent: c.baselineAgent,
+      };
+    }
     const ts = r.typesafe ?? {};
     return {
       agent: r.primaryAgent?.type,
@@ -113,6 +125,8 @@ function runParent() {
     const env = { ...process.env };
     delete env.CLAUDE_FLOW_ROUTER_TYPESAFE; delete env.CLAUDE_FLOW_ROUTER_EMBEDDER;
     delete env.CLAUDE_FLOW_ROUTER_TYPESAFE_MODEL_DIR; delete env.CLAUDE_FLOW_ROUTER_TYPESAFE_MANIFEST;
+    delete env.CLAUDE_FLOW_ROUTER_CENTROID; delete env.CLAUDE_FLOW_ROUTER_CENTROID_MARGIN; delete env.CLAUDE_FLOW_ROUTER_CENTROID_PATH;
+    if (cand === 'E') env.CLAUDE_FLOW_ROUTER_CENTROID = '1';
     if (cand === 'C' || cand === 'D') env.CLAUDE_FLOW_ROUTER_TYPESAFE = '1';
     if (cand === 'D') {
       const dir = process.env.ROUTER_BENCH_TYPESAFE_MODEL_DIR;
@@ -138,8 +152,12 @@ function runParent() {
       r.rawTypesafeTest = score(rows, raw, 'test');
       r.typesafeUsedRate = +(out.filter((o) => o.tsUsed).length / out.length).toFixed(4);
     }
+    if (cand === 'E') {
+      const of = (split) => { const ids = new Set(rows.filter((x) => x.split === split).map((x) => x.id)); const o = out.filter((p) => ids.has(p.id)); const n = (s) => +(o.filter((p) => p.centroidStatus === s).length / o.length).toFixed(4); return { decided: n('decided'), fallback: n('fallback'), unavailable: n('unavailable') }; };
+      r.centroidRates = { dev: of('dev'), test: of('test') };
+    }
     results[cand] = r;
-    console.log(`${cand}: test acc ${r.test.accuracy}  macroF1 ${r.test.macroF1}  traps ${r.test.trapAccuracy}  wrong@≥${HIGH_CONF} ${r.test.wrongHighConfRate}  p50 ${r.latencyMs.p50}ms p95 ${r.latencyMs.p95}ms cold ${r.latencyMs.cold}ms` + (r.rawTypesafeTest ? `  | raw typesafe acc ${r.rawTypesafeTest.accuracy}, used ${r.typesafeUsedRate}` : ''));
+    console.log(`${cand}: test acc ${r.test.accuracy}  macroF1 ${r.test.macroF1}  traps ${r.test.trapAccuracy}  wrong@≥${HIGH_CONF} ${r.test.wrongHighConfRate}  p50 ${r.latencyMs.p50}ms p95 ${r.latencyMs.p95}ms cold ${r.latencyMs.cold}ms` + (r.rawTypesafeTest ? `  | raw typesafe acc ${r.rawTypesafeTest.accuracy}, used ${r.typesafeUsedRate}` : '') + (r.centroidRates ? `  | centroid test decided ${r.centroidRates.test.decided} fallback ${r.centroidRates.test.fallback} unavailable ${r.centroidRates.test.unavailable}` : ''));
   }
   // ADR-391 promotion gate, each candidate vs A on the TEST split.
   const A = results.A;
