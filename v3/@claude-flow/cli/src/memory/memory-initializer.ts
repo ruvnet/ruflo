@@ -4225,7 +4225,7 @@ function publishMemoryDbLock(ownerFile: string, target: string, ownership: strin
     fs.linkSync(ownerFile, target);
     return undefined;
   } catch (error) {
-    if (!['ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? '')) throw error;
+    if (!['ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EPERM', 'EXDEV'].includes((error as NodeJS.ErrnoException).code ?? '')) throw error;
   }
   // Preserve the original O_EXCL protocol on filesystems without hard links.
   // A crash before writing ownership leaves an empty file recoverable by lease.

@@ -43,7 +43,7 @@ async function expectRecovery(): Promise<void> {
 }
 
 describe('memory.db lock ownership (#4738)', () => {
-  it.each(['ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EPERM'])('uses exclusive creation when hard links fail with %s', async (code) => {
+  it.each(['ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EPERM', 'EXDEV'])('uses exclusive creation when hard links fail with %s', async (code) => {
     const originalLink = fs.linkSync;
     vi.spyOn(fs, 'linkSync').mockImplementation((from, to) => {
       if (to === lockFile) throw Object.assign(new Error('not supported'), { code });
@@ -182,9 +182,9 @@ describe('memory.db lock ownership (#4738)', () => {
     expect(fs.readdirSync(root)).toEqual([]);
   });
 
-  it('recovers an expired owner and guard on a filesystem without hard links', async () => {
+  it.each(['ENOTSUP', 'EXDEV'])('recovers an expired owner and guard when hard links fail with %s', async (code) => {
     vi.spyOn(fs, 'linkSync').mockImplementation(() => {
-      throw Object.assign(new Error('not supported'), { code: 'ENOTSUP' });
+      throw Object.assign(new Error('not supported'), { code });
     });
     syncBuiltinESMExports();
     fs.writeFileSync(lockFile, 'old owner');
