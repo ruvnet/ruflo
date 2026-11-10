@@ -19,7 +19,7 @@
     "ruflo-graph-intelligence": {
       "comment": "ADR-123 plugin",
       "dependencies": [
-        "sublinear-time-solver",
+        "@ruvnet/sublinear-core",
         "zod"
       ],
       "peerDependencies": [

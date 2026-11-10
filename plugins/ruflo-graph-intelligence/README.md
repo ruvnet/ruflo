@@ -1,6 +1,14 @@
 # ruflo-graph-intelligence
 
-Graph Intelligence Engine for RuFlo: single-entry personalized PageRank, streaming delta updates and witness-signed reasoning artifacts (ADR-123), built on sublinear-time-solver. Library: `npm test`, `npm run build`.
+Graph Intelligence Engine for RuFlo: single-entry personalized PageRank, streaming delta updates and witness-signed reasoning artifacts (ADR-123). Library: `npm test`, `npm run build`.
+
+Solver dependency: `@ruvnet/sublinear-core` ^1.0.0, the zero-dependency core of `sublinear-time-solver` (`solve`, `pageRank`, `personalizedPageRank`, `forwardPush`, `backwardPush`, `estimateEntry`). The engine's forward-push and CG run in-process (`src/infrastructure/solver-bridge.ts`) and never imported the old `sublinear-time-solver` dependency, so swapping it shrank the lockfile from 1,015 to 77 packages without changing results; signed artifacts keep their `solverVersion` label.
+
+## Skills
+
+- `sublinear-core` — personalized PageRank, local forward/backward push and sparse solves with `@ruvnet/sublinear-core`, and when to use `agentdb_graph-pathfinder` or the full `sublinear-time-solver` instead.
+
+
 
 ## As a mod (0.2.0-alpha.6)
 

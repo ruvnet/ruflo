@@ -12,6 +12,7 @@ import type { AppendCondition } from './append-conditions.js';
 
 import { loadBetterSqlite3 } from './shared-sqlite.js';
 import { resolveMemoryRoot } from './memory-root.js';
+import { getProjectRoot } from '../services/project-root.js';
 import { DEFAULT_SEARCH_THRESHOLD } from './search-defaults.js';
 import { liveMemoryRowSql } from './live-memory-row.js';
 import { encodeEmbeddingQ8, MAX_LIST_EMBEDDINGS, type EmbeddingQ8 } from './embedding-q8.js';
@@ -20,6 +21,12 @@ import * as path from 'path';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createRequire } from 'node:module';
 import { readFileMaybeEncrypted, writeDbImagePreservingFormat, writeFileAtomic, writeFileRestricted } from '../fs-secure.js';
+import {
+  _resetEmbeddingConfigCache,
+  DEFAULT_EMBEDDING_DIMENSION,
+  resolveEffectiveEmbeddingConfig,
+  resolveEmbeddingConfig,
+} from './embedding-config.js';
 import { restoreMemoryDbFromBackup } from '../services/memory-backup.js';
 import { validateIdentifier } from '../mcp-tools/validate-input.js';
 import { resolveModelCacheDir } from './model-cache-dir.js';
@@ -179,10 +186,18 @@ async function releaseOwnNativeHandle(dbPath: string): Promise<void> {
  * this file flows through it.
  *
  * Precedence (highest → lowest):
- *   1. CLAUDE_FLOW_MEMORY_PATH env var
- *   2. memory.persistPath / memory.path in claude-flow.config.json (cwd or
- *      the directory the CLI was invoked from)
- *   3. Default: cwd/.swarm
+ *   1. CLAUDE_FLOW_MEMORY_PATH env var (a relative value resolves against
+ *      the project root)
+ *   2. memory.persistPath / memory.path in claude-flow.config.json or
+ *      .claude-flow/config.json at the project root
+ *   3. Default: <project root>/.swarm
+ *
+ * #2633: "project root" is the nearest ancestor of process.cwd() carrying a
+ * Ruflo marker (getProjectRoot: the walk the daemon uses since #2877, minus
+ * home / filesystem roots),
+ * so a shell that drifted into a subdirectory still opens the project's
+ * memory DB instead of silently starting a new one. With no marker it is
+ * process.cwd(), exactly as before.
  *
  * Cached per-process so repeated lookups are cheap; reset only by spawning
  * a fresh process (which is how config changes already propagate).
@@ -190,7 +205,7 @@ async function releaseOwnNativeHandle(dbPath: string): Promise<void> {
 let _memoryRootCache: string | undefined;
 export function getMemoryRoot(): string {
   if (_memoryRootCache !== undefined) return _memoryRootCache;
-  _memoryRootCache = resolveMemoryRoot(process.cwd());
+  _memoryRootCache = resolveMemoryRoot(getProjectRoot());
   return _memoryRootCache;
 }
 
@@ -1283,7 +1298,7 @@ export function flashAttentionSearch(
 /**
  * Initial metadata to insert after schema creation
  */
-export function getInitialMetadata(backend: string): string {
+export function getInitialMetadata(backend: string, dimension: number = DEFAULT_EMBEDDING_DIMENSION): string {
   return `
 INSERT OR REPLACE INTO metadata (key, value) VALUES
   ('schema_version', '3.0.0'),
@@ -1295,13 +1310,13 @@ INSERT OR REPLACE INTO metadata (key, value) VALUES
   ('temporal_decay', 'enabled'),
   ('hnsw_indexing', 'enabled');
 
--- Create default vector index configuration. Dimension matches the default
--- ONNX embedding model (Xenova/all-MiniLM-L6-v2, 384-dim); HNSW rejects
--- inserts whose dim does not match this row, so a 768 here breaks every
--- memory_store --vector and memory_search on a fresh install (#1947).
+-- Create default vector index configuration. Dimension matches the
+-- configured embedding model (#2305; default Xenova/all-MiniLM-L6-v2,
+-- 384-dim); HNSW rejects inserts whose dim does not match this row, so a
+-- mismatch here breaks every memory_store --vector and memory_search (#1947).
 INSERT OR IGNORE INTO vector_indexes (id, name, dimensions) VALUES
-  ('default', 'default', 384),
-  ('patterns', 'patterns', 384);
+  ('default', 'default', ${dimension}),
+  ('patterns', 'patterns', ${dimension});
 `;
 }
 
@@ -1971,6 +1986,8 @@ export async function initializeMemoryDatabase(options: {
       // Load existing database or create new
       if (fs.existsSync(dbPath) && force) {
         fs.unlinkSync(dbPath);
+        // #2305: the recorded dimension of the deleted store no longer binds.
+        _resetEmbeddingConfigCache();
       }
 
       db = new SQL.Database();
@@ -1987,7 +2004,7 @@ export async function initializeMemoryDatabase(options: {
       db.run(MEMORY_SCHEMA_V3);
 
       // Insert initial metadata
-      db.run(getInitialMetadata(backend));
+      db.run(getInitialMetadata(backend, resolveEmbeddingConfig(process.cwd()).dimension));
 
       // Save to file
       const data = db.export();
@@ -1999,7 +2016,7 @@ export async function initializeMemoryDatabase(options: {
 
       // Also create schema file for reference
       const schemaPath = path.join(dbDir, 'schema.sql');
-      fs.writeFileSync(schemaPath, MEMORY_SCHEMA_V3 + '\n' + getInitialMetadata(backend));
+      fs.writeFileSync(schemaPath, MEMORY_SCHEMA_V3 + '\n' + getInitialMetadata(backend, resolveEmbeddingConfig(process.cwd()).dimension));
 
       // ADR-053: Activate ControllerRegistry so controllers (ReasoningBank,
       // SkillLibrary, ExplainableRecall, etc.) are instantiated during init
@@ -2048,7 +2065,7 @@ export async function initializeMemoryDatabase(options: {
     } else {
       // Fall back to schema file approach
       const schemaPath = path.join(dbDir, 'schema.sql');
-      fs.writeFileSync(schemaPath, MEMORY_SCHEMA_V3 + '\n' + getInitialMetadata(backend));
+      fs.writeFileSync(schemaPath, MEMORY_SCHEMA_V3 + '\n' + getInitialMetadata(backend, resolveEmbeddingConfig(process.cwd()).dimension));
 
       // Create minimal valid SQLite file
       const sqliteHeader = Buffer.alloc(4096, 0);
@@ -2355,6 +2372,20 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
 
   let sawRetryableFailure = false;
 
+  // #2305: honour `.claude-flow/embeddings.json` instead of always loading
+  // MiniLM/384 — unless the memory store already holds vectors of another
+  // dimension, in which case its recorded dimension is kept (with a warning).
+  // Both stores the memory path writes vectors to are checked, in the same
+  // order the bridge uses, so the local chain and the bridge agree.
+  const memoryDbPath = resolveDbPath();
+  const embCfg = await resolveEffectiveEmbeddingConfig({
+    root: process.cwd(),
+    dbPaths: [memoryDbPath, path.join(path.dirname(memoryDbPath), 'agentdb-memory.db')],
+  });
+  // The agentic-flow and ruvector fallbacks below bundle MiniLM only; using
+  // them for any other configured dimension would mix vector sizes.
+  const bundledMiniLmFits = embCfg.dimension === DEFAULT_EMBEDDING_DIMENSION;
+
   try {
     // ADR-094: prefer @huggingface/transformers (clears protobufjs <7.5.5
     // critical RCE chain), fall back to legacy @xenova/transformers.
@@ -2396,7 +2427,7 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
       // (reading 'model')" on every memory store / search call.
       try {
         if (verbose) {
-          console.log(`Loading ONNX embedding model via ${transformersSource} (all-MiniLM-L6-v2)...`);
+          console.log(`Loading ONNX embedding model via ${transformersSource} (${embCfg.model})...`);
         }
 
         // ADR-454: route model downloads to a user-writable cache dir —
@@ -2407,19 +2438,19 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
         const env = transformersModule?.env as { cacheDir: string } | undefined;
         if (env) env.cacheDir = cacheDir;
 
-        const embedder = await pipelineFn('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+        const embedder = await pipelineFn('feature-extraction', embCfg.model);
 
         embeddingModelState = {
           loaded: true,
           model: embedder,
           tokenizer: null,
-          dimensions: 384 // MiniLM-L6 produces 384-dim vectors
+          dimensions: embCfg.dimension
         };
 
         return {
           success: true,
-          dimensions: 384,
-          modelName: 'Xenova/all-MiniLM-L6-v2',
+          dimensions: embCfg.dimension,
+          modelName: embCfg.model,
           loadTime: Date.now() - startTime
         };
       } catch (err) {
@@ -2440,7 +2471,7 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
     // Fallback: Check for agentic-flow ReasoningBank embeddings (v3)
     const reasoningBank = await import('agentic-flow/reasoningbank').catch(() => null);
 
-    if (reasoningBank?.computeEmbedding) {
+    if (bundledMiniLmFits && reasoningBank?.computeEmbedding) {
       if (verbose) {
         console.log('Loading agentic-flow ReasoningBank embedding model...');
       }
@@ -2479,7 +2510,7 @@ async function loadLocalEmbeddingChain(verbose = false, startTime = Date.now()):
         if (onnxEmb?.embed) {
           // Probe embed to trigger lazy ONNX init and verify it works
           const probe = await onnxEmb.embed('test');
-          if (probe && probe.length > 0 && (Array.isArray(probe) ? probe.some((v: number) => v !== 0) : true)) {
+          if (probe && probe.length > 0 && probe.length === embCfg.dimension && (Array.isArray(probe) ? probe.some((v: number) => v !== 0) : true)) {
             if (verbose) {
               console.log(`Loading ruvector ONNX embedder (all-MiniLM-L6-v2, ${probe.length}d)...`);
             }
@@ -2980,6 +3011,8 @@ export async function storeEntry(options: {
   namespace?: string;
   generateEmbeddingFlag?: boolean;
   tags?: string[];
+  /** #1426: JSON object persisted to the metadata column. */
+  metadata?: Record<string, unknown>;
   ttl?: number;
   dbPath?: string;
   upsert?: boolean;
@@ -3160,7 +3193,7 @@ export async function storeEntry(options: {
           embeddingDimensions,
           embeddingModel,
           tags.length > 0 ? JSON.stringify(tags) : null,
-          '{}',
+          JSON.stringify(options.metadata ?? {}),
           persistedProvenance,
           now,
           now,

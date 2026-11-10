@@ -5,11 +5,13 @@
  * detects communities via label propagation, and provides
  * graph-aware ranking for search results.
  *
- * Pure TypeScript - no external graph libraries.
+ * PageRank uses the optional @ruvnet/sublinear-core when installed and an
+ * in-tree implementation otherwise (./pagerank.ts).
  * @module v3/memory/memory-graph
  */
 import { EventEmitter } from 'node:events';
 import type { IMemoryBackend, MemoryEntry, SearchResult } from './types.js';
+import { computePageRankScores } from './pagerank.js';
 
 // ===== Types =====
 
@@ -18,8 +20,8 @@ export type EdgeType = 'reference' | 'similar' | 'temporal' | 'co-accessed' | 'c
 export interface MemoryGraphConfig {
   similarityThreshold?: number;   // Auto-edge threshold (default: 0.8)
   pageRankDamping?: number;       // Damping factor (default: 0.85)
-  pageRankIterations?: number;    // Max iterations (default: 50)
-  pageRankConvergence?: number;   // Convergence threshold (default: 1e-6)
+  pageRankIterations?: number;    // Max iterations (default: 200)
+  pageRankConvergence?: number;   // L1 change between iterates to stop at (default: 1e-10)
   maxNodes?: number;              // Cap graph size (default: 5000)
   enableAutoEdges?: boolean;      // Auto-create edges from similarity (default: true)
   communityAlgorithm?: 'louvain' | 'label-propagation';  // default: label-propagation
@@ -60,8 +62,8 @@ export interface GraphStats {
 const DEFAULT_CONFIG: Required<MemoryGraphConfig> = {
   similarityThreshold: 0.8,
   pageRankDamping: 0.85,
-  pageRankIterations: 50,
-  pageRankConvergence: 1e-6,
+  pageRankIterations: 200,
+  pageRankConvergence: 1e-10,
   maxNodes: 5000,
   enableAutoEdges: true,
   communityAlgorithm: 'label-propagation',
@@ -189,60 +191,47 @@ export class MemoryGraph extends EventEmitter {
   }
 
   /**
-   * Compute PageRank via power iteration with dangling node redistribution.
-   * Returns map of node ID to PageRank score.
+   * Compute PageRank (power iteration, dangling mass redistributed uniformly).
+   * Uses @ruvnet/sublinear-core when installed, else the in-tree solver in
+   * ./pagerank.ts. Stops when the L1 change between iterates is <=
+   * pageRankConvergence. Returns map of node ID to PageRank score (sums to 1).
    */
   computePageRank(): Map<string, number> {
-    const N = this.nodes.size;
+    const ids = [...this.nodes.keys()];
+    const N = ids.length;
     if (N === 0) {
       this.dirty = false;
       this.emit('pagerank:computed', { iterations: 0 });
       return new Map();
     }
 
-    const d = this.config.pageRankDamping;
-    for (const nodeId of this.nodes.keys()) {
-      this.pageRanks.set(nodeId, 1 / N);
-    }
-
-    // Identify dangling nodes (no outgoing edges)
-    const danglingNodes: string[] = [];
-    for (const nodeId of this.nodes.keys()) {
-      const out = this.edges.get(nodeId);
-      if (!out || out.length === 0) danglingNodes.push(nodeId);
-    }
-
-    let iterations = 0;
-    for (let iter = 0; iter < this.config.pageRankIterations; iter++) {
-      let maxDelta = 0;
-      const newRanks = new Map<string, number>();
-
-      let danglingSum = 0;
-      for (const nodeId of danglingNodes) {
-        danglingSum += this.pageRanks.get(nodeId) || 0;
+    const index = new Map<string, number>();
+    ids.forEach((id, i) => index.set(id, i));
+    const edges: Array<[number, number]> = [];
+    for (const [sourceId, out] of this.edges) {
+      const s = index.get(sourceId);
+      if (s === undefined) continue;
+      for (const edge of out) {
+        const t = index.get(edge.targetId);
+        if (t !== undefined) edges.push([s, t]);
       }
-
-      for (const nodeId of this.nodes.keys()) {
-        let sum = 0;
-        const incoming = this.reverseEdges.get(nodeId);
-        if (incoming) {
-          for (const sourceId of incoming) {
-            const outDegree = this.edges.get(sourceId)?.length || 1;
-            sum += (this.pageRanks.get(sourceId) || 0) / outDegree;
-          }
-        }
-        const newRank = (1 - d) / N + d * (sum + danglingSum / N);
-        newRanks.set(nodeId, newRank);
-        maxDelta = Math.max(maxDelta, Math.abs(newRank - (this.pageRanks.get(nodeId) || 0)));
-      }
-
-      this.pageRanks = newRanks;
-      iterations = iter + 1;
-      if (maxDelta < this.config.pageRankConvergence) break;
     }
+
+    const run = computePageRankScores(N, edges, {
+      damping: this.config.pageRankDamping,
+      tolerance: this.config.pageRankConvergence,
+      maxIterations: this.config.pageRankIterations,
+    });
+    this.pageRanks = new Map();
+    ids.forEach((id, i) => this.pageRanks.set(id, run.scores[i]));
 
     this.dirty = false;
-    this.emit('pagerank:computed', { iterations });
+    this.emit('pagerank:computed', {
+      iterations: run.iterations,
+      converged: run.converged,
+      delta: run.delta,
+      backend: run.backend,
+    });
     return new Map(this.pageRanks);
   }
 

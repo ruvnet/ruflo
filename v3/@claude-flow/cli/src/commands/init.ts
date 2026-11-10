@@ -16,7 +16,10 @@ import {
   DEFAULT_INIT_OPTIONS,
   MINIMAL_INIT_OPTIONS,
   FULL_INIT_OPTIONS,
+  finalizeDualInstructions,
+  formatPluginDedupSummary,
   type InitOptions,
+  type InitResult,
 } from '../init/index.js';
 import { executeGrokInit } from '../init/grok-generator.js';
 import {
@@ -88,6 +91,43 @@ async function offerCapabilityEnrollment(ctx: CommandContext): Promise<void> {
   } catch {
     // Enrollment is optional; init success is never affected.
   }
+}
+
+/**
+ * One-time opt-in to anonymous usage telemetry (ADR-302 telemetry domain,
+ * ADR-309). Separate from enrollment, which must never toggle telemetry.
+ * Interactive TTY only, never in CI, skipped with --no-telemetry-prompt,
+ * asked once whatever the answer, default No. Never affects init success.
+ */
+async function offerTelemetryOptIn(ctx: CommandContext): Promise<void> {
+  try {
+    if (ctx.flags.format === 'json') return;
+    const noPrompt = Boolean(ctx.flags['no-telemetry-prompt'] || ctx.flags.noTelemetryPrompt || ctx.flags.telemetryPrompt === false);
+    const { shouldOfferTelemetry } = await import('../funnel/activation.js');
+    if (!shouldOfferTelemetry({ noTelemetryPrompt: noPrompt, cwd: ctx.cwd })) return;
+    output.writeln();
+    output.writeln('Help improve ruflo? Opting in sends anonymous usage events: init finished, first agent run, active days.');
+    output.writeln(output.dim('  Daily-bucketed, with a random ID that rotates every 90 days. No code, paths, prompts or account data.'));
+    const accepted = await confirm({ message: 'Share anonymous usage telemetry?', default: false });
+    const { recordConsent } = await import('../funnel/index.js');
+    recordConsent('telemetry', Boolean(accepted), 'init-prompt');
+    output.writeln(output.dim(accepted
+      ? '  Thanks. Turn it off any time with \`ruflo funnel telemetry off\`.'
+      : '  Telemetry stays off. Turn it on later with \`ruflo funnel telemetry on\`.'));
+  } catch {
+    // Optional; init success is never affected.
+  }
+}
+
+/** Activation funnel: no-op without telemetry consent; never throws. */
+async function noteInitCompleted(): Promise<void> {
+  try {
+    const [{ recordInitCompleted }, { rufloPackageVersion }] = await Promise.all([
+      import('../funnel/activation.js'),
+      import('../mcp-protocol.js'),
+    ]);
+    recordInitCompleted(rufloPackageVersion());
+  } catch { /* optional */ }
 }
 
 // Dynamic import of the optional @claude-flow/codex package. Returns
@@ -555,7 +595,10 @@ async function initCodexAction(
     if (!CodexInitializer) {
       spinner.stop();
       output.printInfo('Fetching the stable Codex adapter for this initialization...');
-      const success = runCodexInitializerCli(ctx.cwd, { template, force, dual: dualMode, codexTrust });
+      // #2638: never pass --dual to a fetched adapter of unknown version — an
+      // older one rewrites CLAUDE.md with its own stub under --force. Without
+      // it, finalizeDualInstructions keeps the full CLAUDE.md.
+      const success = runCodexInitializerCli(ctx.cwd, { template, force, dual: false, codexTrust });
       if (!success) {
         output.printError('Codex initialization failed while running @claude-flow/codex@latest.');
         return { success: false, exitCode: 1 };
@@ -805,6 +848,11 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
     options.skipGlobalClaudeMd = true;
   }
 
+  // #2638 — set by the --dual route below: CLAUDE.md imports AGENTS.md.
+  if (ctx.flags.instructionsSource === 'agents-md') {
+    options.instructionsSource = 'agents-md';
+  }
+
   const riskyMode = riskyModeFromFlags(ctx.flags);
   if (typeof riskyMode === 'object') {
     output.printError(riskyMode.error);
@@ -853,6 +901,13 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
 
     output.printBox(summary.join('\n'), 'Summary');
     output.writeln();
+
+    // #2640: say what was left to the installed ruflo plugins, and why.
+    const pluginLines = result.pluginDedup ? formatPluginDedupSummary(result.pluginDedup) : [];
+    if (pluginLines.length > 0) {
+      output.printBox(pluginLines.join('\n'), 'Provided by installed plugins');
+      output.writeln();
+    }
 
     // Security: surface anything settings-risk-scanner.ts flagged in a
     // pre-existing settings.json this init carried forward unexamined.
@@ -1045,28 +1100,37 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
       }
     }
 
-    if (!startDaemon && !startAll) {
-      const bin = (process.argv[1] || '').includes('ruflo') ? 'ruflo' : 'claude-flow';
-      output.writeln(output.bold('Next steps:'));
-      output.printList([
-        `Run ${output.highlight(`${bin} daemon start`)} to start background workers`,
-        // Memory is initialized automatically during init (persistent by
-        // default — see executor.ts) — no separate `memory init` step needed
-        // unless the DB was skipped (MINIMAL_INIT_OPTIONS) or needs --force.
-        `Run ${output.highlight(`${bin} swarm init`)} to initialize a swarm`,
-        `Or use ${output.highlight(`${bin} init --start-all`)} to do all of the above`,
-        options.components.settings ? `Review ${output.highlight('.claude/settings.json')} for hook configurations` : '',
-        // ADR-150 — surface the new metaharness scorecard to every new user.
-        // Optional dep; the command degrades gracefully when not installed.
-        `Run ${output.highlight(`${bin} metaharness score`)} for a 5-dim harness readiness scorecard (ADR-150)`,
-      ].filter(Boolean));
-    }
-
     if (ctx.flags.format === 'json') {
       output.printJson(result);
     }
 
     await offerCapabilityEnrollment(ctx);
+
+    await offerTelemetryOptIn(ctx);
+
+    await noteInitCompleted();
+
+    if (!startDaemon && !startAll && ctx.flags.format !== 'json') {
+      // End on something about the user's own repo, not a list of commands
+      // (adoption plan item 1). Printed after the optional prompts so it is
+      // the last thing on screen. Local-only, time-capped, never throws.
+      const { snapshotProject, snapshotLines, firstPrompt } = await import('../init/first-win.js');
+      const snap = snapshotProject(ctx.cwd);
+      const lines = snapshotLines(snap);
+      output.writeln();
+      if (lines.length) {
+        output.writeln(output.bold('Your project:'));
+        output.printList(lines);
+        output.writeln();
+      }
+      output.writeln(output.bold('Try it — open Claude Code here and paste:'));
+      output.writeln(`  ${output.highlight(firstPrompt(snap))}`);
+      output.writeln();
+      const bin = (process.argv[1] || '').includes('ruflo') ? 'ruflo' : 'claude-flow';
+      output.writeln(output.dim(`Background workers: ${bin} daemon start · health check: ${bin} doctor`));
+      // ADR-150: surface the metaharness scorecard (optional dep; degrades gracefully when absent).
+      output.writeln(output.dim(`Harness readiness: ${bin} metaharness score (5-dim scorecard)`));
+    }
 
     return { success: true, data: result };
   } catch (error) {
@@ -1078,8 +1142,9 @@ const initClaudeAction = async (ctx: CommandContext): Promise<CommandResult> => 
 
 /**
  * Route platform initialization. Dual mode deliberately runs both native
- * initializers: Claude Code first, then Codex without its compatibility
- * CLAUDE.md stub so the full native Claude scaffold remains authoritative.
+ * initializers: Claude Code first, then Codex. #2638: AGENTS.md carries the
+ * shared instruction sections once and CLAUDE.md imports it (`@AGENTS.md`)
+ * with only the Claude-specific sections; the .claude/ scaffold is unchanged.
  */
 const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
   const force = ctx.flags.force as boolean;
@@ -1113,6 +1178,8 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
       dual: false,
       // The explicit Codex pass below owns Codex setup.
       'no-codex-detect': true,
+      // #2638 — AGENTS.md owns the shared sections; CLAUDE.md imports it.
+      instructionsSource: 'agents-md',
     },
   };
   const claudeResult = await initClaudeAction(claudeContext);
@@ -1120,12 +1187,17 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
 
   const codexResult = await initCodexAction(ctx, {
     codexMode: true,
-    // Preserve the full CLAUDE.md and .claude/ scaffold just generated.
-    dualMode: false,
+    // #2638 — dual AGENTS.md (shared + Codex-only sections). Codex leaves a
+    // CLAUDE.md that already imports AGENTS.md alone.
+    dualMode: true,
     force,
     minimal,
     full,
   });
+  // Keep the @AGENTS.md import only if AGENTS.md really carries the shared
+  // sections; otherwise the full CLAUDE.md is written back.
+  const instructions = finalizeDualInstructions(ctx.cwd, claudeResult.data as InitResult | undefined);
+  if (instructions.action === 'restored' && instructions.message) output.printWarning(instructions.message);
   if (!codexResult.success) {
     return {
       ...codexResult,
@@ -1437,6 +1509,10 @@ const wizardCommand: Command = {
       });
 
       await offerCapabilityEnrollment(ctx);
+
+      await offerTelemetryOptIn(ctx);
+
+      await noteInitCompleted();
 
       return { success: true, data: result };
     } catch (error) {
@@ -1899,6 +1975,12 @@ export const initCommand: Command = {
       // ADR-302 — skip the one-time post-init capability enrollment prompt.
       name: 'no-signup',
       description: 'Skip the post-init Cognitum capability enrollment prompt',
+      type: 'boolean',
+      default: false,
+    },
+    {
+      name: 'no-telemetry-prompt',
+      description: 'Skip the one-time question about anonymous usage telemetry (default answer is No)',
       type: 'boolean',
       default: false,
     },

@@ -5452,8 +5452,22 @@ const refreshFunnelCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     try {
-      const { refreshRemoteMessages } = await import('../funnel/index.js');
-      const result = await refreshRemoteMessages();
+      const { refreshRemoteMessages, resolveFunnelEnabled, hasConsent, flushEvents } = await import('../funnel/index.js');
+      // `ruflo funnel disable` (and every other opt-out source) must stop the
+      // network call, not only the promo row (ADR-309 operational telemetry).
+      const decision = resolveFunnelEnabled();
+      const result: Record<string, unknown> = decision.enabled
+        ? await refreshRemoteMessages()
+        : { refreshed: false, skipped: 'funnel-disabled', decidedBy: decision.decidedBy };
+      // Opt-in event telemetry (ADR-305/309): only with an explicit, current
+      // telemetry consent receipt; flushEvents re-checks consent itself.
+      if (decision.enabled && hasConsent('telemetry')) {
+        const { rufloPackageVersion } = await import('../mcp-protocol.js');
+        // Activation funnel: one "active today" marker per day (7-day retention).
+        const { recordSessionActive } = await import('../funnel/activation.js');
+        recordSessionActive(rufloPackageVersion());
+        result.events = await flushEvents({ release: rufloPackageVersion() });
+      }
       if (!ctx.flags.quiet) {
         output.writeln(JSON.stringify(result));
       }

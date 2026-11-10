@@ -105,14 +105,20 @@ export class PatternDownloader {
         }
       }
 
-      // Verify signature if available
+      // Verify signature if available. A pattern that carries a signature
+      // which does not verify is refused rather than written.
       if (pattern.signature && pattern.publicKey) {
-        const sigVerified = this.verifySignature(content, pattern.signature, pattern.publicKey);
+        const sigVerified = await this.verifySignature(content, pattern.signature, pattern.publicKey);
         if (!sigVerified) {
-          console.warn(`[Download] Warning: Signature verification failed!`);
-        } else {
-          console.log(`[Download] Signature verified!`);
+          console.warn(`[Download] Signature verification failed, not writing the pattern.`);
+          return {
+            success: false,
+            pattern,
+            verified: false,
+            size: content.length,
+          };
         }
+        console.log(`[Download] Signature verified!`);
       }
 
       // Write to file
@@ -282,37 +288,27 @@ export class PatternDownloader {
   }
 
   /**
-   * Verify content signature using crypto
+   * Verify an Ed25519 signature over the content. Any error is a failure.
    */
-  private verifySignature(
+  private async verifySignature(
     content: Buffer,
     signature: string,
     publicKey: string
-  ): boolean {
-    // Check signature format
+  ): Promise<boolean> {
     if (!signature.startsWith('ed25519:') || !publicKey.startsWith('ed25519:')) {
       return false;
     }
-
     try {
-      // For HMAC-based signatures (used in publish.ts)
-      const sigHex = signature.replace('ed25519:', '');
-      const keyHex = publicKey.replace('ed25519:', '');
-
-      // Verify HMAC signature
-      const expectedSig = crypto
-        .createHmac('sha256', keyHex)
-        .update(content)
-        .digest('hex');
-
-      // Constant-time comparison to prevent timing attacks
-      return crypto.timingSafeEqual(
-        Buffer.from(sigHex, 'hex'),
-        Buffer.from(expectedSig, 'hex')
-      );
+      const ed = await import('@noble/ed25519');
+      const sigBytes = Buffer.from(signature.slice('ed25519:'.length), 'hex');
+      const pubBytes = Buffer.from(publicKey.slice('ed25519:'.length), 'hex');
+      if (sigBytes.length !== 64 || pubBytes.length !== 32) {
+        return false;
+      }
+      // RFC 8032 strict mode, as in transfer/ipfs/client.ts.
+      return await ed.verifyAsync(sigBytes, content, pubBytes, { zip215: false });
     } catch {
-      // If crypto verification fails, check basic format
-      return signature.length > 20 && publicKey.length > 20;
+      return false;
     }
   }
 

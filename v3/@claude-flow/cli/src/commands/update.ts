@@ -20,6 +20,7 @@ import {
   clearHistory,
 } from '../update/executor.js';
 import { clearCache } from '../update/rate-limiter.js';
+import { resolveStartupUpdateConfig } from '../update/index.js';
 
 // Helper functions
 function formatUpdateType(type: string): string {
@@ -66,7 +67,7 @@ const checkCommand: Command = {
     }
 
     try {
-      const { results, skipped, reason } = await checkForUpdates(DEFAULT_CONFIG);
+      const { results, skipped, reason } = await checkForUpdates(resolveStartupUpdateConfig());
 
       if (skipped) {
         output.printInfo(`Update check skipped: ${reason}`);

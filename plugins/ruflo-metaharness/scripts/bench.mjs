@@ -20,7 +20,7 @@
 
 import { guardCliArgs } from './_cli-args.mjs';
 
-import { runDarwin, emitDarwinDegradedJsonAndExit } from './_darwin.mjs';
+import { runDarwin, emitDarwinDegradedJsonAndExit, importDarwinLib } from './_darwin.mjs';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -64,8 +64,40 @@ function safetyChecks() {
   }
 }
 
-function main() {
+// ADR-526 — verify through darwin's library (loadSuite + verifySuite), the
+// same two calls the darwin CLI makes, without spawning it. Returns false when
+// the library is unavailable so main() falls back to the CLI.
+async function verifyInProcess() {
+  const darwin = await importDarwinLib();
+  if (!darwin?.bench?.loadSuite || !darwin?.bench?.verifySuite) return false;
+  const start = Date.now();
+  let payload;
+  let exitCode;
+  try {
+    const suite = await darwin.bench.loadSuite(resolve(ARGS.suite));
+    const check = darwin.bench.verifySuite(suite);
+    const tasks = Array.isArray(suite.tasks) ? suite.tasks.length : 0;
+    exitCode = check.ok ? 0 : 1;
+    payload = {
+      success: check.ok,
+      data: {
+        op: 'verify', suiteId: suite.id, version: suite.version, tasks, hashOk: check.ok, hash: check.actual,
+        stdoutTail: `Suite ${suite.id}@${suite.version}: ${tasks} tasks, hash ${check.ok ? 'OK' : 'MISMATCH'} (${String(check.actual).slice(0, 12)}…)\n`,
+        durationMs: Date.now() - start,
+      },
+      generatedAt: new Date().toISOString(),
+    };
+  } catch (e) {
+    exitCode = 1;
+    payload = { success: false, data: { op: 'verify', error: e?.message ?? String(e), durationMs: Date.now() - start }, generatedAt: new Date().toISOString() };
+  }
+  console.log(JSON.stringify(payload, null, 2));
+  process.exit(exitCode);
+}
+
+async function main() {
   safetyChecks();
+  if (ARGS.op === 'verify' && (await verifyInProcess())) return;
 
   const cliArgs = ARGS.op === 'create'
     ? ['bench', 'create', resolve(ARGS.repo), ...(ARGS.out ? ['--out', resolve(ARGS.out)] : [])]

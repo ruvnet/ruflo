@@ -1,5 +1,34 @@
 # @claude-flow/plugin-legal-contracts
 
+<!-- adr-356:quickstart:start -->
+**@claude-flow/plugin-legal-contracts** — A Ruflo plugin that gives agents MCP tools for clause extraction, contract risk assessment, contract comparison, obligation tracking and playbook matching.
+
+**Supported environments:** Node.js 20+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/plugin-legal-contracts
+```
+
+```js
+import { legalContractsTools, ClauseExtractInputSchema } from '@claude-flow/plugin-legal-contracts';
+
+console.log('tools:', legalContractsTools.map((t) => t.name).join(', '));
+const check = ClauseExtractInputSchema.safeParse({ document: 'This Agreement may be terminated by either party.', clauseTypes: ['termination'] });
+console.log('valid input:', check.success);
+```
+
+Expected output:
+
+```text
+tools: legal/clause-extract, legal/risk-assess, legal/contract-compare, legal/obligation-track, legal/playbook-match
+valid input: true
+```
+
+Install it into a Ruflo project with [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli): `npx @claude-flow/cli@latest plugins install -n @claude-flow/plugin-legal-contracts`.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-legal-contracts.svg)](https://www.npmjs.com/package/@claude-flow/plugin-legal-contracts)
 [![npm downloads](https://img.shields.io/npm/dm/@claude-flow/plugin-legal-contracts.svg)](https://www.npmjs.com/package/@claude-flow/plugin-legal-contracts)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -389,3 +418,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/plugins/legal-contracts)
+<!-- adr-356:footer:end -->

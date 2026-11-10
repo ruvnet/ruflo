@@ -272,6 +272,19 @@ export const DARWIN_VERSION_PIN = DARWIN_PIN;
  * evolve.mjs --diagnose (failure-class analysis of run transcripts).
  * Returns the module namespace or null. Never throws on absence.
  */
+export async function importDarwinLib() {
+  // ADR-526 — darwin's root library entry (bench suites). bench.mjs uses it for
+  // verify so a CLI call does not spawn a second node for the darwin CLI.
+  // Bare import ONLY: unlike importGepa it never falls back to a cache install,
+  // because the caller has a no-install fallback (the installed darwin CLI) and
+  // a tool-time npm install is exactly what #3366 removed. Null when absent.
+  try {
+    return await import(DARWIN_PKG);
+  } catch {
+    return null;
+  }
+}
+
 export function importGepa() {
   return importOptionalLibrary({
     specifier: '@metaharness/darwin/gepa',

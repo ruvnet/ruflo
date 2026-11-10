@@ -33,6 +33,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { getProjectRoot } from '../services/project-root.js';
 
 // ============================================================================
 // Types
@@ -157,7 +158,7 @@ const DEFAULT_EWC_CONFIG: EWCConfig = {
   maxPatterns: 1000,
   fisherDecayRate: 0.01,
   importanceThreshold: 0.3,
-  storagePath: path.join(process.cwd(), '.swarm', 'ewc-fisher.json'),
+  storagePath: path.join(getProjectRoot(), '.swarm', 'ewc-fisher.json'),
   onlineMode: true,
   dimensions: 384
 };

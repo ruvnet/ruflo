@@ -19,6 +19,7 @@ import { join } from 'node:path';
 import { nullPrototypeRecords, readPreservedJsonStore } from './record-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier } from './validate-input.js';
+import { noteFirstAgentRun } from '../funnel/activation.js';
 import {
   createApscState,
   isApscAgentEligible,
@@ -333,6 +334,7 @@ export const swarmTools: MCPTool[] = [
       store.swarms[swarmId] = swarmState;
       saveSwarmStore(store);
 
+      noteFirstAgentRun('cli'); // activation funnel (opt-in; no-op without telemetry consent)
       return {
         success: true,
         swarmId,

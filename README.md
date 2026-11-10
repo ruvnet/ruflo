@@ -7,7 +7,7 @@
 <!-- Try Ruflo — the 3 badges first-time visitors actually act on -->
 [![npm version (ruflo)](https://img.shields.io/npm/v/ruflo?label=npx%20ruflo&style=for-the-badge&logo=npm&color=cb3837)](https://www.npmjs.com/package/ruflo)
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/claude-flow?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/claude-flow)
+[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/ruflo?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/ruflo)
 [![Follow @rUv on X](https://img.shields.io/badge/Follow-@rUv-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/rUv)
 
 <p align="center">
@@ -23,9 +23,30 @@
 
 <a id="start-here"></a>
 
-## <img src="docs/assets/readme/icons/terminal.svg" width="32" height="32" alt=""> Get started with Ruflo
+## <img src="docs/assets/readme/icons/terminal.svg" width="32" height="32" alt=""> Get started in one command
 
-<img src="docs/assets/readme/icons/plugins.svg" width="28" height="28" alt=""> **Start in Claude Code** with core tools, the visual console and runtime mods. Requires Claude Code **2.1.287 or later**. Run inside Claude Code:
+Run this in your project folder:
+
+```bash
+npx ruflo@latest init
+```
+
+Then open Claude Code in the same folder and give it a real task, for example:
+
+```text
+Use a ruflo swarm to review this repo: find the riskiest module, write tests for it, and summarise what you changed.
+```
+
+`init` adds ruflo's agents, hooks, memory and MCP server to the project, and Claude Code picks them up on its next start. Codex and other MCP clients work too: point them at `npx -y ruflo@latest mcp start`.
+
+<p align="center"><img src="docs/assets/ruflo-console-tour.gif" width="720" alt="Looping recording of the ruflo console: overview, swarm view and missions in a sample project"></p>
+
+[First useful task, step by step](docs/ruflo-explained.md) · [User guide](docs/USERGUIDE.md) · [Compare install paths](#quick-start)
+
+<details>
+<summary><b>Other ways to install</b> (Claude Code plugins only, MCP-only clients, terminal UI)</summary>
+
+**Claude Code plugins only.** This route installs core tools, the visual console and runtime mods, with no files added to your project. It needs Claude Code **2.1.287 or later**. Run inside Claude Code:
 
 ```text
 /plugin marketplace add ruvnet/ruflo
@@ -36,29 +57,15 @@
 /ruflo
 ```
 
-From a terminal on Claude Code 2.1.292 or later, one command adds the marketplace and installs a plugin: `claude plugin install ruflo-core@ruflo --marketplace ruvnet/ruflo`.
+From a terminal, on Claude Code 2.1.292 or later: `claude plugin install ruflo-core@ruflo --marketplace ruvnet/ruflo`. Mods run with your account's permissions, so review their code before installing.
 
-**Core** provides foundation tools. **Console** opens the agent cockpit. **Mods** add routing and policy enforcement inside Claude Code. Mods run with your account's permissions; review their code before installing.
+**Codex or another MCP client, without project setup.** Configure the **command** `npx` with the **arguments** `["-y", "ruflo@latest", "mcp", "start"]`. To set up a project interactively, run `npx ruflo@latest init wizard`.
 
-<img src="docs/assets/readme/icons/terminal.svg" width="28" height="28" alt=""> **Using Codex or another MCP enabled tool?** Use NPX for Ruflo project setup and connect your client to the Ruflo MCP server. Run the setup wizard in your project terminal:
-
-```bash
-npx ruflo@latest init wizard
-```
-
-For clients that support local stdio MCP servers, configure **command** `npx` and **arguments** `["-y", "ruflo@latest", "mcp", "start"]`. The equivalent server command is:
-
-```bash
-npx -y ruflo@latest mcp start
-```
-
-MCP exposes Ruflo tools to your client. The console and mods above are Claude Code integrations; hook support depends on the client.
-
-<img src="docs/assets/readme/icons/terminal.svg" width="28" height="28" alt=""> **Prefer a plain terminal? Optional.** The console also runs on its own, with no Claude Code: `npx ruflo tui` (add `--plain` to print one frame for scripts). It shows Overview, Cost, Swarm, Events and Missions, plus an optional AI page. [Terminal UI guide](docs/USERGUIDE.md#terminal-ui-optional)
+**Plain terminal.** The console also runs on its own, without Claude Code: `npx ruflo tui`. Add `--plain` to print one frame for scripts. See the [terminal UI guide](docs/USERGUIDE.md#terminal-ui-optional).
 
 <p align="center"><img src="docs/assets/ruflo-tui-compact.svg" width="640" alt="Looping recording of the optional ruflo terminal UI with its pictures: Overview in the Classic BBS look, the Orbital look with its moving globe, and the Swarm graph, in a sample project"></p>
 
-[Compare install paths](#quick-start) · [Open the console](#console-walkthrough) · [User guide](docs/USERGUIDE.md)
+</details>
 
 <div align="center">
 
@@ -484,6 +491,7 @@ Four docs for four audiences:
 |-----|-----------------|
 | **[Status](docs/STATUS.md)** | See what currently works — capability counts, test baselines, recent fixes, what's next. The *is-it-ready* doc. |
 | **[User Guide](docs/USERGUIDE.md)** | Daily reference — every command, every config flag, every plugin. The *how-do-I* doc. |
+| **[Compare frameworks](docs/compare.md)** | Deciding between Ruflo, Claude Code built-in agents, CrewAI, LangGraph, or AutoGen. The *which-one-for-me* doc. |
 | **[MetaHarness Guide](docs/metaharness-user-guide.md)** | How to grade your agent setup, scan tool configs for security, detect changes between runs, and eject a project into a standalone agent toolkit. The *audit-my-setup* doc. |
 | **[Benchmarks](https://gist.github.com/ruvnet/298f8c668c8859b369f91734a0e9cbbe)** | v3.8.0 SOTA matrix vs LangGraph / AutoGen / CrewAI on darwin-arm64 + linux-x64. ruflo wins cold start, single turn, RSS by 1.3×–1953×. The *is-it-fast* doc. |
 | **[Verification](verification.md)** | Cryptographically prove your installed bytes match the signed witness — `ruflo verify`. The *trust-but-verify* doc. |

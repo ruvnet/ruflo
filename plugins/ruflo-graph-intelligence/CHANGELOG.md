@@ -2,6 +2,10 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.3.0-alpha.1 — 2026-11-05
+- chore: the declared solver dependency moves from `sublinear-time-solver` ^1.7.0 to `@ruvnet/sublinear-core` ^1.0.0 (zero runtime dependencies). The engine never imported the old package (forward-push and CG run in-process), so results are unchanged: `tsc --noEmit` clean, vitest 104/104. The lockfile drops from 1,015 to 77 packages; `.github/supply-chain/allowed-deps.json` lists the new dependency
+- feat: new `sublinear-core` skill: personalized PageRank, local forward/backward push, `solve` and `estimateEntry`, with when to use `agentdb_graph-pathfinder` or the full `sublinear-time-solver` instead
+
 ## 0.2.0-alpha.6 — 2026-10-12
 - fix: the shared text screen now catches `.env` and e-mailed credentials, no longer flags a model's token talk or values that only name where a secret lives, and every rule stays linear (#4094, thanks @proffesor-for-testing)
 

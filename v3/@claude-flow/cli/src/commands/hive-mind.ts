@@ -632,9 +632,9 @@ const spawnCommand: Command = {
     },
     {
       name: 'dangerously-skip-permissions',
-      description: 'Skip permission prompts in Claude Code (use with caution)',
+      description: 'Skip permission prompts in Claude Code (use with caution; requires this explicit flag)',
       type: 'boolean',
-      default: true
+      default: false
     },
     {
       name: 'no-auto-permissions',

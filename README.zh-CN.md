@@ -1,11 +1,13 @@
 <div align="center">
 
-[![Ruflo Banner](ruflo/assets/ruflo-small.jpeg)](https://cognitum.one/agentic-engineering)
+<a href="https://cognitum.one/agentic-engineering"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
+
+**面向 Claude Code 与 Codex 的智能体元基座（meta-harness）。**
 
 <!-- Try Ruflo — the 3 badges first-time visitors actually act on -->
 [![npm version (ruflo)](https://img.shields.io/npm/v/ruflo?label=npx%20ruflo&style=for-the-badge&logo=npm&color=cb3837)](https://www.npmjs.com/package/ruflo)
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/claude-flow?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/claude-flow)
+[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/ruflo?style=for-the-badge&logo=github&color=gold)](https://github.com/ruvnet/ruflo)
 
 <!-- Ecosystem strip (collapsed visually with flat-square) -->
 [![🕸️ RuVector Agentic DB](https://img.shields.io/badge/RuVector_Agentic-DB-06b6d4?style=flat-square&logoColor=white&logo=graphql)](https://github.com/ruvnet/ruvector)
@@ -14,11 +16,74 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-D97757?style=flat-square&logoColor=white&logo=anthropic)](https://github.com/ruvnet/claude-flow)
 [![Codex Plugin](https://img.shields.io/badge/Codex-Plugin-412991?style=flat-square&logoColor=white&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0yMi4yODIgOS44MjFhNS45ODUgNS45ODUgMCAwIDAtLjUxNi00LjkxIDYuMDQ2IDYuMDQ2IDAgMCAwLTYuNTEtMi45QTYuMDY1IDYuMDY1IDAgMCAwIDQuOTgxIDQuMThhNS45ODUgNS45ODUgMCAwIDAtMy45OTggMi45IDYuMDQ2IDYuMDQ2IDAgMCAwIC43NDMgNy4wOTcgNS45OCA1Ljk4IDAgMCAwIC41MSA0LjkxMSA2LjA1MSA2LjA1MSAwIDAgMCA2LjUxNSAyLjlBNS45ODUgNS45ODUgMCAwIDAgMTMuMjYgMjRhNi4wNTYgNi4wNTYgMCAwIDAgNS43NzItNC4yMDYgNS45OSA1Ljk5IDAgMCAwIDMuOTk4LTIuOSA2LjA1NiA2LjA1NiAwIDAgMC0uNzQ3LTcuMDczek0xMy4yNiAyMi40M2E0LjQ3NiA0LjQ3NiAwIDAgMS0yLjg3Ni0xLjA0bC4xNDItLjA4IDQuNzc4LTIuNzU4YS43OTUuNzk1IDAgMCAwIC4zOTMtLjY4MXYtNi43MzdsMi4wMiAxLjE2OGEuMDcxLjA3MSAwIDAgMSAuMDM4LjA1MnY1LjU4M2E0LjUwNCA0LjUwNCAwIDAgMS00LjQ5NSA0LjQ5NHpNMy42IDE4LjMwNGE0LjQ3IDQuNDcgMCAwIDEtLjUzNS0zLjAxNGwuMTQyLjA4NSA0Ljc4MyAyLjc1OWEuNzcxLjc3MSAwIDAgMCAuNzgxIDBsNS44NDMtMy4zNjl2Mi4zMzJhLjA4LjA4IDAgMCAxLS4wMzMuMDYyTDkuNzQgMTkuOTVhNC41IDQuNSAwIDAgMS02LjE0LTEuNjQ2ek0yLjM0IDcuODk2YTQuNDg1IDQuNDg1IDAgMCAxIDIuMzY2LTEuOTczVjExLjZhLjc2Ni43NjYgMCAwIDAgLjM4OC42NzdsNS44MTUgMy4zNTQtMi4wMiAxLjE2OGEuMDc2LjA3NiAwIDAgMS0uMDcyIDBsLTQuODMtMi43ODZBNC41MDQgNC41MDQgMCAwIDEgMi4zNCA3Ljg3MnptMTYuNTk3IDMuODU1LTUuODMzLTMuMzg3IDIuMDE2LTEuMTY1YS4wNzYuMDc2IDAgMCAxIC4wNzEgMGw0LjgzIDIuNzkxYTQuNDk0IDQuNDk0IDAgMCAxLS42NzYgOC4xMDR2LTUuNjc3YS43OS43OSAwIDAgMC0uNDA3LS42Njd6bTIuMDEtMy4wMjMtLjE0MS0uMDg1LTQuNzc0LTIuNzgyYS43NzYuNzc2IDAgMCAwLS43ODUgMEw5LjQwOSA5LjIzVjYuODk3YS4wNjYuMDY2IDAgMCAxIC4wMjgtLjA2Mmw0LjgzLTIuNzg3YTQuNDk5IDQuNDk5IDAgMCAxIDYuNjggNC42NnpNOC4zMDcgMTIuODYzbC0yLjAyLTEuMTY0YS4wOC4wOCAwIDAgMS0uMDM4LS4wNTdWNi4wNzRhNC40OTkgNC40OTkgMCAwIDEgNy4zNzYtMy40NTRsLS4xNDIuMDgtNC43NzggMi43NThhLjc5NS43OTUgMCAwIDAtLjM5My42ODJ6bTEuMDk3LTIuMzY2IDIuNjAyLTEuNSAyLjYwNyAxLjV2Mi45OTlsLTIuNTk3IDEuNS0yLjYwNy0xLjVaIi8%2BPC9zdmc%2B)](https://www.npmjs.com/package/@claude-flow/codex)
 
+<a id="start-here"></a>
+
+## <img src="docs/assets/readme/icons/terminal.svg" width="32" height="32" alt=""> 一条命令快速开始
+
+在你的项目文件夹中运行：
+
+```bash
+npx ruflo@latest init
+```
+
+然后在同一文件夹打开 Claude Code 并给它一个真实的任务，例如：
+
+```text
+用 ruflo 蜂群来审查这个代码库：找出风险最高的模块，为它写测试，总结你改了什么。
+```
+
+`init` 会为项目添加 ruflo 的智能体、钩子、记忆和 MCP 服务器。Claude Code 在下次启动时会自动识别它们。Codex 和其他 MCP 客户端也支持：只需指向 `npx -y ruflo@latest mcp start`。
+
+<p align="center"><img src="docs/assets/ruflo-console-tour.gif" width="720" alt="ruflo 控制台演示：概览、蜂群视图和任务"></p>
+
+[第一个实用任务，逐步讲解](docs/ruflo-explained.md) · [用户指南](docs/USERGUIDE.md) · [比较安装路径](#快速开始)
+
+<details>
+<summary><b>其他安装方式</b>（仅 Claude Code 插件、MCP 客户端、终端 UI）</summary>
+
+**仅 Claude Code 插件。** 这种方式安装核心工具、可视控制台和运行时 mod，无需向项目添加文件。需要 Claude Code **2.1.287 或更高版本**。在 Claude Code 中运行：
+
+```text
+/plugin marketplace add ruvnet/ruflo
+/plugin install ruflo-core@ruflo
+/plugin install ruflo-console@ruflo
+/plugin install ruflo-mods@ruflo
+/reload-plugins
+/ruflo
+```
+
+从终端运行（Claude Code 2.1.292 或更高版本）：`claude plugin install ruflo-core@ruflo --marketplace ruvnet/ruflo`。Mod 运行在你的账户权限下，安装前请审查代码。
+
+**Codex 或其他 MCP 客户端，无需项目配置。** 配置 **命令** 为 `npx`，**参数** 为 `["-y", "ruflo@latest", "mcp", "start"]`。要进行交互式项目配置，运行 `npx ruflo@latest init wizard`。
+
+**纯终端。** 控制台也可独立运行，无需 Claude Code：`npx ruflo tui`。加上 `--plain` 为脚本打印单一画面。详见[终端 UI 指南](docs/USERGUIDE.md#terminal-ui-optional)。
+
+<p align="center"><img src="docs/assets/ruflo-tui-compact.svg" width="640" alt="可选的 ruflo 终端 UI 及其界面：经典 BBS 外观、带移动地球的 Orbital 外观、和蜂群图表"></p>
+
+</details>
+
+<div align="center">
+
+### 可选：ruOS Desktop
+
+<a href="https://ruos.cognitum.one"><img src="ruflo/assets/ruos-animated.svg" alt="ruOS — 一个能自己运行的桌面" width="100%"></a>
+
+**通过 MCP 将 ruOS 连接到 ChatGPT 或 Claude：**
+
+```text
+https://ruos.cognitum.one/mcp
+```
+
+<!-- RuVector promo -->
+<a href="https://github.com/ruvnet/ruvector"><img src="docs/assets/readme/ruvector-promo-depth.svg" width="100%" alt="RuVector：给智能体加装记忆。本地向量搜索、持久上下文、图关系、反馈学习。探索 RuVector。"></a>
+
+```bash
+npx ruvector
+```
+
 # Ruflo
 
 [English](README.md) · [简体中文](README.zh-CN.md)
-
-**面向 Claude Code 与 Codex 的智能体元基座（meta-harness）。**
 
 [![RuFlo Explained — build an AI team that plans, remembers, tests, and improves](docs/assets/ruflo-explained/ch14.jpg)](docs/ruflo-explained.md)
 
