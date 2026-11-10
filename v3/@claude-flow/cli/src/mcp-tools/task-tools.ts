@@ -443,6 +443,11 @@ export const taskTools: MCPTool[] = [
           if (newStatus === 'in_progress' && !task.startedAt) {
             task.startedAt = new Date().toISOString();
           }
+          // Reopening a finished task (completed/failed/cancelled -> pending/in_progress) makes it unfinished
+          // again, so it must not keep reporting the completedAt of the run that was undone.
+          if (newStatus === 'pending' || newStatus === 'in_progress') {
+            task.completedAt = null;
+          }
           // A finished task frees its workers, as task_complete and task_cancel do; otherwise a worker
           // whose task was finished through task_update stays `busy` forever, and a later task_complete
           // returns early because the status already reads completed.
