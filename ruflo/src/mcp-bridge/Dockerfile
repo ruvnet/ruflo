@@ -11,7 +11,7 @@ RUN npm install --production
 # Each installed separately so one failure doesn't block others
 RUN npm install -g ruvector || true
 RUN npm install -g ruflo || true
-RUN npm install -g agentic-flow@3.5.3 || true
+RUN npm install -g agentic-flow@3.0.0-alpha.2 || true
 RUN npm install -g gemini-mcp-server@1.2.2 || true
 RUN npm install -g @openai/codex || true
 

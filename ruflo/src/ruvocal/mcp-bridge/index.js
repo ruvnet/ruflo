@@ -275,7 +275,7 @@ class StdioMcpClient {
 // ruvector and ruflo are first-party and follow `latest`. Keep these in step
 // with the Dockerfile's pre-install lines.
 const BACKEND_VERSIONS = {
-  "agentic-flow": "3.5.3",
+  "agentic-flow": "3.0.0-alpha.2", // what the `alpha` tag resolved to; 3.5.3 drops tools the help text lists
   "gemini-mcp-server": "1.2.2",
 };
 
