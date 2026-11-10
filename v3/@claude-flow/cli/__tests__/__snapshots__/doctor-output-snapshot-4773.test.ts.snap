@@ -33,7 +33,7 @@ System diagnostics and health check
 ⚠ agentic-flow: Not installed (optional — embeddings/routing will use fallbacks)
 ⚠ Encryption at Rest: Off — session/terminal/memory stores are plaintext (mode 0600 only)
 ✓ Federation Breaker: ADR-097 breaker loadable — federation_breaker_status / federation_evict / federation_reactivate MCP tools available
-✓ MetaHarness (ADR-150): v<metaharness-version> — run \`npx ruflo metaharness score\` for the full scorecard
+⚠ MetaHarness (ADR-150): Not installed — \`npx ruflo metaharness *\` commands will degrade gracefully
 ✗ MetaHarness declared packages (ADR-150): declared but not installed: @metaharness/darwin, @metaharness/flywheel, @metaharness/radio, @metaharness/turn-credit — advertised MetaHarness surfaces are degraded
 ✓ MetaHarness integration (ADR-150): plugin scripts intact, _similarity.mjs + parseMcpScanText load, smoke OK
 ✓ Funnel (ADR-305): enabled (decided by: package-default; disclosure: never_seen)
@@ -45,9 +45,9 @@ System diagnostics and health check
 
 ──────────────────────────────────────────────────
 
-Summary: 20 passed, 15 warnings, 1 failed
+Summary: 19 passed, 16 warnings, 1 failed
 
-Run with --fix to see 13 suggested commands (does not auto-apply)
+Run with --fix to see 14 suggested commands (does not auto-apply)
 
 Some checks failed. Please address the issues above.
 "
@@ -86,7 +86,7 @@ System diagnostics and health check
 ⚠ agentic-flow: Not installed (optional — embeddings/routing will use fallbacks)
 ⚠ Encryption at Rest: Off — session/terminal/memory stores are plaintext (mode 0600 only)
 ✓ Federation Breaker: ADR-097 breaker loadable — federation_breaker_status / federation_evict / federation_reactivate MCP tools available
-✓ MetaHarness (ADR-150): v<metaharness-version> — run \`npx ruflo metaharness score\` for the full scorecard
+⚠ MetaHarness (ADR-150): Not installed — \`npx ruflo metaharness *\` commands will degrade gracefully
 ✗ MetaHarness declared packages (ADR-150): declared but not installed: @metaharness/darwin, @metaharness/flywheel, @metaharness/radio, @metaharness/turn-credit — advertised MetaHarness surfaces are degraded
 ✓ MetaHarness integration (ADR-150): plugin scripts intact, _similarity.mjs + parseMcpScanText load, smoke OK
 ✓ Funnel (ADR-305): enabled (decided by: package-default; disclosure: never_seen)
@@ -98,7 +98,7 @@ System diagnostics and health check
 
 ──────────────────────────────────────────────────
 
-Summary: 20 passed, 15 warnings, 1 failed
+Summary: 19 passed, 16 warnings, 1 failed
 
 Suggested commands (run them yourself):
 
@@ -112,6 +112,7 @@ Suggested commands (run them yourself):
   TypeScript: npm install -D typescript
   agentic-flow: npm install agentic-flow@latest
   Encryption at Rest: export CLAUDE_FLOW_ENCRYPT_AT_REST=1 && export CLAUDE_FLOW_ENCRYPTION_KEY=<64-char-hex>
+  MetaHarness (ADR-150): npm install --include=optional  # to enable the metaharness optional dep
   MetaHarness declared packages (ADR-150): npm install --include=optional  # optional deps were skipped or pruned
   Meta LLM Proxy (ADR-313): See cognitum-one/meta-proxy (private) for install instructions
   Cognitum identity (ADR-306): ruflo auth login
