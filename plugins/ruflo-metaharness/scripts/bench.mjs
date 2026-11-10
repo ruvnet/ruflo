@@ -17,6 +17,14 @@
 //   0  ok (or degraded — Darwin not available)
 //   1  --op verify and any task malformed
 //   2  config error or upstream invocation failure
+//
+// DIAGNOSTICS (#4930)
+//   Every JSON payload carries a top-level `darwinSource`: which darwin ran.
+//     library    — bare import of @metaharness/darwin, verified in-process
+//     cli-local  — darwin CLI from an installed copy next to this plugin
+//     cli-cache  — darwin CLI from the one-time ~/.ruflo/darwin-cache-<pin> install
+//     none       — darwin could not be resolved at all (degraded)
+//   A degraded payload also carries the upstream exit code and stderr tail.
 
 import { guardCliArgs } from './_cli-args.mjs';
 
@@ -80,6 +88,7 @@ async function verifyInProcess() {
     exitCode = check.ok ? 0 : 1;
     payload = {
       success: check.ok,
+      darwinSource: 'library',
       data: {
         op: 'verify', suiteId: suite.id, version: suite.version, tasks, hashOk: check.ok, hash: check.actual,
         stdoutTail: `Suite ${suite.id}@${suite.version}: ${tasks} tasks, hash ${check.ok ? 'OK' : 'MISMATCH'} (${String(check.actual).slice(0, 12)}…)\n`,
@@ -89,7 +98,7 @@ async function verifyInProcess() {
     };
   } catch (e) {
     exitCode = 1;
-    payload = { success: false, data: { op: 'verify', error: e?.message ?? String(e), durationMs: Date.now() - start }, generatedAt: new Date().toISOString() };
+    payload = { success: false, darwinSource: 'library', data: { op: 'verify', error: e?.message ?? String(e), durationMs: Date.now() - start }, generatedAt: new Date().toISOString() };
   }
   console.log(JSON.stringify(payload, null, 2));
   process.exit(exitCode);
@@ -104,15 +113,21 @@ async function main() {
     : ['bench', 'verify', resolve(ARGS.suite)];
 
   const r = runDarwin(cliArgs, { timeoutMs: 60_000 });
+  const darwinSource = r.source ? `cli-${r.source}` : 'none';
 
   if (r.degraded) {
-    emitDarwinDegradedJsonAndExit(r.reason);
+    emitDarwinDegradedJsonAndExit(r.reason, {
+      darwinSource,
+      upstreamExitCode: r.exitCode,
+      stderrTail: String(r.stderr ?? '').slice(-1200),
+    });
     return;
   }
 
   if (r.exitCode !== 0 && r.exitCode !== 1) {
     const payload = {
       success: false,
+      darwinSource,
       data: { exitCode: r.exitCode, stderrTail: r.stderr.slice(-400) },
       generatedAt: new Date().toISOString(),
     };
@@ -122,6 +137,7 @@ async function main() {
 
   const payload = {
     success: r.exitCode === 0,
+    darwinSource,
     data: {
       op: ARGS.op,
       ...(r.json ?? { stdoutTail: r.stdout.slice(-2000) }),

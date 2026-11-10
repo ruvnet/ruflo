@@ -22,12 +22,30 @@ function findDarwinCli(): string {
 }
 const DARWIN_CLI = findDarwinCli();
 
-function runScript(name: string, args: string[]): { exitCode: number; json: unknown } {
+interface ScriptRun { exitCode: number; json: unknown; stdout: string; stderr: string; signal: string | null }
+
+function runScript(name: string, args: string[]): ScriptRun {
   const r = spawnSync(process.execPath, [join(SCRIPTS, name), ...args, '--format', 'json'], { encoding: 'utf8', timeout: 60_000 });
-  const m = /\{[\s\S]*\}/.exec(r.stdout ?? '');
+  const stdout = r.stdout ?? '';
+  const m = /\{[\s\S]*\}/.exec(stdout);
   let json: unknown = null;
   if (m) { try { json = JSON.parse(m[0]); } catch { /* null */ } }
-  return { exitCode: r.status ?? -1, json };
+  return { exitCode: r.status ?? -1, json, stdout, stderr: r.stderr ?? '', signal: r.signal };
+}
+
+/**
+ * #4930 — failure message for a subprocess exit-code mismatch: which darwin
+ * the script resolved (`darwinSource`: library | cli-local | cli-cache | none),
+ * whether it reported itself degraded, and the stdout/stderr tails.
+ */
+function describeRun(label: string, r: ScriptRun): string {
+  const j = (r.json ?? {}) as { darwinSource?: unknown; degraded?: unknown; reason?: unknown };
+  return [
+    `${label}: exit ${r.exitCode}${r.signal ? ` (signal ${r.signal})` : ''}`,
+    `darwinSource=${String(j.darwinSource ?? 'unreported')} degraded=${String(j.degraded ?? false)}${j.reason ? ` reason=${String(j.reason)}` : ''}`,
+    `--- stdout tail ---\n${r.stdout.slice(-1500)}`,
+    `--- stderr tail ---\n${r.stderr.slice(-1500)}`,
+  ].join('\n');
 }
 
 /**
@@ -87,7 +105,7 @@ describe('ADR-526 darwin in-process parity', () => {
     const inProc = await benchVerify(suite);
     const sub = runScript('bench.mjs', ['--op', 'verify', '--suite', suite]);
     expect(inProc!.exitCode).toBe(0);
-    expect(sub.exitCode).toBe(0);
+    expect(sub.exitCode, describeRun('bench.mjs --op verify (good suite)', sub)).toBe(0);
     const p = inProc!.json as { success: boolean; data: Record<string, unknown> };
     const s = sub.json as { success: boolean; data: Record<string, unknown> };
     expect(p.success).toBe(s.success);
@@ -109,7 +127,38 @@ describe('ADR-526 darwin in-process parity', () => {
     const inProc = await benchVerify(tampered);
     const sub = runScript('bench.mjs', ['--op', 'verify', '--suite', tampered]);
     expect(inProc!.exitCode).toBe(1);
-    expect(sub.exitCode).toBe(1);
+    expect(sub.exitCode, describeRun('bench.mjs --op verify (tampered suite)', sub)).toBe(1);
     expect((inProc!.json as { success: boolean }).success).toBe(false);
+  });
+});
+
+/**
+ * #4930 — the root cause of the flake. Where the plugin script cannot import
+ * darwin (CI's v3-only pnpm install), bench.mjs runs the darwin CLI, which
+ * prints both sha256 digests of a tampered suite to stderr. The degraded
+ * classifier matched any "404", so a digest containing it turned exit 1 into
+ * degraded exit 0.
+ */
+describe('#4930 degraded classification ignores "404" inside hex digests', () => {
+  type Classify = (stderr: string, exitCode: number | null, prefix: string) => { degraded: boolean; reason?: string };
+  let classifyDegraded: Classify;
+
+  beforeAll(async () => {
+    ({ classifyDegraded } = (await import(join(SCRIPTS, '_invoke.mjs'))) as { classifyDegraded: Classify });
+  });
+
+  it('a tampered-suite error whose digests contain 404 is a real failure', () => {
+    const stderr = 'Error: benchmark suite tampered: taskHash 89e4265664cd17b0c2a1f404e8d1 != recomputed 404a1b2c3d4e5f60718293a4b5c6d7e8f9\n    at loadSuite (file:///x/suite.js:50:15)\n';
+    expect(classifyDegraded(stderr, 1, 'metaharness-darwin')).toEqual({ degraded: false });
+  });
+
+  it('still treats npm 404s as unavailable', () => {
+    for (const stderr of [
+      'npm error code E404\nnpm error 404 Not Found - GET https://registry.npmjs.org/@metaharness%2fdarwin',
+      'npm error code E404',
+      '404 Not Found',
+    ]) {
+      expect(classifyDegraded(stderr, 1, 'metaharness-darwin')).toEqual({ degraded: true, reason: 'metaharness-darwin-not-available' });
+    }
   });
 });
