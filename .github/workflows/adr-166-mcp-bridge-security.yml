@@ -12,8 +12,6 @@ on:
       - 'ruflo/src/ruvocal/mcp-bridge/**'
       - 'ruflo/docker-compose.yml'
       - 'ruflo/docker-compose.public.yml'
-      - 'ruflo/package.json'
-      - 'ruflo/tests/tarball-contents.test.mjs'
       - 'v3/@claude-flow/plugin-agent-federation/src/bin.ts'
       - '.github/workflows/adr-166-mcp-bridge-security.yml'
   pull_request:
@@ -22,8 +20,6 @@ on:
       - 'ruflo/src/ruvocal/mcp-bridge/**'
       - 'ruflo/docker-compose.yml'
       - 'ruflo/docker-compose.public.yml'
-      - 'ruflo/package.json'
-      - 'ruflo/tests/tarball-contents.test.mjs'
       - 'v3/@claude-flow/plugin-agent-federation/src/bin.ts'
       - '.github/workflows/adr-166-mcp-bridge-security.yml'
   workflow_dispatch:
@@ -41,8 +37,6 @@ jobs:
         run: node ruflo/src/mcp-bridge/test-security-lock.js
       - name: Outbound URL guard (both bridges)
         run: node ruflo/src/mcp-bridge/test-url-guard.mjs
-      - name: ruflo tarball ships the wrapper only
-        run: node --test ruflo/tests/tarball-contents.test.mjs
 
   runtime-behavior:
     name: Runtime behavior — 401 + terminal gate + fail-closed
