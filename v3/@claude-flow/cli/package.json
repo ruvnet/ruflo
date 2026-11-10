@@ -144,7 +144,7 @@
     "@metaharness/radio": "~0.1.0",
     "@metaharness/turn-credit": "~0.1.0",
     "@napi-rs/keyring": "1.3.0",
-    "agentdb": "^3.6.0",
+    "agentdb": "^3.10.0",
     "better-sqlite3": "^12.9.0",
     "ruvector": "^0.3.13",
     "nostr-tools": "^2.7.0",
