@@ -156,6 +156,8 @@ export function runDarwin(args, opts = {}) {
     shell: false,
   });
   const durationMs = Date.now() - start;
+  // #4930 — which bin ran (`local` install or `cache` install), for diagnostics.
+  const source = resolved.source;
   const stdout = r.stdout || '';
   const stderr = r.stderr || '';
   const classified = classifyDegraded(stderr, r.status, REASON_PREFIX);
@@ -167,6 +169,7 @@ export function runDarwin(args, opts = {}) {
       durationMs,
       degraded: true,
       reason: classified.reason,
+      source,
     };
   }
   return {
@@ -175,6 +178,7 @@ export function runDarwin(args, opts = {}) {
     json: wantJson ? maybeParseJson(stdout) : null,
     durationMs,
     degraded: false,
+    source,
   };
 }
 

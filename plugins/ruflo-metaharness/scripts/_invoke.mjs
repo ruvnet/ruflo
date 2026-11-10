@@ -272,10 +272,12 @@ export async function importOptionalLibrary({ specifier, pkg, pinVersion, entryR
  * Build the per-package `emit*DegradedJsonAndExit(reason)` helper. Emits the
  * structured degraded payload and exits 0 — ADR-150 architectural constraint
  * rule #3: ruflo continues to function when MetaHarness is absent.
+ * `extra` (optional) adds diagnostic fields; it never overrides the fixed ones.
  */
 export function makeDegradedEmitter(pkg, pinVersion) {
-  return function emitDegradedAndExit(reason) {
+  return function emitDegradedAndExit(reason, extra = {}) {
     const payload = {
+      ...extra,
       degraded: true,
       reason,
       hint: `Install with \`npm i -D ${pkg}@${pinVersion}\` (pinned range — this plugin never fetches @latest) or verify network access for the one-time cache install.`,
