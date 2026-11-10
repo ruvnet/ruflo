@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/aidefence",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Prompt injection, jailbreak and PII detection for LLM agents, with self-learning threat patterns and optional AgentDB semantic search over what it learns.",
   "type": "module",
   "main": "dist/index.js",

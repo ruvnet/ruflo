@@ -175,7 +175,9 @@ export class ThreatLearningService {
       namespace: this.namespace,
       query,
       k: options.k ?? 10,
-      minSimilarity: options.minSimilarity ?? 0.7,
+      // No floor by default: InMemoryVectorStore never applied one, and cosine
+      // scores over regex-source pattern text sit well below 0.7.
+      minSimilarity: options.minSimilarity ?? 0,
     });
 
     return results.map(r => r.value as LearnedThreatPattern);
