@@ -106,22 +106,33 @@ process.stdin.on('data', async (chunk) => {
   }
 });
 
-process.stdin.on('end', () => {
-  console.error(
-    `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${sessionId}) stdin closed, shutting down...`
-  );
+let shuttingDown = false;
+async function shutdownStdio(reason) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] (${sessionId}) ${reason}`);
+  try {
+    const { shutdownBridge } = await import('../dist/src/memory/memory-bridge.js');
+    if (typeof shutdownBridge === 'function') {
+      await shutdownBridge();
+    }
+  } catch {
+    // Best-effort SQLite/AgentDB flush on stdio shutdown.
+  }
   process.exit(0);
+}
+
+process.stdin.on('end', () => {
+  void shutdownStdio('stdin closed, shutting down...');
 });
 
 // Handle process termination
 process.on('SIGINT', () => {
-  console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] Received SIGINT`);
-  process.exit(0);
+  void shutdownStdio('Received SIGINT');
 });
 
 process.on('SIGTERM', () => {
-  console.error(`[${new Date().toISOString()}] INFO [claude-flow-mcp] Received SIGTERM`);
-  process.exit(0);
+  void shutdownStdio('Received SIGTERM');
 });
 
 /**

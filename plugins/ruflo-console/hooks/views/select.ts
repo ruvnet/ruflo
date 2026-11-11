@@ -1,4 +1,5 @@
 import type { AgentRecord, ClaimRecord, TaskRecord } from '../data/parse'
+import { sortAgentsForDisplay } from '../data/swarm-status'
 import type { State } from '../state'
 
 const at = <T>(list: readonly T[], index: number): T | null => (list.length === 0 ? null : (list[((index % list.length) + list.length) % list.length] ?? null))
@@ -12,9 +13,11 @@ export const openTasks = (state: State): TaskRecord[] => {
 
 /** What the claims view's buttons act on: indexes wrap, so a re-read that shortens a list never strands them. */
 export function selection(state: State): { claim: ClaimRecord | null; agent: AgentRecord | null; task: TaskRecord | null } {
+  const swarm = state.snapshot?.swarm ?? null
+
   return {
     claim: at(state.snapshot?.claims ?? [], state.select.claim),
-    agent: at(state.snapshot?.agents ?? [], state.select.agent),
+    agent: at(sortAgentsForDisplay(state.snapshot?.agents ?? [], swarm), state.select.agent),
     task: at(openTasks(state), state.select.task),
   }
 }

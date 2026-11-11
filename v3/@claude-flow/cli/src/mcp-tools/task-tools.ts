@@ -159,6 +159,191 @@ function agentIsAssignable(id: string, stores: Array<Record<string, AgentRow>>):
   );
 }
 
+interface SwarmRecordLite {
+  swarmId?: string;
+  status?: string;
+  agents?: string[];
+  tasks?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+function getSwarmStatePath(): string {
+  return join(getProjectCwd(), STORAGE_DIR, 'swarm', 'swarm-state.json');
+}
+
+function selectPrimaryRunningSwarm(swarms: Record<string, SwarmRecordLite>): SwarmRecordLite | null {
+  const running = Object.values(swarms).filter((s) => s && s.status === 'running');
+  if (running.length === 0) return null;
+  running.sort((a, b) => {
+    const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return tB - tA;
+  });
+  return running[0] ?? null;
+}
+
+/**
+ * Sync task/agent lifecycle activity onto the active running swarm record so
+ * live dashboards and topology views reflect current `updatedAt`, `tasks`, and `agents`.
+ */
+export function touchSwarmActivity(
+  taskId: string | null = null,
+  removeTaskId = false,
+  agentIds: string[] = [],
+): void {
+  const nowIso = new Date().toISOString();
+  let updatedSwarmId: string | null = null;
+  try {
+    const swarmPath = getSwarmStatePath();
+    if (existsSync(swarmPath)) {
+      const store = JSON.parse(readFileSync(swarmPath, 'utf-8')) as {
+        swarms?: Record<string, SwarmRecordLite>;
+      };
+      if (store?.swarms) {
+        const target = selectPrimaryRunningSwarm(store.swarms);
+        if (target) {
+          target.updatedAt = nowIso;
+          if (!Array.isArray(target.tasks)) target.tasks = [];
+          if (taskId) {
+            if (removeTaskId) {
+              target.tasks = target.tasks.filter((id) => id !== taskId);
+            } else if (!target.tasks.includes(taskId)) {
+              target.tasks.push(taskId);
+            }
+          }
+          if (!Array.isArray(target.agents)) target.agents = [];
+          for (const agentId of agentIds) {
+            if (typeof agentId === 'string' && agentId && !target.agents.includes(agentId)) {
+              target.agents.push(agentId);
+            }
+          }
+          writeFileSync(swarmPath, JSON.stringify(store, null, 2), 'utf-8');
+          updatedSwarmId = typeof target.swarmId === 'string' ? target.swarmId : null;
+        }
+      }
+    }
+  } catch {
+    // Best-effort swarm telemetry: never block task or agent operations.
+  }
+
+  try {
+    const legacyPath = join(getProjectCwd(), '.swarm', 'state.json');
+    if (existsSync(legacyPath)) {
+      const legacy = JSON.parse(readFileSync(legacyPath, 'utf-8')) as Record<string, unknown>;
+      const legacyId = (legacy.swarmId ?? legacy.id) as string | undefined;
+      if (!updatedSwarmId || !legacyId || legacyId === updatedSwarmId) {
+        legacy.updatedAt = nowIso;
+        writeFileSync(legacyPath, JSON.stringify(legacy, null, 2), 'utf-8');
+      }
+    }
+  } catch {
+    // Best-effort legacy pointer sync.
+  }
+}
+
+const ASSIGNEE_KEYS = ['assignTo', 'assignedTo', 'agentIds', 'agentId'] as const;
+
+/**
+ * Normalize assignee parameters across MCP callers (`assignTo`, `assignedTo`,
+ * `agentIds`, `agentId` as string or array of strings) while preserving the strict
+ * array error contract when `assignTo` is explicitly passed.
+ */
+export function normalizeAgentIdList(
+  input: Record<string, unknown>,
+  options: { requireArrayForAssignTo?: boolean } = {},
+): { ids: string[]; provided: boolean; error?: string } {
+  if (options.requireArrayForAssignTo && input.assignTo !== undefined) {
+    if (
+      !Array.isArray(input.assignTo)
+      || !input.assignTo.every((id) => validateIdentifier(id, 'assignTo').valid)
+    ) {
+      return { ids: [], provided: true, error: 'assignTo must be an array of agent ids' };
+    }
+    return { ids: [...new Set(input.assignTo as string[])], provided: true };
+  }
+
+  for (const key of ASSIGNEE_KEYS) {
+    const raw = input[key];
+    if (raw === undefined) continue;
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (!trimmed) return { ids: [], provided: true };
+      const check = validateIdentifier(trimmed, key);
+      if (!check.valid) {
+        return { ids: [], provided: true, error: `${key} must be a valid agent id or array of agent ids` };
+      }
+      return { ids: [trimmed], provided: true };
+    }
+    if (Array.isArray(raw)) {
+      if (!raw.every((id) => validateIdentifier(id, key).valid)) {
+        return { ids: [], provided: true, error: `${key} must be an array of agent ids` };
+      }
+      return { ids: [...new Set(raw as string[])], provided: true };
+    }
+    return { ids: [], provided: true, error: `${key} must be a valid agent id or array of agent ids` };
+  }
+
+  return { ids: [], provided: false };
+}
+
+/**
+ * Match a task to an idle worker belonging to the active running swarm when the
+ * caller omitted assignee fields. Returns `[]` if no running swarm has a free worker,
+ * leaving non-swarm task creation behavior unchanged.
+ */
+export function resolveAgentsForTask(type: string, description: string): string[] {
+  try {
+    const swarmPath = getSwarmStatePath();
+    if (!existsSync(swarmPath)) return [];
+    const swarmStore = JSON.parse(readFileSync(swarmPath, 'utf-8')) as {
+      swarms?: Record<string, SwarmRecordLite>;
+    };
+    const runningSwarm = swarmStore?.swarms ? selectPrimaryRunningSwarm(swarmStore.swarms) : null;
+    const memberIds = Array.isArray(runningSwarm?.agents) ? runningSwarm.agents : [];
+    if (memberIds.length === 0) return [];
+
+    const stores = assignableAgentStores();
+    const candidates: Array<{ id: string; record: AgentRow }> = [];
+    for (const id of memberIds) {
+      for (const agents of stores) {
+        const rec = Object.prototype.hasOwnProperty.call(agents, id) ? agents[id] : undefined;
+        if (rec && rec.status === 'idle') {
+          candidates.push({ id, record: rec });
+          break;
+        }
+      }
+    }
+    if (candidates.length === 0) return [];
+
+    const haystack = `${type} ${description}`.toLowerCase();
+    const preferredTypes: string[] = [];
+    if (/ui|ux|design|layout|figma|css|tailwind|frontend|vue|react/.test(haystack)) {
+      preferredTypes.push('ui-ux-designer', 'uiux', 'designer', 'frontend', 'coder');
+    } else if (/test|spec|vitest|jest|qa|verify|audit|e2e/.test(haystack)) {
+      preferredTypes.push('tester', 'qa', 'reviewer');
+    } else if (/review|security|lint|inspect/.test(haystack)) {
+      preferredTypes.push('reviewer', 'security-auditor', 'tester');
+    } else if (/architect|plan|adr|schema|design/.test(haystack)) {
+      preferredTypes.push('architect', 'system-architect', 'coder');
+    } else {
+      preferredTypes.push('coder', 'developer', 'engineer', 'programmer');
+    }
+
+    for (const targetType of preferredTypes) {
+      const hit = candidates.find(({ id, record }) => {
+        const roleText = `${String(record.agentType ?? '')} ${String(record.name ?? '')} ${id}`.toLowerCase();
+        return roleText.includes(targetType);
+      });
+      if (hit) return [hit.id];
+    }
+
+    return [candidates[0].id];
+  } catch {
+    return [];
+  }
+}
+
 export const taskTools: MCPTool[] = [
   {
     name: 'task_create',
@@ -170,7 +355,10 @@ export const taskTools: MCPTool[] = [
         type: { type: 'string', description: 'Task type (feature, bugfix, research, refactor)' },
         description: { type: 'string', description: 'Task description' },
         priority: { type: 'string', description: 'Task priority (low, normal, high, critical)' },
-        assignTo: { type: 'array', items: { type: 'string' }, description: 'Agent IDs to assign' },
+        assignTo: { type: 'array', items: { type: 'string' }, description: 'Agent IDs to assign (also accepts assignedTo, agentIds, agentId)' },
+        assignedTo: { type: 'array', items: { type: 'string' }, description: 'Alias for assignTo' },
+        agentIds: { type: 'array', items: { type: 'string' }, description: 'Alias for assignTo' },
+        agentId: { type: 'string', description: 'Single agent ID alias for assignTo' },
         tags: { type: 'array', items: { type: 'string' }, description: 'Task tags' },
       },
       required: ['type', 'description'],
@@ -181,25 +369,30 @@ export const taskTools: MCPTool[] = [
       if (!vType.valid) return { success: false, error: vType.error };
       const vDesc = validateText(input.description, 'description');
       if (!vDesc.valid) return { success: false, error: vDesc.error };
-      if (input.assignTo !== undefined && (!Array.isArray(input.assignTo)
-        || !input.assignTo.every(id => validateIdentifier(id, 'assignTo').valid))) {
-        return { success: false, error: 'assignTo must be an array of agent ids' };
+      const parsedAssign = normalizeAgentIdList(input, { requireArrayForAssignTo: true });
+      if (parsedAssign.error) {
+        return { success: false, error: parsedAssign.error };
       }
+
+      const assignedTo = parsedAssign.provided
+        ? parsedAssign.ids
+        : resolveAgentsForTask(input.type as string, input.description as string);
 
       const store = loadTaskStore();
       const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const nowIso = new Date().toISOString();
 
       const task: TaskRecord = {
         taskId,
         type: input.type as string,
         description: input.description as string,
         priority: (input.priority as TaskRecord['priority']) || 'normal',
-        status: 'pending',
+        status: assignedTo.length > 0 ? 'in_progress' : 'pending',
         progress: 0,
-        assignedTo: (input.assignTo as string[]) || [],
+        assignedTo,
         tags: (input.tags as string[]) || [],
-        createdAt: new Date().toISOString(),
-        startedAt: null,
+        createdAt: nowIso,
+        startedAt: assignedTo.length > 0 ? nowIso : null,
         completedAt: null,
       };
 
@@ -213,6 +406,7 @@ export const taskTools: MCPTool[] = [
         agent.status = 'busy';
         agent.currentTask = taskId;
       });
+      touchSwarmActivity(taskId, false, task.assignedTo);
 
       return {
         taskId,
@@ -380,6 +574,7 @@ export const taskTools: MCPTool[] = [
             agent.taskCount = ((agent.taskCount as number) || 0) + 1;
           }
         });
+        touchSwarmActivity(taskId, true);
 
         return {
           taskId: task.taskId,
@@ -424,9 +619,9 @@ export const taskTools: MCPTool[] = [
         return { success: false, error: `status must be one of ${TASK_STATUSES.join(', ')}` };
       }
 
-      if (input.assignTo !== undefined && (!Array.isArray(input.assignTo)
-        || !input.assignTo.every(id => validateIdentifier(id, 'assignTo').valid))) {
-        return { success: false, error: 'assignTo must be an array of agent ids' };
+      const parsedAssign = normalizeAgentIdList(input, { requireArrayForAssignTo: true });
+      if (parsedAssign.error) {
+        return { success: false, error: parsedAssign.error };
       }
 
       const store = loadTaskStore();
@@ -475,8 +670,8 @@ export const taskTools: MCPTool[] = [
         }
         // Completing is 100% whatever progress the same call carried.
         if (task.status === 'completed') task.progress = 100;
-        if (input.assignTo) {
-          task.assignedTo = input.assignTo as string[];
+        if (parsedAssign.provided) {
+          task.assignedTo = parsedAssign.ids;
           // Reassignment must update the same worker stores as task_assign.
           // Terminal transitions release/credit the workers that held the task
           // before this update; replacement assignees did not perform that work.
@@ -498,6 +693,8 @@ export const taskTools: MCPTool[] = [
         }
         saveTaskStore(store);
         afterSave?.();
+        const isTerminal = ['completed', 'failed', 'cancelled'].includes(task.status);
+        touchSwarmActivity(taskId, isTerminal, isTerminal ? [] : task.assignedTo);
 
         return {
           success: true,
@@ -523,7 +720,10 @@ export const taskTools: MCPTool[] = [
       type: 'object',
       properties: {
         taskId: { type: 'string', description: 'Task ID to assign' },
-        agentIds: { type: 'array', items: { type: 'string' }, description: 'Agent IDs to assign' },
+        agentIds: { type: 'array', items: { type: 'string' }, description: 'Agent IDs to assign (also accepts assignTo, assignedTo, agentId)' },
+        assignTo: { type: 'array', items: { type: 'string' }, description: 'Alias for agentIds' },
+        assignedTo: { type: 'array', items: { type: 'string' }, description: 'Alias for agentIds' },
+        agentId: { type: 'string', description: 'Single agent ID alias for agentIds' },
         unassign: { type: 'boolean', description: 'Unassign all agents from task' },
       },
       required: ['taskId'],
@@ -561,20 +761,27 @@ export const taskTools: MCPTool[] = [
         releaseAgents(previouslyAssigned, taskId);
         task.assignedTo = [];
       } else {
-        const agentIds = (input.agentIds as string[]) || [];
+        const parsedAssign = normalizeAgentIdList(input);
+        if (parsedAssign.error) {
+          return {
+            success: false,
+            taskId,
+            status: task.status,
+            error: parsedAssign.error,
+          };
+        }
+        const agentIds = parsedAssign.ids;
         // An id in neither store is a ghost owner: the task would go
         // in_progress with nobody to do the work (#4725).
-        if (Array.isArray(agentIds)) {
-          const missing = agentIds.filter((id) => typeof id === 'string' && !agentIsAssignable(id, agentStores));
-          if (missing.length > 0) {
-            const listed = missing.join(', ');
-            return {
-              success: false,
-              taskId,
-              status: task.status,
-              error: missing.length === 1 ? `Agent not found: ${listed}` : `Agents not found: ${listed}`,
-            };
-          }
+        const missing = agentIds.filter((id) => !agentIsAssignable(id, agentStores));
+        if (missing.length > 0) {
+          const listed = missing.join(', ');
+          return {
+            success: false,
+            taskId,
+            status: task.status,
+            error: missing.length === 1 ? `Agent not found: ${listed}` : `Agents not found: ${listed}`,
+          };
         }
         // Revert old agents to idle
         releaseAgents(previouslyAssigned.filter((id) => !agentIds.includes(id)), taskId);
@@ -594,6 +801,7 @@ export const taskTools: MCPTool[] = [
       }
 
       saveTaskStore(store);
+      touchSwarmActivity(taskId, Boolean(input.unassign), input.unassign ? [] : task.assignedTo);
 
       return {
         taskId: task.taskId,
@@ -647,6 +855,7 @@ export const taskTools: MCPTool[] = [
         task.result = { cancelReason: input.reason || 'Cancelled by user' };
         saveTaskStore(store);
         releaseAgents(task.assignedTo, taskId);
+        touchSwarmActivity(taskId, true);
 
         return {
           success: true,
@@ -712,6 +921,7 @@ export const taskTools: MCPTool[] = [
         agent.status = 'busy';
         agent.currentTask = newTaskId;
       });
+      touchSwarmActivity(newTaskId, false, retry.assignedTo);
 
       return {
         taskId,

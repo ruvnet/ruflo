@@ -161,6 +161,9 @@ const isMCPMode = !process.stdin.isTTY
   && !explicitNonStdioTransport
   && (process.argv.length === 2 || isExplicitMCP);
 
+const explicitIsolateProjects = cliArgs.includes('--isolate-projects')
+  || process.env.RUFLO_MCP_ISOLATE_PROJECTS === '1';
+
 // `harness` observes the running system (it is the SessionStart hook), so it
 // skips normal CLI startup entirely: no daemon autostart, update check, policy
 // migration or config adoption, and no heavy imports. With --hook it fails
@@ -179,6 +182,12 @@ if (isHarness) {
     }
     process.exitCode = hook ? 0 : 1;
   }
+} else if (isMCPMode && explicitIsolateProjects) {
+  const { startIsolatedProjectMcpRouter } = await import('../dist/src/mcp-project-router.js');
+  const toolsEq = cliArgs.find((a) => a.startsWith('--tools='));
+  const toolsIdx = cliArgs.indexOf('--tools');
+  const tools = toolsEq ? toolsEq.slice('--tools='.length) : (toolsIdx !== -1 ? cliArgs[toolsIdx + 1] : undefined);
+  await startIsolatedProjectMcpRouter({ ...(tools ? { tools } : {}) });
 } else if (isMCPMode) {
   // Run MCP server mode
   const { listMCPTools, callMCPTool, hasTool } = await import('../dist/src/mcp-client.js');
@@ -253,8 +262,27 @@ if (isHarness) {
     }
   });
 
-  process.stdin.on('end', () => {
+  let shuttingDownStdio = false;
+  const shutdownStdio = async () => {
+    if (shuttingDownStdio) return;
+    shuttingDownStdio = true;
+    try {
+      const { shutdownBridge } = await import('../dist/src/memory/memory-bridge.js');
+      if (typeof shutdownBridge === 'function') await shutdownBridge();
+    } catch {
+      // Best-effort SQLite/AgentDB flush on stdio shutdown.
+    }
     process.exit(0);
+  };
+
+  process.stdin.on('end', () => {
+    void shutdownStdio();
+  });
+  process.on('SIGINT', () => {
+    void shutdownStdio();
+  });
+  process.on('SIGTERM', () => {
+    void shutdownStdio();
   });
 
   async function handleMessage(message) {
