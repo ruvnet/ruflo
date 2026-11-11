@@ -28,6 +28,9 @@ McNemar p < 0.05 **and** the gain is at least 3 rows.
 | Darwin full genome incl. the data weight | 0.614 | 78 (0.690) | 11 / 4, **p = 0.118** |
 | Online, bandit feedback (test stream) | — | 0.699 vs 0.690 | p = 1 |
 | Online, 30 % explicit corrections (test stream) | — | 0.726 vs 0.690 | p = 0.29 |
+| The shipped recipe below (weight 1.0, cap 10) | 0.612 | 77 (0.681) | |
+| + ruv-FANN WSP patch (≤ 128 edits: biases + top-K weights by gradient), Darwin vs random | 0.610 | 77 | 3 / 3 vs unpatched, p = 1 |
+| WSP patch on the dev-only base | 0.564 | 69 | 6 / 8 vs shipped, p = 0.79 |
 
 "ruflo's own delegations" are 241 labelled task descriptions mined from 651
 Agent/Task tool calls in this machine's Claude Code transcripts, mapped from
@@ -43,7 +46,13 @@ Findings:
    +0.2-point shape candidate and would have accepted a 4/27 → 7/27 local
    gain. With `noopRate = 0` its floor clause requires only *some* strict
    primary gain.
-3. **Text-hash holdout leaks.** Near-identical descriptions from one session
+3. **WSP patches do not train the router further.** ruv-FANN WSP has no
+   optimizer; it applies and verifies bounded absolute-value patches. Patches
+   proposed by masked gradient descent and searched by Darwin applied cleanly
+   under WSP (hash-bound, 11–115 edits, identical predictions), but added
+   nothing on top of the data (dev 0.610 vs 0.612; test 77 vs 77) and hurt the
+   dev-only base on test (69 vs 71). WSP stays an evidence tool (ADR-528).
+4. **Text-hash holdout leaks.** Near-identical descriptions from one session
    land on both sides; bucketing by session is required.
 
 ## Decision
