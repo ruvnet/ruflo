@@ -28,9 +28,13 @@ McNemar p < 0.05 **and** the gain is at least 3 rows.
 | Darwin full genome incl. the data weight | 0.614 | 78 (0.690) | 11 / 4, **p = 0.118** |
 | Online, bandit feedback (test stream) | — | 0.699 vs 0.690 | p = 1 |
 | Online, 30 % explicit corrections (test stream) | — | 0.726 vs 0.690 | p = 0.29 |
-| The shipped recipe below (weight 1.0, cap 10) | 0.612 | 77 (0.681) | |
+| The shipped recipe below (weight 1.0, cap 10), 20 row orders | 0.590 ± 0.010 (range 0.574–0.612) | 77 (0.681), one order | |
 | + ruv-FANN WSP patch (≤ 128 edits: biases + top-K weights by gradient), Darwin vs random | 0.610 | 77 | 3 / 3 vs unpatched, p = 1 |
 | WSP patch on the dev-only base | 0.564 | 69 | 6 / 8 vs shipped, p = 0.79 |
+| Labels: lead’s agent choice (227 deduplicated delegations), 20 row orders | 0.580 ± 0.010 | not scored | |
+| Labels: only delegations whose own tests then passed (18 rows) | 0.567 | not scored | |
+| Labels: model judge (haiku, label table only) | 0.577 ± 0.016 | not scored | |
+| + 345 unmapped delegations labelled by the judge | 0.573 ± 0.022 | not scored | |
 
 "ruflo's own delegations" are 241 labelled task descriptions mined from 651
 Agent/Task tool calls in this machine's Claude Code transcripts, mapped from
@@ -52,7 +56,24 @@ Findings:
    under WSP (hash-bound, 11–115 edits, identical predictions), but added
    nothing on top of the data (dev 0.610 vs 0.612; test 77 vs 77) and hurt the
    dev-only base on test (69 vs 71). WSP stays an evidence tool (ADR-528).
-4. **Text-hash holdout leaks.** Near-identical descriptions from one session
+4. **Better labels do not move this router.** Two label sources were tried
+   on the same rows, with row order shuffled 20 times (order alone moves dev
+   CV by ±0.010 at cap 10, because the cap keeps the first rows per label):
+   - *Verified outcomes* (did the delegated agent’s own tests pass after its
+     last edit) exist only for agents that edit: 27 of 227 rows, none for
+     reviewer, researcher, architect or tester. Filtering on them scores
+     lower. Tests passing says the work succeeded, not that the agent choice
+     was right. The mod’s own loop recorded no verified outcome in 250 turns
+     across six projects, because agents pipe test output and the verifier
+     correctly ignores piped status (ADR-503).
+   - *A model judge* given only the label table agrees with the corpus
+     labeller on 82 of 84 dev prompts (the router: 0.55). It is a far better
+     labeller than the lead’s agent choice, but training the centroids on its
+     labels scores the same as the lead’s labels, and labelling 345 more
+     delegations adds nothing. The bottleneck is the MiniLM centroid on short
+     task titles, not label quality. The 82/84 measures agreement with a
+     corpus written to the same rules, possibly by the same model family.
+5. **Text-hash holdout leaks.** Near-identical descriptions from one session
    land on both sides; bucketing by session is required.
 
 ## Decision
@@ -69,8 +90,8 @@ routing unchanged unless a person promotes a candidate and opts in.
    so the ledger never leaves the machine. `neural learn correct` records one
    explicit correction.
 2. **Candidate.** Shipped centroids (× support) plus the first 10 non-holdout
-   ledger rows per label at weight 1.0, the recipe chosen on dev CV in exactly
-   this form. Learning always starts from the shipped artifact.
+   ledger rows per label (ordered by text hash) at weight 1.0, chosen on dev
+   CV; nearby weights are not distinguishable within the row-order spread. Learning always starts from the shipped artifact.
 3. **Evidence.** One session in five is holdout and is never learned from.
    `propose` scores base and candidate on it, on a frozen **guard set** (the
    ADR-391 `test` split as int8 vectors, no text, built and drift-checked by
