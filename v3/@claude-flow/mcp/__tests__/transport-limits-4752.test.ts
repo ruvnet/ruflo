@@ -37,9 +37,17 @@ describe('/ws on the HTTP transport (#4752)', () => {
     expect(await upgrade(`ws://127.0.0.1:${port}/ws`, { authorization: `Bearer ${TOKEN}` })).toBe('open');
   });
 
-  it('does not take the token from the query string, like the HTTP routes', async () => {
+  it('also takes ?token= (browsers cannot set Authorization), checked before the upgrade', async () => {
     const port = await open(auth);
+    expect(await upgrade(`ws://127.0.0.1:${port}/ws?token=${TOKEN}`)).toBe('open');
+    expect(await upgrade(`ws://127.0.0.1:${port}/ws?token=wrong-wrong-wrong`)).toBe(401);
+    expect(await upgrade(`ws://127.0.0.1:${port}/ws?token=`)).toBe(401);
+  });
+
+  it('fails closed with an empty token list, header or query', async () => {
+    const port = await open({ auth: { enabled: true, method: 'token', tokens: [] } });
     expect(await upgrade(`ws://127.0.0.1:${port}/ws?token=${TOKEN}`)).toBe(401);
+    expect(await upgrade(`ws://127.0.0.1:${port}/ws`, { authorization: `Bearer ${TOKEN}` })).toBe(401);
   });
 
   it('skips an unset token entry instead of throwing during the upgrade', async () => {
@@ -56,6 +64,16 @@ describe('/ws on the HTTP transport (#4752)', () => {
       ws.on('error', () => undefined);
     });
     expect(code).toBe(1009);
+  });
+
+  it('ignores a non-positive maxMessageSize and keeps the default cap', async () => {
+    const port = await open({ maxMessageSize: -1 });
+    const wss = await new Promise<string>((resolve) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+      ws.on('open', () => { ws.send('x'.repeat(4096)); setTimeout(() => { resolve(ws.readyState === WebSocket.OPEN ? 'open' : 'closed'); ws.close(); }, 200); });
+      ws.on('error', () => undefined);
+    });
+    expect(wss).toBe('open');
   });
 });
 

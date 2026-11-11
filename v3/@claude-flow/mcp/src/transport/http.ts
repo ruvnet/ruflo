@@ -97,13 +97,13 @@ export class HttpTransport extends EventEmitter implements ITransport {
     this.wss = new WebSocketServer({
       server: this.server,
       path: '/ws',
-      maxPayload: this.config.maxMessageSize || DEFAULT_MAX_WS_PAYLOAD,
-      // Authenticate before the upgrade, with the same Authorization header the
-      // HTTP routes take; a query-string token would end up in proxy and access logs.
+      maxPayload: positiveOr(this.config.maxMessageSize, DEFAULT_MAX_WS_PAYLOAD),
+      // Authenticate before the upgrade. Browsers cannot set Authorization on a
+      // WebSocket, so /ws also takes `?token=`, like the standalone WebSocket transport.
       // CORS does not apply to upgrades, so a token-less server checks Host and Origin itself.
       verifyClient: (info: { req: IncomingMessage }) =>
         this.config.auth?.enabled === true
-          ? this.validateAuth(info.req).valid
+          ? this.validateUpgradeAuth(info.req)
           : refuseOpenRequest(info.req, this.config.host, this.config.corsOrigins) === undefined,
     });
 
@@ -340,7 +340,7 @@ export class HttpTransport extends EventEmitter implements ITransport {
         return;
       }
 
-      const maxSse = this.config.maxSseClients || DEFAULT_MAX_SSE_CLIENTS;
+      const maxSse = positiveOr(this.config.maxSseClients, DEFAULT_MAX_SSE_CLIENTS);
       if (this.sseClients.size >= maxSse) {
         this.logger.warn('SSE stream refused: client limit reached', { limit: maxSse });
         res.status(503).setHeader('Retry-After', '5');
@@ -597,9 +597,18 @@ export class HttpTransport extends EventEmitter implements ITransport {
   }
 
   private validateAuth(req: Pick<IncomingMessage, 'headers'>): { valid: boolean } {
-    const given = bearerToken(req.headers.authorization);
+    return { valid: this.matchesConfiguredToken(bearerToken(req.headers.authorization)) };
+  }
+
+  /** /ws upgrade: token from `Authorization: Bearer`, else from `?token=`. */
+  private validateUpgradeAuth(req: IncomingMessage): boolean {
+    const fromQuery = new URL(req.url ?? '', 'http://localhost').searchParams.get('token') ?? undefined;
+    return this.matchesConfiguredToken(bearerToken(req.headers.authorization) ?? fromQuery);
+  }
+
+  private matchesConfiguredToken(given: string | undefined): boolean {
     if (!given) {
-      return { valid: false };
+      return false;
     }
 
     // Fail closed: auth enabled with no configured token accepts nothing.
@@ -613,8 +622,13 @@ export class HttpTransport extends EventEmitter implements ITransport {
         valid = true;
       }
     }
-    return { valid };
+    return valid;
   }
+}
+
+/** A configured limit when it is a positive number, else the default. */
+function positiveOr(value: number | undefined, fallback: number): number {
+  return typeof value === 'number' && value > 0 ? value : fallback;
 }
 
 export function createHttpTransport(
