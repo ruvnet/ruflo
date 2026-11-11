@@ -1,8 +1,8 @@
 {
   "name": "candidate (scanSettingsForRisk)",
-  "tp": 15,
+  "tp": 20,
   "fp": 0,
-  "tn": 9,
+  "tn": 8,
   "fn": 0,
   "precision": 1,
   "recall": 1,

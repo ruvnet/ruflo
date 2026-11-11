@@ -462,6 +462,16 @@ const SR_DANGEROUS_COMMAND_WORDS = [
 ];
 const SR_SHELL_EXEC_WORDS = ['bash', 'sh', 'zsh', 'python', 'python3', 'perl', 'ruby', 'eval'];
 const SR_DOWNLOADER_WORDS = ['curl', 'wget'];
+// Mirrors settings-risk-scanner.ts's INTERPRETER_WORDS (Dream Cycle
+// 2026-11-11): general-purpose scripting interpreters with the same
+// GTFOBins-documented shell-breakout capability as python/ruby/perl, but
+// kept OUT of SR_SHELL_EXEC_WORDS — that array also drives
+// srScanCommandStringForRisk's downloader+shell-exec check on fixed hook
+// *command strings*, where `node <script>` is a legitimate, expected
+// invocation (see the 'node ./some/script.js' parity case below). Only fed
+// into SR_RISKY_PREAPPROVE_WORDS, so it tightens srScanAllowRuleForRisk's
+// permissions.allow heuristic without touching command-string scanning.
+const SR_INTERPRETER_WORDS = ['node', 'deno', 'bun', 'php'];
 const SR_STANDALONE_RISK_PATTERNS = [
   /\bInvoke-Expression\b/i,
   /\biex\s*\(/i,
@@ -469,7 +479,7 @@ const SR_STANDALONE_RISK_PATTERNS = [
   /\bnc\s+-e\b/i,
   /base64\s+(-d|--decode)\b/i,
 ];
-const SR_RISKY_PREAPPROVE_WORDS = [...SR_DANGEROUS_COMMAND_WORDS, ...SR_SHELL_EXEC_WORDS, ...SR_DOWNLOADER_WORDS];
+const SR_RISKY_PREAPPROVE_WORDS = [...SR_DANGEROUS_COMMAND_WORDS, ...SR_SHELL_EXEC_WORDS, ...SR_DOWNLOADER_WORDS, ...SR_INTERPRETER_WORDS];
 
 // Encoded PowerShell (`powershell[.exe] ... -e|-enc|-encodedcommand <payload>`),
 // matched on whitespace-separated tokens in ONE linear pass. The earlier regex
