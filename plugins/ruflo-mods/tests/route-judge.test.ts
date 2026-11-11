@@ -77,6 +77,14 @@ describe('model-judge routing, wired (ADR-530)', () => {
     expect(box(seen)).toContain('Agent: tester')
   })
 
+  test('on: `none` is shown as no specialist at the no-match prior', { options: { routeJudge: true } }, async ($, on) => {
+    const { seen } = boot(on, () => answered('none'))
+    await $.session.start(START)
+    await $.prompt.submit({ text: 'is the console updated?' } as never)
+    expect(box(seen)).toContain('Agent: none')
+    expect(box(seen)).toContain('Confidence: 30.0%')
+  })
+
   test('on: slash commands never reach the judge', { options: { routeJudge: true } }, async ($, on) => {
     const { asked } = boot(on, () => answered('coder'))
     await $.session.start(START)

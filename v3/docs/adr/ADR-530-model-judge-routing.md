@@ -63,6 +63,9 @@ measured here.
 3. The route carries `reason: "model-judge"`; the `$.ruflo` route contract,
    vendored by ruflo-console and ruflo-ruos, is unchanged, and `confidence`
    keeps its priors (0.6 a route, 0.3 `none`). The context box names the judge.
+   A `none` label is shown as `Agent: none` (no specialist; the lead handles
+   it), not replaced by the keyword table's guess, so `$.ruflo.lastRoute()`
+   consumers can see `agent: "none"` with `matched: false`.
 4. Turning it on by default needs the fresh human-labelled result and the
    maintainer's decision.
 
