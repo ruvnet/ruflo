@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.5.2 — 2026-11-10
+- chore: the darwin helper pin moves to `~0.14.0` with the CLI (#4952). Without a surrogate config, darwin 0.14.0 behaves as 0.13.1.
+
 ## 0.5.0 — 2026-11-09
 - feat: `bench --op verify` runs through @metaharness/darwin's library (`loadSuite` + `verifySuite`) instead of spawning the darwin CLI, and reports `suiteId`, `version`, `tasks`, `hashOk` and `hash` as fields beside the old `stdoutTail` line. It never installs at tool time: when the library entry is missing it falls back to the installed darwin CLI (ADR-526).
 
