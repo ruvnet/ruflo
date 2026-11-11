@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/memory",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "type": "module",
   "description": "Memory module - AgentDB unification, HNSW indexing, vector search, hybrid SQLite+AgentDB backend (ADR-009)",
   "homepage": "https://ruv.io",
@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@claude-flow/security": "^3.0.0",
-    "agentdb": "^3.7.2",
+    "agentdb": "^3.10.0",
     "sql.js": "^1.10.3"
   },
   "optionalDependencies": {
