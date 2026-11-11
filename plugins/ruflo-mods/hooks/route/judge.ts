@@ -1,13 +1,17 @@
-import type { RouteResult } from './route-task'
+import { MATCH_CONFIDENCE, NO_MATCH_CONFIDENCE, type RouteResult } from './route-task'
 
 /**
  * ADR-530: opt-in model-judge routing. One no-tools haiku completion labels the
  * prompt with one of the ADR-391 router labels; anything else falls back to the
- * keyword router. The prompt is untrusted data, never instructions.
+ * keyword router. The prompt is untrusted data, never instructions. The engine
+ * stops a hook's budget clock while a $ call is in flight, so the 4 s cap bounds
+ * the prompt's added latency, not the hook's budget.
  */
 export const JUDGE_MODEL = 'haiku'
 export const JUDGE_TIMEOUT_MS = 4_000
 export const JUDGE_MAX_PROMPT_CHARS = 2_000
+/** The route `reason` a judge route carries; `$.ruflo.lastRoute()` consumers can tell the judge from the table by it. */
+export const JUDGE_REASON = 'model-judge'
 
 export const JUDGE_LABELS: readonly string[] = [
   'coder', 'tester', 'reviewer', 'researcher', 'architect', 'security-architect',
@@ -53,9 +57,11 @@ export type Complete = (req: { model: string; system: string; prompt: string; ma
 export async function judgeRoute(complete: Complete, text: string): Promise<RouteResult | undefined> {
   if (!judgeable(text)) return undefined
   try {
-    const reply = await complete({ model: JUDGE_MODEL, system: JUDGE_SYSTEM, prompt: text.slice(0, JUDGE_MAX_PROMPT_CHARS), maxTokens: 8, timeoutMs: JUDGE_TIMEOUT_MS })
+    const reply = await complete({ model: JUDGE_MODEL, system: JUDGE_SYSTEM, prompt: text.slice(0, JUDGE_MAX_PROMPT_CHARS), maxTokens: 32, timeoutMs: JUDGE_TIMEOUT_MS })
     const label = reply.isAnswered ? parseLabel(reply.text) : undefined
-    return label ? { agent: label, confidence: 0.6, matched: label !== 'none', reason: 'model-judge', source: 'judge' } : undefined
+    // The $.ruflo route contract is vendored by other mods, so the judge is named by `reason`, not a new field;
+    // confidence keeps the contract's priors (0.6 a route, 0.3 none), not a calibrated probability.
+    return label ? { agent: label, confidence: label === 'none' ? NO_MATCH_CONFIDENCE : MATCH_CONFIDENCE, matched: label !== 'none', reason: JUDGE_REASON } : undefined
   } catch {
     return undefined
   }
