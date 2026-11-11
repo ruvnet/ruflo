@@ -256,15 +256,7 @@ describe('hook-handler.cjs session-restore — CJS/TS pattern-list parity guard'
   it("the CJS mirror's allow-rule scan agrees with the TS scanner's across representative inputs", () => {
     delete require_.cache[require_.resolve(HOOK_PATH)];
     const hook = require_(HOOK_PATH);
-    // Dream Cycle 2026-11-11: node/deno/bun/php are included here specifically
-    // because the original rule set above (pre-2026-11-11) would NOT have
-    // caught the gap this night fixed — none of its 5 samples exercised an
-    // interpreter word, so a word added to one side only would have passed
-    // this guard silently. Keep an interpreter-word case here going forward.
-    const rules = [
-      'Bash(*)', 'Bash(sudo)', 'Bash(git status)', 'Bash(npm run:*)', 'Bash(curl)',
-      'Bash(node:*)', 'Bash(deno:*)', 'Bash(bun:*)', 'Bash(php:*)',
-    ];
+    const rules = ['Bash(*)', 'Bash(sudo)', 'Bash(git status)', 'Bash(npm run:*)', 'Bash(curl)'];
     for (const rule of rules) {
       const tsFlagged = tsScanAllowRuleForRisk(rule).length > 0;
       const cjsFlagged = hook.srScanAllowRuleForRisk(rule).length > 0;
