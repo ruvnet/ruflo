@@ -370,13 +370,15 @@ export const taskTools: MCPTool[] = [
         task.result = (input.result as Record<string, unknown>) || {};
         saveTaskStore(store);
 
-        // Sync assigned agents back to idle and increment taskCount
+        // Sync assigned agents back to idle and increment taskCount. Credited only to a worker
+        // still holding this task, as task_update does, so completing a reopened task again
+        // (complete -> pending -> complete, no reassignment) never counts the same work twice.
         updateAgents(task.assignedTo, (agent) => {
           if (agent.currentTask === taskId) {
             agent.status = 'idle';
             agent.currentTask = null;
+            agent.taskCount = ((agent.taskCount as number) || 0) + 1;
           }
-          agent.taskCount = ((agent.taskCount as number) || 0) + 1;
         });
 
         return {
