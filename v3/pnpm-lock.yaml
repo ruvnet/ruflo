@@ -253,6 +253,15 @@ importers:
       nostr-tools:
         specifier: ^2.7.0
         version: 2.25.2(typescript@5.9.3)
+      ruv-fann-wsp:
+        specifier: 0.2.0
+        version: 0.2.0
+      ruv-fann-wsp-invariants:
+        specifier: 0.1.0
+        version: 0.1.0
+      ruv-fann-wsp-lifecycle:
+        specifier: 0.1.0
+        version: 0.1.0
       ruvector:
         specifier: ^0.3.13
         version: 0.3.13(@ruvector/router@0.1.30)(@ruvector/ruvllm@4.1.0)(zod@3.25.76)
@@ -8684,11 +8693,39 @@ packages:
     resolution: {integrity: sha512-wV0xT+yMoidjs6ndeTkTO0rNUiDAZ4H7aP6slbVbdM1vG3xS6iCS1/jDwknNBo+m37GBXN4kgFXHZ0yRmMP7oQ==}
     engines: {node: '>=20.9.0'}
 
+  /ruv-fann-wsp-invariants@0.1.0:
+    resolution: {integrity: sha512-qDWrl2WENx0bIwdYVl82GcuJobYd9hhscmg2Xvf5cO9mzGrq3z2wqwdEqjJbTGABRaT0EYdxH2i0cFsz6tSZ/A==}
+    engines: {node: '>=20.9.0'}
+    requiresBuild: true
+    dependencies:
+      ruv-fann: 0.1.2
+      ruv-fann-wsp: 0.2.0
+    dev: false
+    optional: true
+
+  /ruv-fann-wsp-lifecycle@0.1.0:
+    resolution: {integrity: sha512-VLQJ70hPwS+S9dUVGF3/3S0bp7AdiC0CiCN2hc5aQDsh+GCpzJzAUzWIyENUsD865ja+elC/En/GBuwF6wzu7Q==}
+    engines: {node: '>=20.9.0'}
+    requiresBuild: true
+    dependencies:
+      ruv-fann-wsp: 0.2.0
+    dev: false
+    optional: true
+
   /ruv-fann-wsp@0.1.0:
     resolution: {integrity: sha512-nFnbETlTYq3QmvobCWfIVbuuEDKuVK89FBrsv9+yhX4baabzLsfib5g2fLkShhZ1GLyA84KKKn+uALSp/F1Rww==}
     engines: {node: '>=20.9.0'}
     dependencies:
       ruv-fann: 0.1.2
+
+  /ruv-fann-wsp@0.2.0:
+    resolution: {integrity: sha512-vCHGNiMUuxvCycd58gIOdlXTy1e2Tw6J1MD3FV9ri2ljkS534sk90c3h2mS4bBJozpebQu/fB6iDwKvdp09xIQ==}
+    engines: {node: '>=20.9.0'}
+    requiresBuild: true
+    dependencies:
+      ruv-fann: 0.1.2
+    dev: false
+    optional: true
 
   /ruv-fann@0.1.2:
     resolution: {integrity: sha512-gdHjT8EUz4tSPpBYkCjbpISwW7bcB5XvtDPeRqZps8M9DcDF+I3deiIBt9aw6hxqKphrnbzQSltiFYLUYc0vjQ==}
