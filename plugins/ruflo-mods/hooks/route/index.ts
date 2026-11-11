@@ -6,6 +6,7 @@ import type { ModOptions } from '../options'
 import { redraw, under, type ModState } from '../state'
 import { formatRoute } from './format'
 import { parseRanked, rankedContext } from './ranked-context'
+import { judgeRoute } from './judge'
 import { routeTask } from './route-task'
 
 export const RANKED_PATH = '.claude-flow/data/ranked-context.json'
@@ -26,7 +27,9 @@ export function registerRoute(on: On, state: ModState, options: ModOptions, guid
     const advisory = guidance ? await guidance.prompt(text, { stat: path => $.fs.stat(path), read: path => $.fs.read(path) }) : undefined
     const context = [...(e.context ?? []), ...(advisory ? [advisory] : [])]
     if (!state.owned.has('route')) return next(advisory ? { ...e, context } : e)
-    const result = routeTask(text)
+    // ADR-530: opt-in (routeJudge, off by default). One haiku label; any failure keeps the keyword route.
+    const judged = options.routeJudge ? await judgeRoute(req => $.model.complete(req), text) : undefined
+    const result = judged ?? routeTask(text)
     state.lastRoute = result
     state.routed++
 

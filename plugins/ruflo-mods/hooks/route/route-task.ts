@@ -17,6 +17,8 @@ export type RouteResult = {
   readonly confidence: number
   readonly matched: boolean
   readonly reason: string
+  /** Who picked the agent: the keyword table (default) or the opt-in model judge (ADR-530). */
+  readonly source?: 'keyword' | 'judge'
 }
 
 /** A real keyword match's heuristic prior (router.cjs, #2257). */

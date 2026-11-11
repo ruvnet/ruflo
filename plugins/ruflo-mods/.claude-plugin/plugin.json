@@ -1,7 +1,7 @@
 {
   "name": "ruflo-mods",
   "description": "ruflo as a Claude Code mod (function hooks, ADR-404): in-process prompt routing, edit learning signals, tighten-only tool checks from ruflo policy, the cost-tracker budget ladder, a mod trust gate for newly installed mods, and the $.ruflo noun other mods compose their status with. Opt-in and removable: the classic hook-handler hooks stay the default and take every event back whenever the mod is not loaded.",
-  "version": "0.16.2",
+  "version": "0.17.0",
   "repository": "https://github.com/ruvnet/ruflo",
   "author": {
     "name": "ruvnet",
@@ -26,6 +26,13 @@
       "description": "Add the ranked-memory block (.claude-flow/data/ranked-context.json) to each prompt's routing context, as the classic route hook does.",
       "required": false,
       "default": true
+    },
+    "routeJudge": {
+      "type": "boolean",
+      "title": "Model-judge routing",
+      "description": "Route each prompt with one no-tools haiku completion that picks one of 11 agent labels, instead of the keyword table. Adds about a second to each prompt and a small haiku charge on your session credentials. The prompt is sent as data to classify, never as instructions; slash commands and teammate messages are skipped; a timeout, refusal or any other reply keeps the keyword route. Off by default (ADR-530).",
+      "required": false,
+      "default": false
     },
     "statusLine": {
       "type": "boolean",
