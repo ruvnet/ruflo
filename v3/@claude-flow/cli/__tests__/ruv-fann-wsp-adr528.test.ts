@@ -1,8 +1,8 @@
 /**
  * ADR-528 — optional ruv-FANN weight-space tooling.
  *
- * Runs against the real ruv-fann-wsp / invariants / lifecycle packages
- * (optional dependencies, installed in the workspace) and against an
+ * Runs against the real ruv-fann-wsp / invariants / lifecycle packages when they are installed
+ * (optional dependencies; skipped where they are not) and against an
  * importer that reports them missing.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -33,6 +33,10 @@ async function mods(): Promise<WspModules> {
   return l.modules;
 }
 
+// The three packages are optionalDependencies and the repo-root `npm ci` job (ci.yml Test Suite) does not install them.
+// Tests that need the real packages are gated on REAL; the loader contract below is covered with stub importers.
+const REAL = (await loadWsp()).available;
+
 beforeEach(() => __resetWspForTests());
 
 describe('loadWsp', () => {
@@ -51,7 +55,7 @@ describe('loadWsp', () => {
   it('reports a missing package instead of throwing', async () => {
     const missing = async (s: string) => {
       if (s === 'ruv-fann-wsp-lifecycle') throw Object.assign(new Error(`Cannot find package '${s}'`), { code: 'ERR_MODULE_NOT_FOUND' });
-      return import(s);
+      return {}; // stand-in module for the other two packages: only the failing one matters here
     };
     const l = await loadWsp(missing);
     expect(l).toEqual({ available: false, reason: 'ruv-fann-wsp-lifecycle is not installed (optional dependency of @claude-flow/cli)' });
@@ -63,7 +67,7 @@ describe('loadWsp', () => {
     if (!l.available) expect(l.reason).toContain('failed to load: bad token');
   });
 
-  it('resolves versions, including the shared ruv-fann core', () => {
+  it.skipIf(!REAL)('resolves versions, including the shared ruv-fann core', () => {
     const v = wspVersions();
     expect(v['ruv-fann-wsp']).toBe('0.2.0');
     expect(v['ruv-fann-wsp-invariants']).toBe('0.1.0');
@@ -72,7 +76,7 @@ describe('loadWsp', () => {
   });
 });
 
-describe('centroidToDenseModel', () => {
+describe.skipIf(!REAL)('centroidToDenseModel', () => {
   it('ranks labels exactly as the centroid router does', async () => {
     const shipped = loadCentroidArtifact({});
     expect(shipped.error).toBeNull();
@@ -100,21 +104,21 @@ describe('centroidToDenseModel', () => {
 });
 
 describe('self-routing invariants', () => {
-  it('pass on the shipped centroid router', async () => {
+  it.skipIf(!REAL)('pass on the shipped centroid router', async () => {
     const r = await checkCentroidSelfRouting(await mods(), loadCentroidArtifact({}).artifact!);
     expect(r.accepted).toBe(true);
     expect(r.violations).toEqual([]);
     expect(r.checks).toBe(r.labels * r.labels * 2);
   });
 
-  it('catch two near-duplicate labels', async () => {
+  it.skipIf(!REAL)('catch two near-duplicate labels', async () => {
     const a = artifact([unit([1, 0, 0]), unit([0, 1, 0]), unit([0.99, 0.01, 0])], ['x', 'y', 'x-copy']);
     const r = await checkCentroidSelfRouting(await mods(), a);
     expect(r.accepted).toBe(false);
     expect(r.violations.some((v) => v.output === 'x-copy' && v.constraint === 'maximum')).toBe(true);
   });
 
-  it('catch a corrupt (non-unit) centroid', async () => {
+  it.skipIf(!REAL)('catch a corrupt (non-unit) centroid', async () => {
     const a = artifact([[2, 0, 0], unit([0, 1, 0]), unit([0, 0, 1])]);
     const r = await checkCentroidSelfRouting(await mods(), a);
     expect(r.accepted).toBe(false);
@@ -134,7 +138,7 @@ describe('self-routing invariants', () => {
   });
 });
 
-describe('regression gate', () => {
+describe.skipIf(!REAL)('regression gate', () => {
   it('accepts a small bias edit and rejects a large one', async () => {
     const m = await mods();
     const a = loadCentroidArtifact({}).artifact!;
