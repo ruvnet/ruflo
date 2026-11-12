@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/cli",
-  "version": "3.76.1",
+  "version": "3.77.0",
   "type": "module",
   "description": "Ruflo CLI - Enterprise AI agent orchestration with 60+ specialized agents, swarm coordination, MCP server, self-learning hooks, and vector memory for Claude Code",
   "main": "dist/src/index.js",
@@ -149,7 +149,10 @@
     "ruvector": "^0.3.13",
     "nostr-tools": "^2.7.0",
     "@ruvector/learning-wasm": "0.1.29",
-    "agent-booster": "^0.2.2"
+    "agent-booster": "^0.2.2",
+    "ruv-fann-wsp": "0.2.0",
+    "ruv-fann-wsp-invariants": "0.1.0",
+    "ruv-fann-wsp-lifecycle": "0.1.0"
   },
   "peerDependencies": {
     "@metaharness/router": "^0.4.0",
