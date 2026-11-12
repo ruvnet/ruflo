@@ -36,8 +36,15 @@ async function mods(): Promise<WspModules> {
 beforeEach(() => __resetWspForTests());
 
 describe('loadWsp', () => {
-  it('loads all three optional packages', async () => {
+  // The three packages are optionalDependencies. The repo-root `npm ci` job (ci.yml "Test Suite") does not install
+  // them, so there the contract is the explicit "not installed" report, not a successful load; the
+  // missing-package tests below cover that path with an injected importer.
+  it('loads all three optional packages when they are installed', async ({ skip }) => {
     const l = await loadWsp();
+    if (!l.available) {
+      expect(l.reason).toMatch(/is not installed \(optional dependency of @claude-flow\/cli\)/);
+      skip();
+    }
     expect(l.available).toBe(true);
   });
 
