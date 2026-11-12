@@ -59,6 +59,7 @@ plugins/ruflo-mods/tests/guard.test.ts
 plugins/ruflo-mods/tests/probe.test.ts
 plugins/ruflo-mods/tests/ranked-context.test.ts
 plugins/ruflo-mods/tests/rollup.test.ts
+plugins/ruflo-mods/tests/route-judge.test.ts
 plugins/ruflo-mods/tests/toast.test.ts
 plugins/ruflo-music/tests/music-mod.test.ts
 plugins/ruflo-neural-trader/tests/trader-mod.test.ts
@@ -119,3 +120,4 @@ v3/@claude-flow/cli/__tests__/real-binary/context-delegation.test.ts
 v3/@claude-flow/cli/__tests__/real-binary/contracts.test.ts
 v3/@claude-flow/cli/__tests__/real-binary/external-plugins.test.ts
 v3/@claude-flow/cli/__tests__/real-binary/loads.test.ts
+v3/@claude-flow/cli/__tests__/real-binary/route-judge.test.ts
