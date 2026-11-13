@@ -25,9 +25,8 @@ export interface IntegrityResult {
   /** Critical helper names whose on-disk hash doesn't match the signed manifest
    *  (or that are missing from disk despite being part of the signed set). */
   tampered: string[];
-  /** Set only when the package's OWN signed manifest can't be verified at all —
-   *  there's no ground truth to check the installed files against, distinct
-   *  from a clean `tampered: []` result. */
+  /** The package manifest is unverifiable or does not match an expected CLI
+   *  version, so `tampered: []` does not establish a clean installed set. */
   blocked?: string;
 }
 
@@ -36,6 +35,8 @@ export interface IntegrityResult {
  * `sourceDir`'s signed manifest. Read-only — safe to call without holding any
  * refresh lock; callers only need to acquire one if `tampered` comes back
  * non-empty and they intend to repair it.
+ * `expectedVersion` binds refresh checks to the running CLI; callers such as
+ * doctor can omit it to inspect a signed set independently of the CLI version.
  *
  * `sourceDir: null` (package source unresolvable) returns `{ tampered: [] }`
  * — fails open rather than flagging every install as tampered when there is
@@ -46,6 +47,7 @@ export function verifyInstalledCriticalHelpers(
   sourceDir: string | null,
   criticalHelpers: readonly string[],
   pubkeyPemOverride?: string,
+  expectedVersion?: string,
 ): IntegrityResult {
   if (!sourceDir) return { tampered: [] };
 
@@ -57,6 +59,9 @@ export function verifyInstalledCriticalHelpers(
     );
   } catch { trusted = null; }
   if (!trusted) return { tampered: [], blocked: 'signed helpers manifest missing or signature invalid' };
+  if (expectedVersion !== undefined && trusted.version !== expectedVersion) {
+    return { tampered: [], blocked: `signed helpers manifest version ${trusted.version} does not match installed CLI ${expectedVersion}` };
+  }
 
   const tampered: string[] = [];
   for (const name of criticalHelpers) {

@@ -66,11 +66,18 @@ export const JCS_SIGNATURE_PROTOCOL = 'ruflo-signature-jcs-v1' as const;
 export type EnvelopeSignatureVersion = 'legacy-v1' | 'jcs-v1';
 export type EnvelopeSignatureMode = 'legacy' | 'prefer-jcs' | 'require-jcs';
 /**
- * Updated peers advertise and negotiate recursively complete JCS signatures
- * without operator configuration. Legacy mode remains explicit for low-risk
- * heartbeat/status interoperability only.
+ * legacy-v1 signs only `id` and `type`, so it is refused unless the operator
+ * opts in with `prefer-jcs` (legacy-v1 for heartbeat/status from peers that do
+ * not advertise JCS) or `legacy`.
  */
-export const DEFAULT_ENVELOPE_SIGNATURE_MODE: EnvelopeSignatureMode = 'prefer-jcs';
+export const DEFAULT_ENVELOPE_SIGNATURE_MODE: EnvelopeSignatureMode = 'require-jcs';
+
+export function acceptedSignatureVersionsFor(
+  mode: EnvelopeSignatureMode,
+): readonly EnvelopeSignatureVersion[] {
+  return mode === 'require-jcs' ? ['jcs-v1'] : ['legacy-v1', 'jcs-v1'];
+}
+
 export type InboundAuthorizationMode = 'legacy' | 'observe' | 'enforce';
 
 /**

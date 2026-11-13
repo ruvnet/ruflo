@@ -370,13 +370,15 @@ export const taskTools: MCPTool[] = [
         task.result = (input.result as Record<string, unknown>) || {};
         saveTaskStore(store);
 
-        // Sync assigned agents back to idle and increment taskCount
+        // Sync assigned agents back to idle and increment taskCount. Credited only to a worker
+        // still holding this task, as task_update does, so completing a reopened task again
+        // (complete -> pending -> complete, no reassignment) never counts the same work twice.
         updateAgents(task.assignedTo, (agent) => {
           if (agent.currentTask === taskId) {
             agent.status = 'idle';
             agent.currentTask = null;
+            agent.taskCount = ((agent.taskCount as number) || 0) + 1;
           }
-          agent.taskCount = ((agent.taskCount as number) || 0) + 1;
         });
 
         return {
@@ -442,6 +444,11 @@ export const taskTools: MCPTool[] = [
           task.status = newStatus;
           if (newStatus === 'in_progress' && !task.startedAt) {
             task.startedAt = new Date().toISOString();
+          }
+          // Reopening a finished task (completed/failed/cancelled -> pending/in_progress) makes it unfinished
+          // again, so it must not keep reporting the completedAt of the run that was undone.
+          if (newStatus === 'pending' || newStatus === 'in_progress') {
+            task.completedAt = null;
           }
           // A finished task frees its workers, as task_complete and task_cancel do; otherwise a worker
           // whose task was finished through task_update stays `busy` forever, and a later task_complete

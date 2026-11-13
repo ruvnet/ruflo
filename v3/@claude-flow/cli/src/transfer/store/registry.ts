@@ -50,6 +50,7 @@ export const DEFAULT_STORE_CONFIG: StoreConfig = {
   timeout: 30000,
   cacheDir: '.claude-flow/patterns/cache',
   cacheExpiry: 3600000, // 1 hour
+  maxBytes: 8 * 1024 * 1024, // 8 MiB cap per pattern download (#4750)
   requireVerification: false,
   minTrustLevel: 'unverified',
   trustedAuthors: [],

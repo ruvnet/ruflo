@@ -24,6 +24,17 @@ This plugin pairs with three runtime hardening features that ship in the host (A
 - **File mode 0600 / dir mode 0700** on session, terminal, and memory stores via `fs-secure.writeFileRestricted` — cross-user-on-host reads blocked at the OS layer.
 - **Encryption at rest** (opt-in via `CLAUDE_FLOW_ENCRYPT_AT_REST=1`) — AES-256-GCM with magic-byte (`RFE1`) backward-compat sniff. Reports involving memory.db / sessions / terminal-history exfiltration should account for the gate state (`ruflo doctor -c encryption`).
 
+## The same detector elsewhere in the ecosystem
+
+aidefence's pattern-pack detector now guards two more places. Use them where the text enters, and keep this plugin's 3-gate pattern for agent inputs and outputs:
+
+| Where | How | Result |
+|---|---|---|
+| AgentDB memory writes (agentdb 3.4.0+) | Start Claude Code with `AGENTDB_INJECTION_GUARD=warn` (log, keep) or `block` (refuse with `INJECTION_DETECTED`; fails closed without the `aidefence` package) | Screens ReasoningBank, Reflexion and Skill writes, so a planted instruction never lands in recalled memory. The external `agentdb` plugin exposes it as its `injection_guard` option |
+| agentic-flow MCP (3.2.0+) | `prompt_injection_scan` on the external `agentic-flow` plugin's server (read-only profile) | `{safe, maxSeverity, threats[], engine, decision}`; `engine: "aidefence"` when the package is present, a built-in fallback otherwise. `ecosystem_status` shows which engine and policy are active |
+
+The `injection-defense` skill that `ruflo init` installs walks through the `aidefence_*` gate-then-scan workflow; this plugin's `safety-scan` and `pii-detect` skills are the plugin-side entry points.
+
 ## Commands
 
 - `/aidefence` -- Detection stats and threat analysis dashboard

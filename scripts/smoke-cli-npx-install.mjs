@@ -49,10 +49,19 @@ const packDest = mkdtempSync(join(tmpdir(), 'cli-pack-'));
 let tarball;
 {
   console.log(`[1/5] packing CLI to ${packDest}`);
-  const pnpm = run('pnpm', ['pack', '--pack-destination', packDest], { cwd: CLI_DIR });
-  if (pnpm.code === 0) {
+  // #4940: pack what a release packs. A release stages the bundled runtime
+  // packages (and their vendored dependencies) and then runs npm pack; a bare
+  // `pnpm pack` bundles the workspace links, which is not the published shape.
+  let pnpm = { code: 1, stderr: 'skipped: staged bundles are packed with npm' };
+  try {
+    const { stageInternalRuntimeBundles } = await import('./stage-internal-runtime-bundles.mjs');
+    await stageInternalRuntimeBundles(CLI_DIR, { build: false });
+    const staged = run('npm', ['pack', '--ignore-scripts', '--pack-destination', packDest], { cwd: CLI_DIR });
+    if (staged.code !== 0) fail(`npm pack of the staged CLI failed:\n${staged.stderr}`);
     const tgz = readdirSync(packDest).find((f) => f.endsWith('.tgz'));
     if (tgz) tarball = join(packDest, tgz);
+  } catch (error) {
+    fail(`staging the bundled runtime packages failed: ${error?.stack ?? error}`);
   }
   if (!tarball) {
     // Fallback to npm pack — works when run with pnpm-resolved workspace already installed
@@ -112,4 +121,20 @@ if (ver.code !== 0 || !ver.stdout.trim()) {
 }
 console.log(`      ${ver.stdout.trim()}`);
 
-console.log(`[5/5] ok — installed cleanly, no "Invalid Version" regression`);
+// #4940: every bundled runtime package must load from the installed CLI. The
+// bundled security package once resolved `zod` to the CLI's zod 3 and its root
+// export threw `z.config is not a function`; --version never imports it.
+const cliRoot = join(scratch, 'node_modules', '@claude-flow', 'cli');
+for (const name of installedPkg.bundleDependencies ?? installedPkg.bundledDependencies ?? []) {
+  const load = run('node', ['--input-type=module', '-e',
+    `import { createRequire } from 'node:module'; import { pathToFileURL } from 'node:url';
+     const r = createRequire(${JSON.stringify(join(cliRoot, 'package.json'))});
+     await import(pathToFileURL(r.resolve(${JSON.stringify(name)})).href);`], { cwd: scratch });
+  if (load.code !== 0) {
+    console.error(load.stderr);
+    fail(`bundled ${name} does not import from the installed CLI (exit ${load.code})`);
+  }
+  console.log(`      bundled ${name} imports`);
+}
+
+console.log(`[5/5] ok — installed cleanly, no "Invalid Version" regression, bundled runtimes import`);

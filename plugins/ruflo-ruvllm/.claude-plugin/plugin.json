@@ -1,7 +1,7 @@
 {
   "name": "ruflo-ruvllm",
-  "description": "RuVLLM local inference with chat formatting (Claude/GPT/Gemini/Ollama/Cohere), model configuration, MicroLoRA fine-tuning, and SONA real-time adaptation. As a mod (ADR-445): a guard that keeps secrets out of adapters and the pattern router, /ruvllm-mod, and a status file the console shows",
-  "version": "0.3.6",
+  "description": "RuVLLM local inference with chat formatting (Claude/GPT/Gemini/Ollama/Cohere), model configuration, MicroLoRA fine-tuning, SONA real-time adaptation, and a guide to the @ruvector/ruvllm 4.1 runtime vs the GPU-loop harness. As a mod (ADR-445): a guard that keeps secrets out of adapters and the pattern router, /ruvllm-mod, and a status file the console shows",
+  "version": "0.4.0",
   "repository": "https://github.com/ruvnet/ruflo",
   "author": {
     "name": "ruvnet",
@@ -21,7 +21,9 @@
     "chat-templates",
     "mod",
     "function-hooks",
-    "guard"
+    "guard",
+    "sona",
+    "gpu-loop"
   ],
   "userConfig": {
     "guard": {

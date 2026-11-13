@@ -1458,7 +1458,7 @@ async function doImport() {
 
   if (!memPkg || !memPkg.AutoMemoryBridge) {
     warnMemoryUnavailable();
-    return;
+    return 1; // #4963: nothing was imported/synced
   }
 
   // Full implementation deferred to copied version
@@ -1475,7 +1475,7 @@ async function doSync() {
 
   if (!memPkg || !memPkg.AutoMemoryBridge) {
     warnMemoryUnavailable();
-    return;
+    return 1; // #4963: nothing was imported/synced
   }
 
   dim('Auto memory sync available — run init --upgrade for full support');
@@ -1496,10 +1496,11 @@ process.on('unhandledRejection', () => {});
 const COMMANDS = ['import', 'sync', 'status'];
 const command = process.argv[2] || (COMMANDS.includes(process.argv[1]) ? process.argv[1] : 'status');
 
+let exitCode = 0;
 try {
   switch (command) {
-    case 'import': await doImport(); break;
-    case 'sync': await doSync(); break;
+    case 'import': exitCode = (await doImport()) || 0; break;
+    case 'sync': exitCode = (await doSync()) || 0; break;
     case 'status': doStatus(); break;
     default:
       console.log('Usage: auto-memory-hook.mjs <import|sync|status>');
@@ -1509,8 +1510,8 @@ try {
   // Hooks must never crash Claude Code - fail silently
   dim(\`Error (non-critical): \${err.message}\`);
 }
-// Ensure clean exit for Claude Code hooks (exit 0 = success)
-process.exit(0);
+// A missing memory package exits 1 (#4963); other failures above stay non-critical.
+process.exit(exitCode);
 `;
 }
 

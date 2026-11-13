@@ -69,7 +69,14 @@ export function writeFileAtomic(
   let fd: number | undefined;
   try {
     fd = openSync(tmp, 'wx', mode);
-    if (data.length > 0) writeSync(fd, data, 0, data.length, 0);
+    // writeSync may write fewer bytes than asked (#4888). Loop until every byte
+    // is on the temp file, or rename() would publish a truncated image.
+    let written = 0;
+    while (written < data.length) {
+      const n = writeSync(fd, data, written, data.length - written, written);
+      if (n <= 0) throw new Error(`writeFileAtomic: write made no progress at byte ${written} of ${data.length}`);
+      written += n;
+    }
     fsyncSync(fd); // durability: force bytes to disk BEFORE the rename
     closeSync(fd);
     fd = undefined;

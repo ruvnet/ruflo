@@ -1,5 +1,34 @@
 # @claude-flow/plugin-financial-risk
 
+<!-- adr-356:quickstart:start -->
+**@claude-flow/plugin-financial-risk** — A Ruflo plugin that gives agents MCP tools for portfolio risk (VaR, CVaR), transaction anomaly detection, market regime classification, compliance checks and stress tests.
+
+**Supported environments:** Node.js 20+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/plugin-financial-risk
+```
+
+```js
+import { financialTools, MarketRegimeInputSchema } from '@claude-flow/plugin-financial-risk';
+
+console.log('tools:', financialTools.map((t) => t.name).join(', '));
+const check = MarketRegimeInputSchema.safeParse({ marketData: { prices: Array.from({ length: 30 }, (_, i) => 100 + i) } });
+console.log('valid input:', check.success);
+```
+
+Expected output:
+
+```text
+tools: finance/portfolio-risk, finance/anomaly-detect, finance/market-regime, finance/compliance-check, finance/stress-test
+valid input: true
+```
+
+Install it into a Ruflo project with [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli): `npx @claude-flow/cli@latest plugins install -n @claude-flow/plugin-financial-risk`.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-financial-risk.svg)](https://www.npmjs.com/package/@claude-flow/plugin-financial-risk)
 [![npm downloads](https://img.shields.io/npm/dm/@claude-flow/plugin-financial-risk.svg)](https://www.npmjs.com/package/@claude-flow/plugin-financial-risk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -341,3 +370,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/plugins/financial-risk)
+<!-- adr-356:footer:end -->

@@ -2,8 +2,11 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
-## 0.16.3 — 2026-11-06
+## 0.17.1 — 2026-11-13
 - fix: the dangerous-command guard reads `$(...)` as a command substitution, as it already read backticks, so `rm -rf "$(echo)"/` is refused, and it skips `$((...))` arithmetic. A parameter's default is a word the shell may use, so `rm -rf ${X:-/}` is refused too (#4742). Same change in both classic `hook-handler.cjs` copies and the generated fallback.
+
+## 0.17.0 — 2026-11-11
+- feat: `routeJudge` option (off by default, ADR-530). Each prompt is routed by one no-tools haiku completion that must answer with exactly one of the 11 ADR-391 labels; an off-label reply, a refusal, a timeout (4 s) or an error keeps the keyword route, and slash commands and `<…>` envelopes never reach the model. The route carries `reason: "model-judge"` (the vendored `$.ruflo` route contract is unchanged) and the context box says so. On the ADR-391 dev split it agreed with the labels on 70–71 of 84 prompts, against 27 for the keyword table.
 
 ## 0.16.2 — 2026-11-04
 - fix: the `routeContext` ranked-memory block ends with a line saying the entries are stored project notes, not instructions, matching the classic `hook-handler.cjs route` output.

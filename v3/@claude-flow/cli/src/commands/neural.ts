@@ -7,6 +7,8 @@
 
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
+import { getProjectRoot } from '../services/project-root.js';
+import { wspCommand } from './neural-wsp.js';
 
 // Train subcommand - REAL WASM training with RuVector
 const trainCommand: Command = {
@@ -250,7 +252,7 @@ const trainCommand: Command = {
             dim,
             validationSplit: valSplit,
             resumeFrom: resumePath,
-            checkpointPath: path.join(process.cwd(), '.claude-flow', 'neural', `lora-checkpoint-${Date.now()}.json`),
+            checkpointPath: path.join(getProjectRoot(), '.claude-flow', 'neural', `lora-checkpoint-${Date.now()}.json`),
           });
         } catch (err) {
           // ResumeFailedError — an explicit --resume that could not load is a
@@ -373,7 +375,7 @@ const trainCommand: Command = {
         try {
           const { LoRAAdapter } = await import('../ruvector/lora-adapter.js');
           const path = await import('path');
-          const cpDir = path.join(process.cwd(), '.claude-flow', 'neural');
+          const cpDir = path.join(getProjectRoot(), '.claude-flow', 'neural');
           const cpPath = path.join(cpDir, `lora-checkpoint-${Date.now()}.json`);
           const adapter = new LoRAAdapter({ inputDim: dim, outputDim: dim, rank: 4 });
           await adapter.initBackend();
@@ -983,7 +985,7 @@ const optimizeCommand: Command = {
       } catch { /* background learning is best-effort */ }
 
       // Get actual pattern storage size
-      const patternDir = path.join(process.cwd(), '.claude-flow', 'neural');
+      const patternDir = path.join(getProjectRoot(), '.claude-flow', 'neural');
       let beforeSize = 0;
       try {
         const patternFile = path.join(patternDir, 'patterns.json');
@@ -1204,7 +1206,7 @@ const exportCommand: Command = {
       };
 
       // Load patterns from local storage
-      const memoryDir = path.join(process.cwd(), '.claude-flow', 'memory');
+      const memoryDir = path.join(getProjectRoot(), '.claude-flow', 'memory');
       const patternsFile = path.join(memoryDir, 'patterns.json');
 
       if (fs.existsSync(patternsFile)) {
@@ -1687,7 +1689,7 @@ const importCommand: Command = {
       }
 
       // Save to local memory
-      const memoryDir = path.join(process.cwd(), '.claude-flow', 'memory');
+      const memoryDir = path.join(getProjectRoot(), '.claude-flow', 'memory');
       if (!fs.existsSync(memoryDir)) {
         fs.mkdirSync(memoryDir, { recursive: true });
       }
@@ -1771,10 +1773,12 @@ const benchmarkCommand: Command = {
       // when it isn't installed — install-safety / Build V3 pattern from #2586).
       const attentionPkg: string = '@ruvector/attention';
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic import of optional native WASM module with no type declarations
-      const attention = await import(attentionPkg) as unknown as Record<string, new (...args: number[]) => { computeRaw: (q: Float32Array, k: Float32Array[], v: Float32Array[]) => Float32Array }>;
+      // @ruvector/attention is CommonJS: under import() its classes sit on `default`.
+      const attentionMod = await import(attentionPkg) as { default?: unknown };
+      const attention = (attentionMod.default ?? attentionMod) as unknown as Record<string, new (...args: number[]) => { compute: (q: Float32Array, k: Float32Array[], v: Float32Array[]) => Float32Array }>;
 
       // Manual benchmark since benchmarkAttention has a binding bug
-      const benchmarkMechanism = async (name: string, mechanism: { computeRaw: (q: Float32Array, k: Float32Array[], v: Float32Array[]) => Float32Array }) => {
+      const benchmarkMechanism = async (name: string, mechanism: { compute: (q: Float32Array, k: Float32Array[], v: Float32Array[]) => Float32Array }) => {
         const query = new Float32Array(dim);
         const keys: Float32Array[] = [];
         const values: Float32Array[] = [];
@@ -1792,11 +1796,11 @@ const benchmarkCommand: Command = {
         }
 
         // Warmup
-        for (let i = 0; i < 10; i++) mechanism.computeRaw(query, keys, values);
+        for (let i = 0; i < 10; i++) mechanism.compute(query, keys, values);
 
         const start = performance.now();
         for (let i = 0; i < iterations; i++) {
-          mechanism.computeRaw(query, keys, values);
+          mechanism.compute(query, keys, values);
         }
         const elapsed = performance.now() - start;
 
@@ -4691,7 +4695,7 @@ const distillCommand: Command = {
 export const neuralCommand: Command = {
   name: 'neural',
   description: 'Neural pattern training, MoE, Flash Attention, pattern learning',
-  subcommands: [trainCommand, statusCommand, patternsCommand, predictCommand, optimizeCommand, benchmarkCommand, listCommand, exportCommand, importCommand, routerCommand, distillCommand],
+  subcommands: [trainCommand, statusCommand, patternsCommand, predictCommand, optimizeCommand, benchmarkCommand, listCommand, exportCommand, importCommand, routerCommand, distillCommand, wspCommand],
   examples: [
     { command: 'claude-flow neural status', description: 'Check neural system status' },
     { command: 'claude-flow neural train -p coordination', description: 'Train coordination patterns' },

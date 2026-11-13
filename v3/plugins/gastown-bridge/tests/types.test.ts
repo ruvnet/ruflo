@@ -70,7 +70,7 @@ const VarSchema = z.object({
 // Synthesis schema
 const SynthesisSchema = z.object({
   template: z.string(),
-  vars: z.record(z.string()).optional(),
+  vars: z.record(z.string(), z.string()).optional(),
 });
 
 // Template schema (for expansion formulas)
@@ -99,7 +99,7 @@ const FormulaSchema = z.object({
   synthesis: SynthesisSchema.optional(),
   // Workflow-specific
   steps: z.array(StepSchema).optional(),
-  vars: z.record(VarSchema).optional(),
+  vars: z.record(z.string(), VarSchema).optional(),
   // Expansion-specific
   template: z.array(TemplateSchema).optional(),
   // Aspect-specific
@@ -151,7 +151,7 @@ const AgentSchema = z.object({
 // Cooked formula schema (after variable substitution)
 const CookedFormulaSchema = FormulaSchema.extend({
   cooked_at: z.string().datetime().or(z.date()),
-  vars_applied: z.record(z.string()),
+  vars_applied: z.record(z.string(), z.string()),
 });
 
 // ============================================================================

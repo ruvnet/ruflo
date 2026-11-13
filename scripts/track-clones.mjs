@@ -66,12 +66,14 @@ function fetchClones(repo) {
     // array form prevents accidental shell metacharacter expansion (CWE-78).
     const out = execFileSync('gh', ['api', `repos/${repo}/traffic/clones`], {
       encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
     const j = JSON.parse(out);
     return { count: j.count ?? 0, uniques: j.uniques ?? 0, days: j.clones ?? [] };
   } catch (err) {
-    console.error(`  [warn] failed to fetch clones for ${repo}: ${err.message?.slice(0, 80)}`);
+    // The traffic API needs push access; Actions' GITHUB_TOKEN gets 403 here.
+    const why = String(err.stderr || err.message || err).trim().split('\n').slice(-2).join(' ').slice(0, 200);
+    console.error(`  [error] failed to fetch clones for ${repo}: ${why}`);
     return { count: 0, uniques: 0, days: [], error: 'fetch-failed' };
   }
 }
@@ -150,6 +152,14 @@ async function main() {
     clones[repo] = c;
     vector.push(c.count, c.uniques);
     console.error(`  ${repo.padEnd(24)} count=${String(c.count).padStart(8)}  uniques=${String(c.uniques).padStart(6)}`);
+  }
+  // A failed fetch used to be recorded as 0 clones, which poisoned the ledger
+  // (snapshots #15-#18 all read 0 while GitHub reported ~258k). Refuse to
+  // write a snapshot instead.
+  const failed = REPOS.filter((r) => clones[r].error);
+  if (failed.length) {
+    console.error(`clone tracker: ${failed.length}/${REPOS.length} repo(s) failed (${failed.join(', ')}). Set the TRAFFIC_TOKEN secret (fine-grained PAT, Administration: read on these repos). No snapshot written.`);
+    process.exit(1);
   }
 
   console.error('--- fetching npm download totals (last year, headline pkgs) ---');

@@ -4,7 +4,7 @@ Commands for swarm operations in Claude Flow.
 
 ## Available Commands
 
-- [swarm](./swarm.md)
+- [swarm-orchestrate](./swarm-orchestrate.md)
 - [swarm-init](./swarm-init.md)
 - [swarm-spawn](./swarm-spawn.md)
 - [swarm-status](./swarm-status.md)

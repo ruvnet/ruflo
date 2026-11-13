@@ -1,8 +1,31 @@
 {
   "name": "@claude-flow/security",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "type": "module",
   "description": "Security module - CVE fixes, input validation, path security",
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/security"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
+  },
+  "keywords": [
+    "security",
+    "input-validation",
+    "path-traversal",
+    "command-injection",
+    "password-hashing",
+    "bcrypt",
+    "credential-management",
+    "zod",
+    "ai-agents",
+    "claude-flow",
+    "ruflo",
+    "typescript"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -25,7 +48,7 @@
   "dependencies": {
     "@noble/ed25519": "^2.1.0",
     "bcryptjs": "^3.0.3",
-    "zod": "^3.22.0"
+    "zod": "^4.6.7"
   },
   "optionalDependencies": {
     "@napi-rs/keyring": "1.3.0"

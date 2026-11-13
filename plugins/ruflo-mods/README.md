@@ -118,6 +118,7 @@ Claude Code reads a plugin's options from `pluginConfigs["ruflo-mods@ruflo"].opt
 | Option | Default | Effect and evidence |
 |---|---|---|
 | `routeContext` | `true` | Include ranked memory with each prompt's route. Evidence: [live paths](../../v3/docs/validation/ruflo-mods-live-paths-2026-10.md) |
+| `routeJudge` | `false` | Route each prompt with one no-tools haiku call that picks one of 11 agent labels instead of the keyword table; any failure keeps the keyword route. About a second and a small haiku charge per prompt. Evidence: [ADR-530](../../v3/docs/adr/ADR-530-model-judge-routing.md) |
 | `statusLine` | `true` | One-line ruflo status under the prompt; skipped where the ruflo statusLine helper is configured. Evidence: [live paths](../../v3/docs/validation/ruflo-mods-live-paths-2026-10.md) |
 | `costBudgetUsd` | `0` (off) | Session budget for the 50/75/90/100% ladder; each rung is announced once. Evidence: [capability review](../../v3/docs/validation/mod-capability-review-2026-10.md) |
 | `costHardStop` | `false` | Refuse new subagents at 100% of the budget. Live canary run: [evidence](../../v3/docs/validation/ruflo-mods-compact-live-2026-10.md) (10/14 recalled with it on, 0/7 off); design in [ADR-404](../../v3/docs/adr/ADR-404-claude-code-mods-function-hooks.md) |

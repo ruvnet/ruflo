@@ -201,9 +201,15 @@ export type FunnelEventName =
   | 'training_share_disabled'
   // ADR-316 advisor co-pilot tip consent
   | 'advisor_tip_enabled'
-  | 'advisor_tip_disabled';
+  | 'advisor_tip_disabled'
+  // Activation funnel (opt-in, ADR-309): init finished, first agent or
+  // swarm started on this machine, and one "active today" marker per day
+  // so 7-day retention can be computed from the pseudonymous ID.
+  | 'init_completed'
+  | 'first_agent_run'
+  | 'session_active';
 
-export type FunnelSurface = 'statusline' | 'init' | 'credit_exhaustion';
+export type FunnelSurface = 'statusline' | 'init' | 'credit_exhaustion' | 'cli';
 
 export interface FunnelEvent {
   schemaVersion: 1;

@@ -1,7 +1,7 @@
 {
   "name": "ruflo-federation",
   "description": "Cross-installation agent federation with zero-trust security, peer discovery, consensus-based task routing, and per-call budget circuit breaker (ADR-097)",
-  "version": "0.3.7",
+  "version": "0.4.0",
   "repository": "https://github.com/ruvnet/ruflo",
   "author": {
     "name": "ruvnet",
@@ -31,7 +31,18 @@
     "guard": {
       "type": "string",
       "title": "Secret guard",
-      "description": "Refuse outbound federation messages (secrets and obvious PII) that hold a key, token or password. On by default; it only ever tightens.",
+      "description": "Refuse outbound federation messages that hold a key, token or password (and, while the PII guard is on, an SSN or card number). On by default; it only ever tightens.",
+      "required": false,
+      "default": "on",
+      "options": [
+        "on",
+        "off"
+      ]
+    },
+    "piiGuard": {
+      "type": "string",
+      "title": "PII guard",
+      "description": "While the secret guard is on, also refuse outbound federation messages that hold personal data (an SSN or a card number). Off lets personal data leave; secrets are still refused. On by default.",
       "required": false,
       "default": "on",
       "options": [

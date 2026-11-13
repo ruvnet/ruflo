@@ -620,7 +620,10 @@ describe('canonicalizeEnvelopeForVerify', () => {
       JCS_SIGNATURE_PROTOCOL,
       selectEnvelopeSignatureVersion,
     } = await import('../../src/application/inbound-dispatcher.js');
-    expect(DEFAULT_ENVELOPE_SIGNATURE_MODE).toBe('prefer-jcs');
+    expect(DEFAULT_ENVELOPE_SIGNATURE_MODE).toBe('require-jcs');
+    expect(() => selectEnvelopeSignatureVersion(DEFAULT_ENVELOPE_SIGNATURE_MODE, [], 'heartbeat')).toThrow(
+      'PEER_SIGNATURE_PROTOCOL_UNSUPPORTED',
+    );
     expect(selectEnvelopeSignatureVersion('legacy', [JCS_SIGNATURE_PROTOCOL])).toBe('legacy-v1');
     expect(selectEnvelopeSignatureVersion('prefer-jcs', [])).toBe('legacy-v1');
     expect(selectEnvelopeSignatureVersion('prefer-jcs', [JCS_SIGNATURE_PROTOCOL])).toBe('jcs-v1');
@@ -683,6 +686,36 @@ describe('canonicalizeEnvelopeForVerify', () => {
     expect(result).toEqual({ accepted: false, reason: 'INVALID_SIGNATURE' });
     expect(events).toEqual([]);
   });
+
+  it.each(['heartbeat', 'status-broadcast'])(
+    'refuses legacy-v1 %s by default and accepts it with prefer-jcs opt-in',
+    async (type) => {
+      const { DEFAULT_ENVELOPE_SIGNATURE_MODE, acceptedSignatureVersionsFor } = await import(
+        '../../src/application/inbound-dispatcher.js'
+      );
+      const peer = mkPeer('alpha');
+      const message: AgentMessage = {
+        ...baseMsg('alpha', type),
+        metadata: { sourceNodeId: 'alpha', signature: 'valid' },
+      };
+
+      const byDefault = withVerifier([peer], () => true);
+      const refused = await dispatchInbound('a', message, {
+        ...byDefault.deps,
+        acceptedSignatureVersions: acceptedSignatureVersionsFor(DEFAULT_ENVELOPE_SIGNATURE_MODE),
+      });
+      expect(refused).toEqual({ accepted: false, reason: 'INVALID_PAYLOAD' });
+      expect(byDefault.events).toEqual([]);
+
+      const optedIn = withVerifier([peer], () => true);
+      const accepted = await dispatchInbound('a', message, {
+        ...optedIn.deps,
+        acceptedSignatureVersions: acceptedSignatureVersionsFor('prefer-jcs'),
+      });
+      expect(accepted.accepted).toBe(true);
+      expect(optedIn.events).toHaveLength(1);
+    },
+  );
 
   it('can disable legacy verification after enforcement migration', async () => {
     const peer = mkPeer('alpha');

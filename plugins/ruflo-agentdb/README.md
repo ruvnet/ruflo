@@ -14,7 +14,7 @@ The substrate plugin for Ruflo memory. Wraps three CLI MCP families — `agentdb
 ## Compatibility
 
 - **CLI:** pinned to `@claude-flow/cli` v3.6 major+minor. Patch bumps within v3.6 are expected to be no-op.
-- **AgentDB:** the CLI bundles `agentdb@^3.0.0-alpha.11`. The plugin does **not** pin the npm package — internals (alpha.11 → alpha.12 etc.) are not the plugin's contract.
+- **AgentDB:** the CLI reaches AgentDB through `@claude-flow/memory`, which declares `agentdb@^3.3.0` (a fresh install resolves the latest 3.x). The plugin does **not** pin the npm package; internals are not the plugin's contract. For AgentDB's own MCP server pinned to an exact version, install the external `agentdb` plugin from this marketplace (`/plugin install agentdb@ruflo`); the two can run side by side.
 - **Verification:** `bash plugins/ruflo-agentdb/scripts/smoke.sh` checks the plugin's structure and documented surface offline; `--live` also exercises the real AgentDB tools. Passing the offline run does not prove the substrate works.
 
 ## Features
@@ -153,6 +153,19 @@ Implication for consumer plugins:
 - **Don't refresh `claude-memories` yourself.** It auto-imports on every SessionStart. Manual `memory_import_claude` is for force-refresh, not steady-state.
 - **Surface fallback responses.** When `controller: 'memory-store-fallback'` comes back from `agentdb_pattern-store`, the data still landed — see "Pattern-store fallback" below.
 
+## AgentDB 3.4 capabilities
+
+What agentdb 3.4.0 adds, and how it reaches this plugin:
+
+| Capability | How to use it here | Notes |
+|---|---|---|
+| Exact graph min cut (`@ruvector/mincut-wasm`) | `agentdb_graph-pathfinder` with `algorithm: "dynamic-mincut"` (`@claude-flow/cli` 3.72.1+) | Returns the seed's side of the cut plus `cutValue`, `cutEdges` and `backend` (`mincut-wasm` or `js-fallback`, which is limited to 300-node neighbourhoods). The `graph-mincut` skill from `ruflo init` covers reading the result |
+| Personalized PageRank | `agentdb_graph-pathfinder` (default `personalized-pagerank`) | Ranked neighbours from a seed node |
+| Prompt-injection guard on memory writes | Start Claude Code with `AGENTDB_INJECTION_GUARD=warn` or `block` | AgentDB scans text written by ReasoningBank, ReflexionMemory and SkillLibrary (so `agentdb_pattern-store` writes) with aidefence's detector. `block` refuses the write with `INJECTION_DETECTED` and fails closed if `aidefence` is not installed. Default `off`. See the `injection-defense` skill |
+| RaBitQ 1-bit index | `embeddings_rabitq_build` / `_search` / `_status` | AgentDB's own `AGENTDB_QUANTIZED_INDEX=rabitq` switch applies to its `SqlJsRvfBackend`, which ruflo's bridge does not use; ruflo's RaBitQ path is the `embeddings_rabitq_*` trio. See the `vector-quantization` skill |
+
+Security: agentdb 3.4.0 declared the optional `@ruvector/attention@^0.1.2` (resolves 0.1.32, covered by [GHSA-p62c-q7fc-qmg9](https://github.com/advisories/GHSA-p62c-q7fc-qmg9)); agentdb 3.5.0 and later declare `^2.2.3` and `@ruvector/graph-node@^2.1.2` ([GHSA-h928-qgv7-pq8g](https://github.com/advisories/GHSA-h928-qgv7-pq8g)). Use agentdb >= 3.5.0. Check a tree with `npm ls @ruvector/attention @ruvector/graph-node`.
+
 ## Operational fallbacks
 
 Three fallbacks exist in the bridge code; consumers should branch on them rather than treat them as soft failures.
@@ -239,6 +252,7 @@ node plugins/ruflo-agentdb/scripts/bench.mjs  # per-call cost of the pure paths 
 - `ruflo-intelligence` — SONA neural patterns; consumes the `pattern` reserved namespace via ReasoningBank
 - `ruflo-browser` — composes the namespace convention for `browser-sessions/-selectors/-templates/-cookies` (ADR-0001 §3 there)
 - `ruflo-ruvector` — pinned ruvector CLI; sibling substrate plugin
+- `agentdb` (external, this marketplace) — AgentDB's own MCP server pinned to agentdb 3.6.0, with an `injection_guard` option
 
 ## License
 

@@ -15,6 +15,8 @@ User-facing surface for Ruflo's self-learning system. Wraps **29 intelligence-re
 
 - **CLI:** checked against `@claude-flow/cli` 3.56.x (`mcp exec`, `hooks`, `neural` flags as in `--help`).
 - **Verification:** `bash plugins/ruflo-intelligence/scripts/smoke.sh` is the contract.
+- **ruv-FANN weight-space tooling (`@claude-flow/cli` 3.77.0+, ADR-528):** `neural wsp` inspects, invariant-checks and regression-gates dense models through three optional dependencies (`ruv-fann-wsp` 0.2.0, `ruv-fann-wsp-invariants` 0.1.0, `ruv-fann-wsp-lifecycle` 0.1.0) on the same `ruv-fann` 0.1.2 core agentdb already installs. It is evidence only and does not change routing; it is unavailable in the `claude-flow` umbrella and with `--omit=optional`.
+- **Learning backends (`@claude-flow/cli` 3.72.1+):** MicroLoRA training runs on `@ruvector/learning-wasm` (an optional dependency of the CLI; about 2 µs per 256-dim adaptation), and falls back to JS when `--omit=optional` skipped it. The SONA coordinator and contrastive trainer come from `@ruvector/ruvllm` ^4.1.0; `ruvllm_status` shows `native.coordinator` and `native.trainingBackend`. 4.0.x lacked those classes, so anything that resolved it trained on the JS fallback.
 
 ## Tool inventory
 
@@ -117,7 +119,7 @@ Inspect with `npx @claude-flow/cli@latest mcp exec -t hooks_intelligence -p '{"s
 ## Commands
 
 - `/intelligence` — Dashboard: stats, metrics, model-tier distribution, routing rationale on demand
-- `/neural` — Neural training and prediction (`train`, `status`, `patterns`, `predict`, `optimize`, `compress`)
+- `/neural` — Neural training and prediction (`train`, `status`, `patterns`, `predict`, `optimize`, `compress`), plus ruv-FANN weight-space checks (`wsp`: `status`, `inspect`, `check`, `gate`, `export-centroid`)
 
 ## Skills
 
@@ -125,18 +127,24 @@ Inspect with `npx @claude-flow/cli@latest mcp exec -t hooks_intelligence -p '{"s
 - `intelligence-route` — Route tasks using learned patterns; produces a `hooks_explain` rationale
 - `intelligence-transfer` — Publish/fetch patterns via IPFS (`hooks_transfer`)
 
+Skills installed by `ruflo init` that pair with this plugin (not duplicated here):
+
+- `lora-learning` — check the MicroLoRA backend (`neural benchmark`), record trajectories, train and reuse patterns
+- `fast-code-edits` — deterministic `hooks_codemod` and `hooks_fast-apply` (agent-booster snippet merge, no LLM call) for edits the 3-tier router sends to Tier 1
+
 ## As a mod (0.4.2)
 
 A function-hook mod ships beside the skills (ADR-445 pattern). Needs a Claude Code with mods (2.1.287+); older builds ignore it. No network, no process spawning: it only tightens calls to this plugin's own tools and reads through tools already connected.
 
 | Piece | Default | What it does |
 |---|---|---|
-| **Write guard** | on | Refuses a secret in a learned pattern, trajectory step/end, `neural_train` or `hooks_transfer` call, or a `memory_store` into a pattern namespace. A transfer also refuses an email address (IPFS is public). |
+| **Write guard** | on | Refuses a secret in a learned pattern, trajectory step/end, `neural_train` or `hooks_transfer` call, or a `memory_store` into a pattern namespace. A transfer also refuses an email address (IPFS is public) while the PII guard is on. |
+| **PII guard** | on | The email refusal on `hooks_transfer`. Off lets a transfer holding an email publish; a secret is still refused while the write guard is on. |
 | **Reset confirm** | on | Refuses `hooks_intelligence-reset` unless the call carries `confirm: true`. |
 | **`/intelligence-mod`** | — | `status`, `scan <text>`, `stats` (calls `hooks_intelligence_stats` through the connected tool); answered locally, no model call. |
 | **Status file** | — | `.claude-flow/intelligence-mod/status.json` (`version`, `updatedMs`, mode flags and counters); written at session start and when a counter changes. |
 
-Options (`userConfig`): `guard` on\|off, `confirmReset` on\|off. Refusals never echo the value they matched.
+Options (`userConfig`): `guard` on\|off, `piiGuard` on\|off, `confirmReset` on\|off. Refusals never echo the value they matched.
 
 ```bash
 claude plugin test plugins/ruflo-intelligence   # 11 tests

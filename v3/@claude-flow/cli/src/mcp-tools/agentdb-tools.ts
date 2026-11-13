@@ -13,8 +13,10 @@ import { feedbackPatternsSchema, validateFeedbackPatterns } from '../memory/feed
  */
 
 import type { MCPTool } from './types.js';
+import { agentdbInventoryTools } from './agentdb-inventory-tools.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { agentdbEpisodeCrudTools } from './agentdb-episode-tools.js';
+import { agentdbHierarchicalInventoryTools } from './agentdb-hierarchical-inventory-tools.js';
 
 // ===== Shared validation helpers =====
 
@@ -307,6 +309,13 @@ export const agentdbPatternSearch: MCPTool = {
         };
       }
 
+      // #4714 — an empty result is only a healthy zero-match when the
+      // ReasoningBank controller itself ran and reported no error. `null`
+      // (no registry) and `bridge-fallback` (controller not used) do not
+      // qualify, and neither does an empty list that carries a read error.
+      const reasoningBankError = typeof result?.error === 'string' ? result.error : undefined;
+      const reasoningBankRanClean = !!result && result.controller === 'reasoningBank' && !reasoningBankError;
+
       // #1889 — symmetric fallback. pattern-store writes to the `pattern`
       // namespace via memory_store when ReasoningBank is unavailable; the
       // search path used to return an empty list with `controller: 'unavailable'`
@@ -366,12 +375,18 @@ export const agentdbPatternSearch: MCPTool = {
         // getEntry (which DOES return content) before parsing/matching. This is the path
         // that actually runs when the ReasoningBank controller is unavailable (the common
         // real-world state), so a stored pattern is now findable by search.
+        // #4714 — a failed list or hydrate read must not pass as an empty scan.
+        let listError: string | undefined;
+        let scanLimited = false;
         if (results.length === 0) {
           tier = 'substring';
           const all = await listEntries({ namespace: 'pattern', limit: 200 });
+          if (all && all.success === false) listError = all.error ?? 'listEntries returned success:false';
+          const listed = all?.entries ?? [];
+          if (typeof all?.total === 'number' && all.total > listed.length) scanLimited = true;
           const qLower = query.toLowerCase();
           const matched: Array<Record<string, unknown>> = [];
-          for (const e of (all?.entries ?? [])) {
+          for (const e of listed) {
             const meta = e as Record<string, unknown>;
             let entry: Record<string, unknown> = meta;
             // If the listing lacks content, hydrate it from the keyed store.
@@ -379,6 +394,7 @@ export const agentdbPatternSearch: MCPTool = {
               const key = typeof meta.key === 'string' ? meta.key : (typeof meta.id === 'string' ? meta.id : null);
               if (!key) continue;
               const got = await getEntry({ key, namespace: 'pattern' });
+              if (got && got.success === false) listError ??= got.error ?? `getEntry(${key}) returned success:false`;
               if (!got?.found || !got.entry) continue;
               entry = got.entry as unknown as Record<string, unknown>;
             }
@@ -398,20 +414,45 @@ export const agentdbPatternSearch: MCPTool = {
         // #3288: degraded:true is the structural signal a caller can check
         // without already knowing to distrust an apparently-successful
         // response — matches agentbbs-tools.ts's degradedResult() convention.
+        //
+        // #4714 — except when nothing was found and nothing failed: the
+        // ReasoningBank controller ran cleanly and so did every legacy read.
+        // That is an honest "no match", not a degraded controller.
+        if (results.length === 0 && reasoningBankRanClean && !semanticError && !listError) {
+          return {
+            results: [],
+            noMatch: true,
+            degraded: false,
+            controller: 'reasoningBank',
+            searched: ['reasoningBank', 'pattern-namespace'],
+            // The legacy substring scan reads at most 200 entries; say so
+            // when the namespace holds more than that.
+            ...(scanLimited ? { scanLimited: true } : {}),
+            note: 'No patterns matched the query in ReasoningBank or the legacy pattern namespace.',
+          };
+        }
+
+        const safeReasoningBankError = reasoningBankError ? sanitizeError(new Error(reasoningBankError)) : undefined;
         return {
           results,
           degraded: true,
-          reason: result ? `reasoningBank-empty:${result.controller ?? 'unknown'}` : 'reasoningBank-unavailable:registry-null',
+          reason: safeReasoningBankError
+            ? `reasoningBank-error:${safeReasoningBankError}`
+            : result ? `reasoningBank-empty:${result.controller ?? 'unknown'}` : 'reasoningBank-unavailable:registry-null',
           controller: 'memory-store-fallback',
           tier,
+          ...(safeReasoningBankError ? { reasoningBankError: safeReasoningBankError } : {}),
           // #3325: when tier=substring because tier 1 hit a real error (thrown,
           // or {success:false, error}) rather than a genuine zero-match,
           // surface why — otherwise a hard failure and an honest "not found"
           // are indistinguishable from the response alone.
           ...(tier === 'substring' && semanticError ? { semanticError } : {}),
-          note: result
-            ? `ReasoningBank returned 0 results; tier=${tier} from pattern namespace.`
-            : `ReasoningBank controller unavailable; tier=${tier} from pattern namespace.`,
+          ...(listError ? { listError } : {}),
+          note: safeReasoningBankError
+            ? `ReasoningBank search failed; tier=${tier} from pattern namespace.`
+            : result
+              ? `ReasoningBank returned 0 results; tier=${tier} from pattern namespace.`
+              : `ReasoningBank controller unavailable; tier=${tier} from pattern namespace.`,
         };
       } catch (fallbackErr) {
         return { results: [], controller: 'unavailable', fallbackError: sanitizeError(fallbackErr) };
@@ -767,7 +808,12 @@ export const agentdbHierarchicalStore: MCPTool = {
     type: 'object',
     properties: {
       key: { type: 'string', description: 'Memory entry key' },
-      value: { type: 'string', description: 'Memory entry value' },
+      value: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 10000,
+        description: 'Memory entry value. Non-empty, max 10000 UTF-16 code units (JavaScript string length); longer values are refused. JSON Schema maxLength counts code points, so text with astral characters (emoji, some CJK) can pass this schema and still exceed the limit — each such character counts as 2.',
+      },
       tier: {
         type: 'string',
         description: 'Memory tier (working, episodic, semantic)',
@@ -799,7 +845,7 @@ export const agentdbHierarchicalStore: MCPTool = {
       const key = validateString(params.key, 'key', 1000);
       const value = validateString(params.value, 'value');
       if (!key) return { success: false, error: 'key is required (non-empty string, max 1KB)' };
-      if (!value) return { success: false, error: 'value is required (non-empty string, max 100KB)' };
+      if (!value) return { success: false, error: 'value is required (non-empty string, max 10000 characters)' };
       const tier = validateString(params.tier, 'tier', 20) ?? 'working';
       if (!['working', 'episodic', 'semantic'].includes(tier)) {
         return { success: false, error: `Invalid tier: ${tier}. Must be working, episodic, or semantic` };
@@ -1653,4 +1699,6 @@ export const agentdbTools: MCPTool[] = [
   agentdbSemanticRoute,
   agentdbGraphQuery,       // ADR-130 Phase 2
   agentdbGraphPathfinder,  // ADR-130 Phase 5
+  ...agentdbHierarchicalInventoryTools, // #4712
+  ...agentdbInventoryTools, // #4707
 ];

@@ -1,5 +1,34 @@
 # @claude-flow/plugin-neural-coordination
 
+<!-- adr-356:quickstart:start -->
+**@claude-flow/plugin-neural-coordination** — A Ruflo plugin that gives agent swarms MCP tools for neural consensus, topology optimization, collective memory, emergent protocols and swarm behaviour.
+
+**Supported environments:** Node.js 18+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/plugin-neural-coordination
+```
+
+```js
+import { neuralCoordinationTools, ProposalSchema } from '@claude-flow/plugin-neural-coordination';
+
+console.log('tools:', neuralCoordinationTools.map((t) => t.name).join(', '));
+const check = ProposalSchema.safeParse({ topic: 'swarm topology', options: [{ id: 'mesh', value: 'mesh' }, { id: 'star', value: 'star' }] });
+console.log('valid input:', check.success);
+```
+
+Expected output:
+
+```text
+tools: coordination/neural-consensus, coordination/topology-optimize, coordination/collective-memory, coordination/emergent-protocol, coordination/swarm-behavior
+valid input: true
+```
+
+Install it into a Ruflo project with [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli): `npx @claude-flow/cli@latest plugins install -n @claude-flow/plugin-neural-coordination`.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-neural-coordination.svg)](https://www.npmjs.com/package/@claude-flow/plugin-neural-coordination)
 [![license](https://img.shields.io/npm/l/@claude-flow/plugin-neural-coordination.svg)](https://github.com/ruvnet/claude-flow/blob/main/LICENSE)
 [![downloads](https://img.shields.io/npm/dm/@claude-flow/plugin-neural-coordination.svg)](https://www.npmjs.com/package/@claude-flow/plugin-neural-coordination)
@@ -263,3 +292,9 @@ interface NeuralCoordinationConfig {
 ## License
 
 MIT
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/plugins/neural-coordination)
+<!-- adr-356:footer:end -->

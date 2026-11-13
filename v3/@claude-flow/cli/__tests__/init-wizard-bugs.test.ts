@@ -82,12 +82,19 @@ vi.mock('node:child_process', () => ({ execSync: vi.fn() }));
 
 describe('#2207 — init detector accepts both server keys', () => {
   let tmp: string;
+  let savedConfigDir: string | undefined;
 
   beforeEach(() => {
     tmp = mkdtempSync(path.join(tmpdir(), 'wizard-2207-'));
+    // #2640: init skips the MCP entry when ruflo-core is installed; keep the
+    // machine's own Claude Code plugins out of this test.
+    savedConfigDir = process.env.CLAUDE_CONFIG_DIR;
+    process.env.CLAUDE_CONFIG_DIR = path.join(tmp, '.claude-config');
   });
 
   afterEach(() => {
+    if (savedConfigDir === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = savedConfigDir;
     rmSync(tmp, { recursive: true, force: true });
   });
 

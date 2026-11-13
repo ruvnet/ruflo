@@ -11,6 +11,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,6 +24,11 @@ export const INTERNAL_RUNTIME_PACKAGES = [
     name: '@claude-flow/security',
     requiredAssets: ['dist'],
     optionalAssets: ['README.md'],
+    // #4940: security needs zod >=4.6.7 while the CLI and the umbrella keep
+    // zod 3. npm never installs the dependencies of a bundled package, so a
+    // declaration alone still resolves `zod` to the wrapper's zod 3 and the
+    // root export dies at `z.config`. The files have to ship in the bundle.
+    vendoredDependencies: ['zod'],
   },
   {
     directory: 'codex',
@@ -125,7 +131,7 @@ async function validateEntrypoints(packageRoot, packageJson) {
   }
 }
 
-export function createBundledRuntimeManifest(packageJson) {
+export function createBundledRuntimeManifest(packageJson, vendoredDependencies = []) {
   const dependencyMetadata = {};
   for (const field of [
     'dependencies',
@@ -146,10 +152,78 @@ export function createBundledRuntimeManifest(packageJson) {
     },
   };
   delete bundledManifest.dependencies;
+  // A vendored dependency ships inside this package's own node_modules. It
+  // stays declared so the manifest matches the files and npm packs them.
+  const vendored = {};
+  for (const name of vendoredDependencies) {
+    const range = packageJson.dependencies?.[name];
+    if (range === undefined) {
+      throw new Error(`${packageJson.name} does not declare its vendored dependency ${name}`);
+    }
+    vendored[name] = range;
+  }
+  if (Object.keys(vendored).length > 0) bundledManifest.dependencies = vendored;
   delete bundledManifest.optionalDependencies;
   delete bundledManifest.peerDependencies;
   delete bundledManifest.peerDependenciesMeta;
   return bundledManifest;
+}
+
+/**
+ * Range check for a vendored dependency, without a semver package: this script
+ * also runs in CI jobs that install only the v3 workspace. Accepts an exact
+ * version or a caret range on a major >= 1; anything else is refused so an
+ * unusual range is looked at, not guessed.
+ */
+export function satisfiesCaretOrExact(version, range) {
+  const parse = (value) => /^(\d+)\.(\d+)\.(\d+)$/.exec(value)?.slice(1).map(Number);
+  const got = parse(version);
+  const caret = range.startsWith('^');
+  const want = parse(caret ? range.slice(1) : range);
+  if (!got || !want) throw new Error(`Unsupported vendored version or range: ${version} vs ${range}`);
+  if (!caret) return got.join('.') === want.join('.');
+  if (want[0] === 0) throw new Error(`Unsupported vendored range (0.x caret): ${range}`);
+  if (got[0] !== want[0]) return false;
+  return got[1] !== want[1] ? got[1] > want[1] : got[2] >= want[2];
+}
+
+/**
+ * Copy one dependency of a bundled package into that package's node_modules,
+ * from the copy the workspace build resolved. Only leaf packages qualify: a
+ * vendored dependency with dependencies of its own would need them vendored
+ * too, so that is refused instead of shipping a tree that cannot load.
+ */
+export async function vendorDependency(sourceRoot, stagedRoot, packageJson, name) {
+  const range = packageJson.dependencies?.[name];
+  if (range === undefined) {
+    throw new Error(`${packageJson.name} does not declare its vendored dependency ${name}`);
+  }
+  let directory = dirname(createRequire(join(sourceRoot, 'package.json')).resolve(name));
+  let manifest;
+  for (;;) {
+    try {
+      const candidate = JSON.parse(await readFile(join(directory, 'package.json'), 'utf8'));
+      if (candidate.name === name) { manifest = candidate; break; }
+    } catch { /* keep walking up to the package root */ }
+    const parent = dirname(directory);
+    if (parent === directory) throw new Error(`Cannot find the package root of ${name}`);
+    directory = parent;
+  }
+  if (!satisfiesCaretOrExact(manifest.version, range)) {
+    throw new Error(
+      `${packageJson.name} needs ${name}@${range}, but the workspace resolved ${manifest.version}`,
+    );
+  }
+  const own = { ...manifest.dependencies, ...manifest.optionalDependencies, ...manifest.peerDependencies };
+  if (Object.keys(own).length > 0) {
+    throw new Error(`${name}@${manifest.version} has dependencies of its own and cannot be vendored`);
+  }
+  await cp(directory, join(stagedRoot, 'node_modules', name), {
+    recursive: true,
+    dereference: true,
+    filter: (source) => !source.slice(directory.length).split(/[\\/]/).includes('node_modules'),
+  });
+  return manifest.version;
 }
 
 export function alignBundledRuntimeVersion(targetPackageJson, runtimePackageJson) {
@@ -224,8 +298,15 @@ export async function stageInternalRuntimeBundles(
       await mkdir(temporary, { recursive: true });
       await writeFile(
         join(temporary, 'package.json'),
-        `${JSON.stringify(createBundledRuntimeManifest(packageJson), null, 2)}\n`,
+        `${JSON.stringify(
+          createBundledRuntimeManifest(packageJson, runtimePackage.vendoredDependencies),
+          null,
+          2,
+        )}\n`,
       );
+      for (const name of runtimePackage.vendoredDependencies ?? []) {
+        await vendorDependency(sourceRoot, temporary, packageJson, name);
+      }
       for (const asset of runtimePackage.requiredAssets) {
         await copyRequired(join(sourceRoot, asset), join(temporary, asset));
       }
