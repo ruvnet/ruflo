@@ -17,6 +17,7 @@ import {
   writeFileRestricted,
 } from '../fs-secure.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { replaceJsonStore } from './locked-json-store.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -529,15 +530,17 @@ export const sessionTools: MCPTool[] = [
         if (input.restoreMemory !== false && session.data?.memory) {
           memoryRestore = await restoreMemorySnapshot(session.data.memory as Record<string, unknown>);
         }
+        // Same store locks as the task_* and agent_* tools, so a concurrent update
+        // cannot write a pre-restore copy over the restored store.
         if (input.restoreTasks !== false && session.data?.tasks) {
           const taskDir = join(getProjectCwd(), STORAGE_DIR, 'tasks');
           if (!existsSync(taskDir)) mkdirRestricted(taskDir);
-          writeFileRestricted(join(taskDir, 'store.json'), JSON.stringify(session.data.tasks, null, 2));
+          await replaceJsonStore(join(taskDir, 'store.json'), session.data.tasks, 'tasks');
         }
         if (input.restoreAgents !== false && session.data?.agents) {
           const agentDir = join(getProjectCwd(), STORAGE_DIR, 'agents');
           if (!existsSync(agentDir)) mkdirRestricted(agentDir);
-          writeFileRestricted(join(agentDir, 'store.json'), JSON.stringify(session.data.agents, null, 2));
+          await replaceJsonStore(join(agentDir, 'store.json'), session.data.agents, 'agents');
         }
 
         return {

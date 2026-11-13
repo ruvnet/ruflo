@@ -3,7 +3,8 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 const state = vi.hoisted(() => ({ cwd: '', route: vi.fn(), branch: vi.fn(), failNextWrite: false }));
-vi.mock('node:fs', async original => { const fs = await original<typeof import('node:fs')>(); return { ...fs, writeFileSync: (...args: any[]) => { if (state.failNextWrite) { state.failNextWrite=false; throw new Error('fixture write failure'); } return (fs.writeFileSync as any)(...args); } }; });
+// Stores are written to a temp file and renamed into place, so the next store write fails at its rename.
+vi.mock('node:fs', async original => { const fs = await original<typeof import('node:fs')>(); return { ...fs, renameSync: (...args: any[]) => { if (state.failNextWrite && String(args[1]).endsWith('store.json')) { state.failNextWrite=false; throw new Error('fixture write failure'); } return (fs.renameSync as any)(...args); } }; });
 vi.mock('../src/mcp-tools/types.js', () => ({ getProjectCwd: () => state.cwd }));
 vi.mock('../src/ruvector/graph-backend.js', () => ({ addNode: vi.fn() }));
 vi.mock('../src/ruvector/model-router.js', () => ({ recordModelOutcome: vi.fn(), recordModelOutcomeByModelId: vi.fn() }));
@@ -44,6 +45,8 @@ it.each([true,false])('never resurrects an agent terminated during execution (pr
 it('keeps one agent busy until its last overlapping request settles and retains both counts', async () => {
   await spawn('first');const a=deferred(),b=deferred();vi.stubGlobal('fetch',vi.fn().mockReturnValueOnce(a.promise).mockReturnValueOnce(b.promise));
   const first=call('agent_execute',{agentId:'first',prompt:'one'});const second=call('agent_execute',{agentId:'first',prompt:'two'});
+  // Both requests start under the store lock; overlap means both are in flight.
+  await vi.waitFor(()=>expect(fetch).toHaveBeenCalledTimes(2));
   a.resolve(response());await first;expect(agents().first.status).toBe('busy');expect(agents().first.taskCount).toBe(2);
   b.resolve(response());await second;expect(agents().first.status).toBe('idle');expect(agents().first.taskCount).toBe(2);
 });

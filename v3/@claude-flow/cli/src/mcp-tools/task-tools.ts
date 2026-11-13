@@ -4,11 +4,12 @@
  * Tool definitions for task management with file persistence.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readRecordStore } from './record-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { type StoreUpdate, saved, unchanged, updateJsonStore } from './locked-json-store.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -60,20 +61,26 @@ function getTaskPath(): string {
   return join(getTaskDir(), TASK_FILE);
 }
 
-function ensureTaskDir(): void {
-  const dir = getTaskDir();
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-}
-
 function loadTaskStore(): TaskStore {
   return readRecordStore(getTaskPath(), 'tasks', () => ({ tasks: {}, version: '3.0.0' }));
 }
 
-function saveTaskStore(store: TaskStore): void {
-  ensureTaskDir();
-  writeFileSync(getTaskPath(), JSON.stringify(store, null, 2), 'utf-8');
+/**
+ * What a locked task change hands back: the tool response, and the agent-store
+ * updates to run once the task is saved. Those run after the task lock is
+ * released, so a handler never holds two store locks at once, and a failed
+ * task save never leaves workers changed.
+ */
+interface TaskOutcome {
+  response: Record<string, unknown>;
+  afterSave?: () => Promise<void>;
+}
+
+/** Every task write goes through here, under the tasks lock. */
+async function updateTasks(mutate: (store: TaskStore) => StoreUpdate<TaskOutcome>): Promise<Record<string, unknown>> {
+  const { response, afterSave } = await updateJsonStore(getTaskPath(), loadTaskStore, mutate, 'tasks');
+  await afterSave?.();
+  return response;
 }
 
 type AgentRow = Record<string, unknown>;
@@ -87,7 +94,7 @@ type AgentRow = Record<string, unknown>;
  * busy, and completing one never counted it: `hive-mind status` showed the
  * worker idle with 0 completed while its task sat in the queue.
  */
-function updateAgents(agentIds: string[], mutate: (agent: AgentRow) => void): void {
+async function updateAgents(agentIds: string[], mutate: (agent: AgentRow) => void): Promise<void> {
   if (agentIds.length === 0) return;
   const paths = [
     join(getProjectCwd(), STORAGE_DIR, 'agents', 'store.json'),
@@ -96,16 +103,23 @@ function updateAgents(agentIds: string[], mutate: (agent: AgentRow) => void): vo
   for (const path of paths) {
     try {
       if (!existsSync(path)) continue;
-      const store = JSON.parse(readFileSync(path, 'utf-8')) as { agents?: Record<string, AgentRow> };
-      if (!store.agents) continue;
-      let touched = false;
-      for (const id of agentIds) {
-        if (Object.prototype.hasOwnProperty.call(store.agents, id) && store.agents[id]) {
-          mutate(store.agents[id]);
-          touched = true;
-        }
-      }
-      if (touched) writeFileSync(path, JSON.stringify(store, null, 2), 'utf-8');
+      // Same lock as agent_* tools, so a concurrent agent write is not lost.
+      await updateJsonStore(
+        path,
+        () => JSON.parse(readFileSync(path, 'utf-8')) as { agents?: Record<string, AgentRow> },
+        (store) => {
+          if (!store.agents) return unchanged(undefined);
+          let touched = false;
+          for (const id of agentIds) {
+            if (Object.prototype.hasOwnProperty.call(store.agents, id) && store.agents[id]) {
+              mutate(store.agents[id]);
+              touched = true;
+            }
+          }
+          return { result: undefined, save: touched };
+        },
+        'agents',
+      );
     } catch {
       // Best-effort agent sync: a corrupt agent store must not fail the task op.
     }
@@ -113,8 +127,8 @@ function updateAgents(agentIds: string[], mutate: (agent: AgentRow) => void): vo
 }
 
 /** Return agents still holding `taskId` to idle. */
-function releaseAgents(agentIds: string[], taskId: string): void {
-  updateAgents(agentIds, (agent) => {
+function releaseAgents(agentIds: string[], taskId: string): Promise<void> {
+  return updateAgents(agentIds, (agent) => {
     if (agent.currentTask === taskId) {
       agent.status = 'idle';
       agent.currentTask = null;
@@ -186,7 +200,6 @@ export const taskTools: MCPTool[] = [
         return { success: false, error: 'assignTo must be an array of agent ids' };
       }
 
-      const store = loadTaskStore();
       const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       const task: TaskRecord = {
@@ -203,27 +216,29 @@ export const taskTools: MCPTool[] = [
         completedAt: null,
       };
 
-      store.tasks[taskId] = task;
-      saveTaskStore(store);
+      return updateTasks((store) => {
+        store.tasks[taskId] = task;
 
-      // Assigning at creation must mark the workers busy, as task_assign and task_update do;
-      // otherwise they read idle while holding the task, and task_complete or task_cancel,
-      // which only release a worker whose currentTask is this task, never free them either.
-      updateAgents(task.assignedTo, (agent) => {
-        agent.status = 'busy';
-        agent.currentTask = taskId;
+        return saved({
+          response: {
+            taskId,
+            type: task.type,
+            description: task.description,
+            priority: task.priority,
+            status: task.status,
+            createdAt: task.createdAt,
+            assignedTo: task.assignedTo,
+            tags: task.tags,
+          },
+          // Assigning at creation must mark the workers busy, as task_assign and task_update do;
+          // otherwise they read idle while holding the task, and task_complete or task_cancel,
+          // which only release a worker whose currentTask is this task, never free them either.
+          afterSave: () => updateAgents(task.assignedTo, (agent) => {
+            agent.status = 'busy';
+            agent.currentTask = taskId;
+          }),
+        });
       });
-
-      return {
-        taskId,
-        type: task.type,
-        description: task.description,
-        priority: task.priority,
-        status: task.status,
-        createdAt: task.createdAt,
-        assignedTo: task.assignedTo,
-        tags: task.tags,
-      };
     },
   },
   {
@@ -356,44 +371,50 @@ export const taskTools: MCPTool[] = [
       const vId = validateIdentifier(input.taskId, 'taskId');
       if (!vId.valid) return { success: false, error: vId.error };
 
-      const store = loadTaskStore();
       const taskId = input.taskId as string;
-      const task = store.tasks[taskId];
 
-      if (task) {
-        if (task.status === 'completed') {
-          return { taskId: task.taskId, status: task.status, completedAt: task.completedAt, result: task.result };
-        }
-        task.status = 'completed';
-        task.progress = 100;
-        task.completedAt = new Date().toISOString();
-        task.result = (input.result as Record<string, unknown>) || {};
-        saveTaskStore(store);
+      return updateTasks((store) => {
+        const task = store.tasks[taskId];
 
-        // Sync assigned agents back to idle and increment taskCount. Credited only to a worker
-        // still holding this task, as task_update does, so completing a reopened task again
-        // (complete -> pending -> complete, no reassignment) never counts the same work twice.
-        updateAgents(task.assignedTo, (agent) => {
-          if (agent.currentTask === taskId) {
-            agent.status = 'idle';
-            agent.currentTask = null;
-            agent.taskCount = ((agent.taskCount as number) || 0) + 1;
+        if (task) {
+          if (task.status === 'completed') {
+            return unchanged({
+              response: { taskId: task.taskId, status: task.status, completedAt: task.completedAt, result: task.result },
+            });
           }
+          task.status = 'completed';
+          task.progress = 100;
+          task.completedAt = new Date().toISOString();
+          task.result = (input.result as Record<string, unknown>) || {};
+
+          return saved({
+            response: {
+              taskId: task.taskId,
+              status: task.status,
+              completedAt: task.completedAt,
+              result: task.result,
+            },
+            // Sync assigned agents back to idle and increment taskCount. Credited only to a worker
+            // still holding this task, as task_update does, so completing a reopened task again
+            // (complete -> pending -> complete, no reassignment) never counts the same work twice.
+            afterSave: () => updateAgents(task.assignedTo, (agent) => {
+              if (agent.currentTask === taskId) {
+                agent.status = 'idle';
+                agent.currentTask = null;
+                agent.taskCount = ((agent.taskCount as number) || 0) + 1;
+              }
+            }),
+          });
+        }
+
+        return unchanged({
+          response: {
+            taskId,
+            status: 'not_found',
+            error: 'Task not found',
+          },
         });
-
-        return {
-          taskId: task.taskId,
-          status: task.status,
-          completedAt: task.completedAt,
-          result: task.result,
-        };
-      }
-
-      return {
-        taskId,
-        status: 'not_found',
-        error: 'Task not found',
-      };
+      });
     },
   },
   {
@@ -429,90 +450,95 @@ export const taskTools: MCPTool[] = [
         return { success: false, error: 'assignTo must be an array of agent ids' };
       }
 
-      const store = loadTaskStore();
       const taskId = input.taskId as string;
-      const task = store.tasks[taskId];
 
-      if (task) {
-        // Worker effects run AFTER the task store is saved, as task_complete does: a failed save must not leave
-        // workers freed and counted against a task that still reads unfinished.
-        let afterSave: (() => void) | undefined;
-        const previouslyAssigned = Array.isArray(task.assignedTo) ? [...task.assignedTo] : [];
-        if (status !== undefined) {
-          const newStatus = status;
-          const wasCompleted = task.status === 'completed';
-          task.status = newStatus;
-          if (newStatus === 'in_progress' && !task.startedAt) {
-            task.startedAt = new Date().toISOString();
-          }
-          // Reopening a finished task (completed/failed/cancelled -> pending/in_progress) makes it unfinished
-          // again, so it must not keep reporting the completedAt of the run that was undone.
-          if (newStatus === 'pending' || newStatus === 'in_progress') {
-            task.completedAt = null;
-          }
-          // A finished task frees its workers, as task_complete and task_cancel do; otherwise a worker
-          // whose task was finished through task_update stays `busy` forever, and a later task_complete
-          // returns early because the status already reads completed.
-          if (newStatus === 'failed' || newStatus === 'cancelled') {
-            task.completedAt = new Date().toISOString();
-            afterSave = () => releaseAgents(previouslyAssigned, taskId);
-          }
-          if (newStatus === 'completed' && !wasCompleted) {
-            task.completedAt = new Date().toISOString();
-            // Credited only to a worker still holding this task, so complete -> pending -> complete
-            // (no reassignment in between) never counts the same work twice.
-            afterSave = () => updateAgents(previouslyAssigned, (agent) => {
-              if (agent.currentTask === taskId) {
-                agent.status = 'idle';
-                agent.currentTask = null;
-                agent.taskCount = ((agent.taskCount as number) || 0) + 1;
-              }
-            });
-          }
-        }
-        if (typeof input.progress === 'number') {
-          task.progress = Math.min(100, Math.max(0, input.progress as number));
-        }
-        // Completing is 100% whatever progress the same call carried.
-        if (task.status === 'completed') task.progress = 100;
-        if (input.assignTo) {
-          task.assignedTo = input.assignTo as string[];
-          // Reassignment must update the same worker stores as task_assign.
-          // Terminal transitions release/credit the workers that held the task
-          // before this update; replacement assignees did not perform that work.
-          if (!['completed', 'failed', 'cancelled'].includes(task.status)) {
-            afterSave = () => {
-              releaseAgents(previouslyAssigned.filter(id => !task.assignedTo.includes(id)), taskId);
-              // Echoing retained assignees must not take them from another task or re-credit completed work.
-              updateAgents(task.assignedTo.filter(id => !previouslyAssigned.includes(id)), agent => {
-                agent.status = 'busy';
-                agent.currentTask = taskId;
+      return updateTasks((store) => {
+        const task = store.tasks[taskId];
+
+        if (task) {
+          // Worker effects run AFTER the task store is saved, as task_complete does: a failed save must not leave
+          // workers freed and counted against a task that still reads unfinished.
+          let afterSave: (() => Promise<void>) | undefined;
+          const previouslyAssigned = Array.isArray(task.assignedTo) ? [...task.assignedTo] : [];
+          if (status !== undefined) {
+            const newStatus = status;
+            const wasCompleted = task.status === 'completed';
+            task.status = newStatus;
+            if (newStatus === 'in_progress' && !task.startedAt) {
+              task.startedAt = new Date().toISOString();
+            }
+            // Reopening a finished task (completed/failed/cancelled -> pending/in_progress) makes it unfinished
+            // again, so it must not keep reporting the completedAt of the run that was undone.
+            if (newStatus === 'pending' || newStatus === 'in_progress') {
+              task.completedAt = null;
+            }
+            // A finished task frees its workers, as task_complete and task_cancel do; otherwise a worker
+            // whose task was finished through task_update stays `busy` forever, and a later task_complete
+            // returns early because the status already reads completed.
+            if (newStatus === 'failed' || newStatus === 'cancelled') {
+              task.completedAt = new Date().toISOString();
+              afterSave = () => releaseAgents(previouslyAssigned, taskId);
+            }
+            if (newStatus === 'completed' && !wasCompleted) {
+              task.completedAt = new Date().toISOString();
+              // Credited only to a worker still holding this task, so complete -> pending -> complete
+              // (no reassignment in between) never counts the same work twice.
+              afterSave = () => updateAgents(previouslyAssigned, (agent) => {
+                if (agent.currentTask === taskId) {
+                  agent.status = 'idle';
+                  agent.currentTask = null;
+                  agent.taskCount = ((agent.taskCount as number) || 0) + 1;
+                }
               });
-            };
-          } else if (!afterSave) {
-            afterSave = () => releaseAgents(previouslyAssigned, taskId);
+            }
           }
-        }
-        if (input.result && typeof input.result === 'object') {
-          task.result = input.result as Record<string, unknown>;
-        }
-        saveTaskStore(store);
-        afterSave?.();
+          if (typeof input.progress === 'number') {
+            task.progress = Math.min(100, Math.max(0, input.progress as number));
+          }
+          // Completing is 100% whatever progress the same call carried.
+          if (task.status === 'completed') task.progress = 100;
+          if (input.assignTo) {
+            task.assignedTo = input.assignTo as string[];
+            // Reassignment must update the same worker stores as task_assign.
+            // Terminal transitions release/credit the workers that held the task
+            // before this update; replacement assignees did not perform that work.
+            if (!['completed', 'failed', 'cancelled'].includes(task.status)) {
+              afterSave = async () => {
+                await releaseAgents(previouslyAssigned.filter(id => !task.assignedTo.includes(id)), taskId);
+                // Echoing retained assignees must not take them from another task or re-credit completed work.
+                await updateAgents(task.assignedTo.filter(id => !previouslyAssigned.includes(id)), agent => {
+                  agent.status = 'busy';
+                  agent.currentTask = taskId;
+                });
+              };
+            } else if (!afterSave) {
+              afterSave = () => releaseAgents(previouslyAssigned, taskId);
+            }
+          }
+          if (input.result && typeof input.result === 'object') {
+            task.result = input.result as Record<string, unknown>;
+          }
 
-        return {
-          success: true,
-          taskId: task.taskId,
-          status: task.status,
-          progress: task.progress,
-          assignedTo: task.assignedTo,
-        };
-      }
+          return saved({
+            response: {
+              success: true,
+              taskId: task.taskId,
+              status: task.status,
+              progress: task.progress,
+              assignedTo: task.assignedTo,
+            },
+            afterSave,
+          });
+        }
 
-      return {
-        success: false,
-        taskId,
-        error: 'Task not found',
-      };
+        return unchanged({
+          response: {
+            success: false,
+            taskId,
+            error: 'Task not found',
+          },
+        });
+      });
     },
   },
   {
@@ -533,74 +559,85 @@ export const taskTools: MCPTool[] = [
       const vId = validateIdentifier(input.taskId, 'taskId');
       if (!vId.valid) return { success: false, error: vId.error };
 
-      const store = loadTaskStore();
       const taskId = input.taskId as string;
-      const task = store.tasks[taskId];
 
-      if (!task) {
-        return { taskId, error: 'Task not found' };
-      }
+      return updateTasks((store) => {
+        const task = store.tasks[taskId];
 
-      // Completed and cancelled tasks are terminal (#4725). Assigning a
-      // completed task marks the agent busy, and task_complete then returns
-      // without releasing it; task_cancel refuses a finished task too, so
-      // nothing ever sets that agent back to idle.
-      if (task.status === 'completed' || task.status === 'cancelled') {
-        return {
-          success: false,
-          taskId,
-          status: task.status,
-          error: `Cannot assign a ${task.status} task`,
-        };
-      }
+        if (!task) {
+          return unchanged({ response: { taskId, error: 'Task not found' } });
+        }
 
-      const previouslyAssigned = [...task.assignedTo];
-      const agentStores = assignableAgentStores();
-      if (input.unassign) {
-        // Revert previously assigned agents to idle
-        releaseAgents(previouslyAssigned, taskId);
-        task.assignedTo = [];
-      } else {
-        const agentIds = (input.agentIds as string[]) || [];
-        // An id in neither store is a ghost owner: the task would go
-        // in_progress with nobody to do the work (#4725).
-        if (Array.isArray(agentIds)) {
-          const missing = agentIds.filter((id) => typeof id === 'string' && !agentIsAssignable(id, agentStores));
-          if (missing.length > 0) {
-            const listed = missing.join(', ');
-            return {
+        // Completed and cancelled tasks are terminal (#4725). Assigning a
+        // completed task marks the agent busy, and task_complete then returns
+        // without releasing it; task_cancel refuses a finished task too, so
+        // nothing ever sets that agent back to idle.
+        if (task.status === 'completed' || task.status === 'cancelled') {
+          return unchanged({
+            response: {
               success: false,
               taskId,
               status: task.status,
-              error: missing.length === 1 ? `Agent not found: ${listed}` : `Agents not found: ${listed}`,
-            };
+              error: `Cannot assign a ${task.status} task`,
+            },
+          });
+        }
+
+        const previouslyAssigned = [...task.assignedTo];
+        const agentStores = assignableAgentStores();
+        // Worker effects run after the task is saved, as in task_update.
+        let afterSave: () => Promise<void>;
+        if (input.unassign) {
+          // Revert previously assigned agents to idle
+          afterSave = () => releaseAgents(previouslyAssigned, taskId);
+          task.assignedTo = [];
+        } else {
+          const agentIds = (input.agentIds as string[]) || [];
+          // An id in neither store is a ghost owner: the task would go
+          // in_progress with nobody to do the work (#4725).
+          if (Array.isArray(agentIds)) {
+            const missing = agentIds.filter((id) => typeof id === 'string' && !agentIsAssignable(id, agentStores));
+            if (missing.length > 0) {
+              const listed = missing.join(', ');
+              return unchanged({
+                response: {
+                  success: false,
+                  taskId,
+                  status: task.status,
+                  error: missing.length === 1 ? `Agent not found: ${listed}` : `Agents not found: ${listed}`,
+                },
+              });
+            }
+          }
+          afterSave = async () => {
+            // Revert old agents to idle
+            await releaseAgents(previouslyAssigned.filter((id) => !agentIds.includes(id)), taskId);
+            // Set new agents to active
+            await updateAgents(agentIds, (agent) => {
+              agent.status = 'busy';
+              agent.currentTask = taskId;
+            });
+          };
+          task.assignedTo = agentIds;
+          // Auto-transition task to in_progress if pending
+          if (task.status === 'pending' && agentIds.length > 0) {
+            task.status = 'in_progress';
+            if (!task.startedAt) {
+              task.startedAt = new Date().toISOString();
+            }
           }
         }
-        // Revert old agents to idle
-        releaseAgents(previouslyAssigned.filter((id) => !agentIds.includes(id)), taskId);
-        // Set new agents to active
-        updateAgents(agentIds, (agent) => {
-          agent.status = 'busy';
-          agent.currentTask = taskId;
+
+        return saved({
+          response: {
+            taskId: task.taskId,
+            assignedTo: task.assignedTo,
+            previouslyAssigned,
+            status: task.status,
+          },
+          afterSave,
         });
-        task.assignedTo = agentIds;
-        // Auto-transition task to in_progress if pending
-        if (task.status === 'pending' && agentIds.length > 0) {
-          task.status = 'in_progress';
-          if (!task.startedAt) {
-            task.startedAt = new Date().toISOString();
-          }
-        }
-      }
-
-      saveTaskStore(store);
-
-      return {
-        taskId: task.taskId,
-        assignedTo: task.assignedTo,
-        previouslyAssigned,
-        status: task.status,
-      };
+      });
     },
   },
   {
@@ -624,44 +661,51 @@ export const taskTools: MCPTool[] = [
         if (!v.valid) return { success: false, error: v.error };
       }
 
-      const store = loadTaskStore();
       const taskId = input.taskId as string;
-      const task = store.tasks[taskId];
 
-      if (task) {
-        const previousStatus = task.status;
-        // A finished task keeps its outcome: cancelling it used to overwrite a
-        // completed task's result and completedAt with a cancel reason.
-        if (previousStatus === 'completed' || previousStatus === 'failed' || previousStatus === 'cancelled') {
-          return {
-            success: false,
-            taskId,
-            status: previousStatus,
-            previousStatus,
-            error: `Task is already ${previousStatus}`,
-          };
+      return updateTasks((store) => {
+        const task = store.tasks[taskId];
+
+        if (task) {
+          const previousStatus = task.status;
+          // A finished task keeps its outcome: cancelling it used to overwrite a
+          // completed task's result and completedAt with a cancel reason.
+          if (previousStatus === 'completed' || previousStatus === 'failed' || previousStatus === 'cancelled') {
+            return unchanged({
+              response: {
+                success: false,
+                taskId,
+                status: previousStatus,
+                previousStatus,
+                error: `Task is already ${previousStatus}`,
+              },
+            });
+          }
+
+          task.status = 'cancelled';
+          task.completedAt = new Date().toISOString();
+          task.result = { cancelReason: input.reason || 'Cancelled by user' };
+
+          return saved({
+            response: {
+              success: true,
+              taskId: task.taskId,
+              status: task.status,
+              previousStatus,
+              cancelledAt: task.completedAt,
+            },
+            afterSave: () => releaseAgents(task.assignedTo, taskId),
+          });
         }
 
-        task.status = 'cancelled';
-        task.completedAt = new Date().toISOString();
-        task.result = { cancelReason: input.reason || 'Cancelled by user' };
-        saveTaskStore(store);
-        releaseAgents(task.assignedTo, taskId);
-
-        return {
-          success: true,
-          taskId: task.taskId,
-          status: task.status,
-          previousStatus,
-          cancelledAt: task.completedAt,
-        };
-      }
-
-      return {
-        success: false,
-        taskId,
-        error: 'Task not found',
-      };
+        return unchanged({
+          response: {
+            success: false,
+            taskId,
+            error: 'Task not found',
+          },
+        });
+      });
     },
   },
   {
@@ -684,41 +728,43 @@ export const taskTools: MCPTool[] = [
       const v = validateIdentifier(input.taskId, 'taskId');
       if (!v.valid) return { success: false, error: v.error };
 
-      const store = loadTaskStore();
       const taskId = input.taskId as string;
-      const original = store.tasks[taskId];
-      if (!original) return { success: false, taskId, error: 'Task not found' };
 
-      const retainState = input.resetState === false;
-      const newTaskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const retry: TaskRecord = {
-        taskId: newTaskId,
-        type: original.type,
-        description: original.description,
-        priority: original.priority,
-        status: 'pending',
-        progress: retainState ? original.progress ?? 0 : 0,
-        assignedTo: [...original.assignedTo],
-        tags: [...original.tags, 'retry-of:' + taskId],
-        createdAt: new Date().toISOString(),
-        startedAt: null,
-        completedAt: null,
-      };
-      if (retainState && original.result !== undefined) retry.result = original.result;
-      store.tasks[newTaskId] = retry;
-      saveTaskStore(store);
+      return updateTasks((store) => {
+        const original = store.tasks[taskId];
+        if (!original) return unchanged({ response: { success: false, taskId, error: 'Task not found' } });
 
-      updateAgents(retry.assignedTo, (agent) => {
-        agent.status = 'busy';
-        agent.currentTask = newTaskId;
+        const retainState = input.resetState === false;
+        const newTaskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const retry: TaskRecord = {
+          taskId: newTaskId,
+          type: original.type,
+          description: original.description,
+          priority: original.priority,
+          status: 'pending',
+          progress: retainState ? original.progress ?? 0 : 0,
+          assignedTo: [...original.assignedTo],
+          tags: [...original.tags, 'retry-of:' + taskId],
+          createdAt: new Date().toISOString(),
+          startedAt: null,
+          completedAt: null,
+        };
+        if (retainState && original.result !== undefined) retry.result = original.result;
+        store.tasks[newTaskId] = retry;
+
+        return saved({
+          response: {
+            taskId,
+            newTaskId,
+            previousStatus: original.status,
+            status: 'pending',
+          },
+          afterSave: () => updateAgents(retry.assignedTo, (agent) => {
+            agent.status = 'busy';
+            agent.currentTask = newTaskId;
+          }),
+        });
       });
-
-      return {
-        taskId,
-        newTaskId,
-        previousStatus: original.status,
-        status: 'pending',
-      };
     },
   },
 ];

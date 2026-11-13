@@ -87,8 +87,10 @@ it('keeps only the newest 20 samples and computes latency percentiles from measu
 it('preserves an explicit health update made while a provider call is in flight', async () => {
   process.env.ANTHROPIC_API_KEY = 'test-key';
   let complete!: (response: Response) => void;
-  vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(resolve => { complete = resolve; }));
+  const fetch = vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(resolve => { complete = resolve; }));
   const pending = executeAgentTask({ agentId: 'observed', prompt: 'slow response' });
+  // The agent is marked busy under the store lock first; edit once the call is in flight.
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
   const store = JSON.parse(readFileSync(storePath(), 'utf-8'));
   store.agents.observed.health = 0.7;
   writeFileSync(storePath(), JSON.stringify(store));

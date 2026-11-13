@@ -10,17 +10,20 @@ const call = (name: string, input: object) => workflowTools.find(t => t.name ===
 const store = () => JSON.parse(readFileSync(join(state.cwd,'.claude-flow/workflows/store.json'),'utf8'));
 const create = () => call('workflow_create',{name:'running',steps:[{type:'task',config:{agentId:'a',prompt:'one'}},{type:'task',config:{agentId:'a',prompt:'two'}}]});
 let finish: () => void;
+// workflow_execute marks the workflow running under the store lock before its first step;
+// "during an awaited step" means that step has been dispatched.
+const inFlight = (calls = 1) => vi.waitFor(() => expect(state.execute).toHaveBeenCalledTimes(calls));
 beforeEach(() => { state.cwd=mkdtempSync(join(tmpdir(),'ruflo-progress-'));state.execute.mockReset();state.execute.mockImplementationOnce(()=>new Promise(resolve=>finish=()=>resolve({success:true,output:'one'}))).mockResolvedValue({success:true,output:'two'}); });
 afterEach(() => rmSync(state.cwd,{recursive:true,force:true}));
 it('honors a pause received during an awaited step and saves its continuation index', async () => {
-  const {workflowId}=await create();const execution=call('workflow_execute',{workflowId});
+  const {workflowId}=await create();const execution=call('workflow_execute',{workflowId});await inFlight();
   await call('workflow_pause',{workflowId});finish();
   expect(await execution).toMatchObject({status:'paused'});
   expect(state.execute).toHaveBeenCalledTimes(1);
   expect(store().workflows[workflowId]).toMatchObject({status:'paused',currentStep:1});
 });
 it.each(['workflow_cancel','workflow_stop'])('preserves %s during an awaited step and never dispatches its successor', async action => {
-  const {workflowId}=await create();const execution=call('workflow_execute',{workflowId});
+  const {workflowId}=await create();const execution=call('workflow_execute',{workflowId});await inFlight();
   await call(action,{workflowId,reason:'operator cancelled'});finish();
   expect(await execution).toMatchObject({status:'failed'});
   expect(state.execute).toHaveBeenCalledTimes(1);
@@ -28,7 +31,7 @@ it.each(['workflow_cancel','workflow_stop'])('preserves %s during an awaited ste
   expect(store().workflows[workflowId].steps[1].status).toBe('skipped');
 });
 it('retains sibling workflows and templates created while a step is pending', async () => {
-  const {workflowId}=await create();const execution=call('workflow_execute',{workflowId});
+  const {workflowId}=await create();const execution=call('workflow_execute',{workflowId});await inFlight();
   const sibling=await call('workflow_create',{name:'sibling'});
   const template=await call('workflow_template',{action:'save',workflowId:sibling.workflowId});
   finish();await execution;
@@ -36,13 +39,13 @@ it('retains sibling workflows and templates created while a step is pending', as
   expect(store().templates[template.templateId]).toBeDefined();
 });
 it('does not recreate a paused workflow deleted while its current step finishes', async () => {
-  const {workflowId}=await create();const execution=call('workflow_execute',{workflowId});
+  const {workflowId}=await create();const execution=call('workflow_execute',{workflowId});await inFlight();
   await call('workflow_pause',{workflowId});await call('workflow_delete',{workflowId});finish();await execution;
   expect(store().workflows[workflowId]).toBeUndefined();
   expect(state.execute).toHaveBeenCalledTimes(1);
 });
 it('pause then resume before completion does not replay or overlap the in-flight step', async () => {
-  const {workflowId}=await create();const execution=call('workflow_execute',{workflowId});
+  const {workflowId}=await create();const execution=call('workflow_execute',{workflowId});await inFlight();
   await call('workflow_pause',{workflowId});const resumed=call('workflow_resume',{workflowId});
   expect(state.execute).toHaveBeenCalledTimes(1);finish();await execution;await resumed;
   expect(state.execute.mock.calls.map(([input])=>input.prompt)).toEqual(['one','two']);
@@ -55,6 +58,7 @@ it('still permits an explicit retry of a previously failed workflow', async () =
   let finishRetry!: () => void;
   state.execute.mockImplementationOnce(() => new Promise(resolve => finishRetry = () => resolve({success:true,output:'retried'})));
   const retry = call('workflow_execute',{workflowId});
+  await inFlight(2);
   expect(store().workflows[workflowId].error).toBeUndefined();
   expect(store().workflows[workflowId].completedAt).toBeUndefined();
   finishRetry();
