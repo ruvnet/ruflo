@@ -6,6 +6,8 @@ const state = vi.hoisted(() => ({ cwd: '', storeEntry: vi.fn(async () => ({succe
 vi.mock('../src/mcp-tools/types.js', () => ({ getProjectCwd: () => state.cwd }));
 vi.mock('../src/memory/memory-initializer.js', () => ({ storeEntry: state.storeEntry }));
 import { sessionTools } from '../src/mcp-tools/session-tools.js';
+import { storeLockPath } from '../src/mcp-tools/locked-json-store.js';
+import { acquireLock } from '../src/services/policy-runtime.js';
 const call = (name: string, input: any) => sessionTools.find(t=>t.name===name)!.handler(input);
 const file = (kind: string) => join(state.cwd, '.claude-flow', kind, 'store.json');
 beforeEach(() => {
@@ -28,6 +30,17 @@ it.each(['Memory','Tasks','Agents'])('restores only selected %s data and preserv
     else expect(data).toEqual({live:kind});
   }
   expect(state.storeEntry).toHaveBeenCalledTimes(selected==='Memory'?1:0);
+});
+it('waits for the task store lock before restoring, like task_* writers',async()=>{
+  const saved:any=await call('session_save',{name:'checkpoint',includeTasks:true});
+  writeFileSync(file('tasks'),JSON.stringify({live:'tasks'}));
+  const release=await acquireLock(storeLockPath(file('tasks')));
+  const restoring=call('session_restore',{sessionId:saved.sessionId,restoreMemory:false,restoreAgents:false});
+  await new Promise(r=>setTimeout(r,50));
+  expect(JSON.parse(readFileSync(file('tasks'),'utf8'))).toEqual({live:'tasks'});
+  release();
+  await restoring;
+  expect(JSON.parse(readFileSync(file('tasks'),'utf8')).tasks.saved.value).toBe('snapshot');
 });
 it('keeps default restore-all behavior',async()=>{
   const saved:any=await call('session_save',{name:'checkpoint',includeMemory:true,includeTasks:true,includeAgents:true});

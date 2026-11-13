@@ -8,9 +8,10 @@
  * place rather than duplicated.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getProjectCwd } from './types.js';
+import { type StoreUpdate, saved, unchanged, updateJsonStore } from './locked-json-store.js';
 import { appendAgentExecution, summarizeAgentExecutions, type AgentExecutionSample } from './agent-health-metrics.js';
 import { configManager } from '../services/config-file-manager.js';
 
@@ -54,19 +55,15 @@ interface AgentStore {
 
 function getAgentDir(): string { return join(getProjectCwd(), STORAGE_DIR, AGENT_DIR); }
 function getAgentPath(): string { return join(getAgentDir(), AGENT_FILE); }
-function ensureAgentDir(): void {
-  const dir = getAgentDir();
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-}
 function loadAgentStore(): AgentStore {
   try {
     if (existsSync(getAgentPath())) return JSON.parse(readFileSync(getAgentPath(), 'utf-8'));
   } catch { /* fall through */ }
   return { agents: {}, version: '3.0.0' };
 }
-function saveAgentStore(store: AgentStore): void {
-  ensureAgentDir();
-  writeFileSync(getAgentPath(), JSON.stringify(store, null, 2), 'utf-8');
+/** Same file and lock as agent-tools.ts's agent writes. */
+function updateAgentStore<R>(mutate: (store: AgentStore) => StoreUpdate<R>): Promise<R> {
+  return updateJsonStore(getAgentPath(), loadAgentStore, mutate, 'agents');
 }
 
 // #1906/#2232 — Current model ids (Claude 4.x family):
@@ -621,10 +618,18 @@ export interface AgentExecuteResult {
 const activeExecutions = new Map<string, number>();
 
 export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentExecuteResult> {
-  const store = loadAgentStore();
-  const agent = store.agents[input.agentId];
-  if (!agent) return { success: false, agentId: input.agentId, error: 'Agent not found' };
-  if (agent.status === 'terminated') return { success: false, agentId: input.agentId, error: 'Agent has been terminated' };
+  // Check the agent and mark it busy in one locked step; the provider call
+  // below runs without the lock.
+  const claimed = await updateAgentStore((store): StoreUpdate<AgentRecord | string> => {
+    const found = store.agents[input.agentId];
+    if (!found) return unchanged('Agent not found');
+    if (found.status === 'terminated') return unchanged('Agent has been terminated');
+    found.status = 'busy';
+    found.taskCount = (found.taskCount || 0) + 1;
+    return saved(found);
+  });
+  if (typeof claimed === 'string') return { success: false, agentId: input.agentId, error: claimed };
+  const agent = claimed;
 
   // ADR-149 iter 13 — first-call dispatch prefers `agent.modelId` (the
   // cost-optimal pick from the neural backend) over `MODEL_MAP[agent.model]`
@@ -668,9 +673,6 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
 
   const initialModelId = agent.modelId;
   const initialModel = agent.model;
-  agent.status = 'busy';
-  agent.taskCount = (agent.taskCount || 0) + 1;
-  saveAgentStore(store);
 
   const executionKey = JSON.stringify([getAgentPath(), input.agentId, agent.createdAt]);
   activeExecutions.set(executionKey, (activeExecutions.get(executionKey) || 0) + 1);
@@ -838,12 +840,11 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
   }
 
   const remaining = (activeExecutions.get(executionKey) || 1) - 1;
-  const persistCompletion = (out?: AgentExecuteResult): void => {
+  const persistCompletion = (out?: AgentExecuteResult): Promise<void> => updateAgentStore((latest) => {
     // Awaited provider/feedback work may have overlapped registration, updates,
     // termination or deletion. Never replace that newer registry snapshot.
-    const latest = loadAgentStore();
     const current = latest.agents[input.agentId];
-    if (!current || current.createdAt !== agent.createdAt) return;
+    if (!current || current.createdAt !== agent.createdAt) return unchanged(undefined);
     if (current.status === 'busy') current.status = remaining > 0 ? 'busy' : 'idle';
     if (agent.modelId !== initialModelId && current.modelId === initialModelId) {
       // A fallback may also change its tier. Carry that change with the model
@@ -866,8 +867,8 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
     if (mayUpdateStoredHealth) {
       current.health = summarizeAgentExecutions(current.executionHistory).health ?? current.health;
     }
-    saveAgentStore(latest);
-  };
+    return saved(undefined);
+  });
 
   if (result.success) {
     const out: AgentExecuteResult = {
@@ -881,11 +882,11 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
       durationMs: result.durationMs ?? Date.now() - startedAt,
       ...(fallbackHistory.length > 0 ? { fallbackHistory } : {}),
     };
-    persistCompletion(out);
+    await persistCompletion(out);
     return out;
   }
 
-  persistCompletion();
+  await persistCompletion();
   // No-provider-configured error → surface the same actionable message
   // the router built, with a #2042-aware remediation pointer.
   const noProvider = (result.error || '').includes('No LLM provider configured');

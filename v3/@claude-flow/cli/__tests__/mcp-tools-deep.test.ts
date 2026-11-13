@@ -17,25 +17,36 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 // Mock setup - must be before imports
 // ============================================================================
 
-// Mock fs to prevent actual file I/O during tests
-vi.mock('node:fs', () => {
+// Mock fs to prevent actual file I/O during tests (same fake for 'node:fs' and 'fs')
+const createFsFake = vi.hoisted(() => () => {
   const memStore = new Map<string, string>();
   const descriptors = new Map<number, string>();
   let nextDescriptor = 3;
+  // The MCP JSON stores write under the policy runtime's lock file
+  // (locked-json-store.ts): exclusive create, owner record, ownership-checked unlink.
+  const constants = { O_RDONLY: 0, O_WRONLY: 1, O_RDWR: 2, O_CREAT: 64, O_EXCL: 128, O_NOFOLLOW: 0, O_NONBLOCK: 0, O_DIRECTORY: 0 };
+  const missing = (p: string) => Object.assign(new Error(`ENOENT: no such file or directory, open '${p}'`), { code: 'ENOENT' });
+  const exclusive = (flags: unknown) => flags === 'wx' || (typeof flags === 'number' && (flags & constants.O_EXCL) !== 0);
+  const fileStat = (p: string) => ({ size: (memStore.get(p) ?? '').length, isFile: () => true, isDirectory: () => false });
   return {
+    constants,
     existsSync: vi.fn((p: string) => memStore.has(p)),
     readFileSync: vi.fn((p: string) => {
-      if (!memStore.has(p)) {
-        throw Object.assign(new Error(`ENOENT: no such file or directory, open '${p}'`), { code: 'ENOENT' });
-      }
+      if (!memStore.has(p)) throw missing(p);
       return memStore.get(p)!;
     }),
-    writeFileSync: vi.fn((p: string, d: string) => memStore.set(p, d)),
+    writeFileSync: vi.fn((target: string | number, d: string) => {
+      const path = typeof target === 'number' ? descriptors.get(target) : target;
+      if (path !== undefined) memStore.set(path, String(d));
+    }),
     renameSync: vi.fn((from: string, to: string) => {
       memStore.set(to, memStore.get(from) || '');
       memStore.delete(from);
     }),
-    openSync: vi.fn((p: string) => {
+    openSync: vi.fn((p: string, flags?: unknown) => {
+      if (exclusive(flags) && memStore.has(p)) {
+        throw Object.assign(new Error(`EEXIST: file already exists, open '${p}'`), { code: 'EEXIST' });
+      }
       const descriptor = nextDescriptor++;
       descriptors.set(descriptor, p);
       if (!memStore.has(p)) memStore.set(p, '');
@@ -46,53 +57,27 @@ vi.mock('node:fs', () => {
       if (path) memStore.set(path, data.toString());
       return data.length;
     }),
+    readSync: vi.fn((descriptor: number, buffer: Buffer, offset: number, length: number) => {
+      const bytes = Buffer.from(memStore.get(descriptors.get(descriptor) ?? '') ?? '');
+      return bytes.copy(buffer, offset, 0, Math.min(length, bytes.length));
+    }),
+    fstatSync: vi.fn((descriptor: number) => fileStat(descriptors.get(descriptor) ?? '')),
+    lstatSync: vi.fn((p: string) => {
+      if (!memStore.has(p)) throw missing(p);
+      return fileStat(p);
+    }),
     fsyncSync: vi.fn(),
     closeSync: vi.fn((descriptor: number) => descriptors.delete(descriptor)),
     chmodSync: vi.fn(),
     mkdirSync: vi.fn(),
     readdirSync: vi.fn(() => []),
-    unlinkSync: vi.fn(),
+    unlinkSync: vi.fn((p: string) => memStore.delete(p)),
     statSync: vi.fn(() => ({ size: 100, isFile: () => true, isDirectory: () => false })),
   };
 });
 
-vi.mock('fs', () => {
-  const memStore = new Map<string, string>();
-  const descriptors = new Map<number, string>();
-  let nextDescriptor = 3;
-  return {
-    existsSync: vi.fn((p: string) => memStore.has(p)),
-    readFileSync: vi.fn((p: string) => {
-      if (!memStore.has(p)) {
-        throw Object.assign(new Error(`ENOENT: no such file or directory, open '${p}'`), { code: 'ENOENT' });
-      }
-      return memStore.get(p)!;
-    }),
-    writeFileSync: vi.fn((p: string, d: string) => memStore.set(p, d)),
-    renameSync: vi.fn((from: string, to: string) => {
-      memStore.set(to, memStore.get(from) || '');
-      memStore.delete(from);
-    }),
-    openSync: vi.fn((p: string) => {
-      const descriptor = nextDescriptor++;
-      descriptors.set(descriptor, p);
-      if (!memStore.has(p)) memStore.set(p, '');
-      return descriptor;
-    }),
-    writeSync: vi.fn((descriptor: number, data: Buffer) => {
-      const path = descriptors.get(descriptor);
-      if (path) memStore.set(path, data.toString());
-      return data.length;
-    }),
-    fsyncSync: vi.fn(),
-    closeSync: vi.fn((descriptor: number) => descriptors.delete(descriptor)),
-    chmodSync: vi.fn(),
-    mkdirSync: vi.fn(),
-    readdirSync: vi.fn(() => []),
-    unlinkSync: vi.fn(),
-    statSync: vi.fn(() => ({ size: 100, isFile: () => true, isDirectory: () => false })),
-  };
-});
+vi.mock('node:fs', () => createFsFake());
+vi.mock('fs', () => createFsFake());
 
 // Mock child_process for browser/security tools
 vi.mock('child_process', () => ({

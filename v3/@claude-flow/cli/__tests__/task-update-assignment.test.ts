@@ -5,11 +5,16 @@ import { join } from 'node:path';
 const state = vi.hoisted(() => ({ cwd: '', failSave: false, failAgentSave: false }));
 vi.mock('node:fs', async importOriginal => {
   const fs = await importOriginal<typeof import('node:fs')>();
-  return { ...fs, writeFileSync: (...args: Parameters<typeof fs.writeFileSync>) => {
-    if (state.failSave && String(args[0]).endsWith('/tasks/store.json')) throw new Error('save failed');
-    if (state.failAgentSave && String(args[0]).endsWith('/agents/store.json')) throw new Error('agent save failed');
-    return fs.writeFileSync(...args);
-  } };
+  const fail = (target: unknown) => {
+    if (state.failSave && String(target).endsWith('/tasks/store.json')) throw new Error('save failed');
+    if (state.failAgentSave && String(target).endsWith('/agents/store.json')) throw new Error('agent save failed');
+  };
+  // Stores are written to a temp file and renamed into place, so a save fails at the rename.
+  return {
+    ...fs,
+    writeFileSync: (...args: Parameters<typeof fs.writeFileSync>) => { fail(args[0]); return fs.writeFileSync(...args); },
+    renameSync: (...args: Parameters<typeof fs.renameSync>) => { fail(args[1]); return fs.renameSync(...args); },
+  };
 });
 vi.mock('../src/mcp-tools/types.js', () => ({ getProjectCwd: () => state.cwd }));
 import { taskTools } from '../src/mcp-tools/task-tools.js';
@@ -60,6 +65,15 @@ it('preserves both worker stores when saving the reassignment fails', async () =
   const before = stores.map(file => readFileSync(join(state.cwd, '.claude-flow', file), 'utf8'));
   state.failSave = true;
   await expect(call('task_update', { taskId, assignTo: ['next'] })).rejects.toThrow('save failed');
+  expect(stores.map(file => readFileSync(join(state.cwd, '.claude-flow', file), 'utf8'))).toEqual(before);
+});
+it('preserves both worker stores when saving a task_assign fails', async () => {
+  const { taskId } = await call('task_create', { type: 'test', description: 'work' });
+  await call('task_assign', { taskId, agentIds: ['old'] });
+  const before = stores.map(file => readFileSync(join(state.cwd, '.claude-flow', file), 'utf8'));
+  state.failSave = true;
+  // Workers are updated only after the task is saved, as in task_update.
+  await expect(call('task_assign', { taskId, agentIds: ['next'] })).rejects.toThrow('save failed');
   expect(stores.map(file => readFileSync(join(state.cwd, '.claude-flow', file), 'utf8'))).toEqual(before);
 });
 it('does not free a former assignee who now holds another task', async () => {

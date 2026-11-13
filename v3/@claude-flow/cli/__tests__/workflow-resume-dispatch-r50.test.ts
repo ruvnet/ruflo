@@ -15,6 +15,8 @@ async function pausedSnapshot() {
   workflow.status='paused';workflow.currentStep=1;workflow.steps[0].status='completed';workflow.variables['step-1.output']='saved result';
   writeFileSync(path(),JSON.stringify(data));return workflowId;
 }
+// workflow_execute marks the workflow running under the store lock before its first step.
+const inFlight = () => vi.waitFor(() => expect(state.execute).toHaveBeenCalledTimes(1));
 beforeEach(() => { state.cwd=mkdtempSync(join(tmpdir(),'ruflo-resume-'));state.execute.mockReset().mockResolvedValue({success:true,output:'finished'}); });
 afterEach(() => rmSync(state.cwd,{recursive:true,force:true}));
 it('dispatches only remaining steps from a persisted pause and preserves output bindings', async () => {
@@ -38,7 +40,7 @@ it('admits one continuation when resume is requested twice', async () => {
 });
 it('joins an in-flight execution when pause is immediately followed by resume', async () => {
   let finish!:()=>void;state.execute.mockImplementationOnce(()=>new Promise(resolve=>finish=()=>resolve({success:true,output:'first output'})));
-  const {workflowId}=await create();const executing=call('workflow_execute',{workflowId});
+  const {workflowId}=await create();const executing=call('workflow_execute',{workflowId});await inFlight();
   await call('workflow_pause',{workflowId});const resuming=call('workflow_resume',{workflowId});
   expect(state.execute).toHaveBeenCalledTimes(1);finish();await executing;
   expect(await resuming).toMatchObject({resumed:true,status:'completed'});
@@ -46,7 +48,7 @@ it('joins an in-flight execution when pause is immediately followed by resume', 
 });
 it('rejects a second executor even while the active execution is paused', async () => {
   let finish!:()=>void;state.execute.mockImplementationOnce(()=>new Promise(resolve=>finish=()=>resolve({success:true,output:'first output'})));
-  const {workflowId}=await create();const executing=call('workflow_execute',{workflowId});await call('workflow_pause',{workflowId});
+  const {workflowId}=await create();const executing=call('workflow_execute',{workflowId});await inFlight();await call('workflow_pause',{workflowId});
   const duplicate=await call('workflow_execute',{workflowId});
   expect(duplicate.error).toMatch(/already.*execut/i);
   const resuming=call('workflow_resume',{workflowId});finish();await executing;await resuming;
