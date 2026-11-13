@@ -219,8 +219,8 @@ describe('task-embedder uses the resolved config', () => {
 
 describe('AgentDB bridge registry uses the resolved config', () => {
   class RecordingRegistry {
-    static options: Array<{ dbPath: string; embeddingModel: string; dimension: number }> = [];
-    async initialize(options: { dbPath: string; embeddingModel: string; dimension: number }) {
+    static options: Array<{ dbPath: string; embeddingModel: string; dimension: number; embeddingGenerator?: unknown }> = [];
+    async initialize(options: { dbPath: string; embeddingModel: string; dimension: number; embeddingGenerator?: unknown }) {
       RecordingRegistry.options.push(options);
     }
     get() { return null; }
@@ -243,12 +243,15 @@ describe('AgentDB bridge registry uses the resolved config', () => {
   it('opens AgentDB with MiniLM/384 when nothing is configured', async () => {
     const [opts] = await openBridge();
     expect(opts).toMatchObject({ embeddingModel: 'Xenova/all-MiniLM-L6-v2', dimension: 384 });
+    expect(opts.embeddingGenerator).toBeUndefined(); // #4984: default model keeps AgentDB's own embedder
   });
 
   it('opens AgentDB with the configured 768-dim model', async () => {
     writeConfig(JSON.stringify(MPNET_CONFIG));
     const [opts] = await openBridge();
     expect(opts).toMatchObject({ embeddingModel: 'Xenova/all-mpnet-base-v2', dimension: 768 });
+    // #4984: AgentDB hardcodes MiniLM, so a configured model must arrive as an embedder.
+    expect(typeof opts.embeddingGenerator).toBe('function');
   });
 
   it('keeps 384 when only memory.db holds 384-dim vectors, so the bridge cannot mix stores', async () => {
@@ -257,6 +260,7 @@ describe('AgentDB bridge registry uses the resolved config', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const [opts] = await openBridge();
     expect(opts).toMatchObject({ embeddingModel: 'Xenova/all-MiniLM-L6-v2', dimension: 384 });
+    expect(opts.embeddingGenerator).toBeUndefined(); // store pinned to 384/MiniLM: no mixing
     expect(warn.mock.calls.filter((c) => /Keeping 384 dimensions/.test(String(c[0])))).toHaveLength(1);
   });
 });

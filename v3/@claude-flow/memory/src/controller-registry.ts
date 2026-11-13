@@ -667,10 +667,20 @@ export class ControllerRegistry extends EventEmitter {
         // exists. A lock left by a dead writer is cleared (only when provably
         // stale) and init retried once with a fresh instance.
         await withAgentdbLockRecovery(dbPath, async () => {
-          this.agentdb = new AgentDBClass({ dbPath });
+          // #4984: AgentDB sizes its vector backend (and its default embedder)
+          // from `vectorDimension`, default 384. Forwarding only dbPath left a
+          // configured 768-dim store with a 384-dim backend.
+          const vectorDimension = Number.isInteger(config.dimension) && (config.dimension as number) > 0
+            ? config.dimension
+            : undefined;
+          this.agentdb = new AgentDBClass(vectorDimension ? { dbPath, vectorDimension } : { dbPath });
           // Keep agentdb's nested better-sqlite3 11.x out of the process (Node 24 abort).
           useHostSqliteDriver(this.agentdb);
           await this.agentdb.initialize();
+          // #4984: AgentDB hardcodes its embedder model. A host-supplied
+          // generator is authoritative, installed here (awaited) so every
+          // consumer of `agentdb.embedder` shares one model and dimension.
+          if (config.embeddingGenerator) this.installEmbeddingGenerator(this.agentdb, config);
         });
       } finally {
         console.log = origLog;
@@ -683,6 +693,38 @@ export class ControllerRegistry extends EventEmitter {
       this.emit('agentdb:unavailable', { reason: this.agentdbInitError });
       this.agentdb = null;
     }
+  }
+
+  /**
+   * #4984: replace AgentDB's embedder methods, in place, with the host's
+   * generator. In place because AgentDB already handed the same embedder
+   * object to its reflexion/skills/causal controllers. A vector whose length
+   * differs from `config.dimension` is rejected rather than stored, since the
+   * vector backend was created at that dimension.
+   */
+  private installEmbeddingGenerator(agentdb: any, config: RuntimeConfig): void {
+    const emb = agentdb?.embedder;
+    const gen = config.embeddingGenerator;
+    if (!emb || !gen || emb.__registryGenerator) return;
+    const expected = config.dimension;
+    const embed = async (text: string): Promise<Float32Array> => {
+      const out = await gen(text);
+      const vec = out instanceof Float32Array ? out : new Float32Array(out as ArrayLike<number>);
+      if (expected && vec.length !== expected) {
+        throw new Error(`embeddingGenerator returned ${vec.length} dimensions, expected ${expected}`);
+      }
+      return vec;
+    };
+    const batch = async (texts: string[]): Promise<Float32Array[]> => Promise.all(texts.map((t) => embed(t)));
+    emb.embed = embed;
+    emb.embedBatch = batch;
+    // agentdb 3.x ReasoningBank calls the role methods, which never touch embed().
+    if (typeof emb.embedQuery === 'function') emb.embedQuery = embed;
+    if (typeof emb.embedPassage === 'function') emb.embedPassage = embed;
+    if (typeof emb.embedQueryBatch === 'function') emb.embedQueryBatch = batch;
+    if (typeof emb.embedPassageBatch === 'function') emb.embedPassageBatch = batch;
+    try { emb.clearCache?.(); } catch { /* best-effort */ }
+    emb.__registryGenerator = true;
   }
 
   /**
