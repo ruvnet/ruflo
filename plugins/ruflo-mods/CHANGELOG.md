@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-mods`.
 
+## 0.17.2 — 2026-11-13
+- fix: learning-loop lessons are shown only from a `learned-lessons.json` the CLI on this machine wrote (#4747). The ingest stamps the file with an id kept in `~/.claude-flow/learning-loop-origin`, and the mod and the classic `learning-loop.cjs` helper show nothing from a file without it, so one committed to a cloned repository is never presented as the project's own test and build history. A file written before this version shows nothing until the next ingest rewrites it.
+
 ## 0.17.0 — 2026-11-11
 - feat: `routeJudge` option (off by default, ADR-530). Each prompt is routed by one no-tools haiku completion that must answer with exactly one of the 11 ADR-391 labels; an off-label reply, a refusal, a timeout (4 s) or an error keeps the keyword route, and slash commands and `<…>` envelopes never reach the model. The route carries `reason: "model-judge"` (the vendored `$.ruflo` route contract is unchanged) and the context box says so. On the ADR-391 dev split it agreed with the labels on 70–71 of 84 prompts, against 27 for the keyword table.
 
