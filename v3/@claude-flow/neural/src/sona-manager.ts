@@ -431,8 +431,15 @@ export class SONAManager {
   async triggerLearning(reason: string = 'manual'): Promise<void> {
     const startTime = performance.now();
 
+    // Only feed trajectories that haven't already contributed to a prior
+    // learning cycle. Without this filter, every trajectory that survives
+    // pruneTrajectories()'s quality-based eviction (i.e. the highest-quality
+    // ones, exactly the ones most worth keeping) gets re-processed on every
+    // subsequent triggerLearning() call for as long as it stays resident,
+    // inflating gradient accumulation / EWC Fisher importance purely from
+    // replaying old evidence rather than reflecting genuinely new data.
     const completedTrajectories = Array.from(this.trajectories.values())
-      .filter(t => t.isComplete && t.qualityScore >= this.config.qualityThreshold);
+      .filter(t => t.isComplete && t.qualityScore >= this.config.qualityThreshold && !t.learnedFrom);
 
     if (completedTrajectories.length === 0) return;
 
@@ -448,6 +455,10 @@ export class SONAManager {
       this.config,
       this.ewcState!
     );
+
+    for (const trajectory of completedTrajectories) {
+      trajectory.learnedFrom = true;
+    }
 
     this.updateEWCConsolidation();
 
