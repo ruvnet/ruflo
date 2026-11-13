@@ -1,7 +1,7 @@
 # Test files the root vitest run (scripts/ci-test-ratchet.mjs) does not run, because vitest cannot run them. They are NOT failures hidden
 # from the baseline: each has its own runner, and that runner is a CI gate.
 #   - plugins/*/tests/*.test.ts import `claude-code/testing`, which only exists inside Claude Code: `claude plugin test <dir>` runs them
-#     (every plugin's scripts/smoke.sh, and .github/workflows/all-plugins-smoke.yml).
+#     (scripts/run-plugin-kit-tests.mjs; the mods-kit-tests job in .github/workflows/mod-guidance.yml). Smokes skip them without `claude`.
 #   - the .mjs files use node:test: `node --test` runs them (all-plugins-smoke.yml and the plugin smokes).
 #   - v3/@claude-flow/cli/__tests__/real-binary/*.test.ts need the real `claude` binary: `npm run test:real-binary` runs them
 #     (ADR-504; the mods-real-binary job in .github/workflows/mod-guidance.yml).
@@ -90,6 +90,7 @@ scripts/__tests__/guard-label.test.mjs
 scripts/__tests__/mod-capability-matrix.test.mjs
 tests/all-plugins-smoke-workflow.test.mjs
 tests/check-guard-tool-names.test.mjs
+tests/run-plugin-kit-tests.test.mjs
 tests/check-status-forwarding.test.mjs
 tests/external-plugins.test.mjs
 plugins/ruflo-console/tests/result-display.test.ts
