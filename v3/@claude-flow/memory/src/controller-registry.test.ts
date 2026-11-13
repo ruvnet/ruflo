@@ -237,13 +237,15 @@ describe('ControllerRegistry', () => {
 
     it('should include causalRecall in a level so initialize() constructs it (Dream Cycle 2026-11-13)', () => {
       // causalRecall has a real createController() case (dynamic agentdb import +
-      // adapted embedder, same shape as causalGraph/learningSystem) but was absent
-      // from every INIT_LEVELS entry, so initialize() never calls initController()
-      // for it and get('causalRecall') always returned null. Deferred 2026-10-28
-      // ("needs a human call on init-level ordering"); acted on tonight — level 4
-      // alongside its construction-sibling causalGraph (agentdb/vectorBackend are
-      // both already populated before the INIT_LEVELS loop runs, so level choice
-      // doesn't affect correctness, only grouping).
+      // adapted embedder, same construction pattern as learningSystem/
+      // explainableRecall — causalGraph itself is built differently, via agentdb's
+      // own getController() switch) but was absent from every INIT_LEVELS entry, so
+      // initialize() never calls initController() for it and get('causalRecall')
+      // always returned null. Deferred 2026-10-28 ("needs a human call on
+      // init-level ordering"); acted on tonight — level 4, grouped with causalGraph
+      // for topical reasons (agentdb/vectorBackend are both already populated
+      // before the INIT_LEVELS loop runs, so level choice doesn't affect
+      // correctness, only grouping).
       const allNames = INIT_LEVELS.flatMap((l) => l.controllers);
       expect(allNames).toContain('causalRecall');
     });
