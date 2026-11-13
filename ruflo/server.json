@@ -9,12 +9,12 @@
     "subfolder": "ruflo"
   },
   "websiteUrl": "https://github.com/ruvnet/ruflo",
-  "version": "3.77.0",
+  "version": "3.77.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "ruflo",
-      "version": "3.77.0",
+      "version": "3.77.1",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
