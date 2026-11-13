@@ -5,6 +5,12 @@
  * database alone, so their first predict/discover/recall call threw a
  * TypeError on `this.embedder.embed…`, or the controller came back null.
  *
+ * causalRecall added to this list 2026-11-13 (Dream Cycle): it takes the
+ * same `(db, embedder, vectorBackend)` shape and already used the ADR-514
+ * `agentdbEmbedder()` helper in its createController() case, but was never
+ * reachable at all until tonight's INIT_LEVELS fix — this is the first test
+ * that actually constructs it via the real initialize() path.
+ *
  * Runs against the real `agentdb` package in a temp directory.
  */
 import { describe, it, expect, afterAll } from 'vitest';
@@ -16,7 +22,7 @@ import { ControllerRegistry } from './controller-registry.js';
 const dir = mkdtempSync(join(tmpdir(), 'ruflo-adr514-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
-const NAMES = ['learningSystem', 'explainableRecall', 'nightlyLearner', 'graphTransformer'] as const;
+const NAMES = ['learningSystem', 'explainableRecall', 'nightlyLearner', 'graphTransformer', 'causalRecall'] as const;
 
 describe('ControllerRegistry hands AgentDB controllers an embedder (ADR-514)', () => {
   it('builds each embedder-taking controller with a usable embedder', async () => {
