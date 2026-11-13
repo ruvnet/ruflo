@@ -1,5 +1,38 @@
 # @claude-flow/shared
 
+<!-- adr-356:quickstart:start -->
+![Animated diagram: raw config is validated by Zod schemas into typed config that flows through the EventBus to other packages](https://raw.githubusercontent.com/ruvnet/ruflo/main/v3/@claude-flow/shared/assets/shared-flow.svg)
+
+**@claude-flow/shared** — Shared types, Zod config schemas and validators, the event bus and resilience helpers that the other `@claude-flow` packages build on.
+
+**Supported environments:** Node.js 20+ · ESM · Linux, macOS, Windows (pure JavaScript)
+
+## Quickstart
+
+```bash
+npm install @claude-flow/shared
+```
+
+```js
+import { validateAgentConfig } from '@claude-flow/shared';
+
+const ok = validateAgentConfig({ id: 'coder-1', name: 'Coder', type: 'coder' });
+console.log(ok.success, ok.data.maxConcurrentTasks, ok.data.priority);
+
+const bad = validateAgentConfig({ id: 'coder-1', name: 'Coder', type: 'coder', priority: 500 });
+console.log(bad.success, bad.errors.map((e) => `${e.path}: ${e.code}`).join(', '));
+```
+
+Expected output:
+
+```text
+true 5 50
+false priority: too_big
+```
+
+Next: [`@claude-flow/hooks`](https://www.npmjs.com/package/@claude-flow/hooks) builds its lifecycle hooks on these types.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/shared.svg)](https://www.npmjs.com/package/@claude-flow/shared)
 [![npm downloads](https://img.shields.io/npm/dm/@claude-flow/shared.svg)](https://www.npmjs.com/package/@claude-flow/shared)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -321,3 +354,9 @@ This package is a dependency of all other @claude-flow modules:
 ## License
 
 MIT
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/@claude-flow/shared)
+<!-- adr-356:footer:end -->

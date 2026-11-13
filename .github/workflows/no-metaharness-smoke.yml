@@ -65,10 +65,14 @@ jobs:
               }
             } catch {}
             const offenders = [];
+            // ADR-526: @metaharness/darwin is a regular dependency of the CLI
+            // (and only the CLI). Every other metaharness package stays optional.
+            const allowed = { 'v3/@claude-flow/cli/package.json': ['@metaharness/darwin'] };
             for (const c of candidates) {
               let json;
               try { json = JSON.parse(readFileSync(c, 'utf-8')); } catch { continue; }
               for (const dep of Object.keys(json.dependencies || {})) {
+                if ((allowed[c] || []).includes(dep)) continue;
                 if (/^metaharness$|^@metaharness\//.test(dep)) {
                   offenders.push({ file: c, dep });
                 }

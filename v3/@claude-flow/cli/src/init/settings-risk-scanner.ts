@@ -58,11 +58,27 @@ const STANDALONE_RISK_PATTERNS: RegExp[] = [
   /base64\s+(-d|--decode)\b/i,
 ];
 
+// General-purpose scripting interpreters with the same GTFOBins-documented
+// shell-breakout capability as `python`/`ruby`/`perl` (already in
+// SHELL_EXEC_WORDS) — e.g. `node -e "require('child_process').execSync(...)"`
+// — but deliberately NOT merged into SHELL_EXEC_WORDS: that array also
+// drives scanCommandStringForRisk's downloader+shell-exec co-occurrence
+// check on fixed hook *command strings*, where ruflo's own hooks
+// legitimately invoke `node <script>` (see the dedicated "does not flag"
+// cases in settings-risk-scanner.test.ts) and must stay exempt there. This
+// array only ever feeds RISKY_PREAPPROVE_WORDS below, so it tightens
+// scanAllowRuleForRisk's permissions.allow heuristic without touching
+// scanCommandStringForRisk's already-correct behavior. `osascript`/`pwsh`
+// are deliberately excluded: macOS/Windows-only and out of scope for this
+// Linux-focused heuristic; `powershell` already has a dedicated, more
+// precise detector (hasEncodedPowershell) rather than a blunt word match.
+const INTERPRETER_WORDS = ['node', 'deno', 'bun', 'php'];
+
 // Words a Bash allow-rule should never blanket-preapprove without a
 // specific argument scope, even though they aren't "dangerous" on their
 // own the way `rm`/`chmod` are — pre-approving them removes the human
 // review step for exactly the commands download-and-execute attacks use.
-const RISKY_PREAPPROVE_WORDS = [...DANGEROUS_COMMAND_WORDS, ...SHELL_EXEC_WORDS, ...DOWNLOADER_WORDS];
+const RISKY_PREAPPROVE_WORDS = [...DANGEROUS_COMMAND_WORDS, ...SHELL_EXEC_WORDS, ...DOWNLOADER_WORDS, ...INTERPRETER_WORDS];
 
 // Encoded PowerShell (`powershell[.exe] ... -e|-enc|-encodedcommand <payload>`),
 // matched on whitespace-separated tokens in ONE linear pass. The earlier regex

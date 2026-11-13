@@ -1,5 +1,37 @@
 # @claude-flow/codex
 
+<!-- adr-356:quickstart:start -->
+![Animated diagram: CLAUDE.md and settings are migrated into AGENTS.md, config.toml and skills for the Codex CLI](https://raw.githubusercontent.com/ruvnet/ruflo/main/v3/@claude-flow/codex/assets/codex-flow.svg)
+
+**@claude-flow/codex** — Generates and validates the files the OpenAI Codex CLI reads (AGENTS.md, config.toml, skills) and migrates a Claude Code project to them.
+
+**Supported environments:** Node.js 18+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/codex
+```
+
+```js
+import { generateAgentsMd, validateAgentsMd } from '@claude-flow/codex';
+
+const md = await generateAgentsMd({ projectName: 'demo', template: 'default' });
+const result = await validateAgentsMd(md);
+console.log(md.split('\n')[0]);
+console.log('valid:', result.valid);
+```
+
+Expected output:
+
+```text
+# demo
+valid: true
+```
+
+Used by [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli) for `init --codex`.
+<!-- adr-356:quickstart:end -->
+
 <p align="center">
   <strong>OpenAI Codex CLI Adapter for Claude Flow V3</strong><br/>
   <em>Self-learning multi-agent orchestration following the <a href="https://agentics.org">Agentics Foundation</a> standard</em>
@@ -1137,3 +1169,9 @@ MIT
 
 - Documentation: https://github.com/ruvnet/ruflo
 - Issues: https://github.com/ruvnet/ruflo/issues
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/@claude-flow/codex)
+<!-- adr-356:footer:end -->

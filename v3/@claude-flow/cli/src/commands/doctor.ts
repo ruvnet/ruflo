@@ -2286,14 +2286,16 @@ async function checkMetaharnessDeclaredPackages(): Promise<HealthCheck> {
     }
     if (!root) return { name: NAME, status: 'warn', message: 'could not locate the @claude-flow/cli package root' };
 
-    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8')) as { optionalDependencies?: Record<string, string> };
-    const declared = Object.keys(pkg.optionalDependencies ?? {}).filter((n) => n === 'metaharness' || n.startsWith('@metaharness/'));
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8')) as { dependencies?: Record<string, string>; optionalDependencies?: Record<string, string> };
+    // ADR-526: @metaharness/darwin is a regular dependency; the rest stay optional.
+    const declared = Object.keys({ ...(pkg.dependencies ?? {}), ...(pkg.optionalDependencies ?? {}) })
+      .filter((n) => n === 'metaharness' || n.startsWith('@metaharness/'));
     if (declared.length === 0) {
       return {
         name: NAME,
         status: 'fail',
-        message: 'no @metaharness/* packages declared in optionalDependencies — the dependency contract regressed (peer-only declarations are never installed)',
-        fix: 'Restore @metaharness/darwin, @metaharness/flywheel, @metaharness/radio, @metaharness/turn-credit to optionalDependencies in @claude-flow/cli',
+        message: 'no @metaharness/* packages declared in dependencies or optionalDependencies — the dependency contract regressed (peer-only declarations are never installed)',
+        fix: 'Restore @metaharness/darwin to dependencies and @metaharness/flywheel, @metaharness/radio, @metaharness/turn-credit to optionalDependencies in @claude-flow/cli',
       };
     }
 

@@ -15,32 +15,28 @@
 import { z } from 'zod';
 
 /**
- * Custom error map for security-focused messages
+ * Custom error map for security-focused messages. Messages passed to a check
+ * (e.g. `.min(1, '...')`) take precedence; returning undefined falls back to
+ * zod's default message.
  */
-const securityErrorMap: z.ZodErrorMap = (issue, ctx) => {
+const securityErrorMap: z.core.$ZodErrorMap = (issue) => {
   switch (issue.code) {
-    case z.ZodIssueCode.too_big:
-      return { message: `Input exceeds maximum allowed size` };
-    case z.ZodIssueCode.too_small:
-      return { message: `Input below minimum required size` };
-    case z.ZodIssueCode.invalid_string:
-      if (issue.validation === 'email') {
-        return { message: 'Invalid email format' };
-      }
-      if (issue.validation === 'url') {
-        return { message: 'Invalid URL format' };
-      }
-      if (issue.validation === 'uuid') {
-        return { message: 'Invalid UUID format' };
-      }
-      return { message: 'Invalid string format' };
+    case 'too_big':
+      return 'Input exceeds maximum allowed size';
+    case 'too_small':
+      return 'Input below minimum required size';
+    case 'invalid_format':
+      if (issue.format === 'email') return 'Invalid email format';
+      if (issue.format === 'url') return 'Invalid URL format';
+      if (issue.format === 'uuid') return 'Invalid UUID format';
+      return 'Invalid string format';
     default:
-      return { message: ctx.defaultError };
+      return undefined;
   }
 };
 
-// Apply custom error map globally for this module
-z.setErrorMap(securityErrorMap);
+// Apply custom error map globally (zod 4: z.config replaces z.setErrorMap)
+z.config({ customError: securityErrorMap });
 
 /**
  * Common validation patterns as reusable regex
@@ -160,14 +156,12 @@ export const PortSchema = z.number()
 /**
  * IP address schema (v4)
  */
-export const IPv4Schema = z.string()
-  .ip({ version: 'v4', message: 'Invalid IPv4 address' });
+export const IPv4Schema = z.ipv4({ message: 'Invalid IPv4 address' });
 
 /**
  * IP address schema (v4 or v6)
  */
-export const IPSchema = z.string()
-  .ip({ message: 'Invalid IP address' });
+export const IPSchema = z.union([z.ipv4(), z.ipv6()], { message: 'Invalid IP address' });
 
 // ============================================================================
 // Authentication Schemas
@@ -264,7 +258,7 @@ export const AgentTypeSchema = z.enum([
 export const SpawnAgentSchema = z.object({
   type: AgentTypeSchema,
   id: IdentifierSchema.optional(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
   timeout: z.number().positive().optional(),
 });
 
@@ -276,7 +270,7 @@ export const TaskInputSchema = z.object({
   content: SafeStringSchema.max(10000, 'Task content too long'),
   agentType: AgentTypeSchema,
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ============================================================================
@@ -392,14 +386,14 @@ export class InputValidator {
   /**
    * Validates input against a schema
    */
-  static validate<T>(schema: z.ZodSchema<T>, input: unknown): T {
+  static validate<T>(schema: z.ZodType<T>, input: unknown): T {
     return schema.parse(input);
   }
 
   /**
    * Safely validates input, returning result
    */
-  static safeParse<T>(schema: z.ZodSchema<T>, input: unknown): z.SafeParseReturnType<unknown, T> {
+  static safeParse<T>(schema: z.ZodType<T>, input: unknown): z.ZodSafeParseResult<T> {
     return schema.safeParse(input);
   }
 

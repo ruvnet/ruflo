@@ -18,7 +18,7 @@
  * only actually exercises `writeCriticalHelpers`' verify → hash → copy logic
  * when it does.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -154,7 +154,7 @@ describe('autoRefreshHelpersIfStale', () => {
     expect(readFileSync(join(helpersDir, 'hook-handler.cjs'), 'utf-8')).toBe(genuine);
   });
 
-  it('#3565: .LOCKED exempts a stamp-matching project from the integrity re-check (a hand-edit is not tampering)', async () => {
+  it('reports integrity differences under .LOCKED without overwriting a developer edit', async () => {
     const { cwd, helpersDir } = makeProject();
     const handEdited = 'HAND-EDITED-BY-A-DEVELOPER';
     writeFileSync(join(helpersDir, 'hook-handler.cjs'), handEdited);
@@ -165,7 +165,117 @@ describe('autoRefreshHelpersIfStale', () => {
     const r = await autoRefreshHelpersIfStale(cwd, { sourceDirOverride: sourceDir, pubkeyPemOverride: pubkeyPem });
     expect(r.refreshed).toBe(false);
     expect(r.blocked).toMatch(/\.LOCKED marker present/);
+    expect(r.blocked).toContain('hook-handler.cjs');
+    expect(r.tampered).toEqual(['hook-handler.cjs']);
+    expect(r.healed).toBeUndefined();
+    expect(existsSync(join(helpersDir, HELPERS_REFRESH_LOCK_FILE))).toBe(false);
     expect(readFileSync(join(helpersDir, 'hook-handler.cjs'), 'utf-8')).toBe(handEdited);
+  });
+
+  it.each([false, true])('rechecks an ahead stamp without downgrading (content differs: %s)', async (differs) => {
+    const { cwd, helpersDir } = makeProject();
+    const genuine = 'SIGNED-CURRENT-HANDLER';
+    const installed = differs ? 'DIFFERENT-INSTALLED-HANDLER' : genuine;
+    writeFileSync(join(helpersDir, 'hook-handler.cjs'), installed);
+    writeFileSync(join(helpersDir, HELPERS_STAMP_FILE), '99.0.0');
+    const { sourceDir, pubkeyPem } = makeSignedSource(version, genuine);
+
+    const r = await autoRefreshHelpersIfStale(cwd, { sourceDirOverride: sourceDir, pubkeyPemOverride: pubkeyPem });
+    expect(r.refreshed).toBe(false);
+    expect(r.blocked).toMatch(/newer|ahead/);
+    expect(r.tampered ?? []).toEqual(differs ? ['hook-handler.cjs'] : []);
+    expect(readFileSync(join(helpersDir, 'hook-handler.cjs'), 'utf-8')).toBe(installed);
+    expect(readFileSync(join(helpersDir, HELPERS_STAMP_FILE), 'utf-8')).toBe('99.0.0');
+    expect(existsSync(join(helpersDir, HELPERS_REFRESH_LOCK_FILE))).toBe(false);
+  });
+
+  it('reports an invalid signature under .LOCKED without writing', async () => {
+    const { cwd, helpersDir } = makeProject();
+    writeFileSync(join(helpersDir, 'hook-handler.cjs'), 'UNCHANGED');
+    writeFileSync(join(helpersDir, '.LOCKED'), '');
+    const { sourceDir } = makeSignedSource(version);
+    const { publicKey } = generateKeyPairSync('ed25519');
+
+    const r = await autoRefreshHelpersIfStale(cwd, {
+      sourceDirOverride: sourceDir,
+      pubkeyPemOverride: publicKey.export({ type: 'spki', format: 'pem' }).toString(),
+    });
+    expect(r.refreshed).toBe(false);
+    expect(r.blocked).toMatch(/signature invalid/);
+    expect(r.tampered).toBeUndefined();
+    expect(readFileSync(join(helpersDir, 'hook-handler.cjs'), 'utf-8')).toBe('UNCHANGED');
+    expect(existsSync(join(helpersDir, HELPERS_REFRESH_LOCK_FILE))).toBe(false);
+  });
+
+  it('rechecks an env-locked install without creating files or changing helpers', async () => {
+    const { cwd, helpersDir } = makeProject();
+    writeFileSync(join(helpersDir, 'hook-handler.cjs'), 'LOCAL-EDIT');
+    writeFileSync(join(helpersDir, HELPERS_STAMP_FILE), version);
+    const { sourceDir, pubkeyPem } = makeSignedSource(version);
+    const before = readdirSync(helpersDir).sort();
+    vi.stubEnv('RUFLO_HELPERS_LOCKED', 'true');
+    try {
+      const r = await autoRefreshHelpersIfStale(cwd, { sourceDirOverride: sourceDir, pubkeyPemOverride: pubkeyPem });
+      expect(r.refreshed).toBe(false);
+      expect(r.blocked).toContain('RUFLO_HELPERS_LOCKED');
+      expect(r.tampered).toEqual(['hook-handler.cjs']);
+      expect(readFileSync(join(helpersDir, 'hook-handler.cjs'), 'utf-8')).toBe('LOCAL-EDIT');
+      expect(readdirSync(helpersDir).sort()).toEqual(before);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('rechecks a .LOCKED marker created while waiting for another refresh', async () => {
+    const { cwd, helpersDir } = makeProject();
+    writeFileSync(join(helpersDir, 'hook-handler.cjs'), 'LOCAL-EDIT');
+    writeFileSync(join(helpersDir, HELPERS_STAMP_FILE), '0.0.0');
+    const lock = join(helpersDir, HELPERS_REFRESH_LOCK_FILE);
+    writeFileSync(lock, JSON.stringify({ pid: process.pid, token: 'other-refresh' }));
+    const { sourceDir, pubkeyPem } = makeSignedSource(version);
+    const refresh = autoRefreshHelpersIfStale(cwd, {
+      sourceDirOverride: sourceDir,
+      pubkeyPemOverride: pubkeyPem,
+      lockWaitMsOverride: 1000,
+      lockRetryMsOverride: 10,
+    });
+    writeFileSync(join(helpersDir, '.LOCKED'), '');
+    unlinkSync(lock);
+    const r = await refresh;
+    expect(r.refreshed).toBe(false);
+    expect(r.blocked).toContain('.LOCKED marker present');
+    expect(r.tampered).toEqual(['hook-handler.cjs']);
+    expect(readFileSync(join(helpersDir, 'hook-handler.cjs'), 'utf-8')).toBe('LOCAL-EDIT');
+    expect(readFileSync(join(helpersDir, HELPERS_STAMP_FILE), 'utf-8')).toBe('0.0.0');
+    expect(existsSync(lock)).toBe(false);
+  });
+
+  it.each(['0.0.1', '99.0.0'])('rejects a signed manifest for another CLI version (%s)', async (manifestVersion) => {
+    const { cwd, helpersDir } = makeProject();
+    writeFileSync(join(helpersDir, 'hook-handler.cjs'), 'UNCHANGED');
+    writeFileSync(join(helpersDir, HELPERS_STAMP_FILE), '0.0.0');
+    const { sourceDir, pubkeyPem } = makeSignedSource(manifestVersion);
+
+    const r = await autoRefreshHelpersIfStale(cwd, { sourceDirOverride: sourceDir, pubkeyPemOverride: pubkeyPem });
+    expect(r.refreshed).toBe(false);
+    expect(r.blocked).toMatch(/manifest version/);
+    expect(readFileSync(join(helpersDir, 'hook-handler.cjs'), 'utf-8')).toBe('UNCHANGED');
+    expect(readFileSync(join(helpersDir, HELPERS_STAMP_FILE), 'utf-8')).toBe('0.0.0');
+    expect(existsSync(join(helpersDir, 'helpers.manifest.json'))).toBe(false);
+  });
+
+  it('rejects a replayed signed manifest even when the installed stamp and content match it', async () => {
+    const { cwd, helpersDir } = makeProject();
+    const oldContent = 'SIGNED-OLD-CONTENT';
+    writeFileSync(join(helpersDir, 'hook-handler.cjs'), oldContent);
+    writeFileSync(join(helpersDir, HELPERS_STAMP_FILE), version);
+    const { sourceDir, pubkeyPem } = makeSignedSource('0.0.1', oldContent);
+
+    const r = await autoRefreshHelpersIfStale(cwd, { sourceDirOverride: sourceDir, pubkeyPemOverride: pubkeyPem });
+    expect(r.refreshed).toBe(false);
+    expect(r.blocked).toMatch(/manifest version/);
+    expect(r.healed).toBeUndefined();
+    expect(readFileSync(join(helpersDir, 'hook-handler.cjs'), 'utf-8')).toBe(oldContent);
   });
 
   it('#3565: reports blocked (not healed) when the integrity re-check itself cannot establish ground truth', async () => {

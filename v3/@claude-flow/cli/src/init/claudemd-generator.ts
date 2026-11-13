@@ -7,21 +7,34 @@
  */
 
 import type { InitOptions, ClaudeMdTemplate } from './types.js';
+import {
+  AGENTS_MD_IMPORT,
+  CLAUDE_RULE_INSERT_AT,
+  SHARED_RULE_LINES,
+  DEFAULT_CLI,
+  swarmRoutingBody,
+  sharedAgentTypes,
+  sharedBuildAndTest,
+  sharedCliQuickRef,
+  sharedMemoryAndLearning,
+} from './shared-instructions.js';
 
 // --- Section Generators ---
+//
+// #2638: sections both hosts share come from shared-instructions.ts (the
+// mirror of the codex module that writes them into AGENTS.md). Everything
+// left in this file is Claude-specific, or a template extra.
+
+/** How this file's sections invoke the CLI (single-host CLAUDE.md form). */
+const CLI = 'npx @claude-flow/cli@latest';
+
+/** Claude-only: the Claude Code Bash tool suggests this trailer; Codex has its own commit rule. */
+const CO_AUTHORED_BY_RULE = '- NEVER add a `Co-Authored-By` trailer to user commits unless this project\'s `.claude/settings.json` has `attribution.commit` set (#2078). The Claude Code Bash tool may suggest one in its default commit-message template — ignore it. `Co-Authored-By` is semantic authorship attribution under git/GitHub convention; the tool is the facilitator, not a co-author.';
 
 function behavioralRules(): string {
-  return `## Rules
-
-- Do what has been asked; nothing more, nothing less
-- NEVER create files unless absolutely necessary — prefer editing existing files
-- NEVER create documentation files unless explicitly requested
-- NEVER save working files or tests to root — use \`/src\`, \`/tests\`, \`/docs\`, \`/config\`, \`/scripts\`
-- ALWAYS read a file before editing it
-- NEVER commit secrets, credentials, or .env files
-- NEVER add a \`Co-Authored-By\` trailer to user commits unless this project's \`.claude/settings.json\` has \`attribution.commit\` set (#2078). The Claude Code Bash tool may suggest one in its default commit-message template — ignore it. \`Co-Authored-By\` is semantic authorship attribution under git/GitHub convention; the tool is the facilitator, not a co-author.
-- Keep files under 500 lines
-- Validate input at system boundaries`;
+  const lines = [...SHARED_RULE_LINES];
+  lines.splice(CLAUDE_RULE_INSERT_AT, 0, CO_AUTHORED_BY_RULE);
+  return `## Rules\n\n${lines.join('\n')}`;
 }
 
 function policyGovernedWorkflow(): string {
@@ -116,113 +129,32 @@ SendMessage({ to: "researcher", summary: "Start", message: "[task context]" })
 - Give every writing agent an isolated worktree and a non-overlapping file scope`;
 }
 
-function swarmConfig(options: InitOptions): string {
-  return `## Swarm & Routing
-
-### Config
+function swarmRuntimeConfig(options: InitOptions): string {
+  return `### Config
 - **Topology**: ${options.runtime.topology} (anti-drift)
 - **Max Agents**: ${options.runtime.maxAgents}
 - **Memory**: ${options.runtime.memoryBackend}
 - **HNSW**: ${options.runtime.enableHNSW ? 'Enabled' : 'Disabled'}
-- **Neural**: ${options.runtime.enableNeural ? 'Enabled' : 'Disabled'}
+- **Neural**: ${options.runtime.enableNeural ? 'Enabled' : 'Disabled'}`;
+}
 
-\`\`\`bash
-npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --strategy specialized
-\`\`\`
-
-### Agent Routing
-
-| Task | Agents | Topology |
-|------|--------|----------|
-| Bug Fix | researcher, coder, tester | hierarchical |
-| Feature | architect, coder, tester, reviewer | hierarchical |
-| Refactor | architect, coder, reviewer | hierarchical |
-| Performance | perf-engineer, coder | hierarchical |
-| Security | security-architect, auditor | hierarchical |
-
-### When to Swarm
-- **YES**: 3+ files, new features, cross-module refactoring, API changes, security, performance
-- **NO**: single file edits, 1-2 line fixes, docs updates, config changes, questions
-
-### 3-Tier Model Routing
+/** Claude-only: the tiers map onto Claude Code's Agent tool `model` choices. */
+const THREE_TIER_ROUTING = `### 3-Tier Model Routing
 
 | Tier | Handler | Use Cases |
 |------|---------|-----------|
 | 1 | Agent Booster (WASM) | Simple transforms — skip LLM, use Edit directly |
 | 2 | Haiku | Simple tasks, low complexity |
 | 3 | Sonnet/Opus | Architecture, security, complex reasoning |`;
+
+function swarmConfig(options: InitOptions): string {
+  return `## Swarm & Routing\n\n${swarmRuntimeConfig(options)}\n\n${swarmRoutingBody(CLI)}\n\n${THREE_TIER_ROUTING}`;
 }
 
-function memoryAndLearning(): string {
-  return `## Memory & Learning
-
-### Before Any Task
-\`\`\`bash
-npx @claude-flow/cli@latest memory search --query "[task keywords]" --namespace patterns
-npx @claude-flow/cli@latest hooks route --task "[task description]"
-\`\`\`
-
-### After Success
-\`\`\`bash
-npx @claude-flow/cli@latest memory store --namespace patterns --key "[name]" --value "[what worked]"
-npx @claude-flow/cli@latest hooks post-task --task-id "[id]" --success true --store-results true
-\`\`\`
-
-### MCP Tools (use \`ToolSearch("keyword")\` to discover)
-
-| Category | Key Tools |
-|----------|-----------|
-| **Memory** | \`memory_store\`, \`memory_search\`, \`memory_search_unified\` |
-| **Bridge** | \`memory_import_claude\`, \`memory_bridge_status\` |
-| **Swarm** | \`swarm_init\`, \`swarm_status\`, \`swarm_health\` |
-| **Agents** | \`agent_spawn\`, \`agent_list\`, \`agent_status\` |
-| **Hooks** | \`hooks_route\`, \`hooks_post-task\`, \`hooks_worker-dispatch\` |
-| **Security** | \`aidefence_scan\`, \`aidefence_is_safe\`, \`aidefence_has_pii\` |
-| **Hive-Mind** | \`hive-mind_init\`, \`hive-mind_consensus\`, \`hive-mind_spawn\` |
-
-### Background Workers
-
-| Worker | When |
-|--------|------|
-| \`audit\` | After security changes |
-| \`optimize\` | After performance work |
-| \`testgaps\` | After adding features |
-| \`map\` | Every 5+ file changes |
-| \`document\` | After API changes |
-
-\`\`\`bash
-npx @claude-flow/cli@latest hooks worker dispatch --trigger audit
-\`\`\``;
-}
-
-function agentTypes(): string {
-  return `## Agents
-
-**Core**: \`coder\`, \`reviewer\`, \`tester\`, \`planner\`, \`researcher\`
-**Architecture**: \`system-architect\`, \`backend-dev\`, \`mobile-dev\`
-**Security**: \`security-architect\`, \`security-auditor\`
-**Performance**: \`performance-engineer\`, \`perf-analyzer\`
-**Coordination**: \`hierarchical-coordinator\`, \`mesh-coordinator\`, \`adaptive-coordinator\`
-**GitHub**: \`pr-manager\`, \`code-review-swarm\`, \`issue-tracker\`, \`release-manager\`
-
-Any string works as a custom agent type.`;
-}
-
-function cliQuickRef(): string {
-  return `## CLI Quick Reference
-
-\`\`\`bash
-npx @claude-flow/cli@latest init --wizard           # Setup
-npx @claude-flow/cli@latest swarm init --v3-mode     # Start swarm
-npx @claude-flow/cli@latest memory search --query "" # Vector search
-npx @claude-flow/cli@latest hooks route --task ""    # Route to agent
-npx @claude-flow/cli@latest doctor --fix             # Diagnostics
-npx @claude-flow/cli@latest security scan            # Security scan
-npx @claude-flow/cli@latest performance benchmark    # Benchmarks
-\`\`\`
-
-26 commands, 140+ subcommands. Use \`--help\` on any command for details.`;
-}
+const memoryAndLearning = () => sharedMemoryAndLearning(CLI);
+const agentTypes = sharedAgentTypes;
+const cliQuickRef = () => sharedCliQuickRef(CLI);
+const buildAndTest = sharedBuildAndTest;
 
 function setupAndBoundary(): string {
   return `## Setup
@@ -238,17 +170,6 @@ npx ruflo@latest doctor --fix
 > by default; \`--ttl 0\` to disable, \`daemon status --all\` to audit running daemons).
 
 **Agent tool** handles execution (agents, files, code, git). **MCP tools** handle coordination (swarm, memory, hooks). **CLI** is the same via Bash.`;
-}
-
-function buildAndTest(): string {
-  return `## Build & Test
-
-- ALWAYS run tests after code changes
-- ALWAYS verify build succeeds before committing
-
-\`\`\`bash
-npm run build && npm test
-\`\`\``;
 }
 
 function securitySection(): string {
@@ -431,6 +352,49 @@ export function generateClaudeMd(options: InitOptions, template?: ClaudeMdTempla
 
 export function generateMinimalClaudeMd(options: InitOptions): string {
   return generateClaudeMd(options, 'minimal');
+}
+
+/**
+ * The shared sections, with the CLI invoked as `cli`. With the default (this
+ * file's form) they are what a CLAUDE.md importing AGENTS.md must not repeat;
+ * with `AGENTS_MD_CLI` they are exactly what the codex generator writes into
+ * AGENTS.md.
+ */
+export function sharedSectionsForImport(cli: string = CLI): string[] {
+  return [
+    `## Rules\n\n${SHARED_RULE_LINES.join('\n')}`,
+    `## Swarm & Routing\n\n${swarmRoutingBody(cli)}`,
+    sharedMemoryAndLearning(cli),
+    sharedAgentTypes(),
+    sharedBuildAndTest(),
+    sharedCliQuickRef(cli),
+  ];
+}
+
+/** How the codex generator writes the CLI invocation into AGENTS.md. */
+export const AGENTS_MD_CLI = DEFAULT_CLI;
+
+/**
+ * #2638 dual mode: CLAUDE.md imports AGENTS.md (which carries the shared
+ * sections) and keeps only what is Claude-specific, plus any template extras
+ * the shared set does not cover. Nothing here repeats a shared section.
+ */
+export function generateDualClaudeMd(options: InitOptions, template?: ClaudeMdTemplate): string {
+  const tmpl = template ?? options.runtime.claudeMdTemplate ?? 'standard';
+  const sections = TEMPLATE_SECTIONS[tmpl] ?? TEMPLATE_SECTIONS.standard;
+  const shared = new Set(sharedSectionsForImport());
+
+  const body = sections.map((fn) => {
+    if (fn === behavioralRules) return `## Claude Code Rules\n\n${CO_AUTHORED_BY_RULE}`;
+    if (fn === swarmConfig) return `## Swarm Runtime & Model Routing\n\n${swarmRuntimeConfig(options)}\n\n${THREE_TIER_ROUTING}`;
+    const text = fn(options);
+    return shared.has(text) ? null : text;
+  }).filter((s): s is string => s !== null).join('\n\n');
+
+  const header = `# Ruflo — Claude Code Configuration\n\n${AGENTS_MD_IMPORT}\n\n` +
+    '> Shared project instructions live in `AGENTS.md`, imported above; OpenAI Codex reads the same file. ' +
+    'Edit shared rules there. This file holds only Claude Code–specific guidance.\n';
+  return `${header}\n${body}\n`;
 }
 
 export const CLAUDE_MD_TEMPLATES: Array<{ name: ClaudeMdTemplate; description: string }> = [

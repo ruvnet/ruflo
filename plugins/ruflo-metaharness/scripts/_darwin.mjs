@@ -2,7 +2,7 @@
 //
 // Mirrors `_harness.mjs` for the umbrella `metaharness` / `harness` binaries,
 // but targets the separate darwin binary (`metaharness-darwin`) which is
-// published as its own npm package (`@metaharness/darwin@~0.13.0`).
+// published as its own npm package (`@metaharness/darwin@~0.14.0`).
 //
 // Shared plumbing (degraded classification, --json injection, trailing-JSON
 // parse, degraded emitter) lives in `_invoke.mjs`. What stays here is the
@@ -61,14 +61,14 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 
 // Pinned semver range. The `~` allows patch upgrades without re-pinning.
 // Must cover the `@metaharness/darwin` optionalDependency range in
-// v3/@claude-flow/cli/package.json (`~0.13.0`). It sat at ~0.8.0 while that
-// range moved to ~0.9.0 (#2958), ~0.10.2 (#3262), ~0.12.0 (#3219) and ~0.13.0 (GHSA-mjwg-5fm3-fx2p), because the pin-drift
+// v3/@claude-flow/cli/package.json (`~0.14.0`). It sat at ~0.8.0 while that
+// range moved to ~0.9.0 (#2958), ~0.10.2 (#3262), ~0.12.0 (#3219), ~0.13.0 (GHSA-mjwg-5fm3-fx2p) and ~0.14.0 (#4952), because the pin-drift
 // guard only compared MH_DARWIN_PIN (distill-oracle.ts). This range picks
 // the darwin version the evolve / bench / security-bench tools run and the
 // gepa cache fallback installs; scripts/check-metaharness-pins.mjs now fails
 // when it no longer covers the declared range.
 const DARWIN_PKG = '@metaharness/darwin';
-const DARWIN_PIN_VERSION = '~0.13.0';
+const DARWIN_PIN_VERSION = '~0.14.0';
 const DARWIN_PIN = `${DARWIN_PKG}@${DARWIN_PIN_VERSION}`;
 
 const REASON_PREFIX = 'metaharness-darwin';
@@ -156,6 +156,8 @@ export function runDarwin(args, opts = {}) {
     shell: false,
   });
   const durationMs = Date.now() - start;
+  // #4930 — which bin ran (`local` install or `cache` install), for diagnostics.
+  const source = resolved.source;
   const stdout = r.stdout || '';
   const stderr = r.stderr || '';
   const classified = classifyDegraded(stderr, r.status, REASON_PREFIX);
@@ -167,6 +169,7 @@ export function runDarwin(args, opts = {}) {
       durationMs,
       degraded: true,
       reason: classified.reason,
+      source,
     };
   }
   return {
@@ -175,6 +178,7 @@ export function runDarwin(args, opts = {}) {
     json: wantJson ? maybeParseJson(stdout) : null,
     durationMs,
     degraded: false,
+    source,
   };
 }
 
@@ -272,6 +276,19 @@ export const DARWIN_VERSION_PIN = DARWIN_PIN;
  * evolve.mjs --diagnose (failure-class analysis of run transcripts).
  * Returns the module namespace or null. Never throws on absence.
  */
+export async function importDarwinLib() {
+  // ADR-526 — darwin's root library entry (bench suites). bench.mjs uses it for
+  // verify so a CLI call does not spawn a second node for the darwin CLI.
+  // Bare import ONLY: unlike importGepa it never falls back to a cache install,
+  // because the caller has a no-install fallback (the installed darwin CLI) and
+  // a tool-time npm install is exactly what #3366 removed. Null when absent.
+  try {
+    return await import(DARWIN_PKG);
+  } catch {
+    return null;
+  }
+}
+
 export function importGepa() {
   return importOptionalLibrary({
     specifier: '@metaharness/darwin/gepa',

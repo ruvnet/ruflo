@@ -223,6 +223,20 @@ export interface StoreConfig {
   trustedAuthors: string[];
   blockedPatterns: string[];
 
+  /**
+   * Hard cap on a single pattern download in bytes (#4750). Streams abort once
+   * this is exceeded, so a registry cannot exhaust local disk/memory.
+   */
+  maxBytes?: number;
+
+  /**
+   * Trusted Ed25519 public keys for registry verification, keyed by registry
+   * name or IPNS name, e.g. { 'claude-flow-official': 'ed25519:<hex>' } (#4750).
+   * When set, a pattern or registry signature must verify against one of these
+   * keys; the self-declared `pattern.publicKey` is not trusted on its own.
+   */
+  trustedRegistryPublicKeys?: Record<string, string>;
+
   // User identity
   authorId?: string;
   privateKeyPath?: string;

@@ -35,6 +35,8 @@ jobs:
           node-version: 22
       - name: ADR-166 §6 #9 — anti-regression lock (both bridges)
         run: node ruflo/src/mcp-bridge/test-security-lock.js
+      - name: Outbound URL guard (both bridges)
+        run: node ruflo/src/mcp-bridge/test-url-guard.mjs
 
   runtime-behavior:
     name: Runtime behavior — 401 + terminal gate + fail-closed

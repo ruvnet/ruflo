@@ -17,6 +17,7 @@ import type {
   GNNStats,
   ActivationFunction,
 } from './types.js';
+import { computePageRankScores } from './pagerank.js';
 
 // ============================================================================
 // Constants and Configuration
@@ -158,11 +159,11 @@ export interface Community {
 export interface PageRankOptions {
   /** Damping factor (default: 0.85) */
   readonly damping?: number;
-  /** Maximum iterations (default: 100) */
+  /** Maximum iterations (default: 200) */
   readonly maxIterations?: number;
-  /** Convergence tolerance (default: 1e-6) */
+  /** Stop when the L1 change between iterates is <= tolerance (default: 1e-10) */
   readonly tolerance?: number;
-  /** Personalization vector (teleport probabilities) */
+  /** Personalization vector (teleport weights; normalized, nodes not listed get none) */
   readonly personalization?: Map<NodeId, number>;
   /** Whether to use weighted edges */
   readonly weighted?: boolean;
@@ -2379,59 +2380,53 @@ export class GraphOperations {
   }
 
   /**
-   * Compute PageRank scores for all nodes.
+   * Compute PageRank scores for all nodes (scores sum to 1).
+   *
+   * With `personalization`, this is personalized PageRank: the teleport
+   * vector is the personalization weights restricted to graph nodes and
+   * normalized; nodes it omits get no teleport mass. Uses
+   * @ruvnet/sublinear-core when installed, else the in-tree solver in
+   * ./pagerank.ts. Stops when the L1 change between iterates is <= tolerance.
    */
   async pageRank(options: PageRankOptions = {}): Promise<Map<NodeId, number>> {
-    const damping = options.damping ?? 0.85;
-    const maxIterations = options.maxIterations ?? 100;
-    const tolerance = options.tolerance ?? 1e-6;
-
     const nodes = Array.from(this.adjacencyList.keys());
     const n = nodes.length;
-
     if (n === 0) return new Map();
 
-    // Initialize ranks
-    let ranks = new Map<NodeId, number>();
-    const initialRank = 1 / n;
+    const index = new Map<NodeId, number>();
+    nodes.forEach((node, i) => index.set(node, i));
 
-    for (const node of nodes) {
-      ranks.set(node, options.personalization?.get(node) ?? initialRank);
-    }
-
-    // Power iteration
-    for (let iter = 0; iter < maxIterations; iter++) {
-      const newRanks = new Map<NodeId, number>();
-      let diff = 0;
-
-      for (const node of nodes) {
-        let sum = 0;
-        const neighbors = this.adjacencyList.get(node) ?? new Set();
-
-        for (const neighbor of neighbors) {
-          const neighborOutDegree = this.adjacencyList.get(neighbor)?.size ?? 1;
-          const neighborRank = ranks.get(neighbor) ?? 0;
-
-          if (options.weighted) {
-            const weight = this.weights.get(`${neighbor}-${node}`) ?? 1;
-            sum += (neighborRank * weight) / neighborOutDegree;
-          } else {
-            sum += neighborRank / neighborOutDegree;
-          }
-        }
-
-        const teleport = options.personalization?.get(node) ?? 1 / n;
-        const newRank = (1 - damping) * teleport + damping * sum;
-        newRanks.set(node, newRank);
-
-        diff += Math.abs(newRank - (ranks.get(node) ?? 0));
+    // adjacencyList is undirected (loadGraph adds both directions), so each
+    // entry is an out-edge of `node`.
+    const edges: Array<[number, number, number]> = [];
+    for (const [node, neighbors] of this.adjacencyList) {
+      const s = index.get(node)!;
+      for (const neighbor of neighbors) {
+        const t = index.get(neighbor);
+        if (t === undefined) continue;
+        const w = options.weighted ? this.weights.get(`${node}-${neighbor}`) ?? 1 : 1;
+        edges.push([s, t, w]);
       }
-
-      ranks = newRanks;
-
-      if (diff < tolerance) break;
     }
 
+    let teleport: Map<number, number> | undefined;
+    if (options.personalization) {
+      teleport = new Map();
+      for (const [node, w] of options.personalization) {
+        const i = index.get(node);
+        if (i !== undefined) teleport.set(i, w);
+      }
+    }
+
+    const run = computePageRankScores(n, edges, {
+      damping: options.damping ?? 0.85,
+      tolerance: options.tolerance ?? 1e-10,
+      maxIterations: options.maxIterations ?? 200,
+      teleport,
+    });
+
+    const ranks = new Map<NodeId, number>();
+    nodes.forEach((node, i) => ranks.set(node, run.scores[i]));
     return ranks;
   }
 

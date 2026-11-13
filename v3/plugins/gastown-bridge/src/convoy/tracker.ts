@@ -17,7 +17,7 @@
 
 import { EventEmitter } from 'events';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import type {
   Convoy,
   ConvoyStatus,
@@ -221,7 +221,7 @@ export class ConvoyTracker extends EventEmitter {
     const progress = await this.calculateProgress(verifiedIssues);
 
     // Create convoy
-    const convoyId = uuidv4();
+    const convoyId = randomUUID();
     const now = new Date();
 
     const convoy: Convoy = {

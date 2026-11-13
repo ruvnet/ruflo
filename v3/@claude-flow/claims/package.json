@@ -1,7 +1,7 @@
 {
   "name": "@claude-flow/claims",
-  "version": "3.0.0",
-  "description": "Issue claiming and work coordination module for Claude Flow V3",
+  "version": "3.0.1",
+  "description": "Issue claiming, handoff and work-stealing coordination for multi-agent swarms in Ruflo (claude-flow) V3, with MCP tools.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -37,10 +37,12 @@
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
     "claims",
     "issue-tracking",
     "work-coordination",
+    "work-stealing",
     "multi-agent",
     "swarm",
     "mcp"
@@ -49,15 +51,15 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/@claude-flow/claims"
   },
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues"
+    "url": "https://github.com/ruvnet/ruflo/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow#readme",
+  "homepage": "https://ruv.io",
   "dependencies": {
-    "zod": "^3.22.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

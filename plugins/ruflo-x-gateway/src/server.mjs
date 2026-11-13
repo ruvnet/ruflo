@@ -238,7 +238,7 @@ export function createGateway({ relay, keyFile, port, registration, github: gith
       WRITE('Announce gateway peer', { destructive: true, openWorld: true }),
       gate(async ({ name, platform, note }) => text({ ok: true, eventId: await publish(RELAY, sk, 'PeerHello', { from: name, platform, note }) })));
     mcp.tool('federation_publish', 'Publish a signed coordination message AS THE GATEWAY (Status/Task/Result…). Authorised by OAuth swarm:publish or the service-side admin token.',
-      { msgType: z.string(), payload: z.record(z.any()), ...adminSchema },
+      { msgType: z.string(), payload: z.record(z.string(), z.any()), ...adminSchema },
       // A signed relay message is an irreversible external send: it cannot be
       // edited or retracted after publication.
       WRITE('Publish coordination message', { destructive: true, openWorld: true }),
@@ -298,7 +298,7 @@ export function createGateway({ relay, keyFile, port, registration, github: gith
         );
       });
     mcp.tool('channel_publish', 'Publishes a signed gateway message to a public channel. Requires OAuth swarm:publish or the service-side admin token. Private channels are rejected because their encryption keys remain client-held.',
-      { channel: z.string(), msgType: z.string(), payload: z.record(z.any()), ...adminSchema },
+      { channel: z.string(), msgType: z.string(), payload: z.record(z.string(), z.any()), ...adminSchema },
       // Public-channel events are append-only and cannot be deleted or
       // retracted, so publication is destructive for review purposes.
       WRITE('Publish to public channel', { destructive: true, openWorld: true }),

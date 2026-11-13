@@ -2,6 +2,15 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.50.1 — 2026-11-09
+- chore: the command catalog (`catalog/command-catalog.json`) is regenerated from the CLI's `catalog.generated.json`. It picks up the three init commands renamed so they no longer collide with plugin commands (`/memory-neural`, `/stream-chain-run`, `/swarm-orchestrate`, #2640) and the mod registrations and plugins added since the last regeneration
+
+## 0.50.0 — 2026-11-09
+- feat: the AIDefence screen of mission text (goal, question, instruction, loop task) tells a secret from personal data: a key, token or password is now its own `secret` status, found by the local secret screen, so it blocks guidance even when AIDefence is not installed. A new `piiGuard` option (default on, so nothing changes unless you turn it off) decides whether personal data blocks guidance; off, the finding is reported in the screen's detail and the text goes through. Secrets and injections always block (#4861)
+
+## 0.49.13 — 2026-11-06
+- chore: the Vector Lab pin follows ruflo-ruvector to `ruvector@0.3.13` (`hooks/data/vector.ts`). The readers were checked against 0.3.13's output for `hooks stats`, `hooks route`, `rvf examples` and `identity show`: same shapes as 0.3.12. As before, the page runs `npx --offline`, so the pin must be in the npx cache (re-register the ruvector MCP server at 0.3.13)
+
 ## 0.49.12 — 2026-11-06
 - chore: the vector page runs ruvector@0.3.12 (from 0.3.3), the version the CLI and ruflo-ruvector now pin. Every read command on the page (`rvf examples`, `hooks stats/learning-stats/route/recall/rag-context/remember`, `edge join`, `identity show`, `decompile <file> --json`) was run against 0.3.12 and prints what its reader expects.
 - fix: the page runs `npx --offline`, so a machine whose npx cache holds only the old pin got a bare `npm error code ENOTCACHED`. The result now starts with the fix: run `npx -y ruvector@0.3.12 --version` once (or re-register the ruvector MCP server with `/vector-setup`).

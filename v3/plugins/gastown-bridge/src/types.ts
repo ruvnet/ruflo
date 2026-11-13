@@ -532,7 +532,7 @@ export const StepSchema = z.object({
   needs: z.array(z.string()).optional(),
   duration: z.number().optional(),
   requires: z.array(z.string()).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**
@@ -598,10 +598,10 @@ export const FormulaSchema = z.object({
   legs: z.array(LegSchema).optional(),
   synthesis: SynthesisSchema.optional(),
   steps: z.array(StepSchema).optional(),
-  vars: z.record(VarSchema).optional(),
+  vars: z.record(z.string(), VarSchema).optional(),
   templates: z.array(TemplateSchema).optional(),
   aspects: z.array(AspectSchema).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

@@ -39,8 +39,11 @@ export {
 export {
   DEFAULT_MESSAGES_ENDPOINT,
   getRemoteMessages,
+  funnelUserAgent,
+  launchSurface,
   refreshRemoteMessages,
 } from './message-transport.js';
+export { flushEvents } from './event-transport.js';
 export {
   PROMO_REPEAT_CAP_MS,
   PROMO_SLOT_MODULO,

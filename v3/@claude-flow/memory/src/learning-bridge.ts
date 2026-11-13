@@ -141,6 +141,14 @@ export class LearningBridge extends EventEmitter {
   private backend: IMemoryBackend;
   private config: ResolvedConfig;
   private activeTrajectories: Map<string, string> = new Map();
+  /**
+   * Entries whose trajectory consolidate() completed and removed from
+   * activeTrajectories. A later access reopens a trajectory for them so
+   * reused insights keep feeding the neural system (#4884). An entry leaves
+   * this set when it is reopened, so its size is bounded by the number of
+   * distinct insights recorded through this bridge.
+   */
+  private consolidatedEntries: Set<string> = new Set();
   private stats = {
     totalTrajectories: 0,
     completedTrajectories: 0,
@@ -203,12 +211,14 @@ export class LearningBridge extends EventEmitter {
   /**
    * Notify the bridge that an insight entry was accessed.
    * Boosts confidence in the backend and records a step in the
-   * trajectory if one exists.
+   * trajectory if one exists. If the insight's trajectory was already
+   * completed by consolidate(), a new trajectory is opened for it and the
+   * access recorded there, so reused insights keep producing learning signal.
    */
   async onInsightAccessed(entryId: string): Promise<void> {
     if (!this.config.enabled || this.destroyed) return;
 
-    const entry = await this.backend.get(entryId);
+    const entry = await this.getInsightEntry(entryId);
     if (!entry) return;
 
     const currentConf = (entry.metadata?.confidence as number) ?? 0.5;
@@ -217,7 +227,7 @@ export class LearningBridge extends EventEmitter {
       currentConf + this.config.accessBoostAmount,
     );
 
-    await this.backend.update(entryId, {
+    await this.backend.update(entry.id, {
       metadata: { ...entry.metadata, confidence: newConf },
     });
 
@@ -234,9 +244,26 @@ export class LearningBridge extends EventEmitter {
       } catch {
         // Non-fatal
       }
+    } else if (this.neural && this.consolidatedEntries.has(entryId)) {
+      this.reopenTrajectory(entryId, entry);
     }
 
     this.emit('insight:accessed', { entryId, newConfidence: newConf });
+  }
+
+  /**
+   * Resolve an insight the caller addresses by the key it was stored under.
+   * `get()` only knows the backend's internal `entry.id`, and
+   * `createDefaultEntry` mints that id independently of the caller's key, so a
+   * key lookup must go through `getByKey` first; fall back to `get()` for
+   * callers that really pass an id.
+   */
+  private async getInsightEntry(entryId: string): Promise<MemoryEntry | null> {
+    if (typeof this.backend.getByKey === 'function') {
+      const byKey = await this.backend.getByKey(this.config.insightNamespace, entryId);
+      if (byKey) return byKey;
+    }
+    return this.backend.get(entryId);
   }
 
   /**
@@ -280,6 +307,7 @@ export class LearningBridge extends EventEmitter {
 
     for (const key of toRemove) {
       this.activeTrajectories.delete(key);
+      this.consolidatedEntries.add(key);
     }
 
     this.stats.completedTrajectories += completed;
@@ -401,6 +429,7 @@ export class LearningBridge extends EventEmitter {
   destroy(): void {
     this.destroyed = true;
     this.activeTrajectories.clear();
+    this.consolidatedEntries.clear();
 
     if (this.neural && typeof this.neural.cleanup === 'function') {
       try {
@@ -464,6 +493,39 @@ export class LearningBridge extends EventEmitter {
       // @claude-flow/neural not installed or failed to initialize.
       // This is expected in many environments; degrade silently.
       this.neural = null;
+    }
+  }
+
+  /**
+   * Start a fresh trajectory for an insight whose previous trajectory was
+   * completed by consolidate(), then record the access as its first step.
+   * Without this, an insight stops producing learning signal the moment it
+   * is consolidated, however often it is reused afterwards (#4884). The new
+   * trajectory goes back into activeTrajectories, so the same
+   * consolidationThreshold logic completes it again — nothing grows unbounded.
+   *
+   * The task text mirrors onInsightRecorded (the insight summary), read from
+   * the stored entry: `metadata.summary` as AutoMemoryBridge writes it, else
+   * the entry content.
+   */
+  private reopenTrajectory(entryId: string, entry: MemoryEntry): void {
+    const summary =
+      typeof entry.metadata?.summary === 'string' ? entry.metadata.summary : entry.content;
+    try {
+      const trajectoryId = this.neural.beginTask(summary, 'general');
+      this.activeTrajectories.set(entryId, trajectoryId);
+      this.consolidatedEntries.delete(entryId);
+      this.stats.totalTrajectories++;
+
+      this.neural.recordStep(trajectoryId, {
+        action: 'access',
+        reward: this.config.accessBoostAmount,
+        stateEmbedding: this.createHashEmbedding(summary),
+      });
+      this.emit('insight:learning-reopened', { entryId });
+    } catch {
+      // Neural system failure is non-fatal; if beginTask threw, the entry
+      // stays eligible to reopen on its next access
     }
   }
 

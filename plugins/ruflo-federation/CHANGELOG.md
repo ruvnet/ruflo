@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.4.0 — 2026-11-09
+- feat: a separate `piiGuard` option (default on, so nothing changes unless you turn it off). With it off, an outbound federation message that holds only personal data (an SSN or a card number) is let through, while a key, token or password, and input too large to screen, are still refused whenever `guard` is on. Before, the one `guard` switch covered both, so turning off PII refusals also turned off secret screening (#4861)
+
 ## 0.3.7 — 2026-10-29
 - chore: operational skills are user-invoked only (`disable-model-invocation: true`) and long skill/command descriptions are cut to one sentence, so they cost less prompt on every turn (ADR-507, #4588). Every skill is still available as `/<skill>`.
 

@@ -38,6 +38,12 @@ FEDERATION_TRUST_LEVEL=untrusted       # default: untrusted
 
 ## Tests
 
+Handshake signatures cover `ruflo:federation:handshake:v1:` followed by the nonce,
+not the peer-supplied nonce alone. Signing adapters must sign the supplied bytes
+unchanged. Both peers must use this context; raw-nonce handshake responses from
+older peers are rejected, so upgrade federation peers together. This prevents a
+handshake response from also verifying as a signature over bare envelope bytes.
+
 325 unit tests covering audit, routing, discovery, plugin lifecycle.
 
 ```bash

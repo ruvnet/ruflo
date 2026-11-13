@@ -28,6 +28,12 @@ import { mkdirSync, realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { validateFeedbackPatterns } from './feedback-patterns.js';
+import {
+  DEFAULT_EMBEDDING_MODEL,
+  resolveEffectiveEmbeddingConfig,
+  resolveEmbeddingConfig,
+  type EmbeddingConfig,
+} from './embedding-config.js';
 
 // ===== Lazy registry cache, keyed by database path =====
 
@@ -48,6 +54,25 @@ import { validateFeedbackPatterns } from './feedback-patterns.js';
  */
 const registryPromises = new Map<string, Promise<any>>();
 const registryInstances = new Map<string, any>();
+
+/**
+ * #2305: the embedding model/dimension the AgentDB registry was opened with —
+ * `.claude-flow/embeddings.json`, or the store's recorded dimension when that
+ * differs. Falls back to the configured value before any registry opened.
+ */
+let bridgeEmbeddingConfig: EmbeddingConfig | null = null;
+
+function activeEmbeddingConfig(): EmbeddingConfig {
+  return bridgeEmbeddingConfig ?? resolveEmbeddingConfig(process.cwd());
+}
+
+/** Model name recorded next to a vector of `dimension` length. */
+function embeddingModelLabel(dimension: number): string {
+  const cfg = activeEmbeddingConfig();
+  if (dimension === cfg.dimension) return cfg.model;
+  // Unchanged pre-#2305 label for any other size.
+  return DEFAULT_EMBEDDING_MODEL;
+}
 // One lease spans an entire bridge operation, including its awaited controller
 // effects and nested bridge calls. Initializer ownership alone is insufficient:
 // a ReasoningBank write can still be pending after its registry has opened.
@@ -288,11 +313,22 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
         // lifetime and hierarchical memory silently ran volatile.
         try {
           if (resolvedPath !== ':memory:') mkdirSync(path.dirname(resolvedPath), { recursive: true });
+          // Check memory.db as well as this store: the memory path mirrors
+          // the same vectors into both, so an old 384-dim memory.db must keep
+          // an empty agentdb-memory.db at 384 too (same order as the
+          // initializer, so both converge on one answer).
+          const embCfg = await resolveEffectiveEmbeddingConfig({
+            root: process.cwd(),
+            dbPaths: resolvedPath === ':memory:'
+              ? []
+              : [path.join(path.dirname(resolvedPath), 'memory.db'), resolvedPath],
+          });
+          bridgeEmbeddingConfig = embCfg;
           await (registry as any).initialize({
             // #2786: use agentdb-memory.db (plaintext) so native better-sqlite3 doesn't hit the encrypted memory.db.
             dbPath: resolvedPath,
-            embeddingModel: 'Xenova/all-MiniLM-L6-v2',
-            dimension: 384,
+            embeddingModel: embCfg.model,
+            dimension: embCfg.dimension,
             vectorBackend: 'auto',
             controllers: {
               reasoningBank: true,
@@ -542,6 +578,7 @@ export function _resetRegistryCacheForTest(): void {
   testRegistryOverride = null;
   testRegistryFactory = null;
   bridgeFailureReasons.clear();
+  bridgeEmbeddingConfig = null;
 }
 
 /** Inject registry construction without requiring the optional native package in tests. */
@@ -1033,7 +1070,7 @@ async function embedForBridge(
     try {
       const emb = await embedder.embed(text);
       if (emb && emb.length > 0) {
-        return { vector: Array.from(emb), model: 'Xenova/all-MiniLM-L6-v2' };
+        return { vector: Array.from(emb), model: embeddingModelLabel(emb.length) };
       }
       agentdbProblem = 'agentdb embedder returned no vector';
     } catch (err) {
@@ -1068,6 +1105,8 @@ export async function bridgeStoreEntry(options: {
   namespace?: string;
   generateEmbeddingFlag?: boolean;
   tags?: string[];
+  /** #1426: JSON object persisted to the metadata column. */
+  metadata?: Record<string, unknown>;
   ttl?: number;
   dbPath?: string;
   upsert?: boolean;
@@ -1242,7 +1281,7 @@ export async function bridgeStoreEntry(options: {
       id, key, namespace, value,
       embeddingJson, dimensions || null, model,
       tags.length > 0 ? JSON.stringify(tags) : null,
-      '{}',
+      JSON.stringify(options.metadata ?? {}),
       provenanceType,
       now, now,
       ttl ? now + (ttl * 1000) : null
@@ -2089,18 +2128,19 @@ export async function bridgeGenerateEmbedding(
     // yet) and silently fall back to a 128-dim hash stub. The embedder doesn't
     // expose isMock=true in that path, so the wrapper above was reporting
     // backend='onnx' on what's actually 128-dim hash garbage. The model name
-    // we hardcode ('Xenova/all-MiniLM-L6-v2') always produces 384-dim, so a
-    // dimensions mismatch is a definitive stub signal: return null and let
-    // the caller fall through to generateLocalEmbedding which routes to
-    // transformers.js / ruvector ONNX directly.
-    if (emb.length !== 384) {
+    // the registry was opened with (#2305: from embeddings.json, default
+    // MiniLM/384) has a fixed dimension, so a dimensions mismatch is a
+    // definitive stub signal: return null and let the caller fall through to
+    // generateLocalEmbedding which routes to transformers.js / ruvector ONNX.
+    const embCfg = activeEmbeddingConfig();
+    if (emb.length !== embCfg.dimension) {
       return null;
     }
 
     return {
       embedding: Array.from(emb),
       dimensions: emb.length,
-      model: 'Xenova/all-MiniLM-L6-v2',
+      model: embCfg.model,
       backend: isMock ? 'mock' : 'onnx',
     };
   } catch {
@@ -2137,7 +2177,7 @@ export async function bridgeLoadEmbeddingModel(
     return {
       success: true,
       dimensions: test.length,
-      modelName: 'Xenova/all-MiniLM-L6-v2',
+      modelName: embeddingModelLabel(test.length),
       loadTime: Date.now() - startTime,
     };
   } catch {
@@ -2404,7 +2444,7 @@ export async function bridgeAddEmbedding(
         id, key, namespace, content, type,
         embedding, embedding_dimensions, embedding_model,
         created_at, updated_at, status
-      ) VALUES (?, ?, ?, ?, 'semantic', ?, ?, 'Xenova/all-MiniLM-L6-v2', ?, ?, 'active')
+      ) VALUES (?, ?, ?, ?, 'semantic', ?, ?, ?, ?, ?, 'active')
       ON CONFLICT(namespace, key) DO UPDATE SET
         id                   = excluded.id,
         content              = excluded.content,
@@ -2416,7 +2456,7 @@ export async function bridgeAddEmbedding(
         status               = 'active'
     `).run(
       id, entry.key, entry.namespace, entry.content,
-      embeddingJson, embedding.length,
+      embeddingJson, embedding.length, embeddingModelLabel(embedding.length),
       now, now,
     );
     return true;
@@ -2540,6 +2580,7 @@ export function __setMemoryBridgeRegistryForTests(registry: any | null): void {
   testRegistryOverride = registry;
   testRegistryFactory = null;
   bridgeFailureReasons.clear();
+  bridgeEmbeddingConfig = null;
 }
 
 /**
@@ -2723,31 +2764,46 @@ export async function bridgeStorePattern(options: {
 /**
  * Case-insensitive substring match over agentdb's reasoning_patterns table —
  * the rows ReasoningBank.storePattern() writes. Used only when the vector
- * search returns nothing. Returns [] when the table or handle is unavailable.
+ * search returns nothing. Returns no rows (and no error) when there is no
+ * database handle to scan.
+ *
+ * #4714: a read that throws is reported through `error`, not turned into an
+ * empty list. The pattern-search handler reports an error-free empty result
+ * as a healthy no-match, so a SQL failure must not look like one.
  */
-function substringSearchReasoningPatterns(registry: any, query: string, k: number): Array<{ id: string; content: string; score: number }> {
+function substringSearchReasoningPatterns(
+  registry: any,
+  query: string,
+  k: number,
+): { rows: Array<{ id: string; content: string; score: number }>; error?: string } {
+  const db = registry?.getAgentDB?.()?.database;
+  if (!db || typeof db.prepare !== 'function') return { rows: [] };
   try {
-    const db = registry?.getAgentDB?.()?.database;
-    if (!db || typeof db.prepare !== 'function') return [];
     const like = `%${query.toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
     const rows = db.prepare(
       "SELECT id, approach, success_rate FROM reasoning_patterns WHERE lower(approach) LIKE ? ESCAPE '\\' ORDER BY id DESC LIMIT ?",
     ).all(like, k) as Array<{ id: number; approach: string; success_rate: number }>;
-    return rows.map((r) => ({ id: String(r.id), content: r.approach, score: r.success_rate ?? 0 }));
-  } catch {
-    return [];
+    return { rows: rows.map((r) => ({ id: String(r.id), content: r.approach, score: r.success_rate ?? 0 })) };
+  } catch (err) {
+    return { rows: [], error: `reasoning_patterns substring scan failed: ${err instanceof Error ? err.message : String(err)}` };
   }
 }
 
 /**
  * Search patterns via ReasoningBank controller.
+ *
+ * Returns null when no registry is available. With `controller:
+ * 'reasoningBank'`, an empty `results` and no `error` means the controller
+ * ran and found nothing. #4714: when the controller throws, returns a
+ * non-array, or the substring scan fails, the result carries `error` so the
+ * caller cannot mistake the failure for a no-match.
  */
 export async function bridgeSearchPatterns(options: {
   query: string;
   topK?: number;
   minConfidence?: number;
   dbPath?: string;
-}): Promise<{ results: Array<{ id: string; content: string; score: number }>; controller: string } | null> {
+}): Promise<{ results: Array<{ id: string; content: string; score: number }>; controller: string; error?: string } | null> {
   if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeSearchPatterns(options));
   const registry = await getRegistry(options.dbPath);
   if (!registry) return null;
@@ -2758,10 +2814,25 @@ export async function bridgeSearchPatterns(options: {
     // ReasoningBank may expose .searchPatterns() (agentdb) or .search() (legacy) (#1492 Bug 2)
     if (reasoningBank && typeof (reasoningBank.searchPatterns ?? reasoningBank.search) === 'function') {
       let results: any;
-      if (typeof reasoningBank.searchPatterns === 'function') {
-        results = await reasoningBank.searchPatterns({ task: options.query, k: options.topK || 5, threshold: options.minConfidence || 0.3 });
-      } else {
-        results = await reasoningBank.search(options.query, { topK: options.topK || 5, minScore: options.minConfidence || 0.3 });
+      try {
+        if (typeof reasoningBank.searchPatterns === 'function') {
+          results = await reasoningBank.searchPatterns({ task: options.query, k: options.topK || 5, threshold: options.minConfidence || 0.3 });
+        } else {
+          results = await reasoningBank.search(options.query, { topK: options.topK || 5, minScore: options.minConfidence || 0.3 });
+        }
+      } catch (err) {
+        // #4714 — report the failure with the result instead of a bare null,
+        // which callers read as "no registry". Still recorded for agentdb_health.
+        const message = err instanceof Error ? err.message : String(err);
+        bridgeFailureReasons.set(canonicalDbPath(options.dbPath), message);
+        return { results: [], controller: 'reasoningBank', error: `ReasoningBank search failed: ${message}` };
+      }
+      if (!Array.isArray(results)) {
+        return {
+          results: [],
+          controller: 'reasoningBank',
+          error: `ReasoningBank search returned a non-array result (${results === null ? 'null' : typeof results})`,
+        };
       }
       // #3327 Finding A — agentdb returns ReasoningPattern[]: the text lives in
       // `approach` and the cosine score in `similarity`. Neither `content`/
@@ -2769,18 +2840,21 @@ export async function bridgeSearchPatterns(options: {
       // mapping produced `content: ''` and `score: 0` for every hit even when
       // the search itself succeeded. Read the real fields first, keeping the
       // legacy names as fallbacks for the pre-agentdb shape.
-      let mapped = Array.isArray(results) ? results.map((r: any) => ({
+      const mapped = results.map((r: any) => ({
         id: String(r.id ?? r.patternId ?? ''),
         content: r.approach ?? r.content ?? r.pattern ?? '',
         score: r.similarity ?? r.score ?? r.successRate ?? r.confidence ?? 0,
-      })) : [];
+      }));
+      if (mapped.length > 0) return { results: mapped, controller: 'reasoningBank' };
       // #4643 — with agentdb's mock embedder (Transformers.js failed to load:
       // offline, or a failed `sharp` install) a passage and a query embed to
       // unrelated hash vectors, so the vector search misses a pattern that
       // storePattern just wrote. Scan the same reasoning_patterns table for the
       // query text, as the LocalReasoningBank branch below does over getAll().
-      if (mapped.length === 0) mapped = substringSearchReasoningPatterns(registry, options.query, options.topK || 5);
-      return { results: mapped, controller: 'reasoningBank' };
+      const scan = substringSearchReasoningPatterns(registry, options.query, options.topK || 5);
+      return scan.error
+        ? { results: scan.rows, controller: 'reasoningBank', error: scan.error }
+        : { results: scan.rows, controller: 'reasoningBank' };
     }
 
     // #2226 — the wired-in LocalReasoningBank implements store() + findSimilar()/getAll()
@@ -4309,5 +4383,194 @@ export async function getMemoryBridgeStats(options: {
     };
   } catch {
     return { totalEntries: 0, perNamespace: {}, source: 'memory-bridge (error)', reachable: false };
+  }
+}
+
+// ===== #4712: persisted inventory of the hierarchical (tiered) store =====
+
+/** Smallest @claude-flow/memory that ships TieredMemoryStore.listEntries/getEntry. */
+const TIERED_INVENTORY_MIN_MEMORY = '3.3.0';
+
+/**
+ * Run a read-only inventory call against the `hierarchicalMemory` controller
+ * inside one bridge operation. Refuses, never fabricates: a native agentdb
+ * controller, an older @claude-flow/memory without the API, a volatile store
+ * and a failed read each come back as `success: false` with the reason.
+ */
+async function withHierarchicalInventory(
+  operation: 'list' | 'get',
+  read: (store: any) => Record<string, unknown>,
+): Promise<any> {
+  if (!operationContext.getStore()?.active) return withBridgeOperation(() => withHierarchicalInventory(operation, read));
+  const registry = await getRegistry();
+  if (!registry) return null;
+  let hm: any;
+  try {
+    hm = registry.get('hierarchicalMemory');
+  } catch (e: any) {
+    return { success: false, error: `HierarchicalMemory not available: ${e?.message ?? e}` };
+  }
+  if (!hm) return { success: false, error: 'HierarchicalMemory not available' };
+  if (typeof hm.getStats === 'function' && typeof hm.promote === 'function') {
+    return {
+      success: false,
+      controller: 'native-unsupported',
+      error: `hierarchical-${operation} reads the tiered_memory table; the native agentdb HierarchicalMemory has no inventory API`,
+    };
+  }
+  const info = describeHierarchicalStore(hm, getHierarchicalFallback(registry));
+  if (typeof hm.listEntries !== 'function' || typeof hm.getEntry !== 'function') {
+    return {
+      success: false,
+      ...info,
+      code: 'unsupported',
+      error: `the installed @claude-flow/memory predates TieredMemoryStore.listEntries/getEntry (needs >= ${TIERED_INVENTORY_MIN_MEMORY})`,
+    };
+  }
+  try {
+    return { success: true, ...info, ...read(hm) };
+  } catch (e: any) {
+    return {
+      success: false,
+      ...info,
+      ...(typeof e?.code === 'string' ? { code: e.code } : {}),
+      error: String(e?.message ?? e),
+    };
+  }
+}
+
+/** Page through every persisted hierarchical-memory entry (#4712). */
+export async function bridgeHierarchicalList(params: {
+  tier?: string; status?: string; limit?: number; cursor?: string;
+}): Promise<any> {
+  return withHierarchicalInventory('list', hm => hm.listEntries({
+    tier: params.tier,
+    status: params.status,
+    limit: params.limit,
+    cursor: params.cursor,
+  }));
+}
+
+/** Exact read of one hierarchical-memory entry by its stable id (#4712). */
+export async function bridgeHierarchicalGet(params: { id: string; includeInactive?: boolean }): Promise<any> {
+  return withHierarchicalInventory('get', hm => {
+    const entry = hm.getEntry(params.id, { includeInactive: params.includeInactive === true });
+    return { found: entry !== null, entry };
+  });
+}
+
+// ===== #4707: read-only pattern / skill inventory and hierarchical counts =====
+
+/** Smallest agentdb whose ReasoningBank/SkillLibrary ship listPatterns/listSkills/getSkill. */
+const AGENTDB_INVENTORY_MIN = '3.3.0';
+
+/**
+ * Run one read against a registry controller inside a bridge operation.
+ * Refuses, never fabricates: a missing controller and a controller without
+ * the method both come back as `success: false, code: 'unsupported'` naming
+ * the method, so neither can be read as an empty inventory. A native error
+ * (bad page arguments, the graph-adapter refusal) keeps its own code.
+ */
+async function withInventoryController(
+  controllerName: 'reasoningBank' | 'skills',
+  method: string,
+  read: (controller: any) => Record<string, unknown>,
+): Promise<any> {
+  if (!operationContext.getStore()?.active) {
+    return withBridgeOperation(() => withInventoryController(controllerName, method, read));
+  }
+  const registry = await getRegistry();
+  if (!registry) return null;
+  let controller: any;
+  try {
+    controller = registry.get(controllerName);
+  } catch (e: any) {
+    return { success: false, controller: controllerName, code: 'unsupported', error: `${controllerName} not available, so ${method} cannot run: ${e?.message ?? e}` };
+  }
+  if (!controller) {
+    return { success: false, controller: controllerName, code: 'unsupported', error: `${controllerName} controller is not available, so ${method} cannot run` };
+  }
+  if (typeof controller[method] !== 'function') {
+    return {
+      success: false,
+      controller: controllerName,
+      code: 'unsupported',
+      error: `the active ${controllerName} controller has no ${method}() (needs agentdb >= ${AGENTDB_INVENTORY_MIN})`,
+    };
+  }
+  try {
+    return { success: true, controller: controllerName, ...read(controller) };
+  } catch (e: any) {
+    return {
+      success: false,
+      controller: controllerName,
+      ...(typeof e?.code === 'string' ? { code: e.code } : {}),
+      ...(typeof e?.field === 'string' ? { field: e.field } : {}),
+      error: String(e?.message ?? e),
+    };
+  }
+}
+
+/** Native list result envelope, passed through unchanged. */
+function pageOf(page: any): Record<string, unknown> {
+  return { items: page?.items, total: page?.total, limit: page?.limit, offset: page?.offset };
+}
+
+/** Page through ReasoningBank patterns, newest first (#4707). */
+export async function bridgeListPatterns(params: { taskType?: string; limit?: number; offset?: number }): Promise<any> {
+  return withInventoryController('reasoningBank', 'listPatterns', rb =>
+    pageOf(rb.listPatterns({ taskType: params.taskType, limit: params.limit, offset: params.offset })));
+}
+
+/** Page through SkillLibrary skills, newest first (#4707). */
+export async function bridgeListSkills(params: { minSuccessRate?: number; limit?: number; offset?: number }): Promise<any> {
+  return withInventoryController('skills', 'listSkills', sk =>
+    pageOf(sk.listSkills({ minSuccessRate: params.minSuccessRate, limit: params.limit, offset: params.offset })));
+}
+
+/** Exact read of one skill by its numeric id (#4707). */
+export async function bridgeGetSkill(params: { id: number }): Promise<any> {
+  return withInventoryController('skills', 'getSkill', sk => {
+    const skill = sk.getSkill(params.id);
+    return { found: skill != null, skill: skill ?? null };
+  });
+}
+
+/**
+ * Count-only view of the hierarchical store (#4707). `tiers` is the
+ * in-memory tier map sizes from getTierStats(); `persistedRows` is the
+ * tiered_memory row count from countPersisted() (null on a volatile store).
+ * They measure different things and are reported side by side.
+ */
+export async function bridgeHierarchicalStats(): Promise<any> {
+  if (!operationContext.getStore()?.active) return withBridgeOperation(() => bridgeHierarchicalStats());
+  const registry = await getRegistry();
+  if (!registry) return null;
+  let hm: any;
+  try {
+    hm = registry.get('hierarchicalMemory');
+  } catch (e: any) {
+    return { success: false, code: 'unsupported', error: `HierarchicalMemory not available, so getTierStats/countPersisted cannot run: ${e?.message ?? e}` };
+  }
+  if (!hm) {
+    return { success: false, code: 'unsupported', error: 'HierarchicalMemory not available, so getTierStats/countPersisted cannot run' };
+  }
+  const isNative = typeof hm.getStats === 'function' && typeof hm.promote === 'function';
+  const missing = ['getTierStats', 'countPersisted'].filter(m => typeof hm[m] !== 'function');
+  if (isNative || missing.length > 0) {
+    return {
+      success: false,
+      controller: isNative ? 'hierarchicalMemory' : 'tieredMemoryStore',
+      code: 'unsupported',
+      error: isNative
+        ? 'the native agentdb HierarchicalMemory has no getTierStats()/countPersisted()'
+        : `the active hierarchical store has no ${missing.join('()/')}() (the installed @claude-flow/memory predates it)`,
+    };
+  }
+  const info = describeHierarchicalStore(hm, getHierarchicalFallback(registry));
+  try {
+    return { success: true, ...info, tiers: hm.getTierStats(), persistedRows: hm.countPersisted() };
+  } catch (e: any) {
+    return { success: false, ...info, error: String(e?.message ?? e) };
   }
 }

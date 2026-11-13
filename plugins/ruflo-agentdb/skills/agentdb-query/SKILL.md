@@ -34,7 +34,7 @@ Call `mcp__plugin_ruflo-core_ruflo__agentdb_controllers` to list the runtime reg
 - **Lifecycle** — `agentdb_health`, `_controllers`, `_session-start`, `_session-end`
 - **Bulk** — `agentdb_batch` (≤500 entries), `_consolidate`
 - **Quality** — `agentdb_feedback`
-- **Graph reads** — `agentdb_graph-query` (k-hop / semantic / pagerank from a domain-prefixed node id such as `entity:xyz`; SQL k-hop is bounded at 3 hops, check `appliedDepth` and `truncated`) and `agentdb_graph-pathfinder`
+- **Graph reads** — `agentdb_graph-query` (k-hop / semantic / pagerank from a domain-prefixed node id such as `entity:xyz`; SQL k-hop is bounded at 3 hops, check `appliedDepth` and `truncated`) and `agentdb_graph-pathfinder` (`personalized-pagerank` by default; `dynamic-mincut` returns the seed's side of an exact min cut with `cutValue`, `cutEdges` and `backend`; see the `graph-mincut` skill)
 - **Deletes (destructive)** — `agentdb_hierarchical-delete`, `agentdb_causal-edge-delete`, `agentdb_causal-node-delete`. Confirm the exact ids with the user before calling; they are not undoable from this plugin.
 
 ## Important: namespace handling
