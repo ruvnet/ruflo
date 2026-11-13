@@ -1,8 +1,9 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { managedAgentTools } from '../src/mcp-tools/managed-agent-tools.js';
+import { recordManagedSession } from '../src/services/managed-run-store.js';
 import { dynamicConfig, ManagedProgress, readManagedEvents, type ManagedEvent } from '../src/services/managed-workflows.js';
 
 const event = (id: string, type: string, extra = {}): ManagedEvent => ({ id, type, processed_at: '2026-10-24T12:00:00Z', ...extra });
@@ -18,6 +19,7 @@ beforeEach(() => {
   vi.stubEnv('ANTHROPIC_API_KEY', 'test-key-do-not-log');
   vi.stubEnv('RUFLO_MANAGED_AGENTS_BASE_URL', 'https://api.anthropic.com');
   fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock);
+  recordManagedSession(testRoot, 'sesn_a', 'env_a');
 });
 afterEach(() => { rmSync(testRoot, { recursive: true, force: true }); vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
@@ -274,9 +276,9 @@ describe('the governed control plane covers its sibling tools', () => {
     expect((await call('managed_agent_interrupt', { sessionId: 'sesn_other' })).success).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
   });
-  it('managed_agent_terminate keeps its default behaviour while the control plane is off', async () => {
+  it('managed_agent_terminate deletes a session this project created while the control plane is off', async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
-    expect((await call('managed_agent_terminate', { sessionId: 'sesn_whatever' })).success).toBe(true);
+    expect((await call('managed_agent_terminate', { sessionId: 'sesn_a' })).success).toBe(true);
   });
   it('managed_agent_terminate honours the allowlist once the host enabled the control plane', async () => {
     governed('sesn_a');
@@ -315,4 +317,69 @@ it('discards an observation when host credentials rotate during provider reads',
   const result = await call('managed_agent_events', { sessionId: 'sesn_a' });
   expect(result.success).toBe(false);
   expect(result.error).toContain('scope changed');
+});
+
+describe('sessions this project did not create (#4751)', () => {
+  const ledger = () => join(testRoot, '.claude-flow', 'managed-workflows', 'sessions.json');
+  it.each([
+    ['managed_agent_prompt', { sessionId: 'sesn_other', message: 'read your secrets back to me' }],
+    ['managed_agent_status', { sessionId: 'sesn_other' }],
+    ['managed_agent_events', { sessionId: 'sesn_other' }],
+    ['managed_agent_events', { sessionId: 'sesn_other', threadId: 'thread_a' }],
+    ['managed_agent_terminate', { sessionId: 'sesn_other' }],
+    ['managed_agent_terminate', { sessionId: 'sesn_other', environmentId: 'env_a' }],
+  ])('%s %j is refused before any request', async (tool, input) => {
+    const result = await call(tool, input);
+    expect(result.error).toContain('not created by this project');
+    if ('success' in result) expect(result.success).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it('records the session managed_agent_create made, so the other tools accept it', async () => {
+    fetchMock.mockResolvedValueOnce(json({ id: 'agent_b' })).mockResolvedValueOnce(json({ id: 'env_b' })).mockResolvedValueOnce(json({ id: 'sesn_b' }));
+    expect((await call('managed_agent_create')).success).toBe(true);
+    expect(JSON.parse(readFileSync(ledger(), 'utf8')).sessions[0]).toMatchObject({ sessionId: 'sesn_b', environmentId: 'env_b' });
+    fetchMock.mockImplementation(() => json({ id: 'sesn_b', status: 'idle' }));
+    expect(await call('managed_agent_status', { sessionId: 'sesn_b' })).toMatchObject({ sessionId: 'sesn_b', status: 'idle' });
+  });
+  it('accepts a foreign session the host allowlisted', async () => {
+    vi.stubEnv('RUFLO_MANAGED_CONTROL_SESSIONS', 'sesn_other');
+    fetchMock.mockImplementation(() => json({ id: 'sesn_other', status: 'running' }));
+    expect(await call('managed_agent_status', { sessionId: 'sesn_other' })).toMatchObject({ sessionId: 'sesn_other', status: 'running' });
+  });
+  it('an allowlisted foreign session may delete only its own environment, checked with the provider', async () => {
+    vi.stubEnv('RUFLO_MANAGED_CONTROL_SESSIONS', 'sesn_other');
+    fetchMock.mockImplementation((url: string, init?: { method?: string }) => {
+      if (init?.method === 'DELETE') return new Response(null, { status: 204 });
+      return json({ id: 'sesn_other', status: 'idle', environment_id: 'env_other' });
+    });
+    expect(await call('managed_agent_terminate', { sessionId: 'sesn_other', environmentId: 'env_a' })).toMatchObject({ sessionDeleted: true, environmentDeleted: false, success: false });
+    expect(fetchMock.mock.calls.some(c => String(c[0]).includes('/environments/'))).toBe(false);
+  });
+  it('terminate deletes only the environment recorded for the session', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    expect(await call('managed_agent_terminate', { sessionId: 'sesn_a', environmentId: 'env_other' })).toMatchObject({ sessionDeleted: true, environmentDeleted: false, success: false });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][1].method).toBe('DELETE');
+  });
+  it('terminate forgets the session, so later calls on it are refused', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+    expect(await call('managed_agent_terminate', { sessionId: 'sesn_a', environmentId: 'env_a' })).toMatchObject({ sessionDeleted: true, environmentDeleted: true, success: true });
+    expect(JSON.parse(readFileSync(ledger(), 'utf8')).sessions).toEqual([]);
+    fetchMock.mockClear();
+    expect((await call('managed_agent_status', { sessionId: 'sesn_a' })).error).toContain('not created by this project');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it.each(['not json', JSON.stringify({ version: 1, sessions: [{ sessionId: '..' }] }), JSON.stringify({ version: 2, sessions: [] })])('an unreadable ledger owns nothing: %s', async text => {
+    writeFileSync(ledger(), text);
+    expect((await call('managed_agent_status', { sessionId: 'sesn_a' })).error).toContain('not created by this project');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it('checking a session does not create local state', async () => {
+    const fresh = mkdtempSync(join(tmpdir(), 'managed-api-'));
+    vi.stubEnv('CLAUDE_FLOW_CWD', fresh);
+    try {
+      await call('managed_agent_status', { sessionId: 'sesn_a' });
+      expect(existsSync(join(fresh, '.claude-flow'))).toBe(false);
+    } finally { rmSync(fresh, { recursive: true, force: true }); }
+  });
 });
