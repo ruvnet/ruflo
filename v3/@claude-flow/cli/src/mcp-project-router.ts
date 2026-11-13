@@ -11,7 +11,7 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -167,6 +167,39 @@ function isFile(p: string): boolean {
   }
 }
 
+/**
+ * Safely resolve realpath of a path, handling non-existent leaf or intermediate
+ * paths by resolving the deepest existing ancestor on disk and re-joining remaining segments.
+ */
+export function resolveRealPath(targetPath: string): string {
+  const resolved = path.resolve(targetPath);
+  if (existsSync(resolved)) {
+    try {
+      return (realpathSync.native ?? realpathSync)(resolved);
+    } catch {
+      return resolved;
+    }
+  }
+
+  let probe = resolved;
+  const missingParts: string[] = [];
+  while (probe && !existsSync(probe)) {
+    const parent = path.dirname(probe);
+    if (parent === probe) break;
+    missingParts.unshift(path.basename(probe));
+    probe = parent;
+  }
+
+  try {
+    const realBase = existsSync(probe)
+      ? (realpathSync.native ?? realpathSync)(probe)
+      : probe;
+    return path.join(realBase, ...missingParts);
+  } catch {
+    return resolved;
+  }
+}
+
 function splitEnvPaths(raw: string | undefined): string[] {
   if (!raw) return [];
   return raw
@@ -218,7 +251,13 @@ export function buildDefaultContainerDirs(homeDir = os.homedir(), stateDir = pat
   } catch {
     // Containerized environments may not resolve userInfo(); continue without it.
   }
-  return new Set(raw.map((entry) => path.resolve(entry)));
+  const result = new Set<string>();
+  for (const entry of raw) {
+    const resolved = path.resolve(entry);
+    result.add(resolved);
+    result.add(resolveRealPath(resolved));
+  }
+  return result;
 }
 
 /** Resolve the CLI script entrypoint used to spawn child stdio workers. */
@@ -275,7 +314,7 @@ export class ProjectIsolationRouter {
 
   constructor(options: ProjectRouterOptions = {}) {
     const homeDir = os.homedir();
-    this.globalCwd = path.resolve(options.globalCwd ?? homeDir);
+    this.globalCwd = resolveRealPath(options.globalCwd ?? homeDir);
     this.stateDir = path.resolve(options.stateDir ?? path.join(homeDir, '.claude-flow'));
     this.knownProjectsFile = path.join(this.stateDir, 'known-projects.json');
     this.idIndexFile = path.join(this.stateDir, 'router-id-index.json');
@@ -289,17 +328,21 @@ export class ProjectIsolationRouter {
 
     this.containerDirs = buildDefaultContainerDirs(homeDir, this.stateDir);
     this.containerDirs.add(this.globalCwd);
+    this.containerDirs.add(resolveRealPath(this.globalCwd));
     for (const extra of options.containerDirs ?? []) {
-      this.containerDirs.add(path.resolve(extra));
+      const resolved = path.resolve(extra);
+      this.containerDirs.add(resolved);
+      this.containerDirs.add(resolveRealPath(resolved));
     }
 
     const parentRoots = [
       ...(options.projectParentRoots ?? []),
       ...splitEnvPaths(process.env.RUFLO_PROJECT_PARENT_ROOTS),
     ].map((entry) => path.resolve(entry));
-    this.projectParentRoots = [...new Set(parentRoots)];
+    this.projectParentRoots = [...new Set(parentRoots.flatMap((entry) => [entry, resolveRealPath(entry)]))];
     for (const parent of this.projectParentRoots) {
       this.containerDirs.add(parent);
+      this.containerDirs.add(resolveRealPath(parent));
     }
   }
 
@@ -312,7 +355,7 @@ export class ProjectIsolationRouter {
     const trimmed = candidate.trim();
     if (!trimmed || trimmed.includes('\0') || !path.isAbsolute(trimmed)) return null;
 
-    let abs = path.resolve(trimmed);
+    let abs = resolveRealPath(trimmed);
     if (isFile(abs)) {
       abs = path.dirname(abs);
     } else if (!isDir(abs)) {
@@ -329,15 +372,18 @@ export class ProjectIsolationRouter {
       if (!isDir(abs)) return null;
     }
 
+    abs = resolveRealPath(abs);
+
     if (this.containerDirs.has(abs)) return null;
 
     const chain: string[] = [];
     let cur = abs;
     for (let i = 0; i < 16; i++) {
-      if (this.containerDirs.has(cur)) break;
-      chain.push(cur);
-      const parent = path.dirname(cur);
-      if (parent === cur) break;
+      const canonicalCur = resolveRealPath(cur);
+      if (this.containerDirs.has(cur) || this.containerDirs.has(canonicalCur)) break;
+      chain.push(canonicalCur);
+      const parent = path.dirname(canonicalCur);
+      if (parent === canonicalCur) break;
       cur = parent;
     }
     if (chain.length === 0) return null;
@@ -375,7 +421,7 @@ export class ProjectIsolationRouter {
         if (Array.isArray(parsed)) {
           for (const entry of parsed) {
             if (typeof entry === 'string' && isDir(entry)) {
-              const resolved = path.resolve(entry);
+              const resolved = resolveRealPath(entry);
               if (!this.containerDirs.has(resolved)) {
                 this.knownProjects.add(resolved);
               }
@@ -393,7 +439,7 @@ export class ProjectIsolationRouter {
         if (parsed && typeof parsed === 'object') {
           for (const [id, proj] of Object.entries(parsed as Record<string, unknown>)) {
             if (typeof id === 'string' && typeof proj === 'string' && isDir(proj)) {
-              this.idIndex.set(id, path.resolve(proj));
+              this.idIndex.set(id, resolveRealPath(proj));
             }
           }
         }
@@ -442,10 +488,11 @@ export class ProjectIsolationRouter {
   }
 
   registerProject(projectRoot: string): void {
-    if (!projectRoot || projectRoot === this.globalCwd || this.containerDirs.has(projectRoot)) return;
-    if (!this.knownProjects.has(projectRoot)) {
-      this.knownProjects.add(projectRoot);
-      this.indexProjectIdsFromDisk(projectRoot);
+    const canonical = resolveRealPath(projectRoot);
+    if (!canonical || canonical === this.globalCwd || this.containerDirs.has(canonical)) return;
+    if (!this.knownProjects.has(canonical)) {
+      this.knownProjects.add(canonical);
+      this.indexProjectIdsFromDisk(canonical);
       this.schedulePersist();
     }
   }
