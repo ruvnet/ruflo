@@ -73,6 +73,31 @@ function embeddingModelLabel(dimension: number): string {
   // Unchanged pre-#2305 label for any other size.
   return DEFAULT_EMBEDDING_MODEL;
 }
+
+/**
+ * #4984: label for a vector read from `embedder`. AgentDB's own embedder is
+ * MiniLM; only a patched one (rescue / registry generator) runs the configured
+ * model, so a dimension match alone must not claim it.
+ */
+function embedderModelLabel(
+  embedder: { __ruvectorRescued?: boolean; __registryGenerator?: boolean } | null | undefined,
+  dimension: number,
+): string {
+  const patched = embedder?.__ruvectorRescued === true || embedder?.__registryGenerator === true;
+  return patched ? embeddingModelLabel(dimension) : DEFAULT_EMBEDDING_MODEL;
+}
+/** #4984: embedder handed to the registry when embeddings.json names a non-default model. */
+function configuredModelGenerator(dimension: number): (text: string) => Promise<Float32Array> {
+  return async (text: string) => {
+    const { generateLocalEmbedding } = await import('./memory-initializer.js');
+    const local = await generateLocalEmbedding(text);
+    if (local.backend !== 'onnx' || local.embedding.length !== dimension) {
+      throw new Error(`configured embedding model unavailable (backend=${local.backend}, ${local.embedding.length}/${dimension} dims)`);
+    }
+    return Float32Array.from(local.embedding);
+  };
+}
+
 // One lease spans an entire bridge operation, including its awaited controller
 // effects and nested bridge calls. Initializer ownership alone is insufficient:
 // a ReasoningBank write can still be pending after its registry has opened.
@@ -329,6 +354,11 @@ async function getRegistry(dbPath?: string): Promise<any | null> {
             dbPath: resolvedPath,
             embeddingModel: embCfg.model,
             dimension: embCfg.dimension,
+            // #4984: AgentDB hardcodes MiniLM, so a configured non-default
+            // model needs the local chain installed as its embedder. Only real
+            // ONNX vectors are accepted (never hash vectors), and the local
+            // chain never re-enters the bridge (#2312).
+            ...(embCfg.model !== DEFAULT_EMBEDDING_MODEL ? { embeddingGenerator: configuredModelGenerator(embCfg.dimension) } : {}),
             vectorBackend: 'auto',
             controllers: {
               reasoningBank: true,
@@ -1070,7 +1100,7 @@ async function embedForBridge(
     try {
       const emb = await embedder.embed(text);
       if (emb && emb.length > 0) {
-        return { vector: Array.from(emb), model: embeddingModelLabel(emb.length) };
+        return { vector: Array.from(emb), model: embedderModelLabel(embedder, emb.length) };
       }
       agentdbProblem = 'agentdb embedder returned no vector';
     } catch (err) {
@@ -2140,7 +2170,7 @@ export async function bridgeGenerateEmbedding(
     return {
       embedding: Array.from(emb),
       dimensions: emb.length,
-      model: embCfg.model,
+      model: embedderModelLabel(embedder, emb.length),
       backend: isMock ? 'mock' : 'onnx',
     };
   } catch {
@@ -2177,7 +2207,7 @@ export async function bridgeLoadEmbeddingModel(
     return {
       success: true,
       dimensions: test.length,
-      modelName: embeddingModelLabel(test.length),
+      modelName: embedderModelLabel(embedder, test.length),
       loadTime: Date.now() - startTime,
     };
   } catch {
@@ -2456,7 +2486,7 @@ export async function bridgeAddEmbedding(
         status               = 'active'
     `).run(
       id, entry.key, entry.namespace, entry.content,
-      embeddingJson, embedding.length, embeddingModelLabel(embedding.length),
+      embeddingJson, embedding.length, embedderModelLabel(registry.getAgentDB()?.embedder, embedding.length),
       now, now,
     );
     return true;

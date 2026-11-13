@@ -224,8 +224,8 @@ importers:
         specifier: 3.2.1
         version: link:../aidefence
       '@claude-flow/memory':
-        specifier: 3.3.2
-        version: 3.3.2(@types/node@20.19.27)(zod@3.25.76)
+        specifier: 3.3.3
+        version: 3.3.3(@types/node@20.19.27)(zod@3.25.76)
       '@metaharness/flywheel':
         specifier: ~0.1.10
         version: 0.1.13
@@ -982,8 +982,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@claude-flow/memory@3.3.2(@types/node@20.19.27)(zod@3.25.76):
-    resolution: {integrity: sha512-BRTZ5Qt4iBoJ7XLAMZx+r4YV16W8m7+nvfcVExWYHj3O3u7IZu091uYjvBRzgHTuE99g3CscpTTr1QkbyzbMNA==}
+  /@claude-flow/memory@3.3.3(@types/node@20.19.27)(zod@3.25.76):
+    resolution: {integrity: sha512-e1ErfnyIVri5spje1VzpMW8UtF8k9eapckCj6RgGZn/+ZUstyWozqG7IKu++7MHymRmJttq0Vtp+k9hD80VV4w==}
     cpu: [x64, arm64]
     os: [darwin, linux, win32]
     requiresBuild: true
