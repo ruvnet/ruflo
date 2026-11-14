@@ -7,11 +7,13 @@
  *
  * - `writeJsonAtomic` writes a unique sibling temp file and renames it over
  *   the target, so readers never see a torn file.
- * - `withJsonStoreLock` holds `<path>.lock` (O_EXCL) for a SYNCHRONOUS
- *   operation. The lock is never held across an `await`.
+ * - `withJsonStoreLock` holds `<path>.lock` (O_EXCL, owner token inside) for
+ *   a SYNCHRONOUS operation. The lock is never held across an `await`, and is
+ *   never refreshed: the stale threshold assumes operations finish well within
+ *   it.
  * - `updateJsonStore` = lock → fresh read → mutate → atomic write → unlock.
  */
-import { closeSync, mkdirSync, openSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { closeSync, linkSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 
@@ -38,6 +40,9 @@ export function withJsonStoreLock<T>(path: string, operation: () => T): T {
   if (typeof operation !== 'function') throw new TypeError('operation must be a function');
   mkdirSync(dirname(path), { recursive: true });
   const lockPath = `${path}.lock`;
+  // Owner token: release only removes a lock this call still owns, so a
+  // holder that outlived the stale window cannot delete its successor's lock.
+  const token = `${process.pid}.${randomBytes(8).toString('hex')}`;
   const deadline = Date.now() + LOCK_MAX_WAIT_MS;
   let descriptor: number | undefined;
   while (descriptor === undefined) {
@@ -53,6 +58,13 @@ export function withJsonStoreLock<T>(path: string, operation: () => T): T {
     }
   }
   try {
+    writeFileSync(descriptor, token);
+  } catch (error) {
+    try { closeSync(descriptor); } catch { /* best effort */ }
+    try { unlinkSync(lockPath); } catch { /* best effort */ }
+    throw error;
+  }
+  try {
     const result = operation();
     if (result && typeof (result as { then?: unknown }).then === 'function') {
       throw new TypeError('withJsonStoreLock operation must be synchronous; do not hold the lock across await');
@@ -60,25 +72,50 @@ export function withJsonStoreLock<T>(path: string, operation: () => T): T {
     return result;
   } finally {
     try { closeSync(descriptor); } catch { /* best effort */ }
-    try { unlinkSync(lockPath); } catch { /* best effort */ }
+    releaseOwnedLock(lockPath, token);
   }
 }
 
+function releaseOwnedLock(lockPath: string, token: string): void {
+  try {
+    if (readFileSync(lockPath, 'utf-8') === token) unlinkSync(lockPath);
+  } catch { /* already gone */ }
+}
+
+const isMissing = (error: unknown): boolean => (error as NodeJS.ErrnoException)?.code === 'ENOENT';
+
 /**
- * Remove a lock whose mtime is older than the stale threshold. Rename-then-
- * unlink so two waiters cannot both delete a lock and then both acquire.
+ * Take over a lock whose mtime is older than the stale threshold. The lock is
+ * renamed away first (only one waiter can win the rename), then the renamed
+ * file is re-checked: if another waiter had already replaced the stale lock
+ * with a fresh one, that fresh lock is linked back and the takeover aborts.
+ *
+ * Returns true when the caller should retry the acquire immediately: the lock
+ * was taken over or vanished. Any other error returns false so the caller's
+ * deadline and back-off still apply (no busy spin on EACCES/EPERM).
  */
 function takeOverStaleLock(lockPath: string): boolean {
   try {
     if (Date.now() - statSync(lockPath).mtimeMs <= JSON_STORE_LOCK_STALE_MS) return false;
-    const claimed = `${lockPath}.stale.${process.pid}.${randomBytes(4).toString('hex')}`;
-    renameSync(lockPath, claimed);
-    try { unlinkSync(claimed); } catch { /* best effort */ }
-    return true;
-  } catch {
-    // The holder released it, or another waiter took it over first. Retry.
-    return true;
+  } catch (error) {
+    return isMissing(error);
   }
+  const claimed = `${lockPath}.stale.${process.pid}.${randomBytes(4).toString('hex')}`;
+  try {
+    renameSync(lockPath, claimed);
+  } catch (error) {
+    return isMissing(error);
+  }
+  try {
+    if (Date.now() - statSync(claimed).mtimeMs <= JSON_STORE_LOCK_STALE_MS) {
+      // We renamed a live lock another waiter had just acquired. Put it back.
+      try { linkSync(claimed, lockPath); } catch { /* a newer lock already exists */ }
+      try { unlinkSync(claimed); } catch { /* best effort */ }
+      return false;
+    }
+  } catch { /* fall through and discard */ }
+  try { unlinkSync(claimed); } catch { /* best effort */ }
+  return true;
 }
 
 export interface JsonStoreUpdate<R> {

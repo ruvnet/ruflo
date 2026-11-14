@@ -40,8 +40,16 @@ lock file (`openSync(path, 'wx')`, stale-lock takeover) plus a temp-file +
    - `writeJsonAtomic(path, value)` — write to a unique sibling temp file
      (mode `0o600`), `rename` over the target, unlink the temp on failure.
    - `withJsonStoreLock(path, operation)` — acquire `<path>.lock` with
-     `openSync(..., 'wx')`, retry with a short `Atomics.wait` back-off, take
-     over a lock older than a stale threshold, always release in `finally`.
+     `openSync(..., 'wx')` and write a per-acquisition owner token into it,
+     retry with a short `Atomics.wait` back-off until a 5 s deadline, and
+     release in `finally` only if the lock still holds this call's token (so
+     a holder that overran the stale window cannot delete its successor's
+     lock). A lock older than the stale threshold is taken over by renaming
+     it away first and re-checking the renamed file; a fresh lock renamed by
+     mistake is linked back. Only `ENOENT` short-circuits the back-off, so a
+     persistent `EACCES`/`EPERM` cannot busy-spin. The lock is never
+     refreshed: the threshold assumes the synchronous critical section is far
+     shorter than it.
      The operation is **synchronous**: the lock is never held across an
      `await`, so a stalled handler cannot wedge other processes and no
      async re-entrancy is possible.
@@ -81,6 +89,8 @@ lock file (`openSync(path, 'wx')`, stale-lock takeover) plus a temp-file +
 
 ### Neutral
 - File formats and paths are unchanged; no migration.
+- Stores are rewritten with mode `0600` (previously the umask default,
+  usually `0644`), and a symlinked store file is replaced by a regular file.
 - Lock files (`*.lock`) and transient `*.tmp` files appear next to the stores.
 
 ## Links
