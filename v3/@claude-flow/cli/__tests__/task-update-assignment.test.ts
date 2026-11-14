@@ -6,8 +6,9 @@ const state = vi.hoisted(() => ({ cwd: '', failSave: false, failAgentSave: false
 vi.mock('node:fs', async importOriginal => {
   const fs = await importOriginal<typeof import('node:fs')>();
   return { ...fs, writeFileSync: (...args: Parameters<typeof fs.writeFileSync>) => {
-    if (state.failSave && String(args[0]).endsWith('/tasks/store.json')) throw new Error('save failed');
-    if (state.failAgentSave && String(args[0]).endsWith('/agents/store.json')) throw new Error('agent save failed');
+    // Stores are written atomically via `<store>.json.<pid>.<hex>.tmp` + rename (ADR-531, #4736).
+    if (state.failSave && /\/tasks\/store\.json(\.\d+\.[0-9a-f]+\.tmp)?$/.test(String(args[0]))) throw new Error('save failed');
+    if (state.failAgentSave && /\/agents\/store\.json(\.\d+\.[0-9a-f]+\.tmp)?$/.test(String(args[0]))) throw new Error('agent save failed');
     return fs.writeFileSync(...args);
   } };
 });
