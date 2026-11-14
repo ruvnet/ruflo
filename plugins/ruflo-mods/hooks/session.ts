@@ -9,6 +9,7 @@ import type { ModOptions } from './options'
 import { ATTENTION_MAX_BYTES, ATTENTION_STATUS, attentionLine } from './attention'
 import { MAX_BYTES, PROTECTOR_STATUS, protectorLine } from './protector'
 import { redraw, report, under, type ModState } from './state'
+import { writeWithoutLinks } from './files'
 import { runSelfCheck } from './selfcheck'
 import { bindToasts } from './toast'
 
@@ -128,7 +129,14 @@ export function registerSession(on: On, state: ModState, options: ModOptions, gu
       .catch(() => undefined)
     if (project) {
       const heartbeat = { startedAt: new Date().toISOString(), owned: [...state.owned], statusLine: state.statusLine, ...(state.probe.enabled ? { engine: state.probe.version ?? null, events: [...state.probe.registered].sort() } : {}) }
-      await $.fs.write(under(state, HEARTBEAT_PATH), `${JSON.stringify(heartbeat, null, 2)}\n`).catch(() => undefined)
+      // The heartbeat never follows a link out of the project (#4746); a refusal is dropped like any failed write, after a debug log.
+      await writeWithoutLinks({ stat: path => $.fs.stat(path), write: (path, text) => $.fs.write(path, text) }, state.root, under(state, HEARTBEAT_PATH), `${JSON.stringify(heartbeat, null, 2)}\n`).catch((error: unknown) => {
+        try {
+          $.ui.log(`ruflo mods: heartbeat not written (${String((error as Error)?.message ?? error)})`, { to: 'debug' })
+        } catch {
+          // A refused log is swallowed: the heartbeat stays best-effort.
+        }
+      })
     }
     return next(e)
   }).catch(async ($, e, next) => {
