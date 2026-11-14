@@ -7,7 +7,6 @@
 import { createRequire } from 'node:module'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { wasmStatusCommand } from '../../../v3/@claude-flow/cli/src/commands/agent-wasm'
 import { DEV, devPalette, devSpec, probeRvagentWasm, withNeeds } from '../hooks/devtools'
 import { newState } from '../hooks/state'
 import { openLoaders } from '../hooks/view-open'
@@ -26,6 +25,14 @@ const installed = (() => {
   }
 })()
 
+/**
+ * The CLI command, loaded only where its `@claude-flow/cli-core` dependency resolves. The plugin smoke jobs do not install the v3
+ * workspace, so there the real-CLI block is skipped; the CLI's own `agent-wasm-status-json-3979.test.ts` covers that output in v3 CI.
+ */
+const wasmStatusCommand = await import('../../../v3/@claude-flow/cli/src/commands/agent-wasm')
+  .then(mod => mod.wasmStatusCommand)
+  .catch(() => null)
+
 let out = ''
 let err = ''
 
@@ -37,9 +44,9 @@ beforeEach(() => {
 })
 afterEach(() => vi.restoreAllMocks())
 
-const runCli = (format?: string) => wasmStatusCommand.action!({ args: [], flags: format ? { format } : {}, cwd: process.cwd() } as never)
+const runCli = (format?: string) => wasmStatusCommand!.action!({ args: [], flags: format ? { format } : {}, cwd: process.cwd() } as never)
 
-describe('the real CLI feeding the real probe', () => {
+describe.skipIf(!wasmStatusCommand)('the real CLI feeding the real probe', () => {
   it('prints one JSON document that the console parses to the matching state', async () => {
     await runCli('json')
     const stdout = out
