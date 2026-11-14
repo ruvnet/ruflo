@@ -32,6 +32,7 @@ import {
   validateRoomId,
   MAX_HOPS,
   MAX_ENVELOPE_BYTES,
+  MAX_SYNC_RESPONSE_BYTES,
   type SignedEnvelope,
 } from '../src/mcp-tools/agentbbs-federation.js';
 
@@ -356,6 +357,48 @@ describe('http transport (two real nodes)', () => {
     const idB = await getNodeIdentity(dirB);
     addPeer(dirA, { nodeId: idB.nodeId, url: 'http://127.0.0.1:1', publicKey: idB.publicKey });
     await expect(syncRoomFromPeer(dirA, readPeers(dirA)[0], 'sales-dd6531eb')).rejects.toThrow();
+  });
+});
+
+describe('sync response limits (#4752)', () => {
+  async function peerB() {
+    const idB = await getNodeIdentity(dirB);
+    addPeer(dirA, { nodeId: idB.nodeId, url: 'http://127.0.0.1:9', publicKey: idB.publicKey });
+    return readPeers(dirA)[0];
+  }
+
+  it('refuses to follow redirects from a peer', async () => {
+    const peer = await peerB();
+    let init: RequestInit | undefined;
+    const fetchImpl = (async (_u: string, i?: RequestInit) => { init = i; return new Response('{"envelopes":[]}'); }) as typeof fetch;
+    await syncRoomFromPeer(dirA, peer, 'sales-dd6531eb', fetchImpl);
+    expect(init?.redirect).toBe('error');
+  });
+
+  it('rejects a declared Content-Length over the cap without reading the body', async () => {
+    const peer = await peerB();
+    let pulled = 0;
+    const body = new ReadableStream<Uint8Array>({ pull(c) { pulled++; c.enqueue(new Uint8Array(1024)); } });
+    const fetchImpl = (async () => new Response(body, {
+      headers: { 'content-length': String(MAX_SYNC_RESPONSE_BYTES + 1) },
+    })) as typeof fetch;
+    await expect(syncRoomFromPeer(dirA, peer, 'sales-dd6531eb', fetchImpl)).rejects.toThrow(/size cap/);
+    expect(pulled).toBeLessThanOrEqual(1);
+  });
+
+  it('stops reading a streamed body as soon as it passes the cap', async () => {
+    const peer = await peerB();
+    const chunk = new Uint8Array(1024 * 1024);
+    let sent = 0;
+    let cancelled = false;
+    const body = new ReadableStream<Uint8Array>({
+      pull(c) { sent += chunk.byteLength; c.enqueue(chunk); },
+      cancel() { cancelled = true; },
+    });
+    const fetchImpl = (async () => new Response(body)) as typeof fetch;
+    await expect(syncRoomFromPeer(dirA, peer, 'sales-dd6531eb', fetchImpl)).rejects.toThrow(/size cap/);
+    expect(cancelled).toBe(true);
+    expect(sent).toBeLessThanOrEqual(MAX_SYNC_RESPONSE_BYTES + 2 * chunk.byteLength);
   });
 });
 

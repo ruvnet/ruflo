@@ -416,6 +416,38 @@ export async function mergeEnvelopes(
   return result;
 }
 
+/**
+ * Read a response body, giving up as soon as it passes `cap` bytes, so an
+ * oversized peer reply is never buffered whole before the size check.
+ */
+export async function readCappedText(res: Response, cap: number, peerNodeId: string): Promise<string> {
+  const tooBig = () => new Error(`peer ${peerNodeId} response exceeds size cap`);
+  const declared = Number(res.headers?.get?.('content-length'));
+  if (Number.isFinite(declared) && declared > cap) {
+    await res.body?.cancel().catch(() => undefined);
+    throw tooBig();
+  }
+  if (!res.body) {
+    const text = await res.text();
+    if (Buffer.byteLength(text, 'utf8') > cap) throw tooBig();
+    return text;
+  }
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > cap) {
+      await reader.cancel().catch(() => undefined);
+      throw tooBig();
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks, total).toString('utf8');
+}
+
 /** Pull one room from one peer and merge what verifies. */
 export async function syncRoomFromPeer(
   basePath: string,
@@ -431,11 +463,10 @@ export async function syncRoomFromPeer(
   const timer = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS);
   let body: any;
   try {
-    const res = await fetchImpl(url, { signal: controller.signal, headers: { accept: 'application/json' } });
+    // A peer URL is pinned by the operator; a redirect would send the pull somewhere they never approved.
+    const res = await fetchImpl(url, { signal: controller.signal, headers: { accept: 'application/json' }, redirect: 'error' });
     if (!res.ok) throw new Error(`peer ${peer.nodeId} returned ${res.status}`);
-    const text = await res.text();
-    if (text.length > MAX_SYNC_RESPONSE_BYTES) throw new Error(`peer ${peer.nodeId} response exceeds size cap`);
-    body = JSON.parse(text);
+    body = JSON.parse(await readCappedText(res, MAX_SYNC_RESPONSE_BYTES, peer.nodeId));
   } finally {
     clearTimeout(timer);
   }

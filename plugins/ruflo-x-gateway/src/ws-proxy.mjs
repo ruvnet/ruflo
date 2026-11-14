@@ -1,5 +1,7 @@
 import WebSocket, { WebSocketServer } from 'ws';
 const MAX_CONN = 500, MAX_PAYLOAD = 256 * 1024; let active = 0;
+/** Live proxied connections (each counted once, however it closes). */
+export const activeConnections = () => active;
 // Transparent WebSocket proxy: client <-> this gateway <-> Nostr relay.
 export function attachWsProxy(server, relayUrl, paths = ['/', '/relay']) {
   const wss = new WebSocketServer({ noServer: true, perMessageDeflate: false, maxPayload: MAX_PAYLOAD });
@@ -12,7 +14,12 @@ export function attachWsProxy(server, relayUrl, paths = ['/', '/relay']) {
       active++;
       client.on('message', (d) => { if (up.readyState === WebSocket.OPEN) up.send(d.toString()); });
       up.on('message', (d) => { if (client.readyState === WebSocket.OPEN) client.send(d.toString()); });
-      const closeBoth = () => { active--; try { client.close(); } catch {} try { up.close(); } catch {} };
+      // close and error can both fire on both sockets; release the slot only once.
+      let released = false;
+      const closeBoth = () => {
+        if (!released) { released = true; active--; }
+        try { client.close(); } catch {} try { up.close(); } catch {}
+      };
       client.once('close', closeBoth); up.once('close', closeBoth);
       client.once('error', closeBoth); up.once('error', closeBoth);
     }));
