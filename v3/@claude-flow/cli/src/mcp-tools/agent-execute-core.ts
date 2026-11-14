@@ -8,9 +8,10 @@
  * place rather than duplicated.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getProjectCwd } from './types.js';
+import { updateJsonStore } from './locked-json-store.js';
 import { appendAgentExecution, summarizeAgentExecutions, type AgentExecutionSample } from './agent-health-metrics.js';
 import { configManager } from '../services/config-file-manager.js';
 
@@ -54,19 +55,17 @@ interface AgentStore {
 
 function getAgentDir(): string { return join(getProjectCwd(), STORAGE_DIR, AGENT_DIR); }
 function getAgentPath(): string { return join(getAgentDir(), AGENT_FILE); }
-function ensureAgentDir(): void {
-  const dir = getAgentDir();
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-}
+// A missing or unreadable store reads as empty. Both locked writers below only
+// write when the target agent exists, so an unreadable store is never replaced.
 function loadAgentStore(): AgentStore {
   try {
     if (existsSync(getAgentPath())) return JSON.parse(readFileSync(getAgentPath(), 'utf-8'));
   } catch { /* fall through */ }
   return { agents: {}, version: '3.0.0' };
 }
-function saveAgentStore(store: AgentStore): void {
-  ensureAgentDir();
-  writeFileSync(getAgentPath(), JSON.stringify(store, null, 2), 'utf-8');
+/** #4736 / ADR-531 — atomic read-modify-write shared with agent-tools.ts (same lock path). */
+function updateAgentStore<R>(mutate: (store: AgentStore) => { result: R; changed?: boolean }): R {
+  return updateJsonStore(getAgentPath(), loadAgentStore, mutate);
 }
 
 // #1906/#2232 — Current model ids (Claude 4.x family):
@@ -621,10 +620,20 @@ export interface AgentExecuteResult {
 const activeExecutions = new Map<string, number>();
 
 export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentExecuteResult> {
-  const store = loadAgentStore();
-  const agent = store.agents[input.agentId];
-  if (!agent) return { success: false, agentId: input.agentId, error: 'Agent not found' };
-  if (agent.status === 'terminated') return { success: false, agentId: input.agentId, error: 'Agent has been terminated' };
+  // #4736 — mark the agent busy under the store lock on a fresh read, so a
+  // concurrent spawn/update/execute in another process is not overwritten.
+  const begun = updateAgentStore<AgentRecord | string>((store) => {
+    const current = store.agents[input.agentId];
+    if (!current) return { result: 'Agent not found', changed: false };
+    if (current.status === 'terminated') return { result: 'Agent has been terminated', changed: false };
+    current.status = 'busy';
+    current.taskCount = (current.taskCount || 0) + 1;
+    return { result: current };
+  });
+  if (typeof begun === 'string') return { success: false, agentId: input.agentId, error: begun };
+  // Local snapshot of the record as persisted; later fields are merged back
+  // into the freshest store by persistCompletion.
+  const agent = begun;
 
   // ADR-149 iter 13 — first-call dispatch prefers `agent.modelId` (the
   // cost-optimal pick from the neural backend) over `MODEL_MAP[agent.model]`
@@ -668,9 +677,6 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
 
   const initialModelId = agent.modelId;
   const initialModel = agent.model;
-  agent.status = 'busy';
-  agent.taskCount = (agent.taskCount || 0) + 1;
-  saveAgentStore(store);
 
   const executionKey = JSON.stringify([getAgentPath(), input.agentId, agent.createdAt]);
   activeExecutions.set(executionKey, (activeExecutions.get(executionKey) || 0) + 1);
@@ -841,32 +847,34 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
   const persistCompletion = (out?: AgentExecuteResult): void => {
     // Awaited provider/feedback work may have overlapped registration, updates,
     // termination or deletion. Never replace that newer registry snapshot.
-    const latest = loadAgentStore();
-    const current = latest.agents[input.agentId];
-    if (!current || current.createdAt !== agent.createdAt) return;
-    if (current.status === 'busy') current.status = remaining > 0 ? 'busy' : 'idle';
-    if (agent.modelId !== initialModelId && current.modelId === initialModelId) {
-      // A fallback may also change its tier. Carry that change with the model
-      // ID, but preserve any selection the user edited during the request.
-      if (agent.model !== initialModel && current.model === initialModel) current.model = agent.model;
-      current.modelId = agent.modelId;
-    }
-    if (out) current.lastResult = out as unknown as Record<string, unknown>;
-    const previousMeasuredHealth = summarizeAgentExecutions(current.executionHistory).health;
-    const mayUpdateStoredHealth = previousMeasuredHealth === null
-      ? current.health === agent.health
-      : current.health === previousMeasuredHealth;
-    current.executionHistory = appendAgentExecution(current.executionHistory, {
-      at: new Date().toISOString(),
-      success: result.success,
-      durationMs: result.durationMs ?? Date.now() - startedAt,
+    // #4736 — re-read and write under the store lock (synchronous, no await).
+    updateAgentStore((latest) => {
+      const current = latest.agents[input.agentId];
+      if (!current || current.createdAt !== agent.createdAt) return { result: undefined, changed: false };
+      if (current.status === 'busy') current.status = remaining > 0 ? 'busy' : 'idle';
+      if (agent.modelId !== initialModelId && current.modelId === initialModelId) {
+        // A fallback may also change its tier. Carry that change with the model
+        // ID, but preserve any selection the user edited during the request.
+        if (agent.model !== initialModel && current.model === initialModel) current.model = agent.model;
+        current.modelId = agent.modelId;
+      }
+      if (out) current.lastResult = out as unknown as Record<string, unknown>;
+      const previousMeasuredHealth = summarizeAgentExecutions(current.executionHistory).health;
+      const mayUpdateStoredHealth = previousMeasuredHealth === null
+        ? current.health === agent.health
+        : current.health === previousMeasuredHealth;
+      current.executionHistory = appendAgentExecution(current.executionHistory, {
+        at: new Date().toISOString(),
+        success: result.success,
+        durationMs: result.durationMs ?? Date.now() - startedAt,
+      });
+      // An explicit agent_update during the provider call still wins. The
+      // measured value remains available from executionHistory in agent_health.
+      if (mayUpdateStoredHealth) {
+        current.health = summarizeAgentExecutions(current.executionHistory).health ?? current.health;
+      }
+      return { result: undefined };
     });
-    // An explicit agent_update during the provider call still wins. The
-    // measured value remains available from executionHistory in agent_health.
-    if (mayUpdateStoredHealth) {
-      current.health = summarizeAgentExecutions(current.executionHistory).health ?? current.health;
-    }
-    saveAgentStore(latest);
   };
 
   if (result.success) {

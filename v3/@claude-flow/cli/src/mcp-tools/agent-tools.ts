@@ -524,14 +524,19 @@ export const agentTools: MCPTool[] = [
         };
       }
 
-      if (swarm && swarmTools && swarmStore) {
+      if (swarm && swarmTools) {
         try {
-          if (!Array.isArray(swarm.agents)) swarm.agents = [];
-          // Idempotent — don't duplicate if agent_spawn is retried.
-          if (!swarm.agents.includes(agentId)) {
-            swarm.agents.push(agentId);
-            swarmTools.saveSwarmStore(swarmStore);
-          }
+          // #4736 — push under the swarm-state lock on a fresh read, so a
+          // concurrent spawn into the same swarm is not overwritten.
+          swarmTools.updateSwarmStore((latest) => {
+            const live = latest.swarms[swarm.swarmId];
+            if (!live) return { result: undefined, changed: false };
+            if (!Array.isArray(live.agents)) live.agents = [];
+            // Idempotent — don't duplicate if agent_spawn is retried.
+            if (live.agents.includes(agentId)) return { result: undefined, changed: false };
+            live.agents.push(agentId);
+            return { result: undefined, changed: true };
+          });
         } catch { /* swarm store unwritable — agent still registered globally */ }
       }
 
