@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.50.2 — 2026-11-13
+- fix: the Dev Tools WASM agents rows (gallery, categories, search, agents) say n/a, with the install command, when `@ruvector/rvagent-wasm` is not installed, instead of being buttons that can only fail (#3979, ADR-532). The package is not a dependency of any ruflo install, so opening Dev Tools asks the CLI once (`agent wasm-status --format json`, local, read-only) and the rows, their palette ids (`/ruflo run dt-wasm-*`) and the WASM section note follow the answer. A failed, slow or unreadable probe leaves the rows runnable
+
 ## 0.50.1 — 2026-11-09
 - chore: the command catalog (`catalog/command-catalog.json`) is regenerated from the CLI's `catalog.generated.json`. It picks up the three init commands renamed so they no longer collide with plugin commands (`/memory-neural`, `/stream-chain-run`, `/swarm-orchestrate`, #2640) and the mod registrations and plugins added since the last regeneration
 
