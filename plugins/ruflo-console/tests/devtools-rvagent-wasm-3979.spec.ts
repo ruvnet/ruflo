@@ -87,11 +87,60 @@ describe('the probe', () => {
     expect((await probe(() => Promise.reject(new Error('timeout')))).state).toBe('unknown')
   })
 
-  it('does not run again once resolved', async () => {
-    const missing = await probe(async () => ({ exitCode: 0, stdout: '{"available":true}' }), 'missing')
+  it('asks again while missing, so installing the package and reopening the page brings the rows back', async () => {
+    const reopened = await probe(async () => ({ exitCode: 0, stdout: '{"available":true}' }), 'missing')
 
-    expect(missing.calls).toHaveLength(0)
-    expect(missing.state).toBe('missing')
+    expect(reopened.calls).toHaveLength(1)
+    expect(reopened.state).toBe('present')
+  })
+
+  it('does not ask again once the package was found', async () => {
+    const present = await probe(async () => ({ exitCode: 0, stdout: '{"available":false}' }), 'present')
+
+    expect(present.calls).toHaveLength(0)
+    expect(present.state).toBe('present')
+  })
+
+  it('runs one probe at a time for two quick opens', async () => {
+    const state = newState({})
+    let release: () => void = () => undefined
+    const calls: string[][] = []
+    const host = { run: (argv: string[]) => (calls.push(argv), new Promise<{ exitCode: number; stdout: string }>(done => { release = () => done({ exitCode: 0, stdout: '{"available":false}' }) })), invalidate: () => undefined }
+
+    const first = probeRvagentWasm(state, host as never)
+    const second = probeRvagentWasm(state, host as never)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    release()
+    await Promise.all([first, second])
+
+    expect(calls.filter(argv => argv.includes('wasm-status'))).toHaveLength(1)
+    expect(state.devtools.rvagentWasm).toBe('missing')
+  })
+
+  it('uses the launcher the rows use, and never downloads the CLI (cold npx) just to probe', async () => {
+    const state = newState({})
+    const calls: string[][] = []
+    // Every installed launcher fails, so the npx choice would fall back to `npx -y` (cold).
+    const host = { run: async (argv: string[]) => (calls.push(argv), { exitCode: 1, stdout: '' }), invalidate: () => undefined }
+
+    state.options.cli = 'npx'
+    await probeRvagentWasm(state, host as never)
+
+    expect(calls.some(argv => argv.includes('wasm-status'))).toBe(false)
+    expect(state.devtools.rvagentWasm).toBe('unknown')
+  })
+
+  it('probes through a global ruflo when the npx choice finds one on PATH', async () => {
+    const state = newState({})
+    const calls: string[][] = []
+    const host = { run: async (argv: string[]) => (calls.push(argv), argv.includes('wasm-status') ? { exitCode: 0, stdout: '{"available":true}' } : { exitCode: 0, stdout: '3.77.1' }), invalidate: () => undefined }
+
+    state.options.cli = 'npx'
+    await probeRvagentWasm(state, host as never)
+
+    const probed = calls.find(argv => argv.includes('wasm-status'))
+    expect(probed?.[0]).toBe('ruflo')
+    expect(state.devtools.rvagentWasm).toBe('present')
   })
 
   it('runs when the Dev Tools view opens, and not for another view', async () => {

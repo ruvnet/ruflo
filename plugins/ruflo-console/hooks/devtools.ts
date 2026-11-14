@@ -12,7 +12,8 @@ import type { Host } from './host'
 import type { PaletteEntry } from './palette'
 import { RURE, RURE_GROUPS, rurePreflight } from './rure'
 import { SANDBOX, SANDBOX_GROUPS } from './sandbox'
-import { CLI_PREFIXES, type State } from './state'
+import { resolveLauncher } from './launcher'
+import type { State } from './state'
 
 /** `read`: local, $0, changes nothing. `local`: local compute that keeps nothing. Then writes, the network, money, deletes. */
 export type DevCost = 'read' | 'local' | 'writes' | 'network' | 'spends' | 'deletes'
@@ -269,23 +270,36 @@ export function wasmAvailability(stdout: string): boolean | null {
 }
 
 /**
- * Is @ruvector/rvagent-wasm here? Asked of the CLI itself (it resolves the package where the CLI does), once per console
- * session. Only a clear `available: false` hides rows: a failed, slow or unreadable probe leaves them runnable (ADR-532).
+ * Is @ruvector/rvagent-wasm here? Asked of the CLI itself, through the launcher the WASM rows run with, so both resolve
+ * the package from the same install (ADR-532). Only a clear `available: false` hides rows: a failed, slow or unreadable
+ * probe leaves them runnable. Asked again on every Dev Tools open until it is found, so installing the package and
+ * reopening the page brings the rows back; a launcher that would download the CLI (cold npx) is never used for it.
  */
 export async function probeRvagentWasm(state: State, host: Host): Promise<void> {
-  if (state.devtools.rvagentWasm !== 'unknown') return
+  if (state.devtools.rvagentWasm === 'present' || probing.has(state)) return
+  probing.add(state)
 
   try {
-    const result = await host.run([...CLI_PREFIXES[state.options.cli], 'agent', 'wasm-status', '--format', 'json'], 30_000)
-    const available = result.exitCode === 0 ? wasmAvailability(result.stdout) : null
+    const launcher = await resolveLauncher(host, state)
 
-    if (available !== null) state.devtools.rvagentWasm = available ? 'present' : 'missing'
+    // A cold launcher is `npx -y`: opening a page must not download the CLI. Leave it unknown; the rows stay runnable.
+    if (launcher.kind !== 'cold') {
+      const result = await host.run([...launcher.prefix, 'agent', 'wasm-status', '--format', 'json'], 30_000)
+      const available = result.exitCode === 0 ? wasmAvailability(result.stdout) : null
+
+      if (available !== null) state.devtools.rvagentWasm = available ? 'present' : 'missing'
+    }
   } catch {
-    // Leave it unknown: the rows stay runnable.
+    // Leave it as it was: an unknown state keeps the rows runnable.
+  } finally {
+    probing.delete(state)
   }
 
   host.invalidate()
 }
+
+/** Consoles with a probe in flight, so two quick opens do not run two CLIs. */
+const probing = new WeakSet<State>()
 
 /** Which entry Enter in each field runs; a field with none only keeps its text. */
 const SUBMITS: Partial<Record<DevField, string>> = { task: 'dt-brain', ref: 'dt-diff', path: 'dt-cow-status', session: 'dt-sb-capture', send: 'dt-sb-send', url: 'dt-br-open', target: 'dt-br-click', query: 'dt-plug-search', cmd: 'dt-term-exec' }

@@ -49,9 +49,14 @@ Option 3.
    another reason, rows stay runnable (the CLI's own message still applies), so
    the probe can never hide a working feature.
 2. The probe uses the CLI's own availability check (`agent wasm-status
-   --format json`), so it resolves the package exactly where the CLI does
+   --format json`), run through the same launcher the WASM rows use
+   (`resolveLauncher`), so it resolves the package exactly where the rows will
    (a global install sees the global `node_modules`, `npx` does not). The JSON
-   form of that command prints only JSON, so the console can parse it.
+   form of that command prints only JSON, so the console can parse it. A cold
+   launcher (`npx -y`, which would download the CLI) is never used for the
+   probe; the state stays unknown. The probe re-runs on each Dev Tools open
+   until the package is found, so installing it and reopening the page brings
+   the rows back; one probe runs at a time.
 3. The palette drops n/a rows as it already does, so `/ruflo run dt-wasm-*`
    is not offered while the package is missing.
 4. Nothing is installed automatically. The CLI keeps its `not installed`
