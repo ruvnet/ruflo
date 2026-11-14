@@ -7,10 +7,9 @@
 
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
+import { AGENT_WASM_NOT_INSTALLED_MESSAGE } from '../ruvector/agent-wasm.js';
 
-const WASM_NOT_AVAILABLE_MSG =
-  '@ruvector/rvagent-wasm is not installed.\n' +
-  'Install it with: npm install @ruvector/rvagent-wasm';
+const WASM_NOT_AVAILABLE_MSG = AGENT_WASM_NOT_INSTALLED_MESSAGE;
 
 async function loadWasm() {
   const mod = await import('../ruvector/agent-wasm.js');
@@ -31,12 +30,15 @@ export const wasmStatusCommand: Command = {
       const available = await wasm.isAgentWasmAvailable();
 
       if (!available) {
-        output.writeln();
-        output.printWarning(WASM_NOT_AVAILABLE_MSG);
+        const data = { available: false, reason: 'not-installed', install: WASM_NOT_AVAILABLE_MSG };
         if (ctx.flags.format === 'json') {
-          output.printJson({ available: false });
+          // stdout must be exactly one JSON document (ADR-532); the hint is in the JSON.
+          output.printJson(data);
+        } else {
+          output.writeln();
+          output.printWarning(WASM_NOT_AVAILABLE_MSG);
         }
-        return { success: true, data: { available: false } };
+        return { success: true, data };
       }
 
       // Init to get full status
