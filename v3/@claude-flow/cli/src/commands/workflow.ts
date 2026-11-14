@@ -7,6 +7,7 @@ import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { select, confirm, input } from '../prompt.js';
 import { callMCPTool, MCPClientError } from '../mcp-client.js';
+import { localCliContext } from '../mcp-tools/path-containment.js';
 
 // Workflow templates
 const WORKFLOW_TEMPLATES = [
@@ -250,7 +251,7 @@ const validateCommand: Command = {
       }>('workflow_validate', {
         file,
         strict,
-      });
+      }, localCliContext());
 
       if (ctx.flags.format === 'json') {
         output.printJson(result);
