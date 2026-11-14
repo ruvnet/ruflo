@@ -5,7 +5,8 @@
  * Includes model routing integration for intelligent model selection.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { updateJsonStore } from './locked-json-store.js';
 import { join } from 'node:path';
 import { nullPrototypeRecords, readRecordStore } from './record-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
@@ -103,26 +104,19 @@ function getAgentPath(): string {
   return join(getAgentDir(), AGENT_FILE);
 }
 
-function ensureAgentDir(): void {
-  const dir = getAgentDir();
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-}
-
 function loadAgentStore(): AgentStore {
   return readRecordStore(getAgentPath(), 'agents', () => ({ agents: {}, version: '3.0.0' }));
+}
+
+/** #4736 — atomic read-modify-write of the agent store (fresh read inside the lock). */
+function updateAgentStore<R>(mutate: (store: AgentStore) => { result: R; changed?: boolean }): R {
+  return updateJsonStore(getAgentPath(), loadAgentStore, mutate);
 }
 
 /** Live canonical registry members, excluding stale or duplicate swarm IDs. */
 export function getLiveAgentIds(agentIds: string[]): string[] {
   const { agents } = loadAgentStore();
   return [...new Set(agentIds)].filter(id => agents[id] && agents[id].status !== 'terminated');
-}
-
-function saveAgentStore(store: AgentStore): void {
-  ensureAgentDir();
-  writeFileSync(getAgentPath(), JSON.stringify(store, null, 2), 'utf-8');
 }
 
 // #1916: read hive-mind-spawned workers from `.claude-flow/agents.json`.
@@ -472,8 +466,6 @@ export const agentTools: MCPTool[] = [
         ...(routingResult.openrouterModel ? { openrouterModel: routingResult.openrouterModel } : {}),
       };
 
-      const store = loadAgentStore();
-
       // #2085 — the agent is also pushed to the swarm store's agents array so
       // that swarm_status reports it. Resolve that swarm first: #4572 — an
       // active swarm already holding maxAgents live agents refuses the spawn.
@@ -494,33 +486,45 @@ export const agentTools: MCPTool[] = [
       } catch { /* swarm store unavailable — agent still registered globally */ }
       const swarm = targetSwarmId ? swarmStore?.swarms[targetSwarmId] : undefined;
       const members = Array.isArray(swarm?.agents) ? swarm.agents : [];
-      if (swarm && swarm.status !== 'terminated' && !members.includes(agentId)) {
-        // Terminated agents stay listed in swarm.agents; they no longer hold a slot.
-        const live = members.filter(
-          (id) => store.agents[id] && store.agents[id].status !== 'terminated',
-        ).length;
-        if (live >= swarm.maxAgents) {
-          return {
-            success: false,
-            error: `Swarm ${swarm.swarmId} is full: ${live}/${swarm.maxAgents} agents. Terminate an agent (agent_terminate) or init a swarm with a larger maxAgents.`,
-            swarmId: swarm.swarmId,
-            agentCount: live,
-            maxAgents: swarm.maxAgents,
-          };
+      // #4736 — locked phase: re-read the agent store, run the swarm-capacity
+      // check against fresh state, then register. The swarm store is touched
+      // only after the lock is released (no nested cross-file locks).
+      const full = updateAgentStore((store) => {
+        if (swarm && swarm.status !== 'terminated' && !members.includes(agentId)) {
+          // Terminated agents stay listed in swarm.agents; they no longer hold a slot.
+          const live = members.filter(
+            (id) => store.agents[id] && store.agents[id].status !== 'terminated',
+          ).length;
+          if (live >= swarm.maxAgents) {
+            return { result: { live } as { live: number } | undefined, changed: false };
+          }
         }
+        store.agents[agentId] = agent;
+        return { result: undefined as { live: number } | undefined };
+      });
+      if (full && swarm) {
+        return {
+          success: false,
+          error: `Swarm ${swarm.swarmId} is full: ${full.live}/${swarm.maxAgents} agents. Terminate an agent (agent_terminate) or init a swarm with a larger maxAgents.`,
+          swarmId: swarm.swarmId,
+          agentCount: full.live,
+          maxAgents: swarm.maxAgents,
+        };
       }
 
-      store.agents[agentId] = agent;
-      saveAgentStore(store);
-
-      if (swarm && swarmTools && swarmStore) {
+      if (swarm && swarmTools) {
         try {
-          if (!Array.isArray(swarm.agents)) swarm.agents = [];
-          // Idempotent — don't duplicate if agent_spawn is retried.
-          if (!swarm.agents.includes(agentId)) {
-            swarm.agents.push(agentId);
-            swarmTools.saveSwarmStore(swarmStore);
-          }
+          // #4736 — push under the swarm-state lock on a fresh read, so a
+          // concurrent spawn into the same swarm is not overwritten.
+          swarmTools.updateSwarmStore((latest) => {
+            const live = latest.swarms[swarm.swarmId];
+            if (!live) return { result: undefined, changed: false };
+            if (!Array.isArray(live.agents)) live.agents = [];
+            // Idempotent — don't duplicate if agent_spawn is retried.
+            if (live.agents.includes(agentId)) return { result: undefined, changed: false };
+            live.agents.push(agentId);
+            return { result: undefined, changed: true };
+          });
         } catch { /* swarm store unwritable — agent still registered globally */ }
       }
 
@@ -547,13 +551,13 @@ export const agentTools: MCPTool[] = [
             memoryBranch = br.branchPath;
             agent.memoryBranch = br.branchPath;
             agent.memoryBase = br.basePath;
-            const latest = loadAgentStore();
-            const current = latest.agents[agentId];
-            if (current && current.status !== 'terminated') {
+            updateAgentStore((latest) => {
+              const current = latest.agents[agentId];
+              if (!current || current.status === 'terminated') return { result: undefined, changed: false };
               current.memoryBranch = br.branchPath;
               current.memoryBase = br.basePath;
-              saveAgentStore(latest);
-            }
+              return { result: undefined };
+            });
           }
           // else: degraded (agenticow missing / kill-switched) — agent stands
           // without an isolated branch; callers see no memoryBranch field.
@@ -664,13 +668,16 @@ export const agentTools: MCPTool[] = [
       const v = validateIdentifier(input.agentId, 'agentId');
       if (!v.valid) return { success: false, error: `Input validation failed: ${v.error}` };
 
-      const store = loadAgentStore();
       const agentId = input.agentId as string;
 
-      if (store.agents[agentId]) {
-        const rec = store.agents[agentId];
-        rec.status = 'terminated';
-        saveAgentStore(store);
+      const rec = updateAgentStore((store) => {
+        const found = store.agents[agentId];
+        if (!found) return { result: undefined, changed: false };
+        found.status = 'terminated';
+        return { result: { ...found } as AgentRecord | undefined };
+      });
+
+      if (rec) {
 
         // ACOW — resolve the agent's COW memory branch on teardown: promote
         // (merge into base) when asked, else discard. Non-fatal — a failure
@@ -839,9 +846,11 @@ export const agentTools: MCPTool[] = [
         if (!v.valid) return { action: input.action, error: `Input validation failed: ${v.error}` };
       }
 
-      const store = loadAgentStore();
-      const agents = Object.values(store.agents).filter(a => a.status !== 'terminated');
       const action = (input.action as string) || 'status';  // Default to status
+      // #4736 — mutating actions run read → mutate → write inside one lock;
+      // status stays a lock-free read.
+      const runPool = (store: AgentStore): Record<string, unknown> => {
+      const agents = Object.values(store.agents).filter(a => a.status !== 'terminated');
 
       if (action === 'status') {
         const byType: Record<string, number> = {};
@@ -912,7 +921,6 @@ export const agentTools: MCPTool[] = [
           }
         }
 
-        saveAgentStore(store);
         return {
           action,
           agentType,
@@ -935,7 +943,6 @@ export const agentTools: MCPTool[] = [
             }
           }
         }
-        saveAgentStore(store);
         return {
           action,
           agentType: agentType || 'all',
@@ -945,6 +952,14 @@ export const agentTools: MCPTool[] = [
       }
 
       return { action, error: 'Unknown action' };
+      };
+      if (action === 'scale' || action === 'fill' || action === 'drain') {
+        return updateAgentStore((store) => {
+          const result = runPool(store);
+          return { result, changed: !('error' in result) };
+        });
+      }
+      return runPool(loadAgentStore());
     },
   },
   {
@@ -1071,18 +1086,20 @@ export const agentTools: MCPTool[] = [
         if (!vs.valid) return { success: false, agentId: input.agentId, error: `Input validation failed: ${vs.error}` };
       }
 
-      const store = loadAgentStore();
       const agentId = input.agentId as string;
-      const agent = store.agents[agentId];
+      const agent = updateAgentStore((store) => {
+        const found = store.agents[agentId];
+        if (!found) return { result: undefined as AgentRecord | undefined, changed: false };
+        if (input.status) found.status = input.status as AgentRecord['status'];
+        if (typeof input.health === 'number') found.health = input.health as number;
+        if (typeof input.taskCount === 'number') found.taskCount = input.taskCount as number;
+        if (input.config) {
+          found.config = { ...found.config, ...(input.config as Record<string, unknown>) };
+        }
+        return { result: { ...found } as AgentRecord | undefined };
+      });
 
       if (agent) {
-        if (input.status) agent.status = input.status as AgentRecord['status'];
-        if (typeof input.health === 'number') agent.health = input.health as number;
-        if (typeof input.taskCount === 'number') agent.taskCount = input.taskCount as number;
-        if (input.config) {
-          agent.config = { ...agent.config, ...(input.config as Record<string, unknown>) };
-        }
-        saveAgentStore(store);
 
         return {
           success: true,

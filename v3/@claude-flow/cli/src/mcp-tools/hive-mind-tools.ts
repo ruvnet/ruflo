@@ -10,6 +10,7 @@ import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 import { readPreservedJsonStore } from './record-store.js';
+import { updateJsonStore } from './locked-json-store.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -376,11 +377,16 @@ function loadAgentStore(storePath = getHiveAgentPath()): HiveAgentStore {
   return store;
 }
 
-function saveAgentStore(store: HiveAgentStore, storePath = getHiveAgentPath()): void {
-  // A new hive store lives directly in STORAGE_DIR; join only writes stores
-  // that already contain its agent, so their parent directories already exist.
-  mkdirSync(join(getProjectCwd(), STORAGE_DIR), { recursive: true });
-  writeFileSync(storePath, JSON.stringify(store, null, 2), 'utf-8');
+/**
+ * #4736 / ADR-531 — locked read-modify-write of an agent store. `agents.json`
+ * and `agents/store.json` are also written by agent-tools and task-tools under
+ * the same per-path lock, so every writer must go through here.
+ */
+function updateAgentStore<R>(
+  storePath: string,
+  mutate: (store: HiveAgentStore) => { result: R; changed?: boolean },
+): R {
+  return updateJsonStore(storePath, () => loadAgentStore(storePath), mutate);
 }
 
 function findAgent(store: HiveAgentStore, agentId: string): HiveAgentRecord | undefined {
@@ -452,7 +458,7 @@ export const hiveMindTools: MCPTool[] = [
       }
       const agentType = (input.agentType as string) || 'worker';
       const prefix = (input.prefix as string) || 'hive-worker';
-      const agentStore = loadAgentStore();
+      const newAgents: HiveAgentRecord[] = [];
 
       const spawnedWorkers: Array<{ agentId: string; role: string; joinedAt: string }> = [];
 
@@ -470,8 +476,7 @@ export const hiveMindTools: MCPTool[] = [
           createdAt: new Date().toISOString(),
           domain: 'hive-mind',
         };
-        if (Array.isArray(agentStore.agents)) agentStore.agents.push(agent);
-        else agentStore.agents[agentId] = agent;
+        newAgents.push(agent);
 
         // Join to hive-mind (like hive-mind/join)
         if (!state.workers.includes(agentId)) {
@@ -485,7 +490,14 @@ export const hiveMindTools: MCPTool[] = [
         });
       }
 
-      saveAgentStore(agentStore);
+      // #4736 — merge the new records into a fresh read under the store lock.
+      updateAgentStore(getHiveAgentPath(), (agentStore) => {
+        for (const agent of newAgents) {
+          if (Array.isArray(agentStore.agents)) agentStore.agents.push(agent);
+          else agentStore.agents[agent.agentId as string] = agent;
+        }
+        return { result: undefined };
+      });
       saveHiveState(state);
 
       return {
@@ -783,9 +795,14 @@ export const hiveMindTools: MCPTool[] = [
       if (!HIVE_ROLES.has(role)) {
         return { success: false, agentId, error: `role must be one of: ${[...HIVE_ROLES].join(', ')}` };
       }
-      for (const { path, store, agent } of records) {
-        agent.config = { ...(agent.config as Record<string, unknown>), role, hiveRole: role };
-        saveAgentStore(store, path);
+      for (const { path } of records) {
+        // #4736 — re-read under the lock; skip a store the agent has since left.
+        updateAgentStore(path, (store) => {
+          const agent = findAgent(store, agentId);
+          if (!agent) return { result: undefined, changed: false };
+          agent.config = { ...(agent.config as Record<string, unknown>), role, hiveRole: role };
+          return { result: undefined };
+        });
       }
 
       if (!alreadyJoined) {
@@ -1299,17 +1316,18 @@ export const hiveMindTools: MCPTool[] = [
       }
 
       // Clear workers from agent store
-      const agentStore = loadAgentStore();
-      if (Array.isArray(agentStore.agents)) {
-        agentStore.agents = agentStore.agents.filter(agent => !state.workers.includes(agent.agentId as string));
-      } else {
-        for (const workerId of state.workers) {
-          if (Object.prototype.hasOwnProperty.call(agentStore.agents, workerId)) {
-            delete agentStore.agents[workerId];
+      updateAgentStore(getHiveAgentPath(), (agentStore) => {
+        if (Array.isArray(agentStore.agents)) {
+          agentStore.agents = agentStore.agents.filter(agent => !state.workers.includes(agent.agentId as string));
+        } else {
+          for (const workerId of state.workers) {
+            if (Object.prototype.hasOwnProperty.call(agentStore.agents, workerId)) {
+              delete agentStore.agents[workerId];
+            }
           }
         }
-      }
-      saveAgentStore(agentStore);
+        return { result: undefined };
+      });
 
       // Reset hive state
       const shutdownTime = new Date().toISOString();

@@ -175,6 +175,20 @@ export function saveSwarmStore(store: SwarmStore): void {
   }
 }
 
+/**
+ * #4736 / ADR-531 — locked read-modify-write of swarm-state.json for callers
+ * outside this module. `mutate` runs synchronously on a fresh read; the store
+ * is written only when it reports `changed`.
+ */
+export function updateSwarmStore<R>(mutate: (store: SwarmStore) => { result: R; changed: boolean }): R {
+  return withSwarmStoreLock(() => {
+    const store = loadSwarmStore();
+    const { result, changed } = mutate(store);
+    if (changed) saveSwarmStore(store);
+    return result;
+  });
+}
+
 function withSwarmStoreLock<T>(operation: () => T): T {
   ensureSwarmDir();
   const lockPath = join(getSwarmDir(), SWARM_STATE_LOCK);
