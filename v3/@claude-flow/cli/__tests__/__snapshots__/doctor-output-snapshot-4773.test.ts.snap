@@ -1,0 +1,127 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`doctor output stays byte-identical (#4773) > bare doctor 1`] = `
+"
+RuFlo Doctor
+System diagnostics and health check
+──────────────────────────────────────────────────
+
+⚠ Version Freshness: v<cli-version> (cannot check registry)
+✓ Node.js Version: <node-version> (>= 20 required)
+✓ npm Version: v10.9.0
+✓ Claude Code CLI: v2.0.0
+⚠ agent-browser CLI (ADR-122): Not found on PATH; @claude-flow/browser and browser MCP tools need agent-browser v0.27.0 or newer
+✓ Git: v2.47.0
+⚠ Git Repository: Not a git repository
+⚠ Config File: No config file (using defaults)
+✓ Stale npx@latest in settings (#2448): no runaway commands detected
+✓ Project auto-approve settings (ADR-509): no auto-approve keys in project settings
+✓ Helper Integrity (#3565): no installed ruflo helpers to verify
+⚠ Daemon Status: Not running
+⚠ Memory Database Presence: Not initialized
+⚠ Memory Structural Integrity (quick_check): no memory.db found (see Memory Database Presence above) — structural-only check skipped
+⚠ Memory Persistence Driver: no memory.db found (see Memory Database Presence above) — driver check skipped
+✓ Learning Bridge: auto-memory hook not installed (run: npx ruflo@latest init)
+✓ @claude-flow/memory version: v<memory-installed> satisfies declared <memory-declared>
+✓ Native addon headers (Node 24): Node 22.0.0 is not in the affected range (24.19.0-24.21.x)
+⚠ API Keys: No API keys found
+⚠ MCP Servers: No MCP config found
+✓ MCP Schema Overhead: 2 advertised tools ≈ 91 schema tokens (all tools)
+✓ AIDefence: @claude-flow/aidefence loadable — aidefence_* MCP tools functional
+✓ Disk Space: 60G available
+⚠ TypeScript: Not installed locally
+⚠ agentic-flow: Not installed (optional — embeddings/routing will use fallbacks)
+⚠ Encryption at Rest: Off — session/terminal/memory stores are plaintext (mode 0600 only)
+✓ Federation Breaker: ADR-097 breaker loadable — federation_breaker_status / federation_evict / federation_reactivate MCP tools available
+⚠ MetaHarness (ADR-150): Not installed — \`npx ruflo metaharness *\` commands will degrade gracefully
+✗ MetaHarness declared packages (ADR-150): declared but not installed: @metaharness/darwin, @metaharness/flywheel, @metaharness/radio, @metaharness/turn-credit — advertised MetaHarness surfaces are degraded
+✓ MetaHarness integration (ADR-150): plugin scripts intact, _similarity.mjs + parseMcpScanText load, smoke OK
+✓ Funnel (ADR-305): enabled (decided by: package-default; disclosure: never_seen)
+⚠ Meta LLM Proxy (ADR-313): not installed — no proxy-token found; sponsored-downtime capacity is unavailable
+⚠ Cognitum identity (ADR-306): not logged in
+✓ ruflo mods (ADR-404): not enabled; classic hooks handle every event
+✓ Learning loop (#4581): not recording (ruflo-mods learningLoop option off or no turn yet)
+✓ Compaction snapshots (ADR-505): no compaction snapshots in this project
+
+──────────────────────────────────────────────────
+
+Summary: 19 passed, 16 warnings, 1 failed
+
+Run with --fix to see 14 suggested commands (does not auto-apply)
+
+Some checks failed. Please address the issues above.
+"
+`;
+
+exports[`doctor output stays byte-identical (#4773) > doctor --fix 1`] = `
+"
+RuFlo Doctor
+System diagnostics and health check
+──────────────────────────────────────────────────
+
+⚠ Version Freshness: v<cli-version> (cannot check registry)
+✓ Node.js Version: <node-version> (>= 20 required)
+✓ npm Version: v10.9.0
+✓ Claude Code CLI: v2.0.0
+⚠ agent-browser CLI (ADR-122): Not found on PATH; @claude-flow/browser and browser MCP tools need agent-browser v0.27.0 or newer
+✓ Git: v2.47.0
+⚠ Git Repository: Not a git repository
+⚠ Config File: No config file (using defaults)
+✓ Stale npx@latest in settings (#2448): no runaway commands detected
+✓ Project auto-approve settings (ADR-509): no auto-approve keys in project settings
+✓ Helper Integrity (#3565): no installed ruflo helpers to verify
+⚠ Daemon Status: Not running
+⚠ Memory Database Presence: Not initialized
+⚠ Memory Structural Integrity (quick_check): no memory.db found (see Memory Database Presence above) — structural-only check skipped
+⚠ Memory Persistence Driver: no memory.db found (see Memory Database Presence above) — driver check skipped
+✓ Learning Bridge: auto-memory hook not installed (run: npx ruflo@latest init)
+✓ @claude-flow/memory version: v<memory-installed> satisfies declared <memory-declared>
+✓ Native addon headers (Node 24): Node 22.0.0 is not in the affected range (24.19.0-24.21.x)
+⚠ API Keys: No API keys found
+⚠ MCP Servers: No MCP config found
+✓ MCP Schema Overhead: 2 advertised tools ≈ 91 schema tokens (all tools)
+✓ AIDefence: @claude-flow/aidefence loadable — aidefence_* MCP tools functional
+✓ Disk Space: 60G available
+⚠ TypeScript: Not installed locally
+⚠ agentic-flow: Not installed (optional — embeddings/routing will use fallbacks)
+⚠ Encryption at Rest: Off — session/terminal/memory stores are plaintext (mode 0600 only)
+✓ Federation Breaker: ADR-097 breaker loadable — federation_breaker_status / federation_evict / federation_reactivate MCP tools available
+⚠ MetaHarness (ADR-150): Not installed — \`npx ruflo metaharness *\` commands will degrade gracefully
+✗ MetaHarness declared packages (ADR-150): declared but not installed: @metaharness/darwin, @metaharness/flywheel, @metaharness/radio, @metaharness/turn-credit — advertised MetaHarness surfaces are degraded
+✓ MetaHarness integration (ADR-150): plugin scripts intact, _similarity.mjs + parseMcpScanText load, smoke OK
+✓ Funnel (ADR-305): enabled (decided by: package-default; disclosure: never_seen)
+⚠ Meta LLM Proxy (ADR-313): not installed — no proxy-token found; sponsored-downtime capacity is unavailable
+⚠ Cognitum identity (ADR-306): not logged in
+✓ ruflo mods (ADR-404): not enabled; classic hooks handle every event
+✓ Learning loop (#4581): not recording (ruflo-mods learningLoop option off or no turn yet)
+✓ Compaction snapshots (ADR-505): no compaction snapshots in this project
+
+──────────────────────────────────────────────────
+
+Summary: 19 passed, 16 warnings, 1 failed
+
+Suggested commands (run them yourself):
+
+  agent-browser CLI (ADR-122): npm install -g agent-browser@latest
+  Git Repository: git init
+  Config File: claude-flow config init
+  Daemon Status: claude-flow daemon start
+  Memory Database Presence: claude-flow memory configure --backend hybrid
+  API Keys: export ANTHROPIC_API_KEY=your_key
+  MCP Servers: claude mcp add ruflo -- npx -y ruflo@latest mcp start
+  TypeScript: npm install -D typescript
+  agentic-flow: npm install agentic-flow@latest
+  Encryption at Rest: export CLAUDE_FLOW_ENCRYPT_AT_REST=1 && export CLAUDE_FLOW_ENCRYPTION_KEY=<64-char-hex>
+  MetaHarness (ADR-150): npm install --include=optional  # to enable the metaharness optional dep
+  MetaHarness declared packages (ADR-150): npm install --include=optional  # optional deps were skipped or pruned
+  Meta LLM Proxy (ADR-313): See cognitum-one/meta-proxy (private) for install instructions
+  Cognitum identity (ADR-306): ruflo auth login
+
+Some checks failed. Please address the issues above.
+"
+`;
+
+exports[`doctor output stays byte-identical (#4773) > doctor --json -c memory 1`] = `
+"{"schemaVersion":1,"checks":[{"id":"memory-presence","status":"warn","name":"Memory Database Presence","detail":"Not initialized","fix":"claude-flow memory configure --backend hybrid"},{"id":"memory-integrity","status":"warn","name":"Memory Integrity","detail":"no memory.db found (see Memory Database Presence check above)"},{"id":"memory-driver","status":"warn","name":"Memory Persistence Driver","detail":"no memory.db found (see Memory Database Presence above) — driver check skipped"},{"id":"memory-package","status":"pass","name":"@claude-flow/memory version","detail":"v<memory-installed> satisfies declared <memory-declared>"},{"id":"memory-content","status":"warn","name":"Memory Content","detail":"no memory.db found"},{"id":"memory-embeddings","status":"warn","name":"Memory Embedding Coverage","detail":"no memory.db found"},{"id":"memory-reflexion","status":"warn","name":"Memory Reflexion Coverage","detail":"no memory.db found"},{"id":"memory-critique","status":"warn","name":"Memory Feedback Critiques","detail":"no memory.db found"}]}
+"
+`;

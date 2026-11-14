@@ -479,7 +479,7 @@
       {
         "id": "#1791.7",
         "desc": "doctor walk-up .git fallback",
-        "file": "v3/@claude-flow/cli/dist/src/commands/doctor.js",
+        "file": "v3/@claude-flow/cli/dist/src/commands/doctor-checks/environment.js",
         "sha256": "d2f94d0d207b25167c965d180113bb3d2e156147b9b3299c9f4021e8db27d3f1",
         "marker": "is-inside-work-tree",
         "markerVerified": false
@@ -535,7 +535,7 @@
       {
         "id": "#1798",
         "desc": "doctor surfaces config collision (legacy JSON + v3 YAML)",
-        "file": "v3/@claude-flow/cli/dist/src/commands/doctor.js",
+        "file": "v3/@claude-flow/cli/dist/src/commands/doctor-checks/config.js",
         "sha256": "d2f94d0d207b25167c965d180113bb3d2e156147b9b3299c9f4021e8db27d3f1",
         "marker": "Config collision",
         "markerVerified": false
@@ -952,10 +952,10 @@
   },
   "integrity": {
     "manifestHashAlgo": "sha256",
-    "manifestHash": "5b865831b0402557fed9fa250cf15dcccbf6c052989a195352bfa218f299a392",
+    "manifestHash": "fdf400f82a64136800f77495da4ae2de3535a3d660e600dcbb11265c0f65aa17",
     "signatureAlgo": "ed25519",
     "publicKey": "d714b597bab91b8d83493704ef4995746b3f4ed5f181c00d6b1700089792a907",
-    "signature": "9487d1248d20a8269b8691ffe12a4b2f5b7caae4991b82430ede806cd0456255598d4c008fe03d54d9ee9bd0801bae221a7911f3eea51ab9d6eca35f345d8f01",
+    "signature": "a768ebbadd2a5f44ff8d49cbbedf4b5758360e3ed5ac2cad154fbe514321a3418595b86351ec5e482fbc2a5dce8f1346850c02a6e4bc202fdea6aab7bb38290b",
     "authenticity": "self-attested",
     "seedDerivation": "sha256(gitCommit + ':ruflo-witness/v1')"
   }
