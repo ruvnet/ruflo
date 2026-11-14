@@ -336,6 +336,11 @@ export class AgentBrowserAdapter {
     return this.exec<T>(['eval', input.script]);
   }
 
+  /** Alias for {@link eval} — some callers expect the DOM-style `evaluate` name. */
+  async evaluate<T = unknown>(input: EvalInput): Promise<ActionResult<T>> {
+    return this.eval<T>(input);
+  }
+
   // ===========================================================================
   // Mouse Control
   // ===========================================================================
