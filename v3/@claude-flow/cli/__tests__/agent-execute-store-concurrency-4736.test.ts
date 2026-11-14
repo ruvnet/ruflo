@@ -3,6 +3,8 @@
  * agent_spawn → swarm-store push, exercised from real concurrent processes.
  * The provider is a local HTTP stub (ANTHROPIC_BASE_URL), so there is no network.
  */
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { spawn } from 'node:child_process';
 import { createServer, type Server } from 'node:http';
@@ -14,7 +16,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const cliRoot = resolve(here, '..');
-const tsx = resolve(cliRoot, '../../../node_modules/.bin/tsx');
+// Resolve tsx through Node (works whether deps sit at the repo root or in v3/), not a fixed .bin path.
+const tsxLoader = pathToFileURL(createRequire(import.meta.url).resolve('tsx/esm')).href;
 const agentToolsPath = join(cliRoot, 'src/mcp-tools/agent-tools.ts');
 
 const CHILD = `
@@ -62,7 +65,7 @@ function runChild(gate: string, tool: string, input: object): Promise<any> {
   };
   for (const k of ['ANTHROPIC_AUTH_TOKEN', 'OPENROUTER_API_KEY', 'OLLAMA_API_KEY', 'OLLAMA_BASE_URL']) delete env[k];
   return new Promise((resolveRun, reject) => {
-    const child = spawn(tsx, [script, agentToolsPath, gate, tool, JSON.stringify(input)], { cwd: cliRoot, env });
+    const child = spawn(process.execPath, ['--import', tsxLoader, script, agentToolsPath, gate, tool, JSON.stringify(input)], { cwd: cliRoot, env });
     let out = ''; let err = '';
     child.stdout.on('data', (d) => { out += d; });
     child.stderr.on('data', (d) => { err += d; });

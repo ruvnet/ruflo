@@ -3,6 +3,8 @@
  * N real Node processes call the real agent_spawn / agent_update /
  * agent_terminate handlers at once against one project directory.
  */
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -12,7 +14,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const cliRoot = resolve(here, '..');
-const tsx = resolve(cliRoot, '../../../node_modules/.bin/tsx');
+// Resolve tsx through Node (works whether deps sit at the repo root or in v3/), not a fixed .bin path.
+const tsxLoader = pathToFileURL(createRequire(import.meta.url).resolve('tsx/esm')).href;
 const agentToolsPath = join(cliRoot, 'src/mcp-tools/agent-tools.ts');
 const WORKERS = 8;
 
@@ -34,7 +37,7 @@ function runChild(gate: string, tool: string, input: object): Promise<any> {
   const script = join(dir, `child-${Math.random().toString(36).slice(2)}.mts`);
   writeFileSync(script, CHILD);
   return new Promise((resolveRun, reject) => {
-    const child = spawn(tsx, [script, agentToolsPath, gate, tool, JSON.stringify(input)], {
+    const child = spawn(process.execPath, ['--import', tsxLoader, script, agentToolsPath, gate, tool, JSON.stringify(input)], {
       cwd: cliRoot,
       env: { ...process.env, CLAUDE_FLOW_CWD: dir, CLAUDE_FLOW_ROUTER_TRAJECTORY: '0', CLAUDE_FLOW_RUN_TRANSCRIPTS: '0' },
     });
