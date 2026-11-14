@@ -75,9 +75,9 @@ Candidate: `v3/@claude-flow/swarm/src/consensus/byzantine.ts` + `gossip.ts` (+6 
 
 ```
 Session commit:   3a1479883b55b7f786ef0bf3141478e4dfb9444f
-Candidate commit: PENDING
-Gist SHA-256 (pre-witness): PENDING
-Witness stamp:    PENDING
+Candidate commit: cffef28a17e1867c66e03fbd51aaebbc61e48682
+Gist SHA-256 (pre-witness): bbb81412d3e5dcec5059392050ae0a2870b5b1f5679b2f40357827c24ad7e551
+Witness stamp:    0e31d2b12437912db3b405979e222c55925c6d579bf2483b01bd6540f0d984ad
 ```
 Verifier procedure: fetch this file at the candidate commit, replace the three dynamic values above with the literal text `PENDING`, SHA-256 the result, concatenate with the Session commit, SHA-256 again — must equal the Witness stamp. Same structural self-reference caveat every prior night's witness has disclosed: this hash is computed on a draft of the file before this section's final values are filled in, so hashing the fully-published file will not reproduce it.
 
