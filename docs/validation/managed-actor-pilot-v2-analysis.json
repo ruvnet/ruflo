@@ -1,0 +1,112 @@
+{
+  "schema": "ruflo.live-actor-pilot-analysis/v1",
+  "planHash": "909cb786d4dab5f429bb1c39ab54fa3a5c2b9e8dd2a6b7858535277566ccce1e",
+  "selected": "compact",
+  "trainingCalls": 8,
+  "auditCalls": 90,
+  "reportedCostUSD": 0.4765472,
+  "summary": {
+    "baseline": {
+      "passed": 30,
+      "total": 30,
+      "observed": 30,
+      "missing": 0,
+      "reportedCostUSD": 0.1694662,
+      "observedP95Ms": 5556
+    },
+    "random": {
+      "passed": 30,
+      "total": 30,
+      "observed": 30,
+      "missing": 0,
+      "reportedCostUSD": 0.1420766,
+      "observedP95Ms": 5432
+    },
+    "learned": {
+      "passed": 30,
+      "total": 30,
+      "observed": 30,
+      "missing": 0,
+      "reportedCostUSD": 0.1275412,
+      "observedP95Ms": 3882
+    }
+  },
+  "observedLearnedCostReduction": 0.24739446568106216,
+  "observedPairedRegressions": [],
+  "observedPerTaskNoRegression": true,
+  "observedAggregateQualityNoRegression": true,
+  "liveModelInferenceExecuted": true,
+  "liveImprovementProven": false,
+  "promotionAuthorized": false,
+  "limitations": [
+    "Descriptive SDK-reported list-cost and host-oracle scores, not invoice audit.",
+    "No separately signed registration/oracle chain and no established independent task families.",
+    "The selected prompt may be a better static default; no separate static-best control executed.",
+    "The v2 prompt declared core ECMAScript and explicit finite JSON signatures; recorded oracle validity remains conditional on its implemented cases.",
+    "The selector uses float USD; native managed learning uses integer cents and was not this selector.",
+    "Cost-only observations cannot satisfy the preregistered quality-lift proof gate."
+  ],
+  "preregisteredCostEndpoint": {
+    "endpoint": "global-prompt-cost-transfer-v1",
+    "observedGatePassed": false,
+    "comparisons": [
+      {
+        "control": "baseline",
+        "complete": true,
+        "passed": true,
+        "wins": 22,
+        "losses": 8,
+        "ties": 0,
+        "pValue": 0.008062400855123997,
+        "baselineReportedCostUSD": 0.1694662,
+        "learnedReportedCostUSD": 0.1275412,
+        "costReduction": 0.24739446568106205,
+        "perTaskQualityNoRegression": true,
+        "baselineP95Ms": 5556,
+        "learnedP95Ms": 3882
+      },
+      {
+        "control": "random",
+        "complete": true,
+        "passed": false,
+        "wins": 15,
+        "losses": 15,
+        "ties": 0,
+        "pValue": 0.572232224047184,
+        "baselineReportedCostUSD": 0.1420766,
+        "learnedReportedCostUSD": 0.1275412,
+        "costReduction": 0.10230678380535567,
+        "perTaskQualityNoRegression": true,
+        "baselineP95Ms": 5432,
+        "learnedP95Ms": 3882
+      }
+    ],
+    "independenceEstablished": false,
+    "generalAgentImprovementProven": false,
+    "qualification": "Conditional paired test on curated microtasks and SDK-reported list cost; independent-pair assumption and oracle validity require separate evidence.",
+    "promotionAuthorized": false
+  },
+  "artifactSha256": "1529fc0e894da3c1c6a77fe7dcb4931546bc2e200ef16161ede67769dbcfbfeb",
+  "executedSourceHashes": {
+    "actor_pilot.py": "6b8d50b2f9c0f8fe63d480d866d755775e8ef5ab2ff0d2898c3c0cec34bfbcb2",
+    "actor_pilot_v1.py": "a2ce770a5db3d3f6bfc12e3278b478dae9c9cf9428a74644de581f455bd8f4d3",
+    "cost_endpoint.py": "a424859c3618004407cf0f759e084fd4c32d92387839e1670725085fa5dfec2e",
+    "manifest.json": "3cb074a0113f6d6331ddbb585a96a39e2bb3a0f376d3af41ee7063fafec1f1e5"
+  },
+  "referenceChecksPassed": 34,
+  "oracleReview": {
+    "scope": "Post-run source inspection, not a new score or repaired audit",
+    "nullableTasks": [
+      "fresh-dijkstra-distance",
+      "fresh-json-pointer"
+    ],
+    "finding": "Recorded Dijkstra programs explicitly convert unreachable Infinity to null; no observed NaN/toJSON/JSON tampering false pass found. Generic nonfinite coercion and mutable-intrinsic holes in v2 are fixed only in the next offline v3 version."
+  },
+  "posthocEconomicDescription": {
+    "trainingReportedCostUSD": "0.0374632000000000012",
+    "learnedPlusTrainingReportedCostUSD": "0.1650044000000000055",
+    "netFirstBatchReportedCostReduction": "0.0263285540125405408894689110",
+    "breakEvenSimilarTasksAtObservedMeans": "26.80729874776386547707975845",
+    "scope": "Descriptive SDK-reported economics, not a new statistical endpoint or production forecast; excludes experiment controls, VM and verification costs."
+  }
+}

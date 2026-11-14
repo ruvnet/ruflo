@@ -1,0 +1,32 @@
+{
+  "sourceManifest": {
+    "files": {
+      "plugins/ruflo-agent/docs/adrs/0006-model-transfer-and-agent-booster-ablation.md": "9ab23505b67344aef1740cbd6ef6459439ee0f958708be9eca79452b71f88dc0",
+      "scripts/managed-proof/README.md": "60deb0d254ebe05c3f285cb55c986f3ef027f36c31a52fcddcc58489a5d17bbb",
+      "scripts/managed-proof/actor_pilot.py": "bc57bf393a8df26b08938572d771f3e4968ff704bd83b7d60bdcd5fd9fccd628",
+      "scripts/managed-proof/actor_pilot_v1.py": "a2ce770a5db3d3f6bfc12e3278b478dae9c9cf9428a74644de581f455bd8f4d3",
+      "scripts/managed-proof/actor_pilot_v2.py": "6b8d50b2f9c0f8fe63d480d866d755775e8ef5ab2ff0d2898c3c0cec34bfbcb2",
+      "scripts/managed-proof/analyze_actor_pilot.py": "bc94e18c018047014bbf3ea5f5937d0c4e96a28092b7e0884668cdcd57a3298d",
+      "scripts/managed-proof/booster-transfer/README.md": "ddf776d59cb1c6206b471ff56712869d94e8ebc29577e8be0dee19b8e3e536eb",
+      "scripts/managed-proof/booster-transfer/booster_apply.mjs": "3ffc4dfc8b0fae31bc0d56ba874089c065b2cdb157c0d83cded5c01a0d0b51ea",
+      "scripts/managed-proof/booster-transfer/edit_ablation.py": "46378d64a05218a1f01d5228bff217d4e6078404ad9052763f5bf9b7f3bc083b",
+      "scripts/managed-proof/booster-transfer/openrouter_client.py": "8ca15a749b66b799a6ca724b5b544e591d666b5c4ee66a6dbb2a927018043903",
+      "scripts/managed-proof/booster-transfer/test_transfer.py": "0f8f7a0288a5bfe00134318e6818b41d59ac5a4df4db8321538745a04a813aac",
+      "scripts/managed-proof/booster-transfer/transfer_pilot.py": "570d4cdfd59822b6552cf09c81ddf58c8ec73772092f5d23fd6cc99e80e1b31d",
+      "scripts/managed-proof/cost_endpoint.py": "a424859c3618004407cf0f759e084fd4c32d92387839e1670725085fa5dfec2e",
+      "scripts/managed-proof/cost_endpoint_v2.py": "a424859c3618004407cf0f759e084fd4c32d92387839e1670725085fa5dfec2e",
+      "scripts/managed-proof/test_actor_analysis.py": "fab02e0834e5ca2b0cee2975ea540a481287124f8df733be0a6cffec3ee2a05c",
+      "scripts/managed-proof/test_actor_pilot.py": "0549eddc40cae76f455d1ebc34decf8816afb3f54c8887505910a48d84adbf95",
+      "scripts/managed-proof/test_cost_endpoint.py": "7b5c6fa9ee4cea1d1798724a689fe4afde4a1d46a6d06d028ac71098940f109b"
+    },
+    "offlineActorTests": 19,
+    "offlineTransferTests": 18,
+    "bridgeSyntaxChecked": true,
+    "actualActorCallsInThisSnapshotValidation": 0
+  },
+  "immutableTransportArchiveSha256": "2190daf0ac00954dfa4c3bf07201fc9405f97dc39c6e82addc0f8b3735e74b8f",
+  "archiveBytes": 30266,
+  "boundary": "Exact historical v3 source used for completed/interrupted Kimi and raw Booster experiments, not the next journal-aware/verified-selection code.",
+  "sourceCommit": "488d98293b567730ecfb4a6eb8a75dd2d3a92061",
+  "archiveFile": "managed-transfer-v3-source.tar.gz"
+}

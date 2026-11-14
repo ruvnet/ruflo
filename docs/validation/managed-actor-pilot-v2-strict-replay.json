@@ -1,0 +1,598 @@
+{
+  "kind": "posthoc-stricter-oracle-replay",
+  "providerCalls": 0,
+  "oracleHash": "bc57bf393a8df26b08938572d771f3e4968ff704bd83b7d60bdcd5fd9fccd628",
+  "passed": 98,
+  "total": 98,
+  "originalPrimaryGateUnchanged": true,
+  "checks": [
+    {
+      "task": "fresh-arithmetic-mean",
+      "arm": "baseline",
+      "split": "train",
+      "passed": true
+    },
+    {
+      "task": "fresh-arithmetic-mean",
+      "arm": "compact",
+      "split": "train",
+      "passed": true
+    },
+    {
+      "task": "fresh-clamp",
+      "arm": "baseline",
+      "split": "train",
+      "passed": true
+    },
+    {
+      "task": "fresh-clamp",
+      "arm": "compact",
+      "split": "train",
+      "passed": true
+    },
+    {
+      "task": "fresh-dot-product",
+      "arm": "baseline",
+      "split": "train",
+      "passed": true
+    },
+    {
+      "task": "fresh-dot-product",
+      "arm": "compact",
+      "split": "train",
+      "passed": true
+    },
+    {
+      "task": "fresh-collatz-steps",
+      "arm": "baseline",
+      "split": "train",
+      "passed": true
+    },
+    {
+      "task": "fresh-collatz-steps",
+      "arm": "compact",
+      "split": "train",
+      "passed": true
+    },
+    {
+      "task": "fresh-tree-inorder",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-popcount-u32",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-json-pointer",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-zip-pairs",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-clock-angle",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-max-subarray-sum",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-dijkstra-distance",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-factorial",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-us-coin-change",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-josephus-index",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-popcount-u32",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-spiral-order",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-knapsack-value",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-glob-match",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-knapsack-value",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-digital-root",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-deep-equal",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-knapsack-value",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-pascal-row",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-longest-common-prefix",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-posix-path",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-rgb-hex",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-factorial",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-zip-pairs",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-spreadsheet-column",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-multiset-intersection",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-glob-match",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-polynomial-value",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-max-subarray-sum",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-integer-power",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-rpn-evaluation",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-flood-fill",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-factorial",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-connected-components",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-digital-root",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-rpn-evaluation",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-rgb-hex",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-spiral-order",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-longest-common-prefix",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-pascal-row",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-us-coin-change",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-rpn-evaluation",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-multiset-intersection",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-pascal-row",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-glob-match",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-hamming-distance",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-us-coin-change",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-longest-palindrome",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-polynomial-value",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-zip-pairs",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-lis-length",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-matrix-product",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-flood-fill",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-json-pointer",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-dijkstra-distance",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-tree-inorder",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-lis-length",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-integer-power",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-json-pointer",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-spreadsheet-column",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-matrix-product",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-tree-inorder",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-posix-path",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-spiral-order",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-integer-power",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-posix-path",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-connected-components",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-max-subarray-sum",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-connected-components",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-longest-palindrome",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-multiset-intersection",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-matrix-product",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-clock-angle",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-deep-equal",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-rgb-hex",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-spreadsheet-column",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-dijkstra-distance",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-josephus-index",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-polynomial-value",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-lis-length",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-hamming-distance",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-flood-fill",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-deep-equal",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-longest-palindrome",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-clock-angle",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-josephus-index",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-popcount-u32",
+      "arm": "random",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-hamming-distance",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-digital-root",
+      "arm": "learned",
+      "split": "audit",
+      "passed": true
+    },
+    {
+      "task": "fresh-longest-common-prefix",
+      "arm": "baseline",
+      "split": "audit",
+      "passed": true
+    }
+  ]
+}
