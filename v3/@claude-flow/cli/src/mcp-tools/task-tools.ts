@@ -4,9 +4,10 @@
  * Tool definitions for task management with file persistence.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readRecordStore } from './record-store.js';
+import { updateJsonStore } from './locked-json-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validateText } from './validate-input.js';
 
@@ -60,20 +61,24 @@ function getTaskPath(): string {
   return join(getTaskDir(), TASK_FILE);
 }
 
-function ensureTaskDir(): void {
-  const dir = getTaskDir();
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-}
-
 function loadTaskStore(): TaskStore {
   return readRecordStore(getTaskPath(), 'tasks', () => ({ tasks: {}, version: '3.0.0' }));
 }
 
-function saveTaskStore(store: TaskStore): void {
-  ensureTaskDir();
-  writeFileSync(getTaskPath(), JSON.stringify(store, null, 2), 'utf-8');
+/**
+ * Atomic read-modify-write of the task store (ADR-531, #4736). The whole
+ * read -> check -> mutate -> write runs under the store lock on fresh state;
+ * `mutate` must be synchronous. Agent-store effects run afterwards, never
+ * inside this lock, so the task and agent locks are never nested.
+ */
+function updateTasks<R>(mutate: (store: TaskStore) => { result: R; changed?: boolean }): R {
+  return updateJsonStore(getTaskPath(), loadTaskStore, mutate);
+}
+
+/** Response plus the agent-store side effects to run once the task store is saved. */
+interface TaskOutcome {
+  response: Record<string, unknown>;
+  after?: () => void;
 }
 
 type AgentRow = Record<string, unknown>;
@@ -96,16 +101,21 @@ function updateAgents(agentIds: string[], mutate: (agent: AgentRow) => void): vo
   for (const path of paths) {
     try {
       if (!existsSync(path)) continue;
-      const store = JSON.parse(readFileSync(path, 'utf-8')) as { agents?: Record<string, AgentRow> };
-      if (!store.agents) continue;
-      let touched = false;
-      for (const id of agentIds) {
-        if (Object.prototype.hasOwnProperty.call(store.agents, id) && store.agents[id]) {
-          mutate(store.agents[id]);
-          touched = true;
-        }
-      }
-      if (touched) writeFileSync(path, JSON.stringify(store, null, 2), 'utf-8');
+      updateJsonStore(
+        path,
+        () => JSON.parse(readFileSync(path, 'utf-8')) as { agents?: Record<string, AgentRow> },
+        (store) => {
+          if (!store.agents) return { result: undefined, changed: false };
+          let touched = false;
+          for (const id of agentIds) {
+            if (Object.prototype.hasOwnProperty.call(store.agents, id) && store.agents[id]) {
+              mutate(store.agents[id]);
+              touched = true;
+            }
+          }
+          return { result: undefined, changed: touched };
+        },
+      );
     } catch {
       // Best-effort agent sync: a corrupt agent store must not fail the task op.
     }
@@ -186,7 +196,6 @@ export const taskTools: MCPTool[] = [
         return { success: false, error: 'assignTo must be an array of agent ids' };
       }
 
-      const store = loadTaskStore();
       const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       const task: TaskRecord = {
@@ -203,8 +212,10 @@ export const taskTools: MCPTool[] = [
         completedAt: null,
       };
 
-      store.tasks[taskId] = task;
-      saveTaskStore(store);
+      updateTasks((store) => {
+        store.tasks[taskId] = task;
+        return { result: undefined };
+      });
 
       // Assigning at creation must mark the workers busy, as task_assign and task_update do;
       // otherwise they read idle while holding the task, and task_complete or task_cancel,
@@ -356,44 +367,41 @@ export const taskTools: MCPTool[] = [
       const vId = validateIdentifier(input.taskId, 'taskId');
       if (!vId.valid) return { success: false, error: vId.error };
 
-      const store = loadTaskStore();
       const taskId = input.taskId as string;
-      const task = store.tasks[taskId];
-
-      if (task) {
+      const out = updateTasks<TaskOutcome>((store) => {
+        const task = store.tasks[taskId];
+        if (!task) {
+          return { result: { response: { taskId, status: 'not_found', error: 'Task not found' } }, changed: false };
+        }
         if (task.status === 'completed') {
-          return { taskId: task.taskId, status: task.status, completedAt: task.completedAt, result: task.result };
+          return {
+            result: { response: { taskId: task.taskId, status: task.status, completedAt: task.completedAt, result: task.result } },
+            changed: false,
+          };
         }
         task.status = 'completed';
         task.progress = 100;
         task.completedAt = new Date().toISOString();
         task.result = (input.result as Record<string, unknown>) || {};
-        saveTaskStore(store);
-
-        // Sync assigned agents back to idle and increment taskCount. Credited only to a worker
-        // still holding this task, as task_update does, so completing a reopened task again
-        // (complete -> pending -> complete, no reassignment) never counts the same work twice.
-        updateAgents(task.assignedTo, (agent) => {
-          if (agent.currentTask === taskId) {
-            agent.status = 'idle';
-            agent.currentTask = null;
-            agent.taskCount = ((agent.taskCount as number) || 0) + 1;
-          }
-        });
-
+        const assigned = [...task.assignedTo];
         return {
-          taskId: task.taskId,
-          status: task.status,
-          completedAt: task.completedAt,
-          result: task.result,
+          result: {
+            response: { taskId: task.taskId, status: task.status, completedAt: task.completedAt, result: task.result },
+            // Sync assigned agents back to idle and increment taskCount. Credited only to a worker
+            // still holding this task, as task_update does, so completing a reopened task again
+            // (complete -> pending -> complete, no reassignment) never counts the same work twice.
+            after: () => updateAgents(assigned, (agent) => {
+              if (agent.currentTask === taskId) {
+                agent.status = 'idle';
+                agent.currentTask = null;
+                agent.taskCount = ((agent.taskCount as number) || 0) + 1;
+              }
+            }),
+          },
         };
-      }
-
-      return {
-        taskId,
-        status: 'not_found',
-        error: 'Task not found',
-      };
+      });
+      out.after?.();
+      return out.response;
     },
   },
   {
@@ -429,11 +437,12 @@ export const taskTools: MCPTool[] = [
         return { success: false, error: 'assignTo must be an array of agent ids' };
       }
 
-      const store = loadTaskStore();
       const taskId = input.taskId as string;
-      const task = store.tasks[taskId];
-
-      if (task) {
+      const out = updateTasks<TaskOutcome>((store) => {
+        const task = store.tasks[taskId];
+        if (!task) {
+          return { result: { response: { success: false, taskId, error: 'Task not found' } }, changed: false };
+        }
         // Worker effects run AFTER the task store is saved, as task_complete does: a failed save must not leave
         // workers freed and counted against a task that still reads unfinished.
         let afterSave: (() => void) | undefined;
@@ -496,23 +505,22 @@ export const taskTools: MCPTool[] = [
         if (input.result && typeof input.result === 'object') {
           task.result = input.result as Record<string, unknown>;
         }
-        saveTaskStore(store);
-        afterSave?.();
 
         return {
-          success: true,
-          taskId: task.taskId,
-          status: task.status,
-          progress: task.progress,
-          assignedTo: task.assignedTo,
+          result: {
+            response: {
+              success: true,
+              taskId: task.taskId,
+              status: task.status,
+              progress: task.progress,
+              assignedTo: task.assignedTo,
+            },
+            after: afterSave,
+          },
         };
-      }
-
-      return {
-        success: false,
-        taskId,
-        error: 'Task not found',
-      };
+      });
+      out.after?.();
+      return out.response;
     },
   },
   {
@@ -533,74 +541,77 @@ export const taskTools: MCPTool[] = [
       const vId = validateIdentifier(input.taskId, 'taskId');
       if (!vId.valid) return { success: false, error: vId.error };
 
-      const store = loadTaskStore();
       const taskId = input.taskId as string;
-      const task = store.tasks[taskId];
+      const out = updateTasks<TaskOutcome>((store) => {
+        const task = store.tasks[taskId];
+        if (!task) return { result: { response: { taskId, error: 'Task not found' } }, changed: false };
 
-      if (!task) {
-        return { taskId, error: 'Task not found' };
-      }
+        // Completed and cancelled tasks are terminal (#4725). Assigning a
+        // completed task marks the agent busy, and task_complete then returns
+        // without releasing it; task_cancel refuses a finished task too, so
+        // nothing ever sets that agent back to idle.
+        if (task.status === 'completed' || task.status === 'cancelled') {
+          return {
+            result: { response: { success: false, taskId, status: task.status, error: `Cannot assign a ${task.status} task` } },
+            changed: false,
+          };
+        }
 
-      // Completed and cancelled tasks are terminal (#4725). Assigning a
-      // completed task marks the agent busy, and task_complete then returns
-      // without releasing it; task_cancel refuses a finished task too, so
-      // nothing ever sets that agent back to idle.
-      if (task.status === 'completed' || task.status === 'cancelled') {
+        const previouslyAssigned = [...task.assignedTo];
+        let after: (() => void) | undefined;
+        if (input.unassign) {
+          // Revert previously assigned agents to idle
+          after = () => releaseAgents(previouslyAssigned, taskId);
+          task.assignedTo = [];
+        } else {
+          const agentIds = (input.agentIds as string[]) || [];
+          // An id in neither store is a ghost owner: the task would go
+          // in_progress with nobody to do the work (#4725). Lock-free read of the agent stores.
+          if (Array.isArray(agentIds)) {
+            const agentStores = assignableAgentStores();
+            const missing = agentIds.filter((id) => typeof id === 'string' && !agentIsAssignable(id, agentStores));
+            if (missing.length > 0) {
+              const listed = missing.join(', ');
+              return {
+                result: {
+                  response: {
+                    success: false,
+                    taskId,
+                    status: task.status,
+                    error: missing.length === 1 ? `Agent not found: ${listed}` : `Agents not found: ${listed}`,
+                  },
+                },
+                changed: false,
+              };
+            }
+          }
+          after = () => {
+            // Revert old agents to idle, set new agents to busy
+            releaseAgents(previouslyAssigned.filter((id) => !agentIds.includes(id)), taskId);
+            updateAgents(agentIds, (agent) => {
+              agent.status = 'busy';
+              agent.currentTask = taskId;
+            });
+          };
+          task.assignedTo = agentIds;
+          // Auto-transition task to in_progress if pending
+          if (task.status === 'pending' && agentIds.length > 0) {
+            task.status = 'in_progress';
+            if (!task.startedAt) {
+              task.startedAt = new Date().toISOString();
+            }
+          }
+        }
+
         return {
-          success: false,
-          taskId,
-          status: task.status,
-          error: `Cannot assign a ${task.status} task`,
+          result: {
+            response: { taskId: task.taskId, assignedTo: task.assignedTo, previouslyAssigned, status: task.status },
+            after,
+          },
         };
-      }
-
-      const previouslyAssigned = [...task.assignedTo];
-      const agentStores = assignableAgentStores();
-      if (input.unassign) {
-        // Revert previously assigned agents to idle
-        releaseAgents(previouslyAssigned, taskId);
-        task.assignedTo = [];
-      } else {
-        const agentIds = (input.agentIds as string[]) || [];
-        // An id in neither store is a ghost owner: the task would go
-        // in_progress with nobody to do the work (#4725).
-        if (Array.isArray(agentIds)) {
-          const missing = agentIds.filter((id) => typeof id === 'string' && !agentIsAssignable(id, agentStores));
-          if (missing.length > 0) {
-            const listed = missing.join(', ');
-            return {
-              success: false,
-              taskId,
-              status: task.status,
-              error: missing.length === 1 ? `Agent not found: ${listed}` : `Agents not found: ${listed}`,
-            };
-          }
-        }
-        // Revert old agents to idle
-        releaseAgents(previouslyAssigned.filter((id) => !agentIds.includes(id)), taskId);
-        // Set new agents to active
-        updateAgents(agentIds, (agent) => {
-          agent.status = 'busy';
-          agent.currentTask = taskId;
-        });
-        task.assignedTo = agentIds;
-        // Auto-transition task to in_progress if pending
-        if (task.status === 'pending' && agentIds.length > 0) {
-          task.status = 'in_progress';
-          if (!task.startedAt) {
-            task.startedAt = new Date().toISOString();
-          }
-        }
-      }
-
-      saveTaskStore(store);
-
-      return {
-        taskId: task.taskId,
-        assignedTo: task.assignedTo,
-        previouslyAssigned,
-        status: task.status,
-      };
+      });
+      out.after?.();
+      return out.response;
     },
   },
   {
@@ -624,44 +635,36 @@ export const taskTools: MCPTool[] = [
         if (!v.valid) return { success: false, error: v.error };
       }
 
-      const store = loadTaskStore();
       const taskId = input.taskId as string;
-      const task = store.tasks[taskId];
+      const out = updateTasks<TaskOutcome>((store) => {
+        const task = store.tasks[taskId];
+        if (!task) return { result: { response: { success: false, taskId, error: 'Task not found' } }, changed: false };
 
-      if (task) {
         const previousStatus = task.status;
         // A finished task keeps its outcome: cancelling it used to overwrite a
         // completed task's result and completedAt with a cancel reason.
         if (previousStatus === 'completed' || previousStatus === 'failed' || previousStatus === 'cancelled') {
           return {
-            success: false,
-            taskId,
-            status: previousStatus,
-            previousStatus,
-            error: `Task is already ${previousStatus}`,
+            result: {
+              response: { success: false, taskId, status: previousStatus, previousStatus, error: `Task is already ${previousStatus}` },
+            },
+            changed: false,
           };
         }
 
         task.status = 'cancelled';
         task.completedAt = new Date().toISOString();
         task.result = { cancelReason: input.reason || 'Cancelled by user' };
-        saveTaskStore(store);
-        releaseAgents(task.assignedTo, taskId);
-
+        const assigned = [...task.assignedTo];
         return {
-          success: true,
-          taskId: task.taskId,
-          status: task.status,
-          previousStatus,
-          cancelledAt: task.completedAt,
+          result: {
+            response: { success: true, taskId: task.taskId, status: task.status, previousStatus, cancelledAt: task.completedAt },
+            after: () => releaseAgents(assigned, taskId),
+          },
         };
-      }
-
-      return {
-        success: false,
-        taskId,
-        error: 'Task not found',
-      };
+      });
+      out.after?.();
+      return out.response;
     },
   },
   {
@@ -684,41 +687,40 @@ export const taskTools: MCPTool[] = [
       const v = validateIdentifier(input.taskId, 'taskId');
       if (!v.valid) return { success: false, error: v.error };
 
-      const store = loadTaskStore();
       const taskId = input.taskId as string;
-      const original = store.tasks[taskId];
-      if (!original) return { success: false, taskId, error: 'Task not found' };
+      const out = updateTasks<TaskOutcome>((store) => {
+        const original = store.tasks[taskId];
+        if (!original) return { result: { response: { success: false, taskId, error: 'Task not found' } }, changed: false };
 
-      const retainState = input.resetState === false;
-      const newTaskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const retry: TaskRecord = {
-        taskId: newTaskId,
-        type: original.type,
-        description: original.description,
-        priority: original.priority,
-        status: 'pending',
-        progress: retainState ? original.progress ?? 0 : 0,
-        assignedTo: [...original.assignedTo],
-        tags: [...original.tags, 'retry-of:' + taskId],
-        createdAt: new Date().toISOString(),
-        startedAt: null,
-        completedAt: null,
-      };
-      if (retainState && original.result !== undefined) retry.result = original.result;
-      store.tasks[newTaskId] = retry;
-      saveTaskStore(store);
-
-      updateAgents(retry.assignedTo, (agent) => {
-        agent.status = 'busy';
-        agent.currentTask = newTaskId;
+        const retainState = input.resetState === false;
+        const newTaskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const retry: TaskRecord = {
+          taskId: newTaskId,
+          type: original.type,
+          description: original.description,
+          priority: original.priority,
+          status: 'pending',
+          progress: retainState ? original.progress ?? 0 : 0,
+          assignedTo: [...original.assignedTo],
+          tags: [...original.tags, 'retry-of:' + taskId],
+          createdAt: new Date().toISOString(),
+          startedAt: null,
+          completedAt: null,
+        };
+        if (retainState && original.result !== undefined) retry.result = original.result;
+        store.tasks[newTaskId] = retry;
+        return {
+          result: {
+            response: { taskId, newTaskId, previousStatus: original.status, status: 'pending' },
+            after: () => updateAgents(retry.assignedTo, (agent) => {
+              agent.status = 'busy';
+              agent.currentTask = newTaskId;
+            }),
+          },
+        };
       });
-
-      return {
-        taskId,
-        newTaskId,
-        previousStatus: original.status,
-        status: 'pending',
-      };
+      out.after?.();
+      return out.response;
     },
   },
 ];
