@@ -13,9 +13,9 @@
   "bin": {
     "claude-flow": "bin/cli.js"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow#readme",
+  "homepage": "https://ruv.io",
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues",
+    "url": "https://github.com/ruvnet/ruflo/issues",
     "email": "support@ruv.io"
   },
   "funding": {
@@ -175,7 +175,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ruvnet/claude-flow.git"
+    "url": "git+https://github.com/ruvnet/ruflo.git"
   },
   "keywords": [
     "ruvflow",
@@ -210,7 +210,10 @@
     "hive-mind",
     "distributed-systems",
     "consensus",
-    "self-learning"
+    "self-learning",
+    "local-vector-search",
+    "rvf",
+    "mcp-server"
   ],
   "author": "RuvNet <ruv@ruv.io> (https://ruv.io)",
   "license": "MIT",
