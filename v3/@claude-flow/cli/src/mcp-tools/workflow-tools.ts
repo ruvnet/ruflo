@@ -10,7 +10,7 @@ import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validatePath, validateText } from './validate-input.js';
 import { executeAgentTask } from './agent-execute-core.js';
 import { readPreservedJsonStore } from './record-store.js';
-import { updateJsonStore, writeJsonAtomic, type JsonStoreUpdate } from './locked-json-store.js';
+import { updateJsonStore, type JsonStoreUpdate } from './locked-json-store.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';

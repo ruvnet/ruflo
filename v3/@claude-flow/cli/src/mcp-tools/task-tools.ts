@@ -116,8 +116,10 @@ function updateAgents(agentIds: string[], mutate: (agent: AgentRow) => void): vo
           return { result: undefined, changed: touched };
         },
       );
-    } catch {
-      // Best-effort agent sync: a corrupt agent store must not fail the task op.
+    } catch (error) {
+      // Best-effort agent sync: a corrupt or busy agent store must not fail the
+      // task op, but the skipped sync is reported rather than silent (#4736).
+      process.stderr.write(`[task-tools] agent sync skipped for ${path}: ${error instanceof Error ? error.message : String(error)}\n`);
     }
   }
 }

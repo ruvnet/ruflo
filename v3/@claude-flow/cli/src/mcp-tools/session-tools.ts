@@ -17,6 +17,7 @@ import {
   writeFileRestricted,
 } from '../fs-secure.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { withJsonStoreLock, writeJsonAtomic } from './locked-json-store.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -532,12 +533,18 @@ export const sessionTools: MCPTool[] = [
         if (input.restoreTasks !== false && session.data?.tasks) {
           const taskDir = join(getProjectCwd(), STORAGE_DIR, 'tasks');
           if (!existsSync(taskDir)) mkdirRestricted(taskDir);
-          writeFileRestricted(join(taskDir, 'store.json'), JSON.stringify(session.data.tasks, null, 2));
+          // #4736 — replace under the store lock, atomically, so a concurrent
+          // locked task writer neither interleaves with nor tears this write.
+          const taskPath = join(taskDir, 'store.json');
+          const tasks = session.data.tasks;
+          withJsonStoreLock(taskPath, () => writeJsonAtomic(taskPath, tasks));
         }
         if (input.restoreAgents !== false && session.data?.agents) {
           const agentDir = join(getProjectCwd(), STORAGE_DIR, 'agents');
           if (!existsSync(agentDir)) mkdirRestricted(agentDir);
-          writeFileRestricted(join(agentDir, 'store.json'), JSON.stringify(session.data.agents, null, 2));
+          const agentPath = join(agentDir, 'store.json');
+          const agents = session.data.agents;
+          withJsonStoreLock(agentPath, () => writeJsonAtomic(agentPath, agents));
         }
 
         return {

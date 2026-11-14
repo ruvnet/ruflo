@@ -5,8 +5,8 @@
  * Includes model routing integration for intelligent model selection.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { updateJsonStore, writeJsonAtomic } from './locked-json-store.js';
+import { existsSync, readFileSync } from 'node:fs';
+import { updateJsonStore } from './locked-json-store.js';
 import { join } from 'node:path';
 import { nullPrototypeRecords, readRecordStore } from './record-store.js';
 import { type MCPTool, getProjectCwd } from './types.js';
@@ -104,13 +104,6 @@ function getAgentPath(): string {
   return join(getAgentDir(), AGENT_FILE);
 }
 
-function ensureAgentDir(): void {
-  const dir = getAgentDir();
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-}
-
 function loadAgentStore(): AgentStore {
   return readRecordStore(getAgentPath(), 'agents', () => ({ agents: {}, version: '3.0.0' }));
 }
@@ -124,11 +117,6 @@ function updateAgentStore<R>(mutate: (store: AgentStore) => { result: R; changed
 export function getLiveAgentIds(agentIds: string[]): string[] {
   const { agents } = loadAgentStore();
   return [...new Set(agentIds)].filter(id => agents[id] && agents[id].status !== 'terminated');
-}
-
-function saveAgentStore(store: AgentStore): void {
-  ensureAgentDir();
-  writeJsonAtomic(getAgentPath(), store);
 }
 
 // #1916: read hive-mind-spawned workers from `.claude-flow/agents.json`.
