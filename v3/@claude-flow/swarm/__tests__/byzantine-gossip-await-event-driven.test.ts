@@ -136,4 +136,83 @@ describe('Byzantine/Gossip awaitConsensus() event-driven resolution (#4458)', ()
     expect(setIntervalSpy).not.toHaveBeenCalled();
     expect(gossip.listenerCount('consensus.achieved')).toBe(0);
   });
+
+  // Dream Cycle 2026-11-14 (swarm): the per-proposal 'consensus.achieved'
+  // listener pattern above means >10 concurrent in-flight proposals need
+  // setMaxListeners(0), the same guard RaftConsensus already carries
+  // (raft.ts). Byzantine/Gossip never got it when they were converted to
+  // this same event-driven shape under #4458.
+  it('Byzantine supports >10 concurrent in-flight proposals without MaxListenersExceededWarning', async () => {
+    bft = createByzantineConsensus('bft-maxlisteners', {
+      maxFaultyNodes: 1,
+      timeoutMs: 2000,
+    });
+    await bft.initialize();
+    bft.electPrimary();
+    bft.addNode('bft-1');
+    bft.addNode('bft-2');
+    bft.addNode('bft-3');
+
+    const warningNames: string[] = [];
+    const onWarning = (w: Error) => warningNames.push(w.name);
+    process.on('warning', onWarning);
+
+    try {
+      const proposals = await Promise.all(
+        Array.from({ length: 11 }, (_, i) => bft!.propose({ action: `op-${i}` })),
+      );
+      const pending = proposals.map((p) => bft!.awaitConsensus(p.id));
+      // Node emits MaxListenersExceededWarning asynchronously; flush the
+      // microtask/event-loop turn before asserting it did not fire.
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(bft.listenerCount('consensus.achieved')).toBe(11);
+      expect(warningNames).not.toContain('MaxListenersExceededWarning');
+
+      for (const p of proposals) {
+        await bft!.vote(p.id, vote('bft-1'));
+        await bft!.vote(p.id, vote('bft-2'));
+        await bft!.vote(p.id, vote('bft-3'));
+      }
+      await Promise.all(pending);
+    } finally {
+      process.off('warning', onWarning);
+    }
+  });
+
+  it('Gossip supports >10 concurrent in-flight proposals without MaxListenersExceededWarning', async () => {
+    gossip = createGossipConsensus('gossip-maxlisteners', {
+      timeoutMs: 2000,
+      convergenceThreshold: 1.0,
+      gossipIntervalMs: 50,
+    });
+    await gossip.initialize();
+    gossip.addNode('gossip-2');
+    gossip.addNode('gossip-3');
+    gossip.addNode('gossip-4');
+
+    const warningNames: string[] = [];
+    const onWarning = (w: Error) => warningNames.push(w.name);
+    process.on('warning', onWarning);
+
+    try {
+      const proposals = await Promise.all(
+        Array.from({ length: 11 }, (_, i) => gossip!.propose({ action: `op-${i}` })),
+      );
+      const pending = proposals.map((p) => gossip!.awaitConsensus(p.id));
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(gossip.listenerCount('consensus.achieved')).toBe(11);
+      expect(warningNames).not.toContain('MaxListenersExceededWarning');
+
+      for (const p of proposals) {
+        await gossip!.vote(p.id, vote('gossip-2'));
+        await gossip!.vote(p.id, vote('gossip-3'));
+        await gossip!.vote(p.id, vote('gossip-4'));
+      }
+      await Promise.all(pending);
+    } finally {
+      process.off('warning', onWarning);
+    }
+  });
 });
