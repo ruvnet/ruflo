@@ -198,7 +198,7 @@ const storeCommand: Command = {
   ],
   action: async (ctx: CommandContext): Promise<CommandResult> => {
     const key = ctx.flags.key as string;
-    let value = ctx.flags.value as string || ctx.args[0];
+    let value = ctx.flags.value != null ? String(ctx.flags.value) : ctx.args[0] as string;
     // #2461: without `|| 'default'`, omitting -n stores under the literal
     // string namespace "undefined" — silent data loss for first-time users.
     // #1227: --scope/--agent move the write into that scope's partition.
