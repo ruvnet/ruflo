@@ -12,6 +12,7 @@ import type { Host } from './host'
 import type { PaletteEntry } from './palette'
 import { RURE, RURE_GROUPS, rurePreflight } from './rure'
 import { SANDBOX, SANDBOX_GROUPS } from './sandbox'
+import { resolveLauncher } from './launcher'
 import type { State } from './state'
 
 /** `read`: local, $0, changes nothing. `local`: local compute that keeps nothing. Then writes, the network, money, deletes. */
@@ -35,7 +36,7 @@ export type DevEntry = {
   /** A fixed command outside ruflo (tmux): the whole argv, run as it is, with no CLI prefix; null when a field breaks its rule. */
   exec?: (fields: DevFields) => readonly string[] | null
   /** The program the entry needs: while it is known missing, the row is n/a. */
-  needs?: 'tmux'
+  needs?: 'tmux' | 'rvagent-wasm'
   /** How its output reads, when `labLines` would not say it well. */
   read?: (stdout: string, stderr: string, ok: boolean) => string[]
   /** Not runnable from the console: the reason the row shows instead of a button. */
@@ -103,10 +104,10 @@ export const DEV: readonly DevEntry[] = [
   { id: 'dt-cow-promote', group: 'cow', name: 'PROMOTE', about: 'merge this branch .rvf into its base', label: 'agenticow promote the branch into its base', cost: 'writes', input: 'path', args: f => need(f, ['path'], v => tool('agenticow_promote', { branchPath: v.path })), note: 'writes the branch edits and tombstones into its base .rvf' },
   { id: 'dt-cow-vectors', group: 'cow', name: 'QUERY · INGEST · SPECULATE', about: 'n/a here: they take vectors and records as JSON arrays', label: 'agenticow query, ingest, speculate', cost: 'read', na: 'they take vectors or records (JSON arrays) a field cannot carry: call agenticow_query/ingest/speculate from an agent' },
 
-  { id: 'dt-wasm-gallery', group: 'wasm', name: 'GALLERY', about: 'every agent template in the gallery', label: 'WASM gallery: the templates', cost: 'read', args: fixed(tool('wasm_gallery_list', {})) },
-  { id: 'dt-wasm-categories', group: 'wasm', name: 'CATEGORIES', about: 'the gallery by category', label: 'WASM gallery categories', cost: 'read', args: fixed(tool('wasm_gallery_categories', {})) },
-  { id: 'dt-wasm-search', group: 'wasm', name: 'SEARCH', about: 'the gallery for the search field’s words', label: 'search the WASM gallery', cost: 'read', input: 'query', args: f => need(f, ['query'], v => tool('wasm_gallery_search', { query: v.query })) },
-  { id: 'dt-wasm-list', group: 'wasm', name: 'AGENTS', about: 'agents in the answering process (exec keeps none)', label: 'list WASM agents', cost: 'read', args: fixed(tool('wasm_agent_list', {})) },
+  { id: 'dt-wasm-gallery', group: 'wasm', name: 'GALLERY', about: 'every agent template in the gallery', label: 'WASM gallery: the templates', cost: 'read', needs: 'rvagent-wasm', args: fixed(tool('wasm_gallery_list', {})) },
+  { id: 'dt-wasm-categories', group: 'wasm', name: 'CATEGORIES', about: 'the gallery by category', label: 'WASM gallery categories', cost: 'read', needs: 'rvagent-wasm', args: fixed(tool('wasm_gallery_categories', {})) },
+  { id: 'dt-wasm-search', group: 'wasm', name: 'SEARCH', about: 'the gallery for the search field’s words', label: 'search the WASM gallery', cost: 'read', needs: 'rvagent-wasm', input: 'query', args: f => need(f, ['query'], v => tool('wasm_gallery_search', { query: v.query })) },
+  { id: 'dt-wasm-list', group: 'wasm', name: 'AGENTS', about: 'agents in the answering process (exec keeps none)', label: 'list WASM agents', cost: 'read', needs: 'rvagent-wasm', args: fixed(tool('wasm_agent_list', {})) },
   { id: 'dt-wasm-agent', group: 'wasm', name: 'CREATE · PROMPT · STATE · STOP', about: 'n/a here: an agent id dies with its CLI process', label: 'WASM agent create, prompt, state, terminate', cost: 'read', na: IN_PROCESS },
 
   { id: 'dt-br-open', group: 'browser', name: 'OPEN', about: 'open the URL field in the session', label: 'open the URL in the browser', cost: 'network', input: 'url', args: f => need(f, ['url'], v => tool('browser_open', { url: v.url, session: SESSION })), note: 'the browser loads the page from the network' },
@@ -225,7 +226,7 @@ const SAMPLE: DevFields = { ref: 'HEAD', path: 'memory.rvf', label: 'l', url: 'h
 export function devPalette(state: State): PaletteEntry[] {
   const fields = state.devtools.fields
 
-  return DEV.map(entry => withTmux(entry, state.devtools.tmux)).filter(entry => entry.na === undefined).map(entry => {
+  return DEV.map(entry => withNeeds(entry, state.devtools)).filter(entry => entry.na === undefined).map(entry => {
     const input = entry.input
 
     if (input === undefined) return { id: entry.id, group: 'devtools', label: entry.label, run: { kind: 'spec', spec: devSpec(entry, fields), why: devWhy(entry, fields) } }
@@ -251,6 +252,54 @@ export function devPalette(state: State): PaletteEntry[] {
 
 /** The entry as the console can use it now: n/a, with the reason, while the program it needs is known to be missing. */
 export const withTmux = (entry: DevEntry, tmux: State['devtools']['tmux']): DevEntry => (entry.needs === 'tmux' && tmux === 'missing' && entry.na === undefined ? { ...entry, na: 'tmux is not installed on this machine: install it, then open this page again' } : entry)
+
+/** Why a WASM row is n/a: the package, the command that installs it next to a global ruflo, and that npx cannot see it (ADR-532). */
+export const RVAGENT_WASM_NA = '@ruvector/rvagent-wasm is not installed: run `npm install -g @ruvector/rvagent-wasm` (a global ruflo only; npx ruflo cannot see it), then open this page again'
+
+/** `withTmux` for the rvagent-wasm package: n/a with the install text while the probe found it missing; otherwise unchanged. */
+export const withRvagentWasm = (entry: DevEntry, wasm: State['devtools']['rvagentWasm']): DevEntry => (entry.needs === 'rvagent-wasm' && wasm === 'missing' && entry.na === undefined ? { ...entry, na: RVAGENT_WASM_NA, about: `n/a here: ${RVAGENT_WASM_NA}` } : entry)
+
+/** Every `needs` check in one place: the entry as the console can use it with what the probes found. */
+export const withNeeds = (entry: DevEntry, devtools: Pick<State['devtools'], 'tmux' | 'rvagentWasm'>): DevEntry => withRvagentWasm(withTmux(entry, devtools.tmux), devtools.rvagentWasm)
+
+/** `available` from `agent wasm-status --format json`: tolerates a warning line before the JSON; null when it says nothing. */
+export function wasmAvailability(stdout: string): boolean | null {
+  const found = /"available"\s*:\s*(true|false)/.exec(stdout)
+
+  return found === null ? null : found[1] === 'true'
+}
+
+/**
+ * Is @ruvector/rvagent-wasm here? Asked of the CLI itself, through the launcher the WASM rows run with, so both resolve
+ * the package from the same install (ADR-532). Only a clear `available: false` hides rows: a failed, slow or unreadable
+ * probe leaves them runnable. Asked again on every Dev Tools open until it is found, so installing the package and
+ * reopening the page brings the rows back; a launcher that would download the CLI (cold npx) is never used for it.
+ */
+export async function probeRvagentWasm(state: State, host: Host): Promise<void> {
+  if (state.devtools.rvagentWasm === 'present' || probing.has(state)) return
+  probing.add(state)
+
+  try {
+    const launcher = await resolveLauncher(host, state)
+
+    // A cold launcher is `npx -y`: opening a page must not download the CLI. Leave it unknown; the rows stay runnable.
+    if (launcher.kind !== 'cold') {
+      const result = await host.run([...launcher.prefix, 'agent', 'wasm-status', '--format', 'json'], 30_000)
+      const available = result.exitCode === 0 ? wasmAvailability(result.stdout) : null
+
+      if (available !== null) state.devtools.rvagentWasm = available ? 'present' : 'missing'
+    }
+  } catch {
+    // Leave it as it was: an unknown state keeps the rows runnable.
+  } finally {
+    probing.delete(state)
+  }
+
+  host.invalidate()
+}
+
+/** Consoles with a probe in flight, so two quick opens do not run two CLIs. */
+const probing = new WeakSet<State>()
 
 /** Which entry Enter in each field runs; a field with none only keeps its text. */
 const SUBMITS: Partial<Record<DevField, string>> = { task: 'dt-brain', ref: 'dt-diff', path: 'dt-cow-status', session: 'dt-sb-capture', send: 'dt-sb-send', url: 'dt-br-open', target: 'dt-br-click', query: 'dt-plug-search', cmd: 'dt-term-exec' }
