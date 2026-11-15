@@ -1163,6 +1163,14 @@ const initAction = async (ctx: CommandContext): Promise<CommandResult> => {
     });
   }
 
+  // #4994 — only the Grok path implements a preview. For every other mode
+  // --dry-run used to be silently ignored and a real init ran (project scaffold,
+  // $HOME/.codex, mods enable). Refuse to write anything instead.
+  if (ctx.flags.dryRun === true || ctx.flags['dry-run'] === true) {
+    output.printWarning('--dry-run: nothing was written. A file preview is only available with --grok; remove --dry-run to run init.');
+    return { success: true, data: { dryRun: true, written: [] } };
+  }
+
   if (codexMode && !dualMode) {
     return initCodexAction(ctx, { codexMode, dualMode: false, force, minimal, full });
   }
@@ -2054,7 +2062,7 @@ export const initCommand: Command = {
     },
     {
       name: 'dry-run',
-      description: 'With --grok: list the files init would write, write nothing',
+      description: 'List the files init would write (--grok); for other modes write nothing and exit',
       type: 'boolean',
       default: false,
     },
