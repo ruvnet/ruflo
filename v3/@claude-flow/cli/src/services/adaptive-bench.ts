@@ -50,7 +50,7 @@ async function runCase(index: number, concurrency: number): Promise<{ms: number;
   const plan = makeCase(index);
   let calls = 0;
   const run = await executePlan(plan, {
-    handlers: {fixture: handler},
+    handlers: {fixture: {effect:'compute',capability:'bench:read',run:handler}},
     authorize: step => { calls++; return step.capability === 'bench:read'; },
     strategy: concurrency === 1 ? 'serial' : 'parallel',
     maxConcurrency: concurrency, maxWallMs: 10_000, maxEstimatedCostUsd: 0,
