@@ -13,6 +13,7 @@ import { validateIdentifier, validateText, validateAgentSpawn } from './validate
 import { executeAgentTask } from './agent-execute-core.js';
 import { AGENT_HEALTH_WINDOW, summarizeAgentExecutions, type AgentExecutionSample } from './agent-health-metrics.js';
 import { pheromoneAgentEligibility, type loadSwarmStore } from './swarm-tools.js';
+import { touchSwarmActivity } from './task-tools.js';
 import { noteFirstAgentRun } from '../funnel/activation.js';
 
 // Storage paths
@@ -523,6 +524,7 @@ export const agentTools: MCPTool[] = [
           }
         } catch { /* swarm store unwritable — agent still registered globally */ }
       }
+      touchSwarmActivity(null, false, swarm && swarmStore ? [agentId] : []);
 
       // Record agent in graph database (ADR-087, best-effort)
       try {
@@ -671,6 +673,7 @@ export const agentTools: MCPTool[] = [
         const rec = store.agents[agentId];
         rec.status = 'terminated';
         saveAgentStore(store);
+        touchSwarmActivity();
 
         // ACOW — resolve the agent's COW memory branch on teardown: promote
         // (merge into base) when asked, else discard. Non-fatal — a failure

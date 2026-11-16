@@ -909,26 +909,35 @@ export class MCPServerManager extends EventEmitter {
       }
     });
 
-    process.stdin.on('end', () => {
+    let shuttingDown = false;
+    const shutdownStdio = async (reason: string): Promise<void> => {
+      if (shuttingDown) return;
+      shuttingDown = true;
       console.error(
-        `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${sessionId}) stdin closed, shutting down...`
+        `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${sessionId}) ${reason}`
       );
+      try {
+        const { shutdownBridge } = await import('./memory/memory-bridge.js');
+        if (typeof shutdownBridge === 'function') {
+          await shutdownBridge();
+        }
+      } catch {
+        // Best-effort SQLite/AgentDB flush on stdio shutdown.
+      }
       process.exit(0);
+    };
+
+    process.stdin.on('end', () => {
+      void shutdownStdio('stdin closed, shutting down...');
     });
 
     // Handle process termination
     process.on('SIGINT', () => {
-      console.error(
-        `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${sessionId}) Received SIGINT, shutting down...`
-      );
-      process.exit(0);
+      void shutdownStdio('Received SIGINT, shutting down...');
     });
 
     process.on('SIGTERM', () => {
-      console.error(
-        `[${new Date().toISOString()}] INFO [claude-flow-mcp] (${sessionId}) Received SIGTERM, shutting down...`
-      );
-      process.exit(0);
+      void shutdownStdio('Received SIGTERM, shutting down...');
     });
 
     // Mark as ready immediately for stdio

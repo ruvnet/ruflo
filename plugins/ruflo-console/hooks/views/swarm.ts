@@ -1,7 +1,7 @@
 import type { RenderElement } from 'claude-code'
 
 import { agentLabels, shortId, type AgentRecord, type SwarmInfo } from '../data/parse'
-import { membersText, swarmStatusOf } from '../data/swarm-status'
+import { membersText, sortAgentsForDisplay, swarmStatusOf } from '../data/swarm-status'
 import { ago, button, clip, col, kv, picture, row, rule, starts, text, THEME, type Ctx } from './common'
 import { selection } from './select'
 
@@ -30,7 +30,7 @@ export function swarmView(ctx: Ctx): RenderElement {
   const snap = ctx.state.snapshot
   const swarm = snap?.swarm ?? null
   const hive = snap?.hive ?? null
-  const agents = snap?.agents ?? []
+  const agents = sortAgentsForDisplay(snap?.agents ?? [], swarm)
   const picked = selection(ctx.state).agent
   const rows: RenderElement[] = [rule(ctx, 'Swarm', swarm?.id ?? '')]
 

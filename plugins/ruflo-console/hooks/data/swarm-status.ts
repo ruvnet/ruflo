@@ -84,3 +84,32 @@ export function presentAgents(agents: readonly AgentRecord[], log: ReadonlyMap<s
     return (log.get(agent.id) ?? []).some((entry, i) => i > 0 && entry.atMs >= fromMs)
   })
 }
+
+const isWorkingStatus = (status: string): boolean => BUSY.test(status) || /working/i.test(status)
+const isStoppedStatus = (status: string): boolean => /stop|terminat|offline/i.test(status)
+
+/**
+ * Orders agents so active workers and active swarm members stay visible above the console row cutoff:
+ * busy/working first, non-terminated before stopped, current swarm members before unattached agents,
+ * then higher task count descending, preserving input order on ties.
+ */
+export function sortAgentsForDisplay(agents: readonly AgentRecord[], swarm: SwarmInfo | null): AgentRecord[] {
+  if (agents.length <= 1) return [...agents]
+  const memberIds = new Set(swarm?.agentIds ?? [])
+
+  return [...agents].sort((a, b) => {
+    const busyDiff = Number(isWorkingStatus(b.status)) - Number(isWorkingStatus(a.status))
+
+    if (busyDiff !== 0) return busyDiff
+
+    const aliveDiff = Number(!isStoppedStatus(b.status)) - Number(!isStoppedStatus(a.status))
+
+    if (aliveDiff !== 0) return aliveDiff
+
+    const memberDiff = Number(memberIds.has(b.id)) - Number(memberIds.has(a.id))
+
+    if (memberDiff !== 0) return memberDiff
+
+    return (b.taskCount ?? 0) - (a.taskCount ?? 0)
+  })
+}

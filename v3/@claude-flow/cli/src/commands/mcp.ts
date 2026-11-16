@@ -149,10 +149,17 @@ const startCommand: Command = {
       description: 'Force restart (kill existing server first)',
       type: 'boolean',
       default: false
+    },
+    {
+      name: 'isolate-projects',
+      description: 'Route stdio MCP calls to isolated per-workspace worker processes (env RUFLO_MCP_ISOLATE_PROJECTS=1)',
+      type: 'boolean',
+      default: false
     }
   ],
   examples: [
     { command: 'claude-flow mcp start', description: 'Start with defaults (stdio)' },
+    { command: 'claude-flow mcp start --isolate-projects', description: 'Start per-project isolated stdio MCP router' },
     { command: 'claude-flow mcp start -p 8080 -t http', description: 'Start HTTP server' },
     { command: 'claude-flow mcp start -t http --request-timeout-ms 120000', description: 'Allow slower cold-start HTTP tools' },
     { command: 'claude-flow mcp start -t http --rate-limit-per-ip 600 --rate-limit-per-session 500 --rate-limit-global-burst 1000', description: 'Raise rate limits for a shared control plane' },
@@ -217,6 +224,20 @@ const startCommand: Command = {
     }
     const daemon = (ctx.flags.daemon as boolean) ?? false;
     const force = (ctx.flags.force as boolean) ?? false;
+    const isolateProjects = Boolean(
+      ctx.flags['isolate-projects']
+      ?? ctx.flags.isolateProjects
+      ?? (process.env.RUFLO_MCP_ISOLATE_PROJECTS === '1')
+    );
+
+    if (isolateProjects) {
+      if (transport !== 'stdio') {
+        output.printError('--isolate-projects currently supports stdio transport only');
+        return { success: false, exitCode: 1 };
+      }
+      const { startIsolatedProjectMcpRouter } = await import('../mcp-project-router.js');
+      await startIsolatedProjectMcpRouter({ tools: !tools || tools === 'all' ? undefined : tools });
+    }
 
     output.writeln();
     output.printInfo('Starting MCP Server...');
