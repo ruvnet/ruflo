@@ -1,7 +1,7 @@
 /** ADR-532: opt-in, observe-only, read-only adaptive execution tooling. */
 import { createHash } from 'node:crypto';
-import { lstatSync, readFileSync } from 'node:fs';
-import { resolve, relative, isAbsolute } from 'node:path';
+import { lstatSync, readFileSync, realpathSync } from 'node:fs';
+import { resolve, relative, isAbsolute, sep } from 'node:path';
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 import { compilePlan, chooseStrategy } from '../services/adaptive-execution.js';
@@ -21,8 +21,9 @@ const planCommand: Command = {
       const name = ctx.flags.path;
       if (typeof name !== 'string' || !name) throw new Error('--path is required');
       const target = resolve(ctx.cwd, name);
-      const rel = relative(resolve(ctx.cwd), target);
-      if (rel.startsWith('..') || isAbsolute(rel)) throw new Error('manifest must be inside project');
+      const rel = relative(realpathSync(ctx.cwd), realpathSync(target));
+      if (rel === '..' || rel.startsWith('..' + sep) || isAbsolute(rel))
+        throw new Error('manifest must be inside project');
       const stat = lstatSync(target);
       if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 32768) throw new Error('manifest must be regular <=32KB file');
       const plan = compilePlan(JSON.parse(readFileSync(target, 'utf8')));
