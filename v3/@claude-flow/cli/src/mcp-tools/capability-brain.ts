@@ -786,7 +786,14 @@ export function buildCapabilityBrain(
   });
 
   const uniqueToolCount = seen.size;
-  const classifiedToolCount = uniqueToolCount;
+  // `fallbackClassifiedTools` pushes once per loop iteration (capability-brain.ts above),
+  // including re-occurrences of a duplicate name; dedupe before subtracting from the
+  // unique-name count, or a duplicate-named fallback tool drives classifiedToolCount
+  // negative (found by adversarial critique, 2026-11-16).
+  const classifiedToolCount = uniqueToolCount - new Set(fallbackClassifiedTools).size;
+  const coveragePercent = uniqueToolCount === 0
+    ? 100
+    : Number(((classifiedToolCount / uniqueToolCount) * 100).toFixed(2));
   return {
     schemaVersion: 'ruflo.capability-brain/v1',
     generatedAt: now.toISOString(),
@@ -807,7 +814,7 @@ export function buildCapabilityBrain(
     coverage: {
       registeredToolCount: uniqueToolCount,
       classifiedToolCount,
-      coveragePercent: uniqueToolCount === 0 ? 100 : 100,
+      coveragePercent,
       fallbackClassifiedTools: fallbackClassifiedTools.sort(),
       duplicateToolNames: [...duplicates].sort(),
     },
