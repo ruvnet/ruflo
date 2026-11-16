@@ -2,9 +2,11 @@
 
 <a href="https://cognitum.one/ruPro"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
 
-<a href="https://cognitum.one/ruPro"><img src="docs/assets/readme/rupro-preview.jpg" alt="Explore ruPro by Cognitum: interactive desktop workspace, guided tour, and agent project collaboration" width="100%"></a>
+<a href="https://cognitum.one/ruPro"><img src="docs/assets/readme/rupro-iphone-companion.webp" alt="ruPro iPhone companion concept alongside the Ruflo desktop workspace" width="760"></a>
 
-**[Explore ruPro interactive demo](https://cognitum.one/ruPro)** · Your projects and agents, working together.
+**[Explore ruPro interactive demo](https://cognitum.one/ruPro)** · Preview the connected desktop and iPhone companion.
+
+<sub>Illustrative product preview. Dashboard values are sample data; App Store availability is not implied.</sub>
 
 
 **An agent meta-harness for Claude Code and Codex.**
