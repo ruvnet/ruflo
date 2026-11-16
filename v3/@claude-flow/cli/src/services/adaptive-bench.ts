@@ -46,6 +46,28 @@ function percentile(samples: number[], fraction: number): number {
   return Math.round(sorted[Math.min(sorted.length-1, Math.ceil(sorted.length*fraction)-1)]*1000)/1000;
 }
 
+/** Pareto rule: use the fewest workers within 10% of the fastest DEV median. */
+export function selectConcurrency(candidates: Array<{concurrency:number;medianMs:number}>): number {
+  if (!candidates.length || candidates.some(c => !Number.isFinite(c.medianMs) || c.medianMs <= 0)) throw new Error('invalid tuning data');
+  const best = Math.min(...candidates.map(c => c.medianMs));
+  return [...candidates].filter(c => c.medianMs <= best * 1.10)
+    .sort((a,b) => a.concurrency-b.concurrency)[0].concurrency;
+}
+
+/** Deterministic paired bootstrap, not a confidence interval for real-world tasks. */
+function pairedCI(paired: Sample[]): [number,number] {
+  let seed = 0x5320AD1;
+  const next = () => {seed ^= seed << 13;seed ^= seed >>> 17;seed ^= seed << 5;return (seed>>>0)/4294967296;};
+  const ratios: number[] = [];
+  for(let b=0;b<400;b++){
+    const indices=Array.from({length:paired.length},()=>Math.floor(next()*paired.length));
+    const baseline=percentile(indices.map(i=>paired[i].serialMs),.5);
+    const candidate=percentile(indices.map(i=>paired[i].adaptiveMs),.5);
+    ratios.push(baseline/candidate);
+  }
+  return [percentile(ratios,.025),percentile(ratios,.975)];
+}
+
 async function runCase(index: number, concurrency: number): Promise<{ms: number; result: Record<string,unknown>; valid:boolean; calls:number}> {
   const plan = makeCase(index);
   let calls = 0;
@@ -65,7 +87,7 @@ export async function runAdaptiveBenchmark(devCount = 20, holdoutCount = 30): Pr
   corpusHash:string; dev: {samples:number; candidates:Array<{concurrency:number; medianMs:number; p95Ms:number}>};
   selectedConcurrency:number; holdout: {samples:number; paired:Sample[]; correctness:number;
   serialMedianMs:number; serialP95Ms:number; adaptiveMedianMs:number; adaptiveP95Ms:number;
-  medianSpeedup:number; p95Speedup:number; policyCalls:number; receiptValid:number};
+  medianSpeedup:number; p95Speedup:number; speedupCI95:[number,number]; policyCalls:number; receiptValid:number};
 }> {
   if (!Number.isInteger(devCount) || devCount < 5 || devCount > 100 ||
       !Number.isInteger(holdoutCount) || holdoutCount < 30 || holdoutCount > 100) {
@@ -78,7 +100,7 @@ export async function runAdaptiveBenchmark(devCount = 20, holdoutCount = 30): Pr
     candidates.push({concurrency, medianMs:percentile(samples,.5),p95Ms:percentile(samples,.95)});
   }
   // Tune on DEV only; deterministic tie-break to lower concurrency.
-  const selected = [...candidates].sort((a,b) => a.medianMs-b.medianMs || a.concurrency-b.concurrency)[0].concurrency;
+  const selected = selectConcurrency(candidates);
   const paired: Sample[] = [];
   let policyCalls = 0, valid = 0;
   for (let i=devCount; i<devCount+holdoutCount; i++) {
@@ -105,6 +127,7 @@ export async function runAdaptiveBenchmark(devCount = 20, holdoutCount = 30): Pr
       serialMedianMs:base,serialP95Ms:baseP95,adaptiveMedianMs:candidate,adaptiveP95Ms:candidateP95,
       medianSpeedup:Math.round((base/candidate)*1000)/1000,
       p95Speedup:Math.round((baseP95/candidateP95)*1000)/1000,
+      speedupCI95:pairedCI(paired),
       policyCalls,receiptValid:valid,
     }
   };
