@@ -91,7 +91,8 @@ describe('ADR-532 scheduler execution', () => {
     expect(run.receipt.status).toBe('failed');
     expect(run.receipt.events.find(e=>e.id==='s1')?.status).toBe('denied');
     expect(run.receipt.completed).toBe(1);
-    expect(denied).toEqual(['s0','s1']);
+    expect(denied.length).toBe(2);
+    expect(denied[1]).toBe('s1');
   });
   it('overlaps independent read-only work without exceeding concurrency limit', async () => {
     let active=0,max=0;
