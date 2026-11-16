@@ -27,9 +27,13 @@ export interface ExecuteOptions {
   maxEstimatedCostUsd?: number;
   /** Called for EACH step just before its handler; missing callback denies. */
   authorize?: (step: Readonly<Step>) => boolean | Promise<boolean>;
-  handlers: Readonly<Record<string, (
-    args: unknown, ctx: { signal: AbortSignal; dependencies: ReadonlyMap<string, unknown> }
-  ) => unknown | Promise<unknown>>>;
+  handlers: Readonly<Record<string, RegisteredHandler>>;
+}
+/** Binding metadata belongs to the trusted host, never to the submitted plan. */
+export interface RegisteredHandler {
+  effect: 'read' | 'compute';
+  capability: string;
+  run: (args: unknown, ctx: {signal: AbortSignal; dependencies: ReadonlyMap<string, unknown>}) => unknown | Promise<unknown>;
 }
 export interface Event {
   id: string;
@@ -168,7 +172,11 @@ export async function executePlan(input: unknown, options: ExecuteOptions): Prom
   if (!record(handlers)) throw new Error('invalid handler registry');
   for (const step of plan.steps) {
     if (step.effect !== 'read' && step.effect !== 'compute') throw new Error('P0 refuses privileged effects');
-    if (!Object.hasOwn(handlers, step.handler) || typeof handlers[step.handler] !== 'function') throw new Error('unregistered handler');
+    const binding = Object.hasOwn(handlers, step.handler) ? handlers[step.handler] : undefined;
+    if (!binding || !record(binding) || typeof binding.run !== 'function') throw new Error('unregistered handler');
+    if (binding.effect !== step.effect || binding.capability !== step.capability) {
+      throw new Error('handler effect or capability mismatch');
+    }
   }
 
   const startedAt = performance.now(), planHash = digest(plan);
@@ -216,8 +224,8 @@ export async function executePlan(input: unknown, options: ExecuteOptions): Prom
           timer = setTimeout(() => { controller.abort(); reject(new Error('deadline')); }, allowedMs);
         });
         const handler = handlers[step.handler]!;
-        // This is safe for read-only/cooperative handlers, NOT a hard execution sandbox.
-        value = await Promise.race([Promise.resolve().then(() => handler(step.args, {signal: controller.signal, dependencies})), deadline]);
+        // Trusted host handlers only. P0 cannot sandbox arbitrary JavaScript.
+        value = await Promise.race([Promise.resolve().then(() => handler.run(step.args, {signal: controller.signal, dependencies})), deadline]);
         if (controller.signal.aborted) throw new Error('deadline');
         completed.set(step.id, value);
         status = 'ok';
