@@ -68,7 +68,9 @@ const MAX_ARG_BYTES = 16_384;
 const MAX_WORKERS = 8;
 
 function digest(value: unknown): string {
-  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  const json = JSON.stringify(value);
+  if (typeof json !== 'string') throw new Error('unserializable value');
+  return createHash('sha256').update(json).digest('hex');
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -208,40 +210,46 @@ export async function executePlan(input: unknown, options: ExecuteOptions): Prom
 
   async function dispatch(step: Step): Promise<void> {
     const t = performance.now();
-    let authorized = false, status: TaskStatus = 'failed', value: unknown;
+    let authorized = false, status: TaskStatus = 'failed', valueHash: string | undefined;
+    const controller = new AbortController();
+    const stop = () => controller.abort();
+    aborted.signal.addEventListener('abort', stop, { once: true });
+    const allowedMs = maxWallMs - (performance.now() - startedAt);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Budget covers authorization AND handler, not only the tool body.
+    const deadline = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => { controller.abort(); reject(new Error('deadline')); }, Math.max(1, allowedMs));
+    });
     try {
-      // Policy is checked independently before every call, not once per plan.
-      authorized = (await options.authorize?.(step)) === true;
+      if (allowedMs <= 0 || controller.signal.aborted) throw new Error('deadline');
+      // Each call has a distinct policy review. A single batch decision is insufficient.
+      authorized = (await Promise.race([
+        Promise.resolve().then(() => options.authorize?.(step)), deadline
+      ])) === true;
+      if (controller.signal.aborted) throw new Error('deadline');
       if (!authorized) { status = 'denied'; failed = true; aborted.abort(); return; }
-      const controller = new AbortController();
-      const stop = () => controller.abort();
-      aborted.signal.addEventListener('abort', stop, { once: true });
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      try {
-        const dependencies = new Map((step.deps ?? []).map(id => [id, completed.get(id)]));
-        const allowedMs = Math.max(1, Math.ceil(maxWallMs - (performance.now() - startedAt)));
-        const deadline = new Promise<never>((_, reject) => {
-          timer = setTimeout(() => { controller.abort(); reject(new Error('deadline')); }, allowedMs);
-        });
-        const handler = handlers[step.handler]!;
-        // Trusted host handlers only. P0 cannot sandbox arbitrary JavaScript.
-        value = await Promise.race([Promise.resolve().then(() => handler.run(step.args, {signal: controller.signal, dependencies})), deadline]);
-        if (controller.signal.aborted) throw new Error('deadline');
-        completed.set(step.id, value);
-        status = 'ok';
-      } finally {
-        if (timer) clearTimeout(timer);
-        aborted.signal.removeEventListener('abort', stop);
-      }
+      const dependencies = new Map((step.deps ?? []).map(id => [id, completed.get(id)]));
+      const handler = handlers[step.handler]!;
+      // Trusted host handlers only. P0 cannot sandbox arbitrary JavaScript.
+      const value = await Promise.race([
+        Promise.resolve().then(() => handler.run(step.args, {signal: controller.signal, dependencies})), deadline
+      ]);
+      if (controller.signal.aborted) throw new Error('deadline');
+      // Reject non-JSON outputs: a missing output hash must never appear as a success.
+      valueHash = digest(value);
+      completed.set(step.id, value);
+      status = 'ok';
     } catch (error) {
       status = error instanceof Error && error.message === 'deadline' ? 'timeout' : 'failed';
       failed = true;
       aborted.abort();
     } finally {
+      if (timer) clearTimeout(timer);
+      aborted.signal.removeEventListener('abort', stop);
       events.set(step.id, {
         id: step.id, effect: step.effect, status, authorized,
         durationMs: Math.max(0, Math.round((performance.now() - t) * 1000) / 1000),
-        ...(status === 'ok' ? {valueHash: digest(value)} : {}),
+        ...(status === 'ok' ? {valueHash} : {}),
       });
     }
   }
