@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { compilePlan, chooseStrategy, executePlan, verifyReceipt, type ExecutionPlan } from '../src/services/adaptive-execution.js';
-import { makeCase, runAdaptiveBenchmark } from '../src/services/adaptive-bench.js';
+import { makeCase, runAdaptiveBenchmark, selectConcurrency } from '../src/services/adaptive-bench.js';
 
 const fixture = (count = 3): ExecutionPlan => ({
   version:1,
@@ -119,6 +119,12 @@ describe('ADR-532 scheduler execution', () => {
     expect(chooseStrategy(compilePlan(fixture(4)),'auto',4).strategy).toBe('serial');
     expect(chooseStrategy(compilePlan(makeCase(0)),'auto',4).strategy).toBe('parallel');
   });
+  it('selects the least expensive concurrency within ten percent of fastest DEV candidate',()=>{
+    const rows=[{concurrency:1,medianMs:12},{concurrency:2,medianMs:6},{concurrency:4,medianMs:5.5},{concurrency:8,medianMs:5.2}];
+    expect(selectConcurrency(rows)).toBe(4);
+    expect(selectConcurrency([{concurrency:1,medianMs:4},{concurrency:8,medianMs:3.8}])).toBe(1);
+    expect(()=>selectConcurrency([])).toThrow();
+  });
   it('cancels cooperative handler on timeout, does not mark dependent work successful', async () => {
     const run=await executePlan(fixture(2),{
       ...opts,maxWallMs:5,handlers:{
@@ -167,6 +173,7 @@ describe('ADR-532 scheduler execution', () => {
     expect(bench.holdout.correctness).toBe(30);
     expect(bench.holdout.receiptValid).toBe(60);
     expect(bench.holdout.policyCalls).toBe(360);
+    expect(bench.holdout.speedupCI95[1]).toBeGreaterThan(bench.holdout.speedupCI95[0]);
     expect(bench.holdout.serialMedianMs).toBeGreaterThan(bench.holdout.adaptiveMedianMs);
     expect(bench.environment.externalUsd).toBe(0);
   },30000);
