@@ -8,9 +8,10 @@
 import type { Command, CommandContext, CommandResult } from '../types.js';
 import { output } from '../output.js';
 
-const WASM_NOT_AVAILABLE_MSG =
-  '@ruvector/rvagent-wasm is not installed.\n' +
-  'Install it with: npm install @ruvector/rvagent-wasm';
+/** The shared "not installed" text, read on use: the module is only ever loaded through import(), so a mock of it needn't define this. */
+async function notInstalledMessage(): Promise<string> {
+  return (await import('../ruvector/agent-wasm.js')).AGENT_WASM_NOT_INSTALLED_MESSAGE;
+}
 
 async function loadWasm() {
   const mod = await import('../ruvector/agent-wasm.js');
@@ -31,12 +32,15 @@ export const wasmStatusCommand: Command = {
       const available = await wasm.isAgentWasmAvailable();
 
       if (!available) {
-        output.writeln();
-        output.printWarning(WASM_NOT_AVAILABLE_MSG);
+        const data = { available: false, reason: 'not-installed', install: await notInstalledMessage() };
         if (ctx.flags.format === 'json') {
-          output.printJson({ available: false });
+          // stdout must be exactly one JSON document (ADR-532); the hint is in the JSON.
+          output.printJson(data);
+        } else {
+          output.writeln();
+          output.printWarning(await notInstalledMessage());
         }
-        return { success: true, data: { available: false } };
+        return { success: true, data };
       }
 
       // Init to get full status
@@ -145,7 +149,7 @@ export const wasmCreateCommand: Command = {
       const wasm = await loadWasm();
       const available = await wasm.isAgentWasmAvailable();
       if (!available) {
-        output.printError(WASM_NOT_AVAILABLE_MSG);
+        output.printError(await notInstalledMessage());
         return { success: false, exitCode: 1 };
       }
 
@@ -235,7 +239,7 @@ export const wasmPromptCommand: Command = {
       const wasm = await loadWasm();
       const available = await wasm.isAgentWasmAvailable();
       if (!available) {
-        output.printError(WASM_NOT_AVAILABLE_MSG);
+        output.printError(await notInstalledMessage());
         return { success: false, exitCode: 1 };
       }
 
@@ -294,7 +298,7 @@ export const wasmGalleryCommand: Command = {
       const wasm = await loadWasm();
       const available = await wasm.isAgentWasmAvailable();
       if (!available) {
-        output.printError(WASM_NOT_AVAILABLE_MSG);
+        output.printError(await notInstalledMessage());
         return { success: false, exitCode: 1 };
       }
 

@@ -1,7 +1,7 @@
 import type { RenderElement } from 'claude-code'
 
 import type { DevField } from '../data/devtools'
-import { DEV, DEV_GROUPS, devSpec, type DevCost, type DevEntry, type DevGroup } from '../devtools'
+import { DEV, DEV_GROUPS, devSpec, withNeeds, type DevCost, type DevEntry, type DevGroup } from '../devtools'
 import { slot } from './attention'
 import { ago, button, clip, col, type Ctx, row, section, tagChip, text, THEME } from './common'
 import { frameResult } from './status-card'
@@ -159,7 +159,7 @@ export function devtoolsView(ctx: Ctx): RenderElement {
     const entries = DEV.filter(candidate => candidate.group === group.id)
 
     // The first group, and every group with a text field, opens: a field folded away could not be typed into, so its runs would refuse.
-    rows.push(...section(ctx, `dt-${group.id}`, group.title, `${entries.length} · ${group.right}`, [...fieldRows(ctx, group.id), ...entries.map(entry => entryRow(ctx, entry, lead))], i === 0 || (FIELDS[group.id] ?? []).length > 0))
+    rows.push(...section(ctx, `dt-${group.id}`, group.title, `${entries.length} · ${group.right}`, [...fieldRows(ctx, group.id), ...(group.id === 'wasm' && ctx.state.devtools.rvagentWasm === 'missing' ? [text(ctx, ' @ruvector/rvagent-wasm is not installed: its rows are n/a (npm install -g @ruvector/rvagent-wasm, then reopen this page)', { dimColor: true })] : []), ...entries.map(entry => entryRow(ctx, withNeeds(entry, state.devtools), lead))], i === 0 || (FIELDS[group.id] ?? []).length > 0))
   })
 
   rows.push(...section(ctx, 'dt-result', 'Result', resultRight(ctx), resultRows(ctx), hasRun))

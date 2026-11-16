@@ -1,13 +1,13 @@
 import type { RenderElement } from 'claude-code'
 
-import { DEV, DEV_GROUPS, withTmux, type DevGroup } from '../devtools'
+import { DEV, DEV_GROUPS, withNeeds, type DevGroup } from '../devtools'
 import { RVM_LINES } from '../sandbox'
 import { col, type Ctx, section, text } from './common'
 import { entryRow, fieldRows, resultRight, devtoolsResult } from './devtools'
 
 /** One section's rows: the entries of a group as Dev Tools draws them, n/a with the reason while tmux is known missing. */
 function rows(ctx: Ctx, group: DevGroup, lead: number): RenderElement[] {
-  return DEV.filter(entry => entry.group === group).map(entry => entryRow(ctx, withTmux(entry, ctx.state.devtools.tmux), lead))
+  return DEV.filter(entry => entry.group === group).map(entry => entryRow(ctx, withNeeds(entry, ctx.state.devtools), lead))
 }
 
 const right = (group: DevGroup): string => DEV_GROUPS.find(entry => entry.id === group)?.right ?? ''

@@ -348,7 +348,7 @@ export type State = {
   /** The Self-Evolution view: the flywheel files as last read, and what its checks answered. */
   evolve: EvolveState
   /** The Dev Tools view: what is typed in its fields (its runs share the lab result panel, ids dt-*). */
-  devtools: { fields: DevFields; /** Whether tmux is on this machine, from a probe when the Sandbox page opens. */ tmux: 'unknown' | 'present' | 'missing' }
+  devtools: { fields: DevFields; /** Whether tmux is on this machine, from a probe when the Sandbox page opens. */ tmux: 'unknown' | 'present' | 'missing'; /** Whether @ruvector/rvagent-wasm is installed, from a probe when Dev Tools opens (ADR-532). */ rvagentWasm: 'unknown' | 'present' | 'missing' }
   timers: Map<string, Timer>
   stats: { renders: number[]; refreshes: number[]; frames: number[] }
   /** The Workflows page: the last read of Claude Code's run folders, the cursor, the inspector tab (wf-state.ts). */
@@ -432,7 +432,7 @@ export function newState(raw: PluginOptions | undefined): State {
     auto: emptyAuto(),
     vector: emptyVector(),
     evolve: emptyEvolve(),
-    devtools: { fields: emptyFields(), tmux: 'unknown' },
+    devtools: { fields: emptyFields(), tmux: 'unknown', rvagentWasm: 'unknown' },
     timers: new Map(),
     stats: { renders: [], refreshes: [], frames: [] },
     wf: emptyWf(),
