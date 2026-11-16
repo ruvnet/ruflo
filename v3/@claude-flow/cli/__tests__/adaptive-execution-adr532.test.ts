@@ -139,6 +139,28 @@ describe('ADR-532 scheduler execution', () => {
     expect(verifyReceipt(plan,{...run.receipt,chainHead:'0'.repeat(64)})).toBe(false);
     expect(verifyReceipt({...plan,steps:[{...plan.steps[0],args:{value:2}}]},run.receipt)).toBe(false);
   });
+  it('times out a stalled authorization callback before any tool executes', async () => {
+    let invoked=0;
+    const run=await executePlan(fixture(1),{
+      ...opts,maxWallMs:5,
+      authorize:()=>new Promise<boolean>(()=>{}),
+      handlers:{unit:{effect:'compute',capability:'unit:read',run:()=>{invoked++;return true;}}}
+    });
+    expect(run.receipt.status).toBe('failed');
+    expect(run.receipt.completed).toBe(0);
+    expect(run.receipt.events[0].status).toBe('timeout');
+    expect(invoked).toBe(0);
+  });
+  it('refuses unserializable handler results instead of issuing an unverifiable success receipt', async () => {
+    for(const result of [undefined,BigInt(2),(()=>{const o:any={};o.self=o;return o;})()]){
+      const run=await executePlan(fixture(1),{
+        ...opts,handlers:{unit:{effect:'compute',capability:'unit:read',run:()=>result}}
+      });
+      expect(run.receipt.status).toBe('failed');
+      expect(run.receipt.completed).toBe(0);
+      expect(run.receipt.events[0].status).toBe('failed');
+    }
+  });
   it('holds out 30 paired cases and verifies results and policy parity', async () => {
     const bench=await runAdaptiveBenchmark(5,30);
     expect(bench.holdout.samples).toBe(30);
