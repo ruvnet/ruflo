@@ -78,6 +78,15 @@ function record(value: unknown): value is Record<string, unknown> {
     (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
 }
 
+/** Snapshot and freeze validated plan data; trusted callbacks cannot rewrite authorization metadata. */
+function deepFreeze<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const item of Object.values(value)) deepFreeze(item);
+    Object.freeze(value);
+  }
+  return value;
+}
+
 function assertFiniteBound(value: unknown, field: string, min: number, max: number): asserts value is number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) {
     throw new Error(`invalid ${field}`);
@@ -146,7 +155,7 @@ export function compilePlan(input: unknown): ExecutionPlan {
     visited.add(id);
   }
   for (const step of steps) visit(step.id);
-  return { version: 1, steps };
+  return deepFreeze({ version: 1 as const, steps });
 }
 
 /** Critical-path priority, stable tie-break by input order. Never uses an ML guess as authorization. */
@@ -170,15 +179,16 @@ export async function executePlan(input: unknown, options: ExecuteOptions): Prom
   const estimate = plan.steps.reduce((sum, s) => sum + (s.estimatedCostUsd ?? 0), 0);
   if (estimate > maxEstimatedCostUsd + 1e-9) throw new Error('estimated budget exceeded');
   const chosen = chooseStrategy(plan, options.strategy ?? 'auto', options.maxConcurrency ?? 2);
-  const handlers = options.handlers;
-  if (!record(handlers)) throw new Error('invalid handler registry');
+  if (!record(options.handlers)) throw new Error('invalid handler registry');
+  const handlers: Record<string, RegisteredHandler> = Object.create(null);
   for (const step of plan.steps) {
     if (step.effect !== 'read' && step.effect !== 'compute') throw new Error('P0 refuses privileged effects');
-    const binding = Object.hasOwn(handlers, step.handler) ? handlers[step.handler] : undefined;
+    const binding = Object.hasOwn(options.handlers, step.handler) ? options.handlers[step.handler] : undefined;
     if (!binding || !record(binding) || typeof binding.run !== 'function') throw new Error('unregistered handler');
     if (binding.effect !== step.effect || binding.capability !== step.capability) {
       throw new Error('handler effect or capability mismatch');
     }
+    handlers[step.handler] = Object.freeze({effect:binding.effect,capability:binding.capability,run:binding.run});
   }
 
   const startedAt = performance.now(), planHash = digest(plan);
@@ -285,17 +295,30 @@ export async function executePlan(input: unknown, options: ExecuteOptions): Prom
 export function verifyReceipt(input: unknown, receipt: ExecutionReceipt): boolean {
   try {
     const plan = compilePlan(input);
-    if (receipt.schema !== 'ruflo.adaptive.v1' || receipt.planHash !== digest(plan)) return false;
-    const allowed = new Set(plan.steps.map(s => s.id));
+    if (!receipt || !Array.isArray(receipt.events) || receipt.schema !== 'ruflo.adaptive.v1' ||
+      receipt.planHash !== digest(plan)) return false;
+    if (!Number.isFinite(receipt.wallMs) || receipt.wallMs < 0 ||
+      !Number.isInteger(receipt.concurrency) || receipt.concurrency < 1 || receipt.concurrency > MAX_WORKERS) return false;
+    const byId = new Map(plan.steps.map(s => [s.id, s]));
     const seen = new Set<string>();
     let hash = receipt.planHash, okCount = 0;
     for (const event of receipt.events) {
-      if (!allowed.has(event.id) || seen.has(event.id)) return false;
+      if (!event || !byId.has(event.id) || seen.has(event.id) ||
+        event.effect !== byId.get(event.id)?.effect ||
+        !['ok','denied','failed','timeout'].includes(event.status) ||
+        !Number.isFinite(event.durationMs) || event.durationMs < 0) return false;
+      if (event.status === 'ok') {
+        if (event.authorized !== true || typeof event.valueHash !== 'string' ||
+          !/^[a-f0-9]{64}$/.test(event.valueHash)) return false;
+        okCount++;
+      }
+      if (event.status === 'denied' && event.authorized !== false) return false;
       seen.add(event.id);
-      if (event.status === 'ok') okCount++;
       hash = digest({parent: hash, event});
     }
+    const completed = okCount === plan.steps.length && receipt.events.length === plan.steps.length;
     return hash === receipt.chainHead && okCount === receipt.completed &&
-      receipt.total === plan.steps.length && receipt.events.length <= receipt.total;
+      receipt.total === plan.steps.length && receipt.events.length <= receipt.total &&
+      receipt.status === (completed ? 'ok' : 'failed');
   } catch { return false; }
 }
