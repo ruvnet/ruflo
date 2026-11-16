@@ -4,6 +4,7 @@
  * Synthetic delay workloads estimate scheduling overhead, NOT real Claude Code performance.
  */
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { executePlan, verifyReceipt, type ExecutionPlan } from './adaptive-execution.js';
 
 type Mode = 'serial' | 'parallel';
@@ -83,7 +84,7 @@ export async function runAdaptiveBenchmark(devCount = 20, holdoutCount = 30): Pr
   for (let i=devCount; i<devCount+holdoutCount; i++) {
     const serial = await runCase(i,1);
     const adaptive = await runCase(i,selected);
-    const identical = JSON.stringify(serial.result) === JSON.stringify(adaptive.result);
+    const identical = isDeepStrictEqual(serial.result, adaptive.result);
     if (!identical) throw new Error(`result parity regression in case ${i}`);
     if (!serial.valid || !adaptive.valid) throw new Error(`invalid receipt in case ${i}`);
     policyCalls += serial.calls + adaptive.calls;
