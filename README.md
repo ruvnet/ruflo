@@ -2,6 +2,11 @@
 
 <a href="https://cognitum.one/ruPro"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
 
+<a href="https://cognitum.one/ruPro"><img src="docs/assets/readme/rupro-preview.jpg" alt="Explore ruPro by Cognitum: interactive desktop workspace, guided tour, and agent project collaboration" width="100%"></a>
+
+**[Explore ruPro interactive demo](https://cognitum.one/ruPro)** · Your projects and agents, working together.
+
+
 **An agent meta-harness for Claude Code and Codex.**
 
 <!-- Try Ruflo — the 3 badges first-time visitors actually act on -->
