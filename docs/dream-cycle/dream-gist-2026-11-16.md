@@ -57,9 +57,9 @@ Skipped — this is a binary/structural metadata-computation fix (a percentage d
 ## SOTA Proof & Witness
 
 Session commit: 3a1479883b55b7f786ef0bf3141478e4dfb9444f
-Candidate commit: PENDING
-Gist SHA-256 (pre-witness, this block held to the literal text `PENDING`): PENDING
-Witness stamp: PENDING
+Candidate commit: c38714a8d9789a57cd3784b28b78a61e52808c5a
+Gist SHA-256 (pre-witness, this block held to the literal text `PENDING`): 338f218d9c2b5c903917e9286288cb78955b0ff5d92271b652fb20e1db88f3f5
+Witness stamp: 634d0afc9f4b4c07d678cd4c9f64c41f855de72497240078c250d2911b628841
 
 Verifier: fetch this file, replace this block's three dynamic values with the literal text `PENDING` (as they were before this computation), SHA-256 the result, concatenate with the Session commit above, SHA-256 again — must equal the Witness stamp.
 
