@@ -6,8 +6,6 @@
 
 **[Explore ruPro interactive demo](https://cognitum.one/ruPro)** · Preview the connected desktop and iPhone companion.
 
-<sub>Illustrative product preview. Dashboard values are sample data; App Store availability is not implied.</sub>
-
 
 **An agent meta-harness for Claude Code and Codex.**
 
