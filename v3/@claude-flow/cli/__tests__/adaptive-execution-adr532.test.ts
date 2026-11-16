@@ -10,11 +10,11 @@ const fixture = (count = 3): ExecutionPlan => ({
   }))
 });
 const handlers = {
-  unit: async (args:unknown, ctx:{signal:AbortSignal;dependencies:ReadonlyMap<string,unknown>}) => {
+  unit: {effect:'compute' as const,capability:'unit:read',run:async (args:unknown, ctx:{signal:AbortSignal;dependencies:ReadonlyMap<string,unknown>}) => {
     if(ctx.signal.aborted) throw new Error('aborted');
     const input = args as {value:number};
     return input.value + Array.from(ctx.dependencies.values()).reduce<number>((x,v)=>x+Number(v),0);
-  }
+  }}
 };
 const opts = {handlers,authorize:()=>true,maxEstimatedCostUsd:0};
 
@@ -35,7 +35,7 @@ describe('ADR-532 compile and threat invariants', () => {
     ];
     for (const attack of attacks) {
       let invoked=0;
-      await expect(executePlan(attack, {...opts, handlers:{unit:()=>{invoked++; return true;}}})).rejects.toThrow();
+      await expect(executePlan(attack, {...opts, handlers:{unit:{effect:'compute',capability:'unit:read',run:()=>{invoked++; return true;}}}})).rejects.toThrow();
       expect(invoked).toBe(0);
     }
   });
@@ -43,6 +43,16 @@ describe('ADR-532 compile and threat invariants', () => {
     for(const effect of ['network','secret']){
       await expect(executePlan({version:1,steps:[{...fixture(1).steps[0],effect}]},opts)).rejects.toThrow(/privileged/);
     }
+  });
+  it('does not trust a plan claiming a lower effect than its registered handler', async () => {
+    let calls=0;
+    await expect(executePlan(fixture(1),{...opts,handlers:{
+      unit:{effect:'read',capability:'unit:read',run:()=>{calls++;return true;}}
+    }})).rejects.toThrow(/handler effect/);
+    await expect(executePlan(fixture(1),{...opts,handlers:{
+      unit:{effect:'compute',capability:'another:read',run:()=>{calls++;return true;}}
+    }})).rejects.toThrow(/handler effect/);
+    expect(calls).toBe(0);
   });
   it('denies unknown keys, oversized args, invalid limits and excessive graph size', async () => {
     expect(()=>compilePlan({version:1,steps:fixture(1).steps,program:'console.log(1)'})).toThrow();
@@ -76,7 +86,7 @@ describe('ADR-532 scheduler execution', () => {
     expect(verifyReceipt(fixture(4),run.receipt)).toBe(true);
   });
   it('never schedules a dependent task after its parent fails', async () => {
-    const run=await executePlan(fixture(3),{...opts,handlers:{unit:()=>{throw Error('failure');}}});
+    const run=await executePlan(fixture(3),{...opts,handlers:{unit:{effect:'compute',capability:'unit:read',run:()=>{throw Error('failure');}}}});
     expect(run.receipt.status).toBe('failed');
     expect(run.receipt.completed).toBe(0);
     expect(run.receipt.events.map(x=>x.id)).toEqual(['s0']);
@@ -85,7 +95,7 @@ describe('ADR-532 scheduler execution', () => {
     const plan=makeCase(0);
     const denied:string[]=[];
     const run=await executePlan(plan,{
-      strategy:'serial',handlers:{fixture:()=>99},
+      strategy:'serial',handlers:{fixture:{effect:'compute',capability:'bench:read',run:()=>99}},
       authorize:step=>{denied.push(step.id);return step.id!=='s1';}
     });
     expect(run.receipt.status).toBe('failed');
@@ -98,7 +108,7 @@ describe('ADR-532 scheduler execution', () => {
     let active=0,max=0;
     const run=await executePlan(makeCase(0),{
       strategy:'parallel',maxConcurrency:3,authorize:()=>true,
-      handlers:{fixture:async (_args,{signal})=>{active++;max=Math.max(active,max);await new Promise(r=>setTimeout(r,6));active--;if(signal.aborted)throw Error('aborted');return true;}}
+      handlers:{fixture:{effect:'compute',capability:'bench:read',run:async (_args,{signal})=>{active++;max=Math.max(active,max);await new Promise(r=>setTimeout(r,6));active--;if(signal.aborted)throw Error('aborted');return true;}}}
     });
     expect(run.receipt.status).toBe('ok');
     expect(max).toBe(3);
@@ -112,9 +122,9 @@ describe('ADR-532 scheduler execution', () => {
   it('cancels cooperative handler on timeout, does not mark dependent work successful', async () => {
     const run=await executePlan(fixture(2),{
       ...opts,maxWallMs:5,handlers:{
-        unit:(_args,{signal})=>new Promise((_resolve,reject)=>{
+        unit:{effect:'compute',capability:'unit:read',run:(_args,{signal})=>new Promise((_resolve,reject)=>{
           signal.addEventListener('abort',()=>reject(new Error('aborted')),{once:true});
-        })
+        })}
       }
     });
     expect(run.receipt.status).toBe('failed');
