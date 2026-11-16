@@ -68,6 +68,14 @@ describe('ADR-532 compile and threat invariants', () => {
     expect(run.receipt.events[0].status).toBe('denied');
     expect(run.receipt.completed).toBe(0);
   });
+  it('freezes validated graph metadata, dependencies and arguments',()=>{
+    const plan=compilePlan(fixture(2));
+    expect(Object.isFrozen(plan)).toBe(true);
+    expect(Object.isFrozen(plan.steps)).toBe(true);
+    expect(Object.isFrozen(plan.steps[0])).toBe(true);
+    expect(Object.isFrozen(plan.steps[1].deps)).toBe(true);
+    expect(Object.isFrozen(plan.steps[1].args)).toBe(true);
+  });
   it('enforces total estimated budget before any handler', async () => {
     const plan=fixture(1);
     plan.steps[0].estimatedCostUsd=1;
@@ -143,6 +151,9 @@ describe('ADR-532 scheduler execution', () => {
     expect(verifyReceipt(plan,run.receipt)).toBe(true);
     expect(JSON.stringify(run.receipt)).not.toContain('123456789');
     expect(verifyReceipt(plan,{...run.receipt,chainHead:'0'.repeat(64)})).toBe(false);
+    expect(verifyReceipt(plan,{...run.receipt,status:'failed'})).toBe(false);
+    expect(verifyReceipt(plan,{...run.receipt,completed:0})).toBe(false);
+    expect(verifyReceipt(plan,{...run.receipt,concurrency:99})).toBe(false);
     expect(verifyReceipt({...plan,steps:[{...plan.steps[0],args:{value:2}}]},run.receipt)).toBe(false);
   });
   it('times out a stalled authorization callback before any tool executes', async () => {
