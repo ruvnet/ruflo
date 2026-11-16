@@ -2,7 +2,7 @@
 
 <a href="https://cognitum.one/ruPro"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>
 
-<a href="https://cognitum.one/ruPro"><img src="docs/assets/readme/rupro-iphone-companion.webp" alt="ruPro iPhone companion concept alongside the Ruflo desktop workspace" width="760"></a>
+<a href="https://cognitum.one/ruPro"><img src="docs/assets/readme/rupro-iphone-companion.webp" alt="ruPro iPhone companion concept alongside the Ruflo desktop workspace" width="100%"></a>
 
 **[Explore ruPro interactive demo](https://cognitum.one/ruPro)** · Preview the connected desktop and iPhone companion.
 
