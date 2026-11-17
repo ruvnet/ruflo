@@ -1,4 +1,5 @@
 {
+  "homepage": "https://ruv.io",
   "name": "@claude-flow/plugin-test-intelligence",
   "version": "3.0.0-alpha.3",
   "description": "AI-powered test intelligence plugin for predictive test selection, flaky detection, and coverage optimization",

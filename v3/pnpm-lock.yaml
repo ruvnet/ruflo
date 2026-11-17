@@ -71,8 +71,8 @@ importers:
         specifier: '>=3.5.0'
         version: link:../cli
       agent-browser:
-        specifier: ^0.41.0
-        version: 0.41.2
+        specifier: ^0.43.0
+        version: 0.43.0
       agentic-flow:
         specifier: ^2.0.14
         version: 2.0.14(@types/node@20.19.27)
@@ -221,7 +221,7 @@ importers:
         specifier: 2.1.1
         version: 2.1.1
       '@claude-flow/aidefence':
-        specifier: 3.2.1
+        specifier: 3.2.2
         version: link:../aidefence
       '@claude-flow/memory':
         specifier: 3.3.3
@@ -730,6 +730,62 @@ packages:
 
   /@actions/io@2.0.0:
     resolution: {integrity: sha512-Jv33IN09XLO+0HS79aaODsvIRyduiF7NY/F6LYeK5oeUmrsz7aFdRphQjFoESF4jS7lMauDOttKALcpapVDIAg==}
+
+  /@agent-browser/cli-darwin-arm64@0.43.0:
+    resolution: {integrity: sha512-HV6GP59IjNnowlrXR/5rVM8msPWwQDEONt/tWC8STzUfKZQHKZI/Iv9sf2h2ZhwK8xwoqLhxpf+KxcFgJ0sExQ==}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@agent-browser/cli-darwin-x64@0.43.0:
+    resolution: {integrity: sha512-3NKnKFOWLYDYTz4bJxo4jt+GwjM4VtcW5FDrQY35eUrytig65FEDdXmXKuRbZGq9jEEWxh6rmpS4R6xS53XCaw==}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@agent-browser/cli-linux-arm64-gnu@0.43.0:
+    resolution: {integrity: sha512-8DC234LGlXCn8A2YXGk6woy1uTjyexvtHd/TOQHLrV2sfUMZD647HTHEJyF+2z1J1oR34LaB5jqHJ9d0REC+Cw==}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@agent-browser/cli-linux-arm64-musl@0.43.0:
+    resolution: {integrity: sha512-/dYeGX2E1lWZ25q1IZSVs6PaPmr0GmhHU8z/LtCh0anHN4ND50i5fOPbysRBaE8iQCBY74h+1R2kePfEqD7X4Q==}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@agent-browser/cli-linux-x64-gnu@0.43.0:
+    resolution: {integrity: sha512-WY8vy2Saa3oRt6XEmz4Sae1W5qS9TjYcbX6IE+dxb8s2APfL9XyQjMHC6jBZrhwqDBIvUeTMCT/P2cq3XLPSBw==}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@agent-browser/cli-linux-x64-musl@0.43.0:
+    resolution: {integrity: sha512-WpCI0cIaVIVj4trdduDmW90h51BAP5Nhx6lALOqHjUhOOae/TkLL4bK8gJfjPb/nOp2FRjsF1l77f6rVwkpsug==}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /@agent-browser/cli-win32-x64-msvc@0.43.0:
+    resolution: {integrity: sha512-xhk8wnHk3aiBFSR0pd1Ye3ay2jKjgRardgBJLiB9nXJv0ZkbeP/wh3X7jMiKUfUGE1qqJrKdaM5szQ6iz8/8+w==}
+    cpu: [x64, arm64]
+    os: [win32]
+    requiresBuild: true
+    dev: false
+    optional: true
 
   /@agntcy/slim-bindings-darwin-arm64@2.1.1:
     resolution: {integrity: sha512-YbUsO1bWdgxHIQP/I7L+1NG27+mnpW/WueT/1n68NC8n5KedQPAV3TuUU5NAQlUN4uxpbGaZQ6Yi8Yk0qVn88g==}
@@ -4812,11 +4868,19 @@ packages:
     dev: false
     optional: true
 
-  /agent-browser@0.41.2:
-    resolution: {integrity: sha512-/agCKB5rw1EEK8SKWo4zid7a5kOwlclqALC0P3c69buJvKdhrl/dJkKdfLqGGaiNIbWzRdqqT0PxZVkwVEf2fg==}
-    engines: {node: '>=24.0.0', pnpm: '>=11.0.0'}
+  /agent-browser@0.43.0:
+    resolution: {integrity: sha512-TExwnZAW39fUBDJhUPrw8KKGmcjzBo7FxNqoP2/usHG1ODsjGI2jAWq3+Q6I5JYyBMjePFEsj8KGB68mALtglA==}
+    engines: {node: '>=22.0.0'}
     hasBin: true
     requiresBuild: true
+    optionalDependencies:
+      '@agent-browser/cli-darwin-arm64': 0.43.0
+      '@agent-browser/cli-darwin-x64': 0.43.0
+      '@agent-browser/cli-linux-arm64-gnu': 0.43.0
+      '@agent-browser/cli-linux-arm64-musl': 0.43.0
+      '@agent-browser/cli-linux-x64-gnu': 0.43.0
+      '@agent-browser/cli-linux-x64-musl': 0.43.0
+      '@agent-browser/cli-win32-x64-msvc': 0.43.0
     dev: false
 
   /agentdb@3.10.0(@types/node@20.19.27)(zod@3.25.76):

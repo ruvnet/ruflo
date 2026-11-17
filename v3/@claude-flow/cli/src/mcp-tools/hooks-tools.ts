@@ -9,6 +9,8 @@ import * as nodeFs from 'fs';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { dispatchQueueDir } from '../services/dispatch-queue.js';
+import { resolveMemoryRoot } from '../memory/memory-root.js';
+import { getProjectRoot } from '../services/project-root.js';
 import { validateIdentifier, validateText, validatePath } from './validate-input.js';
 import { realpathNearest, isInsideRealRoot } from './realpath-containment.js';
 import { commandRecordingDisabled, redactCommandForStorage } from '../services/command-recording.js';
@@ -401,12 +403,16 @@ async function buildSemanticRouter(kind: RouterEmbedderKind, selectionReason?: s
 
     if (router.VectorDb && router.DistanceMetric) {
       // Try to create VectorDb - may fail with lock error in concurrent envs
+      // Native VectorDb otherwise creates ruvector.db in process.cwd().
+      const memoryRoot = resolveMemoryRoot(getProjectRoot());
+      mkdirSync(memoryRoot, { recursive: true });
       const db = new router.VectorDb({
         dimensions: 384,
         distanceMetric: router.DistanceMetric.Cosine,
         hnswM: 16,
         hnswEfConstruction: 200,
         hnswEfSearch: 100,
+        storagePath: join(memoryRoot, 'ruvector.db'),
       });
 
       // Initialize with static + runtime-learned task patterns

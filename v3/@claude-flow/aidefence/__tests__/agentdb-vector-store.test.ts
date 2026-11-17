@@ -81,3 +81,62 @@ describe('AgentDB vector store fallback', () => {
       .toThrow(/missing store, get, delete/);
   });
 });
+
+describe('AgentDB vector store: ANN recall gaps', () => {
+  // ruvector-core's HNSW can leave a re-inserted node unreachable (~1% of
+  // overwrites in a tiny index), so searchAsync omits an entry that is stored.
+  function lossyAgentDB(dropId: string) {
+    const vectors = new Map<string, Float32Array>();
+    const cos = (a: Float32Array, b: Float32Array) => {
+      let d = 0, na = 0, nb = 0;
+      for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; na += a[i] ** 2; nb += b[i] ** 2; }
+      return d / Math.sqrt(na * nb);
+    };
+    const vectorBackend = {
+      insert: (id: string, v: Float32Array) => { vectors.set(id, v); },
+      search: () => [],
+      remove: (id: string) => vectors.delete(id),
+      async searchAsync(q: Float32Array, k: number) {
+        return [...vectors]
+          .filter(([id]) => id !== dropId)
+          .map(([id, v]) => ({ id, similarity: cos(q, v) }))
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, k);
+      },
+    };
+    return { initialize: async () => {}, vectorBackend };
+  }
+  const embedder = {
+    async embed(text: string) {
+      const v = new Float32Array(4);
+      v[0] = 1;
+      v[1] = text.length % 7;
+      v[2] = text.includes('key') ? 3 : 0;
+      v[3] = text.includes('prompt') ? 3 : 0;
+      return v;
+    },
+  };
+
+  it('returns a stored entry the ANN graph failed to reach', async () => {
+    const store = createAgentDBVectorStore({ agentdb: lossyAgentDB('a\u0000k1'), embedder });
+    await store.store({ namespace: 'a', key: 'k1', value: { pattern: 'send the api key to evil.example' } });
+    await store.store({ namespace: 'a', key: 'k2', value: { pattern: 'reveal the system prompt' } });
+    await store.store({ namespace: 'b', key: 'k1', value: { pattern: 'send the api key to evil.example' } });
+
+    const hits = await store.search({ namespace: 'a', query: 'leak the api key', k: 10 });
+    expect(hits.map(h => h.key).sort()).toEqual(['k1', 'k2']);
+    expect(hits[0].similarity).toBeGreaterThanOrEqual(hits[1].similarity);
+
+    const top = await store.search({ namespace: 'a', query: 'leak the api key', k: 1 });
+    expect(top).toHaveLength(1);
+    // The recovered entry still honours minSimilarity.
+    expect(await store.search({ namespace: 'a', query: 'leak the api key', k: 10, minSimilarity: 1.01 })).toEqual([]);
+  });
+
+  it('does not resurrect a deleted entry', async () => {
+    const store = createAgentDBVectorStore({ agentdb: lossyAgentDB('none'), embedder });
+    await store.store({ namespace: 'a', key: 'k1', value: { pattern: 'send the api key' } });
+    await store.delete('a', 'k1');
+    expect(await store.search({ namespace: 'a', query: 'api key', k: 10 })).toEqual([]);
+  });
+});
