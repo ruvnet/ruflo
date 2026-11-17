@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; older versions: `git log -- plugins/ruflo-console`.
 
+## 0.50.2 — 2026-11-17
+- fix: the POSIX append script (`dd … >> "$1"`) now passes `conv=notrunc`. uutils dd, the default coreutils on Ubuntu 26.04, truncates its stdout to its own offset after writing (`lseek` then `ftruncate`), so concurrent appenders lost whole batches; with the flag, eight writers keep all 2400 lines. Linux still runs the GNU argv; this script is the macOS/BSD path, and `conv=notrunc` is POSIX dd (#4978)
+
 ## 0.50.1 — 2026-11-09
 - chore: the command catalog (`catalog/command-catalog.json`) is regenerated from the CLI's `catalog.generated.json`. It picks up the three init commands renamed so they no longer collide with plugin commands (`/memory-neural`, `/stream-chain-run`, `/swarm-orchestrate`, #2640) and the mod registrations and plugins added since the last regeneration
 
