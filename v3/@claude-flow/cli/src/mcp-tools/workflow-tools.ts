@@ -4,12 +4,14 @@
  * Tool definitions for workflow automation and orchestration.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { type MCPTool, getProjectCwd } from './types.js';
 import { validateIdentifier, validatePath, validateText } from './validate-input.js';
 import { executeAgentTask } from './agent-execute-core.js';
 import { readPreservedJsonStore } from './record-store.js';
+import { containedReadPath, isLocalCliCall } from './path-containment.js';
+import { readImportFile } from './import-limits.js';
 
 // Storage paths
 const STORAGE_DIR = '.claude-flow';
@@ -1034,17 +1036,22 @@ export const workflowTools: MCPTool[] = [
       },
       required: ['file'],
     },
-    handler: async (input) => {
+    handler: async (input, context) => {
       const file = String(input.file ?? '');
       const errors: Array<{ line: number; message: string; severity: string }> = [];
       const warnings: Array<{ line: number; message: string }> = [];
       let stages = 0;
       let agents = 0;
       try {
-        if (!file || !existsSync(file)) {
-          errors.push({ line: 0, message: `File not found: ${file || '(empty)'}`, severity: 'error' });
+        // MCP callers may only read regular files inside the project, matching
+        // memory_import; the local CLI may name any file the operator chooses.
+        const local = isLocalCliCall(context);
+        const resolved = !file ? null : local ? (existsSync(file) ? file : null) : containedReadPath(file);
+        if (!resolved) {
+          errors.push({ line: 0, message: !file || local ? `File not found: ${file || '(empty)'}`
+            : 'file must be an existing regular file inside the project directory (not a symlink)', severity: 'error' });
         } else {
-          const raw = readFileSync(file, 'utf-8');
+          const raw = readImportFile(resolved).toString('utf-8');
           let doc: unknown = null;
           if (/\.ya?ml$/i.test(file)) {
             warnings.push({ line: 0, message: 'YAML workflow files are not schema-validated yet — only JSON is fully checked (#1916 follow-up)' });
@@ -1082,7 +1089,8 @@ export const workflowTools: MCPTool[] = [
           }
         }
       } catch (e) {
-        errors.push({ line: 0, message: `Parse error: ${(e as Error).message}`, severity: 'error' });
+        // Never echo parser text: a SyntaxError message quotes the file's contents.
+        errors.push({ line: 0, message: e instanceof SyntaxError ? 'Parse error: file is not valid JSON' : `Parse error: ${(e as Error).message}`, severity: 'error' });
       }
       const valid = errors.length === 0 && (!input.strict || warnings.length === 0);
       return {
