@@ -10,6 +10,7 @@
 import { type MCPTool, getProjectCwd } from './types.js';
 import { readClaimsStore } from '../services/claims-store.js';
 import { validateIdentifier, validateText } from './validate-input.js';
+import { type StoreUpdate, saved, unchanged, updateJsonStore } from './locked-json-store.js';
 
 // Inline claim service since we can't import external modules
 interface Claimant {
@@ -44,7 +45,6 @@ interface ClaimsStore {
 }
 
 // File-based persistence
-import { existsSync, writeFileSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 
 const CLAIMS_DIR = '.claude-flow/claims';
@@ -55,20 +55,16 @@ function getClaimsPath(): string {
   return resolve(getProjectCwd(), CLAIMS_DIR, CLAIMS_FILE);
 }
 
-function ensureClaimsDir(): void {
-  const dir = resolve(getProjectCwd(), CLAIMS_DIR);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-}
-
 function loadClaims(): ClaimsStore {
   return readClaimsStore(getClaimsPath()) as unknown as ClaimsStore;
 }
 
-function saveClaims(store: ClaimsStore): void {
-  ensureClaimsDir();
-  writeFileSync(getClaimsPath(), JSON.stringify(store, null, 2), 'utf-8');
+/** Every write goes through here: the check and the change run under the
+ * claims lock, so two processes cannot both win the same issue. */
+function updateClaims(
+  mutate: (store: ClaimsStore) => StoreUpdate<Record<string, unknown>>,
+): Promise<Record<string, unknown>> {
+  return updateJsonStore(getClaimsPath(), loadClaims, mutate, 'claims');
 }
 
 function formatClaimant(claimant: Claimant): string {
@@ -137,38 +133,37 @@ export const claimsTools: MCPTool[] = [
         return { success: false, error: 'Invalid claimant format. Use "human:userId:name" or "agent:agentId:agentType"' };
       }
 
-      const store = loadClaims();
+      return updateClaims((store) => {
+        // Check if already claimed
+        if (store.claims[issueId]) {
+          const existing = store.claims[issueId];
+          return unchanged({
+            success: false,
+            error: `Issue already claimed by ${formatClaimant(existing.claimant)}`,
+            existingClaim: existing,
+          });
+        }
 
-      // Check if already claimed
-      if (store.claims[issueId]) {
-        const existing = store.claims[issueId];
-        return {
-          success: false,
-          error: `Issue already claimed by ${formatClaimant(existing.claimant)}`,
-          existingClaim: existing,
+        const now = new Date().toISOString();
+        const claim: IssueClaim = {
+          issueId,
+          claimant,
+          claimedAt: now,
+          status: 'active',
+          statusChangedAt: now,
+          progress: 0,
+          context,
+          expiresAt: ttlMs !== undefined ? new Date(Date.now() + ttlMs).toISOString() : undefined,
         };
-      }
 
-      const now = new Date().toISOString();
-      const claim: IssueClaim = {
-        issueId,
-        claimant,
-        claimedAt: now,
-        status: 'active',
-        statusChangedAt: now,
-        progress: 0,
-        context,
-        expiresAt: ttlMs !== undefined ? new Date(Date.now() + ttlMs).toISOString() : undefined,
-      };
+        store.claims[issueId] = claim;
 
-      store.claims[issueId] = claim;
-      saveClaims(store);
-
-      return {
-        success: true,
-        claim,
-        message: `Issue ${issueId} claimed by ${formatClaimant(claimant)}`,
-      };
+        return saved({
+          success: true,
+          claim,
+          message: `Issue ${issueId} claimed by ${formatClaimant(claimant)}`,
+        });
+      });
     },
   },
 
@@ -208,28 +203,28 @@ export const claimsTools: MCPTool[] = [
         return { success: false, error: 'Invalid claimant format' };
       }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
+        }
 
-      // Verify ownership
-      if (formatClaimant(claim.claimant) !== formatClaimant(claimant)) {
-        return { success: false, error: 'Only the current claimant can release' };
-      }
+        // Verify ownership
+        if (formatClaimant(claim.claimant) !== formatClaimant(claimant)) {
+          return unchanged({ success: false, error: 'Only the current claimant can release' });
+        }
 
-      delete store.claims[issueId];
-      delete store.stealable[issueId];
-      saveClaims(store);
+        delete store.claims[issueId];
+        delete store.stealable[issueId];
 
-      return {
-        success: true,
-        message: `Issue ${issueId} released`,
-        reason,
-        previousClaim: claim,
-      };
+        return saved({
+          success: true,
+          message: `Issue ${issueId} released`,
+          reason,
+          previousClaim: claim,
+        });
+      });
     },
   },
 
@@ -282,40 +277,40 @@ export const claimsTools: MCPTool[] = [
         return { success: false, error: 'Invalid claimant format' };
       }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
+        }
 
-      if (formatClaimant(claim.claimant) !== formatClaimant(from)) {
-        return { success: false, error: 'Only the current claimant can request handoff' };
-      }
+        if (formatClaimant(claim.claimant) !== formatClaimant(from)) {
+          return unchanged({ success: false, error: 'Only the current claimant can request handoff' });
+        }
 
-      const now = new Date().toISOString();
-      claim.status = 'handoff-pending';
-      claim.statusChangedAt = now;
-      claim.handoffTo = to;
-      claim.handoffReason = reason;
-      // Optional: keep the progress recorded with claims_status when it is
-      // left out, and clamp it to 0-100 the same way claims_status does.
-      if (progress !== undefined) {
-        claim.progress = Math.min(100, Math.max(0, progress));
-      }
-      // A claim being handed to a named claimant is no longer up for grabs:
-      // drop it from the list claims_stealable and claims_steal read, so it
-      // cannot be stolen while the handoff is pending or after it is accepted.
-      delete store.stealable[issueId];
+        const now = new Date().toISOString();
+        claim.status = 'handoff-pending';
+        claim.statusChangedAt = now;
+        claim.handoffTo = to;
+        claim.handoffReason = reason;
+        // Optional: keep the progress recorded with claims_status when it is
+        // left out, and clamp it to 0-100 the same way claims_status does.
+        if (progress !== undefined) {
+          claim.progress = Math.min(100, Math.max(0, progress));
+        }
+        // A claim being handed to a named claimant is no longer up for grabs:
+        // drop it from the list claims_stealable and claims_steal read, so it
+        // cannot be stolen while the handoff is pending or after it is accepted.
+        delete store.stealable[issueId];
 
-      store.claims[issueId] = claim;
-      saveClaims(store);
+        store.claims[issueId] = claim;
 
-      return {
-        success: true,
-        claim,
-        message: `Handoff requested from ${formatClaimant(from)} to ${formatClaimant(to)}`,
-      };
+        return saved({
+          success: true,
+          claim,
+          message: `Handoff requested from ${formatClaimant(from)} to ${formatClaimant(to)}`,
+        });
+      });
     },
   },
 
@@ -349,39 +344,39 @@ export const claimsTools: MCPTool[] = [
         return { success: false, error: 'Invalid claimant format' };
       }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
+        }
 
-      if (claim.status !== 'handoff-pending') {
-        return { success: false, error: 'No pending handoff for this issue' };
-      }
+        if (claim.status !== 'handoff-pending') {
+          return unchanged({ success: false, error: 'No pending handoff for this issue' });
+        }
 
-      if (!claim.handoffTo || formatClaimant(claim.handoffTo) !== formatClaimant(claimant)) {
-        return { success: false, error: 'You are not the target of this handoff' };
-      }
+        if (!claim.handoffTo || formatClaimant(claim.handoffTo) !== formatClaimant(claimant)) {
+          return unchanged({ success: false, error: 'You are not the target of this handoff' });
+        }
 
-      const previousOwner = claim.claimant;
-      const now = new Date().toISOString();
+        const previousOwner = claim.claimant;
+        const now = new Date().toISOString();
 
-      claim.claimant = claimant;
-      claim.status = 'active';
-      claim.statusChangedAt = now;
-      claim.handoffTo = undefined;
-      claim.handoffReason = undefined;
+        claim.claimant = claimant;
+        claim.status = 'active';
+        claim.statusChangedAt = now;
+        claim.handoffTo = undefined;
+        claim.handoffReason = undefined;
 
-      store.claims[issueId] = claim;
-      saveClaims(store);
+        store.claims[issueId] = claim;
 
-      return {
-        success: true,
-        claim,
-        previousOwner,
-        message: `Handoff accepted. ${formatClaimant(claimant)} now owns issue ${issueId}`,
-      };
+        return saved({
+          success: true,
+          claim,
+          previousOwner,
+          message: `Handoff accepted. ${formatClaimant(claimant)} now owns issue ${issueId}`,
+        });
+      });
     },
   },
 
@@ -421,35 +416,35 @@ export const claimsTools: MCPTool[] = [
       { const v = validateIdentifier(issueId, 'issueId'); if (!v.valid) return { success: false, error: v.error }; }
       if (note) { const v = validateText(note, 'note'); if (!v.valid) return { success: false, error: v.error }; }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
+        }
 
-      const now = new Date().toISOString();
-      claim.status = status;
-      claim.statusChangedAt = now;
-      if (status === 'blocked') {
-        claim.blockReason = note;
-      }
-      if (progress !== undefined) {
-        claim.progress = Math.min(100, Math.max(0, progress));
-      }
-      // claims_status never sets 'stealable', so a claim it updates is no
-      // longer up for grabs: drop it from the list claims_stealable and
-      // claims_steal read.
-      delete store.stealable[issueId];
+        const now = new Date().toISOString();
+        claim.status = status;
+        claim.statusChangedAt = now;
+        if (status === 'blocked') {
+          claim.blockReason = note;
+        }
+        if (progress !== undefined) {
+          claim.progress = Math.min(100, Math.max(0, progress));
+        }
+        // claims_status never sets 'stealable', so a claim it updates is no
+        // longer up for grabs: drop it from the list claims_stealable and
+        // claims_steal read.
+        delete store.stealable[issueId];
 
-      store.claims[issueId] = claim;
-      saveClaims(store);
+        store.claims[issueId] = claim;
 
-      return {
-        success: true,
-        claim,
-        message: `Issue ${issueId} status updated to ${status}`,
-      };
+        return saved({
+          success: true,
+          claim,
+          message: `Issue ${issueId} status updated to ${status}`,
+        });
+      });
     },
   },
 
@@ -546,34 +541,34 @@ export const claimsTools: MCPTool[] = [
       { const v = validateIdentifier(issueId, 'issueId'); if (!v.valid) return { success: false, error: v.error }; }
       if (context) { const v = validateText(context, 'context'); if (!v.valid) return { success: false, error: v.error }; }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
+        }
 
-      const now = new Date().toISOString();
-      claim.status = 'stealable';
-      claim.statusChangedAt = now;
+        const now = new Date().toISOString();
+        claim.status = 'stealable';
+        claim.statusChangedAt = now;
 
-      store.stealable[issueId] = {
-        reason,
-        stealableAt: now,
-        preferredTypes,
-        progress: claim.progress,
-        context,
-      };
+        store.stealable[issueId] = {
+          reason,
+          stealableAt: now,
+          preferredTypes,
+          progress: claim.progress,
+          context,
+        };
 
-      store.claims[issueId] = claim;
-      saveClaims(store);
+        store.claims[issueId] = claim;
 
-      return {
-        success: true,
-        claim,
-        stealableInfo: store.stealable[issueId],
-        message: `Issue ${issueId} marked as stealable (${reason})`,
-      };
+        return saved({
+          success: true,
+          claim,
+          stealableInfo: store.stealable[issueId],
+          message: `Issue ${issueId} marked as stealable (${reason})`,
+        });
+      });
     },
   },
 
@@ -607,49 +602,49 @@ export const claimsTools: MCPTool[] = [
         return { success: false, error: 'Invalid claimant format' };
       }
 
-      const store = loadClaims();
-      const claim = store.claims[issueId];
-      const stealableInfo = store.stealable[issueId];
+      return updateClaims((store) => {
+        const claim = store.claims[issueId];
+        const stealableInfo = store.stealable[issueId];
 
-      if (!claim) {
-        return { success: false, error: 'Issue is not claimed' };
-      }
-
-      if (!stealableInfo) {
-        return { success: false, error: 'Issue is not stealable' };
-      }
-
-      // Check preferred types
-      if (stealableInfo.preferredTypes && stealableInfo.preferredTypes.length > 0) {
-        if (stealer.type === 'agent' && !stealableInfo.preferredTypes.includes(stealer.agentType!)) {
-          return {
-            success: false,
-            error: `Issue prefers agent types: ${stealableInfo.preferredTypes.join(', ')}`,
-          };
+        if (!claim) {
+          return unchanged({ success: false, error: 'Issue is not claimed' });
         }
-      }
 
-      const previousOwner = claim.claimant;
-      const now = new Date().toISOString();
+        if (!stealableInfo) {
+          return unchanged({ success: false, error: 'Issue is not stealable' });
+        }
 
-      claim.claimant = stealer;
-      claim.status = 'active';
-      claim.statusChangedAt = now;
-      // The context given to claims_mark-stealable is the handoff note for the
-      // stealer; without one, keep the context recorded with the claim.
-      claim.context = stealableInfo.context ?? claim.context;
+        // Check preferred types
+        if (stealableInfo.preferredTypes && stealableInfo.preferredTypes.length > 0) {
+          if (stealer.type === 'agent' && !stealableInfo.preferredTypes.includes(stealer.agentType!)) {
+            return unchanged({
+              success: false,
+              error: `Issue prefers agent types: ${stealableInfo.preferredTypes.join(', ')}`,
+            });
+          }
+        }
 
-      delete store.stealable[issueId];
-      store.claims[issueId] = claim;
-      saveClaims(store);
+        const previousOwner = claim.claimant;
+        const now = new Date().toISOString();
 
-      return {
-        success: true,
-        claim,
-        previousOwner,
-        stealableInfo,
-        message: `Issue ${issueId} stolen by ${formatClaimant(stealer)}`,
-      };
+        claim.claimant = stealer;
+        claim.status = 'active';
+        claim.statusChangedAt = now;
+        // The context given to claims_mark-stealable is the handoff note for the
+        // stealer; without one, keep the context recorded with the claim.
+        claim.context = stealableInfo.context ?? claim.context;
+
+        delete store.stealable[issueId];
+        store.claims[issueId] = claim;
+
+        return saved({
+          success: true,
+          claim,
+          previousOwner,
+          stealableInfo,
+          message: `Issue ${issueId} stolen by ${formatClaimant(stealer)}`,
+        });
+      });
     },
   },
 
@@ -860,86 +855,90 @@ export const claimsTools: MCPTool[] = [
       const dryRun = input.dryRun !== false;
       const targetUtilization = (input.targetUtilization as number) || 0.7;
 
-      const store = loadClaims();
-      // Completed claims are not load, as in claims_load.
-      const openAgentClaims = Object.values(store.claims).filter(isOpenAgentClaim);
+      // The moves are planned from the same locked read they are applied to.
+      return updateClaims((store) => {
+        // Completed claims are not load, as in claims_load.
+        const openAgentClaims = Object.values(store.claims).filter(isOpenAgentClaim);
 
-      // Group by agent
-      const agentLoads = new Map<string, { agentId: string; agentType: string; claims: IssueClaim[] }>();
+        // Group by agent
+        const agentLoads = new Map<string, { agentId: string; agentType: string; claims: IssueClaim[] }>();
 
-      for (const claim of openAgentClaims) {
-        const key = claim.claimant.agentId!;
-        if (!agentLoads.has(key)) {
-          agentLoads.set(key, { agentId: key, agentType: claim.claimant.agentType!, claims: [] });
-        }
-        agentLoads.get(key)!.claims.push(claim);
-      }
-
-      const loads = Array.from(agentLoads.values());
-      const maxClaims = DEFAULT_MAX_CLAIMS;
-      const avgLoad = loads.length > 0
-        ? loads.reduce((sum, l) => sum + l.claims.length, 0) / loads.length
-        : 0;
-
-      const overloaded = loads.filter(l => l.claims.length > maxClaims * targetUtilization * 1.5);
-      const underloaded = loads.filter(l => l.claims.length < maxClaims * targetUtilization * 0.5);
-
-      const suggestions: Array<{ issueId: string; from: string; to: string; reason: string }> = [];
-      // Claim counts including moves suggested so far, so one target is not
-      // handed more claims than maxClaims allows.
-      const plannedCount = new Map(loads.map(l => [l.agentId, l.claims.length]));
-
-      for (const over of overloaded) {
-        // Find low-progress claims to redistribute
-        const movable = over.claims
-          .filter(c => c.progress < 25 && c.status === 'active')
-          .slice(0, over.claims.length - Math.ceil(maxClaims * targetUtilization));
-
-        for (const claim of movable) {
-          const target = underloaded.find(u => u.agentType === over.agentType && plannedCount.get(u.agentId)! < maxClaims);
-          if (target) {
-            plannedCount.set(target.agentId, plannedCount.get(target.agentId)! + 1);
-            suggestions.push({
-              issueId: claim.issueId,
-              from: `agent:${over.agentId}:${over.agentType}`,
-              to: `agent:${target.agentId}:${target.agentType}`,
-              reason: 'Load balancing',
-            });
+        for (const claim of openAgentClaims) {
+          const key = claim.claimant.agentId!;
+          if (!agentLoads.has(key)) {
+            agentLoads.set(key, { agentId: key, agentType: claim.claimant.agentType!, claims: [] });
           }
+          agentLoads.get(key)!.claims.push(claim);
         }
-      }
 
-      // When not a dry run, execute the suggested moves
-      if (!dryRun) {
-        for (const suggestion of suggestions) {
-          const claim = store.claims[suggestion.issueId];
-          if (claim) {
-            const newOwner = parseClaimant(suggestion.to);
-            if (newOwner) {
-              claim.claimant = newOwner;
-              claim.statusChangedAt = new Date().toISOString();
-              store.claims[suggestion.issueId] = claim;
+        const loads = Array.from(agentLoads.values());
+        const maxClaims = DEFAULT_MAX_CLAIMS;
+        const avgLoad = loads.length > 0
+          ? loads.reduce((sum, l) => sum + l.claims.length, 0) / loads.length
+          : 0;
+
+        const overloaded = loads.filter(l => l.claims.length > maxClaims * targetUtilization * 1.5);
+        const underloaded = loads.filter(l => l.claims.length < maxClaims * targetUtilization * 0.5);
+
+        const suggestions: Array<{ issueId: string; from: string; to: string; reason: string }> = [];
+        // Claim counts including moves suggested so far, so one target is not
+        // handed more claims than maxClaims allows.
+        const plannedCount = new Map(loads.map(l => [l.agentId, l.claims.length]));
+
+        for (const over of overloaded) {
+          // Find low-progress claims to redistribute
+          const movable = over.claims
+            .filter(c => c.progress < 25 && c.status === 'active')
+            .slice(0, over.claims.length - Math.ceil(maxClaims * targetUtilization));
+
+          for (const claim of movable) {
+            const target = underloaded.find(u => u.agentType === over.agentType && plannedCount.get(u.agentId)! < maxClaims);
+            if (target) {
+              plannedCount.set(target.agentId, plannedCount.get(target.agentId)! + 1);
+              suggestions.push({
+                issueId: claim.issueId,
+                from: `agent:${over.agentId}:${over.agentType}`,
+                to: `agent:${target.agentId}:${target.agentType}`,
+                reason: 'Load balancing',
+              });
             }
           }
         }
-        saveClaims(store);
-      }
 
-      return {
-        success: true,
-        dryRun,
-        suggestions,
-        metrics: {
-          totalAgents: loads.length,
-          avgLoad,
-          overloadedCount: overloaded.length,
-          underloadedCount: underloaded.length,
-          targetUtilization,
-        },
-        message: dryRun
-          ? `Found ${suggestions.length} rebalancing opportunities (dry run)`
-          : `Applied ${suggestions.length} rebalancing moves`,
-      };
+        // When not a dry run, execute the suggested moves
+        if (!dryRun) {
+          for (const suggestion of suggestions) {
+            const claim = store.claims[suggestion.issueId];
+            if (claim) {
+              const newOwner = parseClaimant(suggestion.to);
+              if (newOwner) {
+                claim.claimant = newOwner;
+                claim.statusChangedAt = new Date().toISOString();
+                store.claims[suggestion.issueId] = claim;
+              }
+            }
+          }
+        }
+
+        return {
+          save: !dryRun,
+          result: {
+            success: true,
+            dryRun,
+            suggestions,
+            metrics: {
+              totalAgents: loads.length,
+              avgLoad,
+              overloadedCount: overloaded.length,
+              underloadedCount: underloaded.length,
+              targetUtilization,
+            },
+            message: dryRun
+              ? `Found ${suggestions.length} rebalancing opportunities (dry run)`
+              : `Applied ${suggestions.length} rebalancing moves`,
+          },
+        };
+      });
     },
   },
 ];
