@@ -323,7 +323,9 @@ function appendArchiveDurably(file: string, receipts: PolicyReceipt[], verifier:
   } finally { closeSync(fd); }
 }
 
-async function writeJsonAtomic(file: string, value: unknown): Promise<void> {
+/** Exported for the MCP JSON stores (`mcp-tools/locked-json-store.ts`), which
+ * write under {@link acquireLock} with the same durability and Windows retry. */
+export async function writeJsonAtomic(file: string, value: unknown): Promise<void> {
   mkdirDurably(dirname(file));
   const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
   let renamed = false;

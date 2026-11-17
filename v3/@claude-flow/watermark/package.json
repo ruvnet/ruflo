@@ -56,9 +56,6 @@
   "engines": {
     "node": ">=18"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build:wasm": "bash scripts/build-wasm.sh",
     "test": "node test/smoke.cjs && node test/smoke-web.mjs",

@@ -2,6 +2,9 @@
 
 Newest first. One `## <version> — <date>` heading per version, then `feat:`, `fix:`, `breaking:` and `chore:` bullets (ADR-478). Built from git history; this is the whole history.
 
+## 0.3.2 — 2026-11-17
+- chore: `@ruvnet/sublinear-core` 1.0.0 → 1.0.1 (#5006)
+
 ## 0.3.1 — 2026-11-10
 - chore: first stable version. The npm manifest gains a canonical repository, homepage and bug-tracker link, and a shorter description. No code changes
 

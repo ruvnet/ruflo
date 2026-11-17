@@ -1,4 +1,5 @@
 {
+  "homepage": "https://ruv.io",
   "name": "@claude-flow/plugin-code-intelligence",
   "version": "3.0.0-alpha.4",
   "description": "Advanced code intelligence plugin for Claude Flow V3 - semantic search, architecture analysis, refactoring impact, module splitting, and pattern learning",
