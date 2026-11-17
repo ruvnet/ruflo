@@ -15,18 +15,26 @@ export type InboundEnvelopeRejection =
   | 'MESSAGE_EXPIRED'
   | 'MESSAGE_FROM_FUTURE'
   | 'MESSAGE_REPLAYED'
+  | 'MESSAGE_PREDATES_REPLAY_HISTORY'
   | 'REPLAY_CACHE_FULL';
 
 /** One lifecycle's bounded replay history; call only after signature and policy checks. */
 export class InboundEnvelopeGuard {
   private readonly peers = new Map<string, Map<string, number>>();
   private messages = 0;
+  /**
+   * Replay history starts empty at construction (plugin initialize). An envelope
+   * signed before that instant may already have been accepted by a previous
+   * lifecycle whose history was lost on restart, so it is rejected (fail closed).
+   */
+  private readonly historyStartsAt: number;
 
   constructor(
     private readonly localNodeId: string,
     private readonly now: () => number = Date.now,
   ) {
     if (!this.validId(localNodeId)) throw new TypeError('Invalid local federation node id');
+    this.historyStartsAt = now();
   }
 
   /** Synchronously check and reserve a signed envelope before any awaited delivery side effect. */
@@ -52,6 +60,8 @@ export class InboundEnvelopeGuard {
     if (!Number.isFinite(timestamp) || !Number.isFinite(now)) return 'INVALID_ENVELOPE';
     if (now - timestamp > INBOUND_ENVELOPE_LIMITS.maxAgeMs) return 'MESSAGE_EXPIRED';
     if (timestamp - now > INBOUND_ENVELOPE_LIMITS.futureSkewMs) return 'MESSAGE_FROM_FUTURE';
+    if (!Number.isFinite(this.historyStartsAt)) return 'INVALID_ENVELOPE';
+    if (timestamp < this.historyStartsAt) return 'MESSAGE_PREDATES_REPLAY_HISTORY';
 
     let seen = this.peers.get(sourceNodeId);
     if (seen) this.prune(seen, now);

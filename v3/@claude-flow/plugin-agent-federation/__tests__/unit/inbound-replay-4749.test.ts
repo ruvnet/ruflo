@@ -99,6 +99,39 @@ describe('plugin authenticated inbound envelope safety', () => {
     expect(deliveries()).toHaveLength(0);
   });
 
+  it('rejects a captured envelope replayed into a fresh plugin instance after restart', async () => {
+    const captured = envelope();
+    await wire.receive!('remote:9100', captured);
+    expect(deliveries()).toHaveLength(1);
+
+    // Restart one minute later: still inside the 5-minute freshness window.
+    await plugin.shutdown();
+    const restartedAt = now + 60_000;
+    vi.mocked(Date.now).mockReturnValue(restartedAt);
+    const services = new Map<string, any>();
+    plugin = new AgentFederationPlugin();
+    await plugin.initialize({
+      config: { nodeId: 'local', endpoint: 'ws://localhost:9100', staticPeers: [] },
+      logger: { info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      eventBus: { emit: events, on: vi.fn() },
+      services: { register: (name: string, service: any) => services.set(name, service), get: (name: string) => services.get(name) },
+    } as any);
+    const peer = FederationNode.create({
+      nodeId: 'remote', publicKey, endpoint: 'ws://remote:9100',
+      capabilities: { agentTypes: [], maxConcurrentSessions: 1, supportedProtocols: [], complianceModes: [] },
+      metadata: {},
+    });
+    vi.spyOn(services.get('federation:discovery'), 'getPeer').mockImplementation((id) => id === 'remote' ? peer : undefined);
+    events.mockClear();
+
+    await wire.receive!('remote:9100', captured);
+    expect(deliveries()).toHaveLength(0);
+
+    // A newly signed envelope with the same ID after the restart is still delivered.
+    await wire.receive!('remote:9100', envelope('local', restartedAt));
+    expect(deliveries()).toHaveLength(1);
+  });
+
   it.each([now - 300_001, now + 30_001])('rejects an out-of-window signed timestamp %s', async (timestamp) => {
     await wire.receive!('remote:9100', envelope('local', timestamp));
     expect(deliveries()).toHaveLength(0);

@@ -58,8 +58,21 @@ describe('bounded authenticated envelope history', () => {
     expect(guard.checkAndRecord(message('future', 'remote', now), 'remote')).toBeNull();
   });
 
+  it('rejects envelopes signed before replay history began (restart window)', () => {
+    let now = start;
+    const guard = new InboundEnvelopeGuard('local', () => now);
+    now += 60_000;
+    // Inside the freshness window, but signed before this lifecycle's replay history existed.
+    expect(guard.checkAndRecord(message('before', 'remote', start - 1), 'remote')).toBe('MESSAGE_PREDATES_REPLAY_HISTORY');
+    expect(guard.checkAndRecord(message('at-start', 'remote', start), 'remote')).toBeNull();
+    expect(guard.checkAndRecord(message('before', 'remote', now), 'remote')).toBeNull();
+  });
+
   it('accepts exact freshness boundaries and rejects malformed time', () => {
-    const guard = new InboundEnvelopeGuard('local', () => start);
+    // Replay history must already cover the oldest accepted instant.
+    let now = start - limits.maxAgeMs;
+    const guard = new InboundEnvelopeGuard('local', () => now);
+    now = start;
     expect(guard.checkAndRecord(message('old', 'remote', start - limits.maxAgeMs), 'remote')).toBeNull();
     expect(guard.checkAndRecord(message('future', 'remote', start + limits.futureSkewMs), 'remote')).toBeNull();
     const invalid = message();

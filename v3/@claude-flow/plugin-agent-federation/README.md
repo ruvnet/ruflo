@@ -52,7 +52,12 @@ callbacks. It retains IDs until the signed timestamp expires, with limits of
 Capacity exhaustion rejects new messages instead of evicting live replay history.
 
 Replay history is in memory for one plugin lifecycle; restarting the plugin
-clears it. This is not durable or cross-replica deduplication. The existing
+clears it. To close the restart window, a JCS envelope whose signed timestamp is
+earlier than the guard's creation (plugin initialize) is rejected with
+`MESSAGE_PREDATES_REPLAY_HISTORY`, so an envelope captured before a restart cannot
+be replayed into the new lifecycle. Peers whose clocks run behind this node may
+see fresh messages rejected for up to that skew immediately after a restart.
+This is not durable or cross-replica deduplication. The existing
 legacy-v1 heartbeat/status compatibility path cannot authenticate nested envelope
 fields and does not acquire JCS replay guarantees. Signature and policy checks
 still run before a JCS message can reserve an ID or reach the event bus.
