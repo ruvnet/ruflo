@@ -1,0 +1,4837 @@
+{
+  "adr": "ADR-391",
+  "ts": "2026-11-10T20:02:00.694Z",
+  "corpusSha256": "b0c1923b2813b61907304dff56c53d199b709797bfb9600a7c1f496cf0c0bf04",
+  "node": "v22.23.2",
+  "host": "linux-x64",
+  "highConfidence": 0.7,
+  "gate": {
+    "B": {
+      "accuracyDeltaPts": 10.62,
+      "p95LatencyRegressionPct": 644.9,
+      "requiredDependencyAdded": false,
+      "passesAccuracy": true,
+      "passesLatency": false,
+      "passesDependency": true
+    },
+    "E": {
+      "accuracyDeltaPts": 38.06,
+      "p95LatencyRegressionPct": 502.8,
+      "requiredDependencyAdded": false,
+      "passesAccuracy": true,
+      "passesLatency": false,
+      "passesDependency": true
+    }
+  },
+  "results": {
+    "A": {
+      "dev": {
+        "n": 84,
+        "accuracy": 0.2619,
+        "macroF1": 0.1996,
+        "wrongHighConfRate": 0.0833,
+        "trapAccuracy": 0.303
+      },
+      "test": {
+        "n": 113,
+        "accuracy": 0.2566,
+        "macroF1": 0.1775,
+        "wrongHighConfRate": 0.0796,
+        "trapAccuracy": 0.2903
+      },
+      "latencyMs": {
+        "cold": 65.71,
+        "p50": 0.77,
+        "p95": 1.418
+      },
+      "predictions": [
+        {
+          "id": "r001",
+          "ms": 65.705321,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r002",
+          "ms": 0.758570000000006,
+          "agent": "coder",
+          "confidence": 0.48,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r003",
+          "ms": 1.606059000000002,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r004",
+          "ms": 0.924548999999999,
+          "agent": "tester",
+          "confidence": 0.52,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r005",
+          "ms": 0.9556200000000104,
+          "agent": "tester",
+          "confidence": 0.46,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r006",
+          "ms": 0.8623599999999954,
+          "agent": "tester",
+          "confidence": 0.44,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r007",
+          "ms": 0.9448490000000049,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r008",
+          "ms": 1.0171200000000056,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r009",
+          "ms": 1.0642799999999966,
+          "agent": "swarm-specialist",
+          "confidence": 0.4,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r010",
+          "ms": 0.8277089999999987,
+          "agent": "tester",
+          "confidence": 0.56,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r011",
+          "ms": 0.9008400000000023,
+          "agent": "security-architect",
+          "confidence": 0.92,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r012",
+          "ms": 0.7395089999999982,
+          "agent": "tester",
+          "confidence": 0.46,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r013",
+          "ms": 0.279910000000001,
+          "agent": "tester",
+          "confidence": 0.64,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r014",
+          "ms": 0.22408000000000072,
+          "agent": "swarm-specialist",
+          "confidence": 0.69,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r015",
+          "ms": 0.755359999999996,
+          "agent": "performance-engineer",
+          "confidence": 0.4,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r016",
+          "ms": 0.6482000000000028,
+          "agent": "performance-engineer",
+          "confidence": 0.44,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r017",
+          "ms": 0.7049090000000007,
+          "agent": "tester",
+          "confidence": 0.45,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r018",
+          "ms": 1.0175700000000063,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r019",
+          "ms": 0.7126999999999981,
+          "agent": "architect",
+          "confidence": 0.5,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r020",
+          "ms": 0.8592390000000023,
+          "agent": "tester",
+          "confidence": 0.49,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r021",
+          "ms": 0.9688500000000033,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r022",
+          "ms": 2.305749000000006,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r023",
+          "ms": 0.7848090000000099,
+          "agent": "memory-specialist",
+          "confidence": 0.44,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r024",
+          "ms": 0.16590999999999667,
+          "agent": "architect",
+          "confidence": 0.52,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r025",
+          "ms": 0.49746999999999275,
+          "agent": "memory-specialist",
+          "confidence": 0.57,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r026",
+          "ms": 0.9608000000000061,
+          "agent": "coder",
+          "confidence": 0.44,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r027",
+          "ms": 0.802929000000006,
+          "agent": "performance-engineer",
+          "confidence": 0.46,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r028",
+          "ms": 1.0275699999999972,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r029",
+          "ms": 0.8329200000000014,
+          "agent": "tester",
+          "confidence": 0.43,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r030",
+          "ms": 0.7233990000000006,
+          "agent": "tester",
+          "confidence": 0.58,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r031",
+          "ms": 0.931209999999993,
+          "agent": "coder",
+          "confidence": 0.41,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r032",
+          "ms": 1.0585590000000025,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r033",
+          "ms": 1.5211299999999994,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r034",
+          "ms": 0.3984190000000041,
+          "agent": "architect",
+          "confidence": 0.52,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r035",
+          "ms": 0.7294399999999968,
+          "agent": "coder",
+          "confidence": 0.49,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r036",
+          "ms": 1.0496699999999919,
+          "agent": "security-architect",
+          "confidence": 0.92,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r037",
+          "ms": 1.6647690000000068,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r038",
+          "ms": 1.387558999999996,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r039",
+          "ms": 1.8280189999999976,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r040",
+          "ms": 1.4317700000000002,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r041",
+          "ms": 0.6282600000000116,
+          "agent": "architect",
+          "confidence": 0.55,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r042",
+          "ms": 1.732958999999994,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r043",
+          "ms": 1.1057890000000157,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r044",
+          "ms": 0.8936400000000049,
+          "agent": "architect",
+          "confidence": 0.9,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r045",
+          "ms": 1.556098999999989,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r046",
+          "ms": 1.038800000000009,
+          "agent": "performance-engineer",
+          "confidence": 0.49,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r047",
+          "ms": 0.8817589999999882,
+          "agent": "architect",
+          "confidence": 0.9,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r048",
+          "ms": 0.7408800000000042,
+          "agent": "tester",
+          "confidence": 0.57,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r049",
+          "ms": 1.0154300000000092,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r050",
+          "ms": 0.8902590000000146,
+          "agent": "tester",
+          "confidence": 0.43,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r051",
+          "ms": 1.147449999999992,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r052",
+          "ms": 0.8723990000000015,
+          "agent": "tester",
+          "confidence": 0.52,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r053",
+          "ms": 1.008010000000013,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r054",
+          "ms": 0.4460199999999759,
+          "agent": "tester",
+          "confidence": 0.67,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r055",
+          "ms": 1.4445289999999886,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r056",
+          "ms": 1.0592900000000043,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r057",
+          "ms": 0.7564590000000067,
+          "agent": "architect",
+          "confidence": 0.5,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r058",
+          "ms": 1.3740999999999985,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r059",
+          "ms": 0.33841999999998507,
+          "agent": "swarm-specialist",
+          "confidence": 0.47,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r060",
+          "ms": 0.8570190000000082,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r061",
+          "ms": 1.0590200000000038,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r062",
+          "ms": 0.5495599999999854,
+          "agent": "tester",
+          "confidence": 0.6,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r063",
+          "ms": 0.6425090000000182,
+          "agent": "coder",
+          "confidence": 0.44,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r064",
+          "ms": 0.45975000000001387,
+          "agent": "architect",
+          "confidence": 0.48,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r065",
+          "ms": 0.8354499999999803,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r066",
+          "ms": 1.0343790000000013,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r067",
+          "ms": 0.7330599999999947,
+          "agent": "tester",
+          "confidence": 0.48,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r068",
+          "ms": 0.7524899999999946,
+          "agent": "tester",
+          "confidence": 0.4,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r069",
+          "ms": 1.0582389999999862,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r070",
+          "ms": 1.0487099999999998,
+          "agent": "architect",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r071",
+          "ms": 1.1777490000000057,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r072",
+          "ms": 1.4075599999999895,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r073",
+          "ms": 0.5465189999999893,
+          "agent": "tester",
+          "confidence": 0.57,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r074",
+          "ms": 0.6845600000000047,
+          "agent": "memory-specialist",
+          "confidence": 0.43,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r075",
+          "ms": 1.4179089999999803,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r076",
+          "ms": 1.1642200000000003,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r077",
+          "ms": 0.9939500000000123,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r078",
+          "ms": 0.5901389999999935,
+          "agent": "tester",
+          "confidence": 0.54,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r079",
+          "ms": 0.8161699999999996,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r080",
+          "ms": 1.2571889999999826,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r081",
+          "ms": 0.4269400000000019,
+          "agent": "coder",
+          "confidence": 0.56,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r082",
+          "ms": 0.67804000000001,
+          "agent": "tester",
+          "confidence": 0.43,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r083",
+          "ms": 0.4687600000000032,
+          "agent": "tester",
+          "confidence": 0.75,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r084",
+          "ms": 0.9375689999999963,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r085",
+          "ms": 0.5942799999999977,
+          "agent": "tester",
+          "confidence": 0.54,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r086",
+          "ms": 0.9103800000000035,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r087",
+          "ms": 1.0498990000000106,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r088",
+          "ms": 0.4250499999999988,
+          "agent": "tester",
+          "confidence": 0.68,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r089",
+          "ms": 0.967979999999983,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r090",
+          "ms": 0.08162900000002082,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r091",
+          "ms": 0.44553999999999405,
+          "agent": "tester",
+          "confidence": 0.52,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r092",
+          "ms": 0.6834900000000061,
+          "agent": "tester",
+          "confidence": 0.62,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r093",
+          "ms": 1.1574690000000203,
+          "agent": "swarm-specialist",
+          "confidence": 0.9,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r094",
+          "ms": 1.1725100000000168,
+          "agent": "performance-engineer",
+          "confidence": 0.88,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r095",
+          "ms": 0.5959799999999973,
+          "agent": "memory-specialist",
+          "confidence": 0.43,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r096",
+          "ms": 0.7593189999999765,
+          "agent": "tester",
+          "confidence": 0.5,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r097",
+          "ms": 0.26264000000000465,
+          "agent": "memory-specialist",
+          "confidence": 0.65,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r098",
+          "ms": 0.5483800000000087,
+          "agent": "architect",
+          "confidence": 0.62,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r099",
+          "ms": 0.5999999999999943,
+          "agent": "tester",
+          "confidence": 0.49,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r100",
+          "ms": 0.7234190000000069,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r101",
+          "ms": 0.8717800000000011,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r102",
+          "ms": 1.0048299999999983,
+          "agent": "security-architect",
+          "confidence": 0.92,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r103",
+          "ms": 0.6459890000000144,
+          "agent": "tester",
+          "confidence": 0.52,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r104",
+          "ms": 0.3587799999999959,
+          "agent": "tester",
+          "confidence": 0.61,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r105",
+          "ms": 0.32478000000000407,
+          "agent": "architect",
+          "confidence": 0.75,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r106",
+          "ms": 0.1371599999999944,
+          "agent": "devops",
+          "confidence": 0.51,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r107",
+          "ms": 1.1063099999999793,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r108",
+          "ms": 0.5685990000000061,
+          "agent": "performance-engineer",
+          "confidence": 0.42,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r109",
+          "ms": 0.9353499999999997,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r110",
+          "ms": 0.4375199999999779,
+          "agent": "tester",
+          "confidence": 0.67,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r111",
+          "ms": 0.7189189999999996,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r112",
+          "ms": 0.8802799999999991,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r113",
+          "ms": 1.161469000000011,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r114",
+          "ms": 1.2029400000000123,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r115",
+          "ms": 0.7192099999999755,
+          "agent": "performance-engineer",
+          "confidence": 0.41,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r116",
+          "ms": 0.14606000000000563,
+          "agent": "security-architect",
+          "confidence": 0.52,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r117",
+          "ms": 0.8528790000000015,
+          "agent": "architect",
+          "confidence": 0.9,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r118",
+          "ms": 0.49671999999998206,
+          "agent": "architect",
+          "confidence": 0.46,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r119",
+          "ms": 0.8863500000000215,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r120",
+          "ms": 1.2766190000000108,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r121",
+          "ms": 0.8059100000000115,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r122",
+          "ms": 0.6001489999999876,
+          "agent": "tester",
+          "confidence": 0.47,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r123",
+          "ms": 0.8102399999999932,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r124",
+          "ms": 0.4265399999999886,
+          "agent": "tester",
+          "confidence": 0.53,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r125",
+          "ms": 0.6877700000000004,
+          "agent": "devops",
+          "confidence": 0.54,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r126",
+          "ms": 1.1276090000000067,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r127",
+          "ms": 0.4770599999999945,
+          "agent": "architect",
+          "confidence": 0.45,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r128",
+          "ms": 0.6737600000000157,
+          "agent": "devops",
+          "confidence": 0.48,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r129",
+          "ms": 0.829858999999999,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r130",
+          "ms": 0.24733000000000516,
+          "agent": "performance-engineer",
+          "confidence": 0.79,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r131",
+          "ms": 1.112259999999992,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r132",
+          "ms": 0.7030490000000214,
+          "agent": "tester",
+          "confidence": 0.48,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r133",
+          "ms": 0.5454799999999977,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r134",
+          "ms": 0.8879499999999894,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r135",
+          "ms": 0.6803089999999941,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r136",
+          "ms": 0.7242600000000152,
+          "agent": "devops",
+          "confidence": 0.42,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r137",
+          "ms": 0.9379100000000165,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r138",
+          "ms": 0.724788999999987,
+          "agent": "swarm-specialist",
+          "confidence": 0.5,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r139",
+          "ms": 0.4929899999999918,
+          "agent": "tester",
+          "confidence": 0.65,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r140",
+          "ms": 0.8473099999999931,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r141",
+          "ms": 0.4872699999999952,
+          "agent": "tester",
+          "confidence": 0.5,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r142",
+          "ms": 1.0237490000000093,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r143",
+          "ms": 0.31126999999997906,
+          "agent": "architect",
+          "confidence": 0.64,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r144",
+          "ms": 0.6157399999999882,
+          "agent": "tester",
+          "confidence": 0.55,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r145",
+          "ms": 0.5863290000000063,
+          "agent": "architect",
+          "confidence": 0.43,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r146",
+          "ms": 0.8904899999999998,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r147",
+          "ms": 0.8627099999999928,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r148",
+          "ms": 0.12284999999999968,
+          "agent": "devops",
+          "confidence": 0.6,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r149",
+          "ms": 0.700129000000004,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r150",
+          "ms": 1.0718600000000151,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r151",
+          "ms": 0.7702290000000005,
+          "agent": "tester",
+          "confidence": 0.4,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r152",
+          "ms": 0.6322199999999896,
+          "agent": "tester",
+          "confidence": 0.48,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r153",
+          "ms": 0.861220000000003,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r154",
+          "ms": 0.6748499999999922,
+          "agent": "architect",
+          "confidence": 0.41,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r155",
+          "ms": 0.9204589999999939,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r156",
+          "ms": 1.1185800000000086,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r157",
+          "ms": 1.3629290000000083,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r158",
+          "ms": 0.8103200000000186,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r159",
+          "ms": 0.8557389999999998,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r160",
+          "ms": 0.6121700000000203,
+          "agent": "swarm-specialist",
+          "confidence": 0.45,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r161",
+          "ms": 0.8653700000000129,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r162",
+          "ms": 0.6149289999999894,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r163",
+          "ms": 0.2315799999999797,
+          "agent": "tester",
+          "confidence": 0.77,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r164",
+          "ms": 0.6097900000000038,
+          "agent": "performance-engineer",
+          "confidence": 0.47,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r165",
+          "ms": 0.4604399999999771,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r166",
+          "ms": 0.6958199999999977,
+          "agent": "swarm-specialist",
+          "confidence": 0.9,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r167",
+          "ms": 0.5885590000000036,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r168",
+          "ms": 0.525100000000009,
+          "agent": "tester",
+          "confidence": 0.52,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r169",
+          "ms": 0.4143500000000131,
+          "agent": "tester",
+          "confidence": 0.62,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r170",
+          "ms": 0.4394499999999937,
+          "agent": "tester",
+          "confidence": 0.61,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r171",
+          "ms": 0.4102800000000002,
+          "agent": "architect",
+          "confidence": 0.65,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r172",
+          "ms": 0.6310489999999902,
+          "agent": "tester",
+          "confidence": 0.44,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r173",
+          "ms": 0.8601400000000012,
+          "agent": "devops",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r174",
+          "ms": 0.713310000000007,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r175",
+          "ms": 1.0317489999999907,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r176",
+          "ms": 0.46993000000000507,
+          "agent": "memory-specialist",
+          "confidence": 0.54,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r177",
+          "ms": 0.52928,
+          "agent": "devops",
+          "confidence": 0.44,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r178",
+          "ms": 0.5969499999999925,
+          "agent": "memory-specialist",
+          "confidence": 0.51,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r179",
+          "ms": 1.0788689999999974,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r180",
+          "ms": 0.4677000000000078,
+          "agent": "memory-specialist",
+          "confidence": 0.5,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r181",
+          "ms": 0.8859600000000114,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r182",
+          "ms": 0.41518899999999803,
+          "agent": "tester",
+          "confidence": 0.65,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r183",
+          "ms": 0.8226999999999975,
+          "agent": "devops",
+          "confidence": 0.85,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r184",
+          "ms": 0.6677799999999934,
+          "agent": "memory-specialist",
+          "confidence": 0.5,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r185",
+          "ms": 0.7553589999999986,
+          "agent": "security-architect",
+          "confidence": 0.4,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r186",
+          "ms": 0.9132199999999955,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r187",
+          "ms": 0.7115300000000104,
+          "agent": "architect",
+          "confidence": 0.41,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r188",
+          "ms": 0.3766290000000083,
+          "agent": "memory-specialist",
+          "confidence": 0.55,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r189",
+          "ms": 0.5004100000000165,
+          "agent": "performance-engineer",
+          "confidence": 0.41,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r190",
+          "ms": 0.722139999999996,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r191",
+          "ms": 0.5223200000000077,
+          "agent": "tester",
+          "confidence": 0.45,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r192",
+          "ms": 0.6188390000000084,
+          "agent": "architect",
+          "confidence": 0.42,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r193",
+          "ms": 0.10202000000001021,
+          "agent": "devops",
+          "confidence": 0.56,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r194",
+          "ms": 0.5108899999999892,
+          "agent": "tester",
+          "confidence": 0.59,
+          "embedder": "hash",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r195",
+          "ms": 0.9115400000000022,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r196",
+          "ms": 0.8633389999999963,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        },
+        {
+          "id": "r197",
+          "ms": 0.9096000000000117,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "hash",
+          "method": "keyword"
+        }
+      ]
+    },
+    "B": {
+      "dev": {
+        "n": 84,
+        "accuracy": 0.3452,
+        "macroF1": 0.3279,
+        "wrongHighConfRate": 0.0595,
+        "trapAccuracy": 0.3636
+      },
+      "test": {
+        "n": 113,
+        "accuracy": 0.3628,
+        "macroF1": 0.3335,
+        "wrongHighConfRate": 0.0531,
+        "trapAccuracy": 0.2581
+      },
+      "latencyMs": {
+        "cold": 354.18,
+        "p50": 4.306,
+        "p95": 10.563
+      },
+      "predictions": [
+        {
+          "id": "r001",
+          "ms": 354.177496,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r002",
+          "ms": 5.653897000000029,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r003",
+          "ms": 5.379177999999968,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r004",
+          "ms": 1.997998999999993,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r005",
+          "ms": 4.845397999999989,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r006",
+          "ms": 5.568177999999989,
+          "agent": "memory-specialist",
+          "confidence": 0.45,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r007",
+          "ms": 1.9490989999999897,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r008",
+          "ms": 5.966047000000003,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r009",
+          "ms": 7.53277700000001,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r010",
+          "ms": 10.454094999999995,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r011",
+          "ms": 18.211401999999964,
+          "agent": "security-architect",
+          "confidence": 0.92,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r012",
+          "ms": 6.813696999999991,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r013",
+          "ms": 10.284205999999983,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r014",
+          "ms": 5.954306999999972,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r015",
+          "ms": 3.6760489999999777,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r016",
+          "ms": 10.563204999999982,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r017",
+          "ms": 2.0255089999999996,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r018",
+          "ms": 9.33806599999997,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r019",
+          "ms": 5.894358000000011,
+          "agent": "swarm-specialist",
+          "confidence": 0.43,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r020",
+          "ms": 3.0837779999999952,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r021",
+          "ms": 2.512029000000041,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r022",
+          "ms": 5.357018000000039,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r023",
+          "ms": 1.946909000000005,
+          "agent": "swarm-specialist",
+          "confidence": 0.58,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r024",
+          "ms": 1.6687689999999975,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r025",
+          "ms": 2.4586590000000115,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r026",
+          "ms": 1.4920589999999265,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r027",
+          "ms": 1.476220000000012,
+          "agent": "architect",
+          "confidence": 0.5,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r028",
+          "ms": 7.541655999999989,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r029",
+          "ms": 2.57338900000002,
+          "agent": "architect",
+          "confidence": 0.42,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r030",
+          "ms": 1.6543700000000854,
+          "agent": "swarm-specialist",
+          "confidence": 0.54,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r031",
+          "ms": 5.4638570000000755,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r032",
+          "ms": 6.352987999999982,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r033",
+          "ms": 7.477086000000099,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r034",
+          "ms": 2.094769000000042,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r035",
+          "ms": 3.4143889999999146,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r036",
+          "ms": 1.853729000000044,
+          "agent": "security-architect",
+          "confidence": 0.47,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r037",
+          "ms": 6.7897669999999835,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r038",
+          "ms": 2.914529000000016,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r039",
+          "ms": 3.4896080000000893,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r040",
+          "ms": 2.0923689999999624,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r041",
+          "ms": 1.4027600000000575,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r042",
+          "ms": 4.076067999999964,
+          "agent": "swarm-specialist",
+          "confidence": 0.43,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r043",
+          "ms": 5.573667999999998,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r044",
+          "ms": 3.279708000000028,
+          "agent": "architect",
+          "confidence": 0.63,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r045",
+          "ms": 1.9734389999999848,
+          "agent": "swarm-specialist",
+          "confidence": 0.49,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r046",
+          "ms": 3.9762590000000273,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r047",
+          "ms": 1.6153790000000754,
+          "agent": "swarm-specialist",
+          "confidence": 0.47,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r048",
+          "ms": 5.380677999999989,
+          "agent": "memory-specialist",
+          "confidence": 0.43,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r049",
+          "ms": 8.19268599999998,
+          "agent": "memory-specialist",
+          "confidence": 0.42,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r050",
+          "ms": 1.8595890000000281,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r051",
+          "ms": 3.607949000000076,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r052",
+          "ms": 2.1962389999999914,
+          "agent": "tester",
+          "confidence": 0.41,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r053",
+          "ms": 2.1829890000000205,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r054",
+          "ms": 1.46396900000002,
+          "agent": "coder",
+          "confidence": 0.51,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r055",
+          "ms": 1.6565389999999525,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r056",
+          "ms": 1.4712799999999788,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r057",
+          "ms": 1.7830490000000054,
+          "agent": "security-architect",
+          "confidence": 0.51,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r058",
+          "ms": 4.898408000000018,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r059",
+          "ms": 1.1603890000000092,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r060",
+          "ms": 2.1403490000000147,
+          "agent": "swarm-specialist",
+          "confidence": 0.45,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r061",
+          "ms": 1.8191000000000486,
+          "agent": "performance-engineer",
+          "confidence": 0.46,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r062",
+          "ms": 1.3980390000000398,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r063",
+          "ms": 4.590757999999937,
+          "agent": "memory-specialist",
+          "confidence": 0.43,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r064",
+          "ms": 1.1905990000000202,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r065",
+          "ms": 4.829277999999931,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r066",
+          "ms": 2.758499000000029,
+          "agent": "architect",
+          "confidence": 0.52,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r067",
+          "ms": 10.260255999999913,
+          "agent": "architect",
+          "confidence": 0.46,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r068",
+          "ms": 4.893987000000038,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r069",
+          "ms": 4.8631579999999985,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r070",
+          "ms": 2.0496899999999414,
+          "agent": "architect",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r071",
+          "ms": 1.8960089999999354,
+          "agent": "swarm-specialist",
+          "confidence": 0.4,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r072",
+          "ms": 2.4457689999999275,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r073",
+          "ms": 1.2488590000000386,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r074",
+          "ms": 7.0651169999999865,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r075",
+          "ms": 5.426827999999887,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r076",
+          "ms": 2.0618389999999636,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r077",
+          "ms": 4.367368000000056,
+          "agent": "tester",
+          "confidence": 0.46,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r078",
+          "ms": 1.3881489999999985,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r079",
+          "ms": 14.819313999999963,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r080",
+          "ms": 5.013697999999977,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r081",
+          "ms": 8.734465999999998,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r082",
+          "ms": 1.8548090000000457,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r083",
+          "ms": 1.2781800000000203,
+          "agent": "coder",
+          "confidence": 0.48,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r084",
+          "ms": 1.649018999999953,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r085",
+          "ms": 1.352218999999991,
+          "agent": "security-architect",
+          "confidence": 0.52,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r086",
+          "ms": 2.3891889999999876,
+          "agent": "performance-engineer",
+          "confidence": 0.44,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r087",
+          "ms": 2.1010989999999765,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r088",
+          "ms": 2.031729000000041,
+          "agent": "devops",
+          "confidence": 0.57,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r089",
+          "ms": 1.584259999999972,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r090",
+          "ms": 10.421354999999949,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r091",
+          "ms": 2.0479289999999537,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r092",
+          "ms": 1.6396499999999605,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r093",
+          "ms": 1.7646290000000135,
+          "agent": "swarm-specialist",
+          "confidence": 0.56,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r094",
+          "ms": 2.153548999999998,
+          "agent": "performance-engineer",
+          "confidence": 0.4,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r095",
+          "ms": 1.6879690000000664,
+          "agent": "coder",
+          "confidence": 0.47,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r096",
+          "ms": 2.403368999999998,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r097",
+          "ms": 1.1305599999999458,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r098",
+          "ms": 2.167929000000072,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r099",
+          "ms": 1.472268999999983,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r100",
+          "ms": 2.4579989999999725,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r101",
+          "ms": 1.6908589999999322,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r102",
+          "ms": 5.907077999999956,
+          "agent": "security-architect",
+          "confidence": 0.92,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r103",
+          "ms": 5.55058699999995,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r104",
+          "ms": 5.607978000000003,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r105",
+          "ms": 1.5977589999999964,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r106",
+          "ms": 1.1719900000000507,
+          "agent": "architect",
+          "confidence": 0.43,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r107",
+          "ms": 5.2242069999999785,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r108",
+          "ms": 8.034787000000051,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r109",
+          "ms": 2.6748190000000704,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r110",
+          "ms": 1.8887389999999868,
+          "agent": "tester",
+          "confidence": 0.44,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r111",
+          "ms": 3.110638999999992,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r112",
+          "ms": 8.00240599999995,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r113",
+          "ms": 10.72159499999998,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r114",
+          "ms": 3.5444190000000617,
+          "agent": "performance-engineer",
+          "confidence": 0.5,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r115",
+          "ms": 7.148856999999907,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r116",
+          "ms": 2.841637999999989,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r117",
+          "ms": 6.888327000000004,
+          "agent": "architect",
+          "confidence": 0.9,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r118",
+          "ms": 8.655627000000095,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r119",
+          "ms": 20.776640999999927,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r120",
+          "ms": 4.3030180000000655,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r121",
+          "ms": 2.0978589999999713,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r122",
+          "ms": 1.6696590000000242,
+          "agent": "performance-engineer",
+          "confidence": 0.47,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r123",
+          "ms": 2.56626899999992,
+          "agent": "devops",
+          "confidence": 0.44,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r124",
+          "ms": 24.39942899999994,
+          "agent": "tester",
+          "confidence": 0.41,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r125",
+          "ms": 12.088595000000055,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r126",
+          "ms": 6.744727000000012,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r127",
+          "ms": 11.997965000000022,
+          "agent": "swarm-specialist",
+          "confidence": 0.9,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r128",
+          "ms": 6.765186999999969,
+          "agent": "performance-engineer",
+          "confidence": 0.63,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r129",
+          "ms": 6.8147769999999355,
+          "agent": "memory-specialist",
+          "confidence": 0.51,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r130",
+          "ms": 6.168106999999964,
+          "agent": "performance-engineer",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r131",
+          "ms": 6.183477999999923,
+          "agent": "devops",
+          "confidence": 0.51,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r132",
+          "ms": 5.46286699999996,
+          "agent": "swarm-specialist",
+          "confidence": 0.48,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r133",
+          "ms": 10.034555999999952,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r134",
+          "ms": 2.365579000000025,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r135",
+          "ms": 9.76837599999999,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r136",
+          "ms": 7.62314600000002,
+          "agent": "security-architect",
+          "confidence": 0.4,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r137",
+          "ms": 5.405847999999992,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r138",
+          "ms": 6.263396999999941,
+          "agent": "performance-engineer",
+          "confidence": 0.47,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r139",
+          "ms": 6.72399699999994,
+          "agent": "security-architect",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r140",
+          "ms": 6.3751880000002075,
+          "agent": "security-architect",
+          "confidence": 0.6,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r141",
+          "ms": 5.3652770000001055,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r142",
+          "ms": 6.217367999999851,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r143",
+          "ms": 5.661946999999827,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r144",
+          "ms": 4.305747999999994,
+          "agent": "tester",
+          "confidence": 0.48,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r145",
+          "ms": 1.6928490000000238,
+          "agent": "coder",
+          "confidence": 0.46,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r146",
+          "ms": 7.519477000000052,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r147",
+          "ms": 6.643146999999999,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r148",
+          "ms": 4.791087999999945,
+          "agent": "architect",
+          "confidence": 0.5,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r149",
+          "ms": 1.952628999999888,
+          "agent": "swarm-specialist",
+          "confidence": 0.43,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r150",
+          "ms": 5.9820279999999,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r151",
+          "ms": 5.834937000000082,
+          "agent": "tester",
+          "confidence": 0.95,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r152",
+          "ms": 7.126437000000124,
+          "agent": "architect",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r153",
+          "ms": 2.1003089999999247,
+          "agent": "swarm-specialist",
+          "confidence": 0.45,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r154",
+          "ms": 6.666476999999986,
+          "agent": "swarm-specialist",
+          "confidence": 0.55,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r155",
+          "ms": 4.477628000000095,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r156",
+          "ms": 7.409357,
+          "agent": "swarm-specialist",
+          "confidence": 0.44,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r157",
+          "ms": 5.651387999999997,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r158",
+          "ms": 6.294707000000017,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r159",
+          "ms": 14.419083999999884,
+          "agent": "performance-engineer",
+          "confidence": 0.42,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r160",
+          "ms": 2.1700489999998354,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r161",
+          "ms": 11.92815500000006,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r162",
+          "ms": 5.631417000000056,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r163",
+          "ms": 3.587248000000045,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r164",
+          "ms": 2.7454790000001594,
+          "agent": "coder",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r165",
+          "ms": 3.848208999999997,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r166",
+          "ms": 9.89977500000009,
+          "agent": "swarm-specialist",
+          "confidence": 0.47,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r167",
+          "ms": 6.886476999999786,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r168",
+          "ms": 1.4892299999999068,
+          "agent": "coder",
+          "confidence": 0.47,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r169",
+          "ms": 4.490178000000014,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r170",
+          "ms": 4.616248000000041,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r171",
+          "ms": 1.3594990000001417,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r172",
+          "ms": 2.998499000000038,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r173",
+          "ms": 2.0741890000001604,
+          "agent": "devops",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r174",
+          "ms": 7.649776999999858,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r175",
+          "ms": 6.732987000000094,
+          "agent": "swarm-specialist",
+          "confidence": 0.57,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r176",
+          "ms": 1.7939790000000357,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r177",
+          "ms": 10.428805000000011,
+          "agent": "memory-specialist",
+          "confidence": 0.41,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r178",
+          "ms": 6.080228000000034,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r179",
+          "ms": 2.4936890000001313,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r180",
+          "ms": 1.8246590000001106,
+          "agent": "devops",
+          "confidence": 0.54,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r181",
+          "ms": 10.493894999999839,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r182",
+          "ms": 1.9306389999999283,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r183",
+          "ms": 4.9747879999999896,
+          "agent": "devops",
+          "confidence": 0.85,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r184",
+          "ms": 4.883957999999893,
+          "agent": "swarm-specialist",
+          "confidence": 0.57,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r185",
+          "ms": 2.232939000000215,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r186",
+          "ms": 4.983997999999929,
+          "agent": "tester",
+          "confidence": 0.42,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r187",
+          "ms": 4.236817999999857,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r188",
+          "ms": 1.3883999999998196,
+          "agent": "performance-engineer",
+          "confidence": 0.6,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r189",
+          "ms": 8.59401600000001,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r190",
+          "ms": 5.816606999999976,
+          "agent": "performance-engineer",
+          "confidence": 0.6,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r191",
+          "ms": 5.074788000000126,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r192",
+          "ms": 1.8398290000000088,
+          "agent": "coder",
+          "confidence": 0.41,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r193",
+          "ms": 4.245638000000099,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r194",
+          "ms": 1.5401600000000144,
+          "agent": "tester",
+          "confidence": 0.46,
+          "embedder": "minilm",
+          "method": "semantic-native"
+        },
+        {
+          "id": "r195",
+          "ms": 6.336337000000185,
+          "agent": "memory-specialist",
+          "confidence": 0.88,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r196",
+          "ms": 5.371057999999948,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        },
+        {
+          "id": "r197",
+          "ms": 2.0665389999999206,
+          "agent": "coder",
+          "confidence": 0.3,
+          "embedder": "minilm",
+          "method": "keyword"
+        }
+      ]
+    },
+    "E": {
+      "dev": {
+        "n": 84,
+        "accuracy": 0.9643,
+        "macroF1": 0.9664,
+        "wrongHighConfRate": 0,
+        "trapAccuracy": 0.9394
+      },
+      "test": {
+        "n": 113,
+        "accuracy": 0.6372,
+        "macroF1": 0.6269,
+        "wrongHighConfRate": 0.0088,
+        "trapAccuracy": 0.4516
+      },
+      "latencyMs": {
+        "cold": 500.08,
+        "p50": 3.191,
+        "p95": 8.548
+      },
+      "predictions": [
+        {
+          "id": "r001",
+          "ms": 500.08435299999996,
+          "agent": "security-architect",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r002",
+          "ms": 7.635066999999935,
+          "agent": "researcher",
+          "confidence": 0.69,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r003",
+          "ms": 8.54757600000005,
+          "agent": "devops",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r004",
+          "ms": 11.245016000000078,
+          "agent": "memory-specialist",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r005",
+          "ms": 11.77716399999997,
+          "agent": "performance-engineer",
+          "confidence": 0.63,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r006",
+          "ms": 6.64038800000003,
+          "agent": "memory-specialist",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r007",
+          "ms": 12.27784399999996,
+          "agent": "coder",
+          "confidence": 0.53,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r008",
+          "ms": 7.444647000000032,
+          "agent": "tester",
+          "confidence": 0.66,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r009",
+          "ms": 6.742017000000033,
+          "agent": "coder",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r010",
+          "ms": 5.427877999999964,
+          "agent": "coder",
+          "confidence": 0.56,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r011",
+          "ms": 5.716387000000054,
+          "agent": "devops",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "security-architect"
+        },
+        {
+          "id": "r012",
+          "ms": 10.932524999999941,
+          "agent": "architect",
+          "confidence": 0.51,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r013",
+          "ms": 6.222548000000074,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r014",
+          "ms": 1.9367990000000646,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r015",
+          "ms": 12.208354999999983,
+          "agent": "coder",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r016",
+          "ms": 4.920846999999981,
+          "agent": "researcher",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r017",
+          "ms": 3.052308999999923,
+          "agent": "reviewer",
+          "confidence": 0.66,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r018",
+          "ms": 2.7217090000000326,
+          "agent": "swarm-specialist",
+          "confidence": 0.82,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r019",
+          "ms": 13.142024000000106,
+          "agent": "memory-specialist",
+          "confidence": 0.83,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r020",
+          "ms": 4.221648000000073,
+          "agent": "memory-specialist",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r021",
+          "ms": 6.0534280000000535,
+          "agent": "architect",
+          "confidence": 0.66,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r022",
+          "ms": 3.5758480000000645,
+          "agent": "reviewer",
+          "confidence": 0.47,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r023",
+          "ms": 4.45335799999998,
+          "agent": "reviewer",
+          "confidence": 0.71,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r024",
+          "ms": 1.849599000000012,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r025",
+          "ms": 1.8628099999999677,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r026",
+          "ms": 2.230199000000084,
+          "agent": "swarm-specialist",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r027",
+          "ms": 2.3013189999999213,
+          "agent": "swarm-specialist",
+          "confidence": 0.51,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r028",
+          "ms": 2.761577999999986,
+          "agent": "tester",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r029",
+          "ms": 2.419328999999948,
+          "agent": "architect",
+          "confidence": 0.64,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r030",
+          "ms": 4.253467999999998,
+          "agent": "swarm-specialist",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r031",
+          "ms": 2.6370490000000473,
+          "agent": "coder",
+          "confidence": 0.41,
+          "centroidStatus": "fallback",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r032",
+          "ms": 4.494667999999933,
+          "agent": "reviewer",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r033",
+          "ms": 4.601787999999942,
+          "agent": "coder",
+          "confidence": 0.5,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r034",
+          "ms": 2.2602390000000696,
+          "agent": "devops",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r035",
+          "ms": 2.4414090000000215,
+          "agent": "coder",
+          "confidence": 0.51,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r036",
+          "ms": 2.542028999999957,
+          "agent": "security-architect",
+          "confidence": 0.73,
+          "centroidStatus": "decided",
+          "baselineAgent": "security-architect"
+        },
+        {
+          "id": "r037",
+          "ms": 3.542878999999971,
+          "agent": "memory-specialist",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r038",
+          "ms": 3.4775379999999814,
+          "agent": "tester",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r039",
+          "ms": 4.40912800000001,
+          "agent": "coder",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r040",
+          "ms": 3.26070900000002,
+          "agent": "tester",
+          "confidence": 0.73,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r041",
+          "ms": 2.138918999999987,
+          "agent": "performance-engineer",
+          "confidence": 0.56,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r042",
+          "ms": 7.272077000000081,
+          "agent": "swarm-specialist",
+          "confidence": 0.64,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r043",
+          "ms": 3.646478000000002,
+          "agent": "performance-engineer",
+          "confidence": 0.68,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r044",
+          "ms": 2.5694389999999885,
+          "agent": "coder",
+          "confidence": 0.49,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r045",
+          "ms": 3.341739000000075,
+          "agent": "swarm-specialist",
+          "confidence": 0.66,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r046",
+          "ms": 2.8657879999999523,
+          "agent": "performance-engineer",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r047",
+          "ms": 4.63464799999997,
+          "agent": "swarm-specialist",
+          "confidence": 0.84,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r048",
+          "ms": 2.5085189999999784,
+          "agent": "researcher",
+          "confidence": 0.63,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r049",
+          "ms": 3.700608999999986,
+          "agent": "memory-specialist",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r050",
+          "ms": 2.534789000000046,
+          "agent": "tester",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r051",
+          "ms": 3.126957999999945,
+          "agent": "tester",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r052",
+          "ms": 6.361517000000049,
+          "agent": "tester",
+          "confidence": 0.66,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r053",
+          "ms": 4.0282889999999725,
+          "agent": "reviewer",
+          "confidence": 0.72,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r054",
+          "ms": 3.1331579999999803,
+          "agent": "researcher",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r055",
+          "ms": 3.294469000000049,
+          "agent": "security-architect",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r056",
+          "ms": 2.8671390000000656,
+          "agent": "researcher",
+          "confidence": 0.73,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r057",
+          "ms": 2.5633189999999786,
+          "agent": "security-architect",
+          "confidence": 0.67,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r058",
+          "ms": 3.2419479999999794,
+          "agent": "coder",
+          "confidence": 0.51,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r059",
+          "ms": 2.4678890000000138,
+          "agent": "reviewer",
+          "confidence": 0.78,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r060",
+          "ms": 2.504428999999959,
+          "agent": "memory-specialist",
+          "confidence": 0.72,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r061",
+          "ms": 9.252206000000001,
+          "agent": "performance-engineer",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r062",
+          "ms": 6.051316999999926,
+          "agent": "tester",
+          "confidence": 0.51,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r063",
+          "ms": 5.307248000000072,
+          "agent": "memory-specialist",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r064",
+          "ms": 2.339909000000034,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r065",
+          "ms": 3.8291080000000193,
+          "agent": "coder",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r066",
+          "ms": 3.07841899999994,
+          "agent": "architect",
+          "confidence": 0.5,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r067",
+          "ms": 2.52684899999997,
+          "agent": "architect",
+          "confidence": 0.7,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r068",
+          "ms": 4.855097999999998,
+          "agent": "devops",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r069",
+          "ms": 4.5223980000000665,
+          "agent": "swarm-specialist",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r070",
+          "ms": 3.968527999999992,
+          "agent": "devops",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r071",
+          "ms": 3.3555489999999963,
+          "agent": "tester",
+          "confidence": 0.76,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r072",
+          "ms": 3.644337999999948,
+          "agent": "researcher",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r073",
+          "ms": 2.0022689999999557,
+          "agent": "swarm-specialist",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r074",
+          "ms": 2.5074690000000146,
+          "agent": "reviewer",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r075",
+          "ms": 3.835378000000105,
+          "agent": "coder",
+          "confidence": 0.56,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r076",
+          "ms": 4.108408999999938,
+          "agent": "coder",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r077",
+          "ms": 3.450207999999975,
+          "agent": "tester",
+          "confidence": 0.7,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r078",
+          "ms": 2.9567690000000084,
+          "agent": "devops",
+          "confidence": 0.51,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r079",
+          "ms": 2.755318999999986,
+          "agent": "reviewer",
+          "confidence": 0.72,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r080",
+          "ms": 3.2912580000000844,
+          "agent": "swarm-specialist",
+          "confidence": 0.56,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r081",
+          "ms": 1.5009000000000015,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r082",
+          "ms": 2.5562380000000076,
+          "agent": "performance-engineer",
+          "confidence": 0.69,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r083",
+          "ms": 1.9378699999999753,
+          "agent": "tester",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r084",
+          "ms": 2.7110480000000052,
+          "agent": "performance-engineer",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r085",
+          "ms": 2.5241989999999532,
+          "agent": "security-architect",
+          "confidence": 0.56,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r086",
+          "ms": 3.5280989999999974,
+          "agent": "performance-engineer",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r087",
+          "ms": 3.369228000000021,
+          "agent": "tester",
+          "confidence": 0.74,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r088",
+          "ms": 4.61712799999998,
+          "agent": "devops",
+          "confidence": 0.72,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r089",
+          "ms": 3.5329590000000053,
+          "agent": "architect",
+          "confidence": 0.55,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r090",
+          "ms": 2.5559690000000046,
+          "agent": "coder",
+          "confidence": 0.3,
+          "centroidStatus": "unavailable",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r091",
+          "ms": 2.9757280000000037,
+          "agent": "reviewer",
+          "confidence": 0.47,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r092",
+          "ms": 2.589509000000021,
+          "agent": "memory-specialist",
+          "confidence": 0.84,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r093",
+          "ms": 3.030108999999925,
+          "agent": "swarm-specialist",
+          "confidence": 0.7,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r094",
+          "ms": 2.957918999999947,
+          "agent": "coder",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r095",
+          "ms": 2.4376590000000533,
+          "agent": "researcher",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r096",
+          "ms": 2.8661480000000665,
+          "agent": "tester",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r097",
+          "ms": 1.4380300000000261,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r098",
+          "ms": 1.8185290000000123,
+          "agent": "security-architect",
+          "confidence": 0.68,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r099",
+          "ms": 2.1645790000000034,
+          "agent": "researcher",
+          "confidence": 0.5,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r100",
+          "ms": 2.353609000000006,
+          "agent": "performance-engineer",
+          "confidence": 0.71,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r101",
+          "ms": 2.621138999999971,
+          "agent": "tester",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r102",
+          "ms": 4.008628000000044,
+          "agent": "security-architect",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "security-architect"
+        },
+        {
+          "id": "r103",
+          "ms": 3.2425289999999904,
+          "agent": "reviewer",
+          "confidence": 0.56,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r104",
+          "ms": 3.169338000000039,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r105",
+          "ms": 1.6556589999999005,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r106",
+          "ms": 1.430409999999938,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r107",
+          "ms": 3.462978000000021,
+          "agent": "tester",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r108",
+          "ms": 2.1249090000000024,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r109",
+          "ms": 2.839578999999958,
+          "agent": "architect",
+          "confidence": 0.69,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r110",
+          "ms": 1.9725190000000339,
+          "agent": "tester",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r111",
+          "ms": 3.205808999999931,
+          "agent": "security-architect",
+          "confidence": 0.5,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r112",
+          "ms": 4.745217999999909,
+          "agent": "reviewer",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r113",
+          "ms": 5.586537000000021,
+          "agent": "coder",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r114",
+          "ms": 3.9599889999999505,
+          "agent": "researcher",
+          "confidence": 0.63,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r115",
+          "ms": 3.3757779999999684,
+          "agent": "coder",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r116",
+          "ms": 1.717999999999961,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "security-architect"
+        },
+        {
+          "id": "r117",
+          "ms": 3.2895079999999552,
+          "agent": "coder",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r118",
+          "ms": 2.2652890000000525,
+          "agent": "architect",
+          "confidence": 0.47,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r119",
+          "ms": 3.0349390000000085,
+          "agent": "devops",
+          "confidence": 0.71,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r120",
+          "ms": 5.476286999999957,
+          "agent": "coder",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r121",
+          "ms": 2.7713289999999233,
+          "agent": "tester",
+          "confidence": 0.66,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r122",
+          "ms": 2.224438999999961,
+          "agent": "performance-engineer",
+          "confidence": 0.64,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r123",
+          "ms": 4.832908000000089,
+          "agent": "devops",
+          "confidence": 0.53,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r124",
+          "ms": 3.3942690000000084,
+          "agent": "coder",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r125",
+          "ms": 2.693659000000025,
+          "agent": "swarm-specialist",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r126",
+          "ms": 3.577317999999991,
+          "agent": "performance-engineer",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r127",
+          "ms": 2.2724090000000388,
+          "agent": "coder",
+          "confidence": 0.64,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r128",
+          "ms": 2.343699000000015,
+          "agent": "performance-engineer",
+          "confidence": 0.68,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r129",
+          "ms": 4.044157999999925,
+          "agent": "architect",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r130",
+          "ms": 1.7482790000001387,
+          "agent": "performance-engineer",
+          "confidence": 0.77,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r131",
+          "ms": 3.3486390000000483,
+          "agent": "swarm-specialist",
+          "confidence": 0.74,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r132",
+          "ms": 2.4548789999998917,
+          "agent": "swarm-specialist",
+          "confidence": 0.71,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r133",
+          "ms": 2.599698999999873,
+          "agent": "devops",
+          "confidence": 0.63,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r134",
+          "ms": 3.02493800000002,
+          "agent": "tester",
+          "confidence": 0.63,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r135",
+          "ms": 3.2581689999999526,
+          "agent": "swarm-specialist",
+          "confidence": 0.78,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r136",
+          "ms": 3.190788999999995,
+          "agent": "security-architect",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r137",
+          "ms": 3.0041479999999865,
+          "agent": "memory-specialist",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r138",
+          "ms": 2.420429000000013,
+          "agent": "swarm-specialist",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r139",
+          "ms": 2.3520790000000034,
+          "agent": "tester",
+          "confidence": 0.7,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r140",
+          "ms": 2.9491689999999835,
+          "agent": "architect",
+          "confidence": 0.49,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r141",
+          "ms": 4.207237999999961,
+          "agent": "devops",
+          "confidence": 0.69,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r142",
+          "ms": 2.961979000000156,
+          "agent": "security-architect",
+          "confidence": 0.5,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r143",
+          "ms": 1.5864389999999275,
+          "agent": "performance-engineer",
+          "confidence": 0.48,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r144",
+          "ms": 2.3177689999999984,
+          "agent": "performance-engineer",
+          "confidence": 0.71,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r145",
+          "ms": 2.157139000000143,
+          "agent": "swarm-specialist",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r146",
+          "ms": 5.070247999999992,
+          "agent": "memory-specialist",
+          "confidence": 0.48,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r147",
+          "ms": 3.1869990000000143,
+          "agent": "coder",
+          "confidence": 0.3,
+          "centroidStatus": "fallback",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r148",
+          "ms": 1.6479490000001533,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r149",
+          "ms": 2.5482090000000426,
+          "agent": "swarm-specialist",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r150",
+          "ms": 3.402567999999974,
+          "agent": "memory-specialist",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r151",
+          "ms": 2.750368999999864,
+          "agent": "tester",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r152",
+          "ms": 2.365528999999924,
+          "agent": "memory-specialist",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r153",
+          "ms": 5.7103380000000925,
+          "agent": "swarm-specialist",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r154",
+          "ms": 2.897418000000016,
+          "agent": "swarm-specialist",
+          "confidence": 0.7,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r155",
+          "ms": 6.254028000000062,
+          "agent": "swarm-specialist",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r156",
+          "ms": 8.732876000000033,
+          "agent": "swarm-specialist",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r157",
+          "ms": 8.505945999999994,
+          "agent": "coder",
+          "confidence": 0.66,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r158",
+          "ms": 5.324967999999899,
+          "agent": "security-architect",
+          "confidence": 0.49,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r159",
+          "ms": 3.813618000000133,
+          "agent": "memory-specialist",
+          "confidence": 0.5,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r160",
+          "ms": 9.144525999999814,
+          "agent": "researcher",
+          "confidence": 0.59,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r161",
+          "ms": 7.328387000000021,
+          "agent": "architect",
+          "confidence": 0.68,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r162",
+          "ms": 3.4915779999998904,
+          "agent": "performance-engineer",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r163",
+          "ms": 1.9420500000001084,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r164",
+          "ms": 2.474078999999847,
+          "agent": "reviewer",
+          "confidence": 0.62,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r165",
+          "ms": 2.682418000000098,
+          "agent": "devops",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r166",
+          "ms": 4.355948000000126,
+          "agent": "swarm-specialist",
+          "confidence": 0.69,
+          "centroidStatus": "decided",
+          "baselineAgent": "swarm-specialist"
+        },
+        {
+          "id": "r167",
+          "ms": 5.039647999999943,
+          "agent": "architect",
+          "confidence": 0.52,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r168",
+          "ms": 2.191109000000097,
+          "agent": "reviewer",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r169",
+          "ms": 5.746048000000201,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r170",
+          "ms": 3.8678879999999936,
+          "agent": "coder",
+          "confidence": 0.47,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r171",
+          "ms": 2.9204990000000635,
+          "agent": "performance-engineer",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r172",
+          "ms": 5.904556999999841,
+          "agent": "coder",
+          "confidence": 0.44,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r173",
+          "ms": 3.361108999999942,
+          "agent": "devops",
+          "confidence": 0.76,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r174",
+          "ms": 6.371887000000015,
+          "agent": "tester",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r175",
+          "ms": 6.897147000000132,
+          "agent": "coder",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r176",
+          "ms": 3.699767999999949,
+          "agent": "researcher",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r177",
+          "ms": 2.3081090000000586,
+          "agent": "researcher",
+          "confidence": 0.57,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r178",
+          "ms": 2.3358489999998255,
+          "agent": "memory-specialist",
+          "confidence": 0.74,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r179",
+          "ms": 5.0112779999999475,
+          "agent": "memory-specialist",
+          "confidence": 0.54,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r180",
+          "ms": 6.576058000000103,
+          "agent": "devops",
+          "confidence": 0.45,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r181",
+          "ms": 3.853998000000047,
+          "agent": "security-architect",
+          "confidence": 0.72,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r182",
+          "ms": 2.0399889999998777,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r183",
+          "ms": 6.242187000000058,
+          "agent": "devops",
+          "confidence": 0.7,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r184",
+          "ms": 2.9915189999999257,
+          "agent": "researcher",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r185",
+          "ms": 3.477777999999944,
+          "agent": "architect",
+          "confidence": 0.5,
+          "centroidStatus": "decided",
+          "baselineAgent": "security-architect"
+        },
+        {
+          "id": "r186",
+          "ms": 3.6113789999999426,
+          "agent": "tester",
+          "confidence": 0.67,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r187",
+          "ms": 2.684499000000187,
+          "agent": "researcher",
+          "confidence": 0.6,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r188",
+          "ms": 1.9085190000000694,
+          "agent": "researcher",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r189",
+          "ms": 2.1402689999999893,
+          "agent": "coder",
+          "confidence": 0.58,
+          "centroidStatus": "decided",
+          "baselineAgent": "performance-engineer"
+        },
+        {
+          "id": "r190",
+          "ms": 2.7848390000001473,
+          "agent": "performance-engineer",
+          "confidence": 0.64,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r191",
+          "ms": 2.523718999999801,
+          "agent": "coder",
+          "confidence": 0.51,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r192",
+          "ms": 2.64305800000011,
+          "agent": "swarm-specialist",
+          "confidence": 0.56,
+          "centroidStatus": "decided",
+          "baselineAgent": "architect"
+        },
+        {
+          "id": "r193",
+          "ms": 1.3334999999999582,
+          "agent": "none",
+          "confidence": 0.3,
+          "centroidStatus": "decided",
+          "baselineAgent": "devops"
+        },
+        {
+          "id": "r194",
+          "ms": 2.0499790000001212,
+          "agent": "tester",
+          "confidence": 0.63,
+          "centroidStatus": "decided",
+          "baselineAgent": "tester"
+        },
+        {
+          "id": "r195",
+          "ms": 3.8536880000001474,
+          "agent": "memory-specialist",
+          "confidence": 0.63,
+          "centroidStatus": "decided",
+          "baselineAgent": "memory-specialist"
+        },
+        {
+          "id": "r196",
+          "ms": 3.1732990000000427,
+          "agent": "coder",
+          "confidence": 0.65,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        },
+        {
+          "id": "r197",
+          "ms": 4.497998000000052,
+          "agent": "architect",
+          "confidence": 0.61,
+          "centroidStatus": "decided",
+          "baselineAgent": "coder"
+        }
+      ],
+      "centroidRates": {
+        "dev": {
+          "decided": 0.9881,
+          "fallback": 0,
+          "unavailable": 0.0119
+        },
+        "test": {
+          "decided": 0.9823,
+          "fallback": 0.0177,
+          "unavailable": 0
+        }
+      }
+    }
+  }
+}

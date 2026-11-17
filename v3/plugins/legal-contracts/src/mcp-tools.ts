@@ -53,8 +53,10 @@ export interface MCPTool<TInput = unknown, TOutput = unknown> {
   description: string;
   category: string;
   version: string;
+  // zod 3 reads these params as <Output, Def, Input> and zod 4 as <Output, Input, Internals>;
+  // `any` in the last two keeps the type valid under both majors.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  inputSchema: z.ZodType<TInput, z.ZodTypeDef, any>;
+  inputSchema: z.ZodType<TInput, any, any>;
   handler: (input: TInput, context: ToolContext) => Promise<MCPToolResult<TOutput>>;
 }
 

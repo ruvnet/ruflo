@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="76" viewBox="0 0 300 76" role="img" aria-labelledby="t d">
+<title id="t">Claude plugin directory</title>
+<desc id="d">Open the supplied Claude plugin listing. This badge does not claim installation or endorsement.</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#241b23"/><stop offset="1" stop-color="#0b111d"/></linearGradient>
+<linearGradient id="line"><stop stop-color="#f7b08a"/><stop offset="1" stop-color="#b79cfa"/></linearGradient></defs>
+<style>text{font-family:Arial,Helvetica,sans-serif}
+.pulse{animation:pulse 3.5s ease-in-out infinite}
+.scan{stroke-dasharray:35 240;animation:scan 7s linear infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes scan{to{stroke-dashoffset:-550}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<rect x=".5" y=".5" width="299" height="75" rx="9" fill="url(#bg)" stroke="#f7b08a" stroke-opacity=".53"/>
+<path d="M57 12V64" stroke="#f7b08a" stroke-opacity=".24"/>
+<g transform="translate(28 37)" fill="none" stroke="#f7b08a" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round">
+<path d="M-12 -5L0 -12L12 -5V9L0 16L-12 9Z"/><path d="M-12 -5L0 3L12 -5M0 3V16"/>
+</g><circle class="pulse" cx="49" cy="15" r="2.2" fill="#f7b08a"/>
+<text x="70" y="20" fill="#e9d7cc" font-size="12" letter-spacing=".7">CLAUDE PLUGIN</text>
+<text x="70" y="46" fill="#f7b08a" font-size="20" font-weight="700">VIEW IN CLAUDE</text>
+<text x="70" y="61" fill="#acb5c4" font-size="10">PLUGIN DIRECTORY</text>
+<path d="M9 70H291" stroke="#f7b08a" stroke-opacity=".17"/>
+<path class="scan" d="M9 70H291" stroke="url(#line)" stroke-width="1.5"/>
+</svg>

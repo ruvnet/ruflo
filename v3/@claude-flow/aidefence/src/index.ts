@@ -5,7 +5,7 @@
  *
  * Features:
  * - 50+ prompt injection patterns
- * - HNSW-indexed threat pattern search (150x-12,500x faster with AgentDB)
+ * - Semantic threat pattern search (HNSW via the optional agentdb peer)
  * - ReasoningBank-style pattern learning
  * - Adaptive mitigation with effectiveness tracking
  * - Strange-loop meta-learning integration
@@ -74,12 +74,21 @@ export {
   InMemoryVectorStore,
 } from './domain/services/threat-learning-service.js';
 
+export {
+  AgentDBVectorStore,
+  createAgentDBVectorStore,
+  isAgentDBInstance,
+} from './infrastructure/agentdb-vector-store.js';
+export type { AgentDBLike, AgentDBVectorStoreOptions } from './infrastructure/agentdb-vector-store.js';
+
 // Import for internal use
 import { createThreatDetectionService } from './domain/services/threat-detection-service.js';
 import { createThreatLearningService } from './domain/services/threat-learning-service.js';
 import type { ThreatDetectionResult, ThreatType, Threat } from './domain/entities/threat.js';
 import type { LearnedThreatPattern, MitigationStrategy, VectorStore } from './domain/services/threat-learning-service.js';
 import type { PackSelection } from './domain/services/packs/index.js';
+import { createAgentDBVectorStore, isAgentDBInstance } from './infrastructure/agentdb-vector-store.js';
+import type { AgentDBLike } from './infrastructure/agentdb-vector-store.js';
 
 /**
  * Configuration for AIDefence
@@ -87,8 +96,11 @@ import type { PackSelection } from './domain/services/packs/index.js';
 export interface AIDefenceConfig {
   /** Enable self-learning from detections */
   enableLearning?: boolean;
-  /** Custom vector store (defaults to in-memory, use AgentDB for production) */
-  vectorStore?: VectorStore;
+  /**
+   * Vector store for learned patterns (default: in-memory). An AgentDB
+   * instance is accepted and wrapped with createAgentDBVectorStore().
+   */
+  vectorStore?: VectorStore | AgentDBLike;
   /** Minimum confidence threshold for threats */
   confidenceThreshold?: number;
   /** Enable PII detection */
@@ -120,8 +132,8 @@ export interface AIDefence {
   hasPII(input: string): boolean;
 
   /**
-   * Search for similar threat patterns using HNSW
-   * Achieves 150x-12,500x speedup when connected to AgentDB
+   * Search for similar threat patterns
+   * Ranked by embedding similarity when the store is AgentDB-backed
    */
   searchSimilarThreats(
     query: string,
@@ -186,19 +198,36 @@ export interface AIDefence {
  * // With learning enabled
  * const learning = createAIDefence({ enableLearning: true });
  *
- * // With AgentDB for HNSW search (150x-12,500x faster)
+ * // With AgentDB (optional peer): semantic search over learned patterns
  * import { AgentDB } from 'agentdb';
- * const agentdb = new AgentDB({ path: './data/aidefence' });
+ * const agentdb = new AgentDB({ dbPath: './data/aidefence.db' });
  * const fast = createAIDefence({
  *   enableLearning: true,
  *   vectorStore: agentdb
  * });
  * ```
  */
+/**
+ * Accept a VectorStore or an AgentDB instance; reject anything else up front
+ * instead of failing inside the first learn/search call.
+ */
+function resolveVectorStore(store: VectorStore | AgentDBLike | undefined): VectorStore | undefined {
+  if (store === undefined) return undefined;
+  if (isAgentDBInstance(store)) return createAgentDBVectorStore({ agentdb: store });
+  const s = store as unknown as Record<string, unknown>;
+  const missing = ['store', 'search', 'get', 'delete'].filter(m => typeof s?.[m] !== 'function');
+  if (missing.length > 0) {
+    throw new TypeError(
+      `aidefence: vectorStore is missing ${missing.join(', ')}; pass a VectorStore or an AgentDB instance`
+    );
+  }
+  return store as VectorStore;
+}
+
 export function createAIDefence(config: AIDefenceConfig = {}): AIDefence {
   const detectionService = createThreatDetectionService({ packs: config.packs });
   const learningService = config.enableLearning
-    ? createThreatLearningService(config.vectorStore)
+    ? createThreatLearningService(resolveVectorStore(config.vectorStore))
     : null;
 
   return {

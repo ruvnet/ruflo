@@ -1,8 +1,8 @@
 {
   "name": "@claude-flow/integration",
-  "version": "3.0.1",
+  "version": "3.0.3",
   "type": "module",
-  "description": "Integration module - agentic-flow@alpha deep integration, ADR-001 compliance, TokenOptimizer",
+  "description": "agentic-flow integration for Ruflo (claude-flow) V3: TokenOptimizer (ReasoningBank compact context, Agent Booster edits), worker pools and swarm adapters.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -15,16 +15,18 @@
     "build": "tsc"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
     "agentic-flow",
     "token-optimizer",
     "agent-booster",
     "reasoningbank",
     "anti-drift",
-    "swarm"
+    "swarm",
+    "multi-agent"
   ],
   "peerDependencies": {
-    "agentic-flow": "^2.0.0-alpha"
+    "agentic-flow": "^2.0.14 || ^3.0.0"
   },
   "devDependencies": {
     "vitest": "^4.1.0"
@@ -50,5 +52,14 @@
         ]
       }
     }
+  },
+  "homepage": "https://ruv.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
+    "directory": "v3/@claude-flow/integration"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruflo/issues"
   }
 }

@@ -55,6 +55,7 @@ type LoadedTransport = AgentTransport & {
 import {
   DEFAULT_ENVELOPE_SIGNATURE_MODE,
   JCS_SIGNATURE_PROTOCOL,
+  acceptedSignatureVersionsFor,
   canonicalizeEnvelopeForVerify,
   dispatchInbound,
   selectEnvelopeSignatureVersion,
@@ -478,8 +479,7 @@ export class AgentFederationPlugin implements ClaudeFlowPlugin {
           eventBus: context.eventBus,
           logger: context.logger,
           verifyEnvelope,
-          acceptedSignatureVersions:
-            signatureMode === 'require-jcs' ? ['jcs-v1'] : ['legacy-v1', 'jcs-v1'],
+          acceptedSignatureVersions: acceptedSignatureVersionsFor(signatureMode),
           authorizationMode,
           authorizeInbound: ({ messageType, peer, messageSizeBytes, sourceNodeId }) =>
             policyEngine.evaluateMessage(

@@ -94,6 +94,20 @@ class RvfVectorIndex {
     return out;
   }
 
+  /** Exact top-k among the given ids, scored with the index metric. */
+  exactAmong(query: Float32Array, ids: Iterable<string>, k: number, threshold?: number): HnswSearchResult[] {
+    const results: HnswSearchResult[] = [];
+    for (const id of ids) {
+      const vec = this.vectors.get(id);
+      if (!vec || vec.length !== query.length) continue;
+      const score = this.similarity(query, vec);
+      if (threshold !== undefined && score < threshold) continue;
+      results.push({ id, score });
+    }
+    results.sort((a, b) => b.score - a.score);
+    return results.slice(0, k);
+  }
+
   private exact(query: Float32Array, k: number, threshold?: number): HnswSearchResult[] {
     const results: HnswSearchResult[] = [];
     for (const [id, vec] of this.vectors) {
@@ -192,6 +206,27 @@ const DEFAULT_PERSIST_INTERVAL = 30000;
  * hold `MemoryEntry` records, and a native store opened at `databasePath`
  * would compete with the snapshot for the same file.
  */
+/**
+ * The attribute filters of a MemoryQuery (everything except the query type,
+ * embedding and paging). `ignoreExpiry` keeps search() behaviour, which has
+ * never dropped expired entries.
+ */
+function matchesQuery(e: MemoryEntry, q: Partial<MemoryQuery>, now: number, ignoreExpiry = false): boolean {
+  if (q.namespace && e.namespace !== q.namespace) return false;
+  if (q.key && e.key !== q.key) return false;
+  if (q.keyPrefix && !e.key.startsWith(q.keyPrefix)) return false;
+  if (q.tags?.length && !q.tags.every(t => e.tags.includes(t))) return false;
+  if (q.memoryType && e.type !== q.memoryType) return false;
+  if (q.accessLevel && e.accessLevel !== q.accessLevel) return false;
+  if (q.ownerId && e.ownerId !== q.ownerId) return false;
+  if (q.createdAfter && !(e.createdAt > q.createdAfter)) return false;
+  if (q.createdBefore && !(e.createdAt < q.createdBefore)) return false;
+  if (q.updatedAfter && !(e.updatedAt > q.updatedAfter)) return false;
+  if (q.updatedBefore && !(e.updatedAt < q.updatedBefore)) return false;
+  if (!ignoreExpiry && !q.includeExpired && e.expiresAt && e.expiresAt <= now) return false;
+  return true;
+}
+
 export class RvfBackend implements IMemoryBackend {
   private entries = new Map<string, MemoryEntry>();
   private keyIndex = new Map<string, string>();
@@ -327,31 +362,19 @@ export class RvfBackend implements IMemoryBackend {
 
   async query(q: MemoryQuery): Promise<MemoryEntry[]> {
     const start = performance.now();
-    let results = Array.from(this.entries.values());
-
-    if (q.namespace) results = results.filter(e => e.namespace === q.namespace);
-    if (q.key) results = results.filter(e => e.key === q.key);
-    if (q.keyPrefix) results = results.filter(e => e.key.startsWith(q.keyPrefix!));
-    if (q.tags?.length) results = results.filter(e => q.tags!.every(t => e.tags.includes(t)));
-    if (q.memoryType) results = results.filter(e => e.type === q.memoryType);
-    if (q.accessLevel) results = results.filter(e => e.accessLevel === q.accessLevel);
-    if (q.ownerId) results = results.filter(e => e.ownerId === q.ownerId);
-    if (q.createdAfter) results = results.filter(e => e.createdAt > q.createdAfter!);
-    if (q.createdBefore) results = results.filter(e => e.createdAt < q.createdBefore!);
-    if (q.updatedAfter) results = results.filter(e => e.updatedAt > q.updatedAfter!);
-    if (q.updatedBefore) results = results.filter(e => e.updatedAt < q.updatedBefore!);
-    if (!q.includeExpired) {
-      const now = Date.now();
-      results = results.filter(e => !e.expiresAt || e.expiresAt > now);
-    }
+    const now = Date.now();
+    let results = Array.from(this.entries.values()).filter(e => matchesQuery(e, q, now));
+    const offset = q.offset ?? 0;
 
     if (q.type === 'semantic' && q.embedding && this.hnswIndex) {
-      const searchResults = await this.hnswIndex.search(q.embedding, q.limit, q.threshold);
-      const idSet = new Set(searchResults.map(r => r.id));
-      results = results.filter(e => idSet.has(e.id));
+      // Rank the filtered candidates by similarity. Intersecting a fixed
+      // top-`limit` with the filter (the old behaviour) returned fewer than
+      // `limit` hits whenever the filter was selective.
+      const allowed = new Set(results.map(e => e.id));
+      const hits = await this.filteredVectorSearch(q.embedding, offset + q.limit, q.threshold, allowed);
+      results = hits.map(h => h.entry);
     }
 
-    const offset = q.offset ?? 0;
     results = results.slice(offset, offset + q.limit);
 
     this.recordTiming(this.queryTimes, start);
@@ -363,17 +386,15 @@ export class RvfBackend implements IMemoryBackend {
     let results: SearchResult[];
 
     if (this.hnswIndex) {
-      const raw = await this.hnswIndex.search(embedding, options.k * 2, options.threshold);
-      results = [];
-      for (const r of raw) {
-        const entry = this.entries.get(r.id);
-        if (!entry) continue;
-        if (options.filters?.namespace && entry.namespace !== options.filters.namespace) continue;
-        if (options.filters?.tags && !options.filters.tags.every(t => entry.tags.includes(t))) continue;
-        if (options.filters?.memoryType && entry.type !== options.filters.memoryType) continue;
-        results.push({ entry, score: r.score, distance: 1 - r.score });
+      let allowed: Set<string> | null = null;
+      if (options.filters) {
+        const f = options.filters;
+        allowed = new Set();
+        for (const e of this.entries.values()) {
+          if (matchesQuery(e, f, 0, true)) allowed.add(e.id);
+        }
       }
-      results = results.slice(0, options.k);
+      results = await this.filteredVectorSearch(embedding, options.k, options.threshold, allowed);
     } else {
       results = this.bruteForceSearch(embedding, options);
     }
@@ -494,14 +515,51 @@ export class RvfBackend implements IMemoryBackend {
     return `${namespace}\0${key}`;
   }
 
+  /**
+   * Top-`k` by similarity among `allowed` ids (all entries when null).
+   * Small candidate sets are scored exactly. Otherwise the HNSW fetch grows
+   * (k*2, then x4) until `k` allowed hits are found or the index is
+   * exhausted, so a selective filter no longer truncates the result.
+   */
+  private async filteredVectorSearch(
+    embedding: Float32Array,
+    k: number,
+    threshold: number | undefined,
+    allowed: Set<string> | null,
+  ): Promise<SearchResult[]> {
+    if (k <= 0 || !this.hnswIndex) return [];
+    if (allowed && allowed.size <= Math.max(EXACT_SEARCH_MAX, k * 8)) {
+      const exact: SearchResult[] = [];
+      for (const r of this.hnswIndex.exactAmong(embedding, allowed, k, threshold)) {
+        const entry = this.entries.get(r.id);
+        if (entry) exact.push({ entry, score: r.score, distance: 1 - r.score });
+      }
+      return exact;
+    }
+    const total = this.hnswIndex.size;
+    let fetch = Math.min(total, k * 2);
+    for (;;) {
+      const raw = await this.hnswIndex.search(embedding, fetch, threshold);
+      const hits: SearchResult[] = [];
+      for (const r of raw) {
+        if (allowed && !allowed.has(r.id)) continue;
+        const entry = this.entries.get(r.id);
+        if (!entry) continue;
+        hits.push({ entry, score: r.score, distance: 1 - r.score });
+        if (hits.length === k) break;
+      }
+      if (hits.length >= k || fetch >= total || raw.length < fetch) return hits;
+      fetch = Math.min(total, fetch * 4);
+    }
+  }
+
   private bruteForceSearch(embedding: Float32Array, options: SearchOptions): SearchResult[] {
     const results: SearchResult[] = [];
     for (const entry of this.entries.values()) {
       if (!entry.embedding) continue;
       const score = cosineSimilarity(embedding, entry.embedding);
       if (options.threshold && score < options.threshold) continue;
-      if (options.filters?.namespace && entry.namespace !== options.filters.namespace) continue;
-      if (options.filters?.tags && !options.filters.tags.every(t => entry.tags.includes(t))) continue;
+      if (options.filters && !matchesQuery(entry, options.filters, 0, true)) continue;
       results.push({ entry, score, distance: 1 - score });
     }
     results.sort((a, b) => b.score - a.score);

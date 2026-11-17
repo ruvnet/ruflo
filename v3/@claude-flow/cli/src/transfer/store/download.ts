@@ -14,6 +14,7 @@ import type {
 } from './types.js';
 import { DEFAULT_STORE_CONFIG } from './registry.js';
 import type { CFPFormat } from '../types.js';
+import { sanitizeName, assertInside, verifyEd25519 } from './security.js';
 
 /**
  * Download progress callback
@@ -105,12 +106,27 @@ export class PatternDownloader {
         }
       }
 
-      // Verify signature if available. A pattern that carries a signature
-      // which does not verify is refused rather than written.
-      if (pattern.signature && pattern.publicKey) {
-        const sigVerified = await this.verifySignature(content, pattern.signature, pattern.publicKey);
+      // Verify the signature (#4750). A signature that does not verify against
+      // the resolved key is refused rather than written. When requireVerification
+      // is on, verification must be backed by a *pinned* key: a self-declared
+      // pattern.publicKey is not trusted, so an entry that supplies its own key
+      // is refused rather than allowed to self-sign.
+      const { key: trustedKey, pinned } = this.resolveVerificationKey(pattern);
+      if (this.config.requireVerification && !pinned) {
+        console.warn(
+          `[Download] requireVerification is on but no trusted (pinned) key is configured for ${pattern.id}; refusing self-declared key. Configure StoreConfig.trustedRegistryPublicKeys to download this pattern, or disable requireVerification.`
+        );
+        return {
+          success: false,
+          pattern,
+          verified: false,
+          size: content.length,
+        };
+      }
+      if (pattern.signature && trustedKey) {
+        const sigVerified = await verifyEd25519(content, pattern.signature, trustedKey);
         if (!sigVerified) {
-          console.warn(`[Download] Signature verification failed, not writing the pattern.`);
+          console.warn(`[Download] Signature verification failed against trusted key, not writing the pattern.`);
           return {
             success: false,
             pattern,
@@ -119,6 +135,15 @@ export class PatternDownloader {
           };
         }
         console.log(`[Download] Signature verified!`);
+        verified = true;
+      } else if (this.config.requireVerification) {
+        console.warn(`[Download] No verifiable signature and requireVerification is on, not writing the pattern.`);
+        return {
+          success: false,
+          pattern,
+          verified: false,
+          size: content.length,
+        };
       }
 
       // Write to file
@@ -172,45 +197,7 @@ export class PatternDownloader {
     console.log(`[Download] Fetching: ${url}`);
 
     try {
-      // Real HTTP fetch with progress
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        console.error(`[Download] HTTP ${response.status}: ${response.statusText}`);
-        return null;
-      }
-
-      const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
-
-      // Stream the response for progress tracking
-      if (response.body && onProgress && contentLength > 0) {
-        const reader = response.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let downloaded = 0;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          chunks.push(value);
-          downloaded += value.length;
-          onProgress({
-            bytesDownloaded: downloaded,
-            totalBytes: contentLength,
-            percentage: Math.round((downloaded / contentLength) * 100),
-          });
-        }
-
-        const buffer = Buffer.concat(chunks.map(c => Buffer.from(c)));
-        console.log(`[Download] Downloaded ${buffer.length} bytes from IPFS gateway`);
-        return buffer;
-      }
-
-      // Fallback for responses without content-length or progress
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      console.log(`[Download] Downloaded ${buffer.length} bytes from IPFS gateway`);
-      return buffer;
+      return await this.fetchBounded(url, onProgress);
     } catch (error) {
       console.error(`[Download] Fetch failed:`, error);
 
@@ -226,19 +213,82 @@ export class PatternDownloader {
         if (gateway === this.config.gateway) continue;
         try {
           console.log(`[Download] Trying alternative gateway: ${gateway}`);
-          const altResponse = await fetch(`${gateway}/ipfs/${cid}`);
-          if (altResponse.ok) {
-            const arrayBuffer = await altResponse.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            console.log(`[Download] Downloaded ${buffer.length} bytes from ${gateway}`);
-            return buffer;
-          }
+          return await this.fetchBounded(`${gateway}/ipfs/${cid}`, onProgress);
         } catch {
           // Continue to next gateway
         }
       }
 
       return null;
+    }
+  }
+
+  /**
+   * Fetch a single URL with a hard timeout and a byte cap (#4750). The timeout
+   * aborts the request; the byte cap aborts mid-stream once exceeded. Both
+   * protect against a registry serving a hung or oversized response.
+   */
+  private async fetchBounded(
+    url: string,
+    onProgress?: DownloadProgressCallback
+  ): Promise<Buffer | null> {
+    const maxBytes = this.config.maxBytes ?? 8 * 1024 * 1024;
+    const timeoutMs = this.config.timeout ?? 30000;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        console.error(`[Download] HTTP ${response.status}: ${response.statusText}`);
+        return null;
+      }
+
+      const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
+      if (contentLength > maxBytes) {
+        throw new Error(`content-length ${contentLength} exceeds maxBytes ${maxBytes}`);
+      }
+
+      if (response.body) {
+        const reader = response.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let downloaded = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          downloaded += value.length;
+          if (downloaded > maxBytes) {
+            await reader.cancel().catch(() => undefined);
+            throw new Error(`download exceeded maxBytes ${maxBytes}`);
+          }
+
+          chunks.push(value);
+          if (onProgress && contentLength > 0) {
+            onProgress({
+              bytesDownloaded: downloaded,
+              totalBytes: contentLength,
+              percentage: Math.round((downloaded / contentLength) * 100),
+            });
+          }
+        }
+
+        const buffer = Buffer.concat(chunks.map(c => Buffer.from(c)));
+        console.log(`[Download] Downloaded ${buffer.length} bytes from ${url}`);
+        return buffer;
+      }
+
+      // No stream body: read the whole thing, then check the cap.
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      if (buffer.length > maxBytes) {
+        throw new Error(`download exceeded maxBytes ${maxBytes}`);
+      }
+      console.log(`[Download] Downloaded ${buffer.length} bytes from ${url}`);
+      return buffer;
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -313,20 +363,73 @@ export class PatternDownloader {
   }
 
   /**
+   * Resolve the Ed25519 public key a pattern's signature must verify against
+   * (#4750). Returns whether the key is *pinned* (came from the operator's
+   * config.trustedRegistryPublicKeys) or merely the entry's own self-declared
+   * publicKey. Callers that enforce verification must treat a self-declared key
+   * as untrusted: otherwise a malicious registry entry can sign its own content
+   * with its own key and pass (the exact gap #4750 was filed to close).
+   */
+  private resolveVerificationKey(pattern: PatternEntry): { key: string | null; pinned: boolean } {
+    const trusted = this.config.trustedRegistryPublicKeys;
+    if (trusted) {
+      const candidates = [pattern.author?.id, pattern.source, pattern.id].filter(Boolean) as string[];
+      for (const key of candidates) {
+        const pinned = trusted[key];
+        if (pinned && pinned.startsWith('ed25519:')) {
+          return { key: pinned, pinned: true };
+        }
+      }
+      // Any configured key also matches a pattern that declares the same key.
+      if (pattern.publicKey && Object.values(trusted).includes(pattern.publicKey)) {
+        return { key: pattern.publicKey, pinned: true };
+      }
+    }
+    if (pattern.publicKey && pattern.publicKey.startsWith('ed25519:')) {
+      return { key: pattern.publicKey, pinned: false };
+    }
+    return { key: null, pinned: false };
+  }
+
+  /**
+   * Thin wrapper kept for callers that only need a usable key.
+   */
+  private resolveTrustedPublicKey(pattern: PatternEntry): string | null {
+    return this.resolveVerificationKey(pattern).key;
+  }
+
+  /**
+   * Sanitize a pattern's name/version and assert the resulting path stays inside
+   * the cache directory before anything is written (#4750).
+   */
+  private sanitizeAndAssertOutput(fileName: string, baseDir: string): string {
+    // fileName is a single path component already assembled from sanitized
+    // name/version; re-sanitize defensively and assert containment.
+    const safe = sanitizeName(fileName);
+    const resolvedBase = path.resolve(baseDir);
+    const target = path.join(resolvedBase, safe);
+    return assertInside(resolvedBase, target);
+  }
+
+  /**
    * Resolve output path for pattern
    */
   private resolveOutputPath(pattern: PatternEntry, options: DownloadOptions): string {
     if (options.output) {
       // If output is a directory, append filename
       if (fs.existsSync(options.output) && fs.statSync(options.output).isDirectory()) {
-        return path.join(options.output, `${pattern.name}.cfp.json`);
+        const fileName = `${sanitizeName(pattern.name)}.cfp.json`;
+        return this.sanitizeAndAssertOutput(fileName, options.output);
       }
       return options.output;
     }
 
-    // Default: cache directory
+    // Default: cache directory. Name and version come from an untrusted registry
+    // entry, so sanitize both and assert the final path stays inside cacheDir
+    // (#4750 path traversal).
     const cacheDir = path.resolve(this.config.cacheDir);
-    return path.join(cacheDir, `${pattern.name}-${pattern.version}.cfp.json`);
+    const fileName = `${sanitizeName(pattern.name)}-${sanitizeName(pattern.version)}.cfp.json`;
+    return this.sanitizeAndAssertOutput(fileName, cacheDir);
   }
 
   /**

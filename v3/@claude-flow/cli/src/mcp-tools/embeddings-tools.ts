@@ -636,8 +636,9 @@ export const embeddingsTools: MCPTool[] = [
         case 'init':
           config.neural = {
             enabled: true,
-            driftThreshold: (input.driftThreshold as number) || 0.3,
-            decayRate: (input.decayRate as number) || 0.01,
+            // `??`, not `||`: an explicit 0 is a valid value for both.
+            driftThreshold: (input.driftThreshold as number) ?? 0.3,
+            decayRate: (input.decayRate as number) ?? 0.01,
             ruvector: {
               enabled: true,
               sona: true,

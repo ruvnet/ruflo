@@ -1316,11 +1316,17 @@ export class QueenCoordinator extends EventEmitter {
   ): AgentAssignment[] {
     const backups: AgentAssignment[] = [];
 
-    // Select up to 2 backup agents
+    // Failover disabled: no backups at all.
+    if (!this.config.enableFailover) return backups;
+
+    // The primary counts as the first delegation attempt, so backups fill
+    // the remaining attempts (default maxDelegationAttempts 3 -> 2 backups).
+    const maxBackups = Math.max(0, this.config.maxDelegationAttempts - 1);
+
     for (const score of scores) {
+      if (backups.length >= maxBackups) break;
       if (score.agentId === primary.agentId) continue;
       if (score.totalScore < 0.3) continue;
-      if (backups.length >= 2) break;
 
       backups.push({
         agentId: score.agentId,

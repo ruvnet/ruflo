@@ -1,5 +1,34 @@
 # @claude-flow/plugin-quantum-optimizer
 
+<!-- adr-356:quickstart:start -->
+**@claude-flow/plugin-quantum-optimizer** — A Ruflo plugin that gives agents quantum-inspired MCP tools (simulated annealing, QAOA, Grover-style search) for dependency resolution, scheduling and other combinatorial problems.
+
+**Supported environments:** Node.js 20+ · ESM
+
+## Quickstart
+
+```bash
+npm install @claude-flow/plugin-quantum-optimizer
+```
+
+```js
+import { quantumOptimizerTools, DependencyResolveInputSchema } from '@claude-flow/plugin-quantum-optimizer';
+
+console.log('tools:', quantumOptimizerTools.map((t) => t.name).join(', '));
+const check = DependencyResolveInputSchema.safeParse({ packages: [{ name: 'app', version: '1.0.0', dependencies: { lib: '^2.0.0' } }] });
+console.log('valid input:', check.success);
+```
+
+Expected output:
+
+```text
+tools: quantum_annealing_solve, quantum_qaoa_optimize, quantum_grover_search, quantum_dependency_resolve, quantum_schedule_optimize
+valid input: true
+```
+
+Install it into a Ruflo project with [`@claude-flow/cli`](https://www.npmjs.com/package/@claude-flow/cli): `npx @claude-flow/cli@latest plugins install -n @claude-flow/plugin-quantum-optimizer`.
+<!-- adr-356:quickstart:end -->
+
 [![npm version](https://img.shields.io/npm/v/@claude-flow/plugin-quantum-optimizer.svg)](https://www.npmjs.com/package/@claude-flow/plugin-quantum-optimizer)
 [![license](https://img.shields.io/npm/l/@claude-flow/plugin-quantum-optimizer.svg)](https://github.com/ruvnet/claude-flow/blob/main/LICENSE)
 [![downloads](https://img.shields.io/npm/dm/@claude-flow/plugin-quantum-optimizer.svg)](https://www.npmjs.com/package/@claude-flow/plugin-quantum-optimizer)
@@ -298,3 +327,9 @@ Amplitude amplification for unstructured search achieving O(sqrt(N)) complexity.
 ## License
 
 MIT
+
+<!-- adr-356:footer:start -->
+---
+
+Built by [rUv](https://ruv.io) · [ruv.io](https://ruv.io) · [Source](https://github.com/ruvnet/ruflo/tree/main/v3/plugins/quantum-optimizer)
+<!-- adr-356:footer:end -->

@@ -25,9 +25,14 @@ import { initCommand } from '../src/commands/init.js';
 import { executeInit, MINIMAL_INIT_OPTIONS } from '../src/init/index.js';
 
 let projectPath: string;
+let savedConfigDir: string | undefined;
 
 beforeEach(() => {
   projectPath = mkdtempSync(join(tmpdir(), 'dual-native-2636-'));
+  // #2640: init defers to installed ruflo plugins; keep the machine's own
+  // Claude Code plugins out of these tests.
+  savedConfigDir = process.env.CLAUDE_CONFIG_DIR;
+  process.env.CLAUDE_CONFIG_DIR = join(projectPath, '.claude-config-isolated');
   codexMock.initialize.mockImplementation(async (options: Record<string, unknown>) => {
     const target = String(options.projectPath);
     mkdirSync(join(target, '.agents'), { recursive: true });
@@ -43,6 +48,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  if (savedConfigDir === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+  else process.env.CLAUDE_CONFIG_DIR = savedConfigDir;
   rmSync(projectPath, { recursive: true, force: true });
 });
 
@@ -77,7 +84,7 @@ describe('native dual initialization (#2636)', () => {
     expect(codexMock.initialize).toHaveBeenCalledWith(expect.objectContaining({
       projectPath,
       template: 'minimal',
-      dual: false,
+      dual: true,
     }));
   });
 });

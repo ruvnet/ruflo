@@ -1495,7 +1495,19 @@ const depsCommand: Command = {
         output.writeln(output.dim('-'.repeat(60)));
 
         try {
-          const auditRaw = execSync('npm audit --json 2>/dev/null', { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+          let auditRaw: string;
+          try {
+            auditRaw = execSync('npm audit --json', {
+              encoding: 'utf-8',
+              maxBuffer: 10 * 1024 * 1024,
+              stdio: ['pipe', 'pipe', 'pipe'],
+            });
+          } catch (auditErr: unknown) {
+            // npm audit exits non-zero when vulnerabilities found — stdout still has JSON
+            const stdout = auditErr instanceof Error && 'stdout' in auditErr ? (auditErr as { stdout: string }).stdout : '';
+            if (!stdout) throw auditErr;
+            auditRaw = stdout;
+          }
           const audit = JSON.parse(auditRaw);
           const vulns = audit.metadata?.vulnerabilities || audit.vulnerabilities || {};
           const info = vulns.info || 0;

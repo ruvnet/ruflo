@@ -230,7 +230,21 @@ Without a token, a loopback server is still unauthenticated: any process on the 
 
 ---
 
+Startup checks report available updates without installing them. To opt in to
+automatic patch installation, set `RUFLO_AUTO_UPDATE=true` (`1`, `yes` and `on`
+also work). Minor and major updates remain manual; critical package priority
+does not bypass an opt-out. CI detection and `CLAUDE_FLOW_AUTO_UPDATE=false`
+still disable the update check.
+
 ## What You Get
+
+Companion helper refresh (`session.cjs` / `memory.cjs`) skips symlinked helper
+directories and symlinked/non-file targets. Regular files are preserved on
+startup and replaced on an explicit upgrade through an exclusive temporary
+file and rename. A skipped companion is left in place; remove or repair the
+unsafe path before retrying. These pathname checks do not protect against an
+attacker concurrently replacing ancestor directories, and do not extend the
+signed helper set or protect other state writers.
 
 | Capability | Description |
 |------------|-------------|

@@ -104,7 +104,9 @@ describe('memory sql.js fallback WAL-sidecar guard — issue #2735 / #3161', () 
     expect(result.id).not.toBe('');
   });
 
-  it('getEntry proceeds through the access_count-bump write past a genuine orphan (#3161)', async () => {
+  // #4734: getEntry is now a pure read (no access_count bump / no whole-image
+  // write); it still runs the #2735 liveness guard, which clears the orphan.
+  it('getEntry proceeds past a genuine orphan as a read (#3161 / #4734)', async () => {
     const { storeEntry } = await import('../src/memory/memory-initializer.js');
     const stored = await storeEntry({ key: 'k2', value: 'v2', dbPath, generateEmbeddingFlag: false });
     expect(stored.success).toBe(true);

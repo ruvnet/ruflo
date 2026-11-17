@@ -1,6 +1,6 @@
 {
   "name": "@claude-flow/plugin-gastown-bridge",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Gas Town orchestrator integration for Claude Flow V3 with WASM-accelerated formula parsing and graph analysis",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -54,6 +54,7 @@
     "prepublishOnly": "npm run build"
   },
   "keywords": [
+    "ruflo",
     "claude-flow",
     "plugin",
     "gastown",
@@ -62,19 +63,20 @@
     "workflows",
     "formulas",
     "wasm",
-    "multi-agent"
+    "multi-agent",
+    "mcp"
   ],
   "author": "rUv",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/claude-flow.git",
+    "url": "git+https://github.com/ruvnet/ruflo.git",
     "directory": "v3/plugins/gastown-bridge"
   },
   "bugs": {
-    "url": "https://github.com/ruvnet/claude-flow/issues"
+    "url": "https://github.com/ruvnet/ruflo/issues"
   },
-  "homepage": "https://github.com/ruvnet/claude-flow/tree/main/v3/plugins/gastown-bridge#readme",
+  "homepage": "https://ruv.io",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -88,13 +90,11 @@
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",
-    "uuid": "^9.0.0",
-    "zod": "^3.22.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "^11.0.0",
     "@types/node": "^20.0.0",
-    "@types/uuid": "^9.0.0",
     "esbuild": "^0.20.0",
     "size-limit": "^11.0.0",
     "tsup": "^8.0.0",

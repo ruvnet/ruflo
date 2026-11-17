@@ -28,6 +28,37 @@ const HIVE_AGENT_FILE = 'agents.json';
 // Model types matching Claude Agent SDK
 type ClaudeModel = 'haiku' | 'sonnet' | 'opus' | 'opus-4.7' | 'inherit';
 
+/** Model aliases that resolve to a tier label rather than an exact model id. */
+const MODEL_ALIASES: readonly ClaudeModel[] = ['haiku', 'sonnet', 'opus', 'opus-4.7', 'inherit'];
+
+/**
+ * #3215 — agent_spawn's `model` accepts an alias or an exact provider model id
+ * (`claude-opus-5-5`, `gpt-6-astra`, `openrouter/anthropic/claude-sonnet-5.5`,
+ * `qwen3.6:27b`). One pattern is shared by the input schema and the handler so
+ * the two cannot drift. It is anchored, starts with an alphanumeric (so a value
+ * cannot read as a CLI flag), and allows only `._:/@+-` besides alphanumerics:
+ * no whitespace and no shell metacharacters. The character class has no
+ * escapes, so it compiles the same under ajv's `u` flag and under the plain
+ * `new RegExp(pattern)` that @claude-flow/mcp's schema validator uses.
+ */
+export const MODEL_ID_PATTERN = '^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$';
+export const MODEL_ID_MAX_LENGTH = 256;
+const MODEL_ID_RE = new RegExp(MODEL_ID_PATTERN);
+
+/** Returns an error message for an invalid model value, or null when it is valid. */
+export function modelIdError(value: unknown, label = 'model'): string | null {
+  if (typeof value !== 'string' || value.length === 0) {
+    return `${label} must be a non-empty string`;
+  }
+  if (value.length > MODEL_ID_MAX_LENGTH) {
+    return `${label} exceeds ${MODEL_ID_MAX_LENGTH} characters`;
+  }
+  if (!MODEL_ID_RE.test(value)) {
+    return `${label} contains invalid characters (must start with a letter or digit; allowed: letters, digits, . _ : / @ + -)`;
+  }
+  return null;
+}
+
 interface AgentRecord {
   agentId: string;
   agentType: string;
@@ -229,7 +260,7 @@ async function determineAgentModel(
   // 1. Explicit model in config
   if (config.model) {
     const explicitModel = config.model as string;
-    if (['haiku', 'sonnet', 'opus', 'opus-4.7', 'inherit'].includes(explicitModel)) {
+    if ((MODEL_ALIASES as readonly string[]).includes(explicitModel)) {
       return { model: explicitModel as ClaudeModel, routedBy: 'explicit' };
     }
     // #2962 — a non-alias model string (e.g. an Ollama tag like
@@ -340,8 +371,10 @@ export const agentTools: MCPTool[] = [
         domain: { type: 'string', description: 'Agent domain' },
         model: {
           type: 'string',
-          enum: ['haiku', 'sonnet', 'opus', 'opus-4.7', 'inherit'],
-          description: 'Claude model alias (haiku=fast/cheap, sonnet=balanced, opus=current Opus 4.8, opus-4.7=prior Opus pin)'
+          minLength: 1,
+          maxLength: MODEL_ID_MAX_LENGTH,
+          pattern: MODEL_ID_PATTERN,
+          description: 'Model alias or exact model id. Aliases: haiku=fast/cheap, sonnet=balanced, opus=current Opus 4.8, opus-4.7=prior Opus pin, inherit=the default model. Any other value is passed through unchanged as an exact model id (e.g. claude-opus-5-5, gpt-6-astra, openrouter/anthropic/claude-sonnet-5.5) and reported back as modelId. Letters, digits and . _ : / @ + - only, starting with a letter or digit.'
         },
         task: { type: 'string', description: 'Task description for intelligent model routing' },
         memoryBase: { type: 'string', description: 'Opt-in: base .rvf memory file to fork a per-agent Copy-On-Write branch from (agenticow). When set, the agent gets an isolated ~162-byte COW branch instead of a full copy — promote on success, discard on terminate. Requires the optional `agenticow` dep; degrades to a no-op when absent or when CLAUDE_FLOW_NO_COW_MEMORY=1.' },
@@ -384,9 +417,19 @@ export const agentTools: MCPTool[] = [
       }
       const config = (input.config as Record<string, unknown>) || {};
 
-      // Add explicit model to config if provided
-      if (input.model) {
+      // #3215 — validate an explicit model before it is stored or routed. The
+      // top-level field is checked even when empty (the schema rejects ''; null
+      // is treated as absent), and config.model is checked too: `agent spawn -m`
+      // sends the model there, where the input schema never sees it. A falsy
+      // config.model keeps its old meaning (no explicit model), matching
+      // determineAgentModel's check.
+      if (input.model !== undefined && input.model !== null) {
+        const err = modelIdError(input.model);
+        if (err) return { success: false, error: `Input validation failed: ${err}` };
         config.model = input.model;
+      } else if (config.model) {
+        const err = modelIdError(config.model, 'config.model');
+        if (err) return { success: false, error: `Input validation failed: ${err}` };
       }
 
       // Get task from either top-level or config (CLI passes it in config.task)

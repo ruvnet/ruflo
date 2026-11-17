@@ -1,4 +1,8 @@
+<p align="center"><img src="https://raw.githubusercontent.com/ruvnet/ruflo/main/docs/assets/readme/packages/memory-hnsw-quickstart.svg" alt="@claude-flow/memory quickstart: three vectors go into an HNSWIndex and a cosine query returns doc-a (distance 0) and doc-b (distance 0.0061)." width="100%"></p>
+
 # @claude-flow/memory
+
+**Persistent vector memory for AI agents:** store embeddings, search them with HNSW, and keep them across restarts, from one `MemoryService` API.
 
 [![npm version](https://img.shields.io/npm/v/@claude-flow/memory.svg)](https://www.npmjs.com/package/@claude-flow/memory)
 [![Ecosystem downloads](https://img.shields.io/badge/ecosystem%20downloads-22.2M%2B-blue.svg)](https://github.com/ruvnet/ruflo/blob/main/data/clone-data.proof.json)
@@ -46,6 +50,42 @@ This release closes out [ADR-125 — Memory Consolidation](../../../v3/docs/adr/
 npm install @claude-flow/memory
 ```
 
+<!-- weaver:seo:quickstart -->
+## Supported environments
+
+- Node.js, ESM (`import`). The quickstart below was run on Node 22 (Linux x64).
+- Storage: `sql.js` (WebAssembly SQLite, no native build). `better-sqlite3` is an optional dependency.
+- Works standalone. The Ruflo CLI (`@claude-flow/cli`) isn't required.
+
+## Quickstart (verified)
+
+```bash
+npm install @claude-flow/memory
+```
+
+```js
+// quickstart.mjs
+import { HNSWIndex } from '@claude-flow/memory';
+
+const index = new HNSWIndex({ dimensions: 8, M: 16, efConstruction: 200, metric: 'cosine' });
+await index.addPoint('doc-a', new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]));
+await index.addPoint('doc-b', new Float32Array([0.9, 0.1, 0, 0, 0, 0, 0, 0]));
+await index.addPoint('doc-c', new Float32Array([0, 1, 0, 0, 0, 0, 0, 0]));
+
+console.log(await index.search(new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]), 2));
+```
+
+Expected output (`node quickstart.mjs`, @claude-flow/memory 3.3.0):
+
+```text
+[
+  { id: 'doc-a', distance: 0 },
+  { id: 'doc-b', distance: 0.006116271018981934 }
+]
+```
+
+**Next:** turn text into vectors for this index with [`@claude-flow/embeddings`](https://www.npmjs.com/package/@claude-flow/embeddings).
+
 ## Standalone use (without the Ruflo CLI)
 
 This package works on its own — you don't need `@claude-flow/cli` or the
@@ -74,7 +114,7 @@ await index.addPoint('doc-c', new Float32Array([0, 1, 0, 0, 0, 0, 0, 0]));
 
 // Search — top 2 nearest to "doc-a"-shaped query
 const hits = await index.search(new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]), 2);
-console.log(hits); // [{ id: 'doc-a', distance: 0 }, { id: 'doc-b', distance: ~0.005 }]
+console.log(hits); // [{ id: 'doc-a', distance: 0 }, { id: 'doc-b', distance: 0.0061… }]
 ```
 
 ### Recipe 2 — Drive the controller registry against your own AgentDB

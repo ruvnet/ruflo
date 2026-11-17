@@ -462,6 +462,10 @@ class LocalReasoningBank {
   private deletedIds: Set<string> = new Set();
   /** A local clear() must remove disk entries too. */
   private clearRequested: boolean = false;
+  /** Message of the most recent failed flush; null after a successful one (#4880). */
+  private lastFlushError: string | null = null;
+  /** Time (ms epoch) of the most recent flush attempt that had something to write. */
+  private lastFlushAt: number | null = null;
 
   constructor(options: { maxSize: number; persistence?: boolean }) {
     this.maxSize = options.maxSize;
@@ -567,9 +571,17 @@ class LocalReasoningBank {
    * patterns this process changed, so a long-lived daemon cannot erase patterns
    * written by another hook/process (#4735). Deletions and clear() are carried
    * as tombstones; the write itself is temp-file + rename.
+   *
+   * Returns true when the patterns are on disk (or there was nothing to
+   * write) and false when the write failed. A failed flush leaves the bank
+   * dirty so the next flush retries, and records the error for
+   * getPersistenceStatus() (#4880). Never throws: the debounce timer and exit
+   * paths rely on that.
    */
-  flushToDisk(): void {
-    if (!this.persistenceEnabled || !this.dirty) return;
+  flushToDisk(): boolean {
+    if (!this.persistenceEnabled || !this.dirty) return true;
+
+    this.lastFlushAt = Date.now();
 
     try {
       ensureDataDir();
@@ -618,8 +630,20 @@ class LocalReasoningBank {
       });
     } catch (error) {
       // Log but don't throw - persistence failures shouldn't break training.
+      this.lastFlushError = error instanceof Error ? error.message : String(error);
       console.error('Failed to persist patterns:', error);
     }
+    // `dirty` is cleared only after the rename succeeded, so any path that did
+    // not complete the write reads as a failure here.
+    if (!this.dirty) this.lastFlushError = null;
+    return !this.dirty;
+  }
+
+  /**
+   * Read-only view of the persistence state (#4880).
+   */
+  getFlushState(): { dirty: boolean; lastFlushError: string | null; lastFlushAt: number | null } {
+    return { dirty: this.dirty, lastFlushError: this.lastFlushError, lastFlushAt: this.lastFlushAt };
   }
 
   /**
@@ -1390,10 +1414,12 @@ export async function recordTrajectory(
     // #4283: the bank's own save is debounced, and the one-shot bins exit as
     // soon as the command resolves, so write the patterns now. Otherwise
     // stats.json counts patterns that never reach patterns.json.
-    reasoningBank?.flushToDisk();
+    // #4880: a failed write (e.g. ENOSPC) returns false instead of claiming
+    // success for patterns that exist only in memory.
+    const persisted = reasoningBank ? reasoningBank.flushToDisk() : true;
     savePersistedStats();
 
-    return true;
+    return persisted;
   } catch {
     return false;
   }
@@ -1702,12 +1728,13 @@ export async function getPatternsByType(type: string): Promise<Pattern[]> {
 /**
  * Flush patterns to disk immediately
  * Call this at the end of training to ensure all patterns are saved
+ *
+ * @returns false when the patterns could not be written (#4880)
  */
-export function flushPatterns(): void {
-  if (reasoningBank) {
-    reasoningBank.flushToDisk();
-  }
+export function flushPatterns(): boolean {
+  const persisted = reasoningBank ? reasoningBank.flushToDisk() : true;
   savePersistedStats();
+  return persisted;
 }
 
 /**
@@ -1831,10 +1858,19 @@ export function getPersistenceStatus(): {
   statsFile: string;
   patternsExist: boolean;
   statsExist: boolean;
+  /** Patterns changed in memory that are not on disk yet (#4880). */
+  dirty: boolean;
+  /** Error from the most recent failed pattern flush; null after a success. */
+  lastFlushError: string | null;
+  /** Time (ms epoch) of the most recent pattern flush attempt. */
+  lastFlushAt: number | null;
 } {
   const dataDir = getDataDir();
   const patternsFile = getPatternsPath();
   const statsFile = getStatsPath();
+  const flush = reasoningBank
+    ? reasoningBank.getFlushState()
+    : { dirty: false, lastFlushError: null, lastFlushAt: null };
 
   return {
     enabled: true,
@@ -1842,6 +1878,7 @@ export function getPersistenceStatus(): {
     patternsFile,
     statsFile,
     patternsExist: existsSync(patternsFile),
-    statsExist: existsSync(statsFile)
+    statsExist: existsSync(statsFile),
+    ...flush,
   };
 }
